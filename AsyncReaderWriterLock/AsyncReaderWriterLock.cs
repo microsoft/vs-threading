@@ -35,12 +35,6 @@
 			Write,
 		}
 
-		////internal LockTaskScheduler Read { get; private set; }
-
-		////internal LockTaskScheduler UpgradeableRead { get; private set; }
-
-		////internal LockTaskScheduler Writer { get; private set; }
-
 		public bool IsReadLockHeld {
 			get { return this.IsLockHeld(LockKind.Read); }
 		}
@@ -203,34 +197,5 @@
 				this.lck.Release(this.kind);
 			}
 		}
-
-		////internal class LockTaskScheduler : TaskScheduler {
-		////	protected override IEnumerable<Task> GetScheduledTasks() {
-		////		throw new NotImplementedException();
-		////	}
-
-		////	protected override void QueueTask(Task task) {
-		////		throw new NotImplementedException();
-		////	}
-
-		////	protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued) {
-		////		throw new NotImplementedException();
-		////	}
-
-		////	public Awaiter GetAwaiter() {
-		////		return new Awaiter();
-		////	}
-
-		////	public struct Awaiter : INotifyCompletion {
-		////		public bool IsCompleted { get; private set; }
-
-		////		public void OnCompleted(Action continuation) {
-		////			throw new NotImplementedException();
-		////		}
-
-		////		public void GetResult() {
-		////		}
-		////	}
-		////}
 	}
 }
