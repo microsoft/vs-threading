@@ -1,0 +1,16 @@
+*.user
+*.suo
+bin
+obj
+_ReSharper.*
+testimpactdata.sdf
+StyleCop.Cache
+TestResults
+Debug
+Release
+*.sdf
+*.opensdf
+ipch
+*.swp
+*.vs10x
+Backup*
