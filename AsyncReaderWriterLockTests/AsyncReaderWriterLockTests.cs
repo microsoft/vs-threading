@@ -86,6 +86,25 @@
 			await subTask;
 		}
 
+		[TestMethod]
+		public async Task ConcurrentReaders() {
+			var reader1HasLock = new ManualResetEventSlim();
+			var reader2HasLock = new ManualResetEventSlim();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+				using (await this.asyncLock.ReadLockAsync()) {
+					reader1HasLock.Set();
+					reader2HasLock.Wait(); // synchronous block to ensure multiple *threads* hold lock.
+				}
+			}),
+				Task.Run(async delegate {
+				using (await this.asyncLock.ReadLockAsync()) {
+					reader2HasLock.Set();
+					reader1HasLock.Wait(); // synchronous block to ensure multiple *threads* hold lock.
+				}
+			}));
+		}
+
 		#endregion
 
 		#region UpgradeableRead tests
