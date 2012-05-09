@@ -392,10 +392,22 @@
 			throw new NotImplementedException();
 		}
 
-		[TestMethod, ExpectedException(typeof(InvalidOperationException)), Ignore]
+		[TestMethod, Timeout(AsyncDelay), ExpectedException(typeof(InvalidOperationException))]
 		[Description("Verifies that a write lock cannot be taken while within a (non-upgradeable) read lock.")]
 		public async Task ReaderWithNestedWriterFails() {
-			throw new NotImplementedException();
+			using (await this.asyncLock.ReadLockAsync()) {
+				using (await this.asyncLock.WriteLockAsync()) {
+				}
+			}
+		}
+
+		[TestMethod, Timeout(AsyncDelay), ExpectedException(typeof(InvalidOperationException))]
+		[Description("Verifies that an upgradeable read lock cannot be taken while within a (non-upgradeable) read lock.")]
+		public async Task ReaderWithNestedUpgradeableReaderFails() {
+			using (await this.asyncLock.ReadLockAsync()) {
+				using (await this.asyncLock.UpgradeableReadLockAsync()) {
+				}
+			}
 		}
 
 		[TestMethod, Ignore]

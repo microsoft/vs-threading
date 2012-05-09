@@ -71,19 +71,64 @@
 			return new LockAwaitable(this, LockKind.Write);
 		}
 
+		private void AggregateLockStackKinds(LockAwaiter awaiter, out bool read, out bool upgradeableRead, out bool write) {
+			read = false;
+			upgradeableRead = false;
+			write = false;
+
+			if (awaiter != null) {
+				lock (this.syncObject) {
+					while (awaiter != null) {
+						// It's possible that this lock has been released (even mid-stack, due to our async nature),
+						// so only consider locks that are still active.
+						if (this.lockHolders.Contains(awaiter)) {
+							switch (awaiter.Kind) {
+								case LockKind.Read:
+									read = true;
+									break;
+								case LockKind.UpgradeableRead:
+									upgradeableRead = true;
+									break;
+								case LockKind.Write:
+									write = true;
+									break;
+							}
+
+							if (read && upgradeableRead && write) {
+								// We've seen it all.  Walking the stack further would not provide anything more.
+								return;
+							}
+						}
+
+						awaiter = awaiter.NestingLock;
+					}
+				}
+			}
+		}
+
+		private bool LockStackContains(LockKind kind, LockAwaiter awaiter) {
+			if (awaiter != null) {
+				lock (this.syncObject) {
+					while (awaiter != null) {
+						// It's possible that this lock has been released (even mid-stack, due to our async nature),
+						// so only consider locks that are still active.
+						if (awaiter.Kind == kind && this.lockHolders.Contains(awaiter)) {
+							return true;
+						}
+
+						awaiter = awaiter.NestingLock;
+					}
+				}
+			}
+
+			return false;
+		}
+
 		private bool IsLockHeld(LockKind kind) {
 			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
 				var awaiter = (LockAwaiter)System.Runtime.Remoting.Messaging.CallContext.LogicalGetData(this.logicalDataKey);
-				if (awaiter != null) {
-					lock (this.syncObject) {
-						while (awaiter != null) {
-							if (awaiter.Kind == kind && this.lockHolders.Contains(awaiter)) {
-								return true;
-							}
-
-							awaiter = awaiter.NestingLock;
-						}
-					}
+				if (this.LockStackContains(kind, awaiter)) {
+					return true;
 				}
 			}
 
@@ -104,6 +149,7 @@
 			bool issued = false;
 			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
 				lock (this.syncObject) {
+					bool hasRead, hasUpgradeableRead, hasWrite;
 					switch (awaiter.Kind) {
 						case LockKind.Read:
 							if (this.lockState >= 0) {
@@ -113,6 +159,12 @@
 
 							break;
 						case LockKind.UpgradeableRead:
+							this.AggregateLockStackKinds(awaiter, out hasRead, out hasUpgradeableRead, out hasWrite);
+							if (hasRead && !hasUpgradeableRead && !hasWrite) {
+								// We cannot issue an upgradeable read lock to folks who have (only) a read lock.
+								throw new InvalidOperationException();
+							}
+
 							if (this.lockState == 0 || ((this.lockState & UpgradeableReadLockState) != 0 && this.lockHolders.Contains(awaiter.NestingLock))) {
 								this.lockState |= UpgradeableReadLockState;
 								issued = true;
@@ -120,6 +172,12 @@
 
 							break;
 						case LockKind.Write:
+							this.AggregateLockStackKinds(awaiter, out hasRead, out hasUpgradeableRead, out hasWrite);
+							if (hasRead && !hasWrite) {
+								// We cannot issue a write lock when the caller already holds a read lock.
+								throw new InvalidOperationException();
+							}
+
 							if (this.lockState == 0 || (this.lockState == -1 && this.lockHolders.Contains(awaiter.NestingLock))) {
 								this.lockState = -1;
 								issued = true;
