@@ -16,6 +16,10 @@
 	///  * internally: sticky write locks, lock leasing, lock sharing
 	///    * consider: hooks for executing code at the conclusion of a write lock.
 	///  * externally: SkipInitialEvaluation, SuppressReevaluation
+	///  
+	/// We have to use a custom awaitable rather than simply returning Task{LockReleaser} because 
+	/// we have to set CallContext data in the context of the person receiving the lock,
+	/// which requires that we get to execute code at the start of the continuation (whether we yield or not).
 	/// </remarks>
 	public class AsyncReaderWriterLock {
 		private readonly object syncObject = new object();
@@ -23,6 +27,12 @@
 		private readonly string logicalDataKey = Guid.NewGuid().ToString();
 
 		private readonly HashSet<Guid> lockHolders = new HashSet<Guid>();
+
+		private readonly Queue<LockAwaiter> waitingReaders = new Queue<LockAwaiter>();
+
+		private readonly Queue<LockAwaiter> waitingUpgradeableReaders = new Queue<LockAwaiter>();
+
+		private readonly Queue<LockAwaiter> waitingWriters = new Queue<LockAwaiter>();
 
 		private int lockState;
 
@@ -61,8 +71,8 @@
 
 		private bool IsLockHeld(LockKind kind) {
 			object data = System.Runtime.Remoting.Messaging.CallContext.LogicalGetData(this.logicalDataKey);
-			if (this.lockState != 0 && data != null) {
-				lock (this.syncObject) {
+			lock (this.syncObject) {
+				if (this.lockState != 0 && data != null) {
 					return this.lockHolders.Contains((Guid)data);
 				}
 			}
@@ -70,10 +80,16 @@
 			return false;
 		}
 
-		private bool TryIssueLock(LockKind kind) {
+		private bool IsLockHeld(Guid lockId) {
+			lock (this.syncObject) {
+				return this.lockHolders.Contains(lockId);
+			}
+		}
+
+		private bool TryIssueLock(LockAwaiter awaiter) {
 			bool issued = false;
 			lock (this.syncObject) {
-				switch (kind) {
+				switch (awaiter.Kind) {
 					case LockKind.Read:
 						if (this.lockState >= 0) {
 							this.lockState++;
@@ -98,15 +114,21 @@
 					default:
 						throw new Exception();
 				}
-			}
 
-			if (issued) {
-				var lockId = Guid.NewGuid();
-				CallContext.LogicalSetData(this.logicalDataKey, lockId);
-				this.lockHolders.Add(lockId);
+				if (issued) {
+					this.lockHolders.Add(awaiter.LockId);
+				}
 			}
 
 			return issued;
+		}
+
+		private void IssueAndExecute(LockAwaiter awaiter) {
+			if (!this.TryIssueLock(awaiter)) {
+				throw new Exception();
+			}
+
+			Task.Run(awaiter.Continuation);
 		}
 
 		private void Release(LockKind kind) {
@@ -118,15 +140,56 @@
 				switch (kind) {
 					case LockKind.Read:
 						this.lockState--;
+
+						if (this.lockState == 0) {
+							if (this.waitingWriters.Count > 0) {
+								this.IssueAndExecute(this.waitingWriters.Dequeue());
+							}
+						}
+
 						break;
 					case LockKind.UpgradeableRead:
 						this.lockState &= ~0x4000000;
 						break;
 					case LockKind.Write:
 						this.lockState = 0;
+
+						// First let the next writer in if there is any.
+						if (this.waitingWriters.Count > 0) {
+							this.IssueAndExecute(this.waitingWriters.Dequeue());
+						} else {
+							// Turn all the readers loose.
+							while (this.waitingReaders.Count > 0) {
+								this.IssueAndExecute(this.waitingReaders.Dequeue());
+							}
+						}
+
 						break;
 					default:
 						throw new Exception();
+				}
+			}
+		}
+
+		private void PendAwaiter(LockAwaiter awaiter) {
+			lock (this.syncObject) {
+				if (this.TryIssueLock(awaiter)) {
+					// Run the continuation asynchronously (since this is called in OnCompleted, which is an async pattern).
+					Task.Run(awaiter.Continuation);
+				} else {
+					switch (awaiter.Kind) {
+						case LockKind.Read:
+							this.waitingReaders.Enqueue(awaiter);
+							break;
+						case LockKind.UpgradeableRead:
+							this.waitingUpgradeableReaders.Enqueue(awaiter);
+							break;
+						case LockKind.Write:
+							this.waitingWriters.Enqueue(awaiter);
+							break;
+						default:
+							break;
+					}
 				}
 			}
 		}
@@ -148,37 +211,61 @@
 		public struct LockAwaiter : INotifyCompletion {
 			private readonly AsyncReaderWriterLock lck;
 			private readonly LockKind kind;
-			private bool lockIssued;
+			private Action continuation;
+			private Guid lockId;
 
 			internal LockAwaiter(AsyncReaderWriterLock lck, LockKind kind) {
 				this.lck = lck;
 				this.kind = kind;
-				this.lockIssued = false;
+				this.continuation = null;
+				this.lockId = Guid.NewGuid();
 			}
 
 			public bool IsCompleted {
 				get {
-					if (this.lockIssued) {
+					if (this.LockIssued) {
 						throw new Exception();
 					}
 
-					return this.lockIssued = this.lck.TryIssueLock(this.kind);
+					// We must atomically check whether the lock is available and obtain it
+					// within this property.  Otherwise, if we detect the lock is available,
+					// the caller will then call GetResult() and we may no longer be able to 
+					// immediately get the lock.
+					return this.lck.TryIssueLock(this);
 				}
 			}
 
 			public void OnCompleted(Action continuation) {
-				if (this.lockIssued) {
+				if (this.LockIssued) {
 					throw new InvalidOperationException();
 				}
 
-				throw new NotImplementedException();
+				this.continuation = continuation;
+				this.lck.PendAwaiter(this);
+			}
+
+			internal LockKind Kind {
+				get { return this.kind; }
+			}
+
+			internal Guid LockId {
+				get { return this.lockId; }
+			}
+
+			internal Action Continuation {
+				get { return this.continuation; }
+			}
+
+			private bool LockIssued {
+				get { return this.lck.IsLockHeld(this.lockId); }
 			}
 
 			public LockReleaser GetResult() {
-				if (!this.lockIssued) {
+				if (!this.LockIssued) {
 					throw new Exception();
 				}
 
+				CallContext.LogicalSetData(this.lck.logicalDataKey, this.lockId);
 				return new LockReleaser(this.lck, this.kind);
 			}
 		}

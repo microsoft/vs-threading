@@ -7,6 +7,8 @@
 
 	[TestClass]
 	public class AsyncReaderWriterLockTests {
+		private const int AsyncDelay = 1000;
+
 		private AsyncReaderWriterLock asyncLock;
 
 		[TestInitialize]
@@ -73,7 +75,7 @@
 				var subTaskObservedLock = new TaskCompletionSource<object>();
 				subTask = Task.Run(async delegate {
 					Assert.IsTrue(this.asyncLock.IsReadLockHeld);
-					subTaskObservedLock.SetResult(null);
+					subTaskObservedLock.Set();
 					await outerLockReleased.Task;
 					Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 				});
@@ -82,7 +84,7 @@
 			}
 
 			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
-			outerLockReleased.SetResult(null);
+			outerLockReleased.Set();
 			await subTask;
 		}
 
@@ -153,6 +155,51 @@
 			}
 
 			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+		}
+
+		#endregion
+
+		#region Read/write lock interactions
+
+		[TestMethod, Timeout(AsyncDelay * 2)]
+		public async Task ReadersWaitForWriter() {
+			var readerHasLock = new TaskCompletionSource<object>();
+			var writerHasLock = new TaskCompletionSource<object>();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+				await writerHasLock.Task;
+				using (await this.asyncLock.ReadLockAsync()) {
+					readerHasLock.Set();
+				}
+			}),
+				Task.Run(async delegate {
+				using (await this.asyncLock.WriteLockAsync()) {
+					writerHasLock.Set();
+					await Task.Delay(AsyncDelay);
+					Assert.IsFalse(readerHasLock.Task.IsCompleted, "Reader was issued lock while writer still had lock.");
+				}
+			}));
+		}
+
+		[TestMethod, Timeout(AsyncDelay * 2)]
+		public async Task WriterWaitsForReaders() {
+			var readerHasLock = new TaskCompletionSource<object>();
+			var writerHasLock = new TaskCompletionSource<object>();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+				using (await this.asyncLock.ReadLockAsync()) {
+					readerHasLock.Set();
+					await Task.Delay(AsyncDelay);
+					Assert.IsFalse(writerHasLock.Task.IsCompleted, "Writer was issued lock while reader still had lock.");
+				}
+			}),
+				Task.Run(async delegate {
+				await readerHasLock.Task;
+				using (await this.asyncLock.WriteLockAsync()) {
+					writerHasLock.Set();
+					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+				}
+			}));
 		}
 
 		#endregion
