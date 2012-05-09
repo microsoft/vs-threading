@@ -175,11 +175,11 @@
 			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 			Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
 			using (await this.asyncLock.UpgradeableReadLockAsync()) {
-				Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+				Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 				Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
 				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 				await Task.Yield();
-				Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+				Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 				Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
 				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 			}
@@ -189,7 +189,7 @@
 			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 		}
 
-		[TestMethod, Timeout(1000), Ignore]
+		[TestMethod, Timeout(AsyncDelay)]
 		public async Task UpgradeReadLock() {
 			using (await this.asyncLock.UpgradeableReadLockAsync()) {
 				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);

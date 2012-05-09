@@ -28,7 +28,7 @@
 
 		private readonly string logicalDataKey = Guid.NewGuid().ToString();
 
-		private readonly HashSet<Guid> lockHolders = new HashSet<Guid>();
+		private readonly HashSet<LockAwaiter> lockHolders = new HashSet<LockAwaiter>();
 
 		private readonly Queue<LockAwaiter> waitingReaders = new Queue<LockAwaiter>();
 
@@ -72,33 +72,15 @@
 		}
 
 		private bool IsLockHeld(LockKind kind) {
-			object data = System.Runtime.Remoting.Messaging.CallContext.LogicalGetData(this.logicalDataKey);
-			if (data != null) {
+			var awaiter = (LockAwaiter)System.Runtime.Remoting.Messaging.CallContext.LogicalGetData(this.logicalDataKey);
+			if (awaiter != null) {
 				lock (this.syncObject) {
-					switch (kind) {
-						case LockKind.Read:
-							if (this.lockState < 0) {
-								return false;
-							}
+					while (awaiter != null) {
+						if (awaiter.Kind == kind && this.lockHolders.Contains(awaiter)) {
+							return true;
+						}
 
-							break;
-						case LockKind.UpgradeableRead:
-							if (this.lockState == -1 || (this.lockState & UpgradeableReadLockState) == 0) {
-								return false;
-							}
-
-							break;
-						case LockKind.Write:
-							if (this.lockState >= 0) {
-								return false;
-							}
-
-							break;
-						default:
-							break;
-					}
-					if (this.lockState != 0) {
-						return this.lockHolders.Contains((Guid)data);
+						awaiter = awaiter.NestingLock;
 					}
 				}
 			}
@@ -106,9 +88,9 @@
 			return false;
 		}
 
-		private bool IsLockHeld(Guid lockId) {
+		private bool IsLockHeld(LockAwaiter awaiter) {
 			lock (this.syncObject) {
-				return this.lockHolders.Contains(lockId);
+				return this.lockHolders.Contains(awaiter);
 			}
 		}
 
@@ -125,14 +107,17 @@
 
 							break;
 						case LockKind.UpgradeableRead:
-							if (this.lockState == 0) {
+							if (this.lockState == 0 || ((this.lockState & UpgradeableReadLockState) != 0 && this.lockHolders.Contains(awaiter.NestingLock))) {
 								this.lockState |= UpgradeableReadLockState;
 								issued = true;
 							}
 
 							break;
 						case LockKind.Write:
-							if (this.lockState == 0 || (this.lockState == -1 && this.lockHolders.Contains(awaiter.NestingLockId))) {
+							if (this.lockState == 0 || (this.lockState == -1 && this.lockHolders.Contains(awaiter.NestingLock))) {
+								this.lockState = -1;
+								issued = true;
+							} else if ((this.lockState & UpgradeableReadLockState) != 0 && this.lockHolders.Contains(awaiter.NestingLock)) {
 								this.lockState = -1;
 								issued = true;
 							}
@@ -143,7 +128,7 @@
 					}
 
 					if (issued) {
-						this.lockHolders.Add(awaiter.LockId);
+						this.lockHolders.Add(awaiter);
 					}
 				}
 			}
@@ -160,15 +145,15 @@
 		}
 
 		private void Release(LockAwaiter awaiter) {
-			Guid lockId = (Guid)CallContext.LogicalGetData(this.logicalDataKey);
-			if (lockId != awaiter.LockId) {
+			var topAwaiter = (LockAwaiter)CallContext.LogicalGetData(this.logicalDataKey);
+			if (topAwaiter != awaiter) {
 				throw new Exception();
 			}
 
-			CallContext.LogicalSetData(this.logicalDataKey, awaiter.NestingLockId != Guid.Empty ? (object)awaiter.NestingLockId : null);
+			CallContext.LogicalSetData(this.logicalDataKey, awaiter.NestingLock);
 
 			lock (this.syncObject) {
-				this.lockHolders.Remove(lockId);
+				this.lockHolders.Remove(awaiter);
 				switch (awaiter.Kind) {
 					case LockKind.Read:
 						this.lockState--;
@@ -251,21 +236,17 @@
 			}
 		}
 
-		public struct LockAwaiter : INotifyCompletion {
+		public class LockAwaiter : INotifyCompletion {
 			private readonly AsyncReaderWriterLock lck;
 			private readonly LockKind kind;
-			private readonly Guid nestingLockId;
-			private readonly Guid lockId;
+			private readonly LockAwaiter nestingLock;
 			private Action continuation;
 
 			internal LockAwaiter(AsyncReaderWriterLock lck, LockKind kind) {
 				this.lck = lck;
 				this.kind = kind;
 				this.continuation = null;
-				this.lockId = Guid.NewGuid();
-
-				object previousLock = CallContext.LogicalGetData(this.lck.logicalDataKey);
-				this.nestingLockId = previousLock != null ? (Guid)previousLock : Guid.Empty;
+				this.nestingLock = (LockAwaiter)CallContext.LogicalGetData(this.lck.logicalDataKey);
 			}
 
 			public bool IsCompleted {
@@ -281,8 +262,8 @@
 				this.lck.PendAwaiter(this);
 			}
 
-			internal Guid NestingLockId {
-				get { return this.nestingLockId; }
+			internal LockAwaiter NestingLock {
+				get { return this.nestingLock; }
 			}
 
 			internal AsyncReaderWriterLock Lock {
@@ -293,16 +274,12 @@
 				get { return this.kind; }
 			}
 
-			internal Guid LockId {
-				get { return this.lockId; }
-			}
-
 			internal Action Continuation {
 				get { return this.continuation; }
 			}
 
 			private bool LockIssued {
-				get { return this.lck.IsLockHeld(this.lockId); }
+				get { return this.lck.IsLockHeld(this); }
 			}
 
 			public LockReleaser GetResult() {
@@ -315,7 +292,7 @@
 			}
 
 			internal void ApplyLock() {
-				CallContext.LogicalSetData(this.lck.logicalDataKey, this.LockId);
+				CallContext.LogicalSetData(this.lck.logicalDataKey, this);
 			}
 		}
 
