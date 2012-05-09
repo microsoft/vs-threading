@@ -110,10 +110,32 @@
 			await subTask;
 		}
 
-		[TestMethod, Ignore]
+		[TestMethod, Timeout(AsyncDelay)]
 		[Description("Verifies that when a thread that already has inherited an implicit lock explicitly requests a lock, that that lock can outlast the parents lock.")]
 		public async Task ReadLockImplicitSharingNotCutOffByParentWhenExplicitlyRetained() {
-			throw new NotImplementedException();
+			Task subTask;
+			var outerLockReleased = new TaskCompletionSource<object>();
+			using (await this.asyncLock.ReadLockAsync()) {
+				Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+
+				var subTaskObservedLock = new TaskCompletionSource<object>();
+				subTask = Task.Run(async delegate {
+					Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+					using (await this.asyncLock.ReadLockAsync()) {
+						subTaskObservedLock.Set();
+						await outerLockReleased.Task;
+						Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+					}
+
+					Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+				});
+
+				await subTaskObservedLock.Task;
+			}
+
+			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+			outerLockReleased.Set();
+			await subTask;
 		}
 
 		[TestMethod, Timeout(AsyncDelay)]
