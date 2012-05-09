@@ -331,10 +331,25 @@
 				);
 		}
 
-		[TestMethod, Ignore]
+		[TestMethod, Timeout(AsyncDelay)]
 		[Description("Verifies that reads and upgradeable reads can run concurrently.")]
 		public async Task ReadAvailableWithExistingUpgradeableReader() {
-			throw new NotImplementedException();
+			var readerHasLock = new TaskCompletionSource<object>();
+			var upgradeableReaderHasLock = new TaskCompletionSource<object>();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+				await upgradeableReaderHasLock.Task;
+				using (await this.asyncLock.ReadLockAsync()) {
+					readerHasLock.Set();
+				}
+			}),
+				Task.Run(async delegate {
+				using (await this.asyncLock.UpgradeableReadLockAsync()) {
+					upgradeableReaderHasLock.Set();
+					await readerHasLock.Task;
+				}
+			})
+				);
 		}
 
 		[TestMethod, Ignore]
