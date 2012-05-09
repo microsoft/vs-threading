@@ -46,11 +46,17 @@
 			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 			using (await this.asyncLock.ReadLockAsync()) {
 				Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+				Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 				await Task.Yield();
 				Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+				Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 			}
 
 			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+			Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 		}
 
 		[TestMethod, Timeout(AsyncDelay)]
@@ -140,13 +146,16 @@
 			using (await this.asyncLock.UpgradeableReadLockAsync()) {
 				Assert.IsTrue(this.asyncLock.IsReadLockHeld);
 				Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 				await Task.Yield();
 				Assert.IsTrue(this.asyncLock.IsReadLockHeld);
 				Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 			}
 
 			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 			Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 		}
 
 		[TestMethod, Timeout(1000), Ignore]
@@ -177,11 +186,17 @@
 		public async Task SimpleWriteLock() {
 			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 			using (await this.asyncLock.WriteLockAsync()) {
+				Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+				Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
 				Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 				await Task.Yield();
+				Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+				Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
 				Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 			}
 
+			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+			Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
 			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 		}
 
@@ -253,12 +268,15 @@
 		[TestMethod, Ignore]
 		[Description("Verifies that a read lock can be taken within a write lock, and that a write lock can then be taken within that.")]
 		public async Task WriterNestingReaderInterleaved() {
+			// TODO: When coding this up, consider mixing it up by doing thread marshaling in between nesting operations.
 			throw new NotImplementedException();
 		}
 
 		[TestMethod, Ignore]
 		[Description("Verifies that a read lock can be taken from within an upgradeable read, and that an upgradeable read and/or write can be taken within that.")]
 		public async Task UpgradeableReaderNestingReaderInterleaved() {
+			// TODO: When coding this up, consider mixing it up by doing thread marshaling in between nesting operations.
+			// CONSIDER: can an upgradeable read lock be shared across threads (yes, or else yielding awaits won't be safe), and what if two threads try to elevate then? (throw on second thread perhaps)
 			throw new NotImplementedException();
 		}
 
