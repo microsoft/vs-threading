@@ -88,6 +88,12 @@
 			await subTask;
 		}
 
+		[TestMethod, Ignore]
+		[Description("Verifies that when a thread that already has inherited an implicit lock explicitly requests a lock, that that lock can outlast the parents lock.")]
+		public async Task ReadLockImplicitSharingNotCutOffByParentWhenExplicitlyRetained() {
+			throw new NotImplementedException();
+		}
+
 		[TestMethod]
 		public async Task ConcurrentReaders() {
 			var reader1HasLock = new ManualResetEventSlim();
@@ -141,6 +147,12 @@
 			}
 		}
 
+		[TestMethod, Ignore]
+		[Description("Verifies that only one upgradeable read lock can be held at once.")]
+		public async Task UpgradeReadLocksMutuallyExclusive() {
+			throw new NotImplementedException();
+		}
+
 		#endregion
 
 		#region Write tests
@@ -161,7 +173,26 @@
 
 		#region Read/write lock interactions
 
+		[TestMethod, Ignore]
+		[Description("Verifies that reads and upgradeable reads can run concurrently.")]
+		public async Task UpgradeableReadAvailableWithExistingReaders() {
+			throw new NotImplementedException();
+		}
+
+		[TestMethod, Ignore]
+		[Description("Verifies that reads and upgradeable reads can run concurrently.")]
+		public async Task ReadAvailableWithExistingUpgradeableReader() {
+			throw new NotImplementedException();
+		}
+
+		[TestMethod, Ignore]
+		[Description("Verifies that an upgradeable reader can obtain write access even while a writer is waiting for a lock.")]
+		public async Task UpgradeableReaderCanUpgradeWhileWriteRequestWaiting() {
+			throw new NotImplementedException();
+		}
+
 		[TestMethod, Timeout(AsyncDelay * 2)]
+		[Description("Verifies that read lock requests are not serviced until any writers have released their locks.")]
 		public async Task ReadersWaitForWriter() {
 			var readerHasLock = new TaskCompletionSource<object>();
 			var writerHasLock = new TaskCompletionSource<object>();
@@ -182,6 +213,7 @@
 		}
 
 		[TestMethod, Timeout(AsyncDelay * 2)]
+		[Description("Verifies that write lock requests are not serviced until all existing readers have released their locks.")]
 		public async Task WriterWaitsForReaders() {
 			var readerHasLock = new TaskCompletionSource<object>();
 			var writerHasLock = new TaskCompletionSource<object>();
@@ -200,6 +232,45 @@
 					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 				}
 			}));
+		}
+
+		[TestMethod, Ignore]
+		[Description("Verifies that a read lock can be taken within a write lock.")]
+		public async Task WriterWithNestedReader() {
+			throw new NotImplementedException();
+		}
+
+		[TestMethod, ExpectedException(typeof(InvalidOperationException)), Ignore]
+		[Description("Verifies that a write lock cannot be taken while within a (non-upgradeable) read lock.")]
+		public async Task ReaderWithNestedWriterFails() {
+			throw new NotImplementedException();
+		}
+
+		[TestMethod, Ignore]
+		[Description("Verifies that if a read lock is open, and a writer is waiting for a lock, that no new top-level read locks will be issued.")]
+		public async Task NewReadersWaitForWaitingWriters() {
+		}
+
+		#endregion
+
+		#region Thread apartment rules
+
+		[TestMethod, Ignore]
+		[Description("Verifies that locks requested on STA threads will marshal to an MTA.")]
+		public async Task StaLockRequestsMarshalToMTA() {
+			throw new NotImplementedException();
+		}
+
+		[TestMethod, Ignore]
+		[Description("Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA does not appear to hold a lock.")]
+		public async Task MtaLockNotSharedWithSta() {
+			throw new NotImplementedException();
+		}
+
+		[TestMethod, Ignore]
+		[Description("Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by marshaling back to an MTA.")]
+		public async Task MtaLockTraversesAcrossSta() {
+			throw new NotImplementedException();
 		}
 
 		#endregion
