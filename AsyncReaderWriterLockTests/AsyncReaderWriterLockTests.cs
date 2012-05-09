@@ -200,6 +200,7 @@
 				}
 
 				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+				Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
 			}
 		}
 
@@ -302,6 +303,12 @@
 		[TestMethod, Ignore]
 		[Description("Verifies that an upgradeable reader can obtain write access even while a writer is waiting for a lock.")]
 		public async Task UpgradeableReaderCanUpgradeWhileWriteRequestWaiting() {
+			throw new NotImplementedException();
+		}
+
+		[TestMethod, Ignore]
+		[Description("Verifies that an upgradeable reader blocks for upgrade while other readers release their locks.")]
+		public async Task UpgradeableReaderWaitsForExistingReadersToExit() {
 			throw new NotImplementedException();
 		}
 
