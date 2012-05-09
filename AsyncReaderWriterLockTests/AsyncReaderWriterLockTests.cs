@@ -310,10 +310,25 @@
 
 		#region Read/write lock interactions
 
-		[TestMethod, Ignore]
+		[TestMethod, Timeout(AsyncDelay)]
 		[Description("Verifies that reads and upgradeable reads can run concurrently.")]
 		public async Task UpgradeableReadAvailableWithExistingReaders() {
-			throw new NotImplementedException();
+			var readerHasLock = new TaskCompletionSource<object>();
+			var upgradeableReaderHasLock = new TaskCompletionSource<object>();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+				using (await this.asyncLock.ReadLockAsync()) {
+					readerHasLock.Set();
+					await upgradeableReaderHasLock.Task;
+				}
+			}),
+				Task.Run(async delegate {
+				await readerHasLock.Task;
+				using (await this.asyncLock.UpgradeableReadLockAsync()) {
+					upgradeableReaderHasLock.Set();
+				}
+			})
+				);
 		}
 
 		[TestMethod, Ignore]
@@ -413,6 +428,11 @@
 		[TestMethod, Ignore]
 		[Description("Verifies that if a read lock is open, and a writer is waiting for a lock, that no new top-level read locks will be issued.")]
 		public async Task NewReadersWaitForWaitingWriters() {
+		}
+
+		[TestMethod, Ignore]
+		[Description("Verifies that if a read lock is open, and a writer is waiting for a lock, that nested read locks will still be issued.")]
+		public async Task NestedReadersStillIssuedLocksWhileWaitingWriters() {
 		}
 
 		#endregion

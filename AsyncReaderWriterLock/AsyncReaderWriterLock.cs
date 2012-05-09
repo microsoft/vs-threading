@@ -165,7 +165,8 @@
 								throw new InvalidOperationException();
 							}
 
-							if (this.lockState == 0 || ((this.lockState & UpgradeableReadLockState) != 0 && this.lockHolders.Contains(awaiter.NestingLock))) {
+							if (this.lockState >= 0 &&
+								((this.lockState & UpgradeableReadLockState) == 0 || this.lockHolders.Contains(awaiter.NestingLock))) {
 								this.lockState |= UpgradeableReadLockState;
 								issued = true;
 							}
