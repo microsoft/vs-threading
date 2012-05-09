@@ -249,8 +249,14 @@
 		}
 
 		[TestMethod, Ignore]
-		[Description("Verifies that a read lock can be taken within a write lock.")]
-		public async Task WriterWithNestedReader() {
+		[Description("Verifies that a read lock can be taken within a write lock, and that a write lock can then be taken within that.")]
+		public async Task WriterNestingReaderInterleaved() {
+			throw new NotImplementedException();
+		}
+
+		[TestMethod, Ignore]
+		[Description("Verifies that a read lock can be taken from within an upgradeable read, and that an upgradeable read and/or write can be taken within that.")]
+		public async Task UpgradeableReaderNestingReaderInterleaved() {
 			throw new NotImplementedException();
 		}
 
