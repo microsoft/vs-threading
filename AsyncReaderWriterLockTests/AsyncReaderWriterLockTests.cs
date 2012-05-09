@@ -411,10 +411,42 @@
 			await testComplete.Task;
 		}
 
-		[TestMethod, Ignore]
+		[TestMethod, Timeout(AsyncDelay)]
+		[Description("Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA does not appear to hold a lock.")]
+		public async Task MtaLockSharedWithMta() {
+			using (await this.asyncLock.ReadLockAsync()) {
+				var testComplete = new TaskCompletionSource<object>();
+				Thread staThread = new Thread((ThreadStart)delegate {
+					try {
+						Assert.IsTrue(this.asyncLock.IsReadLockHeld, "MTA should be told it holds a read lock.");
+						testComplete.Set();
+					} catch (Exception ex) {
+						testComplete.TrySetException(ex);
+					}
+				});
+				staThread.SetApartmentState(ApartmentState.MTA);
+				staThread.Start();
+				await testComplete.Task;
+			}
+		}
+
+		[TestMethod, Timeout(AsyncDelay)]
 		[Description("Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA does not appear to hold a lock.")]
 		public async Task MtaLockNotSharedWithSta() {
-			throw new NotImplementedException();
+			using (await this.asyncLock.ReadLockAsync()) {
+				var testComplete = new TaskCompletionSource<object>();
+				Thread staThread = new Thread((ThreadStart)delegate {
+					try {
+						Assert.IsFalse(this.asyncLock.IsReadLockHeld, "STA should not be told it holds a read lock.");
+						testComplete.Set();
+					} catch (Exception ex) {
+						testComplete.TrySetException(ex);
+					}
+				});
+				staThread.SetApartmentState(ApartmentState.STA);
+				staThread.Start();
+				await testComplete.Task;
+			}
 		}
 
 		[TestMethod, Ignore]

@@ -72,15 +72,17 @@
 		}
 
 		private bool IsLockHeld(LockKind kind) {
-			var awaiter = (LockAwaiter)System.Runtime.Remoting.Messaging.CallContext.LogicalGetData(this.logicalDataKey);
-			if (awaiter != null) {
-				lock (this.syncObject) {
-					while (awaiter != null) {
-						if (awaiter.Kind == kind && this.lockHolders.Contains(awaiter)) {
-							return true;
-						}
+			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
+				var awaiter = (LockAwaiter)System.Runtime.Remoting.Messaging.CallContext.LogicalGetData(this.logicalDataKey);
+				if (awaiter != null) {
+					lock (this.syncObject) {
+						while (awaiter != null) {
+							if (awaiter.Kind == kind && this.lockHolders.Contains(awaiter)) {
+								return true;
+							}
 
-						awaiter = awaiter.NestingLock;
+							awaiter = awaiter.NestingLock;
+						}
 					}
 				}
 			}
@@ -89,9 +91,13 @@
 		}
 
 		private bool IsLockHeld(LockAwaiter awaiter) {
-			lock (this.syncObject) {
-				return this.lockHolders.Contains(awaiter);
+			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
+				lock (this.syncObject) {
+					return this.lockHolders.Contains(awaiter);
+				}
 			}
+
+			return false;
 		}
 
 		private bool TryIssueLock(LockAwaiter awaiter) {
