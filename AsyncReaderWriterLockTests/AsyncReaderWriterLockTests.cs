@@ -449,10 +449,33 @@
 			}
 		}
 
-		[TestMethod, Ignore]
+		[TestMethod, Timeout(AsyncDelay)]
 		[Description("Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by marshaling back to an MTA.")]
 		public async Task MtaLockTraversesAcrossSta() {
-			throw new NotImplementedException();
+			using (await this.asyncLock.ReadLockAsync()) {
+				var testComplete = new TaskCompletionSource<object>();
+				Thread staThread = new Thread((ThreadStart)delegate {
+					try {
+						Assert.IsFalse(this.asyncLock.IsReadLockHeld, "STA should not be told it holds a read lock.");
+
+						Thread mtaThread = new Thread((ThreadStart)delegate {
+							try {
+								Assert.IsTrue(this.asyncLock.IsReadLockHeld, "MTA thread couldn't access lock across STA.");
+								testComplete.Set();
+							} catch (Exception ex) {
+								testComplete.TrySetException(ex);
+							}
+						});
+						mtaThread.SetApartmentState(ApartmentState.MTA);
+						mtaThread.Start();
+					} catch (Exception ex) {
+						testComplete.TrySetException(ex);
+					}
+				});
+				staThread.SetApartmentState(ApartmentState.STA);
+				staThread.Start();
+				await testComplete.Task;
+			}
 		}
 
 		#endregion
