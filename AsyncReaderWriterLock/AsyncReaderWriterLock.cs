@@ -71,9 +71,11 @@
 
 		private bool IsLockHeld(LockKind kind) {
 			object data = System.Runtime.Remoting.Messaging.CallContext.LogicalGetData(this.logicalDataKey);
-			lock (this.syncObject) {
-				if (this.lockState != 0 && data != null) {
-					return this.lockHolders.Contains((Guid)data);
+			if (data != null) {
+				lock (this.syncObject) {
+					if (this.lockState != 0) {
+						return this.lockHolders.Contains((Guid)data);
+					}
 				}
 			}
 
@@ -197,14 +199,19 @@
 		public struct LockAwaitable {
 			private readonly AsyncReaderWriterLock lck;
 			private readonly LockKind kind;
+			private readonly LockAwaiter awaiter;
 
 			internal LockAwaitable(AsyncReaderWriterLock lck, LockKind kind) {
 				this.lck = lck;
 				this.kind = kind;
+				this.awaiter = new LockAwaiter(this.lck, this.kind);
+				if (lck.TryIssueLock(this.awaiter)) {
+					this.awaiter.ApplyLock();
+				}
 			}
 
 			public LockAwaiter GetAwaiter() {
-				return new LockAwaiter(this.lck, this.kind);
+				return this.awaiter;
 			}
 		}
 
@@ -222,17 +229,7 @@
 			}
 
 			public bool IsCompleted {
-				get {
-					if (this.LockIssued) {
-						throw new Exception();
-					}
-
-					// We must atomically check whether the lock is available and obtain it
-					// within this property.  Otherwise, if we detect the lock is available,
-					// the caller will then call GetResult() and we may no longer be able to 
-					// immediately get the lock.
-					return this.lck.TryIssueLock(this);
-				}
+				get { return this.LockIssued; }
 			}
 
 			public void OnCompleted(Action continuation) {
@@ -265,8 +262,12 @@
 					throw new Exception();
 				}
 
-				CallContext.LogicalSetData(this.lck.logicalDataKey, this.lockId);
+				this.ApplyLock();
 				return new LockReleaser(this.lck, this.kind);
+			}
+
+			internal void ApplyLock() {
+				CallContext.LogicalSetData(this.lck.logicalDataKey, this.LockId);
 			}
 		}
 

@@ -23,6 +23,20 @@
 			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 		}
 
+		[TestMethod]
+		public void OnCompletedHasNoSideEffects() {
+			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+			var awaitable = this.asyncLock.ReadLockAsync();
+			Assert.IsTrue(this.asyncLock.IsReadLockHeld, "Just calling the async method alone for a non-contested lock should have issued the lock.");
+			var awaiter = awaitable.GetAwaiter();
+			Assert.IsTrue(awaiter.IsCompleted);
+			Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+			var releaser = awaiter.GetResult();
+			Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+			releaser.Dispose();
+			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+		}
+
 		#region Read tests
 
 		[TestMethod]
