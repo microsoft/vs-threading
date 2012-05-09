@@ -159,13 +159,13 @@
 			Task.Run(awaiter.Continuation);
 		}
 
-		private void Release(LockKind kind) {
+		private void Release(LockAwaiter awaiter) {
 			Guid lockId = (Guid)CallContext.LogicalGetData(this.logicalDataKey);
-			CallContext.LogicalSetData(this.logicalDataKey, null);
+			CallContext.LogicalSetData(this.logicalDataKey, awaiter.NestingLockId != Guid.Empty ? (object)awaiter.NestingLockId : null);
 
 			lock (this.syncObject) {
 				this.lockHolders.Remove(lockId);
-				switch (kind) {
+				switch (awaiter.Kind) {
 					case LockKind.Read:
 						this.lockState--;
 
@@ -275,6 +275,14 @@
 				this.lck.PendAwaiter(this);
 			}
 
+			internal Guid NestingLockId {
+				get { return this.nestingLockId; }
+			}
+
+			internal AsyncReaderWriterLock Lock {
+				get { return this.lck; }
+			}
+
 			internal LockKind Kind {
 				get { return this.kind; }
 			}
@@ -297,7 +305,7 @@
 				}
 
 				this.ApplyLock();
-				return new LockReleaser(this.lck, this.kind);
+				return new LockReleaser(this);
 			}
 
 			internal void ApplyLock() {
@@ -306,17 +314,14 @@
 		}
 
 		public struct LockReleaser : IDisposable {
-			private readonly AsyncReaderWriterLock lck;
+			private readonly LockAwaiter awaiter;
 
-			private readonly LockKind kind;
-
-			internal LockReleaser(AsyncReaderWriterLock lck, LockKind kind) {
-				this.lck = lck;
-				this.kind = kind;
+			internal LockReleaser(LockAwaiter awaiter) {
+				this.awaiter = awaiter;
 			}
 
 			public void Dispose() {
-				this.lck.Release(this.kind);
+				this.awaiter.Lock.Release(this.awaiter);
 			}
 		}
 	}

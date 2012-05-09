@@ -135,7 +135,7 @@
 			}));
 		}
 
-		[TestMethod, Timeout(AsyncDelay), Ignore]
+		[TestMethod, Timeout(AsyncDelay)]
 		public async Task NestedReaders() {
 			using (await this.asyncLock.ReadLockAsync()) {
 				Assert.IsTrue(this.asyncLock.IsReadLockHeld);
