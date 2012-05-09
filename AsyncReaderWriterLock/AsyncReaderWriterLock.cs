@@ -22,6 +22,8 @@
 	/// which requires that we get to execute code at the start of the continuation (whether we yield or not).
 	/// </remarks>
 	public class AsyncReaderWriterLock {
+		private const int UpgradeableReadLockState = 0x40000000;
+
 		private readonly object syncObject = new object();
 
 		private readonly string logicalDataKey = Guid.NewGuid().ToString();
@@ -73,6 +75,28 @@
 			object data = System.Runtime.Remoting.Messaging.CallContext.LogicalGetData(this.logicalDataKey);
 			if (data != null) {
 				lock (this.syncObject) {
+					switch (kind) {
+						case LockKind.Read:
+							if (this.lockState < 0) {
+								return false;
+							}
+
+							break;
+						case LockKind.UpgradeableRead:
+							if (this.lockState == -1 || (this.lockState & UpgradeableReadLockState) == 0) {
+								return false;
+							}
+
+							break;
+						case LockKind.Write:
+							if (this.lockState >= 0) {
+								return false;
+							}
+
+							break;
+						default:
+							break;
+					}
 					if (this.lockState != 0) {
 						return this.lockHolders.Contains((Guid)data);
 					}
@@ -102,7 +126,7 @@
 							break;
 						case LockKind.UpgradeableRead:
 							if (this.lockState == 0) {
-								this.lockState |= 0x40000000;
+								this.lockState |= UpgradeableReadLockState;
 								issued = true;
 							}
 
@@ -153,7 +177,7 @@
 
 						break;
 					case LockKind.UpgradeableRead:
-						this.lockState &= ~0x4000000;
+						this.lockState &= ~UpgradeableReadLockState;
 						break;
 					case LockKind.Write:
 						this.lockState = 0;
