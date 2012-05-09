@@ -90,35 +90,37 @@
 
 		private bool TryIssueLock(LockAwaiter awaiter) {
 			bool issued = false;
-			lock (this.syncObject) {
-				switch (awaiter.Kind) {
-					case LockKind.Read:
-						if (this.lockState >= 0) {
-							this.lockState++;
-							issued = true;
-						}
+			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
+				lock (this.syncObject) {
+					switch (awaiter.Kind) {
+						case LockKind.Read:
+							if (this.lockState >= 0) {
+								this.lockState++;
+								issued = true;
+							}
 
-						break;
-					case LockKind.UpgradeableRead:
-						if (this.lockState == 0) {
-							this.lockState |= 0x40000000;
-							issued = true;
-						}
+							break;
+						case LockKind.UpgradeableRead:
+							if (this.lockState == 0) {
+								this.lockState |= 0x40000000;
+								issued = true;
+							}
 
-						break;
-					case LockKind.Write:
-						if (this.lockState == 0) {
-							this.lockState = -1;
-							issued = true;
-						}
+							break;
+						case LockKind.Write:
+							if (this.lockState == 0) {
+								this.lockState = -1;
+								issued = true;
+							}
 
-						break;
-					default:
-						throw new Exception();
-				}
+							break;
+						default:
+							throw new Exception();
+					}
 
-				if (issued) {
-					this.lockHolders.Add(awaiter.LockId);
+					if (issued) {
+						this.lockHolders.Add(awaiter.LockId);
+					}
 				}
 			}
 
@@ -174,23 +176,27 @@
 		}
 
 		private void PendAwaiter(LockAwaiter awaiter) {
-			lock (this.syncObject) {
-				if (this.TryIssueLock(awaiter)) {
-					// Run the continuation asynchronously (since this is called in OnCompleted, which is an async pattern).
-					Task.Run(awaiter.Continuation);
-				} else {
-					switch (awaiter.Kind) {
-						case LockKind.Read:
-							this.waitingReaders.Enqueue(awaiter);
-							break;
-						case LockKind.UpgradeableRead:
-							this.waitingUpgradeableReaders.Enqueue(awaiter);
-							break;
-						case LockKind.Write:
-							this.waitingWriters.Enqueue(awaiter);
-							break;
-						default:
-							break;
+			if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA) {
+				Task.Run(() => this.PendAwaiter(awaiter));
+			} else {
+				lock (this.syncObject) {
+					if (this.TryIssueLock(awaiter)) {
+						// Run the continuation asynchronously (since this is called in OnCompleted, which is an async pattern).
+						Task.Run(awaiter.Continuation);
+					} else {
+						switch (awaiter.Kind) {
+							case LockKind.Read:
+								this.waitingReaders.Enqueue(awaiter);
+								break;
+							case LockKind.UpgradeableRead:
+								this.waitingUpgradeableReaders.Enqueue(awaiter);
+								break;
+							case LockKind.Write:
+								this.waitingWriters.Enqueue(awaiter);
+								break;
+							default:
+								break;
+						}
 					}
 				}
 			}

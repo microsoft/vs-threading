@@ -7,7 +7,7 @@
 
 	internal static class TestUtilities {
 		internal static void Set(this TaskCompletionSource<object> tcs) {
-			Task.Run(() => tcs.SetResult(null));
+			Task.Run(() => tcs.TrySetResult(null));
 		}
 	}
 }

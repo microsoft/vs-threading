@@ -24,17 +24,19 @@
 		}
 
 		[TestMethod, Timeout(AsyncDelay)]
-		public void OnCompletedHasNoSideEffects() {
-			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
-			var awaitable = this.asyncLock.ReadLockAsync();
-			Assert.IsTrue(this.asyncLock.IsReadLockHeld, "Just calling the async method alone for a non-contested lock should have issued the lock.");
-			var awaiter = awaitable.GetAwaiter();
-			Assert.IsTrue(awaiter.IsCompleted);
-			Assert.IsTrue(this.asyncLock.IsReadLockHeld);
-			var releaser = awaiter.GetResult();
-			Assert.IsTrue(this.asyncLock.IsReadLockHeld);
-			releaser.Dispose();
-			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+		public async Task OnCompletedHasNoSideEffects() {
+			await Task.Run(delegate {
+				Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+				var awaitable = this.asyncLock.ReadLockAsync();
+				Assert.IsTrue(this.asyncLock.IsReadLockHeld, "Just calling the async method alone for a non-contested lock should have issued the lock.");
+				var awaiter = awaitable.GetAwaiter();
+				Assert.IsTrue(awaiter.IsCompleted);
+				Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+				var releaser = awaiter.GetResult();
+				Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+				releaser.Dispose();
+				Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+			});
 		}
 
 		#region Read tests
@@ -275,10 +277,30 @@
 
 		#region Thread apartment rules
 
-		[TestMethod, Ignore]
+		[TestMethod, Timeout(AsyncDelay)]
 		[Description("Verifies that locks requested on STA threads will marshal to an MTA.")]
 		public async Task StaLockRequestsMarshalToMTA() {
-			throw new NotImplementedException();
+			var testComplete = new TaskCompletionSource<object>();
+			Thread staThread = new Thread((ThreadStart)delegate {
+				try {
+					var awaitable = this.asyncLock.ReadLockAsync();
+					var awaiter = awaitable.GetAwaiter();
+					Assert.IsFalse(awaiter.IsCompleted, "The lock should not be issued on an STA thread.");
+
+					awaiter.OnCompleted(delegate {
+						Assert.AreEqual(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
+						awaiter.GetResult().Dispose();
+						testComplete.Set();
+					});
+
+					testComplete.Task.Wait();
+				} catch (Exception ex) {
+					testComplete.TrySetException(ex);
+				}
+			});
+			staThread.SetApartmentState(ApartmentState.STA);
+			staThread.Start();
+			await testComplete.Task;
 		}
 
 		[TestMethod, Ignore]
