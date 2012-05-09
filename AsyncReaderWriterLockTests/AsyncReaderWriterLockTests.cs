@@ -150,7 +150,15 @@
 						Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
 						Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 					}
+
+					Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+					Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+					Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 				}
+
+				Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+				Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 			}
 
 			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
@@ -213,7 +221,13 @@
 						Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
 						Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 					}
+
+					Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+					Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 				}
+
+				Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 			}
 
 			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
@@ -255,7 +269,13 @@
 						Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
 						Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 					}
+
+					Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 				}
+
+				Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+				Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 			}
 
 			Assert.IsFalse(this.asyncLock.IsReadLockHeld);

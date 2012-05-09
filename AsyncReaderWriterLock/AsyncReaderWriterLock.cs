@@ -248,6 +248,7 @@
 		public struct LockAwaiter : INotifyCompletion {
 			private readonly AsyncReaderWriterLock lck;
 			private readonly LockKind kind;
+			private readonly Guid nestingLockId;
 			private readonly Guid lockId;
 			private Action continuation;
 
@@ -256,6 +257,9 @@
 				this.kind = kind;
 				this.continuation = null;
 				this.lockId = Guid.NewGuid();
+
+				object previousLock = CallContext.LogicalGetData(this.lck.logicalDataKey);
+				this.nestingLockId = previousLock != null ? (Guid)previousLock : Guid.Empty;
 			}
 
 			public bool IsCompleted {
