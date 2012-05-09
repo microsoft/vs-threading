@@ -132,7 +132,7 @@
 
 							break;
 						case LockKind.Write:
-							if (this.lockState == 0) {
+							if (this.lockState == 0 || (this.lockState == -1 && this.lockHolders.Contains(awaiter.NestingLockId))) {
 								this.lockState = -1;
 								issued = true;
 							}
@@ -161,6 +161,10 @@
 
 		private void Release(LockAwaiter awaiter) {
 			Guid lockId = (Guid)CallContext.LogicalGetData(this.logicalDataKey);
+			if (lockId != awaiter.LockId) {
+				throw new Exception();
+			}
+
 			CallContext.LogicalSetData(this.logicalDataKey, awaiter.NestingLockId != Guid.Empty ? (object)awaiter.NestingLockId : null);
 
 			lock (this.syncObject) {
@@ -180,15 +184,17 @@
 						this.lockState &= ~UpgradeableReadLockState;
 						break;
 					case LockKind.Write:
-						this.lockState = 0;
+						if (this.lockHolders.Count == 0) {
+							this.lockState = 0;
 
-						// First let the next writer in if there is any.
-						if (this.waitingWriters.Count > 0) {
-							this.IssueAndExecute(this.waitingWriters.Dequeue());
-						} else {
-							// Turn all the readers loose.
-							while (this.waitingReaders.Count > 0) {
-								this.IssueAndExecute(this.waitingReaders.Dequeue());
+							// First let the next writer in if there is any.
+							if (this.waitingWriters.Count > 0) {
+								this.IssueAndExecute(this.waitingWriters.Dequeue());
+							} else {
+								// Turn all the readers loose.
+								while (this.waitingReaders.Count > 0) {
+									this.IssueAndExecute(this.waitingReaders.Dequeue());
+								}
 							}
 						}
 

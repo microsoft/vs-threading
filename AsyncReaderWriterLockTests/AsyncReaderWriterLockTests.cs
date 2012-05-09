@@ -257,7 +257,7 @@
 			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 		}
 
-		[TestMethod, Timeout(AsyncDelay), Ignore]
+		[TestMethod, Timeout(AsyncDelay)]
 		public async Task NestedWriters() {
 			using (await this.asyncLock.WriteLockAsync()) {
 				Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
