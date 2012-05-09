@@ -218,8 +218,8 @@
 		public struct LockAwaiter : INotifyCompletion {
 			private readonly AsyncReaderWriterLock lck;
 			private readonly LockKind kind;
+			private readonly Guid lockId;
 			private Action continuation;
-			private Guid lockId;
 
 			internal LockAwaiter(AsyncReaderWriterLock lck, LockKind kind) {
 				this.lck = lck;
