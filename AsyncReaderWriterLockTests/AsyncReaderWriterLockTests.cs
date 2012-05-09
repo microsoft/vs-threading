@@ -135,6 +135,29 @@
 			}));
 		}
 
+		[TestMethod, Timeout(AsyncDelay), Ignore]
+		public async Task NestedReaders() {
+			using (await this.asyncLock.ReadLockAsync()) {
+				Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+				Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+				using (await this.asyncLock.ReadLockAsync()) {
+					Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+					Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+					Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+					using (await this.asyncLock.ReadLockAsync()) {
+						Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+						Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+						Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+					}
+				}
+			}
+
+			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+			Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+		}
+
 		#endregion
 
 		#region UpgradeableRead tests
@@ -178,6 +201,26 @@
 			throw new NotImplementedException();
 		}
 
+		[TestMethod, Timeout(AsyncDelay), Ignore]
+		public async Task NestedUpgradeableReaders() {
+			using (await this.asyncLock.UpgradeableReadLockAsync()) {
+				Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+				using (await this.asyncLock.UpgradeableReadLockAsync()) {
+					Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+					Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+					using (await this.asyncLock.UpgradeableReadLockAsync()) {
+						Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+						Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+					}
+				}
+			}
+
+			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+			Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+		}
+
 		#endregion
 
 		#region Write tests
@@ -193,6 +236,26 @@
 				Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 				Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
 				Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+			}
+
+			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+			Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+		}
+
+		[TestMethod, Timeout(AsyncDelay), Ignore]
+		public async Task NestedWriters() {
+			using (await this.asyncLock.WriteLockAsync()) {
+				Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+				Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+				using (await this.asyncLock.WriteLockAsync()) {
+					Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+					using (await this.asyncLock.WriteLockAsync()) {
+						Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+						Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+					}
+				}
 			}
 
 			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
