@@ -16,14 +16,14 @@
 			this.asyncLock = new AsyncReaderWriterLock();
 		}
 
-		[TestMethod]
+		[TestMethod, Timeout(AsyncDelay)]
 		public void NoLocksHeld() {
 			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 			Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
 			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 		}
 
-		[TestMethod]
+		[TestMethod, Timeout(AsyncDelay)]
 		public void OnCompletedHasNoSideEffects() {
 			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 			var awaitable = this.asyncLock.ReadLockAsync();
@@ -39,7 +39,7 @@
 
 		#region Read tests
 
-		[TestMethod]
+		[TestMethod, Timeout(AsyncDelay)]
 		public async Task SimpleReadLock() {
 			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 			using (await this.asyncLock.ReadLockAsync()) {
@@ -51,7 +51,7 @@
 			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 		}
 
-		[TestMethod]
+		[TestMethod, Timeout(AsyncDelay)]
 		public async Task ReadLockNotIssuedToAllThreads() {
 			var evt = new ManualResetEventSlim(false);
 			var otherThread = Task.Run(delegate {
@@ -66,7 +66,7 @@
 			}
 		}
 
-		[TestMethod]
+		[TestMethod, Timeout(AsyncDelay)]
 		public async Task ReadLockImplicitSharing() {
 			using (await this.asyncLock.ReadLockAsync()) {
 				Assert.IsTrue(this.asyncLock.IsReadLockHeld);
@@ -79,7 +79,7 @@
 			}
 		}
 
-		[TestMethod]
+		[TestMethod, Timeout(AsyncDelay)]
 		public async Task ReadLockImplicitSharingCutOffByParent() {
 			Task subTask;
 			var outerLockReleased = new TaskCompletionSource<object>();
@@ -108,7 +108,7 @@
 			throw new NotImplementedException();
 		}
 
-		[TestMethod]
+		[TestMethod, Timeout(AsyncDelay)]
 		public async Task ConcurrentReaders() {
 			var reader1HasLock = new ManualResetEventSlim();
 			var reader2HasLock = new ManualResetEventSlim();
@@ -131,7 +131,7 @@
 
 		#region UpgradeableRead tests
 
-		[TestMethod]
+		[TestMethod, Timeout(AsyncDelay)]
 		public async Task UpgradeableReadLockNoUpgrade() {
 			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 			Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
@@ -171,7 +171,7 @@
 
 		#region Write tests
 
-		[TestMethod]
+		[TestMethod, Timeout(AsyncDelay)]
 		public async Task SimpleWriteLock() {
 			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 			using (await this.asyncLock.WriteLockAsync()) {
