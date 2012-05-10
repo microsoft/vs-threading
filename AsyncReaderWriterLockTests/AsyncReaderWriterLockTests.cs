@@ -567,9 +567,38 @@
 				);
 		}
 
-		[TestMethod, Ignore]
+		[TestMethod, Timeout(AsyncDelay)]
 		[Description("Verifies that if a read lock is open, and a writer is waiting for a lock, that nested read locks will still be issued.")]
 		public async Task NestedReadersStillIssuedLocksWhileWaitingWriters() {
+			var readerLockHeld = new TaskCompletionSource<object>();
+			var writerQueued = new TaskCompletionSource<object>();
+			var readerNestedLockHeld = new TaskCompletionSource<object>();
+			var writerLockHeld = new TaskCompletionSource<object>();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+				using (await this.asyncLock.ReadLockAsync()) {
+					readerLockHeld.Set();
+					await writerQueued.Task;
+
+					using (await this.asyncLock.ReadLockAsync()) {
+						Assert.IsFalse(writerLockHeld.Task.IsCompleted);
+						readerNestedLockHeld.Set();
+					}
+				}
+			}),
+				Task.Run(async delegate {
+				await readerLockHeld.Task;
+				var writerAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
+				Assert.IsFalse(writerAwaiter.IsCompleted);
+				writerAwaiter.OnCompleted(delegate {
+					using (writerAwaiter.GetResult()) {
+						writerLockHeld.Set();
+					}
+				});
+				writerQueued.Set();
+			}),
+			readerNestedLockHeld.Task,
+			writerLockHeld.Task);
 		}
 
 		#endregion
