@@ -352,10 +352,37 @@
 				);
 		}
 
-		[TestMethod, Ignore]
+		[TestMethod, Timeout(AsyncDelay)]
 		[Description("Verifies that an upgradeable reader can obtain write access even while a writer is waiting for a lock.")]
 		public async Task UpgradeableReaderCanUpgradeWhileWriteRequestWaiting() {
-			throw new NotImplementedException();
+			var upgradeableReadHeld = new TaskCompletionSource<object>();
+			var upgradeableReadUpgraded = new TaskCompletionSource<object>();
+			var writeRequestPending = new TaskCompletionSource<object>();
+			var writeLockObtained = new TaskCompletionSource<object>();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+				using (await this.asyncLock.UpgradeableReadLockAsync()) {
+					upgradeableReadHeld.Set();
+					await writeRequestPending.Task;
+					using (await this.asyncLock.WriteLockAsync()) {
+						Assert.IsFalse(writeLockObtained.Task.IsCompleted, "The upgradeable read should have received its write lock first.");
+						upgradeableReadUpgraded.Set();
+					}
+				}
+			}),
+				Task.Run(async delegate {
+				await upgradeableReadHeld.Task;
+				var awaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
+				Assert.IsFalse(awaiter.IsCompleted, "We shouldn't get a write lock when an upgradeable read is held.");
+				awaiter.OnCompleted(delegate {
+					using (var releaser = awaiter.GetResult()) {
+						writeLockObtained.Set();
+					}
+				});
+				writeRequestPending.Set();
+				await writeLockObtained.Task;
+			})
+				);
 		}
 
 		[TestMethod, Ignore]

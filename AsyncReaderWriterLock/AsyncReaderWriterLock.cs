@@ -22,21 +22,21 @@
 	/// which requires that we get to execute code at the start of the continuation (whether we yield or not).
 	/// </remarks>
 	public class AsyncReaderWriterLock {
-		private const int UpgradeableReadLockState = 0x40000000;
-
 		private readonly object syncObject = new object();
 
 		private readonly string logicalDataKey = Guid.NewGuid().ToString();
 
-		private readonly HashSet<LockAwaiter> lockHolders = new HashSet<LockAwaiter>();
+		private readonly HashSet<LockAwaiter> readLocksIssued = new HashSet<LockAwaiter>();
+
+		private readonly HashSet<LockAwaiter> upgradeableReadLocksIssued = new HashSet<LockAwaiter>();
+
+		private readonly HashSet<LockAwaiter> writeLocksIssued = new HashSet<LockAwaiter>();
 
 		private readonly Queue<LockAwaiter> waitingReaders = new Queue<LockAwaiter>();
 
 		private readonly Queue<LockAwaiter> waitingUpgradeableReaders = new Queue<LockAwaiter>();
 
 		private readonly Queue<LockAwaiter> waitingWriters = new Queue<LockAwaiter>();
-
-		private int lockState;
 
 		public AsyncReaderWriterLock() {
 		}
@@ -81,23 +81,21 @@
 					while (awaiter != null) {
 						// It's possible that this lock has been released (even mid-stack, due to our async nature),
 						// so only consider locks that are still active.
-						if (this.lockHolders.Contains(awaiter)) {
-							switch (awaiter.Kind) {
-								case LockKind.Read:
-									read = true;
-									break;
-								case LockKind.UpgradeableRead:
-									upgradeableRead = true;
-									break;
-								case LockKind.Write:
-									write = true;
-									break;
-							}
+						switch (awaiter.Kind) {
+							case LockKind.Read:
+								read |= this.readLocksIssued.Contains(awaiter);
+								break;
+							case LockKind.UpgradeableRead:
+								upgradeableRead |= this.upgradeableReadLocksIssued.Contains(awaiter);
+								break;
+							case LockKind.Write:
+								write |= this.writeLocksIssued.Contains(awaiter);
+								break;
+						}
 
-							if (read && upgradeableRead && write) {
-								// We've seen it all.  Walking the stack further would not provide anything more.
-								return;
-							}
+						if (read && upgradeableRead && write) {
+							// We've seen it all.  Walking the stack further would not provide anything more.
+							return;
 						}
 
 						awaiter = awaiter.NestingLock;
@@ -106,13 +104,32 @@
 			}
 		}
 
+		private bool AllHeldLocksAreByThisStack(LockAwaiter awaiter) {
+			lock (this.syncObject) {
+				if (awaiter != null) {
+					int locksMatched = 0;
+					while (awaiter != null) {
+						if (this.GetActiveLockSet(awaiter.Kind).Contains(awaiter)) {
+							locksMatched++;
+						}
+
+						awaiter = awaiter.NestingLock;
+					}
+					return locksMatched == this.readLocksIssued.Count + this.upgradeableReadLocksIssued.Count + this.writeLocksIssued.Count;
+				} else {
+					return this.readLocksIssued.Count == 0 && this.upgradeableReadLocksIssued.Count == 0 && this.writeLocksIssued.Count == 0;
+				}
+			}
+		}
+
 		private bool LockStackContains(LockKind kind, LockAwaiter awaiter) {
 			if (awaiter != null) {
 				lock (this.syncObject) {
+					var lockSet = this.GetActiveLockSet(kind);
 					while (awaiter != null) {
 						// It's possible that this lock has been released (even mid-stack, due to our async nature),
 						// so only consider locks that are still active.
-						if (awaiter.Kind == kind && this.lockHolders.Contains(awaiter)) {
+						if (awaiter.Kind == kind && lockSet.Contains(awaiter)) {
 							return true;
 						}
 
@@ -124,9 +141,12 @@
 			return false;
 		}
 
-		private bool IsLockHeld(LockKind kind) {
+		private bool IsLockHeld(LockKind kind, LockAwaiter awaiter = null) {
 			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
-				var awaiter = (LockAwaiter)System.Runtime.Remoting.Messaging.CallContext.LogicalGetData(this.logicalDataKey);
+				if (awaiter == null) {
+					awaiter = (LockAwaiter)System.Runtime.Remoting.Messaging.CallContext.LogicalGetData(this.logicalDataKey);
+				}
+
 				if (this.LockStackContains(kind, awaiter)) {
 					return true;
 				}
@@ -135,10 +155,10 @@
 			return false;
 		}
 
-		private bool IsLockHeld(LockAwaiter awaiter) {
+		private bool IsLockActive(LockAwaiter awaiter) {
 			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
 				lock (this.syncObject) {
-					return this.lockHolders.Contains(awaiter);
+					return this.GetActiveLockSet(awaiter.Kind).Contains(awaiter);
 				}
 			}
 
@@ -149,56 +169,66 @@
 			bool issued = false;
 			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
 				lock (this.syncObject) {
-					bool hasRead, hasUpgradeableRead, hasWrite;
-					switch (awaiter.Kind) {
-						case LockKind.Read:
-							if (this.lockState >= 0) {
-								this.lockState++;
-								issued = true;
-							}
+					if (this.writeLocksIssued.Count == 0 && this.upgradeableReadLocksIssued.Count == 0 && this.readLocksIssued.Count == 0) {
+						issued = true;
+					} else {
+						bool hasRead, hasUpgradeableRead, hasWrite;
+						switch (awaiter.Kind) {
+							case LockKind.Read:
+								if (this.writeLocksIssued.Count == 0 || this.IsLockHeld(LockKind.Write, awaiter)) {
+									issued = true;
+								}
 
-							break;
-						case LockKind.UpgradeableRead:
-							this.AggregateLockStackKinds(awaiter, out hasRead, out hasUpgradeableRead, out hasWrite);
-							if (hasRead && !hasUpgradeableRead && !hasWrite) {
-								// We cannot issue an upgradeable read lock to folks who have (only) a read lock.
-								throw new InvalidOperationException();
-							}
+								break;
+							case LockKind.UpgradeableRead:
+								this.AggregateLockStackKinds(awaiter, out hasRead, out hasUpgradeableRead, out hasWrite);
+								if (hasUpgradeableRead || hasWrite) {
+									issued = true;
+								} else if (hasRead) {
+									// We cannot issue an upgradeable read lock to folks who have (only) a read lock.
+									throw new InvalidOperationException();
+								} else if (this.upgradeableReadLocksIssued.Count == 0 && this.writeLocksIssued.Count == 0) {
+									issued = true;
+								}
 
-							if (this.lockState >= 0 &&
-								((this.lockState & UpgradeableReadLockState) == 0 || this.lockHolders.Contains(awaiter.NestingLock))) {
-								this.lockState |= UpgradeableReadLockState;
-								issued = true;
-							}
+								break;
+							case LockKind.Write:
+								this.AggregateLockStackKinds(awaiter, out hasRead, out hasUpgradeableRead, out hasWrite);
+								if (hasWrite) {
+									issued = true;
+								} else if (hasRead && !hasUpgradeableRead) {
+									// We cannot issue a write lock when the caller already holds a read lock.
+									throw new InvalidOperationException();
+								} else if (this.AllHeldLocksAreByThisStack(awaiter.NestingLock)) {
+									issued = true;
+								}
 
-							break;
-						case LockKind.Write:
-							this.AggregateLockStackKinds(awaiter, out hasRead, out hasUpgradeableRead, out hasWrite);
-							if (hasRead && !hasWrite) {
-								// We cannot issue a write lock when the caller already holds a read lock.
-								throw new InvalidOperationException();
-							}
-
-							if (this.lockState == 0 || (this.lockState == -1 && this.lockHolders.Contains(awaiter.NestingLock))) {
-								this.lockState = -1;
-								issued = true;
-							} else if ((this.lockState & UpgradeableReadLockState) != 0 && this.lockHolders.Contains(awaiter.NestingLock)) {
-								this.lockState = -1;
-								issued = true;
-							}
-
-							break;
-						default:
-							throw new Exception();
+								break;
+							default:
+								throw new Exception();
+						}
 					}
 
 					if (issued) {
-						this.lockHolders.Add(awaiter);
+						this.GetActiveLockSet(awaiter.Kind).Add(awaiter);
 					}
 				}
 			}
 
 			return issued;
+		}
+
+		private HashSet<LockAwaiter> GetActiveLockSet(LockKind kind) {
+			switch (kind) {
+				case LockKind.Read:
+					return this.readLocksIssued;
+				case LockKind.UpgradeableRead:
+					return this.upgradeableReadLocksIssued;
+				case LockKind.Write:
+					return this.writeLocksIssued;
+				default:
+					throw new Exception();
+			}
 		}
 
 		private void IssueAndExecute(LockAwaiter awaiter) {
@@ -215,37 +245,23 @@
 				throw new Exception();
 			}
 
+			// TODO: fix this to apply the first nesting lock that is *still active* (which may be end up being null)
 			CallContext.LogicalSetData(this.logicalDataKey, awaiter.NestingLock);
 
 			lock (this.syncObject) {
-				this.lockHolders.Remove(awaiter);
+				this.GetActiveLockSet(awaiter.Kind).Remove(awaiter);
 				switch (awaiter.Kind) {
 					case LockKind.Read:
-						this.lockState--;
-
-						if (this.lockState == 0) {
-							if (this.waitingWriters.Count > 0) {
-								this.IssueAndExecute(this.waitingWriters.Dequeue());
-							}
-						}
-
+						this.TryInvokeOneWriterIfAppropriate();
 						break;
 					case LockKind.UpgradeableRead:
-						this.lockState &= ~UpgradeableReadLockState;
+						this.TryInvokeOneWriterIfAppropriate();
+
+						// TODO: add code to try to invoke the next upgradeable reader.
 						break;
 					case LockKind.Write:
-						if (this.lockHolders.Count == 0) {
-							this.lockState = 0;
-
-							// First let the next writer in if there is any.
-							if (this.waitingWriters.Count > 0) {
-								this.IssueAndExecute(this.waitingWriters.Dequeue());
-							} else {
-								// Turn all the readers loose.
-								while (this.waitingReaders.Count > 0) {
-									this.IssueAndExecute(this.waitingReaders.Dequeue());
-								}
-							}
+						if (!this.TryInvokeOneWriterIfAppropriate()) {
+							this.TryInvokeAllReadersIfAppropriate();
 						}
 
 						break;
@@ -253,6 +269,25 @@
 						throw new Exception();
 				}
 			}
+		}
+
+		private void TryInvokeAllReadersIfAppropriate() {
+			if (this.writeLocksIssued.Count == 0) {
+				while (this.waitingReaders.Count > 0) {
+					this.IssueAndExecute(this.waitingReaders.Dequeue());
+				}
+			}
+		}
+
+		private bool TryInvokeOneWriterIfAppropriate() {
+			if (this.readLocksIssued.Count == 0 && this.upgradeableReadLocksIssued.Count == 0 && this.writeLocksIssued.Count == 0) {
+				if (this.waitingWriters.Count > 0) {
+					this.IssueAndExecute(this.waitingWriters.Dequeue());
+					return true;
+				}
+			}
+
+			return false;
 		}
 
 		private void PendAwaiter(LockAwaiter awaiter) {
@@ -344,7 +379,7 @@
 			}
 
 			private bool LockIssued {
-				get { return this.lck.IsLockHeld(this); }
+				get { return this.lck.IsLockActive(this); }
 			}
 
 			public LockReleaser GetResult() {
