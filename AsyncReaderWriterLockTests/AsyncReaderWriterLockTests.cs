@@ -251,7 +251,7 @@
 				secondUpgradeableReadHeld.Task);
 		}
 
-		[TestMethod, Timeout(AsyncDelay), Ignore]
+		[TestMethod, Timeout(AsyncDelay)]
 		public async Task NestedUpgradeableReaders() {
 			using (await this.asyncLock.UpgradeableReadLockAsync()) {
 				Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
@@ -404,10 +404,32 @@
 				);
 		}
 
-		[TestMethod, Ignore]
+		[TestMethod, Timeout(AsyncDelay)]
 		[Description("Verifies that an upgradeable reader blocks for upgrade while other readers release their locks.")]
 		public async Task UpgradeableReaderWaitsForExistingReadersToExit() {
-			throw new NotImplementedException();
+			var readerHasLock = new TaskCompletionSource<object>();
+			var upgradeableReaderWaitingForUpgrade = new TaskCompletionSource<object>();
+			var upgradeableReaderHasUpgraded = new TaskCompletionSource<object>();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+				using (await this.asyncLock.UpgradeableReadLockAsync()) {
+					await readerHasLock.Task;
+					var awaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
+					Assert.IsFalse(awaiter.IsCompleted, "The upgradeable read lock should not be upgraded while readers still have locks.");
+					awaiter.OnCompleted(delegate {
+						upgradeableReaderHasUpgraded.Set();
+					});
+					Assert.IsFalse(upgradeableReaderHasUpgraded.Task.IsCompleted);
+					upgradeableReaderWaitingForUpgrade.Set();
+				}
+			}),
+				Task.Run(async delegate {
+				using (await this.asyncLock.ReadLockAsync()) {
+					readerHasLock.Set();
+					await upgradeableReaderWaitingForUpgrade.Task;
+				}
+			}),
+			upgradeableReaderHasUpgraded.Task);
 		}
 
 		[TestMethod, Timeout(AsyncDelay * 2)]
