@@ -256,8 +256,7 @@
 						break;
 					case LockKind.UpgradeableRead:
 						this.TryInvokeOneWriterIfAppropriate();
-
-						// TODO: add code to try to invoke the next upgradeable reader.
+						this.TryInvokeOneUpgradeableReaderIfAppropriate();
 						break;
 					case LockKind.Write:
 						if (!this.TryInvokeOneWriterIfAppropriate()) {
@@ -277,6 +276,17 @@
 					this.IssueAndExecute(this.waitingReaders.Dequeue());
 				}
 			}
+		}
+
+		private bool TryInvokeOneUpgradeableReaderIfAppropriate() {
+			if (this.upgradeableReadLocksIssued.Count == 0 && this.writeLocksIssued.Count == 0) {
+				if (this.waitingUpgradeableReaders.Count > 0) {
+					this.IssueAndExecute(this.waitingUpgradeableReaders.Dequeue());
+					return true;
+				}
+			}
+
+			return false;
 		}
 
 		private bool TryInvokeOneWriterIfAppropriate() {

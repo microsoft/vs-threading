@@ -226,10 +226,29 @@
 			}
 		}
 
-		[TestMethod, Ignore]
+		[TestMethod, Timeout(AsyncDelay)]
 		[Description("Verifies that only one upgradeable read lock can be held at once.")]
 		public async Task UpgradeReadLocksMutuallyExclusive() {
-			throw new NotImplementedException();
+			var firstUpgradeableReadHeld = new TaskCompletionSource<object>();
+			var secondUpgradeableReadBlocked = new TaskCompletionSource<object>();
+			var secondUpgradeableReadHeld = new TaskCompletionSource<object>();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+				using (await this.asyncLock.UpgradeableReadLockAsync()) {
+					firstUpgradeableReadHeld.Set();
+					await secondUpgradeableReadBlocked.Task;
+				}
+			}),
+				Task.Run(async delegate {
+				await firstUpgradeableReadHeld.Task;
+				var awaiter = this.asyncLock.UpgradeableReadLockAsync().GetAwaiter();
+				Assert.IsFalse(awaiter.IsCompleted, "Second upgradeable read lock issued while first is still held.");
+				awaiter.OnCompleted(delegate {
+					secondUpgradeableReadHeld.Set();
+				});
+				secondUpgradeableReadBlocked.Set();
+			}),
+				secondUpgradeableReadHeld.Task);
 		}
 
 		[TestMethod, Timeout(AsyncDelay), Ignore]
