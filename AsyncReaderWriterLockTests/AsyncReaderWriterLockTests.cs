@@ -190,6 +190,36 @@
 			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 		}
 
+		[TestMethod, Timeout(AsyncDelay * 2)]
+		public async Task DoubleLockReleaseDoesNotReleaseOtherLocks() {
+			var readLockHeld = new TaskCompletionSource<object>();
+			var writerQueued = new TaskCompletionSource<object>();
+			var writeLockHeld = new TaskCompletionSource<object>();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+				using (var outerReleaser = await this.asyncLock.ReadLockAsync()) {
+					readLockHeld.Set();
+					await writerQueued.Task;
+					using (var innerReleaser = await this.asyncLock.ReadLockAsync()) {
+						innerReleaser.Dispose(); // doing this here will lead to double-disposal at the close of the using block.
+					}
+
+					await Task.Delay(AsyncDelay);
+					Assert.IsFalse(writeLockHeld.Task.IsCompleted);
+				}
+			}),
+			Task.Run(async delegate {
+				await readLockHeld.Task;
+				var writeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
+				Assert.IsFalse(writeAwaiter.IsCompleted);
+				writeAwaiter.OnCompleted(delegate {
+					writeLockHeld.Set();
+				});
+				writerQueued.Set();
+			}),
+			writeLockHeld.Task);
+		}
+
 		#endregion
 
 		#region UpgradeableRead tests
@@ -599,6 +629,41 @@
 			}),
 			readerNestedLockHeld.Task,
 			writerLockHeld.Task);
+		}
+
+		[TestMethod, Timeout(AsyncDelay)]
+		[Description("Verifies that an upgradeable reader can 'downgrade' to a standard read lock without releasing the overall lock.")]
+		public async Task DowngradeUpgradeableReadToNormalRead() {
+			var firstUpgradeableReadHeld = new TaskCompletionSource<object>();
+			var secondUpgradeableReadHeld = new TaskCompletionSource<object>();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+				using (var upgradeableReader = await this.asyncLock.UpgradeableReadLockAsync()) {
+					Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+					firstUpgradeableReadHeld.Set();
+					using (var standardReader = await this.asyncLock.ReadLockAsync()) {
+						Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+						Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+
+						// Give up the upgradeable reader lock right away.
+						// This allows another upgradeable reader to obtain that kind of lock.
+						// Since we're *also* holding a (non-upgradeable) read lock, we're not letting writers in.
+						upgradeableReader.Dispose();
+
+						Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+						Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+
+						// Ensure that the second upgradeable read lock is now obtainable.
+						await secondUpgradeableReadHeld.Task;
+					}
+				}
+			}),
+				Task.Run(async delegate {
+				await firstUpgradeableReadHeld.Task;
+				using (await this.asyncLock.UpgradeableReadLockAsync()) {
+					secondUpgradeableReadHeld.Set();
+				}
+			}));
 		}
 
 		#endregion

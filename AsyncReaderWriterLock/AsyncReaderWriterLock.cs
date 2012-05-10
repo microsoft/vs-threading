@@ -1,6 +1,7 @@
 ﻿namespace AsyncReaderWriterLock {
 	using System;
 	using System.Collections.Generic;
+	using System.Diagnostics;
 	using System.Linq;
 	using System.Runtime.CompilerServices;
 	using System.Runtime.Remoting.Messaging;
@@ -234,12 +235,7 @@
 			}
 		}
 
-		private LockAwaiter GetFirstActiveAncestor(LockAwaiter awaiter) {
-			if (awaiter != null) {
-				// start by considering the immediate parent.
-				awaiter = awaiter.NestingLock;
-			}
-
+		private LockAwaiter GetFirstActiveSelfOrAncestor(LockAwaiter awaiter) {
 			while (awaiter != null) {
 				if (this.IsLockActive(awaiter)) {
 					break;
@@ -261,11 +257,6 @@
 
 		private void Release(LockAwaiter awaiter) {
 			var topAwaiter = (LockAwaiter)CallContext.LogicalGetData(this.logicalDataKey);
-			if (topAwaiter != awaiter) {
-				throw new Exception();
-			}
-
-			CallContext.LogicalSetData(this.logicalDataKey, this.GetFirstActiveAncestor(awaiter));
 
 			lock (this.syncObject) {
 				this.GetActiveLockSet(awaiter.Kind).Remove(awaiter);
@@ -287,6 +278,8 @@
 						throw new Exception();
 				}
 			}
+
+			CallContext.LogicalSetData(this.logicalDataKey, this.GetFirstActiveSelfOrAncestor(topAwaiter));
 		}
 
 		private void TryInvokeAllReadersIfAppropriate() {
@@ -365,6 +358,7 @@
 			}
 		}
 
+		[DebuggerDisplay("{kind}")]
 		public class LockAwaiter : INotifyCompletion {
 			private readonly AsyncReaderWriterLock lck;
 			private readonly LockKind kind;
@@ -425,6 +419,7 @@
 			}
 		}
 
+		[DebuggerDisplay("{awaiter.kind}")]
 		public struct LockReleaser : IDisposable {
 			private readonly LockAwaiter awaiter;
 
