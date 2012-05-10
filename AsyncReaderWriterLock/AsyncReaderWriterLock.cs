@@ -173,15 +173,17 @@
 						issued = true;
 					} else {
 						bool hasRead, hasUpgradeableRead, hasWrite;
+						this.AggregateLockStackKinds(awaiter, out hasRead, out hasUpgradeableRead, out hasWrite);
 						switch (awaiter.Kind) {
 							case LockKind.Read:
-								if (this.writeLocksIssued.Count == 0 || this.IsLockHeld(LockKind.Write, awaiter)) {
+								if (this.writeLocksIssued.Count == 0 && this.waitingWriters.Count == 0) {
+									issued = true;
+								} else if (hasWrite || hasRead || hasUpgradeableRead) {
 									issued = true;
 								}
 
 								break;
 							case LockKind.UpgradeableRead:
-								this.AggregateLockStackKinds(awaiter, out hasRead, out hasUpgradeableRead, out hasWrite);
 								if (hasUpgradeableRead || hasWrite) {
 									issued = true;
 								} else if (hasRead) {
@@ -193,7 +195,6 @@
 
 								break;
 							case LockKind.Write:
-								this.AggregateLockStackKinds(awaiter, out hasRead, out hasUpgradeableRead, out hasWrite);
 								if (hasWrite) {
 									issued = true;
 								} else if (hasRead && !hasUpgradeableRead) {

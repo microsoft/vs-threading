@@ -11,6 +11,8 @@
 
 		private AsyncReaderWriterLock asyncLock;
 
+		public TestContext TestContext { get; set; }
+
 		[TestInitialize]
 		public void Initialize() {
 			this.asyncLock = new AsyncReaderWriterLock();
@@ -508,9 +510,61 @@
 			}
 		}
 
-		[TestMethod, Ignore]
+		[TestMethod, Timeout(AsyncDelay)]
 		[Description("Verifies that if a read lock is open, and a writer is waiting for a lock, that no new top-level read locks will be issued.")]
 		public async Task NewReadersWaitForWaitingWriters() {
+			var readLockHeld = new TaskCompletionSource<object>();
+			var writerWaitingForLock = new TaskCompletionSource<object>();
+			var newReaderWaiting = new TaskCompletionSource<object>();
+			var writerLockHeld = new TaskCompletionSource<object>();
+			var newReaderLockHeld = new TaskCompletionSource<object>();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+				this.TestContext.WriteLine("About to wait for first read lock.");
+				using (await this.asyncLock.ReadLockAsync()) {
+					this.TestContext.WriteLine("First read lock now held, and waiting for second reader to get blocked.");
+					readLockHeld.Set();
+					await newReaderWaiting.Task;
+					this.TestContext.WriteLine("Releasing first read lock.");
+				}
+			}),
+				Task.Run(async delegate {
+				await readLockHeld.Task;
+				var writeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
+				Assert.IsFalse(writeAwaiter.IsCompleted, "The writer should not be issued a lock while a read lock is held.");
+				this.TestContext.WriteLine("Write lock in queue.");
+				writeAwaiter.OnCompleted(delegate {
+					using (writeAwaiter.GetResult()) {
+						this.TestContext.WriteLine("Write lock issued.");
+						writerLockHeld.Set();
+						Assert.IsFalse(newReaderLockHeld.Task.IsCompleted, "Read lock should not be issued till after the write lock is released.");
+					}
+				});
+				writerWaitingForLock.Set();
+			}),
+			Task.Run(async delegate {
+				await writerWaitingForLock.Task;
+				var readAwaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
+				Assert.IsFalse(readAwaiter.IsCompleted, "The new reader should not be issued a lock while a write lock is pending.");
+				this.TestContext.WriteLine("Second reader in queue.");
+				readAwaiter.OnCompleted(delegate {
+					try {
+						using (readAwaiter.GetResult()) {
+							Assert.IsTrue(writerLockHeld.Task.IsCompleted);
+							newReaderLockHeld.Set();
+						}
+					} catch (Exception ex) {
+						newReaderLockHeld.SetException(ex);
+					}
+				});
+				newReaderWaiting.Set();
+			}),
+			readLockHeld.Task,
+			writerWaitingForLock.Task,
+			newReaderWaiting.Task,
+			writerLockHeld.Task,
+			newReaderLockHeld.Task
+				);
 		}
 
 		[TestMethod, Ignore]
