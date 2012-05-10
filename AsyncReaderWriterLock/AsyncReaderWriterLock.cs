@@ -17,6 +17,8 @@
 	///    * consider: hooks for executing code at the conclusion of a write lock.
 	///  * externally: SkipInitialEvaluation, SuppressReevaluation
 	///  
+	///  * Complete() method and Completion task?
+	///  
 	/// We have to use a custom awaitable rather than simply returning Task{LockReleaser} because 
 	/// we have to set CallContext data in the context of the person receiving the lock,
 	/// which requires that we get to execute code at the start of the continuation (whether we yield or not).
@@ -232,6 +234,23 @@
 			}
 		}
 
+		private LockAwaiter GetFirstActiveAncestor(LockAwaiter awaiter) {
+			if (awaiter != null) {
+				// start by considering the immediate parent.
+				awaiter = awaiter.NestingLock;
+			}
+
+			while (awaiter != null) {
+				if (this.IsLockActive(awaiter)) {
+					break;
+				}
+
+				awaiter = awaiter.NestingLock;
+			}
+
+			return awaiter;
+		}
+
 		private void IssueAndExecute(LockAwaiter awaiter) {
 			if (!this.TryIssueLock(awaiter)) {
 				throw new Exception();
@@ -246,8 +265,7 @@
 				throw new Exception();
 			}
 
-			// TODO: fix this to apply the first nesting lock that is *still active* (which may be end up being null)
-			CallContext.LogicalSetData(this.logicalDataKey, awaiter.NestingLock);
+			CallContext.LogicalSetData(this.logicalDataKey, this.GetFirstActiveAncestor(awaiter));
 
 			lock (this.syncObject) {
 				this.GetActiveLockSet(awaiter.Kind).Remove(awaiter);
