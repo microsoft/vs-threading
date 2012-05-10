@@ -507,19 +507,28 @@
 			}));
 		}
 
-		[TestMethod, Ignore]
+		[TestMethod, Timeout(AsyncDelay)]
 		[Description("Verifies that a read lock can be taken within a write lock, and that a write lock can then be taken within that.")]
 		public async Task WriterNestingReaderInterleaved() {
-			// TODO: When coding this up, consider mixing it up by doing thread marshaling in between nesting operations.
-			throw new NotImplementedException();
+			using (await this.asyncLock.WriteLockAsync()) {
+				using (await this.asyncLock.ReadLockAsync()) {
+					using (await this.asyncLock.WriteLockAsync()) {
+					}
+				}
+			}
 		}
 
-		[TestMethod, Ignore]
+		[TestMethod, Timeout(AsyncDelay)]
 		[Description("Verifies that a read lock can be taken from within an upgradeable read, and that an upgradeable read and/or write can be taken within that.")]
 		public async Task UpgradeableReaderNestingReaderInterleaved() {
-			// TODO: When coding this up, consider mixing it up by doing thread marshaling in between nesting operations.
-			// CONSIDER: can an upgradeable read lock be shared across threads (yes, or else yielding awaits won't be safe), and what if two threads try to elevate then? (throw on second thread perhaps)
-			throw new NotImplementedException();
+			using (await this.asyncLock.UpgradeableReadLockAsync()) {
+				using (await this.asyncLock.ReadLockAsync()) {
+					using (await this.asyncLock.UpgradeableReadLockAsync()) {
+					}
+					using (await this.asyncLock.WriteLockAsync()) {
+					}
+				}
+			}
 		}
 
 		[TestMethod, Timeout(AsyncDelay), ExpectedException(typeof(InvalidOperationException))]
