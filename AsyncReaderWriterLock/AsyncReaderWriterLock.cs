@@ -14,7 +14,7 @@
 	/// </summary>
 	/// <remarks>
 	/// TODO: 
-	///  * internally: sticky write locks, lock leasing, lock sharing
+	///  * internally: sticky write locks
 	///    * consider: hooks for executing code at the conclusion of a write lock.
 	///  * externally: SkipInitialEvaluation, SuppressReevaluation
 	///  
@@ -63,15 +63,15 @@
 		}
 
 		public LockAwaitable ReadLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
-			return new LockAwaitable(this, LockKind.Read);
+			return new LockAwaitable(this, LockKind.Read, cancellationToken);
 		}
 
 		public LockAwaitable UpgradeableReadLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
-			return new LockAwaitable(this, LockKind.UpgradeableRead);
+			return new LockAwaitable(this, LockKind.UpgradeableRead, cancellationToken);
 		}
 
 		public LockAwaitable WriteLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
-			return new LockAwaitable(this, LockKind.Write);
+			return new LockAwaitable(this, LockKind.Write, cancellationToken);
 		}
 
 		private void AggregateLockStackKinds(LockAwaiter awaiter, out bool read, out bool upgradeableRead, out bool write) {
@@ -252,7 +252,9 @@
 				throw new Exception();
 			}
 
-			Task.Run(awaiter.Continuation);
+			if (!awaiter.TryExecuteContinuation()) {
+				this.Release(awaiter);
+			}
 		}
 
 		private void Release(LockAwaiter awaiter) {
@@ -319,7 +321,9 @@
 				lock (this.syncObject) {
 					if (this.TryIssueLock(awaiter)) {
 						// Run the continuation asynchronously (since this is called in OnCompleted, which is an async pattern).
-						Task.Run(awaiter.Continuation);
+						if (!awaiter.TryExecuteContinuation()) {
+							this.Release(awaiter);
+						}
 					} else {
 						switch (awaiter.Kind) {
 							case LockKind.Read:
@@ -340,15 +344,11 @@
 		}
 
 		public struct LockAwaitable {
-			private readonly AsyncReaderWriterLock lck;
-			private readonly LockKind kind;
 			private readonly LockAwaiter awaiter;
 
-			internal LockAwaitable(AsyncReaderWriterLock lck, LockKind kind) {
-				this.lck = lck;
-				this.kind = kind;
-				this.awaiter = new LockAwaiter(this.lck, this.kind);
-				if (lck.TryIssueLock(this.awaiter)) {
+			internal LockAwaitable(AsyncReaderWriterLock lck, LockKind kind, CancellationToken cancellationToken) {
+				this.awaiter = new LockAwaiter(lck, kind, cancellationToken);
+				if (!cancellationToken.IsCancellationRequested && lck.TryIssueLock(this.awaiter)) {
 					this.awaiter.ApplyLock();
 				}
 			}
@@ -360,20 +360,25 @@
 
 		[DebuggerDisplay("{kind}")]
 		public class LockAwaiter : INotifyCompletion {
+			private static readonly Action<object> cancellationResponseAction = CancellationResponder; // save memory by allocating the delegate only once.
 			private readonly AsyncReaderWriterLock lck;
 			private readonly LockKind kind;
 			private readonly LockAwaiter nestingLock;
+			private readonly CancellationToken cancellationToken;
+			private readonly CancellationTokenRegistration cancellationRegistration;
 			private Action continuation;
 
-			internal LockAwaiter(AsyncReaderWriterLock lck, LockKind kind) {
+			internal LockAwaiter(AsyncReaderWriterLock lck, LockKind kind, CancellationToken cancellationToken) {
 				this.lck = lck;
 				this.kind = kind;
 				this.continuation = null;
+				this.cancellationToken = cancellationToken;
+				this.cancellationRegistration = cancellationToken.Register(CancellationResponder, this, useSynchronizationContext: false);
 				this.nestingLock = (LockAwaiter)CallContext.LogicalGetData(this.lck.logicalDataKey);
 			}
 
 			public bool IsCompleted {
-				get { return this.LockIssued; }
+				get { return this.cancellationToken.IsCancellationRequested || this.LockIssued; }
 			}
 
 			public void OnCompleted(Action continuation) {
@@ -406,16 +411,43 @@
 			}
 
 			public LockReleaser GetResult() {
-				if (!this.LockIssued) {
-					throw new Exception();
+				this.cancellationRegistration.Dispose();
+				if (this.LockIssued) {
+					this.ApplyLock();
+					return new LockReleaser(this);
 				}
 
-				this.ApplyLock();
-				return new LockReleaser(this);
+				this.cancellationToken.ThrowIfCancellationRequested();
+				throw new Exception();
 			}
 
 			internal void ApplyLock() {
 				CallContext.LogicalSetData(this.lck.logicalDataKey, this);
+			}
+
+			internal bool TryExecuteContinuation(Action continuation = null) {
+				if (continuation == null) {
+					continuation = Interlocked.Exchange(ref this.continuation, null);
+				}
+
+				if (continuation != null) {
+					Task.Run(continuation);
+					return true;
+				} else {
+					return false;
+				}
+			}
+
+			private static void CancellationResponder(object state) {
+				var awaiter = (LockAwaiter)state;
+
+				// We're in a race with the lock suddenly becoming available.
+				// Our control in the race is whether the continuation field is still set to a non-null value.
+				var continuation = Interlocked.Exchange(ref awaiter.continuation, null);
+				awaiter.TryExecuteContinuation(continuation); // unblock the awaiter immediately (which will then experience an OperationCanceledException).
+
+				// Release memory of the registered handler, since we only need it to fire once.
+				awaiter.cancellationRegistration.Dispose();
 			}
 		}
 

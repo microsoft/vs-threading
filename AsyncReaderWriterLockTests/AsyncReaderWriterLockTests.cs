@@ -677,6 +677,65 @@
 
 		#endregion
 
+		#region Cancellation tests
+
+		[TestMethod, Timeout(AsyncDelay)]
+		public async Task PrecancelledLockRequest() {
+			await Task.Run(delegate { // get onto an MTA
+				var cts = new CancellationTokenSource();
+				cts.Cancel();
+				var awaiter = this.asyncLock.ReadLockAsync(cts.Token).GetAwaiter();
+				Assert.IsTrue(awaiter.IsCompleted);
+				try {
+					awaiter.GetResult();
+					Assert.Fail("Expected OperationCanceledException not thrown.");
+				} catch (OperationCanceledException) {
+				}
+			});
+		}
+
+		[TestMethod, Timeout(AsyncDelay)]
+		public async Task CancelPendingLock() {
+			var firstWriteHeld = new TaskCompletionSource<object>();
+			var cancellationTestConcluded = new TaskCompletionSource<object>();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+				using (await this.asyncLock.WriteLockAsync()) {
+					firstWriteHeld.Set();
+					await cancellationTestConcluded.Task;
+				}
+			}),
+				Task.Run(async delegate {
+				await firstWriteHeld.Task;
+				var cts = new CancellationTokenSource();
+				var awaiter = this.asyncLock.WriteLockAsync(cts.Token).GetAwaiter();
+				Assert.IsFalse(awaiter.IsCompleted);
+				awaiter.OnCompleted(delegate {
+					try {
+						awaiter.GetResult();
+						cancellationTestConcluded.SetException(new AssertFailedException("Expected OperationCanceledException not thrown."));
+					} catch (OperationCanceledException) {
+						cancellationTestConcluded.Set();
+					}
+				});
+				cts.Cancel();
+			}));
+		}
+
+		[TestMethod, Timeout(AsyncDelay)]
+		public async Task CancelNonImpactfulToIssuedLocks() {
+			var cts = new CancellationTokenSource();
+			using (await this.asyncLock.WriteLockAsync(cts.Token)) {
+				Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+				cts.Cancel();
+				Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+			}
+
+			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+		}
+
+		#endregion
+
 		#region Thread apartment rules
 
 		[TestMethod, Timeout(AsyncDelay)]
