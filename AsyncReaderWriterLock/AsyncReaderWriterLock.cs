@@ -20,6 +20,11 @@
 	///  
 	///  * Complete() method and Completion task?
 	///  
+	///  * Fix the issue where someone with a write lock fires an event handler, and the event handler
+	///    fires off work to occur asynchronously.  Now there is a timing issue where a read lock 
+	///    may or may not throw an InvalidOperationException depending on whether the original write lock
+	///    had been fully released.  
+	///    
 	/// We have to use a custom awaitable rather than simply returning Task{LockReleaser} because 
 	/// we have to set CallContext data in the context of the person receiving the lock,
 	/// which requires that we get to execute code at the start of the continuation (whether we yield or not).
@@ -44,6 +49,12 @@
 		public AsyncReaderWriterLock() {
 		}
 
+		[Flags]
+		public enum LockFlags {
+			None = 0x0,
+			StickyWrite = 0x1,
+		}
+
 		internal enum LockKind {
 			Read,
 			UpgradeableRead,
@@ -63,15 +74,19 @@
 		}
 
 		public LockAwaitable ReadLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
-			return new LockAwaitable(this, LockKind.Read, cancellationToken);
+			return new LockAwaitable(this, LockKind.Read, LockFlags.None, cancellationToken);
 		}
 
 		public LockAwaitable UpgradeableReadLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
-			return new LockAwaitable(this, LockKind.UpgradeableRead, cancellationToken);
+			return new LockAwaitable(this, LockKind.UpgradeableRead, LockFlags.None, cancellationToken);
+		}
+
+		public LockAwaitable UpgradeableReadLockAsync(LockFlags options, CancellationToken cancellationToken = default(CancellationToken)) {
+			return new LockAwaitable(this, LockKind.UpgradeableRead, options, cancellationToken);
 		}
 
 		public LockAwaitable WriteLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
-			return new LockAwaitable(this, LockKind.Write, cancellationToken);
+			return new LockAwaitable(this, LockKind.Write, LockFlags.None, cancellationToken);
 		}
 
 		private void AggregateLockStackKinds(LockAwaiter awaiter, out bool read, out bool upgradeableRead, out bool write) {
@@ -90,6 +105,7 @@
 								break;
 							case LockKind.UpgradeableRead:
 								upgradeableRead |= this.upgradeableReadLocksIssued.Contains(awaiter);
+								write |= this.IsStickyWriteUpgradedLock(awaiter);
 								break;
 							case LockKind.Write:
 								write |= this.writeLocksIssued.Contains(awaiter);
@@ -136,8 +152,22 @@
 							return true;
 						}
 
+						if (kind == LockKind.Write && this.IsStickyWriteUpgradedLock(awaiter)) {
+							return true;
+						}
+
 						awaiter = awaiter.NestingLock;
 					}
+				}
+			}
+
+			return false;
+		}
+
+		private bool IsStickyWriteUpgradedLock(LockAwaiter awaiter) {
+			if (awaiter.Kind == LockKind.UpgradeableRead && (awaiter.Options & LockFlags.StickyWrite) == LockFlags.StickyWrite) {
+				lock (this.syncObject) {
+					return this.writeLocksIssued.Contains(awaiter);
 				}
 			}
 
@@ -150,8 +180,10 @@
 					awaiter = (LockAwaiter)System.Runtime.Remoting.Messaging.CallContext.LogicalGetData(this.logicalDataKey);
 				}
 
-				if (this.LockStackContains(kind, awaiter)) {
-					return true;
+				lock (this.syncObject) {
+					if (this.LockStackContains(kind, awaiter)) {
+						return true;
+					}
 				}
 			}
 
@@ -205,6 +237,12 @@
 									throw new InvalidOperationException();
 								} else if (this.AllHeldLocksAreByThisStack(awaiter.NestingLock)) {
 									issued = true;
+
+									var stickyWriteAwaiter = this.FindRootUpgradeableReadWithStickyWrite(awaiter);
+									if (stickyWriteAwaiter != null) {
+										// Add the upgradeable reader as a write lock as well.
+										this.writeLocksIssued.Add(stickyWriteAwaiter);
+									}
 								}
 
 								break;
@@ -220,6 +258,27 @@
 			}
 
 			return issued;
+		}
+
+		private LockAwaiter FindRootUpgradeableReadWithStickyWrite(LockAwaiter headAwaiter) {
+			if (headAwaiter == null) {
+				return null;
+			}
+
+			var lowerMatch = this.FindRootUpgradeableReadWithStickyWrite(headAwaiter.NestingLock);
+			if (lowerMatch != null) {
+				return lowerMatch;
+			}
+
+			if (headAwaiter.Kind == LockKind.UpgradeableRead && (headAwaiter.Options & LockFlags.StickyWrite) == LockFlags.StickyWrite) {
+				lock (this.syncObject) {
+					if (this.upgradeableReadLocksIssued.Contains(headAwaiter)) {
+						return headAwaiter;
+					}
+				}
+			}
+
+			return null;
 		}
 
 		private HashSet<LockAwaiter> GetActiveLockSet(LockKind kind) {
@@ -262,6 +321,12 @@
 
 			lock (this.syncObject) {
 				this.GetActiveLockSet(awaiter.Kind).Remove(awaiter);
+
+				// In case this is a sticky write lock, it may also belong to the write locks issued collection.
+				if (awaiter.Kind == LockKind.UpgradeableRead && (awaiter.Options & LockFlags.StickyWrite) == LockFlags.StickyWrite) {
+					this.writeLocksIssued.Remove(awaiter);
+				}
+
 				switch (awaiter.Kind) {
 					case LockKind.Read:
 						this.TryInvokeOneWriterIfAppropriate();
@@ -346,8 +411,8 @@
 		public struct LockAwaitable {
 			private readonly LockAwaiter awaiter;
 
-			internal LockAwaitable(AsyncReaderWriterLock lck, LockKind kind, CancellationToken cancellationToken) {
-				this.awaiter = new LockAwaiter(lck, kind, cancellationToken);
+			internal LockAwaitable(AsyncReaderWriterLock lck, LockKind kind, LockFlags options, CancellationToken cancellationToken) {
+				this.awaiter = new LockAwaiter(lck, kind, options, cancellationToken);
 				if (!cancellationToken.IsCancellationRequested && lck.TryIssueLock(this.awaiter)) {
 					this.awaiter.ApplyLock();
 				}
@@ -366,12 +431,14 @@
 			private readonly LockAwaiter nestingLock;
 			private readonly CancellationToken cancellationToken;
 			private readonly CancellationTokenRegistration cancellationRegistration;
+			private readonly LockFlags options;
 			private Action continuation;
 
-			internal LockAwaiter(AsyncReaderWriterLock lck, LockKind kind, CancellationToken cancellationToken) {
+			internal LockAwaiter(AsyncReaderWriterLock lck, LockKind kind, LockFlags options, CancellationToken cancellationToken) {
 				this.lck = lck;
 				this.kind = kind;
 				this.continuation = null;
+				this.options = options;
 				this.cancellationToken = cancellationToken;
 				this.cancellationRegistration = cancellationToken.Register(CancellationResponder, this, useSynchronizationContext: false);
 				this.nestingLock = (LockAwaiter)CallContext.LogicalGetData(this.lck.logicalDataKey);
@@ -400,6 +467,10 @@
 
 			internal LockKind Kind {
 				get { return this.kind; }
+			}
+
+			internal LockFlags Options {
+				get { return this.options; }
 			}
 
 			internal Action Continuation {

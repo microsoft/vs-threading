@@ -309,6 +309,41 @@
 			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 		}
 
+		[TestMethod, Timeout(AsyncDelay)]
+		public async Task UpgradeableReadWithStickyWrite() {
+			using (await this.asyncLock.UpgradeableReadLockAsync(AsyncReaderWriterLock.LockFlags.StickyWrite)) {
+				Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+
+				using (await this.asyncLock.WriteLockAsync()) {
+					Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+				}
+
+				Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+				Assert.IsTrue(this.asyncLock.IsWriteLockHeld, "StickyWrite flag did not retain the write lock.");
+
+				using (await this.asyncLock.WriteLockAsync()) {
+					Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+
+					using (await this.asyncLock.WriteLockAsync()) {
+						Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+						Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+					}
+
+					Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+				}
+
+				Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+				Assert.IsTrue(this.asyncLock.IsWriteLockHeld, "StickyWrite flag did not retain the write lock.");
+			}
+
+			Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+		}
+
 		#endregion
 
 		#region Write tests
