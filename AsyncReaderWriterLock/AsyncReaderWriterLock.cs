@@ -14,8 +14,7 @@
 	/// </summary>
 	/// <remarks>
 	/// TODO: 
-	///  * internally: sticky write locks
-	///    * consider: hooks for executing code at the conclusion of a write lock.
+	///  * consider: hooks for executing code at the conclusion of a write lock.
 	///  * externally: SkipInitialEvaluation, SuppressReevaluation
 	///  
 	///  * Complete() method and Completion task?
