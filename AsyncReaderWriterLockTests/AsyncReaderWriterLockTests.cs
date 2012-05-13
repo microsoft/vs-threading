@@ -41,6 +41,56 @@
 			});
 		}
 
+		[TestMethod, Timeout(AsyncDelay)]
+		[Description("Verifies that folks who hold locks and do not wish to expose those locks when calling outside code may do so.")]
+		public async Task HideLocks() {
+			var writeLockHeld = new TaskCompletionSource<object>();
+			using (await this.asyncLock.ReadLockAsync()) {
+				Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+				await Task.Run(async delegate {
+					Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+					using (this.asyncLock.HideLocks()) {
+						Assert.IsFalse(this.asyncLock.IsReadLockHeld, "Lock should be hidden.");
+
+						// Ensure the lock is also hidden across call context propagation.
+						await Task.Run(delegate {
+							Assert.IsFalse(this.asyncLock.IsReadLockHeld, "Lock should be hidden.");
+						});
+
+						// Also verify that although the lock is hidden, a new lock may need to wait for this lock to finish.
+						var writeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
+						Assert.IsFalse(writeAwaiter.IsCompleted, "The write lock should not be immediately available because a read lock is actually held.");
+						writeAwaiter.OnCompleted(delegate {
+							using (writeAwaiter.GetResult()) {
+								writeLockHeld.Set();
+							}
+						});
+					}
+
+					Assert.IsTrue(this.asyncLock.IsReadLockHeld, "Lock should be hidden.");
+				});
+
+				Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+			}
+
+			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+			await writeLockHeld.Task;
+		}
+
+		[TestMethod, Timeout(AsyncDelay)]
+		public async Task HideLocksRevertedOutOfOrder() {
+			AsyncReaderWriterLock.LockSuppression suppression;
+			using (await this.asyncLock.ReadLockAsync()) {
+				Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+				suppression = this.asyncLock.HideLocks();
+				Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+			}
+
+			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+			suppression.Dispose();
+			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+		}
+
 		#region Read tests
 
 		[TestMethod, Timeout(AsyncDelay)]

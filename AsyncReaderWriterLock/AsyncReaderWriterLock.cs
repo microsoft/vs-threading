@@ -20,11 +20,6 @@
 	///  
 	///  * Complete() method and Completion task?
 	///  
-	///  * Fix the issue where someone with a write lock fires an event handler, and the event handler
-	///    fires off work to occur asynchronously.  Now there is a timing issue where a read lock 
-	///    may or may not throw an InvalidOperationException depending on whether the original write lock
-	///    had been fully released.  
-	///    
 	/// We have to use a custom awaitable rather than simply returning Task{LockReleaser} because 
 	/// we have to set CallContext data in the context of the person receiving the lock,
 	/// which requires that we get to execute code at the start of the continuation (whether we yield or not).
@@ -87,6 +82,10 @@
 
 		public LockAwaitable WriteLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
 			return new LockAwaitable(this, LockKind.Write, LockFlags.None, cancellationToken);
+		}
+
+		public LockSuppression HideLocks() {
+			return new LockSuppression(this);
 		}
 
 		private void AggregateLockStackKinds(LockAwaiter awaiter, out bool read, out bool upgradeableRead, out bool write) {
@@ -257,6 +256,12 @@
 				}
 			}
 
+			if (!issued) {
+				// If the lock is immediately available, we don't need to coordinate with other threads.
+				// But if it is NOT available, we'd have to wait potentially for other threads to do more work.
+				Debugger.NotifyOfCrossThreadDependency();
+			}
+
 			return issued;
 		}
 
@@ -346,6 +351,10 @@
 				}
 			}
 
+			this.ApplyLockToCallContext(topAwaiter);
+		}
+
+		private void ApplyLockToCallContext(LockAwaiter topAwaiter) {
 			CallContext.LogicalSetData(this.logicalDataKey, this.GetFirstActiveSelfOrAncestor(topAwaiter));
 		}
 
@@ -414,7 +423,7 @@
 			internal LockAwaitable(AsyncReaderWriterLock lck, LockKind kind, LockFlags options, CancellationToken cancellationToken) {
 				this.awaiter = new LockAwaiter(lck, kind, options, cancellationToken);
 				if (!cancellationToken.IsCancellationRequested && lck.TryIssueLock(this.awaiter)) {
-					this.awaiter.ApplyLock();
+					lck.ApplyLockToCallContext(this.awaiter);
 				}
 			}
 
@@ -484,16 +493,12 @@
 			public LockReleaser GetResult() {
 				this.cancellationRegistration.Dispose();
 				if (this.LockIssued) {
-					this.ApplyLock();
+					this.lck.ApplyLockToCallContext(this);
 					return new LockReleaser(this);
 				}
 
 				this.cancellationToken.ThrowIfCancellationRequested();
 				throw new Exception();
-			}
-
-			internal void ApplyLock() {
-				CallContext.LogicalSetData(this.lck.logicalDataKey, this);
 			}
 
 			internal bool TryExecuteContinuation(Action continuation = null) {
@@ -532,6 +537,25 @@
 
 			public void Dispose() {
 				this.awaiter.Lock.Release(this.awaiter);
+			}
+		}
+
+		public struct LockSuppression : IDisposable {
+			private readonly AsyncReaderWriterLock lck;
+			private readonly LockAwaiter awaiter;
+
+			internal LockSuppression(AsyncReaderWriterLock lck) {
+				this.lck = lck;
+				this.awaiter = (LockAwaiter)CallContext.LogicalGetData(this.lck.logicalDataKey);
+				if (this.awaiter != null) {
+					CallContext.LogicalSetData(this.lck.logicalDataKey, null);
+				}
+			}
+
+			public void Dispose() {
+				if (this.lck != null) {
+					this.lck.ApplyLockToCallContext(this.awaiter);
+				}
 			}
 		}
 	}
