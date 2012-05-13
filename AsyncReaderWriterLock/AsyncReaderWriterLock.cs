@@ -40,6 +40,14 @@
 
 		private readonly Queue<LockAwaiter> waitingWriters = new Queue<LockAwaiter>();
 
+		private readonly TaskCompletionSource<object> completionSource = new TaskCompletionSource<object>();
+
+		/// <summary>
+		/// A flag indicating that the <see cref="Complete"/> method has been called, indicating that no
+		/// new top-level lock requests should be serviced.
+		/// </summary>
+		private bool completeInvoked;
+
 		public AsyncReaderWriterLock() {
 		}
 
@@ -67,6 +75,10 @@
 			get { return this.IsLockHeld(LockKind.Write); }
 		}
 
+		public Task Completion {
+			get { return this.completionSource.Task; }
+		}
+
 		public LockAwaitable ReadLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
 			return new LockAwaitable(this, LockKind.Read, LockFlags.None, cancellationToken);
 		}
@@ -85,6 +97,25 @@
 
 		public LockSuppression HideLocks() {
 			return new LockSuppression(this);
+		}
+
+		public void Complete() {
+			lock (this.syncObject) {
+				this.completeInvoked = true;
+				this.CompleteIfAppropriate();
+			}
+		}
+
+		private void CompleteIfAppropriate() {
+			if (!Monitor.IsEntered(this.syncObject)) {
+				throw new Exception();
+			}
+
+			if (this.completeInvoked &&
+				this.readLocksIssued.Count == 0 && this.upgradeableReadLocksIssued.Count == 0 && this.writeLocksIssued.Count == 0 &&
+				this.waitingReaders.Count == 0 && this.waitingUpgradeableReaders.Count == 0 && this.waitingWriters.Count == 0) {
+				this.completionSource.TrySetResult(null);
+			}
 		}
 
 		private void AggregateLockStackKinds(LockAwaiter awaiter, out bool read, out bool upgradeableRead, out bool write) {
@@ -330,6 +361,8 @@
 				if (awaiter.Kind == LockKind.UpgradeableRead && (awaiter.Options & LockFlags.StickyWrite) == LockFlags.StickyWrite) {
 					this.writeLocksIssued.Remove(awaiter);
 				}
+
+				this.CompleteIfAppropriate();
 
 				switch (awaiter.Kind) {
 					case LockKind.Read:

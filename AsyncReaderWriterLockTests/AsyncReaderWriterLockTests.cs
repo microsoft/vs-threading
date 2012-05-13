@@ -1,9 +1,10 @@
 ﻿namespace AsyncReaderWriterLockTests {
 	using System;
-	using Microsoft.VisualStudio.TestTools.UnitTesting;
-	using AsyncReaderWriterLock;
-	using System.Threading.Tasks;
+	using System.Diagnostics;
 	using System.Threading;
+	using System.Threading.Tasks;
+	using AsyncReaderWriterLock;
+	using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 	[TestClass]
 	public class AsyncReaderWriterLockTests {
@@ -16,6 +17,16 @@
 		[TestInitialize]
 		public void Initialize() {
 			this.asyncLock = new AsyncReaderWriterLock();
+		}
+
+		[TestCleanup]
+		public void Cleanup() {
+			this.asyncLock.Complete();
+			if (!this.asyncLock.Completion.IsCompleted) {
+				Assert.Fail("Not all locks have been released at the conclusion of the test.");
+			}
+
+			this.asyncLock.Completion.GetAwaiter().GetResult();
 		}
 
 		[TestMethod, Timeout(AsyncDelay)]
@@ -263,7 +274,9 @@
 				var writeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
 				Assert.IsFalse(writeAwaiter.IsCompleted);
 				writeAwaiter.OnCompleted(delegate {
-					writeLockHeld.Set();
+					using (writeAwaiter.GetResult()) {
+						writeLockHeld.Set();
+					}
 				});
 				writerQueued.Set();
 			}),
@@ -326,7 +339,9 @@
 				var awaiter = this.asyncLock.UpgradeableReadLockAsync().GetAwaiter();
 				Assert.IsFalse(awaiter.IsCompleted, "Second upgradeable read lock issued while first is still held.");
 				awaiter.OnCompleted(delegate {
-					secondUpgradeableReadHeld.Set();
+					using (awaiter.GetResult()) {
+						secondUpgradeableReadHeld.Set();
+					}
 				});
 				secondUpgradeableReadBlocked.Set();
 			}),
@@ -534,7 +549,9 @@
 					var awaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
 					Assert.IsFalse(awaiter.IsCompleted, "The upgradeable read lock should not be upgraded while readers still have locks.");
 					awaiter.OnCompleted(delegate {
-						upgradeableReaderHasUpgraded.Set();
+						using (awaiter.GetResult()) {
+							upgradeableReaderHasUpgraded.Set();
+						}
 					});
 					Assert.IsFalse(upgradeableReaderHasUpgraded.Task.IsCompleted);
 					upgradeableReaderWaitingForUpgrade.Set();
