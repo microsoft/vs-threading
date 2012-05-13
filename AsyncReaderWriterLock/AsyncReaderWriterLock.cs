@@ -17,8 +17,6 @@
 	///  * consider: hooks for executing code at the conclusion of a write lock.
 	///  * externally: SkipInitialEvaluation, SuppressReevaluation
 	///  
-	///  * Complete() method and Completion task?
-	///  
 	/// We have to use a custom awaitable rather than simply returning Task{LockReleaser} because 
 	/// we have to set CallContext data in the context of the person receiving the lock,
 	/// which requires that we get to execute code at the start of the continuation (whether we yield or not).
@@ -229,7 +227,15 @@
 			return false;
 		}
 
-		private bool TryIssueLock(LockAwaiter awaiter) {
+		private bool TryIssueLock(LockAwaiter awaiter, bool previouslyQueued) {
+			if (this.completeInvoked && !previouslyQueued) {
+				// If this is a new top-level lock request, reject it completely.
+				if (awaiter.NestingLock == null) {
+					awaiter.SetFault(new InvalidOperationException());
+					return false;
+				}
+			}
+
 			bool issued = false;
 			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
 				lock (this.syncObject) {
@@ -342,7 +348,7 @@
 		}
 
 		private void IssueAndExecute(LockAwaiter awaiter) {
-			if (!this.TryIssueLock(awaiter)) {
+			if (!this.TryIssueLock(awaiter, previouslyQueued: true)) {
 				throw new Exception();
 			}
 
@@ -425,7 +431,7 @@
 				Task.Run(() => this.PendAwaiter(awaiter));
 			} else {
 				lock (this.syncObject) {
-					if (this.TryIssueLock(awaiter)) {
+					if (this.TryIssueLock(awaiter, previouslyQueued: true)) {
 						// Run the continuation asynchronously (since this is called in OnCompleted, which is an async pattern).
 						if (!awaiter.TryExecuteContinuation()) {
 							this.Release(awaiter);
@@ -454,7 +460,7 @@
 
 			internal LockAwaitable(AsyncReaderWriterLock lck, LockKind kind, LockFlags options, CancellationToken cancellationToken) {
 				this.awaiter = new LockAwaiter(lck, kind, options, cancellationToken);
-				if (!cancellationToken.IsCancellationRequested && lck.TryIssueLock(this.awaiter)) {
+				if (!cancellationToken.IsCancellationRequested && lck.TryIssueLock(this.awaiter, previouslyQueued: false)) {
 					lck.ApplyLockToCallContext(this.awaiter);
 				}
 			}
@@ -473,6 +479,7 @@
 			private readonly CancellationToken cancellationToken;
 			private readonly CancellationTokenRegistration cancellationRegistration;
 			private readonly LockFlags options;
+			private Exception fault;
 			private Action continuation;
 
 			internal LockAwaiter(AsyncReaderWriterLock lck, LockKind kind, LockFlags options, CancellationToken cancellationToken) {
@@ -486,7 +493,7 @@
 			}
 
 			public bool IsCompleted {
-				get { return this.cancellationToken.IsCancellationRequested || this.LockIssued; }
+				get { return this.cancellationToken.IsCancellationRequested || this.fault != null || this.LockIssued; }
 			}
 
 			public void OnCompleted(Action continuation) {
@@ -524,6 +531,11 @@
 
 			public LockReleaser GetResult() {
 				this.cancellationRegistration.Dispose();
+
+				if (this.fault != null) {
+					throw fault;
+				}
+
 				if (this.LockIssued) {
 					this.lck.ApplyLockToCallContext(this);
 					return new LockReleaser(this);
@@ -544,6 +556,10 @@
 				} else {
 					return false;
 				}
+			}
+
+			internal void SetFault(Exception ex) {
+				this.fault = ex;
 			}
 
 			private static void CancellationResponder(object state) {

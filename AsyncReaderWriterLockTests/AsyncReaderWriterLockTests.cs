@@ -838,6 +838,106 @@
 
 		#endregion
 
+		#region Completion tests
+
+		[TestMethod, Timeout(AsyncDelay)]
+		public void CompleteBlocksNewTopLevelLocksSTA() {
+			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
+				Assert.Inconclusive("Test thread expected to be STA.");
+			}
+
+			this.asyncLock.Complete();
+
+			// Exceptions should always be thrown via the awaitable result rather than synchronously thrown
+			// so that we meet expectations of C# async methods.
+			var awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
+			Assert.IsTrue(awaiter.IsCompleted);
+			try {
+				awaiter.GetResult();
+				Assert.Fail("Expected exception not thrown.");
+			} catch (InvalidOperationException) {
+			}
+		}
+
+		[TestMethod, Timeout(AsyncDelay)]
+		public async Task CompleteBlocksNewTopLevelLocksMTA() {
+			this.asyncLock.Complete();
+
+			await Task.Run(delegate {
+				// Exceptions should always be thrown via the awaitable result rather than synchronously thrown
+				// so that we meet expectations of C# async methods.
+				var awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
+				Assert.IsTrue(awaiter.IsCompleted);
+				try {
+					awaiter.GetResult();
+					Assert.Fail("Expected exception not thrown.");
+				} catch (InvalidOperationException) {
+				}
+			});
+		}
+
+		[TestMethod, Timeout(AsyncDelay)]
+		public async Task CompleteDoesNotBlockNestedLockRequests() {
+			using (await this.asyncLock.ReadLockAsync()) {
+				this.asyncLock.Complete();
+				Assert.IsFalse(this.asyncLock.Completion.IsCompleted, "Lock shouldn't be completed while there are open locks.");
+
+				using (await this.asyncLock.ReadLockAsync()) {
+				}
+
+				Assert.IsFalse(this.asyncLock.Completion.IsCompleted, "Lock shouldn't be completed while there are open locks.");
+			}
+
+			await this.asyncLock.Completion; // ensure that Completion transitions to completed as a result of releasing all locks.
+		}
+
+		[TestMethod, Timeout(AsyncDelay)]
+		public async Task CompleteAllowsPreviouslyQueuedLockRequests() {
+			var firstLockAcquired = new TaskCompletionSource<object>();
+			var secondLockQueued = new TaskCompletionSource<object>();
+			var completeSignaled = new TaskCompletionSource<object>();
+			var secondLockAcquired = new TaskCompletionSource<object>();
+
+			await Task.WhenAll(
+				Task.Run(async delegate {
+				using (await this.asyncLock.WriteLockAsync()) {
+					this.TestContext.WriteLine("First write lock acquired.");
+					firstLockAcquired.Set();
+					await completeSignaled.Task;
+					Assert.IsFalse(this.asyncLock.Completion.IsCompleted);
+				}
+			}),
+			Task.Run(async delegate {
+				try {
+					await firstLockAcquired.Task;
+					var secondWriteAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
+					Assert.IsFalse(secondWriteAwaiter.IsCompleted);
+					this.TestContext.WriteLine("Second write lock request pended.");
+					secondWriteAwaiter.OnCompleted(delegate {
+						using (secondWriteAwaiter.GetResult()) {
+							this.TestContext.WriteLine("Second write lock acquired.");
+							secondLockAcquired.Set();
+							Assert.IsFalse(this.asyncLock.Completion.IsCompleted);
+						}
+					});
+					secondLockQueued.Set();
+				} catch (Exception ex) {
+					secondLockAcquired.TrySetException(ex);
+				}
+			}),
+			Task.Run(async delegate {
+				await secondLockQueued.Task;
+				this.TestContext.WriteLine("Calling Complete() method.");
+				this.asyncLock.Complete();
+				completeSignaled.Set();
+			}),
+				secondLockAcquired.Task);
+
+			await this.asyncLock.Completion;
+		}
+
+		#endregion
+
 		#region Thread apartment rules
 
 		[TestMethod, Timeout(AsyncDelay)]
