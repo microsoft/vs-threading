@@ -944,15 +944,15 @@
 		public async Task OnBeforeWriteLockReleasedSingle() {
 			var afterWriteLock = new TaskCompletionSource<object>();
 			using (await this.asyncLock.WriteLockAsync()) {
-				this.asyncLock.OnBeforeWriteLockReleased(delegate {
+				this.asyncLock.OnBeforeWriteLockReleased(async delegate {
 					try {
 						Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 						afterWriteLock.SetResult(null);
+						await Task.Yield();
+						Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 					} catch (Exception ex) {
 						afterWriteLock.SetException(ex);
 					}
-
-					return Task.FromResult<object>(null);
 				});
 
 				Assert.IsFalse(afterWriteLock.Task.IsCompleted);
@@ -970,26 +970,26 @@
 			var afterWriteLock1 = new TaskCompletionSource<object>();
 			var afterWriteLock2 = new TaskCompletionSource<object>();
 			using (await this.asyncLock.WriteLockAsync()) {
-				this.asyncLock.OnBeforeWriteLockReleased(delegate {
+				this.asyncLock.OnBeforeWriteLockReleased(async delegate {
 					try {
 						Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 						afterWriteLock1.SetResult(null);
+						await Task.Yield();
+						Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 					} catch (Exception ex) {
 						afterWriteLock1.SetException(ex);
 					}
-
-					return Task.FromResult<object>(null);
 				});
 
-				this.asyncLock.OnBeforeWriteLockReleased(delegate {
+				this.asyncLock.OnBeforeWriteLockReleased(async delegate {
 					try {
 						Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 						afterWriteLock2.SetResult(null);
+						await Task.Yield();
+						Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 					} catch (Exception ex) {
 						afterWriteLock2.SetException(ex);
 					}
-
-					return Task.FromResult<object>(null);
 				});
 
 				Assert.IsFalse(afterWriteLock1.Task.IsCompleted);
