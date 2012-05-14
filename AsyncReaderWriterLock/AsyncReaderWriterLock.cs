@@ -14,7 +14,6 @@
 	/// </summary>
 	/// <remarks>
 	/// TODO: 
-	///  * consider: hooks for executing code at the conclusion of a write lock.
 	///  * externally: SkipInitialEvaluation, SuppressReevaluation
 	///  
 	/// We have to use a custom awaitable rather than simply returning Task{LockReleaser} because 
@@ -39,6 +38,8 @@
 		private readonly Queue<LockAwaiter> waitingWriters = new Queue<LockAwaiter>();
 
 		private readonly TaskCompletionSource<object> completionSource = new TaskCompletionSource<object>();
+
+		private readonly Queue<Action> beforeWriteReleasedCallbacks = new Queue<Action>();
 
 		/// <summary>
 		/// A flag indicating that the <see cref="Complete"/> method has been called, indicating that no
@@ -101,6 +102,16 @@
 			lock (this.syncObject) {
 				this.completeInvoked = true;
 				this.CompleteIfAppropriate();
+			}
+		}
+
+		public void OnBeforeWriteLockReleased(Action action) {
+			lock (this.syncObject) {
+				if (!this.IsWriteLockHeld) {
+					throw new InvalidOperationException();
+				}
+
+				this.beforeWriteReleasedCallbacks.Enqueue(action);
 			}
 		}
 
@@ -368,6 +379,8 @@
 					this.writeLocksIssued.Remove(awaiter);
 				}
 
+				var nowait = this.TryInvokeBeforeWriteLockReleaseHandlersAsync();
+
 				this.CompleteIfAppropriate();
 
 				switch (awaiter.Kind) {
@@ -387,9 +400,43 @@
 					default:
 						throw new Exception();
 				}
+
+				this.ApplyLockToCallContext(topAwaiter);
+			}
+		}
+
+		private async Task TryInvokeBeforeWriteLockReleaseHandlersAsync() {
+			if (!Monitor.IsEntered(this.syncObject)) {
+				throw new Exception();
 			}
 
-			this.ApplyLockToCallContext(topAwaiter);
+			if (this.writeLocksIssued.Count == 0 && this.beforeWriteReleasedCallbacks.Count > 0) {
+				var awaiter = this.WriteLockAsync().GetAwaiter();
+				if (!awaiter.IsCompleted) {
+					throw new Exception(); // internal error.  This must have completed synchronously.
+				}
+
+				using (awaiter.GetResult()) {
+					await Task.Run(delegate {
+						List<Exception> exceptions = null;
+						while (this.beforeWriteReleasedCallbacks.Count > 0) {
+							try {
+								this.beforeWriteReleasedCallbacks.Dequeue()();
+							} catch (Exception ex) {
+								if (exceptions == null) {
+									exceptions = new List<Exception>();
+								}
+
+								exceptions.Add(ex);
+							}
+						}
+
+						if (exceptions != null) {
+							throw new AggregateException(exceptions);
+						}
+					});
+				}
+			}
 		}
 
 		private void ApplyLockToCallContext(LockAwaiter topAwaiter) {

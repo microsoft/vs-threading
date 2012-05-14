@@ -938,6 +938,96 @@
 
 		#endregion
 
+		#region Lock callback tests
+
+		[TestMethod, Timeout(AsyncDelay)]
+		public async Task OnBeforeWriteLockReleasedSingle() {
+			var afterWriteLock = new TaskCompletionSource<object>();
+			using (await this.asyncLock.WriteLockAsync()) {
+				this.asyncLock.OnBeforeWriteLockReleased(delegate {
+					try {
+						Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+						afterWriteLock.SetResult(null);
+					} catch (Exception ex) {
+						afterWriteLock.SetException(ex);
+					}
+				});
+
+				Assert.IsFalse(afterWriteLock.Task.IsCompleted);
+
+				// Set Complete() this early to verify that callbacks can fire even after Complete() is called.
+				this.asyncLock.Complete();
+			}
+
+			await afterWriteLock.Task;
+			await this.asyncLock.Completion;
+		}
+
+		[TestMethod, Timeout(AsyncDelay)]
+		public async Task OnBeforeWriteLockReleasedMultiple() {
+			var afterWriteLock1 = new TaskCompletionSource<object>();
+			var afterWriteLock2 = new TaskCompletionSource<object>();
+			using (await this.asyncLock.WriteLockAsync()) {
+				this.asyncLock.OnBeforeWriteLockReleased(delegate {
+					try {
+						Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+						afterWriteLock1.SetResult(null);
+					} catch (Exception ex) {
+						afterWriteLock1.SetException(ex);
+					}
+				});
+
+				this.asyncLock.OnBeforeWriteLockReleased(delegate {
+					try {
+						Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+						afterWriteLock2.SetResult(null);
+					} catch (Exception ex) {
+						afterWriteLock2.SetException(ex);
+					}
+				});
+
+				Assert.IsFalse(afterWriteLock1.Task.IsCompleted);
+				Assert.IsFalse(afterWriteLock2.Task.IsCompleted);
+			}
+
+			this.asyncLock.Complete();
+			await afterWriteLock1.Task;
+			await afterWriteLock2.Task;
+			await this.asyncLock.Completion;
+		}
+
+		[TestMethod, Timeout(AsyncDelay)]
+		public async Task OnBeforeWriteLockReleasedDelegateThrows() {
+			var afterWriteLock = new TaskCompletionSource<object>();
+			var exceptionToThrow = new ApplicationException();
+			using (await this.asyncLock.WriteLockAsync()) {
+				this.asyncLock.OnBeforeWriteLockReleased(delegate {
+					afterWriteLock.SetResult(null);
+					throw exceptionToThrow;
+				});
+
+				Assert.IsFalse(afterWriteLock.Task.IsCompleted);
+				this.asyncLock.Complete();
+			}
+
+			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+			await afterWriteLock.Task;
+		}
+
+		[TestMethod, Timeout(AsyncDelay), ExpectedException(typeof(InvalidOperationException))]
+		public void OnBeforeWriteLockReleasedWithoutAnyLock() {
+			this.asyncLock.OnBeforeWriteLockReleased(delegate { });
+		}
+
+		[TestMethod, Timeout(AsyncDelay), ExpectedException(typeof(InvalidOperationException))]
+		public async Task OnBeforeWriteLockReleasedInReadlock() {
+			using (await this.asyncLock.ReadLockAsync()) {
+				this.asyncLock.OnBeforeWriteLockReleased(delegate { });
+			}
+		}
+
+		#endregion
+
 		#region Thread apartment rules
 
 		[TestMethod, Timeout(AsyncDelay)]
