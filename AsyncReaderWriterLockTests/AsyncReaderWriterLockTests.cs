@@ -951,6 +951,8 @@
 					} catch (Exception ex) {
 						afterWriteLock.SetException(ex);
 					}
+
+					return Task.FromResult<object>(null);
 				});
 
 				Assert.IsFalse(afterWriteLock.Task.IsCompleted);
@@ -975,6 +977,8 @@
 					} catch (Exception ex) {
 						afterWriteLock1.SetException(ex);
 					}
+
+					return Task.FromResult<object>(null);
 				});
 
 				this.asyncLock.OnBeforeWriteLockReleased(delegate {
@@ -984,6 +988,8 @@
 					} catch (Exception ex) {
 						afterWriteLock2.SetException(ex);
 					}
+
+					return Task.FromResult<object>(null);
 				});
 
 				Assert.IsFalse(afterWriteLock1.Task.IsCompleted);
@@ -1016,13 +1022,17 @@
 
 		[TestMethod, Timeout(AsyncDelay), ExpectedException(typeof(InvalidOperationException))]
 		public void OnBeforeWriteLockReleasedWithoutAnyLock() {
-			this.asyncLock.OnBeforeWriteLockReleased(delegate { });
+			this.asyncLock.OnBeforeWriteLockReleased(delegate {
+				return Task.FromResult<object>(null);
+			});
 		}
 
 		[TestMethod, Timeout(AsyncDelay), ExpectedException(typeof(InvalidOperationException))]
 		public async Task OnBeforeWriteLockReleasedInReadlock() {
 			using (await this.asyncLock.ReadLockAsync()) {
-				this.asyncLock.OnBeforeWriteLockReleased(delegate { });
+				this.asyncLock.OnBeforeWriteLockReleased(delegate {
+					return Task.FromResult<object>(null);
+				});
 			}
 		}
 

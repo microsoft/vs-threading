@@ -39,7 +39,7 @@
 
 		private readonly TaskCompletionSource<object> completionSource = new TaskCompletionSource<object>();
 
-		private readonly Queue<Action> beforeWriteReleasedCallbacks = new Queue<Action>();
+		private readonly Queue<Func<Task>> beforeWriteReleasedCallbacks = new Queue<Func<Task>>();
 
 		/// <summary>
 		/// A flag indicating that the <see cref="Complete"/> method has been called, indicating that no
@@ -105,7 +105,7 @@
 			}
 		}
 
-		public void OnBeforeWriteLockReleased(Action action) {
+		public void OnBeforeWriteLockReleased(Func<Task> action) {
 			lock (this.syncObject) {
 				if (!this.IsWriteLockHeld) {
 					throw new InvalidOperationException();
@@ -417,11 +417,11 @@
 				}
 
 				using (awaiter.GetResult()) {
-					await Task.Run(delegate {
+					await Task.Run(async delegate {
 						List<Exception> exceptions = null;
 						while (this.beforeWriteReleasedCallbacks.Count > 0) {
 							try {
-								this.beforeWriteReleasedCallbacks.Dequeue()();
+								await this.beforeWriteReleasedCallbacks.Dequeue()();
 							} catch (Exception ex) {
 								if (exceptions == null) {
 									exceptions = new List<Exception>();
