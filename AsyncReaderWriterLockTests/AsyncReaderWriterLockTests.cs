@@ -1003,6 +1003,34 @@
 		}
 
 		[TestMethod, Timeout(AsyncDelay)]
+		public async Task OnBeforeWriteLockReleasedNestedCallbacks() {
+			var callback1 = new TaskCompletionSource<object>();
+			var callback2 = new TaskCompletionSource<object>();
+			using (await this.asyncLock.WriteLockAsync()) {
+				this.asyncLock.OnBeforeWriteLockReleased(async delegate {
+					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+					await Task.Yield();
+					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+					callback1.Set();
+
+					// Now within a callback, let's pretend we made some change that caused another callback to register.
+					this.asyncLock.OnBeforeWriteLockReleased(async delegate {
+						Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+						await Task.Yield();
+						Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+						callback2.Set();
+					});
+				});
+
+				// Set Complete() this early to verify that callbacks can fire even after Complete() is called.
+				this.asyncLock.Complete();
+			}
+
+			await callback2.Task;
+			await this.asyncLock.Completion;
+		}
+
+		[TestMethod, Timeout(AsyncDelay)]
 		public async Task OnBeforeWriteLockReleasedDelegateThrows() {
 			var afterWriteLock = new TaskCompletionSource<object>();
 			var exceptionToThrow = new ApplicationException();
