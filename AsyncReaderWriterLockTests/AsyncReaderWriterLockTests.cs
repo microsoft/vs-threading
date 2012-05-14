@@ -1018,6 +1018,7 @@
 
 			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 			await afterWriteLock.Task;
+			await this.asyncLock.Completion;
 		}
 
 		[TestMethod, Timeout(AsyncDelay), ExpectedException(typeof(InvalidOperationException))]
