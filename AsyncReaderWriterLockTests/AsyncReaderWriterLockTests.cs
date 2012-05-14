@@ -6,6 +6,13 @@
 	using AsyncReaderWriterLock;
 	using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <remarks>
+	/// TODO:
+	///  * investigate replacing the tests that use timeouts with tests that use explicit Awaiter calls.
+	/// </remarks>
 	[TestClass]
 	public class AsyncReaderWriterLockTests {
 		private const int AsyncDelay = 1000;
@@ -1046,6 +1053,63 @@
 
 			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 			await afterWriteLock.Task;
+			await this.asyncLock.Completion;
+		}
+
+		[TestMethod, Timeout(AsyncDelay)]
+		public async Task OnBeforeWriteLockReleasedWithUpgradedWrite() {
+			var callbackFired = new TaskCompletionSource<object>();
+			using (await this.asyncLock.UpgradeableReadLockAsync()) {
+				using (await this.asyncLock.WriteLockAsync()) {
+					this.asyncLock.OnBeforeWriteLockReleased(async delegate {
+						await Task.Yield();
+						callbackFired.Set();
+					});
+				}
+
+				Assert.IsTrue(callbackFired.Task.IsCompleted, "This should have completed synchronously with releasing the write lock.");
+			}
+		}
+
+		[TestMethod, Timeout(AsyncDelay)]
+		public async Task OnBeforeWriteLockReleasedWithNestedStickyUpgradedWrite() {
+			var callbackFired = new TaskCompletionSource<object>();
+			using (await this.asyncLock.UpgradeableReadLockAsync()) {
+				using (await this.asyncLock.UpgradeableReadLockAsync(AsyncReaderWriterLock.LockFlags.StickyWrite)) {
+					using (await this.asyncLock.WriteLockAsync()) {
+						this.asyncLock.OnBeforeWriteLockReleased(async delegate {
+							callbackFired.Set();
+							await Task.Yield();
+						});
+					}
+
+					Assert.IsFalse(callbackFired.Task.IsCompleted, "This shouldn't have run yet because the upgradeable read lock bounding the write lock is a sticky one.");
+				}
+
+				Assert.IsTrue(callbackFired.Task.IsCompleted, "This should have completed synchronously with releasing the upgraded sticky upgradeable read lock.");
+			}
+		}
+
+		[TestMethod, Timeout(AsyncDelay * 2)]
+		public async Task OnBeforeWriteLockReleasedWithStickyUpgradedWrite() {
+			var callbackFired = new TaskCompletionSource<object>();
+			using (await this.asyncLock.UpgradeableReadLockAsync(AsyncReaderWriterLock.LockFlags.StickyWrite)) {
+				using (await this.asyncLock.WriteLockAsync()) {
+					this.asyncLock.OnBeforeWriteLockReleased(async delegate {
+						await Task.Delay(AsyncDelay);
+						callbackFired.Set();
+					});
+				}
+
+				Assert.IsFalse(callbackFired.Task.IsCompleted, "This shouldn't have run yet because the upgradeable read lock bounding the write lock is a sticky one.");
+			}
+
+			// TODO: firm this up so it's not so vulnerable to timing.
+			Assert.IsFalse(callbackFired.Task.IsCompleted, "This should have completed asynchronously because no read lock remained after the sticky upgraded read lock was released.");
+
+			// Because the callbacks are fired asynchronously, we must wait for it to settle before allowing the test to finish
+			// to avoid a false failure from the Cleanup method.
+			this.asyncLock.Complete();
 			await this.asyncLock.Completion;
 		}
 

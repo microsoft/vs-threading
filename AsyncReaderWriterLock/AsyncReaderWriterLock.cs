@@ -379,7 +379,10 @@
 					this.writeLocksIssued.Remove(awaiter);
 				}
 
-				var nowait = this.TryInvokeBeforeWriteLockReleaseHandlersAsync();
+				// Callbacks should be fired synchronously iff a the last write lock is being released and read locks are already issued.
+				// This can occur when upgradeable read locks are held and upgraded, and then downgraded back to an upgradeable read.
+				var nowait = this.TryInvokeBeforeWriteLockReleaseHandlersAsync(
+					completeSynchronously: this.readLocksIssued.Count > 0 || this.upgradeableReadLocksIssued.Count > 0);
 
 				this.CompleteIfAppropriate();
 
@@ -405,7 +408,7 @@
 			}
 		}
 
-		private async Task TryInvokeBeforeWriteLockReleaseHandlersAsync() {
+		private async Task TryInvokeBeforeWriteLockReleaseHandlersAsync(bool completeSynchronously) {
 			if (!Monitor.IsEntered(this.syncObject)) {
 				throw new Exception();
 			}
@@ -417,7 +420,9 @@
 				}
 
 				using (awaiter.GetResult()) {
-					await Task.Run(async delegate {
+					Func<Task> invoker = async delegate {
+						// We sequentially loop over the callbacks rather than fire then concurrently because each callback
+						// gets visibility into the write lock, which of course provides exclusivity and concurrency would violate that.
 						List<Exception> exceptions = null;
 						while (this.beforeWriteReleasedCallbacks.Count > 0) {
 							try {
@@ -434,7 +439,13 @@
 						if (exceptions != null) {
 							throw new AggregateException(exceptions);
 						}
-					});
+					};
+
+					if (completeSynchronously) {
+						invoker().Wait();
+					} else {
+						await Task.Run(invoker);
+					}
 				}
 			}
 		}
