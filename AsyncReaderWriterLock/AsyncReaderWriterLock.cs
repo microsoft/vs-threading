@@ -239,17 +239,17 @@
 		}
 
 		private bool TryIssueLock(LockAwaiter awaiter, bool previouslyQueued) {
-			if (this.completeInvoked && !previouslyQueued) {
-				// If this is a new top-level lock request, reject it completely.
-				if (awaiter.NestingLock == null) {
-					awaiter.SetFault(new InvalidOperationException());
-					return false;
+			lock (this.syncObject) {
+				if (this.completeInvoked && !previouslyQueued) {
+					// If this is a new top-level lock request, reject it completely.
+					if (awaiter.NestingLock == null) {
+						awaiter.SetFault(new InvalidOperationException());
+						return false;
+					}
 				}
-			}
 
-			bool issued = false;
-			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
-				lock (this.syncObject) {
+				bool issued = false;
+				if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
 					if (this.writeLocksIssued.Count == 0 && this.upgradeableReadLocksIssued.Count == 0 && this.readLocksIssued.Count == 0) {
 						issued = true;
 					} else {
@@ -301,15 +301,15 @@
 						this.GetActiveLockSet(awaiter.Kind).Add(awaiter);
 					}
 				}
-			}
 
-			if (!issued) {
-				// If the lock is immediately available, we don't need to coordinate with other threads.
-				// But if it is NOT available, we'd have to wait potentially for other threads to do more work.
-				Debugger.NotifyOfCrossThreadDependency();
-			}
+				if (!issued) {
+					// If the lock is immediately available, we don't need to coordinate with other threads.
+					// But if it is NOT available, we'd have to wait potentially for other threads to do more work.
+					Debugger.NotifyOfCrossThreadDependency();
+				}
 
-			return issued;
+				return issued;
+			}
 		}
 
 		private LockAwaiter FindRootUpgradeableReadWithStickyWrite(LockAwaiter headAwaiter) {
