@@ -15,7 +15,9 @@
 	/// </remarks>
 	[TestClass]
 	public class AsyncReaderWriterLockTests {
-		private const int AsyncDelay = 1000;
+		private const int AsyncDelay = 500;
+
+		private const int TestTimeout = 1000;
 
 		private AsyncReaderWriterLock asyncLock;
 
@@ -36,14 +38,14 @@
 			this.asyncLock.Completion.GetAwaiter().GetResult();
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public void NoLocksHeld() {
 			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 			Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
 			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task OnCompletedHasNoSideEffects() {
 			await Task.Run(delegate {
 				Assert.IsFalse(this.asyncLock.IsReadLockHeld);
@@ -59,7 +61,7 @@
 			});
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		[Description("Verifies that folks who hold locks and do not wish to expose those locks when calling outside code may do so.")]
 		public async Task HideLocks() {
 			var writeLockHeld = new TaskCompletionSource<object>();
@@ -95,7 +97,7 @@
 			await writeLockHeld.Task;
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task HideLocksRevertedOutOfOrder() {
 			AsyncReaderWriterLock.LockSuppression suppression;
 			using (await this.asyncLock.ReadLockAsync()) {
@@ -111,7 +113,7 @@
 
 		#region Read tests
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task SimpleReadLock() {
 			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 			using (await this.asyncLock.ReadLockAsync()) {
@@ -129,7 +131,7 @@
 			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task ReadLockNotIssuedToAllThreads() {
 			var evt = new ManualResetEventSlim(false);
 			var otherThread = Task.Run(delegate {
@@ -144,7 +146,7 @@
 			}
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task ReadLockImplicitSharing() {
 			using (await this.asyncLock.ReadLockAsync()) {
 				Assert.IsTrue(this.asyncLock.IsReadLockHeld);
@@ -157,7 +159,7 @@
 			}
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task ReadLockImplicitSharingCutOffByParent() {
 			Task subTask;
 			var outerLockReleased = new TaskCompletionSource<object>();
@@ -180,7 +182,7 @@
 			await subTask;
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		[Description("Verifies that when a thread that already has inherited an implicit lock explicitly requests a lock, that that lock can outlast the parents lock.")]
 		public async Task ReadLockImplicitSharingNotCutOffByParentWhenExplicitlyRetained() {
 			Task subTask;
@@ -208,7 +210,7 @@
 			await subTask;
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task ConcurrentReaders() {
 			var reader1HasLock = new ManualResetEventSlim();
 			var reader2HasLock = new ManualResetEventSlim();
@@ -227,7 +229,7 @@
 			}));
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task NestedReaders() {
 			using (await this.asyncLock.ReadLockAsync()) {
 				Assert.IsTrue(this.asyncLock.IsReadLockHeld);
@@ -258,7 +260,7 @@
 			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 		}
 
-		[TestMethod, Timeout(AsyncDelay * 2)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task DoubleLockReleaseDoesNotReleaseOtherLocks() {
 			var readLockHeld = new TaskCompletionSource<object>();
 			var writerQueued = new TaskCompletionSource<object>();
@@ -294,7 +296,7 @@
 
 		#region UpgradeableRead tests
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task UpgradeableReadLockNoUpgrade() {
 			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 			Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
@@ -313,7 +315,7 @@
 			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task UpgradeReadLock() {
 			using (await this.asyncLock.UpgradeableReadLockAsync()) {
 				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
@@ -328,7 +330,7 @@
 			}
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		[Description("Verifies that only one upgradeable read lock can be held at once.")]
 		public async Task UpgradeReadLocksMutuallyExclusive() {
 			var firstUpgradeableReadHeld = new TaskCompletionSource<object>();
@@ -355,7 +357,7 @@
 				secondUpgradeableReadHeld.Task);
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task NestedUpgradeableReaders() {
 			using (await this.asyncLock.UpgradeableReadLockAsync()) {
 				Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
@@ -381,7 +383,7 @@
 			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task UpgradeableReadWithStickyWrite() {
 			using (await this.asyncLock.UpgradeableReadLockAsync(AsyncReaderWriterLock.LockFlags.StickyWrite)) {
 				Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
@@ -420,7 +422,7 @@
 
 		#region Write tests
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task SimpleWriteLock() {
 			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 			using (await this.asyncLock.WriteLockAsync()) {
@@ -438,7 +440,7 @@
 			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task NestedWriters() {
 			using (await this.asyncLock.WriteLockAsync()) {
 				Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
@@ -468,7 +470,7 @@
 
 		#region Read/write lock interactions
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		[Description("Verifies that reads and upgradeable reads can run concurrently.")]
 		public async Task UpgradeableReadAvailableWithExistingReaders() {
 			var readerHasLock = new TaskCompletionSource<object>();
@@ -489,7 +491,7 @@
 				);
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		[Description("Verifies that reads and upgradeable reads can run concurrently.")]
 		public async Task ReadAvailableWithExistingUpgradeableReader() {
 			var readerHasLock = new TaskCompletionSource<object>();
@@ -510,7 +512,7 @@
 				);
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		[Description("Verifies that an upgradeable reader can obtain write access even while a writer is waiting for a lock.")]
 		public async Task UpgradeableReaderCanUpgradeWhileWriteRequestWaiting() {
 			var upgradeableReadHeld = new TaskCompletionSource<object>();
@@ -543,7 +545,7 @@
 				);
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		[Description("Verifies that an upgradeable reader blocks for upgrade while other readers release their locks.")]
 		public async Task UpgradeableReaderWaitsForExistingReadersToExit() {
 			var readerHasLock = new TaskCompletionSource<object>();
@@ -573,7 +575,7 @@
 			upgradeableReaderHasUpgraded.Task);
 		}
 
-		[TestMethod, Timeout(AsyncDelay * 2)]
+		[TestMethod, Timeout(TestTimeout)]
 		[Description("Verifies that read lock requests are not serviced until any writers have released their locks.")]
 		public async Task ReadersWaitForWriter() {
 			var readerHasLock = new TaskCompletionSource<object>();
@@ -594,7 +596,7 @@
 			}));
 		}
 
-		[TestMethod, Timeout(AsyncDelay * 2)]
+		[TestMethod, Timeout(TestTimeout)]
 		[Description("Verifies that write lock requests are not serviced until all existing readers have released their locks.")]
 		public async Task WriterWaitsForReaders() {
 			var readerHasLock = new TaskCompletionSource<object>();
@@ -616,7 +618,7 @@
 			}));
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		[Description("Verifies that a read lock can be taken within a write lock, and that a write lock can then be taken within that.")]
 		public async Task WriterNestingReaderInterleaved() {
 			using (await this.asyncLock.WriteLockAsync()) {
@@ -627,7 +629,7 @@
 			}
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		[Description("Verifies that a read lock can be taken from within an upgradeable read, and that an upgradeable read and/or write can be taken within that.")]
 		public async Task UpgradeableReaderNestingReaderInterleaved() {
 			using (await this.asyncLock.UpgradeableReadLockAsync()) {
@@ -640,7 +642,7 @@
 			}
 		}
 
-		[TestMethod, Timeout(AsyncDelay), ExpectedException(typeof(InvalidOperationException))]
+		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
 		[Description("Verifies that a write lock cannot be taken while within a (non-upgradeable) read lock.")]
 		public async Task ReaderWithNestedWriterFails() {
 			using (await this.asyncLock.ReadLockAsync()) {
@@ -649,7 +651,7 @@
 			}
 		}
 
-		[TestMethod, Timeout(AsyncDelay), ExpectedException(typeof(InvalidOperationException))]
+		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
 		[Description("Verifies that an upgradeable read lock cannot be taken while within a (non-upgradeable) read lock.")]
 		public async Task ReaderWithNestedUpgradeableReaderFails() {
 			using (await this.asyncLock.ReadLockAsync()) {
@@ -658,7 +660,7 @@
 			}
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		[Description("Verifies that if a read lock is open, and a writer is waiting for a lock, that no new top-level read locks will be issued.")]
 		public async Task NewReadersWaitForWaitingWriters() {
 			var readLockHeld = new TaskCompletionSource<object>();
@@ -715,7 +717,7 @@
 				);
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		[Description("Verifies that if a read lock is open, and a writer is waiting for a lock, that nested read locks will still be issued.")]
 		public async Task NestedReadersStillIssuedLocksWhileWaitingWriters() {
 			var readerLockHeld = new TaskCompletionSource<object>();
@@ -749,7 +751,7 @@
 			writerLockHeld.Task);
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		[Description("Verifies that an upgradeable reader can 'downgrade' to a standard read lock without releasing the overall lock.")]
 		public async Task DowngradeUpgradeableReadToNormalRead() {
 			var firstUpgradeableReadHeld = new TaskCompletionSource<object>();
@@ -788,7 +790,7 @@
 
 		#region Cancellation tests
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task PrecancelledLockRequest() {
 			await Task.Run(delegate { // get onto an MTA
 				var cts = new CancellationTokenSource();
@@ -803,7 +805,7 @@
 			});
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task CancelPendingLock() {
 			var firstWriteHeld = new TaskCompletionSource<object>();
 			var cancellationTestConcluded = new TaskCompletionSource<object>();
@@ -831,7 +833,7 @@
 			}));
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task CancelNonImpactfulToIssuedLocks() {
 			var cts = new CancellationTokenSource();
 			using (await this.asyncLock.WriteLockAsync(cts.Token)) {
@@ -847,7 +849,7 @@
 
 		#region Completion tests
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public void CompleteBlocksNewTopLevelLocksSTA() {
 			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
 				Assert.Inconclusive("Test thread expected to be STA.");
@@ -866,7 +868,7 @@
 			}
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task CompleteBlocksNewTopLevelLocksMTA() {
 			this.asyncLock.Complete();
 
@@ -883,7 +885,7 @@
 			});
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task CompleteDoesNotBlockNestedLockRequests() {
 			using (await this.asyncLock.ReadLockAsync()) {
 				this.asyncLock.Complete();
@@ -898,7 +900,7 @@
 			await this.asyncLock.Completion; // ensure that Completion transitions to completed as a result of releasing all locks.
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task CompleteAllowsPreviouslyQueuedLockRequests() {
 			var firstLockAcquired = new TaskCompletionSource<object>();
 			var secondLockQueued = new TaskCompletionSource<object>();
@@ -947,7 +949,7 @@
 
 		#region Lock callback tests
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task OnBeforeWriteLockReleasedSingle() {
 			var afterWriteLock = new TaskCompletionSource<object>();
 			using (await this.asyncLock.WriteLockAsync()) {
@@ -972,7 +974,7 @@
 			await this.asyncLock.Completion;
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task OnBeforeWriteLockReleasedMultiple() {
 			var afterWriteLock1 = new TaskCompletionSource<object>();
 			var afterWriteLock2 = new TaskCompletionSource<object>();
@@ -1009,7 +1011,7 @@
 			await this.asyncLock.Completion;
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task OnBeforeWriteLockReleasedNestedCallbacks() {
 			var callback1 = new TaskCompletionSource<object>();
 			var callback2 = new TaskCompletionSource<object>();
@@ -1037,7 +1039,7 @@
 			await this.asyncLock.Completion;
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task OnBeforeWriteLockReleasedDelegateThrows() {
 			var afterWriteLock = new TaskCompletionSource<object>();
 			var exceptionToThrow = new ApplicationException();
@@ -1056,7 +1058,7 @@
 			await this.asyncLock.Completion;
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task OnBeforeWriteLockReleasedWithUpgradedWrite() {
 			var callbackFired = new TaskCompletionSource<object>();
 			using (await this.asyncLock.UpgradeableReadLockAsync()) {
@@ -1073,7 +1075,7 @@
 			}
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task OnBeforeWriteLockReleasedWithNestedStickyUpgradedWrite() {
 			var callbackFired = new TaskCompletionSource<object>();
 			using (await this.asyncLock.UpgradeableReadLockAsync()) {
@@ -1094,7 +1096,7 @@
 			}
 		}
 
-		[TestMethod, Timeout(AsyncDelay * 2)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task OnBeforeWriteLockReleasedWithStickyUpgradedWrite() {
 			var callbackFired = new TaskCompletionSource<object>();
 			using (await this.asyncLock.UpgradeableReadLockAsync(AsyncReaderWriterLock.LockFlags.StickyWrite)) {
@@ -1119,14 +1121,14 @@
 			await this.asyncLock.Completion;
 		}
 
-		[TestMethod, Timeout(AsyncDelay), ExpectedException(typeof(InvalidOperationException))]
+		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
 		public void OnBeforeWriteLockReleasedWithoutAnyLock() {
 			this.asyncLock.OnBeforeWriteLockReleased(delegate {
 				return Task.FromResult<object>(null);
 			});
 		}
 
-		[TestMethod, Timeout(AsyncDelay), ExpectedException(typeof(InvalidOperationException))]
+		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
 		public async Task OnBeforeWriteLockReleasedInReadlock() {
 			using (await this.asyncLock.ReadLockAsync()) {
 				this.asyncLock.OnBeforeWriteLockReleased(delegate {
@@ -1135,7 +1137,7 @@
 			}
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task OnBeforeWriteLockReleasedCallbackFiresSynchronouslyWithoutPrivateLockHeld() {
 			var callbackFired = new TaskCompletionSource<object>();
 			var writeLockRequested = new TaskCompletionSource<object>();
@@ -1180,7 +1182,7 @@
 
 		#region Thread apartment rules
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		[Description("Verifies that locks requested on STA threads will marshal to an MTA.")]
 		public async Task StaLockRequestsMarshalToMTA() {
 			var testComplete = new TaskCompletionSource<object>();
@@ -1206,7 +1208,7 @@
 			await testComplete.Task;
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		[Description("Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA does not appear to hold a lock.")]
 		public async Task MtaLockSharedWithMta() {
 			using (await this.asyncLock.ReadLockAsync()) {
@@ -1225,7 +1227,7 @@
 			}
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		[Description("Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA does not appear to hold a lock.")]
 		public async Task MtaLockNotSharedWithSta() {
 			using (await this.asyncLock.ReadLockAsync()) {
@@ -1244,7 +1246,7 @@
 			}
 		}
 
-		[TestMethod, Timeout(AsyncDelay)]
+		[TestMethod, Timeout(TestTimeout)]
 		[Description("Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by marshaling back to an MTA.")]
 		public async Task MtaLockTraversesAcrossSta() {
 			using (await this.asyncLock.ReadLockAsync()) {
