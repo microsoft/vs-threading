@@ -371,6 +371,7 @@
 		private void Release(LockAwaiter awaiter) {
 			var topAwaiter = (LockAwaiter)CallContext.LogicalGetData(this.logicalDataKey);
 
+			Task synchronousCallbackExecution = null;
 			lock (this.syncObject) {
 				this.GetActiveLockSet(awaiter.Kind).Remove(awaiter);
 
@@ -381,8 +382,10 @@
 
 				// Callbacks should be fired synchronously iff a the last write lock is being released and read locks are already issued.
 				// This can occur when upgradeable read locks are held and upgraded, and then downgraded back to an upgradeable read.
-				var nowait = this.TryInvokeBeforeWriteLockReleaseHandlersAsync(
-					completeSynchronously: this.readLocksIssued.Count > 0 || this.upgradeableReadLocksIssued.Count > 0);
+				Task callbackExecution = this.InvokeBeforeWriteLockReleaseHandlersAsync();
+				if (this.readLocksIssued.Count > 0 || this.upgradeableReadLocksIssued.Count > 0) {
+					synchronousCallbackExecution = callbackExecution;
+				}
 
 				this.CompleteIfAppropriate();
 
@@ -406,9 +409,13 @@
 
 				this.ApplyLockToCallContext(topAwaiter);
 			}
+
+			if (synchronousCallbackExecution != null) {
+				synchronousCallbackExecution.Wait();
+			}
 		}
 
-		private async Task TryInvokeBeforeWriteLockReleaseHandlersAsync(bool completeSynchronously) {
+		private async Task InvokeBeforeWriteLockReleaseHandlersAsync() {
 			if (!Monitor.IsEntered(this.syncObject)) {
 				throw new Exception();
 			}
@@ -420,13 +427,14 @@
 				}
 
 				using (awaiter.GetResult()) {
-					Func<Task> invoker = async delegate {
+					await Task.Run(async delegate {
 						// We sequentially loop over the callbacks rather than fire then concurrently because each callback
 						// gets visibility into the write lock, which of course provides exclusivity and concurrency would violate that.
 						List<Exception> exceptions = null;
-						while (this.beforeWriteReleasedCallbacks.Count > 0) {
+						Func<Task> callback;
+						while (this.TryDequeueBeforeWriteReleasedCallback(out callback)) {
 							try {
-								await this.beforeWriteReleasedCallbacks.Dequeue()();
+								await callback();
 							} catch (Exception ex) {
 								if (exceptions == null) {
 									exceptions = new List<Exception>();
@@ -439,13 +447,19 @@
 						if (exceptions != null) {
 							throw new AggregateException(exceptions);
 						}
-					};
+					});
+				}
+			}
+		}
 
-					if (completeSynchronously) {
-						invoker().Wait();
-					} else {
-						await Task.Run(invoker);
-					}
+		private bool TryDequeueBeforeWriteReleasedCallback(out Func<Task> callback) {
+			lock (this.syncObject) {
+				if (this.beforeWriteReleasedCallbacks.Count > 0) {
+					callback = this.beforeWriteReleasedCallbacks.Dequeue();
+					return true;
+				} else {
+					callback = null;
+					return false;
 				}
 			}
 		}
