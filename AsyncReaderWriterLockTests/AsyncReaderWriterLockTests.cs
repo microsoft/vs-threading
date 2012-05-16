@@ -1137,9 +1137,18 @@
 				Task.Run(async delegate {
 				using (await this.asyncLock.UpgradeableReadLockAsync()) {
 					using (await this.asyncLock.WriteLockAsync()) {
+						// Set up a callback that will deadlock if a private lock is held (so the test will fail
+						// to identify the misuse of the lock).
 						this.asyncLock.OnBeforeWriteLockReleased(async delegate {
 							Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 							await Task.Yield();
+
+							// If a private lock were held, now that we're on a different thread this should deadlock.
+							Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+
+							// And if that weren't enough, we can hold this while another thread tries to get a lock.
+							// They should immediately get a "not available" flag, but if they block due to a private
+							// lock behind held while this callback executes, then we'll deadlock.
 							callbackFired.Set();
 							await writeLockRequested.Task;
 						});
