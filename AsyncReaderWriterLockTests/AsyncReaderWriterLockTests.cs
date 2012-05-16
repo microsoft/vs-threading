@@ -1129,6 +1129,38 @@
 			}
 		}
 
+		[TestMethod, Timeout(AsyncDelay)]
+		public async Task OnBeforeWriteLockReleasedCallbackFiresSynchronouslyWithoutPrivateLockHeld() {
+			var callbackFired = new TaskCompletionSource<object>();
+			var writeLockRequested = new TaskCompletionSource<object>();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+				using (await this.asyncLock.UpgradeableReadLockAsync()) {
+					using (await this.asyncLock.WriteLockAsync()) {
+						this.asyncLock.OnBeforeWriteLockReleased(async delegate {
+							Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+							await Task.Yield();
+							callbackFired.Set();
+							await writeLockRequested.Task;
+						});
+					}
+
+					Assert.IsTrue(callbackFired.Task.IsCompleted, "This should have completed synchronously with releasing the write lock.");
+				}
+			}),
+				Task.Run(async delegate {
+				await callbackFired.Task;
+				try {
+					var awaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
+					Assert.IsFalse(awaiter.IsCompleted);
+					writeLockRequested.Set();
+				} catch (Exception ex) {
+					writeLockRequested.SetException(ex);
+				}
+			})
+			);
+		}
+
 		#endregion
 
 		#region Thread apartment rules
