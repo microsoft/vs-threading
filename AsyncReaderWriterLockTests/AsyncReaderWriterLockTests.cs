@@ -1062,7 +1062,9 @@
 			using (await this.asyncLock.UpgradeableReadLockAsync()) {
 				using (await this.asyncLock.WriteLockAsync()) {
 					this.asyncLock.OnBeforeWriteLockReleased(async delegate {
+						Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 						await Task.Yield();
+						Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 						callbackFired.Set();
 					});
 				}
@@ -1078,8 +1080,10 @@
 				using (await this.asyncLock.UpgradeableReadLockAsync(AsyncReaderWriterLock.LockFlags.StickyWrite)) {
 					using (await this.asyncLock.WriteLockAsync()) {
 						this.asyncLock.OnBeforeWriteLockReleased(async delegate {
+							Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 							callbackFired.Set();
 							await Task.Yield();
+							Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 						});
 					}
 
@@ -1096,8 +1100,10 @@
 			using (await this.asyncLock.UpgradeableReadLockAsync(AsyncReaderWriterLock.LockFlags.StickyWrite)) {
 				using (await this.asyncLock.WriteLockAsync()) {
 					this.asyncLock.OnBeforeWriteLockReleased(async delegate {
+						Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 						await Task.Delay(AsyncDelay);
 						callbackFired.Set();
+						Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 					});
 				}
 
