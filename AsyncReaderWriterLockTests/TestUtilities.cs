@@ -6,10 +6,32 @@
 	using System.Text;
 	using System.Threading;
 	using System.Threading.Tasks;
+	using System.Windows.Threading;
 
 	internal static class TestUtilities {
 		internal static void Set(this TaskCompletionSource<object> tcs) {
 			Task.Run(() => tcs.TrySetResult(null));
+		}
+
+		internal static void Run(Func<Task> func) {
+			if (func == null) throw new ArgumentNullException("func");
+
+			var prevCtx = SynchronizationContext.Current;
+			try {
+				var syncCtx = new DispatcherSynchronizationContext();
+				SynchronizationContext.SetSynchronizationContext(syncCtx);
+
+				var t = func();
+				if (t == null) throw new InvalidOperationException();
+
+				var frame = new DispatcherFrame();
+				t.ContinueWith(_ => { frame.Continue = true; }, TaskScheduler.Default);
+				Dispatcher.PushFrame(frame);
+
+				t.GetAwaiter().GetResult();
+			} finally {
+				SynchronizationContext.SetSynchronizationContext(prevCtx);
+			}
 		}
 
 		internal static TaskSchedulerAwaiter GetAwaiter(this TaskScheduler scheduler) {

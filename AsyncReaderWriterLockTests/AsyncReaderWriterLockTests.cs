@@ -292,6 +292,11 @@
 			writeLockHeld.Task);
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void ReadLockReleaseOnSta() {
+			this.LockReleaseTestHelper(this.asyncLock.ReadLockAsync());
+		}
+
 		#endregion
 
 		#region UpgradeableRead tests
@@ -418,6 +423,11 @@
 			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void UpgradeableReadLockReleaseOnSta() {
+			this.LockReleaseTestHelper(this.asyncLock.UpgradeableReadLockAsync());
+		}
+
 		#endregion
 
 		#region Write tests
@@ -464,6 +474,11 @@
 			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 			Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
 			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void WriteLockReleaseOnSta() {
+			this.LockReleaseTestHelper(this.asyncLock.WriteLockAsync());
 		}
 
 		#endregion
@@ -1276,5 +1291,35 @@
 		}
 
 		#endregion
+
+		private void LockReleaseTestHelper(AsyncReaderWriterLock.LockAwaitable initialLock) {
+			TestUtilities.Run(async delegate {
+				var staScheduler = TaskScheduler.FromCurrentSynchronizationContext();
+				var initialLockHeld = new TaskCompletionSource<object>();
+				var secondLockInQueue = new TaskCompletionSource<object>();
+				var secondLockObtained = new TaskCompletionSource<object>();
+
+				await Task.WhenAll(
+					Task.Run(async delegate {
+					using (await initialLock) {
+						initialLockHeld.Set();
+						await secondLockInQueue.Task;
+						await staScheduler;
+					}
+				}),
+				Task.Run(async delegate {
+					await initialLockHeld.Task;
+					var awaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
+					Assert.IsFalse(awaiter.IsCompleted);
+					awaiter.OnCompleted(delegate {
+						using (awaiter.GetResult()) {
+							secondLockObtained.Set();
+						}
+					});
+					secondLockInQueue.Set();
+				}),
+				secondLockObtained.Task);
+			});
+		}
 	}
 }
