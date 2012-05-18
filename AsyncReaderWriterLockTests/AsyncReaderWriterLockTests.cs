@@ -1086,6 +1086,7 @@
 					});
 				}
 
+				// TODO: stabilize this.  This next assertion fails due to race condition, that shows the product has a bug.
 				Assert.IsTrue(callbackFired.Task.IsCompleted, "This should have completed synchronously with releasing the write lock.");
 			}
 		}

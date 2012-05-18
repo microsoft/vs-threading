@@ -13,6 +13,9 @@
 			Task.Run(() => tcs.TrySetResult(null));
 		}
 
+		/// <summary>
+		/// Runs an asynchronous task synchronously, using just the current thread to execute continuations.
+		/// </summary>
 		internal static void Run(Func<Task> func) {
 			if (func == null) throw new ArgumentNullException("func");
 
@@ -25,7 +28,7 @@
 				if (t == null) throw new InvalidOperationException();
 
 				var frame = new DispatcherFrame();
-				t.ContinueWith(_ => { frame.Continue = true; }, TaskScheduler.Default);
+				t.ContinueWith(_ => { frame.Continue = false; }, TaskScheduler.Default);
 				Dispatcher.PushFrame(frame);
 
 				t.GetAwaiter().GetResult();

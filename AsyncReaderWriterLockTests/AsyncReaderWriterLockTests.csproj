@@ -53,6 +53,7 @@
   <ItemGroup>
     <Compile Include="AsyncReaderWriterLockTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TestUtilitiesTests.cs" />
     <Compile Include="TestUtilities.cs" />
   </ItemGroup>
   <ItemGroup>
