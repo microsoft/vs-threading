@@ -374,7 +374,10 @@
 				// Callbacks should be fired synchronously iff a the last write lock is being released and read locks are already issued.
 				// This can occur when upgradeable read locks are held and upgraded, and then downgraded back to an upgradeable read.
 				Task callbackExecution = this.InvokeBeforeWriteLockReleaseHandlersAsync();
-				if (this.readLocksIssued.Count > 0 || this.upgradeableReadLocksIssued.Count > 0) {
+				bool synchronousRequired = this.readLocksIssued.Count > 0;
+				synchronousRequired |= this.upgradeableReadLocksIssued.Count > 1;
+				synchronousRequired |= this.upgradeableReadLocksIssued.Count == 1 && !this.upgradeableReadLocksIssued.Contains(awaiter);
+				if (synchronousRequired) {
 					synchronousCallbackExecution = callbackExecution;
 				}
 

@@ -1114,27 +1114,33 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task OnBeforeWriteLockReleasedWithStickyUpgradedWrite() {
-			var callbackFired = new TaskCompletionSource<object>();
+			var callbackBegin = new TaskCompletionSource<object>();
+			var callbackEnding = new TaskCompletionSource<object>();
+			var releaseCallback = new TaskCompletionSource<object>();
 			using (await this.asyncLock.UpgradeableReadLockAsync(AsyncReaderWriterLock.LockFlags.StickyWrite)) {
 				using (await this.asyncLock.WriteLockAsync()) {
 					this.asyncLock.OnBeforeWriteLockReleased(async delegate {
+						callbackBegin.Set();
 						Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 						await Task.Delay(AsyncDelay);
-						callbackFired.Set();
 						Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+						await releaseCallback.Task;
+						callbackEnding.Set();
 					});
 				}
 
-				Assert.IsFalse(callbackFired.Task.IsCompleted, "This shouldn't have run yet because the upgradeable read lock bounding the write lock is a sticky one.");
+				Assert.IsFalse(callbackBegin.Task.IsCompleted, "This shouldn't have run yet because the upgradeable read lock bounding the write lock is a sticky one.");
 			}
 
-			// TODO: firm this up so it's not so vulnerable to timing.
-			Assert.IsFalse(callbackFired.Task.IsCompleted, "This should have completed asynchronously because no read lock remained after the sticky upgraded read lock was released.");
+			Assert.IsFalse(callbackEnding.Task.IsCompleted, "This should have completed asynchronously because no read lock remained after the sticky upgraded read lock was released.");
+			releaseCallback.Set();
 
 			// Because the callbacks are fired asynchronously, we must wait for it to settle before allowing the test to finish
 			// to avoid a false failure from the Cleanup method.
 			this.asyncLock.Complete();
 			await this.asyncLock.Completion;
+
+			Assert.IsTrue(callbackEnding.Task.IsCompleted, "The completion task should not have completed until the callbacks had completed.");
 		}
 
 		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
