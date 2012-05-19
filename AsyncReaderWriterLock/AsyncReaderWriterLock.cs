@@ -489,29 +489,25 @@
 		}
 
 		private void PendAwaiter(LockAwaiter awaiter) {
-			if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA) {
-				Task.Run(() => this.PendAwaiter(awaiter));
-			} else {
-				lock (this.syncObject) {
-					if (this.TryIssueLock(awaiter, previouslyQueued: true)) {
-						// Run the continuation asynchronously (since this is called in OnCompleted, which is an async pattern).
-						if (!awaiter.TryExecuteContinuation()) {
-							this.Release(awaiter);
-						}
-					} else {
-						switch (awaiter.Kind) {
-							case LockKind.Read:
-								this.waitingReaders.Enqueue(awaiter);
-								break;
-							case LockKind.UpgradeableRead:
-								this.waitingUpgradeableReaders.Enqueue(awaiter);
-								break;
-							case LockKind.Write:
-								this.waitingWriters.Enqueue(awaiter);
-								break;
-							default:
-								break;
-						}
+			lock (this.syncObject) {
+				if (this.TryIssueLock(awaiter, previouslyQueued: true)) {
+					// Run the continuation asynchronously (since this is called in OnCompleted, which is an async pattern).
+					if (!awaiter.TryExecuteContinuation()) {
+						this.Release(awaiter);
+					}
+				} else {
+					switch (awaiter.Kind) {
+						case LockKind.Read:
+							this.waitingReaders.Enqueue(awaiter);
+							break;
+						case LockKind.UpgradeableRead:
+							this.waitingUpgradeableReaders.Enqueue(awaiter);
+							break;
+						case LockKind.Write:
+							this.waitingWriters.Enqueue(awaiter);
+							break;
+						default:
+							break;
 					}
 				}
 			}
