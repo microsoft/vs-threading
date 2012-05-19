@@ -1197,10 +1197,9 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public void OnBeforeWriteLockReleasedCallbackNeverInvokedOnSTA() {
 			TestUtilities.Run(async delegate {
-				var callbackReady = new TaskCompletionSource<object>();
 				var callbackCompleted = new TaskCompletionSource<object>();
-				var staReleaserInvoked = new TaskCompletionSource<object>();
 				AsyncReaderWriterLock.LockReleaser releaser = new AsyncReaderWriterLock.LockReleaser();
+				var staScheduler = TaskScheduler.FromCurrentSynchronizationContext();
 				var nowait = Task.Run(async delegate {
 					using (await this.asyncLock.UpgradeableReadLockAsync()) {
 						using (releaser = await this.asyncLock.WriteLockAsync()) {
@@ -1215,21 +1214,11 @@
 								}
 							});
 
-							callbackReady.Set();
-							await staReleaserInvoked.Task;
-							await Task.Yield();
+							// Transition to an STA thread prior to calling Release (the point of this test).
+							await staScheduler;
 						}
 					}
 				});
-
-				// *Synchronously* wait for this task, as yielding the thread would end up giving us an MTA
-				// when we need to test on an STA.
-				callbackReady.Task.GetAwaiter().GetResult();
-
-				// The test is on an STA, so dispose of the only write lock we have here, which simulates
-				// the lock holder transitioning to an STA prior to disposing of the lock.
-				releaser.Dispose();
-				staReleaserInvoked.Set();
 
 				await callbackCompleted.Task;
 			});
