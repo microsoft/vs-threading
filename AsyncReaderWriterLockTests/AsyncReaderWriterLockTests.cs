@@ -1125,7 +1125,7 @@
 						await Task.Delay(AsyncDelay);
 						Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 						await releaseCallback.Task;
-						callbackEnding.Set();
+						callbackEnding.SetResult(null); // don't use Set() extension method because that's asynchronous, and we measure this to verify ordered behavior.
 					});
 				}
 
