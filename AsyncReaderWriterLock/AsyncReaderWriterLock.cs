@@ -15,7 +15,7 @@
 	/// <remarks>
 	/// TODO: 
 	///  * externally: SkipInitialEvaluation, SuppressReevaluation
-	///  
+	///  * test for when the write queue is NOT empty when a write lock is released on an STA to an upgradeable read lock and a synchronous callback is to be invoked.
 	/// We have to use a custom awaitable rather than simply returning Task{LockReleaser} because 
 	/// we have to set CallContext data in the context of the person receiving the lock,
 	/// which requires that we get to execute code at the start of the continuation (whether we yield or not).
@@ -249,57 +249,55 @@
 				}
 
 				bool issued = false;
-				if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
-					if (this.writeLocksIssued.Count == 0 && this.upgradeableReadLocksIssued.Count == 0 && this.readLocksIssued.Count == 0) {
-						issued = true;
-					} else {
-						bool hasRead, hasUpgradeableRead, hasWrite;
-						this.AggregateLockStackKinds(awaiter, out hasRead, out hasUpgradeableRead, out hasWrite);
-						switch (awaiter.Kind) {
-							case LockKind.Read:
-								if (this.writeLocksIssued.Count == 0 && this.waitingWriters.Count == 0) {
-									issued = true;
-								} else if (hasWrite || hasRead || hasUpgradeableRead) {
-									issued = true;
+				if (this.writeLocksIssued.Count == 0 && this.upgradeableReadLocksIssued.Count == 0 && this.readLocksIssued.Count == 0) {
+					issued = true;
+				} else {
+					bool hasRead, hasUpgradeableRead, hasWrite;
+					this.AggregateLockStackKinds(awaiter, out hasRead, out hasUpgradeableRead, out hasWrite);
+					switch (awaiter.Kind) {
+						case LockKind.Read:
+							if (this.writeLocksIssued.Count == 0 && this.waitingWriters.Count == 0) {
+								issued = true;
+							} else if (hasWrite || hasRead || hasUpgradeableRead) {
+								issued = true;
+							}
+
+							break;
+						case LockKind.UpgradeableRead:
+							if (hasUpgradeableRead || hasWrite) {
+								issued = true;
+							} else if (hasRead) {
+								// We cannot issue an upgradeable read lock to folks who have (only) a read lock.
+								throw new InvalidOperationException();
+							} else if (this.upgradeableReadLocksIssued.Count == 0 && this.writeLocksIssued.Count == 0) {
+								issued = true;
+							}
+
+							break;
+						case LockKind.Write:
+							if (hasWrite) {
+								issued = true;
+							} else if (hasRead && !hasUpgradeableRead) {
+								// We cannot issue a write lock when the caller already holds a read lock.
+								throw new InvalidOperationException();
+							} else if (this.AllHeldLocksAreByThisStack(awaiter.NestingLock)) {
+								issued = true;
+
+								var stickyWriteAwaiter = this.FindRootUpgradeableReadWithStickyWrite(awaiter);
+								if (stickyWriteAwaiter != null) {
+									// Add the upgradeable reader as a write lock as well.
+									this.writeLocksIssued.Add(stickyWriteAwaiter);
 								}
+							}
 
-								break;
-							case LockKind.UpgradeableRead:
-								if (hasUpgradeableRead || hasWrite) {
-									issued = true;
-								} else if (hasRead) {
-									// We cannot issue an upgradeable read lock to folks who have (only) a read lock.
-									throw new InvalidOperationException();
-								} else if (this.upgradeableReadLocksIssued.Count == 0 && this.writeLocksIssued.Count == 0) {
-									issued = true;
-								}
-
-								break;
-							case LockKind.Write:
-								if (hasWrite) {
-									issued = true;
-								} else if (hasRead && !hasUpgradeableRead) {
-									// We cannot issue a write lock when the caller already holds a read lock.
-									throw new InvalidOperationException();
-								} else if (this.AllHeldLocksAreByThisStack(awaiter.NestingLock)) {
-									issued = true;
-
-									var stickyWriteAwaiter = this.FindRootUpgradeableReadWithStickyWrite(awaiter);
-									if (stickyWriteAwaiter != null) {
-										// Add the upgradeable reader as a write lock as well.
-										this.writeLocksIssued.Add(stickyWriteAwaiter);
-									}
-								}
-
-								break;
-							default:
-								throw new Exception();
-						}
+							break;
+						default:
+							throw new Exception();
 					}
+				}
 
-					if (issued) {
-						this.GetActiveLockSet(awaiter.Kind).Add(awaiter);
-					}
+				if (issued) {
+					this.GetActiveLockSet(awaiter.Kind).Add(awaiter);
 				}
 
 				if (!issued) {
@@ -373,13 +371,6 @@
 
 			Task synchronousCallbackExecution = null;
 			lock (this.syncObject) {
-				this.GetActiveLockSet(awaiter.Kind).Remove(awaiter);
-
-				// In case this is a sticky write lock, it may also belong to the write locks issued collection.
-				if (awaiter.Kind == LockKind.UpgradeableRead && (awaiter.Options & LockFlags.StickyWrite) == LockFlags.StickyWrite) {
-					this.writeLocksIssued.Remove(awaiter);
-				}
-
 				// Callbacks should be fired synchronously iff a the last write lock is being released and read locks are already issued.
 				// This can occur when upgradeable read locks are held and upgraded, and then downgraded back to an upgradeable read.
 				Task callbackExecution = this.InvokeBeforeWriteLockReleaseHandlersAsync();
@@ -387,25 +378,16 @@
 					synchronousCallbackExecution = callbackExecution;
 				}
 
+				this.GetActiveLockSet(awaiter.Kind).Remove(awaiter);
+
+				// In case this is a sticky write lock, it may also belong to the write locks issued collection.
+				if (awaiter.Kind == LockKind.UpgradeableRead && (awaiter.Options & LockFlags.StickyWrite) == LockFlags.StickyWrite) {
+					this.writeLocksIssued.Remove(awaiter);
+				}
+
 				this.CompleteIfAppropriate();
 
-				switch (awaiter.Kind) {
-					case LockKind.Read:
-						this.TryInvokeOneWriterIfAppropriate();
-						break;
-					case LockKind.UpgradeableRead:
-						this.TryInvokeOneWriterIfAppropriate();
-						this.TryInvokeOneUpgradeableReaderIfAppropriate();
-						break;
-					case LockKind.Write:
-						if (!this.TryInvokeOneWriterIfAppropriate()) {
-							this.TryInvokeAllReadersIfAppropriate();
-						}
-
-						break;
-					default:
-						throw new Exception();
-				}
+				this.TryInvokeLockConsumer();
 
 				this.ApplyLockToCallContext(topAwaiter);
 			}
@@ -415,39 +397,40 @@
 			}
 		}
 
+		private bool TryInvokeLockConsumer() {
+			return this.TryInvokeOneWriterIfAppropriate()
+				|| this.TryInvokeOneUpgradeableReaderIfAppropriate()
+				|| this.TryInvokeAllReadersIfAppropriate();
+		}
+
 		private async Task InvokeBeforeWriteLockReleaseHandlersAsync() {
 			if (!Monitor.IsEntered(this.syncObject)) {
 				throw new Exception();
 			}
 
-			if (this.writeLocksIssued.Count == 0 && this.beforeWriteReleasedCallbacks.Count > 0) {
-				var awaiter = this.WriteLockAsync().GetAwaiter();
-				if (!awaiter.IsCompleted) {
-					throw new Exception(); // internal error.  This must have completed synchronously.
-				}
+			if (this.writeLocksIssued.Count == 1 && this.beforeWriteReleasedCallbacks.Count > 0) {
+				using (await this.WriteLockAsync()) {
+					await Task.Yield(); // ensure we've yielded to our caller, since the WriteLockAsync will not yield when on an MTA thread.
 
-				using (awaiter.GetResult()) {
-					await Task.Run(async delegate {
-						// We sequentially loop over the callbacks rather than fire then concurrently because each callback
-						// gets visibility into the write lock, which of course provides exclusivity and concurrency would violate that.
-						List<Exception> exceptions = null;
-						Func<Task> callback;
-						while (this.TryDequeueBeforeWriteReleasedCallback(out callback)) {
-							try {
-								await callback();
-							} catch (Exception ex) {
-								if (exceptions == null) {
-									exceptions = new List<Exception>();
-								}
-
-								exceptions.Add(ex);
+					// We sequentially loop over the callbacks rather than fire then concurrently because each callback
+					// gets visibility into the write lock, which of course provides exclusivity and concurrency would violate that.
+					List<Exception> exceptions = null;
+					Func<Task> callback;
+					while (this.TryDequeueBeforeWriteReleasedCallback(out callback)) {
+						try {
+							await callback();
+						} catch (Exception ex) {
+							if (exceptions == null) {
+								exceptions = new List<Exception>();
 							}
-						}
 
-						if (exceptions != null) {
-							throw new AggregateException(exceptions);
+							exceptions.Add(ex);
 						}
-					});
+					}
+
+					if (exceptions != null) {
+						throw new AggregateException(exceptions);
+					}
 				}
 			}
 		}
@@ -468,12 +451,16 @@
 			CallContext.LogicalSetData(this.logicalDataKey, this.GetFirstActiveSelfOrAncestor(topAwaiter));
 		}
 
-		private void TryInvokeAllReadersIfAppropriate() {
+		private bool TryInvokeAllReadersIfAppropriate() {
+			bool invoked = false;
 			if (this.writeLocksIssued.Count == 0) {
 				while (this.waitingReaders.Count > 0) {
 					this.IssueAndExecute(this.waitingReaders.Dequeue());
+					invoked = true;
 				}
 			}
+
+			return invoked;
 		}
 
 		private bool TryInvokeOneUpgradeableReaderIfAppropriate() {

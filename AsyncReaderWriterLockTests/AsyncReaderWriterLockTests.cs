@@ -1344,7 +1344,12 @@
 					Assert.IsFalse(awaiter.IsCompleted);
 					awaiter.OnCompleted(delegate {
 						using (awaiter.GetResult()) {
-							secondLockObtained.Set();
+							try {
+								Assert.AreEqual(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
+								secondLockObtained.Set();
+							} catch (Exception ex) {
+								secondLockObtained.SetException(ex);
+							}
 						}
 					});
 					secondLockInQueue.Set();
