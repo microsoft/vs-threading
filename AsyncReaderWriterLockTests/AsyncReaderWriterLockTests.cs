@@ -297,6 +297,16 @@
 			this.LockReleaseTestHelper(this.asyncLock.ReadLockAsync());
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task UncontestedTopLevelReadLocksAllocFree() {
+			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync());
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task NestedReadLocksAllocFree() {
+			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync());
+		}
+
 		#endregion
 
 		#region UpgradeableRead tests
@@ -1361,6 +1371,54 @@
 					secondLockInQueue.Set();
 				}),
 				secondLockObtained.Task);
+			});
+		}
+
+		private Task UncontestedTopLevelLocksAllocFreeHelperAsync(Func<AsyncReaderWriterLock.LockAwaitable> locker) {
+			// Get on an MTA thread so that locks do not necessarily yield.
+			return Task.Run(async delegate {
+				// First prime the pump to allocate some fixed cost memory.
+				using (await locker()) {
+				}
+
+				const int iterations = 1000;
+				long memory1 = GC.GetTotalMemory(true);
+				for (int i = 0; i < iterations; i++) {
+					using (await locker()) {
+					}
+				}
+
+				long memory2 = GC.GetTotalMemory(false);
+				long allocated = (memory2 - memory1) / iterations;
+				Assert.AreEqual(49, allocated);
+			});
+		}
+
+		private Task NestedLocksAllocFreeHelperAsync(Func<AsyncReaderWriterLock.LockAwaitable> locker) {
+			// Get on an MTA thread so that locks do not necessarily yield.
+			return Task.Run(async delegate {
+				// First prime the pump to allocate some fixed cost memory.
+				using (await locker()) {
+					using (await locker()) {
+						using (await locker()) {
+						}
+					}
+				}
+
+				const int iterations = 1000;
+				long memory1 = GC.GetTotalMemory(true);
+				for (int i = 0; i < iterations; i++) {
+					using (await locker()) {
+						using (await locker()) {
+							using (await locker()) {
+							}
+						}
+					}
+				}
+
+				long memory2 = GC.GetTotalMemory(false);
+				long allocated = (memory2 - memory1) / iterations;
+				Assert.AreEqual(147, allocated);
 			});
 		}
 	}

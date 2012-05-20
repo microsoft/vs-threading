@@ -546,7 +546,7 @@
 				this.continuation = null;
 				this.options = options;
 				this.cancellationToken = cancellationToken;
-				this.cancellationRegistration = cancellationToken.Register(CancellationResponder, this, useSynchronizationContext: false);
+				this.cancellationRegistration = cancellationToken.Register(cancellationResponseAction, this, useSynchronizationContext: false);
 				this.nestingLock = (LockAwaiter)CallContext.LogicalGetData(this.lck.logicalDataKey);
 			}
 
