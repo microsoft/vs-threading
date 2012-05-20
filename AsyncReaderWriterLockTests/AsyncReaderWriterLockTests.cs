@@ -1390,7 +1390,7 @@
 
 				long memory2 = GC.GetTotalMemory(false);
 				long allocated = (memory2 - memory1) / iterations;
-				Assert.AreEqual(49, allocated);
+				Assert.AreEqual(0, allocated);
 			});
 		}
 
@@ -1418,7 +1418,7 @@
 
 				long memory2 = GC.GetTotalMemory(false);
 				long allocated = (memory2 - memory1) / iterations;
-				Assert.AreEqual(49 * 3, allocated);
+				Assert.AreEqual(0, allocated);
 			});
 		}
 	}

@@ -1,5 +1,6 @@
 ﻿namespace AsyncReaderWriterLock {
 	using System;
+	using System.Collections.Concurrent;
 	using System.Collections.Generic;
 	using System.Diagnostics;
 	using System.Linq;
@@ -517,7 +518,7 @@
 			private readonly LockAwaiter awaiter;
 
 			internal LockAwaitable(AsyncReaderWriterLock lck, LockKind kind, LockFlags options, CancellationToken cancellationToken) {
-				this.awaiter = new LockAwaiter(lck, kind, options, cancellationToken);
+				this.awaiter = LockAwaiter.Initialize(lck, kind, options, cancellationToken);
 				if (!cancellationToken.IsCancellationRequested && lck.TryIssueLock(this.awaiter, previouslyQueued: false)) {
 					lck.ApplyLockToCallContext(this.awaiter);
 				}
@@ -531,23 +532,17 @@
 		[DebuggerDisplay("{kind}")]
 		public class LockAwaiter : INotifyCompletion {
 			private static readonly Action<object> cancellationResponseAction = CancellationResponder; // save memory by allocating the delegate only once.
-			private readonly AsyncReaderWriterLock lck;
-			private readonly LockKind kind;
-			private readonly LockAwaiter nestingLock;
-			private readonly CancellationToken cancellationToken;
-			private readonly CancellationTokenRegistration cancellationRegistration;
-			private readonly LockFlags options;
+			private static readonly IProducerConsumerCollection<LockAwaiter> recycledAwaiters = new AllocFreeConcurrentBag<LockAwaiter>();
+			private AsyncReaderWriterLock lck;
+			private LockKind kind;
+			private LockAwaiter nestingLock;
+			private CancellationToken cancellationToken;
+			private CancellationTokenRegistration cancellationRegistration;
+			private LockFlags options;
 			private Exception fault;
 			private Action continuation;
 
-			internal LockAwaiter(AsyncReaderWriterLock lck, LockKind kind, LockFlags options, CancellationToken cancellationToken) {
-				this.lck = lck;
-				this.kind = kind;
-				this.continuation = null;
-				this.options = options;
-				this.cancellationToken = cancellationToken;
-				this.cancellationRegistration = cancellationToken.Register(cancellationResponseAction, this, useSynchronizationContext: false);
-				this.nestingLock = (LockAwaiter)CallContext.LogicalGetData(this.lck.logicalDataKey);
+			private LockAwaiter() {
 			}
 
 			public bool IsCompleted {
@@ -603,6 +598,30 @@
 				throw new Exception();
 			}
 
+			internal static LockAwaiter Initialize(AsyncReaderWriterLock lck, LockKind kind, LockFlags options, CancellationToken cancellationToken) {
+				LockAwaiter awaiter;
+				if (!recycledAwaiters.TryTake(out awaiter)) {
+					awaiter = new LockAwaiter();
+				}
+
+				awaiter.lck = lck;
+				awaiter.kind = kind;
+				awaiter.continuation = null;
+				awaiter.options = options;
+				awaiter.cancellationToken = cancellationToken;
+				awaiter.cancellationRegistration = cancellationToken.Register(cancellationResponseAction, awaiter, useSynchronizationContext: false);
+				awaiter.nestingLock = (LockAwaiter)CallContext.LogicalGetData(lck.logicalDataKey);
+				awaiter.fault = null;
+				awaiter.continuation = null;
+
+				return awaiter;
+			}
+
+			internal void Release() {
+				this.Lock.Release(this);
+				recycledAwaiters.TryAdd(this);
+			}
+
 			internal bool TryExecuteContinuation(Action continuation = null) {
 				if (continuation == null) {
 					continuation = Interlocked.Exchange(ref this.continuation, null);
@@ -642,7 +661,7 @@
 			}
 
 			public void Dispose() {
-				this.awaiter.Lock.Release(this.awaiter);
+				this.awaiter.Release();
 			}
 		}
 
