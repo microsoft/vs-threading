@@ -715,7 +715,7 @@
 						try {
 							this.TestContext.WriteLine("Write lock issued.");
 							Assert.IsFalse(newReaderLockHeld.Task.IsCompleted, "Read lock should not be issued till after the write lock is released.");
-							writerLockHeld.Set();
+							writerLockHeld.SetResult(null); // must not be the asynchronous Set() extension method since we use it as a flag to check ordering later.
 						} catch (Exception ex) {
 							writerLockHeld.SetException(ex);
 						}
