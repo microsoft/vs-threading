@@ -574,10 +574,6 @@
 				get { return this.options; }
 			}
 
-			internal Action Continuation {
-				get { return this.continuation; }
-			}
-
 			private bool LockIssued {
 				get { return this.lck.IsLockActive(this); }
 			}

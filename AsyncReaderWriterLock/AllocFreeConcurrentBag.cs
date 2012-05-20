@@ -7,6 +7,7 @@
 	using System.Text;
 	using System.Threading.Tasks;
 
+	[DebuggerDisplay("Count = {Count}")]
 	internal class AllocFreeConcurrentBag<T> : IProducerConsumerCollection<T> {
 		private readonly List<T> bag = new List<T>();
 
