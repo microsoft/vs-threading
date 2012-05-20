@@ -702,6 +702,8 @@
 					await newReaderWaiting.Task;
 					this.TestContext.WriteLine("Releasing first read lock.");
 				}
+
+				this.TestContext.WriteLine("First read lock released.");
 			}),
 				Task.Run(async delegate {
 				await readLockHeld.Task;
@@ -710,9 +712,13 @@
 				this.TestContext.WriteLine("Write lock in queue.");
 				writeAwaiter.OnCompleted(delegate {
 					using (writeAwaiter.GetResult()) {
-						this.TestContext.WriteLine("Write lock issued.");
-						writerLockHeld.Set();
-						Assert.IsFalse(newReaderLockHeld.Task.IsCompleted, "Read lock should not be issued till after the write lock is released.");
+						try {
+							this.TestContext.WriteLine("Write lock issued.");
+							Assert.IsFalse(newReaderLockHeld.Task.IsCompleted, "Read lock should not be issued till after the write lock is released.");
+							writerLockHeld.Set();
+						} catch (Exception ex) {
+							writerLockHeld.SetException(ex);
+						}
 					}
 				});
 				writerWaitingForLock.Set();
@@ -724,6 +730,7 @@
 				this.TestContext.WriteLine("Second reader in queue.");
 				readAwaiter.OnCompleted(delegate {
 					try {
+						this.TestContext.WriteLine("Second read lock issued.");
 						using (readAwaiter.GetResult()) {
 							Assert.IsTrue(writerLockHeld.Task.IsCompleted);
 							newReaderLockHeld.Set();

@@ -618,8 +618,11 @@
 			}
 
 			internal void Release() {
-				this.Lock.Release(this);
-				recycledAwaiters.TryAdd(this);
+				if (this.lck != null) {
+					this.Lock.Release(this);
+					recycledAwaiters.TryAdd(this);
+					this.lck = null;
+				}
 			}
 
 			internal bool TryExecuteContinuation(Action continuation = null) {
