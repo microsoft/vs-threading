@@ -15,6 +15,8 @@
 	/// </remarks>
 	[TestClass]
 	public class AsyncReaderWriterLockTests {
+		private const int GCAllocationAttempts = 3;
+
 		private const int AsyncDelay = 500;
 
 		private const int TestTimeout = 1000;
@@ -438,6 +440,16 @@
 			this.LockReleaseTestHelper(this.asyncLock.UpgradeableReadLockAsync());
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task UncontestedTopLevelUpgradeableReadLocksAllocFree() {
+			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync());
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task NestedUpgradeableReadLocksAllocFree() {
+			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync());
+		}
+
 		#endregion
 
 		#region Write tests
@@ -489,6 +501,16 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public void WriteLockReleaseOnSta() {
 			this.LockReleaseTestHelper(this.asyncLock.WriteLockAsync());
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task UncontestedTopLevelWriteLocksAllocFree() {
+			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync());
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task NestedWriteLocksAllocFree() {
+			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync());
 		}
 
 		#endregion
@@ -1388,16 +1410,23 @@
 				using (await locker()) {
 				}
 
-				const int iterations = 1000;
-				long memory1 = GC.GetTotalMemory(true);
-				for (int i = 0; i < iterations; i++) {
-					using (await locker()) {
+				// This test is rather rough.  So we're willing to try it a few times in order to observe the desired value.
+				bool passingAttemptObserved = false;
+				for (int attempt = 0; !passingAttemptObserved && attempt < GCAllocationAttempts; attempt++) {
+					const int iterations = 1000;
+					long memory1 = GC.GetTotalMemory(true);
+					for (int i = 0; i < iterations; i++) {
+						using (await locker()) {
+						}
 					}
+
+					long memory2 = GC.GetTotalMemory(false);
+					long allocated = (memory2 - memory1) / iterations;
+					this.TestContext.WriteLine("Allocated bytes: {0}", allocated);
+					passingAttemptObserved = allocated == 0;
 				}
 
-				long memory2 = GC.GetTotalMemory(false);
-				long allocated = (memory2 - memory1) / iterations;
-				Assert.AreEqual(0, allocated);
+				Assert.IsTrue(passingAttemptObserved);
 			});
 		}
 
@@ -1412,20 +1441,27 @@
 					}
 				}
 
-				const int iterations = 1000;
-				long memory1 = GC.GetTotalMemory(true);
-				for (int i = 0; i < iterations; i++) {
-					using (await locker()) {
+				// This test is rather rough.  So we're willing to try it a few times in order to observe the desired value.
+				bool passingAttemptObserved = false;
+				for (int attempt = 0; !passingAttemptObserved && attempt < GCAllocationAttempts; attempt++) {
+					const int iterations = 1000;
+					long memory1 = GC.GetTotalMemory(true);
+					for (int i = 0; i < iterations; i++) {
 						using (await locker()) {
 							using (await locker()) {
+								using (await locker()) {
+								}
 							}
 						}
 					}
+
+					long memory2 = GC.GetTotalMemory(false);
+					long allocated = (memory2 - memory1) / iterations;
+					this.TestContext.WriteLine("Allocated bytes: {0}", allocated);
+					passingAttemptObserved = allocated == 0;
 				}
 
-				long memory2 = GC.GetTotalMemory(false);
-				long allocated = (memory2 - memory1) / iterations;
-				Assert.AreEqual(0, allocated);
+				Assert.IsTrue(passingAttemptObserved);
 			});
 		}
 	}
