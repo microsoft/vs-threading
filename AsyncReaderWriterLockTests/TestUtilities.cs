@@ -9,7 +9,7 @@
 	using System.Windows.Threading;
 
 	internal static class TestUtilities {
-		internal static Task Set(this TaskCompletionSource<object> tcs) {
+		internal static Task SetAsync(this TaskCompletionSource<object> tcs) {
 			return Task.Run(() => tcs.TrySetResult(null));
 		}
 
