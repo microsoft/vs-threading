@@ -315,12 +315,12 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task UncontestedTopLevelReadLocksAllocFree() {
+		public async Task UncontestedTopLevelReadLockAsyncAllocFree() {
 			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync());
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task NestedReadLocksAllocFree() {
+		public async Task NestedReadLockAsyncAllocFree() {
 			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync());
 		}
 
@@ -403,6 +403,16 @@
 
 				Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 			}));
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task UncontestedTopLevelReadLockAllocFree() {
+			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLock());
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task NestedReadLockAllocFree() {
+			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLock());
 		}
 
 		#endregion
@@ -599,6 +609,16 @@
 			}));
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task UncontestedTopLevelUpgradeableReadLockAllocFree() {
+			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLock());
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task NestedUpgradeableReadLockAllocFree() {
+			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLock());
+		}
+
 		#endregion
 
 		#region WriteLockAsync tests
@@ -713,6 +733,16 @@
 
 				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 			}));
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task UncontestedTopLevelWriteLockAllocFree() {
+			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLock());
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task NestedWriteLockAllocFree() {
+			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLock());
 		}
 
 		#endregion
@@ -1719,6 +1749,68 @@
 						using (await locker()) {
 							using (await locker()) {
 								using (await locker()) {
+								}
+							}
+						}
+					}
+
+					long memory2 = GC.GetTotalMemory(false);
+					long allocated = (memory2 - memory1) / iterations;
+					this.TestContext.WriteLine("Allocated bytes: {0}", allocated);
+					passingAttemptObserved = allocated == 0;
+				}
+
+				Assert.IsTrue(passingAttemptObserved);
+			});
+		}
+
+		private Task UncontestedTopLevelLocksAllocFreeHelperAsync(Func<AsyncReaderWriterLock.Releaser> locker) {
+			// Get on an MTA thread so that locks do not necessarily yield.
+			return Task.Run(delegate {
+				// First prime the pump to allocate some fixed cost memory.
+				using (locker()) {
+				}
+
+				// This test is rather rough.  So we're willing to try it a few times in order to observe the desired value.
+				bool passingAttemptObserved = false;
+				for (int attempt = 0; !passingAttemptObserved && attempt < GCAllocationAttempts; attempt++) {
+					const int iterations = 1000;
+					long memory1 = GC.GetTotalMemory(true);
+					for (int i = 0; i < iterations; i++) {
+						using (locker()) {
+						}
+					}
+
+					long memory2 = GC.GetTotalMemory(false);
+					long allocated = (memory2 - memory1) / iterations;
+					this.TestContext.WriteLine("Allocated bytes: {0}", allocated);
+					passingAttemptObserved = allocated == 0;
+				}
+
+				Assert.IsTrue(passingAttemptObserved);
+			});
+		}
+
+		private Task NestedLocksAllocFreeHelperAsync(Func<AsyncReaderWriterLock.Releaser> locker) {
+			// Get on an MTA thread so that locks do not necessarily yield.
+			return Task.Run(delegate {
+				// First prime the pump to allocate some fixed cost memory.
+				using (locker()) {
+					using (locker()) {
+						using (locker()) {
+						}
+					}
+				}
+
+				// This test is rather rough.  So we're willing to try it a few times in order to observe the desired value.
+				bool passingAttemptObserved = false;
+				for (int attempt = 0; !passingAttemptObserved && attempt < GCAllocationAttempts; attempt++) {
+					const int iterations = 1000;
+					long memory1 = GC.GetTotalMemory(true);
+					for (int i = 0; i < iterations; i++) {
+						using (locker()) {
+							using (locker()) {
+								using (locker()) {
 								}
 							}
 						}
