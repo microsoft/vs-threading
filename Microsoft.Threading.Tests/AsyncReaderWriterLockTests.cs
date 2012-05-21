@@ -113,10 +113,25 @@
 			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void ReleaseDefaultCtorDispose() {
+			new AsyncReaderWriterLock.Releaser().Dispose();
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void SuppressionDefaultCtorDispose() {
+			new AsyncReaderWriterLock.Suppression().Dispose();
+		}
+
+		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
+		public void AwaitableDefaultCtorDispose() {
+			new AsyncReaderWriterLock.Awaitable().GetAwaiter();
+		}
+
 		#region Read tests
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task SimpleReadLock() {
+		public async Task ReadLockAsyncSimple() {
 			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 			using (await this.asyncLock.ReadLockAsync()) {
 				Assert.IsTrue(this.asyncLock.IsReadLockHeld);

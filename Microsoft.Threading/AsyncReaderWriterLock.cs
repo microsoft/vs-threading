@@ -524,6 +524,10 @@
 			}
 
 			public Awaiter GetAwaiter() {
+				if (this.awaiter == null) {
+					throw new InvalidOperationException();
+				}
+
 				return this.awaiter;
 			}
 		}
@@ -659,7 +663,9 @@
 			}
 
 			public void Dispose() {
-				this.awaiter.Release();
+				if (this.awaiter != null) {
+					this.awaiter.Release();
+				}
 			}
 		}
 
