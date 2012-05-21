@@ -1304,7 +1304,12 @@
 					Assert.IsFalse(writerAwaiter.IsCompleted);
 					writerAwaiter.OnCompleted(delegate {
 						using (writerAwaiter.GetResult()) {
-							secondWriteLockHeld.SetAsync();
+							try {
+								Assert.IsTrue(callbackCompleted.Task.IsCompleted);
+								secondWriteLockHeld.SetAsync();
+							} catch (Exception ex) {
+								secondWriteLockHeld.SetException(ex);
+							}
 						}
 					});
 
