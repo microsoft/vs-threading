@@ -101,7 +101,7 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task HideLocksRevertedOutOfOrder() {
-			AsyncReaderWriterLock.LockSuppression suppression;
+			AsyncReaderWriterLock.Suppression suppression;
 			using (await this.asyncLock.ReadLockAsync()) {
 				Assert.IsTrue(this.asyncLock.IsReadLockHeld);
 				suppression = this.asyncLock.HideLocks();
@@ -1243,7 +1243,7 @@
 		public void OnBeforeWriteLockReleasedCallbackNeverInvokedOnSTA() {
 			TestUtilities.Run(async delegate {
 				var callbackCompleted = new TaskCompletionSource<object>();
-				AsyncReaderWriterLock.LockReleaser releaser = new AsyncReaderWriterLock.LockReleaser();
+				AsyncReaderWriterLock.Releaser releaser = new AsyncReaderWriterLock.Releaser();
 				var staScheduler = TaskScheduler.FromCurrentSynchronizationContext();
 				var nowait = Task.Run(async delegate {
 					using (await this.asyncLock.UpgradeableReadLockAsync()) {
@@ -1280,7 +1280,7 @@
 				var callbackCompleted = new TaskCompletionSource<object>();
 				var secondWriteLockQueued = new TaskCompletionSource<object>();
 				var secondWriteLockHeld = new TaskCompletionSource<object>();
-				AsyncReaderWriterLock.LockReleaser releaser = new AsyncReaderWriterLock.LockReleaser();
+				AsyncReaderWriterLock.Releaser releaser = new AsyncReaderWriterLock.Releaser();
 				var staScheduler = TaskScheduler.FromCurrentSynchronizationContext();
 				await Task.WhenAll(
 					Task.Run(async delegate {
@@ -1422,7 +1422,7 @@
 
 		#endregion
 
-		private void LockReleaseTestHelper(AsyncReaderWriterLock.LockAwaitable initialLock) {
+		private void LockReleaseTestHelper(AsyncReaderWriterLock.Awaitable initialLock) {
 			TestUtilities.Run(async delegate {
 				var staScheduler = TaskScheduler.FromCurrentSynchronizationContext();
 				var initialLockHeld = new TaskCompletionSource<object>();
@@ -1457,7 +1457,7 @@
 			});
 		}
 
-		private Task UncontestedTopLevelLocksAllocFreeHelperAsync(Func<AsyncReaderWriterLock.LockAwaitable> locker) {
+		private Task UncontestedTopLevelLocksAllocFreeHelperAsync(Func<AsyncReaderWriterLock.Awaitable> locker) {
 			// Get on an MTA thread so that locks do not necessarily yield.
 			return Task.Run(async delegate {
 				// First prime the pump to allocate some fixed cost memory.
@@ -1484,7 +1484,7 @@
 			});
 		}
 
-		private Task NestedLocksAllocFreeHelperAsync(Func<AsyncReaderWriterLock.LockAwaitable> locker) {
+		private Task NestedLocksAllocFreeHelperAsync(Func<AsyncReaderWriterLock.Awaitable> locker) {
 			// Get on an MTA thread so that locks do not necessarily yield.
 			return Task.Run(async delegate {
 				// First prime the pump to allocate some fixed cost memory.
