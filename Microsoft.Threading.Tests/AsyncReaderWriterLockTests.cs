@@ -407,7 +407,7 @@
 
 		#endregion
 
-		#region UpgradeableRead tests
+		#region UpgradeableReadLockAsync tests
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task UpgradeableReadLockNoUpgrade() {
@@ -429,7 +429,7 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task UpgradeReadLock() {
+		public async Task UpgradeReadLockAsync() {
 			using (await this.asyncLock.UpgradeableReadLockAsync()) {
 				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 				using (await this.asyncLock.WriteLockAsync()) {
@@ -548,7 +548,60 @@
 
 		#endregion
 
-		#region Write tests
+		#region UpgradeableReadLock tests
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task UpgradeableReadLockSimple() {
+			// Get onto an MTA thread so that a lock may be synchronously granted.
+			await Task.Run(async delegate {
+				using (this.asyncLock.UpgradeableReadLock()) {
+					Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+					await Task.Yield();
+					Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+				}
+
+				Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+			});
+		}
+
+		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
+		public void UpgradeableReadLockRejectedOnSta() {
+			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
+				Assert.Inconclusive("Not an STA thread.");
+			}
+
+			this.asyncLock.UpgradeableReadLock(CancellationToken.None);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task UpgradeableReadLockContention() {
+			var firstLockObtained = new TaskCompletionSource<object>();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+				using (await this.asyncLock.WriteLockAsync()) {
+					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+					var nowait = firstLockObtained.SetAsync();
+					await Task.Delay(AsyncDelay); // hold it long enough to ensure our other thread blocks waiting for the read lock.
+					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+				}
+
+				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+			}),
+			Task.Run(async delegate {
+				await firstLockObtained.Task;
+				using (this.asyncLock.UpgradeableReadLock()) {
+					Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+					await Task.Yield();
+					Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+				}
+
+				Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+			}));
+		}
+
+		#endregion
+
+		#region WriteLockAsync tests
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task SimpleWriteLock() {
@@ -607,6 +660,59 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task NestedWriteLocksAllocFree() {
 			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync());
+		}
+
+		#endregion
+
+		#region WriteLock tests
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task WriteLockSimple() {
+			// Get onto an MTA thread so that a lock may be synchronously granted.
+			await Task.Run(async delegate {
+				using (this.asyncLock.WriteLock()) {
+					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+					await Task.Yield();
+					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+				}
+
+				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+			});
+		}
+
+		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
+		public void WriteLockRejectedOnSta() {
+			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
+				Assert.Inconclusive("Not an STA thread.");
+			}
+
+			this.asyncLock.WriteLock(CancellationToken.None);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task WriteLockContention() {
+			var firstLockObtained = new TaskCompletionSource<object>();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+				using (await this.asyncLock.WriteLockAsync()) {
+					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+					var nowait = firstLockObtained.SetAsync();
+					await Task.Delay(AsyncDelay); // hold it long enough to ensure our other thread blocks waiting for the read lock.
+					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+				}
+
+				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+			}),
+			Task.Run(async delegate {
+				await firstLockObtained.Task;
+				using (this.asyncLock.WriteLock()) {
+					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+					await Task.Yield();
+					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+				}
+
+				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+			}));
 		}
 
 		#endregion

@@ -100,6 +100,24 @@
 			return awaiter.GetResult();
 		}
 
+		public Releaser UpgradeableReadLock(CancellationToken cancellationToken = default(CancellationToken)) {
+			ThrowOnSta();
+			var awaiter = this.UpgradeableReadLockAsync(cancellationToken).GetAwaiter();
+			return awaiter.GetResult();
+		}
+
+		public Releaser UpgradeableReadLock(LockFlags options, CancellationToken cancellationToken = default(CancellationToken)) {
+			ThrowOnSta();
+			var awaiter = this.UpgradeableReadLockAsync(options, cancellationToken).GetAwaiter();
+			return awaiter.GetResult();
+		}
+
+		public Releaser WriteLock(CancellationToken cancellationToken = default(CancellationToken)) {
+			ThrowOnSta();
+			var awaiter = this.WriteLockAsync(cancellationToken).GetAwaiter();
+			return awaiter.GetResult();
+		}
+
 		public Suppression HideLocks() {
 			return new Suppression(this);
 		}
