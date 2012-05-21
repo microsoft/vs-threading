@@ -94,6 +94,12 @@
 			return new Awaitable(this, LockKind.Write, LockFlags.None, cancellationToken);
 		}
 
+		public Releaser ReadLock(CancellationToken cancellationToken = default(CancellationToken)) {
+			ThrowOnSta();
+			var awaiter = this.ReadLockAsync(cancellationToken).GetAwaiter();
+			return awaiter.GetResult();
+		}
+
 		public Suppression HideLocks() {
 			return new Suppression(this);
 		}
@@ -112,6 +118,12 @@
 				}
 
 				this.beforeWriteReleasedCallbacks.Enqueue(action);
+			}
+		}
+
+		private static void ThrowOnSta() {
+			if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA) {
+				throw new InvalidOperationException();
 			}
 		}
 
@@ -536,6 +548,7 @@
 		public class Awaiter : INotifyCompletion {
 			private static readonly Action<object> cancellationResponseAction = CancellationResponder; // save memory by allocating the delegate only once.
 			private static readonly IProducerConsumerCollection<Awaiter> recycledAwaiters = new AllocFreeConcurrentBag<Awaiter>();
+			private readonly ManualResetEventSlim synchronousBlock = new ManualResetEventSlim();
 			private AsyncReaderWriterLock lck;
 			private LockKind kind;
 			private Awaiter nestingLock;
@@ -584,6 +597,11 @@
 			public Releaser GetResult() {
 				this.cancellationRegistration.Dispose();
 
+				if (!this.LockIssued && this.continuation == null && !this.cancellationToken.IsCancellationRequested) {
+					this.OnCompleted(delegate { this.synchronousBlock.Set(); });
+					this.synchronousBlock.Wait(this.cancellationToken);
+				}
+
 				if (this.fault != null) {
 					throw fault;
 				}
@@ -611,7 +629,7 @@
 				awaiter.cancellationRegistration = cancellationToken.Register(cancellationResponseAction, awaiter, useSynchronizationContext: false);
 				awaiter.nestingLock = (Awaiter)CallContext.LogicalGetData(lck.logicalDataKey);
 				awaiter.fault = null;
-				awaiter.continuation = null;
+				awaiter.synchronousBlock.Reset();
 
 				return awaiter;
 			}

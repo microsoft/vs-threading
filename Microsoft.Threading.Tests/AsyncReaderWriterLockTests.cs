@@ -128,7 +128,7 @@
 			new AsyncReaderWriterLock.Awaitable().GetAwaiter();
 		}
 
-		#region Read tests
+		#region ReadLockAsync tests
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task ReadLockAsyncSimple() {
@@ -322,6 +322,87 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task NestedReadLocksAllocFree() {
 			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync());
+		}
+
+		#endregion
+
+		#region ReadLock tests
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ReadLockSimple() {
+			// Get onto an MTA thread so that a lock may be synchronously granted.
+			await Task.Run(async delegate {
+				using (this.asyncLock.ReadLock()) {
+					Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+					await Task.Yield();
+					Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+				}
+
+				Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+			});
+		}
+
+		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
+		public void ReadLockRejectedOnSta() {
+			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
+				Assert.Inconclusive("Not an STA thread.");
+			}
+
+			this.asyncLock.ReadLock(CancellationToken.None);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ReadLockConcurrent() {
+			var firstReadLockObtained = new TaskCompletionSource<object>();
+			var secondReadLockObtained = new TaskCompletionSource<object>();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+				using (this.asyncLock.ReadLock()) {
+					Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+					await firstReadLockObtained.SetAsync();
+					Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+					await secondReadLockObtained.Task;
+				}
+
+				Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+			}),
+			Task.Run(async delegate {
+				await firstReadLockObtained.Task;
+				using (this.asyncLock.ReadLock()) {
+					Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+					await secondReadLockObtained.SetAsync();
+					Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+					await firstReadLockObtained.Task;
+				}
+
+				Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+			}));
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ReadLockContention() {
+			var firstLockObtained = new TaskCompletionSource<object>();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+				using (await this.asyncLock.WriteLockAsync()) {
+					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+					var nowait = firstLockObtained.SetAsync();
+					await Task.Delay(AsyncDelay); // hold it long enough to ensure our other thread blocks waiting for the read lock.
+					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+				}
+
+				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+			}),
+			Task.Run(async delegate {
+				await firstLockObtained.Task;
+				using (this.asyncLock.ReadLock()) {
+					Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+					await Task.Yield();
+					Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+				}
+
+				Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+			}));
 		}
 
 		#endregion
@@ -860,7 +941,7 @@
 		#region Cancellation tests
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task PrecancelledLockRequest() {
+		public async Task PrecancelledReadLockAsyncRequest() {
 			await Task.Run(delegate { // get onto an MTA
 				var cts = new CancellationTokenSource();
 				cts.Cancel();
@@ -868,6 +949,19 @@
 				Assert.IsTrue(awaiter.IsCompleted);
 				try {
 					awaiter.GetResult();
+					Assert.Fail("Expected OperationCanceledException not thrown.");
+				} catch (OperationCanceledException) {
+				}
+			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task PrecancelledReadLockRequest() {
+			await Task.Run(delegate { // get onto an MTA
+				var cts = new CancellationTokenSource();
+				cts.Cancel();
+				try {
+					this.asyncLock.ReadLock(cts.Token);
 					Assert.Fail("Expected OperationCanceledException not thrown.");
 				} catch (OperationCanceledException) {
 				}
