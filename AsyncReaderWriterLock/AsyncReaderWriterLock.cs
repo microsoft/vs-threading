@@ -16,7 +16,6 @@
 	/// <remarks>
 	/// TODO: 
 	///  * externally: SkipInitialEvaluation, SuppressReevaluation
-	///  * test for when the write queue is NOT empty when a write lock is released on an STA to an upgradeable read lock and a synchronous callback is to be invoked.
 	/// We have to use a custom awaitable rather than simply returning Task{LockReleaser} because 
 	/// we have to set CallContext data in the context of the person receiving the lock,
 	/// which requires that we get to execute code at the start of the continuation (whether we yield or not).

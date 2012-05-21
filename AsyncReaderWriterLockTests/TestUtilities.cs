@@ -9,8 +9,8 @@
 	using System.Windows.Threading;
 
 	internal static class TestUtilities {
-		internal static void Set(this TaskCompletionSource<object> tcs) {
-			Task.Run(() => tcs.TrySetResult(null));
+		internal static Task Set(this TaskCompletionSource<object> tcs) {
+			return Task.Run(() => tcs.TrySetResult(null));
 		}
 
 		/// <summary>

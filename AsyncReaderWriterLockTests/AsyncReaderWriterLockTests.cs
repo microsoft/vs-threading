@@ -1269,6 +1269,55 @@
 			});
 		}
 
+		/// <summary>
+		/// Test for when the write queue is NOT empty when a write lock is released on an STA to a (non-sticky)
+		/// upgradeable read lock and a synchronous callback is to be invoked.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task OnBeforeWriteLockReleasedToUpgradeableReadOnStaWithCallbacksAndWaitingWriter() {
+			TestUtilities.Run(async delegate {
+				var firstWriteHeld = new TaskCompletionSource<object>();
+				var callbackCompleted = new TaskCompletionSource<object>();
+				var secondWriteLockQueued = new TaskCompletionSource<object>();
+				var secondWriteLockHeld = new TaskCompletionSource<object>();
+				AsyncReaderWriterLock.LockReleaser releaser = new AsyncReaderWriterLock.LockReleaser();
+				var staScheduler = TaskScheduler.FromCurrentSynchronizationContext();
+				await Task.WhenAll(
+					Task.Run(async delegate {
+					using (await this.asyncLock.UpgradeableReadLockAsync()) {
+						using (releaser = await this.asyncLock.WriteLockAsync()) {
+							firstWriteHeld.Set();
+							this.asyncLock.OnBeforeWriteLockReleased(async delegate {
+								await callbackCompleted.Set();
+							});
+
+							await secondWriteLockQueued.Task;
+
+							// Transition to an STA thread prior to calling Release (the point of this test).
+							await staScheduler;
+						}
+					}
+				}),
+					Task.Run(async delegate {
+					await firstWriteHeld.Task;
+					var writerAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
+					Assert.IsFalse(writerAwaiter.IsCompleted);
+					writerAwaiter.OnCompleted(delegate {
+						using (writerAwaiter.GetResult()) {
+							secondWriteLockHeld.Set();
+						}
+					});
+
+					await secondWriteLockQueued.Set();
+				}),
+				callbackCompleted.Task,
+				secondWriteLockHeld.Task);
+			});
+
+			this.asyncLock.Complete();
+			await this.asyncLock.Completion;
+		}
+
 		#endregion
 
 		#region Thread apartment rules
