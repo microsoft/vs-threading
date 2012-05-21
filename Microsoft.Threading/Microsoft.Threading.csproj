@@ -7,8 +7,8 @@
     <ProjectGuid>{2C0DFFBD-49C8-4F12-A964-E3096AD4C7F4}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>AsyncReaderWriterLock</RootNamespace>
-    <AssemblyName>AsyncReaderWriterLock</AssemblyName>
+    <RootNamespace>Microsoft.Threading</RootNamespace>
+    <AssemblyName>Microsoft.Threading</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>

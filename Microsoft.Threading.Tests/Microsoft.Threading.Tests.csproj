@@ -6,8 +6,8 @@
     <ProjectGuid>{7B8BF2E6-7D7B-4F4E-B1A4-B08312F6294F}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>AsyncReaderWriterLockTests</RootNamespace>
-    <AssemblyName>AsyncReaderWriterLockTests</AssemblyName>
+    <RootNamespace>Microsoft.Threading.Tests</RootNamespace>
+    <AssemblyName>Microsoft.Threading.Tests</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -57,9 +57,9 @@
     <Compile Include="TestUtilities.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AsyncReaderWriterLock\AsyncReaderWriterLock.csproj">
+    <ProjectReference Include="..\Microsoft.Threading\Microsoft.Threading.csproj">
       <Project>{2c0dffbd-49c8-4f12-a964-e3096ad4c7f4}</Project>
-      <Name>AsyncReaderWriterLock</Name>
+      <Name>Microsoft.Threading</Name>
     </ProjectReference>
   </ItemGroup>
   <Choose>

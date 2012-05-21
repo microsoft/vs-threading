@@ -1,9 +1,10 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 11
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AsyncReaderWriterLock", "AsyncReaderWriterLock\AsyncReaderWriterLock.csproj", "{2C0DFFBD-49C8-4F12-A964-E3096AD4C7F4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Threading", "Microsoft.Threading\Microsoft.Threading.csproj", "{2C0DFFBD-49C8-4F12-A964-E3096AD4C7F4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AsyncReaderWriterLockTests", "AsyncReaderWriterLockTests\AsyncReaderWriterLockTests.csproj", "{7B8BF2E6-7D7B-4F4E-B1A4-B08312F6294F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Threading.Tests", "Microsoft.Threading.Tests\Microsoft.Threading.Tests.csproj", "{7B8BF2E6-7D7B-4F4E-B1A4-B08312F6294F}"
+EndProject
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

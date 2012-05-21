@@ -1,4 +1,4 @@
-﻿namespace AsyncReaderWriterLock {
+﻿namespace Microsoft.Threading {
 	using System;
 	using System.Collections.Concurrent;
 	using System.Collections.Generic;

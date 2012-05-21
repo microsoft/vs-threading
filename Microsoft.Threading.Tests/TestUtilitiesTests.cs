@@ -1,4 +1,4 @@
-﻿namespace AsyncReaderWriterLockTests {
+﻿namespace Microsoft.Threading.Tests {
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;

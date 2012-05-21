@@ -1,9 +1,9 @@
-﻿namespace AsyncReaderWriterLockTests {
+﻿namespace Microsoft.Threading.Tests {
 	using System;
 	using System.Diagnostics;
 	using System.Threading;
 	using System.Threading.Tasks;
-	using AsyncReaderWriterLock;
+	using Microsoft.Threading;
 	using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 	/// <summary>
