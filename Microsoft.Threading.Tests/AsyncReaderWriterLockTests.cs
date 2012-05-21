@@ -11,7 +11,7 @@
 	/// </summary>
 	/// <remarks>
 	/// TODO:
-	///  * investigate replacing the tests that use timeouts with tests that use explicit Awaiter calls.
+	///  * Add alloc-free tests for synchronous lock methods.
 	/// </remarks>
 	[TestClass]
 	public class AsyncReaderWriterLockTests {
@@ -410,7 +410,7 @@
 		#region UpgradeableReadLockAsync tests
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task UpgradeableReadLockNoUpgrade() {
+		public async Task UpgradeableReadLockAsyncNoUpgrade() {
 			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 			Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
 			using (await this.asyncLock.UpgradeableReadLockAsync()) {
@@ -445,7 +445,7 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		[Description("Verifies that only one upgradeable read lock can be held at once.")]
-		public async Task UpgradeReadLocksMutuallyExclusive() {
+		public async Task UpgradeReadLockAsyncMutuallyExclusive() {
 			var firstUpgradeableReadHeld = new TaskCompletionSource<object>();
 			var secondUpgradeableReadBlocked = new TaskCompletionSource<object>();
 			var secondUpgradeableReadHeld = new TaskCompletionSource<object>();
@@ -471,7 +471,7 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task NestedUpgradeableReaders() {
+		public async Task NestedUpgradeableReadLockAsync() {
 			using (await this.asyncLock.UpgradeableReadLockAsync()) {
 				Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
 				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
@@ -497,7 +497,7 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task UpgradeableReadWithStickyWrite() {
+		public async Task UpgradeableReadLockAsyncWithStickyWrite() {
 			using (await this.asyncLock.UpgradeableReadLockAsync(AsyncReaderWriterLock.LockFlags.StickyWrite)) {
 				Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
 				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
@@ -532,17 +532,17 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void UpgradeableReadLockReleaseOnSta() {
+		public void UpgradeableReadLockAsyncReleaseOnSta() {
 			this.LockReleaseTestHelper(this.asyncLock.UpgradeableReadLockAsync());
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task UncontestedTopLevelUpgradeableReadLocksAllocFree() {
+		public async Task UncontestedTopLevelUpgradeableReadLockAsyncAllocFree() {
 			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync());
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task NestedUpgradeableReadLocksAllocFree() {
+		public async Task NestedUpgradeableReadLockAsyncAllocFree() {
 			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync());
 		}
 
@@ -604,7 +604,7 @@
 		#region WriteLockAsync tests
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task SimpleWriteLock() {
+		public async Task WriteLockAsync() {
 			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 			using (await this.asyncLock.WriteLockAsync()) {
 				Assert.IsFalse(this.asyncLock.IsReadLockHeld);
@@ -622,7 +622,7 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task NestedWriters() {
+		public async Task NestedWriteLockAsync() {
 			using (await this.asyncLock.WriteLockAsync()) {
 				Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
 				Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
@@ -648,17 +648,17 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void WriteLockReleaseOnSta() {
+		public void WriteLockAsyncReleaseOnSta() {
 			this.LockReleaseTestHelper(this.asyncLock.WriteLockAsync());
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task UncontestedTopLevelWriteLocksAllocFree() {
+		public async Task UncontestedTopLevelWriteLockAsyncAllocFree() {
 			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync());
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task NestedWriteLocksAllocFree() {
+		public async Task NestedWriteLockAsyncAllocFree() {
 			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync());
 		}
 
