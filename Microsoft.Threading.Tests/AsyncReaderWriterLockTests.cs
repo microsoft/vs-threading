@@ -7,12 +7,8 @@
 	using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 	/// <summary>
-	/// 
+	/// Tests functionality of the <see cref="AsyncReaderWriterLock"/> class.
 	/// </summary>
-	/// <remarks>
-	/// TODO:
-	///  * Add alloc-free tests for synchronous lock methods.
-	/// </remarks>
 	[TestClass]
 	public class AsyncReaderWriterLockTests {
 		private const int GCAllocationAttempts = 3;

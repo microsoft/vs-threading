@@ -11,7 +11,7 @@
 	using System.Threading.Tasks;
 
 	/// <summary>
-	/// 
+	/// A non-blocking lock that allows concurrent access, exclusive access, or concurrent with upgradeability to exclusive access.
 	/// </summary>
 	/// <remarks>
 	/// TODO: 
@@ -204,7 +204,11 @@
 		/// <summary>
 		/// Obtains a read lock, asynchronously awaiting for the lock if it is not immediately available.
 		/// </summary>
-		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
+		/// <param name="cancellationToken">
+		/// A token whose cancellation indicates lost interest in obtaining the lock.  
+		/// A canceled token does not release a lock that has already been issued.  But if the lock isn't immediately available,
+		/// a canceled token will cause the code that is waiting for the lock to resume with an <see cref="OperationCanceledException"/>.
+		/// </param>
 		/// <returns>An awaitable object whose result is the lock releaser.</returns>
 		public Awaitable ReadLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
 			return new Awaitable(this, LockKind.Read, LockFlags.None, cancellationToken);
@@ -213,7 +217,11 @@
 		/// <summary>
 		/// Obtains an upgradeable read lock, asynchronously awaiting for the lock if it is not immediately available.
 		/// </summary>
-		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
+		/// <param name="cancellationToken">
+		/// A token whose cancellation indicates lost interest in obtaining the lock.  
+		/// A canceled token does not release a lock that has already been issued.  But if the lock isn't immediately available,
+		/// a canceled token will cause the code that is waiting for the lock to resume with an <see cref="OperationCanceledException"/>.
+		/// </param>
 		/// <returns>An awaitable object whose result is the lock releaser.</returns>
 		public Awaitable UpgradeableReadLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
 			return new Awaitable(this, LockKind.UpgradeableRead, LockFlags.None, cancellationToken);
@@ -223,7 +231,11 @@
 		/// Obtains a read lock, asynchronously awaiting for the lock if it is not immediately available.
 		/// </summary>
 		/// <param name="options">Modifications to normal lock behavior.</param>
-		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
+		/// <param name="cancellationToken">
+		/// A token whose cancellation indicates lost interest in obtaining the lock.  
+		/// A canceled token does not release a lock that has already been issued.  But if the lock isn't immediately available,
+		/// a canceled token will cause the code that is waiting for the lock to resume with an <see cref="OperationCanceledException"/>.
+		/// </param>
 		/// <returns>An awaitable object whose result is the lock releaser.</returns>
 		public Awaitable UpgradeableReadLockAsync(LockFlags options, CancellationToken cancellationToken = default(CancellationToken)) {
 			return new Awaitable(this, LockKind.UpgradeableRead, options, cancellationToken);
@@ -232,7 +244,11 @@
 		/// <summary>
 		/// Obtains a write lock, asynchronously awaiting for the lock if it is not immediately available.
 		/// </summary>
-		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
+		/// <param name="cancellationToken">
+		/// A token whose cancellation indicates lost interest in obtaining the lock.  
+		/// A canceled token does not release a lock that has already been issued.  But if the lock isn't immediately available,
+		/// a canceled token will cause the code that is waiting for the lock to resume with an <see cref="OperationCanceledException"/>.
+		/// </param>
 		/// <returns>An awaitable object whose result is the lock releaser.</returns>
 		public Awaitable WriteLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
 			return new Awaitable(this, LockKind.Write, LockFlags.None, cancellationToken);
@@ -590,6 +606,12 @@
 			}
 		}
 
+		/// <summary>
+		/// Finds the upgradeable reader with <see cref="LockFlags.StickyWrite"/> flag that is nearest
+		/// to the top-level lock request held by the given lock holder.
+		/// </summary>
+		/// <param name="headAwaiter"></param>
+		/// <returns>The least nested upgradeable reader lock with sticky write flag; or <c>null</c> if none was found.</returns>
 		private Awaiter FindRootUpgradeableReadWithStickyWrite(Awaiter headAwaiter) {
 			if (headAwaiter == null) {
 				return null;
@@ -611,6 +633,11 @@
 			return null;
 		}
 
+		/// <summary>
+		/// Gets the set of locks of a given kind.
+		/// </summary>
+		/// <param name="kind">The kind of lock.</param>
+		/// <returns>A set of locks.</returns>
 		private HashSet<Awaiter> GetActiveLockSet(LockKind kind) {
 			switch (kind) {
 				case LockKind.Read:
@@ -624,6 +651,11 @@
 			}
 		}
 
+		/// <summary>
+		/// Walks the nested lock stack until it finds an active one.
+		/// </summary>
+		/// <param name="awaiter">The most nested lock to consider.  May be null.</param>
+		/// <returns>The first active lock encountered, or <c>null</c> if none.</returns>
 		private Awaiter GetFirstActiveSelfOrAncestor(Awaiter awaiter) {
 			while (awaiter != null) {
 				if (this.IsLockActive(awaiter)) {
@@ -636,6 +668,10 @@
 			return awaiter;
 		}
 
+		/// <summary>
+		/// Issues a lock to the specified awaiter and executes its continuation.
+		/// </summary>
+		/// <param name="awaiter">The awaiter to issue a lock to and execute.</param>
 		private void IssueAndExecute(Awaiter awaiter) {
 			if (!this.TryIssueLock(awaiter, previouslyQueued: true)) {
 				throw new Exception();
@@ -646,6 +682,10 @@
 			}
 		}
 
+		/// <summary>
+		/// Releases the lock held by the specified awaiter.
+		/// </summary>
+		/// <param name="awaiter">The awaiter holding an active lock.</param>
 		private void Release(Awaiter awaiter) {
 			var topAwaiter = (Awaiter)CallContext.LogicalGetData(this.logicalDataKey);
 
@@ -680,12 +720,21 @@
 			}
 		}
 
+		/// <summary>
+		/// Issues locks to one or more queued lock requests and executes their continuations
+		/// based on lock availability and policy-based prioritization (writer-friendly, etc.)
+		/// </summary>
+		/// <returns><c>true</c> if any locks were issued; <c>false</c> otherwise.</returns>
 		private bool TryInvokeLockConsumer() {
 			return this.TryInvokeOneWriterIfAppropriate()
 				|| this.TryInvokeOneUpgradeableReaderIfAppropriate()
 				|| this.TryInvokeAllReadersIfAppropriate();
 		}
 
+		/// <summary>
+		/// Invokes the final write lock release callbacks, if appropriate.
+		/// </summary>
+		/// <returns>A task representing the work of sequentially invoking the callbacks.</returns>
 		private async Task InvokeBeforeWriteLockReleaseHandlersAsync() {
 			if (!Monitor.IsEntered(this.syncObject)) {
 				throw new Exception();
@@ -718,6 +767,11 @@
 			}
 		}
 
+		/// <summary>
+		/// Dequeues a single write lock release callback if available.
+		/// </summary>
+		/// <param name="callback">Receives the callback to invoke, if any.</param>
+		/// <returns>A value indicating whether a callback was available to invoke.</returns>
 		private bool TryDequeueBeforeWriteReleasedCallback(out Func<Task> callback) {
 			lock (this.syncObject) {
 				if (this.beforeWriteReleasedCallbacks.Count > 0) {
@@ -730,10 +784,18 @@
 			}
 		}
 
+		/// <summary>
+		/// Stores the specified lock in the CallContext dictionary.
+		/// </summary>
+		/// <param name="topAwaiter"></param>
 		private void ApplyLockToCallContext(Awaiter topAwaiter) {
 			CallContext.LogicalSetData(this.logicalDataKey, this.GetFirstActiveSelfOrAncestor(topAwaiter));
 		}
 
+		/// <summary>
+		/// Issues locks to all queued reader lock requests if there are no issued write locks.
+		/// </summary>
+		/// <returns>A value indicating whether any readers were issued locks.</returns>
 		private bool TryInvokeAllReadersIfAppropriate() {
 			bool invoked = false;
 			if (this.writeLocksIssued.Count == 0) {
@@ -746,6 +808,10 @@
 			return invoked;
 		}
 
+		/// <summary>
+		/// Issues a lock to the next queued upgradeable reader, if no upgradeable read or write locks are currently issued.
+		/// </summary>
+		/// <returns>A value indicating whether any upgradeable readers were issued locks.</returns>
 		private bool TryInvokeOneUpgradeableReaderIfAppropriate() {
 			if (this.upgradeableReadLocksIssued.Count == 0 && this.writeLocksIssued.Count == 0) {
 				if (this.waitingUpgradeableReaders.Count > 0) {
@@ -757,6 +823,10 @@
 			return false;
 		}
 
+		/// <summary>
+		/// Issues a lock to the next queued writer, if no other locks are currently issued.
+		/// </summary>
+		/// <returns>A value indicating whether a writer was issued a lock.</returns>
 		private bool TryInvokeOneWriterIfAppropriate() {
 			if (this.readLocksIssued.Count == 0 && this.upgradeableReadLocksIssued.Count == 0 && this.writeLocksIssued.Count == 0) {
 				if (this.waitingWriters.Count > 0) {
@@ -768,6 +838,11 @@
 			return false;
 		}
 
+		/// <summary>
+		/// Issues a lock to a lock waiter and execute its code if the lock is immediately available, otherwise
+		/// queues the lock request.
+		/// </summary>
+		/// <param name="awaiter">The lock request.</param>
 		private void PendAwaiter(Awaiter awaiter) {
 			lock (this.syncObject) {
 				if (this.TryIssueLock(awaiter, previouslyQueued: true)) {
@@ -793,9 +868,22 @@
 			}
 		}
 
+		/// <summary>
+		/// An awaitable that is returned from asynchronous lock requests.
+		/// </summary>
 		public struct Awaitable {
+			/// <summary>
+			/// The awaiter to return from the <see cref="GetAwaiter"/> method.
+			/// </summary>
 			private readonly Awaiter awaiter;
 
+			/// <summary>
+			/// Initializes a new instance of the <see cref="Awaitable"/> struct.
+			/// </summary>
+			/// <param name="lck">The lock class that created this instance.</param>
+			/// <param name="kind">The type of lock being requested.</param>
+			/// <param name="options">Any flags applied to the lock request.</param>
+			/// <param name="cancellationToken">The cancellation token.</param>
 			internal Awaitable(AsyncReaderWriterLock lck, LockKind kind, LockFlags options, CancellationToken cancellationToken) {
 				this.awaiter = Awaiter.Initialize(lck, kind, options, cancellationToken);
 				if (!cancellationToken.IsCancellationRequested && lck.TryIssueLock(this.awaiter, previouslyQueued: false)) {
@@ -803,6 +891,9 @@
 				}
 			}
 
+			/// <summary>
+			/// Gets the awaiter value.
+			/// </summary>
 			public Awaiter GetAwaiter() {
 				if (this.awaiter == null) {
 					throw new InvalidOperationException();
@@ -812,27 +903,87 @@
 			}
 		}
 
+		/// <summary>
+		/// Manages asynchronous access to a lock.
+		/// </summary>
 		[DebuggerDisplay("{kind}")]
 		public class Awaiter : INotifyCompletion {
-			private static readonly Action<object> cancellationResponseAction = CancellationResponder; // save memory by allocating the delegate only once.
+			#region Fields
+
+			/// <summary>
+			/// A singleton delegate for use in cancellation token registration to avoid memory allocations for delegates each time.
+			/// </summary>
+			private static readonly Action<object> cancellationResponseAction = CancellationResponder;
+
+			/// <summary>
+			/// A thread-safe bag of <see cref="Awaiter"/> instances that have been recycled to reduce GC pressure.
+			/// </summary>
 			private static readonly IProducerConsumerCollection<Awaiter> recycledAwaiters = new AllocFreeConcurrentBag<Awaiter>();
+
+			/// <summary>
+			/// An event to block on for synchronous lock requests.
+			/// </summary>
 			private readonly ManualResetEventSlim synchronousBlock = new ManualResetEventSlim();
+
+			/// <summary>
+			/// The instance of the lock class to which this awaiter is affiliated.
+			/// </summary>
 			private AsyncReaderWriterLock lck;
+
+			/// <summary>
+			/// The type of lock requested.
+			/// </summary>
 			private LockKind kind;
+
+			/// <summary>
+			/// The "parent" lock (i.e. the lock within which this lock is nested) if any.
+			/// </summary>
 			private Awaiter nestingLock;
+
+			/// <summary>
+			/// The cancellation token that would terminate waiting for a lock that is not yet available.
+			/// </summary>
 			private CancellationToken cancellationToken;
+
+			/// <summary>
+			/// The cancellation token event that should be disposed of to free memory when we no longer need to receive cancellation notifications.
+			/// </summary>
 			private CancellationTokenRegistration cancellationRegistration;
+
+			/// <summary>
+			/// The flags applied to this lock.
+			/// </summary>
 			private LockFlags options;
+
+			/// <summary>
+			/// Any exception to throw back to the lock requestor.
+			/// </summary>
 			private Exception fault;
+
+			/// <summary>
+			/// The continuation to execute when the lock is available.
+			/// </summary>
 			private Action continuation;
 
+			#endregion
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="Awaiter"/> class.
+			/// </summary>
 			private Awaiter() {
 			}
 
+			/// <summary>
+			/// Gets a value indicating whether the lock has been issued.
+			/// </summary>
 			public bool IsCompleted {
 				get { return this.cancellationToken.IsCancellationRequested || this.fault != null || this.LockIssued; }
 			}
 
+			/// <summary>
+			/// Sets the delegate to execute when the lock is available.
+			/// </summary>
+			/// <param name="continuation">The delegate.</param>
 			public void OnCompleted(Action continuation) {
 				if (this.LockIssued) {
 					throw new InvalidOperationException();
@@ -842,26 +993,46 @@
 				this.lck.PendAwaiter(this);
 			}
 
+			/// <summary>
+			/// Gets the lock that the caller held before requesting this lock.
+			/// </summary>
 			internal Awaiter NestingLock {
 				get { return this.nestingLock; }
 			}
 
+			/// <summary>
+			/// Gets the lock class that created this instance.
+			/// </summary>
 			internal AsyncReaderWriterLock Lock {
 				get { return this.lck; }
 			}
 
+			/// <summary>
+			/// Gets the kind of lock being requested.
+			/// </summary>
 			internal LockKind Kind {
 				get { return this.kind; }
 			}
 
+			/// <summary>
+			/// The flags applied to this lock.
+			/// </summary>
 			internal LockFlags Options {
 				get { return this.options; }
 			}
 
+			/// <summary>
+			/// Gets a value indicating whether the lock is active.
+			/// </summary>
+			/// <value><c>true</c> iff the lock has bee issued, has not yet been released, and the caller is on an MTA thread.</value>
 			private bool LockIssued {
 				get { return this.lck.IsLockActive(this); }
 			}
 
+			/// <summary>
+			/// Applies the issued lock to the caller and returns the value used to release the lock.
+			/// </summary>
+			/// <returns>The value to dispose of to release the lock.</returns>
 			public Releaser GetResult() {
 				this.cancellationRegistration.Dispose();
 
@@ -883,6 +1054,14 @@
 				throw new Exception();
 			}
 
+			/// <summary>
+			/// Initializes a new or recycled instance of the <see cref="Awaiter"/> class.
+			/// </summary>
+			/// <param name="lck">The lock class creating this instance.</param>
+			/// <param name="kind">The type of lock being requested.</param>
+			/// <param name="options">The flags to apply to the lock.</param>
+			/// <param name="cancellationToken">The cancellation token.</param>
+			/// <returns>A lock awaiter object.</returns>
 			internal static Awaiter Initialize(AsyncReaderWriterLock lck, LockKind kind, LockFlags options, CancellationToken cancellationToken) {
 				Awaiter awaiter;
 				if (!recycledAwaiters.TryTake(out awaiter)) {
@@ -902,6 +1081,9 @@
 				return awaiter;
 			}
 
+			/// <summary>
+			/// Releases the lock and recycles this instance.
+			/// </summary>
 			internal void Release() {
 				if (this.lck != null) {
 					this.Lock.Release(this);
@@ -910,6 +1092,11 @@
 				}
 			}
 
+			/// <summary>
+			/// Executes the code that requires the lock.
+			/// </summary>
+			/// <param name="continuation">A specific continuation to execute, or <c>null</c> to use the one stored in the field.</param>
+			/// <returns><c>true</c> if the continuation was (asynchronously) invoked; <c>false</c> if there was no continuation available to invoke.</returns>
 			internal bool TryExecuteContinuation(Action continuation = null) {
 				if (continuation == null) {
 					continuation = Interlocked.Exchange(ref this.continuation, null);
@@ -923,10 +1110,17 @@
 				}
 			}
 
+			/// <summary>
+			/// Specifies the exception to throw from <see cref="GetResult"/>
+			/// </summary>
 			internal void SetFault(Exception ex) {
 				this.fault = ex;
 			}
 
+			/// <summary>
+			/// Responds to lock request cancellation.
+			/// </summary>
+			/// <param name="state">The <see cref="Awaiter"/> instance being canceled.</param>
 			private static void CancellationResponder(object state) {
 				var awaiter = (Awaiter)state;
 
@@ -940,14 +1134,27 @@
 			}
 		}
 
+		/// <summary>
+		/// A value whose disposal releases a held lock.
+		/// </summary>
 		[DebuggerDisplay("{awaiter.kind}")]
 		public struct Releaser : IDisposable {
+			/// <summary>
+			/// The awaiter who manages the lifetime of a lock.
+			/// </summary>
 			private readonly Awaiter awaiter;
 
+			/// <summary>
+			/// Initializes a new instance of the <see cref="Releaser"/> struct.
+			/// </summary>
+			/// <param name="awaiter">The awaiter.</param>
 			internal Releaser(Awaiter awaiter) {
 				this.awaiter = awaiter;
 			}
 
+			/// <summary>
+			/// Releases the lock.
+			/// </summary>
 			public void Dispose() {
 				if (this.awaiter != null) {
 					this.awaiter.Release();
@@ -955,10 +1162,24 @@
 			}
 		}
 
+		/// <summary>
+		/// A value whose disposal restores visibility of any locks held by the caller.
+		/// </summary>
 		public struct Suppression : IDisposable {
+			/// <summary>
+			/// The locking class.
+			/// </summary>
 			private readonly AsyncReaderWriterLock lck;
+
+			/// <summary>
+			/// The awaiter most recently acquired by the caller before hiding locks.
+			/// </summary>
 			private readonly Awaiter awaiter;
 
+			/// <summary>
+			/// Initializes a new instance of the <see cref="Suppression"/> struct.
+			/// </summary>
+			/// <param name="lck">The lock class.</param>
 			internal Suppression(AsyncReaderWriterLock lck) {
 				this.lck = lck;
 				this.awaiter = (Awaiter)CallContext.LogicalGetData(this.lck.logicalDataKey);
@@ -967,6 +1188,9 @@
 				}
 			}
 
+			/// <summary>
+			/// Restores visibility of hidden locks.
+			/// </summary>
 			public void Dispose() {
 				if (this.lck != null) {
 					this.lck.ApplyLockToCallContext(this.awaiter);
