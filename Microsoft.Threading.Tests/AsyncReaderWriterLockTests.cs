@@ -1,5 +1,6 @@
 ﻿namespace Microsoft.Threading.Tests {
 	using System;
+	using System.Collections.Generic;
 	using System.Diagnostics;
 	using System.Threading;
 	using System.Threading.Tasks;
@@ -477,32 +478,6 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task NestedUpgradeableReadLockAsync() {
-			using (await this.asyncLock.UpgradeableReadLockAsync()) {
-				Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
-				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
-				using (await this.asyncLock.UpgradeableReadLockAsync()) {
-					Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
-					Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
-					using (await this.asyncLock.UpgradeableReadLockAsync()) {
-						Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
-						Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
-					}
-
-					Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
-					Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
-				}
-
-				Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
-				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
-			}
-
-			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
-			Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
-			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
-		}
-
-		[TestMethod, Timeout(TestTimeout)]
 		public async Task UpgradeableReadLockAsyncWithStickyWrite() {
 			using (await this.asyncLock.UpgradeableReadLockAsync(AsyncReaderWriterLock.LockFlags.StickyWrite)) {
 				Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
@@ -628,32 +603,6 @@
 				Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 				await Task.Yield();
 				Assert.IsFalse(this.asyncLock.IsReadLockHeld);
-				Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
-				Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
-			}
-
-			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
-			Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
-			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
-		}
-
-		[TestMethod, Timeout(TestTimeout)]
-		public async Task NestedWriteLockAsync() {
-			using (await this.asyncLock.WriteLockAsync()) {
-				Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
-				Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
-				using (await this.asyncLock.WriteLockAsync()) {
-					Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
-					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
-					using (await this.asyncLock.WriteLockAsync()) {
-						Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
-						Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
-					}
-
-					Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
-					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
-				}
-
 				Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
 				Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 			}
@@ -891,48 +840,6 @@
 					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 				}
 			}));
-		}
-
-		[TestMethod, Timeout(TestTimeout)]
-		[Description("Verifies that a read lock can be taken within a write lock, and that a write lock can then be taken within that.")]
-		public async Task WriterNestingReaderInterleaved() {
-			using (await this.asyncLock.WriteLockAsync()) {
-				using (await this.asyncLock.ReadLockAsync()) {
-					using (await this.asyncLock.WriteLockAsync()) {
-					}
-				}
-			}
-		}
-
-		[TestMethod, Timeout(TestTimeout)]
-		[Description("Verifies that a read lock can be taken from within an upgradeable read, and that an upgradeable read and/or write can be taken within that.")]
-		public async Task UpgradeableReaderNestingReaderInterleaved() {
-			using (await this.asyncLock.UpgradeableReadLockAsync()) {
-				using (await this.asyncLock.ReadLockAsync()) {
-					using (await this.asyncLock.UpgradeableReadLockAsync()) {
-					}
-					using (await this.asyncLock.WriteLockAsync()) {
-					}
-				}
-			}
-		}
-
-		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
-		[Description("Verifies that a write lock cannot be taken while within a (non-upgradeable) read lock.")]
-		public async Task ReaderWithNestedWriterFails() {
-			using (await this.asyncLock.ReadLockAsync()) {
-				using (await this.asyncLock.WriteLockAsync()) {
-				}
-			}
-		}
-
-		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
-		[Description("Verifies that an upgradeable read lock cannot be taken while within a (non-upgradeable) read lock.")]
-		public async Task ReaderWithNestedUpgradeableReaderFails() {
-			using (await this.asyncLock.ReadLockAsync()) {
-				using (await this.asyncLock.UpgradeableReadLockAsync()) {
-				}
-			}
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -1662,6 +1569,45 @@
 
 		#endregion
 
+		#region Lock nesting tests
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task NestedLocksScenarios() {
+			// R = Reader, U = non-sticky Upgradeable reader, S = Sticky upgradeable reader, W = Writer
+			var scenarios = new Dictionary<string, bool> { 
+				{ "RU", false }, // false means this lock sequence should throw at the last step.
+				{ "RS", false },
+				{ "RW", false },
+
+				{ "RRR", true },
+				{ "UUU", true },
+				{ "SSS", true },
+				{ "WWW", true },
+
+				{ "WRW", true },
+				{ "UW", true },
+				{ "UWW", true },
+				{ "URW", true },
+				{ "UWR", true },
+				{ "UURRWW", true },
+				{ "WUW", true },
+				{ "WRRUW", true },
+				{ "SW", true },
+				{ "USW", true },
+				{ "WSWRU", true },
+				{ "WSRW", true },
+				{ "SUSURWR", true },
+				{ "USUSRWR", true },
+			};
+
+			foreach (var scenario in scenarios) {
+				this.TestContext.WriteLine("Testing {1} scenario: {0}", scenario.Key, scenario.Value ? "valid" : "invalid");
+				await this.NestedLockHelper(scenario.Key, scenario.Value);
+			}
+		}
+
+		#endregion
+
 		private void LockReleaseTestHelper(AsyncReaderWriterLock.Awaitable initialLock) {
 			TestUtilities.Run(async delegate {
 				var staScheduler = TaskScheduler.FromCurrentSynchronizationContext();
@@ -1819,6 +1765,105 @@
 
 				Assert.IsTrue(passingAttemptObserved);
 			});
+		}
+
+		private async Task NestedLockHelper(string lockScript, bool validScenario) {
+			Assert.IsFalse(this.asyncLock.IsReadLockHeld, "IsReadLockHeld not expected value.");
+			Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld, "IsUpgradeableReadLockHeld not expected value.");
+			Assert.IsFalse(this.asyncLock.IsWriteLockHeld, "IsWriteLockHeld not expected value.");
+
+			var lockStack = new Stack<AsyncReaderWriterLock.Releaser>(lockScript.Length);
+			int readers = 0, nonStickyUpgradeableReaders = 0, stickyUpgradeableReaders = 0, writers = 0;
+			try {
+				bool success = true;
+				for (int i = 0; i < lockScript.Length; i++) {
+					char lockTypeChar = lockScript[i];
+					AsyncReaderWriterLock.Awaitable asyncLock;
+					try {
+						switch (lockTypeChar) {
+							case 'R':
+								asyncLock = this.asyncLock.ReadLockAsync();
+								readers++;
+								break;
+							case 'U':
+								asyncLock = this.asyncLock.UpgradeableReadLockAsync();
+								nonStickyUpgradeableReaders++;
+								break;
+							case 'S':
+								asyncLock = this.asyncLock.UpgradeableReadLockAsync(AsyncReaderWriterLock.LockFlags.StickyWrite);
+								stickyUpgradeableReaders++;
+								break;
+							case 'W':
+								asyncLock = this.asyncLock.WriteLockAsync();
+								writers++;
+								break;
+							default:
+								throw new ArgumentOutOfRangeException("lockScript", "Unexpected lock type character '" + lockTypeChar + "'.");
+						}
+
+						lockStack.Push(await asyncLock);
+						success = true;
+					} catch (InvalidOperationException) {
+						if (i < lockScript.Length - 1) {
+							// A failure prior to the last lock in the sequence is always a failure.
+							throw;
+						}
+
+						success = false;
+					}
+
+					Assert.AreEqual(readers > 0, this.asyncLock.IsReadLockHeld, "IsReadLockHeld not expected value at step {0}.", i + 1);
+					Assert.AreEqual(nonStickyUpgradeableReaders + stickyUpgradeableReaders > 0, this.asyncLock.IsUpgradeableReadLockHeld, "IsUpgradeableReadLockHeld not expected value at step {0}.", i + 1);
+					Assert.AreEqual(writers > 0, this.asyncLock.IsWriteLockHeld, "IsWriteLockHeld not expected value at step {0}.", i + 1);
+				}
+
+				Assert.AreEqual(success, validScenario, "Scenario validity unexpected.");
+
+				int readersRemaining = readers;
+				int nonStickyUpgradeableReadersRemaining = nonStickyUpgradeableReaders;
+				int stickyUpgradeableReadersRemaining = stickyUpgradeableReaders;
+				int writersRemaining = writers;
+				int countFrom = lockScript.Length - 1;
+				if (!validScenario) {
+					countFrom--;
+				}
+
+				for (int i = countFrom; i >= 0; i--) {
+					char lockTypeChar = lockScript[i];
+					lockStack.Pop().Dispose();
+
+					switch (lockTypeChar) {
+						case 'R':
+							readersRemaining--;
+							break;
+						case 'U':
+							nonStickyUpgradeableReadersRemaining--;
+							break;
+						case 'S':
+							stickyUpgradeableReadersRemaining--;
+							break;
+						case 'W':
+							writersRemaining--;
+							break;
+						default:
+							throw new ArgumentOutOfRangeException("lockScript", "Unexpected lock type character '" + lockTypeChar + "'.");
+					}
+
+					Assert.AreEqual(readersRemaining > 0, this.asyncLock.IsReadLockHeld, "IsReadLockHeld not expected value at step -{0}.", i + 1);
+					Assert.AreEqual(nonStickyUpgradeableReadersRemaining + stickyUpgradeableReadersRemaining > 0, this.asyncLock.IsUpgradeableReadLockHeld, "IsUpgradeableReadLockHeld not expected value at step -{0}.", i + 1);
+					Assert.AreEqual(writersRemaining > 0 || (stickyUpgradeableReadersRemaining > 0 && writers > 0), this.asyncLock.IsWriteLockHeld, "IsWriteLockHeld not expected value at step -{0}.", i + 1);
+				}
+			} catch {
+				while (lockStack.Count > 0) {
+					lockStack.Pop().Dispose();
+				}
+
+				throw;
+			}
+
+			Assert.IsFalse(this.asyncLock.IsReadLockHeld, "IsReadLockHeld not expected value.");
+			Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld, "IsUpgradeableReadLockHeld not expected value.");
+			Assert.IsFalse(this.asyncLock.IsWriteLockHeld, "IsWriteLockHeld not expected value.");
 		}
 	}
 }
