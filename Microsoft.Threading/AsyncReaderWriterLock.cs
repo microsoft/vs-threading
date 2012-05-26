@@ -956,6 +956,11 @@
 			private readonly ManualResetEventSlim synchronousBlock = new ManualResetEventSlim();
 
 			/// <summary>
+			/// A cached delegate for setting the <see cref="synchronousBlock"/> event.
+			/// </summary>
+			private Action signalSynchronousBlock;
+
+			/// <summary>
 			/// The instance of the lock class to which this awaiter is affiliated.
 			/// </summary>
 			private AsyncReaderWriterLock lck;
@@ -1071,7 +1076,11 @@
 				this.cancellationRegistration.Dispose();
 
 				if (!this.LockIssued && this.continuation == null && !this.cancellationToken.IsCancellationRequested) {
-					this.OnCompleted(delegate { this.synchronousBlock.Set(); });
+					if (this.signalSynchronousBlock == null) {
+						this.signalSynchronousBlock = delegate { this.synchronousBlock.Set(); };
+					}
+
+					this.OnCompleted(this.signalSynchronousBlock);
 					this.synchronousBlock.Wait(this.cancellationToken);
 				}
 
