@@ -22,6 +22,11 @@
 	/// </remarks>
 	public class AsyncReaderWriterLock {
 		/// <summary>
+		/// A singleton task that is already completed.
+		/// </summary>
+		private static readonly Task CompletedTask = Task.FromResult<object>(null);
+
+		/// <summary>
 		/// The object to acquire a Monitor-style lock on for all field access on this instance.
 		/// </summary>
 		private readonly object syncObject = new object();
@@ -739,7 +744,23 @@
 		/// Invokes the final write lock release callbacks, if appropriate.
 		/// </summary>
 		/// <returns>A task representing the work of sequentially invoking the callbacks.</returns>
-		private async Task InvokeBeforeWriteLockReleaseHandlersAsync() {
+		/// <remarks>
+		/// This method is *not* async so that if the condition it checks for is false, we haven't
+		/// paid the perf hit of invoking an async method, which is more expensive than a normal method.
+		/// </remarks>
+		private Task InvokeBeforeWriteLockReleaseHandlersAsync() {
+			if (this.writeLocksIssued.Count == 1 && this.beforeWriteReleasedCallbacks.Count > 0) {
+				return this.InvokeBeforeWriteLockReleaseHandlersHelperAsync();
+			} else {
+				return CompletedTask;
+			}
+		}
+
+		/// <summary>
+		/// Invokes the final write lock release callbacks, if appropriate.
+		/// </summary>
+		/// <returns>A task representing the work of sequentially invoking the callbacks.</returns>
+		private async Task InvokeBeforeWriteLockReleaseHandlersHelperAsync() {
 			if (!Monitor.IsEntered(this.syncObject)) {
 				throw new Exception();
 			}
