@@ -39,7 +39,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AllocFreeConcurrentBag.cs" />
+    <Compile Include="AllocFreeConcurrentStack.cs" />
     <Compile Include="AsyncReaderWriterLock.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -677,7 +677,7 @@
 				throw new Exception();
 			}
 
-			if (!awaiter.TryExecuteContinuation()) {
+			if (!awaiter.TryScheduleContinuationExecution()) {
 				this.Release(awaiter);
 			}
 		}
@@ -847,7 +847,7 @@
 			lock (this.syncObject) {
 				if (this.TryIssueLock(awaiter, previouslyQueued: true)) {
 					// Run the continuation asynchronously (since this is called in OnCompleted, which is an async pattern).
-					if (!awaiter.TryExecuteContinuation()) {
+					if (!awaiter.TryScheduleContinuationExecution()) {
 						this.Release(awaiter);
 					}
 				} else {
@@ -918,7 +918,7 @@
 			/// <summary>
 			/// A thread-safe bag of <see cref="Awaiter"/> instances that have been recycled to reduce GC pressure.
 			/// </summary>
-			private static readonly IProducerConsumerCollection<Awaiter> recycledAwaiters = new AllocFreeConcurrentBag<Awaiter>();
+			private static readonly IProducerConsumerCollection<Awaiter> recycledAwaiters = new AllocFreeConcurrentStack<Awaiter>();
 
 			/// <summary>
 			/// An event to block on for synchronous lock requests.
@@ -1097,7 +1097,7 @@
 			/// </summary>
 			/// <param name="continuation">A specific continuation to execute, or <c>null</c> to use the one stored in the field.</param>
 			/// <returns><c>true</c> if the continuation was (asynchronously) invoked; <c>false</c> if there was no continuation available to invoke.</returns>
-			internal bool TryExecuteContinuation(Action continuation = null) {
+			internal bool TryScheduleContinuationExecution(Action continuation = null) {
 				if (continuation == null) {
 					continuation = Interlocked.Exchange(ref this.continuation, null);
 				}
@@ -1127,7 +1127,7 @@
 				// We're in a race with the lock suddenly becoming available.
 				// Our control in the race is whether the continuation field is still set to a non-null value.
 				var continuation = Interlocked.Exchange(ref awaiter.continuation, null);
-				awaiter.TryExecuteContinuation(continuation); // unblock the awaiter immediately (which will then experience an OperationCanceledException).
+				awaiter.TryScheduleContinuationExecution(continuation); // unblock the awaiter immediately (which will then experience an OperationCanceledException).
 
 				// Release memory of the registered handler, since we only need it to fire once.
 				awaiter.cancellationRegistration.Dispose();
