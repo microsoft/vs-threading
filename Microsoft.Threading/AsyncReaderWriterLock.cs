@@ -366,9 +366,13 @@
 			}
 
 			if (this.completeInvoked &&
+				!this.completionSource.Task.IsCompleted &&
 				this.readLocksIssued.Count == 0 && this.upgradeableReadLocksIssued.Count == 0 && this.writeLocksIssued.Count == 0 &&
 				this.waitingReaders.Count == 0 && this.waitingUpgradeableReaders.Count == 0 && this.waitingWriters.Count == 0) {
-				this.completionSource.TrySetResult(null);
+
+				// We must use another task to asynchronously transition this so we don't inadvertently execute continuations inline
+				// while we're holding a lock.
+				Task.Run(delegate { this.completionSource.TrySetResult(null); });
 			}
 		}
 

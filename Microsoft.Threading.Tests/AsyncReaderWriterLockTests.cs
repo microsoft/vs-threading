@@ -30,10 +30,6 @@
 		[TestCleanup]
 		public void Cleanup() {
 			this.asyncLock.Complete();
-			if (!this.asyncLock.Completion.IsCompleted) {
-				Assert.Fail("Not all locks have been released at the conclusion of the test.");
-			}
-
 			this.asyncLock.Completion.GetAwaiter().GetResult();
 		}
 
@@ -123,6 +119,66 @@
 		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
 		public void AwaitableDefaultCtorDispose() {
 			new AsyncReaderWriterLock.Awaitable().GetAwaiter();
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		[Description("Verifies that continuations of the Completion property's task do not execute in the context of the private lock.")]
+		public async Task CompletionContinuationsDoNotDeadlockWithLockClass() {
+			var continuationFired = new TaskCompletionSource<object>();
+			var releaseContinuation = new TaskCompletionSource<object>();
+			var continuation = this.asyncLock.Completion.ContinueWith(
+				delegate {
+					continuationFired.SetAsync();
+					releaseContinuation.Task.Wait();
+				},
+				TaskContinuationOptions.ExecuteSynchronously); // this flag tries to tease out the sync-allowing behavior if it exists.
+
+			var nowait = Task.Run(async delegate {
+				await continuationFired.Task.ConfigureAwait(false); // wait for the continuation to fire, and resume on an MTA thread.
+
+				// Now on this separate thread, do something that should require the private lock of the lock class, to ensure it's not a blocking call.
+				bool throwaway = this.asyncLock.IsReadLockHeld;
+
+				releaseContinuation.SetResult(null);
+			});
+
+			using (await this.asyncLock.ReadLockAsync()) {
+				this.asyncLock.Complete();
+			}
+
+			await Task.WhenAll(releaseContinuation.Task, continuation);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		[Description("Verifies that continuations of the Completion property's task do not execute synchronously with the last lock holder's Release.")]
+		public async Task CompletionContinuationsExecuteAsynchronously() {
+			var releaseContinuation = new TaskCompletionSource<object>();
+			var continuation = this.asyncLock.Completion.ContinueWith(
+				delegate {
+					releaseContinuation.Task.Wait();
+				},
+				TaskContinuationOptions.ExecuteSynchronously); // this flag tries to tease out the sync-allowing behavior if it exists.
+
+			using (await this.asyncLock.ReadLockAsync()) {
+				this.asyncLock.Complete();
+			}
+
+			releaseContinuation.SetResult(null);
+			await continuation;
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task CompleteMethodExecutesContinuationsAsynchronously() {
+			var releaseContinuation = new TaskCompletionSource<object>();
+			Task continuation = this.asyncLock.Completion.ContinueWith(
+				delegate {
+					releaseContinuation.Task.Wait();
+				},
+				TaskContinuationOptions.ExecuteSynchronously);
+
+			this.asyncLock.Complete();
+			releaseContinuation.SetResult(null);
+			await continuation;
 		}
 
 		#region ReadLockAsync tests
