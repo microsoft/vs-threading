@@ -793,7 +793,12 @@
 		/// </summary>
 		/// <param name="topAwaiter"></param>
 		private void ApplyLockToCallContext(Awaiter topAwaiter) {
-			CallContext.LogicalSetData(this.logicalDataKey, this.GetFirstActiveSelfOrAncestor(topAwaiter));
+			var awaiter = this.GetFirstActiveSelfOrAncestor(topAwaiter);
+			if (awaiter != null) {
+				CallContext.LogicalSetData(this.logicalDataKey, awaiter);
+			} else {
+				CallContext.FreeNamedDataSlot(this.logicalDataKey);
+			}
 		}
 
 		/// <summary>

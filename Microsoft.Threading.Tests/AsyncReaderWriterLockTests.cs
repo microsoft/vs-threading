@@ -181,6 +181,32 @@
 			await continuation;
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task NoMemoryLeakForManyLocks() {
+			// Get on an MTA thread so that locks do not necessarily yield.
+			await Task.Run(delegate {
+				// First prime the pump to allocate some fixed cost memory.
+				{
+					var lck = new AsyncReaderWriterLock();
+					using (lck.ReadLock()) {
+					}
+				}
+
+				const int iterations = 1000;
+				long memory1 = GC.GetTotalMemory(true);
+				for (int i = 0; i < iterations; i++) {
+					var lck = new AsyncReaderWriterLock();
+					using (lck.ReadLock()) {
+					}
+				}
+
+				long memory2 = GC.GetTotalMemory(true);
+				long allocated = (memory2 - memory1) / iterations;
+				this.TestContext.WriteLine("Allocated bytes: {0}", allocated);
+				Assert.AreEqual(0, allocated);
+			});
+		}
+
 		#region ReadLockAsync tests
 
 		[TestMethod, Timeout(TestTimeout)]
