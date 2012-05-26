@@ -369,7 +369,8 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task UncontestedTopLevelReadLockAsyncAllocFree() {
-			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync());
+			var cts = new CancellationTokenSource();
+			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync(cts.Token));
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -460,7 +461,8 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task UncontestedTopLevelReadLockAllocFree() {
-			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLock());
+			var cts = new CancellationTokenSource();
+			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLock(cts.Token));
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -575,7 +577,8 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task UncontestedTopLevelUpgradeableReadLockAsyncAllocFree() {
-			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync());
+			var cts = new CancellationTokenSource();
+			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync(cts.Token));
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -638,7 +641,8 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task UncontestedTopLevelUpgradeableReadLockAllocFree() {
-			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLock());
+			var cts = new CancellationTokenSource();
+			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLock(cts.Token));
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -675,7 +679,8 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task UncontestedTopLevelWriteLockAsyncAllocFree() {
-			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync());
+			var cts = new CancellationTokenSource();
+			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync(cts.Token));
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -738,7 +743,8 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task UncontestedTopLevelWriteLockAllocFree() {
-			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLock());
+			var cts = new CancellationTokenSource();
+			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLock(cts.Token));
 		}
 
 		[TestMethod, Timeout(TestTimeout)]

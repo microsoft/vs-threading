@@ -993,7 +993,11 @@
 					throw new InvalidOperationException();
 				}
 
-				this.continuation = continuation;
+				if (Interlocked.CompareExchange(ref this.continuation, continuation, null) != null) {
+					throw new NotSupportedException("Multiple continuations are not supported.");
+				}
+
+				this.cancellationRegistration = cancellationToken.Register(cancellationResponseAction, this, useSynchronizationContext: false);
 				this.lck.PendAwaiter(this);
 			}
 
@@ -1077,7 +1081,6 @@
 				awaiter.continuation = null;
 				awaiter.options = options;
 				awaiter.cancellationToken = cancellationToken;
-				awaiter.cancellationRegistration = cancellationToken.Register(cancellationResponseAction, awaiter, useSynchronizationContext: false);
 				awaiter.nestingLock = (Awaiter)CallContext.LogicalGetData(lck.logicalDataKey);
 				awaiter.fault = null;
 				awaiter.synchronousBlock.Reset();
