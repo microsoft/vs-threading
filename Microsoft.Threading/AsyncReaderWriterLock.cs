@@ -1082,10 +1082,14 @@
 				if (this.LockIssued) {
 					this.lck.ApplyLockToCallContext(this);
 					return new Releaser(this);
+				} else {
+					// At this point, someone called GetResult who wasn't registered as a synchronous waiter,
+					// and before the lock was issued.
+					// If the cancellation token was signaled, we'll throw that because a canceled token is a 
+					// legit reason to hit this path in the method.  Otherwise it's an internal error.
+					this.cancellationToken.ThrowIfCancellationRequested();
+					throw new Exception();
 				}
-
-				this.cancellationToken.ThrowIfCancellationRequested();
-				throw new Exception();
 			}
 
 			/// <summary>
