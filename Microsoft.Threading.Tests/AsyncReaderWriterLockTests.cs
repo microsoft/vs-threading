@@ -2,6 +2,7 @@
 	using System;
 	using System.Collections.Generic;
 	using System.Diagnostics;
+	using System.Reflection;
 	using System.Threading;
 	using System.Threading.Tasks;
 	using Microsoft.Threading;
@@ -205,6 +206,23 @@
 				this.TestContext.WriteLine("Allocated bytes: {0}", allocated);
 				Assert.AreEqual(0, allocated);
 			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task CallAcrossAppDomainBoundariesWithLock() {
+			var otherDomain = AppDomain.CreateDomain("test domain");
+			try {
+				var proxy = (OtherDomainProxy)otherDomain.CreateInstanceFromAndUnwrap(Assembly.GetExecutingAssembly().Location, typeof(OtherDomainProxy).FullName);
+				proxy.SomeMethod(AppDomain.CurrentDomain.Id); // verify we can call it first.
+
+				using (await this.asyncLock.ReadLockAsync()) {
+					proxy.SomeMethod(AppDomain.CurrentDomain.Id); // verify we can call it while holding a project lock.
+				}
+
+				proxy.SomeMethod(AppDomain.CurrentDomain.Id); // verify we can call it after releasing a project lock.
+			} finally {
+				AppDomain.Unload(otherDomain);
+			}
 		}
 
 		#region ReadLockAsync tests
@@ -1952,6 +1970,12 @@
 			Assert.IsFalse(this.asyncLock.IsReadLockHeld, "IsReadLockHeld not expected value.");
 			Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld, "IsUpgradeableReadLockHeld not expected value.");
 			Assert.IsFalse(this.asyncLock.IsWriteLockHeld, "IsWriteLockHeld not expected value.");
+		}
+
+		private class OtherDomainProxy : MarshalByRefObject {
+			internal void SomeMethod(int callingAppDomainId) {
+				Assert.AreNotEqual(callingAppDomainId, AppDomain.CurrentDomain.Id, "AppDomain boundaries not crossed.");
+			}
 		}
 	}
 }
