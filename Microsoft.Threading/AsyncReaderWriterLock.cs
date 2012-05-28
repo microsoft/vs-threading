@@ -32,11 +32,9 @@
 		private readonly object syncObject = new object();
 
 		/// <summary>
-		/// A randomly generated GUID associated with this particular lock instance that will
-		/// be used as a key in the CallContext dictionary for storing the lock state for that
-		/// particular context.
+		/// A CallContext-local reference to the Awaiter that is on the top of the stack (most recently acquired).
 		/// </summary>
-		private readonly string logicalDataKey = Guid.NewGuid().ToString();
+		private readonly AsyncLocal<Awaiter> topAwaiter = new AsyncLocal<Awaiter>();
 
 		/// <summary>
 		/// The set of read locks that are issued and active.
@@ -500,7 +498,7 @@
 		private bool IsLockHeld(LockKind kind, Awaiter awaiter = null) {
 			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
 				if (awaiter == null) {
-					awaiter = (Awaiter)System.Runtime.Remoting.Messaging.CallContext.LogicalGetData(this.logicalDataKey);
+					awaiter = this.topAwaiter.Value;
 				}
 
 				lock (this.syncObject) {
@@ -696,7 +694,7 @@
 		/// </summary>
 		/// <param name="awaiter">The awaiter holding an active lock.</param>
 		private void Release(Awaiter awaiter) {
-			var topAwaiter = (Awaiter)CallContext.LogicalGetData(this.logicalDataKey);
+			var topAwaiter = this.topAwaiter.Value;
 
 			Task synchronousCallbackExecution = null;
 			lock (this.syncObject) {
@@ -815,11 +813,7 @@
 		/// <param name="topAwaiter"></param>
 		private void ApplyLockToCallContext(Awaiter topAwaiter) {
 			var awaiter = this.GetFirstActiveSelfOrAncestor(topAwaiter);
-			if (awaiter != null) {
-				CallContext.LogicalSetData(this.logicalDataKey, awaiter);
-			} else {
-				CallContext.FreeNamedDataSlot(this.logicalDataKey);
-			}
+			this.topAwaiter.Value = awaiter;
 		}
 
 		/// <summary>
@@ -937,7 +931,7 @@
 		/// Manages asynchronous access to a lock.
 		/// </summary>
 		[DebuggerDisplay("{kind}")]
-		public class Awaiter : INotifyCompletion {
+		public class Awaiter : INotifyCompletion, ICallContextKeyLookup {
 			#region Fields
 
 			/// <summary>
@@ -954,6 +948,11 @@
 			/// An event to block on for synchronous lock requests.
 			/// </summary>
 			private readonly ManualResetEventSlim synchronousBlock = new ManualResetEventSlim();
+
+			/// <summary>
+			/// A simple object that will be stored in the CallContext.
+			/// </summary>
+			private readonly object callContextKey = new object();
 
 			/// <summary>
 			/// A cached delegate for setting the <see cref="synchronousBlock"/> event.
@@ -1069,6 +1068,14 @@
 			}
 
 			/// <summary>
+			/// Gets the value of the readonly field for this object that will be used
+			/// exclusively for this instance.
+			/// </summary>
+			object ICallContextKeyLookup.CallContextValue {
+				get { return this.callContextKey; }
+			}
+
+			/// <summary>
 			/// Applies the issued lock to the caller and returns the value used to release the lock.
 			/// </summary>
 			/// <returns>The value to dispose of to release the lock.</returns>
@@ -1120,7 +1127,7 @@
 				awaiter.continuation = null;
 				awaiter.options = options;
 				awaiter.cancellationToken = cancellationToken;
-				awaiter.nestingLock = (Awaiter)CallContext.LogicalGetData(lck.logicalDataKey);
+				awaiter.nestingLock = lck.topAwaiter.Value;
 				awaiter.fault = null;
 				awaiter.synchronousBlock.Reset();
 
@@ -1228,9 +1235,9 @@
 			/// <param name="lck">The lock class.</param>
 			internal Suppression(AsyncReaderWriterLock lck) {
 				this.lck = lck;
-				this.awaiter = (Awaiter)CallContext.LogicalGetData(this.lck.logicalDataKey);
+				this.awaiter = this.lck.topAwaiter.Value;
 				if (this.awaiter != null) {
-					CallContext.LogicalSetData(this.lck.logicalDataKey, null);
+					this.lck.topAwaiter.Value = null;
 				}
 			}
 

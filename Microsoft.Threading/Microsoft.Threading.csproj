@@ -40,7 +40,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AllocFreeConcurrentStack.cs" />
+    <Compile Include="AsyncLocal.cs" />
     <Compile Include="AsyncReaderWriterLock.cs" />
+    <Compile Include="ICallContextKeyLookup.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
