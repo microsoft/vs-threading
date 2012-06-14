@@ -707,6 +707,16 @@
 		}
 
 		/// <summary>
+		/// Invoked after an exclusive lock is released but before anyone has a chance to enter the lock.
+		/// </summary>
+		/// <remarks>
+		/// This method is called while holding a private lock in order to block future lock consumers till this method is finished.
+		/// </remarks>
+		protected virtual void OnExclusiveLockReleased() {
+			Debug.Assert(Monitor.IsEntered(this.syncObject));
+		}
+
+		/// <summary>
 		/// Releases the lock held by the specified awaiter.
 		/// </summary>
 		/// <param name="awaiter">The awaiter holding an active lock.</param>
@@ -725,11 +735,17 @@
 					synchronousCallbackExecution = callbackExecution;
 				}
 
+				int writeLocksBefore = this.writeLocksIssued.Count;
+
 				this.GetActiveLockSet(awaiter.Kind).Remove(awaiter);
 
 				// In case this is a sticky write lock, it may also belong to the write locks issued collection.
 				if (awaiter.Kind == LockKind.UpgradeableRead && (awaiter.Options & LockFlags.StickyWrite) == LockFlags.StickyWrite) {
 					this.writeLocksIssued.Remove(awaiter);
+				}
+
+				if (writeLocksBefore > 0 && this.writeLocksIssued.Count == 0) {
+					this.OnExclusiveLockReleased();
 				}
 
 				this.CompleteIfAppropriate();
