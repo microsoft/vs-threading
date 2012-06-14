@@ -132,6 +132,10 @@
 
 			private readonly Func<object, Task<TResource>> prepareResourceExclusiveDelegate;
 
+			private readonly Func<Task<TResource>, object, Task<TResource>> prepareResourceConcurrentContinuationDelegate;
+
+			private readonly Func<Task<TResource>, object, Task<TResource>> prepareResourceExclusiveContinuationDelegate;
+
 			private readonly object syncObject = new object();
 
 			/// <summary>
@@ -143,22 +147,29 @@
 				this.service = service;
 				this.prepareResourceConcurrentDelegate = state => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state);
 				this.prepareResourceExclusiveDelegate = state => this.service.PrepareResourceForExclusiveAccessAsync((TResource)state);
+				this.prepareResourceConcurrentContinuationDelegate = (prev, state) => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state);
+				this.prepareResourceExclusiveContinuationDelegate = (prev, state) => this.service.PrepareResourceForExclusiveAccessAsync((TResource)state);
 			}
 
-			public async Task<TResource> GetResourceAsync(TMoniker projectMoniker, CancellationToken cancellationToken) {
+			public async Task<TResource> GetResourceAsync(TMoniker resourceMoniker, CancellationToken cancellationToken) {
 				using (var projectLock = this.AcquirePreexistingLockOrThrow()) {
-					var project = await this.service.GetResourceAsync(projectMoniker);
+					var resource = await this.service.GetResourceAsync(resourceMoniker);
 					Task<TResource> preparationTask;
 
+					// We can't currently use the caller's cancellation token for this task because 
+					// this task may be shared with others or call this method later, and we wouldn't 
+					// want their requests to be cancelled as a result of this first caller cancelling.
 					lock (this.syncObject) {
-						if (!this.projectEvaluationTasks.TryGetValue(project, out preparationTask)) {
-							// We can't currently use the caller's cancellation token for this task because 
-							// this task may be shared with others or call this method later, and we wouldn't 
-							// want their requests to be cancelled as a result of this first caller cancelling.
+						if (!this.projectEvaluationTasks.TryGetValue(resource, out preparationTask)) {
 							var preparationDelegate = this.service.IsWriteLockHeld ? prepareResourceExclusiveDelegate : prepareResourceConcurrentDelegate;
-							preparationTask = Task.Factory.StartNew(preparationDelegate, project, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap();
-							this.projectEvaluationTasks.Add(project, preparationTask);
+							preparationTask = Task.Factory.StartNew(preparationDelegate, resource, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap();
+						} else {
+							var preparationDelegate = this.service.IsWriteLockHeld ? prepareResourceExclusiveContinuationDelegate : prepareResourceConcurrentContinuationDelegate;
+							preparationTask = preparationTask.ContinueWith(preparationDelegate, resource, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap();
+							this.projectEvaluationTasks.Remove(resource);
 						}
+
+						this.projectEvaluationTasks.Add(resource, preparationTask);
 					}
 
 					var result = await preparationTask;
