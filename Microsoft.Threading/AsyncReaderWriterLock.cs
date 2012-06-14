@@ -20,6 +20,23 @@
 	/// we have to set CallContext data in the context of the person receiving the lock,
 	/// which requires that we get to execute code at the start of the continuation (whether we yield or not).
 	/// </remarks>
+	/// <devnotes>
+	/// Considering this class to be a state machine, the states are:
+	///  * No lock issued
+	///  * only read lock(s) issued
+	///  * upgradeable read lock issued and perhaps read locks
+	///  * write lock issued in a nesting upgradeable read
+	///  * write lock issued (NOT in a nesting upgradeable read)
+	/// State transitions are:
+	/// 
+	///    ------------- 
+	///    |           | <-----> READERS
+	///    |    IDLE   | <-----> UPGRADEABLE READER + READERS <-----> UPGRADED WRITER
+	///    |  NO LOCKS | <-----> WRITER
+	///    |           |
+	///    ------------- 
+	/// 
+	/// </devnotes>
 	public class AsyncReaderWriterLock {
 		/// <summary>
 		/// A singleton task that is already completed.

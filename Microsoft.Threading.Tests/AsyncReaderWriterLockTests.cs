@@ -12,16 +12,10 @@
 	/// Tests functionality of the <see cref="AsyncReaderWriterLock"/> class.
 	/// </summary>
 	[TestClass]
-	public class AsyncReaderWriterLockTests {
+	public class AsyncReaderWriterLockTests : TestBase {
 		private const int GCAllocationAttempts = 3;
 
-		private const int AsyncDelay = 500;
-
-		private const int TestTimeout = 1000;
-
 		private AsyncReaderWriterLock asyncLock;
-
-		public TestContext TestContext { get; set; }
 
 		[TestInitialize]
 		public void Initialize() {
