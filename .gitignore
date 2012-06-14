@@ -14,3 +14,4 @@ ipch
 *.swp
 *.vs10x
 Backup*
+*.vsp
