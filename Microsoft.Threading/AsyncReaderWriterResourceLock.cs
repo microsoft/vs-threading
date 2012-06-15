@@ -166,14 +166,9 @@
 							if (!this.projectEvaluationTasks.TryGetValue(resource, out preparationTask)) {
 								var preparationDelegate = this.service.IsWriteLockHeld ? prepareResourceExclusiveDelegate : prepareResourceConcurrentDelegate;
 								preparationTask = Task.Factory.StartNew(preparationDelegate, resource, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap();
-							} else {
-								var preparationDelegate = this.service.IsWriteLockHeld ? prepareResourceExclusiveContinuationDelegate : prepareResourceConcurrentContinuationDelegate;
-								preparationTask = preparationTask.ContinueWith(preparationDelegate, resource, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap();
-								this.projectEvaluationTasks.Remove(resource);
+								this.projectEvaluationTasks.Add(resource, preparationTask);
 							}
 						}
-
-						this.projectEvaluationTasks.Add(resource, preparationTask);
 					}
 
 					var result = await preparationTask;
