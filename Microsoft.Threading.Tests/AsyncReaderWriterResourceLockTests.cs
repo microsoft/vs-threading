@@ -272,19 +272,19 @@
 
 			await Task.WhenAll(
 				Task.Run(async delegate {
-					using (var access = await this.projectLock.ReadLockAsync()) {
-						var resource = access.GetResourceAsync(1);
-						requestSubmitted1.SetResult(null);
-						await resource;
-					}
-				}),
+				using (var access = await this.projectLock.ReadLockAsync()) {
+					var resource = access.GetResourceAsync(1);
+					requestSubmitted1.SetResult(null);
+					await resource;
+				}
+			}),
 				Task.Run(async delegate {
-					using (var access = await this.projectLock.ReadLockAsync()) {
-						var resource = access.GetResourceAsync(1);
-						requestSubmitted2.SetResult(null);
-						await resource;
-					}
-				}),
+				using (var access = await this.projectLock.ReadLockAsync()) {
+					var resource = access.GetResourceAsync(1);
+					requestSubmitted2.SetResult(null);
+					await resource;
+				}
+			}),
 			Task.Run(async delegate {
 				// This is the part of the test that ensures that preparation is not executed concurrently
 				// for a given resource.  
