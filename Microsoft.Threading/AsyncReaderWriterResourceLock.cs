@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.Threading {
 	using System;
 	using System.Collections.Generic;
+	using System.Diagnostics;
 	using System.Linq;
 	using System.Runtime.CompilerServices;
 	using System.Text;
@@ -103,6 +104,11 @@
 
 		protected abstract Task<TResource> PrepareResourceForExclusiveAccessAsync(TResource resource);
 
+		protected override void OnExclusiveLockReleased() {
+			base.OnExclusiveLockReleased();
+			this.helper.OnExclusiveLockReleased();
+		}
+
 		internal class Helper {
 			private readonly AsyncReaderWriterResourceLock<TMoniker, TResource> service;
 
@@ -117,7 +123,7 @@
 			/// <summary>
 			/// A map of projects to the tasks that most recently began evaluating them.
 			/// </summary>
-			private readonly ConditionalWeakTable<TResource, Task<TResource>> projectEvaluationTasks = new ConditionalWeakTable<TResource, Task<TResource>>();
+			private ConditionalWeakTable<TResource, Task<TResource>> projectEvaluationTasks = new ConditionalWeakTable<TResource, Task<TResource>>();
 
 			internal Helper(AsyncReaderWriterResourceLock<TMoniker, TResource> service) {
 				this.service = service;
@@ -125,6 +131,16 @@
 				this.prepareResourceExclusiveDelegate = state => this.service.PrepareResourceForExclusiveAccessAsync((TResource)state);
 				this.prepareResourceConcurrentContinuationDelegate = (prev, state) => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state);
 				this.prepareResourceExclusiveContinuationDelegate = (prev, state) => this.service.PrepareResourceForExclusiveAccessAsync((TResource)state);
+			}
+
+			internal void OnExclusiveLockReleased() {
+				Assumes.True(Monitor.IsEntered(this.service.SyncObject));
+
+				// TODO: write a test that proves that this approach makes resources
+				// vulnerable to concurrent preparation.
+				// We really need a way to indicate that all resources requested after this point
+				// should be prepared again.
+				this.projectEvaluationTasks = new ConditionalWeakTable<TResource, Task<TResource>>();
 			}
 
 			public async Task<TResource> GetResourceAsync(TMoniker resourceMoniker, CancellationToken cancellationToken) {
