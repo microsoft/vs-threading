@@ -190,7 +190,7 @@
 					// TODO: write a test that demonstrates the synchronous regression of the async methods and then fix it.
 					Task.WaitAll(preparationTasks.ToArray());
 					foreach (var resource in this.resourcesAcquiredWithinUpgradeableRead) {
-						this.service.PrepareResourceForConcurrentAccessAsync(resource);
+						this.service.PrepareResourceForConcurrentAccessAsync(resource).GetAwaiter().GetResult();
 					}
 				}
 			}

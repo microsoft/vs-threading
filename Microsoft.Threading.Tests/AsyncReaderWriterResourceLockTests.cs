@@ -398,6 +398,7 @@
 
 			private async Task<Resource> GetPreparationTask(Resource resource) {
 				Assert.IsTrue(this.IsAnyLockHeld);
+				Assert.IsFalse(Monitor.IsEntered(this.SyncObject));
 
 				Tuple<TaskCompletionSource<object>, Task> tuple;
 				lock (this.preparationTasks) {
