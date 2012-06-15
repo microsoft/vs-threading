@@ -164,7 +164,7 @@
 					var resource1Again = await access2.GetResourceAsync(1);
 					Assert.AreSame(resource, resource1Again);
 					Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
-					Assert.AreEqual(1, resource.ExclusiveAccessPreparationCount);
+					Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount); // not incremented because it was prepared for concurrent access earlier.
 
 					resource2 = await access2.GetResourceAsync(2);
 					Assert.AreSame(this.resources[2], resource2);
@@ -172,7 +172,7 @@
 					Assert.AreEqual(1, resource2.ExclusiveAccessPreparationCount);
 				}
 
-				Assert.AreEqual(2, resource.ConcurrentAccessPreparationCount);
+				Assert.AreEqual(2, resource.ConcurrentAccessPreparationCount); // re-entering concurrent access should always be prepared on exit of exclusive access
 				Assert.AreEqual(1, resource.ExclusiveAccessPreparationCount);
 
 				// Cheat a little and peak at the resource held only by the write lock,
@@ -194,17 +194,17 @@
 					var resource1Again = await access2.GetResourceAsync(1);
 					Assert.AreSame(resource, resource1Again);
 					Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
-					Assert.AreEqual(1, resource.ExclusiveAccessPreparationCount);
+					Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount); // doesn't increment because concurrent preparation already performed.
 				}
 
 				Assert.IsTrue(this.projectLock.IsWriteLockHeld, "UpgradeableRead with StickyWrite was expected to hold the write lock.");
 				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
-				Assert.AreEqual(1, resource.ExclusiveAccessPreparationCount);
+				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
 
 				// Preparation should still skip because we're in a sticky write lock and the resource was issued before.
 				resource = await access.GetResourceAsync(1);
 				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
-				Assert.AreEqual(1, resource.ExclusiveAccessPreparationCount);
+				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
 			}
 		}
 

@@ -100,8 +100,27 @@
 
 		protected abstract Task<TResource> GetResourceAsync(TMoniker projectMoniker);
 
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="resource"></param>
+		/// <returns></returns>
+		/// <remarks>
+		/// This is invoked on a resource when it is initially requested for concurrent access,
+		/// for both transitions from no access and exclusive access.
+		/// </remarks>
 		protected abstract Task<TResource> PrepareResourceForConcurrentAccessAsync(TResource resource);
 
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="resource"></param>
+		/// <returns></returns>
+		/// <remarks>
+		/// This is invoked on a resource when it is initially access for exclusive access,
+		/// but only when transitioning from no access -- it is not invoked when transitioning
+		/// from concurrent access to exclusive access.
+		/// </remarks>
 		protected abstract Task<TResource> PrepareResourceForExclusiveAccessAsync(TResource resource);
 
 		protected override void OnExclusiveLockReleased() {
