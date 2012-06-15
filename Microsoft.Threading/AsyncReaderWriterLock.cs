@@ -20,18 +20,13 @@
 	/// </remarks>
 	/// <devnotes>
 	/// Considering this class to be a state machine, the states are:
-	///  * No lock issued
-	///  * only read lock(s) issued
-	///  * upgradeable read lock issued and perhaps read locks
-	///  * write lock issued in a nesting upgradeable read
-	///  * write lock issued (NOT in a nesting upgradeable read)
-	/// State transitions are:
 	/// 
 	///    ------------- 
 	///    |           | <-----> READERS
-	///    |    IDLE   | <-----> UPGRADEABLE READER + READERS <-----> UPGRADED WRITER
-	///    |  NO LOCKS | <-----> WRITER
-	///    |           |
+	///    |    IDLE   | <-----> UPGRADEABLE READER + READERS -----> UPGRADED WRITER --\
+	///    |  NO LOCKS |                             ^                                 |
+	///    |           |                             |--- RE-ENTER CONCURRENCY PREP <--/
+	///    |           | <-----> WRITER
 	///    ------------- 
 	/// 
 	/// </devnotes>
@@ -114,6 +109,13 @@
 		/// asynchronously with respect to the releasing thread.
 		/// </remarks>
 		private readonly Queue<Func<Task>> beforeWriteReleasedCallbacks = new Queue<Func<Task>>();
+
+		/// <summary>
+		/// A task that is incomplete during the transition from a write lock
+		/// to an upgradeable read lock when callbacks and other code must be invoked without ANY
+		/// locks being issued.
+		/// </summary>
+		private Task reenterConcurrencyPrep = CompletedTask;
 
 		/// <summary>
 		/// A flag indicating that the <see cref="Complete"/> method has been called, indicating that no
@@ -407,9 +409,11 @@
 			if (awaiter != null) {
 				lock (this.syncObject) {
 					while (awaiter != null) {
-						aggregateFlags |= awaiter.Options;
-						if ((aggregateFlags & flags) == flags) {
-							return true;
+						if (this.IsLockActive(awaiter, considerStaActive: true)) {
+							aggregateFlags |= awaiter.Options;
+							if ((aggregateFlags & flags) == flags) {
+								return true;
+							}
 						}
 
 						awaiter = awaiter.NestingLock;
@@ -565,12 +569,8 @@
 		/// <returns><c>true</c> if the caller holds active locks of the given type; <c>false</c> otherwise.</returns>
 		private bool IsLockHeld(LockKind kind, Awaiter awaiter = null) {
 			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
-				if (awaiter == null) {
-					awaiter = this.topAwaiter.Value;
-				}
-
 				lock (this.syncObject) {
-					if (this.LockStackContains(kind, awaiter)) {
+					if (this.LockStackContains(kind, awaiter ?? this.topAwaiter.Value)) {
 						return true;
 					}
 				}
@@ -585,10 +585,10 @@
 		/// </summary>
 		/// <param name="awaiter">The lock to check.</param>
 		/// <returns><c>true</c> if the lock is currently issued and the caller is not on an STA thread.</returns>
-		private bool IsLockActive(Awaiter awaiter) {
+		private bool IsLockActive(Awaiter awaiter, bool considerStaActive) {
 			Requires.NotNull(awaiter, "awaiter");
 
-			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
+			if (considerStaActive || Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
 				lock (this.syncObject) {
 					return this.GetActiveLockSet(awaiter.Kind).Contains(awaiter);
 				}
@@ -618,50 +618,52 @@
 				}
 
 				bool issued = false;
-				if (this.writeLocksIssued.Count == 0 && this.upgradeableReadLocksIssued.Count == 0 && this.readLocksIssued.Count == 0) {
-					issued = true;
-				} else {
-					bool hasRead, hasUpgradeableRead, hasWrite;
-					this.AggregateLockStackKinds(awaiter, out hasRead, out hasUpgradeableRead, out hasWrite);
-					switch (awaiter.Kind) {
-						case LockKind.Read:
-							if (this.writeLocksIssued.Count == 0 && this.waitingWriters.Count == 0) {
-								issued = true;
-							} else if (hasWrite || hasRead || hasUpgradeableRead) {
-								issued = true;
-							}
-
-							break;
-						case LockKind.UpgradeableRead:
-							if (hasUpgradeableRead || hasWrite) {
-								issued = true;
-							} else if (hasRead) {
-								// We cannot issue an upgradeable read lock to folks who have (only) a read lock.
-								throw new InvalidOperationException();
-							} else if (this.upgradeableReadLocksIssued.Count == 0 && this.writeLocksIssued.Count == 0) {
-								issued = true;
-							}
-
-							break;
-						case LockKind.Write:
-							if (hasWrite) {
-								issued = true;
-							} else if (hasRead && !hasUpgradeableRead) {
-								// We cannot issue a write lock when the caller already holds a read lock.
-								throw new InvalidOperationException();
-							} else if (this.AllHeldLocksAreByThisStack(awaiter.NestingLock)) {
-								issued = true;
-
-								var stickyWriteAwaiter = this.FindRootUpgradeableReadWithStickyWrite(awaiter);
-								if (stickyWriteAwaiter != null) {
-									// Add the upgradeable reader as a write lock as well.
-									this.writeLocksIssued.Add(stickyWriteAwaiter);
+				if (this.reenterConcurrencyPrep.IsCompleted) {
+					if (this.writeLocksIssued.Count == 0 && this.upgradeableReadLocksIssued.Count == 0 && this.readLocksIssued.Count == 0) {
+						issued = true;
+					} else {
+						bool hasRead, hasUpgradeableRead, hasWrite;
+						this.AggregateLockStackKinds(awaiter, out hasRead, out hasUpgradeableRead, out hasWrite);
+						switch (awaiter.Kind) {
+							case LockKind.Read:
+								if (this.writeLocksIssued.Count == 0 && this.waitingWriters.Count == 0) {
+									issued = true;
+								} else if (hasWrite || hasRead || hasUpgradeableRead) {
+									issued = true;
 								}
-							}
 
-							break;
-						default:
-							throw Assumes.NotReachable();
+								break;
+							case LockKind.UpgradeableRead:
+								if (hasUpgradeableRead || hasWrite) {
+									issued = true;
+								} else if (hasRead) {
+									// We cannot issue an upgradeable read lock to folks who have (only) a read lock.
+									throw new InvalidOperationException();
+								} else if (this.upgradeableReadLocksIssued.Count == 0 && this.writeLocksIssued.Count == 0) {
+									issued = true;
+								}
+
+								break;
+							case LockKind.Write:
+								if (hasWrite) {
+									issued = true;
+								} else if (hasRead && !hasUpgradeableRead) {
+									// We cannot issue a write lock when the caller already holds a read lock.
+									throw new InvalidOperationException();
+								} else if (this.AllHeldLocksAreByThisStack(awaiter.NestingLock)) {
+									issued = true;
+
+									var stickyWriteAwaiter = this.FindRootUpgradeableReadWithStickyWrite(awaiter);
+									if (stickyWriteAwaiter != null) {
+										// Add the upgradeable reader as a write lock as well.
+										this.writeLocksIssued.Add(stickyWriteAwaiter);
+									}
+								}
+
+								break;
+							default:
+								throw Assumes.NotReachable();
+						}
 					}
 				}
 
@@ -731,7 +733,7 @@
 		/// <returns>The first active lock encountered, or <c>null</c> if none.</returns>
 		private Awaiter GetFirstActiveSelfOrAncestor(Awaiter awaiter) {
 			while (awaiter != null) {
-				if (this.IsLockActive(awaiter)) {
+				if (this.IsLockActive(awaiter, considerStaActive: true)) {
 					break;
 				}
 
@@ -749,7 +751,7 @@
 			Assumes.True(this.TryIssueLock(awaiter, previouslyQueued: true));
 
 			if (!awaiter.TryScheduleContinuationExecution()) {
-				this.Release(awaiter);
+				Assumes.True(this.ReleaseAsync(awaiter, lockConsumerCanceled: true).IsCompleted);
 			}
 		}
 
@@ -759,34 +761,48 @@
 		/// <remarks>
 		/// This method is called while holding a private lock in order to block future lock consumers till this method is finished.
 		/// </remarks>
-		protected virtual void OnExclusiveLockReleased() {
-			Assumes.True(Monitor.IsEntered(this.syncObject));
+		protected virtual Task OnExclusiveLockReleasedAsync() {
+			return CompletedTask;
 		}
 
 		/// <summary>
 		/// Invoked when a top-level upgradeable read lock is released, leaving no remaining (write) lock.
 		/// </summary>
-		protected virtual void OnUpgradeableReadLockReleased() {
-			Assumes.True(Monitor.IsEntered(this.syncObject));
+		protected virtual Task OnUpgradeableReadLockReleasedAsync() {
+			return CompletedTask;
 		}
 
 		/// <summary>
 		/// Releases the lock held by the specified awaiter.
 		/// </summary>
 		/// <param name="awaiter">The awaiter holding an active lock.</param>
-		private void Release(Awaiter awaiter) {
+		/// <param name="lockConsumerCanceled">A value indicating whether the lock consumer ended up not executing any work.</param>
+		/// <returns>
+		/// A task that should complete before the releasing thread accesses any resource protected by
+		/// a lock wrapping the lock being released.
+		/// The task will always be complete if <paramref name="lockConsumerCanceled"/> is <c>true</c>.
+		/// This method guarantees that the lock is effectively released from the caller, and the <paramref name="awaiter"/>
+		/// can be safely recycled, before the synchronous portion of this method completes.
+		/// </returns>
+		private Task ReleaseAsync(Awaiter awaiter, bool lockConsumerCanceled = false) {
+			// This method does NOT use the async keyword in its signature to avoid CallContext changes that we make
+			// causing a fork/clone of the CallContext, which defeats our alloc-free uncontested lock story.
+			Assumes.True(this.reenterConcurrencyPrep.IsCompleted); // No one should have any locks to release (and be executing code) if we're in our intermediate state.
 			var topAwaiter = this.topAwaiter.Value;
 
+			Task reenterConcurrentOutsideCode = null;
 			Task synchronousCallbackExecution = null;
 			lock (this.syncObject) {
-				// Callbacks should be fired synchronously iff a the last write lock is being released and read locks are already issued.
-				// This can occur when upgradeable read locks are held and upgraded, and then downgraded back to an upgradeable read.
-				Task callbackExecution = this.InvokeBeforeWriteLockReleaseHandlersAsync();
-				bool synchronousRequired = this.readLocksIssued.Count > 0;
-				synchronousRequired |= this.upgradeableReadLocksIssued.Count > 1;
-				synchronousRequired |= this.upgradeableReadLocksIssued.Count == 1 && !this.upgradeableReadLocksIssued.Contains(awaiter);
-				if (synchronousRequired) {
-					synchronousCallbackExecution = callbackExecution;
+				if (!lockConsumerCanceled) {
+					// Callbacks should be fired synchronously iff the last write lock is being released and read locks are already issued.
+					// This can occur when upgradeable read locks are held and upgraded, and then downgraded back to an upgradeable read.
+					Task callbackExecution = this.InvokeBeforeWriteLockReleaseHandlersAsync();
+					bool synchronousRequired = this.readLocksIssued.Count > 0;
+					synchronousRequired |= this.upgradeableReadLocksIssued.Count > 1;
+					synchronousRequired |= this.upgradeableReadLocksIssued.Count == 1 && !this.upgradeableReadLocksIssued.Contains(awaiter);
+					if (synchronousRequired) {
+						synchronousCallbackExecution = callbackExecution;
+					}
 				}
 
 				int writeLocksBefore = this.writeLocksIssued.Count;
@@ -799,27 +815,45 @@
 					this.writeLocksIssued.Remove(awaiter);
 				}
 
-				if (this.writeLocksIssued.Count == 0) {
-					if (writeLocksBefore > 0) {
-						this.OnExclusiveLockReleased();
-					}
+				if (!lockConsumerCanceled) {
+					if (this.writeLocksIssued.Count == 0) {
+						bool fireExclusiveLockReleased = writeLocksBefore > 0;
+						bool fireUpgradeableReadLockReleased = upgradeableReadLocksBefore > 0 && this.upgradeableReadLocksIssued.Count == 0;
+						if (fireExclusiveLockReleased || fireUpgradeableReadLockReleased) {
+							using (this.HideLocks()) {
+								reenterConcurrentOutsideCode = Task.Run(async delegate {
+									if (fireExclusiveLockReleased) {
+										await this.OnExclusiveLockReleasedAsync().ConfigureAwait(false);
+									}
 
-					if (upgradeableReadLocksBefore > 0 && this.upgradeableReadLocksIssued.Count == 0) {
-						// This will only fire when the outermost upgradeable read is not itself nested by a write lock,
-						// and that's by design.
-						this.OnUpgradeableReadLockReleased();
+									if (fireUpgradeableReadLockReleased) {
+										// This will only fire when the outermost upgradeable read is not itself nested by a write lock,
+										// and that's by design.
+										await this.OnUpgradeableReadLockReleasedAsync().ConfigureAwait(false);
+									}
+
+									this.OnReleaseReenterConcurrencyComplete();
+								});
+								this.reenterConcurrencyPrep = reenterConcurrentOutsideCode;
+							}
+						}
 					}
 				}
-
-				this.CompleteIfAppropriate();
-
-				this.TryInvokeLockConsumer();
 
 				this.ApplyLockToCallContext(topAwaiter);
 			}
 
-			if (synchronousCallbackExecution != null) {
-				synchronousCallbackExecution.Wait();
+			if (reenterConcurrentOutsideCode == null) {
+				this.OnReleaseReenterConcurrencyComplete();
+			}
+
+			return synchronousCallbackExecution ?? CompletedTask;
+		}
+
+		private void OnReleaseReenterConcurrencyComplete() {
+			lock (this.syncObject) {
+				this.CompleteIfAppropriate();
+				this.TryInvokeLockConsumer();
 			}
 		}
 
@@ -867,7 +901,7 @@
 					Func<Task> callback;
 					while (this.TryDequeueBeforeWriteReleasedCallback(out callback)) {
 						try {
-							await callback();
+							await callback().ConfigureAwait(false);
 						} catch (Exception ex) {
 							if (exceptions == null) {
 								exceptions = new List<Exception>();
@@ -966,7 +1000,7 @@
 				if (this.TryIssueLock(awaiter, previouslyQueued: true)) {
 					// Run the continuation asynchronously (since this is called in OnCompleted, which is an async pattern).
 					if (!awaiter.TryScheduleContinuationExecution()) {
-						this.Release(awaiter);
+						Assumes.True(this.ReleaseAsync(awaiter, lockConsumerCanceled: true).IsCompleted);
 					}
 				} else {
 					switch (awaiter.Kind) {
@@ -1158,7 +1192,7 @@
 			/// </summary>
 			/// <value><c>true</c> iff the lock has bee issued, has not yet been released, and the caller is on an MTA thread.</value>
 			private bool LockIssued {
-				get { return this.lck.IsLockActive(this); }
+				get { return this.lck.IsLockActive(this, considerStaActive: false); }
 			}
 
 			/// <summary>
@@ -1221,7 +1255,7 @@
 				awaiter.continuation = null;
 				awaiter.options = options;
 				awaiter.cancellationToken = cancellationToken;
-				awaiter.nestingLock = lck.topAwaiter.Value;
+				awaiter.nestingLock = lck.GetFirstActiveSelfOrAncestor(lck.topAwaiter.Value);
 				awaiter.fault = null;
 				awaiter.synchronousBlock.Reset();
 
@@ -1231,12 +1265,17 @@
 			/// <summary>
 			/// Releases the lock and recycles this instance.
 			/// </summary>
-			internal void Release() {
+			internal Task ReleaseAsync() {
+				// This method does NOT use the async keyword in its signature to avoid CallContext changes that we make
+				// causing a fork/clone of the CallContext, which defeats our alloc-free uncontested lock story.
+				var releaseTask = CompletedTask;
 				if (this.lck != null) {
-					this.Lock.Release(this);
+					releaseTask = this.Lock.ReleaseAsync(this);
 					recycledAwaiters.TryAdd(this);
 					this.lck = null;
 				}
+
+				return releaseTask;
 			}
 
 			/// <summary>
@@ -1304,8 +1343,21 @@
 			/// </summary>
 			public void Dispose() {
 				if (this.awaiter != null) {
-					this.awaiter.Release();
+					this.awaiter.ReleaseAsync().Wait();
 				}
+			}
+
+			/// <summary>
+			/// Releases the lock.
+			/// </summary>
+			/// <returns>
+			/// A task that should complete before the releasing thread accesses any resource protected by
+			/// a lock wrapping the lock being released.
+			/// </returns>
+			public Task DisposeAsync() {
+				return this.awaiter != null
+					? this.awaiter.ReleaseAsync()
+					: CompletedTask;
 			}
 		}
 

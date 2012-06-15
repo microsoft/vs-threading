@@ -123,13 +123,13 @@
 		/// </remarks>
 		protected abstract Task<TResource> PrepareResourceForExclusiveAccessAsync(TResource resource);
 
-		protected override void OnExclusiveLockReleased() {
-			base.OnExclusiveLockReleased();
-			this.helper.OnExclusiveLockReleased();
+		protected override async Task OnExclusiveLockReleasedAsync() {
+			await base.OnExclusiveLockReleasedAsync();
+			await this.helper.OnExclusiveLockReleasedAsync();
 		}
 
-		protected override void OnUpgradeableReadLockReleased() {
-			base.OnUpgradeableReadLockReleased();
+		protected override async Task OnUpgradeableReadLockReleasedAsync() {
+			await base.OnUpgradeableReadLockReleasedAsync();
 			this.helper.OnUpgradeableReadLockReleased();
 		}
 
@@ -162,9 +162,7 @@
 			/// <summary>
 			/// Ensures that all resources are marked as unprepared so at next request they are prepared again.
 			/// </summary>
-			internal void OnExclusiveLockReleased() {
-				Assumes.True(Monitor.IsEntered(this.service.SyncObject));
-
+			internal async Task OnExclusiveLockReleasedAsync() {
 				// TODO: write a test that proves that this approach makes resources
 				// vulnerable to concurrent preparation.
 				// We really need a way to indicate that all resources requested after this point
@@ -174,24 +172,13 @@
 				if (this.service.IsUpgradeableReadLockHeld) {
 					// We must also synchronously prepare all resources that were acquired within the upgradeable read lock
 					// because as soon as this method returns these resources may be access concurrently again.
-					var preparationTasks = new List<Task>(this.resourcesAcquiredWithinUpgradeableRead.Count);
+					var preparationTasks = new Task[this.resourcesAcquiredWithinUpgradeableRead.Count];
+					int taskIndex = 0;
 					foreach (var resource in this.resourcesAcquiredWithinUpgradeableRead) {
-						Task<TResource> task;
-						if (this.projectEvaluationTasks.TryGetValue(resource, out task)) {
-							preparationTasks.Add(task);
-						}
+						preparationTasks[taskIndex++] = this.PrepareResourceAsync(resource, evenIfPreviouslyPrepared: true);
 					}
 
-					// The ugly part of this is that it happens while we're holding the private lock.
-					// It's also all on one thread (to avoid deadlocking the unit tests) instead of leveraging the threadpool
-					// to prepare multiple resources concurrently when possible, so that should be improved.
-					// TODO: Try to fix this so that that isn't so.  Find some other way to asynchronously block others 
-					//       from getting their locks so that we're not synchronously block callers of ReadLockAsync(), etc.
-					// TODO: write a test that demonstrates the synchronous regression of the async methods and then fix it.
-					Task.WaitAll(preparationTasks.ToArray());
-					foreach (var resource in this.resourcesAcquiredWithinUpgradeableRead) {
-						this.service.PrepareResourceForConcurrentAccessAsync(resource).GetAwaiter().GetResult();
-					}
+					await Task.WhenAll(preparationTasks.ToArray());
 				}
 			}
 
@@ -215,7 +202,7 @@
 							// We can't currently use the caller's cancellation token for this task because 
 							// this task may be shared with others or call this method later, and we wouldn't 
 							// want their requests to be cancelled as a result of this first caller cancelling.
-							preparationTask = this.PrepareResource(resource);
+							preparationTask = this.PrepareResourceAsync(resource);
 						}
 					}
 
@@ -224,8 +211,7 @@
 				}
 			}
 
-			private Task<TResource> PrepareResource(TResource resource, bool evenIfPreviouslyPrepared = false) {
-				Assumes.True(Monitor.IsEntered(this.service.SyncObject));
+			private Task<TResource> PrepareResourceAsync(TResource resource, bool evenIfPreviouslyPrepared = false) {
 				Task<TResource> preparationTask;
 				if (!this.projectEvaluationTasks.TryGetValue(resource, out preparationTask)) {
 					var preparationDelegate = this.service.IsWriteLockHeld ? prepareResourceExclusiveDelegate : prepareResourceConcurrentDelegate;
