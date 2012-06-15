@@ -8,10 +8,8 @@
 	using System.Threading.Tasks;
 	using Microsoft.Threading;
 
-	public abstract class AsyncReaderWriterResourceLock<TMoniker, TResource>
+	public abstract class AsyncReaderWriterResourceLock<TMoniker, TResource> : AsyncReaderWriterLock
 		where TResource : class {
-		private readonly AsyncReaderWriterLock asyncLock = new AsyncReaderWriterLock();
-
 		private readonly Helper helper;
 
 		public AsyncReaderWriterResourceLock() {
@@ -22,7 +20,7 @@
 		/// Flags that modify default lock behavior.
 		/// </summary>
 		[Flags]
-		public enum LockFlags {
+		public new enum LockFlags {
 			/// <summary>
 			/// The default behavior applies.
 			/// </summary>
@@ -55,68 +53,48 @@
 			SkipInitialPreparation = 0x1000,
 		}
 
-		public bool IsReadLockHeld {
-			get { return this.asyncLock.IsReadLockHeld; }
-		}
-
-		public bool IsUpgradeableReadLockHeld {
-			get { return this.asyncLock.IsUpgradeableReadLockHeld; }
-		}
-
-		public bool IsWriteLockHeld {
-			get { return this.asyncLock.IsWriteLockHeld; }
-		}
-
 		protected bool IsAnyLockHeld {
-			get { return this.asyncLock.IsReadLockHeld || this.asyncLock.IsUpgradeableReadLockHeld || this.asyncLock.IsWriteLockHeld; }
+			get { return base.IsReadLockHeld || base.IsUpgradeableReadLockHeld || base.IsWriteLockHeld; }
 		}
 
-		public void OnBeforeWriteLockReleased(Func<Task> action) {
-			this.asyncLock.OnBeforeWriteLockReleased(action);
+		public new ResourceReleaser ReadLock(CancellationToken cancellationToken = default(CancellationToken)) {
+			return new ResourceReleaser(base.ReadLock(cancellationToken), this.helper);
 		}
 
-		public ResourceReleaser ReadLock(CancellationToken cancellationToken = default(CancellationToken)) {
-			return new ResourceReleaser(this.asyncLock.ReadLock(cancellationToken), this.helper);
-		}
-
-		public ResourceAwaitable ReadLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
-			return new ResourceAwaitable(this.asyncLock.ReadLockAsync(cancellationToken), this.helper);
+		public new ResourceAwaitable ReadLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
+			return new ResourceAwaitable(base.ReadLockAsync(cancellationToken), this.helper);
 		}
 
 		public ResourceReleaser UpgradeableReadLock(LockFlags options, CancellationToken cancellationToken = default(CancellationToken)) {
-			return new ResourceReleaser(this.asyncLock.UpgradeableReadLock((AsyncReaderWriterLock.LockFlags)options, cancellationToken), this.helper);
+			return new ResourceReleaser(base.UpgradeableReadLock((AsyncReaderWriterLock.LockFlags)options, cancellationToken), this.helper);
 		}
 
-		public ResourceReleaser UpgradeableReadLock(CancellationToken cancellationToken = default(CancellationToken)) {
-			return new ResourceReleaser(this.asyncLock.UpgradeableReadLock(cancellationToken), this.helper);
+		public new ResourceReleaser UpgradeableReadLock(CancellationToken cancellationToken = default(CancellationToken)) {
+			return new ResourceReleaser(base.UpgradeableReadLock(cancellationToken), this.helper);
 		}
 
 		public ResourceAwaitable UpgradeableReadLockAsync(LockFlags options, CancellationToken cancellationToken = default(CancellationToken)) {
-			return new ResourceAwaitable(this.asyncLock.UpgradeableReadLockAsync((AsyncReaderWriterLock.LockFlags)options, cancellationToken), this.helper);
+			return new ResourceAwaitable(base.UpgradeableReadLockAsync((AsyncReaderWriterLock.LockFlags)options, cancellationToken), this.helper);
 		}
 
-		public ResourceAwaitable UpgradeableReadLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
-			return new ResourceAwaitable(this.asyncLock.UpgradeableReadLockAsync(cancellationToken), this.helper);
+		public new ResourceAwaitable UpgradeableReadLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
+			return new ResourceAwaitable(base.UpgradeableReadLockAsync(cancellationToken), this.helper);
 		}
 
-		public ResourceReleaser WriteLock(CancellationToken cancellationToken = default(CancellationToken)) {
-			return new ResourceReleaser(this.asyncLock.WriteLock(cancellationToken), this.helper);
+		public new ResourceReleaser WriteLock(CancellationToken cancellationToken = default(CancellationToken)) {
+			return new ResourceReleaser(base.WriteLock(cancellationToken), this.helper);
 		}
 
 		public ResourceReleaser WriteLock(LockFlags options, CancellationToken cancellationToken = default(CancellationToken)) {
-			return new ResourceReleaser(this.asyncLock.WriteLock((AsyncReaderWriterLock.LockFlags)options, cancellationToken), this.helper);
+			return new ResourceReleaser(base.WriteLock((AsyncReaderWriterLock.LockFlags)options, cancellationToken), this.helper);
 		}
 
-		public ResourceAwaitable WriteLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
-			return new ResourceAwaitable(this.asyncLock.WriteLockAsync(cancellationToken), this.helper);
+		public new ResourceAwaitable WriteLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
+			return new ResourceAwaitable(base.WriteLockAsync(cancellationToken), this.helper);
 		}
 
 		public ResourceAwaitable WriteLockAsync(LockFlags options, CancellationToken cancellationToken = default(CancellationToken)) {
-			return new ResourceAwaitable(this.asyncLock.WriteLockAsync((AsyncReaderWriterLock.LockFlags)options, cancellationToken), this.helper);
-		}
-
-		public ResourceSuppression HideLocks() {
-			return new ResourceSuppression(this.asyncLock.HideLocks());
+			return new ResourceAwaitable(base.WriteLockAsync((AsyncReaderWriterLock.LockFlags)options, cancellationToken), this.helper);
 		}
 
 		protected abstract Task<TResource> GetResourceAsync(TMoniker projectMoniker);
@@ -157,7 +135,7 @@
 					Task<TResource> preparationTask;
 
 					lock (this.syncObject) {
-						if (this.service.IsWriteLockHeld && this.service.asyncLock.LockStackContains((AsyncReaderWriterLock.LockFlags)LockFlags.SkipInitialPreparation)) {
+						if (this.service.IsWriteLockHeld && this.service.LockStackContains((AsyncReaderWriterLock.LockFlags)LockFlags.SkipInitialPreparation)) {
 							return resource;
 						} else {
 							// We can't currently use the caller's cancellation token for this task because 
