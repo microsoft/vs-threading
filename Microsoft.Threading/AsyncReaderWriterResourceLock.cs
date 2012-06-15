@@ -104,7 +104,7 @@
 		}
 
 		public ResourceReleaser WriteLock(LockFlags options, CancellationToken cancellationToken = default(CancellationToken)) {
-			return new ResourceReleaser(this.asyncLock.WriteLock(cancellationToken), this.helper);
+			return new ResourceReleaser(this.asyncLock.WriteLock((AsyncReaderWriterLock.LockFlags)options, cancellationToken), this.helper);
 		}
 
 		public ResourceAwaitable WriteLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
@@ -112,7 +112,7 @@
 		}
 
 		public ResourceAwaitable WriteLockAsync(LockFlags options, CancellationToken cancellationToken = default(CancellationToken)) {
-			return new ResourceAwaitable(this.asyncLock.WriteLockAsync(cancellationToken), this.helper);
+			return new ResourceAwaitable(this.asyncLock.WriteLockAsync((AsyncReaderWriterLock.LockFlags)options, cancellationToken), this.helper);
 		}
 
 		public ResourceSuppression HideLocks() {
@@ -156,17 +156,21 @@
 					var resource = await this.service.GetResourceAsync(resourceMoniker);
 					Task<TResource> preparationTask;
 
-					// We can't currently use the caller's cancellation token for this task because 
-					// this task may be shared with others or call this method later, and we wouldn't 
-					// want their requests to be cancelled as a result of this first caller cancelling.
 					lock (this.syncObject) {
-						if (!this.projectEvaluationTasks.TryGetValue(resource, out preparationTask)) {
-							var preparationDelegate = this.service.IsWriteLockHeld ? prepareResourceExclusiveDelegate : prepareResourceConcurrentDelegate;
-							preparationTask = Task.Factory.StartNew(preparationDelegate, resource, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap();
+						if (this.service.asyncLock.LockStackContains((AsyncReaderWriterLock.LockFlags)LockFlags.SkipInitialPreparation)) {
+							return resource;
 						} else {
-							var preparationDelegate = this.service.IsWriteLockHeld ? prepareResourceExclusiveContinuationDelegate : prepareResourceConcurrentContinuationDelegate;
-							preparationTask = preparationTask.ContinueWith(preparationDelegate, resource, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap();
-							this.projectEvaluationTasks.Remove(resource);
+							// We can't currently use the caller's cancellation token for this task because 
+							// this task may be shared with others or call this method later, and we wouldn't 
+							// want their requests to be cancelled as a result of this first caller cancelling.
+							if (!this.projectEvaluationTasks.TryGetValue(resource, out preparationTask)) {
+								var preparationDelegate = this.service.IsWriteLockHeld ? prepareResourceExclusiveDelegate : prepareResourceConcurrentDelegate;
+								preparationTask = Task.Factory.StartNew(preparationDelegate, resource, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap();
+							} else {
+								var preparationDelegate = this.service.IsWriteLockHeld ? prepareResourceExclusiveContinuationDelegate : prepareResourceConcurrentContinuationDelegate;
+								preparationTask = preparationTask.ContinueWith(preparationDelegate, resource, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap();
+								this.projectEvaluationTasks.Remove(resource);
+							}
 						}
 
 						this.projectEvaluationTasks.Add(resource, preparationTask);

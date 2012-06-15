@@ -219,6 +219,28 @@
 			}
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task LockStackContainsFlags() {
+			var asyncLock = new LockDerived();
+			var customFlag = (AsyncReaderWriterLock.LockFlags)0x10000;
+			var customFlag2 = (AsyncReaderWriterLock.LockFlags)0x20000;
+			Assert.IsFalse(asyncLock.LockStackContains(customFlag));
+			using (await asyncLock.UpgradeableReadLockAsync(customFlag)) {
+				Assert.IsTrue(asyncLock.LockStackContains(customFlag));
+				Assert.IsFalse(asyncLock.LockStackContains(customFlag2));
+
+				using (await asyncLock.WriteLockAsync(customFlag2)) {
+					Assert.IsTrue(asyncLock.LockStackContains(customFlag));
+					Assert.IsTrue(asyncLock.LockStackContains(customFlag2));
+				}
+
+				Assert.IsTrue(asyncLock.LockStackContains(customFlag));
+				Assert.IsFalse(asyncLock.LockStackContains(customFlag2));
+			}
+
+			Assert.IsFalse(asyncLock.LockStackContains(customFlag));
+		}
+
 		#region ReadLockAsync tests
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -1969,6 +1991,12 @@
 		private class OtherDomainProxy : MarshalByRefObject {
 			internal void SomeMethod(int callingAppDomainId) {
 				Assert.AreNotEqual(callingAppDomainId, AppDomain.CurrentDomain.Id, "AppDomain boundaries not crossed.");
+			}
+		}
+
+		private class LockDerived : AsyncReaderWriterLock {
+			internal new bool LockStackContains(LockFlags flags, Awaiter awaiter = null) {
+				return base.LockStackContains(flags, awaiter);
 			}
 		}
 	}

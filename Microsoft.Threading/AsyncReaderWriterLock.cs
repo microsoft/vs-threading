@@ -275,6 +275,20 @@
 		}
 
 		/// <summary>
+		/// Obtains a write lock, asynchronously awaiting for the lock if it is not immediately available.
+		/// </summary>
+		/// <param name="options">Modifications to normal lock behavior.</param>
+		/// <param name="cancellationToken">
+		/// A token whose cancellation indicates lost interest in obtaining the lock.
+		/// A canceled token does not release a lock that has already been issued.  But if the lock isn't immediately available,
+		/// a canceled token will cause the code that is waiting for the lock to resume with an <see cref="OperationCanceledException"/>.
+		/// </param>
+		/// <returns>An awaitable object whose result is the lock releaser.</returns>
+		public Awaitable WriteLockAsync(LockFlags options, CancellationToken cancellationToken = default(CancellationToken)) {
+			return new Awaitable(this, LockKind.Write, options, cancellationToken);
+		}
+
+		/// <summary>
 		/// Obtains a read lock, synchronously blocking for the lock if it is not immediately available.
 		/// </summary>
 		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
@@ -316,6 +330,18 @@
 		public Releaser WriteLock(CancellationToken cancellationToken = default(CancellationToken)) {
 			ThrowIfSta();
 			var awaiter = this.WriteLockAsync(cancellationToken).GetAwaiter();
+			return awaiter.GetResult();
+		}
+
+		/// <summary>
+		/// Obtains a write lock, synchronously blocking for the lock if it is not immediately available.
+		/// </summary>
+		/// <param name="options">Modifications to normal lock behavior.</param>
+		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
+		/// <returns>A lock releaser.</returns>
+		public Releaser WriteLock(LockFlags options, CancellationToken cancellationToken = default(CancellationToken)) {
+			ThrowIfSta();
+			var awaiter = this.WriteLockAsync(options, cancellationToken).GetAwaiter();
 			return awaiter.GetResult();
 		}
 
@@ -365,6 +391,31 @@
 
 				this.beforeWriteReleasedCallbacks.Enqueue(action);
 			}
+		}
+
+		/// <summary>
+		/// Checks whether the aggregated flags from all locks in the lock stack satisfy the specified flag(s).
+		/// </summary>
+		/// <param name="flags">The flag(s) that must be specified for a <c>true</c> result.</param>
+		/// <param name="awaiter">The head of the lock stack, or <c>null</c> to use the one on the top of the caller's context.</param>
+		/// <returns><c>true</c> if all flags are found somewhere in the lock stack; <c>false</c> otherwise.</returns>
+		protected internal bool LockStackContains(LockFlags flags, Awaiter awaiter = null) {
+			LockFlags aggregateFlags = LockFlags.None;
+			awaiter = awaiter ?? this.topAwaiter.Value;
+			if (awaiter != null) {
+				lock (this.syncObject) {
+					while (awaiter != null) {
+						aggregateFlags |= awaiter.Options;
+						if ((aggregateFlags & flags) == flags) {
+							return true;
+						}
+
+						awaiter = awaiter.NestingLock;
+					}
+				}
+			}
+
+			return (aggregateFlags & flags) == flags;
 		}
 
 		/// <summary>
