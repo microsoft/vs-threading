@@ -221,6 +221,10 @@
 			get { return this.completionSource.Task; }
 		}
 
+		protected object SyncObject {
+			get { return this.syncObject; }
+		}
+
 		/// <summary>
 		/// Obtains a read lock, asynchronously awaiting for the lock if it is not immediately available.
 		/// </summary>

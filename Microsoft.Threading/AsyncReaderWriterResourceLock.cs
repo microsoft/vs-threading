@@ -114,8 +114,6 @@
 
 			private readonly Func<Task<TResource>, object, Task<TResource>> prepareResourceExclusiveContinuationDelegate;
 
-			private readonly object syncObject = new object();
-
 			/// <summary>
 			/// A map of projects to the tasks that most recently began evaluating them.
 			/// </summary>
@@ -134,7 +132,7 @@
 					var resource = await this.service.GetResourceAsync(resourceMoniker);
 					Task<TResource> preparationTask;
 
-					lock (this.syncObject) {
+					lock (this.service.SyncObject) {
 						if (this.service.IsWriteLockHeld && this.service.LockStackContains((AsyncReaderWriterLock.LockFlags)LockFlags.SkipInitialPreparation)) {
 							return resource;
 						} else {
