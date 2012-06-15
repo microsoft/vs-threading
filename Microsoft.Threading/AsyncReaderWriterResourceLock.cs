@@ -157,7 +157,7 @@
 					Task<TResource> preparationTask;
 
 					lock (this.syncObject) {
-						if (this.service.asyncLock.LockStackContains((AsyncReaderWriterLock.LockFlags)LockFlags.SkipInitialPreparation)) {
+						if (this.service.IsWriteLockHeld && this.service.asyncLock.LockStackContains((AsyncReaderWriterLock.LockFlags)LockFlags.SkipInitialPreparation)) {
 							return resource;
 						} else {
 							// We can't currently use the caller's cancellation token for this task because 
