@@ -39,7 +39,7 @@
 		/// <summary>
 		/// A singleton task that is already completed.
 		/// </summary>
-		private static readonly Task CompletedTask = Task.FromResult<object>(null);
+		protected static readonly Task CompletedTask = Task.FromResult<object>(null);
 
 		/// <summary>
 		/// The object to acquire a Monitor-style lock on for all field access on this instance.

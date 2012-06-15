@@ -324,6 +324,37 @@
 			await resource;
 		}
 
+		/// <summary>
+		/// Demonstrates that a conscientious lock holder may asynchronously release a write lock
+		/// so that blocking the thread isn't necessary while preparing resource for concurrent access again.
+		/// </summary>
+		/// <returns></returns>
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task AsyncReleaseOfWriteToUpgradeableReadLock() {
+			using (var upgradeableReadAccess = await this.projectLock.UpgradeableReadLockAsync()) {
+				var resource = await upgradeableReadAccess.GetResourceAsync(1);
+				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
+
+				using (var writeAccess = await this.projectLock.WriteLockAsync()) {
+					resource = await writeAccess.GetResourceAsync(1);
+					Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
+					Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
+
+					await writeAccess.DisposeAsync();
+					Assert.IsFalse(this.projectLock.IsWriteLockHeld);
+					Assert.IsTrue(this.projectLock.IsUpgradeableReadLockHeld);
+					Assert.AreEqual(2, resource.ConcurrentAccessPreparationCount);
+					Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
+				}
+
+				Assert.IsFalse(this.projectLock.IsWriteLockHeld);
+				Assert.IsTrue(this.projectLock.IsUpgradeableReadLockHeld);
+				Assert.AreEqual(2, resource.ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
+			}
+		}
+
 		private class Resource {
 			public int ConcurrentAccessPreparationCount { get; set; }
 

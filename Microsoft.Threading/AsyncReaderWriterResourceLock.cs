@@ -321,6 +321,11 @@
 			public void Dispose() {
 				this.helper.OnDispose(this);
 			}
+
+			public Task DisposeAsync() {
+				this.helper.OnDispose(this);
+				return CompletedTask;
+			}
 		}
 
 		public struct ResourceSuppression : IDisposable {
