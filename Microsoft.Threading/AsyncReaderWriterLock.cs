@@ -14,8 +14,6 @@
 	/// A non-blocking lock that allows concurrent access, exclusive access, or concurrent with upgradeability to exclusive access.
 	/// </summary>
 	/// <remarks>
-	/// TODO: 
-	///  * externally: SkipInitialEvaluation, SuppressReevaluation
 	/// We have to use a custom awaitable rather than simply returning Task{LockReleaser} because 
 	/// we have to set CallContext data in the context of the person receiving the lock,
 	/// which requires that we get to execute code at the start of the continuation (whether we yield or not).
@@ -436,9 +434,7 @@
 		/// if appropriate.
 		/// </summary>
 		private void CompleteIfAppropriate() {
-			if (!Monitor.IsEntered(this.syncObject)) {
-				throw new Exception();
-			}
+			Assumes.True(Monitor.IsEntered(this.syncObject));
 
 			if (this.completeInvoked &&
 				!this.completionSource.Task.IsCompleted &&
@@ -590,9 +586,7 @@
 		/// <param name="awaiter">The lock to check.</param>
 		/// <returns><c>true</c> if the lock is currently issued and the caller is not on an STA thread.</returns>
 		private bool IsLockActive(Awaiter awaiter) {
-			if (awaiter == null) {
-				throw new ArgumentNullException("awaiter");
-			}
+			Requires.NotNull(awaiter, "awaiter");
 
 			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
 				lock (this.syncObject) {
@@ -667,7 +661,7 @@
 
 							break;
 						default:
-							throw new Exception();
+							throw Assumes.NotReachable();
 					}
 				}
 
@@ -726,7 +720,7 @@
 				case LockKind.Write:
 					return this.writeLocksIssued;
 				default:
-					throw new Exception();
+					throw Assumes.NotReachable();
 			}
 		}
 
@@ -752,9 +746,7 @@
 		/// </summary>
 		/// <param name="awaiter">The awaiter to issue a lock to and execute.</param>
 		private void IssueAndExecute(Awaiter awaiter) {
-			if (!this.TryIssueLock(awaiter, previouslyQueued: true)) {
-				throw new Exception();
-			}
+			Assumes.True(this.TryIssueLock(awaiter, previouslyQueued: true));
 
 			if (!awaiter.TryScheduleContinuationExecution()) {
 				this.Release(awaiter);
@@ -863,9 +855,7 @@
 		/// </summary>
 		/// <returns>A task representing the work of sequentially invoking the callbacks.</returns>
 		private async Task InvokeBeforeWriteLockReleaseHandlersHelperAsync() {
-			if (!Monitor.IsEntered(this.syncObject)) {
-				throw new Exception();
-			}
+			Assumes.True(Monitor.IsEntered(this.syncObject));
 
 			if (this.writeLocksIssued.Count == 1 && this.beforeWriteReleasedCallbacks.Count > 0) {
 				using (await this.WriteLockAsync()) {
@@ -1208,7 +1198,7 @@
 					// If the cancellation token was signaled, we'll throw that because a canceled token is a 
 					// legit reason to hit this path in the method.  Otherwise it's an internal error.
 					this.cancellationToken.ThrowIfCancellationRequested();
-					throw new Exception();
+					throw Assumes.NotReachable();
 				}
 			}
 
