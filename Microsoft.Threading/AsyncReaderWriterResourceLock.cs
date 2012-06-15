@@ -128,6 +128,11 @@
 			this.helper.OnExclusiveLockReleased();
 		}
 
+		protected override void OnUpgradeableReadLockReleased() {
+			base.OnUpgradeableReadLockReleased();
+			this.helper.OnUpgradeableReadLockReleased();
+		}
+
 		internal class Helper {
 			private readonly AsyncReaderWriterResourceLock<TMoniker, TResource> service;
 
@@ -138,6 +143,8 @@
 			private readonly Func<Task<TResource>, object, Task<TResource>> prepareResourceConcurrentContinuationDelegate;
 
 			private readonly Func<Task<TResource>, object, Task<TResource>> prepareResourceExclusiveContinuationDelegate;
+
+			private readonly HashSet<TResource> resourcesAcquiredWithinUpgradeableRead = new HashSet<TResource>();
 
 			/// <summary>
 			/// A map of projects to the tasks that most recently began evaluating them.
@@ -152,6 +159,9 @@
 				this.prepareResourceExclusiveContinuationDelegate = (prev, state) => this.service.PrepareResourceForExclusiveAccessAsync((TResource)state);
 			}
 
+			/// <summary>
+			/// Ensures that all resources are marked as unprepared so at next request they are prepared again.
+			/// </summary>
 			internal void OnExclusiveLockReleased() {
 				Assumes.True(Monitor.IsEntered(this.service.SyncObject));
 
@@ -160,6 +170,33 @@
 				// We really need a way to indicate that all resources requested after this point
 				// should be prepared again.
 				this.projectEvaluationTasks = new ConditionalWeakTable<TResource, Task<TResource>>();
+
+				if (this.service.IsUpgradeableReadLockHeld) {
+					// We must also synchronously prepare all resources that were acquired within the upgradeable read lock
+					// because as soon as this method returns these resources may be access concurrently again.
+					var preparationTasks = new List<Task>(this.resourcesAcquiredWithinUpgradeableRead.Count);
+					foreach (var resource in this.resourcesAcquiredWithinUpgradeableRead) {
+						Task<TResource> task;
+						if (this.projectEvaluationTasks.TryGetValue(resource, out task)) {
+							preparationTasks.Add(task);
+						}
+					}
+
+					// The ugly part of this is that it happens while we're holding the private lock.
+					// It's also all on one thread (to avoid deadlocking the unit tests) instead of leveraging the threadpool
+					// to prepare multiple resources concurrently when possible, so that should be improved.
+					// TODO: Try to fix this so that that isn't so.  Find some other way to asynchronously block others 
+					//       from getting their locks so that we're not synchronously block callers of ReadLockAsync(), etc.
+					// TODO: write a test that demonstrates the synchronous regression of the async methods and then fix it.
+					Task.WaitAll(preparationTasks.ToArray());
+					foreach (var resource in this.resourcesAcquiredWithinUpgradeableRead) {
+						this.service.PrepareResourceForConcurrentAccessAsync(resource);
+					}
+				}
+			}
+
+			internal void OnUpgradeableReadLockReleased() {
+				this.resourcesAcquiredWithinUpgradeableRead.Clear();
 			}
 
 			public async Task<TResource> GetResourceAsync(TMoniker resourceMoniker, CancellationToken cancellationToken) {
@@ -168,23 +205,40 @@
 					Task<TResource> preparationTask;
 
 					lock (this.service.SyncObject) {
+						if (this.service.IsUpgradeableReadLockHeld && !this.service.IsWriteLockHeld) {
+							this.resourcesAcquiredWithinUpgradeableRead.Add(resource);
+						}
+
 						if (this.service.IsWriteLockHeld && this.service.LockStackContains((AsyncReaderWriterLock.LockFlags)LockFlags.SkipInitialPreparation)) {
 							return resource;
 						} else {
 							// We can't currently use the caller's cancellation token for this task because 
 							// this task may be shared with others or call this method later, and we wouldn't 
 							// want their requests to be cancelled as a result of this first caller cancelling.
-							if (!this.projectEvaluationTasks.TryGetValue(resource, out preparationTask)) {
-								var preparationDelegate = this.service.IsWriteLockHeld ? prepareResourceExclusiveDelegate : prepareResourceConcurrentDelegate;
-								preparationTask = Task.Factory.StartNew(preparationDelegate, resource, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap();
-								this.projectEvaluationTasks.Add(resource, preparationTask);
-							}
+							preparationTask = this.PrepareResource(resource);
 						}
 					}
 
 					var result = await preparationTask;
 					return result;
 				}
+			}
+
+			private Task<TResource> PrepareResource(TResource resource, bool evenIfPreviouslyPrepared = false) {
+				Assumes.True(Monitor.IsEntered(this.service.SyncObject));
+				Task<TResource> preparationTask;
+				if (!this.projectEvaluationTasks.TryGetValue(resource, out preparationTask)) {
+					var preparationDelegate = this.service.IsWriteLockHeld ? prepareResourceExclusiveDelegate : prepareResourceConcurrentDelegate;
+					preparationTask = Task.Factory.StartNew(preparationDelegate, resource, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap();
+					this.projectEvaluationTasks.Add(resource, preparationTask);
+				} else if (evenIfPreviouslyPrepared) {
+					var preparationDelegate = this.service.IsWriteLockHeld ? prepareResourceExclusiveContinuationDelegate : prepareResourceConcurrentContinuationDelegate;
+					preparationTask = preparationTask.ContinueWith(preparationDelegate, resource, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap();
+					this.projectEvaluationTasks.Remove(resource);
+					this.projectEvaluationTasks.Add(resource, preparationTask);
+				}
+
+				return preparationTask;
 			}
 
 			public void OnDispose(ResourceReleaser releaser) {

@@ -768,7 +768,14 @@
 		/// This method is called while holding a private lock in order to block future lock consumers till this method is finished.
 		/// </remarks>
 		protected virtual void OnExclusiveLockReleased() {
-			Debug.Assert(Monitor.IsEntered(this.syncObject));
+			Assumes.True(Monitor.IsEntered(this.syncObject));
+		}
+
+		/// <summary>
+		/// Invoked when a top-level upgradeable read lock is released, leaving no remaining (write) lock.
+		/// </summary>
+		protected virtual void OnUpgradeableReadLockReleased() {
+			Assumes.True(Monitor.IsEntered(this.syncObject));
 		}
 
 		/// <summary>
@@ -791,6 +798,7 @@
 				}
 
 				int writeLocksBefore = this.writeLocksIssued.Count;
+				int upgradeableReadLocksBefore = this.upgradeableReadLocksIssued.Count;
 
 				this.GetActiveLockSet(awaiter.Kind).Remove(awaiter);
 
@@ -799,8 +807,16 @@
 					this.writeLocksIssued.Remove(awaiter);
 				}
 
-				if (writeLocksBefore > 0 && this.writeLocksIssued.Count == 0) {
-					this.OnExclusiveLockReleased();
+				if (this.writeLocksIssued.Count == 0) {
+					if (writeLocksBefore > 0) {
+						this.OnExclusiveLockReleased();
+					}
+
+					if (upgradeableReadLocksBefore > 0 && this.upgradeableReadLocksIssued.Count == 0) {
+						// This will only fire when the outermost upgradeable read is not itself nested by a write lock,
+						// and that's by design.
+						this.OnUpgradeableReadLockReleased();
+					}
 				}
 
 				this.CompleteIfAppropriate();

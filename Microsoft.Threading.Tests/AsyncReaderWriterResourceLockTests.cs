@@ -173,7 +173,7 @@
 				}
 
 				Assert.AreEqual(2, resource.ConcurrentAccessPreparationCount); // re-entering concurrent access should always be prepared on exit of exclusive access
-				Assert.AreEqual(1, resource.ExclusiveAccessPreparationCount);
+				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
 
 				// Cheat a little and peak at the resource held only by the write lock,
 				// in order to verify that no further preparation was performed when the write lock was released.
