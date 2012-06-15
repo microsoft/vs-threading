@@ -60,6 +60,66 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public async Task PreparationExecutesJustOncePerReadLock() {
+			using (var access = await this.projectLock.ReadLockAsync()) {
+				var resource = await access.GetResourceAsync(1);
+				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
+
+				await access.GetResourceAsync(1);
+				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
+
+				using (var access2 = await this.projectLock.ReadLockAsync()) {
+					await access2.GetResourceAsync(1);
+					Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
+					Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
+				}
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task PreparationExecutesJustOncePerUpgradeableReadLock() {
+			using (var access = await this.projectLock.UpgradeableReadLockAsync()) {
+				var resource = await access.GetResourceAsync(1);
+				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
+
+				await access.GetResourceAsync(1);
+				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
+
+				using (var access2 = await this.projectLock.UpgradeableReadLockAsync()) {
+					await access2.GetResourceAsync(1);
+					Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
+					Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
+				}
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task PreparationExecutesJustOncePerWriteLock() {
+			using (var access = await this.projectLock.WriteLockAsync()) {
+				var resource = await access.GetResourceAsync(1);
+				Assert.AreEqual(0, resource.ConcurrentAccessPreparationCount);
+				Assert.AreEqual(1, resource.ExclusiveAccessPreparationCount);
+
+				await access.GetResourceAsync(1);
+				Assert.AreEqual(0, resource.ConcurrentAccessPreparationCount);
+				Assert.AreEqual(1, resource.ExclusiveAccessPreparationCount);
+
+				using (var access2 = await this.projectLock.WriteLockAsync()) {
+					await access2.GetResourceAsync(1);
+					Assert.AreEqual(0, resource.ConcurrentAccessPreparationCount);
+					Assert.AreEqual(1, resource.ExclusiveAccessPreparationCount);
+				}
+
+				Assert.AreEqual(0, resource.ConcurrentAccessPreparationCount);
+				Assert.AreEqual(1, resource.ExclusiveAccessPreparationCount);
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task PreparationSkippedForWriteLockWithFlag() {
 			using (var access = await this.projectLock.WriteLockAsync(AsyncReaderWriterResourceLock<int, Resource>.LockFlags.SkipInitialPreparation)) {
 				var resource = await access.GetResourceAsync(1);
