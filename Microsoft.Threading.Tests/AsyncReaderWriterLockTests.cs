@@ -46,10 +46,10 @@
 			await Task.Run(delegate {
 				Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 				var awaitable = this.asyncLock.ReadLockAsync();
-				Assert.IsTrue(this.asyncLock.IsReadLockHeld, "Just calling the async method alone for a non-contested lock should have issued the lock.");
+				Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 				var awaiter = awaitable.GetAwaiter();
+				Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 				Assert.IsTrue(awaiter.IsCompleted);
-				Assert.IsTrue(this.asyncLock.IsReadLockHeld);
 				var releaser = awaiter.GetResult();
 				Assert.IsTrue(this.asyncLock.IsReadLockHeld);
 				releaser.Dispose();
@@ -420,6 +420,41 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task NestedReadLockAsyncAllocFree() {
 			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync());
+		}
+
+		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
+		public void LockAsyncThrowsOnGetResultBySta() {
+			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
+				Assert.Inconclusive("STA required.");
+			}
+
+			var awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
+			awaiter.GetResult(); // throws on an STA thread
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void LockAsyncNotIssuedTillGetResultOnSta() {
+			var awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
+			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+			try {
+				awaiter.GetResult();
+			} catch (InvalidOperationException) {
+				// This exception happens because we invoke it on the STA.
+				// But we have to invoke it so that the lock is effectively canceled
+				// so the test doesn't hang in Cleanup.
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task LockAsyncNotIssuedTillGetResultOnMta() {
+			await Task.Run(delegate {
+				var awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
+				try {
+					Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+				} finally {
+					awaiter.GetResult().Dispose();
+				}
+			});
 		}
 
 		#endregion

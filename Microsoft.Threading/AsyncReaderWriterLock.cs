@@ -354,9 +354,7 @@
 		/// Throws an exception if called on an STA thread.
 		/// </summary>
 		private static void ThrowIfSta() {
-			if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA) {
-				throw new InvalidOperationException();
-			}
+			Verify.Operation(Thread.CurrentThread.GetApartmentState() != ApartmentState.STA, "This operation is not allowed on an STA thread.");
 		}
 
 		/// <summary>
@@ -902,8 +900,8 @@
 			/// <param name="cancellationToken">The cancellation token.</param>
 			internal Awaitable(AsyncReaderWriterLock lck, LockKind kind, LockFlags options, CancellationToken cancellationToken) {
 				this.awaiter = Awaiter.Initialize(lck, kind, options, cancellationToken);
-				if (!cancellationToken.IsCancellationRequested && lck.TryIssueLock(this.awaiter, previouslyQueued: false)) {
-					lck.ApplyLockToCallContext(this.awaiter);
+				if (!cancellationToken.IsCancellationRequested) {
+					lck.TryIssueLock(this.awaiter, previouslyQueued: false);
 				}
 			}
 
@@ -1072,31 +1070,37 @@
 			/// </summary>
 			/// <returns>The value to dispose of to release the lock.</returns>
 			public Releaser GetResult() {
-				this.cancellationRegistration.Dispose();
+				try {
+					this.cancellationRegistration.Dispose();
 
-				if (!this.LockIssued && this.continuation == null && !this.cancellationToken.IsCancellationRequested) {
-					if (this.signalSynchronousBlock == null) {
-						this.signalSynchronousBlock = delegate { this.synchronousBlock.Set(); };
+					if (!this.LockIssued && this.continuation == null && !this.cancellationToken.IsCancellationRequested) {
+						if (this.signalSynchronousBlock == null) {
+							this.signalSynchronousBlock = delegate { this.synchronousBlock.Set(); };
+						}
+
+						this.OnCompleted(this.signalSynchronousBlock);
+						this.synchronousBlock.Wait(this.cancellationToken);
 					}
 
-					this.OnCompleted(this.signalSynchronousBlock);
-					this.synchronousBlock.Wait(this.cancellationToken);
-				}
+					ThrowIfSta();
+					if (this.fault != null) {
+						throw fault;
+					}
 
-				if (this.fault != null) {
-					throw fault;
-				}
-
-				if (this.LockIssued) {
-					this.lck.ApplyLockToCallContext(this);
-					return new Releaser(this);
-				} else {
-					// At this point, someone called GetResult who wasn't registered as a synchronous waiter,
-					// and before the lock was issued.
-					// If the cancellation token was signaled, we'll throw that because a canceled token is a 
-					// legit reason to hit this path in the method.  Otherwise it's an internal error.
-					this.cancellationToken.ThrowIfCancellationRequested();
-					throw Assumes.NotReachable();
+					if (this.LockIssued) {
+						this.lck.ApplyLockToCallContext(this);
+						return new Releaser(this);
+					} else {
+						// At this point, someone called GetResult who wasn't registered as a synchronous waiter,
+						// and before the lock was issued.
+						// If the cancellation token was signaled, we'll throw that because a canceled token is a 
+						// legit reason to hit this path in the method.  Otherwise it's an internal error.
+						this.cancellationToken.ThrowIfCancellationRequested();
+						throw Assumes.NotReachable();
+					}
+				} catch {
+					this.Release();
+					throw;
 				}
 			}
 
