@@ -676,9 +676,7 @@
 		private void IssueAndExecute(Awaiter awaiter) {
 			Assumes.True(this.TryIssueLock(awaiter, previouslyQueued: true));
 
-			if (!awaiter.TryScheduleContinuationExecution()) {
-				this.Release(awaiter);
-			}
+			this.ExecuteOrHandleCancellation(awaiter);
 		}
 
 		/// <summary>
@@ -867,9 +865,7 @@
 			lock (this.syncObject) {
 				if (this.TryIssueLock(awaiter, previouslyQueued: true)) {
 					// Run the continuation asynchronously (since this is called in OnCompleted, which is an async pattern).
-					if (!awaiter.TryScheduleContinuationExecution()) {
-						this.Release(awaiter);
-					}
+					this.ExecuteOrHandleCancellation(awaiter);
 				} else {
 					switch (awaiter.Kind) {
 						case LockKind.Read:
@@ -885,6 +881,16 @@
 							break;
 					}
 				}
+			}
+		}
+
+		/// <summary>
+		/// Executes the lock receiver or releases the lock because the request for it was canceled before it was issued.
+		/// </summary>
+		/// <param name="awaiter">The awaiter.</param>
+		private void ExecuteOrHandleCancellation(Awaiter awaiter) {
+			if (!awaiter.TryScheduleContinuationExecution()) {
+				awaiter.Release();
 			}
 		}
 
@@ -1104,6 +1110,10 @@
 						this.cancellationToken.ThrowIfCancellationRequested();
 						throw Assumes.NotReachable();
 					}
+				} catch (OperationCanceledException) {
+					// Don't release at this point, or else it would recycle this instance prematurely
+					// (while it's still in the queue to receive a lock).
+					throw;
 				} catch {
 					this.Release();
 					throw;
@@ -1181,8 +1191,7 @@
 
 				// We're in a race with the lock suddenly becoming available.
 				// Our control in the race is whether the continuation field is still set to a non-null value.
-				var continuation = Interlocked.Exchange(ref awaiter.continuation, null);
-				awaiter.TryScheduleContinuationExecution(continuation); // unblock the awaiter immediately (which will then experience an OperationCanceledException).
+				awaiter.TryScheduleContinuationExecution(); // unblock the awaiter immediately (which will then experience an OperationCanceledException).
 
 				// Release memory of the registered handler, since we only need it to fire once.
 				awaiter.cancellationRegistration.Dispose();
