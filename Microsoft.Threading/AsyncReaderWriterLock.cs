@@ -814,7 +814,9 @@
 			bool invoked = false;
 			if (this.writeLocksIssued.Count == 0) {
 				while (this.waitingReaders.Count > 0) {
-					this.IssueAndExecute(this.waitingReaders.Dequeue());
+					var pendingReader = this.waitingReaders.Dequeue();
+					Assumes.True(pendingReader.Kind == LockKind.Read);
+					this.IssueAndExecute(pendingReader);
 					invoked = true;
 				}
 			}
@@ -829,7 +831,9 @@
 		private bool TryInvokeOneUpgradeableReaderIfAppropriate() {
 			if (this.upgradeableReadLocksIssued.Count == 0 && this.writeLocksIssued.Count == 0) {
 				if (this.waitingUpgradeableReaders.Count > 0) {
-					this.IssueAndExecute(this.waitingUpgradeableReaders.Dequeue());
+					var pendingUpgradeableReader = this.waitingUpgradeableReaders.Dequeue();
+					Assumes.True(pendingUpgradeableReader.Kind == LockKind.UpgradeableRead);
+					this.IssueAndExecute(pendingUpgradeableReader);
 					return true;
 				}
 			}
@@ -844,7 +848,9 @@
 		private bool TryInvokeOneWriterIfAppropriate() {
 			if (this.readLocksIssued.Count == 0 && this.upgradeableReadLocksIssued.Count == 0 && this.writeLocksIssued.Count == 0) {
 				if (this.waitingWriters.Count > 0) {
-					this.IssueAndExecute(this.waitingWriters.Dequeue());
+					var pendingWriter = this.waitingWriters.Dequeue();
+					Assumes.True(pendingWriter.Kind == LockKind.Write);
+					this.IssueAndExecute(pendingWriter);
 					return true;
 				}
 			}

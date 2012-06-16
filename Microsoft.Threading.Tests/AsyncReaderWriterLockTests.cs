@@ -1182,6 +1182,56 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public async Task CancelPendingLockFollowedByAnotherLock() {
+			var firstWriteHeld = new TaskCompletionSource<object>();
+			var releaseWriteLock = new TaskCompletionSource<object>();
+			var cancellationTestConcluded = new TaskCompletionSource<object>();
+			var readerConcluded = new TaskCompletionSource<object>();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+				using (await this.asyncLock.WriteLockAsync()) {
+					await firstWriteHeld.SetAsync();
+					await releaseWriteLock.Task;
+				}
+			}),
+				Task.Run(async delegate {
+				await firstWriteHeld.Task;
+				var cts = new CancellationTokenSource();
+				var awaiter = this.asyncLock.WriteLockAsync(cts.Token).GetAwaiter();
+				Assert.IsFalse(awaiter.IsCompleted);
+				awaiter.OnCompleted(delegate {
+					try {
+						awaiter.GetResult();
+						cancellationTestConcluded.SetException(new AssertFailedException("Expected OperationCanceledException not thrown."));
+					} catch (OperationCanceledException) {
+						cancellationTestConcluded.SetAsync();
+					}
+				});
+				cts.Cancel();
+
+				// Pend another lock request.  Make it a read lock this time.
+				// The point of this test is to ensure that the canceled (Write) awaiter doesn't get
+				// reused as a read awaiter while it is still in the writer queue.
+				await cancellationTestConcluded.Task;
+				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+				Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+				var readLockAwaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
+				readLockAwaiter.OnCompleted(delegate {
+					using (readLockAwaiter.GetResult()) {
+						Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+						Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+					}
+
+					Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+					Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+					readerConcluded.SetAsync();
+				});
+				releaseWriteLock.SetAsync();
+				await readerConcluded.Task;
+			}));
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task CancelNonImpactfulToIssuedLocks() {
 			var cts = new CancellationTokenSource();
 			using (await this.asyncLock.WriteLockAsync(cts.Token)) {
