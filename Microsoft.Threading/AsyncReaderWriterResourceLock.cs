@@ -128,8 +128,8 @@
 			await this.helper.OnExclusiveLockReleasedAsync();
 		}
 
-		protected override async Task OnUpgradeableReadLockReleasedAsync() {
-			await base.OnUpgradeableReadLockReleasedAsync();
+		protected override void OnUpgradeableReadLockReleased() {
+			base.OnUpgradeableReadLockReleased();
 			this.helper.OnUpgradeableReadLockReleased();
 		}
 
@@ -162,24 +162,30 @@
 			/// <summary>
 			/// Ensures that all resources are marked as unprepared so at next request they are prepared again.
 			/// </summary>
-			internal async Task OnExclusiveLockReleasedAsync() {
+			internal Task OnExclusiveLockReleasedAsync() {
 				// TODO: write a test that proves that this approach makes resources
 				// vulnerable to concurrent preparation.
 				// We really need a way to indicate that all resources requested after this point
 				// should be prepared again.
 				this.projectEvaluationTasks = new ConditionalWeakTable<TResource, Task<TResource>>();
 
-				if (this.service.IsUpgradeableReadLockHeld) {
+				if (this.service.IsUpgradeableReadLockHeld && this.resourcesAcquiredWithinUpgradeableRead.Count > 0) {
 					// We must also synchronously prepare all resources that were acquired within the upgradeable read lock
 					// because as soon as this method returns these resources may be access concurrently again.
 					var preparationTasks = new Task[this.resourcesAcquiredWithinUpgradeableRead.Count];
 					int taskIndex = 0;
 					foreach (var resource in this.resourcesAcquiredWithinUpgradeableRead) {
-						preparationTasks[taskIndex++] = this.PrepareResourceAsync(resource, evenIfPreviouslyPrepared: true);
+						preparationTasks[taskIndex++] = this.PrepareResourceAsync(resource, evenIfPreviouslyPrepared: true, forcePrepareConcurrent: true);
 					}
 
-					await Task.WhenAll(preparationTasks.ToArray());
+					if (preparationTasks.Length == 1) {
+						return preparationTasks[0];
+					} else if (preparationTasks.Length > 1) {
+						return Task.WhenAll(preparationTasks);
+					}
 				}
+
+				return CompletedTask;
 			}
 
 			internal void OnUpgradeableReadLockReleased() {
@@ -211,24 +217,20 @@
 				}
 			}
 
-			private Task<TResource> PrepareResourceAsync(TResource resource, bool evenIfPreviouslyPrepared = false) {
+			private Task<TResource> PrepareResourceAsync(TResource resource, bool evenIfPreviouslyPrepared = false, bool forcePrepareConcurrent = false) {
 				Task<TResource> preparationTask;
 				if (!this.projectEvaluationTasks.TryGetValue(resource, out preparationTask)) {
-					var preparationDelegate = this.service.IsWriteLockHeld ? prepareResourceExclusiveDelegate : prepareResourceConcurrentDelegate;
+					var preparationDelegate = (this.service.IsWriteLockHeld && !forcePrepareConcurrent) ? prepareResourceExclusiveDelegate : prepareResourceConcurrentDelegate;
 					preparationTask = Task.Factory.StartNew(preparationDelegate, resource, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap();
 					this.projectEvaluationTasks.Add(resource, preparationTask);
 				} else if (evenIfPreviouslyPrepared) {
-					var preparationDelegate = this.service.IsWriteLockHeld ? prepareResourceExclusiveContinuationDelegate : prepareResourceConcurrentContinuationDelegate;
+					var preparationDelegate = (this.service.IsWriteLockHeld && !forcePrepareConcurrent) ? prepareResourceExclusiveContinuationDelegate : prepareResourceConcurrentContinuationDelegate;
 					preparationTask = preparationTask.ContinueWith(preparationDelegate, resource, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap();
 					this.projectEvaluationTasks.Remove(resource);
 					this.projectEvaluationTasks.Add(resource, preparationTask);
 				}
 
 				return preparationTask;
-			}
-
-			public void OnDispose(ResourceReleaser releaser) {
-				releaser.LockReleaser.Dispose();
 			}
 
 			private ResourceReleaser AcquirePreexistingLockOrThrow() {
@@ -305,12 +307,11 @@
 			}
 
 			public void Dispose() {
-				this.helper.OnDispose(this);
+				this.LockReleaser.Dispose();
 			}
 
 			public Task DisposeAsync() {
-				this.helper.OnDispose(this);
-				return CompletedTask;
+				return this.LockReleaser.DisposeAsync();
 			}
 		}
 

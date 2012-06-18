@@ -40,10 +40,10 @@
 			await Task.Run(delegate {
 				Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 				var awaitable = this.asyncLock.ReadLockAsync();
-				Assert.IsTrue(this.asyncLock.IsReadLockHeld, "Just calling the async method alone for a non-contested lock should have issued the lock.");
+				Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 				var awaiter = awaitable.GetAwaiter();
+				Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 				Assert.IsTrue(awaiter.IsCompleted);
-				Assert.IsTrue(this.asyncLock.IsReadLockHeld);
 				var releaser = awaiter.GetResult();
 				Assert.IsTrue(this.asyncLock.IsReadLockHeld);
 				releaser.Dispose();
@@ -176,7 +176,7 @@
 			await continuation;
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout * 2)]
 		public async Task NoMemoryLeakForManyLocks() {
 			// Get on an MTA thread so that locks do not necessarily yield.
 			await Task.Run(delegate {

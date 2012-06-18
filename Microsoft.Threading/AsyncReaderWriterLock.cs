@@ -117,6 +117,8 @@
 		/// </summary>
 		private Task reenterConcurrencyPrep = CompletedTask;
 
+		private volatile bool reenterConcurrencyPrepRunning;
+
 		/// <summary>
 		/// A flag indicating that the <see cref="Complete"/> method has been called, indicating that no
 		/// new top-level lock requests should be serviced.
@@ -442,6 +444,7 @@
 
 			if (this.completeInvoked &&
 				!this.completionSource.Task.IsCompleted &&
+				!this.reenterConcurrencyPrepRunning &&
 				this.readLocksIssued.Count == 0 && this.upgradeableReadLocksIssued.Count == 0 && this.writeLocksIssued.Count == 0 &&
 				this.waitingReaders.Count == 0 && this.waitingUpgradeableReaders.Count == 0 && this.waitingWriters.Count == 0) {
 
@@ -618,7 +621,7 @@
 				}
 
 				bool issued = false;
-				if (this.reenterConcurrencyPrep.IsCompleted) {
+				if (!this.reenterConcurrencyPrepRunning) {
 					if (this.writeLocksIssued.Count == 0 && this.upgradeableReadLocksIssued.Count == 0 && this.readLocksIssued.Count == 0) {
 						issued = true;
 					} else {
@@ -750,9 +753,7 @@
 		private void IssueAndExecute(Awaiter awaiter) {
 			Assumes.True(this.TryIssueLock(awaiter, previouslyQueued: true));
 
-			if (!awaiter.TryScheduleContinuationExecution()) {
-				Assumes.True(this.ReleaseAsync(awaiter, lockConsumerCanceled: true).IsCompleted);
-			}
+			this.ExecuteOrHandleCancellation(awaiter);
 		}
 
 		/// <summary>
@@ -768,8 +769,7 @@
 		/// <summary>
 		/// Invoked when a top-level upgradeable read lock is released, leaving no remaining (write) lock.
 		/// </summary>
-		protected virtual Task OnUpgradeableReadLockReleasedAsync() {
-			return CompletedTask;
+		protected virtual void OnUpgradeableReadLockReleased() {
 		}
 
 		/// <summary>
@@ -787,8 +787,7 @@
 		private Task ReleaseAsync(Awaiter awaiter, bool lockConsumerCanceled = false) {
 			// This method does NOT use the async keyword in its signature to avoid CallContext changes that we make
 			// causing a fork/clone of the CallContext, which defeats our alloc-free uncontested lock story.
-			Assumes.True(this.reenterConcurrencyPrep.IsCompleted); // No one should have any locks to release (and be executing code) if we're in our intermediate state.
-			var topAwaiter = this.topAwaiter.Value;
+			Assumes.False(this.reenterConcurrencyPrepRunning); // No one should have any locks to release (and be executing code) if we're in our intermediate state.
 
 			Task reenterConcurrentOutsideCode = null;
 			Task synchronousCallbackExecution = null;
@@ -807,51 +806,82 @@
 
 				int writeLocksBefore = this.writeLocksIssued.Count;
 				int upgradeableReadLocksBefore = this.upgradeableReadLocksIssued.Count;
-
-				this.GetActiveLockSet(awaiter.Kind).Remove(awaiter);
+				int writeLocksAfter = writeLocksBefore - (awaiter.Kind == LockKind.Write ? 1 : 0);
+				int upgradeableReadLocksAfter = upgradeableReadLocksBefore - (awaiter.Kind == LockKind.UpgradeableRead ? 1 : 0);
 
 				// In case this is a sticky write lock, it may also belong to the write locks issued collection.
-				if (awaiter.Kind == LockKind.UpgradeableRead && (awaiter.Options & LockFlags.StickyWrite) == LockFlags.StickyWrite) {
-					this.writeLocksIssued.Remove(awaiter);
-				}
+				bool upgradedStickyWrite = awaiter.Kind == LockKind.UpgradeableRead
+					&& (awaiter.Options & LockFlags.StickyWrite) == LockFlags.StickyWrite
+					&& this.writeLocksIssued.Contains(awaiter);
 
 				if (!lockConsumerCanceled) {
-					if (this.writeLocksIssued.Count == 0) {
-						bool fireExclusiveLockReleased = writeLocksBefore > 0;
-						bool fireUpgradeableReadLockReleased = upgradeableReadLocksBefore > 0 && this.upgradeableReadLocksIssued.Count == 0;
-						if (fireExclusiveLockReleased || fireUpgradeableReadLockReleased) {
-							using (this.HideLocks()) {
-								reenterConcurrentOutsideCode = Task.Run(async delegate {
-									if (fireExclusiveLockReleased) {
-										await this.OnExclusiveLockReleasedAsync().ConfigureAwait(false);
-									}
-
-									if (fireUpgradeableReadLockReleased) {
-										// This will only fire when the outermost upgradeable read is not itself nested by a write lock,
-										// and that's by design.
-										await this.OnUpgradeableReadLockReleasedAsync().ConfigureAwait(false);
-									}
-
-									this.OnReleaseReenterConcurrencyComplete();
-								});
+					if (writeLocksAfter == 0) {
+						bool fireWriteLockReleased = writeLocksBefore > 0;
+						bool fireUpgradeableReadLockReleased = upgradeableReadLocksBefore > 0 && upgradeableReadLocksAfter == 0;
+						if (fireWriteLockReleased || fireUpgradeableReadLockReleased) {
+							// The Task.Run is invoked from another method so that C# doesn't allocate the anonymous delegate
+							// it uses unless we actually are going to invoke it -- 
+							if (fireWriteLockReleased) {
+								reenterConcurrentOutsideCode = this.DowngradeLockAsync(awaiter, upgradedStickyWrite, fireUpgradeableReadLockReleased);
 								this.reenterConcurrencyPrep = reenterConcurrentOutsideCode;
+							} else if (fireUpgradeableReadLockReleased) {
+								this.OnUpgradeableReadLockReleased();
 							}
 						}
 					}
 				}
 
-				this.ApplyLockToCallContext(topAwaiter);
+				if (reenterConcurrentOutsideCode == null) {
+					this.OnReleaseReenterConcurrencyComplete(awaiter, upgradedStickyWrite);
+				}
 			}
 
-			if (reenterConcurrentOutsideCode == null) {
-				this.OnReleaseReenterConcurrencyComplete();
+			if (reenterConcurrentOutsideCode != null && (synchronousCallbackExecution != null && !synchronousCallbackExecution.IsCompleted)) {
+				return Task.WhenAll(reenterConcurrentOutsideCode, synchronousCallbackExecution);
+			} else {
+				return reenterConcurrentOutsideCode ?? synchronousCallbackExecution ?? CompletedTask;
 			}
-
-			return synchronousCallbackExecution ?? CompletedTask;
 		}
 
-		private void OnReleaseReenterConcurrencyComplete() {
+		/// <summary>
+		/// Schedules work on a background thread that will prepare protected resource(s) for concurrent access.
+		/// </summary>
+		private async Task DowngradeLockAsync(Awaiter awaiter, bool upgradedStickyWrite, bool fireUpgradeableReadLockReleased) {
+			Assumes.True(Monitor.IsEntered(this.syncObject));
+
+			this.reenterConcurrencyPrepRunning = true;
+			await this.OnExclusiveLockReleasedAsync().ConfigureAwait(false);
+
+			if (fireUpgradeableReadLockReleased) {
+				// This will only fire when the outermost upgradeable read is not itself nested by a write lock,
+				// and that's by design.
+				this.OnUpgradeableReadLockReleased();
+			}
+
 			lock (this.syncObject) {
+				this.reenterConcurrencyPrepRunning = false;
+
+				// Skip updating the call context because we're in a forked execution context that won't
+				// ever impact the client code, and changing the CallContext now would cause the data to be cloned,
+				// allocating more memory wastefully.
+				this.OnReleaseReenterConcurrencyComplete(awaiter, upgradedStickyWrite, updateCallContext: false);
+			}
+		}
+
+		private void OnReleaseReenterConcurrencyComplete(Awaiter awaiter, bool upgradedStickyWrite, bool updateCallContext = true) {
+			Requires.NotNull(awaiter, "awaiter");
+
+			lock (this.syncObject) {
+				Assumes.True(this.GetActiveLockSet(awaiter.Kind).Remove(awaiter));
+				if (upgradedStickyWrite) {
+					Assumes.True(this.writeLocksIssued.Remove(awaiter));
+				}
+
+				awaiter.Recycle();
+				if (updateCallContext) {
+					this.ApplyLockToCallContext(this.topAwaiter.Value);
+				}
+
 				this.CompleteIfAppropriate();
 				this.TryInvokeLockConsumer();
 			}
@@ -999,9 +1029,7 @@
 			lock (this.syncObject) {
 				if (this.TryIssueLock(awaiter, previouslyQueued: true)) {
 					// Run the continuation asynchronously (since this is called in OnCompleted, which is an async pattern).
-					if (!awaiter.TryScheduleContinuationExecution()) {
-						Assumes.True(this.ReleaseAsync(awaiter, lockConsumerCanceled: true).IsCompleted);
-					}
+					this.ExecuteOrHandleCancellation(awaiter);
 				} else {
 					switch (awaiter.Kind) {
 						case LockKind.Read:
@@ -1017,6 +1045,16 @@
 							break;
 					}
 				}
+			}
+		}
+
+		/// <summary>
+		/// Executes the lock receiver or releases the lock because the request for it was canceled before it was issued.
+		/// </summary>
+		/// <param name="awaiter">The awaiter.</param>
+		private void ExecuteOrHandleCancellation(Awaiter awaiter) {
+			if (!awaiter.TryScheduleContinuationExecution()) {
+				Assumes.True(awaiter.ReleaseAsync(lockConsumerCanceled: true).IsCompleted);
 			}
 		}
 
@@ -1038,8 +1076,8 @@
 			/// <param name="cancellationToken">The cancellation token.</param>
 			internal Awaitable(AsyncReaderWriterLock lck, LockKind kind, LockFlags options, CancellationToken cancellationToken) {
 				this.awaiter = Awaiter.Initialize(lck, kind, options, cancellationToken);
-				if (!cancellationToken.IsCancellationRequested && lck.TryIssueLock(this.awaiter, previouslyQueued: false)) {
-					lck.ApplyLockToCallContext(this.awaiter);
+				if (!cancellationToken.IsCancellationRequested) {
+					lck.TryIssueLock(this.awaiter, previouslyQueued: false);
 				}
 			}
 
@@ -1208,31 +1246,42 @@
 			/// </summary>
 			/// <returns>The value to dispose of to release the lock.</returns>
 			public Releaser GetResult() {
-				this.cancellationRegistration.Dispose();
+				try {
+					this.cancellationRegistration.Dispose();
 
-				if (!this.LockIssued && this.continuation == null && !this.cancellationToken.IsCancellationRequested) {
-					if (this.signalSynchronousBlock == null) {
-						this.signalSynchronousBlock = delegate { this.synchronousBlock.Set(); };
+					if (!this.LockIssued && this.continuation == null && !this.cancellationToken.IsCancellationRequested) {
+						if (this.signalSynchronousBlock == null) {
+							this.signalSynchronousBlock = delegate { this.synchronousBlock.Set(); };
+						}
+
+						this.OnCompleted(this.signalSynchronousBlock);
+						this.synchronousBlock.Wait(this.cancellationToken);
 					}
 
-					this.OnCompleted(this.signalSynchronousBlock);
-					this.synchronousBlock.Wait(this.cancellationToken);
-				}
+					ThrowIfSta();
+					if (this.fault != null) {
+						throw fault;
+					}
 
-				if (this.fault != null) {
-					throw fault;
-				}
+					if (this.LockIssued) {
+						this.lck.ApplyLockToCallContext(this);
+						return new Releaser(this);
+					} else if (this.cancellationToken.IsCancellationRequested) {
+						// At this point, someone called GetResult who wasn't registered as a synchronous waiter,
+						// and before the lock was issued.
+						// If the cancellation token was signaled, we'll throw that because a canceled token is a 
+						// legit reason to hit this path in the method.  Otherwise it's an internal error.
+						throw new OperationCanceledException();
+					}
 
-				if (this.LockIssued) {
-					this.lck.ApplyLockToCallContext(this);
-					return new Releaser(this);
-				} else {
-					// At this point, someone called GetResult who wasn't registered as a synchronous waiter,
-					// and before the lock was issued.
-					// If the cancellation token was signaled, we'll throw that because a canceled token is a 
-					// legit reason to hit this path in the method.  Otherwise it's an internal error.
-					this.cancellationToken.ThrowIfCancellationRequested();
 					throw Assumes.NotReachable();
+				} catch (OperationCanceledException) {
+					// Don't release at this point, or else it would recycle this instance prematurely
+					// (while it's still in the queue to receive a lock).
+					throw;
+				} catch {
+					this.ReleaseAsync(lockConsumerCanceled: true);
+					throw;
 				}
 			}
 
@@ -1265,17 +1314,24 @@
 			/// <summary>
 			/// Releases the lock and recycles this instance.
 			/// </summary>
-			internal Task ReleaseAsync() {
+			internal Task ReleaseAsync(bool lockConsumerCanceled = false) {
 				// This method does NOT use the async keyword in its signature to avoid CallContext changes that we make
 				// causing a fork/clone of the CallContext, which defeats our alloc-free uncontested lock story.
 				var releaseTask = CompletedTask;
 				if (this.lck != null) {
-					releaseTask = this.Lock.ReleaseAsync(this);
-					recycledAwaiters.TryAdd(this);
+					var lck = this.lck;
 					this.lck = null;
+					releaseTask = lck.ReleaseAsync(this, lockConsumerCanceled);
 				}
 
 				return releaseTask;
+			}
+
+			/// <summary>
+			/// Recycles this instance.
+			/// </summary>
+			internal void Recycle() {
+				recycledAwaiters.TryAdd(this);
 			}
 
 			/// <summary>
@@ -1312,8 +1368,7 @@
 
 				// We're in a race with the lock suddenly becoming available.
 				// Our control in the race is whether the continuation field is still set to a non-null value.
-				var continuation = Interlocked.Exchange(ref awaiter.continuation, null);
-				awaiter.TryScheduleContinuationExecution(continuation); // unblock the awaiter immediately (which will then experience an OperationCanceledException).
+				awaiter.TryScheduleContinuationExecution(); // unblock the awaiter immediately (which will then experience an OperationCanceledException).
 
 				// Release memory of the registered handler, since we only need it to fire once.
 				awaiter.cancellationRegistration.Dispose();
