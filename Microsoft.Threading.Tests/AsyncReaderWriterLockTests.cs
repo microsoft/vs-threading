@@ -6,6 +6,7 @@
 	using System.Threading;
 	using System.Threading.Tasks;
 	using Microsoft.Threading;
+	using Microsoft.Threading.Fakes;
 	using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 	/// <summary>
@@ -244,6 +245,78 @@
 			}
 
 			Assert.IsFalse(asyncLock.LockStackContains(customFlag));
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task OnLockReleaseCallbacksWithOuterWriteLock() {
+			var stub = new StubAsyncReaderWriterLock();
+			stub.CallBase = true;
+
+			int onExclusiveLockReleasedAsyncInvocationCount = 0;
+			stub.OnExclusiveLockReleasedAsync01 = delegate {
+				onExclusiveLockReleasedAsyncInvocationCount++;
+				return Task.FromResult<object>(null);
+			};
+
+			int onUpgradeableReadLockReleasedInvocationCount = 0;
+			stub.OnUpgradeableReadLockReleased01 = delegate {
+				onUpgradeableReadLockReleasedInvocationCount++;
+			};
+
+			this.asyncLock = stub;
+			using (await this.asyncLock.WriteLockAsync()) {
+				using (await this.asyncLock.WriteLockAsync()) {
+					using (await this.asyncLock.WriteLockAsync()) {
+						using (await this.asyncLock.UpgradeableReadLockAsync()) {
+							Assert.AreEqual(0, onUpgradeableReadLockReleasedInvocationCount);
+						}
+
+						Assert.AreEqual(0, onUpgradeableReadLockReleasedInvocationCount);
+					}
+
+					Assert.AreEqual(0, onExclusiveLockReleasedAsyncInvocationCount);
+				}
+
+				Assert.AreEqual(0, onExclusiveLockReleasedAsyncInvocationCount);
+			}
+
+			Assert.AreEqual(1, onExclusiveLockReleasedAsyncInvocationCount);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task OnLockReleaseCallbacksWithOuterUpgradeableReadLock() {
+			var stub = new StubAsyncReaderWriterLock();
+			stub.CallBase = true;
+
+			int onExclusiveLockReleasedAsyncInvocationCount = 0;
+			stub.OnExclusiveLockReleasedAsync01 = delegate {
+				onExclusiveLockReleasedAsyncInvocationCount++;
+				return Task.FromResult<object>(null);
+			};
+
+			int onUpgradeableReadLockReleasedInvocationCount = 0;
+			stub.OnUpgradeableReadLockReleased01 = delegate {
+				onUpgradeableReadLockReleasedInvocationCount++;
+			};
+
+			this.asyncLock = stub;
+			using (await this.asyncLock.UpgradeableReadLockAsync()) {
+				using (await this.asyncLock.UpgradeableReadLockAsync()) {
+					using (await this.asyncLock.WriteLockAsync()) {
+						Assert.AreEqual(0, onUpgradeableReadLockReleasedInvocationCount);
+						Assert.AreEqual(0, onExclusiveLockReleasedAsyncInvocationCount);
+					}
+
+					Assert.AreEqual(0, onUpgradeableReadLockReleasedInvocationCount);
+					Assert.AreEqual(1, onExclusiveLockReleasedAsyncInvocationCount);
+				}
+
+				Assert.AreEqual(0, onUpgradeableReadLockReleasedInvocationCount);
+				Assert.AreEqual(1, onExclusiveLockReleasedAsyncInvocationCount);
+			}
+
+			Assert.AreEqual(1, onUpgradeableReadLockReleasedInvocationCount);
+			Assert.AreEqual(1, onExclusiveLockReleasedAsyncInvocationCount);
 		}
 
 		#region ReadLockAsync tests
