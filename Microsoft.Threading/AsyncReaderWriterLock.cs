@@ -1311,6 +1311,7 @@
 				awaiter.cancellationToken = cancellationToken;
 				awaiter.nestingLock = lck.GetFirstActiveSelfOrAncestor(lck.topAwaiter.Value);
 				awaiter.fault = null;
+				awaiter.releaseAsyncTask = null;
 				awaiter.synchronousBlock.Reset();
 
 				return awaiter;
