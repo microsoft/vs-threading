@@ -355,6 +355,17 @@
 			}
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task LockDisposeAsyncWithoutWaitFollowedByDispose() {
+			using (var upgradeableReadAccess = await this.projectLock.UpgradeableReadLockAsync()) {
+				var resource1 = await upgradeableReadAccess.GetResourceAsync(1);
+				using (var writeAccess = await this.projectLock.WriteLockAsync()) {
+					var resource2 = await writeAccess.GetResourceAsync(1); // the test is to NOT await on this result.
+					var nowait = writeAccess.DisposeAsync();
+				} // this calls writeAccess.Dispose();
+			}
+		}
+
 		private class Resource {
 			public int ConcurrentAccessPreparationCount { get; set; }
 

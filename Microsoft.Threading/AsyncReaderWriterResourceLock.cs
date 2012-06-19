@@ -163,10 +163,9 @@
 			/// Ensures that all resources are marked as unprepared so at next request they are prepared again.
 			/// </summary>
 			internal Task OnExclusiveLockReleasedAsync() {
-				// TODO: write a test that proves that this approach makes resources
-				// vulnerable to concurrent preparation.
-				// We really need a way to indicate that all resources requested after this point
-				// should be prepared again.
+				// This arbitrary clearing of the table seems like it should introduce the risk of preparing a given
+				// resource multiple times concurrently, since no evidence remains of an asynchronous operation still
+				// in progress.  In practice, various other designs in this class prevent it from ever actually occurring.
 				this.projectEvaluationTasks = new ConditionalWeakTable<TResource, Task<TResource>>();
 
 				if (this.service.IsUpgradeableReadLockHeld && this.resourcesAcquiredWithinUpgradeableRead.Count > 0) {

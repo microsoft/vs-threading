@@ -1165,6 +1165,11 @@
 			/// </summary>
 			private Action continuation;
 
+			/// <summary>
+			/// The task from a prior call to <see cref="ReleaseAsync"/>, if any.
+			/// </summary>
+			private Task releaseAsyncTask;
+
 			#endregion
 
 			/// <summary>
@@ -1315,16 +1320,17 @@
 			/// Releases the lock and recycles this instance.
 			/// </summary>
 			internal Task ReleaseAsync(bool lockConsumerCanceled = false) {
-				// This method does NOT use the async keyword in its signature to avoid CallContext changes that we make
-				// causing a fork/clone of the CallContext, which defeats our alloc-free uncontested lock story.
-				var releaseTask = CompletedTask;
-				if (this.lck != null) {
-					var lck = this.lck;
-					this.lck = null;
-					releaseTask = lck.ReleaseAsync(this, lockConsumerCanceled);
+				if (this.releaseAsyncTask == null) {
+					// This method does NOT use the async keyword in its signature to avoid CallContext changes that we make
+					// causing a fork/clone of the CallContext, which defeats our alloc-free uncontested lock story.
+					if (this.lck != null) {
+						var lck = this.lck;
+						this.lck = null;
+						this.releaseAsyncTask = lck.ReleaseAsync(this, lockConsumerCanceled);
+					}
 				}
 
-				return releaseTask;
+				return this.releaseAsyncTask;
 			}
 
 			/// <summary>
@@ -1397,9 +1403,7 @@
 			/// Releases the lock.
 			/// </summary>
 			public void Dispose() {
-				if (this.awaiter != null) {
-					this.awaiter.ReleaseAsync().Wait();
-				}
+				this.DisposeAsync().Wait();
 			}
 
 			/// <summary>
