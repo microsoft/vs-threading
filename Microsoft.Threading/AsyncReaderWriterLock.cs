@@ -223,6 +223,9 @@
 			get { return this.completionSource.Task; }
 		}
 
+		/// <summary>
+		/// Gets the object used to synchronize access to this instance's fields.
+		/// </summary>
 		protected object SyncObject {
 			get { return this.syncObject; }
 		}

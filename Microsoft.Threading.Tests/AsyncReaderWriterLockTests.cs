@@ -666,6 +666,14 @@
 				}
 
 				Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+
+				using (this.asyncLock.UpgradeableReadLock(AsyncReaderWriterLock.LockFlags.None)) {
+					Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+					await Task.Yield();
+					Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+				}
+
+				Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
 			});
 		}
 
@@ -762,6 +770,14 @@
 			// Get onto an MTA thread so that a lock may be synchronously granted.
 			await Task.Run(async delegate {
 				using (this.asyncLock.WriteLock()) {
+					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+					await Task.Yield();
+					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+				}
+
+				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+
+				using (this.asyncLock.WriteLock(AsyncReaderWriterLock.LockFlags.None)) {
 					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 					await Task.Yield();
 					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
