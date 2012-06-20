@@ -440,6 +440,41 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// Fired when any lock is being released.
+		/// </summary>
+		/// <returns>A task whose completion signals the conclusion of the asynchronous operation.</returns>
+		protected virtual Task OnBeforeLockReleasedAsync() {
+			return this.InvokeBeforeWriteLockReleaseHandlersAsync();
+		}
+
+		/// <summary>
+		/// Associates some object to the active lock that can be obtained later using <see cref="GetLockData"/>.
+		/// </summary>
+		/// <param name="value">The value to save.  Use <c>null</c> to clear a previously stored value.</param>
+		/// <remarks>
+		/// The value stored here is automatically cleared when the lock is released.
+		/// </remarks>
+		protected void SetLockData(object value) {
+			lock (this.syncObject) {
+				var awaiter = this.GetFirstActiveSelfOrAncestor(this.topAwaiter.Value);
+				Verify.Operation(awaiter != null, "No active lock.");
+				awaiter.Data = value;
+			}
+		}
+
+		/// <summary>
+		/// Gets the object associated with the active lock, as previously stored using <see cref="SetLockData"/>.
+		/// </summary>
+		/// <returns>The stored object, or <c>null</c> if no object was associated with this lock.</returns>
+		protected object GetLockData() {
+			lock (this.syncObject) {
+				var awaiter = this.GetFirstActiveSelfOrAncestor(this.topAwaiter.Value);
+				Verify.Operation(awaiter != null, "No active lock.");
+				return awaiter.Data;
+			}
+		}
+
+		/// <summary>
 		/// Throws an exception if called on an STA thread.
 		/// </summary>
 		private static void ThrowIfSta() {
@@ -806,7 +841,7 @@ namespace Microsoft.Threading {
 				if (!lockConsumerCanceled) {
 					// Callbacks should be fired synchronously iff the last write lock is being released and read locks are already issued.
 					// This can occur when upgradeable read locks are held and upgraded, and then downgraded back to an upgradeable read.
-					Task callbackExecution = this.InvokeBeforeWriteLockReleaseHandlersAsync();
+					Task callbackExecution = this.OnBeforeLockReleasedAsync();
 					bool synchronousRequired = this.readLocksIssued.Count > 0;
 					synchronousRequired |= this.upgradeableReadLocksIssued.Count > 1;
 					synchronousRequired |= this.upgradeableReadLocksIssued.Count == 1 && !this.upgradeableReadLocksIssued.Contains(awaiter);
@@ -1195,6 +1230,11 @@ namespace Microsoft.Threading {
 			/// </summary>
 			private Task releaseAsyncTask;
 
+			/// <summary>
+			/// An arbitrary object that may be set by a derived type of the containing lock class.
+			/// </summary>
+			private object data;
+
 			#endregion
 
 			/// <summary>
@@ -1232,6 +1272,14 @@ namespace Microsoft.Threading {
 			/// </summary>
 			internal Awaiter NestingLock {
 				get { return this.nestingLock; }
+			}
+
+			/// <summary>
+			/// Gets or sets an arbitrary object that may be set by a derived type of the containing lock class.
+			/// </summary>
+			internal object Data {
+				get { return this.data; }
+				set { this.data = value; }
 			}
 
 			/// <summary>
@@ -1339,6 +1387,7 @@ namespace Microsoft.Threading {
 				awaiter.fault = null;
 				awaiter.releaseAsyncTask = null;
 				awaiter.synchronousBlock.Reset();
+				awaiter.data = null;
 
 				return awaiter;
 			}
@@ -1365,6 +1414,7 @@ namespace Microsoft.Threading {
 			/// </summary>
 			internal void Recycle() {
 				// Clear some fields to remove strong references to data we don't need any more.
+				this.data = null;
 				this.continuation = null;
 				this.cancellationToken = CancellationToken.None;
 				this.cancellationRegistration = default(CancellationTokenRegistration);
