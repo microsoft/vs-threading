@@ -1,4 +1,10 @@
-﻿namespace Microsoft.Threading {
+﻿//-----------------------------------------------------------------------
+// <copyright file="AsyncReaderWriterLock.cs" company="Microsoft">
+//     Copyright (c) Microsoft. All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
+
+namespace Microsoft.Threading {
 	using System;
 	using System.Collections.Concurrent;
 	using System.Collections.Generic;
@@ -117,6 +123,10 @@
 		/// </summary>
 		private Task reenterConcurrencyPrep = CompletedTask;
 
+		/// <summary>
+		/// A flag indicating whether we're currently running code to prepare for re-entering concurrency mode
+		/// after releasing an exclusive lock.
+		/// </summary>
 		private volatile bool reenterConcurrencyPrepRunning;
 
 		/// <summary>
@@ -871,6 +881,12 @@
 			}
 		}
 
+		/// <summary>
+		/// Called at the conclusion of releasing an exclusive lock to complete the transition.
+		/// </summary>
+		/// <param name="awaiter">The awaiter being released.</param>
+		/// <param name="upgradedStickyWrite">A flag indicating whether the lock being released was an upgraded read lock with the sticky write flag set.</param>
+		/// <param name="updateCallContext">A flag indicating whether the CallContext should be updated with the remaining active lock awaiter.</param>
 		private void OnReleaseReenterConcurrencyComplete(Awaiter awaiter, bool upgradedStickyWrite, bool updateCallContext = true) {
 			Requires.NotNull(awaiter, "awaiter");
 

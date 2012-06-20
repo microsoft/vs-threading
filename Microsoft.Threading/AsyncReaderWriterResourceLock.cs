@@ -1,4 +1,10 @@
-﻿namespace Microsoft.Threading {
+﻿//-----------------------------------------------------------------------
+// <copyright file="AsyncReaderWriterResourceLock.cs" company="Microsoft">
+//     Copyright (c) Microsoft. All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
+
+namespace Microsoft.Threading {
 	using System;
 	using System.Collections.Generic;
 	using System.Diagnostics;
@@ -9,10 +15,20 @@
 	using System.Threading.Tasks;
 	using Microsoft.Threading;
 
+	/// <summary>
+	/// A non-blocking lock that allows concurrent access, exclusive access, or concurrent with upgradeability to exclusive access,
+	/// making special allowances for resources that must be prepared for concurrent or exclusive access.
+	/// </summary>
 	public abstract class AsyncReaderWriterResourceLock<TMoniker, TResource> : AsyncReaderWriterLock
 		where TResource : class {
+		/// <summary>
+		/// A private nested class we use to isolate some of our behavior.
+		/// </summary>
 		private readonly Helper helper;
 
+		/// <summary>
+		/// Initializes a new instance of the <see cref="AsyncReaderWriterResourceLock"/> class.
+		/// </summary>
 		public AsyncReaderWriterResourceLock() {
 			this.helper = new Helper(this);
 		}
@@ -54,50 +70,132 @@
 			SkipInitialPreparation = 0x1000,
 		}
 
+		/// <summary>
+		/// Gets a value indicating whether any kind of lock is held by the caller.
+		/// </summary>
 		protected bool IsAnyLockHeld {
 			get { return base.IsReadLockHeld || base.IsUpgradeableReadLockHeld || base.IsWriteLockHeld; }
 		}
 
+		/// <summary>
+		/// Obtains a read lock, synchronously blocking for the lock if it is not immediately available.
+		/// </summary>
+		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
+		/// <returns>A lock releaser.</returns>
 		public new ResourceReleaser ReadLock(CancellationToken cancellationToken = default(CancellationToken)) {
 			return new ResourceReleaser(base.ReadLock(cancellationToken), this.helper);
 		}
 
+		/// <summary>
+		/// Obtains a read lock, asynchronously awaiting for the lock if it is not immediately available.
+		/// </summary>
+		/// <param name="cancellationToken">
+		/// A token whose cancellation indicates lost interest in obtaining the lock.  
+		/// A canceled token does not release a lock that has already been issued.  But if the lock isn't immediately available,
+		/// a canceled token will cause the code that is waiting for the lock to resume with an <see cref="OperationCanceledException"/>.
+		/// </param>
+		/// <returns>An awaitable object whose result is the lock releaser.</returns>
 		public new ResourceAwaitable ReadLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
 			return new ResourceAwaitable(base.ReadLockAsync(cancellationToken), this.helper);
 		}
 
+		/// <summary>
+		/// Obtains an upgradeable read lock, synchronously blocking for the lock if it is not immediately available.
+		/// </summary>
+		/// <param name="options">Modifications to normal lock behavior.</param>
+		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
+		/// <returns>A lock releaser.</returns>
 		public ResourceReleaser UpgradeableReadLock(LockFlags options, CancellationToken cancellationToken = default(CancellationToken)) {
 			return new ResourceReleaser(base.UpgradeableReadLock((AsyncReaderWriterLock.LockFlags)options, cancellationToken), this.helper);
 		}
 
+		/// <summary>
+		/// Obtains an upgradeable read lock, synchronously blocking for the lock if it is not immediately available.
+		/// </summary>
+		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
+		/// <returns>A lock releaser.</returns>
 		public new ResourceReleaser UpgradeableReadLock(CancellationToken cancellationToken = default(CancellationToken)) {
 			return new ResourceReleaser(base.UpgradeableReadLock(cancellationToken), this.helper);
 		}
 
+		/// <summary>
+		/// Obtains a read lock, asynchronously awaiting for the lock if it is not immediately available.
+		/// </summary>
+		/// <param name="options">Modifications to normal lock behavior.</param>
+		/// <param name="cancellationToken">
+		/// A token whose cancellation indicates lost interest in obtaining the lock.  
+		/// A canceled token does not release a lock that has already been issued.  But if the lock isn't immediately available,
+		/// a canceled token will cause the code that is waiting for the lock to resume with an <see cref="OperationCanceledException"/>.
+		/// </param>
+		/// <returns>An awaitable object whose result is the lock releaser.</returns>
 		public ResourceAwaitable UpgradeableReadLockAsync(LockFlags options, CancellationToken cancellationToken = default(CancellationToken)) {
 			return new ResourceAwaitable(base.UpgradeableReadLockAsync((AsyncReaderWriterLock.LockFlags)options, cancellationToken), this.helper);
 		}
 
+		/// <summary>
+		/// Obtains an upgradeable read lock, asynchronously awaiting for the lock if it is not immediately available.
+		/// </summary>
+		/// <param name="cancellationToken">
+		/// A token whose cancellation indicates lost interest in obtaining the lock.  
+		/// A canceled token does not release a lock that has already been issued.  But if the lock isn't immediately available,
+		/// a canceled token will cause the code that is waiting for the lock to resume with an <see cref="OperationCanceledException"/>.
+		/// </param>
+		/// <returns>An awaitable object whose result is the lock releaser.</returns>
 		public new ResourceAwaitable UpgradeableReadLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
 			return new ResourceAwaitable(base.UpgradeableReadLockAsync(cancellationToken), this.helper);
 		}
 
+		/// <summary>
+		/// Obtains a write lock, synchronously blocking for the lock if it is not immediately available.
+		/// </summary>
+		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
+		/// <returns>A lock releaser.</returns>
 		public new ResourceReleaser WriteLock(CancellationToken cancellationToken = default(CancellationToken)) {
 			return new ResourceReleaser(base.WriteLock(cancellationToken), this.helper);
 		}
 
+		/// <summary>
+		/// Obtains a write lock, synchronously blocking for the lock if it is not immediately available.
+		/// </summary>
+		/// <param name="options">Modifications to normal lock behavior.</param>
+		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
+		/// <returns>A lock releaser.</returns>
 		public ResourceReleaser WriteLock(LockFlags options, CancellationToken cancellationToken = default(CancellationToken)) {
 			return new ResourceReleaser(base.WriteLock((AsyncReaderWriterLock.LockFlags)options, cancellationToken), this.helper);
 		}
 
+		/// <summary>
+		/// Obtains a write lock, asynchronously awaiting for the lock if it is not immediately available.
+		/// </summary>
+		/// <param name="cancellationToken">
+		/// A token whose cancellation indicates lost interest in obtaining the lock.  
+		/// A canceled token does not release a lock that has already been issued.  But if the lock isn't immediately available,
+		/// a canceled token will cause the code that is waiting for the lock to resume with an <see cref="OperationCanceledException"/>.
+		/// </param>
+		/// <returns>An awaitable object whose result is the lock releaser.</returns>
 		public new ResourceAwaitable WriteLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
 			return new ResourceAwaitable(base.WriteLockAsync(cancellationToken), this.helper);
 		}
 
+		/// <summary>
+		/// Obtains a write lock, asynchronously awaiting for the lock if it is not immediately available.
+		/// </summary>
+		/// <param name="options">Modifications to normal lock behavior.</param>
+		/// <param name="cancellationToken">
+		/// A token whose cancellation indicates lost interest in obtaining the lock.
+		/// A canceled token does not release a lock that has already been issued.  But if the lock isn't immediately available,
+		/// a canceled token will cause the code that is waiting for the lock to resume with an <see cref="OperationCanceledException"/>.
+		/// </param>
+		/// <returns>An awaitable object whose result is the lock releaser.</returns>
 		public ResourceAwaitable WriteLockAsync(LockFlags options, CancellationToken cancellationToken = default(CancellationToken)) {
 			return new ResourceAwaitable(base.WriteLockAsync((AsyncReaderWriterLock.LockFlags)options, cancellationToken), this.helper);
 		}
 
+		/// <summary>
+		/// Retrieves the resource with the specified moniker.
+		/// </summary>
+		/// <param name="projectMoniker">The identifier for the desired resource.</param>
+		/// <returns>A task whose result is the desired resource.</returns>
 		protected abstract Task<TResource> GetResourceAsync(TMoniker projectMoniker);
 
 		/// <summary>
@@ -123,27 +221,57 @@
 		/// </remarks>
 		protected abstract Task<TResource> PrepareResourceForExclusiveAccessAsync(TResource resource);
 
+		/// <summary>
+		/// Invoked after an exclusive lock is released but before anyone has a chance to enter the lock.
+		/// </summary>
+		/// <remarks>
+		/// This method is called while holding a private lock in order to block future lock consumers till this method is finished.
+		/// </remarks>
 		protected override async Task OnExclusiveLockReleasedAsync() {
 			await base.OnExclusiveLockReleasedAsync();
 			await this.helper.OnExclusiveLockReleasedAsync();
 		}
 
+		/// <summary>
+		/// Invoked when a top-level upgradeable read lock is released, leaving no remaining (write) lock.
+		/// </summary>
 		protected override void OnUpgradeableReadLockReleased() {
 			base.OnUpgradeableReadLockReleased();
 			this.helper.OnUpgradeableReadLockReleased();
 		}
 
+		/// <summary>
+		/// A helper class to isolate some specific functionality in this outer class.
+		/// </summary>
 		internal class Helper {
+			/// <summary>
+			/// The owning lock instance.
+			/// </summary>
 			private readonly AsyncReaderWriterResourceLock<TMoniker, TResource> service;
 
+			/// <summary>
+			/// A reusable delegate that invokes the <see cref="AsyncReaderWriterResourceLock{TMoniker, TResource}.PrepareResourceForConcurrentAccessAsync"/> method.
+			/// </summary>
 			private readonly Func<object, Task<TResource>> prepareResourceConcurrentDelegate;
 
+			/// <summary>
+			/// A reusable delegate that invokes the <see cref="AsyncReaderWriterResourceLock{TMoniker, TResource}.PrepareResourceForExclusiveAccessAsync"/> method.
+			/// </summary>
 			private readonly Func<object, Task<TResource>> prepareResourceExclusiveDelegate;
 
+			/// <summary>
+			/// A reusable delegate that invokes the <see cref="AsyncReaderWriterResourceLock{TMoniker, TResource}.PrepareResourceForConcurrentAccessAsync"/> method.
+			/// </summary>
 			private readonly Func<Task<TResource>, object, Task<TResource>> prepareResourceConcurrentContinuationDelegate;
 
+			/// <summary>
+			/// A reusable delegate that invokes the <see cref="AsyncReaderWriterResourceLock{TMoniker, TResource}.PrepareResourceForExclusiveAccessAsync"/> method.
+			/// </summary>
 			private readonly Func<Task<TResource>, object, Task<TResource>> prepareResourceExclusiveContinuationDelegate;
 
+			/// <summary>
+			/// A collection of all the resources requested within the outermost upgradeable read lock.
+			/// </summary>
 			private readonly HashSet<TResource> resourcesAcquiredWithinUpgradeableRead = new HashSet<TResource>();
 
 			/// <summary>
@@ -151,7 +279,13 @@
 			/// </summary>
 			private ConditionalWeakTable<TResource, Task<TResource>> projectEvaluationTasks = new ConditionalWeakTable<TResource, Task<TResource>>();
 
+			/// <summary>
+			/// Initializes a new instance of the <see cref="Helper"/> class.
+			/// </summary>
+			/// <param name="service">The owning lock instance.</param>
 			internal Helper(AsyncReaderWriterResourceLock<TMoniker, TResource> service) {
+				Requires.NotNull(service, "service");
+
 				this.service = service;
 				this.prepareResourceConcurrentDelegate = state => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state);
 				this.prepareResourceExclusiveDelegate = state => this.service.PrepareResourceForExclusiveAccessAsync((TResource)state);
@@ -189,10 +323,18 @@
 				return CompletedTask;
 			}
 
+			/// <summary>
+			/// Invoked when a top-level upgradeable read lock is released, leaving no remaining (write) lock.
+			/// </summary>
 			internal void OnUpgradeableReadLockReleased() {
 				this.resourcesAcquiredWithinUpgradeableRead.Clear();
 			}
 
+			/// <summary>
+			/// Retrieves the resource with the specified moniker.
+			/// </summary>
+			/// <param name="projectMoniker">The identifier for the desired resource.</param>
+			/// <returns>A task whose result is the desired resource.</returns>
 			public async Task<TResource> GetResourceAsync(TMoniker resourceMoniker, CancellationToken cancellationToken) {
 				using (var projectLock = this.AcquirePreexistingLockOrThrow()) {
 					var resource = await this.service.GetResourceAsync(resourceMoniker);
@@ -218,6 +360,13 @@
 				}
 			}
 
+			/// <summary>
+			/// Prepares the specified resource for access by a lock holder.
+			/// </summary>
+			/// <param name="resource">The resource to prepare.</param>
+			/// <param name="evenIfPreviouslyPrepared">Whether to force preparation of the resource even if it had been previously prepared.</param>
+			/// <param name="forcePrepareConcurrent">Force preparation of the resource for concurrent access, even if an exclusive lock is currently held.</param>
+			/// <returns>A task whose result is the prepared resource.  The result is the same as <paramref name="resource"/>.</returns>
 			private Task<TResource> PrepareResourceAsync(TResource resource, bool evenIfPreviouslyPrepared = false, bool forcePrepareConcurrent = false) {
 				Task<TResource> preparationTask;
 				if (!this.projectEvaluationTasks.TryGetValue(resource, out preparationTask)) {
@@ -234,6 +383,11 @@
 				return preparationTask;
 			}
 
+			/// <summary>
+			/// Reserves a read lock from a previously held lock.
+			/// </summary>
+			/// <returns>The releaser for the read lock.</returns>
+			/// <exception cref="InvalidOperationException">Thrown if no lock is held by the caller.</exception>
 			private ResourceReleaser AcquirePreexistingLockOrThrow() {
 				Verify.Operation(this.service.IsAnyLockHeld, "A lock is required");
 				return this.service.ReadLock(CancellationToken.None);
