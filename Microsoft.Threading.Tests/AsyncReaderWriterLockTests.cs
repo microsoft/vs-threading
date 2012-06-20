@@ -1331,7 +1331,7 @@
 					Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 					readerConcluded.SetAsync();
 				});
-				releaseWriteLock.SetAsync();
+				var nowait = releaseWriteLock.SetAsync();
 				await readerConcluded.Task;
 			}));
 		}

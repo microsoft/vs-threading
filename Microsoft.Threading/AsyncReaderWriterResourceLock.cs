@@ -27,7 +27,7 @@ namespace Microsoft.Threading {
 		private readonly Helper helper;
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="AsyncReaderWriterResourceLock"/> class.
+		/// Initializes a new instance of the AsyncReaderWriterResourceLock class.
 		/// </summary>
 		public AsyncReaderWriterResourceLock() {
 			this.helper = new Helper(this);
@@ -58,7 +58,7 @@ namespace Microsoft.Threading {
 			StickyWrite = 0x1,
 
 			/// <summary>
-			/// Skips a step to make sure that a project is initially evaluated when retrieved using <see cref="IDirectAccess.GetProject"/>.
+			/// Skips a step to make sure that a project is initially evaluated when retrieved using GetResourceAsync.
 			/// Setting this flag can have negative side effects to components that write to the MSBuild project,
 			/// so use to improve performance of bulk operations where you know re-evaluating the project
 			/// is not necessary to maintain a consistent state.
