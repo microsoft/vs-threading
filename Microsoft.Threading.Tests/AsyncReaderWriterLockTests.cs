@@ -516,6 +516,41 @@
 			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync());
 		}
 
+		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
+		public void LockAsyncThrowsOnGetResultBySta() {
+			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
+				Assert.Inconclusive("STA required.");
+			}
+
+			var awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
+			awaiter.GetResult(); // throws on an STA thread
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void LockAsyncNotIssuedTillGetResultOnSta() {
+			var awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
+			Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+			try {
+				awaiter.GetResult();
+			} catch (InvalidOperationException) {
+				// This exception happens because we invoke it on the STA.
+				// But we have to invoke it so that the lock is effectively canceled
+				// so the test doesn't hang in Cleanup.
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task LockAsyncNotIssuedTillGetResultOnMta() {
+			await Task.Run(delegate {
+				var awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
+				try {
+					Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+				} finally {
+					awaiter.GetResult().Dispose();
+				}
+			});
+		}
+
 		#endregion
 
 		#region ReadLock tests
@@ -1248,6 +1283,56 @@
 					}
 				});
 				cts.Cancel();
+			}));
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task CancelPendingLockFollowedByAnotherLock() {
+			var firstWriteHeld = new TaskCompletionSource<object>();
+			var releaseWriteLock = new TaskCompletionSource<object>();
+			var cancellationTestConcluded = new TaskCompletionSource<object>();
+			var readerConcluded = new TaskCompletionSource<object>();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+				using (await this.asyncLock.WriteLockAsync()) {
+					await firstWriteHeld.SetAsync();
+					await releaseWriteLock.Task;
+				}
+			}),
+				Task.Run(async delegate {
+				await firstWriteHeld.Task;
+				var cts = new CancellationTokenSource();
+				var awaiter = this.asyncLock.WriteLockAsync(cts.Token).GetAwaiter();
+				Assert.IsFalse(awaiter.IsCompleted);
+				awaiter.OnCompleted(delegate {
+					try {
+						awaiter.GetResult();
+						cancellationTestConcluded.SetException(new AssertFailedException("Expected OperationCanceledException not thrown."));
+					} catch (OperationCanceledException) {
+						cancellationTestConcluded.SetAsync();
+					}
+				});
+				cts.Cancel();
+
+				// Pend another lock request.  Make it a read lock this time.
+				// The point of this test is to ensure that the canceled (Write) awaiter doesn't get
+				// reused as a read awaiter while it is still in the writer queue.
+				await cancellationTestConcluded.Task;
+				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+				Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+				var readLockAwaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
+				readLockAwaiter.OnCompleted(delegate {
+					using (readLockAwaiter.GetResult()) {
+						Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+						Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+					}
+
+					Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+					Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+					readerConcluded.SetAsync();
+				});
+				releaseWriteLock.SetAsync();
+				await readerConcluded.Task;
 			}));
 		}
 
