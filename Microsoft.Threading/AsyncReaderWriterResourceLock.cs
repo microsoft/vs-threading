@@ -394,26 +394,58 @@ namespace Microsoft.Threading {
 			}
 		}
 
+		/// <summary>
+		/// An awaitable that is returned from asynchronous lock requests.
+		/// </summary>
 		public struct ResourceAwaitable {
+			/// <summary>
+			/// The underlying lock awaitable.
+			/// </summary>
 			private readonly AsyncReaderWriterLock.Awaitable awaitable;
 
+			/// <summary>
+			/// The helper class.
+			/// </summary>
 			private readonly Helper helper;
 
+			/// <summary>
+			/// Initializes a new instance of the <see cref="ResourceAwaitable"/> struct.
+			/// </summary>
+			/// <param name="awaitable">The underlying lock awaitable.</param>
+			/// <param name="helper">The helper class.</param>
 			internal ResourceAwaitable(AsyncReaderWriterLock.Awaitable awaitable, Helper helper) {
 				this.awaitable = awaitable;
 				this.helper = helper;
 			}
 
+			/// <summary>
+			/// Gets the awaiter value.
+			/// </summary>
 			public ResourceAwaiter GetAwaiter() {
 				return new ResourceAwaiter(this.awaitable.GetAwaiter(), this.helper);
 			}
 		}
 
+		/// <summary>
+		/// Manages asynchronous access to a lock.
+		/// </summary>
+		[DebuggerDisplay("{awaiter.kind}")]
 		public struct ResourceAwaiter : INotifyCompletion {
+			/// <summary>
+			/// The underlying lock awaiter.
+			/// </summary>
 			private readonly AsyncReaderWriterLock.Awaiter awaiter;
 
+			/// <summary>
+			/// The helper class.
+			/// </summary>
 			private readonly Helper helper;
 
+			/// <summary>
+			/// Initializes a new instance of the <see cref="ResourceAwaiter"/> struct.
+			/// </summary>
+			/// <param name="awaiter">The underlying lock awaiter.</param>
+			/// <param name="helper">The helper class.</param>
 			internal ResourceAwaiter(AsyncReaderWriterLock.Awaiter awaiter, Helper helper) {
 				this.awaiter = awaiter;
 				this.helper = helper;
@@ -443,42 +475,60 @@ namespace Microsoft.Threading {
 			}
 		}
 
+		/// <summary>
+		/// A value whose disposal releases a held lock.
+		/// </summary>
+		[DebuggerDisplay("{releaser.awaiter.kind}")]
 		public struct ResourceReleaser : IDisposable {
+			/// <summary>
+			/// The underlying lock releaser.
+			/// </summary>
 			private readonly AsyncReaderWriterLock.Releaser releaser;
 
+			/// <summary>
+			/// The helper class.
+			/// </summary>
 			private readonly Helper helper;
 
+			/// <summary>
+			/// Initializes a new instance of the <see cref="ResourceReleaser"/> struct.
+			/// </summary>
+			/// <param name="releaser">The underlying lock releaser.</param>
+			/// <param name="helper">The helper class.</param>
 			internal ResourceReleaser(AsyncReaderWriterLock.Releaser releaser, Helper helper) {
 				this.releaser = releaser;
 				this.helper = helper;
 			}
 
+			/// <summary>
+			/// Gets the underlying lock releaser.
+			/// </summary>
 			internal AsyncReaderWriterLock.Releaser LockReleaser {
 				get { return this.releaser; }
 			}
 
+			/// <summary>
+			/// Gets the lock protected resource.
+			/// </summary>
+			/// <param name="resourceMoniker">The identifier for the protected resource.</param>
+			/// <param name="cancellationToken">A token whose cancellation signals lost interest in the protected resource.</param>
+			/// <returns>A task whose result is the resource.</returns>
 			public Task<TResource> GetResourceAsync(TMoniker resourceMoniker, CancellationToken cancellationToken = default(CancellationToken)) {
 				return this.helper.GetResourceAsync(resourceMoniker, cancellationToken);
 			}
 
+			/// <summary>
+			/// Releases the lock.
+			/// </summary>
 			public void Dispose() {
 				this.LockReleaser.Dispose();
 			}
 
+			/// <summary>
+			/// Releases the lock.
+			/// </summary>
 			public Task DisposeAsync() {
 				return this.LockReleaser.DisposeAsync();
-			}
-		}
-
-		public struct ResourceSuppression : IDisposable {
-			private readonly AsyncReaderWriterLock.Suppression suppression;
-
-			internal ResourceSuppression(AsyncReaderWriterLock.Suppression suppression) {
-				this.suppression = suppression;
-			}
-
-			public void Dispose() {
-				this.suppression.Dispose();
 			}
 		}
 	}
