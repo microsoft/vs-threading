@@ -9,14 +9,14 @@
 
 	[TestClass]
 	public class AsyncReaderWriterResourceLockTests : TestBase {
-		private ProjectLockWrapper projectLock;
+		private ResourceLockWrapper resourceLock;
 
 		private List<Resource> resources;
 
 		[TestInitialize]
 		public void Initialize() {
 			this.resources = new List<Resource>();
-			this.projectLock = new ProjectLockWrapper(this.resources);
+			this.resourceLock = new ResourceLockWrapper(this.resources);
 			this.resources.Add(null); // something so that if default(T) were ever used in the product, it would likely throw.
 			this.resources.Add(new Resource());
 			this.resources.Add(new Resource());
@@ -24,7 +24,7 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task ReadResourceAsync() {
-			using (var access = await this.projectLock.ReadLockAsync()) {
+			using (var access = await this.resourceLock.ReadLockAsync()) {
 				var resource = await access.GetResourceAsync(1);
 				Assert.AreSame(this.resources[1], resource);
 				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
@@ -34,7 +34,7 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task UpgradeableReadResourceAsync() {
-			using (var access = await this.projectLock.UpgradeableReadLockAsync()) {
+			using (var access = await this.resourceLock.UpgradeableReadLockAsync()) {
 				var resource = await access.GetResourceAsync(1);
 				Assert.AreSame(this.resources[1], resource);
 				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
@@ -44,14 +44,14 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task WriteResourceAsync() {
-			using (var access = await this.projectLock.WriteLockAsync()) {
+			using (var access = await this.resourceLock.WriteLockAsync()) {
 				var resource = await access.GetResourceAsync(1);
 				Assert.AreSame(this.resources[1], resource);
 				Assert.AreEqual(0, resource.ConcurrentAccessPreparationCount);
 				Assert.AreEqual(1, resource.ExclusiveAccessPreparationCount);
 			}
 
-			using (var access = await this.projectLock.WriteLockAsync()) {
+			using (var access = await this.resourceLock.WriteLockAsync()) {
 				var resource = await access.GetResourceAsync(1);
 				Assert.AreSame(this.resources[1], resource);
 				Assert.AreEqual(0, resource.ConcurrentAccessPreparationCount);
@@ -61,7 +61,7 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task PreparationExecutesJustOncePerReadLock() {
-			using (var access = await this.projectLock.ReadLockAsync()) {
+			using (var access = await this.resourceLock.ReadLockAsync()) {
 				var resource = await access.GetResourceAsync(1);
 				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
 				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
@@ -70,7 +70,7 @@
 				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
 				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
 
-				using (var access2 = await this.projectLock.ReadLockAsync()) {
+				using (var access2 = await this.resourceLock.ReadLockAsync()) {
 					await access2.GetResourceAsync(1);
 					Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
 					Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
@@ -80,7 +80,7 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task PreparationExecutesJustOncePerUpgradeableReadLock() {
-			using (var access = await this.projectLock.UpgradeableReadLockAsync()) {
+			using (var access = await this.resourceLock.UpgradeableReadLockAsync()) {
 				var resource = await access.GetResourceAsync(1);
 				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
 				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
@@ -89,7 +89,7 @@
 				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
 				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
 
-				using (var access2 = await this.projectLock.UpgradeableReadLockAsync()) {
+				using (var access2 = await this.resourceLock.UpgradeableReadLockAsync()) {
 					await access2.GetResourceAsync(1);
 					Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
 					Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
@@ -99,7 +99,7 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task PreparationExecutesJustOncePerWriteLock() {
-			using (var access = await this.projectLock.WriteLockAsync()) {
+			using (var access = await this.resourceLock.WriteLockAsync()) {
 				var resource = await access.GetResourceAsync(1);
 				Assert.AreEqual(0, resource.ConcurrentAccessPreparationCount);
 				Assert.AreEqual(1, resource.ExclusiveAccessPreparationCount);
@@ -108,7 +108,7 @@
 				Assert.AreEqual(0, resource.ConcurrentAccessPreparationCount);
 				Assert.AreEqual(1, resource.ExclusiveAccessPreparationCount);
 
-				using (var access2 = await this.projectLock.WriteLockAsync()) {
+				using (var access2 = await this.resourceLock.WriteLockAsync()) {
 					await access2.GetResourceAsync(1);
 					Assert.AreEqual(0, resource.ConcurrentAccessPreparationCount);
 					Assert.AreEqual(1, resource.ExclusiveAccessPreparationCount);
@@ -121,7 +121,7 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task PreparationSkippedForWriteLockWithFlag() {
-			using (var access = await this.projectLock.WriteLockAsync(AsyncReaderWriterResourceLock<int, Resource>.LockFlags.SkipInitialPreparation)) {
+			using (var access = await this.resourceLock.WriteLockAsync(AsyncReaderWriterResourceLock<int, Resource>.LockFlags.SkipInitialPreparation)) {
 				var resource = await access.GetResourceAsync(1);
 				Assert.AreSame(this.resources[1], resource);
 				Assert.AreEqual(0, resource.ConcurrentAccessPreparationCount);
@@ -131,7 +131,7 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task PreparationNotSkippedForUpgradeableReadLockWithFlag() {
-			using (var access = await this.projectLock.UpgradeableReadLockAsync(AsyncReaderWriterResourceLock<int, Resource>.LockFlags.SkipInitialPreparation)) {
+			using (var access = await this.resourceLock.UpgradeableReadLockAsync(AsyncReaderWriterResourceLock<int, Resource>.LockFlags.SkipInitialPreparation)) {
 				var resource = await access.GetResourceAsync(1);
 				Assert.AreSame(this.resources[1], resource);
 				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
@@ -141,8 +141,8 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task PreparationSkippedForWriteLockUnderUpgradeableReadWithFlag() {
-			using (var access = await this.projectLock.UpgradeableReadLockAsync(AsyncReaderWriterResourceLock<int, Resource>.LockFlags.SkipInitialPreparation)) {
-				using (var access2 = await this.projectLock.WriteLockAsync()) {
+			using (var access = await this.resourceLock.UpgradeableReadLockAsync(AsyncReaderWriterResourceLock<int, Resource>.LockFlags.SkipInitialPreparation)) {
+				using (var access2 = await this.resourceLock.WriteLockAsync()) {
 					var resource = await access2.GetResourceAsync(1);
 					Assert.AreSame(this.resources[1], resource);
 					Assert.AreEqual(0, resource.ConcurrentAccessPreparationCount);
@@ -153,14 +153,14 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task ResourceHeldByUpgradeableReadPreparedWhenWriteLockReleased() {
-			using (var access = await this.projectLock.UpgradeableReadLockAsync()) {
+			using (var access = await this.resourceLock.UpgradeableReadLockAsync()) {
 				var resource = await access.GetResourceAsync(1);
 				Assert.AreSame(this.resources[1], resource);
 				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
 				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
 
 				Resource resource2;
-				using (var access2 = await this.projectLock.WriteLockAsync()) {
+				using (var access2 = await this.resourceLock.WriteLockAsync()) {
 					var resource1Again = await access2.GetResourceAsync(1);
 					Assert.AreSame(resource, resource1Again);
 					Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
@@ -184,20 +184,20 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task ResourceHeldByStickyUpgradeableReadNotPreparedWhenExplicitWriteLockReleased() {
-			using (var access = await this.projectLock.UpgradeableReadLockAsync(AsyncReaderWriterResourceLock<int, Resource>.LockFlags.StickyWrite)) {
+			using (var access = await this.resourceLock.UpgradeableReadLockAsync(AsyncReaderWriterResourceLock<int, Resource>.LockFlags.StickyWrite)) {
 				var resource = await access.GetResourceAsync(1);
 				Assert.AreSame(this.resources[1], resource);
 				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
 				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
 
-				using (var access2 = await this.projectLock.WriteLockAsync()) {
+				using (var access2 = await this.resourceLock.WriteLockAsync()) {
 					var resource1Again = await access2.GetResourceAsync(1);
 					Assert.AreSame(resource, resource1Again);
 					Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
 					Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount); // doesn't increment because concurrent preparation already performed.
 				}
 
-				Assert.IsTrue(this.projectLock.IsWriteLockHeld, "UpgradeableRead with StickyWrite was expected to hold the write lock.");
+				Assert.IsTrue(this.resourceLock.IsWriteLockHeld, "UpgradeableRead with StickyWrite was expected to hold the write lock.");
 				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
 				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
 
@@ -210,9 +210,9 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task DowngradedWriteLockDoesNotPrepareResourceWhenUpgradeableReadDidNotHaveIt() {
-			using (var access = await this.projectLock.UpgradeableReadLockAsync()) {
+			using (var access = await this.resourceLock.UpgradeableReadLockAsync()) {
 				Resource resource;
-				using (var access2 = await this.projectLock.WriteLockAsync()) {
+				using (var access2 = await this.resourceLock.WriteLockAsync()) {
 					resource = await access2.GetResourceAsync(1);
 					Assert.AreSame(this.resources[1], resource);
 					Assert.AreEqual(0, resource.ConcurrentAccessPreparationCount);
@@ -236,17 +236,17 @@
 		public async Task ResourcesPreparedConcurrently() {
 			var resourceTask1 = new TaskCompletionSource<object>();
 			var resourceTask2 = new TaskCompletionSource<object>();
-			var preparationEnteredTask1 = this.projectLock.SetPreparationTask(this.resources[1], resourceTask1.Task);
-			var preparationEnteredTask2 = this.projectLock.SetPreparationTask(this.resources[2], resourceTask2.Task);
+			var preparationEnteredTask1 = this.resourceLock.SetPreparationTask(this.resources[1], resourceTask1.Task);
+			var preparationEnteredTask2 = this.resourceLock.SetPreparationTask(this.resources[2], resourceTask2.Task);
 
 			await Task.WhenAll(
 				Task.Run(async delegate {
-				using (var access = await this.projectLock.ReadLockAsync()) {
+				using (var access = await this.resourceLock.ReadLockAsync()) {
 					var resource1 = await access.GetResourceAsync(1);
 				}
 			}),
 				Task.Run(async delegate {
-				using (var access = await this.projectLock.ReadLockAsync()) {
+				using (var access = await this.resourceLock.ReadLockAsync()) {
 					var resource2 = await access.GetResourceAsync(2);
 				}
 			}),
@@ -266,20 +266,20 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task IndividualResourcePreparationNotConcurrent() {
 			var resourceTask = new TaskCompletionSource<object>();
-			var preparationEnteredTask1 = this.projectLock.SetPreparationTask(this.resources[1], resourceTask.Task);
+			var preparationEnteredTask1 = this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task);
 			var requestSubmitted1 = new TaskCompletionSource<object>();
 			var requestSubmitted2 = new TaskCompletionSource<object>();
 
 			await Task.WhenAll(
 				Task.Run(async delegate {
-				using (var access = await this.projectLock.ReadLockAsync()) {
+				using (var access = await this.resourceLock.ReadLockAsync()) {
 					var resource = access.GetResourceAsync(1);
 					requestSubmitted1.SetResult(null);
 					await resource;
 				}
 			}),
 				Task.Run(async delegate {
-				using (var access = await this.projectLock.ReadLockAsync()) {
+				using (var access = await this.resourceLock.ReadLockAsync()) {
 					var resource = access.GetResourceAsync(1);
 					requestSubmitted2.SetResult(null);
 					await resource;
@@ -311,10 +311,10 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task PreparationReservesLock() {
 			var resourceTask = new TaskCompletionSource<object>();
-			this.projectLock.SetPreparationTask(this.resources[1], resourceTask.Task);
+			this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task);
 
 			Task<Resource> resource;
-			using (var access = await this.projectLock.ReadLockAsync()) {
+			using (var access = await this.resourceLock.ReadLockAsync()) {
 				resource = access.GetResourceAsync(1);
 			}
 
@@ -331,25 +331,25 @@
 		/// <returns></returns>
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task AsyncReleaseOfWriteToUpgradeableReadLock() {
-			using (var upgradeableReadAccess = await this.projectLock.UpgradeableReadLockAsync()) {
+			using (var upgradeableReadAccess = await this.resourceLock.UpgradeableReadLockAsync()) {
 				var resource = await upgradeableReadAccess.GetResourceAsync(1);
 				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
 				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
 
-				using (var writeAccess = await this.projectLock.WriteLockAsync()) {
+				using (var writeAccess = await this.resourceLock.WriteLockAsync()) {
 					resource = await writeAccess.GetResourceAsync(1);
 					Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
 					Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
 
 					await writeAccess.DisposeAsync();
-					Assert.IsFalse(this.projectLock.IsWriteLockHeld);
-					Assert.IsTrue(this.projectLock.IsUpgradeableReadLockHeld);
+					Assert.IsFalse(this.resourceLock.IsWriteLockHeld);
+					Assert.IsTrue(this.resourceLock.IsUpgradeableReadLockHeld);
 					Assert.AreEqual(2, resource.ConcurrentAccessPreparationCount);
 					Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
 				}
 
-				Assert.IsFalse(this.projectLock.IsWriteLockHeld);
-				Assert.IsTrue(this.projectLock.IsUpgradeableReadLockHeld);
+				Assert.IsFalse(this.resourceLock.IsWriteLockHeld);
+				Assert.IsTrue(this.resourceLock.IsUpgradeableReadLockHeld);
 				Assert.AreEqual(2, resource.ConcurrentAccessPreparationCount);
 				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
 			}
@@ -357,9 +357,9 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task LockDisposeAsyncWithoutWaitFollowedByDispose() {
-			using (var upgradeableReadAccess = await this.projectLock.UpgradeableReadLockAsync()) {
+			using (var upgradeableReadAccess = await this.resourceLock.UpgradeableReadLockAsync()) {
 				var resource1 = await upgradeableReadAccess.GetResourceAsync(1);
-				using (var writeAccess = await this.projectLock.WriteLockAsync()) {
+				using (var writeAccess = await this.resourceLock.WriteLockAsync()) {
 					var resource2 = await writeAccess.GetResourceAsync(1); // the test is to NOT await on this result.
 					var nowait = writeAccess.DisposeAsync();
 				} // this calls writeAccess.Dispose();
@@ -372,12 +372,12 @@
 			public int ExclusiveAccessPreparationCount { get; set; }
 		}
 
-		private class ProjectLockWrapper : AsyncReaderWriterResourceLock<int, Resource> {
+		private class ResourceLockWrapper : AsyncReaderWriterResourceLock<int, Resource> {
 			private readonly List<Resource> resources;
 
 			private readonly Dictionary<Resource, Tuple<TaskCompletionSource<object>, Task>> preparationTasks = new Dictionary<Resource, Tuple<TaskCompletionSource<object>, Task>>();
 
-			internal ProjectLockWrapper(List<Resource> resources) {
+			internal ResourceLockWrapper(List<Resource> resources) {
 				this.resources = resources;
 			}
 
