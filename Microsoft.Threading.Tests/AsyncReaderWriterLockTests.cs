@@ -1686,6 +1686,25 @@
 			await this.asyncLock.Completion;
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task OnBeforeWriteLockReleasedAndReenterConcurrency() {
+			var stub = new StubAsyncReaderWriterLock();
+
+			var beforeWriteLockReleasedTaskSource = new TaskCompletionSource<object>();
+			var exclusiveLockReleasedTaskSource = new TaskCompletionSource<object>();
+
+			stub.OnExclusiveLockReleasedAsync01 = () => exclusiveLockReleasedTaskSource.Task;
+
+			using (var releaser = await stub.WriteLockAsync()) {
+				stub.OnBeforeWriteLockReleased(() => beforeWriteLockReleasedTaskSource.Task);
+				var disposeTask = releaser.DisposeAsync();
+
+				beforeWriteLockReleasedTaskSource.SetResult(null);
+				exclusiveLockReleasedTaskSource.SetResult(null);
+				await disposeTask;
+			}
+		}
+
 		#endregion
 
 		#region Thread apartment rules

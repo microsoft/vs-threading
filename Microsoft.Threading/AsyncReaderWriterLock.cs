@@ -925,7 +925,7 @@
 			Assumes.True(Monitor.IsEntered(this.syncObject));
 
 			if (this.writeLocksIssued.Count == 1 && this.beforeWriteReleasedCallbacks.Count > 0) {
-				using (await this.WriteLockAsync()) {
+				using (var releaser = await this.WriteLockAsync()) {
 					await Task.Yield(); // ensure we've yielded to our caller, since the WriteLockAsync will not yield when on an MTA thread.
 
 					// We sequentially loop over the callbacks rather than fire then concurrently because each callback
@@ -943,6 +943,8 @@
 							exceptions.Add(ex);
 						}
 					}
+
+					await releaser.DisposeAsync();
 
 					if (exceptions != null) {
 						throw new AggregateException(exceptions);
