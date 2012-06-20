@@ -397,17 +397,17 @@
 				return Task.FromResult(this.resources[resourceMoniker]);
 			}
 
-			protected override Task<Resource> PrepareResourceForConcurrentAccessAsync(Resource resource) {
+			protected override Task PrepareResourceForConcurrentAccessAsync(Resource resource) {
 				resource.ConcurrentAccessPreparationCount++;
 				return this.GetPreparationTask(resource);
 			}
 
-			protected override Task<Resource> PrepareResourceForExclusiveAccessAsync(Resource resource) {
+			protected override Task PrepareResourceForExclusiveAccessAsync(Resource resource) {
 				resource.ExclusiveAccessPreparationCount++;
 				return this.GetPreparationTask(resource);
 			}
 
-			private async Task<Resource> GetPreparationTask(Resource resource) {
+			private async Task GetPreparationTask(Resource resource) {
 				Assert.IsTrue(this.IsAnyLockHeld);
 				Assert.IsFalse(Monitor.IsEntered(this.SyncObject));
 
@@ -424,7 +424,6 @@
 				}
 
 				Assert.IsTrue(this.IsAnyLockHeld);
-				return resource;
 			}
 		}
 	}

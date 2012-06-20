@@ -199,27 +199,27 @@ namespace Microsoft.Threading {
 		protected abstract Task<TResource> GetResourceAsync(TMoniker projectMoniker);
 
 		/// <summary>
-		/// 
+		/// Prepares a resource for concurrent access.
 		/// </summary>
 		/// <param name="resource"></param>
-		/// <returns></returns>
+		/// <returns>A task whose completion signals the resource has been prepared.</returns>
 		/// <remarks>
 		/// This is invoked on a resource when it is initially requested for concurrent access,
 		/// for both transitions from no access and exclusive access.
 		/// </remarks>
-		protected abstract Task<TResource> PrepareResourceForConcurrentAccessAsync(TResource resource);
+		protected abstract Task PrepareResourceForConcurrentAccessAsync(TResource resource);
 
 		/// <summary>
-		/// 
+		/// Prepares a resource for access by one thread.
 		/// </summary>
 		/// <param name="resource"></param>
-		/// <returns></returns>
+		/// <returns>A task whose completion signals the resource has been prepared.</returns>
 		/// <remarks>
 		/// This is invoked on a resource when it is initially access for exclusive access,
 		/// but only when transitioning from no access -- it is not invoked when transitioning
 		/// from concurrent access to exclusive access.
 		/// </remarks>
-		protected abstract Task<TResource> PrepareResourceForExclusiveAccessAsync(TResource resource);
+		protected abstract Task PrepareResourceForExclusiveAccessAsync(TResource resource);
 
 		/// <summary>
 		/// Invoked after an exclusive lock is released but before anyone has a chance to enter the lock.
@@ -252,22 +252,22 @@ namespace Microsoft.Threading {
 			/// <summary>
 			/// A reusable delegate that invokes the <see cref="AsyncReaderWriterResourceLock{TMoniker, TResource}.PrepareResourceForConcurrentAccessAsync"/> method.
 			/// </summary>
-			private readonly Func<object, Task<TResource>> prepareResourceConcurrentDelegate;
+			private readonly Func<object, Task> prepareResourceConcurrentDelegate;
 
 			/// <summary>
 			/// A reusable delegate that invokes the <see cref="AsyncReaderWriterResourceLock{TMoniker, TResource}.PrepareResourceForExclusiveAccessAsync"/> method.
 			/// </summary>
-			private readonly Func<object, Task<TResource>> prepareResourceExclusiveDelegate;
+			private readonly Func<object, Task> prepareResourceExclusiveDelegate;
 
 			/// <summary>
 			/// A reusable delegate that invokes the <see cref="AsyncReaderWriterResourceLock{TMoniker, TResource}.PrepareResourceForConcurrentAccessAsync"/> method.
 			/// </summary>
-			private readonly Func<Task<TResource>, object, Task<TResource>> prepareResourceConcurrentContinuationDelegate;
+			private readonly Func<Task, object, Task> prepareResourceConcurrentContinuationDelegate;
 
 			/// <summary>
 			/// A reusable delegate that invokes the <see cref="AsyncReaderWriterResourceLock{TMoniker, TResource}.PrepareResourceForExclusiveAccessAsync"/> method.
 			/// </summary>
-			private readonly Func<Task<TResource>, object, Task<TResource>> prepareResourceExclusiveContinuationDelegate;
+			private readonly Func<Task, object, Task> prepareResourceExclusiveContinuationDelegate;
 
 			/// <summary>
 			/// A collection of all the resources requested within the outermost upgradeable read lock.
@@ -277,7 +277,7 @@ namespace Microsoft.Threading {
 			/// <summary>
 			/// A map of projects to the tasks that most recently began evaluating them.
 			/// </summary>
-			private ConditionalWeakTable<TResource, Task<TResource>> projectEvaluationTasks = new ConditionalWeakTable<TResource, Task<TResource>>();
+			private ConditionalWeakTable<TResource, Task> projectEvaluationTasks = new ConditionalWeakTable<TResource, Task>();
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="Helper"/> class.
@@ -302,7 +302,7 @@ namespace Microsoft.Threading {
 				// This arbitrary clearing of the table seems like it should introduce the risk of preparing a given
 				// resource multiple times concurrently, since no evidence remains of an asynchronous operation still
 				// in progress.  In practice, various other designs in this class prevent it from ever actually occurring.
-				this.projectEvaluationTasks = new ConditionalWeakTable<TResource, Task<TResource>>();
+				this.projectEvaluationTasks = new ConditionalWeakTable<TResource, Task>();
 
 				if (this.service.IsUpgradeableReadLockHeld && this.resourcesAcquiredWithinUpgradeableRead.Count > 0) {
 					// We must also synchronously prepare all resources that were acquired within the upgradeable read lock
@@ -368,13 +368,13 @@ namespace Microsoft.Threading {
 			/// <param name="forcePrepareConcurrent">Force preparation of the resource for concurrent access, even if an exclusive lock is currently held.</param>
 			/// <returns>A task that is completed when preparation has completed.</returns>
 			private Task PrepareResourceAsync(TResource resource, bool evenIfPreviouslyPrepared = false, bool forcePrepareConcurrent = false) {
-				Task<TResource> preparationTask;
+				Task preparationTask;
 				if (!this.projectEvaluationTasks.TryGetValue(resource, out preparationTask)) {
-					var preparationDelegate = (this.service.IsWriteLockHeld && !forcePrepareConcurrent) ? prepareResourceExclusiveDelegate : prepareResourceConcurrentDelegate;
+					var preparationDelegate = (this.service.IsWriteLockHeld && !forcePrepareConcurrent) ? this.prepareResourceExclusiveDelegate : this.prepareResourceConcurrentDelegate;
 					preparationTask = Task.Factory.StartNew(preparationDelegate, resource, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap();
 					this.projectEvaluationTasks.Add(resource, preparationTask);
 				} else if (evenIfPreviouslyPrepared) {
-					var preparationDelegate = (this.service.IsWriteLockHeld && !forcePrepareConcurrent) ? prepareResourceExclusiveContinuationDelegate : prepareResourceConcurrentContinuationDelegate;
+					var preparationDelegate = (this.service.IsWriteLockHeld && !forcePrepareConcurrent) ? this.prepareResourceExclusiveContinuationDelegate : this.prepareResourceConcurrentContinuationDelegate;
 					preparationTask = preparationTask.ContinueWith(preparationDelegate, resource, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap();
 					this.projectEvaluationTasks.Remove(resource);
 					this.projectEvaluationTasks.Add(resource, preparationTask);
