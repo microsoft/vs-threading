@@ -196,7 +196,7 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="projectMoniker">The identifier for the desired resource.</param>
 		/// <returns>A task whose result is the desired resource.</returns>
-		protected abstract Task<TResource> GetResourceAsync(TMoniker projectMoniker);
+		protected abstract Task<TResource> GetResourceAsync(TMoniker projectMoniker, CancellationToken cancellationToken);
 
 		/// <summary>
 		/// Prepares a resource for concurrent access.
@@ -207,7 +207,7 @@ namespace Microsoft.Threading {
 		/// This is invoked on a resource when it is initially requested for concurrent access,
 		/// for both transitions from no access and exclusive access.
 		/// </remarks>
-		protected abstract Task PrepareResourceForConcurrentAccessAsync(TResource resource);
+		protected abstract Task PrepareResourceForConcurrentAccessAsync(TResource resource, CancellationToken cancellationToken);
 
 		/// <summary>
 		/// Prepares a resource for access by one thread.
@@ -219,7 +219,7 @@ namespace Microsoft.Threading {
 		/// but only when transitioning from no access -- it is not invoked when transitioning
 		/// from concurrent access to exclusive access.
 		/// </remarks>
-		protected abstract Task PrepareResourceForExclusiveAccessAsync(TResource resource);
+		protected abstract Task PrepareResourceForExclusiveAccessAsync(TResource resource, CancellationToken cancellationToken);
 
 		/// <summary>
 		/// Invoked after an exclusive lock is released but before anyone has a chance to enter the lock.
@@ -287,10 +287,10 @@ namespace Microsoft.Threading {
 				Requires.NotNull(service, "service");
 
 				this.service = service;
-				this.prepareResourceConcurrentDelegate = state => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state);
-				this.prepareResourceExclusiveDelegate = state => this.service.PrepareResourceForExclusiveAccessAsync((TResource)state);
-				this.prepareResourceConcurrentContinuationDelegate = (prev, state) => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state);
-				this.prepareResourceExclusiveContinuationDelegate = (prev, state) => this.service.PrepareResourceForExclusiveAccessAsync((TResource)state);
+				this.prepareResourceConcurrentDelegate = state => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state, CancellationToken.None);
+				this.prepareResourceExclusiveDelegate = state => this.service.PrepareResourceForExclusiveAccessAsync((TResource)state, CancellationToken.None);
+				this.prepareResourceConcurrentContinuationDelegate = (prev, state) => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state, CancellationToken.None);
+				this.prepareResourceExclusiveContinuationDelegate = (prev, state) => this.service.PrepareResourceForExclusiveAccessAsync((TResource)state, CancellationToken.None);
 			}
 
 			/// <summary>
@@ -310,7 +310,7 @@ namespace Microsoft.Threading {
 					var preparationTasks = new Task[this.resourcesAcquiredWithinUpgradeableRead.Count];
 					int taskIndex = 0;
 					foreach (var resource in this.resourcesAcquiredWithinUpgradeableRead) {
-						preparationTasks[taskIndex++] = this.PrepareResourceAsync(resource, evenIfPreviouslyPrepared: true, forcePrepareConcurrent: true);
+						preparationTasks[taskIndex++] = this.PrepareResourceAsync(resource, CancellationToken.None, evenIfPreviouslyPrepared: true, forcePrepareConcurrent: true);
 					}
 
 					if (preparationTasks.Length == 1) {
@@ -335,9 +335,9 @@ namespace Microsoft.Threading {
 			/// </summary>
 			/// <param name="projectMoniker">The identifier for the desired resource.</param>
 			/// <returns>A task whose result is the desired resource.</returns>
-			public async Task<TResource> GetResourceAsync(TMoniker resourceMoniker, CancellationToken cancellationToken) {
+			internal async Task<TResource> GetResourceAsync(TMoniker resourceMoniker, CancellationToken cancellationToken) {
 				using (var projectLock = this.AcquirePreexistingLockOrThrow()) {
-					var resource = await this.service.GetResourceAsync(resourceMoniker);
+					var resource = await this.service.GetResourceAsync(resourceMoniker, cancellationToken);
 					Task preparationTask;
 
 					lock (this.service.SyncObject) {
@@ -351,7 +351,7 @@ namespace Microsoft.Threading {
 							// We can't currently use the caller's cancellation token for this task because 
 							// this task may be shared with others or call this method later, and we wouldn't 
 							// want their requests to be cancelled as a result of this first caller cancelling.
-							preparationTask = this.PrepareResourceAsync(resource);
+							preparationTask = this.PrepareResourceAsync(resource, cancellationToken);
 						}
 					}
 
@@ -367,14 +367,18 @@ namespace Microsoft.Threading {
 			/// <param name="evenIfPreviouslyPrepared">Whether to force preparation of the resource even if it had been previously prepared.</param>
 			/// <param name="forcePrepareConcurrent">Force preparation of the resource for concurrent access, even if an exclusive lock is currently held.</param>
 			/// <returns>A task that is completed when preparation has completed.</returns>
-			private Task PrepareResourceAsync(TResource resource, bool evenIfPreviouslyPrepared = false, bool forcePrepareConcurrent = false) {
+			private Task PrepareResourceAsync(TResource resource, CancellationToken cancellationToken, bool evenIfPreviouslyPrepared = false, bool forcePrepareConcurrent = false) {
 				Task preparationTask;
 				if (!this.projectEvaluationTasks.TryGetValue(resource, out preparationTask)) {
-					var preparationDelegate = (this.service.IsWriteLockHeld && !forcePrepareConcurrent) ? this.prepareResourceExclusiveDelegate : this.prepareResourceConcurrentDelegate;
+					var preparationDelegate = (this.service.IsWriteLockHeld && !forcePrepareConcurrent)
+						? (cancellationToken.CanBeCanceled ? state => this.service.PrepareResourceForExclusiveAccessAsync((TResource)state, cancellationToken) : this.prepareResourceExclusiveDelegate)
+						: (cancellationToken.CanBeCanceled ? state => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state, cancellationToken) : this.prepareResourceConcurrentDelegate);
 					preparationTask = Task.Factory.StartNew(preparationDelegate, resource, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap();
 					this.projectEvaluationTasks.Add(resource, preparationTask);
 				} else if (evenIfPreviouslyPrepared) {
-					var preparationDelegate = (this.service.IsWriteLockHeld && !forcePrepareConcurrent) ? this.prepareResourceExclusiveContinuationDelegate : this.prepareResourceConcurrentContinuationDelegate;
+					var preparationDelegate = (this.service.IsWriteLockHeld && !forcePrepareConcurrent)
+						? (cancellationToken.CanBeCanceled ? (prev, state) => this.service.PrepareResourceForExclusiveAccessAsync((TResource)state, cancellationToken) : this.prepareResourceExclusiveContinuationDelegate)
+						: (cancellationToken.CanBeCanceled ? (prev, state) => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state, cancellationToken) : this.prepareResourceConcurrentContinuationDelegate);
 					preparationTask = preparationTask.ContinueWith(preparationDelegate, resource, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap();
 					this.projectEvaluationTasks.Remove(resource);
 					this.projectEvaluationTasks.Add(resource, preparationTask);

@@ -393,16 +393,16 @@
 				return tcs.Task;
 			}
 
-			protected override Task<Resource> GetResourceAsync(int resourceMoniker) {
+			protected override Task<Resource> GetResourceAsync(int resourceMoniker, CancellationToken cancellationToken) {
 				return Task.FromResult(this.resources[resourceMoniker]);
 			}
 
-			protected override Task PrepareResourceForConcurrentAccessAsync(Resource resource) {
+			protected override Task PrepareResourceForConcurrentAccessAsync(Resource resource, CancellationToken cancellationToken) {
 				resource.ConcurrentAccessPreparationCount++;
 				return this.GetPreparationTask(resource);
 			}
 
-			protected override Task PrepareResourceForExclusiveAccessAsync(Resource resource) {
+			protected override Task PrepareResourceForExclusiveAccessAsync(Resource resource, CancellationToken cancellationToken) {
 				resource.ExclusiveAccessPreparationCount++;
 				return this.GetPreparationTask(resource);
 			}
