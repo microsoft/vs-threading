@@ -1928,6 +1928,45 @@
 
 		#endregion
 
+		#region Lock data tests
+
+		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
+		public void SetLockDataWithoutLock() {
+			var lck = new LockDerived();
+			lck.SetLockData(null);
+		}
+
+		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
+		public void GetLockDataWithoutLock() {
+			var lck = new LockDerived();
+			lck.GetLockData();
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task SetLockDataNoLock() {
+			var lck = new LockDerived();
+			using (await lck.WriteLockAsync()) {
+				lck.SetLockData(null);
+				Assert.AreEqual(null, lck.GetLockData());
+
+				var value1 = new object();
+				lck.SetLockData(value1);
+				Assert.AreEqual(value1, lck.GetLockData());
+
+				using (await lck.WriteLockAsync()) {
+					Assert.AreEqual(null, lck.GetLockData());
+
+					var value2 = new object();
+					lck.SetLockData(value2);
+					Assert.AreEqual(value2, lck.GetLockData());
+				}
+
+				Assert.AreEqual(value1, lck.GetLockData());
+			}
+		}
+
+		#endregion
+
 		private void LockReleaseTestHelper(AsyncReaderWriterLock.Awaitable initialLock) {
 			TestUtilities.Run(async delegate {
 				var staScheduler = TaskScheduler.FromCurrentSynchronizationContext();
@@ -2195,6 +2234,14 @@
 		private class LockDerived : AsyncReaderWriterLock {
 			internal new bool LockStackContains(LockFlags flags, Awaiter awaiter = null) {
 				return base.LockStackContains(flags, awaiter);
+			}
+
+			internal new void SetLockData(object value) {
+				base.SetLockData(value);
+			}
+
+			internal new object GetLockData() {
+				return base.GetLockData();
 			}
 		}
 	}
