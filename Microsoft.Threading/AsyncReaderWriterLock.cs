@@ -1334,6 +1334,7 @@ namespace Microsoft.Threading {
 				awaiter.continuation = null;
 				awaiter.options = options;
 				awaiter.cancellationToken = cancellationToken;
+				awaiter.cancellationRegistration = default(CancellationTokenRegistration);
 				awaiter.nestingLock = lck.GetFirstActiveSelfOrAncestor(lck.topAwaiter.Value);
 				awaiter.fault = null;
 				awaiter.releaseAsyncTask = null;
@@ -1363,6 +1364,13 @@ namespace Microsoft.Threading {
 			/// Recycles this instance.
 			/// </summary>
 			internal void Recycle() {
+				// Clear some fields to remove strong references to data we don't need any more.
+				this.continuation = null;
+				this.cancellationToken = CancellationToken.None;
+				this.cancellationRegistration = default(CancellationTokenRegistration);
+				this.fault = null;
+				this.releaseAsyncTask = null;
+
 				recycledAwaiters.TryAdd(this);
 			}
 

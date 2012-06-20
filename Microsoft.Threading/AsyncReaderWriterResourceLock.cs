@@ -202,6 +202,7 @@ namespace Microsoft.Threading {
 		/// Prepares a resource for concurrent access.
 		/// </summary>
 		/// <param name="resource"></param>
+		/// <param name="cancellationToken">The token whose cancellation signals lost interest in the resource.</param>
 		/// <returns>A task whose completion signals the resource has been prepared.</returns>
 		/// <remarks>
 		/// This is invoked on a resource when it is initially requested for concurrent access,
@@ -213,6 +214,7 @@ namespace Microsoft.Threading {
 		/// Prepares a resource for access by one thread.
 		/// </summary>
 		/// <param name="resource"></param>
+		/// <param name="cancellationToken">The token whose cancellation signals lost interest in the resource.</param>
 		/// <returns>A task whose completion signals the resource has been prepared.</returns>
 		/// <remarks>
 		/// This is invoked on a resource when it is initially access for exclusive access,
@@ -333,7 +335,8 @@ namespace Microsoft.Threading {
 			/// <summary>
 			/// Retrieves the resource with the specified moniker.
 			/// </summary>
-			/// <param name="projectMoniker">The identifier for the desired resource.</param>
+			/// <param name="resourceMoniker">The identifier for the desired resource.</param>
+			/// <param name="cancellationToken">The token whose cancellation signals lost interest in this resource.</param>
 			/// <returns>A task whose result is the desired resource.</returns>
 			internal async Task<TResource> GetResourceAsync(TMoniker resourceMoniker, CancellationToken cancellationToken) {
 				using (var projectLock = this.AcquirePreexistingLockOrThrow()) {
@@ -364,6 +367,7 @@ namespace Microsoft.Threading {
 			/// Prepares the specified resource for access by a lock holder.
 			/// </summary>
 			/// <param name="resource">The resource to prepare.</param>
+			/// <param name="cancellationToken">The token whose cancellation signals lost interest in this resource.</param>
 			/// <param name="evenIfPreviouslyPrepared">Whether to force preparation of the resource even if it had been previously prepared.</param>
 			/// <param name="forcePrepareConcurrent">Force preparation of the resource for concurrent access, even if an exclusive lock is currently held.</param>
 			/// <returns>A task that is completed when preparation has completed.</returns>
