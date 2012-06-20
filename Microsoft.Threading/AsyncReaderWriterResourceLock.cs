@@ -338,7 +338,7 @@ namespace Microsoft.Threading {
 			public async Task<TResource> GetResourceAsync(TMoniker resourceMoniker, CancellationToken cancellationToken) {
 				using (var projectLock = this.AcquirePreexistingLockOrThrow()) {
 					var resource = await this.service.GetResourceAsync(resourceMoniker);
-					Task<TResource> preparationTask;
+					Task preparationTask;
 
 					lock (this.service.SyncObject) {
 						if (this.service.IsUpgradeableReadLockHeld && !this.service.IsWriteLockHeld) {
@@ -355,8 +355,8 @@ namespace Microsoft.Threading {
 						}
 					}
 
-					var result = await preparationTask;
-					return result;
+					await preparationTask;
+					return resource;
 				}
 			}
 
@@ -366,8 +366,8 @@ namespace Microsoft.Threading {
 			/// <param name="resource">The resource to prepare.</param>
 			/// <param name="evenIfPreviouslyPrepared">Whether to force preparation of the resource even if it had been previously prepared.</param>
 			/// <param name="forcePrepareConcurrent">Force preparation of the resource for concurrent access, even if an exclusive lock is currently held.</param>
-			/// <returns>A task whose result is the prepared resource.  The result is the same as <paramref name="resource"/>.</returns>
-			private Task<TResource> PrepareResourceAsync(TResource resource, bool evenIfPreviouslyPrepared = false, bool forcePrepareConcurrent = false) {
+			/// <returns>A task that is completed when preparation has completed.</returns>
+			private Task PrepareResourceAsync(TResource resource, bool evenIfPreviouslyPrepared = false, bool forcePrepareConcurrent = false) {
 				Task<TResource> preparationTask;
 				if (!this.projectEvaluationTasks.TryGetValue(resource, out preparationTask)) {
 					var preparationDelegate = (this.service.IsWriteLockHeld && !forcePrepareConcurrent) ? prepareResourceExclusiveDelegate : prepareResourceConcurrentDelegate;
