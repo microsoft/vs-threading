@@ -311,7 +311,7 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task PreparationReservesLock() {
 			var resourceTask = new TaskCompletionSource<object>();
-			this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task);
+			var nowait = this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task);
 
 			Task<Resource> resource;
 			using (var access = await this.resourceLock.ReadLockAsync()) {
