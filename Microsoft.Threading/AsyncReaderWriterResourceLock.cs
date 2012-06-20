@@ -163,6 +163,8 @@
 			/// Ensures that all resources are marked as unprepared so at next request they are prepared again.
 			/// </summary>
 			internal Task OnExclusiveLockReleasedAsync() {
+				// We need to mark all resource preparations that may have already occurred as needing to occur again
+				// now that we're releasing the exclusive lock.
 				// This arbitrary clearing of the table seems like it should introduce the risk of preparing a given
 				// resource multiple times concurrently, since no evidence remains of an asynchronous operation still
 				// in progress.  In practice, various other designs in this class prevent it from ever actually occurring.
