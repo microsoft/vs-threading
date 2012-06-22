@@ -1406,7 +1406,7 @@ namespace Microsoft.Threading {
 					}
 				}
 
-				return this.releaseAsyncTask;
+				return this.releaseAsyncTask ?? CompletedTask;
 			}
 
 			/// <summary>
