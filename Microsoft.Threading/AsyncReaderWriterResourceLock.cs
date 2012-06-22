@@ -195,6 +195,7 @@ namespace Microsoft.Threading {
 		/// Retrieves the resource with the specified moniker.
 		/// </summary>
 		/// <param name="projectMoniker">The identifier for the desired resource.</param>
+		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the resource.</param>
 		/// <returns>A task whose result is the desired resource.</returns>
 		protected abstract Task<TResource> GetResourceAsync(TMoniker projectMoniker, CancellationToken cancellationToken);
 

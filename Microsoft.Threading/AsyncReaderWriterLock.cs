@@ -26,7 +26,7 @@ namespace Microsoft.Threading {
 	/// </remarks>
 	/// <devnotes>
 	/// Considering this class to be a state machine, the states are:
-	/// 
+	/// <![CDATA[
 	///    ------------- 
 	///    |           | <-----> READERS
 	///    |    IDLE   | <-----> UPGRADEABLE READER + READERS -----> UPGRADED WRITER --\
@@ -34,7 +34,7 @@ namespace Microsoft.Threading {
 	///    |           |                             |--- RE-ENTER CONCURRENCY PREP <--/
 	///    |           | <-----> WRITER
 	///    ------------- 
-	/// 
+	/// ]]>
 	/// </devnotes>
 	public class AsyncReaderWriterLock {
 		/// <summary>
@@ -633,6 +633,7 @@ namespace Microsoft.Threading {
 		/// Always <c>false</c> when called on an STA thread.
 		/// </summary>
 		/// <param name="awaiter">The lock to check.</param>
+		/// <param name="considerStaActive">if <c>false</c> the return value will always be <c>false</c> if called on an STA thread.</param>
 		/// <returns><c>true</c> if the lock is currently issued and the caller is not on an STA thread.</returns>
 		private bool IsLockActive(Awaiter awaiter, bool considerStaActive) {
 			Requires.NotNull(awaiter, "awaiter");
