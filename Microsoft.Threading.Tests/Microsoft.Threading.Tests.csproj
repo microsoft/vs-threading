@@ -58,7 +58,7 @@
     <Compile Include="AsyncAutoResetEventTests.cs" />
     <Compile Include="AsyncBarrierTests.cs" />
     <Compile Include="AsyncCountdownEventTests.cs" />
-    <Compile Include="AsyncLockTests.cs" />
+    <Compile Include="AsyncSemaphoreTests.cs" />
     <Compile Include="AsyncManualResetEventTests.cs" />
     <Compile Include="AsyncReaderWriterLockTests.cs" />
     <Compile Include="AsyncReaderWriterResourceLockTests.cs" />

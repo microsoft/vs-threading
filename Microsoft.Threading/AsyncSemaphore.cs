@@ -7,9 +7,9 @@
 	using System.Threading.Tasks;
 
 	/// <summary>
-	/// An asynchronous <see cref="Monitor"/> like class.
+	/// An asynchronous <see cref="SemaphoreSlim"/> like class with more convenient release syntax.
 	/// </summary>
-	public class AsyncLock {
+	public class AsyncSemaphore {
 		/// <summary>
 		/// The semaphore used to keep concurrent access to this lock to just 1.
 		/// </summary>
@@ -26,10 +26,10 @@
 		private readonly Task<Releaser> canceledReleaser;
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="AsyncLock"/> class.
+		/// Initializes a new instance of the <see cref="AsyncSemaphore"/> class.
 		/// </summary>
-		public AsyncLock() {
-			this.semaphore = new SemaphoreSlim(1);
+		public AsyncSemaphore(int initialCount) {
+			this.semaphore = new SemaphoreSlim(initialCount);
 			this.uncontestedReleaser = Task.FromResult(new Releaser(this));
 
 			var canceledSource = new TaskCompletionSource<Releaser>();
@@ -42,7 +42,7 @@
 		/// </summary>
 		/// <param name="cancellationToken">A token whose cancellation signals lost interest in the lock.</param>
 		/// <returns>A task whose result is a releaser that should be disposed to release the lock.</returns>
-		public Task<Releaser> LockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
+		public Task<Releaser> EnterAsync(CancellationToken cancellationToken = default(CancellationToken)) {
 			return this.LockWaitingHelper(this.semaphore.WaitAsync(cancellationToken));
 		}
 
@@ -52,7 +52,7 @@
 		/// <param name="timeout">A timeout for waiting for the lock.</param>
 		/// <param name="cancellationToken">A token whose cancellation signals lost interest in the lock.</param>
 		/// <returns>A task whose result is a releaser that should be disposed to release the lock.</returns>
-		public Task<Releaser> LockAsync(TimeSpan timeout, CancellationToken cancellationToken = default(CancellationToken)) {
+		public Task<Releaser> EnterAsync(TimeSpan timeout, CancellationToken cancellationToken = default(CancellationToken)) {
 			return this.LockWaitingHelper(this.semaphore.WaitAsync(timeout, cancellationToken));
 		}
 
@@ -62,7 +62,7 @@
 		/// <param name="timeout">A timeout for waiting for the lock.</param>
 		/// <param name="cancellationToken">A token whose cancellation signals lost interest in the lock.</param>
 		/// <returns>A task whose result is a releaser that should be disposed to release the lock.</returns>
-		public Task<Releaser> LockAsync(int timeout, CancellationToken cancellationToken = default(CancellationToken)) {
+		public Task<Releaser> EnterAsync(int timeout, CancellationToken cancellationToken = default(CancellationToken)) {
 			return this.LockWaitingHelper(this.semaphore.WaitAsync(timeout, cancellationToken));
 		}
 
@@ -82,7 +82,7 @@
 							throw new OperationCanceledException();
 						}
 
-						return new Releaser((AsyncLock)state);
+						return new Releaser((AsyncSemaphore)state);
 					},
 					this,
 					CancellationToken.None,
@@ -106,7 +106,7 @@
 							throw new OperationCanceledException();
 						}
 
-						return new Releaser((AsyncLock)state);
+						return new Releaser((AsyncSemaphore)state);
 					},
 					this,
 					CancellationToken.None,
@@ -121,13 +121,13 @@
 			/// <summary>
 			/// The lock instance to release.
 			/// </summary>
-			private readonly AsyncLock toRelease;
+			private readonly AsyncSemaphore toRelease;
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="Releaser"/> struct.
 			/// </summary>
 			/// <param name="toRelease">The lock instance to release on.</param>
-			internal Releaser(AsyncLock toRelease) {
+			internal Releaser(AsyncSemaphore toRelease) {
 				this.toRelease = toRelease;
 			}
 

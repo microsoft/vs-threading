@@ -8,26 +8,26 @@
 	using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 	[TestClass]
-	public class AsyncLockTests : TestBase {
-		private AsyncLock lck = new AsyncLock();
+	public class AsyncSemaphoreTests : TestBase {
+		private AsyncSemaphore lck = new AsyncSemaphore(1);
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task Uncontested() {
-			using (await this.lck.LockAsync()) {
+			using (await this.lck.EnterAsync()) {
 			}
 
-			using (await this.lck.LockAsync()) {
+			using (await this.lck.EnterAsync()) {
 			}
 
-			using (await this.lck.LockAsync()) {
+			using (await this.lck.EnterAsync()) {
 			}
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task Contested() {
-			var first = this.lck.LockAsync();
+			var first = this.lck.EnterAsync();
 			Assert.IsTrue(first.IsCompleted);
-			var second = this.lck.LockAsync();
+			var second = this.lck.EnterAsync();
 			Assert.IsFalse(second.IsCompleted);
 			first.Result.Dispose();
 			await second;
@@ -37,8 +37,8 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task ContestedAndCancelled() {
 			var cts = new CancellationTokenSource();
-			var first = this.lck.LockAsync();
-			var second = this.lck.LockAsync(cts.Token);
+			var first = this.lck.EnterAsync();
+			var second = this.lck.EnterAsync(cts.Token);
 			Assert.IsFalse(second.IsCompleted);
 			cts.Cancel();
 			first.Result.Dispose();
@@ -51,15 +51,15 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void TimeoutIntImmediateFailure() {
-			var first = this.lck.LockAsync(0);
-			var second = this.lck.LockAsync(0);
+			var first = this.lck.EnterAsync(0);
+			var second = this.lck.EnterAsync(0);
 			Assert.AreEqual(TaskStatus.Canceled, second.Status);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task TimeoutIntEventualFailure() {
-			var first = this.lck.LockAsync(0);
-			var second = this.lck.LockAsync(1);
+			var first = this.lck.EnterAsync(0);
+			var second = this.lck.EnterAsync(1);
 			Assert.IsFalse(second.IsCompleted);
 			try {
 				await second;
@@ -69,8 +69,8 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task TimeoutIntSuccess() {
-			var first = this.lck.LockAsync(0);
-			var second = this.lck.LockAsync(AsyncDelay);
+			var first = this.lck.EnterAsync(0);
+			var second = this.lck.EnterAsync(AsyncDelay);
 			Assert.IsFalse(second.IsCompleted);
 			first.Result.Dispose();
 			await second;
@@ -79,9 +79,21 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void TimeoutTimeSpan() {
-			var first = this.lck.LockAsync(TimeSpan.Zero);
-			var second = this.lck.LockAsync(TimeSpan.Zero);
+			var first = this.lck.EnterAsync(TimeSpan.Zero);
+			var second = this.lck.EnterAsync(TimeSpan.Zero);
 			Assert.AreEqual(TaskStatus.Canceled, second.Status);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void TwoResourceSemaphore() {
+			var sem = new AsyncSemaphore(2);
+			var first = sem.EnterAsync();
+			var second = sem.EnterAsync();
+			var third = sem.EnterAsync();
+
+			Assert.AreEqual(TaskStatus.RanToCompletion, first.Status);
+			Assert.AreEqual(TaskStatus.RanToCompletion, second.Status);
+			Assert.IsFalse(third.IsCompleted);
 		}
 	}
 }
