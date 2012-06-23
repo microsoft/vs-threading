@@ -13,6 +13,9 @@
     <releaseNotes></releaseNotes>
     <copyright>Copyright 2012</copyright>
     <tags>Threading Async Lock Synchronization Threadsafe</tags>
+    <dependencies>
+      <dependency id="Microsoft.Validation" version="[1.0.4,2.0)" />
+    </dependencies>
   </metadata>
   <files>
     <file src="Microsoft.Threading\bin\release\Microsoft.Threading.dll" target="lib\net45-client" />
