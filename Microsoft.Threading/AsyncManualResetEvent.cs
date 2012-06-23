@@ -25,6 +25,9 @@
 			}
 		}
 
+		/// <summary>
+		/// Gets a value indicating whether the event is currently in a signaled state.
+		/// </summary>
 		public bool IsSet {
 			get { return this.taskCompletionSource.Task.IsCompleted; }
 		}

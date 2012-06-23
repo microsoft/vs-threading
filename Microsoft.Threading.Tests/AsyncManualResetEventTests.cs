@@ -42,7 +42,7 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task Reset() {
+		public void Reset() {
 			this.evt.Set();
 			this.evt.Reset();
 			var result = this.evt.WaitAsync();
