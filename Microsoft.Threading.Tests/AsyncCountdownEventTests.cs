@@ -15,18 +15,18 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public Task CountdownFromOnePresignaled() {
-			return this.PreSignalHelperAsync(1);
+		public async Task CountdownFromOnePresignaled() {
+			await this.PreSignalHelperAsync(1);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public Task CountdownFromOnePostSignaled() {
-			return this.PostSignalHelperAsync(1);
+		public async Task CountdownFromOnePostSignaled() {
+			await this.PostSignalHelperAsync(1);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public Task CountdownFromTwoPresignaled() {
-			return this.PreSignalHelperAsync(2);
+		public async Task CountdownFromTwoPresignaled() {
+			await this.PreSignalHelperAsync(2);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
