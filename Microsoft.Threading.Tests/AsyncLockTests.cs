@@ -48,5 +48,40 @@
 			} catch (OperationCanceledException) {
 			}
 		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void TimeoutIntImmediateFailure() {
+			var first = this.lck.LockAsync(0);
+			var second = this.lck.LockAsync(0);
+			Assert.AreEqual(TaskStatus.Canceled, second.Status);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task TimeoutIntEventualFailure() {
+			var first = this.lck.LockAsync(0);
+			var second = this.lck.LockAsync(1);
+			Assert.IsFalse(second.IsCompleted);
+			try {
+				await second;
+			} catch (OperationCanceledException) {
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task TimeoutIntSuccess() {
+			var first = this.lck.LockAsync(0);
+			var second = this.lck.LockAsync(AsyncDelay);
+			Assert.IsFalse(second.IsCompleted);
+			first.Result.Dispose();
+			await second;
+			second.Dispose();
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void TimeoutTimeSpan() {
+			var first = this.lck.LockAsync(TimeSpan.Zero);
+			var second = this.lck.LockAsync(TimeSpan.Zero);
+			Assert.AreEqual(TaskStatus.Canceled, second.Status);
+		}
 	}
 }
