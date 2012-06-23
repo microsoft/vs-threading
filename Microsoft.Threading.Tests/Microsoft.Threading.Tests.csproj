@@ -55,6 +55,7 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="AsyncManualResetEventTests.cs" />
     <Compile Include="AsyncReaderWriterLockTests.cs" />
     <Compile Include="AsyncReaderWriterResourceLockTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

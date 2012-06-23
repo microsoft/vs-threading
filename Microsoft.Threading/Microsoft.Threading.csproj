@@ -43,6 +43,7 @@
   <ItemGroup>
     <Compile Include="AllocFreeConcurrentStack.cs" />
     <Compile Include="AsyncLocal.cs" />
+    <Compile Include="AsyncManualResetEvent.cs" />
     <Compile Include="AsyncReaderWriterLock.cs" />
     <Compile Include="AsyncReaderWriterResourceLock.cs" />
     <Compile Include="ICallContextKeyLookup.cs" />
