@@ -373,6 +373,28 @@
 			}
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task UpgradeableReadLock() {
+			await Task.Run(delegate {
+				using (this.resourceLock.UpgradeableReadLock()) {
+				}
+
+				using (this.resourceLock.UpgradeableReadLock(AsyncReaderWriterResourceLock<int, Resource>.LockFlags.None)) {
+				}
+			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task WriteLock() {
+			await Task.Run(delegate {
+				using (this.resourceLock.WriteLock()) {
+				}
+
+				using (this.resourceLock.WriteLock(AsyncReaderWriterResourceLock<int, Resource>.LockFlags.None)) {
+				}
+			});
+		}
+
 		private class Resource {
 			public int ConcurrentAccessPreparationCount { get; set; }
 
