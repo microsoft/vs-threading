@@ -3,6 +3,7 @@
 	using System.Collections.Concurrent;
 	using System.Collections.Generic;
 	using System.Diagnostics;
+	using System.Diagnostics.CodeAnalysis;
 	using System.Linq;
 	using System.Text;
 	using System.Threading.Tasks;
@@ -11,18 +12,17 @@
 	internal class AllocFreeConcurrentStack<T> : IProducerConsumerCollection<T> {
 		private readonly Stack<T> stack = new Stack<T>();
 
+		[ExcludeFromCodeCoverage]
 		public int Count {
-			get {
-				lock (this.stack) {
-					return this.stack.Count;
-				}
-			}
+			get { throw new NotImplementedException(); }
 		}
 
+		[ExcludeFromCodeCoverage]
 		public bool IsSynchronized {
 			get { return true; }
 		}
 
+		[ExcludeFromCodeCoverage]
 		public object SyncRoot {
 			get { throw new NotSupportedException(); }
 		}
@@ -48,22 +48,27 @@
 			return false;
 		}
 
+		[ExcludeFromCodeCoverage]
 		public void CopyTo(T[] array, int index) {
 			throw new NotImplementedException();
 		}
 
+		[ExcludeFromCodeCoverage]
 		public T[] ToArray() {
 			throw new NotImplementedException();
 		}
 
+		[ExcludeFromCodeCoverage]
 		public IEnumerator<T> GetEnumerator() {
 			throw new NotImplementedException();
 		}
 
+		[ExcludeFromCodeCoverage]
 		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
 			throw new NotImplementedException();
 		}
 
+		[ExcludeFromCodeCoverage]
 		public void CopyTo(Array array, int index) {
 			throw new NotImplementedException();
 		}
