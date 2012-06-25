@@ -285,7 +285,7 @@
 					await resource;
 				}
 			}),
-			Task.Run(async delegate {
+				Task.Run(async delegate {
 				// This is the part of the test that ensures that preparation is not executed concurrently
 				// for a given resource.  
 				await Task.WhenAll(requestSubmitted1.Task, requestSubmitted2.Task);
@@ -298,9 +298,16 @@
 				// the second request shouldn't start to execute prepare.  
 				// In fact, the second request should never even need to prepare since the first one
 				// did the job already, but asserting that is not the purpose of this particular test.
-				Assert.AreEqual(1, this.resources[1].ConcurrentAccessPreparationCount);
-				Assert.AreEqual(0, this.resources[1].ExclusiveAccessPreparationCount);
-				resourceTask.SetResult(null);
+				try {
+					await this.resourceLock.PreparationTaskBegun.WaitAsync();
+					Assert.AreEqual(1, this.resources[1].ConcurrentAccessPreparationCount, "ConcurrentAccessPreparationCount unexpected.");
+					Assert.AreEqual(0, this.resources[1].ExclusiveAccessPreparationCount, "ExclusiveAccessPreparationCount unexpected.");
+				} catch (Exception ex) {
+					Console.WriteLine("Failed with: {0}", ex);
+					throw;
+				} finally {
+					resourceTask.SetResult(null); // avoid the test hanging in failure cases.
+				}
 			}));
 		}
 
@@ -377,6 +384,8 @@
 
 			private readonly Dictionary<Resource, Tuple<TaskCompletionSource<object>, Task>> preparationTasks = new Dictionary<Resource, Tuple<TaskCompletionSource<object>, Task>>();
 
+			private readonly AsyncAutoResetEvent preparationTaskBegun = new AsyncAutoResetEvent();
+
 			internal ResourceLockWrapper(List<Resource> resources) {
 				this.resources = resources;
 			}
@@ -393,17 +402,23 @@
 				return tcs.Task;
 			}
 
+			internal AsyncAutoResetEvent PreparationTaskBegun {
+				get { return this.preparationTaskBegun; }
+			}
+
 			protected override Task<Resource> GetResourceAsync(int resourceMoniker, CancellationToken cancellationToken) {
 				return Task.FromResult(this.resources[resourceMoniker]);
 			}
 
 			protected override Task PrepareResourceForConcurrentAccessAsync(Resource resource, CancellationToken cancellationToken) {
 				resource.ConcurrentAccessPreparationCount++;
+				this.preparationTaskBegun.Set();
 				return this.GetPreparationTask(resource);
 			}
 
 			protected override Task PrepareResourceForExclusiveAccessAsync(Resource resource, CancellationToken cancellationToken) {
 				resource.ExclusiveAccessPreparationCount++;
+				this.preparationTaskBegun.Set();
 				return this.GetPreparationTask(resource);
 			}
 

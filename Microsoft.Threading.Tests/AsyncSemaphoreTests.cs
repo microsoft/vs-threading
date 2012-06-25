@@ -59,7 +59,7 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task TimeoutIntEventualFailure() {
 			var first = this.lck.EnterAsync(0);
-			var second = this.lck.EnterAsync(1);
+			var second = this.lck.EnterAsync(100);
 			Assert.IsFalse(second.IsCompleted);
 			try {
 				await second;
