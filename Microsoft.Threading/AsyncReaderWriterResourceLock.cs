@@ -459,6 +459,9 @@ namespace Microsoft.Threading {
 			/// <param name="awaiter">The underlying lock awaiter.</param>
 			/// <param name="helper">The helper class.</param>
 			internal ResourceAwaiter(AsyncReaderWriterLock.Awaiter awaiter, Helper helper) {
+				Requires.NotNull(awaiter, "awaiter");
+				Requires.NotNull(helper, "helper");
+
 				this.awaiter = awaiter;
 				this.helper = helper;
 			}
@@ -467,7 +470,13 @@ namespace Microsoft.Threading {
 			/// Gets a value indicating whether the lock has been issued.
 			/// </summary>
 			public bool IsCompleted {
-				get { return this.awaiter.IsCompleted; }
+				get {
+					if (this.awaiter == null) {
+						throw new InvalidOperationException();
+					}
+
+					return this.awaiter.IsCompleted;
+				}
 			}
 
 			/// <summary>
@@ -475,6 +484,10 @@ namespace Microsoft.Threading {
 			/// </summary>
 			/// <param name="continuation">The delegate.</param>
 			public void OnCompleted(Action continuation) {
+				if (this.awaiter == null) {
+					throw new InvalidOperationException();
+				}
+
 				this.awaiter.OnCompleted(continuation);
 			}
 
@@ -483,6 +496,10 @@ namespace Microsoft.Threading {
 			/// </summary>
 			/// <returns>The value to dispose of to release the lock.</returns>
 			public ResourceReleaser GetResult() {
+				if (this.awaiter == null) {
+					throw new InvalidOperationException();
+				}
+
 				return new ResourceReleaser(this.awaiter.GetResult(), helper);
 			}
 		}
