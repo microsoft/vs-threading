@@ -444,7 +444,28 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <returns>A task whose completion signals the conclusion of the asynchronous operation.</returns>
 		protected virtual Task OnBeforeLockReleasedAsync() {
-			return this.InvokeBeforeWriteLockReleaseHandlersAsync();
+			// Raise the write release lock event if and only if this is the last write that is about to be released.
+			// Also check that issued read lock count is 0, because these callbacks themselves may acquire read locks
+			// on top of this write lock that hasn't quite gone away yet, and when they release their read lock,
+			// that shouldn't trigger a recursive call of the event.
+			if (this.writeLocksIssued.Count == 1 && this.readLocksIssued.Count == 0) {
+				return this.OnBeforeExclusiveLockReleasedAsync();
+			} else {
+				return CompletedTask;
+			}
+		}
+
+		/// <summary>
+		/// Fired when the last write lock is about to be released.
+		/// </summary>
+		/// <returns>A task whose completion signals the conclusion of the asynchronous operation.</returns>
+		protected virtual Task OnBeforeExclusiveLockReleasedAsync() {
+			Assumes.True(this.writeLocksIssued.Count == 1);
+			if (this.beforeWriteReleasedCallbacks.Count > 0) {
+				return this.InvokeBeforeWriteLockReleaseHandlersAsync();
+			} else {
+				return CompletedTask;
+			}
 		}
 
 		/// <summary>
@@ -955,50 +976,33 @@ namespace Microsoft.Threading {
 		/// Invokes the final write lock release callbacks, if appropriate.
 		/// </summary>
 		/// <returns>A task representing the work of sequentially invoking the callbacks.</returns>
-		/// <remarks>
-		/// This method is *not* async so that if the condition it checks for is false, we haven't
-		/// paid the perf hit of invoking an async method, which is more expensive than a normal method.
-		/// </remarks>
-		private Task InvokeBeforeWriteLockReleaseHandlersAsync() {
-			if (this.writeLocksIssued.Count == 1 && this.beforeWriteReleasedCallbacks.Count > 0) {
-				return this.InvokeBeforeWriteLockReleaseHandlersHelperAsync();
-			} else {
-				return CompletedTask;
-			}
-		}
-
-		/// <summary>
-		/// Invokes the final write lock release callbacks, if appropriate.
-		/// </summary>
-		/// <returns>A task representing the work of sequentially invoking the callbacks.</returns>
-		private async Task InvokeBeforeWriteLockReleaseHandlersHelperAsync() {
+		private async Task InvokeBeforeWriteLockReleaseHandlersAsync() {
 			Assumes.True(Monitor.IsEntered(this.syncObject));
+			Assumes.True(this.writeLocksIssued.Count == 1 && this.beforeWriteReleasedCallbacks.Count > 0);
 
-			if (this.writeLocksIssued.Count == 1 && this.beforeWriteReleasedCallbacks.Count > 0) {
-				using (var releaser = await this.WriteLockAsync()) {
-					await Task.Yield(); // ensure we've yielded to our caller, since the WriteLockAsync will not yield when on an MTA thread.
+			using (var releaser = await this.WriteLockAsync()) {
+				await Task.Yield(); // ensure we've yielded to our caller, since the WriteLockAsync will not yield when on an MTA thread.
 
-					// We sequentially loop over the callbacks rather than fire then concurrently because each callback
-					// gets visibility into the write lock, which of course provides exclusivity and concurrency would violate that.
-					List<Exception> exceptions = null;
-					Func<Task> callback;
-					while (this.TryDequeueBeforeWriteReleasedCallback(out callback)) {
-						try {
-							await callback().ConfigureAwait(false);
-						} catch (Exception ex) {
-							if (exceptions == null) {
-								exceptions = new List<Exception>();
-							}
-
-							exceptions.Add(ex);
+				// We sequentially loop over the callbacks rather than fire then concurrently because each callback
+				// gets visibility into the write lock, which of course provides exclusivity and concurrency would violate that.
+				List<Exception> exceptions = null;
+				Func<Task> callback;
+				while (this.TryDequeueBeforeWriteReleasedCallback(out callback)) {
+					try {
+						await callback().ConfigureAwait(false);
+					} catch (Exception ex) {
+						if (exceptions == null) {
+							exceptions = new List<Exception>();
 						}
-					}
 
-					await releaser.DisposeAsync();
-
-					if (exceptions != null) {
-						throw new AggregateException(exceptions);
+						exceptions.Add(ex);
 					}
+				}
+
+				await releaser.DisposeAsync();
+
+				if (exceptions != null) {
+					throw new AggregateException(exceptions);
 				}
 			}
 		}

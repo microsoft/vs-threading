@@ -1453,6 +1453,37 @@
 		#region Lock callback tests
 
 		[TestMethod, Timeout(TestTimeout)]
+		public async Task OnBeforeLockReleasedAsyncSingle() {
+			var asyncLock = new LockDerived();
+			int callbackInvoked = 0;
+			asyncLock.OnBeforeExclusiveLockReleasedAsyncDelegate = () => {
+				callbackInvoked++;
+				return Task.FromResult<object>(null);
+			};
+			using (await asyncLock.WriteLockAsync()) {
+			}
+
+			Assert.AreEqual(1, callbackInvoked);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task OnBeforeLockReleasedAsyncNestedLock() {
+			var asyncLock = new LockDerived();
+			int callbackInvoked = 0;
+			asyncLock.OnBeforeExclusiveLockReleasedAsyncDelegate = async () => {
+				using (await asyncLock.ReadLockAsync()) {
+					using (await asyncLock.WriteLockAsync()) {
+					}
+				}
+				callbackInvoked++;
+			};
+			using (await asyncLock.WriteLockAsync()) {
+			}
+
+			Assert.AreEqual(1, callbackInvoked);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task OnBeforeWriteLockReleasedSingle() {
 			var afterWriteLock = new TaskCompletionSource<object>();
 			using (await this.asyncLock.WriteLockAsync()) {
@@ -2232,6 +2263,8 @@
 		}
 
 		private class LockDerived : AsyncReaderWriterLock {
+			internal Func<Task> OnBeforeExclusiveLockReleasedAsyncDelegate { get; set; }
+
 			internal new bool LockStackContains(LockFlags flags, Awaiter awaiter = null) {
 				return base.LockStackContains(flags, awaiter);
 			}
@@ -2242,6 +2275,13 @@
 
 			internal new object GetLockData() {
 				return base.GetLockData();
+			}
+
+			protected override async Task OnBeforeExclusiveLockReleasedAsync() {
+				await base.OnBeforeExclusiveLockReleasedAsync();
+				if (this.OnBeforeExclusiveLockReleasedAsyncDelegate != null) {
+					await this.OnBeforeExclusiveLockReleasedAsyncDelegate();
+				}
 			}
 		}
 	}
