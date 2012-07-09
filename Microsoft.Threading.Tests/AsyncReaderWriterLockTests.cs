@@ -930,41 +930,64 @@
 			var writeLockAcquired = new TaskCompletionSource<object>();
 			await Task.WhenAll(
 				Task.Run(async delegate {
+				this.TestContext.WriteLine("Task 1: Requesting an upgradeable read lock.");
 				using (await this.asyncLock.UpgradeableReadLockAsync()) {
+					this.TestContext.WriteLine("Task 1: Acquired an upgradeable read lock.");
 					var nowait = upgradeableLockAcquired.SetAsync();
 					await Task.WhenAll(readLockAcquired.Task, contendingWriteLockRequested.Task);
 
+					this.TestContext.WriteLine("Task 1: Requesting a write lock.");
 					var upgradeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
+					this.TestContext.WriteLine("Task 1: Write lock requested.");
 					Assert.IsFalse(upgradeAwaiter.IsCompleted); // contested lock should not be immediately available.
 					upgradeAwaiter.OnCompleted(delegate {
 						using (upgradeAwaiter.GetResult()) {
+							this.TestContext.WriteLine("Task 1: Write lock acquired.");
 							writeLockAcquired.SetAsync();
 						}
 					});
 
 					nowait = writeLockRequested.SetAsync();
+					this.TestContext.WriteLine("Task 1: Waiting for write lock acquisition.");
 					await writeLockAcquired.Task;
+					this.TestContext.WriteLine("Task 1: Write lock acquisition complete.  Exiting task 1.");
 				}
 			}),
 				Task.Run(async delegate {
+				this.TestContext.WriteLine("Task 2: Waiting for upgradeable read lock acquisition in task 1.");
 				await upgradeableLockAcquired.Task;
+				this.TestContext.WriteLine("Task 2: Requesting read lock.");
 				using (await this.asyncLock.ReadLockAsync()) {
+					this.TestContext.WriteLine("Task 2: Acquired read lock.");
 					var nowait = readLockAcquired.SetAsync();
+					this.TestContext.WriteLine("Task 2: Awaiting write lock request by task 1.");
 					await writeLockRequested.Task;
+					this.TestContext.WriteLine("Task 2: Releasing read lock.");
 				}
+
+				this.TestContext.WriteLine("Task 2: Released read lock.");
 			}),
 				Task.Run(async delegate {
-				await upgradeableLockAcquired.Task;
+				this.TestContext.WriteLine("Task 3: Waiting for upgradeable read lock acquisition in task 1 and read lock acquisition in task 2.");
+				await Task.WhenAll(upgradeableLockAcquired.Task, readLockAcquired.Task);
+				this.TestContext.WriteLine("Task 3: Requesting write lock.");
 				var writeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
+				this.TestContext.WriteLine("Task 3: Write lock requested.");
 				Assert.IsFalse(writeAwaiter.IsCompleted);
 				var contestingWriteLockAcquired = new TaskCompletionSource<object>();
 				writeAwaiter.OnCompleted(delegate {
 					using (writeAwaiter.GetResult()) {
+						this.TestContext.WriteLine("Task 3: Write lock acquired.");
 						contestingWriteLockAcquired.SetAsync();
+						this.TestContext.WriteLine("Task 3: Releasing write lock.");
 					}
+
+					this.TestContext.WriteLine("Task 3: Write lock released.");
 				});
 				var nowait = contendingWriteLockRequested.SetAsync();
+				this.TestContext.WriteLine("Task 3: Awaiting write lock acquisition.");
 				await contestingWriteLockAcquired.Task;
+				this.TestContext.WriteLine("Task 3: Write lock acquisition complete.");
 			}));
 		}
 
