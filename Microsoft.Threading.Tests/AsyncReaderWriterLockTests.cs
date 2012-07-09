@@ -1813,11 +1813,11 @@
 
 			using (var releaser = await stub.WriteLockAsync()) {
 				stub.OnBeforeWriteLockReleased(() => beforeWriteLockReleasedTaskSource.Task);
-				var disposeTask = releaser.DisposeAsync();
+				var releaseTask = releaser.ReleaseAsync();
 
 				beforeWriteLockReleasedTaskSource.SetResult(null);
 				exclusiveLockReleasedTaskSource.SetResult(null);
-				await disposeTask;
+				await releaseTask;
 			}
 		}
 

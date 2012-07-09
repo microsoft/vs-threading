@@ -856,6 +856,7 @@ namespace Microsoft.Threading {
 			// This method does NOT use the async keyword in its signature to avoid CallContext changes that we make
 			// causing a fork/clone of the CallContext, which defeats our alloc-free uncontested lock story.
 			Assumes.False(this.reenterConcurrencyPrepRunning); // No one should have any locks to release (and be executing code) if we're in our intermediate state.
+			Assumes.True(this.IsLockActive(awaiter, true));
 
 			Task reenterConcurrentOutsideCode = null;
 			Task synchronousCallbackExecution = null;
@@ -951,7 +952,7 @@ namespace Microsoft.Threading {
 					Assumes.True(this.writeLocksIssued.Remove(awaiter));
 				}
 
-				awaiter.Recycle();
+				awaiter.SignalReadyForRecycling();
 				if (updateCallContext) {
 					this.ApplyLockToCallContext(this.topAwaiter.Value);
 				}
@@ -999,7 +1000,7 @@ namespace Microsoft.Threading {
 					}
 				}
 
-				await releaser.DisposeAsync();
+				await releaser.ReleaseAsync();
 
 				if (exceptions != null) {
 					throw new AggregateException(exceptions);
@@ -1236,6 +1237,11 @@ namespace Microsoft.Threading {
 			private Task releaseAsyncTask;
 
 			/// <summary>
+			/// A flag indicating this instance has been released but has not (yet) been recycled.
+			/// </summary>
+			private bool readyForRecycling;
+
+			/// <summary>
 			/// An arbitrary object that may be set by a derived type of the containing lock class.
 			/// </summary>
 			private object data;
@@ -1415,18 +1421,30 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>
+			/// Signals that this instance's lock has been completely released and is now ready for recycling.
+			/// </summary>
+			internal void SignalReadyForRecycling() {
+				Assumes.False(this.readyForRecycling);
+				this.readyForRecycling = true;
+			}
+
+			/// <summary>
 			/// Recycles this instance.
 			/// </summary>
 			internal void Recycle() {
-				// Clear some fields to remove strong references to data we don't need any more.
-				this.data = null;
-				this.continuation = null;
-				this.cancellationToken = CancellationToken.None;
-				this.cancellationRegistration = default(CancellationTokenRegistration);
-				this.fault = null;
-				this.releaseAsyncTask = null;
+				if (this.readyForRecycling) {
+					// Clear some fields to remove strong references to data we don't need any more.
+					this.data = null;
+					this.continuation = null;
+					this.cancellationToken = CancellationToken.None;
+					this.cancellationRegistration = default(CancellationTokenRegistration);
+					this.fault = null;
+					this.releaseAsyncTask = null;
+					this.requestingStackTrace = null;
+					this.readyForRecycling = false;
 
-				recycledAwaiters.TryAdd(this);
+					recycledAwaiters.TryAdd(this);
+				}
 			}
 
 			/// <summary>
@@ -1492,20 +1510,25 @@ namespace Microsoft.Threading {
 			/// Releases the lock.
 			/// </summary>
 			public void Dispose() {
-				this.DisposeAsync().Wait();
+				if (this.awaiter != null) {
+					this.ReleaseAsync().Wait();
+					this.awaiter.Recycle();
+				}
 			}
 
 			/// <summary>
-			/// Releases the lock.
+			/// Asynchronously releases the lock.  Dispose should still be called after this.
 			/// </summary>
 			/// <returns>
 			/// A task that should complete before the releasing thread accesses any resource protected by
 			/// a lock wrapping the lock being released.
 			/// </returns>
-			public Task DisposeAsync() {
-				return this.awaiter != null
-					? this.awaiter.ReleaseAsync()
-					: CompletedTask;
+			public Task ReleaseAsync() {
+				if (this.awaiter != null) {
+					return this.awaiter.ReleaseAsync();
+				} else {
+					return CompletedTask;
+				}
 			}
 		}
 

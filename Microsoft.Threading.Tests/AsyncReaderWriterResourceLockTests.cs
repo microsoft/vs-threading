@@ -348,7 +348,7 @@
 					Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
 					Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
 
-					await writeAccess.DisposeAsync();
+					await writeAccess.ReleaseAsync();
 					Assert.IsFalse(this.resourceLock.IsWriteLockHeld);
 					Assert.IsTrue(this.resourceLock.IsUpgradeableReadLockHeld);
 					Assert.AreEqual(2, resource.ConcurrentAccessPreparationCount);
@@ -363,12 +363,12 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task LockDisposeAsyncWithoutWaitFollowedByDispose() {
+		public async Task LockReleaseAsyncWithoutWaitFollowedByDispose() {
 			using (var upgradeableReadAccess = await this.resourceLock.UpgradeableReadLockAsync()) {
 				var resource1 = await upgradeableReadAccess.GetResourceAsync(1);
 				using (var writeAccess = await this.resourceLock.WriteLockAsync()) {
 					var resource2 = await writeAccess.GetResourceAsync(1); // the test is to NOT await on this result.
-					var nowait = writeAccess.DisposeAsync();
+					var nowait = writeAccess.ReleaseAsync();
 				} // this calls writeAccess.Dispose();
 			}
 		}

@@ -554,10 +554,10 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>
-			/// Releases the lock.
+			/// Asynchronously releases the lock.  Dispose should still be called after this.
 			/// </summary>
-			public Task DisposeAsync() {
-				return this.LockReleaser.DisposeAsync();
+			public Task ReleaseAsync() {
+				return this.LockReleaser.ReleaseAsync();
 			}
 		}
 	}
