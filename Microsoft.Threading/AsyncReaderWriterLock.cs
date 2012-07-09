@@ -866,6 +866,33 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// Removes an element from the middle of a queue without disrupting the other elements.
+		/// </summary>
+		/// <typeparam name="T">The element to remove.</typeparam>
+		/// <param name="queue">The queue to modify.</param>
+		/// <param name="valueToRemove">The value to remove.</param>
+		private static void RemoveMidQueue<T>(Queue<T> queue, T valueToRemove) where T : class {
+			Requires.NotNull(queue, "queue");
+			Requires.NotNull(valueToRemove, "valueToRemove");
+			if (queue.Count == 0) {
+				return;
+			}
+
+			T originalHead = queue.Dequeue();
+			if (Object.ReferenceEquals(originalHead, valueToRemove)) {
+				return;
+			}
+
+			queue.Enqueue(originalHead);
+			while (!Object.ReferenceEquals(originalHead, queue.Peek())) {
+				var tempHead = queue.Dequeue();
+				if (!Object.ReferenceEquals(tempHead, valueToRemove)) {
+					queue.Enqueue(tempHead);
+				}
+			}
+		}
+
+		/// <summary>
 		/// Releases the lock held by the specified awaiter.
 		/// </summary>
 		/// <param name="awaiter">The awaiter holding an active lock.</param>
@@ -1095,7 +1122,8 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
-		/// Issues a lock to the next queued writer, if no other locks are currently issued.
+		/// Issues a lock to the next queued writer, if no other locks are currently issued 
+		/// or the last contending read lock was removed allowing a waiting upgradeable reader to upgrade.
 		/// </summary>
 		/// <returns>A value indicating whether a writer was issued a lock.</returns>
 		private bool TryInvokeOneWriterIfAppropriate() {
@@ -1105,6 +1133,16 @@ namespace Microsoft.Threading {
 					Assumes.True(pendingWriter.Kind == LockKind.Write);
 					this.IssueAndExecute(pendingWriter);
 					return true;
+				}
+			} else if (this.upgradeableReadLocksIssued.Count > 0) {
+				foreach (var waitingWriter in this.waitingWriters) {
+					if (this.TryIssueLock(waitingWriter, previouslyQueued: true)) {
+						RemoveMidQueue(this.waitingWriters, waitingWriter);
+
+						// Run the continuation asynchronously (since this is called in OnCompleted, which is an async pattern).
+						this.ExecuteOrHandleCancellation(waitingWriter);
+						return true;
+					}
 				}
 			}
 

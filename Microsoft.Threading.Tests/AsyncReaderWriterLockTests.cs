@@ -859,6 +859,116 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public async Task WriteLockAsyncWhileHoldingUpgradeableReadLockContestedByActiveReader() {
+			var upgradeableLockAcquired = new TaskCompletionSource<object>();
+			var readLockAcquired = new TaskCompletionSource<object>();
+			var writeLockRequested = new TaskCompletionSource<object>();
+			var writeLockAcquired = new TaskCompletionSource<object>();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+				using (await this.asyncLock.UpgradeableReadLockAsync()) {
+					var nowait = upgradeableLockAcquired.SetAsync();
+					await readLockAcquired.Task;
+
+					var upgradeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
+					Assert.IsFalse(upgradeAwaiter.IsCompleted); // contested lock should not be immediately available.
+					upgradeAwaiter.OnCompleted(delegate {
+						using (upgradeAwaiter.GetResult()) {
+							writeLockAcquired.SetAsync();
+						}
+					});
+
+					nowait = writeLockRequested.SetAsync();
+					await writeLockAcquired.Task;
+				}
+			}),
+				Task.Run(async delegate {
+				await upgradeableLockAcquired.Task;
+				using (await this.asyncLock.ReadLockAsync()) {
+					var nowait = readLockAcquired.SetAsync();
+					await writeLockRequested.Task;
+				}
+			}));
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task WriteLockAsyncWhileHoldingUpgradeableReadLockContestedByWaitingWriter() {
+			var upgradeableLockAcquired = new TaskCompletionSource<object>();
+			var contendingWriteLockRequested = new TaskCompletionSource<object>();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+				using (await this.asyncLock.UpgradeableReadLockAsync()) {
+					var nowait = upgradeableLockAcquired.SetAsync();
+					await contendingWriteLockRequested.Task;
+
+					var upgradeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
+					Assert.IsTrue(upgradeAwaiter.IsCompleted); // the waiting writer should not have priority of this one.
+					upgradeAwaiter.GetResult().Dispose(); // accept and release the lock.
+				}
+			}),
+				Task.Run(async delegate {
+				await upgradeableLockAcquired.Task;
+				var writeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
+				Assert.IsFalse(writeAwaiter.IsCompleted);
+				var contestingWriteLockAcquired = new TaskCompletionSource<object>();
+				writeAwaiter.OnCompleted(delegate {
+					using (writeAwaiter.GetResult()) {
+						contestingWriteLockAcquired.SetAsync();
+					}
+				});
+				var nowait = contendingWriteLockRequested.SetAsync();
+				await contestingWriteLockAcquired.Task;
+			}));
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task WriteLockAsyncWhileHoldingUpgradeableReadLockContestedByActiveReaderAndWaitingWriter() {
+			var upgradeableLockAcquired = new TaskCompletionSource<object>();
+			var readLockAcquired = new TaskCompletionSource<object>();
+			var contendingWriteLockRequested = new TaskCompletionSource<object>();
+			var writeLockRequested = new TaskCompletionSource<object>();
+			var writeLockAcquired = new TaskCompletionSource<object>();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+				using (await this.asyncLock.UpgradeableReadLockAsync()) {
+					var nowait = upgradeableLockAcquired.SetAsync();
+					await Task.WhenAll(readLockAcquired.Task, contendingWriteLockRequested.Task);
+
+					var upgradeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
+					Assert.IsFalse(upgradeAwaiter.IsCompleted); // contested lock should not be immediately available.
+					upgradeAwaiter.OnCompleted(delegate {
+						using (upgradeAwaiter.GetResult()) {
+							writeLockAcquired.SetAsync();
+						}
+					});
+
+					nowait = writeLockRequested.SetAsync();
+					await writeLockAcquired.Task;
+				}
+			}),
+				Task.Run(async delegate {
+				await upgradeableLockAcquired.Task;
+				using (await this.asyncLock.ReadLockAsync()) {
+					var nowait = readLockAcquired.SetAsync();
+					await writeLockRequested.Task;
+				}
+			}),
+				Task.Run(async delegate {
+				await upgradeableLockAcquired.Task;
+				var writeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
+				Assert.IsFalse(writeAwaiter.IsCompleted);
+				var contestingWriteLockAcquired = new TaskCompletionSource<object>();
+				writeAwaiter.OnCompleted(delegate {
+					using (writeAwaiter.GetResult()) {
+						contestingWriteLockAcquired.SetAsync();
+					}
+				});
+				var nowait = contendingWriteLockRequested.SetAsync();
+				await contestingWriteLockAcquired.Task;
+			}));
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task UncontestedTopLevelWriteLockAsyncAllocFree() {
 			var cts = new CancellationTokenSource();
 			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync(cts.Token));
