@@ -34,6 +34,16 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// Initializes a new instance of the AsyncReaderWriterResourceLock class.
+		/// </summary>
+		/// <param name="captureDiagnostics">
+		/// <c>true</c> to spend additional resources capturing diagnostic details that can be used
+		/// to analyze deadlocks or other issues.</param>
+		public AsyncReaderWriterResourceLock(bool captureDiagnostics)
+			: base(captureDiagnostics) {
+		}
+
+		/// <summary>
 		/// Flags that modify default lock behavior.
 		/// </summary>
 		[Flags]

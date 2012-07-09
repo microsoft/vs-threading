@@ -117,6 +117,12 @@ namespace Microsoft.Threading {
 		private readonly Queue<Func<Task>> beforeWriteReleasedCallbacks = new Queue<Func<Task>>();
 
 		/// <summary>
+		/// A value indicating whether extra resources should be spent to collect diagnostic information
+		/// that may be useful in deadlock investigations.
+		/// </summary>
+		private bool captureDiagnostics;
+
+		/// <summary>
 		/// A task that is incomplete during the transition from a write lock
 		/// to an upgradeable read lock when callbacks and other code must be invoked without ANY
 		/// locks being issued.
@@ -139,6 +145,16 @@ namespace Microsoft.Threading {
 		/// Initializes a new instance of the <see cref="AsyncReaderWriterLock"/> class.
 		/// </summary>
 		public AsyncReaderWriterLock() {
+		}
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="AsyncReaderWriterLock"/> class.
+		/// </summary>
+		/// <param name="captureDiagnostics">
+		/// <c>true</c> to spend additional resources capturing diagnostic details that can be used
+		/// to analyze deadlocks or other issues.</param>
+		public AsyncReaderWriterLock(bool captureDiagnostics) {
+			this.captureDiagnostics = captureDiagnostics;
 		}
 
 		/// <summary>
@@ -238,6 +254,15 @@ namespace Microsoft.Threading {
 		/// </summary>
 		protected object SyncObject {
 			get { return this.syncObject; }
+		}
+
+		/// <summary>
+		/// Gets or sets a value indicating whether additional resources should be spent to collect
+		/// information that would be useful in diagnosing deadlocks, etc.
+		/// </summary>
+		protected bool CaptureDiagnostics {
+			get { return this.captureDiagnostics; }
+			set { this.captureDiagnostics = value; }
 		}
 
 		/// <summary>
@@ -1237,6 +1262,15 @@ namespace Microsoft.Threading {
 			private Task releaseAsyncTask;
 
 			/// <summary>
+			/// The stacktrace of the caller originally requesting the lock.
+			/// </summary>
+			/// <remarks>
+			/// This field is initialized only when <see cref="AsyncReaderWriterLock"/> is constructed with
+			/// the captureDiagnostics parameter set to <c>true</c>.
+			/// </remarks>
+			private StackTrace requestingStackTrace;
+
+			/// <summary>
 			/// A flag indicating this instance has been released but has not (yet) been recycled.
 			/// </summary>
 			private bool readyForRecycling;
@@ -1399,6 +1433,7 @@ namespace Microsoft.Threading {
 				awaiter.releaseAsyncTask = null;
 				awaiter.synchronousBlock.Reset();
 				awaiter.data = null;
+				awaiter.requestingStackTrace = lck.captureDiagnostics ? new StackTrace(2, true) : null;
 
 				return awaiter;
 			}
