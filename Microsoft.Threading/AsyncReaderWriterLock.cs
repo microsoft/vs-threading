@@ -468,12 +468,12 @@ namespace Microsoft.Threading {
 		/// Fired when any lock is being released.
 		/// </summary>
 		/// <returns>A task whose completion signals the conclusion of the asynchronous operation.</returns>
-		protected virtual Task OnBeforeLockReleasedAsync() {
+		protected virtual Task OnBeforeLockReleasedAsync(bool exclusiveLockRelease) {
 			// Raise the write release lock event if and only if this is the last write that is about to be released.
 			// Also check that issued read lock count is 0, because these callbacks themselves may acquire read locks
 			// on top of this write lock that hasn't quite gone away yet, and when they release their read lock,
 			// that shouldn't trigger a recursive call of the event.
-			if (this.writeLocksIssued.Count == 1 && this.readLocksIssued.Count == 0) {
+			if (exclusiveLockRelease) {
 				return this.OnBeforeExclusiveLockReleasedAsync();
 			} else {
 				return CompletedTask;
@@ -931,10 +931,21 @@ namespace Microsoft.Threading {
 			Task reenterConcurrentOutsideCode = null;
 			Task synchronousCallbackExecution = null;
 			lock (this.syncObject) {
+				// In case this is a sticky write lock, it may also belong to the write locks issued collection.
+				bool upgradedStickyWrite = awaiter.Kind == LockKind.UpgradeableRead
+					&& (awaiter.Options & LockFlags.StickyWrite) == LockFlags.StickyWrite
+					&& this.writeLocksIssued.Contains(awaiter);
+
+				int writeLocksBefore = this.writeLocksIssued.Count;
+				int upgradeableReadLocksBefore = this.upgradeableReadLocksIssued.Count;
+				int writeLocksAfter = writeLocksBefore - ((awaiter.Kind == LockKind.Write || upgradedStickyWrite) ? 1 : 0);
+				int upgradeableReadLocksAfter = upgradeableReadLocksBefore - (awaiter.Kind == LockKind.UpgradeableRead ? 1 : 0);
+				bool finalExclusiveLockRelease = writeLocksBefore > 0 && writeLocksAfter == 0;
+
 				if (!lockConsumerCanceled) {
 					// Callbacks should be fired synchronously iff the last write lock is being released and read locks are already issued.
 					// This can occur when upgradeable read locks are held and upgraded, and then downgraded back to an upgradeable read.
-					Task callbackExecution = this.OnBeforeLockReleasedAsync();
+					Task callbackExecution = this.OnBeforeLockReleasedAsync(finalExclusiveLockRelease);
 					bool synchronousRequired = this.readLocksIssued.Count > 0;
 					synchronousRequired |= this.upgradeableReadLocksIssued.Count > 1;
 					synchronousRequired |= this.upgradeableReadLocksIssued.Count == 1 && !this.upgradeableReadLocksIssued.Contains(awaiter);
@@ -942,16 +953,6 @@ namespace Microsoft.Threading {
 						synchronousCallbackExecution = callbackExecution;
 					}
 				}
-
-				int writeLocksBefore = this.writeLocksIssued.Count;
-				int upgradeableReadLocksBefore = this.upgradeableReadLocksIssued.Count;
-				int writeLocksAfter = writeLocksBefore - (awaiter.Kind == LockKind.Write ? 1 : 0);
-				int upgradeableReadLocksAfter = upgradeableReadLocksBefore - (awaiter.Kind == LockKind.UpgradeableRead ? 1 : 0);
-
-				// In case this is a sticky write lock, it may also belong to the write locks issued collection.
-				bool upgradedStickyWrite = awaiter.Kind == LockKind.UpgradeableRead
-					&& (awaiter.Options & LockFlags.StickyWrite) == LockFlags.StickyWrite
-					&& this.writeLocksIssued.Contains(awaiter);
 
 				if (!lockConsumerCanceled) {
 					if (writeLocksAfter == 0) {
