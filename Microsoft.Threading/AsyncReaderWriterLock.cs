@@ -1022,7 +1022,6 @@ namespace Microsoft.Threading {
 					Assumes.True(this.writeLocksIssued.Remove(awaiter));
 				}
 
-				awaiter.SignalReadyForRecycling();
 				if (updateCallContext) {
 					this.ApplyLockToCallContext(this.topAwaiter.Value);
 				}
@@ -1309,11 +1308,6 @@ namespace Microsoft.Threading {
 			private StackTrace requestingStackTrace;
 
 			/// <summary>
-			/// A flag indicating this instance has been released but has not (yet) been recycled.
-			/// </summary>
-			private bool readyForRecycling;
-
-			/// <summary>
 			/// An arbitrary object that may be set by a derived type of the containing lock class.
 			/// </summary>
 			private object data;
@@ -1470,14 +1464,6 @@ namespace Microsoft.Threading {
 				}
 
 				return this.releaseAsyncTask ?? CompletedTask;
-			}
-
-			/// <summary>
-			/// Signals that this instance's lock has been completely released and is now ready for recycling.
-			/// </summary>
-			internal void SignalReadyForRecycling() {
-				Assumes.False(this.readyForRecycling);
-				this.readyForRecycling = true;
 			}
 
 			/// <summary>
