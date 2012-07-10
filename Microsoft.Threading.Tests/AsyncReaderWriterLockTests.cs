@@ -15,6 +15,7 @@
 	[TestClass]
 	public class AsyncReaderWriterLockTests : TestBase {
 		private const int GCAllocationAttempts = 3;
+		private const int MaxGarbagePerLock = 150;
 
 		private AsyncReaderWriterLock asyncLock;
 
@@ -201,7 +202,7 @@
 					long memory2 = GC.GetTotalMemory(true);
 					long allocated = (memory2 - memory1) / iterations;
 					this.TestContext.WriteLine("Allocated bytes: {0}", allocated);
-					passingAttemptObserved = allocated == 0;
+					passingAttemptObserved = allocated <= MaxGarbagePerLock;
 				}
 
 				Assert.IsTrue(passingAttemptObserved);
@@ -654,13 +655,13 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task UncontestedTopLevelReadLockAsyncAllocFree() {
+		public async Task UncontestedTopLevelReadLockAsyncGarbageCheck() {
 			var cts = new CancellationTokenSource();
 			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync(cts.Token));
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task NestedReadLockAsyncAllocFree() {
+		public async Task NestedReadLockAsyncGarbageCheck() {
 			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync());
 		}
 
@@ -781,13 +782,13 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task UncontestedTopLevelReadLockAllocFree() {
+		public async Task UncontestedTopLevelReadLockGarbageCheck() {
 			var cts = new CancellationTokenSource();
 			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLock(cts.Token));
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task NestedReadLockAllocFree() {
+		public async Task NestedReadLockGarbageCheck() {
 			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLock());
 		}
 
@@ -897,13 +898,13 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task UncontestedTopLevelUpgradeableReadLockAsyncAllocFree() {
+		public async Task UncontestedTopLevelUpgradeableReadLockAsyncGarbageCheck() {
 			var cts = new CancellationTokenSource();
 			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync(cts.Token));
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task NestedUpgradeableReadLockAsyncAllocFree() {
+		public async Task NestedUpgradeableReadLockAsyncGarbageCheck() {
 			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync());
 		}
 
@@ -969,13 +970,13 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task UncontestedTopLevelUpgradeableReadLockAllocFree() {
+		public async Task UncontestedTopLevelUpgradeableReadLockGarbageCheck() {
 			var cts = new CancellationTokenSource();
 			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLock(cts.Token));
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task NestedUpgradeableReadLockAllocFree() {
+		public async Task NestedUpgradeableReadLockGarbageCheck() {
 			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLock());
 		}
 
@@ -1140,13 +1141,13 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task UncontestedTopLevelWriteLockAsyncAllocFree() {
+		public async Task UncontestedTopLevelWriteLockAsyncGarbageCheck() {
 			var cts = new CancellationTokenSource();
 			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync(cts.Token));
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task NestedWriteLockAsyncAllocFree() {
+		public async Task NestedWriteLockAsyncGarbageCheck() {
 			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync());
 		}
 
@@ -1212,13 +1213,13 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task UncontestedTopLevelWriteLockAllocFree() {
+		public async Task UncontestedTopLevelWriteLockGarbageCheck() {
 			var cts = new CancellationTokenSource();
 			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLock(cts.Token));
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task NestedWriteLockAllocFree() {
+		public async Task NestedWriteLockGarbageCheck() {
 			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLock());
 		}
 
@@ -2393,7 +2394,7 @@
 					long memory2 = GC.GetTotalMemory(false);
 					long allocated = (memory2 - memory1) / iterations;
 					this.TestContext.WriteLine("Allocated bytes: {0}", allocated);
-					passingAttemptObserved = allocated == 0;
+					passingAttemptObserved = allocated <= MaxGarbagePerLock;
 				}
 
 				Assert.IsTrue(passingAttemptObserved);
@@ -2428,7 +2429,8 @@
 					long memory2 = GC.GetTotalMemory(false);
 					long allocated = (memory2 - memory1) / iterations;
 					this.TestContext.WriteLine("Allocated bytes: {0}", allocated);
-					passingAttemptObserved = allocated == 0;
+					const int NestingLevel = 3;
+					passingAttemptObserved = allocated <= MaxGarbagePerLock * NestingLevel;
 				}
 
 				Assert.IsTrue(passingAttemptObserved);
@@ -2455,7 +2457,7 @@
 					long memory2 = GC.GetTotalMemory(false);
 					long allocated = (memory2 - memory1) / iterations;
 					this.TestContext.WriteLine("Allocated bytes: {0}", allocated);
-					passingAttemptObserved = allocated == 0;
+					passingAttemptObserved = allocated <= MaxGarbagePerLock;
 				}
 
 				Assert.IsTrue(passingAttemptObserved);
@@ -2490,7 +2492,8 @@
 					long memory2 = GC.GetTotalMemory(false);
 					long allocated = (memory2 - memory1) / iterations;
 					this.TestContext.WriteLine("Allocated bytes: {0}", allocated);
-					passingAttemptObserved = allocated == 0;
+					const int NestingLevel = 3;
+					passingAttemptObserved = allocated <= MaxGarbagePerLock * NestingLevel;
 				}
 
 				Assert.IsTrue(passingAttemptObserved);
