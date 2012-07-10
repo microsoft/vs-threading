@@ -1186,6 +1186,7 @@ namespace Microsoft.Threading {
 		/// Executes the lock receiver or releases the lock because the request for it was canceled before it was issued.
 		/// </summary>
 		/// <param name="awaiter">The awaiter.</param>
+		/// <param name="stillInQueue">A value indicating whether the specified <paramref name="awaiter"/> is expected to still be in the queue (and should be removed).</param>
 		private bool ExecuteOrHandleCancellation(Awaiter awaiter, bool stillInQueue) {
 			Requires.NotNull(awaiter, "awaiter");
 
@@ -1218,7 +1219,7 @@ namespace Microsoft.Threading {
 			/// <param name="options">Any flags applied to the lock request.</param>
 			/// <param name="cancellationToken">The cancellation token.</param>
 			internal Awaitable(AsyncReaderWriterLock lck, LockKind kind, LockFlags options, CancellationToken cancellationToken) {
-				this.awaiter = Awaiter.Initialize(lck, kind, options, cancellationToken);
+				this.awaiter = new Awaiter(lck, kind, options, cancellationToken);
 				if (!cancellationToken.IsCancellationRequested) {
 					lck.TryIssueLock(this.awaiter, previouslyQueued: false);
 				}
@@ -1249,24 +1250,9 @@ namespace Microsoft.Threading {
 			private static readonly Action<object> cancellationResponseAction = CancellationResponder;
 
 			/// <summary>
-			/// A thread-safe bag of <see cref="Awaiter"/> instances that have been recycled to reduce GC pressure.
-			/// </summary>
-			private static readonly IProducerConsumerCollection<Awaiter> recycledAwaiters = new AllocFreeConcurrentStack<Awaiter>();
-
-			/// <summary>
-			/// An event to block on for synchronous lock requests.
-			/// </summary>
-			private readonly ManualResetEventSlim synchronousBlock = new ManualResetEventSlim();
-
-			/// <summary>
 			/// A simple object that will be stored in the CallContext.
 			/// </summary>
 			private readonly object callContextKey = new object();
-
-			/// <summary>
-			/// A cached delegate for setting the <see cref="synchronousBlock"/> event.
-			/// </summary>
-			private Action signalSynchronousBlock;
 
 			/// <summary>
 			/// The instance of the lock class to which this awaiter is affiliated.
@@ -1337,7 +1323,19 @@ namespace Microsoft.Threading {
 			/// <summary>
 			/// Initializes a new instance of the <see cref="Awaiter"/> class.
 			/// </summary>
-			private Awaiter() {
+			/// <param name="lck">The lock class creating this instance.</param>
+			/// <param name="kind">The type of lock being requested.</param>
+			/// <param name="options">The flags to apply to the lock.</param>
+			/// <param name="cancellationToken">The cancellation token.</param>
+			internal Awaiter(AsyncReaderWriterLock lck, LockKind kind, LockFlags options, CancellationToken cancellationToken) {
+				Requires.NotNull(lck, "lck");
+
+				this.lck = lck;
+				this.kind = kind;
+				this.options = options;
+				this.cancellationToken = cancellationToken;
+				this.nestingLock = lck.GetFirstActiveSelfOrAncestor(lck.topAwaiter.Value);
+				this.requestingStackTrace = lck.captureDiagnostics ? new StackTrace(2, true) : null;
 			}
 
 			/// <summary>
@@ -1425,12 +1423,9 @@ namespace Microsoft.Threading {
 					this.cancellationRegistration.Dispose();
 
 					if (!this.LockIssued && this.continuation == null && !this.cancellationToken.IsCancellationRequested) {
-						if (this.signalSynchronousBlock == null) {
-							this.signalSynchronousBlock = delegate { this.synchronousBlock.Set(); };
-						}
-
-						this.OnCompleted(this.signalSynchronousBlock);
-						this.synchronousBlock.Wait(this.cancellationToken);
+						var synchronousBlock = new ManualResetEventSlim();
+						this.OnCompleted(() => synchronousBlock.Set());
+						synchronousBlock.Wait(this.cancellationToken);
 					}
 
 					ThrowIfSta();
@@ -1461,38 +1456,6 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>
-			/// Initializes a new or recycled instance of the <see cref="Awaiter"/> class.
-			/// </summary>
-			/// <param name="lck">The lock class creating this instance.</param>
-			/// <param name="kind">The type of lock being requested.</param>
-			/// <param name="options">The flags to apply to the lock.</param>
-			/// <param name="cancellationToken">The cancellation token.</param>
-			/// <returns>A lock awaiter object.</returns>
-			internal static Awaiter Initialize(AsyncReaderWriterLock lck, LockKind kind, LockFlags options, CancellationToken cancellationToken) {
-				Requires.NotNull(lck, "lck");
-
-				Awaiter awaiter;
-				if (!recycledAwaiters.TryTake(out awaiter)) {
-					awaiter = new Awaiter();
-				}
-
-				awaiter.lck = lck;
-				awaiter.kind = kind;
-				awaiter.continuation = null;
-				awaiter.options = options;
-				awaiter.cancellationToken = cancellationToken;
-				awaiter.cancellationRegistration = default(CancellationTokenRegistration);
-				awaiter.nestingLock = lck.GetFirstActiveSelfOrAncestor(lck.topAwaiter.Value);
-				awaiter.fault = null;
-				awaiter.releaseAsyncTask = null;
-				awaiter.synchronousBlock.Reset();
-				awaiter.data = null;
-				awaiter.requestingStackTrace = lck.captureDiagnostics ? new StackTrace(2, true) : null;
-
-				return awaiter;
-			}
-
-			/// <summary>
 			/// Releases the lock and recycles this instance.
 			/// </summary>
 			internal Task ReleaseAsync(bool lockConsumerCanceled = false) {
@@ -1518,30 +1481,8 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>
-			/// Recycles this instance.
-			/// </summary>
-			internal void Recycle() {
-				if (this.readyForRecycling) {
-					// Clear some fields to remove strong references to data we don't need any more.
-					this.nestingLock = null;
-					this.lck = null;
-					this.data = null;
-					this.continuation = null;
-					this.cancellationToken = CancellationToken.None;
-					this.cancellationRegistration = default(CancellationTokenRegistration);
-					this.fault = null;
-					this.releaseAsyncTask = null;
-					this.requestingStackTrace = null;
-					this.readyForRecycling = false;
-
-					recycledAwaiters.TryAdd(this);
-				}
-			}
-
-			/// <summary>
 			/// Executes the code that requires the lock.
 			/// </summary>
-			/// <param name="continuation">A specific continuation to execute, or <c>null</c> to use the one stored in the field.</param>
 			/// <returns><c>true</c> if the continuation was (asynchronously) invoked; <c>false</c> if there was no continuation available to invoke.</returns>
 			internal bool TryScheduleContinuationExecution() {
 				var continuation = Interlocked.Exchange(ref this.continuation, null);
@@ -1602,7 +1543,6 @@ namespace Microsoft.Threading {
 			public void Dispose() {
 				if (this.awaiter != null) {
 					this.ReleaseAsync().Wait();
-					this.awaiter.Recycle();
 				}
 			}
 

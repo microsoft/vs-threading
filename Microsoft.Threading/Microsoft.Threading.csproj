@@ -41,7 +41,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AllocFreeConcurrentStack.cs" />
     <Compile Include="AsyncAutoResetEvent.cs" />
     <Compile Include="AsyncBarrier.cs" />
     <Compile Include="AsyncCountdownEvent.cs" />
