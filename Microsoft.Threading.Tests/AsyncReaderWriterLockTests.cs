@@ -1375,6 +1375,65 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		[Description("Verifies proper behavior when multiple read locks are held, and both read and write locks are in the queue, and a read lock is released.")]
+		public async Task ManyReadersBlockWriteAndSubsequentReadRequest() {
+			var firstReaderAcquired = new TaskCompletionSource<object>();
+			var secondReaderAcquired = new TaskCompletionSource<object>();
+			var writerWaiting = new TaskCompletionSource<object>();
+			var thirdReaderWaiting = new TaskCompletionSource<object>();
+
+			var releaseFirstReader = new TaskCompletionSource<object>();
+			var releaseSecondReader = new TaskCompletionSource<object>();
+			var writeAcquired = new TaskCompletionSource<object>();
+			var thirdReadAcquired = new TaskCompletionSource<object>();
+
+			await Task.WhenAll(
+				Task.Run(async delegate { // FIRST READER
+				using (await this.asyncLock.ReadLockAsync()) {
+					var nowait = firstReaderAcquired.SetAsync();
+					await releaseFirstReader.Task;
+				}
+			}),
+				Task.Run(async delegate { // SECOND READER
+				using (await this.asyncLock.ReadLockAsync()) {
+					var nowait = secondReaderAcquired.SetAsync();
+					await releaseSecondReader.Task;
+				}
+			}),
+			Task.Run(async delegate { // WRITER
+				await Task.WhenAll(firstReaderAcquired.Task, secondReaderAcquired.Task);
+				var writeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
+				Assert.IsFalse(writeAwaiter.IsCompleted);
+				writeAwaiter.OnCompleted(delegate {
+					using (writeAwaiter.GetResult()) {
+						writeAcquired.SetAsync();
+						Assert.IsFalse(thirdReadAcquired.Task.IsCompleted);
+					}
+				});
+				var nowait = writerWaiting.SetAsync();
+				await writeAcquired.Task;
+			}),
+			Task.Run(async delegate { // THIRD READER
+				await writerWaiting.Task;
+				var readAwaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
+				Assert.IsFalse(readAwaiter.IsCompleted, "Third reader should not have been issued a new top-level lock while writer is in the queue.");
+				readAwaiter.OnCompleted(delegate {
+					using (readAwaiter.GetResult()) {
+						thirdReadAcquired.SetAsync();
+						Assert.IsTrue(writeAcquired.Task.IsCompleted);
+					}
+				});
+				var nowait = thirdReaderWaiting.SetAsync();
+				await thirdReadAcquired.Task;
+			}),
+			Task.Run(async delegate { // Coordinator
+				await thirdReaderWaiting.Task;
+				var nowait = releaseFirstReader.SetAsync();
+				nowait = releaseSecondReader.SetAsync();
+			}));
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		[Description("Verifies that if a read lock is open, and a writer is waiting for a lock, that nested read locks will still be issued.")]
 		public async Task NestedReadersStillIssuedLocksWhileWaitingWriters() {
 			var readerLockHeld = new TaskCompletionSource<object>();

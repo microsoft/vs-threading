@@ -1092,7 +1092,7 @@ namespace Microsoft.Threading {
 		/// <returns>A value indicating whether any readers were issued locks.</returns>
 		private bool TryInvokeAllReadersIfAppropriate() {
 			bool invoked = false;
-			if (this.writeLocksIssued.Count == 0) {
+			if (this.writeLocksIssued.Count == 0 && this.waitingWriters.Count == 0) {
 				while (this.waitingReaders.Count > 0) {
 					var pendingReader = this.waitingReaders.Dequeue();
 					Assumes.True(pendingReader.Kind == LockKind.Read);
