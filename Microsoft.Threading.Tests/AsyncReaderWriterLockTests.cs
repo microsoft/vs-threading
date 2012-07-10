@@ -319,6 +319,29 @@
 			Assert.AreEqual(1, onExclusiveLockReleasedAsyncInvocationCount);
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task AwaiterInCallContextGetsRecycled() {
+			await Task.Run(async delegate {
+				Task remoteTask;
+				var firstLockObserved = new TaskCompletionSource<object>();
+				var secondLockAcquired = new TaskCompletionSource<object>();
+				using (await this.asyncLock.ReadLockAsync()) {
+					remoteTask = Task.Run(async delegate {
+						Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+						var nowait = firstLockObserved.SetAsync();
+						await secondLockAcquired.Task;
+						Assert.IsFalse(this.asyncLock.IsReadLockHeld, "Some remote call context saw a recycled lock issued to someone else.");
+					});
+					await firstLockObserved.Task;
+				}
+
+				using (await this.asyncLock.ReadLockAsync()) {
+					await secondLockAcquired.SetAsync();
+					await remoteTask;
+				}
+			});
+		}
+
 		[TestMethod, TestCategory("Stress"), Timeout(5000)]
 		public async Task LockStress() {
 			const int MaxDepth = 5;
