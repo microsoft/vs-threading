@@ -381,6 +381,8 @@
 		[TestMethod, TestCategory("Stress"), Timeout(5000)]
 		public async Task LockStress() {
 			const int MaxDepth = 5;
+			const int MaxLockAcquisitions = -1;
+			const int MaxLockHeldDelay = 0;// 80;
 			int maxWorkers = Environment.ProcessorCount * 4; // we do a lot of awaiting, but still want to flood all cores.
 			var cancellation = new CancellationTokenSource(4000);
 			int lockAcquisitions = 0;
@@ -436,10 +438,12 @@
 								break;
 						}
 
-						await Task.Delay(random.Next(80));
+						await Task.Delay(random.Next(MaxLockHeldDelay));
 					} finally {
 						while (lockStack.Count > 0) {
-							Interlocked.Increment(ref lockAcquisitions);
+							if (Interlocked.Increment(ref lockAcquisitions) > MaxLockAcquisitions && MaxLockAcquisitions > 0) {
+								cancellation.Cancel();
+							}
 							var releaser = lockStack.Pop();
 							releaser.Dispose();
 						}
@@ -450,15 +454,16 @@
 			await Task.Run(async delegate {
 				var workers = new Task[maxWorkers];
 				for (int i = 0; i < workers.Length; i++) {
-					workers[i] = worker();
+					workers[i] = Task.Run(() => worker(), cancellation.Token);
+					var nowait = workers[i].ContinueWith(_ => cancellation.Cancel(), TaskContinuationOptions.OnlyOnFaulted);
 				}
 
 				try {
 					await Task.WhenAll(workers);
 				} catch (OperationCanceledException) {
+				} finally {
+					Console.WriteLine("Stress tested {0} lock acquisitions.", lockAcquisitions);
 				}
-
-				this.TestContext.WriteLine("Stress tested {0} lock acquisitions.", lockAcquisitions);
 			});
 		}
 
