@@ -823,6 +823,24 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// Gets the queue for a lock with a given type.
+		/// </summary>
+		/// <param name="kind">The kind of lock.</param>
+		/// <returns>A queue.</returns>
+		private Queue<Awaiter> GetLockQueue(LockKind kind) {
+			switch (kind) {
+				case LockKind.Read:
+					return this.waitingReaders;
+				case LockKind.UpgradeableRead:
+					return this.waitingUpgradeableReaders;
+				case LockKind.Write:
+					return this.waitingWriters;
+				default:
+					throw Assumes.NotReachable();
+			}
+		}
+
+		/// <summary>
 		/// Walks the nested lock stack until it finds an active one.
 		/// </summary>
 		/// <param name="awaiter">The most nested lock to consider.  May be null.</param>
@@ -1160,19 +1178,8 @@ namespace Microsoft.Threading {
 					// Run the continuation asynchronously (since this is called in OnCompleted, which is an async pattern).
 					this.ExecuteOrHandleCancellation(awaiter);
 				} else {
-					switch (awaiter.Kind) {
-						case LockKind.Read:
-							this.waitingReaders.Enqueue(awaiter);
-							break;
-						case LockKind.UpgradeableRead:
-							this.waitingUpgradeableReaders.Enqueue(awaiter);
-							break;
-						case LockKind.Write:
-							this.waitingWriters.Enqueue(awaiter);
-							break;
-						default:
-							break;
-					}
+					var queue = this.GetLockQueue(awaiter.Kind);
+					queue.Enqueue(awaiter);
 				}
 			}
 		}
