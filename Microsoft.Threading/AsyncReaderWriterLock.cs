@@ -864,7 +864,7 @@ namespace Microsoft.Threading {
 		/// <param name="awaiter">The awaiter to issue a lock to and execute.</param>
 		private void IssueAndExecute(Awaiter awaiter) {
 			Assumes.True(this.TryIssueLock(awaiter, previouslyQueued: true));
-			this.ExecuteOrHandleCancellation(awaiter, stillInQueue: false);
+			Assumes.True(this.ExecuteOrHandleCancellation(awaiter, stillInQueue: false));
 		}
 
 		/// <summary>
@@ -1156,7 +1156,7 @@ namespace Microsoft.Threading {
 				foreach (var waitingWriter in this.waitingWriters) {
 					if (this.TryIssueLock(waitingWriter, previouslyQueued: true)) {
 						// Run the continuation asynchronously (since this is called in OnCompleted, which is an async pattern).
-						this.ExecuteOrHandleCancellation(waitingWriter, stillInQueue: true);
+						Assumes.True(this.ExecuteOrHandleCancellation(waitingWriter, stillInQueue: true));
 						return true;
 					}
 				}
@@ -1174,7 +1174,7 @@ namespace Microsoft.Threading {
 			lock (this.syncObject) {
 				if (this.TryIssueLock(awaiter, previouslyQueued: true)) {
 					// Run the continuation asynchronously (since this is called in OnCompleted, which is an async pattern).
-					this.ExecuteOrHandleCancellation(awaiter, stillInQueue: false);
+					Assumes.True(this.ExecuteOrHandleCancellation(awaiter, stillInQueue: false));
 				} else {
 					var queue = this.GetLockQueue(awaiter.Kind);
 					queue.Enqueue(awaiter);
@@ -1186,7 +1186,7 @@ namespace Microsoft.Threading {
 		/// Executes the lock receiver or releases the lock because the request for it was canceled before it was issued.
 		/// </summary>
 		/// <param name="awaiter">The awaiter.</param>
-		private void ExecuteOrHandleCancellation(Awaiter awaiter, bool stillInQueue) {
+		private bool ExecuteOrHandleCancellation(Awaiter awaiter, bool stillInQueue) {
 			Requires.NotNull(awaiter, "awaiter");
 
 			lock (this.SyncObject) {
@@ -1197,7 +1197,7 @@ namespace Microsoft.Threading {
 					RemoveMidQueue(queue, awaiter);
 				}
 
-				Assumes.True(awaiter.TryScheduleContinuationExecution());
+				return awaiter.TryScheduleContinuationExecution();
 			}
 		}
 
