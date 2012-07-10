@@ -859,12 +859,12 @@ namespace Microsoft.Threading {
 
 		/// <summary>
 		/// Issues a lock to the specified awaiter and executes its continuation.
+		/// The awaiter should have already been dequeued.
 		/// </summary>
 		/// <param name="awaiter">The awaiter to issue a lock to and execute.</param>
 		private void IssueAndExecute(Awaiter awaiter) {
 			Assumes.True(this.TryIssueLock(awaiter, previouslyQueued: true));
-
-			this.ExecuteOrHandleCancellation(awaiter);
+			this.ExecuteOrHandleCancellation(awaiter, stillInQueue: false);
 		}
 
 		/// <summary>
@@ -1155,10 +1155,8 @@ namespace Microsoft.Threading {
 			} else if (this.upgradeableReadLocksIssued.Count > 0) {
 				foreach (var waitingWriter in this.waitingWriters) {
 					if (this.TryIssueLock(waitingWriter, previouslyQueued: true)) {
-						RemoveMidQueue(this.waitingWriters, waitingWriter);
-
 						// Run the continuation asynchronously (since this is called in OnCompleted, which is an async pattern).
-						this.ExecuteOrHandleCancellation(waitingWriter);
+						this.ExecuteOrHandleCancellation(waitingWriter, stillInQueue: true);
 						return true;
 					}
 				}
@@ -1176,7 +1174,7 @@ namespace Microsoft.Threading {
 			lock (this.syncObject) {
 				if (this.TryIssueLock(awaiter, previouslyQueued: true)) {
 					// Run the continuation asynchronously (since this is called in OnCompleted, which is an async pattern).
-					this.ExecuteOrHandleCancellation(awaiter);
+					this.ExecuteOrHandleCancellation(awaiter, stillInQueue: false);
 				} else {
 					var queue = this.GetLockQueue(awaiter.Kind);
 					queue.Enqueue(awaiter);
@@ -1188,9 +1186,18 @@ namespace Microsoft.Threading {
 		/// Executes the lock receiver or releases the lock because the request for it was canceled before it was issued.
 		/// </summary>
 		/// <param name="awaiter">The awaiter.</param>
-		private void ExecuteOrHandleCancellation(Awaiter awaiter) {
-			if (!awaiter.TryScheduleContinuationExecution()) {
-				Assumes.True(awaiter.ReleaseAsync(lockConsumerCanceled: true).IsCompleted);
+		private void ExecuteOrHandleCancellation(Awaiter awaiter, bool stillInQueue) {
+			Requires.NotNull(awaiter, "awaiter");
+
+			lock (this.SyncObject) {
+				if (stillInQueue) {
+					// The lock class can't deal well with cancelled lock requests remaining in its queue.
+					// Remove the awaiter, wherever in the queue it happens to be.
+					var queue = this.GetLockQueue(awaiter.Kind);
+					RemoveMidQueue(queue, awaiter);
+				}
+
+				Assumes.True(awaiter.TryScheduleContinuationExecution());
 			}
 		}
 
@@ -1462,6 +1469,8 @@ namespace Microsoft.Threading {
 			/// <param name="cancellationToken">The cancellation token.</param>
 			/// <returns>A lock awaiter object.</returns>
 			internal static Awaiter Initialize(AsyncReaderWriterLock lck, LockKind kind, LockFlags options, CancellationToken cancellationToken) {
+				Requires.NotNull(lck, "lck");
+
 				Awaiter awaiter;
 				if (!recycledAwaiters.TryTake(out awaiter)) {
 					awaiter = new Awaiter();
@@ -1514,6 +1523,8 @@ namespace Microsoft.Threading {
 			internal void Recycle() {
 				if (this.readyForRecycling) {
 					// Clear some fields to remove strong references to data we don't need any more.
+					this.nestingLock = null;
+					this.lck = null;
 					this.data = null;
 					this.continuation = null;
 					this.cancellationToken = CancellationToken.None;
@@ -1532,10 +1543,8 @@ namespace Microsoft.Threading {
 			/// </summary>
 			/// <param name="continuation">A specific continuation to execute, or <c>null</c> to use the one stored in the field.</param>
 			/// <returns><c>true</c> if the continuation was (asynchronously) invoked; <c>false</c> if there was no continuation available to invoke.</returns>
-			internal bool TryScheduleContinuationExecution(Action continuation = null) {
-				if (continuation == null) {
-					continuation = Interlocked.Exchange(ref this.continuation, null);
-				}
+			internal bool TryScheduleContinuationExecution() {
+				var continuation = Interlocked.Exchange(ref this.continuation, null);
 
 				if (continuation != null) {
 					Task.Run(continuation);
@@ -1560,8 +1569,9 @@ namespace Microsoft.Threading {
 				var awaiter = (Awaiter)state;
 
 				// We're in a race with the lock suddenly becoming available.
-				// Our control in the race is whether the continuation field is still set to a non-null value.
-				awaiter.TryScheduleContinuationExecution(); // unblock the awaiter immediately (which will then experience an OperationCanceledException).
+				// Our control in the race is asking the lock class to execute for us (within their private lock).
+				// unblock the awaiter immediately (which will then experience an OperationCanceledException).
+				awaiter.lck.ExecuteOrHandleCancellation(awaiter, stillInQueue: true);
 
 				// Release memory of the registered handler, since we only need it to fire once.
 				awaiter.cancellationRegistration.Dispose();
