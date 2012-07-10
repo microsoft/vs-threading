@@ -908,6 +908,102 @@
 			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync());
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ExclusiveLockReleasedEventsFireOnlyWhenWriteLockReleased() {
+			var asyncLock = new LockDerived();
+			int onBeforeReleaseInvocations = 0;
+			int onReleaseInvocations = 0;
+			asyncLock.OnBeforeExclusiveLockReleasedAsyncDelegate = delegate {
+				onBeforeReleaseInvocations++;
+				return Task.FromResult<object>(null);
+			};
+			asyncLock.OnExclusiveLockReleasedAsyncDelegate = delegate {
+				onReleaseInvocations++;
+				return Task.FromResult<object>(null);
+			};
+
+			using (await asyncLock.WriteLockAsync()) {
+				using (await asyncLock.UpgradeableReadLockAsync()) {
+				}
+
+				Assert.AreEqual(0, onBeforeReleaseInvocations);
+				Assert.AreEqual(0, onReleaseInvocations);
+
+				using (await asyncLock.ReadLockAsync()) {
+				}
+
+				Assert.AreEqual(0, onBeforeReleaseInvocations);
+				Assert.AreEqual(0, onReleaseInvocations);
+			}
+
+			Assert.AreEqual(1, onBeforeReleaseInvocations);
+			Assert.AreEqual(1, onReleaseInvocations);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ExclusiveLockReleasedEventsFireOnlyWhenWriteLockReleasedWithinUpgradeableRead() {
+			var asyncLock = new LockDerived();
+			int onBeforeReleaseInvocations = 0;
+			int onReleaseInvocations = 0;
+			asyncLock.OnBeforeExclusiveLockReleasedAsyncDelegate = delegate {
+				onBeforeReleaseInvocations++;
+				return Task.FromResult<object>(null);
+			};
+			asyncLock.OnExclusiveLockReleasedAsyncDelegate = delegate {
+				onReleaseInvocations++;
+				return Task.FromResult<object>(null);
+			};
+
+			using (await asyncLock.UpgradeableReadLockAsync()) {
+				using (await asyncLock.UpgradeableReadLockAsync()) {
+				}
+
+				Assert.AreEqual(0, onBeforeReleaseInvocations);
+				Assert.AreEqual(0, onReleaseInvocations);
+
+				using (await asyncLock.WriteLockAsync()) {
+				}
+
+				Assert.AreEqual(1, onBeforeReleaseInvocations);
+				Assert.AreEqual(1, onReleaseInvocations);
+			}
+
+			Assert.AreEqual(1, onBeforeReleaseInvocations);
+			Assert.AreEqual(1, onReleaseInvocations);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ExclusiveLockReleasedEventsFireOnlyWhenStickyUpgradedLockReleased() {
+			var asyncLock = new LockDerived();
+			int onBeforeReleaseInvocations = 0;
+			int onReleaseInvocations = 0;
+			asyncLock.OnBeforeExclusiveLockReleasedAsyncDelegate = delegate {
+				onBeforeReleaseInvocations++;
+				return Task.FromResult<object>(null);
+			};
+			asyncLock.OnExclusiveLockReleasedAsyncDelegate = delegate {
+				onReleaseInvocations++;
+				return Task.FromResult<object>(null);
+			};
+
+			using (await asyncLock.UpgradeableReadLockAsync(AsyncReaderWriterLock.LockFlags.StickyWrite)) {
+				using (await asyncLock.UpgradeableReadLockAsync()) {
+				}
+
+				Assert.AreEqual(0, onBeforeReleaseInvocations);
+				Assert.AreEqual(0, onReleaseInvocations);
+
+				using (await asyncLock.WriteLockAsync()) {
+				}
+
+				Assert.AreEqual(0, onBeforeReleaseInvocations);
+				Assert.AreEqual(0, onReleaseInvocations);
+			}
+
+			Assert.AreEqual(1, onBeforeReleaseInvocations);
+			Assert.AreEqual(1, onReleaseInvocations);
+		}
+
 		#endregion
 
 		#region UpgradeableReadLock tests
@@ -2607,6 +2703,7 @@
 
 		private class LockDerived : AsyncReaderWriterLock {
 			internal Func<Task> OnBeforeExclusiveLockReleasedAsyncDelegate { get; set; }
+			internal Func<Task> OnExclusiveLockReleasedAsyncDelegate { get; set; }
 
 			internal new bool LockStackContains(LockFlags flags, Awaiter awaiter = null) {
 				return base.LockStackContains(flags, awaiter);
@@ -2624,6 +2721,13 @@
 				await base.OnBeforeExclusiveLockReleasedAsync();
 				if (this.OnBeforeExclusiveLockReleasedAsyncDelegate != null) {
 					await this.OnBeforeExclusiveLockReleasedAsyncDelegate();
+				}
+			}
+
+			protected override async Task OnExclusiveLockReleasedAsync() {
+				await base.OnExclusiveLockReleasedAsync();
+				if (this.OnExclusiveLockReleasedAsyncDelegate != null) {
+					await this.OnExclusiveLockReleasedAsyncDelegate();
 				}
 			}
 		}
