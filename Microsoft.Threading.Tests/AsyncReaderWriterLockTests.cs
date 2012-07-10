@@ -342,6 +342,42 @@
 			});
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task AwaiterInCallContextGetsRecycledTwoDeep() {
+			await Task.Run(async delegate {
+				Task remoteTask;
+				var lockObservedOnce = new TaskCompletionSource<object>();
+				var nestedLockReleased = new TaskCompletionSource<object>();
+				var lockObservedTwice = new TaskCompletionSource<object>();
+				var secondLockAcquired = new TaskCompletionSource<object>();
+				var secondLockNotSeen = new TaskCompletionSource<object>();
+				using (await this.asyncLock.ReadLockAsync()) {
+					using (await this.asyncLock.ReadLockAsync()) {
+						remoteTask = Task.Run(async delegate {
+							Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+							var nowait = lockObservedOnce.SetAsync();
+							await nestedLockReleased.Task;
+							Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+							nowait = lockObservedTwice.SetAsync();
+							await secondLockAcquired.Task;
+							Assert.IsFalse(this.asyncLock.IsReadLockHeld, "Some remote call context saw a recycled lock issued to someone else.");
+							Assert.IsFalse(this.asyncLock.IsWriteLockHeld, "Some remote call context saw a recycled lock issued to someone else.");
+							nowait = secondLockNotSeen.SetAsync();
+						});
+						await lockObservedOnce.Task;
+					}
+
+					var nowait2 = nestedLockReleased.SetAsync();
+					await lockObservedTwice.Task;
+				}
+
+				using (await this.asyncLock.WriteLockAsync()) {
+					var nowait = secondLockAcquired.SetAsync();
+					await secondLockNotSeen.Task;
+				}
+			});
+		}
+
 		[TestMethod, TestCategory("Stress"), Timeout(5000)]
 		public async Task LockStress() {
 			const int MaxDepth = 5;
