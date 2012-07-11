@@ -9,7 +9,7 @@
 	/// An interface implemented by values that are to be safely stored via
 	/// <see cref="AsyncLocal{T}"/>.
 	/// </summary>
-	internal interface ICallContextKeyLookup {
+	public interface ICallContextKeyLookup {
 		/// <summary>
 		/// Gets the value of the readonly field for this object that will be used
 		/// exclusively for this instance.

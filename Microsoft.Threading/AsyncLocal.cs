@@ -12,7 +12,7 @@
 	/// Stores reference types in the CallContext such that marshaling is safe.
 	/// </summary>
 	/// <typeparam name="T">The type of value to store.</typeparam>
-	internal class AsyncLocal<T> where T : class, ICallContextKeyLookup {
+	public class AsyncLocal<T> where T : class, ICallContextKeyLookup {
 		/// <summary>
 		/// A weak reference table that associates simple objects with some specific type that cannot be marshaled.
 		/// </summary>
