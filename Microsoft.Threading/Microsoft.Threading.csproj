@@ -45,6 +45,7 @@
     <Compile Include="AsyncBarrier.cs" />
     <Compile Include="AsyncCountdownEvent.cs" />
     <Compile Include="AsyncLocal.cs" />
+    <Compile Include="AsyncPump.cs" />
     <Compile Include="AsyncSemaphore.cs" />
     <Compile Include="AsyncManualResetEvent.cs" />
     <Compile Include="AsyncReaderWriterLock.cs" />
