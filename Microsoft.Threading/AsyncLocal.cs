@@ -12,11 +12,15 @@
 	/// Stores reference types in the CallContext such that marshaling is safe.
 	/// </summary>
 	/// <typeparam name="T">The type of value to store.</typeparam>
-	public class AsyncLocal<T> where T : class, ICallContextKeyLookup {
+	public class AsyncLocal<T> where T : class {
+		private readonly object syncObject = new object();
+
 		/// <summary>
 		/// A weak reference table that associates simple objects with some specific type that cannot be marshaled.
 		/// </summary>
 		private readonly ConditionalWeakTable<object, T> valueTable = new ConditionalWeakTable<object, T>();
+
+		private readonly ConditionalWeakTable<T, object> reverseLookupTable = new ConditionalWeakTable<T, object>();
 
 		/// <summary>
 		/// A unique GUID that prevents this instance from conflicting with other instances.
@@ -31,7 +35,7 @@
 				object boxKey = CallContext.LogicalGetData(this.callContextKey);
 				T value;
 				if (boxKey != null) {
-					lock (this.valueTable) {
+					lock (this.syncObject) {
 						if (this.valueTable.TryGetValue(boxKey, out value)) {
 							return value;
 						}
@@ -43,10 +47,9 @@
 
 			set {
 				if (value != null) {
-					object callContextValue = value.CallContextValue;
-					Debug.Assert(callContextValue.GetType().IsEquivalentTo(typeof(object)));
-					CallContext.LogicalSetData(this.callContextKey, callContextValue);
-					lock (this.valueTable) {
+					lock (this.syncObject) {
+						object callContextValue = this.reverseLookupTable.GetOrCreateValue(value);
+						CallContext.LogicalSetData(this.callContextKey, callContextValue);
 						this.valueTable.Remove(callContextValue);
 						this.valueTable.Add(callContextValue, value);
 					}

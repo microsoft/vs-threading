@@ -1241,18 +1241,13 @@ namespace Microsoft.Threading {
 		/// Manages asynchronous access to a lock.
 		/// </summary>
 		[DebuggerDisplay("{kind}")]
-		public class Awaiter : INotifyCompletion, ICallContextKeyLookup {
+		public class Awaiter : INotifyCompletion {
 			#region Fields
 
 			/// <summary>
 			/// A singleton delegate for use in cancellation token registration to avoid memory allocations for delegates each time.
 			/// </summary>
 			private static readonly Action<object> cancellationResponseAction = CancellationResponder;
-
-			/// <summary>
-			/// A simple object that will be stored in the CallContext.
-			/// </summary>
-			private readonly object callContextKey = new object();
 
 			/// <summary>
 			/// The instance of the lock class to which this awaiter is affiliated.
@@ -1399,14 +1394,6 @@ namespace Microsoft.Threading {
 			/// <value><c>true</c> iff the lock has bee issued, has not yet been released, and the caller is on an MTA thread.</value>
 			private bool LockIssued {
 				get { return this.lck.IsLockActive(this, considerStaActive: false); }
-			}
-
-			/// <summary>
-			/// Gets the value of the readonly field for this object that will be used
-			/// exclusively for this instance.
-			/// </summary>
-			object ICallContextKeyLookup.CallContextValue {
-				get { return this.callContextKey; }
 			}
 
 			/// <summary>

@@ -8,16 +8,16 @@
 
 	[TestClass]
 	public class AsyncLocalTests {
-		private AsyncLocal<ContextObject> asyncLocal;
+		private AsyncLocal<GenericParameterHelper> asyncLocal;
 
 		[TestInitialize]
 		public void Initialize() {
-			this.asyncLocal = new AsyncLocal<ContextObject>();
+			this.asyncLocal = new AsyncLocal<GenericParameterHelper>();
 		}
 
 		[TestMethod]
 		public void SetGetNoYield() {
-			var value = new ContextObject();
+			var value = new GenericParameterHelper();
 			this.asyncLocal.Value = value;
 			Assert.AreSame(value, this.asyncLocal.Value);
 			this.asyncLocal.Value = null;
@@ -26,7 +26,7 @@
 
 		[TestMethod]
 		public async Task SetGetWithYield() {
-			var value = new ContextObject();
+			var value = new GenericParameterHelper();
 			this.asyncLocal.Value = value;
 			await Task.Yield();
 			Assert.AreSame(value, this.asyncLocal.Value);
@@ -36,7 +36,7 @@
 
 		[TestMethod]
 		public async Task ForkedContext() {
-			var value = new ContextObject();
+			var value = new GenericParameterHelper();
 			this.asyncLocal.Value = value;
 			await Task.WhenAll(
 				Task.Run(delegate {
@@ -56,9 +56,9 @@
 		}
 
 		[TestMethod]
-		public void SetValuesRepeatedly() {
+		public void SetNewValuesRepeatedly() {
 			for (int i = 0; i < 10; i++) {
-				var value = new ContextObject();
+				var value = new GenericParameterHelper();
 				this.asyncLocal.Value = value;
 				Assert.AreSame(value, this.asyncLocal.Value);
 			}
@@ -67,12 +67,30 @@
 			Assert.IsNull(this.asyncLocal.Value);
 		}
 
-		private class ContextObject : ICallContextKeyLookup {
-			private readonly object contextObject = new object();
-
-			public object CallContextValue {
-				get { return contextObject; }
+		[TestMethod]
+		public void SetSameValuesRepeatedly() {
+			var value = new GenericParameterHelper();
+			for (int i = 0; i < 10; i++) {
+				this.asyncLocal.Value = value;
+				Assert.AreSame(value, this.asyncLocal.Value);
 			}
+
+			this.asyncLocal.Value = null;
+			Assert.IsNull(this.asyncLocal.Value);
+		}
+
+		[TestMethod]
+		public void SurvivesGC() {
+			var value = new GenericParameterHelper(5);
+			this.asyncLocal.Value = value;
+			Assert.AreSame(value, this.asyncLocal.Value);
+
+			GC.Collect();
+			Assert.AreSame(value, this.asyncLocal.Value);
+
+			value = null;
+			GC.Collect();
+			Assert.AreEqual(5, this.asyncLocal.Value.Data);
 		}
 	}
 }
