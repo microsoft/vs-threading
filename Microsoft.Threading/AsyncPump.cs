@@ -96,9 +96,6 @@ namespace Microsoft.Threading {
 			private readonly BlockingCollection<KeyValuePair<SendOrPostCallback, object>> queue =
 				new BlockingCollection<KeyValuePair<SendOrPostCallback, object>>();
 
-			/// <summary>The processing thread.</summary>
-			private readonly Thread thread = Thread.CurrentThread;
-
 			/// <summary>The number of outstanding operations.</summary>
 			private int operationCount = 0;
 
