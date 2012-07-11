@@ -4,7 +4,7 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-namespace Microsoft.Threading.Tests {
+namespace Microsoft.Threading {
 	using System;
 	using System.Collections.Concurrent;
 	using System.Collections.Generic;
