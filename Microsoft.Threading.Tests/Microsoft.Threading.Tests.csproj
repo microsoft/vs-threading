@@ -66,6 +66,7 @@
     <Compile Include="AsyncReaderWriterResourceLockTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestBase.cs" />
+    <Compile Include="TaskExtensionsTests.cs" />
     <Compile Include="TestUtilitiesTests.cs" />
     <Compile Include="TestUtilities.cs" />
   </ItemGroup>

@@ -19,6 +19,11 @@ namespace Microsoft.Threading
     public static class TaskExtensions
     {
         /// <summary>
+        /// A singleton completed task.
+        /// </summary>
+        public static readonly Task CompletedTask = Task.FromResult<object>(null);
+
+        /// <summary>
         /// A cached delegate that takes a task as a parameter and does nothing.
         /// </summary>
         private static readonly Action<Task> EmptyTaskContinuation = task => { };
