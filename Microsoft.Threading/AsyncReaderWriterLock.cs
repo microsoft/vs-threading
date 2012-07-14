@@ -48,6 +48,11 @@ namespace Microsoft.Threading {
 		private readonly object syncObject = new object();
 
 		/// <summary>
+		/// The synchronization context applied to folks who hold upgradeable read and write locks.
+		/// </summary>
+		private readonly NonConcurrentSynchronizationContext nonConcurrentSyncContext = new NonConcurrentSynchronizationContext();
+
+		/// <summary>
 		/// A CallContext-local reference to the Awaiter that is on the top of the stack (most recently acquired).
 		/// </summary>
 		private readonly AsyncLocal<Awaiter> topAwaiter = new AsyncLocal<Awaiter>();
@@ -1417,6 +1422,10 @@ namespace Microsoft.Threading {
 
 					if (this.LockIssued) {
 						this.lck.ApplyLockToCallContext(this);
+						if ((this.Kind & (LockKind.UpgradeableRead | LockKind.Write)) != 0) {
+							this.lck.nonConcurrentSyncContext.Apply();
+						}
+
 						return new Releaser(this);
 					} else if (this.cancellationToken.IsCancellationRequested) {
 						// At this point, someone called GetResult who wasn't registered as a synchronous waiter,
@@ -1448,6 +1457,10 @@ namespace Microsoft.Threading {
 						var lck = this.lck;
 						this.lck = null;
 						this.releaseAsyncTask = lck.ReleaseAsync(this, lockConsumerCanceled);
+
+						if ((this.Kind & (LockKind.UpgradeableRead | LockKind.Write)) != 0) {
+							lck.nonConcurrentSyncContext.Revert();
+						}
 					}
 				}
 
@@ -1490,6 +1503,41 @@ namespace Microsoft.Threading {
 
 				// Release memory of the registered handler, since we only need it to fire once.
 				awaiter.cancellationRegistration.Dispose();
+			}
+		}
+
+		private class NonConcurrentSynchronizationContext : SynchronizationContext {
+			private readonly AsyncSemaphore semaphore = new AsyncSemaphore(1);
+
+			private SynchronizationContext priorSyncContext;
+
+			private int recursion = 0;
+
+			public override void Send(SendOrPostCallback d, object state) {
+				throw new NotSupportedException();
+			}
+
+			public override void Post(SendOrPostCallback d, object state) {
+				Task.Run(async delegate {
+					using (await this.semaphore.EnterAsync().ConfigureAwait(false)) {
+						SynchronizationContext.SetSynchronizationContext(this);
+						d(state);
+					}
+				});
+			}
+
+			internal void Apply() {
+				Interlocked.Increment(ref this.recursion);
+				if (!(SynchronizationContext.Current is NonConcurrentSynchronizationContext)) {
+					this.priorSyncContext = SynchronizationContext.Current;
+					SynchronizationContext.SetSynchronizationContext(this);
+				}
+			}
+
+			internal void Revert() {
+				if (Interlocked.Decrement(ref this.recursion) == 0) {
+					SynchronizationContext.SetSynchronizationContext(this.priorSyncContext);
+				}
 			}
 		}
 

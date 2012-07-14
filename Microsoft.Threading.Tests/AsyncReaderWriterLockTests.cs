@@ -2,6 +2,7 @@
 	using System;
 	using System.Collections.Generic;
 	using System.Diagnostics;
+	using System.Linq;
 	using System.Reflection;
 	using System.Threading;
 	using System.Threading.Tasks;
@@ -15,7 +16,7 @@
 	[TestClass]
 	public class AsyncReaderWriterLockTests : TestBase {
 		private const int GCAllocationAttempts = 3;
-		private const int MaxGarbagePerLock = 150;
+		private const int MaxGarbagePerLock = 160;
 
 		private AsyncReaderWriterLock asyncLock;
 
@@ -391,6 +392,9 @@
 				var random = new Random();
 				var lockStack = new Stack<AsyncReaderWriterLock.Releaser>(MaxDepth);
 				while (true) {
+					Assert.IsFalse(this.asyncLock.IsReadLockHeld || this.asyncLock.IsUpgradeableReadLockHeld || this.asyncLock.IsWriteLockHeld);
+					var syncContext = new SynchronizationContext();
+					SynchronizationContext.SetSynchronizationContext(syncContext);
 					int depth = random.Next(MaxDepth) + 1;
 					int kind = random.Next(3);
 					try {
@@ -398,6 +402,7 @@
 							case 0: // read
 								while (--depth > 0) {
 									lockStack.Push(await this.asyncLock.ReadLockAsync(cancellation.Token));
+									Assert.AreSame(syncContext, SynchronizationContext.Current);
 								}
 
 								break;
@@ -415,6 +420,12 @@
 										case 2:
 											lockStack.Push(await this.asyncLock.WriteLockAsync(cancellation.Token));
 											break;
+									}
+
+									if (this.asyncLock.IsUpgradeableReadLockHeld || this.asyncLock.IsWriteLockHeld) {
+										Assert.AreNotSame(syncContext, SynchronizationContext.Current);
+									} else {
+										Assert.AreSame(syncContext, SynchronizationContext.Current);
 									}
 								}
 
@@ -434,6 +445,12 @@
 											lockStack.Push(await this.asyncLock.WriteLockAsync(cancellation.Token));
 											break;
 									}
+
+									if (this.asyncLock.IsUpgradeableReadLockHeld || this.asyncLock.IsWriteLockHeld) {
+										Assert.AreNotSame(syncContext, SynchronizationContext.Current);
+									} else {
+										Assert.AreSame(syncContext, SynchronizationContext.Current);
+									}
 								}
 
 								break;
@@ -447,6 +464,12 @@
 							}
 							var releaser = lockStack.Pop();
 							releaser.Dispose();
+
+							if (this.asyncLock.IsUpgradeableReadLockHeld || this.asyncLock.IsWriteLockHeld) {
+								Assert.AreNotSame(syncContext, SynchronizationContext.Current);
+							} else {
+								Assert.AreSame(syncContext, SynchronizationContext.Current);
+							}
 						}
 					}
 				}
@@ -698,6 +721,33 @@
 					awaiter.GetResult().Dispose();
 				}
 			});
+		}
+
+		[TestMethod, Timeout(TestTimeout * 2)]
+		public async Task AllowImplicitReadLockConcurrency() {
+			using (await this.asyncLock.ReadLockAsync()) {
+				await this.CheckContinuationsConcurrencyHelper();
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ReadLockPreservesSynchronizationContext() {
+			using (await this.asyncLock.ReadLockAsync()) {
+				Assert.IsNull(SynchronizationContext.Current);
+			}
+
+			var ctxt = new SynchronizationContext();
+			SynchronizationContext.SetSynchronizationContext(ctxt);
+			using (await this.asyncLock.ReadLockAsync()) {
+				Assert.AreSame(ctxt, SynchronizationContext.Current);
+				using (await this.asyncLock.ReadLockAsync()) {
+					Assert.AreSame(ctxt, SynchronizationContext.Current);
+				}
+
+				Assert.AreSame(ctxt, SynchronizationContext.Current);
+			}
+
+			Assert.AreSame(ctxt, SynchronizationContext.Current);
 		}
 
 		#endregion
@@ -1004,6 +1054,33 @@
 			Assert.AreEqual(1, onReleaseInvocations);
 		}
 
+		[TestMethod, Timeout(TestTimeout * 2)]
+		public async Task MitigationAgainstAccidentalUpgradeableReadLockConcurrency() {
+			using (await this.asyncLock.WriteLockAsync()) {
+				await this.CheckContinuationsConcurrencyHelper();
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task UpgradeableReadLockRestoresSynchronizationContext() {
+			using (await this.asyncLock.ReadLockAsync()) {
+				Assert.IsNull(SynchronizationContext.Current);
+			}
+
+			var ctxt = new SynchronizationContext();
+			SynchronizationContext.SetSynchronizationContext(ctxt);
+			using (await this.asyncLock.UpgradeableReadLockAsync()) {
+				Assert.AreNotSame(ctxt, SynchronizationContext.Current);
+				using (await this.asyncLock.UpgradeableReadLockAsync()) {
+					Assert.AreNotSame(ctxt, SynchronizationContext.Current);
+				}
+
+				Assert.AreNotSame(ctxt, SynchronizationContext.Current);
+			}
+
+			Assert.AreSame(ctxt, SynchronizationContext.Current);
+		}
+
 		#endregion
 
 		#region UpgradeableReadLock tests
@@ -1245,6 +1322,33 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task NestedWriteLockAsyncGarbageCheck() {
 			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync());
+		}
+
+		[TestMethod, Timeout(TestTimeout * 2)]
+		public async Task MitigationAgainstAccidentalWriteLockConcurrency() {
+			using (await this.asyncLock.WriteLockAsync()) {
+				await this.CheckContinuationsConcurrencyHelper();
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task WriteLockRestoresSynchronizationContext() {
+			using (await this.asyncLock.ReadLockAsync()) {
+				Assert.IsNull(SynchronizationContext.Current);
+			}
+
+			var ctxt = new SynchronizationContext();
+			SynchronizationContext.SetSynchronizationContext(ctxt);
+			using (await this.asyncLock.WriteLockAsync()) {
+				Assert.AreNotSame(ctxt, SynchronizationContext.Current);
+				using (await this.asyncLock.WriteLockAsync()) {
+					Assert.AreNotSame(ctxt, SynchronizationContext.Current);
+				}
+
+				Assert.AreNotSame(ctxt, SynchronizationContext.Current);
+			}
+
+			Assert.AreSame(ctxt, SynchronizationContext.Current);
 		}
 
 		#endregion
@@ -2693,6 +2797,35 @@
 			Assert.IsFalse(this.asyncLock.IsReadLockHeld, "IsReadLockHeld not expected value.");
 			Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld, "IsUpgradeableReadLockHeld not expected value.");
 			Assert.IsFalse(this.asyncLock.IsWriteLockHeld, "IsWriteLockHeld not expected value.");
+		}
+
+		private async Task CheckContinuationsConcurrencyHelper() {
+			bool hasReadLock = this.asyncLock.IsReadLockHeld;
+			bool hasUpgradeableReadLock = this.asyncLock.IsUpgradeableReadLockHeld;
+			bool hasWriteLock = this.asyncLock.IsWriteLockHeld;
+			bool concurrencyExpected = !(hasWriteLock || hasUpgradeableReadLock);
+
+			var barrier = new Barrier(2); // we use a *synchronous* style Barrier since we are deliberately measuring multi-thread concurrency
+
+			Func<Task> worker = async delegate {
+				await Task.Yield();
+				Assert.AreEqual(hasReadLock, this.asyncLock.IsReadLockHeld);
+				Assert.AreEqual(hasUpgradeableReadLock, this.asyncLock.IsUpgradeableReadLockHeld);
+				Assert.AreEqual(hasWriteLock, this.asyncLock.IsWriteLockHeld);
+				Assert.AreEqual(concurrencyExpected, barrier.SignalAndWait(AsyncDelay / 2), "Concurrency detected for an exclusive lock.");
+				await Task.Yield(); // this second yield is useful to check that the magic works across multiple continuations.
+				Assert.AreEqual(hasReadLock, this.asyncLock.IsReadLockHeld);
+				Assert.AreEqual(hasUpgradeableReadLock, this.asyncLock.IsUpgradeableReadLockHeld);
+				Assert.AreEqual(hasWriteLock, this.asyncLock.IsWriteLockHeld);
+				Assert.AreEqual(concurrencyExpected, barrier.SignalAndWait(AsyncDelay / 2), "Concurrency detected for an exclusive lock.");
+			};
+
+			var asyncFuncs = new Func<Task>[] { worker, worker };
+
+			// This idea of kicking off lots of async tasks and then awaiting all of them is a common
+			// pattern in async code.  The async lock should protect against the continuatoins accidentally
+			// running concurrently, thereby forking the write lock across multiple threads.
+			await Task.WhenAll(asyncFuncs.Select(f => f()));
 		}
 
 		private class OtherDomainProxy : MarshalByRefObject {
