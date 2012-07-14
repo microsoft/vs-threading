@@ -1075,7 +1075,7 @@ namespace Microsoft.Threading {
 					}
 				}
 
-				await releaser.ReleaseAsync();
+				await releaser.ReleaseAsync().ConfigureAwait(false);
 
 				if (exceptions != null) {
 					throw new AggregateException(exceptions);
