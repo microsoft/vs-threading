@@ -533,12 +533,20 @@ namespace Microsoft.Threading {
 			Verify.Operation(!IsUnsupportedSynchronizationContext, "Acquiring locks on threads with a SynchronizationContext applied is not allowed.");
 		}
 
+		/// <summary>
+		/// Gets a value indicating whether the caller's thread apartment model and SynchronizationContext
+		/// is compatible with a lock.
+		/// </summary>
 		private static bool IsLockSupportingContext {
 			get {
 				return Thread.CurrentThread.GetApartmentState() == ApartmentState.MTA && !IsUnsupportedSynchronizationContext;
 			}
 		}
 
+		/// <summary>
+		/// Gets a value indicating whether the current SynchronizationContext is one that is not supported
+		/// by this lock.
+		/// </summary>
 		private static bool IsUnsupportedSynchronizationContext {
 			get {
 				var ctxt = SynchronizationContext.Current;
