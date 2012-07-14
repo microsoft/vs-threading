@@ -390,8 +390,11 @@ namespace Microsoft.Threading {
 						: (cancellationToken.CanBeCanceled ? state => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state, cancellationToken) : this.prepareResourceConcurrentDelegate);
 
 					// We kick this off on a new task because we're currently holding a private lock
-					// and don't want to execute arbitrary code.
-					preparationTask = Task.Factory.StartNew(preparationDelegate, resource, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap();
+					// and don't want to execute arbitrary code.  Let's also hide the ARWL from the delegate.
+					using (this.service.HideLocks()) {
+						preparationTask = Task.Factory.StartNew(preparationDelegate, resource, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap();
+					}
+
 					this.projectEvaluationTasks.Add(resource, preparationTask);
 				} else if (evenIfPreviouslyPrepared) {
 					var preparationDelegate = (this.service.IsWriteLockHeld && !forcePrepareConcurrent)

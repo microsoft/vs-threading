@@ -454,7 +454,7 @@ namespace Microsoft.Threading {
 			if (awaiter != null) {
 				lock (this.syncObject) {
 					while (awaiter != null) {
-						if (this.IsLockActive(awaiter, considerStaActive: true)) {
+						if (this.IsLockActive(awaiter, considerStaActive: true, checkSyncContextCompatibility: true)) {
 							aggregateFlags |= awaiter.Options;
 							if ((aggregateFlags & flags) == flags) {
 								return true;
@@ -689,11 +689,17 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="kind">The type of lock to check for.</param>
 		/// <param name="awaiter">The most nested lock of the caller, or null to look up the caller's lock in the CallContext.</param>
+		/// <param name="checkSyncContextCompatibility"><c>true</c> to throw an exception if the caller has an exclusive lock but not an associated SynchronizationContext.</param>
 		/// <returns><c>true</c> if the caller holds active locks of the given type; <c>false</c> otherwise.</returns>
-		private bool IsLockHeld(LockKind kind, Awaiter awaiter = null) {
+		private bool IsLockHeld(LockKind kind, Awaiter awaiter = null, bool checkSyncContextCompatibility = true) {
 			if (IsLockSupportingContext) {
 				lock (this.syncObject) {
-					if (this.LockStackContains(kind, awaiter ?? this.topAwaiter.Value)) {
+					awaiter = awaiter ?? this.topAwaiter.Value;
+					if (this.LockStackContains(kind, awaiter)) {
+						if (checkSyncContextCompatibility) {
+							Assumes.True(this.IsSynchronizationContextSetForLock(awaiter));
+						}
+
 						return true;
 					}
 				}
@@ -708,17 +714,36 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="awaiter">The lock to check.</param>
 		/// <param name="considerStaActive">if <c>false</c> the return value will always be <c>false</c> if called on an STA thread.</param>
+		/// <param name="checkSyncContextCompatibility"><c>true</c> to throw an exception if the caller has an exclusive lock but not an associated SynchronizationContext.</param>
 		/// <returns><c>true</c> if the lock is currently issued and the caller is not on an STA thread.</returns>
-		private bool IsLockActive(Awaiter awaiter, bool considerStaActive) {
+		private bool IsLockActive(Awaiter awaiter, bool considerStaActive, bool checkSyncContextCompatibility = false) {
 			Requires.NotNull(awaiter, "awaiter");
 
 			if (considerStaActive || IsLockSupportingContext) {
 				lock (this.syncObject) {
-					return this.GetActiveLockSet(awaiter.Kind).Contains(awaiter);
+					bool activeLock = this.GetActiveLockSet(awaiter.Kind).Contains(awaiter);
+					if (checkSyncContextCompatibility && activeLock) {
+						Assumes.True(this.IsSynchronizationContextSetForLock(awaiter));
+					}
+
+					return activeLock;
 				}
 			}
 
 			return false;
+		}
+
+		/// <summary>
+		/// Checks whether the specified awaiter's lock type has an associated SynchronizationContext if one is applicable.
+		/// </summary>
+		/// <param name="awaiter">The awaiter whose lock should be considered.</param>
+		/// <returns><c>true</c> if the caller has a valid context; <c>false</c> otherwise.</returns>
+		private bool IsSynchronizationContextSetForLock(Awaiter awaiter) {
+			if ((awaiter.Kind & (LockKind.UpgradeableRead | LockKind.Write)) != 0) {
+				return SynchronizationContext.Current is NonConcurrentSynchronizationContext;
+			} else {
+				return true;
+			}
 		}
 
 		/// <summary>
@@ -959,7 +984,7 @@ namespace Microsoft.Threading {
 			// This method does NOT use the async keyword in its signature to avoid CallContext changes that we make
 			// causing a fork/clone of the CallContext, which defeats our alloc-free uncontested lock story.
 			Assumes.False(this.reenterConcurrencyPrepRunning); // No one should have any locks to release (and be executing code) if we're in our intermediate state.
-			Assumes.True(this.IsLockActive(awaiter, true));
+			Assumes.True(this.IsLockActive(awaiter, considerStaActive: true));
 
 			Task reenterConcurrentOutsideCode = null;
 			Task synchronousCallbackExecution = null;
@@ -1093,7 +1118,7 @@ namespace Microsoft.Threading {
 				Func<Task> callback;
 				while (this.TryDequeueBeforeWriteReleasedCallback(out callback)) {
 					try {
-						await callback().ConfigureAwait(false);
+						await callback();
 					} catch (Exception ex) {
 						if (exceptions == null) {
 							exceptions = new List<Exception>();
@@ -1464,7 +1489,8 @@ namespace Microsoft.Threading {
 						var priorSynchronizationContext = SynchronizationContext.Current;
 						try {
 							bool clearSynchronizationContext = false;
-							if (!(this.lck.IsUpgradeableReadLockHeld || this.lck.IsWriteLockHeld)
+							if (!(this.lck.IsLockHeld(LockKind.UpgradeableRead, checkSyncContextCompatibility: false)
+								|| this.lck.IsLockHeld(LockKind.Write, checkSyncContextCompatibility: false))
 								&& (this.Kind & (LockKind.UpgradeableRead | LockKind.Write)) != 0
 								&& !(priorSynchronizationContext is NonConcurrentSynchronizationContext)) {
 								clearSynchronizationContext = true;

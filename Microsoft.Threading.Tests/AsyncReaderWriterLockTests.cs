@@ -137,7 +137,7 @@
 				TaskContinuationOptions.ExecuteSynchronously); // this flag tries to tease out the sync-allowing behavior if it exists.
 
 			var nowait = Task.Run(async delegate {
-				await continuationFired.Task.ConfigureAwait(false); // wait for the continuation to fire, and resume on an MTA thread.
+				await continuationFired.Task; // wait for the continuation to fire, and resume on an MTA thread.
 
 				// Now on this separate thread, do something that should require the private lock of the lock class, to ensure it's not a blocking call.
 				bool throwaway = this.asyncLock.IsReadLockHeld;
@@ -1022,6 +1022,13 @@
 			});
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task MitigationAgainstAccidentalUpgradeableReadLockForking() {
+			await this.MitigationAgainstAccidentalLockForkingHelper(
+				() => this.asyncLock.UpgradeableReadLockAsync(),
+				() => { bool dummy = this.asyncLock.IsUpgradeableReadLockHeld; });
+		}
+
 		#endregion
 
 		#region UpgradeableReadLock tests
@@ -1286,6 +1293,13 @@
 			using (await this.asyncLock.WriteLockAsync()) {
 				await this.CheckContinuationsConcurrencyHelper();
 			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task MitigationAgainstAccidentalWriteLockForking() {
+			await this.MitigationAgainstAccidentalLockForkingHelper(
+				() => this.asyncLock.WriteLockAsync(),
+				() => { bool dummy = this.asyncLock.IsWriteLockHeld; });
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -2936,6 +2950,32 @@
 						Console.WriteLine("Stress tested {0} lock acquisitions.", lockAcquisitions);
 					}
 				});
+			}
+		}
+
+		private async Task MitigationAgainstAccidentalLockForkingHelper(Func<AsyncReaderWriterLock.Awaitable> locker, Action test) {
+			using (TestUtilities.DisableAssertionDialog()) {
+				using (await locker()) {
+					test();
+					await Task.Run(async delegate {
+						try {
+							test();
+							Assert.Fail("Expected exception not thrown.");
+						} catch {
+							// Expected exception thrown.
+						}
+
+						AsyncReaderWriterLock.Releaser releaser = default(AsyncReaderWriterLock.Releaser);
+						try {
+							releaser = await locker();
+							Assert.Fail("Expected exception not thrown.");
+						} catch {
+							// Expected exception thrown.
+						} finally {
+							releaser.Dispose();
+						}
+					});
+				}
 			}
 		}
 
