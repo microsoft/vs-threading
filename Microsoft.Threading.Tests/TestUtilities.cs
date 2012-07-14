@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.Threading.Tests {
 	using System;
 	using System.Collections.Generic;
+	using System.Diagnostics;
 	using System.Linq;
 	using System.Runtime.CompilerServices;
 	using System.Text;
@@ -37,6 +38,15 @@
 			}
 		}
 
+		internal static DebugAssertionRevert DisableAssertionDialog() {
+			var listener = Debug.Listeners.OfType<DefaultTraceListener>().FirstOrDefault();
+			if (listener != null) {
+				listener.AssertUiEnabled = false;
+			}
+
+			return new DebugAssertionRevert();
+		}
+
 		internal static TaskSchedulerAwaiter GetAwaiter(this TaskScheduler scheduler) {
 			return new TaskSchedulerAwaiter(scheduler);
 		}
@@ -57,6 +67,15 @@
 			}
 
 			public void GetResult() {
+			}
+		}
+
+		internal struct DebugAssertionRevert : IDisposable {
+			public void Dispose() {
+				var listener = Debug.Listeners.OfType<DefaultTraceListener>().FirstOrDefault();
+				if (listener != null) {
+					listener.AssertUiEnabled = true;
+				}
 			}
 		}
 	}
