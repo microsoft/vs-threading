@@ -1479,11 +1479,7 @@ namespace Microsoft.Threading {
 				if (this.releaseAsyncTask == null) {
 					// This method does NOT use the async keyword in its signature to avoid CallContext changes that we make
 					// causing a fork/clone of the CallContext, which defeats our alloc-free uncontested lock story.
-					if (this.lck != null) {
-						var lck = this.lck;
-						this.lck = null;
-						this.releaseAsyncTask = lck.ReleaseAsync(this, lockConsumerCanceled);
-					}
+					this.releaseAsyncTask = this.lck.ReleaseAsync(this, lockConsumerCanceled);
 				}
 
 				return this.releaseAsyncTask ?? CompletedTask;
