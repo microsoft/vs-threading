@@ -241,8 +241,8 @@ namespace Microsoft.Threading {
 		/// This method is called while holding a private lock in order to block future lock consumers till this method is finished.
 		/// </remarks>
 		protected override async Task OnExclusiveLockReleasedAsync() {
-			await base.OnExclusiveLockReleasedAsync();
-			await this.helper.OnExclusiveLockReleasedAsync();
+			await base.OnExclusiveLockReleasedAsync().ConfigureAwait(false);
+			await this.helper.OnExclusiveLockReleasedAsync().ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -351,7 +351,7 @@ namespace Microsoft.Threading {
 			/// <returns>A task whose result is the desired resource.</returns>
 			internal async Task<TResource> GetResourceAsync(TMoniker resourceMoniker, CancellationToken cancellationToken) {
 				using (var projectLock = this.AcquirePreexistingLockOrThrow()) {
-					var resource = await this.service.GetResourceAsync(resourceMoniker, cancellationToken);
+					var resource = await this.service.GetResourceAsync(resourceMoniker, cancellationToken).ConfigureAwait(false);
 					Task preparationTask;
 
 					lock (this.service.SyncObject) {
@@ -369,7 +369,7 @@ namespace Microsoft.Threading {
 						}
 					}
 
-					await preparationTask;
+					await preparationTask.ConfigureAwait(false);
 					return resource;
 				}
 			}

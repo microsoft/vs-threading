@@ -48,6 +48,11 @@ namespace Microsoft.Threading {
 		private readonly object syncObject = new object();
 
 		/// <summary>
+		/// The synchronization context applied to folks who hold upgradeable read and write locks.
+		/// </summary>
+		private readonly NonConcurrentSynchronizationContext nonConcurrentSyncContext = new NonConcurrentSynchronizationContext();
+
+		/// <summary>
 		/// A CallContext-local reference to the Awaiter that is on the top of the stack (most recently acquired).
 		/// </summary>
 		private readonly AsyncLocal<Awaiter> topAwaiter = new AsyncLocal<Awaiter>();
@@ -338,7 +343,7 @@ namespace Microsoft.Threading {
 		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
 		/// <returns>A lock releaser.</returns>
 		public Releaser ReadLock(CancellationToken cancellationToken = default(CancellationToken)) {
-			ThrowIfSta();
+			ThrowIfStaOrUnsupportedSyncContext();
 			var awaiter = this.ReadLockAsync(cancellationToken).GetAwaiter();
 			return awaiter.GetResult();
 		}
@@ -349,7 +354,7 @@ namespace Microsoft.Threading {
 		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
 		/// <returns>A lock releaser.</returns>
 		public Releaser UpgradeableReadLock(CancellationToken cancellationToken = default(CancellationToken)) {
-			ThrowIfSta();
+			ThrowIfStaOrUnsupportedSyncContext();
 			var awaiter = this.UpgradeableReadLockAsync(cancellationToken).GetAwaiter();
 			return awaiter.GetResult();
 		}
@@ -361,7 +366,7 @@ namespace Microsoft.Threading {
 		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
 		/// <returns>A lock releaser.</returns>
 		public Releaser UpgradeableReadLock(LockFlags options, CancellationToken cancellationToken = default(CancellationToken)) {
-			ThrowIfSta();
+			ThrowIfStaOrUnsupportedSyncContext();
 			var awaiter = this.UpgradeableReadLockAsync(options, cancellationToken).GetAwaiter();
 			return awaiter.GetResult();
 		}
@@ -372,7 +377,7 @@ namespace Microsoft.Threading {
 		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
 		/// <returns>A lock releaser.</returns>
 		public Releaser WriteLock(CancellationToken cancellationToken = default(CancellationToken)) {
-			ThrowIfSta();
+			ThrowIfStaOrUnsupportedSyncContext();
 			var awaiter = this.WriteLockAsync(cancellationToken).GetAwaiter();
 			return awaiter.GetResult();
 		}
@@ -384,7 +389,7 @@ namespace Microsoft.Threading {
 		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
 		/// <returns>A lock releaser.</returns>
 		public Releaser WriteLock(LockFlags options, CancellationToken cancellationToken = default(CancellationToken)) {
-			ThrowIfSta();
+			ThrowIfStaOrUnsupportedSyncContext();
 			var awaiter = this.WriteLockAsync(options, cancellationToken).GetAwaiter();
 			return awaiter.GetResult();
 		}
@@ -523,8 +528,23 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Throws an exception if called on an STA thread.
 		/// </summary>
-		private static void ThrowIfSta() {
+		private static void ThrowIfStaOrUnsupportedSyncContext() {
 			Verify.Operation(Thread.CurrentThread.GetApartmentState() != ApartmentState.STA, "This operation is not allowed on an STA thread.");
+			Verify.Operation(!IsUnsupportedSynchronizationContext, "Acquiring locks on threads with a SynchronizationContext applied is not allowed.");
+		}
+
+		private static bool IsLockSupportingContext {
+			get {
+				return Thread.CurrentThread.GetApartmentState() == ApartmentState.MTA && !IsUnsupportedSynchronizationContext;
+			}
+		}
+
+		private static bool IsUnsupportedSynchronizationContext {
+			get {
+				var ctxt = SynchronizationContext.Current;
+				bool supported = ctxt == null || ctxt is NonConcurrentSynchronizationContext;
+				return !supported;
+			}
 		}
 
 		/// <summary>
@@ -663,7 +683,7 @@ namespace Microsoft.Threading {
 		/// <param name="awaiter">The most nested lock of the caller, or null to look up the caller's lock in the CallContext.</param>
 		/// <returns><c>true</c> if the caller holds active locks of the given type; <c>false</c> otherwise.</returns>
 		private bool IsLockHeld(LockKind kind, Awaiter awaiter = null) {
-			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
+			if (IsLockSupportingContext) {
 				lock (this.syncObject) {
 					if (this.LockStackContains(kind, awaiter ?? this.topAwaiter.Value)) {
 						return true;
@@ -684,7 +704,7 @@ namespace Microsoft.Threading {
 		private bool IsLockActive(Awaiter awaiter, bool considerStaActive) {
 			Requires.NotNull(awaiter, "awaiter");
 
-			if (considerStaActive || Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
+			if (considerStaActive || IsLockSupportingContext) {
 				lock (this.syncObject) {
 					return this.GetActiveLockSet(awaiter.Kind).Contains(awaiter);
 				}
@@ -1070,7 +1090,7 @@ namespace Microsoft.Threading {
 					}
 				}
 
-				await releaser.ReleaseAsync();
+				await releaser.ReleaseAsync().ConfigureAwait(false);
 
 				if (exceptions != null) {
 					throw new AggregateException(exceptions);
@@ -1410,14 +1430,29 @@ namespace Microsoft.Threading {
 						synchronousBlock.Wait(this.cancellationToken);
 					}
 
-					ThrowIfSta();
+					ThrowIfStaOrUnsupportedSyncContext();
 					if (this.fault != null) {
 						throw fault;
 					}
 
 					if (this.LockIssued) {
-						this.lck.ApplyLockToCallContext(this);
-						return new Releaser(this);
+						var priorSynchronizationContext = SynchronizationContext.Current;
+						try {
+							bool clearSynchronizationContext = false;
+							if (!(this.lck.IsUpgradeableReadLockHeld || this.lck.IsWriteLockHeld)
+								&& (this.Kind & (LockKind.UpgradeableRead | LockKind.Write)) != 0
+								&& !(priorSynchronizationContext is NonConcurrentSynchronizationContext)) {
+								clearSynchronizationContext = true;
+								SynchronizationContext.SetSynchronizationContext(this.lck.nonConcurrentSyncContext);
+							}
+
+							this.lck.ApplyLockToCallContext(this);
+
+							return new Releaser(this, clearSynchronizationContext);
+						} catch {
+							SynchronizationContext.SetSynchronizationContext(priorSynchronizationContext);
+							throw;
+						}
 					} else if (this.cancellationToken.IsCancellationRequested) {
 						// At this point, someone called GetResult who wasn't registered as a synchronous waiter,
 						// and before the lock was issued.
@@ -1489,6 +1524,23 @@ namespace Microsoft.Threading {
 			}
 		}
 
+		private class NonConcurrentSynchronizationContext : SynchronizationContext {
+			private readonly AsyncSemaphore semaphore = new AsyncSemaphore(1);
+
+			public override void Send(SendOrPostCallback d, object state) {
+				throw new NotSupportedException();
+			}
+
+			public override void Post(SendOrPostCallback d, object state) {
+				Task.Run(async delegate {
+					using (await this.semaphore.EnterAsync().ConfigureAwait(false)) {
+						SynchronizationContext.SetSynchronizationContext(this);
+						d(state);
+					}
+				});
+			}
+		}
+
 		/// <summary>
 		/// A value whose disposal releases a held lock.
 		/// </summary>
@@ -1499,12 +1551,15 @@ namespace Microsoft.Threading {
 			/// </summary>
 			private readonly Awaiter awaiter;
 
+			private readonly bool clearSynchronizationContext;
+
 			/// <summary>
 			/// Initializes a new instance of the <see cref="Releaser"/> struct.
 			/// </summary>
 			/// <param name="awaiter">The awaiter.</param>
-			internal Releaser(Awaiter awaiter) {
+			internal Releaser(Awaiter awaiter, bool clearSynchronizationContext) {
 				this.awaiter = awaiter;
+				this.clearSynchronizationContext = clearSynchronizationContext;
 			}
 
 			/// <summary>
@@ -1524,11 +1579,18 @@ namespace Microsoft.Threading {
 			/// a lock wrapping the lock being released.
 			/// </returns>
 			public Task ReleaseAsync() {
+				Task result;
 				if (this.awaiter != null) {
-					return this.awaiter.ReleaseAsync();
+					result = this.awaiter.ReleaseAsync();
 				} else {
-					return CompletedTask;
+					result = CompletedTask;
 				}
+
+				if (this.clearSynchronizationContext && SynchronizationContext.Current is NonConcurrentSynchronizationContext) {
+					SynchronizationContext.SetSynchronizationContext(null);
+				}
+
+				return result;
 			}
 		}
 

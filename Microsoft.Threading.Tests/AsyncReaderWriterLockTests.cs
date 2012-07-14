@@ -2,6 +2,7 @@
 	using System;
 	using System.Collections.Generic;
 	using System.Diagnostics;
+	using System.Linq;
 	using System.Reflection;
 	using System.Threading;
 	using System.Threading.Tasks;
@@ -14,8 +15,13 @@
 	/// </summary>
 	[TestClass]
 	public class AsyncReaderWriterLockTests : TestBase {
+		private const char ReadChar = 'R';
+		private const char UpgradeableReadChar = 'U';
+		private const char StickyUpgradeableReadChar = 'S';
+		private const char WriteChar = 'W';
+
 		private const int GCAllocationAttempts = 3;
-		private const int MaxGarbagePerLock = 150;
+		private const int MaxGarbagePerLock = 165;
 
 		private AsyncReaderWriterLock asyncLock;
 
@@ -391,28 +397,35 @@
 				var random = new Random();
 				var lockStack = new Stack<AsyncReaderWriterLock.Releaser>(MaxDepth);
 				while (true) {
+					string log = string.Empty;
+					Assert.IsFalse(this.asyncLock.IsReadLockHeld || this.asyncLock.IsUpgradeableReadLockHeld || this.asyncLock.IsWriteLockHeld);
 					int depth = random.Next(MaxDepth) + 1;
 					int kind = random.Next(3);
 					try {
 						switch (kind) {
 							case 0: // read
 								while (--depth > 0) {
+									log += ReadChar;
 									lockStack.Push(await this.asyncLock.ReadLockAsync(cancellation.Token));
 								}
 
 								break;
 							case 1: // upgradeable read
+								log += UpgradeableReadChar;
 								lockStack.Push(await this.asyncLock.UpgradeableReadLockAsync(cancellation.Token));
 								depth--;
 								while (--depth > 0) {
 									switch (random.Next(3)) {
 										case 0:
+											log += ReadChar;
 											lockStack.Push(await this.asyncLock.ReadLockAsync(cancellation.Token));
 											break;
 										case 1:
+											log += UpgradeableReadChar;
 											lockStack.Push(await this.asyncLock.UpgradeableReadLockAsync(cancellation.Token));
 											break;
 										case 2:
+											log += WriteChar;
 											lockStack.Push(await this.asyncLock.WriteLockAsync(cancellation.Token));
 											break;
 									}
@@ -420,17 +433,21 @@
 
 								break;
 							case 2: // write
+								log += WriteChar;
 								lockStack.Push(await this.asyncLock.WriteLockAsync(cancellation.Token));
 								depth--;
 								while (--depth > 0) {
 									switch (random.Next(3)) {
 										case 0:
+											log += ReadChar;
 											lockStack.Push(await this.asyncLock.ReadLockAsync(cancellation.Token));
 											break;
 										case 1:
+											log += UpgradeableReadChar;
 											lockStack.Push(await this.asyncLock.UpgradeableReadLockAsync(cancellation.Token));
 											break;
 										case 2:
+											log += WriteChar;
 											lockStack.Push(await this.asyncLock.WriteLockAsync(cancellation.Token));
 											break;
 									}
@@ -441,11 +458,13 @@
 
 						await Task.Delay(random.Next(MaxLockHeldDelay));
 					} finally {
+						log += " ";
 						while (lockStack.Count > 0) {
 							if (Interlocked.Increment(ref lockAcquisitions) > MaxLockAcquisitions && MaxLockAcquisitions > 0) {
 								cancellation.Cancel();
 							}
 							var releaser = lockStack.Pop();
+							log += '_';
 							releaser.Dispose();
 						}
 					}
@@ -700,6 +719,38 @@
 			});
 		}
 
+		[TestMethod, Timeout(TestTimeout * 2)]
+		public async Task AllowImplicitReadLockConcurrency() {
+			using (await this.asyncLock.ReadLockAsync()) {
+				await this.CheckContinuationsConcurrencyHelper();
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ReadLockAsyncYieldsIfSyncContextSet() {
+			await Task.Run(async delegate {
+				SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
+
+				var awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
+				try {
+					Assert.IsFalse(awaiter.IsCompleted);
+				} catch {
+					awaiter.GetResult().Dispose(); // avoid test hangs on test failure
+					throw;
+				}
+
+				var lockAcquired = new TaskCompletionSource<object>();
+				awaiter.OnCompleted(delegate {
+					using (awaiter.GetResult()) {
+						Assert.IsNull(SynchronizationContext.Current);
+					}
+
+					lockAcquired.SetAsync();
+				});
+				await lockAcquired.Task;
+			});
+		}
+
 		#endregion
 
 		#region ReadLock tests
@@ -725,6 +776,22 @@
 			}
 
 			this.asyncLock.ReadLock(CancellationToken.None);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ReadLockRejectedOnMtaWithSynchronizationContext() {
+			await Task.Run(delegate {
+				SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
+				AsyncReaderWriterLock.Releaser releaser = new AsyncReaderWriterLock.Releaser();
+				try {
+					releaser = this.asyncLock.ReadLock(CancellationToken.None);
+					Assert.Fail("Expected exception not thrown.");
+				} catch (InvalidOperationException) {
+					// Expected
+				} finally {
+					releaser.Dispose();
+				}
+			});
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -1004,6 +1071,37 @@
 			Assert.AreEqual(1, onReleaseInvocations);
 		}
 
+		[TestMethod, Timeout(TestTimeout * 2)]
+		public async Task MitigationAgainstAccidentalUpgradeableReadLockConcurrency() {
+			using (await this.asyncLock.WriteLockAsync()) {
+				await this.CheckContinuationsConcurrencyHelper();
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task UpgradeableReadLockAsyncYieldsIfSyncContextSet() {
+			await Task.Run(async delegate {
+				SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
+
+				var awaiter = this.asyncLock.UpgradeableReadLockAsync().GetAwaiter();
+				try {
+					Assert.IsFalse(awaiter.IsCompleted);
+				} catch {
+					awaiter.GetResult().Dispose(); // avoid test hangs on test failure
+					throw;
+				}
+
+				var lockAcquired = new TaskCompletionSource<object>();
+				awaiter.OnCompleted(delegate {
+					using (awaiter.GetResult()) {
+					}
+
+					lockAcquired.SetAsync();
+				});
+				await lockAcquired.Task;
+			});
+		}
+
 		#endregion
 
 		#region UpgradeableReadLock tests
@@ -1037,6 +1135,22 @@
 			}
 
 			this.asyncLock.UpgradeableReadLock(CancellationToken.None);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task UpgradeableReadLockRejectedOnMtaWithSynchronizationContext() {
+			await Task.Run(delegate {
+				SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
+				AsyncReaderWriterLock.Releaser releaser = new AsyncReaderWriterLock.Releaser();
+				try {
+					releaser = this.asyncLock.UpgradeableReadLock(CancellationToken.None);
+					Assert.Fail("Expected exception not thrown.");
+				} catch (InvalidOperationException) {
+					// Expected
+				} finally {
+					releaser.Dispose();
+				}
+			});
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -1247,6 +1361,37 @@
 			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync());
 		}
 
+		[TestMethod, Timeout(TestTimeout * 2)]
+		public async Task MitigationAgainstAccidentalWriteLockConcurrency() {
+			using (await this.asyncLock.WriteLockAsync()) {
+				await this.CheckContinuationsConcurrencyHelper();
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task WriteLockAsyncYieldsIfSyncContextSet() {
+			await Task.Run(async delegate {
+				SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
+
+				var awaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
+				try {
+					Assert.IsFalse(awaiter.IsCompleted);
+				} catch {
+					awaiter.GetResult().Dispose(); // avoid test hangs on test failure
+					throw;
+				}
+
+				var lockAcquired = new TaskCompletionSource<object>();
+				awaiter.OnCompleted(delegate {
+					using (awaiter.GetResult()) {
+					}
+
+					lockAcquired.SetAsync();
+				});
+				await lockAcquired.Task;
+			});
+		}
+
 		#endregion
 
 		#region WriteLock tests
@@ -1280,6 +1425,22 @@
 			}
 
 			this.asyncLock.WriteLock(CancellationToken.None);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task WriteLockRejectedOnMtaWithSynchronizationContext() {
+			await Task.Run(delegate {
+				SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
+				AsyncReaderWriterLock.Releaser releaser = new AsyncReaderWriterLock.Releaser();
+				try {
+					releaser = this.asyncLock.WriteLock(CancellationToken.None);
+					Assert.Fail("Expected exception not thrown.");
+				} catch (InvalidOperationException) {
+					// Expected
+				} finally {
+					releaser.Dispose();
+				}
+			});
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -1661,6 +1822,33 @@
 					await secondUpgradeableReadHeld.SetAsync();
 				}
 			}));
+		}
+
+		[TestMethod, Timeout(AsyncDelay * 7 * 2 + AsyncDelay)]
+		public async Task MitigationAgainstAccidentalExclusiveLockConcurrency() {
+			using (await this.asyncLock.UpgradeableReadLockAsync()) {
+				using (await this.asyncLock.WriteLockAsync()) {
+					await this.CheckContinuationsConcurrencyHelper();
+
+					using (await this.asyncLock.WriteLockAsync()) {
+						await this.CheckContinuationsConcurrencyHelper();
+					}
+
+					await this.CheckContinuationsConcurrencyHelper();
+				}
+
+				await this.CheckContinuationsConcurrencyHelper();
+			}
+
+			using (await this.asyncLock.WriteLockAsync()) {
+				await this.CheckContinuationsConcurrencyHelper();
+
+				using (await this.asyncLock.WriteLockAsync()) {
+					await this.CheckContinuationsConcurrencyHelper();
+				}
+
+				await this.CheckContinuationsConcurrencyHelper();
+			}
 		}
 
 		#endregion
@@ -2610,19 +2798,19 @@
 					AsyncReaderWriterLock.Awaitable asyncLock;
 					try {
 						switch (lockTypeChar) {
-							case 'R':
+							case ReadChar:
 								asyncLock = this.asyncLock.ReadLockAsync();
 								readers++;
 								break;
-							case 'U':
+							case UpgradeableReadChar:
 								asyncLock = this.asyncLock.UpgradeableReadLockAsync();
 								nonStickyUpgradeableReaders++;
 								break;
-							case 'S':
+							case StickyUpgradeableReadChar:
 								asyncLock = this.asyncLock.UpgradeableReadLockAsync(AsyncReaderWriterLock.LockFlags.StickyWrite);
 								stickyUpgradeableReaders++;
 								break;
-							case 'W':
+							case WriteChar:
 								asyncLock = this.asyncLock.WriteLockAsync();
 								writers++;
 								break;
@@ -2662,16 +2850,16 @@
 					lockStack.Pop().Dispose();
 
 					switch (lockTypeChar) {
-						case 'R':
+						case ReadChar:
 							readersRemaining--;
 							break;
-						case 'U':
+						case UpgradeableReadChar:
 							nonStickyUpgradeableReadersRemaining--;
 							break;
-						case 'S':
+						case StickyUpgradeableReadChar:
 							stickyUpgradeableReadersRemaining--;
 							break;
-						case 'W':
+						case WriteChar:
 							writersRemaining--;
 							break;
 						default:
@@ -2693,6 +2881,35 @@
 			Assert.IsFalse(this.asyncLock.IsReadLockHeld, "IsReadLockHeld not expected value.");
 			Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld, "IsUpgradeableReadLockHeld not expected value.");
 			Assert.IsFalse(this.asyncLock.IsWriteLockHeld, "IsWriteLockHeld not expected value.");
+		}
+
+		private async Task CheckContinuationsConcurrencyHelper() {
+			bool hasReadLock = this.asyncLock.IsReadLockHeld;
+			bool hasUpgradeableReadLock = this.asyncLock.IsUpgradeableReadLockHeld;
+			bool hasWriteLock = this.asyncLock.IsWriteLockHeld;
+			bool concurrencyExpected = !(hasWriteLock || hasUpgradeableReadLock);
+
+			var barrier = new Barrier(2); // we use a *synchronous* style Barrier since we are deliberately measuring multi-thread concurrency
+
+			Func<Task> worker = async delegate {
+				await Task.Yield();
+				Assert.AreEqual(hasReadLock, this.asyncLock.IsReadLockHeld);
+				Assert.AreEqual(hasUpgradeableReadLock, this.asyncLock.IsUpgradeableReadLockHeld);
+				Assert.AreEqual(hasWriteLock, this.asyncLock.IsWriteLockHeld);
+				Assert.AreEqual(concurrencyExpected, barrier.SignalAndWait(AsyncDelay / 2), "Concurrency detected for an exclusive lock.");
+				await Task.Yield(); // this second yield is useful to check that the magic works across multiple continuations.
+				Assert.AreEqual(hasReadLock, this.asyncLock.IsReadLockHeld);
+				Assert.AreEqual(hasUpgradeableReadLock, this.asyncLock.IsUpgradeableReadLockHeld);
+				Assert.AreEqual(hasWriteLock, this.asyncLock.IsWriteLockHeld);
+				Assert.AreEqual(concurrencyExpected, barrier.SignalAndWait(AsyncDelay / 2), "Concurrency detected for an exclusive lock.");
+			};
+
+			var asyncFuncs = new Func<Task>[] { worker, worker };
+
+			// This idea of kicking off lots of async tasks and then awaiting all of them is a common
+			// pattern in async code.  The async lock should protect against the continuatoins accidentally
+			// running concurrently, thereby forking the write lock across multiple threads.
+			await Task.WhenAll(asyncFuncs.Select(f => f()));
 		}
 
 		private class OtherDomainProxy : MarshalByRefObject {
@@ -2729,6 +2946,15 @@
 				if (this.OnExclusiveLockReleasedAsyncDelegate != null) {
 					await this.OnExclusiveLockReleasedAsyncDelegate();
 				}
+			}
+		}
+
+		private class SelfPreservingSynchronizationContext : SynchronizationContext {
+			public override void Post(SendOrPostCallback d, object state) {
+				Task.Run(delegate {
+					SynchronizationContext.SetSynchronizationContext(this);
+					d(state);
+				});
 			}
 		}
 	}
