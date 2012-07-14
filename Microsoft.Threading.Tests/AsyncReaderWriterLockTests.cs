@@ -1824,6 +1824,33 @@
 			}));
 		}
 
+		[TestMethod, Timeout(AsyncDelay * 7 * 2 + AsyncDelay)]
+		public async Task MitigationAgainstAccidentalExclusiveLockConcurrency() {
+			using (await this.asyncLock.UpgradeableReadLockAsync()) {
+				using (await this.asyncLock.WriteLockAsync()) {
+					await this.CheckContinuationsConcurrencyHelper();
+
+					using (await this.asyncLock.WriteLockAsync()) {
+						await this.CheckContinuationsConcurrencyHelper();
+					}
+
+					await this.CheckContinuationsConcurrencyHelper();
+				}
+
+				await this.CheckContinuationsConcurrencyHelper();
+			}
+
+			using (await this.asyncLock.WriteLockAsync()) {
+				await this.CheckContinuationsConcurrencyHelper();
+
+				using (await this.asyncLock.WriteLockAsync()) {
+					await this.CheckContinuationsConcurrencyHelper();
+				}
+
+				await this.CheckContinuationsConcurrencyHelper();
+			}
+		}
+
 		#endregion
 
 		#region Cancellation tests
