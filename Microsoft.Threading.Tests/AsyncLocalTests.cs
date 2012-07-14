@@ -7,7 +7,7 @@
 	using System.Threading.Tasks;
 
 	[TestClass]
-	public class AsyncLocalTests {
+	public class AsyncLocalTests : TestBase {
 		private AsyncLocal<GenericParameterHelper> asyncLocal;
 
 		[TestInitialize]
@@ -91,6 +91,22 @@
 			value = null;
 			GC.Collect();
 			Assert.AreEqual(5, this.asyncLocal.Value.Data);
+		}
+
+		[TestMethod]
+		public void NotDisruptedByTestContextWriteLine() {
+			var value = new GenericParameterHelper();
+			this.asyncLocal.Value = value;
+
+			// TestContext.WriteLine causes the CallContext to be serialized.
+			// When a .testsettings file is applied to the test runner, the
+			// original contents of the CallContext are replaced with a
+			// serialize->deserialize clone, which breaks the reference equality
+			// of the objects stored in the AsyncLocal class's private fields.
+			this.TestContext.WriteLine("Foobar");
+
+			Assert.IsNotNull(this.asyncLocal.Value);
+			Assert.AreSame(value, this.asyncLocal.Value);
 		}
 	}
 }
