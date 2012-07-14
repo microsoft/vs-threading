@@ -15,8 +15,13 @@
 	/// </summary>
 	[TestClass]
 	public class AsyncReaderWriterLockTests : TestBase {
+		private const char ReadChar = 'R';
+		private const char UpgradeableReadChar = 'U';
+		private const char StickyUpgradeableReadChar = 'S';
+		private const char WriteChar = 'W';
+
 		private const int GCAllocationAttempts = 3;
-		private const int MaxGarbagePerLock = 160;
+		private const int MaxGarbagePerLock = 165;
 
 		private AsyncReaderWriterLock asyncLock;
 
@@ -392,64 +397,59 @@
 				var random = new Random();
 				var lockStack = new Stack<AsyncReaderWriterLock.Releaser>(MaxDepth);
 				while (true) {
+					string log = string.Empty;
 					Assert.IsFalse(this.asyncLock.IsReadLockHeld || this.asyncLock.IsUpgradeableReadLockHeld || this.asyncLock.IsWriteLockHeld);
-					var syncContext = new SynchronizationContext();
-					SynchronizationContext.SetSynchronizationContext(syncContext);
 					int depth = random.Next(MaxDepth) + 1;
 					int kind = random.Next(3);
 					try {
 						switch (kind) {
 							case 0: // read
 								while (--depth > 0) {
+									log += ReadChar;
 									lockStack.Push(await this.asyncLock.ReadLockAsync(cancellation.Token));
-									Assert.AreSame(syncContext, SynchronizationContext.Current);
 								}
 
 								break;
 							case 1: // upgradeable read
+								log += UpgradeableReadChar;
 								lockStack.Push(await this.asyncLock.UpgradeableReadLockAsync(cancellation.Token));
 								depth--;
 								while (--depth > 0) {
 									switch (random.Next(3)) {
 										case 0:
+											log += ReadChar;
 											lockStack.Push(await this.asyncLock.ReadLockAsync(cancellation.Token));
 											break;
 										case 1:
+											log += UpgradeableReadChar;
 											lockStack.Push(await this.asyncLock.UpgradeableReadLockAsync(cancellation.Token));
 											break;
 										case 2:
+											log += WriteChar;
 											lockStack.Push(await this.asyncLock.WriteLockAsync(cancellation.Token));
 											break;
-									}
-
-									if (this.asyncLock.IsUpgradeableReadLockHeld || this.asyncLock.IsWriteLockHeld) {
-										Assert.AreNotSame(syncContext, SynchronizationContext.Current);
-									} else {
-										Assert.AreSame(syncContext, SynchronizationContext.Current);
 									}
 								}
 
 								break;
 							case 2: // write
+								log += WriteChar;
 								lockStack.Push(await this.asyncLock.WriteLockAsync(cancellation.Token));
 								depth--;
 								while (--depth > 0) {
 									switch (random.Next(3)) {
 										case 0:
+											log += ReadChar;
 											lockStack.Push(await this.asyncLock.ReadLockAsync(cancellation.Token));
 											break;
 										case 1:
+											log += UpgradeableReadChar;
 											lockStack.Push(await this.asyncLock.UpgradeableReadLockAsync(cancellation.Token));
 											break;
 										case 2:
+											log += WriteChar;
 											lockStack.Push(await this.asyncLock.WriteLockAsync(cancellation.Token));
 											break;
-									}
-
-									if (this.asyncLock.IsUpgradeableReadLockHeld || this.asyncLock.IsWriteLockHeld) {
-										Assert.AreNotSame(syncContext, SynchronizationContext.Current);
-									} else {
-										Assert.AreSame(syncContext, SynchronizationContext.Current);
 									}
 								}
 
@@ -458,18 +458,14 @@
 
 						await Task.Delay(random.Next(MaxLockHeldDelay));
 					} finally {
+						log += " ";
 						while (lockStack.Count > 0) {
 							if (Interlocked.Increment(ref lockAcquisitions) > MaxLockAcquisitions && MaxLockAcquisitions > 0) {
 								cancellation.Cancel();
 							}
 							var releaser = lockStack.Pop();
+							log += '_';
 							releaser.Dispose();
-
-							if (this.asyncLock.IsUpgradeableReadLockHeld || this.asyncLock.IsWriteLockHeld) {
-								Assert.AreNotSame(syncContext, SynchronizationContext.Current);
-							} else {
-								Assert.AreSame(syncContext, SynchronizationContext.Current);
-							}
 						}
 					}
 				}
@@ -731,33 +727,28 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task ReadLockPreservesSynchronizationContext() {
-			using (await this.asyncLock.ReadLockAsync()) {
-				Assert.IsNull(SynchronizationContext.Current);
-			}
+		public async Task ReadLockAsyncYieldsIfSyncContextSet() {
+			await Task.Run(async delegate {
+				SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
 
-			var ctxt = new SynchronizationContext();
-			SynchronizationContext.SetSynchronizationContext(ctxt);
-			using (await this.asyncLock.ReadLockAsync()) {
-				Assert.AreSame(ctxt, SynchronizationContext.Current);
-				using (await this.asyncLock.ReadLockAsync()) {
-					Assert.AreSame(ctxt, SynchronizationContext.Current);
+				var awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
+				try {
+					Assert.IsFalse(awaiter.IsCompleted);
+				} catch {
+					awaiter.GetResult().Dispose(); // avoid test hangs on test failure
+					throw;
 				}
 
-				Assert.AreSame(ctxt, SynchronizationContext.Current);
-			}
+				var lockAcquired = new TaskCompletionSource<object>();
+				awaiter.OnCompleted(delegate {
+					using (awaiter.GetResult()) {
+						Assert.IsNull(SynchronizationContext.Current);
+					}
 
-			Assert.AreSame(ctxt, SynchronizationContext.Current);
-		}
-
-		[TestMethod, Timeout(TestTimeout)]
-		public async Task ReadLockLeavesSyncContextAloneIfChanged() {
-			var ctxt = new SynchronizationContext();
-			using (await this.asyncLock.UpgradeableReadLockAsync()) {
-				SynchronizationContext.SetSynchronizationContext(ctxt);
-			}
-
-			Assert.AreSame(ctxt, SynchronizationContext.Current);
+					lockAcquired.SetAsync();
+				});
+				await lockAcquired.Task;
+			});
 		}
 
 		#endregion
@@ -785,6 +776,22 @@
 			}
 
 			this.asyncLock.ReadLock(CancellationToken.None);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ReadLockRejectedOnMtaWithSynchronizationContext() {
+			await Task.Run(delegate {
+				SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
+				AsyncReaderWriterLock.Releaser releaser = new AsyncReaderWriterLock.Releaser();
+				try {
+					releaser = this.asyncLock.ReadLock(CancellationToken.None);
+					Assert.Fail("Expected exception not thrown.");
+				} catch (InvalidOperationException) {
+					// Expected
+				} finally {
+					releaser.Dispose();
+				}
+			});
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -1072,34 +1079,27 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task UpgradeableReadLockRestoresSynchronizationContext() {
-			using (await this.asyncLock.ReadLockAsync()) {
-				Assert.IsNull(SynchronizationContext.Current);
-			}
+		public async Task UpgradeableReadLockAsyncYieldsIfSyncContextSet() {
+			await Task.Run(async delegate {
+				SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
 
-			var ctxt = new SynchronizationContext();
-			SynchronizationContext.SetSynchronizationContext(ctxt);
-			using (await this.asyncLock.UpgradeableReadLockAsync()) {
-				Assert.AreNotSame(ctxt, SynchronizationContext.Current);
-				using (await this.asyncLock.UpgradeableReadLockAsync()) {
-					Assert.AreNotSame(ctxt, SynchronizationContext.Current);
+				var awaiter = this.asyncLock.UpgradeableReadLockAsync().GetAwaiter();
+				try {
+					Assert.IsFalse(awaiter.IsCompleted);
+				} catch {
+					awaiter.GetResult().Dispose(); // avoid test hangs on test failure
+					throw;
 				}
 
-				Assert.AreNotSame(ctxt, SynchronizationContext.Current);
-			}
+				var lockAcquired = new TaskCompletionSource<object>();
+				awaiter.OnCompleted(delegate {
+					using (awaiter.GetResult()) {
+					}
 
-			Assert.AreSame(ctxt, SynchronizationContext.Current);
-		}
-
-		[TestMethod, Timeout(TestTimeout)]
-		public async Task UpgradeableReadLockLeavesSyncContextAloneIfChanged() {
-			var ctxt = new SynchronizationContext();
-			using (await this.asyncLock.UpgradeableReadLockAsync()) {
-				Assert.AreNotSame(ctxt, SynchronizationContext.Current);
-				SynchronizationContext.SetSynchronizationContext(ctxt);
-			}
-
-			Assert.AreSame(ctxt, SynchronizationContext.Current);
+					lockAcquired.SetAsync();
+				});
+				await lockAcquired.Task;
+			});
 		}
 
 		#endregion
@@ -1135,6 +1135,22 @@
 			}
 
 			this.asyncLock.UpgradeableReadLock(CancellationToken.None);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task UpgradeableReadLockRejectedOnMtaWithSynchronizationContext() {
+			await Task.Run(delegate {
+				SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
+				AsyncReaderWriterLock.Releaser releaser = new AsyncReaderWriterLock.Releaser();
+				try {
+					releaser = this.asyncLock.UpgradeableReadLock(CancellationToken.None);
+					Assert.Fail("Expected exception not thrown.");
+				} catch (InvalidOperationException) {
+					// Expected
+				} finally {
+					releaser.Dispose();
+				}
+			});
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -1353,34 +1369,27 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task WriteLockRestoresSynchronizationContext() {
-			using (await this.asyncLock.ReadLockAsync()) {
-				Assert.IsNull(SynchronizationContext.Current);
-			}
+		public async Task WriteLockAsyncYieldsIfSyncContextSet() {
+			await Task.Run(async delegate {
+				SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
 
-			var ctxt = new SynchronizationContext();
-			SynchronizationContext.SetSynchronizationContext(ctxt);
-			using (await this.asyncLock.WriteLockAsync()) {
-				Assert.AreNotSame(ctxt, SynchronizationContext.Current);
-				using (await this.asyncLock.WriteLockAsync()) {
-					Assert.AreNotSame(ctxt, SynchronizationContext.Current);
+				var awaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
+				try {
+					Assert.IsFalse(awaiter.IsCompleted);
+				} catch {
+					awaiter.GetResult().Dispose(); // avoid test hangs on test failure
+					throw;
 				}
 
-				Assert.AreNotSame(ctxt, SynchronizationContext.Current);
-			}
+				var lockAcquired = new TaskCompletionSource<object>();
+				awaiter.OnCompleted(delegate {
+					using (awaiter.GetResult()) {
+					}
 
-			Assert.AreSame(ctxt, SynchronizationContext.Current);
-		}
-
-		[TestMethod, Timeout(TestTimeout)]
-		public async Task WriteLockLeavesSyncContextAloneIfChanged() {
-			var ctxt = new SynchronizationContext();
-			using (await this.asyncLock.WriteLockAsync()) {
-				Assert.AreNotSame(ctxt, SynchronizationContext.Current);
-				SynchronizationContext.SetSynchronizationContext(ctxt);
-			}
-
-			Assert.AreSame(ctxt, SynchronizationContext.Current);
+					lockAcquired.SetAsync();
+				});
+				await lockAcquired.Task;
+			});
 		}
 
 		#endregion
@@ -1416,6 +1425,22 @@
 			}
 
 			this.asyncLock.WriteLock(CancellationToken.None);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task WriteLockRejectedOnMtaWithSynchronizationContext() {
+			await Task.Run(delegate {
+				SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
+				AsyncReaderWriterLock.Releaser releaser = new AsyncReaderWriterLock.Releaser();
+				try {
+					releaser = this.asyncLock.WriteLock(CancellationToken.None);
+					Assert.Fail("Expected exception not thrown.");
+				} catch (InvalidOperationException) {
+					// Expected
+				} finally {
+					releaser.Dispose();
+				}
+			});
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -2746,19 +2771,19 @@
 					AsyncReaderWriterLock.Awaitable asyncLock;
 					try {
 						switch (lockTypeChar) {
-							case 'R':
+							case ReadChar:
 								asyncLock = this.asyncLock.ReadLockAsync();
 								readers++;
 								break;
-							case 'U':
+							case UpgradeableReadChar:
 								asyncLock = this.asyncLock.UpgradeableReadLockAsync();
 								nonStickyUpgradeableReaders++;
 								break;
-							case 'S':
+							case StickyUpgradeableReadChar:
 								asyncLock = this.asyncLock.UpgradeableReadLockAsync(AsyncReaderWriterLock.LockFlags.StickyWrite);
 								stickyUpgradeableReaders++;
 								break;
-							case 'W':
+							case WriteChar:
 								asyncLock = this.asyncLock.WriteLockAsync();
 								writers++;
 								break;
@@ -2798,16 +2823,16 @@
 					lockStack.Pop().Dispose();
 
 					switch (lockTypeChar) {
-						case 'R':
+						case ReadChar:
 							readersRemaining--;
 							break;
-						case 'U':
+						case UpgradeableReadChar:
 							nonStickyUpgradeableReadersRemaining--;
 							break;
-						case 'S':
+						case StickyUpgradeableReadChar:
 							stickyUpgradeableReadersRemaining--;
 							break;
-						case 'W':
+						case WriteChar:
 							writersRemaining--;
 							break;
 						default:
@@ -2894,6 +2919,15 @@
 				if (this.OnExclusiveLockReleasedAsyncDelegate != null) {
 					await this.OnExclusiveLockReleasedAsyncDelegate();
 				}
+			}
+		}
+
+		private class SelfPreservingSynchronizationContext : SynchronizationContext {
+			public override void Post(SendOrPostCallback d, object state) {
+				Task.Run(delegate {
+					SynchronizationContext.SetSynchronizationContext(this);
+					d(state);
+				});
 			}
 		}
 	}
