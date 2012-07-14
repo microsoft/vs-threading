@@ -390,101 +390,110 @@
 			const int MaxDepth = 5;
 			const int MaxLockAcquisitions = -1;
 			const int MaxLockHeldDelay = 0;// 80;
+			const int overallTimeout = 4000;
+			const int iterationTimeout = 1000;
 			int maxWorkers = Environment.ProcessorCount * 4; // we do a lot of awaiting, but still want to flood all cores.
-			var cancellation = new CancellationTokenSource(4000);
+			var overallCancellation = new CancellationTokenSource(overallTimeout);
 			int lockAcquisitions = 0;
-			Func<Task> worker = async delegate {
-				var random = new Random();
-				var lockStack = new Stack<AsyncReaderWriterLock.Releaser>(MaxDepth);
-				while (true) {
-					string log = string.Empty;
-					Assert.IsFalse(this.asyncLock.IsReadLockHeld || this.asyncLock.IsUpgradeableReadLockHeld || this.asyncLock.IsWriteLockHeld);
-					int depth = random.Next(MaxDepth) + 1;
-					int kind = random.Next(3);
-					try {
-						switch (kind) {
-							case 0: // read
-								while (--depth > 0) {
-									log += ReadChar;
-									lockStack.Push(await this.asyncLock.ReadLockAsync(cancellation.Token));
-								}
+			while (!overallCancellation.IsCancellationRequested) {
+				// Construct a cancellation token that is canceled when either the overall or the iteration timeout has expired.
+				var cancellation = CancellationTokenSource.CreateLinkedTokenSource(
+					overallCancellation.Token,
+					new CancellationTokenSource(iterationTimeout).Token);
 
-								break;
-							case 1: // upgradeable read
-								log += UpgradeableReadChar;
-								lockStack.Push(await this.asyncLock.UpgradeableReadLockAsync(cancellation.Token));
-								depth--;
-								while (--depth > 0) {
-									switch (random.Next(3)) {
-										case 0:
-											log += ReadChar;
-											lockStack.Push(await this.asyncLock.ReadLockAsync(cancellation.Token));
-											break;
-										case 1:
-											log += UpgradeableReadChar;
-											lockStack.Push(await this.asyncLock.UpgradeableReadLockAsync(cancellation.Token));
-											break;
-										case 2:
-											log += WriteChar;
-											lockStack.Push(await this.asyncLock.WriteLockAsync(cancellation.Token));
-											break;
+				Func<Task> worker = async delegate {
+					var random = new Random();
+					var lockStack = new Stack<AsyncReaderWriterLock.Releaser>(MaxDepth);
+					while (true) {
+						string log = string.Empty;
+						Assert.IsFalse(this.asyncLock.IsReadLockHeld || this.asyncLock.IsUpgradeableReadLockHeld || this.asyncLock.IsWriteLockHeld);
+						int depth = random.Next(MaxDepth) + 1;
+						int kind = random.Next(3);
+						try {
+							switch (kind) {
+								case 0: // read
+									while (--depth > 0) {
+										log += ReadChar;
+										lockStack.Push(await this.asyncLock.ReadLockAsync(cancellation.Token));
 									}
-								}
 
-								break;
-							case 2: // write
-								log += WriteChar;
-								lockStack.Push(await this.asyncLock.WriteLockAsync(cancellation.Token));
-								depth--;
-								while (--depth > 0) {
-									switch (random.Next(3)) {
-										case 0:
-											log += ReadChar;
-											lockStack.Push(await this.asyncLock.ReadLockAsync(cancellation.Token));
-											break;
-										case 1:
-											log += UpgradeableReadChar;
-											lockStack.Push(await this.asyncLock.UpgradeableReadLockAsync(cancellation.Token));
-											break;
-										case 2:
-											log += WriteChar;
-											lockStack.Push(await this.asyncLock.WriteLockAsync(cancellation.Token));
-											break;
+									break;
+								case 1: // upgradeable read
+									log += UpgradeableReadChar;
+									lockStack.Push(await this.asyncLock.UpgradeableReadLockAsync(cancellation.Token));
+									depth--;
+									while (--depth > 0) {
+										switch (random.Next(3)) {
+											case 0:
+												log += ReadChar;
+												lockStack.Push(await this.asyncLock.ReadLockAsync(cancellation.Token));
+												break;
+											case 1:
+												log += UpgradeableReadChar;
+												lockStack.Push(await this.asyncLock.UpgradeableReadLockAsync(cancellation.Token));
+												break;
+											case 2:
+												log += WriteChar;
+												lockStack.Push(await this.asyncLock.WriteLockAsync(cancellation.Token));
+												break;
+										}
 									}
-								}
 
-								break;
-						}
+									break;
+								case 2: // write
+									log += WriteChar;
+									lockStack.Push(await this.asyncLock.WriteLockAsync(cancellation.Token));
+									depth--;
+									while (--depth > 0) {
+										switch (random.Next(3)) {
+											case 0:
+												log += ReadChar;
+												lockStack.Push(await this.asyncLock.ReadLockAsync(cancellation.Token));
+												break;
+											case 1:
+												log += UpgradeableReadChar;
+												lockStack.Push(await this.asyncLock.UpgradeableReadLockAsync(cancellation.Token));
+												break;
+											case 2:
+												log += WriteChar;
+												lockStack.Push(await this.asyncLock.WriteLockAsync(cancellation.Token));
+												break;
+										}
+									}
 
-						await Task.Delay(random.Next(MaxLockHeldDelay));
-					} finally {
-						log += " ";
-						while (lockStack.Count > 0) {
-							if (Interlocked.Increment(ref lockAcquisitions) > MaxLockAcquisitions && MaxLockAcquisitions > 0) {
-								cancellation.Cancel();
+									break;
 							}
-							var releaser = lockStack.Pop();
-							log += '_';
-							releaser.Dispose();
+
+							await Task.Delay(random.Next(MaxLockHeldDelay));
+						} finally {
+							log += " ";
+							while (lockStack.Count > 0) {
+								if (Interlocked.Increment(ref lockAcquisitions) > MaxLockAcquisitions && MaxLockAcquisitions > 0) {
+									cancellation.Cancel();
+								}
+								var releaser = lockStack.Pop();
+								log += '_';
+								releaser.Dispose();
+							}
 						}
 					}
-				}
-			};
+				};
 
-			await Task.Run(async delegate {
-				var workers = new Task[maxWorkers];
-				for (int i = 0; i < workers.Length; i++) {
-					workers[i] = Task.Run(() => worker(), cancellation.Token);
-					var nowait = workers[i].ContinueWith(_ => cancellation.Cancel(), TaskContinuationOptions.OnlyOnFaulted);
-				}
+				await Task.Run(async delegate {
+					var workers = new Task[maxWorkers];
+					for (int i = 0; i < workers.Length; i++) {
+						workers[i] = Task.Run(() => worker(), cancellation.Token);
+						var nowait = workers[i].ContinueWith(_ => cancellation.Cancel(), TaskContinuationOptions.OnlyOnFaulted);
+					}
 
-				try {
-					await Task.WhenAll(workers);
-				} catch (OperationCanceledException) {
-				} finally {
-					Console.WriteLine("Stress tested {0} lock acquisitions.", lockAcquisitions);
-				}
-			});
+					try {
+						await Task.WhenAll(workers);
+					} catch (OperationCanceledException) {
+					} finally {
+						Console.WriteLine("Stress tested {0} lock acquisitions.", lockAcquisitions);
+					}
+				});
+			}
 		}
 
 		#region ReadLockAsync tests
