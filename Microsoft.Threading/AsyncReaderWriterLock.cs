@@ -909,25 +909,30 @@ namespace Microsoft.Threading {
 		/// <typeparam name="T">The element to remove.</typeparam>
 		/// <param name="queue">The queue to modify.</param>
 		/// <param name="valueToRemove">The value to remove.</param>
-		private static void RemoveMidQueue<T>(Queue<T> queue, T valueToRemove) where T : class {
+		private static bool RemoveMidQueue<T>(Queue<T> queue, T valueToRemove) where T : class {
 			Requires.NotNull(queue, "queue");
 			Requires.NotNull(valueToRemove, "valueToRemove");
 			if (queue.Count == 0) {
-				return;
+				return false;
 			}
 
 			T originalHead = queue.Dequeue();
 			if (Object.ReferenceEquals(originalHead, valueToRemove)) {
-				return;
+				return true;
 			}
 
+			bool found = false;
 			queue.Enqueue(originalHead);
 			while (!Object.ReferenceEquals(originalHead, queue.Peek())) {
 				var tempHead = queue.Dequeue();
-				if (!Object.ReferenceEquals(tempHead, valueToRemove)) {
+				if (Object.ReferenceEquals(tempHead, valueToRemove)) {
+					found = true;
+				} else {
 					queue.Enqueue(tempHead);
 				}
 			}
+
+			return found;
 		}
 
 		/// <summary>
@@ -1215,7 +1220,12 @@ namespace Microsoft.Threading {
 					// The lock class can't deal well with cancelled lock requests remaining in its queue.
 					// Remove the awaiter, wherever in the queue it happens to be.
 					var queue = this.GetLockQueue(awaiter.Kind);
-					RemoveMidQueue(queue, awaiter);
+					if (!RemoveMidQueue(queue, awaiter)) {
+						// This can happen when the lock request is cancelled, but during a race
+						// condition where the lock was just about to be issued anyway.
+						Assumes.True(awaiter.CancellationToken.IsCancellationRequested);
+						return false;
+					}
 				}
 
 				return awaiter.TryScheduleContinuationExecution();
@@ -1388,6 +1398,13 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>
+			/// Gets the cancellation token.
+			/// </summary>
+			internal CancellationToken CancellationToken {
+				get { return this.cancellationToken; }
+			}
+
+			/// <summary>
 			/// Gets the lock class that created this instance.
 			/// </summary>
 			internal AsyncReaderWriterLock Lock {
@@ -1557,6 +1574,7 @@ namespace Microsoft.Threading {
 			/// Initializes a new instance of the <see cref="Releaser"/> struct.
 			/// </summary>
 			/// <param name="awaiter">The awaiter.</param>
+			/// <param name="clearSynchronizationContext"><c>true</c> to clear <see cref="SynchronizationContext.Current"/> when the lock is released.</param>
 			internal Releaser(Awaiter awaiter, bool clearSynchronizationContext) {
 				this.awaiter = awaiter;
 				this.clearSynchronizationContext = clearSynchronizationContext;
