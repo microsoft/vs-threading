@@ -750,6 +750,16 @@
 			Assert.AreSame(ctxt, SynchronizationContext.Current);
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ReadLockLeavesSyncContextAloneIfChanged() {
+			var ctxt = new SynchronizationContext();
+			using (await this.asyncLock.UpgradeableReadLockAsync()) {
+				SynchronizationContext.SetSynchronizationContext(ctxt);
+			}
+
+			Assert.AreSame(ctxt, SynchronizationContext.Current);
+		}
+
 		#endregion
 
 		#region ReadLock tests
@@ -1081,6 +1091,17 @@
 			Assert.AreSame(ctxt, SynchronizationContext.Current);
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task UpgradeableReadLockLeavesSyncContextAloneIfChanged() {
+			var ctxt = new SynchronizationContext();
+			using (await this.asyncLock.UpgradeableReadLockAsync()) {
+				Assert.AreNotSame(ctxt, SynchronizationContext.Current);
+				SynchronizationContext.SetSynchronizationContext(ctxt);
+			}
+
+			Assert.AreSame(ctxt, SynchronizationContext.Current);
+		}
+
 		#endregion
 
 		#region UpgradeableReadLock tests
@@ -1346,6 +1367,17 @@
 				}
 
 				Assert.AreNotSame(ctxt, SynchronizationContext.Current);
+			}
+
+			Assert.AreSame(ctxt, SynchronizationContext.Current);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task WriteLockLeavesSyncContextAloneIfChanged() {
+			var ctxt = new SynchronizationContext();
+			using (await this.asyncLock.WriteLockAsync()) {
+				Assert.AreNotSame(ctxt, SynchronizationContext.Current);
+				SynchronizationContext.SetSynchronizationContext(ctxt);
 			}
 
 			Assert.AreSame(ctxt, SynchronizationContext.Current);
