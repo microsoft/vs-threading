@@ -695,13 +695,11 @@ namespace Microsoft.Threading {
 			if (IsLockSupportingContext) {
 				lock (this.syncObject) {
 					awaiter = awaiter ?? this.topAwaiter.Value;
-					if (this.LockStackContains(kind, awaiter)) {
-						if (checkSyncContextCompatibility) {
-							Assumes.True(this.IsSynchronizationContextSetForLock(awaiter));
-						}
-
-						return true;
+					if (checkSyncContextCompatibility) {
+						Assumes.True(this.IsSynchronizationContextSetForLock(awaiter));
 					}
+
+					return this.LockStackContains(kind, awaiter);
 				}
 			}
 
@@ -739,7 +737,8 @@ namespace Microsoft.Threading {
 		/// <param name="awaiter">The awaiter whose lock should be considered.</param>
 		/// <returns><c>true</c> if the caller has a valid context; <c>false</c> otherwise.</returns>
 		private bool IsSynchronizationContextSetForLock(Awaiter awaiter) {
-			if ((awaiter.Kind & (LockKind.UpgradeableRead | LockKind.Write)) != 0) {
+			bool syncContextRequired = this.LockStackContains(LockKind.UpgradeableRead, awaiter) || this.LockStackContains(LockKind.Write, awaiter);
+			if (syncContextRequired) {
 				return SynchronizationContext.Current is NonConcurrentSynchronizationContext;
 			} else {
 				return true;
@@ -1109,7 +1108,7 @@ namespace Microsoft.Threading {
 			Assumes.True(Monitor.IsEntered(this.syncObject));
 			Assumes.True(this.writeLocksIssued.Count == 1 && this.beforeWriteReleasedCallbacks.Count > 0);
 
-			using (var releaser = await this.WriteLockAsync()) {
+			using (var releaser = await new Awaitable(this, LockKind.Write, LockFlags.None, CancellationToken.None, checkSyncContextCompatibility: false)) {
 				await Task.Yield(); // ensure we've yielded to our caller, since the WriteLockAsync will not yield when on an MTA thread.
 
 				// We sequentially loop over the callbacks rather than fire then concurrently because each callback
@@ -1281,7 +1280,12 @@ namespace Microsoft.Threading {
 			/// <param name="kind">The type of lock being requested.</param>
 			/// <param name="options">Any flags applied to the lock request.</param>
 			/// <param name="cancellationToken">The cancellation token.</param>
-			internal Awaitable(AsyncReaderWriterLock lck, LockKind kind, LockFlags options, CancellationToken cancellationToken) {
+			/// <param name="checkSyncContextCompatibility"><c>true</c> to throw an exception if the caller has an exclusive lock but not an associated SynchronizationContext.</param>
+			internal Awaitable(AsyncReaderWriterLock lck, LockKind kind, LockFlags options, CancellationToken cancellationToken, bool checkSyncContextCompatibility = true) {
+				if (checkSyncContextCompatibility) {
+					Assumes.True(lck.IsSynchronizationContextSetForLock(lck.topAwaiter.Value));
+				}
+
 				this.awaiter = new Awaiter(lck, kind, options, cancellationToken);
 				if (!cancellationToken.IsCancellationRequested) {
 					lck.TryIssueLock(this.awaiter, previouslyQueued: false);
@@ -1489,9 +1493,7 @@ namespace Microsoft.Threading {
 						var priorSynchronizationContext = SynchronizationContext.Current;
 						try {
 							bool clearSynchronizationContext = false;
-							if (!(this.lck.IsLockHeld(LockKind.UpgradeableRead, checkSyncContextCompatibility: false)
-								|| this.lck.IsLockHeld(LockKind.Write, checkSyncContextCompatibility: false))
-								&& (this.Kind & (LockKind.UpgradeableRead | LockKind.Write)) != 0
+							if ((this.Kind & (LockKind.UpgradeableRead | LockKind.Write)) != 0
 								&& !(priorSynchronizationContext is NonConcurrentSynchronizationContext)) {
 								clearSynchronizationContext = true;
 								SynchronizationContext.SetSynchronizationContext(this.lck.nonConcurrentSyncContext);
