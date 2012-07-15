@@ -445,7 +445,7 @@
 			}
 
 			private async Task GetPreparationTask(Resource resource) {
-				Assert.IsTrue(this.IsAnyLockHeld);
+				Assert.IsFalse(this.IsAnyLockHeld); // the lock should be hidden from the preparation task.
 				Assert.IsFalse(Monitor.IsEntered(this.SyncObject));
 
 				Tuple<TaskCompletionSource<object>, Task> tuple;
@@ -460,7 +460,7 @@
 					await tuple.Item2;
 				}
 
-				Assert.IsTrue(this.IsAnyLockHeld);
+				Assert.IsFalse(this.IsAnyLockHeld);
 			}
 		}
 	}

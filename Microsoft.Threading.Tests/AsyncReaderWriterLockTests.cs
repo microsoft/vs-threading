@@ -137,7 +137,7 @@
 				TaskContinuationOptions.ExecuteSynchronously); // this flag tries to tease out the sync-allowing behavior if it exists.
 
 			var nowait = Task.Run(async delegate {
-				await continuationFired.Task.ConfigureAwait(false); // wait for the continuation to fire, and resume on an MTA thread.
+				await continuationFired.Task; // wait for the continuation to fire, and resume on an MTA thread.
 
 				// Now on this separate thread, do something that should require the private lock of the lock class, to ensure it's not a blocking call.
 				bool throwaway = this.asyncLock.IsReadLockHeld;
@@ -1022,6 +1022,12 @@
 			});
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task MitigationAgainstAccidentalUpgradeableReadLockForking() {
+			await this.MitigationAgainstAccidentalLockForkingHelper(
+				() => this.asyncLock.UpgradeableReadLockAsync());
+		}
+
 		#endregion
 
 		#region UpgradeableReadLock tests
@@ -1286,6 +1292,12 @@
 			using (await this.asyncLock.WriteLockAsync()) {
 				await this.CheckContinuationsConcurrencyHelper();
 			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task MitigationAgainstAccidentalWriteLockForking() {
+			await this.MitigationAgainstAccidentalLockForkingHelper(
+				() => this.asyncLock.WriteLockAsync());
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -1769,6 +1781,36 @@
 
 				await this.CheckContinuationsConcurrencyHelper();
 			}
+		}
+
+		[TestMethod]
+		public async Task UpgradedReadWithSyncContext() {
+			var contestingReadLockAcquired = new TaskCompletionSource<object>();
+			var writeLockWaiting = new TaskCompletionSource<object>();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+				using (await this.asyncLock.UpgradeableReadLockAsync()) {
+					await contestingReadLockAcquired.Task;
+					var writeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
+					Assert.IsFalse(writeAwaiter.IsCompleted);
+					var nestedLockAcquired = new TaskCompletionSource<object>();
+					writeAwaiter.OnCompleted(async delegate {
+						using (writeAwaiter.GetResult()) {
+							using (await this.asyncLock.UpgradeableReadLockAsync()) {
+								var nowait2 = nestedLockAcquired.SetAsync();
+							}
+						}
+					});
+					var nowait = writeLockWaiting.SetAsync();
+					await nestedLockAcquired.Task;
+				}
+			}),
+				Task.Run(async delegate {
+				using (await this.asyncLock.ReadLockAsync()) {
+					var nowait = contestingReadLockAcquired.SetAsync();
+					await writeLockWaiting.Task;
+				}
+			}));
 		}
 
 		#endregion
@@ -2936,6 +2978,70 @@
 						Console.WriteLine("Stress tested {0} lock acquisitions.", lockAcquisitions);
 					}
 				});
+			}
+		}
+
+		private async Task MitigationAgainstAccidentalLockForkingHelper(Func<AsyncReaderWriterLock.Awaitable> locker) {
+			Action<bool> test = successExpected => {
+				try {
+					bool dummy = this.asyncLock.IsReadLockHeld;
+					if (!successExpected) {
+						Assert.Fail("Expected exception not thrown.");
+					}
+				} catch (Exception ex) {
+					if (ex is AssertFailedException) {
+						throw;
+					}
+				}
+
+				try {
+					bool dummy = this.asyncLock.IsUpgradeableReadLockHeld;
+					if (!successExpected) {
+						Assert.Fail("Expected exception not thrown.");
+					}
+				} catch (Exception ex) {
+					if (ex is AssertFailedException) {
+						throw;
+					}
+				}
+
+				try {
+					bool dummy = this.asyncLock.IsWriteLockHeld;
+					if (!successExpected) {
+						Assert.Fail("Expected exception not thrown.");
+					}
+				} catch (Exception ex) {
+					if (ex is AssertFailedException) {
+						throw;
+					}
+				}
+			};
+
+			Func<Task> helper = async delegate {
+				test(false);
+
+				AsyncReaderWriterLock.Releaser releaser = default(AsyncReaderWriterLock.Releaser);
+				try {
+					releaser = await locker();
+					Assert.Fail("Expected exception not thrown.");
+				} catch (Exception ex) {
+					if (ex is AssertFailedException) {
+						throw;
+					}
+				} finally {
+					releaser.Dispose();
+				}
+			};
+
+			using (TestUtilities.DisableAssertionDialog()) {
+				using (await locker()) {
+					test(true);
+					await Task.Run(helper);
+
+					using (await this.asyncLock.ReadLockAsync()) {
+						await Task.Run(helper);
+					}
+				}
 			}
 		}
 
