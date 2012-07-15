@@ -1621,7 +1621,8 @@ namespace Microsoft.Threading {
 			/// </summary>
 			public void Dispose() {
 				if (this.awaiter != null) {
-					this.ReleaseAsync().Wait();
+					var that = this;
+					AsyncPump.Run(() => that.ReleaseAsync());
 				}
 			}
 

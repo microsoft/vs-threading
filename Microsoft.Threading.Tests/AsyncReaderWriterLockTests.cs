@@ -407,6 +407,37 @@
 			await this.StressHelper(MaxLockAcquisitions, MaxLockHeldDelay, overallTimeout, iterationTimeout, maxWorkers, testCancellation);
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		[Description("Tests that deadlocks don't occur when acquiring and releasing locks synchronously while async callbacks are defined.")]
+		public async Task SynchronousLockReleaseWithCallbacks() {
+			await Task.Run(async delegate {
+				Func<Task> yieldingDelegate = async () => { await Task.Yield(); };
+				var asyncLock = new LockDerived {
+					OnBeforeExclusiveLockReleasedAsyncDelegate = yieldingDelegate,
+					OnBeforeLockReleasedAsyncDelegate = yieldingDelegate,
+					OnExclusiveLockReleasedAsyncDelegate = yieldingDelegate,
+				};
+
+				using (asyncLock.WriteLock()) {
+				}
+
+				using (asyncLock.UpgradeableReadLock()) {
+					using (asyncLock.WriteLock()) {
+					}
+				}
+
+				using (await asyncLock.WriteLockAsync()) {
+					await Task.Yield();
+				}
+
+				using (await asyncLock.UpgradeableReadLockAsync()) {
+					using (await asyncLock.WriteLockAsync()) {
+						await Task.Yield();
+					}
+				}
+			});
+		}
+
 		#region ReadLockAsync tests
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -1783,7 +1814,7 @@
 			}
 		}
 
-		[TestMethod]
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task UpgradedReadWithSyncContext() {
 			var contestingReadLockAcquired = new TaskCompletionSource<object>();
 			var writeLockWaiting = new TaskCompletionSource<object>();
@@ -3054,6 +3085,7 @@
 		private class LockDerived : AsyncReaderWriterLock {
 			internal Func<Task> OnBeforeExclusiveLockReleasedAsyncDelegate { get; set; }
 			internal Func<Task> OnExclusiveLockReleasedAsyncDelegate { get; set; }
+			internal Func<Task> OnBeforeLockReleasedAsyncDelegate { get; set; }
 
 			internal new bool LockStackContains(LockFlags flags, Awaiter awaiter = null) {
 				return base.LockStackContains(flags, awaiter);
@@ -3078,6 +3110,13 @@
 				await base.OnExclusiveLockReleasedAsync();
 				if (this.OnExclusiveLockReleasedAsyncDelegate != null) {
 					await this.OnExclusiveLockReleasedAsyncDelegate();
+				}
+			}
+
+			protected override async Task OnBeforeLockReleasedAsync(bool exclusiveLockRelease) {
+				await base.OnBeforeLockReleasedAsync(exclusiveLockRelease);
+				if (this.OnBeforeLockReleasedAsyncDelegate != null) {
+					await this.OnBeforeLockReleasedAsyncDelegate();
 				}
 			}
 		}
