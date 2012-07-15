@@ -696,7 +696,7 @@ namespace Microsoft.Threading {
 				lock (this.syncObject) {
 					awaiter = awaiter ?? this.topAwaiter.Value;
 					if (checkSyncContextCompatibility) {
-						Assumes.True(this.IsSynchronizationContextSetForLock(awaiter));
+						this.CheckSynchronizationContextAppropriateForLock(awaiter);
 					}
 
 					return this.LockStackContains(kind, awaiter);
@@ -721,7 +721,7 @@ namespace Microsoft.Threading {
 				lock (this.syncObject) {
 					bool activeLock = this.GetActiveLockSet(awaiter.Kind).Contains(awaiter);
 					if (checkSyncContextCompatibility && activeLock) {
-						Assumes.True(this.IsSynchronizationContextSetForLock(awaiter));
+						this.CheckSynchronizationContextAppropriateForLock(awaiter);
 					}
 
 					return activeLock;
@@ -736,12 +736,12 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="awaiter">The awaiter whose lock should be considered.</param>
 		/// <returns><c>true</c> if the caller has a valid context; <c>false</c> otherwise.</returns>
-		private bool IsSynchronizationContextSetForLock(Awaiter awaiter) {
+		private void CheckSynchronizationContextAppropriateForLock(Awaiter awaiter) {
 			bool syncContextRequired = this.LockStackContains(LockKind.UpgradeableRead, awaiter) || this.LockStackContains(LockKind.Write, awaiter);
 			if (syncContextRequired) {
-				return SynchronizationContext.Current is NonConcurrentSynchronizationContext;
-			} else {
-				return true;
+				if (!(SynchronizationContext.Current is NonConcurrentSynchronizationContext)) {
+					Assumes.Fail();
+				}
 			}
 		}
 
@@ -1283,7 +1283,7 @@ namespace Microsoft.Threading {
 			/// <param name="checkSyncContextCompatibility"><c>true</c> to throw an exception if the caller has an exclusive lock but not an associated SynchronizationContext.</param>
 			internal Awaitable(AsyncReaderWriterLock lck, LockKind kind, LockFlags options, CancellationToken cancellationToken, bool checkSyncContextCompatibility = true) {
 				if (checkSyncContextCompatibility) {
-					Assumes.True(lck.IsSynchronizationContextSetForLock(lck.topAwaiter.Value));
+					lck.CheckSynchronizationContextAppropriateForLock(lck.topAwaiter.Value);
 				}
 
 				this.awaiter = new Awaiter(lck, kind, options, cancellationToken);
