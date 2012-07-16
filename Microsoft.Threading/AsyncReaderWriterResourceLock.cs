@@ -81,13 +81,6 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
-		/// Gets a value indicating whether any kind of lock is held by the caller.
-		/// </summary>
-		protected bool IsAnyLockHeld {
-			get { return base.IsReadLockHeld || base.IsUpgradeableReadLockHeld || base.IsWriteLockHeld; }
-		}
-
-		/// <summary>
 		/// Obtains a read lock, synchronously blocking for the lock if it is not immediately available.
 		/// </summary>
 		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
@@ -204,10 +197,10 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Retrieves the resource with the specified moniker.
 		/// </summary>
-		/// <param name="projectMoniker">The identifier for the desired resource.</param>
+		/// <param name="resourceMoniker">The identifier for the desired resource.</param>
 		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the resource.</param>
 		/// <returns>A task whose result is the desired resource.</returns>
-		protected abstract Task<TResource> GetResourceAsync(TMoniker projectMoniker, CancellationToken cancellationToken);
+		protected abstract Task<TResource> GetResourceAsync(TMoniker resourceMoniker, CancellationToken cancellationToken);
 
 		/// <summary>
 		/// Prepares a resource for concurrent access.
@@ -288,9 +281,9 @@ namespace Microsoft.Threading {
 			private readonly HashSet<TResource> resourcesAcquiredWithinUpgradeableRead = new HashSet<TResource>();
 
 			/// <summary>
-			/// A map of projects to the tasks that most recently began evaluating them.
+			/// A map of resources to the tasks that most recently began evaluating them.
 			/// </summary>
-			private ConditionalWeakTable<TResource, Task> projectEvaluationTasks = new ConditionalWeakTable<TResource, Task>();
+			private ConditionalWeakTable<TResource, Task> resourcePreparationTasks = new ConditionalWeakTable<TResource, Task>();
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="Helper"/> class.
@@ -315,7 +308,7 @@ namespace Microsoft.Threading {
 				// This arbitrary clearing of the table seems like it should introduce the risk of preparing a given
 				// resource multiple times concurrently, since no evidence remains of an asynchronous operation still
 				// in progress.  In practice, various other designs in this class prevent it from ever actually occurring.
-				this.projectEvaluationTasks = new ConditionalWeakTable<TResource, Task>();
+				this.resourcePreparationTasks = new ConditionalWeakTable<TResource, Task>();
 
 				if (this.service.IsUpgradeableReadLockHeld && this.resourcesAcquiredWithinUpgradeableRead.Count > 0) {
 					// We must also synchronously prepare all resources that were acquired within the upgradeable read lock
@@ -333,7 +326,7 @@ namespace Microsoft.Threading {
 					}
 				}
 
-				return CompletedTask;
+				return TaskExtensions.CompletedTask;
 			}
 
 			/// <summary>
@@ -350,7 +343,7 @@ namespace Microsoft.Threading {
 			/// <param name="cancellationToken">The token whose cancellation signals lost interest in this resource.</param>
 			/// <returns>A task whose result is the desired resource.</returns>
 			internal async Task<TResource> GetResourceAsync(TMoniker resourceMoniker, CancellationToken cancellationToken) {
-				using (var projectLock = this.AcquirePreexistingLockOrThrow()) {
+				using (var resourceLock = this.AcquirePreexistingLockOrThrow()) {
 					var resource = await this.service.GetResourceAsync(resourceMoniker, cancellationToken).ConfigureAwait(false);
 					Task preparationTask;
 
@@ -384,7 +377,7 @@ namespace Microsoft.Threading {
 			/// <returns>A task that is completed when preparation has completed.</returns>
 			private Task PrepareResourceAsync(TResource resource, CancellationToken cancellationToken, bool evenIfPreviouslyPrepared = false, bool forcePrepareConcurrent = false) {
 				Task preparationTask;
-				if (!this.projectEvaluationTasks.TryGetValue(resource, out preparationTask)) {
+				if (!this.resourcePreparationTasks.TryGetValue(resource, out preparationTask)) {
 					var preparationDelegate = (this.service.IsWriteLockHeld && !forcePrepareConcurrent)
 						? (cancellationToken.CanBeCanceled ? state => this.service.PrepareResourceForExclusiveAccessAsync((TResource)state, cancellationToken) : this.prepareResourceExclusiveDelegate)
 						: (cancellationToken.CanBeCanceled ? state => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state, cancellationToken) : this.prepareResourceConcurrentDelegate);
@@ -395,14 +388,14 @@ namespace Microsoft.Threading {
 						preparationTask = Task.Factory.StartNew(preparationDelegate, resource, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap();
 					}
 
-					this.projectEvaluationTasks.Add(resource, preparationTask);
+					this.resourcePreparationTasks.Add(resource, preparationTask);
 				} else if (evenIfPreviouslyPrepared) {
 					var preparationDelegate = (this.service.IsWriteLockHeld && !forcePrepareConcurrent)
 						? (cancellationToken.CanBeCanceled ? (prev, state) => this.service.PrepareResourceForExclusiveAccessAsync((TResource)state, cancellationToken) : this.prepareResourceExclusiveContinuationDelegate)
 						: (cancellationToken.CanBeCanceled ? (prev, state) => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state, cancellationToken) : this.prepareResourceConcurrentContinuationDelegate);
 					preparationTask = preparationTask.ContinueWith(preparationDelegate, resource, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap();
-					this.projectEvaluationTasks.Remove(resource);
-					this.projectEvaluationTasks.Add(resource, preparationTask);
+					this.resourcePreparationTasks.Remove(resource);
+					this.resourcePreparationTasks.Add(resource, preparationTask);
 				}
 
 				return preparationTask;

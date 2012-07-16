@@ -85,7 +85,7 @@
 						});
 					}
 
-					Assert.IsTrue(this.asyncLock.IsReadLockHeld, "Lock should be hidden.");
+					Assert.IsTrue(this.asyncLock.IsReadLockHeld, "Lock should be visible.");
 				});
 
 				Assert.IsTrue(this.asyncLock.IsReadLockHeld);
@@ -435,6 +435,31 @@
 						await Task.Yield();
 					}
 				}
+			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task IsAnyLockHeldTest() {
+			var asyncLock = new LockDerived();
+
+			Assert.IsFalse(asyncLock.IsAnyLockHeld);
+			await Task.Run(delegate {
+				Assert.IsFalse(asyncLock.IsAnyLockHeld);
+				using (asyncLock.ReadLock()) {
+					Assert.IsTrue(asyncLock.IsAnyLockHeld);
+				}
+
+				Assert.IsFalse(asyncLock.IsAnyLockHeld);
+				using (asyncLock.UpgradeableReadLock()) {
+					Assert.IsTrue(asyncLock.IsAnyLockHeld);
+				}
+
+				Assert.IsFalse(asyncLock.IsAnyLockHeld);
+				using (asyncLock.WriteLock()) {
+					Assert.IsTrue(asyncLock.IsAnyLockHeld);
+				}
+
+				Assert.IsFalse(asyncLock.IsAnyLockHeld);
 			});
 		}
 
@@ -3162,6 +3187,10 @@
 			internal Func<Task> OnBeforeExclusiveLockReleasedAsyncDelegate { get; set; }
 			internal Func<Task> OnExclusiveLockReleasedAsyncDelegate { get; set; }
 			internal Func<Task> OnBeforeLockReleasedAsyncDelegate { get; set; }
+
+			internal new bool IsAnyLockHeld {
+				get { return base.IsAnyLockHeld; }
+			}
 
 			internal new bool LockStackContains(LockFlags flags, Awaiter awaiter = null) {
 				return base.LockStackContains(flags, awaiter);

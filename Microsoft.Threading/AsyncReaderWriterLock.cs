@@ -38,11 +38,6 @@ namespace Microsoft.Threading {
 	/// </devnotes>
 	public class AsyncReaderWriterLock {
 		/// <summary>
-		/// A singleton task that is already completed.
-		/// </summary>
-		protected static readonly Task CompletedTask = Task.FromResult<object>(null);
-
-		/// <summary>
 		/// The object to acquire a Monitor-style lock on for all field access on this instance.
 		/// </summary>
 		private readonly object syncObject = new object();
@@ -132,7 +127,7 @@ namespace Microsoft.Threading {
 		/// to an upgradeable read lock when callbacks and other code must be invoked without ANY
 		/// locks being issued.
 		/// </summary>
-		private Task reenterConcurrencyPrep = CompletedTask;
+		private Task reenterConcurrencyPrep = TaskExtensions.CompletedTask;
 
 		/// <summary>
 		/// A flag indicating whether we're currently running code to prepare for re-entering concurrency mode
@@ -268,6 +263,13 @@ namespace Microsoft.Threading {
 		protected bool CaptureDiagnostics {
 			get { return this.captureDiagnostics; }
 			set { this.captureDiagnostics = value; }
+		}
+
+		/// <summary>
+		/// Gets a value indicating whether any kind of lock is held by the caller.
+		/// </summary>
+		protected bool IsAnyLockHeld {
+			get { return this.IsReadLockHeld || this.IsUpgradeableReadLockHeld || this.IsWriteLockHeld; }
 		}
 
 		/// <summary>
@@ -472,6 +474,7 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Fired when any lock is being released.
 		/// </summary>
+		/// <param name="exclusiveLockRelease">A flag indicating whether the last write lock that the caller holds is being released.</param>
 		/// <returns>A task whose completion signals the conclusion of the asynchronous operation.</returns>
 		protected virtual Task OnBeforeLockReleasedAsync(bool exclusiveLockRelease) {
 			// Raise the write release lock event if and only if this is the last write that is about to be released.
@@ -481,7 +484,7 @@ namespace Microsoft.Threading {
 			if (exclusiveLockRelease) {
 				return this.OnBeforeExclusiveLockReleasedAsync();
 			} else {
-				return CompletedTask;
+				return TaskExtensions.CompletedTask;
 			}
 		}
 
@@ -494,7 +497,7 @@ namespace Microsoft.Threading {
 			if (this.beforeWriteReleasedCallbacks.Count > 0) {
 				return this.InvokeBeforeWriteLockReleaseHandlersAsync();
 			} else {
-				return CompletedTask;
+				return TaskExtensions.CompletedTask;
 			}
 		}
 
@@ -621,6 +624,7 @@ namespace Microsoft.Threading {
 		/// <param name="awaiter">The most nested lock.</param>
 		/// <returns><c>true</c> if all issued locks are the specified lock or nesting locks of it.</returns>
 		private bool AllHeldLocksAreByThisStack(Awaiter awaiter) {
+			Assumes.True(awaiter == null || !this.IsLockHeld(LockKind.Write, awaiter)); // this method doesn't yet handle sticky upgraded read locks (that appear in the write lock set).
 			lock (this.syncObject) {
 				if (awaiter != null) {
 					int locksMatched = 0;
@@ -760,7 +764,7 @@ namespace Microsoft.Threading {
 				if (this.completeInvoked && !previouslyQueued) {
 					// If this is a new top-level lock request, reject it completely.
 					if (awaiter.NestingLock == null) {
-						awaiter.SetFault(new InvalidOperationException());
+						awaiter.SetFault(new InvalidOperationException(Strings.LockCompletionAlreadyRequested));
 						return false;
 					}
 				}
@@ -786,7 +790,7 @@ namespace Microsoft.Threading {
 									issued = true;
 								} else if (hasRead) {
 									// We cannot issue an upgradeable read lock to folks who have (only) a read lock.
-									throw new InvalidOperationException();
+									throw new InvalidOperationException(Strings.CannotUpgradeNonUpgradeableLock);
 								} else if (this.upgradeableReadLocksIssued.Count == 0 && this.writeLocksIssued.Count == 0) {
 									issued = true;
 								}
@@ -926,7 +930,7 @@ namespace Microsoft.Threading {
 		/// This method is called while holding a private lock in order to block future lock consumers till this method is finished.
 		/// </remarks>
 		protected virtual Task OnExclusiveLockReleasedAsync() {
-			return CompletedTask;
+			return TaskExtensions.CompletedTask;
 		}
 
 		/// <summary>
@@ -1036,7 +1040,7 @@ namespace Microsoft.Threading {
 			if (reenterConcurrentOutsideCode != null && (synchronousCallbackExecution != null && !synchronousCallbackExecution.IsCompleted)) {
 				return Task.WhenAll(reenterConcurrentOutsideCode, synchronousCallbackExecution);
 			} else {
-				return reenterConcurrentOutsideCode ?? synchronousCallbackExecution ?? CompletedTask;
+				return reenterConcurrentOutsideCode ?? synchronousCallbackExecution ?? TaskExtensions.CompletedTask;
 			}
 		}
 
@@ -1077,6 +1081,7 @@ namespace Microsoft.Threading {
 			lock (this.syncObject) {
 				Assumes.True(this.GetActiveLockSet(awaiter.Kind).Remove(awaiter));
 				if (upgradedStickyWrite) {
+					Assumes.True(awaiter.Kind == LockKind.UpgradeableRead);
 					Assumes.True(this.writeLocksIssued.Remove(awaiter));
 				}
 
@@ -1244,6 +1249,7 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="awaiter">The awaiter.</param>
 		/// <param name="stillInQueue">A value indicating whether the specified <paramref name="awaiter"/> is expected to still be in the queue (and should be removed).</param>
+		/// <returns>A value indicating whether a continuation delegate was actually invoked.</returns>
 		private bool ExecuteOrHandleCancellation(Awaiter awaiter, bool stillInQueue) {
 			Requires.NotNull(awaiter, "awaiter");
 
@@ -1479,9 +1485,10 @@ namespace Microsoft.Threading {
 					this.cancellationRegistration.Dispose();
 
 					if (!this.LockIssued && this.continuation == null && !this.cancellationToken.IsCancellationRequested) {
-						var synchronousBlock = new ManualResetEventSlim();
-						this.OnCompleted(() => synchronousBlock.Set());
-						synchronousBlock.Wait(this.cancellationToken);
+						using (var synchronousBlock = new ManualResetEventSlim()) {
+							this.OnCompleted(() => synchronousBlock.Set());
+							synchronousBlock.Wait(this.cancellationToken);
+						}
 					}
 
 					ThrowIfStaOrUnsupportedSyncContext();
@@ -1535,7 +1542,7 @@ namespace Microsoft.Threading {
 					this.releaseAsyncTask = this.lck.ReleaseAsync(this, lockConsumerCanceled);
 				}
 
-				return this.releaseAsyncTask ?? CompletedTask;
+				return this.releaseAsyncTask ?? TaskExtensions.CompletedTask;
 			}
 
 			/// <summary>
@@ -1670,7 +1677,7 @@ namespace Microsoft.Threading {
 				if (this.awaiter != null) {
 					result = this.awaiter.ReleaseAsync();
 				} else {
-					result = CompletedTask;
+					result = TaskExtensions.CompletedTask;
 				}
 
 				if (this.clearSynchronizationContext && SynchronizationContext.Current is NonConcurrentSynchronizationContext) {

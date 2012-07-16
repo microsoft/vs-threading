@@ -3,6 +3,7 @@
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
+	using System.Reflection;
 	using System.Text;
 	using System.Threading.Tasks;
 
@@ -107,6 +108,33 @@
 
 			Assert.IsNotNull(this.asyncLocal.Value);
 			Assert.AreSame(value, this.asyncLocal.Value);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void CallAcrossAppDomainBoundariesWithNonSerializableData() {
+			var otherDomain = AppDomain.CreateDomain("test domain");
+			try {
+				var proxy = (OtherDomainProxy)otherDomain.CreateInstanceFromAndUnwrap(Assembly.GetExecutingAssembly().Location, typeof(OtherDomainProxy).FullName);
+
+				// Verify we can call it first.
+				proxy.SomeMethod(AppDomain.CurrentDomain.Id);
+
+				// Verify we can call it while AsyncLocal has a non-serializable value.
+				this.asyncLocal.Value = new GenericParameterHelper();
+				proxy.SomeMethod(AppDomain.CurrentDomain.Id);
+
+				// Verify we can call it after clearing the value.
+				this.asyncLocal.Value = null;
+				proxy.SomeMethod(AppDomain.CurrentDomain.Id);
+			} finally {
+				AppDomain.Unload(otherDomain);
+			}
+		}
+
+		private class OtherDomainProxy : MarshalByRefObject {
+			internal void SomeMethod(int callingAppDomainId) {
+				Assert.AreNotEqual(callingAppDomainId, AppDomain.CurrentDomain.Id, "AppDomain boundaries not crossed.");
+			}
 		}
 	}
 }
