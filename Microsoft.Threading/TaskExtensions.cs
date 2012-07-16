@@ -190,5 +190,14 @@ namespace Microsoft.Threading
 
             return tcs.Task;
         }
+
+        /// <summary>
+        /// Returns an awaitable for the specified task that will never throw, even if the source task
+        /// faults or is canceled.
+        /// </summary>
+        public static Task NoThrowAwaitable(this Task task)
+        {
+            return task.ContinueWith(_ => { }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+        }
     }
 }
