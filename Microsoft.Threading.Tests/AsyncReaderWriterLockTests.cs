@@ -1053,7 +1053,16 @@
 			});
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		/// <summary>
+		/// Tests that a common way to accidentally fork an exclusive lock for
+		/// concurrent access gets called out as an error.
+		/// </summary>
+		/// <remarks>
+		/// Test ignored because the tested behavior is incompatible with the 
+		/// <see cref="UpgradeableReadLockTraversesAcrossSta"/> and <see cref="WriteLockTraversesAcrossSta"/> tests,
+		/// which are deemed more important.
+		/// </remarks>
+		////[TestMethod, Timeout(TestTimeout), Ignore]
 		public async Task MitigationAgainstAccidentalUpgradeableReadLockForking() {
 			await this.MitigationAgainstAccidentalLockForkingHelper(
 				() => this.asyncLock.UpgradeableReadLockAsync());
@@ -1325,7 +1334,16 @@
 			}
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		/// <summary>
+		/// Tests that a common way to accidentally fork an exclusive lock for
+		/// concurrent access gets called out as an error.
+		/// </summary>
+		/// <remarks>
+		/// Test ignored because the tested behavior is incompatible with the 
+		/// <see cref="UpgradeableReadLockTraversesAcrossSta"/> and <see cref="WriteLockTraversesAcrossSta"/> tests,
+		/// which are deemed more important.
+		/// </remarks>
+		////[TestMethod, Timeout(TestTimeout), Ignore]
 		public async Task MitigationAgainstAccidentalWriteLockForking() {
 			await this.MitigationAgainstAccidentalLockForkingHelper(
 				() => this.asyncLock.WriteLockAsync());
@@ -2509,7 +2527,7 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		[Description("Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by marshaling back to an MTA.")]
-		public async Task MtaLockTraversesAcrossSta() {
+		public async Task ReadLockTraversesAcrossSta() {
 			using (await this.asyncLock.ReadLockAsync()) {
 				var testComplete = new TaskCompletionSource<object>();
 				Thread staThread = new Thread((ThreadStart)delegate {
@@ -2519,6 +2537,64 @@
 						Thread mtaThread = new Thread((ThreadStart)delegate {
 							try {
 								Assert.IsTrue(this.asyncLock.IsReadLockHeld, "MTA thread couldn't access lock across STA.");
+								testComplete.SetAsync();
+							} catch (Exception ex) {
+								testComplete.TrySetException(ex);
+							}
+						});
+						mtaThread.SetApartmentState(ApartmentState.MTA);
+						mtaThread.Start();
+					} catch (Exception ex) {
+						testComplete.TrySetException(ex);
+					}
+				});
+				staThread.SetApartmentState(ApartmentState.STA);
+				staThread.Start();
+				await testComplete.Task;
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		[Description("Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by marshaling back to an MTA.")]
+		public async Task UpgradeableReadLockTraversesAcrossSta() {
+			using (await this.asyncLock.UpgradeableReadLockAsync()) {
+				var testComplete = new TaskCompletionSource<object>();
+				Thread staThread = new Thread((ThreadStart)delegate {
+					try {
+						Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld, "STA should not be told it holds an upgradeable read lock.");
+
+						Thread mtaThread = new Thread((ThreadStart)delegate {
+							try {
+								Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld, "MTA thread couldn't access lock across STA.");
+								testComplete.SetAsync();
+							} catch (Exception ex) {
+								testComplete.TrySetException(ex);
+							}
+						});
+						mtaThread.SetApartmentState(ApartmentState.MTA);
+						mtaThread.Start();
+					} catch (Exception ex) {
+						testComplete.TrySetException(ex);
+					}
+				});
+				staThread.SetApartmentState(ApartmentState.STA);
+				staThread.Start();
+				await testComplete.Task;
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		[Description("Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by marshaling back to an MTA.")]
+		public async Task WriteLockTraversesAcrossSta() {
+			using (await this.asyncLock.WriteLockAsync()) {
+				var testComplete = new TaskCompletionSource<object>();
+				Thread staThread = new Thread((ThreadStart)delegate {
+					try {
+						Assert.IsFalse(this.asyncLock.IsWriteLockHeld, "STA should not be told it holds an upgradeable read lock.");
+
+						Thread mtaThread = new Thread((ThreadStart)delegate {
+							try {
+								Assert.IsTrue(this.asyncLock.IsWriteLockHeld, "MTA thread couldn't access lock across STA.");
 								testComplete.SetAsync();
 							} catch (Exception ex) {
 								testComplete.TrySetException(ex);

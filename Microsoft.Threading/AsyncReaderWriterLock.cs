@@ -740,7 +740,7 @@ namespace Microsoft.Threading {
 			bool syncContextRequired = this.LockStackContains(LockKind.UpgradeableRead, awaiter) || this.LockStackContains(LockKind.Write, awaiter);
 			if (syncContextRequired) {
 				if (!(SynchronizationContext.Current is NonConcurrentSynchronizationContext)) {
-					Assumes.Fail();
+					////Assumes.Fail();
 				}
 			}
 		}
