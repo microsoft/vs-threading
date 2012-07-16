@@ -1578,7 +1578,7 @@ namespace Microsoft.Threading {
 		}
 
 		private class NonConcurrentSynchronizationContext : SynchronizationContext {
-			private readonly AsyncSemaphore semaphore = new AsyncSemaphore(1);
+			private readonly SemaphoreSlim semaphore = new SemaphoreSlim(1);
 
 			public override void Send(SendOrPostCallback d, object state) {
 				throw new NotSupportedException();
@@ -1586,11 +1586,36 @@ namespace Microsoft.Threading {
 
 			public override void Post(SendOrPostCallback d, object state) {
 				Task.Run(async delegate {
-					using (await this.semaphore.EnterAsync().ConfigureAwait(false)) {
+					await this.semaphore.WaitAsync().ConfigureAwait(false);
+					try {
 						SynchronizationContext.SetSynchronizationContext(this);
 						d(state);
+					} finally {
+						this.semaphore.Release();
 					}
 				});
+			}
+
+			internal LoanBack LoanBackAnyHeldResource() {
+				return this.semaphore.CurrentCount == 0
+					 ? new LoanBack(this)
+					 : default(LoanBack);
+			}
+
+			internal struct LoanBack : IDisposable {
+				private readonly NonConcurrentSynchronizationContext syncContext;
+
+				internal LoanBack(NonConcurrentSynchronizationContext syncContext) {
+					Requires.NotNull(syncContext, "syncContext");
+					this.syncContext = syncContext;
+					this.syncContext.semaphore.Release();
+				}
+
+				public void Dispose() {
+					if (this.syncContext != null) {
+						this.syncContext.semaphore.Wait();
+					}
+				}
 			}
 		}
 
@@ -1621,8 +1646,15 @@ namespace Microsoft.Threading {
 			/// </summary>
 			public void Dispose() {
 				if (this.awaiter != null) {
-					var that = this;
-					AsyncPump.Run(() => that.ReleaseAsync());
+					var syncContext = SynchronizationContext.Current as NonConcurrentSynchronizationContext;
+					var loan = syncContext != null
+						? syncContext.LoanBackAnyHeldResource()
+						: default(NonConcurrentSynchronizationContext.LoanBack);
+					try {
+						this.ReleaseAsync().Wait();
+					} finally {
+						loan.Dispose();
+					}
 				}
 			}
 
