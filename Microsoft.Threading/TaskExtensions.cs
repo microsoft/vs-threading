@@ -24,6 +24,16 @@ namespace Microsoft.Threading
         public static readonly Task CompletedTask = Task.FromResult<object>(null);
 
         /// <summary>
+        /// A completed task with a <c>true</c> result.
+        /// </summary>
+        public static readonly Task<bool> TrueTask = Task.FromResult(true);
+
+        /// <summary>
+        /// A completed task with a <c>false</c> result.
+        /// </summary>
+        public static readonly Task<bool> FalseTask = Task.FromResult(false);
+
+        /// <summary>
         /// A cached delegate that takes a task as a parameter and does nothing.
         /// </summary>
         private static readonly Action<Task> EmptyTaskContinuation = task => { };
