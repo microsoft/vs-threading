@@ -51,7 +51,7 @@ namespace Microsoft.Threading {
 				var t = asyncMethod();
 				Verify.Operation(t != null, "No task provided.");
 				t.ContinueWith(
-					(_, state) => ((SingleThreadSynchronizationContext)syncCtx).Complete(),
+					(_, state) => ((SingleThreadSynchronizationContext)state).Complete(),
 					syncCtx,
 					TaskScheduler.Default);
 
