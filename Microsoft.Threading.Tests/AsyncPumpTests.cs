@@ -6,9 +6,10 @@
 	using System.Text;
 	using System.Threading;
 	using System.Threading.Tasks;
+	using System.Windows.Threading;
 
 	[TestClass]
-	public class AsyncPumpTests {
+	public class AsyncPumpTests : TestBase {
 		[TestMethod]
 		public void RunActionSTA() {
 			RunActionHelper();
@@ -37,6 +38,16 @@
 		[TestMethod]
 		public async Task RunFuncOfTaskOfTMTA() {
 			await Task.Run(() => RunFuncOfTaskOfTHelper());
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void NoHangWhenInvokedWithDispatcher() {
+			var ctxt = new DispatcherSynchronizationContext();
+			SynchronizationContext.SetSynchronizationContext(ctxt);
+
+			AsyncPump.Run(async delegate {
+				await Task.Yield();
+			});
 		}
 
 		private static void RunActionHelper() {
