@@ -14,9 +14,65 @@ namespace Microsoft.Threading {
 
 	/// <summary>Provides a pump that supports running asynchronous methods on the current thread.</summary>
 	public class AsyncPump {
-		private readonly AsyncLocal<SynchronizationContext> mainThreadControllingSyncContext = new AsyncLocal<SynchronizationContext>();
+		private readonly AsyncLocal<SingleThreadSynchronizationContext> mainThreadControllingSyncContext = new AsyncLocal<SingleThreadSynchronizationContext>();
 
 		private readonly SynchronizationContext underlyingSynchronizationContext;
+
+		private readonly Queue<Action> pendingActions = new Queue<Action>();
+
+		private readonly object syncObject = new object();
+
+		private volatile bool underlyingSyncContextWaiting;
+
+		private Dictionary<SingleThreadSynchronizationContext, StrongBox<int>> extraContexts =
+			new Dictionary<SingleThreadSynchronizationContext, StrongBox<int>>();
+
+		private void Post(Action action) {
+			if (this.underlyingSynchronizationContext != null) {
+				bool postThisTime = false;
+				lock (this.syncObject) {
+					this.pendingActions.Enqueue(action);
+					if (!this.underlyingSyncContextWaiting) {
+						this.underlyingSyncContextWaiting = true;
+						postThisTime = true;
+					}
+
+					foreach (var context in this.extraContexts) {
+						context.Key.Post(ExecuteActions, Tuple.Create(this, context.Value));
+					}
+				}
+
+				var mainThreadControllingSyncContext = this.mainThreadControllingSyncContext.Value;
+				if (mainThreadControllingSyncContext != null) {
+					mainThreadControllingSyncContext.Post(ExecuteActions, this);
+				}
+
+				if (postThisTime) { // do this outside the lock.
+					this.underlyingSynchronizationContext.Post(ExecuteActions, this);
+				}
+			} else {
+				ThreadPool.QueueUserWorkItem(state => ((Action)state)(), action);
+			}
+		}
+
+		private static void ExecuteActions(object state) {
+			var tuple = state as Tuple<AsyncPump, StrongBox<int>>;
+			var instance = state as AsyncPump ?? tuple.Item1;
+
+			while (tuple == null || tuple.Item2.Value > 0) {
+				Action action = null;
+				lock (instance.syncObject) {
+					if (instance.pendingActions.Count > 0) {
+						action = instance.pendingActions.Dequeue();
+					} else {
+						instance.underlyingSyncContextWaiting = false;
+						return;
+					}
+				}
+
+				action();
+			}
+		}
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AsyncPump"/> class.
@@ -112,11 +168,62 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <returns>An awaitable.</returns>
 		public SynchronizationContextAwaitable SwitchToMainThread() {
-			return new SynchronizationContextAwaitable(this.mainThreadControllingSyncContext.Value ?? this.underlyingSynchronizationContext);
+			return new SynchronizationContextAwaitable(this);
 		}
 
-		public IDisposable Join() {
-			return null;
+		public JoinRelease Join() {
+			var mainThreadControllingSyncContext = this.mainThreadControllingSyncContext.Value;
+			if (mainThreadControllingSyncContext != null) {
+
+
+				// TODO: add tests that verify whether the caller shares the same main thread as this instance.
+				StrongBox<int> refCountBox;
+				bool pendingActionsExist;
+				lock (this.syncObject) {
+					if (!this.extraContexts.TryGetValue(mainThreadControllingSyncContext, out refCountBox)) {
+						refCountBox = new StrongBox<int>();
+						this.extraContexts.Add(mainThreadControllingSyncContext, refCountBox);
+					}
+
+					refCountBox.Value = refCountBox.Value + 1;
+
+					pendingActionsExist = this.pendingActions.Count > 0;
+				}
+
+				if (pendingActionsExist) {
+					var tuple = Tuple.Create(this, refCountBox);
+					mainThreadControllingSyncContext.Post(ExecuteActions, tuple);
+				}
+
+				return new JoinRelease(this, mainThreadControllingSyncContext);
+			}
+
+			return new JoinRelease();
+		}
+
+		public struct JoinRelease : IDisposable {
+			private AsyncPump parent;
+			private SingleThreadSynchronizationContext context;
+
+			internal JoinRelease(AsyncPump parent, SynchronizationContext context) {
+				this.parent = parent;
+				this.context = (SingleThreadSynchronizationContext)context;
+			}
+
+			public void Dispose() {
+				if (this.parent != null) {
+					lock (this.parent.syncObject) {
+						StrongBox<int> refCount = this.parent.extraContexts[this.context];
+						refCount.Value = refCount.Value - 1; // always decrement value, even if to 0 so others observe it.
+						if (refCount.Value == 0) {
+							this.parent.extraContexts.Remove(this.context);
+						}
+					}
+
+					this.parent = null;
+					this.context = null;
+				}
+			}
 		}
 
 		/// <summary>Provides a SynchronizationContext that's single-threaded.</summary>
@@ -167,31 +274,31 @@ namespace Microsoft.Threading {
 		}
 
 		public struct SynchronizationContextAwaitable {
-			private readonly SynchronizationContext synchronizationContext;
+			private readonly AsyncPump asyncPump;
 
-			internal SynchronizationContextAwaitable(SynchronizationContext synchronizationContext) {
-				this.synchronizationContext = synchronizationContext;
+			internal SynchronizationContextAwaitable(AsyncPump asyncPump) {
+				this.asyncPump = asyncPump;
 			}
 
 			public SynchronizationContextAwaiter GetAwaiter() {
-				return new SynchronizationContextAwaiter(this.synchronizationContext);
+				return new SynchronizationContextAwaiter(this.asyncPump);
 			}
 		}
 
 		public struct SynchronizationContextAwaiter : INotifyCompletion {
-			private readonly SynchronizationContext synchronizationContext;
+			private readonly AsyncPump asyncPump;
 
-			internal SynchronizationContextAwaiter(SynchronizationContext synchronizationContext) {
-				this.synchronizationContext = synchronizationContext;
+			internal SynchronizationContextAwaiter(AsyncPump asyncPump) {
+				this.asyncPump = asyncPump;
 			}
 
 			public bool IsCompleted {
-				get { return this.synchronizationContext == null; }
+				get { return this.asyncPump == null; }
 			}
 
 			public void OnCompleted(Action continuation) {
-				Assumes.True(this.synchronizationContext != null);
-				this.synchronizationContext.Post(state => ((Action)state)(), continuation);
+				Assumes.True(this.asyncPump != null);
+				this.asyncPump.Post(continuation);
 			}
 
 			public void GetResult() {

@@ -159,7 +159,8 @@
 				backgroundContenderCompletedRelevantUIWork.SetResult(null);
 
 				await backgroundInvitationReverted.Task; // temporarily get off UI thread until the UI thread has rescinded offer to lend its time
-				Assert.IsTrue(syncUIOperationCompleted);
+				Assert.AreSame(originalThread, Thread.CurrentThread);
+				Assert.IsTrue(syncUIOperationCompleted); // should be true because continuation needs same thread that this is set on.
 			});
 
 			this.asyncPump.Run(async delegate {
@@ -173,11 +174,13 @@
 					await backgroundContenderCompletedRelevantUIWork.Task; // we can't complete until this seemingly unrelated work completes.
 				} // stop inviting more work from background thread.
 
-				backgroundInvitationReverted.SetResult(null);
 				await this.asyncPump.SwitchToMainThread();
+				var nowait = backgroundInvitationReverted.SetAsync();
 				Assert.AreSame(originalThread, Thread.CurrentThread);
 				syncUIOperationCompleted = true;
 			});
+
+			backgroundContender.Wait(); // ensure it didn't ultimately throw any exception.
 		}
 
 		// TODO: 
@@ -185,6 +188,7 @@
 		//  * other Run method overloads such as Run<T>(Func<Task<T>> and Run(Action)
 		//  * original sync context is restored after.
 		//  * nested Run methods.
+		//  * Run invoked on a non-Main thread, that it doesn't set the asynclocal for that thread.
 
 		private void RunActionHelper() {
 			var initialThread = Thread.CurrentThread;
