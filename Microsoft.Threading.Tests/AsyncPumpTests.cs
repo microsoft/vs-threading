@@ -158,7 +158,18 @@
 				await uiThreadNowBusy.Task;
 				await uiPump2.SwitchToMainThread();
 				Assert.AreSame(originalThread, Thread.CurrentThread);
+
+				// Release, then reacquire the STA a couple of different ways
+				// to verify that even after the invitation has been extended
+				// to join the STA thread we can leave and revisit.
+				await uiPump2.SwitchToMainThread();
+				Assert.AreSame(originalThread, Thread.CurrentThread);
+				await Task.Yield();
+				Assert.AreSame(originalThread, Thread.CurrentThread);
+
+				// Now complete the task that the synchronous work is waiting before reverting their invitation.
 				backgroundContenderCompletedRelevantUIWork.SetResult(null);
+
 				await backgroundInvitationReverted.Task; // temporarily get off UI thread until the UI thread has rescinded offer to lend its time
 				Assert.IsTrue(syncUIOperationCompleted);
 			});
@@ -170,7 +181,7 @@
 				await TaskScheduler.Default;
 				Assert.AreNotSame(originalThread, Thread.CurrentThread);
 
-				using (uiPump2.Join()) {
+				using (uiPump2.Join()) { // invite the work to re-enter our synchronous work on the STA thread.
 					await backgroundContenderCompletedRelevantUIWork.Task; // we can't complete until this seemingly unrelated work completes.
 				} // stop inviting more work from background thread.
 
