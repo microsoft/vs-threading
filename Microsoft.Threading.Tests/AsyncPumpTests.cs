@@ -140,6 +140,47 @@
 			});
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void SwitchToSTASucceedsForDependentWork() {
+			var ctxt = new DispatcherSynchronizationContext();
+			SynchronizationContext.SetSynchronizationContext(ctxt);
+
+			var originalThread = Thread.CurrentThread;
+			var uiPump = new AsyncPump(ctxt);
+			var uiPump2 = new AsyncPump(ctxt);
+
+			var uiThreadNowBusy = new TaskCompletionSource<object>();
+			var backgroundContenderCompletedRelevantUIWork = new TaskCompletionSource<object>();
+			var backgroundInvitationReverted = new TaskCompletionSource<object>();
+			bool syncUIOperationCompleted = false;
+
+			var backgroundContender = Task.Run(async delegate {
+				await uiThreadNowBusy.Task;
+				await uiPump2.SwitchToMainThread();
+				Assert.AreSame(originalThread, Thread.CurrentThread);
+				backgroundContenderCompletedRelevantUIWork.SetResult(null);
+				await backgroundInvitationReverted.Task; // temporarily get off UI thread until the UI thread has rescinded offer to lend its time
+				Assert.IsTrue(syncUIOperationCompleted);
+			});
+
+			AsyncPump.Run(async delegate {
+				uiThreadNowBusy.SetResult(null);
+				Assert.AreSame(originalThread, Thread.CurrentThread);
+
+				await TaskScheduler.Default;
+				Assert.AreNotSame(originalThread, Thread.CurrentThread);
+
+				using (uiPump2.Join()) {
+					await backgroundContenderCompletedRelevantUIWork.Task; // we can't complete until this seemingly unrelated work completes.
+				} // stop inviting more work from background thread.
+
+				backgroundInvitationReverted.SetResult(null);
+				await uiPump.SwitchToMainThread();
+				Assert.AreSame(originalThread, Thread.CurrentThread);
+				syncUIOperationCompleted = true;
+			});
+		}
+
 		private static void RunActionHelper() {
 			var initialThread = Thread.CurrentThread;
 			AsyncPump.Run((Action)async delegate {

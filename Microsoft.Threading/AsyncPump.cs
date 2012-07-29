@@ -115,6 +115,10 @@ namespace Microsoft.Threading {
 			return new SynchronizationContextAwaitable(mainThreadControllingSyncContext.Value ?? this.synchronizationContext);
 		}
 
+		public IDisposable Join() {
+			return null;
+		}
+
 		/// <summary>Provides a SynchronizationContext that's single-threaded.</summary>
 		private sealed class SingleThreadSynchronizationContext : SynchronizationContext {
 			/// <summary>The queue of work items.</summary>
