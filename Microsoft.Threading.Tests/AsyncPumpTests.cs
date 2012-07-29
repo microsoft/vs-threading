@@ -72,20 +72,21 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void SwitchToSTADoesNotCauseReentrancy() {
+		public void SwitchToSTADoesNotCauseUnrelatedReentrancy() {
 			var ctxt = new DispatcherSynchronizationContext();
 			SynchronizationContext.SetSynchronizationContext(ctxt);
 			var frame = new DispatcherFrame();
 
 			var originalThread = Thread.CurrentThread;
 			var uiPump = new AsyncPump(ctxt);
-			
+			var uiPump2 = new AsyncPump(ctxt);
+
 			var uiThreadNowBusy = new TaskCompletionSource<object>();
 			bool contenderHasReachedUIThread = false;
 
 			var backgroundContender = Task.Run(async delegate {
 				await uiThreadNowBusy.Task;
-				await uiPump.SwitchToMainThread();
+				await uiPump2.SwitchToMainThread();
 				Assert.AreSame(originalThread, Thread.CurrentThread);
 				contenderHasReachedUIThread = true;
 				frame.Continue = false;
@@ -108,6 +109,35 @@
 			Dispatcher.PushFrame(frame);
 
 			Assert.IsTrue(backgroundContender.Wait(AsyncDelay), "Background contender never reached the UI thread.");
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void SwitchToSTASucceedsForRelevantWork() {
+			var ctxt = new DispatcherSynchronizationContext();
+			SynchronizationContext.SetSynchronizationContext(ctxt);
+
+			var originalThread = Thread.CurrentThread;
+			var uiPump = new AsyncPump(ctxt);
+
+			var uiThreadNowBusy = new TaskCompletionSource<object>();
+
+			var backgroundContender = Task.Run(async delegate {
+				await uiThreadNowBusy.Task;
+				await uiPump.SwitchToMainThread();
+				Assert.AreSame(originalThread, Thread.CurrentThread);
+			});
+
+			AsyncPump.Run(async delegate {
+				uiThreadNowBusy.SetResult(null);
+				Assert.AreSame(originalThread, Thread.CurrentThread);
+
+				await TaskScheduler.Default;
+				Assert.AreNotSame(originalThread, Thread.CurrentThread);
+				await backgroundContender; // we can't complete until this seemingly unrelated work completes.
+
+				await uiPump.SwitchToMainThread();
+				Assert.AreSame(originalThread, Thread.CurrentThread);
+			});
 		}
 
 		private static void RunActionHelper() {
