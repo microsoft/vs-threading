@@ -50,6 +50,27 @@
 			});
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void LeaveAndReturnToSTA() {
+			var ctxt = new DispatcherSynchronizationContext();
+			SynchronizationContext.SetSynchronizationContext(ctxt);
+
+			var originalThread = Thread.CurrentThread;
+			var uithread = new AsyncPump(ctxt);
+			var fullyCompleted = false;
+			AsyncPump.Run(async delegate {
+				Assert.AreSame(originalThread, Thread.CurrentThread);
+
+				await TaskScheduler.Default;
+				Assert.AreNotSame(originalThread, Thread.CurrentThread);
+
+				await uithread.SwitchToMainThread();
+				Assert.AreSame(originalThread, Thread.CurrentThread);
+				fullyCompleted = true;
+			});
+			Assert.IsTrue(fullyCompleted);
+		}
+
 		private static void RunActionHelper() {
 			var initialThread = Thread.CurrentThread;
 			AsyncPump.Run((Action)async delegate {

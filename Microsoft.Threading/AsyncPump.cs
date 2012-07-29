@@ -8,11 +8,24 @@ namespace Microsoft.Threading {
 	using System;
 	using System.Collections.Concurrent;
 	using System.Collections.Generic;
+	using System.Runtime.CompilerServices;
 	using System.Threading;
 	using System.Threading.Tasks;
 
 	/// <summary>Provides a pump that supports running asynchronous methods on the current thread.</summary>
-	public static class AsyncPump {
+	public class AsyncPump {
+		private readonly SynchronizationContext synchronizationContext;
+
+		private static readonly AsyncLocal<SynchronizationContext> mainThreadControllingSyncContext = new AsyncLocal<SynchronizationContext>();
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="AsyncPump"/> class.
+		/// </summary>
+		/// <param name="synchronizationContext">The synchronization context </param>
+		public AsyncPump(SynchronizationContext synchronizationContext = null) {
+			this.synchronizationContext = synchronizationContext ?? SynchronizationContext.Current; // may still be null after this.
+		}
+
 		/// <summary>Runs the specified asynchronous method.</summary>
 		/// <param name="asyncMethod">The asynchronous method to execute.</param>
 		public static void Run(Action asyncMethod) {
@@ -42,10 +55,12 @@ namespace Microsoft.Threading {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
 			var prevCtx = SynchronizationContext.Current;
+			var prevAsyncLocalCtxt = mainThreadControllingSyncContext.Value;
 			try {
 				// Establish the new context
 				var syncCtx = new SingleThreadSynchronizationContext();
 				SynchronizationContext.SetSynchronizationContext(syncCtx);
+				mainThreadControllingSyncContext.Value = syncCtx;
 
 				// Invoke the function and alert the context to when it completes
 				var t = asyncMethod();
@@ -59,6 +74,7 @@ namespace Microsoft.Threading {
 				syncCtx.RunOnCurrentThread();
 				t.GetAwaiter().GetResult();
 			} finally {
+				mainThreadControllingSyncContext.Value = prevAsyncLocalCtxt;
 				SynchronizationContext.SetSynchronizationContext(prevCtx);
 			}
 		}
@@ -88,6 +104,15 @@ namespace Microsoft.Threading {
 			} finally {
 				SynchronizationContext.SetSynchronizationContext(prevCtx);
 			}
+		}
+
+		/// <summary>
+		/// Gets an awaitable whose continuations execute on the synchronization context that this instance was initialized with,
+		/// in such a way as to mitigate both deadlocks and reentrancy.
+		/// </summary>
+		/// <returns>An awaitable.</returns>
+		public SynchronizationContextAwaitable SwitchToMainThread() {
+			return new SynchronizationContextAwaitable(mainThreadControllingSyncContext.Value ?? this.synchronizationContext);
 		}
 
 		/// <summary>Provides a SynchronizationContext that's single-threaded.</summary>
@@ -134,6 +159,38 @@ namespace Microsoft.Threading {
 				if (Interlocked.Decrement(ref this.operationCount) == 0) {
 					this.Complete();
 				}
+			}
+		}
+
+		public struct SynchronizationContextAwaitable {
+			private readonly SynchronizationContext synchronizationContext;
+
+			internal SynchronizationContextAwaitable(SynchronizationContext synchronizationContext) {
+				this.synchronizationContext = synchronizationContext;
+			}
+
+			public SynchronizationContextAwaiter GetAwaiter() {
+				return new SynchronizationContextAwaiter(this.synchronizationContext);
+			}
+		}
+
+		public struct SynchronizationContextAwaiter : INotifyCompletion {
+			private readonly SynchronizationContext synchronizationContext;
+
+			internal SynchronizationContextAwaiter(SynchronizationContext synchronizationContext) {
+				this.synchronizationContext = synchronizationContext;
+			}
+
+			public bool IsCompleted {
+				get { return this.synchronizationContext == null; }
+			}
+
+			public void OnCompleted(Action continuation) {
+				Assumes.True(this.synchronizationContext != null);
+				this.synchronizationContext.Post(state => ((Action)state)(), continuation);
+			}
+
+			public void GetResult() {
 			}
 		}
 	}
