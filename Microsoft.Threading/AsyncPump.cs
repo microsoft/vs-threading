@@ -14,9 +14,9 @@ namespace Microsoft.Threading {
 
 	/// <summary>Provides a pump that supports running asynchronous methods on the current thread.</summary>
 	public class AsyncPump {
-		private readonly SynchronizationContext synchronizationContext;
+		private readonly AsyncLocal<SynchronizationContext> mainThreadControllingSyncContext = new AsyncLocal<SynchronizationContext>();
 
-		private static readonly AsyncLocal<SynchronizationContext> mainThreadControllingSyncContext = new AsyncLocal<SynchronizationContext>();
+		private readonly SynchronizationContext synchronizationContext;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AsyncPump"/> class.
@@ -28,7 +28,7 @@ namespace Microsoft.Threading {
 
 		/// <summary>Runs the specified asynchronous method.</summary>
 		/// <param name="asyncMethod">The asynchronous method to execute.</param>
-		public static void Run(Action asyncMethod) {
+		public void Run(Action asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
 			var prevCtx = SynchronizationContext.Current;
@@ -51,16 +51,16 @@ namespace Microsoft.Threading {
 
 		/// <summary>Runs the specified asynchronous method.</summary>
 		/// <param name="asyncMethod">The asynchronous method to execute.</param>
-		public static void Run(Func<Task> asyncMethod) {
+		public void Run(Func<Task> asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
 			var prevCtx = SynchronizationContext.Current;
-			var prevAsyncLocalCtxt = mainThreadControllingSyncContext.Value;
+			var prevAsyncLocalCtxt = this.mainThreadControllingSyncContext.Value;
 			try {
 				// Establish the new context
 				var syncCtx = new SingleThreadSynchronizationContext();
 				SynchronizationContext.SetSynchronizationContext(syncCtx);
-				mainThreadControllingSyncContext.Value = syncCtx;
+				this.mainThreadControllingSyncContext.Value = syncCtx;
 
 				// Invoke the function and alert the context to when it completes
 				var t = asyncMethod();
@@ -74,14 +74,14 @@ namespace Microsoft.Threading {
 				syncCtx.RunOnCurrentThread();
 				t.GetAwaiter().GetResult();
 			} finally {
-				mainThreadControllingSyncContext.Value = prevAsyncLocalCtxt;
+				this.mainThreadControllingSyncContext.Value = prevAsyncLocalCtxt;
 				SynchronizationContext.SetSynchronizationContext(prevCtx);
 			}
 		}
 
 		/// <summary>Runs the specified asynchronous method.</summary>
 		/// <param name="asyncMethod">The asynchronous method to execute.</param>
-		public static T Run<T>(Func<Task<T>> asyncMethod) {
+		public T Run<T>(Func<Task<T>> asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
 			var prevCtx = SynchronizationContext.Current;
@@ -112,7 +112,7 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <returns>An awaitable.</returns>
 		public SynchronizationContextAwaitable SwitchToMainThread() {
-			return new SynchronizationContextAwaitable(mainThreadControllingSyncContext.Value ?? this.synchronizationContext);
+			return new SynchronizationContextAwaitable(this.mainThreadControllingSyncContext.Value ?? this.synchronizationContext);
 		}
 
 		public IDisposable Join() {

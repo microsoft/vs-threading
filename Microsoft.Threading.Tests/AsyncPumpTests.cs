@@ -10,24 +10,39 @@
 
 	[TestClass]
 	public class AsyncPumpTests : TestBase {
-		[TestMethod]
-		public void RunActionSTA() {
-			RunActionHelper();
+		private AsyncPump asyncPump;
+		private Thread originalThread;
+
+		[TestInitialize]
+		public void Initialize() {
+			var ctxt = new DispatcherSynchronizationContext();
+			SynchronizationContext.SetSynchronizationContext(ctxt);
+			this.asyncPump = new AsyncPump();
+			this.originalThread = Thread.CurrentThread;
+		}
+
+		[TestCleanup]
+		public void Cleanup() {
 		}
 
 		[TestMethod]
-		public async Task RunActionMTA() {
-			await Task.Run(() => RunActionHelper());
+		public void RunActionSTA() {
+			this.RunActionHelper();
+		}
+
+		[TestMethod]
+		public void RunActionMTA() {
+			Task.Run(() => this.RunActionHelper()).Wait();
 		}
 
 		[TestMethod]
 		public void RunFuncOfTaskSTA() {
-			RunFuncOfTaskHelper();
+			this.RunFuncOfTaskHelper();
 		}
 
 		[TestMethod]
-		public async Task RunFuncOfTaskMTA() {
-			await Task.Run(() => RunFuncOfTaskHelper());
+		public void RunFuncOfTaskMTA() {
+			Task.Run(() => RunFuncOfTaskHelper()).Wait();
 		}
 
 		[TestMethod]
@@ -36,36 +51,28 @@
 		}
 
 		[TestMethod]
-		public async Task RunFuncOfTaskOfTMTA() {
-			await Task.Run(() => RunFuncOfTaskOfTHelper());
+		public void RunFuncOfTaskOfTMTA() {
+			Task.Run(() => RunFuncOfTaskOfTHelper()).Wait();
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void NoHangWhenInvokedWithDispatcher() {
-			var ctxt = new DispatcherSynchronizationContext();
-			SynchronizationContext.SetSynchronizationContext(ctxt);
-
-			AsyncPump.Run(async delegate {
+			this.asyncPump.Run(async delegate {
 				await Task.Yield();
 			});
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void LeaveAndReturnToSTA() {
-			var ctxt = new DispatcherSynchronizationContext();
-			SynchronizationContext.SetSynchronizationContext(ctxt);
-
-			var originalThread = Thread.CurrentThread;
-			var uiPump = new AsyncPump(ctxt);
 			var fullyCompleted = false;
-			AsyncPump.Run(async delegate {
-				Assert.AreSame(originalThread, Thread.CurrentThread);
+			this.asyncPump.Run(async delegate {
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 
 				await TaskScheduler.Default;
-				Assert.AreNotSame(originalThread, Thread.CurrentThread);
+				Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
 
-				await uiPump.SwitchToMainThread();
-				Assert.AreSame(originalThread, Thread.CurrentThread);
+				await this.asyncPump.SwitchToMainThread();
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 				fullyCompleted = true;
 			});
 			Assert.IsTrue(fullyCompleted);
@@ -73,35 +80,29 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void SwitchToSTADoesNotCauseUnrelatedReentrancy() {
-			var ctxt = new DispatcherSynchronizationContext();
-			SynchronizationContext.SetSynchronizationContext(ctxt);
 			var frame = new DispatcherFrame();
-
-			var originalThread = Thread.CurrentThread;
-			var uiPump = new AsyncPump(ctxt);
-			var uiPump2 = new AsyncPump(ctxt);
 
 			var uiThreadNowBusy = new TaskCompletionSource<object>();
 			bool contenderHasReachedUIThread = false;
 
 			var backgroundContender = Task.Run(async delegate {
 				await uiThreadNowBusy.Task;
-				await uiPump2.SwitchToMainThread();
-				Assert.AreSame(originalThread, Thread.CurrentThread);
+				await this.asyncPump.SwitchToMainThread();
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 				contenderHasReachedUIThread = true;
 				frame.Continue = false;
 			});
 
-			AsyncPump.Run(async delegate {
+			this.asyncPump.Run(async delegate {
 				uiThreadNowBusy.SetResult(null);
-				Assert.AreSame(originalThread, Thread.CurrentThread);
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 
 				await TaskScheduler.Default;
-				Assert.AreNotSame(originalThread, Thread.CurrentThread);
+				Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
 				await Task.Delay(AsyncDelay); // allow ample time for the background contender to re-enter the STA thread if it's possible (we don't want it to be).
 
-				await uiPump.SwitchToMainThread();
-				Assert.AreSame(originalThread, Thread.CurrentThread);
+				await this.asyncPump.SwitchToMainThread();
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 				Assert.IsFalse(contenderHasReachedUIThread, "The contender managed to get to the STA thread while other work was on it.");
 			});
 
@@ -113,42 +114,29 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void SwitchToSTASucceedsForRelevantWork() {
-			var ctxt = new DispatcherSynchronizationContext();
-			SynchronizationContext.SetSynchronizationContext(ctxt);
-
-			var originalThread = Thread.CurrentThread;
-			var uiPump = new AsyncPump(ctxt);
-
-			AsyncPump.Run(async delegate {
+			this.asyncPump.Run(async delegate {
 				var backgroundContender = Task.Run(async delegate {
-					await uiPump.SwitchToMainThread();
-					Assert.AreSame(originalThread, Thread.CurrentThread);
+					await this.asyncPump.SwitchToMainThread();
+					Assert.AreSame(this.originalThread, Thread.CurrentThread);
 				});
 
-				Assert.AreSame(originalThread, Thread.CurrentThread);
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 
 				await TaskScheduler.Default;
-				Assert.AreNotSame(originalThread, Thread.CurrentThread);
+				Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
 
 				// We can't complete until this seemingly unrelated work completes.
 				// This shouldn't deadlock because this synchronous operation kicked off
 				// the operation to begin with.
 				await backgroundContender;
 
-				await uiPump.SwitchToMainThread();
-				Assert.AreSame(originalThread, Thread.CurrentThread);
+				await this.asyncPump.SwitchToMainThread();
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 			});
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void SwitchToSTASucceedsForDependentWork() {
-			var ctxt = new DispatcherSynchronizationContext();
-			SynchronizationContext.SetSynchronizationContext(ctxt);
-
-			var originalThread = Thread.CurrentThread;
-			var uiPump = new AsyncPump(ctxt);
-			var uiPump2 = new AsyncPump(ctxt);
-
 			var uiThreadNowBusy = new TaskCompletionSource<object>();
 			var backgroundContenderCompletedRelevantUIWork = new TaskCompletionSource<object>();
 			var backgroundInvitationReverted = new TaskCompletionSource<object>();
@@ -156,13 +144,13 @@
 
 			var backgroundContender = Task.Run(async delegate {
 				await uiThreadNowBusy.Task;
-				await uiPump2.SwitchToMainThread();
+				await this.asyncPump.SwitchToMainThread();
 				Assert.AreSame(originalThread, Thread.CurrentThread);
 
 				// Release, then reacquire the STA a couple of different ways
 				// to verify that even after the invitation has been extended
 				// to join the STA thread we can leave and revisit.
-				await uiPump2.SwitchToMainThread();
+				await this.asyncPump.SwitchToMainThread();
 				Assert.AreSame(originalThread, Thread.CurrentThread);
 				await Task.Yield();
 				Assert.AreSame(originalThread, Thread.CurrentThread);
@@ -174,46 +162,52 @@
 				Assert.IsTrue(syncUIOperationCompleted);
 			});
 
-			AsyncPump.Run(async delegate {
+			this.asyncPump.Run(async delegate {
 				uiThreadNowBusy.SetResult(null);
 				Assert.AreSame(originalThread, Thread.CurrentThread);
 
 				await TaskScheduler.Default;
 				Assert.AreNotSame(originalThread, Thread.CurrentThread);
 
-				using (uiPump2.Join()) { // invite the work to re-enter our synchronous work on the STA thread.
+				using (this.asyncPump.Join()) { // invite the work to re-enter our synchronous work on the STA thread.
 					await backgroundContenderCompletedRelevantUIWork.Task; // we can't complete until this seemingly unrelated work completes.
 				} // stop inviting more work from background thread.
 
 				backgroundInvitationReverted.SetResult(null);
-				await uiPump.SwitchToMainThread();
+				await this.asyncPump.SwitchToMainThread();
 				Assert.AreSame(originalThread, Thread.CurrentThread);
 				syncUIOperationCompleted = true;
 			});
 		}
 
-		private static void RunActionHelper() {
+		// TODO: 
+		// Add tests for:
+		//  * other Run method overloads such as Run<T>(Func<Task<T>> and Run(Action)
+		//  * original sync context is restored after.
+		//  * nested Run methods.
+
+		private void RunActionHelper() {
 			var initialThread = Thread.CurrentThread;
-			AsyncPump.Run((Action)async delegate {
+			this.asyncPump.Run((Action)async delegate {
 				Assert.AreSame(initialThread, Thread.CurrentThread);
 				await Task.Yield();
 				Assert.AreSame(initialThread, Thread.CurrentThread);
 			});
 		}
 
-		private static void RunFuncOfTaskHelper() {
+		private void RunFuncOfTaskHelper() {
 			var initialThread = Thread.CurrentThread;
-			AsyncPump.Run(async delegate {
+			this.asyncPump.Run(async delegate {
 				Assert.AreSame(initialThread, Thread.CurrentThread);
 				await Task.Yield();
 				Assert.AreSame(initialThread, Thread.CurrentThread);
 			});
 		}
 
-		private static void RunFuncOfTaskOfTHelper() {
+		private void RunFuncOfTaskOfTHelper() {
 			var initialThread = Thread.CurrentThread;
 			var expectedResult = new GenericParameterHelper();
-			GenericParameterHelper actualResult = AsyncPump.Run(async delegate {
+			GenericParameterHelper actualResult = this.asyncPump.Run(async delegate {
 				Assert.AreSame(initialThread, Thread.CurrentThread);
 				await Task.Yield();
 				Assert.AreSame(initialThread, Thread.CurrentThread);
