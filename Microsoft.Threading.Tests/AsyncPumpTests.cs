@@ -56,7 +56,7 @@
 			SynchronizationContext.SetSynchronizationContext(ctxt);
 
 			var originalThread = Thread.CurrentThread;
-			var uithread = new AsyncPump(ctxt);
+			var uiPump = new AsyncPump(ctxt);
 			var fullyCompleted = false;
 			AsyncPump.Run(async delegate {
 				Assert.AreSame(originalThread, Thread.CurrentThread);
@@ -64,11 +64,50 @@
 				await TaskScheduler.Default;
 				Assert.AreNotSame(originalThread, Thread.CurrentThread);
 
-				await uithread.SwitchToMainThread();
+				await uiPump.SwitchToMainThread();
 				Assert.AreSame(originalThread, Thread.CurrentThread);
 				fullyCompleted = true;
 			});
 			Assert.IsTrue(fullyCompleted);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void SwitchToSTADoesNotCauseReentrancy() {
+			var ctxt = new DispatcherSynchronizationContext();
+			SynchronizationContext.SetSynchronizationContext(ctxt);
+			var frame = new DispatcherFrame();
+
+			var originalThread = Thread.CurrentThread;
+			var uiPump = new AsyncPump(ctxt);
+			
+			var uiThreadNowBusy = new TaskCompletionSource<object>();
+			bool contenderHasReachedUIThread = false;
+
+			var backgroundContender = Task.Run(async delegate {
+				await uiThreadNowBusy.Task;
+				await uiPump.SwitchToMainThread();
+				Assert.AreSame(originalThread, Thread.CurrentThread);
+				contenderHasReachedUIThread = true;
+				frame.Continue = false;
+			});
+
+			AsyncPump.Run(async delegate {
+				uiThreadNowBusy.SetResult(null);
+				Assert.AreSame(originalThread, Thread.CurrentThread);
+
+				await TaskScheduler.Default;
+				Assert.AreNotSame(originalThread, Thread.CurrentThread);
+				await Task.Delay(AsyncDelay); // allow ample time for the background contender to re-enter the STA thread if it's possible (we don't want it to be).
+
+				await uiPump.SwitchToMainThread();
+				Assert.AreSame(originalThread, Thread.CurrentThread);
+				Assert.IsFalse(contenderHasReachedUIThread, "The contender managed to get to the STA thread while other work was on it.");
+			});
+
+			// Pump messages until everything's done.
+			Dispatcher.PushFrame(frame);
+
+			Assert.IsTrue(backgroundContender.Wait(AsyncDelay), "Background contender never reached the UI thread.");
 		}
 
 		private static void RunActionHelper() {
