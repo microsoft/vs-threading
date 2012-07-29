@@ -119,21 +119,21 @@
 			var originalThread = Thread.CurrentThread;
 			var uiPump = new AsyncPump(ctxt);
 
-			var uiThreadNowBusy = new TaskCompletionSource<object>();
-
-			var backgroundContender = Task.Run(async delegate {
-				await uiThreadNowBusy.Task;
-				await uiPump.SwitchToMainThread();
-				Assert.AreSame(originalThread, Thread.CurrentThread);
-			});
-
 			AsyncPump.Run(async delegate {
-				uiThreadNowBusy.SetResult(null);
+				var backgroundContender = Task.Run(async delegate {
+					await uiPump.SwitchToMainThread();
+					Assert.AreSame(originalThread, Thread.CurrentThread);
+				});
+
 				Assert.AreSame(originalThread, Thread.CurrentThread);
 
 				await TaskScheduler.Default;
 				Assert.AreNotSame(originalThread, Thread.CurrentThread);
-				await backgroundContender; // we can't complete until this seemingly unrelated work completes.
+
+				// We can't complete until this seemingly unrelated work completes.
+				// This shouldn't deadlock because this synchronous operation kicked off
+				// the operation to begin with.
+				await backgroundContender;
 
 				await uiPump.SwitchToMainThread();
 				Assert.AreSame(originalThread, Thread.CurrentThread);
