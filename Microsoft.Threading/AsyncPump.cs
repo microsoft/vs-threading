@@ -16,14 +16,14 @@ namespace Microsoft.Threading {
 	public class AsyncPump {
 		private readonly AsyncLocal<SynchronizationContext> mainThreadControllingSyncContext = new AsyncLocal<SynchronizationContext>();
 
-		private readonly SynchronizationContext synchronizationContext;
+		private readonly SynchronizationContext underlyingSynchronizationContext;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AsyncPump"/> class.
 		/// </summary>
 		/// <param name="synchronizationContext">The synchronization context </param>
 		public AsyncPump(SynchronizationContext synchronizationContext = null) {
-			this.synchronizationContext = synchronizationContext ?? SynchronizationContext.Current; // may still be null after this.
+			this.underlyingSynchronizationContext = synchronizationContext ?? SynchronizationContext.Current; // may still be null after this.
 		}
 
 		/// <summary>Runs the specified asynchronous method.</summary>
@@ -112,7 +112,7 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <returns>An awaitable.</returns>
 		public SynchronizationContextAwaitable SwitchToMainThread() {
-			return new SynchronizationContextAwaitable(this.mainThreadControllingSyncContext.Value ?? this.synchronizationContext);
+			return new SynchronizationContextAwaitable(this.mainThreadControllingSyncContext.Value ?? this.underlyingSynchronizationContext);
 		}
 
 		public IDisposable Join() {
