@@ -273,6 +273,40 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void RunSynchronouslyOffMainThreadCanReenterMainThreadForSameAsyncPumpInstance() {
+			var task = Task.Run(delegate {
+				this.asyncPump.RunSynchronously(async delegate {
+					await this.asyncPump.SwitchToMainThread();
+					Assert.AreSame(this.originalThread, Thread.CurrentThread, "We're not on the Main thread!");
+				});
+			});
+
+			this.asyncPump.RunSynchronously(async delegate {
+				// No Join necessary here because it's all the same instance of AsyncPump.
+				await task;
+			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void RunSynchronouslyOffMainThreadRequiresJoinToReenterMainThreadForDifferentAsyncPumpInstance() {
+			var otherAsyncPump = new AsyncPump();
+			var task = Task.Run(delegate {
+				otherAsyncPump.RunSynchronously(async delegate {
+					await otherAsyncPump.SwitchToMainThread();
+					Assert.AreSame(this.originalThread, Thread.CurrentThread);
+				});
+			});
+
+			this.asyncPump.RunSynchronously(async delegate {
+				// No Join necessary here because it's all the same instance of AsyncPump.
+				Assert.AreNotSame(task, await Task.WhenAny(task, Task.Delay(AsyncDelay / 2)), "The unrelated main thread work completed before the Main thread was joined.");
+				using (otherAsyncPump.Join()) {
+					await task;
+				}
+			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void JoinRejectsSubsequentWork() {
 			bool outerCompleted = false;
 
