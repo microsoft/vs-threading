@@ -425,6 +425,26 @@
 			});
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void RunSynchronouslyKicksOffReturnsThenSyncBlocksStillRequiresJoin() {
+			var mainThreadNowBlocking = new AsyncManualResetEvent();
+			Task task = null;
+			this.asyncPump.RunSynchronously(delegate {
+				task = Task.Run(async delegate {
+					await mainThreadNowBlocking.WaitAsync();
+					await this.asyncPump.SwitchToMainThread();
+				});
+			});
+
+			this.asyncPump.RunSynchronously(async delegate {
+				mainThreadNowBlocking.Set();
+				Assert.AreNotSame(task, await Task.WhenAny(task, Task.Delay(AsyncDelay / 2)));
+				using (this.asyncPump.Join()) {
+					await task;
+				}
+			});
+		}
+
 		private async Task TestReentrancyOfUnrelatedDependentWork() {
 			var unrelatedMainThreadWorkWaiting = new TaskCompletionSource<object>();
 			var unrelatedMainThreadWorkInvoked = new TaskCompletionSource<object>();
