@@ -235,7 +235,7 @@
 			Assert.IsTrue(outerCompleted, "Outer Run did not complete.");
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout + AsyncDelay * 4)]
 		public void RunSynchronouslyNestedWithJoins() {
 			bool outerCompleted = false, innerCompleted = false;
 
