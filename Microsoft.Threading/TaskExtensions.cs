@@ -209,5 +209,11 @@ namespace Microsoft.Threading
         {
             return task.ContinueWith(_ => { }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
         }
+
+		/// <summary>
+		/// Consumes a task and doesn't do anything with it.  Useful for fire-and-forget calls to async methods within async methods.
+		/// </summary>
+		public static void Forget(this Task taks) {
+		}
     }
 }
