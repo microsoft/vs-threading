@@ -58,7 +58,7 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public void LeaveAndReturnToSTA() {
 			var fullyCompleted = false;
-			this.asyncPump.Run(async delegate {
+			this.asyncPump.RunSynchronously(async delegate {
 				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 
 				await TaskScheduler.Default;
@@ -86,7 +86,7 @@
 				frame.Continue = false;
 			});
 
-			this.asyncPump.Run(async delegate {
+			this.asyncPump.RunSynchronously(async delegate {
 				uiThreadNowBusy.SetResult(null);
 				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 
@@ -107,7 +107,7 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void SwitchToSTASucceedsForRelevantWork() {
-			this.asyncPump.Run(async delegate {
+			this.asyncPump.RunSynchronously(async delegate {
 				var backgroundContender = Task.Run(async delegate {
 					await this.asyncPump.SwitchToMainThread();
 					Assert.AreSame(this.originalThread, Thread.CurrentThread);
@@ -163,7 +163,7 @@
 				Assert.IsTrue(syncUIOperationCompleted); // should be true because continuation needs same thread that this is set on.
 			});
 
-			this.asyncPump.Run(async delegate {
+			this.asyncPump.RunSynchronously(async delegate {
 				uiThreadNowBusy.SetResult(null);
 				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 
@@ -190,7 +190,7 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public void NestedRunsNoJoins() {
 			bool outerCompleted = false, innerCompleted = false;
-			this.asyncPump.Run(async delegate {
+			this.asyncPump.RunSynchronously(async delegate {
 				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 				await Task.Yield();
 				Assert.AreSame(this.originalThread, Thread.CurrentThread);
@@ -200,7 +200,7 @@
 					Assert.AreSame(this.originalThread, Thread.CurrentThread);
 				});
 
-				this.asyncPump.Run(async delegate {
+				this.asyncPump.RunSynchronously(async delegate {
 					Assert.AreSame(this.originalThread, Thread.CurrentThread);
 					await Task.Yield();
 					Assert.AreSame(this.originalThread, Thread.CurrentThread);
@@ -244,7 +244,7 @@
 				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 			});
 
-			this.asyncPump.Run(async delegate {
+			this.asyncPump.RunSynchronously(async delegate {
 				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 				await Task.Yield();
 				Assert.AreSame(this.originalThread, Thread.CurrentThread);
@@ -266,7 +266,7 @@
 			Assert.IsTrue(outerCompleted, "Outer Run did not complete.");
 
 			// Allow background task's last Main thread work to finish.
-			this.asyncPump.Run(async delegate {
+			this.asyncPump.RunSynchronously(async delegate {
 				using (this.asyncPump.Join()) {
 					await unrelatedTask;
 				}
@@ -280,7 +280,7 @@
 				Assert.Inconclusive("We need a non-null sync context for this test to be useful.");
 			}
 
-			this.asyncPump.Run(async delegate {
+			this.asyncPump.RunSynchronously(async delegate {
 				await Task.Yield();
 			});
 
@@ -289,7 +289,7 @@
 
 		private void RunActionHelper() {
 			var initialThread = Thread.CurrentThread;
-			this.asyncPump.Run((Action)async delegate {
+			this.asyncPump.RunSynchronously((Action)async delegate {
 				Assert.AreSame(initialThread, Thread.CurrentThread);
 				await Task.Yield();
 				Assert.AreSame(initialThread, Thread.CurrentThread);
@@ -298,7 +298,7 @@
 
 		private void RunFuncOfTaskHelper() {
 			var initialThread = Thread.CurrentThread;
-			this.asyncPump.Run(async delegate {
+			this.asyncPump.RunSynchronously(async delegate {
 				Assert.AreSame(initialThread, Thread.CurrentThread);
 				await Task.Yield();
 				Assert.AreSame(initialThread, Thread.CurrentThread);
@@ -308,7 +308,7 @@
 		private void RunFuncOfTaskOfTHelper() {
 			var initialThread = Thread.CurrentThread;
 			var expectedResult = new GenericParameterHelper();
-			GenericParameterHelper actualResult = this.asyncPump.Run(async delegate {
+			GenericParameterHelper actualResult = this.asyncPump.RunSynchronously(async delegate {
 				Assert.AreSame(initialThread, Thread.CurrentThread);
 				await Task.Yield();
 				Assert.AreSame(initialThread, Thread.CurrentThread);

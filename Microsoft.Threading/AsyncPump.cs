@@ -35,7 +35,7 @@ namespace Microsoft.Threading {
 
 		/// <summary>Runs the specified asynchronous method.</summary>
 		/// <param name="asyncMethod">The asynchronous method to execute.</param>
-		public void Run(Action asyncMethod) {
+		public void RunSynchronously(Action asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
 			using (var framework = new RunFramework(this)) {
@@ -51,7 +51,7 @@ namespace Microsoft.Threading {
 
 		/// <summary>Runs the specified asynchronous method.</summary>
 		/// <param name="asyncMethod">The asynchronous method to execute.</param>
-		public void Run(Func<Task> asyncMethod) {
+		public void RunSynchronously(Func<Task> asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
 			using (var framework = new RunFramework(this)) {
@@ -73,7 +73,7 @@ namespace Microsoft.Threading {
 
 		/// <summary>Runs the specified asynchronous method.</summary>
 		/// <param name="asyncMethod">The asynchronous method to execute.</param>
-		public T Run<T>(Func<Task<T>> asyncMethod) {
+		public T RunSynchronously<T>(Func<Task<T>> asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
 			using (var framework = new RunFramework(this)) {
