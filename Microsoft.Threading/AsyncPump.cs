@@ -14,7 +14,8 @@ namespace Microsoft.Threading {
 
 	/// <summary>Provides a pump that supports running asynchronous methods on the current thread.</summary>
 	public class AsyncPump {
-		private readonly AsyncLocal<SingleThreadSynchronizationContext> mainThreadControllingSyncContext = new AsyncLocal<SingleThreadSynchronizationContext>();
+		private static readonly ConditionalWeakTable<Thread, AsyncLocal<SingleThreadSynchronizationContext>> threadControllingSyncContexts
+			= new ConditionalWeakTable<Thread, AsyncLocal<SingleThreadSynchronizationContext>>();
 
 		private readonly SynchronizationContext underlyingSynchronizationContext;
 
@@ -35,6 +36,22 @@ namespace Microsoft.Threading {
 		public AsyncPump(Thread mainThread = null, SynchronizationContext synchronizationContext = null) {
 			this.mainThread = mainThread ?? Thread.CurrentThread;
 			this.underlyingSynchronizationContext = synchronizationContext ?? SynchronizationContext.Current; // may still be null after this.
+		}
+
+		private SingleThreadSynchronizationContext MainThreadControllingSyncContext {
+			get {
+				AsyncLocal<SingleThreadSynchronizationContext> local;
+				if (threadControllingSyncContexts.TryGetValue(this.mainThread, out local)) {
+					return local.Value;
+				}
+
+				return null;
+			}
+
+			set {
+				var local = threadControllingSyncContexts.GetOrCreateValue(this.mainThread);
+				local.Value = value;
+			}
 		}
 
 		/// <summary>Runs the specified asynchronous method.</summary>
@@ -107,7 +124,7 @@ namespace Microsoft.Threading {
 		}
 
 		public JoinRelease Join() {
-			var mainThreadControllingSyncContext = this.mainThreadControllingSyncContext.Value;
+			var mainThreadControllingSyncContext = this.MainThreadControllingSyncContext;
 			if (mainThreadControllingSyncContext != null) {
 				StrongBox<int> refCountBox;
 				lock (this.syncObject) {
@@ -158,7 +175,7 @@ namespace Microsoft.Threading {
 					context.Key.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
 				}
 
-				var mainThreadControllingSyncContext = this.mainThreadControllingSyncContext.Value;
+				var mainThreadControllingSyncContext = this.MainThreadControllingSyncContext;
 				if (mainThreadControllingSyncContext != null) {
 					mainThreadControllingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
 				}
@@ -176,8 +193,8 @@ namespace Microsoft.Threading {
 				Requires.NotNull(pump, "pump");
 				this.pump = pump;
 
-				this.oldCallContextValue = pump.mainThreadControllingSyncContext.Value;
-				pump.mainThreadControllingSyncContext.Value = null;
+				this.oldCallContextValue = pump.MainThreadControllingSyncContext;
+				pump.MainThreadControllingSyncContext = null;
 
 				this.oldCurrentSyncContext = SynchronizationContext.Current as SingleThreadSynchronizationContext;
 				if (this.oldCurrentSyncContext != null) {
@@ -187,7 +204,7 @@ namespace Microsoft.Threading {
 
 			public void Dispose() {
 				if (this.pump != null) {
-					this.pump.mainThreadControllingSyncContext.Value = this.oldCallContextValue;
+					this.pump.MainThreadControllingSyncContext = this.oldCallContextValue;
 				}
 
 				if (this.oldCurrentSyncContext != null) {
@@ -463,12 +480,12 @@ namespace Microsoft.Threading {
 
 				this.pump = pump;
 				this.previousContext = SynchronizationContext.Current;
-				this.previousAsyncLocalContext = pump.mainThreadControllingSyncContext.Value;
+				this.previousAsyncLocalContext = pump.MainThreadControllingSyncContext;
 				this.appliedContext = new SingleThreadSynchronizationContext();
 				SynchronizationContext.SetSynchronizationContext(this.appliedContext);
 
 				if (pump.mainThread == Thread.CurrentThread) {
-					pump.mainThreadControllingSyncContext.Value = this.appliedContext;
+					pump.MainThreadControllingSyncContext = this.appliedContext;
 				}
 			}
 
@@ -478,7 +495,7 @@ namespace Microsoft.Threading {
 
 			public void Dispose() {
 				if (this.pump != null) {
-					this.pump.mainThreadControllingSyncContext.Value = this.previousAsyncLocalContext;
+					this.pump.MainThreadControllingSyncContext = this.previousAsyncLocalContext;
 					SynchronizationContext.SetSynchronizationContext(this.previousContext);
 				}
 			}
