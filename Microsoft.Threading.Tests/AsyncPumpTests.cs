@@ -187,6 +187,106 @@
 			});
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void NestedRunsNoJoins() {
+			bool outerCompleted = false, innerCompleted = false;
+			this.asyncPump.Run(async delegate {
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
+				await Task.Yield();
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
+
+				await Task.Run(async delegate {
+					await this.asyncPump.SwitchToMainThread();
+					Assert.AreSame(this.originalThread, Thread.CurrentThread);
+				});
+
+				this.asyncPump.Run(async delegate {
+					Assert.AreSame(this.originalThread, Thread.CurrentThread);
+					await Task.Yield();
+					Assert.AreSame(this.originalThread, Thread.CurrentThread);
+
+					await Task.Run(async delegate {
+						await this.asyncPump.SwitchToMainThread();
+						Assert.AreSame(this.originalThread, Thread.CurrentThread);
+					});
+
+					Assert.AreSame(this.originalThread, Thread.CurrentThread);
+					innerCompleted = true;
+				});
+
+				await Task.Yield();
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
+				outerCompleted = true;
+			});
+
+			Assert.IsTrue(innerCompleted, "Nested Run did not complete.");
+			Assert.IsTrue(outerCompleted, "Outer Run did not complete.");
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void JoinRejectsSubsequentWork() {
+			bool outerCompleted = false;
+
+			var mainThreadDependentWorkQueued = new TaskCompletionSource<object>();
+			var dependentWorkCompleted = new TaskCompletionSource<object>();
+			var joinReverted = new TaskCompletionSource<object>();
+			var postJoinRevertedWorkQueued = new TaskCompletionSource<object>();
+			var postJoinRevertedWorkExecuting = new TaskCompletionSource<object>();
+			var unrelatedTask = Task.Run(async delegate {
+				await this.asyncPump.SwitchToMainThread()
+					.GetAwaiter().YieldAndNotify(mainThreadDependentWorkQueued);
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
+				dependentWorkCompleted.SetAsync().Forget();
+				await joinReverted.Task.ConfigureAwait(false);
+				Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
+	
+				await this.asyncPump.SwitchToMainThread().GetAwaiter().YieldAndNotify(postJoinRevertedWorkQueued, postJoinRevertedWorkExecuting);
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
+			});
+
+			this.asyncPump.Run(async delegate {
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
+				await Task.Yield();
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
+
+				await mainThreadDependentWorkQueued.Task;
+				using (this.asyncPump.Join()) {
+					await dependentWorkCompleted.Task;
+				}
+				
+				joinReverted.SetAsync().Forget();
+				await postJoinRevertedWorkQueued.Task;
+				Assert.AreNotSame(postJoinRevertedWorkExecuting.Task, await Task.WhenAny(postJoinRevertedWorkExecuting.Task, Task.Delay(AsyncDelay)), "Main thread work from unrelated task should not have executed.");
+
+				await Task.Yield();
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
+				outerCompleted = true;
+			});
+
+			Assert.IsTrue(outerCompleted, "Outer Run did not complete.");
+
+			// Allow background task's last Main thread work to finish.
+			this.asyncPump.Run(async delegate {
+				using (this.asyncPump.Join()) {
+					await unrelatedTask;
+				}
+			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void SyncContextRestoredAfterRun() {
+			var syncContext = SynchronizationContext.Current;
+			if (syncContext == null) {
+				Assert.Inconclusive("We need a non-null sync context for this test to be useful.");
+			}
+
+			this.asyncPump.Run(async delegate {
+				await Task.Yield();
+			});
+
+			Assert.AreSame(syncContext, SynchronizationContext.Current);
+		}
+
 		private void RunActionHelper() {
 			var initialThread = Thread.CurrentThread;
 			this.asyncPump.Run((Action)async delegate {
