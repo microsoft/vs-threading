@@ -18,6 +18,8 @@ namespace Microsoft.Threading {
 
 		private readonly SynchronizationContext underlyingSynchronizationContext;
 
+		private readonly Thread mainThread;
+
 		private readonly Queue<SingleExecuteProtector> pendingActions = new Queue<SingleExecuteProtector>();
 
 		private readonly object syncObject = new object();
@@ -28,8 +30,10 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AsyncPump"/> class.
 		/// </summary>
-		/// <param name="synchronizationContext">The synchronization context </param>
-		public AsyncPump(SynchronizationContext synchronizationContext = null) {
+		/// <param name="mainThread">The thread to switch to in <see cref="SwitchToMainThread"/>.</param>
+		/// <param name="synchronizationContext">The synchronization context to use to switch to the main thread.</param>
+		public AsyncPump(Thread mainThread = null, SynchronizationContext synchronizationContext = null) {
+			this.mainThread = mainThread ?? Thread.CurrentThread;
 			this.underlyingSynchronizationContext = synchronizationContext ?? SynchronizationContext.Current; // may still be null after this.
 		}
 
@@ -462,7 +466,10 @@ namespace Microsoft.Threading {
 				this.previousAsyncLocalContext = pump.mainThreadControllingSyncContext.Value;
 				this.appliedContext = new SingleThreadSynchronizationContext();
 				SynchronizationContext.SetSynchronizationContext(this.appliedContext);
-				pump.mainThreadControllingSyncContext.Value = this.appliedContext;
+
+				if (pump.mainThread == Thread.CurrentThread) {
+					pump.mainThreadControllingSyncContext.Value = this.appliedContext;
+				}
 			}
 
 			internal SingleThreadSynchronizationContext AppliedContext {

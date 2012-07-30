@@ -282,8 +282,12 @@
 			});
 
 			this.asyncPump.RunSynchronously(async delegate {
-				// No Join necessary here because it's all the same instance of AsyncPump.
-				await task;
+				// Even though it's all the same instance of AsyncPump,
+				// unrelated work (work not spun off from this block) must still be 
+				// Joined in order to execute here.
+				using (this.asyncPump.Join()) {
+					await task;
+				}
 			});
 		}
 
