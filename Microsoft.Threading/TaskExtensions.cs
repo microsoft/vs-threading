@@ -24,6 +24,16 @@ namespace Microsoft.Threading
         public static readonly Task CompletedTask = Task.FromResult<object>(null);
 
         /// <summary>
+        /// A completed task with a <c>true</c> result.
+        /// </summary>
+        public static readonly Task<bool> TrueTask = Task.FromResult(true);
+
+        /// <summary>
+        /// A completed task with a <c>false</c> result.
+        /// </summary>
+        public static readonly Task<bool> FalseTask = Task.FromResult(false);
+
+        /// <summary>
         /// A cached delegate that takes a task as a parameter and does nothing.
         /// </summary>
         private static readonly Action<Task> EmptyTaskContinuation = task => { };
@@ -189,6 +199,15 @@ namespace Microsoft.Threading
                 TaskScheduler.Default);
 
             return tcs.Task;
+        }
+
+        /// <summary>
+        /// Returns an awaitable for the specified task that will never throw, even if the source task
+        /// faults or is canceled.
+        /// </summary>
+        public static Task NoThrowAwaitable(this Task task)
+        {
+            return task.ContinueWith(_ => { }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
         }
     }
 }
