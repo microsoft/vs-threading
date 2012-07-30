@@ -440,7 +440,7 @@ namespace Microsoft.Threading {
 			}
 
 			public bool IsCompleted {
-				get { return this.asyncPump == null; }
+				get { return this.asyncPump == null || this.asyncPump.mainThread == Thread.CurrentThread; }
 			}
 
 			public void OnCompleted(Action continuation) {

@@ -72,6 +72,18 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void SwitchToMainThreadDoesNotYieldWhenAlreadyOnMainThread() {
+			Assert.IsTrue(this.asyncPump.SwitchToMainThread().GetAwaiter().IsCompleted, "Yield occurred even when already on UI thread.");
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void SwitchToMainThreadYieldsWhenOffMainThread() {
+			Task.Run(
+				() => Assert.IsFalse(this.asyncPump.SwitchToMainThread().GetAwaiter().IsCompleted, "Yield did not occur when off Main thread."))
+				.GetAwaiter().GetResult();
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void SwitchToSTADoesNotCauseUnrelatedReentrancy() {
 			var frame = new DispatcherFrame();
 
