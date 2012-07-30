@@ -387,6 +387,29 @@
 			Assert.AreSame(syncContext, SynchronizationContext.Current);
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void BackgroundSynchronousTransitionsToUIThreadSynchronous() {
+			var task = Task.Run(delegate {
+				this.asyncPump.RunSynchronously(async delegate {
+					Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
+					await this.asyncPump.SwitchToMainThread();
+
+					// The scenario here is that some code calls out, then back in, via a synchronous interface
+					this.asyncPump.RunSynchronously(async delegate {
+						await Task.Yield();
+						await this.TestReentrancyOfUnrelatedDependentWork();
+					});
+				});
+			});
+
+			// Avoid a deadlock while waiting for test to complete.
+			this.asyncPump.RunSynchronously(async delegate {
+				using (this.asyncPump.Join()) {
+					await task;
+				}
+			});
+		}
+
 		private async Task TestReentrancyOfUnrelatedDependentWork() {
 			var unrelatedMainThreadWorkWaiting = new TaskCompletionSource<object>();
 			var unrelatedMainThreadWorkInvoked = new TaskCompletionSource<object>();
