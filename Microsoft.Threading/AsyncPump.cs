@@ -18,61 +18,12 @@ namespace Microsoft.Threading {
 
 		private readonly SynchronizationContext underlyingSynchronizationContext;
 
-		private readonly Queue<Action> pendingActions = new Queue<Action>();
+		private readonly Queue<SingleExecuteProtector> pendingActions = new Queue<SingleExecuteProtector>();
 
 		private readonly object syncObject = new object();
 
-		private volatile bool underlyingSyncContextWaiting;
-
 		private Dictionary<SingleThreadSynchronizationContext, StrongBox<int>> extraContexts =
 			new Dictionary<SingleThreadSynchronizationContext, StrongBox<int>>();
-
-		private void Post(Action action) {
-			if (this.underlyingSynchronizationContext != null) {
-				bool postThisTime = false;
-				lock (this.syncObject) {
-					this.pendingActions.Enqueue(action);
-					if (!this.underlyingSyncContextWaiting) {
-						this.underlyingSyncContextWaiting = true;
-						postThisTime = true;
-					}
-
-					foreach (var context in this.extraContexts) {
-						context.Key.Post(ExecuteActions, Tuple.Create(this, context.Value));
-					}
-				}
-
-				var mainThreadControllingSyncContext = this.mainThreadControllingSyncContext.Value;
-				if (mainThreadControllingSyncContext != null) {
-					mainThreadControllingSyncContext.Post(ExecuteActions, this);
-				}
-
-				if (postThisTime) { // do this outside the lock.
-					this.underlyingSynchronizationContext.Post(ExecuteActions, this);
-				}
-			} else {
-				ThreadPool.QueueUserWorkItem(state => ((Action)state)(), action);
-			}
-		}
-
-		private static void ExecuteActions(object state) {
-			var tuple = state as Tuple<AsyncPump, StrongBox<int>>;
-			var instance = state as AsyncPump ?? tuple.Item1;
-
-			while (tuple == null || tuple.Item2.Value > 0) {
-				Action action = null;
-				lock (instance.syncObject) {
-					if (instance.pendingActions.Count > 0) {
-						action = instance.pendingActions.Dequeue();
-					} else {
-						instance.underlyingSyncContextWaiting = false;
-						return;
-					}
-				}
-
-				action();
-			}
-		}
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AsyncPump"/> class.
@@ -87,21 +38,14 @@ namespace Microsoft.Threading {
 		public void Run(Action asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
-			var prevCtx = SynchronizationContext.Current;
-			try {
-				// Establish the new context
-				var syncCtx = new SingleThreadSynchronizationContext();
-				SynchronizationContext.SetSynchronizationContext(syncCtx);
-
+			using (var framework = new RunFramework(this)) {
 				// Invoke the function
-				syncCtx.OperationStarted();
+				framework.AppliedContext.OperationStarted();
 				asyncMethod();
-				syncCtx.OperationCompleted();
+				framework.AppliedContext.OperationCompleted();
 
 				// Pump continuations and propagate any exceptions
-				syncCtx.RunOnCurrentThread();
-			} finally {
-				SynchronizationContext.SetSynchronizationContext(prevCtx);
+				framework.AppliedContext.RunOnCurrentThread();
 			}
 		}
 
@@ -110,28 +54,20 @@ namespace Microsoft.Threading {
 		public void Run(Func<Task> asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
-			var prevCtx = SynchronizationContext.Current;
-			var prevAsyncLocalCtxt = this.mainThreadControllingSyncContext.Value;
-			try {
-				// Establish the new context
-				var syncCtx = new SingleThreadSynchronizationContext();
-				SynchronizationContext.SetSynchronizationContext(syncCtx);
-				this.mainThreadControllingSyncContext.Value = syncCtx;
-
-				// Invoke the function and alert the context to when it completes
+			using (var framework = new RunFramework(this)) {
+				// Invoke the function and alert the context when it completes
 				var t = asyncMethod();
 				Verify.Operation(t != null, "No task provided.");
 				t.ContinueWith(
 					(_, state) => ((SingleThreadSynchronizationContext)state).Complete(),
-					syncCtx,
+					framework.AppliedContext,
+					CancellationToken.None,
+					TaskContinuationOptions.ExecuteSynchronously,
 					TaskScheduler.Default);
 
 				// Pump continuations and propagate any exceptions
-				syncCtx.RunOnCurrentThread();
+				framework.AppliedContext.RunOnCurrentThread();
 				t.GetAwaiter().GetResult();
-			} finally {
-				this.mainThreadControllingSyncContext.Value = prevAsyncLocalCtxt;
-				SynchronizationContext.SetSynchronizationContext(prevCtx);
 			}
 		}
 
@@ -140,25 +76,20 @@ namespace Microsoft.Threading {
 		public T Run<T>(Func<Task<T>> asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
-			var prevCtx = SynchronizationContext.Current;
-			try {
-				// Establish the new context
-				var syncCtx = new SingleThreadSynchronizationContext();
-				SynchronizationContext.SetSynchronizationContext(syncCtx);
-
-				// Invoke the function and alert the context to when it completes
+			using (var framework = new RunFramework(this)) {
+				// Invoke the function and alert the context when it completes
 				var t = asyncMethod();
 				Verify.Operation(t != null, "No task provided.");
 				t.ContinueWith(
-					(_, state) => ((SingleThreadSynchronizationContext)syncCtx).Complete(),
-					syncCtx,
+					(_, state) => ((SingleThreadSynchronizationContext)state).Complete(),
+					framework.AppliedContext,
+					CancellationToken.None,
+					TaskContinuationOptions.ExecuteSynchronously,
 					TaskScheduler.Default);
 
 				// Pump continuations and propagate any exceptions
-				syncCtx.RunOnCurrentThread();
+				framework.AppliedContext.RunOnCurrentThread();
 				return t.GetAwaiter().GetResult();
-			} finally {
-				SynchronizationContext.SetSynchronizationContext(prevCtx);
 			}
 		}
 
@@ -174,31 +105,112 @@ namespace Microsoft.Threading {
 		public JoinRelease Join() {
 			var mainThreadControllingSyncContext = this.mainThreadControllingSyncContext.Value;
 			if (mainThreadControllingSyncContext != null) {
-
-
-				// TODO: add tests that verify whether the caller shares the same main thread as this instance.
 				StrongBox<int> refCountBox;
-				bool pendingActionsExist;
 				lock (this.syncObject) {
 					if (!this.extraContexts.TryGetValue(mainThreadControllingSyncContext, out refCountBox)) {
 						refCountBox = new StrongBox<int>();
 						this.extraContexts.Add(mainThreadControllingSyncContext, refCountBox);
 					}
 
-					refCountBox.Value = refCountBox.Value + 1;
+					refCountBox.Value++;
 
-					pendingActionsExist = this.pendingActions.Count > 0;
-				}
-
-				if (pendingActionsExist) {
-					var tuple = Tuple.Create(this, refCountBox);
-					mainThreadControllingSyncContext.Post(ExecuteActions, tuple);
+					foreach (var item in this.pendingActions) {
+						mainThreadControllingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, item);
+					}
 				}
 
 				return new JoinRelease(this, mainThreadControllingSyncContext);
 			}
 
 			return new JoinRelease();
+		}
+
+		private void Post(Action action) {
+			if (this.underlyingSynchronizationContext != null) {
+				this.Post(new SingleExecuteProtector(this, action));
+			} else {
+				ThreadPool.QueueUserWorkItem(state => ((Action)state)(), action);
+			}
+		}
+
+		private void Post(SendOrPostCallback callback, object state) {
+			if (this.underlyingSynchronizationContext != null) {
+				this.Post(new SingleExecuteProtector(this, callback, state));
+			} else {
+				ThreadPool.QueueUserWorkItem(new WaitCallback(callback), state);
+			}
+		}
+
+		private void Post(SingleExecuteProtector wrapper) {
+			Assumes.NotNull(this.underlyingSynchronizationContext);
+			lock (this.syncObject) {
+				this.pendingActions.Enqueue(wrapper);
+
+				foreach (var context in this.extraContexts) {
+					context.Key.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
+				}
+
+				var mainThreadControllingSyncContext = this.mainThreadControllingSyncContext.Value;
+				if (mainThreadControllingSyncContext != null) {
+					mainThreadControllingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
+				}
+			}
+
+			this.underlyingSynchronizationContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
+		}
+
+		private class SingleExecuteProtector {
+			private readonly AsyncPump asyncPump;
+
+			private object invokeDelegate;
+
+			private object state;
+
+			private SingleExecuteProtector(AsyncPump asyncPump) {
+				Requires.NotNull(asyncPump, "asyncPump");
+				this.asyncPump = asyncPump;
+			}
+
+			internal SingleExecuteProtector(AsyncPump asyncPump, Action action)
+				: this(asyncPump) {
+				this.invokeDelegate = action;
+			}
+
+			internal SingleExecuteProtector(AsyncPump asyncPump, SendOrPostCallback callback, object state)
+				: this(asyncPump) {
+				this.invokeDelegate = callback;
+				this.state = state;
+			}
+
+			internal static void ExecuteOnce(object state) {
+				var instance = (SingleExecuteProtector)state;
+				instance.TryExecute();
+			}
+
+			internal bool TryExecute() {
+				object invokeDelegate = Interlocked.Exchange(ref this.invokeDelegate, null);
+				if (invokeDelegate != null) {
+					lock (this.asyncPump.syncObject) {
+						// This work item will usually be at the head of the queue, but since the
+						// caller doesn't guarantee it, be careful to allow for its appearance elsewhere.
+						this.asyncPump.pendingActions.RemoveMidQueue(this);
+					}
+
+					var action = invokeDelegate as Action;
+					if (action != null) {
+						action();
+					} else {
+						var callback = invokeDelegate as SendOrPostCallback;
+						Assumes.NotNull(callback);
+						callback(this.state);
+						this.state = null;
+					}
+
+					return true;
+				} else {
+					return false;
+				}
+			}
 		}
 
 		public struct JoinRelease : IDisposable {
@@ -302,6 +314,35 @@ namespace Microsoft.Threading {
 			}
 
 			public void GetResult() {
+			}
+		}
+
+		private struct RunFramework : IDisposable {
+			private readonly AsyncPump pump;
+			private readonly SynchronizationContext previousContext;
+			private readonly SingleThreadSynchronizationContext appliedContext;
+			private readonly SingleThreadSynchronizationContext previousAsyncLocalContext;
+
+			internal RunFramework(AsyncPump pump) {
+				Requires.NotNull(pump, "pump");
+
+				this.pump = pump;
+				this.previousContext = SynchronizationContext.Current;
+				this.previousAsyncLocalContext = pump.mainThreadControllingSyncContext.Value;
+				this.appliedContext = new SingleThreadSynchronizationContext();
+				SynchronizationContext.SetSynchronizationContext(this.appliedContext);
+				pump.mainThreadControllingSyncContext.Value = this.appliedContext;
+			}
+
+			internal SingleThreadSynchronizationContext AppliedContext {
+				get { return this.appliedContext; }
+			}
+
+			public void Dispose() {
+				if (this.pump != null) {
+					this.pump.mainThreadControllingSyncContext.Value = this.previousAsyncLocalContext;
+					SynchronizationContext.SetSynchronizationContext(this.previousContext);
+				}
 			}
 		}
 	}

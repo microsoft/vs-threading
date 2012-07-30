@@ -56,13 +56,6 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void NoHangWhenInvokedWithDispatcher() {
-			this.asyncPump.Run(async delegate {
-				await Task.Yield();
-			});
-		}
-
-		[TestMethod, Timeout(TestTimeout)]
 		public void LeaveAndReturnToSTA() {
 			var fullyCompleted = false;
 			this.asyncPump.Run(async delegate {
@@ -158,7 +151,14 @@
 				// Now complete the task that the synchronous work is waiting before reverting their invitation.
 				backgroundContenderCompletedRelevantUIWork.SetResult(null);
 
-				await backgroundInvitationReverted.Task; // temporarily get off UI thread until the UI thread has rescinded offer to lend its time
+				// Temporarily get off UI thread until the UI thread has rescinded offer to lend its time.
+				// In so doing, once the task we're waiting on has completed, we'll be scheduled to return using
+				// the current synchronization context, which because we switched to the main thread earlier
+				// and have not yet switched off, will mean our continuation won't execute until the UI thread
+				// becomes available (without any reentrancy).
+				await backgroundInvitationReverted.Task;
+
+				// We should now be on the UI thread (and the Run delegate below should have altogether completd.)
 				Assert.AreSame(originalThread, Thread.CurrentThread);
 				Assert.IsTrue(syncUIOperationCompleted); // should be true because continuation needs same thread that this is set on.
 			});
@@ -182,13 +182,6 @@
 
 			backgroundContender.Wait(); // ensure it didn't ultimately throw any exception.
 		}
-
-		// TODO: 
-		// Add tests for:
-		//  * other Run method overloads such as Run<T>(Func<Task<T>> and Run(Action)
-		//  * original sync context is restored after.
-		//  * nested Run methods.
-		//  * Run invoked on a non-Main thread, that it doesn't set the asynclocal for that thread.
 
 		private void RunActionHelper() {
 			var initialThread = Thread.CurrentThread;
