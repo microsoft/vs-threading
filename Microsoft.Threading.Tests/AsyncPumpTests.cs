@@ -188,7 +188,7 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void NestedRunsNoJoins() {
+		public void RunSynchronouslyNestedNoJoins() {
 			bool outerCompleted = false, innerCompleted = false;
 			this.asyncPump.RunSynchronously(async delegate {
 				Assert.AreSame(this.originalThread, Thread.CurrentThread);
@@ -224,6 +224,55 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void RunSynchronouslyNestedWithJoins() {
+			bool outerCompleted = false, innerCompleted = false;
+
+			this.asyncPump.RunSynchronously(async delegate {
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
+				await Task.Yield();
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
+
+				await this.TestReentrancyOfUnrelatedDependentWork();
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
+
+				await Task.Run(async delegate {
+					await this.asyncPump.SwitchToMainThread();
+					Assert.AreSame(this.originalThread, Thread.CurrentThread);
+				});
+
+				await this.TestReentrancyOfUnrelatedDependentWork();
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
+
+				this.asyncPump.RunSynchronously(async delegate {
+					Assert.AreSame(this.originalThread, Thread.CurrentThread);
+					await Task.Yield();
+					Assert.AreSame(this.originalThread, Thread.CurrentThread);
+
+					await this.TestReentrancyOfUnrelatedDependentWork();
+					Assert.AreSame(this.originalThread, Thread.CurrentThread);
+
+					await Task.Run(async delegate {
+						await this.asyncPump.SwitchToMainThread();
+						Assert.AreSame(this.originalThread, Thread.CurrentThread);
+					});
+
+					await this.TestReentrancyOfUnrelatedDependentWork();
+					Assert.AreSame(this.originalThread, Thread.CurrentThread);
+
+					Assert.AreSame(this.originalThread, Thread.CurrentThread);
+					innerCompleted = true;
+				});
+
+				await Task.Yield();
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
+				outerCompleted = true;
+			});
+
+			Assert.IsTrue(innerCompleted, "Nested Run did not complete.");
+			Assert.IsTrue(outerCompleted, "Outer Run did not complete.");
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void JoinRejectsSubsequentWork() {
 			bool outerCompleted = false;
 
@@ -239,7 +288,7 @@
 				dependentWorkCompleted.SetAsync().Forget();
 				await joinReverted.Task.ConfigureAwait(false);
 				Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
-	
+
 				await this.asyncPump.SwitchToMainThread().GetAwaiter().YieldAndNotify(postJoinRevertedWorkQueued, postJoinRevertedWorkExecuting);
 				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 			});
@@ -253,7 +302,7 @@
 				using (this.asyncPump.Join()) {
 					await dependentWorkCompleted.Task;
 				}
-				
+
 				joinReverted.SetAsync().Forget();
 				await postJoinRevertedWorkQueued.Task;
 				Assert.AreNotSame(postJoinRevertedWorkExecuting.Task, await Task.WhenAny(postJoinRevertedWorkExecuting.Task, Task.Delay(AsyncDelay)), "Main thread work from unrelated task should not have executed.");
@@ -286,6 +335,37 @@
 			});
 
 			Assert.AreSame(syncContext, SynchronizationContext.Current);
+		}
+
+		private async Task TestReentrancyOfUnrelatedDependentWork() {
+			var unrelatedMainThreadWorkWaiting = new TaskCompletionSource<object>();
+			var unrelatedMainThreadWorkInvoked = new TaskCompletionSource<object>();
+			AsyncPump unrelatedPump;
+			Task unrelatedTask;
+
+			// don't let this task be identified as related to the caller, so that the caller has to Join for this to complete.
+			using (this.asyncPump.SuppressRelevance()) {
+				unrelatedPump = new AsyncPump();
+				unrelatedTask = Task.Run(async delegate {
+					await unrelatedPump.SwitchToMainThread().GetAwaiter().YieldAndNotify(unrelatedMainThreadWorkWaiting, unrelatedMainThreadWorkInvoked);
+					Assert.AreSame(this.originalThread, Thread.CurrentThread);
+				});
+			}
+
+			await unrelatedMainThreadWorkWaiting.Task;
+
+			// Await an extra bit of time to allow for unexpected reentrancy to occur while the
+			// main thread is only synchronously blocking.
+			Assert.AreNotSame(
+				unrelatedMainThreadWorkInvoked.Task,
+				await Task.WhenAny(unrelatedMainThreadWorkInvoked.Task, Task.Delay(AsyncDelay / 2)),
+				"Background work completed work on the UI thread before it was invited to do so.");
+
+			using (unrelatedPump.Join()) {
+				// The work SHOULD be able to complete now that we've Joined the work.
+				await unrelatedMainThreadWorkInvoked.Task;
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
+			}
 		}
 
 		private void RunActionHelper() {

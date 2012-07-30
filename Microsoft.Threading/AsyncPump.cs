@@ -125,6 +125,10 @@ namespace Microsoft.Threading {
 			return new JoinRelease();
 		}
 
+		public RevertRelevance SuppressRelevance() {
+			return new RevertRelevance(this);
+		}
+
 		private void Post(Action action) {
 			if (this.underlyingSynchronizationContext != null) {
 				this.Post(new SingleExecuteProtector(this, action));
@@ -157,6 +161,35 @@ namespace Microsoft.Threading {
 			}
 
 			this.underlyingSynchronizationContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
+		}
+
+		public struct RevertRelevance : IDisposable {
+			private readonly AsyncPump pump;
+			private SingleThreadSynchronizationContext oldCallContextValue;
+			private SingleThreadSynchronizationContext oldCurrentSyncContext;
+
+			internal RevertRelevance(AsyncPump pump) {
+				Requires.NotNull(pump, "pump");
+				this.pump = pump;
+
+				this.oldCallContextValue = pump.mainThreadControllingSyncContext.Value;
+				pump.mainThreadControllingSyncContext.Value = null;
+
+				this.oldCurrentSyncContext = SynchronizationContext.Current as SingleThreadSynchronizationContext;
+				if (this.oldCurrentSyncContext != null) {
+					SynchronizationContext.SetSynchronizationContext(this.oldCurrentSyncContext.PreviousSyncContext);
+				}
+			}
+
+			public void Dispose() {
+				if (this.pump != null) {
+					this.pump.mainThreadControllingSyncContext.Value = this.oldCallContextValue;
+				}
+
+				if (this.oldCurrentSyncContext != null) {
+					SynchronizationContext.SetSynchronizationContext(this.oldCurrentSyncContext);
+				}
+			}
 		}
 
 		private class SingleExecuteProtector {
@@ -253,6 +286,10 @@ namespace Microsoft.Threading {
 			/// <summary>Initializes a new instance of the <see cref="SingleThreadSynchronizationContext"/> class.</summary>
 			internal SingleThreadSynchronizationContext() {
 				this.previousSyncContext = SynchronizationContext.Current;
+			}
+
+			internal SynchronizationContext PreviousSyncContext {
+				get { return this.previousSyncContext; }
 			}
 
 			/// <summary>Dispatches an asynchronous message to the synchronization context.</summary>
