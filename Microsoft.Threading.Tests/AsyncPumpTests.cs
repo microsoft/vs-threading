@@ -266,6 +266,7 @@
 			Assert.IsTrue(outerCompleted, "Outer Run did not complete.");
 
 			// Allow background task's last Main thread work to finish.
+			Assert.IsFalse(unrelatedTask.IsCompleted);
 			this.asyncPump.RunSynchronously(async delegate {
 				using (this.asyncPump.Join()) {
 					await unrelatedTask;
