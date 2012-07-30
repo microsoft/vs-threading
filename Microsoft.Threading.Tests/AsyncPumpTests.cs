@@ -138,15 +138,15 @@
 			var backgroundContender = Task.Run(async delegate {
 				await uiThreadNowBusy.Task;
 				await this.asyncPump.SwitchToMainThread();
-				Assert.AreSame(originalThread, Thread.CurrentThread);
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 
 				// Release, then reacquire the STA a couple of different ways
 				// to verify that even after the invitation has been extended
 				// to join the STA thread we can leave and revisit.
 				await this.asyncPump.SwitchToMainThread();
-				Assert.AreSame(originalThread, Thread.CurrentThread);
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 				await Task.Yield();
-				Assert.AreSame(originalThread, Thread.CurrentThread);
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 
 				// Now complete the task that the synchronous work is waiting before reverting their invitation.
 				backgroundContenderCompletedRelevantUIWork.SetResult(null);
@@ -159,16 +159,16 @@
 				await backgroundInvitationReverted.Task;
 
 				// We should now be on the UI thread (and the Run delegate below should have altogether completd.)
-				Assert.AreSame(originalThread, Thread.CurrentThread);
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 				Assert.IsTrue(syncUIOperationCompleted); // should be true because continuation needs same thread that this is set on.
 			});
 
 			this.asyncPump.Run(async delegate {
 				uiThreadNowBusy.SetResult(null);
-				Assert.AreSame(originalThread, Thread.CurrentThread);
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 
 				await TaskScheduler.Default;
-				Assert.AreNotSame(originalThread, Thread.CurrentThread);
+				Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
 
 				using (this.asyncPump.Join()) { // invite the work to re-enter our synchronous work on the STA thread.
 					await backgroundContenderCompletedRelevantUIWork.Task; // we can't complete until this seemingly unrelated work completes.
@@ -176,11 +176,15 @@
 
 				await this.asyncPump.SwitchToMainThread();
 				var nowait = backgroundInvitationReverted.SetAsync();
-				Assert.AreSame(originalThread, Thread.CurrentThread);
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 				syncUIOperationCompleted = true;
-			});
 
-			backgroundContender.Wait(); // ensure it didn't ultimately throw any exception.
+				using (this.asyncPump.Join()) {
+					// Since this background task finishes on the UI thread, we need to ensure
+					// it can get on it.
+					await backgroundContender;
+				}
+			});
 		}
 
 		private void RunActionHelper() {
