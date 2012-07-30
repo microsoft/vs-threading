@@ -410,6 +410,33 @@
 			});
 		}
 
+		[TestMethod]//, Timeout(TestTimeout)]
+		public void Fails() {
+			var task = Task.Run(delegate {
+				this.asyncPump.RunSynchronously(async delegate {
+					Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
+					await this.asyncPump.SwitchToMainThread();
+
+
+					// The SyncContext is right, but AsyncLocal is cleared, so that background work doesn't think it can get back.
+					await this.TestReentrancyOfUnrelatedDependentWork();
+
+					// The scenario here is that some code calls out, then back in, via a synchronous interface
+					this.asyncPump.RunSynchronously(async delegate {
+						await Task.Yield();
+						await this.TestReentrancyOfUnrelatedDependentWork();
+					});
+				});
+			});
+
+			// Avoid a deadlock while waiting for test to complete.
+			this.asyncPump.RunSynchronously(async delegate {
+				using (this.asyncPump.Join()) {
+					await task;
+				}
+			});
+		}
+
 		[TestMethod, Timeout(TestTimeout)]
 		public void NestedJoinsDistinctAsyncPumps() {
 			const int nestLevels = 3;
