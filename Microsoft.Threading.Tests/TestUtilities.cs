@@ -47,6 +47,55 @@
 			return new DebugAssertionRevert();
 		}
 
+		internal static YieldAndNotifyAwaitable YieldAndNotify(this INotifyCompletion baseAwaiter, TaskCompletionSource<object> signal) {
+			Requires.NotNull(baseAwaiter, "baseAwaiter");
+			Requires.NotNull(signal, "signal");
+
+			return new YieldAndNotifyAwaitable(baseAwaiter, signal);
+		}
+
+		internal struct YieldAndNotifyAwaitable {
+			private readonly INotifyCompletion baseAwaiter;
+			private readonly TaskCompletionSource<object> signal;
+
+			internal YieldAndNotifyAwaitable(INotifyCompletion baseAwaiter, TaskCompletionSource<object> signal) {
+				Requires.NotNull(baseAwaiter, "baseAwaiter");
+				Requires.NotNull(signal, "signal");
+
+				this.baseAwaiter = baseAwaiter;
+				this.signal = signal;
+			}
+
+			public YieldAndNotifyAwaiter GetAwaiter() {
+				return new YieldAndNotifyAwaiter(this.baseAwaiter, this.signal);
+			}
+		}
+
+		internal struct YieldAndNotifyAwaiter : INotifyCompletion {
+			private readonly INotifyCompletion baseAwaiter;
+			private readonly TaskCompletionSource<object> signal;
+
+			internal YieldAndNotifyAwaiter(INotifyCompletion baseAwaiter, TaskCompletionSource<object> signal) {
+				Requires.NotNull(baseAwaiter, "baseAwaiter");
+				Requires.NotNull(signal, "signal");
+
+				this.baseAwaiter = baseAwaiter;
+				this.signal = signal;
+			}
+
+			public bool IsCompleted {
+				get { return false; }
+			}
+
+			public void OnCompleted(Action continuation) {
+				this.baseAwaiter.OnCompleted(continuation);
+				this.signal.SetAsync();
+			}
+
+			public void GetResult() {
+			}
+		}
+
 		internal static TaskSchedulerAwaiter GetAwaiter(this TaskScheduler scheduler) {
 			return new TaskSchedulerAwaiter(scheduler);
 		}
