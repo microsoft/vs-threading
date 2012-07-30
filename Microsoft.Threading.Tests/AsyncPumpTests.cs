@@ -410,6 +410,21 @@
 			});
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void NestedJoinsDistinctAsyncPumps() {
+			const int nestLevels = 3;
+			MockAsyncService outerService = null;
+			for (int level = 0; level < nestLevels; level++) {
+				outerService = new MockAsyncService(outerService);
+			}
+
+			var operationTask = outerService.OperationAsync();
+
+			this.asyncPump.RunSynchronously(async delegate {
+				await outerService.StopAsync();
+			});
+		}
+
 		private async Task TestReentrancyOfUnrelatedDependentWork() {
 			var unrelatedMainThreadWorkWaiting = new TaskCompletionSource<object>();
 			var unrelatedMainThreadWorkInvoked = new TaskCompletionSource<object>();
@@ -469,6 +484,42 @@
 				return expectedResult;
 			});
 			Assert.AreSame(expectedResult, actualResult);
+		}
+
+		private class MockAsyncService {
+			private AsyncPump pump = new AsyncPump();
+			private AsyncManualResetEvent stopRequested = new AsyncManualResetEvent();
+			private Task ongoingWork;
+			private Thread originalThread = Thread.CurrentThread;
+			private MockAsyncService dependentService;
+
+			internal MockAsyncService(MockAsyncService dependentService = null) {
+				this.dependentService = dependentService;
+			}
+
+			internal Task OperationAsync() {
+				return this.ongoingWork = Task.Run(async delegate {
+					if (this.dependentService != null) {
+						await this.dependentService.OperationAsync();
+					}
+
+					await this.stopRequested.WaitAsync();
+					await this.pump.SwitchToMainThread();
+					await Task.Yield();
+					Assert.AreSame(this.originalThread, Thread.CurrentThread);
+				});
+			}
+
+			internal async Task StopAsync() {
+				if (this.dependentService != null) {
+					await this.dependentService.StopAsync();
+				}
+
+				this.stopRequested.Set();
+				using (this.pump.Join()) {
+					await this.ongoingWork;
+				}
+			}
 		}
 	}
 }
