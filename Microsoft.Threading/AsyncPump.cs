@@ -123,6 +123,36 @@ namespace Microsoft.Threading {
 			return new SynchronizationContextAwaitable(this);
 		}
 
+		/// <summary>
+		/// Called from within a delegate passed to <see cref="RunSynchronously(Func{Task})"/> 
+		/// to share the caller's ticket to the Main thread with any work that uses this instance
+		/// to switch to the Main thread.  Used to avoid deadlocks when the Main thread must
+		/// synchronously block till some otherwise not obviously related work is done.
+		/// </summary>
+		/// <returns>A value to dispose to discontinue sharing the Main thread.</returns>
+		/// <remarks>
+		/// <para>The Main thread is generally available to asynchronous tasks when it is otherwise not occupied,
+		/// or when the Main thread is blocked waiting for an asynchronous task to complete which it has itself
+		/// spun off while inside a call to <see cref="RunSynchronously(Func{Task})"/>.
+		/// When the Main thread must synchronously block waiting for work to complete that did <em>not</em>
+		/// originate from this same RunSynchronously delegate, then wrapping the <c>await</c> inside a
+		/// <c>using</c> block with this method as the expression will avoid deadlocks.</para>
+		/// <example>
+		/// <code>
+		/// var asyncOperation = Task.Run(async delegate {
+		///     // Some background work.
+		///     await this.asyncPump.SwitchToUIThread();
+		///     // Some Main thread work.
+		/// });
+		/// 
+		/// someAsyncPump.RunSynchronously(async delegate {
+		///     using(this.asyncPump.Join()) {
+		///         await asyncOperation;
+		///     }
+		/// });
+		/// </code>
+		/// </example>
+		/// </remarks>
 		public JoinRelease Join() {
 			var mainThreadControllingSyncContext = this.MainThreadControllingSyncContext;
 			if (mainThreadControllingSyncContext != null) {
@@ -146,10 +176,43 @@ namespace Microsoft.Threading {
 			return new JoinRelease();
 		}
 
+		/// <summary>
+		/// Conceals any ticket to the Main thread until the returned value is disposed.
+		/// </summary>
+		/// <returns>A value to dispose of to restore insight into tickets to the Main thread.</returns>
+		/// <remarks>
+		/// <para>It may be that while inside a delegate supplied to <see cref="RunSynchronously(Func{Task})"/>
+		/// that async work be spun off such that it does not have privileges to re-enter the Main thread
+		/// till the <see cref="RunSynchronously(Func{Task})"/> call has returned and the UI thread is
+		/// idle.  To prevent the async work from automatically being allowed to re-enter the Main thread,
+		/// wrap the code that calls the async task in a <c>using</c> block with a call to this method 
+		/// as the expression.</para>
+		/// <example>
+		/// <code>
+		/// this.asyncPump.RunSynchronously(async delegate {
+		///     using(this.asyncPump.SuppressRelevance()) {
+		///         var asyncOperation = Task.Run(async delegate {
+		///             // Some background work.
+		///             await this.asyncPump.SwitchToUIThread();
+		///             // Some Main thread work, that cannot begin until the outer RunSynchronously call has returned.
+		///         });
+		///     }
+		///     
+		///     // Because the asyncOperation is not related to this Main thread work (it was suppressed),
+		///     // the following await *would* deadlock if it were uncommented.
+		///     ////await asyncOperation;
+		/// });
+		/// </code>
+		/// </example>
+		/// </remarks>
 		public RevertRelevance SuppressRelevance() {
 			return new RevertRelevance(this);
 		}
 
+		/// <summary>
+		/// Schedules the specified delegate for execution on the Main thread.
+		/// </summary>
+		/// <param name="action">The delegate to invoke.</param>
 		private void Post(Action action) {
 			if (this.underlyingSynchronizationContext != null) {
 				this.Post(new SingleExecuteProtector(this, action));
@@ -158,6 +221,11 @@ namespace Microsoft.Threading {
 			}
 		}
 
+		/// <summary>
+		/// Schedules the specified delegate for execution on the Main thread.
+		/// </summary>
+		/// <param name="callback">The delegate to invoke.</param>
+		/// <param name="state">The argument to pass to the delegate.</param>
 		private void Post(SendOrPostCallback callback, object state) {
 			if (this.underlyingSynchronizationContext != null) {
 				this.Post(new SingleExecuteProtector(this, callback, state));
@@ -166,8 +234,20 @@ namespace Microsoft.Threading {
 			}
 		}
 
+		/// <summary>
+		/// Schedules the specified delegate for execution on the Main thread.
+		/// </summary>
+		/// <param name="wrapper">The delegate wrapper that guarantees the delegate cannot be invoked more than once.</param>
 		private void Post(SingleExecuteProtector wrapper) {
 			Assumes.NotNull(this.underlyingSynchronizationContext);
+
+			// Our strategy here is to post the delegate to as many SynchronizationContexts
+			// as may be necessary to mitigate deadlocks, since any of the ones we try below
+			// *could* be the One that is currently controlling the Main thread in a synchronously
+			// blocking wait for this very work to occur.
+			// The SingleExecuteProtector class ensures that if more than one SynchronizationContext
+			// ultimately responds to the message and invokes the delegate, that it will no-op after
+			// the first invocation.
 			lock (this.syncObject) {
 				this.pendingActions.Enqueue(wrapper);
 
@@ -184,11 +264,19 @@ namespace Microsoft.Threading {
 			this.underlyingSynchronizationContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
 		}
 
+		/// <summary>
+		/// A structure that clears CallContext and SynchronizationContext async/thread statics and
+		/// restores those values when this structure is disposed.
+		/// </summary>
 		public struct RevertRelevance : IDisposable {
 			private readonly AsyncPump pump;
 			private SingleThreadSynchronizationContext oldCallContextValue;
 			private SingleThreadSynchronizationContext oldCurrentSyncContext;
 
+			/// <summary>
+			/// Initializes a new instance of the <see cref="RevertRelevance"/> struct.
+			/// </summary>
+			/// <param name="pump">The instance that created this value.</param>
 			internal RevertRelevance(AsyncPump pump) {
 				Requires.NotNull(pump, "pump");
 				this.pump = pump;
@@ -202,6 +290,9 @@ namespace Microsoft.Threading {
 				}
 			}
 
+			/// <summary>
+			/// Reverts the async local and thread static values to their original values.
+			/// </summary>
 			public void Dispose() {
 				if (this.pump != null) {
 					this.pump.MainThreadControllingSyncContext = this.oldCallContextValue;
@@ -213,34 +304,69 @@ namespace Microsoft.Threading {
 			}
 		}
 
+		/// <summary>
+		/// A delegate wrapper that ensures the delegate is only invoked at most once.
+		/// </summary>
 		private class SingleExecuteProtector {
+			/// <summary>
+			/// The instance that created this delegate.
+			/// </summary>
 			private readonly AsyncPump asyncPump;
 
+			/// <summary>
+			/// The delegate to invoke.  <c>null</c> if it has already been invoked.
+			/// </summary>
+			/// <value>May be of type <see cref="Action"/> or <see cref="SendOrPostCallback"/>.</value>
 			private object invokeDelegate;
 
+			/// <summary>
+			/// The value to pass to the delegate if it is a <see cref="SendOrPostCallback"/>.
+			/// </summary>
 			private object state;
 
+			/// <summary>
+			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class.
+			/// </summary>
+			/// <param name="asyncPump">The <see cref="AsyncPump"/> instance that created this.</param>
 			private SingleExecuteProtector(AsyncPump asyncPump) {
 				Requires.NotNull(asyncPump, "asyncPump");
 				this.asyncPump = asyncPump;
 			}
 
+			/// <summary>
+			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class.
+			/// </summary>
+			/// <param name="asyncPump">The <see cref="AsyncPump"/> instance that created this.</param>
+			/// <param name="action">The delegate being wrapped.</param>
 			internal SingleExecuteProtector(AsyncPump asyncPump, Action action)
 				: this(asyncPump) {
 				this.invokeDelegate = action;
 			}
 
+			/// <summary>
+			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class.
+			/// </summary>
+			/// <param name="asyncPump">The <see cref="AsyncPump"/> instance that created this.</param>
+			/// <param name="callback">The delegate being wrapped.</param>
+			/// <param name="state">The value to pass to the delegate.</param>
 			internal SingleExecuteProtector(AsyncPump asyncPump, SendOrPostCallback callback, object state)
 				: this(asyncPump) {
 				this.invokeDelegate = callback;
 				this.state = state;
 			}
 
+			/// <summary>
+			/// Executes the delegate if it has not already executed.
+			/// </summary>
+			/// <param name="state">The <see cref="SingleExecuteProtector"/> instance wrapping the delegate to invoke.</param>
 			internal static void ExecuteOnce(object state) {
 				var instance = (SingleExecuteProtector)state;
 				instance.TryExecute();
 			}
 
+			/// <summary>
+			/// Executes the delegate if it has not already executed.
+			/// </summary>
 			internal bool TryExecute() {
 				object invokeDelegate = Interlocked.Exchange(ref this.invokeDelegate, null);
 				if (invokeDelegate != null) {
@@ -267,15 +393,26 @@ namespace Microsoft.Threading {
 			}
 		}
 
+		/// <summary>
+		/// A value whose disposal cancels a <see cref="Join"/> operation.
+		/// </summary>
 		public struct JoinRelease : IDisposable {
 			private AsyncPump parent;
 			private SingleThreadSynchronizationContext context;
 
+			/// <summary>
+			/// Initializes a new instance of the <see cref="JoinRelease"/> struct.
+			/// </summary>
+			/// <param name="parent">The instance that created this value.</param>
+			/// <param name="context">The Main thread controlling SynchronizationContext to use to accelerate execution of Main thread bound work.</param>
 			internal JoinRelease(AsyncPump parent, SynchronizationContext context) {
 				this.parent = parent;
 				this.context = (SingleThreadSynchronizationContext)context;
 			}
 
+			/// <summary>
+			/// Cancels the <see cref="Join"/> operation.
+			/// </summary>
 			public void Dispose() {
 				if (this.parent != null) {
 					lock (this.parent.syncObject) {
@@ -437,34 +574,58 @@ namespace Microsoft.Threading {
 			}
 		}
 
+		/// <summary>
+		/// An awaitable struct that facilitates an asynchronous transition to the Main thread.
+		/// </summary>
 		public struct SynchronizationContextAwaitable {
 			private readonly AsyncPump asyncPump;
 
+			/// <summary>
+			/// Initializes a new instance of the <see cref="SynchronizationContextAwaitable"/> struct.
+			/// </summary>
 			internal SynchronizationContextAwaitable(AsyncPump asyncPump) {
 				this.asyncPump = asyncPump;
 			}
 
+			/// <summary>
+			/// Gets the awaiter.
+			/// </summary>
 			public SynchronizationContextAwaiter GetAwaiter() {
 				return new SynchronizationContextAwaiter(this.asyncPump);
 			}
 		}
 
+		/// <summary>
+		/// An awaiter struct that facilitates an asynchronous transition to the Main thread.
+		/// </summary>
 		public struct SynchronizationContextAwaiter : INotifyCompletion {
 			private readonly AsyncPump asyncPump;
 
+			/// <summary>
+			/// Initializes a new instance of the <see cref="SynchronizationContextAwaiter"/> struct.
+			/// </summary>
 			internal SynchronizationContextAwaiter(AsyncPump asyncPump) {
 				this.asyncPump = asyncPump;
 			}
 
+			/// <summary>
+			/// Gets a value indicating whether the caller is already on the Main thread.
+			/// </summary>
 			public bool IsCompleted {
 				get { return this.asyncPump == null || this.asyncPump.mainThread == Thread.CurrentThread; }
 			}
 
+			/// <summary>
+			/// Schedules a continuation for execution on the Main thread.
+			/// </summary>
 			public void OnCompleted(Action continuation) {
 				Assumes.True(this.asyncPump != null);
 				this.asyncPump.Post(continuation);
 			}
 
+			/// <summary>
+			/// Called on the Main thread to prepare it to execute the continuation.
+			/// </summary>
 			public void GetResult() {
 				// If we don't have a CallContext associated sync context then try applying the one on the current thread.
 				if (this.asyncPump.MainThreadControllingSyncContext == null) {
