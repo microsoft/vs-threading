@@ -144,7 +144,8 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AsyncReaderWriterLock"/> class.
 		/// </summary>
-		public AsyncReaderWriterLock() {
+		public AsyncReaderWriterLock()
+			: this(captureDiagnostics: false) {
 		}
 
 		/// <summary>
@@ -1413,13 +1414,6 @@ namespace Microsoft.Threading {
 			/// </summary>
 			internal CancellationToken CancellationToken {
 				get { return this.cancellationToken; }
-			}
-
-			/// <summary>
-			/// Gets the lock class that created this instance.
-			/// </summary>
-			internal AsyncReaderWriterLock Lock {
-				get { return this.lck; }
 			}
 
 			/// <summary>
