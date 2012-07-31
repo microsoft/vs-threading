@@ -357,6 +357,11 @@ namespace Microsoft.Threading {
 		/// </summary>
 		private class SingleExecuteProtector {
 			/// <summary>
+			/// Executes the delegate if it has not already executed.
+			/// </summary>
+			internal static SendOrPostCallback ExecuteOnce = state => ((SingleExecuteProtector)state).TryExecute();
+
+			/// <summary>
 			/// The instance that created this delegate.
 			/// </summary>
 			private readonly AsyncPump asyncPump;
@@ -401,15 +406,6 @@ namespace Microsoft.Threading {
 				: this(asyncPump) {
 				this.invokeDelegate = callback;
 				this.state = state;
-			}
-
-			/// <summary>
-			/// Executes the delegate if it has not already executed.
-			/// </summary>
-			/// <param name="state">The <see cref="SingleExecuteProtector"/> instance wrapping the delegate to invoke.</param>
-			internal static void ExecuteOnce(object state) {
-				var instance = (SingleExecuteProtector)state;
-				instance.TryExecute();
 			}
 
 			/// <summary>
