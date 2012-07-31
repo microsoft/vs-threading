@@ -54,7 +54,7 @@
 		/// <param name="yieldingSignal">The signal to set after the continuation has been pended.</param>
 		/// <param name="resumingSignal">The signal to set when the continuation has been invoked.</param>
 		/// <returns>A new awaitable.</returns>
-		internal static YieldAndNotifyAwaitable YieldAndNotify(this INotifyCompletion baseAwaiter, TaskCompletionSource<object> yieldingSignal = null, TaskCompletionSource<object> resumingSignal = null) {
+		internal static YieldAndNotifyAwaitable YieldAndNotify(this INotifyCompletion baseAwaiter, AsyncManualResetEvent yieldingSignal = null, AsyncManualResetEvent resumingSignal = null) {
 			Requires.NotNull(baseAwaiter, "baseAwaiter");
 
 			return new YieldAndNotifyAwaitable(baseAwaiter, yieldingSignal, resumingSignal);
@@ -62,10 +62,10 @@
 
 		internal struct YieldAndNotifyAwaitable {
 			private readonly INotifyCompletion baseAwaiter;
-			private readonly TaskCompletionSource<object> yieldingSignal;
-			private readonly TaskCompletionSource<object> resumingSignal;
+			private readonly AsyncManualResetEvent yieldingSignal;
+			private readonly AsyncManualResetEvent resumingSignal;
 
-			internal YieldAndNotifyAwaitable(INotifyCompletion baseAwaiter, TaskCompletionSource<object> yieldingSignal, TaskCompletionSource<object> resumingSignal) {
+			internal YieldAndNotifyAwaitable(INotifyCompletion baseAwaiter, AsyncManualResetEvent yieldingSignal, AsyncManualResetEvent resumingSignal) {
 				Requires.NotNull(baseAwaiter, "baseAwaiter");
 
 				this.baseAwaiter = baseAwaiter;
@@ -80,10 +80,10 @@
 
 		internal struct YieldAndNotifyAwaiter : INotifyCompletion {
 			private readonly INotifyCompletion baseAwaiter;
-			private readonly TaskCompletionSource<object> yieldingSignal;
-			private readonly TaskCompletionSource<object> resumingSignal;
+			private readonly AsyncManualResetEvent yieldingSignal;
+			private readonly AsyncManualResetEvent resumingSignal;
 
-			internal YieldAndNotifyAwaiter(INotifyCompletion baseAwaiter, TaskCompletionSource<object> yieldingSignal, TaskCompletionSource<object> resumingSignal) {
+			internal YieldAndNotifyAwaiter(INotifyCompletion baseAwaiter, AsyncManualResetEvent yieldingSignal, AsyncManualResetEvent resumingSignal) {
 				Requires.NotNull(baseAwaiter, "baseAwaiter");
 
 				this.baseAwaiter = baseAwaiter;
@@ -99,13 +99,13 @@
 				var that = this;
 				this.baseAwaiter.OnCompleted(delegate {
 					if (that.resumingSignal != null) {
-						that.resumingSignal.SetAsync();
+						that.resumingSignal.Set();
 					}
 
 					continuation();
 				});
 				if (this.yieldingSignal != null) {
-					this.yieldingSignal.SetAsync();
+					this.yieldingSignal.Set();
 				}
 			}
 
