@@ -14,5 +14,21 @@
 				await Task.Yield();
 			});
 		}
+
+		[TestMethod, Timeout(500)]
+		public async Task YieldAndNotify() {
+			var task1Awaiting = new TaskCompletionSource<object>();
+			var task1Resuming = new TaskCompletionSource<object>();
+			var task2ReceivedNotification = new TaskCompletionSource<object>();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+				await task2ReceivedNotification.Task.GetAwaiter().YieldAndNotify(task1Awaiting, task1Resuming);
+			}),
+				Task.Run(async delegate {
+				await task1Awaiting.Task;
+				task2ReceivedNotification.SetAsync().Forget();
+				await task1Resuming.Task;
+			}));
+		}
 	}
 }

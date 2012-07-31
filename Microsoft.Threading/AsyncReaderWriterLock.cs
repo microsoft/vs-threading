@@ -940,38 +940,6 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
-		/// Removes an element from the middle of a queue without disrupting the other elements.
-		/// </summary>
-		/// <typeparam name="T">The element to remove.</typeparam>
-		/// <param name="queue">The queue to modify.</param>
-		/// <param name="valueToRemove">The value to remove.</param>
-		private static bool RemoveMidQueue<T>(Queue<T> queue, T valueToRemove) where T : class {
-			Requires.NotNull(queue, "queue");
-			Requires.NotNull(valueToRemove, "valueToRemove");
-			if (queue.Count == 0) {
-				return false;
-			}
-
-			T originalHead = queue.Dequeue();
-			if (Object.ReferenceEquals(originalHead, valueToRemove)) {
-				return true;
-			}
-
-			bool found = false;
-			queue.Enqueue(originalHead);
-			while (!Object.ReferenceEquals(originalHead, queue.Peek())) {
-				var tempHead = queue.Dequeue();
-				if (Object.ReferenceEquals(tempHead, valueToRemove)) {
-					found = true;
-				} else {
-					queue.Enqueue(tempHead);
-				}
-			}
-
-			return found;
-		}
-
-		/// <summary>
 		/// Releases the lock held by the specified awaiter.
 		/// </summary>
 		/// <param name="awaiter">The awaiter holding an active lock.</param>
@@ -1258,7 +1226,7 @@ namespace Microsoft.Threading {
 					// The lock class can't deal well with cancelled lock requests remaining in its queue.
 					// Remove the awaiter, wherever in the queue it happens to be.
 					var queue = this.GetLockQueue(awaiter.Kind);
-					if (!RemoveMidQueue(queue, awaiter)) {
+					if (!queue.RemoveMidQueue(awaiter)) {
 						// This can happen when the lock request is cancelled, but during a race
 						// condition where the lock was just about to be issued anyway.
 						Assumes.True(awaiter.CancellationToken.IsCancellationRequested);
