@@ -48,5 +48,14 @@
 			var result = this.evt.WaitAsync();
 			Assert.IsFalse(result.IsCompleted);
 		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void Awaitable() {
+			var task = Task.Run(async delegate {
+				await this.evt;
+			});
+			this.evt.Set();
+			task.Wait();
+		}
 	}
 }

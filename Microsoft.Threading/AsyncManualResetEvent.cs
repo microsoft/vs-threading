@@ -2,6 +2,7 @@
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
+	using System.Runtime.CompilerServices;
 	using System.Text;
 	using System.Threading;
 	using System.Threading.Tasks;
@@ -66,6 +67,14 @@
 				}
 #pragma warning restore 0420
 			}
+		}
+
+		/// <summary>
+		/// Gets an awaiter that completes when this event is signaled.
+		/// </summary>
+		[System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+		public TaskAwaiter GetAwaiter() {
+			return this.WaitAsync().GetAwaiter();
 		}
 	}
 }
