@@ -14,17 +14,46 @@ namespace Microsoft.Threading {
 
 	/// <summary>Provides a pump that supports running asynchronous methods on the current thread.</summary>
 	public class AsyncPump {
+		/// <summary>
+		/// A map of all the threads that instances of AsyncPump consider to be "Main" threads
+		/// (so in a typical app this map will contain one element) and access to
+		/// the Main thread's current synchronous SynchronizationContext that is conditionally
+		/// available based on the calling thread's possession of the "ticket to the Main thread".
+		/// </summary>
 		private static readonly ConditionalWeakTable<Thread, AsyncLocal<SingleThreadSynchronizationContext>> threadControllingSyncContexts
 			= new ConditionalWeakTable<Thread, AsyncLocal<SingleThreadSynchronizationContext>>();
 
+		/// <summary>
+		/// The WPF Dispatcher, or other SynchronizationContext that is applied to the Main thread.
+		/// </summary>
 		private readonly SynchronizationContext underlyingSynchronizationContext;
 
+		/// <summary>
+		/// The Main thread itself.
+		/// </summary>
 		private readonly Thread mainThread;
 
+		/// <summary>
+		/// A queue of async continuations that have not yet been executed, and may 
+		/// need to be "replayed" to new SynchronizationContexts that may <see cref="Join"/>
+		/// this instance, allowing for Main thread access to be granted after
+		/// continuations have already been pended.
+		/// </summary>
 		private readonly Queue<SingleExecuteProtector> pendingActions = new Queue<SingleExecuteProtector>();
 
+		/// <summary>
+		/// The lock object used to protect field access on this instance.
+		/// </summary>
 		private readonly object syncObject = new object();
 
+		/// <summary>
+		/// A map of SynchronizationContexts that we're authorized to pend work to
+		/// in an effort to execute on the Main thread, and the number of authorizations
+		/// received for each of those contexts.
+		/// </summary>
+		/// <remarks>
+		/// When the value in an entry is decremented to 0, the entry is removed from the map.
+		/// </remarks>
 		private Dictionary<SingleThreadSynchronizationContext, StrongBox<int>> extraContexts =
 			new Dictionary<SingleThreadSynchronizationContext, StrongBox<int>>();
 
