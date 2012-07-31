@@ -410,15 +410,17 @@
 			});
 		}
 
-		[TestMethod]//, Timeout(TestTimeout)]
-		public void Fails() {
+		[TestMethod, Timeout(TestTimeout)]
+		public void SwitchToMainThreadAwaiterReappliesAsyncLocalSyncContextOnContinuation() {
 			var task = Task.Run(delegate {
 				this.asyncPump.RunSynchronously(async delegate {
 					Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
+
+					// Switching to the main thread here will get us the SynchronizationContext we need,
+					// and the awaiter's GetResult() should apply the AsyncLocal sync context as well
+					// to avoid deadlocks later.
 					await this.asyncPump.SwitchToMainThread();
 
-
-					// The SyncContext is right, but AsyncLocal is cleared, so that background work doesn't think it can get back.
 					await this.TestReentrancyOfUnrelatedDependentWork();
 
 					// The scenario here is that some code calls out, then back in, via a synchronous interface

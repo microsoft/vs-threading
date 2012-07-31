@@ -466,6 +466,10 @@ namespace Microsoft.Threading {
 			}
 
 			public void GetResult() {
+				// If we don't have a CallContext associated sync context then try applying the one on the current thread.
+				if (this.asyncPump.MainThreadControllingSyncContext == null) {
+					this.asyncPump.MainThreadControllingSyncContext = (SynchronizationContext.Current as SingleThreadSynchronizationContext);
+				}
 			}
 		}
 
