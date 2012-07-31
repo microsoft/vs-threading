@@ -40,7 +40,7 @@ namespace Microsoft.Threading {
 
 		/// <summary>
 		/// Gets or sets the SynchronizationContext that is currently executing the
-		/// <see cref="RunSynchronously(Funk{Task})"/> call on the Main thread.
+		/// <see cref="RunSynchronously(Func{Task})"/> call on the Main thread.
 		/// </summary>
 		private SingleThreadSynchronizationContext MainThreadControllingSyncContext {
 			get {
