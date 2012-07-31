@@ -34,16 +34,6 @@ namespace Microsoft.Threading
         public static readonly Task<bool> FalseTask = Task.FromResult(false);
 
         /// <summary>
-        /// A cached delegate that takes a task as a parameter and does nothing.
-        /// </summary>
-        private static readonly Action<Task> EmptyTaskContinuation = task => { };
-
-        /// <summary>
-        /// A cached delegate that takes a delegate as a state object and invokes it.
-        /// </summary>
-        private static readonly Action<Task, object> ActionInvokingTaskContinuation = (task, state) => ((Action)state)();
-
-        /// <summary>
         /// Wait on a task without possibly inlining it to the current thread.
         /// </summary>
         /// <param name="task">The task to wait on.</param>
@@ -53,7 +43,7 @@ namespace Microsoft.Threading
             if (!task.IsCompleted)
             {
                 // Waiting on a continuation of a task won't ever inline the predecessor (in .NET 4.x anyway).
-                var continuation = task.ContinueWith(EmptyTaskContinuation, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                var continuation = task.ContinueWith(t => { }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
                 continuation.Wait();
             }
 
@@ -153,7 +143,7 @@ namespace Microsoft.Threading
             Requires.NotNull(task, "task");
             Requires.NotNull(action, "action");
 
-            return task.ContinueWith(ActionInvokingTaskContinuation, action, cancellation, options, TaskScheduler.Default);
+            return task.ContinueWith((t, state) => ((Action)state)(), action, cancellation, options, TaskScheduler.Default);
         }
 
         /// <summary>

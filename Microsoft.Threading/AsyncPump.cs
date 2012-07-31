@@ -69,7 +69,7 @@ namespace Microsoft.Threading {
 
 		/// <summary>
 		/// Gets or sets the SynchronizationContext that is currently executing the
-		/// <see cref="RunSynchronously(Funk{Task})"/> call on the Main thread.
+		/// <see cref="RunSynchronously(Func{Task})"/> call on the Main thread.
 		/// </summary>
 		private SingleThreadSynchronizationContext MainThreadControllingSyncContext {
 			get {
@@ -301,19 +301,6 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Schedules the specified delegate for execution on the Main thread.
 		/// </summary>
-		/// <param name="callback">The delegate to invoke.</param>
-		/// <param name="state">The argument to pass to the delegate.</param>
-		private void Post(SendOrPostCallback callback, object state) {
-			if (this.underlyingSynchronizationContext != null) {
-				this.Post(new SingleExecuteProtector(this, callback, state));
-			} else {
-				ThreadPool.QueueUserWorkItem(new WaitCallback(callback), state);
-			}
-		}
-
-		/// <summary>
-		/// Schedules the specified delegate for execution on the Main thread.
-		/// </summary>
 		/// <param name="wrapper">The delegate wrapper that guarantees the delegate cannot be invoked more than once.</param>
 		private void Post(SingleExecuteProtector wrapper) {
 			Assumes.NotNull(this.underlyingSynchronizationContext);
@@ -386,6 +373,11 @@ namespace Microsoft.Threading {
 		/// </summary>
 		private class SingleExecuteProtector {
 			/// <summary>
+			/// Executes the delegate if it has not already executed.
+			/// </summary>
+			internal static SendOrPostCallback ExecuteOnce = state => ((SingleExecuteProtector)state).TryExecute();
+
+			/// <summary>
 			/// The instance that created this delegate.
 			/// </summary>
 			private readonly AsyncPump asyncPump;
@@ -394,58 +386,26 @@ namespace Microsoft.Threading {
 			/// The delegate to invoke.  <c>null</c> if it has already been invoked.
 			/// </summary>
 			/// <value>May be of type <see cref="Action"/> or <see cref="SendOrPostCallback"/>.</value>
-			private object invokeDelegate;
-
-			/// <summary>
-			/// The value to pass to the delegate if it is a <see cref="SendOrPostCallback"/>.
-			/// </summary>
-			private object state;
-
-			/// <summary>
-			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class.
-			/// </summary>
-			/// <param name="asyncPump">The <see cref="AsyncPump"/> instance that created this.</param>
-			private SingleExecuteProtector(AsyncPump asyncPump) {
-				Requires.NotNull(asyncPump, "asyncPump");
-				this.asyncPump = asyncPump;
-			}
+			private Action invokeDelegate;
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class.
 			/// </summary>
 			/// <param name="asyncPump">The <see cref="AsyncPump"/> instance that created this.</param>
 			/// <param name="action">The delegate being wrapped.</param>
-			internal SingleExecuteProtector(AsyncPump asyncPump, Action action)
-				: this(asyncPump) {
+			internal SingleExecuteProtector(AsyncPump asyncPump, Action action) {
+				Requires.NotNull(asyncPump, "asyncPump");
+				Requires.NotNull(action, "action");
+
+				this.asyncPump = asyncPump;
 				this.invokeDelegate = action;
-			}
-
-			/// <summary>
-			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class.
-			/// </summary>
-			/// <param name="asyncPump">The <see cref="AsyncPump"/> instance that created this.</param>
-			/// <param name="callback">The delegate being wrapped.</param>
-			/// <param name="state">The value to pass to the delegate.</param>
-			internal SingleExecuteProtector(AsyncPump asyncPump, SendOrPostCallback callback, object state)
-				: this(asyncPump) {
-				this.invokeDelegate = callback;
-				this.state = state;
-			}
-
-			/// <summary>
-			/// Executes the delegate if it has not already executed.
-			/// </summary>
-			/// <param name="state">The <see cref="SingleExecuteProtector"/> instance wrapping the delegate to invoke.</param>
-			internal static void ExecuteOnce(object state) {
-				var instance = (SingleExecuteProtector)state;
-				instance.TryExecute();
 			}
 
 			/// <summary>
 			/// Executes the delegate if it has not already executed.
 			/// </summary>
 			internal bool TryExecute() {
-				object invokeDelegate = Interlocked.Exchange(ref this.invokeDelegate, null);
+				var invokeDelegate = Interlocked.Exchange(ref this.invokeDelegate, null);
 				if (invokeDelegate != null) {
 					lock (this.asyncPump.syncObject) {
 						// This work item will usually be at the head of the queue, but since the
@@ -453,16 +413,7 @@ namespace Microsoft.Threading {
 						this.asyncPump.pendingActions.RemoveMidQueue(this);
 					}
 
-					var action = invokeDelegate as Action;
-					if (action != null) {
-						action();
-					} else {
-						var callback = invokeDelegate as SendOrPostCallback;
-						Assumes.NotNull(callback);
-						callback(this.state);
-						this.state = null;
-					}
-
+					invokeDelegate();
 					return true;
 				} else {
 					return false;
