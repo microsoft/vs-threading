@@ -38,6 +38,10 @@ namespace Microsoft.Threading {
 			this.underlyingSynchronizationContext = synchronizationContext ?? SynchronizationContext.Current; // may still be null after this.
 		}
 
+		/// <summary>
+		/// Gets or sets the SynchronizationContext that is currently executing the
+		/// <see cref="RunSynchronously(Funk{Task})"/> call on the Main thread.
+		/// </summary>
 		private SingleThreadSynchronizationContext MainThreadControllingSyncContext {
 			get {
 				AsyncLocal<SingleThreadSynchronizationContext> local;
@@ -56,6 +60,10 @@ namespace Microsoft.Threading {
 
 		/// <summary>Runs the specified asynchronous method.</summary>
 		/// <param name="asyncMethod">The asynchronous method to execute.</param>
+		/// <remarks>
+		/// See the <see cref="RunSynchronously(Func{Task})"/> overload documentation
+		/// for an example.
+		/// </remarks>
 		public void RunSynchronously(Action asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
@@ -72,6 +80,26 @@ namespace Microsoft.Threading {
 
 		/// <summary>Runs the specified asynchronous method.</summary>
 		/// <param name="asyncMethod">The asynchronous method to execute.</param>
+		/// <remarks>
+		/// <example>
+		/// <code>
+		/// // On threadpool or Main thread, this method will block
+		/// // the calling thread until all async operations in the
+		/// // delegate complete.
+		/// this.asyncPump.RunSynchronously(async delegate {
+		///     // still on the threadpool or Main thread as before.
+		///     await OperationAsync();
+		///     // still on the threadpool or Main thread as before.
+		///     await Task.Run(async delegate {
+		///          // Now we're on a threadpool thread.
+		///          await Task.Yield();
+		///          // still on a threadpool thread.
+		///     });
+		///     // Now back on the Main thread (or threadpool thread if that's where we started).
+		/// });
+		/// </code>
+		/// </example>
+		/// </remarks>
 		public void RunSynchronously(Func<Task> asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
@@ -94,6 +122,10 @@ namespace Microsoft.Threading {
 
 		/// <summary>Runs the specified asynchronous method.</summary>
 		/// <param name="asyncMethod">The asynchronous method to execute.</param>
+		/// <remarks>
+		/// See the <see cref="RunSynchronously(Func{Task})"/> overload documentation
+		/// for an example.
+		/// </remarks>
 		public T RunSynchronously<T>(Func<Task<T>> asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
@@ -119,6 +151,22 @@ namespace Microsoft.Threading {
 		/// in such a way as to mitigate both deadlocks and reentrancy.
 		/// </summary>
 		/// <returns>An awaitable.</returns>
+		/// <remarks>
+		/// <example>
+		/// <code>
+		/// private async Task SomeOperationAsync() {
+		///     // on the caller's thread.
+		///     await DoAsync();
+		///     
+		///     // Now switch to a threadpool thread explicitly.
+		///     await TaskScheduler.Default;
+		///     
+		///     // Now switch to the Main thread to talk to some STA object.
+		///     await this.asyncPump.SwitchToMainThread();
+		///     STAService.DoSomething();
+		/// }
+		/// </code>
+		/// </example></remarks>
 		public SynchronizationContextAwaitable SwitchToMainThread() {
 			return new SynchronizationContextAwaitable(this);
 		}
@@ -141,7 +189,7 @@ namespace Microsoft.Threading {
 		/// <code>
 		/// var asyncOperation = Task.Run(async delegate {
 		///     // Some background work.
-		///     await this.asyncPump.SwitchToUIThread();
+		///     await this.asyncPump.SwitchToMainThread();
 		///     // Some Main thread work.
 		/// });
 		/// 
@@ -193,7 +241,7 @@ namespace Microsoft.Threading {
 		///     using(this.asyncPump.SuppressRelevance()) {
 		///         var asyncOperation = Task.Run(async delegate {
 		///             // Some background work.
-		///             await this.asyncPump.SwitchToUIThread();
+		///             await this.asyncPump.SwitchToMainThread();
 		///             // Some Main thread work, that cannot begin until the outer RunSynchronously call has returned.
 		///         });
 		///     }
@@ -634,12 +682,21 @@ namespace Microsoft.Threading {
 			}
 		}
 
+		/// <summary>
+		/// A value to construct with a C# using block in all the Run method overloads
+		/// to setup and teardown the boilerplate stuff.
+		/// </summary>
 		private struct RunFramework : IDisposable {
 			private readonly AsyncPump pump;
 			private readonly SynchronizationContext previousContext;
 			private readonly SingleThreadSynchronizationContext appliedContext;
 			private readonly SingleThreadSynchronizationContext previousAsyncLocalContext;
 
+			/// <summary>
+			/// Initializes a new instance of the <see cref="RunFramework"/> struct
+			/// and sets up the synchronization contexts for the
+			/// <see cref="RunSynchronously(Func{Task})"/> family of methods.
+			/// </summary>
 			internal RunFramework(AsyncPump pump) {
 				Requires.NotNull(pump, "pump");
 
@@ -654,10 +711,17 @@ namespace Microsoft.Threading {
 				}
 			}
 
+			/// <summary>
+			/// Gets the SynchronizationContext instance that is running inside
+			/// the <see cref="RunSynchronously(Func{Task})"/> method.
+			/// </summary>
 			internal SingleThreadSynchronizationContext AppliedContext {
 				get { return this.appliedContext; }
 			}
 
+			/// <summary>
+			/// Reverts the execution context to its previous state before this struct was created.
+			/// </summary>
 			public void Dispose() {
 				if (this.pump != null) {
 					this.pump.MainThreadControllingSyncContext = this.previousAsyncLocalContext;
