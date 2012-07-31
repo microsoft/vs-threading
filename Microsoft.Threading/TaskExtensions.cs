@@ -39,11 +39,6 @@ namespace Microsoft.Threading
         private static readonly Action<Task> EmptyTaskContinuation = task => { };
 
         /// <summary>
-        /// A cached delegate that takes a delegate as a state object and invokes it.
-        /// </summary>
-        private static readonly Action<Task, object> ActionInvokingTaskContinuation = (task, state) => ((Action)state)();
-
-        /// <summary>
         /// Wait on a task without possibly inlining it to the current thread.
         /// </summary>
         /// <param name="task">The task to wait on.</param>
@@ -153,7 +148,7 @@ namespace Microsoft.Threading
             Requires.NotNull(task, "task");
             Requires.NotNull(action, "action");
 
-            return task.ContinueWith(ActionInvokingTaskContinuation, action, cancellation, options, TaskScheduler.Default);
+            return task.ContinueWith((t, state) => ((Action)state)(), action, cancellation, options, TaskScheduler.Default);
         }
 
         /// <summary>
