@@ -113,29 +113,6 @@
 			}
 		}
 
-		internal static TaskSchedulerAwaiter GetAwaiter(this TaskScheduler scheduler) {
-			return new TaskSchedulerAwaiter(scheduler);
-		}
-
-		internal struct TaskSchedulerAwaiter : INotifyCompletion {
-			private readonly TaskScheduler scheduler;
-
-			internal TaskSchedulerAwaiter(TaskScheduler scheduler) {
-				this.scheduler = scheduler;
-			}
-
-			public bool IsCompleted {
-				get { return false; }
-			}
-
-			public void OnCompleted(Action action) {
-				Task.Factory.StartNew(action, CancellationToken.None, TaskCreationOptions.None, this.scheduler);
-			}
-
-			public void GetResult() {
-			}
-		}
-
 		internal struct DebugAssertionRevert : IDisposable {
 			public void Dispose() {
 				var listener = Debug.Listeners.OfType<DefaultTraceListener>().FirstOrDefault();
