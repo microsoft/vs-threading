@@ -36,6 +36,12 @@ namespace Microsoft.Threading {
 		private readonly PromotableMainThreadSynchronizationContext promotableSyncContext;
 
 		/// <summary>
+		/// A task scheduler that executes tasks on the main thread under the same rules as
+		/// <see cref="SwitchToMainThreadAsync"/>.
+		/// </summary>
+		private readonly MainThreadScheduler mainThreadTaskScheduler;
+
+		/// <summary>
 		/// The Main thread itself.
 		/// </summary>
 		private readonly Thread mainThread;
@@ -73,6 +79,15 @@ namespace Microsoft.Threading {
 			this.mainThread = mainThread ?? Thread.CurrentThread;
 			this.underlyingSynchronizationContext = synchronizationContext ?? SynchronizationContext.Current; // may still be null after this.
 			this.promotableSyncContext = new PromotableMainThreadSynchronizationContext(this);
+			this.mainThreadTaskScheduler = new MainThreadScheduler(this);
+		}
+
+		/// <summary>
+		/// Gets a scheduler that executes tasks on the main thread under the same conditions
+		/// as those used for <see cref="SwitchToMainThreadAsync"/>.
+		/// </summary>
+		public TaskScheduler MainThreadTaskScheduler {
+			get { return this.mainThreadTaskScheduler; }
 		}
 
 		/// <summary>
@@ -752,6 +767,71 @@ namespace Microsoft.Threading {
 				} else {
 					throw new NotSupportedException();
 				}
+			}
+		}
+
+		/// <summary>
+		/// A TaskScheduler that executes task on the main thread.
+		/// </summary>
+		private class MainThreadScheduler : TaskScheduler {
+			/// <summary>The synchronization object for field access.</summary>
+			private readonly object syncObject = new object();
+
+			/// <summary>The owning AsyncPump.</summary>
+			private readonly AsyncPump asyncPump;
+
+			/// <summary>The scheduled tasks that have not yet been executed.</summary>
+			private readonly HashSet<Task> queuedTasks = new HashSet<Task>();
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="MainThreadScheduler"/> class.
+			/// </summary>
+			internal MainThreadScheduler(AsyncPump asyncPump) {
+				Requires.NotNull(asyncPump, "asyncPump");
+				this.asyncPump = asyncPump;
+			}
+
+			/// <summary>
+			/// Returns a snapshot of the tasks pending on this scheduler.
+			/// </summary>
+			protected override IEnumerable<Task> GetScheduledTasks() {
+				lock (this.syncObject) {
+					return new List<Task>(this.queuedTasks);
+				}
+			}
+
+			/// <summary>
+			/// Enqueues a task.
+			/// </summary>
+			protected override async void QueueTask(Task task) {
+				lock (this.syncObject) {
+					this.queuedTasks.Add(task);
+				}
+
+				await this.asyncPump.SwitchToMainThreadAsync();
+				this.TryExecuteTask(task);
+
+				lock (this.syncObject) {
+					this.queuedTasks.Remove(task);
+				}
+			}
+
+			/// <summary>
+			/// Executes a task inline if we're on the UI thread.
+			/// </summary>
+			protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued) {
+				if (this.asyncPump.mainThread == Thread.CurrentThread) {
+					bool result = this.TryExecuteTask(task);
+					if (taskWasPreviouslyQueued) {
+						lock (this.syncObject) {
+							this.queuedTasks.Remove(task);
+						}
+					}
+
+					return result;
+				}
+
+				return false;
 			}
 		}
 

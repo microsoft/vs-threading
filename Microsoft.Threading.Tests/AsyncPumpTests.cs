@@ -502,6 +502,22 @@
 			});
 		}
 
+		[TestMethod]
+		public void MainThreadTaskScheduler() {
+			this.asyncPump.RunSynchronously(async delegate {
+				bool completed = false;
+				await Task.Factory.StartNew(
+					() => {
+						Assert.AreSame(this.originalThread, Thread.CurrentThread);
+						completed = true;
+					},
+					CancellationToken.None,
+					TaskCreationOptions.None,
+					this.asyncPump.MainThreadTaskScheduler);
+				Assert.IsTrue(completed);
+			});
+		}
+
 		private async Task SomeOperationThatMayBeOnMainThreadAsync() {
 			await Task.Yield();
 			await Task.Yield();
