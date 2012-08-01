@@ -603,10 +603,8 @@ namespace Microsoft.Threading {
 			/// <param name="state">The object passed to the delegate.</param>
 			public override void Post(SendOrPostCallback d, object state) {
 				Requires.NotNull(d, "d");
-				if (this.queue.IsCompleted) {
+				if (!this.queue.TryAdd(new KeyValuePair<SendOrPostCallback, object>(d, state))) {
 					this.asyncPump.Post(d, state);
-				} else {
-					this.queue.Add(new KeyValuePair<SendOrPostCallback, object>(d, state));
 				}
 			}
 
@@ -655,14 +653,12 @@ namespace Microsoft.Threading {
 			/// <param name="caller">The caller of this method, if an instance of AsyncPump.</param>
 			internal void Post(SendOrPostCallback d, object state, AsyncPump caller) {
 				Requires.NotNull(d, "d");
-				if (this.queue.IsCompleted) {
+				if (!this.queue.TryAdd(new KeyValuePair<SendOrPostCallback, object>(d, state))) {
 					if (this.asyncPump != caller) { // avoid infinite recursion.
 						this.asyncPump.Post(d, state);
 					} else {
 						this.previousSyncContext.Post(d, state);
 					}
-				} else {
-					this.queue.Add(new KeyValuePair<SendOrPostCallback, object>(d, state));
 				}
 			}
 
@@ -737,9 +733,12 @@ namespace Microsoft.Threading {
 				/// Enqueues an item.
 				/// </summary>
 				/// <param name="value">The value to add to the queue.</param>
-				internal void Add(T value) {
+				internal bool TryAdd(T value) {
 					lock (this.queue) {
-						Verify.Operation(!this.completed, "Queue not accepting new items.");
+						if (this.completed) {
+							return false;
+						}
+
 						this.queue.Enqueue(value);
 
 						// We only need to pulse if the queue only just became non-empty.
@@ -747,6 +746,8 @@ namespace Microsoft.Threading {
 						if (this.queue.Count == 1) {
 							Monitor.Pulse(this.queue);
 						}
+
+						return true;
 					}
 				}
 			}
