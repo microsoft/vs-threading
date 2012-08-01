@@ -490,7 +490,11 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void KickOffAsyncWorkFromMainThreadThenBlockOnIt() {
-			var task = this.SomeOperationThatMayBeOnMainThreadAsync();
+			Task task = null;
+			this.asyncPump.RunSynchronously(delegate {
+				task = this.SomeOperationThatMayBeOnMainThreadAsync();
+			});
+
 			this.asyncPump.RunSynchronously(async delegate {
 				using (this.asyncPump.Join()) {
 					await task;
@@ -499,10 +503,6 @@
 		}
 
 		private async Task SomeOperationThatMayBeOnMainThreadAsync() {
-			// Although already on the Main thread, this method has to "switch" to it
-			// in order to acquire a SynchronizationContext that is resistent to deadlocks
-			// when its caller ultimately synchronously blocks for its completion.
-			await this.asyncPump.MainThreadJoinableAsync();
 			await Task.Yield();
 			await Task.Yield();
 		}
