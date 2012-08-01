@@ -8,6 +8,7 @@ namespace Microsoft.Threading {
 	using System;
 	using System.Collections.Concurrent;
 	using System.Collections.Generic;
+	using System.Diagnostics;
 	using System.Runtime.CompilerServices;
 	using System.Threading;
 	using System.Threading.Tasks;
@@ -651,6 +652,7 @@ namespace Microsoft.Threading {
 			/// A thread-safe queue.
 			/// </summary>
 			/// <typeparam name="T">The type of values stored in the queue.</typeparam>
+			[DebuggerDisplay("Count = {queue.Count}, Completed = {completed}")]
 			private class OneWorkerBlockingQueue<T> {
 				/// <summary>
 				/// The underlying non-threadsafe queue that this class wraps.
