@@ -462,7 +462,7 @@
 			var operationTask = outerService.OperationAsync();
 
 			this.asyncPump.RunSynchronously(async delegate {
-				await outerService.StopAsync();
+				await outerService.StopAsync(operationTask);
 			});
 
 			Assert.IsTrue(operationTask.IsCompleted);
@@ -486,6 +486,25 @@
 					await task;
 				}
 			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void KickOffAsyncWorkFromMainThreadThenBlockOnIt() {
+			var task = this.SomeOperationThatMayBeOnMainThreadAsync();
+			this.asyncPump.RunSynchronously(async delegate {
+				using (this.asyncPump.Join()) {
+					await task;
+				}
+			});
+		}
+
+		private async Task SomeOperationThatMayBeOnMainThreadAsync() {
+			// Although already on the Main thread, this method has to "switch" to it
+			// in order to acquire a SynchronizationContext that is resistent to deadlocks
+			// when its caller ultimately synchronously blocks for its completion.
+			await this.asyncPump.MainThreadJoinableAsync();
+			await Task.Yield();
+			await Task.Yield();
 		}
 
 		private async Task TestReentrancyOfUnrelatedDependentWork() {
@@ -553,35 +572,34 @@
 		private class MockAsyncService {
 			private AsyncPump pump = new AsyncPump();
 			private AsyncManualResetEvent stopRequested = new AsyncManualResetEvent();
-			private Task ongoingWork;
 			private Thread originalThread = Thread.CurrentThread;
+			private Task dependentTask;
 			private MockAsyncService dependentService;
 
 			internal MockAsyncService(MockAsyncService dependentService = null) {
 				this.dependentService = dependentService;
 			}
 
-			internal Task OperationAsync() {
-				return this.ongoingWork = Task.Run(async delegate {
-					if (this.dependentService != null) {
-						await this.dependentService.OperationAsync();
-					}
+			internal async Task OperationAsync() {
+				await this.pump.SwitchToMainThread();
+				if (this.dependentService != null) {
+					await (this.dependentTask = this.dependentService.OperationAsync());
+				}
 
-					await this.stopRequested.WaitAsync();
-					await this.pump.SwitchToMainThread();
-					await Task.Yield();
-					Assert.AreSame(this.originalThread, Thread.CurrentThread);
-				});
+				await this.stopRequested.WaitAsync();
+				await Task.Yield();
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 			}
 
-			internal async Task StopAsync() {
+			internal async Task StopAsync(Task operation) {
+				Requires.NotNull(operation, "operation");
 				if (this.dependentService != null) {
-					await this.dependentService.StopAsync();
+					await this.dependentService.StopAsync(this.dependentTask);
 				}
 
 				this.stopRequested.Set();
 				using (this.pump.Join()) {
-					await this.ongoingWork;
+					await operation;
 				}
 			}
 		}

@@ -29,6 +29,13 @@ namespace Microsoft.Threading {
 		private readonly SynchronizationContext underlyingSynchronizationContext;
 
 		/// <summary>
+		/// A singleton SynchronizationContext to apply on async methods that may
+		/// be invoked on the Main thread and may eventually need to complete while
+		/// the Main thread is synchronously blocking on its completion.
+		/// </summary>
+		private readonly PromotableMainThreadSynchronizationContext promotableSyncContext;
+
+		/// <summary>
 		/// The Main thread itself.
 		/// </summary>
 		private readonly Thread mainThread;
@@ -65,6 +72,7 @@ namespace Microsoft.Threading {
 		public AsyncPump(Thread mainThread = null, SynchronizationContext synchronizationContext = null) {
 			this.mainThread = mainThread ?? Thread.CurrentThread;
 			this.underlyingSynchronizationContext = synchronizationContext ?? SynchronizationContext.Current; // may still be null after this.
+			this.promotableSyncContext = new PromotableMainThreadSynchronizationContext(this);
 		}
 
 		/// <summary>
@@ -201,6 +209,64 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// Called at the start of public async service methods that may ultimately synchronously block
+		/// the Main thread although they are initially invoked asynchronously.
+		/// </summary>
+		/// <returns>An awaiter.</returns>
+		/// <remarks>
+		/// This awaitable *never* yields, but it is declared as an async-style awaitable to discourage
+		/// synchronous method callers because this method's side-effects are only safe when called from
+		/// an async method.  Specifically, when awaited on, this method sets 
+		/// <see cref="SynchronizationContext.Current"/> for the calling method such that continuations
+		/// scheduled to the Main thread can be promoted when necessary to avoid deadlocks.
+		/// This occurs only when invoked on the Main thread; otherwise it no-ops.
+		/// <example>
+		/// <code>
+		/// class SomeService {
+		///     private AsyncPump asyncPump = new AsyncPump();
+		///
+		///     public async Task OperationAsync() {
+		///         await this.asyncPump.MainThreadJoinableAsync();
+		///         // Do some real work.
+		///         await Task.Yield();
+		///     }
+		///     
+		///     public async Task StopOperationAsync(Task operation) {
+		///         using (this.asyncPump.Join()) {
+		///             await operation;
+		///         }
+		///     }
+		/// }
+		/// 
+		/// class Controller {
+		///     private SomeService service = new SomeService();
+		///     private Task operation;
+		///     private AsyncPump asyncPump = new AsyncPump();
+		///     public void KicKOff() {
+		///         this.operation = this.service.OperationAsync();
+		///     }
+		///     
+		///     public void Stop() {
+		///         this.asyncPump.RunSynchronously(async delegate {
+		///             await this.service.StopOperationAsync(this.operation);
+		///         });
+		///     }
+		/// </code>
+		/// </example>
+		/// <para>Note that this method need not be called when ANY of the following are true:
+		/// <list type="bullet">
+		///  <item>The method is *always* invoked on a background thread.</item>
+		///  <item>The caller will never synchronously block the Main thread on the result.</item>
+		///  <item>The caller invokes the method within a <see cref="RunSynchronously(Func{Task})"/> delegate.</item>
+		/// </list>
+		/// One of these usually true, so actually needing to use this method is expected to be rare.
+		/// </para>
+		/// </remarks>
+		public SynchronizationContextApplier MainThreadJoinableAsync() {
+			return new SynchronizationContextApplier(this);
+		}
+
+		/// <summary>
 		/// Called from within a delegate passed to <see cref="RunSynchronously(Func{Task})"/> 
 		/// to share the caller's ticket to the Main thread with any work that uses this instance
 		/// to switch to the Main thread.  Used to avoid deadlocks when the Main thread must
@@ -229,6 +295,18 @@ namespace Microsoft.Threading {
 		/// });
 		/// </code>
 		/// </example>
+		/// <para>It is also critical to avoiding deadlocks that if an asynchronous method may be 
+		/// invoked on the Main thread, and this work may need to complete while the Main thread
+		/// subsequently synchronously blocks for that work to complete (using the Join method),
+		/// that this async method's first <c>await</c> be with a call to
+		/// <see cref="SwitchToMainThread"/> (or one that gets <em>off</em> the Main thread)
+		/// so that the await's continuation may execute on the Main thread in cases where the Main
+		/// thread has called <see cref="Join"/> on the async method's work and avoid a deadlock.
+		/// Otherwise a deadlock may result as the async method's continuations will be posted
+		/// to the WPF Dispatcher (or whatever the default SynchronizationContext is for the Main thread,
+		/// which will not be executed while the Main thread is subsequently in a synchronously
+		/// blocking wait.
+		/// </para>
 		/// </remarks>
 		public JoinRelease Join() {
 			var mainThreadControllingSyncContext = this.MainThreadControllingSyncContext;
@@ -339,6 +417,24 @@ namespace Microsoft.Threading {
 			}
 
 			this.underlyingSynchronizationContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
+		}
+
+		/// <summary>
+		/// Applies a SynchronizationContext that mitigates deadlocks in async methods that may be invoked
+		/// on the Main thread and while invoked asynchronously may ultimately synchronously block the Main
+		/// thread for completion.
+		/// </summary>
+		private void ApplyPromotableContext() {
+			if (this.mainThread == Thread.CurrentThread) {
+				// It's critical that the SynchronizationContext applied to the caller be one 
+				// that not only posts to the current Dispatcher, but to a queue that can be
+				// forwarded to another one in the event that an async method eventually ends up
+				// being synchronously blocked on.
+				if (!(SynchronizationContext.Current is SingleThreadSynchronizationContext
+					|| SynchronizationContext.Current == this.promotableSyncContext)) {
+					SynchronizationContext.SetSynchronizationContext(this.promotableSyncContext);
+				}
+			}
 		}
 
 		/// <summary>
@@ -503,7 +599,7 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>Provides a SynchronizationContext that's single-threaded.</summary>
-		private sealed class SingleThreadSynchronizationContext : SynchronizationContext {
+		private class SingleThreadSynchronizationContext : SynchronizationContext {
 			/// <summary>The queue of work items.</summary>
 			private readonly OneWorkerBlockingQueue<KeyValuePair<SendOrPostCallback, object>> queue =
 				new OneWorkerBlockingQueue<KeyValuePair<SendOrPostCallback, object>>();
@@ -648,6 +744,51 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// A synchronization context that simply forwards posted messages back to
+		/// the <see cref="AsyncPump.Post(SendOrPostCallback, object)"/> method.
+		/// </summary>
+		private class PromotableMainThreadSynchronizationContext : SynchronizationContext {
+			/// <summary>
+			/// The instance to forward calls to Post to.
+			/// </summary>
+			private readonly AsyncPump asyncPump;
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="PromotableMainThreadSynchronizationContext"/> class.
+			/// </summary>
+			internal PromotableMainThreadSynchronizationContext(AsyncPump asyncPump) {
+				Requires.NotNull(asyncPump, "asyncPump");
+				this.asyncPump = asyncPump;
+			}
+
+			/// <summary>
+			/// Gets the controlling async pump.
+			/// </summary>
+			internal AsyncPump OwningPump {
+				get { return this.asyncPump; }
+			}
+
+			/// <summary>
+			/// Forwards posted delegates to <see cref="AsyncPump.Post(SendOrPostCallback, object)"/>
+			/// </summary>
+			public override void Post(SendOrPostCallback d, object state) {
+				this.asyncPump.Post(d, state);
+			}
+
+			/// <summary>
+			/// Executes the delegate on the current thread if called on the Main thread,
+			/// otherwise throws <see cref="NotSupportedException"/>.
+			/// </summary>
+			public override void Send(SendOrPostCallback d, object state) {
+				if (this.asyncPump.mainThread == Thread.CurrentThread) {
+					d(state);
+				} else {
+					throw new NotSupportedException();
+				}
+			}
+		}
+
+		/// <summary>
 		/// An awaitable struct that facilitates an asynchronous transition to the Main thread.
 		/// </summary>
 		public struct SynchronizationContextAwaitable {
@@ -700,9 +841,72 @@ namespace Microsoft.Threading {
 			/// Called on the Main thread to prepare it to execute the continuation.
 			/// </summary>
 			public void GetResult() {
+				Assumes.True(this.asyncPump != null);
+				Assumes.True(this.asyncPump.mainThread == Thread.CurrentThread);
+
 				// If we don't have a CallContext associated sync context then try applying the one on the current thread.
 				if (this.asyncPump.MainThreadControllingSyncContext == null) {
 					this.asyncPump.MainThreadControllingSyncContext = (SynchronizationContext.Current as SingleThreadSynchronizationContext);
+				}
+
+				this.asyncPump.ApplyPromotableContext();
+			}
+		}
+
+		/// <summary>
+		/// An awaitable struct that facilitates an asynchronous transition to the Main thread.
+		/// </summary>
+		public struct SynchronizationContextApplier {
+			private readonly AsyncPump asyncPump;
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="SynchronizationContextApplier"/> struct.
+			/// </summary>
+			internal SynchronizationContextApplier(AsyncPump asyncPump) {
+				this.asyncPump = asyncPump;
+			}
+
+			/// <summary>
+			/// Gets the awaiter.
+			/// </summary>
+			public SynchronizationContextApplierAwaiter GetAwaiter() {
+				return new SynchronizationContextApplierAwaiter(this.asyncPump);
+			}
+		}
+
+		/// <summary>
+		/// An awaiter struct that facilitates an asynchronous transition to the Main thread.
+		/// </summary>
+		public struct SynchronizationContextApplierAwaiter : INotifyCompletion {
+			private readonly AsyncPump asyncPump;
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="SynchronizationContextApplierAwaiter"/> struct.
+			/// </summary>
+			internal SynchronizationContextApplierAwaiter(AsyncPump asyncPump) {
+				this.asyncPump = asyncPump;
+			}
+
+			/// <summary>
+			/// Gets a value indicating whether the caller is already on the Main thread.
+			/// </summary>
+			public bool IsCompleted {
+				get { return true; }
+			}
+
+			/// <summary>
+			/// Schedules a continuation for execution on the Main thread.
+			/// </summary>
+			public void OnCompleted(Action continuation) {
+				Assumes.Fail();
+			}
+
+			/// <summary>
+			/// Called on the Main thread to prepare it to execute the continuation.
+			/// </summary>
+			public void GetResult() {
+				if (this.asyncPump != null) {
+					this.asyncPump.ApplyPromotableContext();
 				}
 			}
 		}
