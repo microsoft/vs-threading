@@ -46,5 +46,14 @@
 			tcs1.SetException(new ApplicationException());
 			Assert.IsInstanceOfType(tcs2.Task.Exception.InnerException.InnerException, typeof(ApplicationException));
 		}
+
+		[TestMethod]
+		public void WaitWithoutInlining() {
+			var originalThread = Thread.CurrentThread;
+			var task = Task.Run(delegate {
+				Assert.AreNotSame(originalThread, Thread.CurrentThread);
+			});
+			task.WaitWithoutInlining();
+		}
 	}
 }
