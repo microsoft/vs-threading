@@ -688,7 +688,14 @@ namespace Microsoft.Threading {
 								return false;
 							}
 
-							Monitor.Wait(this.queue);
+							// Break out of the wait every once in a while, and keep looping back in the wait.
+							// This allows a debugger that has broken into this method (to investigate a hang
+							// for example), to step out of the Wait method so that we're in an unoptimized
+							// frame, allowing us to more easily inspect local variables, etc that otherwise
+							// wouldn't be available.
+							while (!Monitor.Wait(this.queue, 1000)) {
+								// This area intentionally left blank.
+							}
 						}
 					}
 				}
