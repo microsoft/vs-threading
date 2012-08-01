@@ -90,7 +90,7 @@ namespace Microsoft.Threading {
 			}
 
 			set {
-				var local = threadControllingSyncContexts.GetOrCreateValue(this.mainThread);
+				var local = threadControllingSyncContexts.GetValue(this.mainThread, thread => new AsyncLocal<SingleThreadSynchronizationContext>());
 				local.Value = value;
 			}
 		}
@@ -253,8 +253,8 @@ namespace Microsoft.Threading {
 		public JoinRelease Join() {
 			var mainThreadControllingSyncContext = this.MainThreadControllingSyncContext;
 			if (mainThreadControllingSyncContext != null) {
-				StrongBox<int> refCountBox;
 				lock (this.syncObject) {
+					StrongBox<int> refCountBox;
 					if (!this.extraContexts.TryGetValue(mainThreadControllingSyncContext, out refCountBox)) {
 						refCountBox = new StrongBox<int>();
 						this.extraContexts.Add(mainThreadControllingSyncContext, refCountBox);
@@ -682,7 +682,12 @@ namespace Microsoft.Threading {
 				internal void CompleteAdding() {
 					lock (this.queue) {
 						this.completed = true;
-						Monitor.Pulse(this.queue);
+
+						// We only need to pulse if the queue is empty, since if it is non-empty,
+						// TryDequeue would not be blocking in Monitor.Wait().
+						if (this.queue.Count == 0) {
+							Monitor.Pulse(this.queue);
+						}
 					}
 				}
 
@@ -694,7 +699,12 @@ namespace Microsoft.Threading {
 					lock (this.queue) {
 						Verify.Operation(!this.completed, "Queue not accepting new items.");
 						this.queue.Enqueue(value);
-						Monitor.Pulse(this.queue);
+
+						// We only need to pulse if the queue only just became non-empty.
+						// If the queue was already non-empty then no one is blocked in Monitor.Wait().
+						if (this.queue.Count == 1) {
+							Monitor.Pulse(this.queue);
+						}
 					}
 				}
 			}
