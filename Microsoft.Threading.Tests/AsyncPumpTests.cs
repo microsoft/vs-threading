@@ -64,7 +64,7 @@
 				await TaskScheduler.Default;
 				Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
 
-				await this.asyncPump.SwitchToMainThread();
+				await this.asyncPump.SwitchToMainThreadAsync();
 				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 				fullyCompleted = true;
 			});
@@ -73,13 +73,13 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void SwitchToMainThreadDoesNotYieldWhenAlreadyOnMainThread() {
-			Assert.IsTrue(this.asyncPump.SwitchToMainThread().GetAwaiter().IsCompleted, "Yield occurred even when already on UI thread.");
+			Assert.IsTrue(this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().IsCompleted, "Yield occurred even when already on UI thread.");
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void SwitchToMainThreadYieldsWhenOffMainThread() {
 			Task.Run(
-				() => Assert.IsFalse(this.asyncPump.SwitchToMainThread().GetAwaiter().IsCompleted, "Yield did not occur when off Main thread."))
+				() => Assert.IsFalse(this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().IsCompleted, "Yield did not occur when off Main thread."))
 				.GetAwaiter().GetResult();
 		}
 
@@ -92,7 +92,7 @@
 
 			var backgroundContender = Task.Run(async delegate {
 				await uiThreadNowBusy.Task;
-				await this.asyncPump.SwitchToMainThread();
+				await this.asyncPump.SwitchToMainThreadAsync();
 				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 				contenderHasReachedUIThread = true;
 				frame.Continue = false;
@@ -106,7 +106,7 @@
 				Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
 				await Task.Delay(AsyncDelay); // allow ample time for the background contender to re-enter the STA thread if it's possible (we don't want it to be).
 
-				await this.asyncPump.SwitchToMainThread();
+				await this.asyncPump.SwitchToMainThreadAsync();
 				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 				Assert.IsFalse(contenderHasReachedUIThread, "The contender managed to get to the STA thread while other work was on it.");
 			});
@@ -121,7 +121,7 @@
 		public void SwitchToSTASucceedsForRelevantWork() {
 			this.asyncPump.RunSynchronously(async delegate {
 				var backgroundContender = Task.Run(async delegate {
-					await this.asyncPump.SwitchToMainThread();
+					await this.asyncPump.SwitchToMainThreadAsync();
 					Assert.AreSame(this.originalThread, Thread.CurrentThread);
 				});
 
@@ -135,7 +135,7 @@
 				// the operation to begin with.
 				await backgroundContender;
 
-				await this.asyncPump.SwitchToMainThread();
+				await this.asyncPump.SwitchToMainThreadAsync();
 				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 			});
 		}
@@ -149,13 +149,13 @@
 
 			var backgroundContender = Task.Run(async delegate {
 				await uiThreadNowBusy.Task;
-				await this.asyncPump.SwitchToMainThread();
+				await this.asyncPump.SwitchToMainThreadAsync();
 				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 
 				// Release, then reacquire the STA a couple of different ways
 				// to verify that even after the invitation has been extended
 				// to join the STA thread we can leave and revisit.
-				await this.asyncPump.SwitchToMainThread();
+				await this.asyncPump.SwitchToMainThreadAsync();
 				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 				await Task.Yield();
 				Assert.AreSame(this.originalThread, Thread.CurrentThread);
@@ -186,7 +186,7 @@
 					await backgroundContenderCompletedRelevantUIWork.Task; // we can't complete until this seemingly unrelated work completes.
 				} // stop inviting more work from background thread.
 
-				await this.asyncPump.SwitchToMainThread();
+				await this.asyncPump.SwitchToMainThreadAsync();
 				var nowait = backgroundInvitationReverted.SetAsync();
 				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 				syncUIOperationCompleted = true;
@@ -208,7 +208,7 @@
 				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 
 				await Task.Run(async delegate {
-					await this.asyncPump.SwitchToMainThread();
+					await this.asyncPump.SwitchToMainThreadAsync();
 					Assert.AreSame(this.originalThread, Thread.CurrentThread);
 				});
 
@@ -218,7 +218,7 @@
 					Assert.AreSame(this.originalThread, Thread.CurrentThread);
 
 					await Task.Run(async delegate {
-						await this.asyncPump.SwitchToMainThread();
+						await this.asyncPump.SwitchToMainThreadAsync();
 						Assert.AreSame(this.originalThread, Thread.CurrentThread);
 					});
 
@@ -248,7 +248,7 @@
 				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 
 				await Task.Run(async delegate {
-					await this.asyncPump.SwitchToMainThread();
+					await this.asyncPump.SwitchToMainThreadAsync();
 					Assert.AreSame(this.originalThread, Thread.CurrentThread);
 				});
 
@@ -264,7 +264,7 @@
 					Assert.AreSame(this.originalThread, Thread.CurrentThread);
 
 					await Task.Run(async delegate {
-						await this.asyncPump.SwitchToMainThread();
+						await this.asyncPump.SwitchToMainThreadAsync();
 						Assert.AreSame(this.originalThread, Thread.CurrentThread);
 					});
 
@@ -288,7 +288,7 @@
 		public void RunSynchronouslyOffMainThreadRequiresJoinToReenterMainThreadForSameAsyncPumpInstance() {
 			var task = Task.Run(delegate {
 				this.asyncPump.RunSynchronously(async delegate {
-					await this.asyncPump.SwitchToMainThread();
+					await this.asyncPump.SwitchToMainThreadAsync();
 					Assert.AreSame(this.originalThread, Thread.CurrentThread, "We're not on the Main thread!");
 				});
 			});
@@ -309,7 +309,7 @@
 			var otherAsyncPump = new AsyncPump();
 			var task = Task.Run(delegate {
 				otherAsyncPump.RunSynchronously(async delegate {
-					await otherAsyncPump.SwitchToMainThread();
+					await otherAsyncPump.SwitchToMainThreadAsync();
 					Assert.AreSame(this.originalThread, Thread.CurrentThread);
 				});
 			});
@@ -333,7 +333,7 @@
 			var postJoinRevertedWorkExecuting = new AsyncManualResetEvent();
 			var unrelatedTask = Task.Run(async delegate {
 				// STEP 2
-				await this.asyncPump.SwitchToMainThread()
+				await this.asyncPump.SwitchToMainThreadAsync()
 					.GetAwaiter().YieldAndNotify(mainThreadDependentWorkQueued);
 
 				// STEP 4
@@ -343,7 +343,7 @@
 
 				// STEP 6
 				Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
-				await this.asyncPump.SwitchToMainThread().GetAwaiter().YieldAndNotify(postJoinRevertedWorkQueued, postJoinRevertedWorkExecuting);
+				await this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().YieldAndNotify(postJoinRevertedWorkQueued, postJoinRevertedWorkExecuting);
 
 				// STEP 8
 				Assert.AreSame(this.originalThread, Thread.CurrentThread);
@@ -404,7 +404,7 @@
 			var task = Task.Run(delegate {
 				this.asyncPump.RunSynchronously(async delegate {
 					Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
-					await this.asyncPump.SwitchToMainThread();
+					await this.asyncPump.SwitchToMainThreadAsync();
 
 					// The scenario here is that some code calls out, then back in, via a synchronous interface
 					this.asyncPump.RunSynchronously(async delegate {
@@ -431,7 +431,7 @@
 					// Switching to the main thread here will get us the SynchronizationContext we need,
 					// and the awaiter's GetResult() should apply the AsyncLocal sync context as well
 					// to avoid deadlocks later.
-					await this.asyncPump.SwitchToMainThread();
+					await this.asyncPump.SwitchToMainThreadAsync();
 
 					await this.TestReentrancyOfUnrelatedDependentWork();
 
@@ -475,7 +475,7 @@
 			this.asyncPump.RunSynchronously(delegate {
 				task = Task.Run(async delegate {
 					await mainThreadNowBlocking.WaitAsync();
-					await this.asyncPump.SwitchToMainThread();
+					await this.asyncPump.SwitchToMainThreadAsync();
 				});
 			});
 
@@ -517,7 +517,7 @@
 			using (this.asyncPump.SuppressRelevance()) {
 				unrelatedPump = new AsyncPump();
 				unrelatedTask = Task.Run(async delegate {
-					await unrelatedPump.SwitchToMainThread().GetAwaiter().YieldAndNotify(unrelatedMainThreadWorkWaiting, unrelatedMainThreadWorkInvoked);
+					await unrelatedPump.SwitchToMainThreadAsync().GetAwaiter().YieldAndNotify(unrelatedMainThreadWorkWaiting, unrelatedMainThreadWorkInvoked);
 					Assert.AreSame(this.originalThread, Thread.CurrentThread);
 				});
 			}
@@ -581,7 +581,7 @@
 			}
 
 			internal async Task OperationAsync() {
-				await this.pump.SwitchToMainThread();
+				await this.pump.SwitchToMainThreadAsync();
 				if (this.dependentService != null) {
 					await (this.dependentTask = this.dependentService.OperationAsync());
 				}

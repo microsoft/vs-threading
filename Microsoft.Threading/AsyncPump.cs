@@ -67,7 +67,7 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AsyncPump"/> class.
 		/// </summary>
-		/// <param name="mainThread">The thread to switch to in <see cref="SwitchToMainThread"/>.</param>
+		/// <param name="mainThread">The thread to switch to in <see cref="SwitchToMainThreadAsync"/>.</param>
 		/// <param name="synchronizationContext">The synchronization context to use to switch to the main thread.</param>
 		public AsyncPump(Thread mainThread = null, SynchronizationContext synchronizationContext = null) {
 			this.mainThread = mainThread ?? Thread.CurrentThread;
@@ -199,12 +199,12 @@ namespace Microsoft.Threading {
 		///     await TaskScheduler.Default;
 		///     
 		///     // Now switch to the Main thread to talk to some STA object.
-		///     await this.asyncPump.SwitchToMainThread();
+		///     await this.asyncPump.SwitchToMainThreadAsync();
 		///     STAService.DoSomething();
 		/// }
 		/// </code>
 		/// </example></remarks>
-		public SynchronizationContextAwaitable SwitchToMainThread() {
+		public SynchronizationContextAwaitable SwitchToMainThreadAsync() {
 			return new SynchronizationContextAwaitable(this);
 		}
 
@@ -226,7 +226,7 @@ namespace Microsoft.Threading {
 		/// <code>
 		/// var asyncOperation = Task.Run(async delegate {
 		///     // Some background work.
-		///     await this.asyncPump.SwitchToMainThread();
+		///     await this.asyncPump.SwitchToMainThreadAsync();
 		///     // Some Main thread work.
 		/// });
 		/// 
@@ -241,7 +241,7 @@ namespace Microsoft.Threading {
 		/// invoked on the Main thread, and this work may need to complete while the Main thread
 		/// subsequently synchronously blocks for that work to complete (using the Join method),
 		/// that this async method's first <c>await</c> be with a call to
-		/// <see cref="SwitchToMainThread"/> (or one that gets <em>off</em> the Main thread)
+		/// <see cref="SwitchToMainThreadAsync"/> (or one that gets <em>off</em> the Main thread)
 		/// so that the await's continuation may execute on the Main thread in cases where the Main
 		/// thread has called <see cref="Join"/> on the async method's work and avoid a deadlock.
 		/// Otherwise a deadlock may result as the async method's continuations will be posted
@@ -290,7 +290,7 @@ namespace Microsoft.Threading {
 		///     using(this.asyncPump.SuppressRelevance()) {
 		///         var asyncOperation = Task.Run(async delegate {
 		///             // Some background work.
-		///             await this.asyncPump.SwitchToMainThread();
+		///             await this.asyncPump.SwitchToMainThreadAsync();
 		///             // Some Main thread work, that cannot begin until the outer RunSynchronously call has returned.
 		///         });
 		///     }
