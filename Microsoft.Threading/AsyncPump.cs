@@ -36,6 +36,12 @@ namespace Microsoft.Threading {
 		private readonly PromotableMainThreadSynchronizationContext promotableSyncContext;
 
 		/// <summary>
+		/// A task scheduler that executes tasks on the main thread under the same rules as
+		/// <see cref="SwitchToMainThreadAsync"/>.
+		/// </summary>
+		private readonly MainThreadScheduler mainThreadTaskScheduler;
+
+		/// <summary>
 		/// The Main thread itself.
 		/// </summary>
 		private readonly Thread mainThread;
@@ -67,12 +73,21 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AsyncPump"/> class.
 		/// </summary>
-		/// <param name="mainThread">The thread to switch to in <see cref="SwitchToMainThread"/>.</param>
+		/// <param name="mainThread">The thread to switch to in <see cref="SwitchToMainThreadAsync"/>.</param>
 		/// <param name="synchronizationContext">The synchronization context to use to switch to the main thread.</param>
 		public AsyncPump(Thread mainThread = null, SynchronizationContext synchronizationContext = null) {
 			this.mainThread = mainThread ?? Thread.CurrentThread;
 			this.underlyingSynchronizationContext = synchronizationContext ?? SynchronizationContext.Current; // may still be null after this.
 			this.promotableSyncContext = new PromotableMainThreadSynchronizationContext(this);
+			this.mainThreadTaskScheduler = new MainThreadScheduler(this);
+		}
+
+		/// <summary>
+		/// Gets a scheduler that executes tasks on the main thread under the same conditions
+		/// as those used for <see cref="SwitchToMainThreadAsync"/>.
+		/// </summary>
+		public TaskScheduler MainThreadTaskScheduler {
+			get { return this.mainThreadTaskScheduler; }
 		}
 
 		/// <summary>
@@ -199,12 +214,12 @@ namespace Microsoft.Threading {
 		///     await TaskScheduler.Default;
 		///     
 		///     // Now switch to the Main thread to talk to some STA object.
-		///     await this.asyncPump.SwitchToMainThread();
+		///     await this.asyncPump.SwitchToMainThreadAsync();
 		///     STAService.DoSomething();
 		/// }
 		/// </code>
 		/// </example></remarks>
-		public SynchronizationContextAwaitable SwitchToMainThread() {
+		public SynchronizationContextAwaitable SwitchToMainThreadAsync() {
 			return new SynchronizationContextAwaitable(this);
 		}
 
@@ -226,7 +241,7 @@ namespace Microsoft.Threading {
 		/// <code>
 		/// var asyncOperation = Task.Run(async delegate {
 		///     // Some background work.
-		///     await this.asyncPump.SwitchToMainThread();
+		///     await this.asyncPump.SwitchToMainThreadAsync();
 		///     // Some Main thread work.
 		/// });
 		/// 
@@ -241,7 +256,7 @@ namespace Microsoft.Threading {
 		/// invoked on the Main thread, and this work may need to complete while the Main thread
 		/// subsequently synchronously blocks for that work to complete (using the Join method),
 		/// that this async method's first <c>await</c> be with a call to
-		/// <see cref="SwitchToMainThread"/> (or one that gets <em>off</em> the Main thread)
+		/// <see cref="SwitchToMainThreadAsync"/> (or one that gets <em>off</em> the Main thread)
 		/// so that the await's continuation may execute on the Main thread in cases where the Main
 		/// thread has called <see cref="Join"/> on the async method's work and avoid a deadlock.
 		/// Otherwise a deadlock may result as the async method's continuations will be posted
@@ -290,7 +305,7 @@ namespace Microsoft.Threading {
 		///     using(this.asyncPump.SuppressRelevance()) {
 		///         var asyncOperation = Task.Run(async delegate {
 		///             // Some background work.
-		///             await this.asyncPump.SwitchToMainThread();
+		///             await this.asyncPump.SwitchToMainThreadAsync();
 		///             // Some Main thread work, that cannot begin until the outer RunSynchronously call has returned.
 		///         });
 		///     }
@@ -752,6 +767,71 @@ namespace Microsoft.Threading {
 				} else {
 					throw new NotSupportedException();
 				}
+			}
+		}
+
+		/// <summary>
+		/// A TaskScheduler that executes task on the main thread.
+		/// </summary>
+		private class MainThreadScheduler : TaskScheduler {
+			/// <summary>The synchronization object for field access.</summary>
+			private readonly object syncObject = new object();
+
+			/// <summary>The owning AsyncPump.</summary>
+			private readonly AsyncPump asyncPump;
+
+			/// <summary>The scheduled tasks that have not yet been executed.</summary>
+			private readonly HashSet<Task> queuedTasks = new HashSet<Task>();
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="MainThreadScheduler"/> class.
+			/// </summary>
+			internal MainThreadScheduler(AsyncPump asyncPump) {
+				Requires.NotNull(asyncPump, "asyncPump");
+				this.asyncPump = asyncPump;
+			}
+
+			/// <summary>
+			/// Returns a snapshot of the tasks pending on this scheduler.
+			/// </summary>
+			protected override IEnumerable<Task> GetScheduledTasks() {
+				lock (this.syncObject) {
+					return new List<Task>(this.queuedTasks);
+				}
+			}
+
+			/// <summary>
+			/// Enqueues a task.
+			/// </summary>
+			protected override async void QueueTask(Task task) {
+				lock (this.syncObject) {
+					this.queuedTasks.Add(task);
+				}
+
+				await this.asyncPump.SwitchToMainThreadAsync();
+				this.TryExecuteTask(task);
+
+				lock (this.syncObject) {
+					this.queuedTasks.Remove(task);
+				}
+			}
+
+			/// <summary>
+			/// Executes a task inline if we're on the UI thread.
+			/// </summary>
+			protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued) {
+				if (this.asyncPump.mainThread == Thread.CurrentThread) {
+					bool result = this.TryExecuteTask(task);
+					if (taskWasPreviouslyQueued) {
+						lock (this.syncObject) {
+							this.queuedTasks.Remove(task);
+						}
+					}
+
+					return result;
+				}
+
+				return false;
 			}
 		}
 
