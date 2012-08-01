@@ -502,7 +502,7 @@
 			});
 		}
 
-		[TestMethod]
+		[TestMethod, Timeout(TestTimeout)]
 		public void MainThreadTaskScheduler() {
 			this.asyncPump.RunSynchronously(async delegate {
 				bool completed = false;
@@ -516,6 +516,20 @@
 					this.asyncPump.MainThreadTaskScheduler);
 				Assert.IsTrue(completed);
 			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void RunSynchronouslyTaskOfTWithFireAndForgetMethod() {
+			this.asyncPump.RunSynchronously(async delegate {
+				await Task.Yield();
+				SomeFireAndForgetMethod();
+				await Task.Yield();
+				await Task.Delay(AsyncDelay);
+			});
+		}
+
+		private static async void SomeFireAndForgetMethod() {
+			await Task.Yield();
 		}
 
 		private async Task SomeOperationThatMayBeOnMainThreadAsync() {

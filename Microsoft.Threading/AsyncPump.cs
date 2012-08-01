@@ -120,7 +120,7 @@ namespace Microsoft.Threading {
 		public void RunSynchronously(Action asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
-			using (var framework = new RunFramework(this)) {
+			using (var framework = new RunFramework(this, asyncVoidMethod: true)) {
 				// Invoke the function
 				framework.AppliedContext.OperationStarted();
 				asyncMethod();
@@ -156,7 +156,7 @@ namespace Microsoft.Threading {
 		public void RunSynchronously(Func<Task> asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
-			using (var framework = new RunFramework(this)) {
+			using (var framework = new RunFramework(this, asyncVoidMethod: false)) {
 				// Invoke the function and alert the context when it completes
 				var t = asyncMethod();
 				Verify.Operation(t != null, "No task provided.");
@@ -169,6 +169,7 @@ namespace Microsoft.Threading {
 
 				// Pump continuations and propagate any exceptions
 				framework.AppliedContext.RunOnCurrentThread();
+				Assumes.True(t.IsCompleted);
 				t.GetAwaiter().GetResult();
 			}
 		}
@@ -182,7 +183,7 @@ namespace Microsoft.Threading {
 		public T RunSynchronously<T>(Func<Task<T>> asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
-			using (var framework = new RunFramework(this)) {
+			using (var framework = new RunFramework(this, asyncVoidMethod: false)) {
 				// Invoke the function and alert the context when it completes
 				var t = asyncMethod();
 				Verify.Operation(t != null, "No task provided.");
@@ -195,6 +196,7 @@ namespace Microsoft.Threading {
 
 				// Pump continuations and propagate any exceptions
 				framework.AppliedContext.RunOnCurrentThread();
+				Assumes.True(t.IsCompleted);
 				return t.GetAwaiter().GetResult();
 			}
 		}
@@ -568,13 +570,27 @@ namespace Microsoft.Threading {
 			/// <summary>The sync context to forward messages to after this one is disposed.</summary>
 			private readonly SynchronizationContext previousSyncContext;
 
+			/// <summary>
+			/// Whether to automatically <see cref="Complete"/> queue processing after an 
+			/// equal positive number of OperationStarted and OperationCompleted calls are invoked.
+			/// Should be true only when processing for a root "async void" method.
+			/// </summary>
+			private readonly bool autoCompleteWhenOperationsReachZero;
+
 			/// <summary>The number of outstanding operations.</summary>
 			private int operationCount = 0;
 
 			/// <summary>Initializes a new instance of the <see cref="SingleThreadSynchronizationContext"/> class.</summary>
-			internal SingleThreadSynchronizationContext(AsyncPump asyncPump) {
+			/// <param name="asyncPump">The pump that owns this instance.</param>
+			/// <param name="autoCompleteWhenOperationsReachZero">
+			/// Whether to automatically <see cref="Complete"/> queue processing after an 
+			/// equal positive number of OperationStarted and OperationCompleted calls are invoked.
+			/// Should be true only when processing for a root "async void" method.
+			/// </param>
+			internal SingleThreadSynchronizationContext(AsyncPump asyncPump, bool autoCompleteWhenOperationsReachZero) {
 				Requires.NotNull(asyncPump, "asyncPump");
 				this.asyncPump = asyncPump;
+				this.autoCompleteWhenOperationsReachZero = autoCompleteWhenOperationsReachZero;
 				this.previousSyncContext = SynchronizationContext.Current;
 			}
 
@@ -627,7 +643,9 @@ namespace Microsoft.Threading {
 			/// <summary>Invoked when an async operation is completed.</summary>
 			public override void OperationCompleted() {
 				if (Interlocked.Decrement(ref this.operationCount) == 0) {
-					this.Complete();
+					if (this.autoCompleteWhenOperationsReachZero) {
+						this.Complete();
+					}
 				}
 			}
 
@@ -924,13 +942,13 @@ namespace Microsoft.Threading {
 			/// and sets up the synchronization contexts for the
 			/// <see cref="RunSynchronously(Func{Task})"/> family of methods.
 			/// </summary>
-			internal RunFramework(AsyncPump pump) {
+			internal RunFramework(AsyncPump pump, bool asyncVoidMethod) {
 				Requires.NotNull(pump, "pump");
 
 				this.pump = pump;
 				this.previousContext = SynchronizationContext.Current;
 				this.previousAsyncLocalContext = pump.MainThreadControllingSyncContext;
-				this.appliedContext = new SingleThreadSynchronizationContext(pump);
+				this.appliedContext = new SingleThreadSynchronizationContext(pump, asyncVoidMethod);
 				SynchronizationContext.SetSynchronizationContext(this.appliedContext);
 
 				if (pump.mainThread == Thread.CurrentThread) {
