@@ -59,7 +59,7 @@ namespace Microsoft.Threading {
 		/// Many readers are allowed concurrently.  Also, readers may re-enter read locks (recursively)
 		/// each of which gets an element in this set.
 		/// </remarks>
-		private readonly HashSet<Awaiter> readLocksIssued = new HashSet<Awaiter>();
+		private readonly HashSet<Awaiter> issuedReadLocks = new HashSet<Awaiter>();
 
 		/// <summary>
 		/// The set of upgradeable read locks that are issued and active.
@@ -69,7 +69,7 @@ namespace Microsoft.Threading {
 		/// than one element because that one lock holder may enter the lock it already possesses 
 		/// multiple times.
 		/// </remarks>
-		private readonly HashSet<Awaiter> upgradeableReadLocksIssued = new HashSet<Awaiter>();
+		private readonly HashSet<Awaiter> issuedUpgradeableReadLocks = new HashSet<Awaiter>();
 
 		/// <summary>
 		/// The set of write locks that are issued and active.
@@ -79,11 +79,11 @@ namespace Microsoft.Threading {
 		/// than one element because that one lock holder may enter the lock it already possesses 
 		/// multiple times.
 		/// Although this lock is mutually exclusive, there *may* be elements in the
-		/// <see cref="upgradeableReadLocksIssued"/> set if the write lock was upgraded from a reader.
+		/// <see cref="issuedUpgradeableReadLocks"/> set if the write lock was upgraded from a reader.
 		/// Also note that some elements in this may themselves be upgradeable readers if they have
 		/// the <see cref="LockFlags.StickyWrite"/> flag.
 		/// </remarks>
-		private readonly HashSet<Awaiter> writeLocksIssued = new HashSet<Awaiter>();
+		private readonly HashSet<Awaiter> issuedWriteLocks = new HashSet<Awaiter>();
 
 		/// <summary>
 		/// A queue of readers waiting to obtain the concurrent read lock.
@@ -494,7 +494,7 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <returns>A task whose completion signals the conclusion of the asynchronous operation.</returns>
 		protected virtual Task OnBeforeExclusiveLockReleasedAsync() {
-			Assumes.True(this.writeLocksIssued.Count == 1);
+			Assumes.True(this.issuedWriteLocks.Count == 1);
 			if (this.beforeWriteReleasedCallbacks.Count > 0) {
 				return this.InvokeBeforeWriteLockReleaseHandlersAsync();
 			} else {
@@ -569,7 +569,7 @@ namespace Microsoft.Threading {
 			if (this.completeInvoked &&
 				!this.completionSource.Task.IsCompleted &&
 				!this.reenterConcurrencyPrepRunning &&
-				this.readLocksIssued.Count == 0 && this.upgradeableReadLocksIssued.Count == 0 && this.writeLocksIssued.Count == 0 &&
+				this.issuedReadLocks.Count == 0 && this.issuedUpgradeableReadLocks.Count == 0 && this.issuedWriteLocks.Count == 0 &&
 				this.waitingReaders.Count == 0 && this.waitingUpgradeableReaders.Count == 0 && this.waitingWriters.Count == 0) {
 
 				// We must use another task to asynchronously transition this so we don't inadvertently execute continuations inline
@@ -597,14 +597,14 @@ namespace Microsoft.Threading {
 						// so only consider locks that are still active.
 						switch (awaiter.Kind) {
 							case LockKind.Read:
-								read |= this.readLocksIssued.Contains(awaiter);
+								read |= this.issuedReadLocks.Contains(awaiter);
 								break;
 							case LockKind.UpgradeableRead:
-								upgradeableRead |= this.upgradeableReadLocksIssued.Contains(awaiter);
+								upgradeableRead |= this.issuedUpgradeableReadLocks.Contains(awaiter);
 								write |= this.IsStickyWriteUpgradedLock(awaiter);
 								break;
 							case LockKind.Write:
-								write |= this.writeLocksIssued.Contains(awaiter);
+								write |= this.issuedWriteLocks.Contains(awaiter);
 								break;
 						}
 
@@ -636,9 +636,9 @@ namespace Microsoft.Threading {
 
 						awaiter = awaiter.NestingLock;
 					}
-					return locksMatched == this.readLocksIssued.Count + this.upgradeableReadLocksIssued.Count + this.writeLocksIssued.Count;
+					return locksMatched == this.issuedReadLocks.Count + this.issuedUpgradeableReadLocks.Count + this.issuedWriteLocks.Count;
 				} else {
-					return this.readLocksIssued.Count == 0 && this.upgradeableReadLocksIssued.Count == 0 && this.writeLocksIssued.Count == 0;
+					return this.issuedReadLocks.Count == 0 && this.issuedUpgradeableReadLocks.Count == 0 && this.issuedWriteLocks.Count == 0;
 				}
 			}
 		}
@@ -681,7 +681,7 @@ namespace Microsoft.Threading {
 		private bool IsStickyWriteUpgradedLock(Awaiter awaiter) {
 			if (awaiter.Kind == LockKind.UpgradeableRead && (awaiter.Options & LockFlags.StickyWrite) == LockFlags.StickyWrite) {
 				lock (this.syncObject) {
-					return this.writeLocksIssued.Contains(awaiter);
+					return this.issuedWriteLocks.Contains(awaiter);
 				}
 			}
 
@@ -772,14 +772,14 @@ namespace Microsoft.Threading {
 
 				bool issued = false;
 				if (!this.reenterConcurrencyPrepRunning) {
-					if (this.writeLocksIssued.Count == 0 && this.upgradeableReadLocksIssued.Count == 0 && this.readLocksIssued.Count == 0) {
+					if (this.issuedWriteLocks.Count == 0 && this.issuedUpgradeableReadLocks.Count == 0 && this.issuedReadLocks.Count == 0) {
 						issued = true;
 					} else {
 						bool hasRead, hasUpgradeableRead, hasWrite;
 						this.AggregateLockStackKinds(awaiter, out hasRead, out hasUpgradeableRead, out hasWrite);
 						switch (awaiter.Kind) {
 							case LockKind.Read:
-								if (this.writeLocksIssued.Count == 0 && this.waitingWriters.Count == 0) {
+								if (this.issuedWriteLocks.Count == 0 && this.waitingWriters.Count == 0) {
 									issued = true;
 								} else if (hasWrite || hasRead || hasUpgradeableRead) {
 									issued = true;
@@ -792,7 +792,7 @@ namespace Microsoft.Threading {
 								} else if (hasRead) {
 									// We cannot issue an upgradeable read lock to folks who have (only) a read lock.
 									throw new InvalidOperationException(Strings.CannotUpgradeNonUpgradeableLock);
-								} else if (this.upgradeableReadLocksIssued.Count == 0 && this.writeLocksIssued.Count == 0) {
+								} else if (this.issuedUpgradeableReadLocks.Count == 0 && this.issuedWriteLocks.Count == 0) {
 									issued = true;
 								}
 
@@ -809,7 +809,7 @@ namespace Microsoft.Threading {
 									var stickyWriteAwaiter = this.FindRootUpgradeableReadWithStickyWrite(awaiter);
 									if (stickyWriteAwaiter != null) {
 										// Add the upgradeable reader as a write lock as well.
-										this.writeLocksIssued.Add(stickyWriteAwaiter);
+										this.issuedWriteLocks.Add(stickyWriteAwaiter);
 									}
 								}
 
@@ -852,7 +852,7 @@ namespace Microsoft.Threading {
 
 			if (headAwaiter.Kind == LockKind.UpgradeableRead && (headAwaiter.Options & LockFlags.StickyWrite) == LockFlags.StickyWrite) {
 				lock (this.syncObject) {
-					if (this.upgradeableReadLocksIssued.Contains(headAwaiter)) {
+					if (this.issuedUpgradeableReadLocks.Contains(headAwaiter)) {
 						return headAwaiter;
 					}
 				}
@@ -869,11 +869,11 @@ namespace Microsoft.Threading {
 		private HashSet<Awaiter> GetActiveLockSet(LockKind kind) {
 			switch (kind) {
 				case LockKind.Read:
-					return this.readLocksIssued;
+					return this.issuedReadLocks;
 				case LockKind.UpgradeableRead:
-					return this.upgradeableReadLocksIssued;
+					return this.issuedUpgradeableReadLocks;
 				case LockKind.Write:
-					return this.writeLocksIssued;
+					return this.issuedWriteLocks;
 				default:
 					throw Assumes.NotReachable();
 			}
@@ -964,10 +964,10 @@ namespace Microsoft.Threading {
 				// In case this is a sticky write lock, it may also belong to the write locks issued collection.
 				bool upgradedStickyWrite = awaiter.Kind == LockKind.UpgradeableRead
 					&& (awaiter.Options & LockFlags.StickyWrite) == LockFlags.StickyWrite
-					&& this.writeLocksIssued.Contains(awaiter);
+					&& this.issuedWriteLocks.Contains(awaiter);
 
-				int writeLocksBefore = this.writeLocksIssued.Count;
-				int upgradeableReadLocksBefore = this.upgradeableReadLocksIssued.Count;
+				int writeLocksBefore = this.issuedWriteLocks.Count;
+				int upgradeableReadLocksBefore = this.issuedUpgradeableReadLocks.Count;
 				int writeLocksAfter = writeLocksBefore - ((awaiter.Kind == LockKind.Write || upgradedStickyWrite) ? 1 : 0);
 				int upgradeableReadLocksAfter = upgradeableReadLocksBefore - (awaiter.Kind == LockKind.UpgradeableRead ? 1 : 0);
 				bool finalExclusiveLockRelease = writeLocksBefore > 0 && writeLocksAfter == 0;
@@ -976,9 +976,9 @@ namespace Microsoft.Threading {
 					// Callbacks should be fired synchronously iff the last write lock is being released and read locks are already issued.
 					// This can occur when upgradeable read locks are held and upgraded, and then downgraded back to an upgradeable read.
 					Task callbackExecution = this.OnBeforeLockReleasedAsync(finalExclusiveLockRelease);
-					bool synchronousRequired = this.readLocksIssued.Count > 0;
-					synchronousRequired |= this.upgradeableReadLocksIssued.Count > 1;
-					synchronousRequired |= this.upgradeableReadLocksIssued.Count == 1 && !this.upgradeableReadLocksIssued.Contains(awaiter);
+					bool synchronousRequired = this.issuedReadLocks.Count > 0;
+					synchronousRequired |= this.issuedUpgradeableReadLocks.Count > 1;
+					synchronousRequired |= this.issuedUpgradeableReadLocks.Count == 1 && !this.issuedUpgradeableReadLocks.Contains(awaiter);
 					if (synchronousRequired) {
 						synchronousCallbackExecution = callbackExecution;
 					}
@@ -1051,7 +1051,7 @@ namespace Microsoft.Threading {
 				Assumes.True(this.GetActiveLockSet(awaiter.Kind).Remove(awaiter));
 				if (upgradedStickyWrite) {
 					Assumes.True(awaiter.Kind == LockKind.UpgradeableRead);
-					Assumes.True(this.writeLocksIssued.Remove(awaiter));
+					Assumes.True(this.issuedWriteLocks.Remove(awaiter));
 				}
 
 				if (updateCallContext) {
@@ -1080,7 +1080,7 @@ namespace Microsoft.Threading {
 		/// <returns>A task representing the work of sequentially invoking the callbacks.</returns>
 		private async Task InvokeBeforeWriteLockReleaseHandlersAsync() {
 			Assumes.True(Monitor.IsEntered(this.syncObject));
-			Assumes.True(this.writeLocksIssued.Count == 1 && this.beforeWriteReleasedCallbacks.Count > 0);
+			Assumes.True(this.issuedWriteLocks.Count == 1 && this.beforeWriteReleasedCallbacks.Count > 0);
 
 			using (var releaser = await new Awaitable(this, LockKind.Write, LockFlags.None, CancellationToken.None, checkSyncContextCompatibility: false)) {
 				await Task.Yield(); // ensure we've yielded to our caller, since the WriteLockAsync will not yield when on an MTA thread.
@@ -1141,7 +1141,7 @@ namespace Microsoft.Threading {
 		/// <returns>A value indicating whether any readers were issued locks.</returns>
 		private bool TryInvokeAllReadersIfAppropriate() {
 			bool invoked = false;
-			if (this.writeLocksIssued.Count == 0 && this.waitingWriters.Count == 0) {
+			if (this.issuedWriteLocks.Count == 0 && this.waitingWriters.Count == 0) {
 				while (this.waitingReaders.Count > 0) {
 					var pendingReader = this.waitingReaders.Dequeue();
 					Assumes.True(pendingReader.Kind == LockKind.Read);
@@ -1158,7 +1158,7 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <returns>A value indicating whether any upgradeable readers were issued locks.</returns>
 		private bool TryInvokeOneUpgradeableReaderIfAppropriate() {
-			if (this.upgradeableReadLocksIssued.Count == 0 && this.writeLocksIssued.Count == 0) {
+			if (this.issuedUpgradeableReadLocks.Count == 0 && this.issuedWriteLocks.Count == 0) {
 				if (this.waitingUpgradeableReaders.Count > 0) {
 					var pendingUpgradeableReader = this.waitingUpgradeableReaders.Dequeue();
 					Assumes.True(pendingUpgradeableReader.Kind == LockKind.UpgradeableRead);
@@ -1176,14 +1176,14 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <returns>A value indicating whether a writer was issued a lock.</returns>
 		private bool TryInvokeOneWriterIfAppropriate() {
-			if (this.readLocksIssued.Count == 0 && this.upgradeableReadLocksIssued.Count == 0 && this.writeLocksIssued.Count == 0) {
+			if (this.issuedReadLocks.Count == 0 && this.issuedUpgradeableReadLocks.Count == 0 && this.issuedWriteLocks.Count == 0) {
 				if (this.waitingWriters.Count > 0) {
 					var pendingWriter = this.waitingWriters.Dequeue();
 					Assumes.True(pendingWriter.Kind == LockKind.Write);
 					this.IssueAndExecute(pendingWriter);
 					return true;
 				}
-			} else if (this.upgradeableReadLocksIssued.Count > 0) {
+			} else if (this.issuedUpgradeableReadLocks.Count > 0) {
 				foreach (var waitingWriter in this.waitingWriters) {
 					if (this.TryIssueLock(waitingWriter, previouslyQueued: true)) {
 						// Run the continuation asynchronously (since this is called in OnCompleted, which is an async pattern).
