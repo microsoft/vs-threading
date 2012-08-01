@@ -390,8 +390,8 @@ namespace Microsoft.Threading {
 				// that not only posts to the current Dispatcher, but to a queue that can be
 				// forwarded to another one in the event that an async method eventually ends up
 				// being synchronously blocked on.
-				if (!(SynchronizationContext.Current is SingleThreadSynchronizationContext
-					|| SynchronizationContext.Current == this.promotableSyncContext)) {
+				if (!(SynchronizationContext.Current is SingleThreadSynchronizationContext)
+					&& SynchronizationContext.Current != this.promotableSyncContext) {
 					SynchronizationContext.SetSynchronizationContext(this.promotableSyncContext);
 				}
 			}
