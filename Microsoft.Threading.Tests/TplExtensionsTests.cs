@@ -6,13 +6,12 @@
 	using System.Text;
 	using System.Threading;
 	using System.Threading.Tasks;
-	using TaskExtensions = Microsoft.Threading.TaskExtensions;
 
 	[TestClass]
-	public class TaskExtensionsTests : TestBase {
+	public class TplExtensionsTests : TestBase {
 		[TestMethod]
 		public void CompletedTask() {
-			Assert.IsTrue(TaskExtensions.CompletedTask.IsCompleted);
+			Assert.IsTrue(TplExtensions.CompletedTask.IsCompleted);
 		}
 
 		[TestMethod]
@@ -20,7 +19,7 @@
 			var evt = new ManualResetEventSlim();
 			Action a = () => evt.Set();
 			var cts = new CancellationTokenSource();
-			var result = TaskExtensions.CompletedTask.AppendAction(a, TaskContinuationOptions.DenyChildAttach, cts.Token);
+			var result = TplExtensions.CompletedTask.AppendAction(a, TaskContinuationOptions.DenyChildAttach, cts.Token);
 			Assert.IsNotNull(result);
 			Assert.AreEqual(TaskContinuationOptions.DenyChildAttach, (TaskContinuationOptions)result.CreationOptions);
 			Assert.IsTrue(evt.Wait(TestTimeout));

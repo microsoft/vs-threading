@@ -326,7 +326,7 @@ namespace Microsoft.Threading {
 					}
 				}
 
-				return TaskExtensions.CompletedTask;
+				return TplExtensions.CompletedTask;
 			}
 
 			/// <summary>

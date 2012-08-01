@@ -67,7 +67,7 @@
     <Compile Include="AwaitExtensionsTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestBase.cs" />
-    <Compile Include="TaskExtensionsTests.cs" />
+    <Compile Include="TplExtensionsTests.cs" />
     <Compile Include="TestUtilitiesTests.cs" />
     <Compile Include="TestUtilities.cs" />
     <Compile Include="ThreadingToolsTests.cs" />

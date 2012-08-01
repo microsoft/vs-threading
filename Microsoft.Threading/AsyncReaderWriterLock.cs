@@ -127,7 +127,7 @@ namespace Microsoft.Threading {
 		/// to an upgradeable read lock when callbacks and other code must be invoked without ANY
 		/// locks being issued.
 		/// </summary>
-		private Task reenterConcurrencyPrep = TaskExtensions.CompletedTask;
+		private Task reenterConcurrencyPrep = TplExtensions.CompletedTask;
 
 		/// <summary>
 		/// A flag indicating whether we're currently running code to prepare for re-entering concurrency mode
@@ -485,7 +485,7 @@ namespace Microsoft.Threading {
 			if (exclusiveLockRelease) {
 				return this.OnBeforeExclusiveLockReleasedAsync();
 			} else {
-				return TaskExtensions.CompletedTask;
+				return TplExtensions.CompletedTask;
 			}
 		}
 
@@ -498,7 +498,7 @@ namespace Microsoft.Threading {
 			if (this.beforeWriteReleasedCallbacks.Count > 0) {
 				return this.InvokeBeforeWriteLockReleaseHandlersAsync();
 			} else {
-				return TaskExtensions.CompletedTask;
+				return TplExtensions.CompletedTask;
 			}
 		}
 
@@ -931,7 +931,7 @@ namespace Microsoft.Threading {
 		/// This method is called while holding a private lock in order to block future lock consumers till this method is finished.
 		/// </remarks>
 		protected virtual Task OnExclusiveLockReleasedAsync() {
-			return TaskExtensions.CompletedTask;
+			return TplExtensions.CompletedTask;
 		}
 
 		/// <summary>
@@ -1009,7 +1009,7 @@ namespace Microsoft.Threading {
 			if (reenterConcurrentOutsideCode != null && (synchronousCallbackExecution != null && !synchronousCallbackExecution.IsCompleted)) {
 				return Task.WhenAll(reenterConcurrentOutsideCode, synchronousCallbackExecution);
 			} else {
-				return reenterConcurrentOutsideCode ?? synchronousCallbackExecution ?? TaskExtensions.CompletedTask;
+				return reenterConcurrentOutsideCode ?? synchronousCallbackExecution ?? TplExtensions.CompletedTask;
 			}
 		}
 
@@ -1504,7 +1504,7 @@ namespace Microsoft.Threading {
 					this.releaseAsyncTask = this.lck.ReleaseAsync(this, lockConsumerCanceled);
 				}
 
-				return this.releaseAsyncTask ?? TaskExtensions.CompletedTask;
+				return this.releaseAsyncTask ?? TplExtensions.CompletedTask;
 			}
 
 			/// <summary>
@@ -1639,7 +1639,7 @@ namespace Microsoft.Threading {
 				if (this.awaiter != null) {
 					result = this.awaiter.ReleaseAsync();
 				} else {
-					result = TaskExtensions.CompletedTask;
+					result = TplExtensions.CompletedTask;
 				}
 
 				if (this.clearSynchronizationContext && SynchronizationContext.Current is NonConcurrentSynchronizationContext) {

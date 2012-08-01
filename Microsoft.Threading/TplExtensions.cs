@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------
-// <copyright file="TaskExtensions.cs" company="Microsoft">
+// <copyright file="TplExtensions.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
@@ -16,7 +16,7 @@ namespace Microsoft.Threading
     /// <summary>
     /// Extensions to the Task Parallel Library.
     /// </summary>
-    public static class TaskExtensions
+    public static class TplExtensions
     {
         /// <summary>
         /// A singleton completed task.

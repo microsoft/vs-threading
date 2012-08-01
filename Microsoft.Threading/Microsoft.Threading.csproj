@@ -58,7 +58,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
-    <Compile Include="TaskExtensions.cs" />
+    <Compile Include="TplExtensions.cs" />
     <Compile Include="ThreadingTools.cs" />
   </ItemGroup>
   <ItemGroup>
