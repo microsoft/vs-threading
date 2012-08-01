@@ -54,5 +54,20 @@
 			});
 			task.WaitWithoutInlining();
 		}
+
+		[TestMethod]
+		public void NoThrowAwaitable() {
+			var tcs = new TaskCompletionSource<object>();
+			var nothrowTask = tcs.Task.NoThrowAwaitable();
+			Assert.IsFalse(nothrowTask.IsCompleted);
+			tcs.SetException(new InvalidOperationException());
+			nothrowTask.Wait();
+
+			tcs = new TaskCompletionSource<object>();
+			nothrowTask = tcs.Task.NoThrowAwaitable();
+			Assert.IsFalse(nothrowTask.IsCompleted);
+			tcs.SetCanceled();
+			nothrowTask.Wait();
+		}
 	}
 }
