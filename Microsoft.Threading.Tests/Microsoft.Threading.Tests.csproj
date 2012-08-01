@@ -70,6 +70,7 @@
     <Compile Include="TaskExtensionsTests.cs" />
     <Compile Include="TestUtilitiesTests.cs" />
     <Compile Include="TestUtilities.cs" />
+    <Compile Include="ThreadingToolsTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Microsoft.Validation\Microsoft.Validation.csproj">

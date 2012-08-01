@@ -81,7 +81,7 @@ namespace Microsoft.Threading
                 },
                 tcs,
                 CancellationToken.None,
-                TaskContinuationOptions.None,
+                TaskContinuationOptions.ExecuteSynchronously,
                 TaskScheduler.Default);
         }
 
