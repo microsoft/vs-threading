@@ -95,6 +95,11 @@ namespace Microsoft.Threading {
 		/// Gets or sets the SynchronizationContext that is currently executing the
 		/// <see cref="RunSynchronously(Func{Task})"/> call on the Main thread.
 		/// </summary>
+		/// <remarks>
+		/// This value's persistence is AsyncLocal, so the value propagates with the
+		/// ExecutionContext.  It is effectively the "ticket" to the UI thread when one
+		/// exists for the caller.
+		/// </remarks>
 		private SingleThreadSynchronizationContext MainThreadControllingSyncContext {
 			get {
 				AsyncLocal<SingleThreadSynchronizationContext> local;
