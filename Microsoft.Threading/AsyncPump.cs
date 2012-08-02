@@ -713,7 +713,7 @@ namespace Microsoft.Threading {
 							// frame, allowing us to more easily inspect local variables, etc that otherwise
 							// wouldn't be available.
 							while (!Monitor.Wait(this.queue, 1000)) {
-								// This area intentionally left blank.
+								Assumes.True(this.queue.Count == 0 && !this.IsCompleted, "The queue is not empty, but not pulsed either.");
 							}
 						}
 					}
@@ -725,12 +725,7 @@ namespace Microsoft.Threading {
 				internal void CompleteAdding() {
 					lock (this.queue) {
 						this.completed = true;
-
-						// We only need to pulse if the queue is empty, since if it is non-empty,
-						// TryDequeue would not be blocking in Monitor.Wait().
-						if (this.queue.Count == 0) {
-							Monitor.Pulse(this.queue);
-						}
+						Monitor.Pulse(this.queue);
 					}
 				}
 
@@ -745,13 +740,7 @@ namespace Microsoft.Threading {
 						}
 
 						this.queue.Enqueue(value);
-
-						// We only need to pulse if the queue only just became non-empty.
-						// If the queue was already non-empty then no one is blocked in Monitor.Wait().
-						if (this.queue.Count == 1) {
-							Monitor.Pulse(this.queue);
-						}
-
+						Monitor.Pulse(this.queue);
 						return true;
 					}
 				}
