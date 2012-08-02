@@ -608,6 +608,13 @@ namespace Microsoft.Threading {
 			/// <param name="state">The object passed to the delegate.</param>
 			public override void Post(SendOrPostCallback d, object state) {
 				Requires.NotNull(d, "d");
+
+				// We post a SingleExecuteProtector of this message to both our queue and 
+				// the WPF dispatcher so that when one item in the queue causes modal UI to appear,
+				// that someone who posts to this SynchronizationContext (which will be active during
+				// that modal dialog) the message has a chance of being executed before the dialog is dismissed.
+				////TODO: code here to make the above happen.
+
 				if (!this.queue.TryAdd(new KeyValuePair<SendOrPostCallback, object>(d, state))) {
 					this.asyncPump.Post(d, state);
 				}
@@ -615,14 +622,11 @@ namespace Microsoft.Threading {
 
 			/// <summary>Not supported.</summary>
 			public override void Send(SendOrPostCallback d, object state) {
-				if (this.queue.IsCompleted && this.previousSyncContext != null) {
-					// Some folks unfortunately capture the SynchronizationContext from the UI thread
-					// while this one is active.  So after this one is no longer active, forward it to
-					// the underlying sync context to not break those folks.
-					this.previousSyncContext.Send(d, state);
-				} else {
-					throw new NotSupportedException("Synchronously sending is not supported.");
-				}
+				// Some folks unfortunately capture the SynchronizationContext from the UI thread
+				// while this one is active.  So forward it to
+				// the underlying sync context to not break those folks.
+				// Ideally this method would throw because synchronously crossing threads is a bad idea.
+				this.previousSyncContext.Send(d, state);
 			}
 
 			/// <summary>Runs an loop to process all queued work items.</summary>
@@ -713,7 +717,10 @@ namespace Microsoft.Threading {
 							// frame, allowing us to more easily inspect local variables, etc that otherwise
 							// wouldn't be available.
 							while (!Monitor.Wait(this.queue, 1000)) {
-								Assumes.True(this.queue.Count == 0 && !this.IsCompleted, "The queue is not empty, but not pulsed either.");
+								if (this.queue.Count > 0 || this.IsCompleted) {
+									Report.Fail("The queue is not empty, but not pulsed either.");
+									break;
+								}
 							}
 						}
 					}
