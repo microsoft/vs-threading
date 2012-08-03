@@ -208,6 +208,13 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// Gets a value indicating whether any kind of lock is held by the caller.
+		/// </summary>
+		public bool IsAnyLockHeld {
+			get { return this.IsReadLockHeld || this.IsUpgradeableReadLockHeld || this.IsWriteLockHeld; }
+		}
+
+		/// <summary>
 		/// Gets a value indicating whether the caller holds a read lock.
 		/// </summary>
 		/// <remarks>
@@ -264,13 +271,6 @@ namespace Microsoft.Threading {
 		protected bool CaptureDiagnostics {
 			get { return this.captureDiagnostics; }
 			set { this.captureDiagnostics = value; }
-		}
-
-		/// <summary>
-		/// Gets a value indicating whether any kind of lock is held by the caller.
-		/// </summary>
-		protected bool IsAnyLockHeld {
-			get { return this.IsReadLockHeld || this.IsUpgradeableReadLockHeld || this.IsWriteLockHeld; }
 		}
 
 		/// <summary>
