@@ -607,6 +607,44 @@
 			task.Wait(); // observe any exceptions thrown.
 		}
 
+		/// <summary>
+		/// This test verifies that in the event that a RunSynchronously method executes a delegate that
+		/// invokes modal UI, where the WPF dispatcher would normally process Posted messages, that our
+		/// applied SynchronizationContext will facilitate the same expedited message delivery.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public void PostedMessagesAlsoSentToDispatcher() {
+			this.asyncPump.RunSynchronously(delegate {
+				var syncContext = SynchronizationContext.Current; // simulate someone who has captured our own sync context.
+				var frame = new DispatcherFrame();
+				Exception ex = null;
+				using (this.asyncPump.SuppressRelevance()) { // simulate some kind of sync context hand-off that doesn't flow execution context.
+					Task.Run(delegate {
+						// This post will only get a chance for processing 
+						syncContext.Post(
+							state => {
+								try {
+									Assert.AreSame(this.originalThread, Thread.CurrentThread);
+								} catch (Exception e) {
+									ex = e;
+								} finally {
+									frame.Continue = false;
+								}
+							},
+							null);
+					});
+				}
+
+				// Now simulate the display of modal UI by pushing an unfiltered message pump onto the stack.
+				// This will hang unless the message gets processed.
+				Dispatcher.PushFrame(frame);
+
+				if (ex != null) {
+					Assert.Fail("Posted message threw an exception: {0}", ex);
+				}
+			});
+		}
+
 		private static async void SomeFireAndForgetMethod() {
 			await Task.Yield();
 		}

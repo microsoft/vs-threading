@@ -286,7 +286,7 @@ namespace Microsoft.Threading {
 					refCountBox.Value++;
 
 					foreach (var item in this.pendingActions) {
-						mainThreadControllingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, item);
+						mainThreadControllingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, item, this);
 					}
 				}
 
@@ -333,12 +333,10 @@ namespace Microsoft.Threading {
 		/// Schedules the specified delegate for execution on the Main thread.
 		/// </summary>
 		/// <param name="action">The delegate to invoke.</param>
-		private void Post(Action action) {
-			if (this.underlyingSynchronizationContext != null) {
-				this.Post(new SingleExecuteProtector(this, action));
-			} else {
-				ThreadPool.QueueUserWorkItem(state => ((Action)state)(), action);
-			}
+		private SingleExecuteProtector Post(Action action) {
+			var executor = new SingleExecuteProtector(this, action);
+			this.Post(executor);
+			return executor;
 		}
 
 		/// <summary>
@@ -346,12 +344,10 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="callback">The delegate to invoke.</param>
 		/// <param name="state">The argument to pass to the delegate.</param>
-		private void Post(SendOrPostCallback callback, object state) {
-			if (this.underlyingSynchronizationContext != null) {
-				this.Post(new SingleExecuteProtector(this, callback, state));
-			} else {
-				ThreadPool.QueueUserWorkItem(new WaitCallback(callback), state);
-			}
+		private SingleExecuteProtector Post(SendOrPostCallback callback, object state) {
+			var executor = new SingleExecuteProtector(this, callback, state);
+			this.Post(executor);
+			return executor;
 		}
 
 		/// <summary>
@@ -361,27 +357,31 @@ namespace Microsoft.Threading {
 		private void Post(SingleExecuteProtector wrapper) {
 			Assumes.NotNull(this.underlyingSynchronizationContext);
 
-			// Our strategy here is to post the delegate to as many SynchronizationContexts
-			// as may be necessary to mitigate deadlocks, since any of the ones we try below
-			// *could* be the One that is currently controlling the Main thread in a synchronously
-			// blocking wait for this very work to occur.
-			// The SingleExecuteProtector class ensures that if more than one SynchronizationContext
-			// ultimately responds to the message and invokes the delegate, that it will no-op after
-			// the first invocation.
-			lock (this.syncObject) {
-				this.pendingActions.Enqueue(wrapper);
+			if (this.underlyingSynchronizationContext != null) {
+				// Our strategy here is to post the delegate to as many SynchronizationContexts
+				// as may be necessary to mitigate deadlocks, since any of the ones we try below
+				// *could* be the One that is currently controlling the Main thread in a synchronously
+				// blocking wait for this very work to occur.
+				// The SingleExecuteProtector class ensures that if more than one SynchronizationContext
+				// ultimately responds to the message and invokes the delegate, that it will no-op after
+				// the first invocation.
+				lock (this.syncObject) {
+					this.pendingActions.Enqueue(wrapper);
 
-				foreach (var context in this.extraContexts) {
-					context.Key.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
+					foreach (var context in this.extraContexts) {
+						context.Key.Post(SingleExecuteProtector.ExecuteOnce, wrapper, this);
+					}
+
+					var mainThreadControllingSyncContext = this.MainThreadControllingSyncContext;
+					if (mainThreadControllingSyncContext != null) {
+						mainThreadControllingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper, this);
+					}
 				}
 
-				var mainThreadControllingSyncContext = this.MainThreadControllingSyncContext;
-				if (mainThreadControllingSyncContext != null) {
-					mainThreadControllingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper, this);
-				}
+				this.underlyingSynchronizationContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
+			} else {
+				ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
 			}
-
-			this.underlyingSynchronizationContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
 		}
 
 		/// <summary>
@@ -432,6 +432,11 @@ namespace Microsoft.Threading {
 			/// Executes the delegate if it has not already executed.
 			/// </summary>
 			internal static SendOrPostCallback ExecuteOnce = state => ((SingleExecuteProtector)state).TryExecute();
+
+			/// <summary>
+			/// Executes the delegate if it has not already executed.
+			/// </summary>
+			internal static WaitCallback ExecuteOnceWaitCallback = state => ((SingleExecuteProtector)state).TryExecute();
 
 			/// <summary>
 			/// The instance that created this delegate.
@@ -595,11 +600,8 @@ namespace Microsoft.Threading {
 				// the WPF dispatcher so that when one item in the queue causes modal UI to appear,
 				// that someone who posts to this SynchronizationContext (which will be active during
 				// that modal dialog) the message has a chance of being executed before the dialog is dismissed.
-				////TODO: code here to make the above happen.
-
-				if (!this.queue.TryAdd(new KeyValuePair<SendOrPostCallback, object>(d, state))) {
-					this.asyncPump.Post(d, state);
-				}
+				var executor = this.asyncPump.Post(d, state);
+				this.queue.TryAdd(new KeyValuePair<SendOrPostCallback, object>(SingleExecuteProtector.ExecuteOnce, executor));
 			}
 
 			/// <summary>Not supported.</summary>
