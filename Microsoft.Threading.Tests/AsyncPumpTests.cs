@@ -528,6 +528,85 @@
 			});
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void SendToSyncContextCapturedFromWithinRunSynchronously() {
+			var state = new GenericParameterHelper(3);
+			SynchronizationContext syncContext = null;
+			Task sendFromWithinRunSync = null;
+			this.asyncPump.RunSynchronously(delegate {
+				syncContext = SynchronizationContext.Current;
+
+				bool executed1 = false;
+				syncContext.Send(s => { Assert.AreSame(this.originalThread, Thread.CurrentThread); Assert.AreSame(state, s); executed1 = true; }, state);
+				Assert.IsTrue(executed1);
+
+				// And from another thread.  But the Main thread is "busy" in a synchronous block,
+				// so the Send isn't expected to get in right away.  So spin off a task to keep the Send
+				// in a wait state until it's finally able to get through.
+				// This tests that Send can work even if not immediately.
+				sendFromWithinRunSync = Task.Run(delegate {
+					bool executed2 = false;
+					syncContext.Send(s => { Assert.AreSame(this.originalThread, Thread.CurrentThread); Assert.AreSame(state, s); executed2 = true; }, state);
+					Assert.IsTrue(executed2);
+				});
+			});
+
+			// From the Main thread.
+			bool executed3 = false;
+			syncContext.Send(s => { Assert.AreSame(this.originalThread, Thread.CurrentThread); Assert.AreSame(state, s); executed3 = true; }, state);
+			Assert.IsTrue(executed3);
+
+			// And from another thread.
+			var frame = new DispatcherFrame();
+			var task = Task.Run(delegate {
+				try {
+					bool executed4 = false;
+					syncContext.Send(s => { Assert.AreSame(this.originalThread, Thread.CurrentThread); Assert.AreSame(state, s); executed4 = true; }, state);
+					Assert.IsTrue(executed4);
+				} finally {
+					// Allow the message pump to exit.
+					frame.Continue = false;
+				}
+			});
+			Dispatcher.PushFrame(frame);
+
+			// throw exceptions for any failures.
+			task.Wait();
+			sendFromWithinRunSync.Wait();
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void SendToSyncContextCapturedAfterSwitchingToMainThread() {
+			var frame = new DispatcherFrame();
+			var state = new GenericParameterHelper(3);
+			SynchronizationContext syncContext = null;
+			var task = Task.Run(async delegate {
+				try {
+					// starting on a worker thread, we switch to the Main thread.
+					await this.asyncPump.SwitchToMainThreadAsync();
+					syncContext = SynchronizationContext.Current;
+
+					bool executed1 = false;
+					syncContext.Send(s => { Assert.AreSame(this.originalThread, Thread.CurrentThread); Assert.AreSame(state, s); executed1 = true; }, state);
+					Assert.IsTrue(executed1);
+
+					await TaskScheduler.Default;
+
+					bool executed2 = false;
+					syncContext.Send(s => { Assert.AreSame(this.originalThread, Thread.CurrentThread); Assert.AreSame(state, s); executed2 = true; }, state);
+					Assert.IsTrue(executed2);
+				} finally {
+					// Allow the pushed message pump frame to exit.
+					frame.Continue = false;
+				}
+			});
+
+			// Open message pump so the background thread can switch to the Main thread.
+			Dispatcher.PushFrame(frame);
+
+			task.Wait(); // observe any exceptions thrown.
+		}
+
 		private static async void SomeFireAndForgetMethod() {
 			await Task.Yield();
 		}

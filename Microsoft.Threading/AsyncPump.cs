@@ -385,24 +385,6 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
-		/// Applies a SynchronizationContext that mitigates deadlocks in async methods that may be invoked
-		/// on the Main thread and while invoked asynchronously may ultimately synchronously block the Main
-		/// thread for completion.
-		/// </summary>
-		private void ApplyPromotableContext() {
-			if (this.mainThread == Thread.CurrentThread) {
-				// It's critical that the SynchronizationContext applied to the caller be one 
-				// that not only posts to the current Dispatcher, but to a queue that can be
-				// forwarded to another one in the event that an async method eventually ends up
-				// being synchronously blocked on.
-				if (!(SynchronizationContext.Current is SingleThreadSynchronizationContext)
-					&& SynchronizationContext.Current != this.promotableSyncContext) {
-					SynchronizationContext.SetSynchronizationContext(this.promotableSyncContext);
-				}
-			}
-		}
-
-		/// <summary>
 		/// A structure that clears CallContext and SynchronizationContext async/thread statics and
 		/// restores those values when this structure is disposed.
 		/// </summary>
@@ -791,11 +773,7 @@ namespace Microsoft.Threading {
 			/// otherwise throws <see cref="NotSupportedException"/>.
 			/// </summary>
 			public override void Send(SendOrPostCallback d, object state) {
-				if (this.asyncPump.mainThread == Thread.CurrentThread) {
-					d(state);
-				} else {
-					throw new NotSupportedException();
-				}
+				this.asyncPump.underlyingSynchronizationContext.Send(d, state);
 			}
 		}
 
@@ -925,7 +903,21 @@ namespace Microsoft.Threading {
 					this.asyncPump.MainThreadControllingSyncContext = (SynchronizationContext.Current as SingleThreadSynchronizationContext);
 				}
 
-				this.asyncPump.ApplyPromotableContext();
+				// Applies a SynchronizationContext that mitigates deadlocks in async methods that may be invoked
+				// on the Main thread and while invoked asynchronously may ultimately synchronously block the Main
+				// thread for completion.
+				if (this.asyncPump.mainThread == Thread.CurrentThread) {
+					// It's critical that the SynchronizationContext applied to the caller be one 
+					// that not only posts to the current Dispatcher, but to a queue that can be
+					// forwarded to another one in the event that an async method eventually ends up
+					// being synchronously blocked on.
+					if (!(SynchronizationContext.Current is SingleThreadSynchronizationContext)
+						&& SynchronizationContext.Current != this.asyncPump.promotableSyncContext) {
+						// We don't have to worry about backing up the old context to restore it later
+						// because in an async continuation (which this is), .NET automatically does this.
+						SynchronizationContext.SetSynchronizationContext(this.asyncPump.promotableSyncContext);
+					}
+				}
 			}
 		}
 
