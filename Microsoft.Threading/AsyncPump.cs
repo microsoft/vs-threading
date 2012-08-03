@@ -68,8 +68,8 @@ namespace Microsoft.Threading {
 		/// <remarks>
 		/// When the value in an entry is decremented to 0, the entry is removed from the map.
 		/// </remarks>
-		private Dictionary<SingleThreadSynchronizationContext, StrongBox<int>> extraContexts =
-			new Dictionary<SingleThreadSynchronizationContext, StrongBox<int>>();
+		private Dictionary<SingleThreadSynchronizationContext, int> extraContexts =
+			new Dictionary<SingleThreadSynchronizationContext, int>();
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AsyncPump"/> class.
@@ -277,13 +277,10 @@ namespace Microsoft.Threading {
 			var mainThreadControllingSyncContext = this.MainThreadControllingSyncContext;
 			if (mainThreadControllingSyncContext != null) {
 				lock (this.syncObject) {
-					StrongBox<int> refCountBox;
-					if (!this.extraContexts.TryGetValue(mainThreadControllingSyncContext, out refCountBox)) {
-						refCountBox = new StrongBox<int>();
-						this.extraContexts.Add(mainThreadControllingSyncContext, refCountBox);
-					}
-
-					refCountBox.Value++;
+					int refCount;
+					this.extraContexts.TryGetValue(mainThreadControllingSyncContext, out refCount);
+					refCount++;
+					this.extraContexts[mainThreadControllingSyncContext] = refCount;
 
 					foreach (var item in this.pendingActions) {
 						mainThreadControllingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, item, this);
@@ -537,10 +534,11 @@ namespace Microsoft.Threading {
 			public void Dispose() {
 				if (this.parent != null) {
 					lock (this.parent.syncObject) {
-						StrongBox<int> refCount = this.parent.extraContexts[this.context];
-						refCount.Value = refCount.Value - 1; // always decrement value, even if to 0 so others observe it.
-						if (refCount.Value == 0) {
+						int refCount = this.parent.extraContexts[this.context];
+						if (--refCount == 0) {
 							this.parent.extraContexts.Remove(this.context);
+						} else {
+							this.parent.extraContexts[this.context] = refCount;
 						}
 					}
 
