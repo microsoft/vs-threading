@@ -645,6 +645,31 @@
 			});
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void StackOverflowAvoidance() {
+			Task backgroundTask = null;
+			var mainThreadUnblocked = new AsyncManualResetEvent();
+			var otherPump = new AsyncPump();
+			var frame = new DispatcherFrame();
+			otherPump.RunSynchronously(delegate {
+				this.asyncPump.RunSynchronously(delegate {
+					backgroundTask = Task.Run(async delegate {
+						using (this.asyncPump.Join()) {
+							await mainThreadUnblocked;
+							await this.asyncPump.SwitchToMainThreadAsync();
+							frame.Continue = false;
+						}
+					});
+				});
+			});
+
+			mainThreadUnblocked.Set();
+
+			// The rest of this isn't strictly necessary for the hang, but it gets the test
+			// to wait till the background task has either succeeded, or failed.
+			Dispatcher.PushFrame(frame);
+		}
+
 		private static async void SomeFireAndForgetMethod() {
 			await Task.Yield();
 		}

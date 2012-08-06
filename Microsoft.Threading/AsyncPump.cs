@@ -25,6 +25,13 @@ namespace Microsoft.Threading {
 			= new ConditionalWeakTable<Thread, AsyncLocal<SingleThreadSynchronizationContext>>();
 
 		/// <summary>
+		/// A thread-local HashSet that can be used to detect and cut off recursion that would 
+		/// otherwise lead to a StackOverflowException while walking AsyncPump graphs that
+		/// contain circular references.
+		/// </summary>
+		private static readonly ThreadLocal<HashSet<AsyncPump>> postedMessageVisited = new ThreadLocal<HashSet<AsyncPump>>(() => new HashSet<AsyncPump>());
+
+		/// <summary>
 		/// The WPF Dispatcher, or other SynchronizationContext that is applied to the Main thread.
 		/// </summary>
 		private readonly SynchronizationContext underlyingSynchronizationContext;
@@ -354,30 +361,36 @@ namespace Microsoft.Threading {
 		private void Post(SingleExecuteProtector wrapper) {
 			Assumes.NotNull(this.underlyingSynchronizationContext);
 
-			if (this.underlyingSynchronizationContext != null) {
-				// Our strategy here is to post the delegate to as many SynchronizationContexts
-				// as may be necessary to mitigate deadlocks, since any of the ones we try below
-				// *could* be the One that is currently controlling the Main thread in a synchronously
-				// blocking wait for this very work to occur.
-				// The SingleExecuteProtector class ensures that if more than one SynchronizationContext
-				// ultimately responds to the message and invokes the delegate, that it will no-op after
-				// the first invocation.
-				lock (this.syncObject) {
-					this.pendingActions.Enqueue(wrapper);
+			if (postedMessageVisited.Value.Add(this)) {
+				try {
+					if (this.underlyingSynchronizationContext != null) {
+						// Our strategy here is to post the delegate to as many SynchronizationContexts
+						// as may be necessary to mitigate deadlocks, since any of the ones we try below
+						// *could* be the One that is currently controlling the Main thread in a synchronously
+						// blocking wait for this very work to occur.
+						// The SingleExecuteProtector class ensures that if more than one SynchronizationContext
+						// ultimately responds to the message and invokes the delegate, that it will no-op after
+						// the first invocation.
+						lock (this.syncObject) {
+							this.pendingActions.Enqueue(wrapper);
 
-					foreach (var context in this.extraContexts) {
-						context.Key.Post(SingleExecuteProtector.ExecuteOnce, wrapper, this);
-					}
+							foreach (var context in this.extraContexts) {
+								context.Key.Post(SingleExecuteProtector.ExecuteOnce, wrapper, this);
+							}
 
-					var mainThreadControllingSyncContext = this.MainThreadControllingSyncContext;
-					if (mainThreadControllingSyncContext != null) {
-						mainThreadControllingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper, this);
+							var mainThreadControllingSyncContext = this.MainThreadControllingSyncContext;
+							if (mainThreadControllingSyncContext != null) {
+								mainThreadControllingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper, this);
+							}
+						}
+
+						this.underlyingSynchronizationContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
+					} else {
+						ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
 					}
+				} finally {
+					postedMessageVisited.Value.Remove(this);
 				}
-
-				this.underlyingSynchronizationContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
-			} else {
-				ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
 			}
 		}
 
@@ -645,11 +658,8 @@ namespace Microsoft.Threading {
 			internal void Post(SendOrPostCallback d, object state, AsyncPump caller) {
 				Requires.NotNull(d, "d");
 				if (!this.queue.TryAdd(new KeyValuePair<SendOrPostCallback, object>(d, state))) {
-					if (this.asyncPump != caller) { // avoid infinite recursion.
-						this.asyncPump.Post(d, state);
-					} else {
-						this.previousSyncContext.Post(d, state);
-					}
+					this.asyncPump.Post(d, state);
+					this.previousSyncContext.Post(d, state);
 				}
 			}
 
