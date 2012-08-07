@@ -704,28 +704,33 @@ namespace Microsoft.Threading {
 				/// <param name="value">Receives the dequeued value.</param>
 				/// <returns><c>true</c> if an item was dequeued; <c>false</c> if the queue is permanently empty.</returns>
 				internal bool TryDequeue(out T value) {
-					lock (this.queue) {
-						while (true) {
-							if (this.queue.Count > 0) {
-								value = this.queue.Dequeue();
-								return true;
-							} else if (this.completed) {
-								value = default(T);
-								return false;
-							}
+					bool internalFailure = false;
+					try {
+						lock (this.queue) {
+							while (true) {
+								if (this.queue.Count > 0) {
+									value = this.queue.Dequeue();
+									return true;
+								} else if (this.completed) {
+									value = default(T);
+									return false;
+								}
 
-							// Break out of the wait every once in a while, and keep looping back in the wait.
-							// This allows a debugger that has broken into this method (to investigate a hang
-							// for example), to step out of the Wait method so that we're in an unoptimized
-							// frame, allowing us to more easily inspect local variables, etc that otherwise
-							// wouldn't be available.
-							while (!Monitor.Wait(this.queue, 1000)) {
-								if (this.queue.Count > 0 || this.IsCompleted) {
-									Report.Fail("The queue is not empty, but not pulsed either.");
-									break;
+								// Break out of the wait every once in a while, and keep looping back in the wait.
+								// This allows a debugger that has broken into this method (to investigate a hang
+								// for example), to step out of the Wait method so that we're in an unoptimized
+								// frame, allowing us to more easily inspect local variables, etc that otherwise
+								// wouldn't be available.
+								while (!Monitor.Wait(this.queue, 1000)) {
+									if (this.queue.Count > 0 || this.IsCompleted) {
+										internalFailure = !Monitor.Wait(this.queue, 0);
+										break;
+									}
 								}
 							}
 						}
+					} finally {
+						Report.If(internalFailure, "The queue is not empty, but not pulsed either.");
 					}
 				}
 
