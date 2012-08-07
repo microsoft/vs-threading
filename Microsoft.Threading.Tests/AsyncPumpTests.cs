@@ -685,6 +685,38 @@
 			Dispatcher.PushFrame(frame);
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void JoinControllingSelf() {
+			var runSynchronouslyExited = new AsyncManualResetEvent();
+			var unblockMainThread = new ManualResetEventSlim();
+			Task backgroundTask = null, uiBoundWork;
+			var frame = new DispatcherFrame();
+			this.asyncPump.RunSynchronously(delegate {
+				backgroundTask = Task.Run(async delegate {
+					await runSynchronouslyExited;
+					try {
+						using (this.asyncPump.Join()) {
+							unblockMainThread.Set();
+						}
+					} catch {
+						unblockMainThread.Set();
+						throw;
+					}
+				});
+			});
+
+			uiBoundWork = Task.Factory.StartNew(
+				delegate { frame.Continue = false; },
+				CancellationToken.None,
+				TaskCreationOptions.None,
+				this.asyncPump.MainThreadTaskScheduler);
+
+			runSynchronouslyExited.Set();
+			unblockMainThread.Wait();
+			Dispatcher.PushFrame(frame);
+			backgroundTask.GetAwaiter().GetResult(); // rethrow any exceptions
+		}
+
 		private static async void SomeFireAndForgetMethod() {
 			await Task.Yield();
 		}
