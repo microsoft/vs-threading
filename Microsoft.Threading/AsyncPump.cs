@@ -339,7 +339,7 @@ namespace Microsoft.Threading {
 		/// <param name="action">The delegate to invoke.</param>
 		private SingleExecuteProtector Post(Action action) {
 			var executor = new SingleExecuteProtector(this, action);
-			this.Post(executor);
+			this.Post(executor, null);
 			return executor;
 		}
 
@@ -348,9 +348,9 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="callback">The delegate to invoke.</param>
 		/// <param name="state">The argument to pass to the delegate.</param>
-		private SingleExecuteProtector Post(SendOrPostCallback callback, object state) {
+		private SingleExecuteProtector Post(SendOrPostCallback callback, object state, AsyncPump caller = null) {
 			var executor = new SingleExecuteProtector(this, callback, state);
-			this.Post(executor);
+			this.Post(executor, caller);
 			return executor;
 		}
 
@@ -358,7 +358,7 @@ namespace Microsoft.Threading {
 		/// Schedules the specified delegate for execution on the Main thread.
 		/// </summary>
 		/// <param name="wrapper">The delegate wrapper that guarantees the delegate cannot be invoked more than once.</param>
-		private void Post(SingleExecuteProtector wrapper) {
+		private void Post(SingleExecuteProtector wrapper, AsyncPump caller) {
 			Assumes.NotNull(this.underlyingSynchronizationContext);
 
 			if (postedMessageVisited.Value.Add(this)) {
@@ -372,7 +372,9 @@ namespace Microsoft.Threading {
 						// ultimately responds to the message and invokes the delegate, that it will no-op after
 						// the first invocation.
 						lock (this.syncObject) {
-							this.pendingActions.Enqueue(wrapper);
+							if (caller != this) { // avoid modifying the queue to add a duplicate when the original caller is ourselves.
+								this.pendingActions.Enqueue(wrapper);
+							}
 
 							foreach (var context in this.extraContexts) {
 								context.Key.Post(SingleExecuteProtector.ExecuteOnce, wrapper, this);
@@ -665,7 +667,7 @@ namespace Microsoft.Threading {
 			internal void Post(SendOrPostCallback d, object state, AsyncPump caller) {
 				Requires.NotNull(d, "d");
 				if (!this.queue.TryAdd(new KeyValuePair<SendOrPostCallback, object>(d, state))) {
-					this.asyncPump.Post(d, state);
+					this.asyncPump.Post(d, state, caller);
 					this.previousSyncContext.Post(d, state);
 				}
 			}
