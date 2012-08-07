@@ -507,13 +507,15 @@
 			this.asyncPump.RunSynchronously(async delegate {
 				bool completed = false;
 				await Task.Factory.StartNew(
-					() => {
+					async delegate {
+						Assert.AreSame(this.originalThread, Thread.CurrentThread);
+						await Task.Yield();
 						Assert.AreSame(this.originalThread, Thread.CurrentThread);
 						completed = true;
 					},
 					CancellationToken.None,
 					TaskCreationOptions.None,
-					this.asyncPump.MainThreadTaskScheduler);
+					this.asyncPump.MainThreadTaskScheduler).Unwrap();
 				Assert.IsTrue(completed);
 			});
 		}
