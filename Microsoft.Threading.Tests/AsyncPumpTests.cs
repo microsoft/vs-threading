@@ -672,6 +672,19 @@
 			Dispatcher.PushFrame(frame);
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void MainThreadTaskSchedulerDoesNotInlineWhileQueuingTasks() {
+			var frame = new DispatcherFrame();
+			var uiBoundWork = Task.Factory.StartNew(
+				delegate { frame.Continue = false; },
+				CancellationToken.None,
+				TaskCreationOptions.None,
+				this.asyncPump.MainThreadTaskScheduler);
+
+			Assert.IsTrue(frame.Continue, "The UI bound work should not have executed yet.");
+			Dispatcher.PushFrame(frame);
+		}
+
 		private static async void SomeFireAndForgetMethod() {
 			await Task.Yield();
 		}
