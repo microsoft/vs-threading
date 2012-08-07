@@ -348,6 +348,7 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="callback">The delegate to invoke.</param>
 		/// <param name="state">The argument to pass to the delegate.</param>
+		/// <param name="caller">The AsyncPump that lies further down the stack that originated this call.</param>
 		private SingleExecuteProtector Post(SendOrPostCallback callback, object state, AsyncPump caller = null) {
 			var executor = new SingleExecuteProtector(this, callback, state);
 			this.Post(executor, caller);
@@ -358,6 +359,7 @@ namespace Microsoft.Threading {
 		/// Schedules the specified delegate for execution on the Main thread.
 		/// </summary>
 		/// <param name="wrapper">The delegate wrapper that guarantees the delegate cannot be invoked more than once.</param>
+		/// <param name="caller">The AsyncPump that lies further down the stack that originated this call.</param>
 		private void Post(SingleExecuteProtector wrapper, AsyncPump caller) {
 			Assumes.NotNull(this.underlyingSynchronizationContext);
 
@@ -757,7 +759,7 @@ namespace Microsoft.Threading {
 
 		/// <summary>
 		/// A synchronization context that simply forwards posted messages back to
-		/// the <see cref="AsyncPump.Post(SendOrPostCallback, object)"/> method.
+		/// the <see cref="AsyncPump.Post(SendOrPostCallback, object, AsyncPump)"/> method.
 		/// </summary>
 		private class PromotableMainThreadSynchronizationContext : SynchronizationContext {
 			/// <summary>
@@ -781,7 +783,7 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>
-			/// Forwards posted delegates to <see cref="AsyncPump.Post(SendOrPostCallback, object)"/>
+			/// Forwards posted delegates to <see cref="AsyncPump.Post(SendOrPostCallback, object, AsyncPump)"/>
 			/// </summary>
 			public override void Post(SendOrPostCallback d, object state) {
 				this.asyncPump.Post(d, state);
