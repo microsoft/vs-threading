@@ -517,6 +517,13 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void BeginAsyncCompleteSync() {
+			Task task = this.asyncPump.BeginAsynchronously(
+				() => this.SomeOperationThatUsesMainThreadViaItsOwnAsyncPumpAsync());
+			this.asyncPump.CompleteSynchronously(task);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void MainThreadTaskScheduler() {
 			this.asyncPump.RunSynchronously(async delegate {
 				bool completed = false;

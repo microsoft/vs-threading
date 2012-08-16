@@ -214,6 +214,42 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// Wraps the invocation of an async method such that it may
+		/// execute asynchronously, but may potentially be
+		/// synchronously completed (waited on) in the future.
+		/// </summary>
+		/// <typeparam name="TaskOrTaskOfT"><see cref="Task"/> or <see cref="Task{T}"/></typeparam>
+		/// <param name="asyncMethod"></param>
+		/// <returns></returns>
+		public TaskOrTaskOfT BeginAsynchronously<TaskOrTaskOfT>(Func<TaskOrTaskOfT> asyncMethod)
+			where TaskOrTaskOfT : Task {
+			Requires.NotNull(asyncMethod, "asyncMethod");
+
+			TaskOrTaskOfT task = null;
+			this.RunSynchronously(delegate {
+				task = asyncMethod();
+			});
+
+			return task;
+		}
+
+		/// <summary>
+		/// Synchronously blocks until the specified task has completed,
+		/// which was previously obtained from <see cref="BeginAsynchronously{T}"/>.
+		/// </summary>
+		/// <param name="task">The task to wait on.</param>
+		/// <exception cref="Exception">Any exception thrown by a faulted task is rethrown by this method.</exception>
+		public void CompleteSynchronously(Task task) {
+			Requires.NotNull(task, "task");
+
+			this.RunSynchronously(async delegate {
+				using (this.Join()) {
+					await task;
+				}
+			});
+		}
+
+		/// <summary>
 		/// Gets an awaitable whose continuations execute on the synchronization context that this instance was initialized with,
 		/// in such a way as to mitigate both deadlocks and reentrancy.
 		/// </summary>
