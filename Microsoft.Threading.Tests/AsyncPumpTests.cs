@@ -503,6 +503,20 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void KickOffDeepAsyncWorkFromMainThreadThenBlockOnIt() {
+			Task task = null;
+			this.asyncPump.RunSynchronously(delegate {
+				task = this.SomeOperationThatUsesMainThreadViaItsOwnAsyncPumpAsync();
+			});
+
+			this.asyncPump.RunSynchronously(async delegate {
+				using (this.asyncPump.Join()) {
+					await task;
+				}
+			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void MainThreadTaskScheduler() {
 			this.asyncPump.RunSynchronously(async delegate {
 				bool completed = false;
@@ -724,6 +738,15 @@
 		private async Task SomeOperationThatMayBeOnMainThreadAsync() {
 			await Task.Yield();
 			await Task.Yield();
+		}
+
+		private Task SomeOperationThatUsesMainThreadViaItsOwnAsyncPumpAsync() {
+			var privateAsyncPump = new AsyncPump();
+			return Task.Run(async delegate {
+				await Task.Yield();
+				await privateAsyncPump.SwitchToMainThreadAsync();
+				await Task.Yield();
+			});
 		}
 
 		private async Task TestReentrancyOfUnrelatedDependentWork() {
