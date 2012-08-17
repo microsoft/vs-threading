@@ -219,8 +219,8 @@ namespace Microsoft.Threading {
 		/// synchronously completed (waited on) in the future.
 		/// </summary>
 		/// <typeparam name="TaskOrTaskOfT"><see cref="Task"/> or <see cref="Task{T}"/></typeparam>
-		/// <param name="asyncMethod"></param>
-		/// <returns></returns>
+		/// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
+		/// <returns>The task result of the method.</returns>
 		public TaskOrTaskOfT BeginAsynchronously<TaskOrTaskOfT>(Func<TaskOrTaskOfT> asyncMethod)
 			where TaskOrTaskOfT : Task {
 			Requires.NotNull(asyncMethod, "asyncMethod");
