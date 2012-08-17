@@ -238,13 +238,14 @@ namespace Microsoft.Threading {
 		/// which was previously obtained from <see cref="BeginAsynchronously{T}"/>.
 		/// </summary>
 		/// <param name="task">The task to wait on.</param>
+		/// <param name="cancellationToken">A cancellation token that will exit this method before the task is completed.</param>
 		/// <exception cref="Exception">Any exception thrown by a faulted task is rethrown by this method.</exception>
-		public void CompleteSynchronously(Task task) {
+		public void CompleteSynchronously(Task task, CancellationToken cancellationToken = default(CancellationToken)) {
 			Requires.NotNull(task, "task");
 
 			this.RunSynchronously(async delegate {
 				using (this.Join()) {
-					await task;
+					await task.WithCancellation(cancellationToken);
 				}
 			});
 		}

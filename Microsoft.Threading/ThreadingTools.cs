@@ -49,5 +49,56 @@ namespace Microsoft.Threading
             Thread.MemoryBarrier();
             return true;
         }
+
+        /// <summary>
+        /// Wraps a task with one that will complete as cancelled based on a cancellation token, 
+        /// allowing someone to await a task but be able to break out early by cancelling the token.
+        /// </summary>
+        /// <typeparam name="T">The type of value returned by the task.</typeparam>
+        /// <param name="task">The task to wrap.</param>
+        /// <param name="cancellationToken">The token that can be canceled to break out of the await.</param>
+        /// <returns>The wrapping task.</returns>
+        public static async Task<T> WithCancellation<T>(this Task<T> task, CancellationToken cancellationToken)
+        {
+            if (cancellationToken.CanBeCanceled)
+            {
+                var tcs = new TaskCompletionSource<bool>();
+                using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s).TrySetResult(true), tcs))
+                {
+                    if (task != await Task.WhenAny(task, tcs.Task))
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                    }
+                }
+            }
+
+            // Return result or rethrow any fault/cancellation exception.
+            return await task;
+        }
+
+        /// <summary>
+        /// Wraps a task with one that will complete as cancelled based on a cancellation token, 
+        /// allowing someone to await a task but be able to break out early by cancelling the token.
+        /// </summary>
+        /// <param name="task">The task to wrap.</param>
+        /// <param name="cancellationToken">The token that can be canceled to break out of the await.</param>
+        /// <returns>The wrapping task.</returns>
+        public static async Task WithCancellation(this Task task, CancellationToken cancellationToken)
+        {
+            if (cancellationToken.CanBeCanceled)
+            {
+                var tcs = new TaskCompletionSource<bool>();
+                using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s).TrySetResult(true), tcs))
+                {
+                    if (task != await Task.WhenAny(task, tcs.Task))
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                    }
+                }
+            }
+
+            // Rethrow any fault/cancellation exception.
+            await task;
+        }
     }
 }
