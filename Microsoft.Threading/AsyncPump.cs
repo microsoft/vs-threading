@@ -398,8 +398,6 @@ namespace Microsoft.Threading {
 		/// <param name="wrapper">The delegate wrapper that guarantees the delegate cannot be invoked more than once.</param>
 		/// <param name="caller">The AsyncPump that lies further down the stack that originated this call.</param>
 		private void Post(SingleExecuteProtector wrapper, AsyncPump caller) {
-			Assumes.NotNull(this.underlyingSynchronizationContext);
-
 			if (postedMessageVisited.Value.Add(this)) {
 				try {
 					if (this.underlyingSynchronizationContext != null) {

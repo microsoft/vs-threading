@@ -738,6 +738,15 @@
 			backgroundTask.GetAwaiter().GetResult(); // rethrow any exceptions
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void RunSynchronouslyWithoutSyncContext() {
+			SynchronizationContext.SetSynchronizationContext(null);
+			this.asyncPump = new AsyncPump();
+			this.asyncPump.RunSynchronously(async delegate {
+				await Task.Yield();
+			});
+		}
+
 		private static async void SomeFireAndForgetMethod() {
 			await Task.Yield();
 		}
