@@ -553,6 +553,7 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void SendToSyncContextCapturedFromWithinRunSynchronously() {
+			var countdownEvent = new AsyncCountdownEvent(2);
 			var state = new GenericParameterHelper(3);
 			SynchronizationContext syncContext = null;
 			Task sendFromWithinRunSync = null;
@@ -569,7 +570,16 @@
 				// This tests that Send can work even if not immediately.
 				sendFromWithinRunSync = Task.Run(delegate {
 					bool executed2 = false;
-					syncContext.Send(s => { Assert.AreSame(this.originalThread, Thread.CurrentThread); Assert.AreSame(state, s); executed2 = true; }, state);
+					syncContext.Send(s => {
+						try {
+							Assert.AreSame(this.originalThread, Thread.CurrentThread);
+							Assert.AreSame(state, s);
+							executed2 = true;
+						} finally {
+							// Allow the message pump to exit.
+							countdownEvent.Signal();
+						}
+					}, state);
 					Assert.IsTrue(executed2);
 				});
 			});
@@ -584,13 +594,20 @@
 			var task = Task.Run(delegate {
 				try {
 					bool executed4 = false;
-					syncContext.Send(s => { Assert.AreSame(this.originalThread, Thread.CurrentThread); Assert.AreSame(state, s); executed4 = true; }, state);
+					syncContext.Send(s => {
+						Assert.AreSame(this.originalThread, Thread.CurrentThread);
+						Assert.AreSame(state, s);
+						executed4 = true;
+					}, state);
 					Assert.IsTrue(executed4);
 				} finally {
 					// Allow the message pump to exit.
-					frame.Continue = false;
+					countdownEvent.Signal();
 				}
 			});
+
+			countdownEvent.WaitAsync().ContinueWith(_ => frame.Continue = false, TaskScheduler.Default);
+
 			Dispatcher.PushFrame(frame);
 
 			// throw exceptions for any failures.
