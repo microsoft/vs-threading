@@ -371,6 +371,15 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// Responds to calls to <see cref="SynchronizationContextAwaiter.OnCompleted"/>
+		/// by scheduling a continuation to execute on the Main thread.
+		/// </summary>
+		/// <param name="action">The continuation to execute.</param>
+		protected virtual void SwitchToMainThreadOnCompleted(Action action) {
+			this.Post(action);
+		}
+
+		/// <summary>
 		/// Schedules the specified delegate for execution on the Main thread.
 		/// </summary>
 		/// <param name="action">The delegate to invoke.</param>
@@ -962,7 +971,7 @@ namespace Microsoft.Threading {
 			/// </summary>
 			public void OnCompleted(Action continuation) {
 				Assumes.True(this.asyncPump != null);
-				this.asyncPump.Post(continuation);
+				this.asyncPump.SwitchToMainThreadOnCompleted(continuation);
 			}
 
 			/// <summary>
