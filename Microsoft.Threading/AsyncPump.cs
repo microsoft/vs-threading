@@ -63,9 +63,9 @@ namespace Microsoft.Threading {
 		private readonly Queue<SingleExecuteProtector> pendingActions = new Queue<SingleExecuteProtector>();
 
 		/// <summary>
-		/// The lock object used to protect field access on this instance.
+		/// The lock that protects the <see cref="extraContexts"/> field access.
 		/// </summary>
-		private readonly object syncObject = new object();
+		private readonly ReaderWriterLockSlim extraContextsLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
 		/// <summary>
 		/// A map of SynchronizationContexts that we're authorized to pend work to
@@ -320,12 +320,17 @@ namespace Microsoft.Threading {
 		public JoinRelease Join() {
 			var mainThreadControllingSyncContext = this.MainThreadControllingSyncContext;
 			if (mainThreadControllingSyncContext != null) {
-				lock (this.syncObject) {
+				this.extraContextsLock.EnterWriteLock();
+				try {
 					int refCount;
 					this.extraContexts.TryGetValue(mainThreadControllingSyncContext, out refCount);
 					refCount++;
 					this.extraContexts[mainThreadControllingSyncContext] = refCount;
+				} finally {
+					this.extraContextsLock.ExitWriteLock();
+				}
 
+				lock (this.pendingActions) {
 					foreach (var item in this.pendingActions) {
 						mainThreadControllingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, item, this);
 					}
@@ -417,19 +422,24 @@ namespace Microsoft.Threading {
 						// The SingleExecuteProtector class ensures that if more than one SynchronizationContext
 						// ultimately responds to the message and invokes the delegate, that it will no-op after
 						// the first invocation.
-						lock (this.syncObject) {
+						lock (this.pendingActions) {
 							if (caller != this) { // avoid modifying the queue to add a duplicate when the original caller is ourselves.
 								this.pendingActions.Enqueue(wrapper);
 							}
+						}
 
+						this.extraContextsLock.EnterReadLock();
+						try {
 							foreach (var context in this.extraContexts) {
 								context.Key.Post(SingleExecuteProtector.ExecuteOnce, wrapper, this);
 							}
+						} finally {
+							this.extraContextsLock.ExitReadLock();
+						}
 
-							var mainThreadControllingSyncContext = this.MainThreadControllingSyncContext;
-							if (mainThreadControllingSyncContext != null) {
-								mainThreadControllingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper, this);
-							}
+						var mainThreadControllingSyncContext = this.MainThreadControllingSyncContext;
+						if (mainThreadControllingSyncContext != null) {
+							mainThreadControllingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper, this);
 						}
 
 						this.underlyingSynchronizationContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
@@ -556,7 +566,7 @@ namespace Microsoft.Threading {
 			internal bool TryExecute() {
 				object invokeDelegate = Interlocked.Exchange(ref this.invokeDelegate, null);
 				if (invokeDelegate != null) {
-					lock (this.asyncPump.syncObject) {
+					lock (this.asyncPump.pendingActions) {
 						// This work item will usually be at the head of the queue, but since the
 						// caller doesn't guarantee it, be careful to allow for its appearance elsewhere.
 						this.asyncPump.pendingActions.RemoveMidQueue(this);
@@ -601,13 +611,16 @@ namespace Microsoft.Threading {
 			/// </summary>
 			public void Dispose() {
 				if (this.parent != null) {
-					lock (this.parent.syncObject) {
+					this.parent.extraContextsLock.EnterWriteLock();
+					try {
 						int refCount = this.parent.extraContexts[this.context];
 						if (--refCount == 0) {
 							this.parent.extraContexts.Remove(this.context);
 						} else {
 							this.parent.extraContexts[this.context] = refCount;
 						}
+					} finally {
+						this.parent.extraContextsLock.ExitWriteLock();
 					}
 
 					this.parent = null;

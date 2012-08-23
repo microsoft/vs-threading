@@ -764,6 +764,55 @@
 			});
 		}
 
+		/// <summary>
+		/// Rapidly posts messages to several interlinked AsyncPumps
+		/// to check for thread-safety and deadlocks.
+		/// </summary>
+		[TestMethod, Timeout(5000)]
+		public void PostStress() {
+			int outstandingMessages = 0;
+			var cts = new CancellationTokenSource(1000);
+			var pump2 = new AsyncPump();
+			Task t1 = null, t2 = null;
+			var frame = new DispatcherFrame();
+
+			pump2.RunSynchronously(delegate {
+				t1 = Task.Run(delegate {
+					using (this.asyncPump.Join()) {
+						while (!cts.IsCancellationRequested) {
+							var awaiter = pump2.SwitchToMainThreadAsync().GetAwaiter();
+							Interlocked.Increment(ref outstandingMessages);
+							awaiter.OnCompleted(delegate {
+								awaiter.GetResult();
+								if (Interlocked.Decrement(ref outstandingMessages) == 0) {
+									frame.Continue = false;
+								}
+							});
+						}
+					}
+				});
+			});
+
+			this.asyncPump.RunSynchronously(delegate {
+				t2 = Task.Run(delegate {
+					using (pump2.Join()) {
+						while (!cts.IsCancellationRequested) {
+							var awaiter = this.asyncPump.SwitchToMainThreadAsync().GetAwaiter();
+							Interlocked.Increment(ref outstandingMessages);
+							awaiter.OnCompleted(delegate {
+								awaiter.GetResult();
+								if (Interlocked.Decrement(ref outstandingMessages) == 0) {
+									frame.Continue = false;
+								}
+							});
+						}
+					}
+				});
+			});
+
+			Dispatcher.PushFrame(frame);
+		}
+
 		private static async void SomeFireAndForgetMethod() {
 			await Task.Yield();
 		}
