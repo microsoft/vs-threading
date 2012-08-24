@@ -48,7 +48,14 @@ namespace Microsoft.Threading {
 			if (this.value == null) {
 				lock (this.syncObject) {
 					if (this.value == null) {
-						this.value = this.valueFactory();
+						try {
+							this.value = this.valueFactory();
+						} catch (Exception ex) {
+							var tcs = new TaskCompletionSource<T>();
+							tcs.SetException(ex);
+							this.value = tcs.Task;
+						}
+
 						this.valueFactory = null;
 					}
 				}

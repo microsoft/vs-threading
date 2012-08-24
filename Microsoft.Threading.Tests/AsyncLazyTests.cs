@@ -99,5 +99,21 @@ namespace Microsoft.Threading.Tests {
 			GC.Collect();
 			Assert.IsFalse(collectible.IsAlive);
 		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void ValueFactoryThrowsSynchronously() {
+			bool executed = false;
+			var lazy = new AsyncLazy<object>(new Func<Task<object>>(delegate {
+				Assert.IsFalse(executed);
+				executed = true;
+				throw new ApplicationException();
+			}));
+
+			var task1 = lazy.GetValueAsync();
+			var task2 = lazy.GetValueAsync();
+			Assert.AreSame(task1, task2);
+			Assert.IsTrue(task1.IsFaulted);
+			Assert.IsInstanceOfType(task1.Exception.InnerException, typeof(ApplicationException));
+		}
 	}
 }
