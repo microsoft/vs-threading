@@ -36,6 +36,7 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="valueFactory">The async function that produces the value.  To be invoked at most once.</param>
 		public AsyncLazy(Func<Task<T>> valueFactory) {
+			Requires.NotNull(valueFactory, "valueFactory");
 			this.valueFactory = valueFactory;
 		}
 

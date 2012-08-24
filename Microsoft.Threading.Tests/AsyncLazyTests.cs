@@ -27,6 +27,11 @@ namespace Microsoft.Threading.Tests {
 			Assert.AreSame(expected, actual);
 		}
 
+		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(ArgumentNullException))]
+		public void CtorNullArgs() {
+			new AsyncLazy<object>(null);
+		}
+
 		/// <summary>
 		/// Verifies that multiple sequential calls to <see cref="AsyncLazy{T}.GetValueAsync"/>
 		/// do not result in multiple invocations of the value factory.
