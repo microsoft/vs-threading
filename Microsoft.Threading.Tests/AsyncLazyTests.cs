@@ -288,5 +288,43 @@ namespace Microsoft.Threading.Tests {
 			// task should have no problem completing.
 			Assert.IsTrue(resultTask.Wait(AsyncDelay));
 		}
+
+		[TestMethod, Timeout(TestTimeout), Ignore]
+		public async Task ValueFactoryRequiresReadLockHeldByOther() {
+			var lck = new AsyncReaderWriterLock();
+			var readLockAcquiredByOther = new AsyncManualResetEvent();
+			var writeLockWaitingByOther = new AsyncManualResetEvent();
+
+			var lazy = new AsyncLazy<object>(
+				async delegate {
+					await writeLockWaitingByOther;
+					using (await lck.ReadLockAsync()) {
+						return new object();
+					}
+				});
+
+			var writeLockTask = Task.Run(async delegate {
+				await readLockAcquiredByOther;
+				var writeAwaiter = lck.WriteLockAsync().GetAwaiter();
+				writeAwaiter.OnCompleted(delegate {
+					using (writeAwaiter.GetResult()) {
+					}
+				});
+				writeLockWaitingByOther.Set();
+			});
+
+			// Kick off the value factory without any lock context.
+			var resultTask = lazy.GetValueAsync();
+
+			using (await lck.ReadLockAsync()) {
+				readLockAcquiredByOther.Set();
+
+				// Now request the lazy task again.
+				// This would traditionally deadlock because the value factory won't
+				// be able to get its read lock while a write lock is waiting (for us to release ours).
+				// This unit test verifies that the AsyncLazy<T> class can avoid deadlocks in this case.
+				await lazy.GetValueAsync();
+			}
+		}
 	}
 }
