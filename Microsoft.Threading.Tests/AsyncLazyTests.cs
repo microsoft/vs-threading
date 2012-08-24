@@ -1,0 +1,79 @@
+﻿//-----------------------------------------------------------------------
+// <copyright file="AsyncLazyTests.cs" company="Microsoft">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
+
+namespace Microsoft.Threading.Tests {
+	using Microsoft.VisualStudio.TestTools.UnitTesting;
+	using System;
+	using System.Collections.Generic;
+	using System.Linq;
+	using System.Text;
+	using System.Threading;
+	using System.Threading.Tasks;
+
+	[TestClass]
+	public class AsyncLazyTests : TestBase {
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task Basic() {
+			var expected = new GenericParameterHelper(5);
+			var lazy = new AsyncLazy<GenericParameterHelper>(async delegate {
+				await Task.Yield();
+				return expected;
+			});
+
+			var actual = await lazy.GetValueAsync();
+			Assert.AreSame(expected, actual);
+		}
+
+		/// <summary>
+		/// Verifies that multiple sequential calls to <see cref="AsyncLazy{T}.GetValueAsync"/>
+		/// do not result in multiple invocations of the value factory.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ValueFactoryExecutedOnlyOnceSequential() {
+			bool valueFactoryExecuted = false;
+			var lazy = new AsyncLazy<GenericParameterHelper>(async delegate {
+				Assert.IsFalse(valueFactoryExecuted);
+				valueFactoryExecuted = true;
+				await Task.Yield();
+				return new GenericParameterHelper(5);
+			});
+
+			var task1 = lazy.GetValueAsync();
+			var task2 = lazy.GetValueAsync();
+			var actual1 = await task1;
+			var actual2 = await task2;
+			Assert.AreSame(actual1, actual2);
+			Assert.AreEqual(5, actual1.Data);
+		}
+
+		/// <summary>
+		/// Verifies that multiple concurrent calls to <see cref="AsyncLazy{T}.GetValueAsync"/>
+		/// do not result in multiple invocations of the value factory.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public void ValueFactoryExecutedOnlyOnceConcurrent() {
+			var cts = new CancellationTokenSource(AsyncDelay);
+			while (!cts.Token.IsCancellationRequested) {
+				bool valueFactoryExecuted = false;
+				var lazy = new AsyncLazy<GenericParameterHelper>(async delegate {
+					Assert.IsFalse(valueFactoryExecuted);
+					valueFactoryExecuted = true;
+					await Task.Yield();
+					return new GenericParameterHelper(5);
+				});
+
+				var results = TestUtilities.ConcurrencyTest(delegate {
+					return lazy.GetValueAsync().Result;
+				});
+
+				Assert.AreEqual(5, results[0].Data);
+				for (int i = 1; i < results.Length; i++) {
+					Assert.AreSame(results[0], results[i]);
+				}
+			}
+		}
+	}
+}

@@ -38,6 +38,24 @@
 			}
 		}
 
+		internal static T[] ConcurrencyTest<T>(Func<T> action, int concurrency = 4) {
+			// We use a barrier to guarantee that all threads are fully ready to 
+			// execute the provided function at precisely the same time.
+			// The barrier will unblock all of them together.
+			using (var barrier = new Barrier(concurrency)) {
+				var tasks = new Task<T>[concurrency];
+				for (int i = 0; i < tasks.Length; i++) {
+					tasks[i] = Task.Run(delegate {
+						barrier.SignalAndWait();
+						return action();
+					});
+				}
+
+				Task.WaitAll(tasks);
+				return tasks.Select(t => t.Result).ToArray();
+			}
+		}
+
 		internal static DebugAssertionRevert DisableAssertionDialog() {
 			var listener = Debug.Listeners.OfType<DefaultTraceListener>().FirstOrDefault();
 			if (listener != null) {
