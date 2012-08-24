@@ -58,6 +58,11 @@ namespace Microsoft.Threading {
 		public Task<T> GetValueAsync() {
 			if (this.value == null) {
 				lock (this.syncObject) {
+					// Note that if multiple threads hit GetValueAsync() before
+					// the valueFactory has completed its synchronous execution,
+					// the only one thread will execute the valueFactory while the
+					// other threads synchronously block till the synchronous portion
+					// has completed.
 					if (this.value == null) {
 						try {
 							var valueFactory = this.valueFactory;
