@@ -27,6 +27,24 @@ namespace Microsoft.Threading.Tests {
 			Assert.AreSame(expected, actual);
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task IsValueCreated() {
+			var evt = new AsyncManualResetEvent();
+			var lazy = new AsyncLazy<GenericParameterHelper>(async delegate {
+				// Wait here, so we can verify that IsValueCreated is true
+				// before the value factory has completed execution.
+				await evt;
+				return new GenericParameterHelper(5);
+			});
+
+			Assert.IsFalse(lazy.IsValueCreated);
+			var resultTask = lazy.GetValueAsync();
+			Assert.IsTrue(lazy.IsValueCreated);
+			evt.Set();
+			Assert.AreEqual(5, (await resultTask).Data);
+			Assert.IsTrue(lazy.IsValueCreated);
+		}
+
 		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(ArgumentNullException))]
 		public void CtorNullArgs() {
 			new AsyncLazy<object>(null);

@@ -9,6 +9,7 @@ namespace Microsoft.Threading {
 	using System.Collections.Generic;
 	using System.Linq;
 	using System.Text;
+	using System.Threading;
 	using System.Threading.Tasks;
 
 	/// <summary>
@@ -41,6 +42,16 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// Gets a value indicating whether the value factory has been invoked.
+		/// </summary>
+		public bool IsValueCreated {
+			get {
+				Thread.MemoryBarrier();
+				return this.valueFactory == null;
+			}
+		}
+
+		/// <summary>
 		/// Gets the task that produces or has produced the value.
 		/// </summary>
 		/// <returns>A task whose result is the lazily constructed value.</returns>
@@ -49,14 +60,14 @@ namespace Microsoft.Threading {
 				lock (this.syncObject) {
 					if (this.value == null) {
 						try {
-							this.value = this.valueFactory();
+							var valueFactory = this.valueFactory;
+							this.valueFactory = null;
+							this.value = valueFactory();
 						} catch (Exception ex) {
 							var tcs = new TaskCompletionSource<T>();
 							tcs.SetException(ex);
 							this.value = tcs.Task;
 						}
-
-						this.valueFactory = null;
 					}
 				}
 			}
