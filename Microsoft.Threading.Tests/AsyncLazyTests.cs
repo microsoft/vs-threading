@@ -137,11 +137,22 @@ namespace Microsoft.Threading.Tests {
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task ValueFactoryReentersValueFactorySynchronously() {
 			AsyncLazy<object> lazy = null;
+			bool executed = false;
 			lazy = new AsyncLazy<object>(delegate {
+				Assert.IsFalse(executed);
+				executed = true;
 				lazy.GetValueAsync();
 				return Task.FromResult<object>(new object());
 			});
 
+			try {
+				await lazy.GetValueAsync();
+				Assert.Fail("Expected exception not thrown.");
+			} catch (InvalidOperationException) {
+				// this is the expected exception.
+			}
+
+			// Do it again, to verify that AsyncLazy recorded the failure and will replay it.
 			try {
 				await lazy.GetValueAsync();
 				Assert.Fail("Expected exception not thrown.");
@@ -153,12 +164,23 @@ namespace Microsoft.Threading.Tests {
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task ValueFactoryReentersValueFactoryAsynchronously() {
 			AsyncLazy<object> lazy = null;
+			bool executed = false;
 			lazy = new AsyncLazy<object>(async delegate {
+				Assert.IsFalse(executed);
+				executed = true;
 				await Task.Yield();
 				await lazy.GetValueAsync();
 				return new object();
 			});
 
+			try {
+				await lazy.GetValueAsync();
+				Assert.Fail("Expected exception not thrown.");
+			} catch (InvalidOperationException) {
+				// this is the expected exception.
+			}
+
+			// Do it again, to verify that AsyncLazy recorded the failure and will replay it.
 			try {
 				await lazy.GetValueAsync();
 				Assert.Fail("Expected exception not thrown.");

@@ -67,6 +67,7 @@ namespace Microsoft.Threading {
 		/// </exception>
 		public Task<T> GetValueAsync() {
 			if (this.value == null) {
+				Verify.Operation(!Monitor.IsEntered(this.syncObject), Strings.ValueFactoryReentrancy);
 				lock (this.syncObject) {
 					// Note that if multiple threads hit GetValueAsync() before
 					// the valueFactory has completed its synchronous execution,

@@ -123,4 +123,7 @@
   <data name="LockCompletionAlreadyRequested" xml:space="preserve">
     <value>This lock has already been marked for completion.  No new top-level locks can be serviced.</value>
   </data>
+  <data name="ValueFactoryReentrancy" xml:space="preserve">
+    <value>The value factory has called for the value on the same instance.</value>
+  </data>
 </root>
