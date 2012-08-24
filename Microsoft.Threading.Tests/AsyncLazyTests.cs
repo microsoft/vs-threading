@@ -217,5 +217,48 @@ namespace Microsoft.Threading.Tests {
 			Assert.IsNotNull(result);
 			Assert.AreNotEqual(string.Empty, result);
 		}
+
+		/// <summary>
+		/// Verifies that even after the value factory has been invoked
+		/// its dependency on the Main thread can be satisfied by
+		/// someone synchronously blocking on the Main thread that is
+		/// also interested in its value.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public void ValueFactoryRequiresMainThreadHeldByOther() {
+			var ctxt = new DispatcherSynchronizationContext();
+			SynchronizationContext.SetSynchronizationContext(ctxt);
+			var asyncPump = new AsyncPump();
+			var originalThread = Thread.CurrentThread;
+
+			var evt = new AsyncManualResetEvent();
+			var lazy = new AsyncLazy<object>(
+				async delegate {
+					await evt; // use an event here to ensure it won't resume till the Main thread is blocked.
+					return new object();
+				},
+				asyncPump);
+
+			var resultTask = lazy.GetValueAsync();
+			Assert.IsFalse(resultTask.IsCompleted);
+
+			var someRandomPump = new AsyncPump();
+			someRandomPump.RunSynchronously(async delegate {
+				evt.Set(); // setting this event allows the value factory to resume, once it can get the Main thread.
+
+				// The interesting bit we're testing here is that
+				// the value factory has already been invoked.  It cannot
+				// complete until the Main thread is available and we're blocking
+				// the Main thread waiting for it to complete.
+				// This will deadlock unless the AsyncLazy joins
+				// the value factory's async pump with the currently blocking one.
+				var value = await lazy.GetValueAsync();
+				Assert.IsNotNull(value);
+			});
+
+			// Now that the value factory has completed, the earlier acquired
+			// task should have no problem completing.
+			Assert.IsTrue(resultTask.Wait(AsyncDelay));
+		}
 	}
 }
