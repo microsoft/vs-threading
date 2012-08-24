@@ -34,16 +34,21 @@ namespace Microsoft.Threading.Tests {
 		/// also interested in its value.
 		/// </summary>
 		[TestMethod, Timeout(TestTimeout)]
-		public void AsyncPumpAsyncLazy() {
-			var lazy = new AsyncLazy<object>(async delegate {
-				await Task.Yield();
-				return new object();
-			});
+		public void ValueFactoryRequiresMainThreadHeldByOther() {
+			var evt = new AsyncManualResetEvent();
+			var lazy = new AsyncLazy<object>(
+				async delegate {
+					await evt; // use an event here to ensure it won't resume till the Main thread is blocked.
+					return new object();
+				},
+				this.asyncPump);
 
 			var resultTask = lazy.GetValueAsync();
-			Assert.IsFalse(resultTask.IsCompleted); // valueFactory needs this thread to complete.
+			Assert.IsFalse(resultTask.IsCompleted);
 
 			this.asyncPump.RunSynchronously(async delegate {
+				evt.Set(); // setting this event allows the value factory to resume, once it can get the Main thread.
+
 				// The interesting bit we're testing here is that
 				// the value factory has already been invoked.  It cannot
 				// complete until the Main thread is available and we're blocking

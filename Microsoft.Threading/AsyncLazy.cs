@@ -28,6 +28,11 @@ namespace Microsoft.Threading {
 		private Func<Task<T>> valueFactory;
 
 		/// <summary>
+		/// The async pump to Join on calls to <see cref="GetValueAsync"/>.
+		/// </summary>
+		private AsyncPump asyncPump;
+
+		/// <summary>
 		/// The result of the value factory.
 		/// </summary>
 		private Task<T> value;
@@ -36,9 +41,11 @@ namespace Microsoft.Threading {
 		/// Initializes a new instance of the <see cref="AsyncLazy{T}"/> class.
 		/// </summary>
 		/// <param name="valueFactory">The async function that produces the value.  To be invoked at most once.</param>
-		public AsyncLazy(Func<Task<T>> valueFactory) {
+		/// <param name="asyncPump">The async pump to <see cref="AsyncPump.Join"/> for calls to <see cref="GetValueAsync"/>.</param>
+		public AsyncLazy(Func<Task<T>> valueFactory, AsyncPump asyncPump = null) {
 			Requires.NotNull(valueFactory, "valueFactory");
 			this.valueFactory = valueFactory;
+			this.asyncPump = asyncPump;
 		}
 
 		/// <summary>
@@ -70,7 +77,15 @@ namespace Microsoft.Threading {
 						try {
 							var valueFactory = this.valueFactory;
 							this.valueFactory = null;
-							this.value = valueFactory();
+
+							if (this.asyncPump != null) {
+								// Wrapping with BeginAsynchronously allows a future caller
+								// to synchronously block the Main thread waiting for the result
+								// without leading to deadlocks.
+								this.value = this.asyncPump.BeginAsynchronously(valueFactory);
+							} else {
+								this.value = valueFactory();
+							}
 						} catch (Exception ex) {
 							var tcs = new TaskCompletionSource<T>();
 							tcs.SetException(ex);
@@ -78,6 +93,11 @@ namespace Microsoft.Threading {
 						}
 					}
 				}
+			}
+
+			if (!this.value.IsCompleted && this.asyncPump != null) {
+				var joinReleaser = this.asyncPump.Join();
+				this.value.ContinueWith((_, state) => ((AsyncPump.JoinRelease)state).Dispose(), joinReleaser, TaskScheduler.Default);
 			}
 
 			return this.value;
