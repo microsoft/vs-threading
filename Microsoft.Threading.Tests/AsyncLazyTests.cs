@@ -12,6 +12,7 @@ namespace Microsoft.Threading.Tests {
 	using System.Text;
 	using System.Threading;
 	using System.Threading.Tasks;
+	using System.Windows.Threading;
 
 	[TestClass]
 	public class AsyncLazyTests : TestBase {
@@ -115,6 +116,33 @@ namespace Microsoft.Threading.Tests {
 			Assert.IsTrue(collectible.IsAlive);
 			var result = await lazy.GetValueAsync();
 			GC.Collect();
+			Assert.IsFalse(collectible.IsAlive);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task AsyncPumpReleasedAfterExecution() {
+			WeakReference collectible = null;
+			AsyncLazy<object> lazy = null;
+			((Action)(() => {
+				var asyncPump = new AsyncPump();
+				collectible = new WeakReference(asyncPump);
+				lazy = new AsyncLazy<object>(
+					async delegate {
+						await Task.Yield();
+						return new object();
+					},
+					asyncPump);
+			}))();
+
+			Assert.IsTrue(collectible.IsAlive);
+			var result = await lazy.GetValueAsync();
+
+			var cts = new CancellationTokenSource(AsyncDelay);
+			while (!cts.IsCancellationRequested && collectible.IsAlive) {
+				await Task.Yield();
+				GC.Collect();
+			}
+
 			Assert.IsFalse(collectible.IsAlive);
 		}
 

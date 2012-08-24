@@ -92,6 +92,7 @@ namespace Microsoft.Threading {
 								// to synchronously block the Main thread waiting for the result
 								// without leading to deadlocks.
 								this.value = this.asyncPump.BeginAsynchronously(valueFactory);
+								this.value.ContinueWith((_, state) => ((AsyncLazy<T>)state).asyncPump = null, this, TaskScheduler.Default);
 							} else {
 								this.value = valueFactory();
 							}
@@ -106,8 +107,9 @@ namespace Microsoft.Threading {
 				}
 			}
 
-			if (!this.value.IsCompleted && this.asyncPump != null) {
-				var joinReleaser = this.asyncPump.Join();
+			var asyncPump = this.asyncPump;
+			if (!this.value.IsCompleted && asyncPump != null) {
+				var joinReleaser = asyncPump.Join();
 				this.value.ContinueWith((_, state) => ((AsyncPump.JoinRelease)state).Dispose(), joinReleaser, TaskScheduler.Default);
 			}
 
