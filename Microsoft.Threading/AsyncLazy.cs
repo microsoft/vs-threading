@@ -55,6 +55,9 @@ namespace Microsoft.Threading {
 		/// Gets the task that produces or has produced the value.
 		/// </summary>
 		/// <returns>A task whose result is the lazily constructed value.</returns>
+		/// <exception cref="InvalidOperationException">
+		/// Thrown when the value factory calls <see cref="GetValueAsync"/> on this instance.
+		/// </exception>
 		public Task<T> GetValueAsync() {
 			if (this.value == null) {
 				lock (this.syncObject) {

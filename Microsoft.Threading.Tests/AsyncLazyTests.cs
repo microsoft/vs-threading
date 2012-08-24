@@ -133,5 +133,38 @@ namespace Microsoft.Threading.Tests {
 			Assert.IsTrue(task1.IsFaulted);
 			Assert.IsInstanceOfType(task1.Exception.InnerException, typeof(ApplicationException));
 		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ValueFactoryReentersValueFactorySynchronously() {
+			AsyncLazy<object> lazy = null;
+			lazy = new AsyncLazy<object>(delegate {
+				lazy.GetValueAsync();
+				return Task.FromResult<object>(new object());
+			});
+
+			try {
+				await lazy.GetValueAsync();
+				Assert.Fail("Expected exception not thrown.");
+			} catch (InvalidOperationException) {
+				// this is the expected exception.
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ValueFactoryReentersValueFactoryAsynchronously() {
+			AsyncLazy<object> lazy = null;
+			lazy = new AsyncLazy<object>(async delegate {
+				await Task.Yield();
+				await lazy.GetValueAsync();
+				return new object();
+			});
+
+			try {
+				await lazy.GetValueAsync();
+				Assert.Fail("Expected exception not thrown.");
+			} catch (InvalidOperationException) {
+				// this is the expected exception.
+			}
+		}
 	}
 }
