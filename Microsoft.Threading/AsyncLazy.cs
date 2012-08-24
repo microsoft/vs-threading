@@ -103,5 +103,14 @@ namespace Microsoft.Threading {
 
 			return this.value;
 		}
+
+		/// <summary>
+		/// Renders a string describing an uncreated value, or the string representation of the created value.
+		/// </summary>
+		public override string ToString() {
+			return (this.value != null && this.value.IsCompleted)
+				? (this.value.Status == TaskStatus.RanToCompletion ? this.value.Result.ToString() : Strings.LazyValueFaulted)
+				: Strings.LazyValueNotCreated;
+		}
 	}
 }

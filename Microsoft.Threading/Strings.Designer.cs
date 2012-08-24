@@ -70,6 +70,24 @@ namespace Microsoft.Threading {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Lazily created value faulted during construction..
+        /// </summary>
+        internal static string LazyValueFaulted {
+            get {
+                return ResourceManager.GetString("LazyValueFaulted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Lazily created value not yet constructed..
+        /// </summary>
+        internal static string LazyValueNotCreated {
+            get {
+                return ResourceManager.GetString("LazyValueNotCreated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to This lock has already been marked for completion.  No new top-level locks can be serviced..
         /// </summary>
         internal static string LockCompletionAlreadyRequested {

@@ -188,5 +188,34 @@ namespace Microsoft.Threading.Tests {
 				// this is the expected exception.
 			}
 		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void ToStringForUncreatedValue() {
+			var lazy = new AsyncLazy<object>(() => Task.FromResult<object>(null));
+			string result = lazy.ToString();
+			Assert.IsNotNull(result);
+			Assert.AreNotEqual(string.Empty, result);
+			Assert.IsFalse(lazy.IsValueCreated);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ToStringForCreatedValue() {
+			var lazy = new AsyncLazy<int>(() => Task.FromResult<int>(3));
+			var value = await lazy.GetValueAsync();
+			string result = lazy.ToString();
+			Assert.AreEqual(value.ToString(), result);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void ToStringForFaultedValue() {
+			var lazy = new AsyncLazy<int>(delegate {
+				throw new ApplicationException();
+			});
+			lazy.GetValueAsync().Forget();
+			Assert.IsTrue(lazy.IsValueCreated);
+			string result = lazy.ToString();
+			Assert.IsNotNull(result);
+			Assert.AreNotEqual(string.Empty, result);
+		}
 	}
 }
