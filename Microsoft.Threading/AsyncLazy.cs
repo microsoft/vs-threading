@@ -48,6 +48,7 @@ namespace Microsoft.Threading {
 				lock (this.syncObject) {
 					if (this.value == null) {
 						this.value = this.valueFactory();
+						this.valueFactory = null;
 					}
 				}
 			}

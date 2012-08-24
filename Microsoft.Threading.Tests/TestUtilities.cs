@@ -1,4 +1,5 @@
 ﻿namespace Microsoft.Threading.Tests {
+	using Microsoft.VisualStudio.TestTools.UnitTesting;
 	using System;
 	using System.Collections.Generic;
 	using System.Diagnostics;
@@ -38,7 +39,23 @@
 			}
 		}
 
-		internal static T[] ConcurrencyTest<T>(Func<T> action, int concurrency = 4) {
+		/// <summary>
+		/// Executes the specified function on multiple threads simultaneously.
+		/// </summary>
+		/// <typeparam name="T">The type of the value returned by the specified function.</typeparam>
+		/// <param name="action">The function to invoke concurrently.</param>
+		/// <param name="concurrency">The level of concurrency.</param>
+		/// <returns></returns>
+		internal static T[] ConcurrencyTest<T>(Func<T> action, int concurrency = -1) {
+			Requires.NotNull(action, "action");
+			if (concurrency == -1) {
+				concurrency = Environment.ProcessorCount;
+			}
+
+			if (Environment.ProcessorCount < concurrency) {
+				Assert.Inconclusive("The test machine does not have enough CPU cores to exercise a concurrency level of {0}", concurrency);
+			}
+
 			// We use a barrier to guarantee that all threads are fully ready to 
 			// execute the provided function at precisely the same time.
 			// The barrier will unblock all of them together.

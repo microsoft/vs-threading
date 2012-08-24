@@ -53,7 +53,7 @@ namespace Microsoft.Threading.Tests {
 		/// Verifies that multiple concurrent calls to <see cref="AsyncLazy{T}.GetValueAsync"/>
 		/// do not result in multiple invocations of the value factory.
 		/// </summary>
-		[TestMethod, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout * 2)]
 		public void ValueFactoryExecutedOnlyOnceConcurrent() {
 			var cts = new CancellationTokenSource(AsyncDelay);
 			while (!cts.Token.IsCancellationRequested) {
@@ -74,6 +74,25 @@ namespace Microsoft.Threading.Tests {
 					Assert.AreSame(results[0], results[i]);
 				}
 			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ValueFactoryReleasedAfterExecution() {
+			WeakReference collectible = null;
+			AsyncLazy<object> lazy = null;
+			((Action)(() => {
+				var closure = new { value = new object() };
+				collectible = new WeakReference(closure);
+				lazy = new AsyncLazy<object>(async delegate {
+					await Task.Yield();
+					return closure.value;
+				});
+			}))();
+
+			Assert.IsTrue(collectible.IsAlive);
+			var result = await lazy.GetValueAsync();
+			GC.Collect();
+			Assert.IsFalse(collectible.IsAlive);
 		}
 	}
 }
