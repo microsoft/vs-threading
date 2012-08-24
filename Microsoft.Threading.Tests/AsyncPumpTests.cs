@@ -21,10 +21,6 @@
 			this.originalThread = Thread.CurrentThread;
 		}
 
-		[TestCleanup]
-		public void Cleanup() {
-		}
-
 		[TestMethod]
 		public void RunActionSTA() {
 			this.RunActionHelper();

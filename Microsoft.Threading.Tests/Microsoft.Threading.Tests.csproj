@@ -58,6 +58,7 @@
     <Compile Include="AsyncAutoResetEventTests.cs" />
     <Compile Include="AsyncBarrierTests.cs" />
     <Compile Include="AsyncCountdownEventTests.cs" />
+    <Compile Include="AsyncLazyTests.cs" />
     <Compile Include="AsyncLocalTests.cs" />
     <Compile Include="AsyncPumpTests.cs" />
     <Compile Include="AsyncSemaphoreTests.cs" />
