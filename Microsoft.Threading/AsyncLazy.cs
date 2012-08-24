@@ -8,6 +8,7 @@ namespace Microsoft.Threading {
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
+	using System.Runtime.Remoting.Messaging;
 	using System.Text;
 	using System.Threading;
 	using System.Threading.Tasks;
@@ -21,6 +22,11 @@ namespace Microsoft.Threading {
 		/// The object to lock to provide thread-safety.
 		/// </summary>
 		private readonly object syncObject = new object();
+
+		/// <summary>
+		/// The unique instance identifier.
+		/// </summary>
+		private readonly string identity = Guid.NewGuid().ToString();
 
 		/// <summary>
 		/// The function to invoke to produce the task.
@@ -66,6 +72,7 @@ namespace Microsoft.Threading {
 		/// Thrown when the value factory calls <see cref="GetValueAsync"/> on this instance.
 		/// </exception>
 		public Task<T> GetValueAsync() {
+			Verify.Operation((this.value != null && this.value.IsCompleted) || CallContext.LogicalGetData(identity) == null, Strings.ValueFactoryReentrancy);
 			if (this.value == null) {
 				Verify.Operation(!Monitor.IsEntered(this.syncObject), Strings.ValueFactoryReentrancy);
 				lock (this.syncObject) {
@@ -75,6 +82,7 @@ namespace Microsoft.Threading {
 					// other threads synchronously block till the synchronous portion
 					// has completed.
 					if (this.value == null) {
+						CallContext.LogicalSetData(identity, new object());
 						try {
 							var valueFactory = this.valueFactory;
 							this.valueFactory = null;
@@ -91,6 +99,8 @@ namespace Microsoft.Threading {
 							var tcs = new TaskCompletionSource<T>();
 							tcs.SetException(ex);
 							this.value = tcs.Task;
+						} finally {
+							CallContext.FreeNamedDataSlot(identity);
 						}
 					}
 				}
