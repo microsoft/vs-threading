@@ -40,7 +40,7 @@ namespace Microsoft.Threading {
 			/// Initializes a new instance of the <see cref="TaskSchedulerAwaiter"/> class.
 			/// </summary>
 			/// <param name="scheduler">The scheduler for continuations.</param>
-			internal TaskSchedulerAwaiter(TaskScheduler scheduler) {
+			public TaskSchedulerAwaiter(TaskScheduler scheduler) {
 				this.scheduler = scheduler;
 			}
 
