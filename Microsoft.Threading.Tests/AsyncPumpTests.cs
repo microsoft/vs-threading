@@ -760,6 +760,32 @@
 			});
 		}
 
+		/// <summary>
+		/// Verifies the fix for a bug found in actual Visual Studio use of the AsyncPump.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public void AsyncPumpEnumeratingModifiedCollection() {
+			// Arrange for a pending action on this.asyncPump.
+			var messagePosted = new AsyncManualResetEvent();
+			Task.Run(async delegate {
+				await this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().YieldAndNotify(messagePosted);
+			});
+
+			// The repro in VS wasn't as concise (or possibly as contrived looking) as this.
+			// This code sets up the minimal scenario for reproducing the bug that came about
+			// through interactions of various CPS/VC components.
+			var otherPump = new AsyncPump();
+			otherPump.RunSynchronously(async delegate {
+				await this.asyncPump.BeginAsynchronously(async delegate {
+					await Task.Run(async delegate {
+						await messagePosted; // wait for this.asyncPump.pendingActions to be non empty
+						using (var j = this.asyncPump.Join()) {
+						}
+					});
+				});
+			});
+		}
+
 		// This is a known issue and we haven't a fix yet
 		[TestMethod, Timeout(TestTimeout), Ignore]
 		public void CallContextWasOverwrittenByReentrance() {
