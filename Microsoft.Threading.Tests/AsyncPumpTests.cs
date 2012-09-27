@@ -762,15 +762,13 @@
 
 		// This is a known issue and we haven't a fix yet
 		[TestMethod, Timeout(TestTimeout), Ignore]
-		public void CallContextWasOverwrittenByReentrance()
-		{
+		public void CallContextWasOverwrittenByReentrance() {
 			var asyncLock = new AsyncReaderWriterLock();
 
 			// 4. This is the task which the UI thread is waiting for,
 			//    and it's scheduled on UI thread.
 			//    As UI thread did "Join" before "await", so this task can reenter UI thread.
-			var task = Task.Factory.StartNew(async delegate
-			{
+			var task = Task.Factory.StartNew(async delegate {
 				// 4.1 Now this anonymous method is on UI thread,
 				//     and it needs to acquire a read lock.
 				//
@@ -782,8 +780,7 @@
 				//     the write lock holder is also waiting for this method to complete.
 				//
 				//     This test would be timeout here.
-				using (await asyncLock.ReadLockAsync())
-				{
+				using (await asyncLock.ReadLockAsync()) {
 				}
 			},
 			CancellationToken.None,
@@ -791,11 +788,9 @@
 			this.asyncPump.MainThreadTaskScheduler
 			).Unwrap();
 
-			this.asyncPump.RunSynchronously(async delegate
-			{
+			this.asyncPump.RunSynchronously(async delegate {
 				// 1. Acquire write lock on worker thread
-				using (await asyncLock.WriteLockAsync())
-				{
+				using (await asyncLock.WriteLockAsync()) {
 					// 2. Hold the write lock but switch to UI thread.
 					//    That's to simulate the scenario to call into IVs services
 					await this.asyncPump.SwitchToMainThreadAsync();
@@ -803,8 +798,7 @@
 					// 3. Join and wait for another BG task.
 					//    That's to simulate the scenario when the IVs service also calls into CPS,
 					//    and CPS join and wait for another task.
-					using (this.asyncPump.Join())
-					{
+					using (this.asyncPump.Join()) {
 						await task;
 					}
 				}
