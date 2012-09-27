@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.Threading {
 	using System;
 	using System.Collections.Generic;
+	using System.Diagnostics;
 	using System.Linq;
 	using System.Runtime.CompilerServices;
 	using System.Text;
@@ -10,6 +11,7 @@
 	/// <summary>
 	/// A flavor of <see cref="ManualResetEvent"/> that can be asynchronously awaited on.
 	/// </summary>
+	[DebuggerDisplay("Signaled: {IsSet}")]
 	public class AsyncManualResetEvent {
 		/// <summary>
 		/// The task to return from <see cref="WaitAsync"/>
