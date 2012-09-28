@@ -47,11 +47,13 @@
     <Compile Include="AsyncLazy.cs" />
     <Compile Include="AsyncLocal.cs" />
     <Compile Include="AsyncPump.cs" />
+    <Compile Include="AsyncQueue.cs" />
     <Compile Include="AsyncSemaphore.cs" />
     <Compile Include="AsyncManualResetEvent.cs" />
     <Compile Include="AsyncReaderWriterLock.cs" />
     <Compile Include="AsyncReaderWriterResourceLock.cs" />
     <Compile Include="AwaitExtensions.cs" />
+    <Compile Include="EnumerateOneOrMany.cs" />
     <Compile Include="InternalUtilities.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Strings.Designer.cs">
