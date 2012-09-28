@@ -14,15 +14,17 @@
 		[TestInitialize]
 		public void Initialize() {
 			this.queue = new AsyncQueue<GenericParameterHelper>();
+			System.Diagnostics.Trace.Listeners.Clear();
 		}
 
 		[TestMethod]
 		public void JustInitialized() {
 			Assert.AreEqual(0, this.queue.Count);
 			Assert.IsTrue(this.queue.IsEmpty);
+			Assert.IsFalse(this.queue.Completion.IsCompleted);
 		}
 
-		[TestMethod]
+		[TestMethod, Timeout(TestTimeout)]
 		public void Enqueue() {
 			var value = new GenericParameterHelper(1);
 			this.queue.Enqueue(value);
@@ -154,7 +156,7 @@
 			Assert.IsTrue(dequeuers.All(d => d.IsCompleted));
 		}
 
-		[TestMethod]
+		[TestMethod, Timeout(TestTimeout)]
 		public void TryDequeue() {
 			var enqueuedValue = new GenericParameterHelper(1);
 			this.queue.Enqueue(enqueuedValue);
@@ -169,6 +171,51 @@
 			Assert.IsNull(dequeuedValue);
 			Assert.AreEqual(0, this.queue.Count);
 			Assert.IsTrue(this.queue.IsEmpty);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void Complete() {
+			this.queue.Complete();
+			Assert.IsTrue(this.queue.Completion.IsCompleted);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task CompleteThenDequeueAsync() {
+			var enqueuedValue = new GenericParameterHelper(1);
+			this.queue.Enqueue(enqueuedValue);
+			this.queue.Complete();
+			Assert.IsFalse(this.queue.Completion.IsCompleted);
+
+			var dequeuedValue = await this.queue.DequeueAsync();
+			Assert.AreSame(enqueuedValue, dequeuedValue);
+			Assert.IsTrue(this.queue.Completion.IsCompleted);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void CompleteThenTryDequeue() {
+			var enqueuedValue = new GenericParameterHelper(1);
+			this.queue.Enqueue(enqueuedValue);
+			this.queue.Complete();
+			Assert.IsFalse(this.queue.Completion.IsCompleted);
+
+			GenericParameterHelper dequeuedValue;
+			Assert.IsTrue(this.queue.TryDequeue(out dequeuedValue));
+			Assert.AreSame(enqueuedValue, dequeuedValue);
+			Assert.IsTrue(this.queue.Completion.IsCompleted);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void CompleteWhileDequeuersWaiting() {
+			var dequeueTask = this.queue.DequeueAsync();
+			this.queue.Complete();
+			Assert.IsTrue(this.queue.Completion.IsCompleted);
+			Assert.IsTrue(dequeueTask.IsCanceled);
+		}
+
+		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
+		public void CompletedQueueRejectsEnqueue() {
+			this.queue.Complete();
+			this.queue.Enqueue(new GenericParameterHelper(1));
 		}
 	}
 }
