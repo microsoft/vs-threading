@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.Threading {
 	using System;
 	using System.Collections.Generic;
+	using System.Diagnostics;
 	using System.Linq;
 	using System.Text;
 	using System.Threading;
@@ -10,6 +11,7 @@
 	/// A thread-safe, asynchronously dequeable queue.
 	/// </summary>
 	/// <typeparam name="T">The type of values kept by the queue.</typeparam>
+	[DebuggerDisplay("Count = {Count}, Completed = {completeSignaled}")]
 	public class AsyncQueue<T> {
 		/// <summary>
 		/// The object to lock when reading/writing our internal data structures.
