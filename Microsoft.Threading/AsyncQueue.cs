@@ -79,9 +79,21 @@
 		/// </summary>
 		/// <param name="value">The value to add.</param>
 		public void Enqueue(T value) {
+			Verify.Operation(this.TryEnqueue(value), "Queue already completed.");
+		}
+
+		/// <summary>
+		/// Adds an element to the tail of the queue if it has not yet completed.
+		/// </summary>
+		/// <param name="value">The value to add.</param>
+		/// <returns><c>true</c> if the value was added to the queue; <c>false</c> if the queue is already completed.</returns>
+		public bool TryEnqueue(T value) {
 			TaskCompletionSource<T> dequeuer = null;
 			lock (this.syncObject) {
-				Verify.Operation(!this.completeSignaled, "Queue already completed.");
+				if (this.completeSignaled) {
+					return false;
+				}
+
 				foreach (var entry in this.dequeuingTasks) {
 					CancellationToken cancellationToken = entry.Key;
 					CancellableDequeuers dequeurs = entry.Value;
@@ -110,6 +122,8 @@
 				// immediately allow them to begin work and skip our internal queue.
 				dequeuer.SetResult(value);
 			}
+
+			return true;
 		}
 
 		/// <summary>

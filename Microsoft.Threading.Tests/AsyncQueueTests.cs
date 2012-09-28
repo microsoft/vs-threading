@@ -33,6 +33,14 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void TryEnqueue() {
+			var value = new GenericParameterHelper(1);
+			Assert.IsTrue(this.queue.TryEnqueue(value));
+			Assert.AreEqual(1, this.queue.Count);
+			Assert.IsFalse(this.queue.IsEmpty);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task DequeueAsyncCompletesSynchronouslyForNonEmptyQueue() {
 			var enqueuedValue = new GenericParameterHelper(1);
 			this.queue.Enqueue(enqueuedValue);
@@ -212,10 +220,23 @@
 			Assert.IsTrue(dequeueTask.IsCanceled);
 		}
 
-		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
+		[TestMethod, Timeout(TestTimeout)]
 		public void CompletedQueueRejectsEnqueue() {
 			this.queue.Complete();
-			this.queue.Enqueue(new GenericParameterHelper(1));
+			try {
+				this.queue.Enqueue(new GenericParameterHelper(1));
+				Assert.Fail("Expected exception InvalidOperationException not thrown.");
+			} catch (InvalidOperationException) {
+			}
+
+			Assert.IsTrue(this.queue.IsEmpty);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void CompletedQueueRejectsTryEnqueue() {
+			this.queue.Complete();
+			Assert.IsFalse(this.queue.TryEnqueue(new GenericParameterHelper(1)));
+			Assert.IsTrue(this.queue.IsEmpty);
 		}
 	}
 }
