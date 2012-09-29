@@ -49,5 +49,42 @@ namespace Microsoft.Threading {
 
 			return found;
 		}
+
+		/// <summary>
+		/// Removes an element from the middle of a queue without disrupting the other elements.
+		/// </summary>
+		/// <typeparam name="T">The element to remove.</typeparam>
+		/// <param name="queue">The queue to modify.</param>
+		/// <param name="valueToRemove">The value to remove.</param>
+		/// <remarks>
+		/// If a value appears multiple times in the queue, only its first entry is removed.
+		/// </remarks>
+		internal static bool RemoveMidQueue<T>(this AsyncQueue<T> queue, T valueToRemove) where T : class {
+			Requires.NotNull(queue, "queue");
+			Requires.NotNull(valueToRemove, "valueToRemove");
+			if (queue.IsEmpty) {
+				return false;
+			}
+
+			T originalHead;
+			Assumes.True(queue.TryDequeue(out originalHead));
+			if (Object.ReferenceEquals(originalHead, valueToRemove)) {
+				return true;
+			}
+
+			bool found = false;
+			queue.Enqueue(originalHead);
+			while (!Object.ReferenceEquals(originalHead, queue.Peek())) {
+				T tempHead;
+				Assumes.True(queue.TryDequeue(out tempHead));
+				if (!found && Object.ReferenceEquals(tempHead, valueToRemove)) {
+					found = true;
+				} else {
+					queue.Enqueue(tempHead);
+				}
+			}
+
+			return found;
+		}
 	}
 }

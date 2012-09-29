@@ -40,6 +40,49 @@
 			Assert.IsFalse(this.queue.IsEmpty);
 		}
 
+		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
+		public void PeekThrowsOnEmptyQueue() {
+			this.queue.Peek();
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void TryPeek() {
+			GenericParameterHelper value;
+			Assert.IsFalse(this.queue.TryPeek(out value));
+			Assert.IsNull(value);
+
+			var enqueuedValue = new GenericParameterHelper(1);
+			this.queue.Enqueue(enqueuedValue);
+			GenericParameterHelper peekedValue;
+			Assert.IsTrue(this.queue.TryPeek(out peekedValue));
+			Assert.AreSame(enqueuedValue, peekedValue);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void Peek() {
+			var enqueuedValue = new GenericParameterHelper(1);
+			this.queue.Enqueue(enqueuedValue);
+			var peekedValue = this.queue.Peek();
+			Assert.AreSame(enqueuedValue, peekedValue);
+
+			// Peeking again should yield the same result.
+			peekedValue = this.queue.Peek();
+			Assert.AreSame(enqueuedValue, peekedValue);
+
+			// Enqueuing another element shouldn't change the peeked value.
+			var secondValue = new GenericParameterHelper(2);
+			this.queue.Enqueue(secondValue);
+			peekedValue = this.queue.Peek();
+			Assert.AreSame(enqueuedValue, peekedValue);
+
+			GenericParameterHelper dequeuedValue;
+			Assert.IsTrue(this.queue.TryDequeue(out dequeuedValue));
+			Assert.AreSame(enqueuedValue, dequeuedValue);
+
+			peekedValue = this.queue.Peek();
+			Assert.AreSame(secondValue, peekedValue);
+		}
+
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task DequeueAsyncCompletesSynchronouslyForNonEmptyQueue() {
 			var enqueuedValue = new GenericParameterHelper(1);

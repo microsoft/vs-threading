@@ -127,6 +127,33 @@
 		}
 
 		/// <summary>
+		/// Gets the value at the head of the queue without removing it from the queue, if it is non-empty.
+		/// </summary>
+		/// <param name="value">Receives the value at the head of the queue; or the default value for the element type if the queue is empty.</param>
+		/// <returns><c>true</c> if the queue was non-empty; <c>false</c> otherwise.</returns>
+		public bool TryPeek(out T value) {
+			lock (this.syncObject) {
+				if (this.queueElements.Count > 0) {
+					value = this.queueElements.Peek();
+					return true;
+				} else {
+					value = default(T);
+					return false;
+				}
+			}
+		}
+
+		/// <summary>
+		/// Gets the value at the head of the queue without removing it from the queue.
+		/// </summary>
+		/// <exception cref="InvalidOperationException">Thrown if the queue is empty.</exception>
+		public T Peek() {
+			T value;
+			Verify.Operation(this.TryPeek(out value), "Queue empty.");
+			return value;
+		}
+
+		/// <summary>
 		/// Gets a task whose result is the element at the head of the queue.
 		/// </summary>
 		/// <param name="cancellationToken">
