@@ -14,7 +14,6 @@
 		[TestInitialize]
 		public void Initialize() {
 			this.queue = new AsyncQueue<GenericParameterHelper>();
-			System.Diagnostics.Trace.Listeners.Clear();
 		}
 
 		[TestMethod]
