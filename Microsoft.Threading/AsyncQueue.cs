@@ -182,6 +182,10 @@
 			var tcs = new TaskCompletionSource<T>();
 			lock (this.syncObject) {
 				if (cancellationToken.IsCancellationRequested) {
+					// It's OK to transition this task within the lock,
+					// since we only just created the task in this method so
+					// it couldn't possibly have any continuations that would inline
+					// inside our lock.
 					tcs.SetCanceled();
 				} else {
 					T value;
@@ -248,15 +252,16 @@
 			CancellableDequeuers cancelledAwaiters;
 			lock (that.syncObject) {
 				if (that.dequeuingTasks.TryGetValue(ct, out cancelledAwaiters)) {
-					foreach (var awaiter in cancelledAwaiters) {
-						awaiter.SetCanceled();
-					}
-
 					that.dequeuingTasks.Remove(ct);
 				}
 			}
 
+			// This work can invoke external code and mustn't happen within our private lock.
 			if (cancelledAwaiters != null) {
+				foreach (var awaiter in cancelledAwaiters) {
+					awaiter.SetCanceled();
+				}
+
 				cancelledAwaiters.Dispose();
 			}
 		}

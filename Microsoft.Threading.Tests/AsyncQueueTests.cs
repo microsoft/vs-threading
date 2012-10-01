@@ -312,5 +312,25 @@
 
 			Console.WriteLine("Iterations: {0}", iterations);
 		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void NoLockHeldForCancellationContinuation() {
+			var cts = new CancellationTokenSource();
+			var dequeueTask = this.queue.DequeueAsync(cts.Token);
+			dequeueTask.ContinueWith(
+				delegate {
+					Task.Run(delegate {
+						// Enqueue presumably requires a private lock internally.
+						// Since we're calling it on a different thread than the
+						// blocking cancellation continuation, this should deadlock
+						// if and only if the queue is holding a lock while invoking
+						// our cancellation continuation (which they shouldn't be doing).
+						this.queue.Enqueue(new GenericParameterHelper(1));
+					}).Wait();
+				},
+				TaskContinuationOptions.ExecuteSynchronously);
+
+			cts.Cancel();
+		}
 	}
 }
