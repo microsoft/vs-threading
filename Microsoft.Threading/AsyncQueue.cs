@@ -341,7 +341,7 @@
 			/// <summary>
 			/// Initializes a new instance of the <see cref="CancellableDequeuers"/> struct.
 			/// </summary>
-			/// <param name="cancellationRegistration">The cancellation registration to dispose of when this value is disposed.</param>
+			/// <param name="owningQueue">The queue that created this instance.</param>
 			internal CancellableDequeuers(AsyncQueue<T> owningQueue) {
 				Requires.NotNull(owningQueue, "owningQueue");
 
@@ -391,7 +391,7 @@
 			/// <summary>
 			/// Sets the cancellation token registration associated with this instance.
 			/// </summary>
-			/// <param name="cancellationRegistration">The cancellation registration.</param>
+			/// <param name="cancellationRegistration">The cancellation registration to dispose of when this value is disposed.</param>
 			internal void SetCancellationRegistration(CancellationTokenRegistration cancellationRegistration) {
 				// It's possible that between the time this instance was created
 				// and this invocation, that another thread with a private lock 
