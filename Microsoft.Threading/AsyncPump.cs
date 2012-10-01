@@ -60,23 +60,7 @@ namespace Microsoft.Threading {
 		/// this instance, allowing for Main thread access to be granted after
 		/// continuations have already been pended.
 		/// </summary>
-		private readonly Queue<SingleExecuteProtector> pendingActions = new Queue<SingleExecuteProtector>();
-
-		/// <summary>
-		/// The lock that protects the <see cref="extraContexts"/> field access.
-		/// </summary>
-		private readonly ReaderWriterLockSlim extraContextsLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
-
-		/// <summary>
-		/// A map of SynchronizationContexts that we're authorized to pend work to
-		/// in an effort to execute on the Main thread, and the number of authorizations
-		/// received for each of those contexts.
-		/// </summary>
-		/// <remarks>
-		/// When the value in an entry is decremented to 0, the entry is removed from the map.
-		/// </remarks>
-		private Dictionary<SingleThreadSynchronizationContext, int> extraContexts =
-			new Dictionary<SingleThreadSynchronizationContext, int>();
+		private readonly AsyncQueue<SingleExecuteProtector> pendingActions = new AsyncQueue<SingleExecuteProtector>();
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AsyncPump"/> class.
@@ -320,23 +304,7 @@ namespace Microsoft.Threading {
 		public JoinRelease Join() {
 			var mainThreadControllingSyncContext = this.MainThreadControllingSyncContext;
 			if (mainThreadControllingSyncContext != null) {
-				this.extraContextsLock.EnterWriteLock();
-				try {
-					int refCount;
-					this.extraContexts.TryGetValue(mainThreadControllingSyncContext, out refCount);
-					refCount++;
-					this.extraContexts[mainThreadControllingSyncContext] = refCount;
-				} finally {
-					this.extraContextsLock.ExitWriteLock();
-				}
-
-				lock (this.pendingActions) {
-					foreach (var item in this.pendingActions) {
-						mainThreadControllingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, item, this);
-					}
-				}
-
-				return new JoinRelease(this, mainThreadControllingSyncContext);
+				return mainThreadControllingSyncContext.Join(this);
 			}
 
 			return new JoinRelease();
@@ -390,7 +358,7 @@ namespace Microsoft.Threading {
 		/// <param name="action">The delegate to invoke.</param>
 		private SingleExecuteProtector Post(Action action) {
 			var executor = new SingleExecuteProtector(this, action);
-			this.Post(executor, null);
+			this.Post(executor);
 			return executor;
 		}
 
@@ -399,10 +367,9 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="callback">The delegate to invoke.</param>
 		/// <param name="state">The argument to pass to the delegate.</param>
-		/// <param name="caller">The AsyncPump that lies further down the stack that originated this call.</param>
-		private SingleExecuteProtector Post(SendOrPostCallback callback, object state, AsyncPump caller = null) {
+		private SingleExecuteProtector Post(SendOrPostCallback callback, object state) {
 			var executor = new SingleExecuteProtector(this, callback, state);
-			this.Post(executor, caller);
+			this.Post(executor);
 			return executor;
 		}
 
@@ -410,8 +377,7 @@ namespace Microsoft.Threading {
 		/// Schedules the specified delegate for execution on the Main thread.
 		/// </summary>
 		/// <param name="wrapper">The delegate wrapper that guarantees the delegate cannot be invoked more than once.</param>
-		/// <param name="caller">The AsyncPump that lies further down the stack that originated this call.</param>
-		private void Post(SingleExecuteProtector wrapper, AsyncPump caller) {
+		private void Post(SingleExecuteProtector wrapper) {
 			if (postedMessageVisited.Value.Add(this)) {
 				try {
 					if (this.underlyingSynchronizationContext != null) {
@@ -423,23 +389,12 @@ namespace Microsoft.Threading {
 						// ultimately responds to the message and invokes the delegate, that it will no-op after
 						// the first invocation.
 						lock (this.pendingActions) {
-							if (caller != this) { // avoid modifying the queue to add a duplicate when the original caller is ourselves.
-								this.pendingActions.Enqueue(wrapper);
-							}
-						}
-
-						this.extraContextsLock.EnterReadLock();
-						try {
-							foreach (var context in this.extraContexts) {
-								context.Key.Post(SingleExecuteProtector.ExecuteOnce, wrapper, this);
-							}
-						} finally {
-							this.extraContextsLock.ExitReadLock();
+							this.pendingActions.Enqueue(wrapper);
 						}
 
 						var mainThreadControllingSyncContext = this.MainThreadControllingSyncContext;
 						if (mainThreadControllingSyncContext != null) {
-							mainThreadControllingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper, this);
+							mainThreadControllingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
 						}
 
 						this.underlyingSynchronizationContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
@@ -593,47 +548,40 @@ namespace Microsoft.Threading {
 		/// A value whose disposal cancels a <see cref="Join"/> operation.
 		/// </summary>
 		public struct JoinRelease : IDisposable {
-			private AsyncPump parent;
-			private SingleThreadSynchronizationContext context;
+			private SingleThreadSynchronizationContext joined;
+			private AsyncPump joiner;
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="JoinRelease"/> struct.
 			/// </summary>
-			/// <param name="parent">The instance that created this value.</param>
-			/// <param name="context">The Main thread controlling SynchronizationContext to use to accelerate execution of Main thread bound work.</param>
-			internal JoinRelease(AsyncPump parent, SynchronizationContext context) {
-				this.parent = parent;
-				this.context = (SingleThreadSynchronizationContext)context;
+			/// <param name="joined">The Main thread controlling SingleThreadSynchronizationContext to use to accelerate execution of Main thread bound work.</param>
+			/// <param name="joiner">The instance that created this value.</param>
+			internal JoinRelease(object joined, AsyncPump joiner) {
+				Requires.NotNull(joined, "joined");
+				Requires.NotNull(joiner, "joiner");
+
+				this.joined = (SingleThreadSynchronizationContext)joined;
+				this.joiner = joiner;
 			}
 
 			/// <summary>
 			/// Cancels the <see cref="Join"/> operation.
 			/// </summary>
 			public void Dispose() {
-				if (this.parent != null) {
-					this.parent.extraContextsLock.EnterWriteLock();
-					try {
-						int refCount = this.parent.extraContexts[this.context];
-						if (--refCount == 0) {
-							this.parent.extraContexts.Remove(this.context);
-						} else {
-							this.parent.extraContexts[this.context] = refCount;
-						}
-					} finally {
-						this.parent.extraContextsLock.ExitWriteLock();
-					}
-
-					this.parent = null;
-					this.context = null;
+				if (this.joined != null) {
+					this.joined.Disjoin(this.joiner);
+					this.joined = null;
+					this.joiner = null;
 				}
 			}
 		}
 
 		/// <summary>Provides a SynchronizationContext that's single-threaded.</summary>
 		private class SingleThreadSynchronizationContext : SynchronizationContext {
+			private readonly object syncObject = new object();
+
 			/// <summary>The queue of work items.</summary>
-			private readonly OneWorkerBlockingQueue<KeyValuePair<SendOrPostCallback, object>> queue =
-				new OneWorkerBlockingQueue<KeyValuePair<SendOrPostCallback, object>>();
+			private readonly AsyncQueue<SingleExecuteProtector> queue = new AsyncQueue<SingleExecuteProtector>();
 
 			/// <summary>The pump that created this instance.</summary>
 			private readonly AsyncPump asyncPump;
@@ -647,6 +595,17 @@ namespace Microsoft.Threading {
 			/// Should be true only when processing for a root "async void" method.
 			/// </summary>
 			private readonly bool autoCompleteWhenOperationsReachZero;
+
+			/// <summary>
+			/// A map of SynchronizationContexts that we can 
+			/// </summary>
+			/// <remarks>
+			/// When the value in an entry is decremented to 0, the entry is removed from the map.
+			/// </remarks>
+			private Dictionary<AsyncPump, int> extraQueueSources =
+				new Dictionary<AsyncPump, int>();
+
+			private CancellationTokenSource extraContextsChanged = new CancellationTokenSource();
 
 			/// <summary>The number of outstanding operations.</summary>
 			private int operationCount = 0;
@@ -680,7 +639,7 @@ namespace Microsoft.Threading {
 				// that someone who posts to this SynchronizationContext (which will be active during
 				// that modal dialog) the message has a chance of being executed before the dialog is dismissed.
 				var executor = this.asyncPump.Post(d, state);
-				this.queue.TryAdd(new KeyValuePair<SendOrPostCallback, object>(SingleExecuteProtector.ExecuteOnce, executor));
+				this.queue.TryEnqueue(executor);
 			}
 
 			/// <summary>Not supported.</summary>
@@ -694,15 +653,20 @@ namespace Microsoft.Threading {
 
 			/// <summary>Runs an loop to process all queued work items.</summary>
 			public void RunOnCurrentThread() {
-				KeyValuePair<SendOrPostCallback, object> workItem;
-				while (this.queue.TryDequeue(out workItem)) {
-					workItem.Key(workItem.Value);
+				while (true) {
+					var dequeueTask = this.DequeueFromAllSelfAndJoinedQueuesAsync();
+					while (!dequeueTask.Wait(1000)) { }
+					if (dequeueTask.Result != null) {
+						dequeueTask.Result.TryExecute();
+					} else {
+						break;
+					}
 				}
 			}
 
 			/// <summary>Notifies the context that no more work will arrive.</summary>
 			public void Complete() {
-				this.queue.CompleteAdding();
+				this.queue.Complete();
 			}
 
 			/// <summary>Invoked when an async operation is started.</summary>
@@ -725,103 +689,146 @@ namespace Microsoft.Threading {
 			/// <param name="caller">The caller of this method, if an instance of AsyncPump.</param>
 			internal void Post(SendOrPostCallback d, object state, AsyncPump caller) {
 				Requires.NotNull(d, "d");
-				if (!this.queue.TryAdd(new KeyValuePair<SendOrPostCallback, object>(d, state))) {
-					this.asyncPump.Post(d, state, caller);
-					this.previousSyncContext.Post(d, state);
+				var wrapper = new SingleExecuteProtector(this.asyncPump, d, state);
+				if (!this.queue.TryEnqueue(wrapper)) {
+					this.asyncPump.Post(wrapper);
+					this.previousSyncContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
 				}
 			}
 
-			/// <summary>
-			/// A thread-safe queue.
-			/// </summary>
-			/// <typeparam name="T">The type of values stored in the queue.</typeparam>
-			[DebuggerDisplay("Count = {queue.Count}, Completed = {completed}")]
-			private class OneWorkerBlockingQueue<T> {
-				/// <summary>
-				/// The underlying non-threadsafe queue that this class wraps.
-				/// </summary>
-				private readonly Queue<T> queue = new Queue<T>();
+			internal JoinRelease Join(AsyncPump other) {
+				Requires.NotNull(other, "other");
 
-				/// <summary>
-				/// A flag indicating whether no more items will be queued.
-				/// </summary>
-				private volatile bool completed;
+				CancellationTokenSource extraContextsChanged = null;
+				lock (this.syncObject) {
+					int refCount;
+					this.extraQueueSources.TryGetValue(other, out refCount);
+					refCount++;
+					this.extraQueueSources[other] = refCount;
 
-				/// <summary>
-				/// Gets a value indicating whether no more items will be queued.
-				/// </summary>
-				internal bool IsCompleted {
-					get { return this.completed; }
+					// Only if the actual set of queues changed do we want to disrupt the cancellation token.
+					if (refCount == 1) {
+						extraContextsChanged = this.extraContextsChanged;
+						this.extraContextsChanged = new CancellationTokenSource();
+					}
 				}
 
-				/// <summary>
-				/// Dequeues one item, blocking the caller if the queue is empty,
-				/// or until the queue has been completed.
-				/// </summary>
-				/// <param name="value">Receives the dequeued value.</param>
-				/// <returns><c>true</c> if an item was dequeued; <c>false</c> if the queue is permanently empty.</returns>
-				internal bool TryDequeue(out T value) {
-					bool internalFailure = false;
-					try {
-						lock (this.queue) {
-							while (true) {
-								if (this.queue.Count > 0) {
-									value = this.queue.Dequeue();
-									return true;
-								} else if (this.completed) {
-									value = default(T);
-									return false;
-								}
+				var nestingSyncContext = this.previousSyncContext as SingleThreadSynchronizationContext;
+				if (nestingSyncContext != null) {
+					nestingSyncContext.Join(other);
+				}
 
-								// Break out of the wait every once in a while, and keep looping back in the wait.
-								// This allows a debugger that has broken into this method (to investigate a hang
-								// for example), to step out of the Wait method so that we're in an unoptimized
-								// frame, allowing us to more easily inspect local variables, etc that otherwise
-								// wouldn't be available.
-								while (!Monitor.Wait(this.queue, 1000)) {
-									if (this.queue.Count > 0 || this.IsCompleted) {
-										internalFailure = !Monitor.Wait(this.queue, 0);
-										break;
-									}
-								}
+				if (extraContextsChanged != null) {
+					extraContextsChanged.Cancel();
+				}
+
+				return new JoinRelease(this, other);
+			}
+
+			internal void Disjoin(AsyncPump other) {
+				CancellationTokenSource extraContextsChanged = null;
+				lock (this.syncObject) {
+					int refCount = this.extraQueueSources[other];
+					if (--refCount == 0) {
+						this.extraQueueSources.Remove(other);
+					} else {
+						this.extraQueueSources[other] = refCount;
+					}
+
+					// Only if the actual set of queues changed do we want to disrupt the cancellation token.
+					if (refCount == 0) {
+						extraContextsChanged = this.extraContextsChanged;
+						this.extraContextsChanged = new CancellationTokenSource();
+					}
+				}
+
+				var nestingSyncContext = this.previousSyncContext as SingleThreadSynchronizationContext;
+				if (nestingSyncContext != null) {
+					nestingSyncContext.Disjoin(other);
+				}
+
+				if (extraContextsChanged != null) {
+					extraContextsChanged.Cancel();
+				}
+			}
+
+			private Task<SingleExecuteProtector> DequeueFromAllSelfAndJoinedQueuesAsync(TaskCompletionSource<SingleExecuteProtector> completionSource = null) {
+				var resultSource = completionSource ?? new TaskCompletionSource<SingleExecuteProtector>();
+
+				CancellationToken extraContextsChangedToken;
+				List<AsyncQueue<SingleExecuteProtector>> applicableQueues;
+				lock (this.syncObject) {
+					extraContextsChangedToken = this.extraContextsChanged.Token;
+					applicableQueues = new List<AsyncQueue<SingleExecuteProtector>>(1 + this.extraQueueSources.Count);
+					applicableQueues.Add(this.queue);
+					foreach (var joiner in this.extraQueueSources.Keys) {
+						if (!joiner.pendingActions.Completion.IsCompleted) {
+							applicableQueues.Add(joiner.pendingActions);
+						}
+					}
+				}
+
+				var overallCancellation = CancellationTokenSource.CreateLinkedTokenSource(extraContextsChangedToken);
+				var allApplicableDequeues = new Task<SingleExecuteProtector>[applicableQueues.Count];
+				for (int i = 0; i < allApplicableDequeues.Length; i++) {
+					allApplicableDequeues[i] = applicableQueues[i].DequeueAsync(overallCancellation.Token);
+				}
+
+				var dequeueTask = Task.WhenAny<SingleExecuteProtector>(allApplicableDequeues);
+				dequeueTask.ContinueWith(
+					priorTask => {
+						var completedTask = priorTask.Result;
+
+						// Do our best to avoid dequeueing from more than one queue by cancelling all
+						// outstanding requests.  We'll also need to check for any extra dequeuers 
+						// that managed to complete.
+						overallCancellation.Cancel();
+						for (int i = 0; i < allApplicableDequeues.Length; i++) {
+							if (allApplicableDequeues[i] != completedTask) {
+								// We need to requeue the extra element back to its original queue.
+								allApplicableDequeues[i].ContinueWith(
+									(straggler, state) => {
+										var queue = (AsyncQueue<SingleExecuteProtector>)state;
+										Assumes.True(queue.TryEnqueue(straggler.Result));
+									},
+									applicableQueues[i],
+									CancellationToken.None,
+									TaskContinuationOptions.OnlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously,
+									TaskScheduler.Default);
 							}
 						}
-					} finally {
-						Report.If(internalFailure, "The queue is not empty, but not pulsed either.");
-					}
-				}
 
-				/// <summary>
-				/// Signals that no more work will be enqueued.
-				/// </summary>
-				internal void CompleteAdding() {
-					lock (this.queue) {
-						this.completed = true;
-						Monitor.Pulse(this.queue);
-					}
-				}
-
-				/// <summary>
-				/// Enqueues an item.
-				/// </summary>
-				/// <param name="value">The value to add to the queue.</param>
-				internal bool TryAdd(T value) {
-					lock (this.queue) {
-						if (this.completed) {
-							return false;
+						if (completedTask.IsCanceled) {
+							if (completedTask == allApplicableDequeues[0] && this.queue.Completion.IsCompleted) {
+								// Our own queue was completed.  Release our caller by completing the task we returned.
+								// We could cancel the task, but then our caller would throw if they are waiting/awaiting on it,
+								// and we don't want to throw every time our queue completes because that is a very common scenario.
+								// So just complete the task normally, but with a value that signals completion.
+								resultSource.TrySetResult(null);
+							} else {
+								// A joined queue has completed, unjoined, or a new queue has joined.
+								// We should reinitialize.
+								this.DequeueFromAllSelfAndJoinedQueuesAsync(resultSource);
+							}
+						} else if (completedTask.IsFaulted) {
+							Report.Fail("Unexpected exception in a bad place.");
+							resultSource.TrySetException(completedTask.Exception);
+						} else if (completedTask.IsCompleted) {
+							Assumes.NotNull(completedTask.Result);
+							resultSource.TrySetResult(completedTask.Result);
 						}
+					},
+					CancellationToken.None,
+					TaskContinuationOptions.ExecuteSynchronously,
+					TaskScheduler.Default);
 
-						this.queue.Enqueue(value);
-						Monitor.Pulse(this.queue);
-						return true;
-					}
-				}
+				return resultSource.Task;
 			}
 		}
 
 		/// <summary>
 		/// A synchronization context that simply forwards posted messages back to
-		/// the <see cref="AsyncPump.Post(SendOrPostCallback, object, AsyncPump)"/> method.
+		/// the <see cref="AsyncPump.Post(SendOrPostCallback, object)"/> method.
 		/// </summary>
 		private class PromotableMainThreadSynchronizationContext : SynchronizationContext {
 			/// <summary>
@@ -845,7 +852,7 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>
-			/// Forwards posted delegates to <see cref="AsyncPump.Post(SendOrPostCallback, object, AsyncPump)"/>
+			/// Forwards posted delegates to <see cref="AsyncPump.Post(SendOrPostCallback, object)"/>
 			/// </summary>
 			public override void Post(SendOrPostCallback d, object state) {
 				this.asyncPump.Post(d, state);
