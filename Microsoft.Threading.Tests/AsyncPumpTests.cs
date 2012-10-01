@@ -1,5 +1,4 @@
 ﻿namespace Microsoft.Threading.Tests {
-	using Microsoft.VisualStudio.TestTools.UnitTesting;
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
@@ -7,6 +6,7 @@
 	using System.Threading;
 	using System.Threading.Tasks;
 	using System.Windows.Threading;
+	using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 	[TestClass]
 	public class AsyncPumpTests : TestBase {
@@ -767,7 +767,7 @@
 		public void AsyncPumpEnumeratingModifiedCollection() {
 			// Arrange for a pending action on this.asyncPump.
 			var messagePosted = new AsyncManualResetEvent();
-			Task.Run(async delegate {
+			var uiThreadReachedTask = Task.Run(async delegate {
 				await this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().YieldAndNotify(messagePosted);
 			});
 
@@ -776,10 +776,11 @@
 			// through interactions of various CPS/VC components.
 			var otherPump = new AsyncPump();
 			otherPump.RunSynchronously(async delegate {
-				await this.asyncPump.BeginAsynchronously(async delegate {
-					await Task.Run(async delegate {
+				await this.asyncPump.BeginAsynchronously(delegate {
+					return Task.Run(async delegate {
 						await messagePosted; // wait for this.asyncPump.pendingActions to be non empty
 						using (var j = this.asyncPump.Join()) {
+							await uiThreadReachedTask;
 						}
 					});
 				});
