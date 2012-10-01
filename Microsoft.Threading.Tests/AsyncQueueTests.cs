@@ -287,12 +287,14 @@
 			var queue = new AsyncQueue<GenericParameterHelper>();
 			queue.Complete();
 
+			// This scenario was proven to cause a deadlock before a bug was fixed.
+			// This scenario should remain to protect against regressions.
 			int iterations = 0;
 			var stopwatch = Stopwatch.StartNew();
 			while (stopwatch.ElapsedMilliseconds < TestTimeout / 2) {
 				var cts = new CancellationTokenSource();
 				using (var barrier = new Barrier(2)) {
-					Task.Run(delegate {
+					var otherThread = Task.Run(delegate {
 						barrier.SignalAndWait();
 						queue.DequeueAsync(cts.Token);
 						barrier.SignalAndWait();
@@ -301,6 +303,8 @@
 					barrier.SignalAndWait();
 					cts.Cancel();
 					barrier.SignalAndWait();
+
+					otherThread.Wait();
 				}
 
 				iterations++;
