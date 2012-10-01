@@ -253,16 +253,18 @@
 
 			bool transitionTaskSource;
 			List<TaskCompletionSource<T>> tasksToCancel = null;
+			List<CancellableDequeuers> objectsToDispose = null;
 			lock (this.syncObject) {
 				transitionTaskSource = this.completeSignaled && this.queueElements.Count == 0;
 				if (transitionTaskSource) {
 					tasksToCancel = new List<TaskCompletionSource<T>>();
+					objectsToDispose = new List<CancellableDequeuers>();
 					foreach (var entry in this.dequeuingTasks) {
 						foreach (var tcs in entry.Value) {
 							tasksToCancel.Add(tcs);
 						}
 
-						entry.Value.Dispose();
+						objectsToDispose.Add(entry.Value);
 					}
 
 					this.dequeuingTasks.Clear();
@@ -274,6 +276,12 @@
 				if (tasksToCancel != null) {
 					foreach (var tcs in tasksToCancel) {
 						tcs.TrySetCanceled();
+					}
+				}
+
+				if (objectsToDispose != null) {
+					foreach (var item in objectsToDispose) {
+						item.Dispose();
 					}
 				}
 			}

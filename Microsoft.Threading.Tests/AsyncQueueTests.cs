@@ -1,11 +1,12 @@
 ﻿namespace Microsoft.Threading.Tests {
-	using Microsoft.VisualStudio.TestTools.UnitTesting;
 	using System;
 	using System.Collections.Generic;
+	using System.Diagnostics;
 	using System.Linq;
 	using System.Text;
 	using System.Threading;
 	using System.Threading.Tasks;
+	using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 	[TestClass]
 	public class AsyncQueueTests : TestBase {
@@ -279,6 +280,33 @@
 			this.queue.Complete();
 			Assert.IsFalse(this.queue.TryEnqueue(new GenericParameterHelper(1)));
 			Assert.IsTrue(this.queue.IsEmpty);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void DequeueCancellationAndCompletionStress() {
+			var queue = new AsyncQueue<GenericParameterHelper>();
+			queue.Complete();
+
+			int iterations = 0;
+			var stopwatch = Stopwatch.StartNew();
+			while (stopwatch.ElapsedMilliseconds < TestTimeout / 2) {
+				var cts = new CancellationTokenSource();
+				using (var barrier = new Barrier(2)) {
+					Task.Run(delegate {
+						barrier.SignalAndWait();
+						queue.DequeueAsync(cts.Token);
+						barrier.SignalAndWait();
+					});
+
+					barrier.SignalAndWait();
+					cts.Cancel();
+					barrier.SignalAndWait();
+				}
+
+				iterations++;
+			}
+
+			Console.WriteLine("Iterations: {0}", iterations);
 		}
 	}
 }
