@@ -89,6 +89,7 @@
 		/// <returns><c>true</c> if the value was added to the queue; <c>false</c> if the queue is already completed.</returns>
 		public bool TryEnqueue(T value) {
 			TaskCompletionSource<T> dequeuer = null;
+			List<CancellableDequeuers> valuesToDispose = null;
 			lock (this.syncObject) {
 				if (this.completeSignaled) {
 					return false;
@@ -103,7 +104,12 @@
 
 					if (dequeurs.IsEmpty) {
 						this.dequeuingTasks.Remove(cancellationToken);
-						dequeurs.Dispose();
+
+						if (valuesToDispose == null) {
+							valuesToDispose = new List<CancellableDequeuers>();
+						}
+
+						valuesToDispose.Add(dequeurs);
 					}
 
 					break;
@@ -112,6 +118,13 @@
 				if (dequeuer == null) {
 					// There were no waiting dequeuers, so actually add this element to our queue.
 					this.queueElements.Enqueue(value);
+				}
+			}
+
+			// It's important we dispose of these values outside the lock.
+			if (valuesToDispose != null) {
+				foreach (var item in valuesToDispose) {
+					item.Dispose();
 				}
 			}
 
@@ -181,7 +194,7 @@
 								state => CancelDequeuers(state),
 								Tuple.Create(this, cancellationToken));
 
-							existingAwaiters = new CancellableDequeuers(cancellationRegistration);
+							existingAwaiters = new CancellableDequeuers(this, cancellationRegistration);
 							this.dequeuingTasks[cancellationToken] = existingAwaiters;
 						}
 
@@ -232,16 +245,19 @@
 			var tuple = (Tuple<AsyncQueue<T>, CancellationToken>)state;
 			AsyncQueue<T> that = tuple.Item1;
 			CancellationToken ct = tuple.Item2;
+			CancellableDequeuers cancelledAwaiters;
 			lock (that.syncObject) {
-				CancellableDequeuers cancelledAwaiters;
 				if (that.dequeuingTasks.TryGetValue(ct, out cancelledAwaiters)) {
 					foreach (var awaiter in cancelledAwaiters) {
 						awaiter.SetCanceled();
 					}
 
 					that.dequeuingTasks.Remove(ct);
-					cancelledAwaiters.Dispose();
 				}
+			}
+
+			if (cancelledAwaiters != null) {
+				cancelledAwaiters.Dispose();
 			}
 		}
 
@@ -297,6 +313,11 @@
 			private readonly CancellationTokenRegistration cancellationRegistration;
 
 			/// <summary>
+			/// The queue that owns this instance.
+			/// </summary>
+			private readonly AsyncQueue<T> owningQueue;
+
+			/// <summary>
 			/// Gets the list of dequeuers.
 			/// </summary>
 			private object completionSources;
@@ -305,7 +326,10 @@
 			/// Initializes a new instance of the <see cref="CancellableDequeuers"/> struct.
 			/// </summary>
 			/// <param name="cancellationRegistration">The cancellation registration to dispose of when this value is disposed.</param>
-			internal CancellableDequeuers(CancellationTokenRegistration cancellationRegistration) {
+			internal CancellableDequeuers(AsyncQueue<T> owningQueue, CancellationTokenRegistration cancellationRegistration) {
+				Requires.NotNull(owningQueue, "owningQueue");
+
+				this.owningQueue = owningQueue;
 				this.cancellationRegistration = cancellationRegistration;
 				this.completionSources = null;
 			}
@@ -332,6 +356,7 @@
 			/// Disposes of the cancellation registration.
 			/// </summary>
 			public void Dispose() {
+				Assumes.False(Monitor.IsEntered(this.owningQueue.syncObject), "Disposing CancellationTokenRegistration values while holding locks is unsafe.");
 				this.cancellationRegistration.Dispose();
 			}
 
