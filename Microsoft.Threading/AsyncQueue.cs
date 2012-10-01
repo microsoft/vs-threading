@@ -121,6 +121,8 @@
 				}
 			}
 
+			Assumes.False(Monitor.IsEntered(this.syncObject)); // important because we'll transition a task to complete.
+
 			// It's important we dispose of these values outside the lock.
 			if (valuesToDispose != null) {
 				foreach (var item in valuesToDispose) {
@@ -180,6 +182,8 @@
 		/// <returns>A task whose result is the head element.</returns>
 		public Task<T> DequeueAsync(CancellationToken cancellationToken = default(CancellationToken)) {
 			var tcs = new TaskCompletionSource<T>();
+			CancellableDequeuers existingAwaiters = null;
+			bool newDequeuerObjectAllocated = false;
 			lock (this.syncObject) {
 				if (cancellationToken.IsCancellationRequested) {
 					// It's OK to transition this task within the lock,
@@ -192,19 +196,23 @@
 					if (this.TryDequeueInternal(out value)) {
 						tcs.SetResult(value);
 					} else {
-						CancellableDequeuers existingAwaiters;
 						if (!this.dequeuingTasks.TryGetValue(cancellationToken, out existingAwaiters)) {
-							var cancellationRegistration = cancellationToken.Register(
-								state => CancelDequeuers(state),
-								Tuple.Create(this, cancellationToken));
-
-							existingAwaiters = new CancellableDequeuers(this, cancellationRegistration);
+							existingAwaiters = new CancellableDequeuers(this);
+							newDequeuerObjectAllocated = true;
 							this.dequeuingTasks[cancellationToken] = existingAwaiters;
 						}
 
 						existingAwaiters.AddCompletionSource(tcs);
 					}
 				}
+			}
+
+			if (newDequeuerObjectAllocated) {
+				Assumes.NotNull(existingAwaiters);
+				var cancellationRegistration = cancellationToken.Register(
+					state => CancelDequeuers(state),
+					Tuple.Create(this, cancellationToken));
+				existingAwaiters.SetCancellationRegistration(cancellationRegistration);
 			}
 
 			this.CompleteIfNecessary();
@@ -257,6 +265,7 @@
 			}
 
 			// This work can invoke external code and mustn't happen within our private lock.
+			Assumes.False(Monitor.IsEntered(that.syncObject)); // important because we'll transition a task to complete.
 			if (cancelledAwaiters != null) {
 				foreach (var awaiter in cancelledAwaiters) {
 					awaiter.SetCanceled();
@@ -313,14 +322,16 @@
 		/// </summary>
 		private class CancellableDequeuers : IDisposable {
 			/// <summary>
-			/// Gets the cancellation registration.
-			/// </summary>
-			private readonly CancellationTokenRegistration cancellationRegistration;
-
-			/// <summary>
 			/// The queue that owns this instance.
 			/// </summary>
 			private readonly AsyncQueue<T> owningQueue;
+
+			private bool disposed;
+
+			/// <summary>
+			/// Gets the cancellation registration.
+			/// </summary>
+			private CancellationTokenRegistration cancellationRegistration;
 
 			/// <summary>
 			/// Gets the list of dequeuers.
@@ -331,11 +342,10 @@
 			/// Initializes a new instance of the <see cref="CancellableDequeuers"/> struct.
 			/// </summary>
 			/// <param name="cancellationRegistration">The cancellation registration to dispose of when this value is disposed.</param>
-			internal CancellableDequeuers(AsyncQueue<T> owningQueue, CancellationTokenRegistration cancellationRegistration) {
+			internal CancellableDequeuers(AsyncQueue<T> owningQueue) {
 				Requires.NotNull(owningQueue, "owningQueue");
 
 				this.owningQueue = owningQueue;
-				this.cancellationRegistration = cancellationRegistration;
 				this.completionSources = null;
 			}
 
@@ -363,6 +373,7 @@
 			public void Dispose() {
 				Assumes.False(Monitor.IsEntered(this.owningQueue.syncObject), "Disposing CancellationTokenRegistration values while holding locks is unsafe.");
 				this.cancellationRegistration.Dispose();
+				this.disposed = true;
 			}
 
 			/// <summary>
@@ -374,6 +385,22 @@
 					return new EnumerateOneOrMany<TaskCompletionSource<T>>(list);
 				} else {
 					return new EnumerateOneOrMany<TaskCompletionSource<T>>((TaskCompletionSource<T>)this.completionSources);
+				}
+			}
+
+			/// <summary>
+			/// Sets the cancellation token registration associated with this instance.
+			/// </summary>
+			/// <param name="cancellationRegistration">The cancellation registration.</param>
+			internal void SetCancellationRegistration(CancellationTokenRegistration cancellationRegistration) {
+				// It's possible that between the time this instance was created
+				// and this invocation, that another thread with a private lock 
+				// already disposed of this object, in which case we'll immediately dispose
+				// of the registration to avoid memory leaks.
+				if (this.disposed) {
+					cancellationRegistration.Dispose();
+				} else {
+					this.cancellationRegistration = cancellationRegistration;
 				}
 			}
 
