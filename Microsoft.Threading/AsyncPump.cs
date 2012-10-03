@@ -353,6 +353,29 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// Posts a message to the specified underlying SynchronizationContext for processing when the main thread
+		/// is freely available.
+		/// </summary>
+		/// <param name="underlyingSynchronizationContext">The underlying SynchronizationContext (usually the WPF Dispatcher in a WPF app).</param>
+		/// <param name="callback">The callback to invoke.</param>
+		/// <param name="state">State to pass to the callback.</param>
+		protected virtual void PostToUnderlyingSynchronizationContext(SynchronizationContext underlyingSynchronizationContext, SendOrPostCallback callback, object state) {
+			Requires.NotNull(underlyingSynchronizationContext, "underlyingSynchronizationContext");
+			Requires.NotNull(callback, "callback");
+
+			underlyingSynchronizationContext.Post(callback, state);
+		}
+
+		/// <summary>
+		/// Synchronously blocks the calling thread for the completion of the specified task.
+		/// </summary>
+		/// <param name="task">The task whose completion is being waited on.</param>
+		protected virtual void WaitSynchronously(Task task) {
+			Requires.NotNull(task, "task");
+			while (!task.Wait(1000)) { }
+		}
+
+		/// <summary>
 		/// Schedules the specified delegate for execution on the Main thread.
 		/// </summary>
 		/// <param name="action">The delegate to invoke.</param>
@@ -397,7 +420,14 @@ namespace Microsoft.Threading {
 							mainThreadControllingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
 						}
 
-						this.underlyingSynchronizationContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
+						if (this.underlyingSynchronizationContext is PromotableMainThreadSynchronizationContext ||
+							this.underlyingSynchronizationContext is SingleThreadSynchronizationContext) {
+							this.underlyingSynchronizationContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
+						} else {
+							// We're passing the message to the root SynchronizationContext.  Call a virtual method to do this
+							// as our host may want to customize behavior (adjusting message priority for example).
+							this.PostToUnderlyingSynchronizationContext(this.underlyingSynchronizationContext, SingleExecuteProtector.ExecuteOnce, wrapper);
+						}
 					} else {
 						ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
 					}
@@ -597,7 +627,7 @@ namespace Microsoft.Threading {
 			private readonly bool autoCompleteWhenOperationsReachZero;
 
 			/// <summary>
-			/// A map of SynchronizationContexts that we can 
+			/// A map of queues that we should be willing to dequeue from when we control the UI thread.
 			/// </summary>
 			/// <remarks>
 			/// When the value in an entry is decremented to 0, the entry is removed from the map.
@@ -655,7 +685,8 @@ namespace Microsoft.Threading {
 			public void RunOnCurrentThread() {
 				while (true) {
 					var dequeueTask = this.DequeueFromAllSelfAndJoinedQueuesAsync();
-					while (!dequeueTask.Wait(1000)) { }
+					this.asyncPump.WaitSynchronously(dequeueTask);
+					Assumes.True(dequeueTask.IsCompleted);
 					if (dequeueTask.Result != null) {
 						dequeueTask.Result.TryExecute();
 					} else {

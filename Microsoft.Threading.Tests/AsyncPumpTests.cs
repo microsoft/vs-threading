@@ -17,7 +17,7 @@
 		public void Initialize() {
 			var ctxt = new DispatcherSynchronizationContext();
 			SynchronizationContext.SetSynchronizationContext(ctxt);
-			this.asyncPump = new AsyncPump();
+			this.asyncPump = new DerivedAsyncPump();
 			this.originalThread = Thread.CurrentThread;
 		}
 
@@ -959,6 +959,25 @@
 				return expectedResult;
 			});
 			Assert.AreSame(expectedResult, actualResult);
+		}
+
+		private class DerivedAsyncPump : AsyncPump {
+			protected override void SwitchToMainThreadOnCompleted(Action action) {
+				Assert.IsNotNull(action);
+				base.SwitchToMainThreadOnCompleted(action);
+			}
+
+			protected override void WaitSynchronously(Task task) {
+				Assert.IsNotNull(task);
+				base.WaitSynchronously(task);
+			}
+
+			protected override void PostToUnderlyingSynchronizationContext(SynchronizationContext underlyingSynchronizationContext, SendOrPostCallback callback, object state) {
+				Assert.IsNotNull(underlyingSynchronizationContext);
+				Assert.IsNotNull(callback);
+				Assert.IsInstanceOfType(underlyingSynchronizationContext, typeof(DispatcherSynchronizationContext));
+				base.PostToUnderlyingSynchronizationContext(underlyingSynchronizationContext, callback, state);
+			}
 		}
 
 		private class MockAsyncService {
