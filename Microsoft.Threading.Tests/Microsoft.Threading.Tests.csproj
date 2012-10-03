@@ -67,6 +67,7 @@
     <Compile Include="AsyncReaderWriterLockTests.cs" />
     <Compile Include="AsyncReaderWriterResourceLockTests.cs" />
     <Compile Include="AwaitExtensionsTests.cs" />
+    <Compile Include="ProgressWithCompletionTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestBase.cs" />
     <Compile Include="TplExtensionsTests.cs" />
