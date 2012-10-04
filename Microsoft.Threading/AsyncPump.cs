@@ -116,7 +116,7 @@ namespace Microsoft.Threading {
 		public void RunSynchronously(Action asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
-			using (var framework = new RunFramework(this, asyncVoidMethod: true)) {
+			using (var framework = new RunFramework(this, asyncVoidMethod: true, completingSynchronously: true)) {
 				// Invoke the function
 				framework.AppliedContext.OperationStarted();
 				asyncMethod();
@@ -152,7 +152,7 @@ namespace Microsoft.Threading {
 		public void RunSynchronously(Func<Task> asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
-			using (var framework = new RunFramework(this, asyncVoidMethod: false)) {
+			using (var framework = new RunFramework(this, asyncVoidMethod: false, completingSynchronously: true)) {
 				// Invoke the function and alert the context when it completes
 				var t = asyncMethod();
 				Verify.Operation(t != null, "No task provided.");
@@ -179,7 +179,7 @@ namespace Microsoft.Threading {
 		public T RunSynchronously<T>(Func<Task<T>> asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
-			using (var framework = new RunFramework(this, asyncVoidMethod: false)) {
+			using (var framework = new RunFramework(this, asyncVoidMethod: false, completingSynchronously: true)) {
 				// Invoke the function and alert the context when it completes
 				var t = asyncMethod();
 				Verify.Operation(t != null, "No task provided.");
@@ -209,7 +209,7 @@ namespace Microsoft.Threading {
 			where TaskOrTaskOfT : Task {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
-			using (var framework = new RunFramework(this, asyncVoidMethod: false)) {
+			using (var framework = new RunFramework(this, asyncVoidMethod: false, completingSynchronously: false)) {
 				// Invoke the function and alert the context when it completes
 				var task = asyncMethod();
 				Verify.Operation(task != null, "No task provided.");
@@ -427,6 +427,10 @@ namespace Microsoft.Threading {
 							mainThreadControllingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
 						}
 
+						// We also post this to the underlying sync context (WPF dispatcher) so that when one item
+						// in the queue causes modal UI to appear,
+						// that someone who posts to this SynchronizationContext (which will be active during
+						// that modal dialog) the message has a chance of being executed before the dialog is dismissed.
 						if (this.underlyingSynchronizationContext is PromotableMainThreadSynchronizationContext ||
 							this.underlyingSynchronizationContext is SingleThreadSynchronizationContext) {
 							this.underlyingSynchronizationContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
@@ -634,6 +638,16 @@ namespace Microsoft.Threading {
 			private readonly bool autoCompleteWhenOperationsReachZero;
 
 			/// <summary>
+			/// Indicates whether the synchronization context was initialized on the main thread.
+			/// </summary>
+			private readonly bool affinityWithMainThread;
+
+			/// <summary>
+			/// Indicates whether the <see cref="RunOnCurrentThread"/> method of this class is or will be called.
+			/// </summary>
+			private volatile bool completingSynchronously;
+
+			/// <summary>
 			/// A map of queues that we should be willing to dequeue from when we control the UI thread.
 			/// </summary>
 			/// <remarks>
@@ -654,11 +668,16 @@ namespace Microsoft.Threading {
 			/// equal positive number of OperationStarted and OperationCompleted calls are invoked.
 			/// Should be true only when processing for a root "async void" method.
 			/// </param>
-			internal SingleThreadSynchronizationContext(AsyncPump asyncPump, bool autoCompleteWhenOperationsReachZero) {
+			/// <param name="completingSynchronously">
+			/// Indicates whether the <see cref="RunOnCurrentThread"/> method of this class is or will be called.
+			/// </param>
+			internal SingleThreadSynchronizationContext(AsyncPump asyncPump, bool autoCompleteWhenOperationsReachZero, bool completingSynchronously) {
 				Requires.NotNull(asyncPump, "asyncPump");
 				this.asyncPump = asyncPump;
 				this.autoCompleteWhenOperationsReachZero = autoCompleteWhenOperationsReachZero;
 				this.previousSyncContext = SynchronizationContext.Current;
+				this.affinityWithMainThread = Thread.CurrentThread == asyncPump.mainThread;
+				this.completingSynchronously = completingSynchronously;
 			}
 
 			internal SynchronizationContext PreviousSyncContext {
@@ -671,12 +690,21 @@ namespace Microsoft.Threading {
 			public override void Post(SendOrPostCallback d, object state) {
 				Requires.NotNull(d, "d");
 
-				// We post a SingleExecuteProtector of this message to both our queue and 
-				// the WPF dispatcher so that when one item in the queue causes modal UI to appear,
-				// that someone who posts to this SynchronizationContext (which will be active during
-				// that modal dialog) the message has a chance of being executed before the dialog is dismissed.
-				var executor = this.asyncPump.Post(d, state);
-				this.queue.TryEnqueue(executor);
+				// We'll be posting this message to (potentially) multiple queues, so we wrap
+				// the work up in an object that ensures the work executes no more than once.
+				var executor = new SingleExecuteProtector(this.asyncPump, d, state);
+				bool enqueuedSuccessfully = this.queue.TryEnqueue(executor);
+
+				// Work posted to this sync context should be executed on the Main thread
+				// if and only if it was originally constructed on the main thread.
+				if (this.affinityWithMainThread) {
+					// We post a SingleExecuteProtector of this message to both our queue and
+					// the AsyncPump's queue so that Joining and other opportunities for execution
+					// are satisfied.
+					this.asyncPump.Post(executor);
+				} else if (!this.completingSynchronously || !enqueuedSuccessfully) { // only use threadpool if we don't have a dedicated thread.
+					ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, executor);
+				}
 			}
 
 			/// <summary>Not supported.</summary>
@@ -690,15 +718,19 @@ namespace Microsoft.Threading {
 
 			/// <summary>Runs an loop to process all queued work items.</summary>
 			public void RunOnCurrentThread() {
-				while (true) {
-					var dequeueTask = this.DequeueFromAllSelfAndJoinedQueuesAsync();
-					this.asyncPump.WaitSynchronously(dequeueTask);
-					Assumes.True(dequeueTask.IsCompleted);
-					if (dequeueTask.Result != null) {
-						dequeueTask.Result.TryExecute();
-					} else {
-						break;
+				try {
+					while (true) {
+						var dequeueTask = this.DequeueFromAllSelfAndJoinedQueuesAsync();
+						this.asyncPump.WaitSynchronously(dequeueTask);
+						Assumes.True(dequeueTask.IsCompleted);
+						if (dequeueTask.Result != null) {
+							dequeueTask.Result.TryExecute();
+						} else {
+							break;
+						}
 					}
+				} finally {
+					this.completingSynchronously = false;
 				}
 			}
 
@@ -1077,13 +1109,13 @@ namespace Microsoft.Threading {
 			/// and sets up the synchronization contexts for the
 			/// <see cref="RunSynchronously(Func{Task})"/> family of methods.
 			/// </summary>
-			internal RunFramework(AsyncPump pump, bool asyncVoidMethod) {
+			internal RunFramework(AsyncPump pump, bool asyncVoidMethod, bool completingSynchronously) {
 				Requires.NotNull(pump, "pump");
 
 				this.pump = pump;
 				this.previousContext = SynchronizationContext.Current;
 				this.previousAsyncLocalContext = pump.MainThreadControllingSyncContext;
-				this.appliedContext = new SingleThreadSynchronizationContext(pump, asyncVoidMethod);
+				this.appliedContext = new SingleThreadSynchronizationContext(pump, asyncVoidMethod, completingSynchronously);
 				SynchronizationContext.SetSynchronizationContext(this.appliedContext);
 
 				if (pump.mainThread == Thread.CurrentThread) {

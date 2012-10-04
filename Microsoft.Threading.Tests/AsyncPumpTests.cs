@@ -549,6 +549,46 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void BeginAsyncYieldsToAppropriateContext() {
+			var backgroundWork = Task.Run<Task>(delegate {
+				return this.asyncPump.BeginAsynchronously(async delegate {
+					// Verify that we're on a background thread and stay there.
+					Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
+					await Task.Yield();
+					Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
+
+					// Now explicitly get on the Main thread, and verify that we stay there.
+					await this.asyncPump.SwitchToMainThreadAsync();
+					Assert.AreSame(this.originalThread, Thread.CurrentThread);
+					await Task.Yield();
+					Assert.AreSame(this.originalThread, Thread.CurrentThread);
+				});
+			}).Result;
+
+			this.asyncPump.CompleteSynchronously(backgroundWork);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void RunSynchronouslyYieldsToAppropriateContext() {
+			var backgroundWork = Task.Run(delegate {
+				this.asyncPump.RunSynchronously(async delegate {
+					// Verify that we're on a background thread and stay there.
+					Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
+					await Task.Yield();
+					Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
+
+					// Now explicitly get on the Main thread, and verify that we stay there.
+					await this.asyncPump.SwitchToMainThreadAsync();
+					Assert.AreSame(this.originalThread, Thread.CurrentThread);
+					await Task.Yield();
+					Assert.AreSame(this.originalThread, Thread.CurrentThread);
+				});
+			});
+
+			this.asyncPump.CompleteSynchronously(backgroundWork);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void MainThreadTaskScheduler() {
 			this.asyncPump.RunSynchronously(async delegate {
 				bool completed = false;
@@ -814,6 +854,23 @@
 					});
 				});
 			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void NoPostedMessageLost() {
+			Assert.IsTrue(Task.Run(async delegate {
+				var delegateExecuted = new AsyncManualResetEvent();
+				SynchronizationContext syncContext = null;
+				this.asyncPump.RunSynchronously(delegate {
+					syncContext = SynchronizationContext.Current;
+				});
+				syncContext.Post(
+					delegate {
+						delegateExecuted.Set();
+					},
+					null);
+				await delegateExecuted;
+			}).Wait(TestTimeout), "Timed out waiting for completion.");
 		}
 
 		// This is a known issue and we haven't a fix yet
