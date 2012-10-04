@@ -209,12 +209,19 @@ namespace Microsoft.Threading {
 			where TaskOrTaskOfT : Task {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
-			TaskOrTaskOfT task = null;
-			this.RunSynchronously(delegate {
-				task = asyncMethod();
-			});
+			using (var framework = new RunFramework(this, asyncVoidMethod: false)) {
+				// Invoke the function and alert the context when it completes
+				var task = asyncMethod();
+				Verify.Operation(task != null, "No task provided.");
+				task.ContinueWith(
+					(_, state) => ((SingleThreadSynchronizationContext)state).Complete(),
+					framework.AppliedContext,
+					CancellationToken.None,
+					TaskContinuationOptions.ExecuteSynchronously,
+					TaskScheduler.Default);
 
-			return task;
+				return task;
+			}
 		}
 
 		/// <summary>

@@ -516,7 +516,36 @@
 		public void BeginAsyncCompleteSync() {
 			Task task = this.asyncPump.BeginAsynchronously(
 				() => this.SomeOperationThatUsesMainThreadViaItsOwnAsyncPumpAsync());
+			Assert.IsFalse(task.IsCompleted);
 			this.asyncPump.CompleteSynchronously(task);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void BeginAsyncYieldsWhenDelegateYieldsOnUIThread() {
+			bool afterYieldReached = false;
+			Task task = this.asyncPump.BeginAsynchronously(async delegate {
+				await Task.Yield();
+				afterYieldReached = true;
+			});
+
+			Assert.IsFalse(afterYieldReached);
+			this.asyncPump.CompleteSynchronously(task);
+			Assert.IsTrue(afterYieldReached);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void BeginAsyncYieldsWhenDelegateYieldsOffUIThread() {
+			bool afterYieldReached = false;
+			var backgroundThreadWorkDoneEvent = new AsyncManualResetEvent();
+			Task task = this.asyncPump.BeginAsynchronously(async delegate {
+				await backgroundThreadWorkDoneEvent;
+				afterYieldReached = true;
+			});
+
+			Assert.IsFalse(afterYieldReached);
+			backgroundThreadWorkDoneEvent.Set();
+			this.asyncPump.CompleteSynchronously(task);
+			Assert.IsTrue(afterYieldReached);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
