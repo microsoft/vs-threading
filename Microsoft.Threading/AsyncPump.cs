@@ -1079,17 +1079,15 @@ namespace Microsoft.Threading {
 				// Applies a SynchronizationContext that mitigates deadlocks in async methods that may be invoked
 				// on the Main thread and while invoked asynchronously may ultimately synchronously block the Main
 				// thread for completion.
-				if (this.asyncPump.mainThread == Thread.CurrentThread) {
-					// It's critical that the SynchronizationContext applied to the caller be one 
-					// that not only posts to the current Dispatcher, but to a queue that can be
-					// forwarded to another one in the event that an async method eventually ends up
-					// being synchronously blocked on.
-					if (!(SynchronizationContext.Current is SingleThreadSynchronizationContext)
-						&& SynchronizationContext.Current != this.asyncPump.promotableSyncContext) {
-						// We don't have to worry about backing up the old context to restore it later
-						// because in an async continuation (which this is), .NET automatically does this.
-						SynchronizationContext.SetSynchronizationContext(this.asyncPump.promotableSyncContext);
-					}
+				// It's critical that the SynchronizationContext applied to the caller be one 
+				// that not only posts to the current Dispatcher, but to a queue that can be
+				// forwarded to another one in the event that an async method eventually ends up
+				// being synchronously blocked on.
+				if (!(SynchronizationContext.Current is SingleThreadSynchronizationContext)
+					&& SynchronizationContext.Current != this.asyncPump.promotableSyncContext) {
+					// We don't have to worry about backing up the old context to restore it later
+					// because in an async continuation (which this is), .NET automatically does this.
+					SynchronizationContext.SetSynchronizationContext(this.asyncPump.promotableSyncContext);
 				}
 			}
 		}
