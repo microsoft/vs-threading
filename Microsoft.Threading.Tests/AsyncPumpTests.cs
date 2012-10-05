@@ -842,6 +842,63 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void JoinWorkStealingRetainsThreadAffinityUI() {
+			bool synchronousCompletionStarting = false;
+			var asyncTask = this.asyncPump.BeginAsynchronously(async delegate {
+				int iterationsRemaining = 20;
+				while (iterationsRemaining > 0) {
+					await Task.Yield();
+					Assert.AreSame(this.originalThread, Thread.CurrentThread);
+
+					if (synchronousCompletionStarting) {
+						iterationsRemaining--;
+					}
+				}
+			});
+
+			var frame = new DispatcherFrame();
+
+			Task.Run(async delegate {
+				synchronousCompletionStarting = true;
+				this.asyncPump.CompleteSynchronously(asyncTask);
+				Assert.IsTrue(asyncTask.IsCompleted);
+				frame.Continue = false;
+			});
+
+			Dispatcher.PushFrame(frame);
+			asyncTask.Wait(); // realize any exceptions
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void JoinWorkStealingRetainsThreadAffinityBackground() {
+			bool synchronousCompletionStarting = false;
+			var asyncTask = Task.Run(delegate {
+				return this.asyncPump.BeginAsynchronously(async delegate {
+					int iterationsRemaining = 20;
+					while (iterationsRemaining > 0) {
+						await Task.Yield();
+						Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
+
+						if (synchronousCompletionStarting) {
+							iterationsRemaining--;
+						}
+					}
+
+					await this.asyncPump.SwitchToMainThreadAsync();
+					for (int i = 0; i < 20; i++) {
+						Assert.AreSame(this.originalThread, Thread.CurrentThread);
+						await Task.Yield();
+					}
+				});
+			});
+
+			synchronousCompletionStarting = true;
+			this.asyncPump.CompleteSynchronously(asyncTask);
+			Assert.IsTrue(asyncTask.IsCompleted);
+			asyncTask.Wait(); // realize any exceptions
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void RunSynchronouslyWithoutSyncContext() {
 			SynchronizationContext.SetSynchronizationContext(null);
 			this.asyncPump = new AsyncPump();
