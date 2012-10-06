@@ -356,7 +356,7 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="action">The continuation to execute.</param>
 		protected virtual void SwitchToMainThreadOnCompleted(Action action) {
-			this.Post(action);
+			this.Post(SingleExecuteProtector.Create(this, action));
 		}
 
 		/// <summary>
@@ -380,27 +380,6 @@ namespace Microsoft.Threading {
 		protected virtual void WaitSynchronously(Task task) {
 			Requires.NotNull(task, "task");
 			while (!task.Wait(1000)) { }
-		}
-
-		/// <summary>
-		/// Schedules the specified delegate for execution on the Main thread.
-		/// </summary>
-		/// <param name="action">The delegate to invoke.</param>
-		private SingleExecuteProtector Post(Action action) {
-			var executor = SingleExecuteProtector.Create(this, action);
-			this.Post(executor);
-			return executor;
-		}
-
-		/// <summary>
-		/// Schedules the specified delegate for execution on the Main thread.
-		/// </summary>
-		/// <param name="callback">The delegate to invoke.</param>
-		/// <param name="state">The argument to pass to the delegate.</param>
-		private SingleExecuteProtector Post(SendOrPostCallback callback, object state) {
-			var executor = SingleExecuteProtector.Create(this, callback, state);
-			this.Post(executor);
-			return executor;
 		}
 
 		/// <summary>
@@ -924,7 +903,7 @@ namespace Microsoft.Threading {
 			/// Forwards posted delegates to <see cref="AsyncPump.Post(SendOrPostCallback, object)"/>
 			/// </summary>
 			public override void Post(SendOrPostCallback d, object state) {
-				this.asyncPump.Post(d, state);
+				this.asyncPump.Post(SingleExecuteProtector.Create(this.asyncPump, d, state));
 			}
 
 			/// <summary>
