@@ -753,19 +753,6 @@ namespace Microsoft.Threading {
 				}
 			}
 
-			/// <summary>Dispatches an asynchronous message to the synchronization context.</summary>
-			/// <param name="d">The System.Threading.SendOrPostCallback delegate to call.</param>
-			/// <param name="state">The object passed to the delegate.</param>
-			/// <param name="caller">The caller of this method, if an instance of AsyncPump.</param>
-			internal void Post(SendOrPostCallback d, object state, AsyncPump caller) {
-				Requires.NotNull(d, "d");
-				var wrapper = new SingleExecuteProtector(this.asyncPump, d, state);
-				if (!this.queue.TryEnqueue(wrapper)) {
-					this.asyncPump.Post(wrapper);
-					this.previousSyncContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
-				}
-			}
-
 			internal JoinRelease Join(AsyncPump other) {
 				Requires.NotNull(other, "other");
 
