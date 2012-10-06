@@ -102,21 +102,36 @@ namespace Microsoft.Threading.Tests {
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task ValueFactoryReleasedAfterExecution() {
-			WeakReference collectible = null;
-			AsyncLazy<object> lazy = null;
-			((Action)(() => {
-				var closure = new { value = new object() };
-				collectible = new WeakReference(closure);
-				lazy = new AsyncLazy<object>(async delegate {
-					await Task.Yield();
-					return closure.value;
-				});
-			}))();
+			for (int i = 0; i < 10; i++) {
+				Console.WriteLine("Iteration {0}", i);
+				WeakReference collectible = null;
+				AsyncLazy<object> lazy = null;
+				((Action)(() => {
+					var closure = new { value = new object() };
+					collectible = new WeakReference(closure);
+					lazy = new AsyncLazy<object>(async delegate {
+						await Task.Yield();
+						return closure.value;
+					});
+				}))();
 
-			Assert.IsTrue(collectible.IsAlive);
-			var result = await lazy.GetValueAsync();
-			GC.Collect();
-			Assert.IsFalse(collectible.IsAlive);
+				Assert.IsTrue(collectible.IsAlive);
+				var result = await lazy.GetValueAsync();
+
+				for (int j = 0; j < 3 && collectible.IsAlive; j++) {
+					GC.Collect(2, GCCollectionMode.Forced, true);
+					await Task.Yield();
+				}
+
+				// It turns out that the GC isn't predictable.  But as long as
+				// we can get an iteration where the value has been GC'd, we can
+				// be confident that the product is releasing the reference.
+				if (!collectible.IsAlive) {
+					return; // PASS.
+				}
+			}
+
+			Assert.Fail("The reference was never released");
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
