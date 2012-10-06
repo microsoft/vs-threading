@@ -398,7 +398,7 @@ namespace Microsoft.Threading {
 		/// <param name="callback">The delegate to invoke.</param>
 		/// <param name="state">The argument to pass to the delegate.</param>
 		private SingleExecuteProtector Post(SendOrPostCallback callback, object state) {
-			var executor = new SingleExecuteProtector(this, callback, state);
+			var executor = SingleExecuteProtector.Create(this, callback, state);
 			this.Post(executor);
 			return executor;
 		}
@@ -545,15 +545,25 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>
-			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class.
+			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class
+			/// that describes the specified callback.
 			/// </summary>
-			/// <param name="asyncPump">The <see cref="AsyncPump"/> instance that created this.</param>
-			/// <param name="callback">The delegate being wrapped.</param>
-			/// <param name="state">The value to pass to the delegate.</param>
-			internal SingleExecuteProtector(AsyncPump asyncPump, SendOrPostCallback callback, object state)
-				: this(asyncPump) {
-				this.invokeDelegate = callback;
-				this.state = state;
+			/// <param name="asyncPump">The pump whose queue should be dequeued when this delegate is invoked.</param>
+			/// <param name="callback">The callback to invoke.</param>
+			/// <param name="state">The state object to pass to the callback.</param>
+			/// <returns>An instance of <see cref="SingleExecuteProtector"/>.</returns>
+			internal static SingleExecuteProtector Create(AsyncPump asyncPump, SendOrPostCallback callback, object state) {
+				// As an optimization, recognize if what we're being handed is already an instance of this type,
+				// because if it is, we don't need to wrap it with yet another instance.
+				var existing = state as SingleExecuteProtector;
+				if (callback == ExecuteOnce && existing != null && existing.asyncPump == asyncPump) {
+					return (SingleExecuteProtector)state;
+				}
+
+				return new SingleExecuteProtector(asyncPump) {
+					invokeDelegate = callback,
+					state = state,
+				};
 			}
 
 			/// <summary>
@@ -692,7 +702,7 @@ namespace Microsoft.Threading {
 
 				// We'll be posting this message to (potentially) multiple queues, so we wrap
 				// the work up in an object that ensures the work executes no more than once.
-				var executor = new SingleExecuteProtector(this.asyncPump, d, state);
+				var executor = SingleExecuteProtector.Create(this.asyncPump, d, state);
 				bool enqueuedSuccessfully = this.queue.TryEnqueue(executor);
 
 				// Work posted to this sync context should be executed on the Main thread
