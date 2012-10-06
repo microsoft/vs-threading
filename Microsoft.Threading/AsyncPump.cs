@@ -387,7 +387,7 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="action">The delegate to invoke.</param>
 		private SingleExecuteProtector Post(Action action) {
-			var executor = new SingleExecuteProtector(this, action);
+			var executor = SingleExecuteProtector.Create(this, action);
 			this.Post(executor);
 			return executor;
 		}
@@ -539,9 +539,11 @@ namespace Microsoft.Threading {
 			/// </summary>
 			/// <param name="asyncPump">The <see cref="AsyncPump"/> instance that created this.</param>
 			/// <param name="action">The delegate being wrapped.</param>
-			internal SingleExecuteProtector(AsyncPump asyncPump, Action action)
-				: this(asyncPump) {
-				this.invokeDelegate = action;
+			/// <returns>An instance of <see cref="SingleExecuteProtector"/>.</returns>
+			internal static SingleExecuteProtector Create(AsyncPump asyncPump, Action action) {
+				return new SingleExecuteProtector(asyncPump) {
+					invokeDelegate = action,
+				};
 			}
 
 			/// <summary>
