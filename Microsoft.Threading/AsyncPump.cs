@@ -31,6 +31,8 @@ namespace Microsoft.Threading {
 		/// </summary>
 		private static readonly ThreadLocal<HashSet<AsyncPump>> postedMessageVisited = new ThreadLocal<HashSet<AsyncPump>>(() => new HashSet<AsyncPump>());
 
+		private static readonly AsyncLocal<Joinable> joinableOperation = new AsyncLocal<Joinable>();
+
 		/// <summary>
 		/// The WPF Dispatcher, or other SynchronizationContext that is applied to the Main thread.
 		/// </summary>
@@ -225,6 +227,34 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// Wraps the invocation of an async method such that it may
+		/// execute asynchronously, but may potentially be
+		/// synchronously completed (waited on) in the future.
+		/// </summary>
+		/// <typeparam name="TaskOrTaskOfT"><see cref="Task"/> or <see cref="Task{T}"/></typeparam>
+		/// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
+		/// <returns>The task result of the method.</returns>
+		public Joinable BeginAsynchronouslyJoinable<TaskOrTaskOfT>(Func<TaskOrTaskOfT> asyncMethod)
+			where TaskOrTaskOfT : Task {
+			Requires.NotNull(asyncMethod, "asyncMethod");
+
+			using (var framework = new RunFramework(this, asyncVoidMethod: false, completingSynchronously: false)) {
+				// Invoke the function and alert the context when it completes
+				var task = asyncMethod();
+				Verify.Operation(task != null, "No task provided.");
+				task.ContinueWith(
+					(_, state) => ((SingleThreadSynchronizationContext)state).Complete(),
+					framework.AppliedContext,
+					CancellationToken.None,
+					TaskContinuationOptions.ExecuteSynchronously,
+					TaskScheduler.Default);
+
+				framework.JoinableOperation.Task = task;
+				return framework.JoinableOperation;
+			}
+		}
+
+		/// <summary>
 		/// Synchronously blocks until the specified task has completed,
 		/// which was previously obtained from <see cref="BeginAsynchronously{T}"/>.
 		/// </summary>
@@ -263,6 +293,10 @@ namespace Microsoft.Threading {
 		/// </code>
 		/// </example></remarks>
 		public SynchronizationContextAwaitable SwitchToMainThreadAsync() {
+			if (joinableOperation.Value != null) {
+				joinableOperation.Value.Add(this);
+			}
+
 			return new SynchronizationContextAwaitable(this);
 		}
 
@@ -604,6 +638,54 @@ namespace Microsoft.Threading {
 					this.joined.Disjoin(this.joiner);
 					this.joined = null;
 					this.joiner = null;
+				}
+			}
+		}
+
+		public class Joinable {
+			private readonly HashSet<AsyncPump> set;
+			private readonly AsyncPump owner;
+
+			internal Joinable(AsyncPump owner) {
+				Requires.NotNull(owner, "owner");
+
+				this.set = new HashSet<AsyncPump>();
+				this.owner = owner;
+			}
+
+			public Task Task { get; internal set; }
+
+			public void Join() {
+				this.owner.RunSynchronously(async delegate {
+					await this.JoinAsync();
+				});
+			}
+
+			public async Task JoinAsync() {
+				HashSet<AsyncPump> localSet;
+				lock (this.set) {
+					localSet = new HashSet<AsyncPump>(this.set);
+				}
+
+				var joinReleasers = new List<JoinRelease>(localSet.Count);
+				try {
+					// TODO: respond to changes in the set while we're still in a joined state.
+					foreach (var pump in localSet) {
+						joinReleasers.Add(pump.Join());
+					}
+
+					await this.Task;
+				} finally {
+					foreach (var releaser in joinReleasers) {
+						releaser.Dispose();
+					}
+				}
+			}
+
+			internal void Add(AsyncPump pump) {
+				Requires.NotNull(pump, "pump");
+				lock (this.set) {
+					this.set.Add(pump);
 				}
 			}
 		}
@@ -1079,6 +1161,7 @@ namespace Microsoft.Threading {
 			private readonly SynchronizationContext previousContext;
 			private readonly SingleThreadSynchronizationContext appliedContext;
 			private readonly SingleThreadSynchronizationContext previousAsyncLocalContext;
+			private readonly Joinable joinable;
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="RunFramework"/> struct
@@ -1088,6 +1171,7 @@ namespace Microsoft.Threading {
 			internal RunFramework(AsyncPump pump, bool asyncVoidMethod, bool completingSynchronously) {
 				Requires.NotNull(pump, "pump");
 
+				this.joinable = null;
 				this.pump = pump;
 				this.previousContext = SynchronizationContext.Current;
 				this.previousAsyncLocalContext = pump.MainThreadControllingSyncContext;
@@ -1096,6 +1180,10 @@ namespace Microsoft.Threading {
 
 				if (pump.mainThread == Thread.CurrentThread) {
 					pump.MainThreadControllingSyncContext = this.appliedContext;
+				} else if (!completingSynchronously) {
+					joinableOperation.Value = new Joinable(pump);
+					joinableOperation.Value.Add(pump);
+					joinable = joinableOperation.Value;
 				}
 			}
 
@@ -1105,6 +1193,10 @@ namespace Microsoft.Threading {
 			/// </summary>
 			internal SingleThreadSynchronizationContext AppliedContext {
 				get { return this.appliedContext; }
+			}
+
+			internal Joinable JoinableOperation {
+				get { return this.joinable; }
 			}
 
 			/// <summary>

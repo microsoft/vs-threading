@@ -588,25 +588,27 @@
 			this.asyncPump.CompleteSynchronously(backgroundWork);
 		}
 
-		[TestMethod, Timeout(TestTimeout), Ignore] // fails, but the scenario seems important to make work
+		[TestMethod]//, Timeout(TestTimeout)]
 		public void BeginAsyncOnMTAKicksOffOtherAsyncPumpWorkCanCompleteSynchronously() {
 			var otherPump = new AsyncPump();
 			bool taskFinished = false;
 
 			// Kick off the BeginAsync work from a background thread that has no special
 			// affinity to the main thread.
-			Task task = Task.Run<Task>(delegate {
-				return this.asyncPump.BeginAsynchronously(async delegate {
+			var joinable = Task.Run(delegate {
+				return this.asyncPump.BeginAsynchronouslyJoinable(async delegate {
 					await Task.Yield();
 					await otherPump.SwitchToMainThreadAsync();
 					taskFinished = true;
 				});
 			}).Result;
 
-			Assert.IsFalse(task.IsCompleted);
-			this.asyncPump.CompleteSynchronously(task);
-			Assert.IsTrue(task.IsCompleted);
-			Assert.IsTrue(taskFinished);
+			Assert.IsFalse(joinable.Task.IsCompleted);
+			this.asyncPump.RunSynchronously(async delegate {
+				await joinable.JoinAsync();
+				Assert.IsTrue(taskFinished);
+				Assert.IsTrue(joinable.Task.IsCompleted);
+			});
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
