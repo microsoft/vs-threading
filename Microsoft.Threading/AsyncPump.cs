@@ -31,6 +31,9 @@ namespace Microsoft.Threading {
 		/// </summary>
 		private static readonly ThreadLocal<HashSet<AsyncPump>> postedMessageVisited = new ThreadLocal<HashSet<AsyncPump>>(() => new HashSet<AsyncPump>());
 
+		/// <summary>
+		/// An AsyncLocal value that carries the joinable instance associated with an async operation.
+		/// </summary>
 		private static readonly AsyncLocal<Joinable> joinableOperation = new AsyncLocal<Joinable>();
 
 		/// <summary>
