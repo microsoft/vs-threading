@@ -236,7 +236,8 @@ namespace Microsoft.Threading {
 		public Joinable BeginAsynchronouslyJoinable(Func<Task> asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
-			using (var framework = new RunFramework(this, asyncVoidMethod: false, completingSynchronously: false)) {
+			var joinable = this.mainThread == Thread.CurrentThread ? null : new Joinable(this);
+			using (var framework = new RunFramework(this, asyncVoidMethod: false, completingSynchronously: false, joinable: joinable)) {
 				// Invoke the function and alert the context when it completes
 				var task = asyncMethod();
 				Verify.Operation(task != null, "No task provided.");
@@ -249,6 +250,34 @@ namespace Microsoft.Threading {
 
 				framework.JoinableOperation.Task = task;
 				return framework.JoinableOperation;
+			}
+		}
+
+		/// <summary>
+		/// Wraps the invocation of an async method such that it may
+		/// execute asynchronously, but may potentially be
+		/// synchronously completed (waited on) in the future.
+		/// </summary>
+		/// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
+		/// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
+		/// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
+		public Joinable<T> BeginAsynchronouslyJoinable<T>(Func<Task<T>> asyncMethod) {
+			Requires.NotNull(asyncMethod, "asyncMethod");
+
+			var joinable = this.mainThread == Thread.CurrentThread ? null : new Joinable<T>(this);
+			using (var framework = new RunFramework(this, asyncVoidMethod: false, completingSynchronously: false, joinable: joinable)) {
+				// Invoke the function and alert the context when it completes
+				var task = asyncMethod();
+				Verify.Operation(task != null, "No task provided.");
+				task.ContinueWith(
+					(_, state) => ((SingleThreadSynchronizationContext)state).Complete(),
+					framework.AppliedContext,
+					CancellationToken.None,
+					TaskContinuationOptions.ExecuteSynchronously,
+					TaskScheduler.Default);
+
+				framework.JoinableOperation.Task = task;
+				return (Joinable<T>)framework.JoinableOperation;
 			}
 		}
 
@@ -291,10 +320,6 @@ namespace Microsoft.Threading {
 		/// </code>
 		/// </example></remarks>
 		public SynchronizationContextAwaitable SwitchToMainThreadAsync() {
-			if (joinableOperation.Value != null) {
-				joinableOperation.Value.Add(this);
-			}
-
 			return new SynchronizationContextAwaitable(this);
 		}
 
@@ -474,6 +499,7 @@ namespace Microsoft.Threading {
 			private readonly AsyncPump pump;
 			private SingleThreadSynchronizationContext oldCallContextValue;
 			private SingleThreadSynchronizationContext oldCurrentSyncContext;
+			private Joinable oldJoinable;
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="RevertRelevance"/> struct.
@@ -485,6 +511,9 @@ namespace Microsoft.Threading {
 
 				this.oldCallContextValue = pump.MainThreadControllingSyncContext;
 				pump.MainThreadControllingSyncContext = null;
+
+				this.oldJoinable = joinableOperation.Value;
+				joinableOperation.Value = null;
 
 				this.oldCurrentSyncContext = SynchronizationContext.Current as SingleThreadSynchronizationContext;
 				if (this.oldCurrentSyncContext != null) {
@@ -499,6 +528,8 @@ namespace Microsoft.Threading {
 				if (this.pump != null) {
 					this.pump.MainThreadControllingSyncContext = this.oldCallContextValue;
 				}
+
+				joinableOperation.Value = this.oldJoinable;
 
 				if (this.oldCurrentSyncContext != null) {
 					SynchronizationContext.SetSynchronizationContext(this.oldCurrentSyncContext);
@@ -741,6 +772,14 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>
+			/// Gets an awaiter that is equivalent to calling <see cref="JoinAsync"/>.
+			/// </summary>
+			/// <returns>A task whose result is the result of the asynchronous operation.</returns>
+			public TaskAwaiter GetAwaiter() {
+				return this.JoinAsync().GetAwaiter();
+			}
+
+			/// <summary>
 			/// Adds an <see cref="AsyncPump"/> instance as one that is relevant to the async operation.
 			/// </summary>
 			/// <param name="pump">The instance to add.</param>
@@ -766,6 +805,58 @@ namespace Microsoft.Threading {
 				if (addedPump != null) {
 					addedPump(pump);
 				}
+			}
+		}
+
+		/// <summary>
+		/// Tracks asynchronous operations and provides the ability to Join those operations to avoid
+		/// deadlocks while synchronously blocking the Main thread for the operation's completion.
+		/// </summary>
+		/// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
+		public class Joinable<T> : Joinable {
+			/// <summary>
+			/// Initializes a new instance of the <see cref="Joinable"/> class.
+			/// </summary>
+			/// <param name="owner">The instance that began the async operation.</param>
+			public Joinable(AsyncPump owner)
+				: base(owner) {
+			}
+
+			/// <summary>
+			/// Gets the asynchronous task that completes when the async operation completes.
+			/// </summary>
+			public new Task<T> Task {
+				get { return (Task<T>)base.Task; }
+				set { base.Task = value; }
+			}
+
+			/// <summary>
+			/// Joins any main thread affinity of the caller with the asynchronous operation to avoid deadlocks
+			/// in the event that the main thread ultimately synchronously blocks waiting for the operation to complete.
+			/// </summary>
+			/// <returns>A task that completes after the asynchronous operation completes and the join is reverted, with the result of the operation.</returns>
+			public new async Task<T> JoinAsync() {
+				await base.JoinAsync();
+				return await this.Task;
+			}
+
+			/// <summary>
+			/// Synchronously blocks the calling thread until the operation has completed.
+			/// If the calling thread is the Main thread, deadlocks are mitigated.
+			/// </summary>
+			/// <returns>The result of the asynchronous operation.</returns>
+			public new T Join() {
+				base.Join();
+				Assumes.True(this.Task.IsCompleted);
+				return this.Task.Result;
+			}
+
+			/// <summary>
+			/// Gets an awaiter that is equivalent to calling <see cref="JoinAsync"/>.
+			/// </summary>
+			/// <returns>A task whose result is the result of the asynchronous operation.</returns>
+			public new TaskAwaiter<T> GetAwaiter() {
+				return this.JoinAsync().GetAwaiter();
 			}
 		}
 
@@ -1154,8 +1245,14 @@ namespace Microsoft.Threading {
 			/// Initializes a new instance of the <see cref="SynchronizationContextAwaitable"/> struct.
 			/// </summary>
 			internal SynchronizationContextAwaitable(AsyncPump asyncPump, bool alwaysYield = false) {
+				Requires.NotNull(asyncPump, "asyncPump");
+
 				this.asyncPump = asyncPump;
 				this.alwaysYield = alwaysYield;
+
+				if (joinableOperation.Value != null) {
+					joinableOperation.Value.Add(asyncPump);
+				}
 			}
 
 			/// <summary>
@@ -1247,10 +1344,10 @@ namespace Microsoft.Threading {
 			/// and sets up the synchronization contexts for the
 			/// <see cref="RunSynchronously(Func{Task})"/> family of methods.
 			/// </summary>
-			internal RunFramework(AsyncPump pump, bool asyncVoidMethod, bool completingSynchronously) {
+			internal RunFramework(AsyncPump pump, bool asyncVoidMethod, bool completingSynchronously, Joinable joinable = null) {
 				Requires.NotNull(pump, "pump");
 
-				this.joinable = null;
+				this.joinable = joinable;
 				this.pump = pump;
 				this.previousContext = SynchronizationContext.Current;
 				this.previousAsyncLocalContext = pump.MainThreadControllingSyncContext;
@@ -1259,8 +1356,10 @@ namespace Microsoft.Threading {
 
 				if (pump.mainThread == Thread.CurrentThread) {
 					pump.MainThreadControllingSyncContext = this.appliedContext;
-				} else if (!completingSynchronously) {
-					joinable = joinableOperation.Value = new Joinable(pump);
+				}
+
+				if (joinable != null) {
+					joinableOperation.Value = joinable;
 				}
 			}
 
@@ -1272,6 +1371,9 @@ namespace Microsoft.Threading {
 				get { return this.appliedContext; }
 			}
 
+			/// <summary>
+			/// Gets the joinable operation this work is affiliated with.
+			/// </summary>
 			internal Joinable JoinableOperation {
 				get { return this.joinable; }
 			}

@@ -604,11 +604,32 @@
 			}).Result;
 
 			Assert.IsFalse(joinable.Task.IsCompleted);
-			this.asyncPump.RunSynchronously(async delegate {
-				await joinable.JoinAsync();
-				Assert.IsTrue(taskFinished);
-				Assert.IsTrue(joinable.Task.IsCompleted);
-			});
+			joinable.Join();
+			Assert.IsTrue(taskFinished);
+			Assert.IsTrue(joinable.Task.IsCompleted);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void BeginAsyncWithResultOnMTAKicksOffOtherAsyncPumpWorkCanCompleteSynchronously() {
+			var otherPump = new AsyncPump();
+			bool taskFinished = false;
+
+			// Kick off the BeginAsync work from a background thread that has no special
+			// affinity to the main thread.
+			var joinable = Task.Run(delegate {
+				return this.asyncPump.BeginAsynchronouslyJoinable(async delegate {
+					await Task.Yield();
+					await otherPump.SwitchToMainThreadAsync();
+					taskFinished = true;
+					return 5;
+				});
+			}).Result;
+
+			Assert.IsFalse(joinable.Task.IsCompleted);
+			var result = joinable.Join();
+			Assert.AreEqual<int>(5, result);
+			Assert.IsTrue(taskFinished);
+			Assert.IsTrue(joinable.Task.IsCompleted);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
