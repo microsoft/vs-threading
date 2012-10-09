@@ -44,6 +44,11 @@ namespace Microsoft.Threading {
 		private Task<T> value;
 
 		/// <summary>
+		/// A joinable task whose result is the value to be cached.
+		/// </summary>
+		private AsyncPump.Joinable<T> joinableTask;
+
+		/// <summary>
 		/// Initializes a new instance of the <see cref="AsyncLazy{T}"/> class.
 		/// </summary>
 		/// <param name="valueFactory">The async function that produces the value.  To be invoked at most once.</param>
@@ -91,8 +96,16 @@ namespace Microsoft.Threading {
 								// Wrapping with BeginAsynchronously allows a future caller
 								// to synchronously block the Main thread waiting for the result
 								// without leading to deadlocks.
-								this.value = this.asyncPump.BeginAsynchronously(valueFactory);
-								this.value.ContinueWith((_, state) => ((AsyncLazy<T>)state).asyncPump = null, this, TaskScheduler.Default);
+								this.joinableTask = this.asyncPump.BeginAsynchronously(valueFactory);
+								this.value = this.joinableTask.Task;
+								this.value.ContinueWith(
+									(_, state) => {
+										var that = (AsyncLazy<T>)state;
+										that.asyncPump = null;
+										that.joinableTask = null;
+									},
+									this,
+									TaskScheduler.Default);
 							} else {
 								this.value = valueFactory();
 							}
@@ -108,9 +121,8 @@ namespace Microsoft.Threading {
 			}
 
 			var asyncPump = this.asyncPump;
-			if (!this.value.IsCompleted && asyncPump != null) {
-				var joinReleaser = asyncPump.Join();
-				this.value.ContinueWith((_, state) => ((AsyncPump.JoinRelease)state).Dispose(), joinReleaser, TaskScheduler.Default);
+			if (!this.value.IsCompleted && this.joinableTask != null) {
+				this.joinableTask.JoinAsync().Forget();
 			}
 
 			return this.value;
