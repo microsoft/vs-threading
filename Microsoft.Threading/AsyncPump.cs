@@ -204,36 +204,9 @@ namespace Microsoft.Threading {
 		/// execute asynchronously, but may potentially be
 		/// synchronously completed (waited on) in the future.
 		/// </summary>
-		/// <typeparam name="TaskOrTaskOfT"><see cref="Task"/> or <see cref="Task{T}"/></typeparam>
-		/// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
-		/// <returns>The task result of the method.</returns>
-		public TaskOrTaskOfT BeginAsynchronously<TaskOrTaskOfT>(Func<TaskOrTaskOfT> asyncMethod)
-			where TaskOrTaskOfT : Task {
-			Requires.NotNull(asyncMethod, "asyncMethod");
-
-			using (var framework = new RunFramework(this, asyncVoidMethod: false, completingSynchronously: false)) {
-				// Invoke the function and alert the context when it completes
-				var task = asyncMethod();
-				Verify.Operation(task != null, "No task provided.");
-				task.ContinueWith(
-					(_, state) => ((SingleThreadSynchronizationContext)state).Complete(),
-					framework.AppliedContext,
-					CancellationToken.None,
-					TaskContinuationOptions.ExecuteSynchronously,
-					TaskScheduler.Default);
-
-				return task;
-			}
-		}
-
-		/// <summary>
-		/// Wraps the invocation of an async method such that it may
-		/// execute asynchronously, but may potentially be
-		/// synchronously completed (waited on) in the future.
-		/// </summary>
 		/// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
 		/// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
-		public Joinable BeginAsynchronouslyJoinable(Func<Task> asyncMethod) {
+		public Joinable BeginAsynchronously(Func<Task> asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
 			using (var framework = new RunFramework(this, asyncVoidMethod: false, completingSynchronously: false, joinable: new Joinable(this))) {
@@ -260,7 +233,7 @@ namespace Microsoft.Threading {
 		/// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
 		/// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
 		/// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
-		public Joinable<T> BeginAsynchronouslyJoinable<T>(Func<Task<T>> asyncMethod) {
+		public Joinable<T> BeginAsynchronously<T>(Func<Task<T>> asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
 			using (var framework = new RunFramework(this, asyncVoidMethod: false, completingSynchronously: false, joinable: new Joinable<T>(this))) {
