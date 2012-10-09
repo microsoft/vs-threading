@@ -588,7 +588,7 @@
 			this.asyncPump.CompleteSynchronously(backgroundWork);
 		}
 
-		[TestMethod]//, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout)]
 		public void BeginAsyncOnMTAKicksOffOtherAsyncPumpWorkCanCompleteSynchronously() {
 			var otherPump = new AsyncPump();
 			bool taskFinished = false;
@@ -860,7 +860,7 @@
 
 			var frame = new DispatcherFrame();
 
-			Task.Run(async delegate {
+			Task.Run(delegate {
 				synchronousCompletionStarting = true;
 				this.asyncPump.CompleteSynchronously(asyncTask);
 				Assert.IsTrue(asyncTask.IsCompleted);

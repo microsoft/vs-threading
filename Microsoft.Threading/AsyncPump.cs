@@ -231,11 +231,9 @@ namespace Microsoft.Threading {
 		/// execute asynchronously, but may potentially be
 		/// synchronously completed (waited on) in the future.
 		/// </summary>
-		/// <typeparam name="TaskOrTaskOfT"><see cref="Task"/> or <see cref="Task{T}"/></typeparam>
 		/// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
-		/// <returns>The task result of the method.</returns>
-		public Joinable BeginAsynchronouslyJoinable<TaskOrTaskOfT>(Func<TaskOrTaskOfT> asyncMethod)
-			where TaskOrTaskOfT : Task {
+		/// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
+		public Joinable BeginAsynchronouslyJoinable(Func<Task> asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
 			using (var framework = new RunFramework(this, asyncVoidMethod: false, completingSynchronously: false)) {
@@ -642,50 +640,131 @@ namespace Microsoft.Threading {
 			}
 		}
 
+		/// <summary>
+		/// Tracks asynchronous operations and provides the ability to Join those operations to avoid
+		/// deadlocks while synchronously blocking the Main thread for the operation's completion.
+		/// </summary>
 		public class Joinable {
+			/// <summary>
+			/// The set of <see cref="AsyncPump"/> instances that are involved in the async operation.
+			/// </summary>
 			private readonly HashSet<AsyncPump> set;
+
+			/// <summary>
+			/// The <see cref="AsyncPump"/> that began the async operation.
+			/// </summary>
 			private readonly AsyncPump owner;
 
+			/// <summary>
+			/// An event that is raised when an <see cref="AsyncPump"/> is added as relevant to this operation.
+			/// </summary>
+			private event Action<AsyncPump> addedPump;
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="Joinable"/> class.
+			/// </summary>
+			/// <param name="owner">The instance that began the async operation.</param>
 			internal Joinable(AsyncPump owner) {
 				Requires.NotNull(owner, "owner");
 
 				this.set = new HashSet<AsyncPump>();
+				this.set.Add(owner);
 				this.owner = owner;
 			}
 
+			/// <summary>
+			/// Gets the asynchronous task that completes when the async operation completes.
+			/// </summary>
 			public Task Task { get; internal set; }
 
+			/// <summary>
+			/// Synchronously blocks the calling thread until the operation has completed.
+			/// If the calling thread is the Main thread, deadlocks are mitigated.
+			/// </summary>
 			public void Join() {
 				this.owner.RunSynchronously(async delegate {
 					await this.JoinAsync();
 				});
 			}
 
+			/// <summary>
+			/// Joins any main thread affinity of the caller with the asynchronous operation to avoid deadlocks
+			/// in the event that the main thread ultimately synchronously blocks waiting for the operation to complete.
+			/// </summary>
+			/// <returns>A task that completes after the asynchronous operation completes and the join is reverted.</returns>
 			public async Task JoinAsync() {
 				HashSet<AsyncPump> localSet;
+				var joinReleasers = new List<JoinRelease>();
+				var controllingSyncContext = this.owner.MainThreadControllingSyncContext;
+				bool dejoining = false;
+				Action<AsyncPump> addedHandler = addedPump => {
+					if (controllingSyncContext != null && !dejoining) {
+						var releaser = controllingSyncContext.Join(addedPump);
+						lock (joinReleasers) {
+							joinReleasers.Add(releaser);
+						}
+
+						if (dejoining) {
+							// make sure we don't leave a straggling join in the event of a race condition.
+							releaser.Dispose();
+						}
+					}
+				};
+
 				lock (this.set) {
 					localSet = new HashSet<AsyncPump>(this.set);
+					this.addedPump += addedHandler;
 				}
 
-				var joinReleasers = new List<JoinRelease>(localSet.Count);
 				try {
-					// TODO: respond to changes in the set while we're still in a joined state.
 					foreach (var pump in localSet) {
-						joinReleasers.Add(pump.Join());
+						var releaser = pump.Join();
+						lock (joinReleasers) {
+							joinReleasers.Add(releaser);
+						}
 					}
 
 					await this.Task;
 				} finally {
-					foreach (var releaser in joinReleasers) {
+					dejoining = true;
+					this.addedPump -= addedHandler;
+					var releasing = new List<JoinRelease>();
+					lock (joinReleasers) {
+						releasing.AddRange(joinReleasers);
+						joinReleasers.Clear();
+					}
+
+					foreach (var releaser in releasing) {
 						releaser.Dispose();
 					}
 				}
 			}
 
+			/// <summary>
+			/// Adds an <see cref="AsyncPump"/> instance as one that is relevant to the async operation.
+			/// </summary>
+			/// <param name="pump">The instance to add.</param>
 			internal void Add(AsyncPump pump) {
 				Requires.NotNull(pump, "pump");
+
+				bool added;
 				lock (this.set) {
-					this.set.Add(pump);
+					added = this.set.Add(pump);
+				}
+
+				if (added) {
+					this.OnAddedPump(pump);
+				}
+			}
+
+			/// <summary>
+			/// Raises the <see cref="addedPump"/> event.
+			/// </summary>
+			/// <param name="pump">The added pump</param>
+			private void OnAddedPump(AsyncPump pump) {
+				var addedPump = this.addedPump;
+				if (addedPump != null) {
+					addedPump(pump);
 				}
 			}
 		}
@@ -958,7 +1037,7 @@ namespace Microsoft.Threading {
 
 		/// <summary>
 		/// A synchronization context that simply forwards posted messages back to
-		/// the <see cref="AsyncPump.Post(SendOrPostCallback, object)"/> method.
+		/// the <see cref="AsyncPump.Post"/> method.
 		/// </summary>
 		private class PromotableMainThreadSynchronizationContext : SynchronizationContext {
 			/// <summary>
@@ -982,7 +1061,7 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>
-			/// Forwards posted delegates to <see cref="AsyncPump.Post(SendOrPostCallback, object)"/>
+			/// Forwards posted delegates to <see cref="AsyncPump.Post"/>
 			/// </summary>
 			public override void Post(SendOrPostCallback d, object state) {
 				this.asyncPump.Post(SingleExecuteProtector.Create(this.asyncPump, d, state));
@@ -1181,9 +1260,7 @@ namespace Microsoft.Threading {
 				if (pump.mainThread == Thread.CurrentThread) {
 					pump.MainThreadControllingSyncContext = this.appliedContext;
 				} else if (!completingSynchronously) {
-					joinableOperation.Value = new Joinable(pump);
-					joinableOperation.Value.Add(pump);
-					joinable = joinableOperation.Value;
+					joinable = joinableOperation.Value = new Joinable(pump);
 				}
 			}
 
