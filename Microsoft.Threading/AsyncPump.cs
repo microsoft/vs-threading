@@ -236,8 +236,7 @@ namespace Microsoft.Threading {
 		public Joinable BeginAsynchronouslyJoinable(Func<Task> asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
-			var joinable = this.mainThread == Thread.CurrentThread ? null : new Joinable(this);
-			using (var framework = new RunFramework(this, asyncVoidMethod: false, completingSynchronously: false, joinable: joinable)) {
+			using (var framework = new RunFramework(this, asyncVoidMethod: false, completingSynchronously: false, joinable: new Joinable(this))) {
 				// Invoke the function and alert the context when it completes
 				var task = asyncMethod();
 				Verify.Operation(task != null, "No task provided.");
@@ -264,8 +263,7 @@ namespace Microsoft.Threading {
 		public Joinable<T> BeginAsynchronouslyJoinable<T>(Func<Task<T>> asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
-			var joinable = this.mainThread == Thread.CurrentThread ? null : new Joinable<T>(this);
-			using (var framework = new RunFramework(this, asyncVoidMethod: false, completingSynchronously: false, joinable: joinable)) {
+			using (var framework = new RunFramework(this, asyncVoidMethod: false, completingSynchronously: false, joinable: new Joinable<T>(this))) {
 				// Invoke the function and alert the context when it completes
 				var task = asyncMethod();
 				Verify.Operation(task != null, "No task provided.");
@@ -698,15 +696,26 @@ namespace Microsoft.Threading {
 			internal Joinable(AsyncPump owner) {
 				Requires.NotNull(owner, "owner");
 
-				this.set = new HashSet<AsyncPump>();
-				this.set.Add(owner);
 				this.owner = owner;
+
+				// If we're already on the main thread, an existing AsyncLocal will keep us from deadlocking.
+				if (owner.mainThread != Thread.CurrentThread) {
+					this.set = new HashSet<AsyncPump>();
+					this.set.Add(owner);
+				}
 			}
 
 			/// <summary>
 			/// Gets the asynchronous task that completes when the async operation completes.
 			/// </summary>
 			public Task Task { get; internal set; }
+
+			/// <summary>
+			/// Gets a value indicating whether this instance is useful to store in an AsyncLocal instance.
+			/// </summary>
+			internal bool IsApplicable {
+				get { return this.set != null; }
+			}
 
 			/// <summary>
 			/// Synchronously blocks the calling thread until the operation has completed.
@@ -724,50 +733,55 @@ namespace Microsoft.Threading {
 			/// </summary>
 			/// <returns>A task that completes after the asynchronous operation completes and the join is reverted.</returns>
 			public async Task JoinAsync() {
-				HashSet<AsyncPump> localSet;
-				var joinReleasers = new List<JoinRelease>();
-				var controllingSyncContext = this.owner.MainThreadControllingSyncContext;
-				bool dejoining = false;
-				Action<AsyncPump> addedHandler = addedPump => {
-					if (controllingSyncContext != null && !dejoining) {
-						var releaser = controllingSyncContext.Join(addedPump);
-						lock (joinReleasers) {
-							joinReleasers.Add(releaser);
+				if (this.IsApplicable) {
+					HashSet<AsyncPump> localSet;
+					var joinReleasers = new List<JoinRelease>();
+					var controllingSyncContext = this.owner.MainThreadControllingSyncContext;
+					bool dejoining = false;
+					Action<AsyncPump> addedHandler = addedPump => {
+						if (controllingSyncContext != null && !dejoining) {
+							var releaser = controllingSyncContext.Join(addedPump);
+							lock (joinReleasers) {
+								joinReleasers.Add(releaser);
+							}
+
+							if (dejoining) {
+								// make sure we don't leave a straggling join in the event of a race condition.
+								releaser.Dispose();
+							}
+						}
+					};
+
+					lock (this.set) {
+						localSet = new HashSet<AsyncPump>(this.set);
+						this.addedPump += addedHandler;
+					}
+
+					try {
+						foreach (var pump in localSet) {
+							var releaser = pump.Join();
+							lock (joinReleasers) {
+								joinReleasers.Add(releaser);
+							}
 						}
 
-						if (dejoining) {
-							// make sure we don't leave a straggling join in the event of a race condition.
+						await this.Task;
+					} finally {
+						dejoining = true;
+						this.addedPump -= addedHandler;
+						var releasing = new List<JoinRelease>();
+						lock (joinReleasers) {
+							releasing.AddRange(joinReleasers);
+							joinReleasers.Clear();
+						}
+
+						foreach (var releaser in releasing) {
 							releaser.Dispose();
 						}
 					}
-				};
-
-				lock (this.set) {
-					localSet = new HashSet<AsyncPump>(this.set);
-					this.addedPump += addedHandler;
-				}
-
-				try {
-					foreach (var pump in localSet) {
-						var releaser = pump.Join();
-						lock (joinReleasers) {
-							joinReleasers.Add(releaser);
-						}
-					}
-
+				} else {
+					// no joining is necessary.
 					await this.Task;
-				} finally {
-					dejoining = true;
-					this.addedPump -= addedHandler;
-					var releasing = new List<JoinRelease>();
-					lock (joinReleasers) {
-						releasing.AddRange(joinReleasers);
-						joinReleasers.Clear();
-					}
-
-					foreach (var releaser in releasing) {
-						releaser.Dispose();
-					}
 				}
 			}
 
@@ -785,6 +799,7 @@ namespace Microsoft.Threading {
 			/// <param name="pump">The instance to add.</param>
 			internal void Add(AsyncPump pump) {
 				Requires.NotNull(pump, "pump");
+				Assumes.True(this.IsApplicable);
 
 				bool added;
 				lock (this.set) {
@@ -1358,7 +1373,7 @@ namespace Microsoft.Threading {
 					pump.MainThreadControllingSyncContext = this.appliedContext;
 				}
 
-				if (joinable != null) {
+				if (joinable != null && joinable.IsApplicable) {
 					joinableOperation.Value = joinable;
 				}
 			}
