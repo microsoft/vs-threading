@@ -98,7 +98,14 @@ namespace Microsoft.Threading {
 								// without leading to deadlocks.
 								this.joinableTask = this.asyncPump.BeginAsynchronously(valueFactory);
 								this.value = this.joinableTask.Task;
-								this.value.ContinueWith((_, state) => ((AsyncLazy<T>)state).asyncPump = null, this, TaskScheduler.Default);
+								this.value.ContinueWith(
+									(_, state) => {
+										var that = (AsyncLazy<T>)state;
+										that.asyncPump = null;
+										that.joinableTask = null;
+									},
+									this,
+									TaskScheduler.Default);
 							} else {
 								this.value = valueFactory();
 							}
