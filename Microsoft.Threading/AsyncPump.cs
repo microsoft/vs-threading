@@ -697,9 +697,10 @@ namespace Microsoft.Threading {
 			/// Synchronously blocks the calling thread until the operation has completed.
 			/// If the calling thread is the Main thread, deadlocks are mitigated.
 			/// </summary>
-			public void Join() {
+			/// <param name="cancellationToken">A cancellation token that will exit this method before the task is completed.</param>
+			public void Join(CancellationToken cancellationToken = default(CancellationToken)) {
 				this.owner.RunSynchronously(async delegate {
-					await this.JoinAsync();
+					await this.JoinAsync(cancellationToken);
 				});
 			}
 
@@ -707,8 +708,10 @@ namespace Microsoft.Threading {
 			/// Joins any main thread affinity of the caller with the asynchronous operation to avoid deadlocks
 			/// in the event that the main thread ultimately synchronously blocks waiting for the operation to complete.
 			/// </summary>
+			/// <param name="cancellationToken">A cancellation token that will exit this method before the task is completed.</param>
 			/// <returns>A task that completes after the asynchronous operation completes and the join is reverted.</returns>
-			public async Task JoinAsync() {
+			public async Task JoinAsync(CancellationToken cancellationToken = default(CancellationToken)) {
+				cancellationToken.ThrowIfCancellationRequested();
 				if (this.IsApplicable) {
 					HashSet<AsyncPump> localSet;
 					var joinReleasers = new List<JoinRelease>();
@@ -741,7 +744,7 @@ namespace Microsoft.Threading {
 							}
 						}
 
-						await this.Task;
+						await this.Task.WithCancellation(cancellationToken);
 					} finally {
 						dejoining = true;
 						this.addedPump -= addedHandler;
@@ -757,7 +760,7 @@ namespace Microsoft.Threading {
 					}
 				} else {
 					// no joining is necessary.
-					await this.Task;
+					await this.Task.WithCancellation(cancellationToken);
 				}
 			}
 
@@ -825,9 +828,10 @@ namespace Microsoft.Threading {
 			/// Joins any main thread affinity of the caller with the asynchronous operation to avoid deadlocks
 			/// in the event that the main thread ultimately synchronously blocks waiting for the operation to complete.
 			/// </summary>
+			/// <param name="cancellationToken">A cancellation token that will exit this method before the task is completed.</param>
 			/// <returns>A task that completes after the asynchronous operation completes and the join is reverted, with the result of the operation.</returns>
-			public new async Task<T> JoinAsync() {
-				await base.JoinAsync();
+			public new async Task<T> JoinAsync(CancellationToken cancellationToken = default(CancellationToken)) {
+				await base.JoinAsync(cancellationToken);
 				return await this.Task;
 			}
 
@@ -835,9 +839,10 @@ namespace Microsoft.Threading {
 			/// Synchronously blocks the calling thread until the operation has completed.
 			/// If the calling thread is the Main thread, deadlocks are mitigated.
 			/// </summary>
+			/// <param name="cancellationToken">A cancellation token that will exit this method before the task is completed.</param>
 			/// <returns>The result of the asynchronous operation.</returns>
-			public new T Join() {
-				base.Join();
+			public new T Join(CancellationToken cancellationToken = default(CancellationToken)) {
+				base.Join(cancellationToken);
 				Assumes.True(this.Task.IsCompleted);
 				return this.Task.Result;
 			}

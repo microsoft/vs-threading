@@ -632,6 +632,21 @@
 			Assert.IsTrue(joinable.Task.IsCompleted);
 		}
 
+		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(OperationCanceledException))]
+		public void JoinCancellation() {
+			// Kick off the BeginAsync work from a background thread that has no special
+			// affinity to the main thread.
+			var joinable = this.asyncPump.BeginAsynchronously(async delegate {
+				await Task.Yield();
+				await this.asyncPump.SwitchToMainThreadAsync();
+				await Task.Delay(AsyncDelay);
+			});
+
+			Assert.IsFalse(joinable.Task.IsCompleted);
+			var cts = new CancellationTokenSource(AsyncDelay / 4);
+			joinable.Join(cts.Token);
+		}
+
 		[TestMethod, Timeout(TestTimeout)]
 		public void MainThreadTaskScheduler() {
 			this.asyncPump.RunSynchronously(async delegate {
