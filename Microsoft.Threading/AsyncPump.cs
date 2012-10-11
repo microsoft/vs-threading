@@ -941,6 +941,17 @@ namespace Microsoft.Threading {
 					// the AsyncPump's queue so that Joining and other opportunities for execution
 					// are satisfied.
 					this.asyncPump.Post(executor);
+
+					// This sync context is the only one that knows what sync context was beneath it
+					// on the stack when it was applied to the Main thread, so be sure to pass the
+					// message up to avoid deadlocks when this sync context pops off but the underlying
+					// one ultimately needs to synchronously block for the continuation to execute.
+					// We do this instead of joining the parent sync context because that would tie
+					// this sync context's lifetime to the lifetime of the parent, which could quickly
+					// take up lots of memory if child contexts are being created in a loop.
+					if (this.previousSyncContext != null) {
+						this.previousSyncContext.Post(SingleExecuteProtector.ExecuteOnce, executor);
+					}
 				} else if (!this.completingSynchronously || !enqueuedSuccessfully) { // only use threadpool if we don't have a dedicated thread.
 					ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, executor);
 				}

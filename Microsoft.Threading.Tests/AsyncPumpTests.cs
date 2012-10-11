@@ -989,6 +989,15 @@
 			}).Wait(TestTimeout), "Timed out waiting for completion.");
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void NestedSyncContextsAvoidDeadlocks() {
+			this.asyncPump.RunSynchronously(async delegate {
+				await this.asyncPump.BeginAsynchronously(async delegate {
+					await Task.Yield();
+				});
+			});
+		}
+
 		// This is a known issue and we haven't a fix yet
 		[TestMethod, Timeout(TestTimeout), Ignore]
 		public void CallContextWasOverwrittenByReentrance() {
