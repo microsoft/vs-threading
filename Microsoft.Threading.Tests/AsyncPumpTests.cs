@@ -1092,6 +1092,106 @@
 			Dispatcher.PushFrame(frame);
 		}
 
+		/// <summary>
+		/// Verifies that in the scenario when the initializing thread doesn't have a sync context at all (vcupgrade.exe)
+		/// that reasonable behavior still occurs.
+		/// </summary>
+		[TestMethod]
+		public void NoMainThreadSyncContextAndKickedOffFromOriginalThread() {
+			SynchronizationContext.SetSynchronizationContext(null);
+			this.asyncPump = new DerivedAsyncPump();
+
+			this.asyncPump.RunSynchronously(async delegate {
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
+				await Task.Yield();
+
+				await this.asyncPump.SwitchToMainThreadAsync();
+				await Task.Yield();
+
+				await TaskScheduler.Default;
+				await Task.Yield();
+
+				await this.asyncPump.SwitchToMainThreadAsync();
+				await Task.Yield();
+			});
+
+			var joinable = this.asyncPump.BeginAsynchronously(async delegate {
+				Assert.AreSame(this.originalThread, Thread.CurrentThread);
+				await Task.Yield();
+
+				// verifies no yield
+				Assert.IsTrue(this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().IsCompleted);
+
+				await this.asyncPump.SwitchToMainThreadAsync();
+				await Task.Yield();
+
+				await TaskScheduler.Default;
+				await Task.Yield();
+
+				await this.asyncPump.SwitchToMainThreadAsync();
+				await Task.Yield();
+			});
+			joinable.Join();
+		}
+
+		/// <summary>
+		/// Verifies that in the scenario when the initializing thread doesn't have a sync context at all (vcupgrade.exe)
+		/// that reasonable behavior still occurs.
+		/// </summary>
+		[TestMethod]
+		public void NoMainThreadSyncContextAndKickedOffFromOtherThread() {
+			SynchronizationContext.SetSynchronizationContext(null);
+			this.asyncPump = new DerivedAsyncPump();
+			Thread otherThread = null;
+
+			Task.Run(delegate {
+				otherThread = Thread.CurrentThread;
+				this.asyncPump.RunSynchronously(async delegate {
+					Assert.AreSame(otherThread, Thread.CurrentThread);
+					await Task.Yield();
+					Assert.AreSame(otherThread, Thread.CurrentThread);
+
+					// verifies no yield
+					Assert.IsTrue(this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().IsCompleted);
+
+					await this.asyncPump.SwitchToMainThreadAsync(); // we expect this to no-op
+					Assert.AreSame(otherThread, Thread.CurrentThread);
+					await Task.Yield();
+					Assert.AreSame(otherThread, Thread.CurrentThread);
+
+					await Task.Run(async delegate {
+						Thread threadpoolThread = Thread.CurrentThread;
+						Assert.AreNotSame(otherThread, Thread.CurrentThread);
+						await Task.Yield();
+						Assert.AreNotSame(otherThread, Thread.CurrentThread);
+
+						await this.asyncPump.SwitchToMainThreadAsync();
+						await Task.Yield();
+					});
+				});
+
+				var joinable = this.asyncPump.BeginAsynchronously(async delegate {
+					Assert.AreSame(otherThread, Thread.CurrentThread);
+					await Task.Yield();
+
+					// verifies no yield
+					Assert.IsTrue(this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().IsCompleted);
+
+					await this.asyncPump.SwitchToMainThreadAsync(); // we expect this to no-op
+					await Task.Yield();
+
+					await Task.Run(async delegate {
+						Thread threadpoolThread = Thread.CurrentThread;
+						await Task.Yield();
+
+						await this.asyncPump.SwitchToMainThreadAsync();
+						await Task.Yield();
+					});
+				});
+				joinable.Join();
+			}).Wait();
+		}
+
 		private static async void SomeFireAndForgetMethod() {
 			await Task.Yield();
 		}

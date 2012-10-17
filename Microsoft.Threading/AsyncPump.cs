@@ -1295,7 +1295,9 @@ namespace Microsoft.Threading {
 						return false;
 					}
 
-					return this.asyncPump == null || this.asyncPump.mainThread == Thread.CurrentThread;
+					return this.asyncPump == null
+						|| this.asyncPump.mainThread == Thread.CurrentThread
+						|| this.asyncPump.underlyingSynchronizationContext == null;
 				}
 			}
 
@@ -1312,7 +1314,7 @@ namespace Microsoft.Threading {
 			/// </summary>
 			public void GetResult() {
 				Assumes.True(this.asyncPump != null);
-				Assumes.True(this.asyncPump.mainThread == Thread.CurrentThread);
+				Assumes.True(this.asyncPump.mainThread == Thread.CurrentThread || this.asyncPump.underlyingSynchronizationContext == null);
 
 				// If we don't have a CallContext associated sync context then try applying the one on the current thread.
 				if (this.asyncPump.MainThreadControllingSyncContext == null) {
