@@ -653,7 +653,7 @@ namespace Microsoft.Threading {
 			/// <summary>
 			/// The set of <see cref="AsyncPump"/> instances that are involved in the async operation.
 			/// </summary>
-			private readonly HashSet<AsyncPump> set;
+			private readonly HashSet<AsyncPump> pumpsSet;
 
 			/// <summary>
 			/// The <see cref="AsyncPump"/> that began the async operation.
@@ -676,8 +676,8 @@ namespace Microsoft.Threading {
 
 				// If we're already on the main thread, an existing AsyncLocal will keep us from deadlocking.
 				if (owner.mainThread != Thread.CurrentThread) {
-					this.set = new HashSet<AsyncPump>();
-					this.set.Add(owner);
+					this.pumpsSet = new HashSet<AsyncPump>();
+					this.pumpsSet.Add(owner);
 				}
 			}
 
@@ -690,7 +690,7 @@ namespace Microsoft.Threading {
 			/// Gets a value indicating whether this instance is useful to store in an AsyncLocal instance.
 			/// </summary>
 			internal bool IsApplicable {
-				get { return this.set != null; }
+				get { return this.pumpsSet != null; }
 			}
 
 			/// <summary>
@@ -731,8 +731,8 @@ namespace Microsoft.Threading {
 						}
 					};
 
-					lock (this.set) {
-						localSet = new HashSet<AsyncPump>(this.set);
+					lock (this.pumpsSet) {
+						localSet = new HashSet<AsyncPump>(this.pumpsSet);
 						this.addedPump += addedHandler;
 					}
 
@@ -781,8 +781,8 @@ namespace Microsoft.Threading {
 				Assumes.True(this.IsApplicable);
 
 				bool added;
-				lock (this.set) {
-					added = this.set.Add(pump);
+				lock (this.pumpsSet) {
+					added = this.pumpsSet.Add(pump);
 				}
 
 				if (added) {
