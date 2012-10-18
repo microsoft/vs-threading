@@ -387,7 +387,7 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="action">The continuation to execute.</param>
 		protected virtual void SwitchToMainThreadOnCompleted(Action action) {
-			this.Post(SingleExecuteProtector.Create(this, action));
+			this.Post(SingleExecuteProtector.Create(this, true, action));
 		}
 
 		/// <summary>
@@ -466,6 +466,27 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// Applies a SynchronizationContext to the calling thread that posts continuations
+		/// to the main thread, such that deadlocks are avoided when the continuation becomes
+		/// synchronously waited on while on the main thread (as long as a Join is made).
+		/// </summary>
+		private void EnsureDeadlockAvoidingSyncContextIsApplied() {
+			// Applies a SynchronizationContext that mitigates deadlocks in async methods that may be invoked
+			// on the Main thread and while invoked asynchronously may ultimately synchronously block the Main
+			// thread for completion.
+			// It's critical that the SynchronizationContext applied to the caller be one 
+			// that not only posts to the current Dispatcher, but to a queue that can be
+			// forwarded to another one in the event that an async method eventually ends up
+			// being synchronously blocked on.
+			if (!(SynchronizationContext.Current is SingleThreadSynchronizationContext)
+				&& SynchronizationContext.Current != this.promotableSyncContext) {
+				// We don't have to worry about backing up the old context to restore it later
+				// because in an async continuation (which this is), .NET automatically does this.
+				SynchronizationContext.SetSynchronizationContext(this.promotableSyncContext);
+			}
+		}
+
+		/// <summary>
 		/// A structure that clears CallContext and SynchronizationContext async/thread statics and
 		/// restores those values when this structure is disposed.
 		/// </summary>
@@ -531,6 +552,11 @@ namespace Microsoft.Threading {
 			private readonly AsyncPump asyncPump;
 
 			/// <summary>
+			/// A flag indicating whether to apply the async pump's sync context before invoking the delegate.
+			/// </summary>
+			private readonly bool applySyncContext;
+
+			/// <summary>
 			/// The delegate to invoke.  <c>null</c> if it has already been invoked.
 			/// </summary>
 			/// <value>May be of type <see cref="Action"/> or <see cref="SendOrPostCallback"/>.</value>
@@ -545,19 +571,22 @@ namespace Microsoft.Threading {
 			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class.
 			/// </summary>
 			/// <param name="asyncPump">The <see cref="AsyncPump"/> instance that created this.</param>
-			private SingleExecuteProtector(AsyncPump asyncPump) {
+			/// <param name="applySyncContext">A flag indicating whether to apply the async pump's sync context before invoking the delegate.</param>
+			private SingleExecuteProtector(AsyncPump asyncPump, bool applySyncContext) {
 				Requires.NotNull(asyncPump, "asyncPump");
 				this.asyncPump = asyncPump;
+				this.applySyncContext = applySyncContext;
 			}
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class.
 			/// </summary>
 			/// <param name="asyncPump">The <see cref="AsyncPump"/> instance that created this.</param>
+			/// <param name="applySyncContext">A flag indicating whether to apply the async pump's sync context before invoking the delegate.</param>
 			/// <param name="action">The delegate being wrapped.</param>
 			/// <returns>An instance of <see cref="SingleExecuteProtector"/>.</returns>
-			internal static SingleExecuteProtector Create(AsyncPump asyncPump, Action action) {
-				return new SingleExecuteProtector(asyncPump) {
+			internal static SingleExecuteProtector Create(AsyncPump asyncPump, bool applySyncContext, Action action) {
+				return new SingleExecuteProtector(asyncPump, applySyncContext) {
 					invokeDelegate = action,
 				};
 			}
@@ -567,18 +596,19 @@ namespace Microsoft.Threading {
 			/// that describes the specified callback.
 			/// </summary>
 			/// <param name="asyncPump">The pump whose queue should be dequeued when this delegate is invoked.</param>
+			/// <param name="applySyncContext">A flag indicating whether to apply the async pump's sync context before invoking the delegate.</param>
 			/// <param name="callback">The callback to invoke.</param>
 			/// <param name="state">The state object to pass to the callback.</param>
 			/// <returns>An instance of <see cref="SingleExecuteProtector"/>.</returns>
-			internal static SingleExecuteProtector Create(AsyncPump asyncPump, SendOrPostCallback callback, object state) {
+			internal static SingleExecuteProtector Create(AsyncPump asyncPump, bool applySyncContext, SendOrPostCallback callback, object state) {
 				// As an optimization, recognize if what we're being handed is already an instance of this type,
 				// because if it is, we don't need to wrap it with yet another instance.
 				var existing = state as SingleExecuteProtector;
-				if (callback == ExecuteOnce && existing != null && existing.asyncPump == asyncPump) {
+				if (callback == ExecuteOnce && existing != null && existing.asyncPump == asyncPump && existing.applySyncContext == applySyncContext) {
 					return (SingleExecuteProtector)state;
 				}
 
-				return new SingleExecuteProtector(asyncPump) {
+				return new SingleExecuteProtector(asyncPump, applySyncContext) {
 					invokeDelegate = callback,
 					state = state,
 				};
@@ -596,14 +626,23 @@ namespace Microsoft.Threading {
 						this.asyncPump.pendingActions.RemoveMidQueue(this);
 					}
 
-					var action = invokeDelegate as Action;
-					if (action != null) {
-						action();
-					} else {
-						var callback = invokeDelegate as SendOrPostCallback;
-						Assumes.NotNull(callback);
-						callback(this.state);
-						this.state = null;
+					SynchronizationContext oldSyncContext = SynchronizationContext.Current;
+					if (this.applySyncContext) {
+						this.asyncPump.EnsureDeadlockAvoidingSyncContextIsApplied();
+					}
+
+					try {
+						var action = invokeDelegate as Action;
+						if (action != null) {
+							action();
+						} else {
+							var callback = invokeDelegate as SendOrPostCallback;
+							Assumes.NotNull(callback);
+							callback(this.state);
+							this.state = null;
+						}
+					} finally {
+						SynchronizationContext.SetSynchronizationContext(oldSyncContext);
 					}
 
 					return true;
@@ -915,7 +954,7 @@ namespace Microsoft.Threading {
 
 				// We'll be posting this message to (potentially) multiple queues, so we wrap
 				// the work up in an object that ensures the work executes no more than once.
-				var executor = SingleExecuteProtector.Create(this.asyncPump, d, state);
+				var executor = SingleExecuteProtector.Create(this.asyncPump, this.affinityWithMainThread, d, state);
 				bool enqueuedSuccessfully = this.queue.TryEnqueue(executor);
 
 				// Work posted to this sync context should be executed on the Main thread
@@ -1146,7 +1185,7 @@ namespace Microsoft.Threading {
 			/// Forwards posted delegates to <see cref="AsyncPump.Post"/>
 			/// </summary>
 			public override void Post(SendOrPostCallback d, object state) {
-				this.asyncPump.Post(SingleExecuteProtector.Create(this.asyncPump, d, state));
+				this.asyncPump.Post(SingleExecuteProtector.Create(this.asyncPump, true, d, state));
 			}
 
 			/// <summary>
@@ -1305,19 +1344,7 @@ namespace Microsoft.Threading {
 					this.asyncPump.MainThreadControllingSyncContext = (SynchronizationContext.Current as SingleThreadSynchronizationContext);
 				}
 
-				// Applies a SynchronizationContext that mitigates deadlocks in async methods that may be invoked
-				// on the Main thread and while invoked asynchronously may ultimately synchronously block the Main
-				// thread for completion.
-				// It's critical that the SynchronizationContext applied to the caller be one 
-				// that not only posts to the current Dispatcher, but to a queue that can be
-				// forwarded to another one in the event that an async method eventually ends up
-				// being synchronously blocked on.
-				if (!(SynchronizationContext.Current is SingleThreadSynchronizationContext)
-					&& SynchronizationContext.Current != this.asyncPump.promotableSyncContext) {
-					// We don't have to worry about backing up the old context to restore it later
-					// because in an async continuation (which this is), .NET automatically does this.
-					SynchronizationContext.SetSynchronizationContext(this.asyncPump.promotableSyncContext);
-				}
+				this.asyncPump.EnsureDeadlockAvoidingSyncContextIsApplied();
 			}
 		}
 

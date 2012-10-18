@@ -936,12 +936,52 @@
 			asyncTask.Wait(); // realize any exceptions
 		}
 
+		/// <summary>
+		/// Verifies that yields in a BeginAsynchronously delegate still retain their
+		/// ability to execute continuations on-demand when executed within a Join.
+		/// </summary>
 		[TestMethod, Timeout(TestTimeout)]
 		public void BeginAsyncThenJoinOnMainThread() {
 			var joinable = this.asyncPump.BeginAsynchronously(async delegate {
 				await Task.Yield();
+				await Task.Yield();
 			});
-			joinable.Join();
+			joinable.Join(); // this Join will "host" the first and second continuations.
+		}
+
+		/// <summary>
+		/// Verifies that yields in a BeginAsynchronously delegate still retain their
+		/// ability to execute continuations on-demand from a Join call later on
+		/// the main thread.
+		/// </summary>
+		/// <remarks>
+		/// This test allows the first continuation to naturally execute as if it were
+		/// asynchronous.  Then it intercepts the main thread and Joins the original task,
+		/// that has one continuation scheduled and another not yet scheduled.
+		/// This test verifies that continuations retain an appropriate SynchronizationContext
+		/// that will avoid deadlocks when async operations are synchronously blocked on.
+		/// </remarks>
+		[TestMethod, Timeout(TestTimeout)]
+		public void BeginAsyncThenJoinOnMainThreadLater() {
+			var frame = new DispatcherFrame();
+			var firstYield = new AsyncManualResetEvent();
+			var startingJoin = new AsyncManualResetEvent();
+
+			var joinable = this.asyncPump.BeginAsynchronously(async delegate {
+				await Task.Yield();
+				firstYield.Set();
+				await startingJoin;
+				frame.Continue = false;
+			});
+
+			var forcingFactor = Task.Run(async delegate {
+				await this.asyncPump.SwitchToMainThreadAsync();
+				await firstYield;
+				startingJoin.Set();
+				joinable.Join();
+			});
+
+			Dispatcher.PushFrame(frame);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
