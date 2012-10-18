@@ -1358,6 +1358,7 @@ namespace Microsoft.Threading {
 			private readonly SingleThreadSynchronizationContext appliedContext;
 			private readonly SingleThreadSynchronizationContext previousAsyncLocalContext;
 			private readonly Joinable joinable;
+			private readonly Joinable previousJoinable;
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="RunFramework"/> struct
@@ -1378,6 +1379,7 @@ namespace Microsoft.Threading {
 					pump.MainThreadControllingSyncContext = this.appliedContext;
 				}
 
+				this.previousJoinable = joinableOperation.Value;
 				if (joinable != null) {
 					joinableOperation.Value = joinable;
 				}
@@ -1406,6 +1408,8 @@ namespace Microsoft.Threading {
 					this.pump.MainThreadControllingSyncContext = this.previousAsyncLocalContext;
 					SynchronizationContext.SetSynchronizationContext(this.previousContext);
 				}
+
+				joinableOperation.Value = this.previousJoinable;
 			}
 		}
 	}
