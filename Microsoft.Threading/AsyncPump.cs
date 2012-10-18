@@ -674,24 +674,14 @@ namespace Microsoft.Threading {
 
 				this.owner = owner;
 
-				// If we're already on the main thread, an existing AsyncLocal will keep us from deadlocking.
-				if (owner.mainThread != Thread.CurrentThread) {
-					this.pumpsSet = new HashSet<AsyncPump>();
-					this.pumpsSet.Add(owner);
-				}
+				this.pumpsSet = new HashSet<AsyncPump>();
+				this.pumpsSet.Add(owner);
 			}
 
 			/// <summary>
 			/// Gets the asynchronous task that completes when the async operation completes.
 			/// </summary>
 			public Task Task { get; internal set; }
-
-			/// <summary>
-			/// Gets a value indicating whether this instance is useful to store in an AsyncLocal instance.
-			/// </summary>
-			internal bool IsApplicable {
-				get { return this.pumpsSet != null; }
-			}
 
 			/// <summary>
 			/// Synchronously blocks the calling thread until the operation has completed.
@@ -712,55 +702,50 @@ namespace Microsoft.Threading {
 			/// <returns>A task that completes after the asynchronous operation completes and the join is reverted.</returns>
 			public async Task JoinAsync(CancellationToken cancellationToken = default(CancellationToken)) {
 				cancellationToken.ThrowIfCancellationRequested();
-				if (this.IsApplicable) {
-					HashSet<AsyncPump> localSet;
-					var joinReleasers = new List<JoinRelease>();
-					var controllingSyncContext = this.owner.MainThreadControllingSyncContext;
-					bool dejoining = false;
-					Action<AsyncPump> addedHandler = addedPump => {
-						if (controllingSyncContext != null && !dejoining) {
-							var releaser = controllingSyncContext.Join(addedPump);
-							lock (joinReleasers) {
-								joinReleasers.Add(releaser);
-							}
-
-							if (dejoining) {
-								// make sure we don't leave a straggling join in the event of a race condition.
-								releaser.Dispose();
-							}
-						}
-					};
-
-					lock (this.pumpsSet) {
-						localSet = new HashSet<AsyncPump>(this.pumpsSet);
-						this.addedPump += addedHandler;
-					}
-
-					try {
-						foreach (var pump in localSet) {
-							var releaser = pump.Join();
-							lock (joinReleasers) {
-								joinReleasers.Add(releaser);
-							}
-						}
-
-						await this.Task.WithCancellation(cancellationToken);
-					} finally {
-						dejoining = true;
-						this.addedPump -= addedHandler;
-						var releasing = new List<JoinRelease>();
+				HashSet<AsyncPump> localSet;
+				var joinReleasers = new List<JoinRelease>();
+				var controllingSyncContext = this.owner.MainThreadControllingSyncContext;
+				bool dejoining = false;
+				Action<AsyncPump> addedHandler = addedPump => {
+					if (controllingSyncContext != null && !dejoining) {
+						var releaser = controllingSyncContext.Join(addedPump);
 						lock (joinReleasers) {
-							releasing.AddRange(joinReleasers);
-							joinReleasers.Clear();
+							joinReleasers.Add(releaser);
 						}
 
-						foreach (var releaser in releasing) {
+						if (dejoining) {
+							// make sure we don't leave a straggling join in the event of a race condition.
 							releaser.Dispose();
 						}
 					}
-				} else {
-					// no joining is necessary.
+				};
+
+				lock (this.pumpsSet) {
+					localSet = new HashSet<AsyncPump>(this.pumpsSet);
+					this.addedPump += addedHandler;
+				}
+
+				try {
+					foreach (var pump in localSet) {
+						var releaser = pump.Join();
+						lock (joinReleasers) {
+							joinReleasers.Add(releaser);
+						}
+					}
+
 					await this.Task.WithCancellation(cancellationToken);
+				} finally {
+					dejoining = true;
+					this.addedPump -= addedHandler;
+					var releasing = new List<JoinRelease>();
+					lock (joinReleasers) {
+						releasing.AddRange(joinReleasers);
+						joinReleasers.Clear();
+					}
+
+					foreach (var releaser in releasing) {
+						releaser.Dispose();
+					}
 				}
 			}
 
@@ -778,7 +763,6 @@ namespace Microsoft.Threading {
 			/// <param name="pump">The instance to add.</param>
 			internal void Add(AsyncPump pump) {
 				Requires.NotNull(pump, "pump");
-				Assumes.True(this.IsApplicable);
 
 				bool added;
 				lock (this.pumpsSet) {
@@ -1367,7 +1351,7 @@ namespace Microsoft.Threading {
 					pump.MainThreadControllingSyncContext = this.appliedContext;
 				}
 
-				if (joinable != null && joinable.IsApplicable) {
+				if (joinable != null) {
 					joinableOperation.Value = joinable;
 				}
 			}

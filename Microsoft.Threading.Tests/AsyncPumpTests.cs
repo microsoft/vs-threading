@@ -937,6 +937,14 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void BeginAsyncThenJoinOnMainThread() {
+			var joinable = this.asyncPump.BeginAsynchronously(async delegate {
+				await Task.Yield();
+			});
+			joinable.Join();
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void RunSynchronouslyWithoutSyncContext() {
 			SynchronizationContext.SetSynchronizationContext(null);
 			this.asyncPump = new AsyncPump();
