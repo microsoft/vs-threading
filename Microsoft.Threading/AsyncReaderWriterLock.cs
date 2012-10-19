@@ -208,10 +208,23 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
-		/// Gets a value indicating whether any kind of lock is held by the caller.
+		/// Gets a value indicating whether any kind of lock is held by the caller and can
+		/// be immediately used given the caller's context.
 		/// </summary>
 		public bool IsAnyLockHeld {
 			get { return this.IsReadLockHeld || this.IsUpgradeableReadLockHeld || this.IsWriteLockHeld; }
+		}
+
+		/// <summary>
+		/// Gets a value indicating whether any kind of lock is held by the caller without regard
+		/// to the lock compatibility of the caller's context.
+		/// </summary>
+		public bool IsAnyPassiveLockHeld {
+			get {
+				return this.IsLockHeld(LockKind.Read, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true)
+					|| this.IsLockHeld(LockKind.UpgradeableRead, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true)
+					|| this.IsLockHeld(LockKind.Write, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true);
+			}
 		}
 
 		/// <summary>
@@ -695,9 +708,10 @@ namespace Microsoft.Threading {
 		/// <param name="kind">The type of lock to check for.</param>
 		/// <param name="awaiter">The most nested lock of the caller, or null to look up the caller's lock in the CallContext.</param>
 		/// <param name="checkSyncContextCompatibility"><c>true</c> to throw an exception if the caller has an exclusive lock but not an associated SynchronizationContext.</param>
+		/// <param name="allowNonLockSupportingContext"><c>true</c> to return true when a lock is held but unusable because of the context of the caller.</param>
 		/// <returns><c>true</c> if the caller holds active locks of the given type; <c>false</c> otherwise.</returns>
-		private bool IsLockHeld(LockKind kind, Awaiter awaiter = null, bool checkSyncContextCompatibility = true) {
-			if (IsLockSupportingContext) {
+		private bool IsLockHeld(LockKind kind, Awaiter awaiter = null, bool checkSyncContextCompatibility = true, bool allowNonLockSupportingContext = false) {
+			if (allowNonLockSupportingContext || IsLockSupportingContext) {
 				lock (this.syncObject) {
 					awaiter = awaiter ?? this.topAwaiter.Value;
 					if (checkSyncContextCompatibility) {

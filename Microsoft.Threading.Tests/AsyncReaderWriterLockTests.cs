@@ -6,6 +6,7 @@
 	using System.Reflection;
 	using System.Threading;
 	using System.Threading.Tasks;
+	using System.Windows.Threading;
 	using Microsoft.Threading;
 	using Microsoft.Threading.Fakes;
 	using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -462,6 +463,28 @@
 
 				Assert.IsFalse(asyncLock.IsAnyLockHeld);
 			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task IsAnyLockHeldReturnsFalseForIncompatibleSyncContexts() {
+			var dispatcher = new DispatcherSynchronizationContext();
+			var asyncLock = new LockDerived();
+			using (await asyncLock.ReadLockAsync()) {
+				Assert.IsTrue(asyncLock.IsAnyLockHeld);
+				SynchronizationContext.SetSynchronizationContext(dispatcher);
+				Assert.IsFalse(asyncLock.IsAnyLockHeld);
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task IsAnyPassiveLockHeldReturnsTrueForIncompatibleSyncContexts() {
+			var dispatcher = new DispatcherSynchronizationContext();
+			var asyncLock = new LockDerived();
+			using (await asyncLock.ReadLockAsync()) {
+				Assert.IsTrue(asyncLock.IsAnyPassiveLockHeld);
+				SynchronizationContext.SetSynchronizationContext(dispatcher);
+				Assert.IsTrue(asyncLock.IsAnyPassiveLockHeld);
+			}
 		}
 
 		#region ReadLockAsync tests
