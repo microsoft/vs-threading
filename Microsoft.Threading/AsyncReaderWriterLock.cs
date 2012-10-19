@@ -754,7 +754,6 @@ namespace Microsoft.Threading {
 		/// Checks whether the specified awaiter's lock type has an associated SynchronizationContext if one is applicable.
 		/// </summary>
 		/// <param name="awaiter">The awaiter whose lock should be considered.</param>
-		/// <returns><c>true</c> if the caller has a valid context; <c>false</c> otherwise.</returns>
 		private void CheckSynchronizationContextAppropriateForLock(Awaiter awaiter) {
 			bool syncContextRequired = this.LockStackContains(LockKind.UpgradeableRead, awaiter) || this.LockStackContains(LockKind.Write, awaiter);
 			if (syncContextRequired) {
