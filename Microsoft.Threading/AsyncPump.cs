@@ -940,6 +940,17 @@ namespace Microsoft.Threading {
 				this.previousSyncContext = SynchronizationContext.Current;
 				this.affinityWithMainThread = Thread.CurrentThread == asyncPump.mainThread;
 				this.completingSynchronously = completingSynchronously;
+
+				if (this.affinityWithMainThread && this.previousSyncContext != null && this.previousSyncContext.GetType().IsEquivalentTo(typeof(SynchronizationContext))) {
+					// This is really bad as any code in VS could badly misbehave in this scenario.
+					// Nevertheless we observe (at least when cancelling Win8 app deployment) that
+					// native code can re-enter the UI thread in such a way that the SynchronizationContext
+					// on the main thread gets set to this default one. So to protect ourselves from
+					// executing main thread work on a background thread, we'll forcibly consider the
+					// known good SyncContext as our previous one.
+					Report.Fail("The main thread was observed to have an ordinary SynchronizationContext applied, which would misbehave causing posted messages to execute on the ThreadPool instead of the main thread.");
+					this.previousSyncContext = asyncPump.underlyingSynchronizationContext;
+				}
 			}
 
 			internal SynchronizationContext PreviousSyncContext {

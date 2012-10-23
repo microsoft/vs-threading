@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.Threading.Tests {
 	using System;
 	using System.Collections.Generic;
+	using System.Diagnostics;
 	using System.Linq;
 	using System.Text;
 	using System.Threading;
@@ -1238,6 +1239,19 @@
 				});
 				joinable.Join();
 			}).Wait();
+		}
+
+		[TestMethod]
+		public void MitigationAgainstBadSyncContextOnMainThread() {
+			var ordinarySyncContext = new SynchronizationContext();
+			SynchronizationContext.SetSynchronizationContext(ordinarySyncContext);
+			var assertDialogListener = Trace.Listeners.OfType<DefaultTraceListener>().FirstOrDefault();
+			assertDialogListener.AssertUiEnabled = false;
+			this.asyncPump.RunSynchronously(async delegate {
+				await Task.Yield();
+				await this.asyncPump.SwitchToMainThreadAsync();
+			});
+			assertDialogListener.AssertUiEnabled = true;
 		}
 
 		private static async void SomeFireAndForgetMethod() {
