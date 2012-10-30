@@ -25,13 +25,6 @@ namespace Microsoft.Threading {
 			= new ConditionalWeakTable<Thread, AsyncLocal<SingleThreadSynchronizationContext>>();
 
 		/// <summary>
-		/// A thread-local HashSet that can be used to detect and cut off recursion that would 
-		/// otherwise lead to a StackOverflowException while walking AsyncPump graphs that
-		/// contain circular references.
-		/// </summary>
-		private static readonly ThreadLocal<HashSet<AsyncPump>> postedMessageVisited = new ThreadLocal<HashSet<AsyncPump>>(() => new HashSet<AsyncPump>());
-
-		/// <summary>
 		/// An AsyncLocal value that carries the joinable instance associated with an async operation.
 		/// </summary>
 		private static readonly AsyncLocal<Joinable> joinableOperation = new AsyncLocal<Joinable>();
@@ -382,7 +375,8 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="action">The continuation to execute.</param>
 		protected virtual void SwitchToMainThreadOnCompleted(Action action) {
-			this.Post(SingleExecuteProtector.Create(this, true, action));
+			var wrapper = SingleExecuteProtector.Create(this, true, action);
+			this.mainThreadSwitchingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
 		}
 
 		/// <summary>
@@ -406,47 +400,6 @@ namespace Microsoft.Threading {
 		protected virtual void WaitSynchronously(Task task) {
 			Requires.NotNull(task, "task");
 			while (!task.Wait(1000)) { }
-		}
-
-		/// <summary>
-		/// Schedules the specified delegate for execution on the Main thread.
-		/// </summary>
-		/// <param name="wrapper">The delegate wrapper that guarantees the delegate cannot be invoked more than once.</param>
-		private void Post(SingleExecuteProtector wrapper) {
-			if (postedMessageVisited.Value.Add(this)) {
-				try {
-					if (this.underlyingSynchronizationContext != null) {
-						// Our strategy here is to post the delegate to as many SynchronizationContexts
-						// as may be necessary to mitigate deadlocks, since any of the ones we try below
-						// *could* be the One that is currently controlling the Main thread in a synchronously
-						// blocking wait for this very work to occur.
-						// The SingleExecuteProtector class ensures that if more than one SynchronizationContext
-						// ultimately responds to the message and invokes the delegate, that it will no-op after
-						// the first invocation.
-						var mainThreadControllingSyncContext = this.MainThreadControllingSyncContext;
-						if (mainThreadControllingSyncContext != null) {
-							mainThreadControllingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
-						}
-
-						// We also post this to the underlying sync context (WPF dispatcher) so that when one item
-						// in the queue causes modal UI to appear,
-						// that someone who posts to this SynchronizationContext (which will be active during
-						// that modal dialog) the message has a chance of being executed before the dialog is dismissed.
-						if (this.underlyingSynchronizationContext is PromotableMainThreadSynchronizationContext ||
-							this.underlyingSynchronizationContext is SingleThreadSynchronizationContext) {
-							this.underlyingSynchronizationContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
-						} else {
-							// We're passing the message to the root SynchronizationContext.  Call a virtual method to do this
-							// as our host may want to customize behavior (adjusting message priority for example).
-							this.PostToUnderlyingSynchronizationContext(this.underlyingSynchronizationContext, SingleExecuteProtector.ExecuteOnce, wrapper);
-						}
-					} else {
-						ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
-					}
-				} finally {
-					postedMessageVisited.Value.Remove(this);
-				}
-			}
 		}
 
 		/// <summary>
@@ -953,26 +906,10 @@ namespace Microsoft.Threading {
 				var executor = SingleExecuteProtector.Create(this.asyncPump, this.affinityWithMainThread, d, state);
 				bool enqueuedSuccessfully = this.queue.TryEnqueue(executor);
 
-				// Work posted to this sync context should be executed on the Main thread
-				// if and only if it was originally constructed on the main thread.
-				if (this.affinityWithMainThread) {
-					// We post a SingleExecuteProtector of this message to both our queue and
-					// the AsyncPump's queue so that Joining and other opportunities for execution
-					// are satisfied.
-					this.asyncPump.Post(executor);
-
-					// This sync context is the only one that knows what sync context was beneath it
-					// on the stack when it was applied to the Main thread, so be sure to pass the
-					// message up to avoid deadlocks when this sync context pops off but the underlying
-					// one ultimately needs to synchronously block for the continuation to execute.
-					// We do this instead of joining the parent sync context because that would tie
-					// this sync context's lifetime to the lifetime of the parent, which could quickly
-					// take up lots of memory if child contexts are being created in a loop.
-					if (this.previousSyncContext != null) {
-						this.previousSyncContext.Post(SingleExecuteProtector.ExecuteOnce, executor);
-					}
-				} else if (!this.completingSynchronously || !enqueuedSuccessfully) { // only use threadpool if we don't have a dedicated thread.
-					ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, executor);
+				// Avoid posting the message elsewhere for processing when we're on a threadpool thread
+				// that won't be released till this work is done.
+				if (this.affinityWithMainThread || !this.completingSynchronously || !enqueuedSuccessfully) {
+					this.PostToFallbackScheduler(executor);
 				}
 			}
 
@@ -1078,6 +1015,26 @@ namespace Microsoft.Threading {
 				}
 			}
 
+			/// <summary>
+			/// Forwards the execution request to occur on the Main thread's primary dispatcher, when applicable.
+			/// </summary>
+			/// <param name="wrapper">The delegate wrapper that guarantees the delegate cannot be invoked more than once.</param>
+			private void PostToFallbackScheduler(SingleExecuteProtector wrapper) {
+				Requires.NotNull(wrapper, "wrapper");
+
+				if (this.affinityWithMainThread) {
+					// We also post this to the underlying sync context (WPF dispatcher) so that when one item
+					// in the queue causes modal UI to appear,
+					// that someone who posts to this SynchronizationContext (which will be active during
+					// that modal dialog) the message has a chance of being executed before the dialog is dismissed.
+					// We're passing the message to the root SynchronizationContext.  Call a virtual method to do this
+					// as our host may want to customize behavior (adjusting message priority for example).
+					this.asyncPump.PostToUnderlyingSynchronizationContext(this.asyncPump.underlyingSynchronizationContext, SingleExecuteProtector.ExecuteOnce, wrapper);
+				} else {
+					ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
+				}
+			}
+
 			private Task<SingleExecuteProtector> DequeueFromAllSelfAndJoinedQueuesAsync(TaskCompletionSource<SingleExecuteProtector> completionSource = null) {
 				var resultSource = completionSource ?? new TaskCompletionSource<SingleExecuteProtector>();
 
@@ -1178,10 +1135,11 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>
-			/// Forwards posted delegates to <see cref="AsyncPump.Post"/>
+			/// Forwards posted delegates to <see cref="SingleThreadSynchronizationContext.Post"/>
 			/// </summary>
 			public override void Post(SendOrPostCallback d, object state) {
-				this.asyncPump.Post(SingleExecuteProtector.Create(this.asyncPump, true, d, state));
+				var executor = SingleExecuteProtector.Create(this.asyncPump, true, d, state);
+				this.asyncPump.mainThreadSwitchingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, executor);
 			}
 
 			/// <summary>
