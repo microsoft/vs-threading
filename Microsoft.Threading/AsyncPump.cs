@@ -8,7 +8,9 @@ namespace Microsoft.Threading {
 	using System;
 	using System.Collections.Concurrent;
 	using System.Collections.Generic;
+	using System.Collections.Specialized;
 	using System.Diagnostics;
+	using System.Linq;
 	using System.Runtime.CompilerServices;
 	using System.Threading;
 	using System.Threading.Tasks;
@@ -628,19 +630,14 @@ namespace Microsoft.Threading {
 		/// </summary>
 		public class Joinable {
 			/// <summary>
-			/// The set of <see cref="AsyncPump"/> instances that are involved in the async operation.
-			/// </summary>
-			private readonly HashSet<AsyncPump> pumpsSet;
-
-			/// <summary>
 			/// The <see cref="AsyncPump"/> that began the async operation.
 			/// </summary>
 			private readonly AsyncPump owner;
 
 			/// <summary>
-			/// An event that is raised when an <see cref="AsyncPump"/> is added as relevant to this operation.
+			/// The set of joinables that have been joined to this.
 			/// </summary>
-			private event Action<AsyncPump> addedPump;
+			private readonly JoinableSet joinables;
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="Joinable"/> class.
@@ -650,9 +647,7 @@ namespace Microsoft.Threading {
 				Requires.NotNull(owner, "owner");
 
 				this.owner = owner;
-
-				this.pumpsSet = new HashSet<AsyncPump>();
-				this.pumpsSet.Add(owner);
+				this.joinables = new JoinableSet(owner);
 			}
 
 			/// <summary>
@@ -679,50 +674,13 @@ namespace Microsoft.Threading {
 			/// <returns>A task that completes after the asynchronous operation completes and the join is reverted.</returns>
 			public async Task JoinAsync(CancellationToken cancellationToken = default(CancellationToken)) {
 				cancellationToken.ThrowIfCancellationRequested();
-				HashSet<AsyncPump> localSet;
-				var joinReleasers = new List<JoinRelease>();
-				var controllingSyncContext = this.owner.MainThreadControllingSyncContext;
-				bool dejoining = false;
-				Action<AsyncPump> addedHandler = addedPump => {
-					if (controllingSyncContext != null && !dejoining) {
-						var releaser = controllingSyncContext.Join(addedPump.mainThreadSwitchingSyncContext);
-						lock (joinReleasers) {
-							joinReleasers.Add(releaser);
-						}
 
-						if (dejoining) {
-							// make sure we don't leave a straggling join in the event of a race condition.
-							releaser.Dispose();
-						}
-					}
-				};
-
-				lock (this.pumpsSet) {
-					localSet = new HashSet<AsyncPump>(this.pumpsSet);
-					this.addedPump += addedHandler;
-				}
-
+				var mainThreadControllingSyncContext = this.owner.MainThreadControllingSyncContext;
+				this.joinables.AddParent(mainThreadControllingSyncContext);
 				try {
-					foreach (var pump in localSet) {
-						var releaser = pump.Join();
-						lock (joinReleasers) {
-							joinReleasers.Add(releaser);
-						}
-					}
-
 					await this.Task.WithCancellation(cancellationToken);
 				} finally {
-					dejoining = true;
-					this.addedPump -= addedHandler;
-					var releasing = new List<JoinRelease>();
-					lock (joinReleasers) {
-						releasing.AddRange(joinReleasers);
-						joinReleasers.Clear();
-					}
-
-					foreach (var releaser in releasing) {
-						releaser.Dispose();
-					}
+					this.joinables.RemoveParent(mainThreadControllingSyncContext);
 				}
 			}
 
@@ -737,28 +695,132 @@ namespace Microsoft.Threading {
 			/// <summary>
 			/// Adds an <see cref="AsyncPump"/> instance as one that is relevant to the async operation.
 			/// </summary>
-			/// <param name="pump">The instance to add.</param>
-			internal void Add(AsyncPump pump) {
-				Requires.NotNull(pump, "pump");
+			/// <param name="joinChild">The <see cref="SingleThreadSynchronizationContext"/> to join as a child.</param>
+			internal void AddDependency(object joinChild) {
+				Requires.NotNull(joinChild, "joinChild");
+				this.joinables.AddJoinChild((SingleThreadSynchronizationContext)joinChild);
+			}
+		}
 
-				bool added;
-				lock (this.pumpsSet) {
-					added = this.pumpsSet.Add(pump);
+		private class JoinableSet : IDisposable {
+			private readonly object syncObject = new object();
+
+			private readonly ObservableSet<SingleThreadSynchronizationContext> joinParents;
+
+			private readonly ObservableSet<SingleThreadSynchronizationContext> joinChildren;
+
+			/// <summary>
+			/// A map of joined parent and their releasers.
+			/// </summary>
+			private readonly Dictionary<SingleThreadSynchronizationContext, List<JoinRelease>> releasers;
+
+			private readonly AsyncPump owner;
+
+			private bool disposed;
+
+			internal JoinableSet(AsyncPump owner) {
+				Requires.NotNull(owner, "owner");
+
+				this.owner = owner;
+				this.releasers = new Dictionary<SingleThreadSynchronizationContext, List<JoinRelease>>();
+				this.joinChildren = new ObservableSet<SingleThreadSynchronizationContext>();
+				this.joinParents = new ObservableSet<SingleThreadSynchronizationContext>();
+				this.joinParents.CollectionChanged += this.JoinParents_Changed;
+				this.joinChildren.CollectionChanged += this.JoinChildren_Changed;
+			}
+
+			public void Dispose() {
+				List<JoinRelease> releasers = null;
+				lock (this.syncObject) {
+					if (this.releasers.Count > 0) {
+						releasers = new List<JoinRelease>(this.releasers.Values.SelectMany(v => v));
+						this.releasers.Clear();
+					}
+
+					this.disposed = true;
+					this.joinParents.CollectionChanged -= this.JoinParents_Changed;
+					this.joinChildren.CollectionChanged -= this.JoinChildren_Changed;
 				}
 
-				if (added) {
-					this.OnAddedPump(pump);
+				if (releasers != null) {
+					foreach (var releaser in releasers) {
+						releaser.Dispose();
+					}
 				}
 			}
 
-			/// <summary>
-			/// Raises the <see cref="addedPump"/> event.
-			/// </summary>
-			/// <param name="pump">The added pump</param>
-			private void OnAddedPump(AsyncPump pump) {
-				var addedPump = this.addedPump;
-				if (addedPump != null) {
-					addedPump(pump);
+			internal void AddJoinChild(SingleThreadSynchronizationContext syncContext) {
+				Requires.NotNull(syncContext, "syncContext");
+				this.joinChildren.Add(syncContext);
+			}
+
+			internal void AddParent(SingleThreadSynchronizationContext syncContext) {
+				Requires.NotNull(syncContext, "syncContext");
+				bool added = this.joinParents.Add(syncContext);
+				Assumes.True(added, "We don't support repeatedly joining from the same main thread controlling context.");
+			}
+
+			internal void RemoveParent(SingleThreadSynchronizationContext syncContext) {
+				Requires.NotNull(syncContext, "syncContext");
+				this.joinParents.Remove(syncContext);
+			}
+
+			private void JoinParents_Changed(object sender, NotifyCollectionChangedEventArgs e) {
+				lock (this.syncObject) {
+					switch (e.Action) {
+						case NotifyCollectionChangedAction.Add:
+							foreach (SingleThreadSynchronizationContext parent in e.NewItems) {
+								List<JoinRelease> parentJoinList;
+								if (!this.releasers.TryGetValue(parent, out parentJoinList)) {
+									this.releasers[parent] = parentJoinList = new List<JoinRelease>();
+								}
+
+								foreach (var child in this.joinChildren) {
+									parentJoinList.Add(parent.Join(child));
+								}
+							}
+
+							break;
+						case NotifyCollectionChangedAction.Remove:
+							foreach (SingleThreadSynchronizationContext parent in e.NewItems) {
+								List<JoinRelease> parentJoinList;
+								if (this.releasers.TryGetValue(parent, out parentJoinList)) {
+									foreach (var releaser in parentJoinList) {
+										releaser.Dispose();
+									}
+
+									this.releasers.Remove(parent);
+								}
+							}
+
+							break;
+						default:
+							throw Assumes.Fail();
+					}
+				}
+			}
+
+			private void JoinChildren_Changed(object sender, NotifyCollectionChangedEventArgs e) {
+				Assumes.True(e.Action == NotifyCollectionChangedAction.Add);
+				if (this.disposed) {
+					return;
+				}
+
+				foreach (SingleThreadSynchronizationContext addedChild in e.NewItems) {
+					lock (this.syncObject) {
+						// Add the child to our collection of children so that future parents can join them.
+						if (!this.disposed && this.joinChildren.Add(addedChild)) {
+							// Also join any existing parents.
+							foreach (var parent in this.joinParents) {
+								List<JoinRelease> parentJoinList;
+								if (!this.releasers.TryGetValue(parent, out parentJoinList)) {
+									this.releasers[parent] = parentJoinList = new List<JoinRelease>();
+								}
+
+								parentJoinList.Add(parent.Join(addedChild));
+							}
+						}
+					}
 				}
 			}
 		}
@@ -1242,6 +1304,99 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// A thread-safe, observable set.
+		/// </summary>
+		/// <typeparam name="T">The type of elements stored by the collection.</typeparam>
+		private class ObservableSet<T> : ICollection<T>, INotifyCollectionChanged {
+			/// <summary>
+			/// The underlying hash set.
+			/// </summary>
+			private readonly HashSet<T> collection = new HashSet<T>();
+
+			/// <summary>
+			/// The synchronization object.
+			/// </summary>
+			private readonly object syncObject = new object();
+
+			public event NotifyCollectionChangedEventHandler CollectionChanged;
+
+			public int Count {
+				get {
+					lock (this.syncObject) {
+						return this.collection.Count;
+					}
+				}
+			}
+
+			public bool Add(T item) {
+				bool added;
+				lock (this.syncObject) {
+					added = this.collection.Add(item);
+				}
+
+				if (added) {
+					this.OnCollectionChanged(NotifyCollectionChangedAction.Add, item);
+				}
+
+				return added;
+			}
+
+			void ICollection<T>.Add(T item) {
+				this.Add(item);
+			}
+
+			public void Clear() {
+				bool cleared;
+				lock (this.syncObject) {
+					cleared = this.collection.Count > 0;
+					this.collection.Clear();
+				}
+			}
+
+			public bool Contains(T item) {
+				throw new NotImplementedException();
+			}
+
+			public void CopyTo(T[] array, int arrayIndex) {
+				throw new NotImplementedException();
+			}
+
+			public bool IsReadOnly {
+				get { return false; }
+			}
+
+			public bool Remove(T item) {
+				bool removed;
+				lock (this.syncObject) {
+					removed = this.collection.Remove(item);
+				}
+
+				if (removed) {
+					this.OnCollectionChanged(NotifyCollectionChangedAction.Remove, item);
+				}
+
+				return removed;
+			}
+
+			public IEnumerator<T> GetEnumerator() {
+				lock (this.syncObject) {
+					return new List<T>(this.collection).GetEnumerator();
+				}
+			}
+
+			System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
+				return this.GetEnumerator();
+			}
+
+			protected virtual void OnCollectionChanged(NotifyCollectionChangedAction action, T item) {
+				var changed = this.CollectionChanged;
+				if (changed != null) {
+					changed(this, new NotifyCollectionChangedEventArgs(action, item));
+				}
+			}
+		}
+
+		/// <summary>
 		/// An awaitable struct that facilitates an asynchronous transition to the Main thread.
 		/// </summary>
 		public struct SynchronizationContextAwaitable {
@@ -1259,7 +1414,7 @@ namespace Microsoft.Threading {
 				this.alwaysYield = alwaysYield;
 
 				if (joinableOperation.Value != null) {
-					joinableOperation.Value.Add(asyncPump);
+					joinableOperation.Value.AddDependency(asyncPump.mainThreadSwitchingSyncContext);
 				}
 			}
 
