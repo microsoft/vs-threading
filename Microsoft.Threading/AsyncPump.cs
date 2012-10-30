@@ -56,6 +56,8 @@ namespace Microsoft.Threading {
 		/// </summary>
 		private readonly Thread mainThread;
 
+		private readonly JoinableSet ongoingSyncContexts;
+
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AsyncPump"/> class.
 		/// </summary>
@@ -64,6 +66,7 @@ namespace Microsoft.Threading {
 		public AsyncPump(Thread mainThread = null, SynchronizationContext synchronizationContext = null) {
 			this.mainThread = mainThread ?? Thread.CurrentThread;
 			this.underlyingSynchronizationContext = synchronizationContext ?? SynchronizationContext.Current; // may still be null after this.
+			this.ongoingSyncContexts = new JoinableSet(this);
 			this.promotableSyncContext = new PromotableMainThreadSynchronizationContext(this);
 			this.mainThreadSwitchingSyncContext = new SingleThreadSynchronizationContext(this, false, false);
 			this.mainThreadTaskScheduler = new MainThreadScheduler(this);
@@ -332,10 +335,10 @@ namespace Microsoft.Threading {
 		public JoinRelease Join() {
 			var mainThreadControllingSyncContext = this.MainThreadControllingSyncContext;
 			if (mainThreadControllingSyncContext != null) {
-				return mainThreadControllingSyncContext.Join(this.mainThreadSwitchingSyncContext);
+				return new JoinRelease(this.ongoingSyncContexts.AddParent(mainThreadControllingSyncContext));
 			}
 
-			return new JoinRelease();
+			return new JoinRelease(OnDisposeAction.NoOpDefault);
 		}
 
 		/// <summary>
@@ -377,6 +380,10 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="action">The continuation to execute.</param>
 		protected virtual void SwitchToMainThreadOnCompleted(Action action) {
+			if (joinableOperation.Value != null) {
+				joinableOperation.Value.AddDependency(this.mainThreadSwitchingSyncContext);
+			}
+
 			var wrapper = SingleExecuteProtector.Create(this, true, action);
 			this.mainThreadSwitchingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
 		}
@@ -598,9 +605,20 @@ namespace Microsoft.Threading {
 		public struct JoinRelease : IDisposable {
 			private SingleThreadSynchronizationContext joined;
 			private SingleThreadSynchronizationContext joiner;
+			private readonly IDisposable disposable;
 
 			/// <summary>
-			/// Initializes a new instance of the <see cref="JoinRelease"/> struct.
+			/// Initializes a new instance of the <see cref="JoinRelease"/> class.
+			/// </summary>
+			internal JoinRelease(IDisposable disposable) {
+				Requires.NotNull(disposable, "disposable");
+				this.disposable = disposable;
+				this.joined = null;
+				this.joiner = null;
+			}
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="JoinRelease"/> class.
 			/// </summary>
 			/// <param name="joined">The Main thread controlling SingleThreadSynchronizationContext to use to accelerate execution of Main thread bound work.</param>
 			/// <param name="joiner">The instance that created this value.</param>
@@ -610,6 +628,7 @@ namespace Microsoft.Threading {
 
 				this.joined = (SingleThreadSynchronizationContext)joined;
 				this.joiner = (SingleThreadSynchronizationContext)joiner;
+				this.disposable = null;
 			}
 
 			/// <summary>
@@ -620,6 +639,10 @@ namespace Microsoft.Threading {
 					this.joined.Disjoin(this.joiner);
 					this.joined = null;
 					this.joiner = null;
+				}
+
+				if (this.disposable != null) {
+					this.disposable.Dispose();
 				}
 			}
 		}
@@ -675,12 +698,8 @@ namespace Microsoft.Threading {
 			public async Task JoinAsync(CancellationToken cancellationToken = default(CancellationToken)) {
 				cancellationToken.ThrowIfCancellationRequested();
 
-				var mainThreadControllingSyncContext = this.owner.MainThreadControllingSyncContext;
-				this.joinables.AddParent(mainThreadControllingSyncContext);
-				try {
+				using (this.joinables.AddParent(this.owner.MainThreadControllingSyncContext)) {
 					await this.Task.WithCancellation(cancellationToken);
-				} finally {
-					this.joinables.RemoveParent(mainThreadControllingSyncContext);
 				}
 			}
 
@@ -702,6 +721,30 @@ namespace Microsoft.Threading {
 			}
 		}
 
+		private class OnDisposeAction : IDisposable {
+			private static readonly IDisposable noOpSingleton = new OnDisposeAction(() => { });
+			private Action action;
+
+			internal OnDisposeAction(Action action) {
+				Requires.NotNull(action, "action");
+
+				this.action = action;
+			}
+
+			internal static IDisposable NoOpDefault {
+				get { return noOpSingleton; }
+			}
+
+			public void Dispose() {
+				Action action;
+				action = Interlocked.Exchange(ref this.action, null);
+				if (action != null) {
+					action();
+				}
+			}
+		}
+
+		[DebuggerDisplay("Parents: {joinParents.Count} Children: {joinChildren.Count}")]
 		private class JoinableSet : IDisposable {
 			private readonly object syncObject = new object();
 
@@ -754,15 +797,11 @@ namespace Microsoft.Threading {
 				this.joinChildren.Add(syncContext);
 			}
 
-			internal void AddParent(SingleThreadSynchronizationContext syncContext) {
+			internal IDisposable AddParent(SingleThreadSynchronizationContext syncContext) {
 				Requires.NotNull(syncContext, "syncContext");
 				bool added = this.joinParents.Add(syncContext);
 				Assumes.True(added, "We don't support repeatedly joining from the same main thread controlling context.");
-			}
-
-			internal void RemoveParent(SingleThreadSynchronizationContext syncContext) {
-				Requires.NotNull(syncContext, "syncContext");
-				this.joinParents.Remove(syncContext);
+				return new OnDisposeAction(() => this.joinParents.Remove(syncContext));
 			}
 
 			private void JoinParents_Changed(object sender, NotifyCollectionChangedEventArgs e) {
@@ -782,7 +821,7 @@ namespace Microsoft.Threading {
 
 							break;
 						case NotifyCollectionChangedAction.Remove:
-							foreach (SingleThreadSynchronizationContext parent in e.NewItems) {
+							foreach (SingleThreadSynchronizationContext parent in e.OldItems) {
 								List<JoinRelease> parentJoinList;
 								if (this.releasers.TryGetValue(parent, out parentJoinList)) {
 									foreach (var releaser in parentJoinList) {
@@ -1022,6 +1061,12 @@ namespace Microsoft.Threading {
 				}
 			}
 
+			/// <summary>
+			/// Adds the specified <see cref="SingleThreadSynchronizationContext"/> as a child,
+			/// (i.e. dependency) of this parent.
+			/// </summary>
+			/// <param name="other">The child/dependency.</param>
+			/// <returns>A releaser that can be used to terminate the relationship prior to the child's completion.</returns>
 			internal JoinRelease Join(SingleThreadSynchronizationContext other) {
 				Requires.NotNull(other, "other");
 
@@ -1048,17 +1093,29 @@ namespace Microsoft.Threading {
 					extraContextsChanged.Cancel();
 				}
 
-				return new JoinRelease(this, other);
+				var releaser = new JoinRelease(this, other);
+
+				// Arrange to automatically disjoin when the child context completes.
+				other.queue.Completion.ContinueWith(
+					(_, state) => ((JoinRelease)state).Dispose(),
+					releaser,
+					CancellationToken.None,
+					TaskContinuationOptions.None,
+					TaskScheduler.Default);
+
+				return releaser;
 			}
 
 			internal void Disjoin(SingleThreadSynchronizationContext other) {
 				CancellationTokenSource extraContextsChanged = null;
 				lock (this.syncObject) {
-					int refCount = this.extraQueueSources[other];
-					if (--refCount == 0) {
-						this.extraQueueSources.Remove(other);
-					} else {
-						this.extraQueueSources[other] = refCount;
+					int refCount;
+					if (this.extraQueueSources.TryGetValue(other, out refCount)) {
+						if (--refCount <= 0) {
+							this.extraQueueSources.Remove(other);
+						} else {
+							this.extraQueueSources[other] = refCount;
+						}
 					}
 
 					// Only if the actual set of queues changed do we want to disrupt the cancellation token.
@@ -1083,20 +1140,15 @@ namespace Microsoft.Threading {
 			/// will also be interesting for our parent to execute.
 			/// </summary>
 			private void JoinMainThreadSyncContextAncestorIfApplicable() {
+				this.asyncPump.ongoingSyncContexts.AddJoinChild(this);
 				if (this.affinityWithMainThread) {
 					// Select our nearest ancestor that will execute messages on the main thread.
 					var ancestor = this.asyncPump.MainThreadControllingSyncContext;
 
 					// If there is no such ancestor, no joining is necessary.
 					if (ancestor != null) {
-						// Join our ancestor, and arrange to disjoin as soon as our own work is complete.
-						var disjoiner = ancestor.Join(this);
-						this.queue.Completion.ContinueWith(
-							(_, state) => ((JoinRelease)state).Dispose(),
-							disjoiner,
-							CancellationToken.None,
-							TaskContinuationOptions.None,
-							TaskScheduler.Default);
+						// Join our ancestor.  We'll automatically disjoin when our work is complete.
+						ancestor.Join(this);
 					}
 				}
 			}
@@ -1412,10 +1464,6 @@ namespace Microsoft.Threading {
 
 				this.asyncPump = asyncPump;
 				this.alwaysYield = alwaysYield;
-
-				if (joinableOperation.Value != null) {
-					joinableOperation.Value.AddDependency(asyncPump.mainThreadSwitchingSyncContext);
-				}
 			}
 
 			/// <summary>
