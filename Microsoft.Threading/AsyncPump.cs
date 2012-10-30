@@ -986,7 +986,7 @@ namespace Microsoft.Threading {
 				this.asyncPump = asyncPump;
 				this.autoCompleteWhenOperationsReachZero = autoCompleteWhenOperationsReachZero;
 				this.previousSyncContext = SynchronizationContext.Current;
-				this.affinityWithMainThread = Thread.CurrentThread == asyncPump.mainThread;
+				this.affinityWithMainThread = Thread.CurrentThread == asyncPump.mainThread && this.asyncPump.underlyingSynchronizationContext != null;
 				this.completingSynchronously = completingSynchronously;
 				this.JoinMainThreadSyncContextAncestorIfApplicable();
 
