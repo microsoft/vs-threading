@@ -440,7 +440,8 @@ namespace Microsoft.Threading {
 				&& SynchronizationContext.Current != this.promotableSyncContext) {
 				// We don't have to worry about backing up the old context to restore it later
 				// because in an async continuation (which this is), .NET automatically does this.
-				SynchronizationContext.SetSynchronizationContext(this.promotableSyncContext);
+				SynchronizationContext.SetSynchronizationContext(
+					(SynchronizationContext)this.MainThreadControllingSyncContext ?? this.promotableSyncContext);
 			}
 		}
 
