@@ -48,6 +48,8 @@ namespace Microsoft.Threading {
 		/// </summary>
 		private readonly PromotableMainThreadSynchronizationContext promotableSyncContext;
 
+		private readonly SingleThreadSynchronizationContext mainThreadSwitchingSyncContext;
+
 		/// <summary>
 		/// A task scheduler that executes tasks on the main thread under the same rules as
 		/// <see cref="SwitchToMainThreadAsync()"/>.
@@ -60,14 +62,6 @@ namespace Microsoft.Threading {
 		private readonly Thread mainThread;
 
 		/// <summary>
-		/// A queue of async continuations that have not yet been executed, and may 
-		/// need to be "replayed" to new SynchronizationContexts that may <see cref="Join"/>
-		/// this instance, allowing for Main thread access to be granted after
-		/// continuations have already been pended.
-		/// </summary>
-		private readonly AsyncQueue<SingleExecuteProtector> pendingActions = new AsyncQueue<SingleExecuteProtector>();
-
-		/// <summary>
 		/// Initializes a new instance of the <see cref="AsyncPump"/> class.
 		/// </summary>
 		/// <param name="mainThread">The thread to switch to in <see cref="SwitchToMainThreadAsync()"/>.</param>
@@ -76,6 +70,7 @@ namespace Microsoft.Threading {
 			this.mainThread = mainThread ?? Thread.CurrentThread;
 			this.underlyingSynchronizationContext = synchronizationContext ?? SynchronizationContext.Current; // may still be null after this.
 			this.promotableSyncContext = new PromotableMainThreadSynchronizationContext(this);
+			this.mainThreadSwitchingSyncContext = new SingleThreadSynchronizationContext(this, false, false);
 			this.mainThreadTaskScheduler = new MainThreadScheduler(this);
 		}
 
@@ -342,7 +337,7 @@ namespace Microsoft.Threading {
 		public JoinRelease Join() {
 			var mainThreadControllingSyncContext = this.MainThreadControllingSyncContext;
 			if (mainThreadControllingSyncContext != null) {
-				return mainThreadControllingSyncContext.Join(this);
+				return mainThreadControllingSyncContext.Join(this.mainThreadSwitchingSyncContext);
 			}
 
 			return new JoinRelease();
@@ -428,10 +423,6 @@ namespace Microsoft.Threading {
 						// The SingleExecuteProtector class ensures that if more than one SynchronizationContext
 						// ultimately responds to the message and invokes the delegate, that it will no-op after
 						// the first invocation.
-						lock (this.pendingActions) {
-							this.pendingActions.Enqueue(wrapper);
-						}
-
 						var mainThreadControllingSyncContext = this.MainThreadControllingSyncContext;
 						if (mainThreadControllingSyncContext != null) {
 							mainThreadControllingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
@@ -620,12 +611,6 @@ namespace Microsoft.Threading {
 			internal bool TryExecute() {
 				object invokeDelegate = Interlocked.Exchange(ref this.invokeDelegate, null);
 				if (invokeDelegate != null) {
-					lock (this.asyncPump.pendingActions) {
-						// This work item will usually be at the head of the queue, but since the
-						// caller doesn't guarantee it, be careful to allow for its appearance elsewhere.
-						this.asyncPump.pendingActions.RemoveMidQueue(this);
-					}
-
 					SynchronizationContext oldSyncContext = SynchronizationContext.Current;
 					if (this.applySyncContext) {
 						this.asyncPump.EnsureDeadlockAvoidingSyncContextIsApplied();
@@ -657,19 +642,19 @@ namespace Microsoft.Threading {
 		/// </summary>
 		public struct JoinRelease : IDisposable {
 			private SingleThreadSynchronizationContext joined;
-			private AsyncPump joiner;
+			private SingleThreadSynchronizationContext joiner;
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="JoinRelease"/> struct.
 			/// </summary>
 			/// <param name="joined">The Main thread controlling SingleThreadSynchronizationContext to use to accelerate execution of Main thread bound work.</param>
 			/// <param name="joiner">The instance that created this value.</param>
-			internal JoinRelease(object joined, AsyncPump joiner) {
+			internal JoinRelease(object joined, object joiner) {
 				Requires.NotNull(joined, "joined");
 				Requires.NotNull(joiner, "joiner");
 
 				this.joined = (SingleThreadSynchronizationContext)joined;
-				this.joiner = joiner;
+				this.joiner = (SingleThreadSynchronizationContext)joiner;
 			}
 
 			/// <summary>
@@ -747,7 +732,7 @@ namespace Microsoft.Threading {
 				bool dejoining = false;
 				Action<AsyncPump> addedHandler = addedPump => {
 					if (controllingSyncContext != null && !dejoining) {
-						var releaser = controllingSyncContext.Join(addedPump);
+						var releaser = controllingSyncContext.Join(addedPump.mainThreadSwitchingSyncContext);
 						lock (joinReleasers) {
 							joinReleasers.Add(releaser);
 						}
@@ -915,8 +900,8 @@ namespace Microsoft.Threading {
 			/// <remarks>
 			/// When the value in an entry is decremented to 0, the entry is removed from the map.
 			/// </remarks>
-			private Dictionary<AsyncPump, int> extraQueueSources =
-				new Dictionary<AsyncPump, int>();
+			private Dictionary<SingleThreadSynchronizationContext, int> extraQueueSources =
+				new Dictionary<SingleThreadSynchronizationContext, int>();
 
 			private CancellationTokenSource extraContextsChanged = new CancellationTokenSource();
 
@@ -1037,7 +1022,7 @@ namespace Microsoft.Threading {
 				}
 			}
 
-			internal JoinRelease Join(AsyncPump other) {
+			internal JoinRelease Join(SingleThreadSynchronizationContext other) {
 				Requires.NotNull(other, "other");
 
 				CancellationTokenSource extraContextsChanged = null;
@@ -1066,7 +1051,7 @@ namespace Microsoft.Threading {
 				return new JoinRelease(this, other);
 			}
 
-			internal void Disjoin(AsyncPump other) {
+			internal void Disjoin(SingleThreadSynchronizationContext other) {
 				CancellationTokenSource extraContextsChanged = null;
 				lock (this.syncObject) {
 					int refCount = this.extraQueueSources[other];
@@ -1103,8 +1088,8 @@ namespace Microsoft.Threading {
 					applicableQueues = new List<AsyncQueue<SingleExecuteProtector>>(1 + this.extraQueueSources.Count);
 					applicableQueues.Add(this.queue);
 					foreach (var joiner in this.extraQueueSources.Keys) {
-						if (!joiner.pendingActions.Completion.IsCompleted) {
-							applicableQueues.Add(joiner.pendingActions);
+						if (!joiner.queue.Completion.IsCompleted) {
+							applicableQueues.Add(joiner.queue);
 						}
 					}
 				}
