@@ -878,6 +878,7 @@ namespace Microsoft.Threading {
 				this.previousSyncContext = SynchronizationContext.Current;
 				this.affinityWithMainThread = Thread.CurrentThread == asyncPump.mainThread;
 				this.completingSynchronously = completingSynchronously;
+				this.JoinMainThreadSyncContextAncestorIfApplicable();
 
 				if (this.affinityWithMainThread && this.previousSyncContext != null && this.previousSyncContext.GetType().IsEquivalentTo(typeof(SynchronizationContext))) {
 					// This is really bad as any code in VS could badly misbehave in this scenario.
@@ -1016,6 +1017,29 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>
+			/// Joins our parent sync context where applicable, so that any messages in our own queue
+			/// will also be interesting for our parent to execute.
+			/// </summary>
+			private void JoinMainThreadSyncContextAncestorIfApplicable() {
+				if (this.affinityWithMainThread) {
+					// Select our nearest ancestor that will execute messages on the main thread.
+					var ancestor = this.asyncPump.MainThreadControllingSyncContext;
+
+					// If there is no such ancestor, no joining is necessary.
+					if (ancestor != null) {
+						// Join our ancestor, and arrange to disjoin as soon as our own work is complete.
+						var disjoiner = ancestor.Join(this);
+						this.queue.Completion.ContinueWith(
+							(_, state) => ((JoinRelease)state).Dispose(),
+							disjoiner,
+							CancellationToken.None,
+							TaskContinuationOptions.None,
+							TaskScheduler.Default);
+					}
+				}
+			}
+
+			/// <summary>
 			/// Forwards the execution request to occur on the Main thread's primary dispatcher, when applicable.
 			/// </summary>
 			/// <param name="wrapper">The delegate wrapper that guarantees the delegate cannot be invoked more than once.</param>
@@ -1111,7 +1135,7 @@ namespace Microsoft.Threading {
 
 		/// <summary>
 		/// A synchronization context that simply forwards posted messages back to
-		/// the <see cref="AsyncPump.Post"/> method.
+		/// the <see cref="SingleThreadSynchronizationContext.Post"/> method.
 		/// </summary>
 		private class PromotableMainThreadSynchronizationContext : SynchronizationContext {
 			/// <summary>
