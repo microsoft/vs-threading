@@ -857,7 +857,7 @@ namespace Microsoft.Threading {
 				foreach (SingleThreadSynchronizationContext addedChild in e.NewItems) {
 					lock (this.syncObject) {
 						// Add the child to our collection of children so that future parents can join them.
-						if (!this.disposed && this.joinChildren.Add(addedChild)) {
+						if (!this.disposed) {
 							// Also join any existing parents.
 							foreach (var parent in this.joinParents) {
 								List<JoinRelease> parentJoinList;
