@@ -386,6 +386,11 @@ namespace Microsoft.Threading {
 
 			var wrapper = SingleExecuteProtector.Create(this, true, action);
 			this.mainThreadSwitchingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
+
+			var mainThreadControllingSyncContext = this.MainThreadControllingSyncContext;
+			if (mainThreadControllingSyncContext != null) {
+				mainThreadControllingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
+			}
 		}
 
 		/// <summary>
