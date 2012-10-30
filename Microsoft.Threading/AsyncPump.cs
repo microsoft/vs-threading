@@ -1566,6 +1566,7 @@ namespace Microsoft.Threading {
 				this.previousJoinable = joinableOperation.Value;
 				if (joinable != null) {
 					joinableOperation.Value = joinable;
+					joinable.AddDependency(this.appliedContext);
 				}
 			}
 
