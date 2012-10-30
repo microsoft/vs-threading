@@ -1175,7 +1175,9 @@ namespace Microsoft.Threading {
 					// that modal dialog) the message has a chance of being executed before the dialog is dismissed.
 					// We're passing the message to the root SynchronizationContext.  Call a virtual method to do this
 					// as our host may want to customize behavior (adjusting message priority for example).
-					this.asyncPump.PostToUnderlyingSynchronizationContext(this.asyncPump.underlyingSynchronizationContext, SingleExecuteProtector.ExecuteOnce, wrapper);
+					if (this.asyncPump.underlyingSynchronizationContext != null) {
+						this.asyncPump.PostToUnderlyingSynchronizationContext(this.asyncPump.underlyingSynchronizationContext, SingleExecuteProtector.ExecuteOnce, wrapper);
+					}
 				} else {
 					ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
 				}
