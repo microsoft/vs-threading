@@ -487,28 +487,26 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void KickOffAsyncWorkFromMainThreadThenBlockOnIt() {
-			Task task = null;
-			this.asyncPump.RunSynchronously(delegate {
-				task = this.SomeOperationThatMayBeOnMainThreadAsync();
+			var joinable = this.asyncPump.BeginAsynchronously(async delegate {
+				await this.SomeOperationThatMayBeOnMainThreadAsync();
 			});
 
 			this.asyncPump.RunSynchronously(async delegate {
 				using (this.asyncPump.Join()) {
-					await task;
+					await joinable.Task;
 				}
 			});
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void KickOffDeepAsyncWorkFromMainThreadThenBlockOnIt() {
-			Task task = null;
-			this.asyncPump.RunSynchronously(delegate {
-				task = this.SomeOperationThatUsesMainThreadViaItsOwnAsyncPumpAsync();
+			var joinable = this.asyncPump.BeginAsynchronously(async delegate {
+				await this.SomeOperationThatUsesMainThreadViaItsOwnAsyncPumpAsync();
 			});
 
 			this.asyncPump.RunSynchronously(async delegate {
 				using (this.asyncPump.Join()) {
-					await task;
+					await joinable.Task;
 				}
 			});
 		}
