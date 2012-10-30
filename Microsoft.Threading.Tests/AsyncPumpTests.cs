@@ -588,22 +588,57 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void BeginAsyncOnMTAKicksOffOtherAsyncPumpWorkCanCompleteSynchronously() {
+		public void BeginAsyncOnMTAKicksOffOtherAsyncPumpWorkCanCompleteSynchronouslySwitchFirst() {
 			var otherPump = new AsyncPump();
 			bool taskFinished = false;
+			var switchPended = new ManualResetEventSlim();
 
 			// Kick off the BeginAsync work from a background thread that has no special
 			// affinity to the main thread.
 			var joinable = Task.Run(delegate {
 				return this.asyncPump.BeginAsynchronously(async delegate {
 					await Task.Yield();
+					var awaiter = otherPump.SwitchToMainThreadAsync().GetAwaiter();
+					Assert.IsFalse(awaiter.IsCompleted);
+					var continuationFinished = new AsyncManualResetEvent();
+					awaiter.OnCompleted(delegate {
+						taskFinished = true;
+						continuationFinished.Set();
+					});
+					switchPended.Set();
+					await continuationFinished;
+				});
+			}).Result;
+
+			Assert.IsFalse(joinable.Task.IsCompleted);
+			switchPended.Wait();
+			joinable.Join();
+			Assert.IsTrue(taskFinished);
+			Assert.IsTrue(joinable.Task.IsCompleted);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void BeginAsyncOnMTAKicksOffOtherAsyncPumpWorkCanCompleteSynchronouslyJoinFirst() {
+			var otherPump = new AsyncPump();
+			bool taskFinished = false;
+			var joinedEvent = new AsyncManualResetEvent();
+
+			// Kick off the BeginAsync work from a background thread that has no special
+			// affinity to the main thread.
+			var joinable = Task.Run(delegate {
+				return this.asyncPump.BeginAsynchronously(async delegate {
+					await joinedEvent;
 					await otherPump.SwitchToMainThreadAsync();
 					taskFinished = true;
 				});
 			}).Result;
 
 			Assert.IsFalse(joinable.Task.IsCompleted);
-			joinable.Join();
+			this.asyncPump.RunSynchronously(async delegate {
+				var awaitable = joinable.JoinAsync();
+				joinedEvent.Set();
+				await awaitable;
+			});
 			Assert.IsTrue(taskFinished);
 			Assert.IsTrue(joinable.Task.IsCompleted);
 		}
