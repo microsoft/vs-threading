@@ -798,10 +798,13 @@ namespace Microsoft.Threading {
 			}
 
 			internal IDisposable AddParent(SingleThreadSynchronizationContext syncContext) {
-				Requires.NotNull(syncContext, "syncContext");
-				bool added = this.joinParents.Add(syncContext);
-				Assumes.True(added, "We don't support repeatedly joining from the same main thread controlling context.");
-				return new OnDisposeAction(() => this.joinParents.Remove(syncContext));
+				if (syncContext != null) {
+					bool added = this.joinParents.Add(syncContext);
+					Assumes.True(added, "We don't support repeatedly joining from the same main thread controlling context.");
+					return new OnDisposeAction(() => this.joinParents.Remove(syncContext));
+				} else {
+					return OnDisposeAction.NoOpDefault;
+				}
 			}
 
 			private void JoinParents_Changed(object sender, NotifyCollectionChangedEventArgs e) {
