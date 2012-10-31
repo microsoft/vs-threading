@@ -13,11 +13,12 @@
 	public class AsyncPumpTests : TestBase {
 		private AsyncPump asyncPump;
 		private Thread originalThread;
+		private SynchronizationContext dispatcherContext;
 
 		[TestInitialize]
 		public void Initialize() {
-			var ctxt = new DispatcherSynchronizationContext();
-			SynchronizationContext.SetSynchronizationContext(ctxt);
+			this.dispatcherContext = new DispatcherSynchronizationContext();
+			SynchronizationContext.SetSynchronizationContext(dispatcherContext);
 			this.asyncPump = new DerivedAsyncPump();
 			this.originalThread = Thread.CurrentThread;
 		}
@@ -1327,6 +1328,23 @@
 			long actualAllocatedMemory = memory2 - memory1;
 			Assert.IsTrue(actualAllocatedMemory <= allowedAllocatedMemory, "Allocated bytes {0} > {1} allowed bytes.", actualAllocatedMemory, allowedAllocatedMemory);
 			this.TestContext.WriteLine("Allocated bytes {0} <= {1} allowed bytes.", actualAllocatedMemory, allowedAllocatedMemory);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void SwitchToMainThreadSucceedsWhenConstructedUnderMTAOperation() {
+			var frame = new DispatcherFrame();
+			var task = Task.Run(async delegate {
+				try {
+					var otherPump = new AsyncPump(this.originalThread, this.dispatcherContext);
+					await otherPump.SwitchToMainThreadAsync();
+					Assert.AreSame(this.originalThread, Thread.CurrentThread);
+				} finally {
+					frame.Continue = false;
+				}
+			});
+
+			Dispatcher.PushFrame(frame);
+			task.GetAwaiter().GetResult(); // rethrow any failures
 		}
 
 		private static async void SomeFireAndForgetMethod() {
