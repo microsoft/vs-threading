@@ -384,7 +384,7 @@ namespace Microsoft.Threading {
 				joinableOperation.Value.AddDependency(this.mainThreadSwitchingSyncContext);
 			}
 
-			var wrapper = SingleExecuteProtector.Create(this, true, action);
+			var wrapper = SingleExecuteProtector.Create(this.mainThreadSwitchingSyncContext, action);
 			this.mainThreadSwitchingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
 
 			var mainThreadControllingSyncContext = this.MainThreadControllingSyncContext;
@@ -508,12 +508,7 @@ namespace Microsoft.Threading {
 			/// <summary>
 			/// The instance that created this delegate.
 			/// </summary>
-			private readonly AsyncPump asyncPump;
-
-			/// <summary>
-			/// A flag indicating whether to apply the async pump's sync context before invoking the delegate.
-			/// </summary>
-			private readonly bool applySyncContext;
+			private readonly SingleThreadSynchronizationContext syncContext;
 
 			/// <summary>
 			/// The delegate to invoke.  <c>null</c> if it has already been invoked.
@@ -534,12 +529,10 @@ namespace Microsoft.Threading {
 			/// <summary>
 			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class.
 			/// </summary>
-			/// <param name="asyncPump">The <see cref="AsyncPump"/> instance that created this.</param>
-			/// <param name="applySyncContext">A flag indicating whether to apply the async pump's sync context before invoking the delegate.</param>
-			private SingleExecuteProtector(AsyncPump asyncPump, bool applySyncContext) {
-				Requires.NotNull(asyncPump, "asyncPump");
-				this.asyncPump = asyncPump;
-				this.applySyncContext = applySyncContext;
+			/// <param name="syncContext">The synchronization context that created this instance.</param>
+			private SingleExecuteProtector(SingleThreadSynchronizationContext syncContext) {
+				Requires.NotNull(syncContext, "syncContext");
+				this.syncContext = syncContext;
 			}
 
 			/// <summary>
@@ -565,14 +558,20 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>
+			/// Gets a value indicating whether this delegate must be executed on the main thread.
+			/// </summary>
+			internal bool RequiresMainThread {
+				get { return this.syncContext.AffinitizedToMainThread; }
+			}
+
+			/// <summary>
 			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class.
 			/// </summary>
-			/// <param name="asyncPump">The <see cref="AsyncPump"/> instance that created this.</param>
-			/// <param name="applySyncContext">A flag indicating whether to apply the async pump's sync context before invoking the delegate.</param>
+			/// <param name="syncContext">The synchronization context that created this instance.</param>
 			/// <param name="action">The delegate being wrapped.</param>
 			/// <returns>An instance of <see cref="SingleExecuteProtector"/>.</returns>
-			internal static SingleExecuteProtector Create(AsyncPump asyncPump, bool applySyncContext, Action action) {
-				return new SingleExecuteProtector(asyncPump, applySyncContext) {
+			internal static SingleExecuteProtector Create(SingleThreadSynchronizationContext syncContext, Action action) {
+				return new SingleExecuteProtector(syncContext) {
 					invokeDelegate = action,
 				};
 			}
@@ -581,20 +580,19 @@ namespace Microsoft.Threading {
 			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class
 			/// that describes the specified callback.
 			/// </summary>
-			/// <param name="asyncPump">The pump whose queue should be dequeued when this delegate is invoked.</param>
-			/// <param name="applySyncContext">A flag indicating whether to apply the async pump's sync context before invoking the delegate.</param>
+			/// <param name="syncContext">The synchronization context that created this instance.</param>
 			/// <param name="callback">The callback to invoke.</param>
 			/// <param name="state">The state object to pass to the callback.</param>
 			/// <returns>An instance of <see cref="SingleExecuteProtector"/>.</returns>
-			internal static SingleExecuteProtector Create(AsyncPump asyncPump, bool applySyncContext, SendOrPostCallback callback, object state) {
+			internal static SingleExecuteProtector Create(SingleThreadSynchronizationContext syncContext, SendOrPostCallback callback, object state) {
 				// As an optimization, recognize if what we're being handed is already an instance of this type,
 				// because if it is, we don't need to wrap it with yet another instance.
 				var existing = state as SingleExecuteProtector;
-				if (callback == ExecuteOnce && existing != null && existing.asyncPump == asyncPump && existing.applySyncContext == applySyncContext) {
+				if (callback == ExecuteOnce && existing != null && existing.syncContext == syncContext) {
 					return (SingleExecuteProtector)state;
 				}
 
-				return new SingleExecuteProtector(asyncPump, applySyncContext) {
+				return new SingleExecuteProtector(syncContext) {
 					invokeDelegate = callback,
 					state = state,
 				};
@@ -608,8 +606,8 @@ namespace Microsoft.Threading {
 				if (invokeDelegate != null) {
 					this.OnExecuting();
 					SynchronizationContext oldSyncContext = SynchronizationContext.Current;
-					if (this.applySyncContext) {
-						this.asyncPump.EnsureDeadlockAvoidingSyncContextIsApplied();
+					if (this.syncContext.AffinitizedToMainThread) {
+						this.syncContext.ParentPump.EnsureDeadlockAvoidingSyncContextIsApplied();
 					}
 
 					try {
@@ -1047,6 +1045,14 @@ namespace Microsoft.Threading {
 				get { return this.previousSyncContext; }
 			}
 
+			internal AsyncPump ParentPump {
+				get { return this.asyncPump; }
+			}
+
+			internal bool AffinitizedToMainThread {
+				get { return this.affinityWithMainThread; }
+			}
+
 			/// <summary>Dispatches an asynchronous message to the synchronization context.</summary>
 			/// <param name="d">The System.Threading.SendOrPostCallback delegate to call.</param>
 			/// <param name="state">The object passed to the delegate.</param>
@@ -1055,7 +1061,7 @@ namespace Microsoft.Threading {
 
 				// We'll be posting this message to (potentially) multiple queues, so we wrap
 				// the work up in an object that ensures the work executes no more than once.
-				var executor = SingleExecuteProtector.Create(this.asyncPump, this.affinityWithMainThread, d, state);
+				var executor = SingleExecuteProtector.Create(this, d, state);
 				bool enqueuedSuccessfully = this.queue.TryEnqueue(executor);
 
 				// Avoid posting the message elsewhere for processing when we're on a threadpool thread
@@ -1225,6 +1231,7 @@ namespace Microsoft.Threading {
 						this.asyncPump.PostToUnderlyingSynchronizationContext(this.asyncPump.underlyingSynchronizationContext, SingleExecuteProtector.ExecuteOnce, wrapper);
 					}
 				} else {
+					Assumes.False(wrapper.RequiresMainThread);
 					ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
 				}
 			}
@@ -1369,7 +1376,7 @@ namespace Microsoft.Threading {
 			/// Forwards posted delegates to <see cref="SingleThreadSynchronizationContext.Post"/>
 			/// </summary>
 			public override void Post(SendOrPostCallback d, object state) {
-				var executor = SingleExecuteProtector.Create(this.asyncPump, true, d, state);
+				var executor = SingleExecuteProtector.Create(this.asyncPump.mainThreadSwitchingSyncContext, d, state);
 				this.asyncPump.mainThreadSwitchingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, executor);
 			}
 
