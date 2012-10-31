@@ -527,6 +527,11 @@ namespace Microsoft.Threading {
 			private object state;
 
 			/// <summary>
+			/// Backing field for the <see cref="Executing"/> event.
+			/// </summary>
+			private event EventHandler executing;
+
+			/// <summary>
 			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class.
 			/// </summary>
 			/// <param name="asyncPump">The <see cref="AsyncPump"/> instance that created this.</param>
@@ -535,6 +540,28 @@ namespace Microsoft.Threading {
 				Requires.NotNull(asyncPump, "asyncPump");
 				this.asyncPump = asyncPump;
 				this.applySyncContext = applySyncContext;
+			}
+
+			/// <summary>
+			/// An event raised when this instance is being executed.
+			/// </summary>
+			internal event EventHandler Executing {
+				add {
+					if (!this.HasBeenExecuted) {
+						this.executing += value;
+					}
+				}
+
+				remove {
+					this.executing -= value;
+				}
+			}
+
+			/// <summary>
+			/// Gets a value indicating whether this instance has already executed.
+			/// </summary>
+			internal bool HasBeenExecuted {
+				get { return this.invokeDelegate == null; }
 			}
 
 			/// <summary>
@@ -579,6 +606,7 @@ namespace Microsoft.Threading {
 			internal bool TryExecute() {
 				object invokeDelegate = Interlocked.Exchange(ref this.invokeDelegate, null);
 				if (invokeDelegate != null) {
+					this.OnExecuting();
 					SynchronizationContext oldSyncContext = SynchronizationContext.Current;
 					if (this.applySyncContext) {
 						this.asyncPump.EnsureDeadlockAvoidingSyncContextIsApplied();
@@ -601,6 +629,19 @@ namespace Microsoft.Threading {
 					return true;
 				} else {
 					return false;
+				}
+			}
+
+			/// <summary>
+			/// Raises the <see cref="Executing"/> event.
+			/// </summary>
+			private void OnExecuting() {
+				// While raising the event, automatically remove the handlers since we'll only
+				// raise them once, and we'd like to avoid holding references that may extend
+				// the lifetime of our recipients.
+				var executing = Interlocked.Exchange(ref this.executing, null);
+				if (executing != null) {
+					executing(this, EventArgs.Empty);
 				}
 			}
 		}
@@ -932,7 +973,7 @@ namespace Microsoft.Threading {
 			private readonly object syncObject = new object();
 
 			/// <summary>The queue of work items.</summary>
-			private readonly AsyncQueue<SingleExecuteProtector> queue = new AsyncQueue<SingleExecuteProtector>();
+			private readonly AsyncQueue<SingleExecuteProtector> queue = new ExecutionQueue();
 
 			/// <summary>The pump that created this instance.</summary>
 			private readonly AsyncPump asyncPump;
@@ -1259,6 +1300,43 @@ namespace Microsoft.Threading {
 					TaskScheduler.Default);
 
 				return resultSource.Task;
+			}
+
+			/// <summary>
+			/// A thread-safe queue of <see cref="SingleExecuteProtector"/> elements
+			/// that self-scavenges elements that are executed by other means.
+			/// </summary>
+			private class ExecutionQueue : AsyncQueue<SingleExecuteProtector> {
+				protected override void OnEnqueued(SingleExecuteProtector value, bool alreadyDispatched) {
+					base.OnEnqueued(value, alreadyDispatched);
+
+					// We only need to consider scavenging our queue if this item was
+					// actually added to the queue.
+					if (!alreadyDispatched) {
+						value.Executing += this.OnExecuting;
+
+						// It's possible this value has already been executed
+						// (before our event wire-up was applied). So check and
+						// scavenge.
+						if (value.HasBeenExecuted) {
+							this.Scavenge();
+						}
+					}
+				}
+
+				protected override void OnDequeued(SingleExecuteProtector value) {
+					base.OnDequeued(value);
+					value.Executing -= this.OnExecuting;
+				}
+
+				private void OnExecuting(object sender, EventArgs e) {
+					this.Scavenge();
+				}
+
+				private void Scavenge() {
+					SingleExecuteProtector stale;
+					while (this.TryDequeue(p => p.HasBeenExecuted, out stale)) { }
+				}
 			}
 		}
 

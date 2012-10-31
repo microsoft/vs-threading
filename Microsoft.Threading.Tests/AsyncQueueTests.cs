@@ -332,5 +332,49 @@
 
 			cts.Cancel();
 		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void OnEnqueuedNotAlreadyDispatched() {
+			var queue = new Fakes.StubAsyncQueue<int>();
+			bool callbackFired = false;
+			queue.OnEnqueuedT0Boolean = (value, alreadyDispatched) => {
+				Assert.AreEqual(5, value);
+				Assert.IsFalse(alreadyDispatched);
+				callbackFired = true;
+			};
+			queue.Enqueue(5);
+			Assert.IsTrue(callbackFired);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void OnEnqueuedAlreadyDispatched() {
+			var queue = new Fakes.StubAsyncQueue<int>();
+			bool callbackFired = false;
+			queue.OnEnqueuedT0Boolean = (value, alreadyDispatched) => {
+				Assert.AreEqual(5, value);
+				Assert.IsTrue(alreadyDispatched);
+				callbackFired = true;
+			};
+
+			var dequeuer = queue.DequeueAsync();
+			queue.Enqueue(5);
+			Assert.IsTrue(callbackFired);
+			Assert.IsTrue(dequeuer.IsCompleted);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void OnDequeued() {
+			var queue = new Fakes.StubAsyncQueue<int>();
+			bool callbackFired = false;
+			queue.OnDequeuedT0 = value => {
+				Assert.AreEqual(5, value);
+				callbackFired = true;
+			};
+
+			queue.Enqueue(5);
+			int dequeuedValue;
+			Assert.IsTrue(queue.TryDequeue(out dequeuedValue));
+			Assert.IsTrue(callbackFired);
+		}
 	}
 }

@@ -138,6 +138,8 @@
 				dequeuer.SetResult(value);
 			}
 
+			this.OnEnqueued(value, dequeuer != null);
+
 			return true;
 		}
 
@@ -193,7 +195,7 @@
 					tcs.SetCanceled();
 				} else {
 					T value;
-					if (this.TryDequeueInternal(out value)) {
+					if (this.TryDequeueInternal(null, out value)) {
 						tcs.SetResult(value);
 					} else {
 						if (!this.dequeuingTasks.TryGetValue(cancellationToken, out existingAwaiters)) {
@@ -226,27 +228,69 @@
 		/// <param name="value">Receives the element from the head of the queue; or <c>default(T)</c> if the queue is empty.</param>
 		/// <returns><c>true</c> if an element was dequeued; <c>false</c> if the queue was empty.</returns>
 		public bool TryDequeue(out T value) {
-			bool result = this.TryDequeueInternal(out value);
+			bool result = this.TryDequeueInternal(null, out value);
 			this.CompleteIfNecessary();
 			return result;
+		}
+
+		/// <summary>
+		/// Immediately dequeues the element from the head of the queue if one is available
+		/// that satisfies the specified check;
+		/// otherwise returns without an element.
+		/// </summary>
+		/// <param name="valueCheck">The test on the head element that must succeed to dequeue.</param>
+		/// <param name="value">Receives the element from the head of the queue; or <c>default(T)</c> if the queue is empty.</param>
+		/// <returns><c>true</c> if an element was dequeued; <c>false</c> if the queue was empty.</returns>
+		protected bool TryDequeue(Predicate<T> valueCheck, out T value) {
+			Requires.NotNull(valueCheck, "valueCheck");
+
+			bool result = this.TryDequeueInternal(valueCheck, out value);
+			this.CompleteIfNecessary();
+			return result;
+		}
+
+		/// <summary>
+		/// Invoked when a value is enqueued.
+		/// </summary>
+		/// <param name="value">The enqueued value.</param>
+		/// <param name="alreadyDispatched">
+		/// <c>true</c> if the item will skip the queue because a dequeuer was already waiting for an item;
+		/// <c>false</c> if the item was actually added to the queue.
+		/// </param>
+		protected virtual void OnEnqueued(T value, bool alreadyDispatched) {
+		}
+
+		/// <summary>
+		/// Invoked when a value is dequeued.
+		/// </summary>
+		/// <param name="value">The dequeued value.</param>
+		protected virtual void OnDequeued(T value) {
 		}
 
 		/// <summary>
 		/// Immediately dequeues the element from the head of the queue if one is available,
 		/// otherwise returns without an element.
 		/// </summary>
+		/// <param name="valueCheck">The test on the head element that must succeed to dequeue.</param>
 		/// <param name="value">Receives the element from the head of the queue; or <c>default(T)</c> if the queue is empty.</param>
 		/// <returns><c>true</c> if an element was dequeued; <c>false</c> if the queue was empty.</returns>
-		private bool TryDequeueInternal(out T value) {
+		private bool TryDequeueInternal(Predicate<T> valueCheck, out T value) {
+			bool dequeued;
 			lock (this.syncObject) {
-				if (this.queueElements.Count > 0) {
+				if (this.queueElements.Count > 0 && (valueCheck == null || valueCheck(this.queueElements.Peek()))) {
 					value = this.queueElements.Dequeue();
-					return true;
+					dequeued = true;
 				} else {
 					value = default(T);
-					return false;
+					dequeued = false;
 				}
 			}
+
+			if (dequeued) {
+				this.OnDequeued(value);
+			}
+
+			return dequeued;
 		}
 
 		/// <summary>
