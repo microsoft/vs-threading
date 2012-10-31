@@ -569,22 +569,24 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void RunSynchronouslyYieldsToAppropriateContext() {
-			var backgroundWork = Task.Run(delegate {
-				this.asyncPump.RunSynchronously(async delegate {
-					// Verify that we're on a background thread and stay there.
-					Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
-					await Task.Yield();
-					Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
+			for (int i = 0; i < 100; i++) {
+				var backgroundWork = Task.Run(delegate {
+					this.asyncPump.RunSynchronously(async delegate {
+						// Verify that we're on a background thread and stay there.
+						Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
+						await Task.Yield();
+						Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
 
-					// Now explicitly get on the Main thread, and verify that we stay there.
-					await this.asyncPump.SwitchToMainThreadAsync();
-					Assert.AreSame(this.originalThread, Thread.CurrentThread);
-					await Task.Yield();
-					Assert.AreSame(this.originalThread, Thread.CurrentThread);
+						// Now explicitly get on the Main thread, and verify that we stay there.
+						await this.asyncPump.SwitchToMainThreadAsync();
+						Assert.AreSame(this.originalThread, Thread.CurrentThread);
+						await Task.Yield();
+						Assert.AreSame(this.originalThread, Thread.CurrentThread);
+					});
 				});
-			});
 
-			this.asyncPump.CompleteSynchronously(backgroundWork);
+				this.asyncPump.CompleteSynchronously(backgroundWork);
+			}
 		}
 
 		[TestMethod, Timeout(TestTimeout)]

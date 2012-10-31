@@ -1079,40 +1079,44 @@ namespace Microsoft.Threading {
 			internal JoinRelease Join(SingleThreadSynchronizationContext other) {
 				Requires.NotNull(other, "other");
 
-				CancellationTokenSource extraContextsChanged = null;
-				lock (this.syncObject) {
-					int refCount;
-					this.extraQueueSources.TryGetValue(other, out refCount);
-					refCount++;
-					this.extraQueueSources[other] = refCount;
+				if (this.affinityWithMainThread == other.affinityWithMainThread) {
+					CancellationTokenSource extraContextsChanged = null;
+					lock (this.syncObject) {
+						int refCount;
+						this.extraQueueSources.TryGetValue(other, out refCount);
+						refCount++;
+						this.extraQueueSources[other] = refCount;
 
-					// Only if the actual set of queues changed do we want to disrupt the cancellation token.
-					if (refCount == 1) {
-						extraContextsChanged = this.extraContextsChanged;
-						this.extraContextsChanged = new CancellationTokenSource();
+						// Only if the actual set of queues changed do we want to disrupt the cancellation token.
+						if (refCount == 1) {
+							extraContextsChanged = this.extraContextsChanged;
+							this.extraContextsChanged = new CancellationTokenSource();
+						}
 					}
+
+					var nestingSyncContext = this.previousSyncContext as SingleThreadSynchronizationContext;
+					if (nestingSyncContext != null) {
+						nestingSyncContext.Join(other);
+					}
+
+					if (extraContextsChanged != null) {
+						extraContextsChanged.Cancel();
+					}
+
+					var releaser = new JoinRelease(this, other);
+
+					// Arrange to automatically disjoin when the child context completes.
+					other.queue.Completion.ContinueWith(
+						(_, state) => ((JoinRelease)state).Dispose(),
+						releaser,
+						CancellationToken.None,
+						TaskContinuationOptions.None,
+						TaskScheduler.Default);
+
+					return releaser;
+				} else {
+					return new JoinRelease();
 				}
-
-				var nestingSyncContext = this.previousSyncContext as SingleThreadSynchronizationContext;
-				if (nestingSyncContext != null) {
-					nestingSyncContext.Join(other);
-				}
-
-				if (extraContextsChanged != null) {
-					extraContextsChanged.Cancel();
-				}
-
-				var releaser = new JoinRelease(this, other);
-
-				// Arrange to automatically disjoin when the child context completes.
-				other.queue.Completion.ContinueWith(
-					(_, state) => ((JoinRelease)state).Dispose(),
-					releaser,
-					CancellationToken.None,
-					TaskContinuationOptions.None,
-					TaskScheduler.Default);
-
-				return releaser;
 			}
 
 			internal void Disjoin(SingleThreadSynchronizationContext other) {
