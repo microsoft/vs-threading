@@ -1289,6 +1289,46 @@
 			assertDialogListener.AssertUiEnabled = true;
 		}
 
+		[TestMethod]
+		public void SwitchToMainThreadMemoryLeak() {
+			const long iterations = 5000;
+			const long allowedAllocatedMemory = 4000; // should be fewer than iterations
+
+			var frame = new DispatcherFrame();
+
+			Task.Run(async delegate {
+				for (int i = 0; i < 2; i++) {
+					await this.asyncPump.SwitchToMainThreadAsync();
+					await TaskScheduler.Default;
+				}
+
+				frame.Continue = false;
+			});
+
+			Dispatcher.PushFrame(frame);
+			long memory1 = GC.GetTotalMemory(true);
+
+			frame.Continue = true;
+			Task.Run(async delegate {
+				for (int i = 0; i < iterations; i++) {
+					await this.asyncPump.SwitchToMainThreadAsync();
+					await TaskScheduler.Default;
+					await Task.Yield();
+				}
+
+				frame.Continue = false;
+			});
+
+			Dispatcher.PushFrame(frame);
+
+			GC.Collect();
+			long memory2 = GC.GetTotalMemory(true);
+
+			long actualAllocatedMemory = memory2 - memory1;
+			Assert.IsTrue(actualAllocatedMemory <= allowedAllocatedMemory, "Allocated bytes {0} > {1} allowed bytes.", actualAllocatedMemory, allowedAllocatedMemory);
+			this.TestContext.WriteLine("Allocated bytes {0} <= {1} allowed bytes.", actualAllocatedMemory, allowedAllocatedMemory);
+		}
+
 		private static async void SomeFireAndForgetMethod() {
 			await Task.Yield();
 		}
