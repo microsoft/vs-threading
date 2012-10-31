@@ -1180,7 +1180,7 @@
 		/// Verifies that in the scenario when the initializing thread doesn't have a sync context at all (vcupgrade.exe)
 		/// that reasonable behavior still occurs.
 		/// </summary>
-		[TestMethod]
+		[TestMethod, Timeout(TestTimeout)]
 		public void NoMainThreadSyncContextAndKickedOffFromOriginalThread() {
 			SynchronizationContext.SetSynchronizationContext(null);
 			this.asyncPump = new DerivedAsyncPump();
@@ -1222,7 +1222,7 @@
 		/// Verifies that in the scenario when the initializing thread doesn't have a sync context at all (vcupgrade.exe)
 		/// that reasonable behavior still occurs.
 		/// </summary>
-		[TestMethod]
+		[TestMethod, Timeout(TestTimeout)]
 		public void NoMainThreadSyncContextAndKickedOffFromOtherThread() {
 			SynchronizationContext.SetSynchronizationContext(null);
 			this.asyncPump = new DerivedAsyncPump();
@@ -1276,7 +1276,7 @@
 			}).Wait();
 		}
 
-		[TestMethod]
+		[TestMethod, Timeout(TestTimeout)]
 		public void MitigationAgainstBadSyncContextOnMainThread() {
 			var ordinarySyncContext = new SynchronizationContext();
 			SynchronizationContext.SetSynchronizationContext(ordinarySyncContext);
@@ -1289,7 +1289,7 @@
 			assertDialogListener.AssertUiEnabled = true;
 		}
 
-		[TestMethod]
+		[TestMethod, Timeout(TestTimeout)]
 		public void SwitchToMainThreadMemoryLeak() {
 			const long iterations = 5000;
 			const long allowedAllocatedMemory = 4000; // should be fewer than iterations
