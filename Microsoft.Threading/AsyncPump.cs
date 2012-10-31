@@ -68,7 +68,7 @@ namespace Microsoft.Threading {
 			this.underlyingSynchronizationContext = synchronizationContext ?? SynchronizationContext.Current; // may still be null after this.
 			this.ongoingSyncContexts = new JoinableSet(this);
 			this.promotableSyncContext = new PromotableMainThreadSynchronizationContext(this);
-			this.mainThreadSwitchingSyncContext = new SingleThreadSynchronizationContext(this, false, false);
+			this.mainThreadSwitchingSyncContext = new SingleThreadSynchronizationContext(this, false, false, this.underlyingSynchronizationContext, this.underlyingSynchronizationContext != null);
 			this.mainThreadTaskScheduler = new MainThreadScheduler(this);
 		}
 
@@ -1020,12 +1020,15 @@ namespace Microsoft.Threading {
 			/// <param name="completingSynchronously">
 			/// Indicates whether the <see cref="RunOnCurrentThread"/> method of this class is or will be called.
 			/// </param>
-			internal SingleThreadSynchronizationContext(AsyncPump asyncPump, bool autoCompleteWhenOperationsReachZero, bool completingSynchronously) {
+			/// <param name="previousSyncContext">The synchronization context to consider the active one prior to this one.</param>
+			/// <param name="affinitizedToMainThread">A value to force whether posted messages must run on the main thread.</param>
+			internal SingleThreadSynchronizationContext(AsyncPump asyncPump, bool autoCompleteWhenOperationsReachZero, bool completingSynchronously, SynchronizationContext previousSyncContext = null, bool? affinitizedToMainThread = null) {
 				Requires.NotNull(asyncPump, "asyncPump");
+				Assumes.True(previousSyncContext != null || !affinitizedToMainThread.HasValue || !affinitizedToMainThread.Value);
 				this.asyncPump = asyncPump;
 				this.autoCompleteWhenOperationsReachZero = autoCompleteWhenOperationsReachZero;
-				this.previousSyncContext = SynchronizationContext.Current;
-				this.affinityWithMainThread = Thread.CurrentThread == asyncPump.mainThread && this.asyncPump.underlyingSynchronizationContext != null;
+				this.previousSyncContext = previousSyncContext ?? SynchronizationContext.Current;
+				this.affinityWithMainThread = affinitizedToMainThread ?? Thread.CurrentThread == asyncPump.mainThread && this.asyncPump.underlyingSynchronizationContext != null;
 				this.completingSynchronously = completingSynchronously;
 				this.JoinMainThreadSyncContextAncestorIfApplicable();
 
