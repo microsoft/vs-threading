@@ -1225,6 +1225,22 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>
+			/// Recursively adds the specified context's queue and all its dependency queues to the specified set.
+			/// </summary>
+			private static void AddDependentQueues(ISet<ExecutionQueue> contextSet, SingleThreadSynchronizationContext context) {
+				Requires.NotNull(contextSet, "contextSet");
+				Requires.NotNull(context, "context");
+
+				if (!context.queue.Completion.IsCompleted) {
+					if (contextSet.Add(context.queue)) {
+						foreach (var childContext in context.extraQueueSources.Keys) {
+							AddDependentQueues(contextSet, childContext);
+						}
+					}
+				}
+			}
+
+			/// <summary>
 			/// Joins our parent sync context where applicable, so that any messages in our own queue
 			/// will also be interesting for our parent to execute.
 			/// </summary>
@@ -1272,23 +1288,18 @@ namespace Microsoft.Threading {
 					}
 
 					CancellationToken extraContextsChangedToken;
-					List<ExecutionQueue> applicableQueues;
+					HashSet<ExecutionQueue> applicableQueues;
 					lock (this.syncObject) {
 						extraContextsChangedToken = this.extraContextsChanged.Token;
-						applicableQueues = new List<ExecutionQueue>(1 + this.extraQueueSources.Count);
-						applicableQueues.Add(this.queue);
-						foreach (var joiner in this.extraQueueSources.Keys) {
-							if (!joiner.queue.Completion.IsCompleted) {
-								applicableQueues.Add(joiner.queue);
-							}
-						}
+						applicableQueues = new HashSet<ExecutionQueue>();
+						AddDependentQueues(applicableQueues, this);
 					}
 
 					while (!extraContextsChangedToken.IsCancellationRequested && !this.queue.Completion.IsCompleted) {
 						// Check all queues to see if any have immediate work.
-						for (int i = 0; i < applicableQueues.Count; i++) {
+						foreach (var queue in applicableQueues) {
 							SingleExecuteProtector value;
-							if (applicableQueues[i].TryDequeue(out value)) {
+							if (queue.TryDequeue(out value)) {
 								return value;
 							}
 						}
