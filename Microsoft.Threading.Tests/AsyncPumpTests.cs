@@ -1360,6 +1360,19 @@
 			});
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void GrandparentJoins() {
+			var innerJoinable = this.asyncPump.BeginAsynchronously(async delegate {
+				await Task.Yield();
+			});
+
+			var outerJoinable = this.asyncPump.BeginAsynchronously(async delegate {
+				await innerJoinable;
+			});
+
+			outerJoinable.Join();
+		}
+
 		private static async void SomeFireAndForgetMethod() {
 			await Task.Yield();
 		}
