@@ -65,7 +65,7 @@ namespace Microsoft.Threading
                 var tcs = new TaskCompletionSource<bool>();
                 using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s).TrySetResult(true), tcs))
                 {
-                    if (task != await Task.WhenAny(task, tcs.Task))
+                    if (task != await Task.WhenAny(task, tcs.Task).ConfigureAwait(false))
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                     }
@@ -90,7 +90,7 @@ namespace Microsoft.Threading
                 var tcs = new TaskCompletionSource<bool>();
                 using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s).TrySetResult(true), tcs))
                 {
-                    if (task != await Task.WhenAny(task, tcs.Task))
+                    if (task != await Task.WhenAny(task, tcs.Task).ConfigureAwait(false))
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                     }

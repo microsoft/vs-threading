@@ -6,6 +6,7 @@
 	using System.Text;
 	using System.Threading;
 	using System.Threading.Tasks;
+	using System.Windows.Threading;
 
 	[TestClass]
 	public class ThreadingToolsTests : TestBase {
@@ -60,6 +61,34 @@
 			var t = ((Task)tcs.Task).WithCancellation(cts.Token);
 			tcs.SetResult(new GenericParameterHelper());
 			t.GetAwaiter().GetResult();
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void WithCancellationNoDeadlockFromSyncContext() {
+			var dispatcher = new DispatcherSynchronizationContext();
+			SynchronizationContext.SetSynchronizationContext(dispatcher);
+			var tcs = new TaskCompletionSource<object>();
+			var cts = new CancellationTokenSource(AsyncDelay / 4);
+			try {
+				((Task)tcs.Task).WithCancellation(cts.Token).Wait(TestTimeout);
+				Assert.Fail("Expected OperationCanceledException not thrown.");
+			} catch (AggregateException ex) {
+				ex.Handle(x => x is OperationCanceledException);
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void WithCancellationOfTNoDeadlockFromSyncContext() {
+			var dispatcher = new DispatcherSynchronizationContext();
+			SynchronizationContext.SetSynchronizationContext(dispatcher);
+			var tcs = new TaskCompletionSource<object>();
+			var cts = new CancellationTokenSource(AsyncDelay / 4);
+			try {
+				tcs.Task.WithCancellation(cts.Token).Wait(TestTimeout);
+				Assert.Fail("Expected OperationCanceledException not thrown.");
+			} catch (AggregateException ex) {
+				ex.Handle(x => x is OperationCanceledException);
+			}
 		}
 	}
 }
