@@ -967,11 +967,12 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>Provides a SynchronizationContext that's single-threaded.</summary>
+		[DebuggerDisplay("UIThread: {affinityWithMainThread} Sync: {completingSynchronously} Queue: {queue.Count} Completed: {queue.Completion.IsCompleted}")]
 		private class SingleThreadSynchronizationContext : SynchronizationContext {
 			private readonly object syncObject = new object();
 
 			/// <summary>The queue of work items.</summary>
-			private readonly AsyncQueue<SingleExecuteProtector> queue = new ExecutionQueue();
+			private readonly ExecutionQueue queue = new ExecutionQueue();
 
 			/// <summary>The pump that created this instance.</summary>
 			private readonly AsyncPump asyncPump;
@@ -1239,77 +1240,41 @@ namespace Microsoft.Threading {
 				}
 			}
 
-			private Task<SingleExecuteProtector> DequeueFromAllSelfAndJoinedQueuesAsync(TaskCompletionSource<SingleExecuteProtector> completionSource = null) {
-				var resultSource = completionSource ?? new TaskCompletionSource<SingleExecuteProtector>();
+			private async Task<SingleExecuteProtector> DequeueFromAllSelfAndJoinedQueuesAsync() {
+				while (true) {
+					if (this.queue.Completion.IsCompleted) {
+						return null;
+					}
 
-				CancellationToken extraContextsChangedToken;
-				List<AsyncQueue<SingleExecuteProtector>> applicableQueues;
-				lock (this.syncObject) {
-					extraContextsChangedToken = this.extraContextsChanged.Token;
-					applicableQueues = new List<AsyncQueue<SingleExecuteProtector>>(1 + this.extraQueueSources.Count);
-					applicableQueues.Add(this.queue);
-					foreach (var joiner in this.extraQueueSources.Keys) {
-						if (!joiner.queue.Completion.IsCompleted) {
-							applicableQueues.Add(joiner.queue);
+					CancellationToken extraContextsChangedToken;
+					List<ExecutionQueue> applicableQueues;
+					lock (this.syncObject) {
+						extraContextsChangedToken = this.extraContextsChanged.Token;
+						applicableQueues = new List<ExecutionQueue>(1 + this.extraQueueSources.Count);
+						applicableQueues.Add(this.queue);
+						foreach (var joiner in this.extraQueueSources.Keys) {
+							if (!joiner.queue.Completion.IsCompleted) {
+								applicableQueues.Add(joiner.queue);
+							}
+						}
+					}
+
+					while (!extraContextsChangedToken.IsCancellationRequested && !this.queue.Completion.IsCompleted) {
+						// Check all queues to see if any have immediate work.
+						for (int i = 0; i < applicableQueues.Count; i++) {
+							SingleExecuteProtector value;
+							if (applicableQueues[i].TryDequeue(out value)) {
+								return value;
+							}
+						}
+
+						// None of the queues had work to do right away.
+						try {
+							await Task.WhenAny(applicableQueues.Select(q => q.EnqueuedNotify)).WithCancellation(extraContextsChangedToken).ConfigureAwait(false);
+						} catch (OperationCanceledException) {
 						}
 					}
 				}
-
-				var overallCancellation = CancellationTokenSource.CreateLinkedTokenSource(extraContextsChangedToken);
-				var allApplicableDequeues = new Task<SingleExecuteProtector>[applicableQueues.Count];
-				for (int i = 0; i < allApplicableDequeues.Length; i++) {
-					allApplicableDequeues[i] = applicableQueues[i].DequeueAsync(overallCancellation.Token);
-				}
-
-				var dequeueTask = Task.WhenAny<SingleExecuteProtector>(allApplicableDequeues);
-				dequeueTask.ContinueWith(
-					priorTask => {
-						var completedTask = priorTask.Result;
-
-						// Do our best to avoid dequeueing from more than one queue by cancelling all
-						// outstanding requests.  We'll also need to check for any extra dequeuers 
-						// that managed to complete.
-						overallCancellation.Cancel();
-						for (int i = 0; i < allApplicableDequeues.Length; i++) {
-							if (allApplicableDequeues[i] != completedTask) {
-								// We need to requeue the extra element back to its original queue.
-								allApplicableDequeues[i].ContinueWith(
-									(straggler, state) => {
-										var queue = (AsyncQueue<SingleExecuteProtector>)state;
-										Assumes.True(queue.TryEnqueue(straggler.Result));
-									},
-									applicableQueues[i],
-									CancellationToken.None,
-									TaskContinuationOptions.OnlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously,
-									TaskScheduler.Default);
-							}
-						}
-
-						if (completedTask.IsCanceled) {
-							if (completedTask == allApplicableDequeues[0] && this.queue.Completion.IsCompleted) {
-								// Our own queue was completed.  Release our caller by completing the task we returned.
-								// We could cancel the task, but then our caller would throw if they are waiting/awaiting on it,
-								// and we don't want to throw every time our queue completes because that is a very common scenario.
-								// So just complete the task normally, but with a value that signals completion.
-								resultSource.TrySetResult(null);
-							} else {
-								// A joined queue has completed, unjoined, or a new queue has joined.
-								// We should reinitialize.
-								this.DequeueFromAllSelfAndJoinedQueuesAsync(resultSource);
-							}
-						} else if (completedTask.IsFaulted) {
-							Report.Fail("Unexpected exception in a bad place.");
-							resultSource.TrySetException(completedTask.Exception);
-						} else if (completedTask.IsCompleted) {
-							Assumes.NotNull(completedTask.Result);
-							resultSource.TrySetResult(completedTask.Result);
-						}
-					},
-					CancellationToken.None,
-					TaskContinuationOptions.ExecuteSynchronously,
-					TaskScheduler.Default);
-
-				return resultSource.Task;
 			}
 
 			/// <summary>
@@ -1317,6 +1282,19 @@ namespace Microsoft.Threading {
 			/// that self-scavenges elements that are executed by other means.
 			/// </summary>
 			private class ExecutionQueue : AsyncQueue<SingleExecuteProtector> {
+				private TaskCompletionSource<object> enqueuedNotification = new TaskCompletionSource<object>();
+
+				internal ExecutionQueue() {
+					this.Completion.ContinueWith((_, that) => ((ExecutionQueue)that).enqueuedNotification.TrySetResult(null), this, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+				}
+
+				/// <summary>
+				/// Gets a task that completes when the queue is non-empty or completed.
+				/// </summary>
+				internal Task EnqueuedNotify {
+					get { return this.enqueuedNotification.Task; }
+				}
+
 				protected override void OnEnqueued(SingleExecuteProtector value, bool alreadyDispatched) {
 					base.OnEnqueued(value, alreadyDispatched);
 
@@ -1331,12 +1309,29 @@ namespace Microsoft.Threading {
 						if (value.HasBeenExecuted) {
 							this.Scavenge();
 						}
+
+						// Also cause continuations to execute that may be waiting on a non-empty queue.
+						this.enqueuedNotification.TrySetResult(null);
 					}
 				}
 
 				protected override void OnDequeued(SingleExecuteProtector value) {
 					base.OnDequeued(value);
 					value.Executing -= this.OnExecuting;
+
+					if (this.Count == 0 && this.enqueuedNotification.Task.IsCompleted) {
+						var oldNotify = Interlocked.Exchange(ref this.enqueuedNotification, new TaskCompletionSource<object>());
+
+						// Race conditions suggest this just might be a different task than we observed in the if condition.
+						// We must mitigate the risk that someone has already seen that task and put continuations on it
+						// by unblocking them. They may see an empty queue, but can re-await at that point.
+						oldNotify.TrySetResult(null);
+
+						// Another race is that we're no longer empty, in which case be sure we've completed the task.
+						if (this.Count > 0) {
+							this.enqueuedNotification.TrySetResult(null);
+						}
+					}
 				}
 
 				private void OnExecuting(object sender, EventArgs e) {
@@ -1466,6 +1461,7 @@ namespace Microsoft.Threading {
 			/// <summary>
 			/// The underlying hash set.
 			/// </summary>
+			[DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
 			private readonly HashSet<T> collection = new HashSet<T>();
 
 			/// <summary>
@@ -1652,7 +1648,7 @@ namespace Microsoft.Threading {
 			internal RunFramework(AsyncPump pump, bool asyncVoidMethod, bool completingSynchronously, Joinable joinable = null) {
 				Requires.NotNull(pump, "pump");
 
-				this.joinable = joinable;
+				this.joinable = joinable ?? joinableOperation.Value;
 				this.pump = pump;
 				this.previousContext = SynchronizationContext.Current;
 				this.previousAsyncLocalContext = pump.MainThreadControllingSyncContext;
@@ -1664,9 +1660,9 @@ namespace Microsoft.Threading {
 				}
 
 				this.previousJoinable = joinableOperation.Value;
-				if (joinable != null) {
-					joinableOperation.Value = joinable;
-					joinable.AddDependency(this.appliedContext);
+				if (this.joinable != null) {
+					joinableOperation.Value = this.joinable;
+					this.joinable.AddDependency(this.appliedContext);
 				}
 			}
 
