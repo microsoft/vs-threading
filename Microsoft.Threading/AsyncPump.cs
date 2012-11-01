@@ -413,7 +413,12 @@ namespace Microsoft.Threading {
 		/// <param name="task">The task whose completion is being waited on.</param>
 		protected virtual void WaitSynchronously(Task task) {
 			Requires.NotNull(task, "task");
-			while (!task.Wait(1000)) { }
+			while (!task.Wait(3000)) {
+				// This could be a hang. If a memory dump with heap is taken, it will
+				// significantly simplify investigation if the heap only has live awaitables
+				// remaining (completed ones GC'd). So run the GC now and then keep waiting.
+				GC.Collect();
+			}
 		}
 
 		/// <summary>
