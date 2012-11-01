@@ -41,6 +41,32 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void WithCancellationOfTNoDeadlockFromSyncContext() {
+			var dispatcher = new DispatcherSynchronizationContext();
+			SynchronizationContext.SetSynchronizationContext(dispatcher);
+			var tcs = new TaskCompletionSource<object>();
+			var cts = new CancellationTokenSource(AsyncDelay / 4);
+			try {
+				tcs.Task.WithCancellation(cts.Token).Wait(TestTimeout);
+				Assert.Fail("Expected OperationCanceledException not thrown.");
+			} catch (AggregateException ex) {
+				ex.Handle(x => x is OperationCanceledException);
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void WithCancellationOfTNoncancelableNoDeadlockFromSyncContext() {
+			var dispatcher = new DispatcherSynchronizationContext();
+			SynchronizationContext.SetSynchronizationContext(dispatcher);
+			var tcs = new TaskCompletionSource<object>();
+			Task.Run(async delegate {
+				await Task.Delay(AsyncDelay);
+				tcs.SetResult(null);
+			});
+			tcs.Task.WithCancellation(CancellationToken.None).Wait(TestTimeout);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void WithCancellationCanceled() {
 			var tcs = new TaskCompletionSource<object>();
 			var cts = new CancellationTokenSource();
@@ -78,17 +104,15 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void WithCancellationOfTNoDeadlockFromSyncContext() {
+		public void WithCancellationNoncancelableNoDeadlockFromSyncContext() {
 			var dispatcher = new DispatcherSynchronizationContext();
 			SynchronizationContext.SetSynchronizationContext(dispatcher);
 			var tcs = new TaskCompletionSource<object>();
-			var cts = new CancellationTokenSource(AsyncDelay / 4);
-			try {
-				tcs.Task.WithCancellation(cts.Token).Wait(TestTimeout);
-				Assert.Fail("Expected OperationCanceledException not thrown.");
-			} catch (AggregateException ex) {
-				ex.Handle(x => x is OperationCanceledException);
-			}
+			Task.Run(async delegate {
+				await Task.Delay(AsyncDelay);
+				tcs.SetResult(null);
+			});
+			((Task)tcs.Task).WithCancellation(CancellationToken.None).Wait(TestTimeout);
 		}
 	}
 }

@@ -72,8 +72,10 @@ namespace Microsoft.Threading
                 }
             }
 
-            // Return result or rethrow any fault/cancellation exception.
-            return await task;
+            // Rethrow any fault/cancellation exception, even if we awaited above.
+            // But if we skipped the above if branch, this will actually yield
+            // on an incompleted task.
+            return await task.ConfigureAwait(false);
         }
 
         /// <summary>
@@ -97,8 +99,10 @@ namespace Microsoft.Threading
                 }
             }
 
-            // Rethrow any fault/cancellation exception.
-            await task;
+            // Rethrow any fault/cancellation exception, even if we awaited above.
+            // But if we skipped the above if branch, this will actually yield
+            // on an incompleted task.
+            await task.ConfigureAwait(false);
         }
     }
 }
