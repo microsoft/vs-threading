@@ -1347,6 +1347,19 @@
 			task.GetAwaiter().GetResult(); // rethrow any failures
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void JoinTwice() {
+			var joinable = this.asyncPump.BeginAsynchronously(async delegate {
+				await Task.Yield();
+			});
+
+			this.asyncPump.RunSynchronously(async delegate {
+				var task1 = joinable.JoinAsync();
+				var task2 = joinable.JoinAsync();
+				await Task.WhenAll(task1, task2);
+			});
+		}
+
 		private static async void SomeFireAndForgetMethod() {
 			await Task.Yield();
 		}

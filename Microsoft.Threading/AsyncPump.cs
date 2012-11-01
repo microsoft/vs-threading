@@ -795,6 +795,8 @@ namespace Microsoft.Threading {
 
 			private readonly ObservableSet<SingleThreadSynchronizationContext> joinParents;
 
+			private readonly Dictionary<SingleThreadSynchronizationContext, int> joinedParentsRefCount;
+
 			private readonly ObservableSet<SingleThreadSynchronizationContext> joinChildren;
 
 			/// <summary>
@@ -811,9 +813,12 @@ namespace Microsoft.Threading {
 
 				this.owner = owner;
 				this.releasers = new Dictionary<SingleThreadSynchronizationContext, List<JoinRelease>>();
-				this.joinChildren = new ObservableSet<SingleThreadSynchronizationContext>();
+
+				this.joinedParentsRefCount = new Dictionary<SingleThreadSynchronizationContext, int>();
 				this.joinParents = new ObservableSet<SingleThreadSynchronizationContext>();
 				this.joinParents.CollectionChanged += this.JoinParents_Changed;
+
+				this.joinChildren = new ObservableSet<SingleThreadSynchronizationContext>();
 				this.joinChildren.CollectionChanged += this.JoinChildren_Changed;
 			}
 
@@ -844,9 +849,29 @@ namespace Microsoft.Threading {
 
 			internal IDisposable AddParent(SingleThreadSynchronizationContext syncContext) {
 				if (syncContext != null) {
-					bool added = this.joinParents.Add(syncContext);
-					Assumes.True(added, "We don't support repeatedly joining from the same main thread controlling context.");
-					return new OnDisposeAction(() => this.joinParents.Remove(syncContext));
+					lock (this.syncObject) {
+						int oldParentCount;
+						this.joinedParentsRefCount.TryGetValue(syncContext, out oldParentCount);
+						this.joinedParentsRefCount[syncContext] = oldParentCount + 1;
+						if (oldParentCount == 0) {
+							bool added = this.joinParents.Add(syncContext);
+							Assumes.True(added);
+						}
+
+						return new OnDisposeAction(delegate {
+							int parentRefCount;
+							lock (this.syncObject) {
+								if (this.joinedParentsRefCount.TryGetValue(syncContext, out parentRefCount)) {
+									if (parentRefCount == 1) {
+										this.joinParents.Remove(syncContext);
+										this.joinedParentsRefCount.Remove(syncContext);
+									} else {
+										this.joinedParentsRefCount[syncContext] = parentRefCount - 1;
+									}
+								}
+							}
+						});
+					}
 				} else {
 					return OnDisposeAction.NoOpDefault;
 				}
@@ -1457,11 +1482,11 @@ namespace Microsoft.Threading {
 		/// A thread-safe, observable set.
 		/// </summary>
 		/// <typeparam name="T">The type of elements stored by the collection.</typeparam>
+		[DebuggerDisplay("Count = {Count}")]
 		private class ObservableSet<T> : ICollection<T>, INotifyCollectionChanged {
 			/// <summary>
 			/// The underlying hash set.
 			/// </summary>
-			[DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
 			private readonly HashSet<T> collection = new HashSet<T>();
 
 			/// <summary>
