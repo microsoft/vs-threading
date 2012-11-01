@@ -65,15 +65,17 @@ namespace Microsoft.Threading
                 var tcs = new TaskCompletionSource<bool>();
                 using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s).TrySetResult(true), tcs))
                 {
-                    if (task != await Task.WhenAny(task, tcs.Task))
+                    if (task != await Task.WhenAny(task, tcs.Task).ConfigureAwait(false))
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                     }
                 }
             }
 
-            // Return result or rethrow any fault/cancellation exception.
-            return await task;
+            // Rethrow any fault/cancellation exception, even if we awaited above.
+            // But if we skipped the above if branch, this will actually yield
+            // on an incompleted task.
+            return await task.ConfigureAwait(false);
         }
 
         /// <summary>
@@ -90,15 +92,17 @@ namespace Microsoft.Threading
                 var tcs = new TaskCompletionSource<bool>();
                 using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s).TrySetResult(true), tcs))
                 {
-                    if (task != await Task.WhenAny(task, tcs.Task))
+                    if (task != await Task.WhenAny(task, tcs.Task).ConfigureAwait(false))
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                     }
                 }
             }
 
-            // Rethrow any fault/cancellation exception.
-            await task;
+            // Rethrow any fault/cancellation exception, even if we awaited above.
+            // But if we skipped the above if branch, this will actually yield
+            // on an incompleted task.
+            await task.ConfigureAwait(false);
         }
     }
 }

@@ -13,11 +13,12 @@
 	public class AsyncPumpTests : TestBase {
 		private AsyncPump asyncPump;
 		private Thread originalThread;
+		private SynchronizationContext dispatcherContext;
 
 		[TestInitialize]
 		public void Initialize() {
-			var ctxt = new DispatcherSynchronizationContext();
-			SynchronizationContext.SetSynchronizationContext(ctxt);
+			this.dispatcherContext = new DispatcherSynchronizationContext();
+			SynchronizationContext.SetSynchronizationContext(dispatcherContext);
 			this.asyncPump = new DerivedAsyncPump();
 			this.originalThread = Thread.CurrentThread;
 		}
@@ -487,28 +488,26 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void KickOffAsyncWorkFromMainThreadThenBlockOnIt() {
-			Task task = null;
-			this.asyncPump.RunSynchronously(delegate {
-				task = this.SomeOperationThatMayBeOnMainThreadAsync();
+			var joinable = this.asyncPump.BeginAsynchronously(async delegate {
+				await this.SomeOperationThatMayBeOnMainThreadAsync();
 			});
 
 			this.asyncPump.RunSynchronously(async delegate {
 				using (this.asyncPump.Join()) {
-					await task;
+					await joinable.Task;
 				}
 			});
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void KickOffDeepAsyncWorkFromMainThreadThenBlockOnIt() {
-			Task task = null;
-			this.asyncPump.RunSynchronously(delegate {
-				task = this.SomeOperationThatUsesMainThreadViaItsOwnAsyncPumpAsync();
+			var joinable = this.asyncPump.BeginAsynchronously(async delegate {
+				await this.SomeOperationThatUsesMainThreadViaItsOwnAsyncPumpAsync();
 			});
 
 			this.asyncPump.RunSynchronously(async delegate {
 				using (this.asyncPump.Join()) {
-					await task;
+					await joinable.Task;
 				}
 			});
 		}
@@ -571,41 +570,78 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void RunSynchronouslyYieldsToAppropriateContext() {
-			var backgroundWork = Task.Run(delegate {
-				this.asyncPump.RunSynchronously(async delegate {
-					// Verify that we're on a background thread and stay there.
-					Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
-					await Task.Yield();
-					Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
+			for (int i = 0; i < 100; i++) {
+				var backgroundWork = Task.Run(delegate {
+					this.asyncPump.RunSynchronously(async delegate {
+						// Verify that we're on a background thread and stay there.
+						Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
+						await Task.Yield();
+						Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
 
-					// Now explicitly get on the Main thread, and verify that we stay there.
-					await this.asyncPump.SwitchToMainThreadAsync();
-					Assert.AreSame(this.originalThread, Thread.CurrentThread);
-					await Task.Yield();
-					Assert.AreSame(this.originalThread, Thread.CurrentThread);
+						// Now explicitly get on the Main thread, and verify that we stay there.
+						await this.asyncPump.SwitchToMainThreadAsync();
+						Assert.AreSame(this.originalThread, Thread.CurrentThread);
+						await Task.Yield();
+						Assert.AreSame(this.originalThread, Thread.CurrentThread);
+					});
 				});
-			});
 
-			this.asyncPump.CompleteSynchronously(backgroundWork);
+				this.asyncPump.CompleteSynchronously(backgroundWork);
+			}
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void BeginAsyncOnMTAKicksOffOtherAsyncPumpWorkCanCompleteSynchronously() {
+		public void BeginAsyncOnMTAKicksOffOtherAsyncPumpWorkCanCompleteSynchronouslySwitchFirst() {
 			var otherPump = new AsyncPump();
 			bool taskFinished = false;
+			var switchPended = new ManualResetEventSlim();
 
 			// Kick off the BeginAsync work from a background thread that has no special
 			// affinity to the main thread.
 			var joinable = Task.Run(delegate {
 				return this.asyncPump.BeginAsynchronously(async delegate {
 					await Task.Yield();
+					var awaiter = otherPump.SwitchToMainThreadAsync().GetAwaiter();
+					Assert.IsFalse(awaiter.IsCompleted);
+					var continuationFinished = new AsyncManualResetEvent();
+					awaiter.OnCompleted(delegate {
+						taskFinished = true;
+						continuationFinished.Set();
+					});
+					switchPended.Set();
+					await continuationFinished;
+				});
+			}).Result;
+
+			Assert.IsFalse(joinable.Task.IsCompleted);
+			switchPended.Wait();
+			joinable.Join();
+			Assert.IsTrue(taskFinished);
+			Assert.IsTrue(joinable.Task.IsCompleted);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void BeginAsyncOnMTAKicksOffOtherAsyncPumpWorkCanCompleteSynchronouslyJoinFirst() {
+			var otherPump = new AsyncPump();
+			bool taskFinished = false;
+			var joinedEvent = new AsyncManualResetEvent();
+
+			// Kick off the BeginAsync work from a background thread that has no special
+			// affinity to the main thread.
+			var joinable = Task.Run(delegate {
+				return this.asyncPump.BeginAsynchronously(async delegate {
+					await joinedEvent;
 					await otherPump.SwitchToMainThreadAsync();
 					taskFinished = true;
 				});
 			}).Result;
 
 			Assert.IsFalse(joinable.Task.IsCompleted);
-			joinable.Join();
+			this.asyncPump.RunSynchronously(async delegate {
+				var awaitable = joinable.JoinAsync();
+				joinedEvent.Set();
+				await awaitable;
+			});
 			Assert.IsTrue(taskFinished);
 			Assert.IsTrue(joinable.Task.IsCompleted);
 		}
@@ -1145,7 +1181,7 @@
 		/// Verifies that in the scenario when the initializing thread doesn't have a sync context at all (vcupgrade.exe)
 		/// that reasonable behavior still occurs.
 		/// </summary>
-		[TestMethod]
+		[TestMethod, Timeout(TestTimeout)]
 		public void NoMainThreadSyncContextAndKickedOffFromOriginalThread() {
 			SynchronizationContext.SetSynchronizationContext(null);
 			this.asyncPump = new DerivedAsyncPump();
@@ -1187,7 +1223,7 @@
 		/// Verifies that in the scenario when the initializing thread doesn't have a sync context at all (vcupgrade.exe)
 		/// that reasonable behavior still occurs.
 		/// </summary>
-		[TestMethod]
+		[TestMethod, Timeout(TestTimeout)]
 		public void NoMainThreadSyncContextAndKickedOffFromOtherThread() {
 			SynchronizationContext.SetSynchronizationContext(null);
 			this.asyncPump = new DerivedAsyncPump();
@@ -1241,7 +1277,7 @@
 			}).Wait();
 		}
 
-		[TestMethod]
+		[TestMethod, Timeout(TestTimeout)]
 		public void MitigationAgainstBadSyncContextOnMainThread() {
 			var ordinarySyncContext = new SynchronizationContext();
 			SynchronizationContext.SetSynchronizationContext(ordinarySyncContext);
@@ -1252,6 +1288,63 @@
 				await this.asyncPump.SwitchToMainThreadAsync();
 			});
 			assertDialogListener.AssertUiEnabled = true;
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void SwitchToMainThreadMemoryLeak() {
+			const long iterations = 5000;
+			const long allowedAllocatedMemory = 4000; // should be fewer than iterations
+
+			var frame = new DispatcherFrame();
+
+			Task.Run(async delegate {
+				for (int i = 0; i < 2; i++) {
+					await this.asyncPump.SwitchToMainThreadAsync();
+					await TaskScheduler.Default;
+				}
+
+				frame.Continue = false;
+			});
+
+			Dispatcher.PushFrame(frame);
+			long memory1 = GC.GetTotalMemory(true);
+
+			frame.Continue = true;
+			Task.Run(async delegate {
+				for (int i = 0; i < iterations; i++) {
+					await this.asyncPump.SwitchToMainThreadAsync();
+					await TaskScheduler.Default;
+					await Task.Yield();
+				}
+
+				frame.Continue = false;
+			});
+
+			Dispatcher.PushFrame(frame);
+
+			GC.Collect();
+			long memory2 = GC.GetTotalMemory(true);
+
+			long actualAllocatedMemory = memory2 - memory1;
+			Assert.IsTrue(actualAllocatedMemory <= allowedAllocatedMemory, "Allocated bytes {0} > {1} allowed bytes.", actualAllocatedMemory, allowedAllocatedMemory);
+			this.TestContext.WriteLine("Allocated bytes {0} <= {1} allowed bytes.", actualAllocatedMemory, allowedAllocatedMemory);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void SwitchToMainThreadSucceedsWhenConstructedUnderMTAOperation() {
+			var frame = new DispatcherFrame();
+			var task = Task.Run(async delegate {
+				try {
+					var otherPump = new AsyncPump(this.originalThread, this.dispatcherContext);
+					await otherPump.SwitchToMainThreadAsync();
+					Assert.AreSame(this.originalThread, Thread.CurrentThread);
+				} finally {
+					frame.Continue = false;
+				}
+			});
+
+			Dispatcher.PushFrame(frame);
+			task.GetAwaiter().GetResult(); // rethrow any failures
 		}
 
 		private static async void SomeFireAndForgetMethod() {
