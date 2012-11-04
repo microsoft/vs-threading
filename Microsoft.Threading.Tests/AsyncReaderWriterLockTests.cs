@@ -2144,12 +2144,13 @@
 		#region Lock callback tests
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task OnBeforeLockReleasedAsyncSingle() {
+		public async Task OnBeforeExclusiveLockReleasedAsyncSimpleSyncHandler() {
 			var asyncLock = new LockDerived();
 			int callbackInvoked = 0;
-			asyncLock.OnBeforeExclusiveLockReleasedAsyncDelegate = () => {
+			asyncLock.OnBeforeExclusiveLockReleasedAsyncDelegate = delegate {
 				callbackInvoked++;
-				return Task.FromResult<object>(null);
+				Assert.IsTrue(asyncLock.IsWriteLockHeld);
+				return TplExtensions.CompletedTask;
 			};
 			using (await asyncLock.WriteLockAsync()) {
 			}
@@ -2158,14 +2159,18 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task OnBeforeLockReleasedAsyncNestedLock() {
+		public async Task OnBeforeExclusiveLockReleasedAsyncNestedLockSyncHandler() {
 			var asyncLock = new LockDerived();
 			int callbackInvoked = 0;
-			asyncLock.OnBeforeExclusiveLockReleasedAsyncDelegate = async () => {
+			asyncLock.OnBeforeExclusiveLockReleasedAsyncDelegate = async delegate {
+				Assert.IsTrue(asyncLock.IsWriteLockHeld);
 				using (await asyncLock.ReadLockAsync()) {
-					using (await asyncLock.WriteLockAsync()) {
+					Assert.IsTrue(asyncLock.IsWriteLockHeld);
+					using (await asyncLock.WriteLockAsync()) { // this should succeed because our caller has a write lock.
+						Assert.IsTrue(asyncLock.IsWriteLockHeld);
 					}
 				}
+
 				callbackInvoked++;
 			};
 			using (await asyncLock.WriteLockAsync()) {
