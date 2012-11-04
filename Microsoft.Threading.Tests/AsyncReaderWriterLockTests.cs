@@ -2180,6 +2180,87 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public async Task OnBeforeExclusiveLockReleasedAsyncSimpleAsyncHandler() {
+			var asyncLock = new LockDerived();
+			var callbackCompleted = new TaskCompletionSource<object>();
+			asyncLock.OnBeforeExclusiveLockReleasedAsyncDelegate = async delegate {
+				try {
+					Assert.IsTrue(asyncLock.IsWriteLockHeld);
+					await Task.Yield();
+					Assert.IsFalse(asyncLock.IsWriteLockHeld); // yielding without claiming a lock should lose access to the lock. (TODO: this feels weird)
+					callbackCompleted.SetResult(null);
+				} catch (Exception ex) {
+					callbackCompleted.SetException(ex);
+				}
+			};
+			using (await asyncLock.WriteLockAsync()) {
+			}
+
+			await callbackCompleted.Task;
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task OnBeforeExclusiveLockReleasedAsyncReadLockAcquiringAsyncHandler() {
+			var asyncLock = new LockDerived();
+			var callbackCompleted = new TaskCompletionSource<object>();
+			asyncLock.OnBeforeExclusiveLockReleasedAsyncDelegate = async delegate {
+				try {
+					Assert.IsTrue(asyncLock.IsWriteLockHeld);
+					using (await asyncLock.ReadLockAsync()) {
+						Assert.IsTrue(asyncLock.IsWriteLockHeld);
+						Assert.IsTrue(asyncLock.IsReadLockHeld);
+						await Task.Yield();
+						Assert.IsFalse(asyncLock.IsWriteLockHeld);
+						Assert.IsTrue(asyncLock.IsReadLockHeld);
+					}
+
+					callbackCompleted.SetResult(null);
+				} catch (Exception ex) {
+					callbackCompleted.SetException(ex);
+				}
+			};
+			using (await asyncLock.WriteLockAsync()) {
+			}
+
+			await callbackCompleted.Task;
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task OnBeforeExclusiveLockReleasedAsyncNestedWriteLockAsyncHandler() {
+			var asyncLock = new LockDerived();
+			var callbackCompleted = new TaskCompletionSource<object>();
+			bool outermostExecuted = false;
+			asyncLock.OnBeforeExclusiveLockReleasedAsyncDelegate = async delegate {
+				try {
+					// Only do our deed on the outermost lock release -- not the one we take.
+					if (!outermostExecuted) {
+						outermostExecuted = true;
+						Assert.IsTrue(asyncLock.IsWriteLockHeld);
+						using (await asyncLock.WriteLockAsync()) {
+							await Task.Yield();
+							using (await asyncLock.ReadLockAsync()) {
+								Assert.IsTrue(asyncLock.IsWriteLockHeld);
+								using (await asyncLock.WriteLockAsync()) {
+									Assert.IsTrue(asyncLock.IsWriteLockHeld);
+									await Task.Yield();
+									Assert.IsTrue(asyncLock.IsWriteLockHeld);
+								}
+							}
+						}
+
+						callbackCompleted.SetResult(null);
+					}
+				} catch (Exception ex) {
+					callbackCompleted.SetException(ex);
+				}
+			};
+			using (await asyncLock.WriteLockAsync()) {
+			}
+
+			await callbackCompleted.Task;
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task OnBeforeWriteLockReleasedSingle() {
 			var afterWriteLock = new TaskCompletionSource<object>();
 			using (await this.asyncLock.WriteLockAsync()) {
