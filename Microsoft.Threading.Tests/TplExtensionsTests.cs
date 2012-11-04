@@ -69,5 +69,135 @@
 			tcs.SetCanceled();
 			nothrowTask.Wait();
 		}
+
+		[TestMethod]
+		public void InvokeAsyncNullEverything() {
+			AsyncEventHandler handler = null;
+			var task = handler.InvokeAsync(null, null);
+			Assert.IsTrue(task.IsCompleted);
+		}
+
+		[TestMethod]
+		public void InvokeAsyncParametersCarry() {
+			InvokeAsyncHelper(null, null);
+			InvokeAsyncHelper(new object(), new EventArgs());
+		}
+
+		[TestMethod]
+		public void InvokeAsyncOfTNullEverything() {
+			AsyncEventHandler<EventArgs> handler = null;
+			var task = handler.InvokeAsync(null, null);
+			Assert.IsTrue(task.IsCompleted);
+		}
+
+		[TestMethod]
+		public void InvokeAsyncOfTParametersCarry() {
+			InvokeAsyncOfTHelper(null, null);
+			InvokeAsyncHelper(new object(), new EventArgs());
+		}
+
+		[TestMethod]
+		public void InvokeAsyncExecutesEachHandlerSequentially() {
+			AsyncEventHandler handlers = null;
+			int counter = 0;
+			handlers += async (sender, args) => {
+				Assert.AreEqual(1, ++counter);
+				await Task.Yield();
+				Assert.AreEqual(2, ++counter);
+			};
+			handlers += async (sender, args) => {
+				Assert.AreEqual(3, ++counter);
+				await Task.Yield();
+				Assert.AreEqual(4, ++counter);
+			};
+			var task = handlers.InvokeAsync(null, null);
+			task.GetAwaiter().GetResult();
+		}
+
+		[TestMethod]
+		public void InvokeAsyncOfTExecutesEachHandlerSequentially() {
+			AsyncEventHandler<EventArgs> handlers = null;
+			int counter = 0;
+			handlers += async (sender, args) => {
+				Assert.AreEqual(1, ++counter);
+				await Task.Yield();
+				Assert.AreEqual(2, ++counter);
+			};
+			handlers += async (sender, args) => {
+				Assert.AreEqual(3, ++counter);
+				await Task.Yield();
+				Assert.AreEqual(4, ++counter);
+			};
+			var task = handlers.InvokeAsync(null, null);
+			task.GetAwaiter().GetResult();
+		}
+
+		[TestMethod]
+		public void InvokeAsyncAggregatesExceptions() {
+			AsyncEventHandler handlers = null;
+			handlers += (sender, args) => {
+				throw new ApplicationException("a");
+			};
+			handlers += async (sender, args) => {
+				await Task.Yield();
+				throw new ApplicationException("b");
+			};
+			var task = handlers.InvokeAsync(null, null);
+			try {
+				task.GetAwaiter().GetResult();
+				Assert.Fail("Expected AggregateException not thrown.");
+			} catch (AggregateException ex) {
+				Assert.AreEqual(2, ex.InnerExceptions.Count);
+				Assert.AreEqual("a", ex.InnerExceptions[0].Message);
+				Assert.AreEqual("b", ex.InnerExceptions[1].Message);
+			}
+		}
+
+		[TestMethod]
+		public void InvokeAsyncOfTAggregatesExceptions() {
+			AsyncEventHandler<EventArgs> handlers = null;
+			handlers += (sender, args) => {
+				throw new ApplicationException("a");
+			};
+			handlers += async (sender, args) => {
+				await Task.Yield();
+				throw new ApplicationException("b");
+			};
+			var task = handlers.InvokeAsync(null, null);
+			try {
+				task.GetAwaiter().GetResult();
+				Assert.Fail("Expected AggregateException not thrown.");
+			} catch (AggregateException ex) {
+				Assert.AreEqual(2, ex.InnerExceptions.Count);
+				Assert.AreEqual("a", ex.InnerExceptions[0].Message);
+				Assert.AreEqual("b", ex.InnerExceptions[1].Message);
+			}
+		}
+
+		private static void InvokeAsyncHelper(object sender, EventArgs args) {
+			int invoked = 0;
+			AsyncEventHandler handler = (s, a) => {
+				Assert.AreSame(sender, s);
+				Assert.AreSame(args, a);
+				invoked++;
+				return TplExtensions.CompletedTask;
+			};
+			var task = handler.InvokeAsync(sender, args);
+			Assert.IsTrue(task.IsCompleted);
+			Assert.AreEqual(1, invoked);
+		}
+
+		private static void InvokeAsyncOfTHelper(object sender, EventArgs args) {
+			int invoked = 0;
+			AsyncEventHandler<EventArgs> handler = (s, a) => {
+				Assert.AreSame(sender, s);
+				Assert.AreSame(args, a);
+				invoked++;
+				return TplExtensions.CompletedTask;
+			};
+			var task = handler.InvokeAsync(sender, args);
+			Assert.IsTrue(task.IsCompleted);
+			Assert.AreEqual(1, invoked);
+		}
 	}
 }
