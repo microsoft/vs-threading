@@ -436,9 +436,13 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
-		/// Registers a callback to be invoked when the write lock held by the caller is fully released.
+		/// Registers a callback to be invoked when the write lock held by the caller is 
+		/// about to be ultimately released (outermost write lock).
 		/// </summary>
-		/// <param name="action">The asynchronous delegate to invoke.</param>
+		/// <param name="action">
+		/// The asynchronous delegate to invoke.
+		/// Access to the write lock is provided throughout the asynchronous invocation.
+		/// </param>
 		/// <remarks>
 		/// This supports some scenarios VC++ has where change event handlers need to inspect changes,
 		/// or follow up with other changes to respond to earlier changes, at the conclusion of the lock.
@@ -1100,8 +1104,10 @@ namespace Microsoft.Threading {
 			using (var releaser = await new Awaitable(this, LockKind.Write, LockFlags.None, CancellationToken.None, checkSyncContextCompatibility: false)) {
 				await Task.Yield(); // ensure we've yielded to our caller, since the WriteLockAsync will not yield when on an MTA thread.
 
-				// We sequentially loop over the callbacks rather than fire then concurrently because each callback
+				// We sequentially loop over the callbacks rather than fire them concurrently because each callback
 				// gets visibility into the write lock, which of course provides exclusivity and concurrency would violate that.
+				// We also avoid executing the synchronous portions all in a row and awaiting them all
+				// because that too would violate an individual callback's sense of isolation in a write lock.
 				List<Exception> exceptions = null;
 				Func<Task> callback;
 				while (this.TryDequeueBeforeWriteReleasedCallback(out callback)) {
