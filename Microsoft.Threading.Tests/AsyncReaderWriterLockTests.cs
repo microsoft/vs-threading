@@ -2260,6 +2260,13 @@
 			await callbackCompleted.Task;
 		}
 
+		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(ArgumentNullException))]
+		public async Task OnBeforeWriteLockReleasedNullArgument() {
+			using (await this.asyncLock.WriteLockAsync()) {
+				this.asyncLock.OnBeforeWriteLockReleased(null);
+			}
+		}
+
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task OnBeforeWriteLockReleasedSingle() {
 			var afterWriteLock = new TaskCompletionSource<object>();

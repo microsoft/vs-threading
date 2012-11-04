@@ -449,6 +449,8 @@ namespace Microsoft.Threading {
 		/// asynchronously with respect to the releasing thread.
 		/// </remarks>
 		public void OnBeforeWriteLockReleased(Func<Task> action) {
+			Requires.NotNull(action, "action");
+
 			lock (this.syncObject) {
 				if (!this.IsWriteLockHeld) {
 					throw new InvalidOperationException();
