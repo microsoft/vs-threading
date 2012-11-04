@@ -1633,7 +1633,9 @@ namespace Microsoft.Threading {
 						? syncContext.LoanBackAnyHeldResource()
 						: default(NonConcurrentSynchronizationContext.LoanBack);
 					try {
-						this.ReleaseAsync().Wait();
+						var releaseTask = this.ReleaseAsync();
+						while (!releaseTask.Wait(1000)) { // this loop allows us to break into the debugger and step into managed code to analyze a hang.
+						}
 					} finally {
 						loan.Dispose();
 					}
