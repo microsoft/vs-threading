@@ -2445,6 +2445,47 @@
 			Assert.IsTrue(callbackEnding.Task.IsCompleted, "The completion task should not have completed until the callbacks had completed.");
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task OnBeforeWriteLockReleasedWithStickyUpgradedWriteWithNestedLocks() {
+			var asyncLock = new LockDerived();
+			asyncLock.OnExclusiveLockReleasedAsyncDelegate = async delegate {
+				await Task.Yield();
+			};
+			var releaseCallback = new TaskCompletionSource<object>();
+			using (await asyncLock.UpgradeableReadLockAsync(AsyncReaderWriterLock.LockFlags.StickyWrite)) {
+				using (await asyncLock.WriteLockAsync()) {
+					asyncLock.OnBeforeWriteLockReleased(async delegate {
+						// For this test, we deliberately do not yield before
+						// requesting first lock because we're racing to request a lock
+						// while the reenterConcurrencyPrepRunning field is "true".
+						Assert.IsTrue(asyncLock.IsWriteLockHeld);
+						using (await asyncLock.ReadLockAsync()) {
+							using (await asyncLock.WriteLockAsync()) {
+							}
+						}
+
+						using (await asyncLock.UpgradeableReadLockAsync()) {
+						}
+
+						using (await asyncLock.WriteLockAsync()) {
+						}
+
+						await Task.Yield();
+						Assert.IsTrue(asyncLock.IsWriteLockHeld);
+						await releaseCallback.Task;
+						Assert.IsTrue(asyncLock.IsWriteLockHeld);
+					});
+				}
+			}
+
+			await releaseCallback.SetAsync();
+
+			// Because the callbacks are fired asynchronously, we must wait for it to settle before allowing the test to finish
+			// to avoid a false failure from the Cleanup method.
+			asyncLock.Complete();
+			await asyncLock.Completion;
+		}
+
 		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
 		public void OnBeforeWriteLockReleasedWithoutAnyLock() {
 			this.asyncLock.OnBeforeWriteLockReleased(delegate {
