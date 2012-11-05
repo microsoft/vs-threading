@@ -1021,7 +1021,7 @@ namespace Microsoft.Threading {
 				}
 
 				if (reenterConcurrentOutsideCode == null) {
-					this.OnReleaseReenterConcurrencyComplete(awaiter, upgradedStickyWrite);
+					this.OnReleaseReenterConcurrencyComplete(awaiter, upgradedStickyWrite, searchAllWaiters: false, updateCallContext: true);
 				}
 			}
 
@@ -1053,7 +1053,7 @@ namespace Microsoft.Threading {
 				// Skip updating the call context because we're in a forked execution context that won't
 				// ever impact the client code, and changing the CallContext now would cause the data to be cloned,
 				// allocating more memory wastefully.
-				this.OnReleaseReenterConcurrencyComplete(awaiter, upgradedStickyWrite, updateCallContext: false);
+				this.OnReleaseReenterConcurrencyComplete(awaiter, upgradedStickyWrite, searchAllWaiters: true, updateCallContext: false);
 			}
 		}
 
@@ -1062,8 +1062,9 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="awaiter">The awaiter being released.</param>
 		/// <param name="upgradedStickyWrite">A flag indicating whether the lock being released was an upgraded read lock with the sticky write flag set.</param>
+		/// <param name="searchAllWaiters"><c>true</c> to scan the entire queue for pending lock requests that might qualify; used when qualifying locks were delayed for some reason besides lock contention.</param>
 		/// <param name="updateCallContext">A flag indicating whether the CallContext should be updated with the remaining active lock awaiter.</param>
-		private void OnReleaseReenterConcurrencyComplete(Awaiter awaiter, bool upgradedStickyWrite, bool updateCallContext = true) {
+		private void OnReleaseReenterConcurrencyComplete(Awaiter awaiter, bool upgradedStickyWrite, bool searchAllWaiters, bool updateCallContext) {
 			Requires.NotNull(awaiter, "awaiter");
 
 			lock (this.syncObject) {
@@ -1078,7 +1079,7 @@ namespace Microsoft.Threading {
 				}
 
 				this.CompleteIfAppropriate();
-				this.TryInvokeLockConsumer();
+				this.TryInvokeLockConsumer(searchAllWaiters);
 			}
 		}
 
@@ -1086,11 +1087,12 @@ namespace Microsoft.Threading {
 		/// Issues locks to one or more queued lock requests and executes their continuations
 		/// based on lock availability and policy-based prioritization (writer-friendly, etc.)
 		/// </summary>
+		/// <param name="searchAllWaiters"><c>true</c> to scan the entire queue for pending lock requests that might qualify; used when qualifying locks were delayed for some reason besides lock contention.</param>
 		/// <returns><c>true</c> if any locks were issued; <c>false</c> otherwise.</returns>
-		private bool TryInvokeLockConsumer() {
-			return this.TryInvokeOneWriterIfAppropriate()
-				|| this.TryInvokeOneUpgradeableReaderIfAppropriate()
-				|| this.TryInvokeAllReadersIfAppropriate();
+		private bool TryInvokeLockConsumer(bool searchAllWaiters) {
+			return this.TryInvokeOneWriterIfAppropriate(searchAllWaiters)
+				|| this.TryInvokeOneUpgradeableReaderIfAppropriate(searchAllWaiters)
+				|| this.TryInvokeAllReadersIfAppropriate(searchAllWaiters);
 		}
 
 		/// <summary>
@@ -1159,8 +1161,9 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Issues locks to all queued reader lock requests if there are no issued write locks.
 		/// </summary>
+		/// <param name="searchAllWaiters"><c>true</c> to scan the entire queue for pending lock requests that might qualify; used when qualifying locks were delayed for some reason besides lock contention.</param>
 		/// <returns>A value indicating whether any readers were issued locks.</returns>
-		private bool TryInvokeAllReadersIfAppropriate() {
+		private bool TryInvokeAllReadersIfAppropriate(bool searchAllWaiters) {
 			bool invoked = false;
 			if (this.issuedWriteLocks.Count == 0 && this.waitingWriters.Count == 0) {
 				while (this.waitingReaders.Count > 0) {
@@ -1168,6 +1171,10 @@ namespace Microsoft.Threading {
 					Assumes.True(pendingReader.Kind == LockKind.Read);
 					this.IssueAndExecute(pendingReader);
 					invoked = true;
+				}
+			} else if (searchAllWaiters) {
+				if (this.TryInvokeAnyWaitersInQueue(this.waitingReaders, breakOnFirstIssue: false)) {
+					return true;
 				}
 			}
 
@@ -1177,13 +1184,18 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Issues a lock to the next queued upgradeable reader, if no upgradeable read or write locks are currently issued.
 		/// </summary>
+		/// <param name="searchAllWaiters"><c>true</c> to scan the entire queue for pending lock requests that might qualify; used when qualifying locks were delayed for some reason besides lock contention.</param>
 		/// <returns>A value indicating whether any upgradeable readers were issued locks.</returns>
-		private bool TryInvokeOneUpgradeableReaderIfAppropriate() {
+		private bool TryInvokeOneUpgradeableReaderIfAppropriate(bool searchAllWaiters) {
 			if (this.issuedUpgradeableReadLocks.Count == 0 && this.issuedWriteLocks.Count == 0) {
 				if (this.waitingUpgradeableReaders.Count > 0) {
 					var pendingUpgradeableReader = this.waitingUpgradeableReaders.Dequeue();
 					Assumes.True(pendingUpgradeableReader.Kind == LockKind.UpgradeableRead);
 					this.IssueAndExecute(pendingUpgradeableReader);
+					return true;
+				}
+			} else if (searchAllWaiters) {
+				if (this.TryInvokeAnyWaitersInQueue(this.waitingUpgradeableReaders, breakOnFirstIssue: true)) {
 					return true;
 				}
 			}
@@ -1195,8 +1207,9 @@ namespace Microsoft.Threading {
 		/// Issues a lock to the next queued writer, if no other locks are currently issued 
 		/// or the last contending read lock was removed allowing a waiting upgradeable reader to upgrade.
 		/// </summary>
+		/// <param name="searchAllWaiters"><c>true</c> to scan the entire queue for pending lock requests that might qualify; used when qualifying locks were delayed for some reason besides lock contention.</param>
 		/// <returns>A value indicating whether a writer was issued a lock.</returns>
-		private bool TryInvokeOneWriterIfAppropriate() {
+		private bool TryInvokeOneWriterIfAppropriate(bool searchAllWaiters) {
 			if (this.issuedReadLocks.Count == 0 && this.issuedUpgradeableReadLocks.Count == 0 && this.issuedWriteLocks.Count == 0) {
 				if (this.waitingWriters.Count > 0) {
 					var pendingWriter = this.waitingWriters.Dequeue();
@@ -1204,17 +1217,48 @@ namespace Microsoft.Threading {
 					this.IssueAndExecute(pendingWriter);
 					return true;
 				}
-			} else if (this.issuedUpgradeableReadLocks.Count > 0) {
-				foreach (var waitingWriter in this.waitingWriters) {
-					if (this.TryIssueLock(waitingWriter, previouslyQueued: true)) {
-						// Run the continuation asynchronously (since this is called in OnCompleted, which is an async pattern).
-						Assumes.True(this.ExecuteOrHandleCancellation(waitingWriter, stillInQueue: true));
-						return true;
-					}
+			} else if (this.issuedUpgradeableReadLocks.Count > 0 || searchAllWaiters) {
+				if (this.TryInvokeAnyWaitersInQueue(this.waitingWriters, breakOnFirstIssue: true)) {
+					return true;
 				}
 			}
 
 			return false;
+		}
+
+		/// <summary>
+		/// Scans a lock awaiter queue for any that can be issued locks now.
+		/// </summary>
+		/// <param name="waiters">The queue to scan.</param>
+		/// <param name="breakOnFirstIssue"><c>true</c> to break out immediately after issuing the first lock.</param>
+		/// <returns><c>true</c> if any lock was issued; <c>false</c> otherwise.</returns>
+		private bool TryInvokeAnyWaitersInQueue(Queue<Awaiter> waiters, bool breakOnFirstIssue) {
+			Requires.NotNull(waiters, "waiters");
+
+			bool invoked = false;
+			bool invokedThisLoop;
+			do {
+				invokedThisLoop = false;
+				foreach (var lockWaiter in waiters) {
+					if (this.TryIssueLock(lockWaiter, previouslyQueued: true)) {
+						// Run the continuation asynchronously (since this is called in OnCompleted, which is an async pattern).
+						Assumes.True(this.ExecuteOrHandleCancellation(lockWaiter, stillInQueue: true));
+						invoked = true;
+						invokedThisLoop = true;
+						if (breakOnFirstIssue) {
+							return true;
+						}
+
+						// At this point, the waiter was removed from the queue, so we can't keep
+						// enumerating the queue or we'll get an InvalidOperationException.
+						// Break out of the foreach, but the while loop will re-enter and we'll
+						// examine other possibilities.
+						break;
+					}
+				}
+			} while (invokedThisLoop); // keep looping while we find matching locks.
+
+			return invoked;
 		}
 
 		/// <summary>
