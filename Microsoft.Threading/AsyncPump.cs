@@ -1360,7 +1360,7 @@ namespace Microsoft.Threading {
 
 				protected override void OnDequeued(SingleExecuteProtector value) {
 					base.OnDequeued(value);
-					value.Executing -= this.OnExecuting;
+					value.Executing -= this.onExecutingHandler;
 
 					if (this.Count == 0 && this.enqueuedNotification.Task.IsCompleted) {
 						var oldNotify = Interlocked.Exchange(ref this.enqueuedNotification, new TaskCompletionSource<object>());
