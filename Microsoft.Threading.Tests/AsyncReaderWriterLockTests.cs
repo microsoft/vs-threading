@@ -2260,6 +2260,16 @@
 			await callbackCompleted.Task;
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task OnBeforeExclusiveLockReleasedAsyncWriteLockWrapsBaseMethod() {
+			var callbackCompleted = new AsyncManualResetEvent();
+			var asyncLock = new LockDerivedWriteLockAroundOnBeforeExclusiveLockReleased();
+			using (await asyncLock.WriteLockAsync()) {
+			}
+
+			await asyncLock.OnBeforeExclusiveLockReleasedAsyncInvoked.WaitAsync();
+		}
+
 		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(ArgumentNullException))]
 		public async Task OnBeforeWriteLockReleasedNullArgument() {
 			using (await this.asyncLock.WriteLockAsync()) {
@@ -3387,6 +3397,18 @@
 				if (this.OnBeforeLockReleasedAsyncDelegate != null) {
 					await this.OnBeforeLockReleasedAsyncDelegate();
 				}
+			}
+		}
+
+		private class LockDerivedWriteLockAroundOnBeforeExclusiveLockReleased : AsyncReaderWriterLock {
+			internal AsyncAutoResetEvent OnBeforeExclusiveLockReleasedAsyncInvoked = new AsyncAutoResetEvent();
+
+			protected override async Task OnBeforeExclusiveLockReleasedAsync() {
+				using (await this.WriteLockAsync()) {
+					await base.OnBeforeExclusiveLockReleasedAsync();
+				}
+
+				this.OnBeforeExclusiveLockReleasedAsyncInvoked.Set();
 			}
 		}
 

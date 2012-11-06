@@ -513,7 +513,11 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <returns>A task whose completion signals the conclusion of the asynchronous operation.</returns>
 		protected virtual Task OnBeforeExclusiveLockReleasedAsync() {
-			Assumes.True(this.issuedWriteLocks.Count == 1);
+			// While this method is called when the last write lock is about to be released,
+			// a derived type may override this method and have already taken an additional write lock,
+			// so only state our assumption in the non-derivation case.
+			Assumes.True(this.issuedWriteLocks.Count == 1 || !this.GetType().IsEquivalentTo(typeof(AsyncReaderWriterLock)));
+
 			if (this.beforeWriteReleasedCallbacks.Count > 0) {
 				return this.InvokeBeforeWriteLockReleaseHandlersAsync();
 			} else {
