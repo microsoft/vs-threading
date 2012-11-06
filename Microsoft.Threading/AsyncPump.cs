@@ -1323,9 +1323,11 @@ namespace Microsoft.Threading {
 			/// that self-scavenges elements that are executed by other means.
 			/// </summary>
 			private class ExecutionQueue : AsyncQueue<SingleExecuteProtector> {
+				private readonly EventHandler onExecutingHandler;
 				private TaskCompletionSource<object> enqueuedNotification = new TaskCompletionSource<object>();
 
 				internal ExecutionQueue() {
+					this.onExecutingHandler = new EventHandler(this.OnExecuting);
 					this.Completion.ContinueWith((_, that) => ((ExecutionQueue)that).enqueuedNotification.TrySetResult(null), this, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
 				}
 
@@ -1342,7 +1344,7 @@ namespace Microsoft.Threading {
 					// We only need to consider scavenging our queue if this item was
 					// actually added to the queue.
 					if (!alreadyDispatched) {
-						value.Executing += this.OnExecuting;
+						value.Executing += this.onExecutingHandler; // Use cached handler to reduce GC pressure
 
 						// It's possible this value has already been executed
 						// (before our event wire-up was applied). So check and
