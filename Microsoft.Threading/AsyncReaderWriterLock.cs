@@ -1105,7 +1105,7 @@ namespace Microsoft.Threading {
 		/// <returns>A task representing the work of sequentially invoking the callbacks.</returns>
 		private async Task InvokeBeforeWriteLockReleaseHandlersAsync() {
 			Assumes.True(Monitor.IsEntered(this.syncObject));
-			Assumes.True(this.issuedWriteLocks.Count == 1 && this.beforeWriteReleasedCallbacks.Count > 0);
+			Assumes.True(this.beforeWriteReleasedCallbacks.Count > 0);
 
 			using (var releaser = await new Awaitable(this, LockKind.Write, LockFlags.None, CancellationToken.None, checkSyncContextCompatibility: false)) {
 				await Task.Yield(); // ensure we've yielded to our caller, since the WriteLockAsync will not yield when on an MTA thread.

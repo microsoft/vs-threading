@@ -2265,6 +2265,9 @@
 			var callbackCompleted = new AsyncManualResetEvent();
 			var asyncLock = new LockDerivedWriteLockAroundOnBeforeExclusiveLockReleased();
 			using (await asyncLock.WriteLockAsync()) {
+				asyncLock.OnBeforeWriteLockReleased(async delegate {
+					await Task.Yield();
+				});
 			}
 
 			await asyncLock.OnBeforeExclusiveLockReleasedAsyncInvoked.WaitAsync();
