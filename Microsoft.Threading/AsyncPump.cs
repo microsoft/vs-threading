@@ -1003,9 +1003,6 @@ namespace Microsoft.Threading {
 		private class SingleThreadSynchronizationContext : SynchronizationContext {
 			private readonly object syncObject = new object();
 
-			/// <summary>The queue of work items.</summary>
-			private readonly ExecutionQueue queue = new ExecutionQueue();
-
 			/// <summary>The pump that created this instance.</summary>
 			private readonly AsyncPump asyncPump;
 
@@ -1029,8 +1026,14 @@ namespace Microsoft.Threading {
 			/// </summary>
 			private volatile bool completingSynchronously;
 
+			/// <summary>The queue of work items. Lazily constructed.</summary>
+			private ExecutionQueue queue;
+
+			/// <summary>A flag indicating that <see cref="Complete"/> has been invoked.</summary>
+			private bool completionRequested;
+
 			/// <summary>
-			/// A map of queues that we should be willing to dequeue from when we control the UI thread.
+			/// A map of queues that we should be willing to dequeue from when we control the UI thread. Lazily constructed.
 			/// </summary>
 			/// <remarks>
 			/// When the value in an entry is decremented to 0, the entry is removed from the map.
@@ -1088,16 +1091,28 @@ namespace Microsoft.Threading {
 				get { return this.affinityWithMainThread; }
 			}
 
+			/// <summary>
+			/// Gets a value indicating whether all tasks this instance wil accept have been completed.
+			/// </summary>
+			internal bool IsCompleted {
+				get { return this.completionRequested && (this.queue == null || this.queue.Completion.IsCompleted); }
+			}
+
 			/// <summary>Dispatches an asynchronous message to the synchronization context.</summary>
 			/// <param name="d">The System.Threading.SendOrPostCallback delegate to call.</param>
 			/// <param name="state">The object passed to the delegate.</param>
 			public override void Post(SendOrPostCallback d, object state) {
 				Requires.NotNull(d, "d");
 
+				this.EnsureQueueInitializedUnlessCompleted();
+
 				// We'll be posting this message to (potentially) multiple queues, so we wrap
 				// the work up in an object that ensures the work executes no more than once.
 				var executor = SingleExecuteProtector.Create(this, d, state);
-				bool enqueuedSuccessfully = this.queue.TryEnqueue(executor);
+				bool enqueuedSuccessfully = false;
+				if (this.queue != null) {
+					enqueuedSuccessfully = this.queue.TryEnqueue(executor);
+				}
 
 				// Avoid posting the message elsewhere for processing when we're on a threadpool thread
 				// that won't be released till this work is done.
@@ -1135,7 +1150,12 @@ namespace Microsoft.Threading {
 
 			/// <summary>Notifies the context that no more work will arrive.</summary>
 			public void Complete() {
-				this.queue.Complete();
+				lock (this.syncObject) {
+					this.completionRequested = true;
+					if (this.queue != null) {
+						this.queue.Complete();
+					}
+				}
 			}
 
 			/// <summary>Invoked when an async operation is started.</summary>
@@ -1192,12 +1212,18 @@ namespace Microsoft.Threading {
 					var releaser = new JoinRelease(this, other);
 
 					// Arrange to automatically disjoin when the child context completes.
-					other.queue.Completion.ContinueWith(
-						(_, state) => ((JoinRelease)state).Dispose(),
-						releaser,
-						CancellationToken.None,
-						TaskContinuationOptions.None,
-						TaskScheduler.Default);
+					other.EnsureQueueInitializedUnlessCompleted();
+					if (other.IsCompleted) {
+						// it's already completed.
+						releaser.Dispose();
+					} else {
+						other.queue.Completion.ContinueWith(
+							(_, state) => ((JoinRelease)state).Dispose(),
+							releaser,
+							CancellationToken.None,
+							TaskContinuationOptions.None,
+							TaskScheduler.Default);
+					}
 
 					return releaser;
 				} else {
@@ -1241,7 +1267,8 @@ namespace Microsoft.Threading {
 				Requires.NotNull(contextSet, "contextSet");
 				Requires.NotNull(context, "context");
 
-				if (!context.queue.Completion.IsCompleted) {
+				context.EnsureQueueInitializedUnlessCompleted();
+				if (!context.IsCompleted) {
 					if (contextSet.Add(context.queue)) {
 						SingleThreadSynchronizationContext[] extraQueueSourceKeys = null;
 						lock (context.syncObject) {
@@ -1255,6 +1282,14 @@ namespace Microsoft.Threading {
 								AddDependentQueues(contextSet, childContext);
 							}
 						}
+					}
+				}
+			}
+
+			private void EnsureQueueInitializedUnlessCompleted() {
+				lock (this.syncObject) {
+					if (this.queue == null && !this.completionRequested) {
+						this.queue = new ExecutionQueue();
 					}
 				}
 			}
@@ -1302,7 +1337,7 @@ namespace Microsoft.Threading {
 
 			private async Task<SingleExecuteProtector> DequeueFromAllSelfAndJoinedQueuesAsync() {
 				while (true) {
-					if (this.queue.Completion.IsCompleted) {
+					if (this.IsCompleted) {
 						return null;
 					}
 
@@ -1314,7 +1349,7 @@ namespace Microsoft.Threading {
 						AddDependentQueues(applicableQueues, this);
 					}
 
-					while (!extraContextsChangedToken.IsCancellationRequested && !this.queue.Completion.IsCompleted) {
+					while (!extraContextsChangedToken.IsCancellationRequested && !this.IsCompleted) {
 						// Check all queues to see if any have immediate work.
 						foreach (var queue in applicableQueues) {
 							SingleExecuteProtector value;
