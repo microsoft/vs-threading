@@ -1590,6 +1590,10 @@ namespace Microsoft.Threading {
 
 			public IEnumerator<T> GetEnumerator() {
 				lock (this.syncObject) {
+					if (this.collection.Count == 0) {
+						return Enumerable.Empty<T>().GetEnumerator();
+					}
+
 					return new List<T>(this.collection).GetEnumerator();
 				}
 			}
