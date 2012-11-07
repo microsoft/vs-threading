@@ -884,32 +884,29 @@ namespace Microsoft.Threading {
 				}
 			}
 
-			private void JoinParents_Changed(object sender, NotifyCollectionChangedEventArgs e) {
+			private void JoinParents_Changed(object sender, NotifyCollectionChangedEventArgs<SingleThreadSynchronizationContext> e) {
 				lock (this.syncObject) {
 					switch (e.Action) {
 						case NotifyCollectionChangedAction.Add:
-							foreach (SingleThreadSynchronizationContext parent in e.NewItems) {
-								List<JoinRelease> parentJoinList;
-								if (!this.releasers.TryGetValue(parent, out parentJoinList)) {
-									this.releasers[parent] = parentJoinList = new List<JoinRelease>();
-								}
+							SingleThreadSynchronizationContext parent = e.Value;
+							List<JoinRelease> parentJoinList;
+							if (!this.releasers.TryGetValue(parent, out parentJoinList)) {
+								this.releasers[parent] = parentJoinList = new List<JoinRelease>();
+							}
 
-								foreach (var child in this.joinChildren) {
-									parentJoinList.Add(parent.Join(child));
-								}
+							foreach (var child in this.joinChildren) {
+								parentJoinList.Add(parent.Join(child));
 							}
 
 							break;
 						case NotifyCollectionChangedAction.Remove:
-							foreach (SingleThreadSynchronizationContext parent in e.OldItems) {
-								List<JoinRelease> parentJoinList;
-								if (this.releasers.TryGetValue(parent, out parentJoinList)) {
-									foreach (var releaser in parentJoinList) {
-										releaser.Dispose();
-									}
-
-									this.releasers.Remove(parent);
+							parent = e.Value;
+							if (this.releasers.TryGetValue(parent, out parentJoinList)) {
+								foreach (var releaser in parentJoinList) {
+									releaser.Dispose();
 								}
+
+								this.releasers.Remove(parent);
 							}
 
 							break;
@@ -919,25 +916,24 @@ namespace Microsoft.Threading {
 				}
 			}
 
-			private void JoinChildren_Changed(object sender, NotifyCollectionChangedEventArgs e) {
+			private void JoinChildren_Changed(object sender, NotifyCollectionChangedEventArgs<SingleThreadSynchronizationContext> e) {
 				Assumes.True(e.Action == NotifyCollectionChangedAction.Add);
 				if (this.disposed) {
 					return;
 				}
 
-				foreach (SingleThreadSynchronizationContext addedChild in e.NewItems) {
-					lock (this.syncObject) {
-						// Add the child to our collection of children so that future parents can join them.
-						if (!this.disposed) {
-							// Also join any existing parents.
-							foreach (var parent in this.joinParents) {
-								List<JoinRelease> parentJoinList;
-								if (!this.releasers.TryGetValue(parent, out parentJoinList)) {
-									this.releasers[parent] = parentJoinList = new List<JoinRelease>();
-								}
-
-								parentJoinList.Add(parent.Join(addedChild));
+				SingleThreadSynchronizationContext addedChild = e.Value;
+				lock (this.syncObject) {
+					// Add the child to our collection of children so that future parents can join them.
+					if (!this.disposed) {
+						// Also join any existing parents.
+						foreach (var parent in this.joinParents) {
+							List<JoinRelease> parentJoinList;
+							if (!this.releasers.TryGetValue(parent, out parentJoinList)) {
+								this.releasers[parent] = parentJoinList = new List<JoinRelease>();
 							}
+
+							parentJoinList.Add(parent.Join(addedChild));
 						}
 					}
 				}
@@ -1548,11 +1544,34 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// Notifies listeners of dynamic changes, such as when items get added and removed
+		/// or the whole list is refreshed.
+		/// </summary>
+		private interface INotifyCollectionChanged<T> {
+			/// <summary>
+			/// Occurs when the collection changes.
+			/// </summary>
+			event EventHandler<NotifyCollectionChangedEventArgs<T>> CollectionChanged;
+		}
+
+		private struct NotifyCollectionChangedEventArgs<T> {
+			internal NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction action, T value)
+				: this() {
+				this.Action = action;
+				this.Value = value;
+			}
+
+			public NotifyCollectionChangedAction Action { get; private set; }
+
+			public T Value { get; private set; }
+		}
+
+		/// <summary>
 		/// A thread-safe, observable set.
 		/// </summary>
 		/// <typeparam name="T">The type of elements stored by the collection.</typeparam>
 		[DebuggerDisplay("Count = {Count}")]
-		private class ObservableSet<T> : ICollection<T>, INotifyCollectionChanged {
+		private class ObservableSet<T> : ICollection<T>, INotifyCollectionChanged<T> {
 			/// <summary>
 			/// The underlying hash set.
 			/// </summary>
@@ -1563,7 +1582,7 @@ namespace Microsoft.Threading {
 			/// </summary>
 			private readonly object syncObject = new object();
 
-			public event NotifyCollectionChangedEventHandler CollectionChanged;
+			public event EventHandler<NotifyCollectionChangedEventArgs<T>> CollectionChanged;
 
 			public int Count {
 				get {
@@ -1640,7 +1659,7 @@ namespace Microsoft.Threading {
 			protected virtual void OnCollectionChanged(NotifyCollectionChangedAction action, T item) {
 				var changed = this.CollectionChanged;
 				if (changed != null) {
-					changed(this, new NotifyCollectionChangedEventArgs(action, item));
+					changed(this, new NotifyCollectionChangedEventArgs<T>(action, item));
 				}
 			}
 		}
