@@ -15,7 +15,7 @@
 
 		public TestContext TestContext { get; set; }
 
-		protected void CheckGCPressure(Action scenario, int maxBytesAllocated, int iterations = 100) {
+		protected void CheckGCPressure(Action scenario, int maxBytesAllocated, int iterations = 100, int allowedAttempts = GCAllocationAttempts) {
 			// prime the pump
 			for (int i = 0; i < iterations; i++) {
 				scenario();
@@ -23,7 +23,7 @@
 
 			// This test is rather rough.  So we're willing to try it a few times in order to observe the desired value.
 			bool passingAttemptObserved = false;
-			for (int attempt = 0; attempt < GCAllocationAttempts; attempt++) {
+			for (int attempt = 0; attempt < allowedAttempts; attempt++) {
 				this.TestContext.WriteLine("Iteration {0}", attempt);
 				long initialMemory = GC.GetTotalMemory(true);
 				for (int i = 0; i < iterations; i++) {
