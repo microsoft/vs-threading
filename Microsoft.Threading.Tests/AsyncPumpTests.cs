@@ -11,7 +11,6 @@
 
 	[TestClass]
 	public class AsyncPumpTests : TestBase {
-		private const int GCAllocationAttempts = 3;
 		private AsyncPump asyncPump;
 		private Thread originalThread;
 		private SynchronizationContext dispatcherContext;
@@ -1376,77 +1375,22 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void RunSynchronouslyTaskNoYieldGCPressure() {
-			const int iterations = 100;
-			const int allowedAllocations = 300;
-
-			// prime the pump
-			for (int i = 0; i < iterations; i++) {
+			this.CheckGCPressure(delegate {
 				this.asyncPump.RunSynchronously(delegate {
 					return TplExtensions.CompletedTask;
 				});
-			}
-
-			// This test is rather rough.  So we're willing to try it a few times in order to observe the desired value.
-			bool passingAttemptObserved = false;
-			for (int attempt = 0; attempt < GCAllocationAttempts; attempt++) {
-				this.TestContext.WriteLine("Iteration {0}", attempt);
-				long initialMemory = GC.GetTotalMemory(true);
-				for (int i = 0; i < iterations; i++) {
-					this.asyncPump.RunSynchronously(delegate {
-						return TplExtensions.CompletedTask;
-					});
-				}
-
-				long allocated = (GC.GetTotalMemory(false) - initialMemory) / iterations;
-				long leaked = (GC.GetTotalMemory(true) - initialMemory) / iterations;
-
-				this.TestContext.WriteLine("{0} bytes leaked per iteration.", leaked);
-				this.TestContext.WriteLine("{0} bytes allocated per iteration ({1} allowed).", allocated, allowedAllocations);
-
-				if (leaked == 0 && allocated < allowedAllocations) {
-					passingAttemptObserved = true;
-				}
-			}
-
-			Assert.IsTrue(passingAttemptObserved);
+			}, maxBytesAllocated: 300);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void RunSynchronouslyTaskOfTNoYieldGCPressure() {
-			const int iterations = 100;
-			const int allowedAllocations = 300;
 			Task<object> completedTask = Task.FromResult<object>(null);
 
-			// prime the pump
-			for (int i = 0; i < iterations; i++) {
+			this.CheckGCPressure(delegate {
 				this.asyncPump.RunSynchronously(delegate {
 					return completedTask;
 				});
-			}
-
-			// This test is rather rough.  So we're willing to try it a few times in order to observe the desired value.
-			bool passingAttemptObserved = false;
-			for (int attempt = 0; attempt < GCAllocationAttempts; attempt++) {
-				this.TestContext.WriteLine("Iteration {0}", attempt);
-				long initialMemory = GC.GetTotalMemory(true);
-				for (int i = 0; i < iterations; i++) {
-					this.asyncPump.RunSynchronously(delegate {
-						return completedTask;
-					});
-				}
-
-				long allocated = (GC.GetTotalMemory(false) - initialMemory) / iterations;
-				long leaked = (GC.GetTotalMemory(true) - initialMemory) / iterations;
-
-				this.TestContext.WriteLine("{0} bytes leaked per iteration.", leaked);
-				this.TestContext.WriteLine("{0} bytes allocated per iteration ({1} allowed).", allocated, allowedAllocations);
-
-				if (leaked == 0 && allocated < allowedAllocations) {
-					passingAttemptObserved = true;
-				}
-			}
-
-			Assert.IsTrue(passingAttemptObserved);
+			}, maxBytesAllocated: 300);
 		}
 
 		private static async void SomeFireAndForgetMethod() {
