@@ -154,16 +154,21 @@ namespace Microsoft.Threading {
 				// Invoke the function and alert the context when it completes
 				var t = asyncMethod();
 				Verify.Operation(t != null, "No task provided.");
-				t.ContinueWith(
-					(_, state) => ((SingleThreadSynchronizationContext)state).Complete(),
-					framework.AppliedContext,
-					CancellationToken.None,
-					TaskContinuationOptions.ExecuteSynchronously,
-					TaskScheduler.Default);
+				if (t.IsCompleted) {
+					framework.AppliedContext.Complete();
+				} else {
+					t.ContinueWith(
+						(_, state) => ((SingleThreadSynchronizationContext)state).Complete(),
+						framework.AppliedContext,
+						CancellationToken.None,
+						TaskContinuationOptions.ExecuteSynchronously,
+						TaskScheduler.Default);
 
-				// Pump continuations and propagate any exceptions
-				framework.AppliedContext.RunOnCurrentThread();
-				Assumes.True(t.IsCompleted);
+					// Pump continuations and propagate any exceptions
+					framework.AppliedContext.RunOnCurrentThread();
+					Assumes.True(t.IsCompleted);
+				}
+
 				t.GetAwaiter().GetResult();
 			}
 		}
@@ -181,16 +186,21 @@ namespace Microsoft.Threading {
 				// Invoke the function and alert the context when it completes
 				var t = asyncMethod();
 				Verify.Operation(t != null, "No task provided.");
-				t.ContinueWith(
-					(_, state) => ((SingleThreadSynchronizationContext)state).Complete(),
-					framework.AppliedContext,
-					CancellationToken.None,
-					TaskContinuationOptions.ExecuteSynchronously,
-					TaskScheduler.Default);
+				if (t.IsCompleted) {
+					framework.AppliedContext.Complete();
+				} else {
+					t.ContinueWith(
+						(_, state) => ((SingleThreadSynchronizationContext)state).Complete(),
+						framework.AppliedContext,
+						CancellationToken.None,
+						TaskContinuationOptions.ExecuteSynchronously,
+						TaskScheduler.Default);
 
-				// Pump continuations and propagate any exceptions
-				framework.AppliedContext.RunOnCurrentThread();
-				Assumes.True(t.IsCompleted);
+					// Pump continuations and propagate any exceptions
+					framework.AppliedContext.RunOnCurrentThread();
+					Assumes.True(t.IsCompleted);
+				}
+
 				return t.GetAwaiter().GetResult();
 			}
 		}
