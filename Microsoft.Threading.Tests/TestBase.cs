@@ -36,7 +36,7 @@
 				this.TestContext.WriteLine("{0} bytes leaked per iteration.", leaked);
 				this.TestContext.WriteLine("{0} bytes allocated per iteration ({1} allowed).", allocated, maxBytesAllocated);
 
-				if (leaked == 0 && allocated < maxBytesAllocated) {
+				if (leaked == 0 && allocated <= maxBytesAllocated) {
 					passingAttemptObserved = true;
 				}
 			}

@@ -19,11 +19,6 @@
 		private readonly object syncObject = new object();
 
 		/// <summary>
-		/// The internal queue of elements.
-		/// </summary>
-		private readonly Queue<T> queueElements = new Queue<T>();
-
-		/// <summary>
 		/// The tasks wanting to dequeue elements from the stack, grouped by their cancellation tokens.
 		/// </summary>
 		private readonly Dictionary<CancellationToken, CancellableDequeuers> dequeuingTasks = new Dictionary<CancellationToken, CancellableDequeuers>();
@@ -32,6 +27,11 @@
 		/// The source of the task returned by <see cref="Completion"/>.
 		/// </summary>
 		private readonly TaskCompletionSource<object> completedSource = new TaskCompletionSource<object>();
+
+		/// <summary>
+		/// The internal queue of elements. Lazily constructed.
+		/// </summary>
+		private Queue<T> queueElements;
 
 		/// <summary>
 		/// A value indicating whether <see cref="Complete"/> has been called.
@@ -51,7 +51,7 @@
 		public int Count {
 			get {
 				lock (this.syncObject) {
-					return this.queueElements.Count;
+					return this.queueElements != null ? this.queueElements.Count : 0;
 				}
 			}
 		}
@@ -117,6 +117,10 @@
 
 				if (dequeuer == null) {
 					// There were no waiting dequeuers, so actually add this element to our queue.
+					if (this.queueElements == null) {
+						this.queueElements = new Queue<T>();
+					}
+
 					this.queueElements.Enqueue(value);
 				}
 			}
@@ -150,7 +154,7 @@
 		/// <returns><c>true</c> if the queue was non-empty; <c>false</c> otherwise.</returns>
 		public bool TryPeek(out T value) {
 			lock (this.syncObject) {
-				if (this.queueElements.Count > 0) {
+				if (this.queueElements != null && this.queueElements.Count > 0) {
 					value = this.queueElements.Peek();
 					return true;
 				} else {
@@ -283,7 +287,7 @@
 		private bool TryDequeueInternal(Predicate<T> valueCheck, out T value) {
 			bool dequeued;
 			lock (this.syncObject) {
-				if (this.queueElements.Count > 0 && (valueCheck == null || valueCheck(this.queueElements.Peek()))) {
+				if (this.queueElements != null && this.queueElements.Count > 0 && (valueCheck == null || valueCheck(this.queueElements.Peek()))) {
 					value = this.queueElements.Dequeue();
 					dequeued = true;
 				} else {
@@ -335,7 +339,7 @@
 			List<TaskCompletionSource<T>> tasksToCancel = null;
 			List<CancellableDequeuers> objectsToDispose = null;
 			lock (this.syncObject) {
-				transitionTaskSource = this.completeSignaled && this.queueElements.Count == 0;
+				transitionTaskSource = this.completeSignaled && (this.queueElements == null || this.queueElements.Count == 0);
 				if (transitionTaskSource) {
 					if (objectsToDispose == null && this.dequeuingTasks.Count > 0) {
 						objectsToDispose = new List<CancellableDequeuers>();

@@ -381,13 +381,22 @@
 		public void OnCompletedInvoked() {
 			var queue = new Fakes.StubAsyncQueue<GenericParameterHelper>();
 			int invoked = 0;
-			queue.OnCompleted01 = () => invoked ++;
+			queue.OnCompleted01 = () => invoked++;
 			queue.Complete();
 			Assert.AreEqual(1, invoked);
 
 			// Call it again to make sure it's only invoked once.
 			queue.Complete();
 			Assert.AreEqual(1, invoked);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void UnusedQueueGCPressure() {
+			this.CheckGCPressure(
+				delegate {
+					new AsyncQueue<GenericParameterHelper>();
+				},
+				maxBytesAllocated: 163);
 		}
 	}
 }
