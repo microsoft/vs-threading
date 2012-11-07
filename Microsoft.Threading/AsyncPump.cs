@@ -1007,7 +1007,7 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>Provides a SynchronizationContext that's single-threaded.</summary>
-		[DebuggerDisplay("UIThread: {affinityWithMainThread} Sync: {completingSynchronously} Queue: {queue.Count} Completed: {queue.Completion.IsCompleted}")]
+		[DebuggerDisplay("UIThread: {affinityWithMainThread} Sync: {completingSynchronously} Queue: {QueueLength} Completed: {IsCompleted}")]
 		private class SingleThreadSynchronizationContext : SynchronizationContext {
 			private readonly object syncObject;
 
@@ -1109,6 +1109,16 @@ namespace Microsoft.Threading {
 			/// </summary>
 			internal bool IsCompleted {
 				get { return this.completionRequested && (this.queue == null || this.queue.Completion.IsCompleted); }
+			}
+
+			/// <summary>
+			/// Gets the current length of the queue.
+			/// </summary>
+			/// <remarks>
+			/// This property is for the DebuggerDisplay attribute on this class.
+			/// </remarks>
+			private int QueueLength {
+				get { return this.queue == null ? 0 : this.queue.Count; }
 			}
 
 			/// <summary>Dispatches an asynchronous message to the synchronization context.</summary>
