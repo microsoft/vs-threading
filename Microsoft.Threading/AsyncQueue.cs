@@ -16,17 +16,17 @@
 		/// <summary>
 		/// The object to lock when reading/writing our internal data structures.
 		/// </summary>
-		private readonly object syncObject = new object();
+		private readonly object syncObject;
 
 		/// <summary>
-		/// The tasks wanting to dequeue elements from the stack, grouped by their cancellation tokens.
+		/// The tasks wanting to dequeue elements from the stack, grouped by their cancellation tokens. Lazily constructed.
 		/// </summary>
-		private readonly Dictionary<CancellationToken, CancellableDequeuers> dequeuingTasks = new Dictionary<CancellationToken, CancellableDequeuers>();
+		private Dictionary<CancellationToken, CancellableDequeuers> dequeuingTasks;
 
 		/// <summary>
-		/// The source of the task returned by <see cref="Completion"/>.
+		/// The source of the task returned by <see cref="Completion"/>. Lazily constructed.
 		/// </summary>
-		private readonly TaskCompletionSource<object> completedSource = new TaskCompletionSource<object>();
+		private TaskCompletionSource<object> completedSource;
 
 		/// <summary>
 		/// The internal queue of elements. Lazily constructed.
@@ -37,6 +37,18 @@
 		/// A value indicating whether <see cref="Complete"/> has been called.
 		/// </summary>
 		private bool completeSignaled;
+
+		/// <summary>
+		/// A flag indicating whether the <see cref="OnCompleted"/> has been invoked.
+		/// </summary>
+		private bool onCompletedInvoked;
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="AsyncQueue{T}"/> class.
+		/// </summary>
+		public AsyncQueue() {
+			this.syncObject = this; // save allocations by using this instead of a new object.
+		}
 
 		/// <summary>
 		/// Gets a value indicating whether the queue is currently empty.
@@ -57,21 +69,47 @@
 		}
 
 		/// <summary>
+		/// Gets a value indicating whether the queue has completed.
+		/// </summary>
+		public bool IsCompleted {
+			get {
+				lock (this.syncObject) {
+					return this.IsEmpty && this.completeSignaled;
+				}
+			}
+		}
+
+		/// <summary>
 		/// Gets a task that transitions to a completed state when <see cref="Complete"/> is called.
 		/// </summary>
 		public Task Completion {
-			get { return this.completedSource.Task; }
+			get {
+				if (this.completedSource == null) {
+					lock (this.syncObject) {
+						if (this.completedSource == null) {
+							this.completedSource = new TaskCompletionSource<object>();
+							if (this.IsCompleted) {
+								this.completedSource.SetResult(null);
+							}
+						}
+					}
+				}
+
+				return this.completedSource.Task;
+			}
 		}
 
 		/// <summary>
 		/// Signals that no further elements will be enqueued.
 		/// </summary>
 		public void Complete() {
+			bool signaledJustNow;
 			lock (this.syncObject) {
+				signaledJustNow = !this.completeSignaled;
 				this.completeSignaled = true;
 			}
 
-			this.CompleteIfNecessary();
+			this.CompleteIfNecessary(signaledJustNow);
 		}
 
 		/// <summary>
@@ -95,24 +133,26 @@
 					return false;
 				}
 
-				foreach (var entry in this.dequeuingTasks) {
-					CancellationToken cancellationToken = entry.Key;
-					CancellableDequeuers dequeurs = entry.Value;
+				if (this.dequeuingTasks != null) {
+					foreach (var entry in this.dequeuingTasks) {
+						CancellationToken cancellationToken = entry.Key;
+						CancellableDequeuers dequeurs = entry.Value;
 
-					// Remove the last dequeuer from the list.
-					dequeuer = dequeurs.PopDequeuer();
+						// Remove the last dequeuer from the list.
+						dequeuer = dequeurs.PopDequeuer();
 
-					if (dequeurs.IsEmpty) {
-						this.dequeuingTasks.Remove(cancellationToken);
+						if (dequeurs.IsEmpty) {
+							this.dequeuingTasks.Remove(cancellationToken);
 
-						if (valuesToDispose == null) {
-							valuesToDispose = new List<CancellableDequeuers>();
+							if (valuesToDispose == null) {
+								valuesToDispose = new List<CancellableDequeuers>();
+							}
+
+							valuesToDispose.Add(dequeurs);
 						}
 
-						valuesToDispose.Add(dequeurs);
+						break;
 					}
-
-					break;
 				}
 
 				if (dequeuer == null) {
@@ -202,6 +242,10 @@
 					if (this.TryDequeueInternal(null, out value)) {
 						tcs.SetResult(value);
 					} else {
+						if (this.dequeuingTasks == null) {
+							this.dequeuingTasks = new Dictionary<CancellationToken, CancellableDequeuers>();
+						}
+
 						if (!this.dequeuingTasks.TryGetValue(cancellationToken, out existingAwaiters)) {
 							existingAwaiters = new CancellableDequeuers(this);
 							newDequeuerObjectAllocated = true;
@@ -311,9 +355,9 @@
 			var tuple = (Tuple<AsyncQueue<T>, CancellationToken>)state;
 			AsyncQueue<T> that = tuple.Item1;
 			CancellationToken ct = tuple.Item2;
-			CancellableDequeuers cancelledAwaiters;
+			CancellableDequeuers cancelledAwaiters = null;
 			lock (that.syncObject) {
-				if (that.dequeuingTasks.TryGetValue(ct, out cancelledAwaiters)) {
+				if (that.dequeuingTasks != null && that.dequeuingTasks.TryGetValue(ct, out cancelledAwaiters)) {
 					that.dequeuingTasks.Remove(ct);
 				}
 			}
@@ -332,37 +376,45 @@
 		/// <summary>
 		/// Transitions this queue to a completed state if signaled and the queue is empty.
 		/// </summary>
-		private void CompleteIfNecessary() {
+		private void CompleteIfNecessary(bool signaledJustNow = false) {
 			Assumes.False(Monitor.IsEntered(this.syncObject)); // important because we'll transition a task to complete.
 
-			bool transitionTaskSource;
+			bool transitionTaskSource, invokeOnCompleted = false;
 			List<TaskCompletionSource<T>> tasksToCancel = null;
 			List<CancellableDequeuers> objectsToDispose = null;
 			lock (this.syncObject) {
 				transitionTaskSource = this.completeSignaled && (this.queueElements == null || this.queueElements.Count == 0);
 				if (transitionTaskSource) {
-					if (objectsToDispose == null && this.dequeuingTasks.Count > 0) {
+					invokeOnCompleted = !this.onCompletedInvoked;
+					this.onCompletedInvoked = true;
+					if (objectsToDispose == null && this.dequeuingTasks != null && this.dequeuingTasks.Count > 0) {
 						objectsToDispose = new List<CancellableDequeuers>();
 					}
 
-					foreach (var entry in this.dequeuingTasks) {
-						if (tasksToCancel == null && !entry.Value.IsEmpty) {
-							tasksToCancel = new List<TaskCompletionSource<T>>();
+					if (this.dequeuingTasks != null) {
+						foreach (var entry in this.dequeuingTasks) {
+							if (tasksToCancel == null && !entry.Value.IsEmpty) {
+								tasksToCancel = new List<TaskCompletionSource<T>>();
+							}
+
+							foreach (var tcs in entry.Value) {
+								tasksToCancel.Add(tcs);
+							}
+
+							objectsToDispose.Add(entry.Value);
 						}
 
-						foreach (var tcs in entry.Value) {
-							tasksToCancel.Add(tcs);
-						}
-
-						objectsToDispose.Add(entry.Value);
+						this.dequeuingTasks.Clear();
 					}
-
-					this.dequeuingTasks.Clear();
 				}
 			}
 
 			if (transitionTaskSource) {
-				if (this.completedSource.TrySetResult(null)) {
+				if (this.completedSource != null) {
+					this.completedSource.TrySetResult(null);
+				}
+
+				if (invokeOnCompleted) {
 					this.OnCompleted();
 				}
 

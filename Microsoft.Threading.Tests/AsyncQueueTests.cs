@@ -394,9 +394,11 @@
 		public void UnusedQueueGCPressure() {
 			this.CheckGCPressure(
 				delegate {
-					new AsyncQueue<GenericParameterHelper>();
+					var queue = new AsyncQueue<GenericParameterHelper>();
+					queue.Complete();
+					Assert.IsTrue(queue.IsCompleted);
 				},
-				maxBytesAllocated: 163);
+				maxBytesAllocated: 81);
 		}
 	}
 }
