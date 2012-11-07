@@ -1009,7 +1009,7 @@ namespace Microsoft.Threading {
 		/// <summary>Provides a SynchronizationContext that's single-threaded.</summary>
 		[DebuggerDisplay("UIThread: {affinityWithMainThread} Sync: {completingSynchronously} Queue: {queue.Count} Completed: {queue.Completion.IsCompleted}")]
 		private class SingleThreadSynchronizationContext : SynchronizationContext {
-			private readonly object syncObject = new object();
+			private readonly object syncObject;
 
 			/// <summary>The pump that created this instance.</summary>
 			private readonly AsyncPump asyncPump;
@@ -1071,6 +1071,8 @@ namespace Microsoft.Threading {
 			internal SingleThreadSynchronizationContext(AsyncPump asyncPump, bool autoCompleteWhenOperationsReachZero, bool completingSynchronously, SynchronizationContext previousSyncContext = null, bool? affinitizedToMainThread = null) {
 				Requires.NotNull(asyncPump, "asyncPump");
 				Assumes.True(previousSyncContext != null || !affinitizedToMainThread.HasValue || !affinitizedToMainThread.Value);
+
+				this.syncObject = this; // these instances should be as cheap as possible, so reuse our own instance for synchronization.
 				this.asyncPump = asyncPump;
 				this.autoCompleteWhenOperationsReachZero = autoCompleteWhenOperationsReachZero;
 				this.previousSyncContext = previousSyncContext ?? SynchronizationContext.Current;
