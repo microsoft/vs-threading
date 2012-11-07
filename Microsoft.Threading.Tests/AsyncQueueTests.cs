@@ -376,5 +376,18 @@
 			Assert.IsTrue(queue.TryDequeue(out dequeuedValue));
 			Assert.IsTrue(callbackFired);
 		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void OnCompletedInvoked() {
+			var queue = new Fakes.StubAsyncQueue<GenericParameterHelper>();
+			int invoked = 0;
+			queue.OnCompleted01 = () => invoked ++;
+			queue.Complete();
+			Assert.AreEqual(1, invoked);
+
+			// Call it again to make sure it's only invoked once.
+			queue.Complete();
+			Assert.AreEqual(1, invoked);
+		}
 	}
 }

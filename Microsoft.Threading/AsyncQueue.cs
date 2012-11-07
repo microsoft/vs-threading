@@ -268,6 +268,12 @@
 		}
 
 		/// <summary>
+		/// Invoked when the queue is completed.
+		/// </summary>
+		protected virtual void OnCompleted() {
+		}
+
+		/// <summary>
 		/// Immediately dequeues the element from the head of the queue if one is available,
 		/// otherwise returns without an element.
 		/// </summary>
@@ -346,7 +352,10 @@
 			}
 
 			if (transitionTaskSource) {
-				this.completedSource.TrySetResult(null);
+				if (this.completedSource.TrySetResult(null)) {
+					this.OnCompleted();
+				}
+
 				if (tasksToCancel != null) {
 					foreach (var tcs in tasksToCancel) {
 						tcs.TrySetCanceled();

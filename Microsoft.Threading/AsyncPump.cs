@@ -1328,7 +1328,6 @@ namespace Microsoft.Threading {
 
 				internal ExecutionQueue() {
 					this.onExecutingHandler = new EventHandler(this.OnExecuting);
-					this.Completion.ContinueWith((_, that) => ((ExecutionQueue)that).enqueuedNotification.TrySetResult(null), this, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
 				}
 
 				/// <summary>
@@ -1375,6 +1374,11 @@ namespace Microsoft.Threading {
 							this.enqueuedNotification.TrySetResult(null);
 						}
 					}
+				}
+
+				protected override void OnCompleted() {
+					base.OnCompleted();
+					this.enqueuedNotification.TrySetResult(null);
 				}
 
 				private void OnExecuting(object sender, EventArgs e) {
