@@ -1048,7 +1048,10 @@ namespace Microsoft.Threading {
 			/// </remarks>
 			private Dictionary<SingleThreadSynchronizationContext, int> extraQueueSources;
 
-			private CancellationTokenSource extraContextsChanged = new CancellationTokenSource();
+			/// <summary>
+			/// A token that is canceled whenever the contents of the <see cref="extraQueueSources"/> has changed.  Lazily constructed.
+			/// </summary>
+			private CancellationTokenSource extraContextsChanged;
 
 			/// <summary>The number of outstanding operations.</summary>
 			private int operationCount = 0;
@@ -1352,6 +1355,10 @@ namespace Microsoft.Threading {
 					CancellationToken extraContextsChangedToken;
 					HashSet<ExecutionQueue> applicableQueues;
 					lock (this.syncObject) {
+						if (this.extraContextsChanged == null) {
+							this.extraContextsChanged = new CancellationTokenSource();
+						}
+
 						extraContextsChangedToken = this.extraContextsChanged.Token;
 						applicableQueues = new HashSet<ExecutionQueue>();
 						AddDependentQueues(applicableQueues, this);
