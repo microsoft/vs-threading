@@ -337,9 +337,15 @@
 			lock (this.syncObject) {
 				transitionTaskSource = this.completeSignaled && this.queueElements.Count == 0;
 				if (transitionTaskSource) {
-					tasksToCancel = new List<TaskCompletionSource<T>>();
-					objectsToDispose = new List<CancellableDequeuers>();
+					if (objectsToDispose == null && this.dequeuingTasks.Count > 0) {
+						objectsToDispose = new List<CancellableDequeuers>();
+					}
+
 					foreach (var entry in this.dequeuingTasks) {
+						if (tasksToCancel == null && !entry.Value.IsEmpty) {
+							tasksToCancel = new List<TaskCompletionSource<T>>();
+						}
+
 						foreach (var tcs in entry.Value) {
 							tasksToCancel.Add(tcs);
 						}
