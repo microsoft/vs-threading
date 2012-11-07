@@ -927,13 +927,15 @@ namespace Microsoft.Threading {
 					// Add the child to our collection of children so that future parents can join them.
 					if (!this.disposed) {
 						// Also join any existing parents.
-						foreach (var parent in this.joinParents) {
-							List<JoinRelease> parentJoinList;
-							if (!this.releasers.TryGetValue(parent, out parentJoinList)) {
-								this.releasers[parent] = parentJoinList = new List<JoinRelease>();
-							}
+						if (this.joinParents.Count > 0) {
+							foreach (var parent in this.joinParents) {
+								List<JoinRelease> parentJoinList;
+								if (!this.releasers.TryGetValue(parent, out parentJoinList)) {
+									this.releasers[parent] = parentJoinList = new List<JoinRelease>();
+								}
 
-							parentJoinList.Add(parent.Join(addedChild));
+								parentJoinList.Add(parent.Join(addedChild));
+							}
 						}
 					}
 				}
