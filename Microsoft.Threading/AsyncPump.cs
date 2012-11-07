@@ -1035,8 +1035,7 @@ namespace Microsoft.Threading {
 			/// <remarks>
 			/// When the value in an entry is decremented to 0, the entry is removed from the map.
 			/// </remarks>
-			private Dictionary<SingleThreadSynchronizationContext, int> extraQueueSources =
-				new Dictionary<SingleThreadSynchronizationContext, int>();
+			private Dictionary<SingleThreadSynchronizationContext, int> extraQueueSources;
 
 			private CancellationTokenSource extraContextsChanged = new CancellationTokenSource();
 
@@ -1165,6 +1164,10 @@ namespace Microsoft.Threading {
 				if (this.affinityWithMainThread == other.affinityWithMainThread) {
 					CancellationTokenSource extraContextsChanged = null;
 					lock (this.syncObject) {
+						if (this.extraQueueSources == null) {
+							this.extraQueueSources = new Dictionary<SingleThreadSynchronizationContext, int>();
+						}
+
 						int refCount;
 						this.extraQueueSources.TryGetValue(other, out refCount);
 						refCount++;
@@ -1205,8 +1208,8 @@ namespace Microsoft.Threading {
 			internal void Disjoin(SingleThreadSynchronizationContext other) {
 				CancellationTokenSource extraContextsChanged = null;
 				lock (this.syncObject) {
-					int refCount;
-					if (this.extraQueueSources.TryGetValue(other, out refCount)) {
+					int refCount = 0;
+					if (this.extraQueueSources != null && this.extraQueueSources.TryGetValue(other, out refCount)) {
 						if (--refCount <= 0) {
 							this.extraQueueSources.Remove(other);
 						} else {
@@ -1240,8 +1243,17 @@ namespace Microsoft.Threading {
 
 				if (!context.queue.Completion.IsCompleted) {
 					if (contextSet.Add(context.queue)) {
-						foreach (var childContext in context.extraQueueSources.Keys) {
-							AddDependentQueues(contextSet, childContext);
+						SingleThreadSynchronizationContext[] extraQueueSourceKeys = null;
+						lock (context.syncObject) {
+							if (context.extraQueueSources != null) {
+								extraQueueSourceKeys = context.extraQueueSources.Keys.ToArray();
+							}
+						}
+
+						if (extraQueueSourceKeys != null) {
+							foreach (var childContext in extraQueueSourceKeys) {
+								AddDependentQueues(contextSet, childContext);
+							}
 						}
 					}
 				}
