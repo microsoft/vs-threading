@@ -100,6 +100,13 @@
 		}
 
 		/// <summary>
+		/// Gets the synchronization object used by this queue.
+		/// </summary>
+		protected object SyncRoot {
+			get { return this.syncObject; }
+		}
+
+		/// <summary>
 		/// Signals that no further elements will be enqueued.
 		/// </summary>
 		public void Complete() {

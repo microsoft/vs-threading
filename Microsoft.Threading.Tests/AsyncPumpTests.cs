@@ -1379,7 +1379,7 @@
 				this.asyncPump.RunSynchronously(delegate {
 					return TplExtensions.CompletedTask;
 				});
-			}, maxBytesAllocated: 300);
+			}, maxBytesAllocated: 245);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -1389,6 +1389,26 @@
 			this.CheckGCPressure(delegate {
 				this.asyncPump.RunSynchronously(delegate {
 					return completedTask;
+				});
+			}, maxBytesAllocated: 163);
+		}
+
+		[TestMethod/*, Timeout(TestTimeout)*/, Ignore]
+		public void RunSynchronouslyTaskWithYieldGCPressure() {
+			this.CheckGCPressure(delegate {
+				this.asyncPump.RunSynchronously(async delegate {
+					await Task.Yield();
+				});
+			}, maxBytesAllocated: 300);
+		}
+
+		[TestMethod/*, Timeout(TestTimeout)*/, Ignore]
+		public void RunSynchronouslyTaskOfTWithYieldGCPressure() {
+			Task<object> completedTask = Task.FromResult<object>(null);
+
+			this.CheckGCPressure(delegate {
+				this.asyncPump.RunSynchronously(async delegate {
+					await Task.Yield();
 				});
 			}, maxBytesAllocated: 300);
 		}

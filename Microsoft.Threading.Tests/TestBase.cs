@@ -1,17 +1,18 @@
 ﻿namespace Microsoft.Threading.Tests {
+	using Microsoft.VisualStudio.TestTools.UnitTesting;
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
 	using System.Text;
+	using System.Threading;
 	using System.Threading.Tasks;
-	using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 	public abstract class TestBase {
 		protected const int AsyncDelay = 500;
 
 		protected const int TestTimeout = 1000;
 
-		private const int GCAllocationAttempts = 3;
+		private const int GCAllocationAttempts = 5;
 
 		public TestContext TestContext { get; set; }
 
@@ -38,6 +39,12 @@
 
 				if (leaked == 0 && allocated <= maxBytesAllocated) {
 					passingAttemptObserved = true;
+				}
+
+				if (!passingAttemptObserved) {
+					// give the system a bit of cool down time to increase the odds we'll pass next time.
+					GC.Collect();
+					Thread.Sleep(250);
 				}
 			}
 

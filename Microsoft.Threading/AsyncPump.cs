@@ -1401,7 +1401,7 @@ namespace Microsoft.Threading {
 			/// that self-scavenges elements that are executed by other means.
 			/// </summary>
 			internal class ExecutionQueue : AsyncQueue<SingleExecuteProtector> {
-				private TaskCompletionSource<object> enqueuedNotification = new TaskCompletionSource<object>();
+				private TaskCompletionSource<object> enqueuedNotification;
 
 				internal ExecutionQueue() {
 				}
@@ -1410,7 +1410,28 @@ namespace Microsoft.Threading {
 				/// Gets a task that completes when the queue is non-empty or completed.
 				/// </summary>
 				internal Task EnqueuedNotify {
-					get { return this.enqueuedNotification.Task; }
+					get {
+						if (this.enqueuedNotification == null) {
+							lock (this.SyncRoot) {
+								if (!this.IsEmpty || this.IsCompleted) {
+									// We're already non-empty or totally done, so avoid allocating a task
+									// by returning a singleton completed task.
+									return TplExtensions.CompletedTask;
+								}
+
+								if (this.enqueuedNotification == null) {
+									var tcs = new TaskCompletionSource<object>();
+									if (!this.IsEmpty) {
+										tcs.TrySetResult(null);
+									}
+
+									this.enqueuedNotification = tcs;
+								}
+							}
+						}
+
+						return this.enqueuedNotification.Task;
+					}
 				}
 
 				protected override void OnEnqueued(SingleExecuteProtector value, bool alreadyDispatched) {
@@ -1428,8 +1449,21 @@ namespace Microsoft.Threading {
 							this.Scavenge();
 						}
 
-						// Also cause continuations to execute that may be waiting on a non-empty queue.
-						this.enqueuedNotification.TrySetResult(null);
+						TaskCompletionSource<object> notifyCompletionSource = null;
+						lock (this.SyncRoot) {
+							// Also cause continuations to execute that may be waiting on a non-empty queue.
+							// But be paranoid about whether the queue is still non-empty since this method
+							// isn't called within a lock.
+							if (!this.IsEmpty && this.enqueuedNotification != null && !this.enqueuedNotification.Task.IsCompleted) {
+								// Snag the task source to complete, but don't complete it until
+								// we're outside our lock so 3rd party code doesn't inline.
+								notifyCompletionSource = this.enqueuedNotification;
+							}
+						}
+
+						if (notifyCompletionSource != null) {
+							notifyCompletionSource.TrySetResult(null);
+						}
 					}
 				}
 
@@ -1437,24 +1471,27 @@ namespace Microsoft.Threading {
 					base.OnDequeued(value);
 					value.RemoveExecutingCallback(this);
 
-					if (this.Count == 0 && this.enqueuedNotification.Task.IsCompleted) {
-						var oldNotify = Interlocked.Exchange(ref this.enqueuedNotification, new TaskCompletionSource<object>());
-
-						// Race conditions suggest this just might be a different task than we observed in the if condition.
-						// We must mitigate the risk that someone has already seen that task and put continuations on it
-						// by unblocking them. They may see an empty queue, but can re-await at that point.
-						oldNotify.TrySetResult(null);
-
-						// Another race is that we're no longer empty, in which case be sure we've completed the task.
-						if (this.Count > 0) {
-							this.enqueuedNotification.TrySetResult(null);
+					lock (this.SyncRoot) {
+						// If the queue is now empty and we have a completed non-empty task, 
+						// clear the task field so that the next person to ask for a task that
+						// signals a non-empty queue will get an incompleted task.
+						if (this.IsEmpty && this.enqueuedNotification != null && this.enqueuedNotification.Task.IsCompleted) {
+							this.enqueuedNotification = null;
 						}
 					}
 				}
 
 				protected override void OnCompleted() {
 					base.OnCompleted();
-					this.enqueuedNotification.TrySetResult(null);
+
+					TaskCompletionSource<object> notifyCompletionSource;
+					lock (this.SyncRoot) {
+						notifyCompletionSource = this.enqueuedNotification;
+					}
+
+					if (notifyCompletionSource != null) {
+						notifyCompletionSource.TrySetResult(null);
+					}
 				}
 
 				internal void OnExecuting(object sender, EventArgs e) {
