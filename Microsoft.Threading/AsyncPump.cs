@@ -527,9 +527,9 @@ namespace Microsoft.Threading {
 			private object state;
 
 			/// <summary>
-			/// Backing field for the <see cref="Executing"/> event.
+			/// Stores execution callbacks for <see cref="AddExecutingCallback"/>.
 			/// </summary>
-			private event EventHandler executing;
+			private ListOfOftenOne<SingleThreadSynchronizationContext.ExecutionQueue> executingCallbacks;
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class.
@@ -541,18 +541,19 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>
-			/// An event raised when this instance is being executed.
+			/// Registers for a callback when this instance is executed.
 			/// </summary>
-			internal event EventHandler Executing {
-				add {
-					if (!this.HasBeenExecuted) {
-						this.executing += value;
-					}
+			internal void AddExecutingCallback(SingleThreadSynchronizationContext.ExecutionQueue callbackReceiver) {
+				if (!this.HasBeenExecuted) {
+					this.executingCallbacks.Add(callbackReceiver);
 				}
+			}
 
-				remove {
-					this.executing -= value;
-				}
+			/// <summary>
+			/// Unregisters a callback for when this instance is executed.
+			/// </summary>
+			internal void RemoveExecutingCallback(SingleThreadSynchronizationContext.ExecutionQueue callbackReceiver) {
+				this.executingCallbacks.Remove(callbackReceiver);
 			}
 
 			/// <summary>
@@ -636,15 +637,16 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>
-			/// Raises the <see cref="Executing"/> event.
+			/// Invokes <see cref="SingleThreadSynchronizationContext.ExecutionQueue.OnExecuting"/> handler.
 			/// </summary>
 			private void OnExecuting() {
 				// While raising the event, automatically remove the handlers since we'll only
 				// raise them once, and we'd like to avoid holding references that may extend
 				// the lifetime of our recipients.
-				var executing = Interlocked.Exchange(ref this.executing, null);
-				if (executing != null) {
-					executing(this, EventArgs.Empty);
+				using (var enumerator = this.executingCallbacks.EnumerateAndClear()) {
+					while (enumerator.MoveNext()) {
+						enumerator.Current.OnExecuting(this, EventArgs.Empty);
+					}
 				}
 			}
 		}
@@ -1322,12 +1324,10 @@ namespace Microsoft.Threading {
 			/// A thread-safe queue of <see cref="SingleExecuteProtector"/> elements
 			/// that self-scavenges elements that are executed by other means.
 			/// </summary>
-			private class ExecutionQueue : AsyncQueue<SingleExecuteProtector> {
-				private readonly EventHandler onExecutingHandler;
+			internal class ExecutionQueue : AsyncQueue<SingleExecuteProtector> {
 				private TaskCompletionSource<object> enqueuedNotification = new TaskCompletionSource<object>();
 
 				internal ExecutionQueue() {
-					this.onExecutingHandler = new EventHandler(this.OnExecuting);
 				}
 
 				/// <summary>
@@ -1343,7 +1343,7 @@ namespace Microsoft.Threading {
 					// We only need to consider scavenging our queue if this item was
 					// actually added to the queue.
 					if (!alreadyDispatched) {
-						value.Executing += this.onExecutingHandler; // Use cached handler to reduce GC pressure
+						value.AddExecutingCallback(this);
 
 						// It's possible this value has already been executed
 						// (before our event wire-up was applied). So check and
@@ -1359,7 +1359,7 @@ namespace Microsoft.Threading {
 
 				protected override void OnDequeued(SingleExecuteProtector value) {
 					base.OnDequeued(value);
-					value.Executing -= this.onExecutingHandler;
+					value.RemoveExecutingCallback(this);
 
 					if (this.Count == 0 && this.enqueuedNotification.Task.IsCompleted) {
 						var oldNotify = Interlocked.Exchange(ref this.enqueuedNotification, new TaskCompletionSource<object>());
@@ -1381,7 +1381,7 @@ namespace Microsoft.Threading {
 					this.enqueuedNotification.TrySetResult(null);
 				}
 
-				private void OnExecuting(object sender, EventArgs e) {
+				internal void OnExecuting(object sender, EventArgs e) {
 					this.Scavenge();
 				}
 
