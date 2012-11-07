@@ -859,9 +859,9 @@ namespace Microsoft.Threading {
 				}
 			}
 
-			internal void AddJoinChild(SingleThreadSynchronizationContext syncContext) {
+			internal bool AddJoinChild(SingleThreadSynchronizationContext syncContext) {
 				Requires.NotNull(syncContext, "syncContext");
-				this.joinChildren.Add(syncContext);
+				return this.joinChildren.Add(syncContext);
 			}
 
 			internal IDisposable AddParent(SingleThreadSynchronizationContext syncContext) {
@@ -1078,7 +1078,6 @@ namespace Microsoft.Threading {
 				this.previousSyncContext = previousSyncContext ?? SynchronizationContext.Current;
 				this.affinityWithMainThread = affinitizedToMainThread ?? Thread.CurrentThread == asyncPump.mainThread && this.asyncPump.underlyingSynchronizationContext != null;
 				this.completingSynchronously = completingSynchronously;
-				this.JoinMainThreadSyncContextAncestorIfApplicable();
 
 				if (this.affinityWithMainThread && this.previousSyncContext != null && this.previousSyncContext.GetType().IsEquivalentTo(typeof(SynchronizationContext))) {
 					// This is really bad as any code in VS could badly misbehave in this scenario.
@@ -1204,6 +1203,7 @@ namespace Microsoft.Threading {
 			internal JoinRelease Join(SingleThreadSynchronizationContext other) {
 				Requires.NotNull(other, "other");
 
+				this.JoinMainThreadSyncContextAncestorIfApplicable();
 				if (this.affinityWithMainThread == other.affinityWithMainThread) {
 					CancellationTokenSource extraContextsChanged = null;
 					lock (this.syncObject) {
@@ -1310,6 +1310,7 @@ namespace Microsoft.Threading {
 			}
 
 			private void EnsureQueueInitializedUnlessCompleted() {
+				this.JoinMainThreadSyncContextAncestorIfApplicable();
 				lock (this.syncObject) {
 					if (this.queue == null && !this.completionRequested) {
 						this.queue = new ExecutionQueue();
@@ -1322,15 +1323,16 @@ namespace Microsoft.Threading {
 			/// will also be interesting for our parent to execute.
 			/// </summary>
 			private void JoinMainThreadSyncContextAncestorIfApplicable() {
-				this.asyncPump.ongoingSyncContexts.AddJoinChild(this);
-				if (this.affinityWithMainThread) {
-					// Select our nearest ancestor that will execute messages on the main thread.
-					var ancestor = this.asyncPump.MainThreadControllingSyncContext;
+				if (!this.IsCompleted && this.asyncPump.ongoingSyncContexts.AddJoinChild(this)) {
+					if (this.affinityWithMainThread) {
+						// Select our nearest ancestor that will execute messages on the main thread.
+						var ancestor = this.asyncPump.MainThreadControllingSyncContext;
 
-					// If there is no such ancestor, no joining is necessary.
-					if (ancestor != null) {
-						// Join our ancestor.  We'll automatically disjoin when our work is complete.
-						ancestor.Join(this);
+						// If there is no such ancestor, no joining is necessary.
+						if (ancestor != null) {
+							// Join our ancestor.  We'll automatically disjoin when our work is complete.
+							ancestor.Join(this);
+						}
 					}
 				}
 			}
