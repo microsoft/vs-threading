@@ -1056,6 +1056,11 @@ namespace Microsoft.Threading {
 			/// <summary>The number of outstanding operations.</summary>
 			private int operationCount = 0;
 
+			/// <summary>
+			/// A list of releasers to dispose of when the queue is completed.
+			/// </summary>
+			private List<JoinRelease> releaseOnCompletion;
+
 			/// <summary>Initializes a new instance of the <see cref="SingleThreadSynchronizationContext"/> class.</summary>
 			/// <param name="asyncPump">The pump that owns this instance.</param>
 			/// <param name="autoCompleteWhenOperationsReachZero">
@@ -1107,7 +1112,7 @@ namespace Microsoft.Threading {
 			/// Gets a value indicating whether all tasks this instance wil accept have been completed.
 			/// </summary>
 			internal bool IsCompleted {
-				get { return this.completionRequested && (this.queue == null || this.queue.Completion.IsCompleted); }
+				get { return this.completionRequested && (this.queue == null || this.queue.IsCompleted); }
 			}
 
 			/// <summary>
@@ -1173,9 +1178,36 @@ namespace Microsoft.Threading {
 			/// <summary>Notifies the context that no more work will arrive.</summary>
 			public void Complete() {
 				lock (this.syncObject) {
+					bool firstCompletionRequest = !this.completionRequested;
 					this.completionRequested = true;
 					if (this.queue != null) {
 						this.queue.Complete();
+					}
+
+					if (firstCompletionRequest) {
+						if (this.IsCompleted) {
+							this.OnCompleted();
+						} else {
+							Assumes.NotNull(this.queue);
+							this.queue.Completion.ContinueWith(
+								(_, state) => ((SingleThreadSynchronizationContext)state).OnCompleted(),
+								this,
+								CancellationToken.None,
+								TaskContinuationOptions.ExecuteSynchronously,
+								TaskScheduler.Default);
+						}
+					}
+				}
+			}
+
+			private void OnCompleted() {
+				lock (this.syncObject) {
+					if (this.releaseOnCompletion != null) {
+						foreach (var releaser in this.releaseOnCompletion) {
+							releaser.Dispose();
+						}
+
+						this.releaseOnCompletion = null;
 					}
 				}
 			}
@@ -1235,18 +1267,7 @@ namespace Microsoft.Threading {
 					var releaser = new JoinRelease(this, other);
 
 					// Arrange to automatically disjoin when the child context completes.
-					other.EnsureQueueInitializedUnlessCompleted();
-					if (other.IsCompleted) {
-						// it's already completed.
-						releaser.Dispose();
-					} else {
-						other.queue.Completion.ContinueWith(
-							(_, state) => ((JoinRelease)state).Dispose(),
-							releaser,
-							CancellationToken.None,
-							TaskContinuationOptions.None,
-							TaskScheduler.Default);
-					}
+					other.ReleaseJoinOnCompletion(releaser);
 
 					return releaser;
 				} else {
@@ -1360,6 +1381,20 @@ namespace Microsoft.Threading {
 				}
 			}
 
+			private void ReleaseJoinOnCompletion(JoinRelease releaser) {
+				lock (this.syncObject) {
+					if (this.IsCompleted) {
+						releaser.Dispose();
+					} else {
+						if (this.releaseOnCompletion == null) {
+							this.releaseOnCompletion = new List<JoinRelease>(1);
+						}
+
+						this.releaseOnCompletion.Add(releaser);
+					}
+				}
+			}
+
 			private async Task<SingleExecuteProtector> DequeueFromAllSelfAndJoinedQueuesAsync() {
 				while (true) {
 					if (this.IsCompleted) {
@@ -1380,11 +1415,18 @@ namespace Microsoft.Threading {
 
 					while (!extraContextsChangedToken.IsCancellationRequested && !this.IsCompleted) {
 						// Check all queues to see if any have immediate work.
+						bool applicableQueuesOutdated = false;
 						foreach (var queue in applicableQueues) {
 							SingleExecuteProtector value;
 							if (queue.TryDequeue(out value)) {
 								return value;
+							} else if (queue.IsCompleted) {
+								applicableQueuesOutdated = true;
 							}
+						}
+
+						if (applicableQueuesOutdated) {
+							break;
 						}
 
 						// None of the queues had work to do right away.
