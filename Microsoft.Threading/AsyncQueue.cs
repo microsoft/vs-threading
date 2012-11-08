@@ -72,7 +72,7 @@
 		/// Gets a value indicating whether the queue has completed.
 		/// </summary>
 		/// <remarks>
-		/// This is arguably redundant with <see cref="Completion.IsCompleted"/>, but this property
+		/// This is arguably redundant with <see cref="Completion"/>.IsCompleted, but this property
 		/// won't cause the lazy instantiation of the Task that <see cref="Completion"/> may if there
 		/// is no other reason for the Task to exist.
 		/// </remarks>
