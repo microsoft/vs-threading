@@ -1251,7 +1251,7 @@ namespace Microsoft.Threading {
 						// Only if the actual set of queues changed do we want to disrupt the cancellation token.
 						if (refCount == 1) {
 							extraContextsChanged = this.extraContextsChanged;
-							this.extraContextsChanged = new CancellationTokenSource();
+							this.extraContextsChanged = null;
 						}
 					}
 
@@ -1290,7 +1290,7 @@ namespace Microsoft.Threading {
 					// Only if the actual set of queues changed do we want to disrupt the cancellation token.
 					if (refCount == 0) {
 						extraContextsChanged = this.extraContextsChanged;
-						this.extraContextsChanged = new CancellationTokenSource();
+						this.extraContextsChanged = null;
 					}
 				}
 
