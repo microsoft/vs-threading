@@ -1476,6 +1476,10 @@ namespace Microsoft.Threading {
 					}
 				}
 
+				protected override int InitialCapacity {
+					get { return 1; } // in non-concurrent cases, 1 is sufficient.
+				}
+
 				protected override void OnEnqueued(SingleExecuteProtector value, bool alreadyDispatched) {
 					base.OnEnqueued(value, alreadyDispatched);
 

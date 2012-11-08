@@ -112,6 +112,13 @@
 		}
 
 		/// <summary>
+		/// Gets the initial capacity for the queue.
+		/// </summary>
+		protected virtual int InitialCapacity {
+			get { return 4; }
+		}
+
+		/// <summary>
 		/// Signals that no further elements will be enqueued.
 		/// </summary>
 		public void Complete() {
@@ -170,7 +177,7 @@
 				if (dequeuer == null) {
 					// There were no waiting dequeuers, so actually add this element to our queue.
 					if (this.queueElements == null) {
-						this.queueElements = new Queue<T>();
+						this.queueElements = new Queue<T>(this.InitialCapacity);
 					}
 
 					this.queueElements.Enqueue(value);
