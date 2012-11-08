@@ -55,6 +55,9 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="..\Microsoft.Threading\ListOfOftenOne.cs">
+      <Link>ListOfOftenOne.cs</Link>
+    </Compile>
     <Compile Include="AsyncAutoResetEventTests.cs" />
     <Compile Include="AsyncBarrierTests.cs" />
     <Compile Include="AsyncCountdownEventTests.cs" />
@@ -68,6 +71,7 @@
     <Compile Include="AsyncReaderWriterLockTests.cs" />
     <Compile Include="AsyncReaderWriterResourceLockTests.cs" />
     <Compile Include="AwaitExtensionsTests.cs" />
+    <Compile Include="ListOfOftenOneTests.cs" />
     <Compile Include="ProgressWithCompletionTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestBase.cs" />

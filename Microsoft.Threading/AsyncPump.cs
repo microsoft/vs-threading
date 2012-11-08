@@ -154,16 +154,21 @@ namespace Microsoft.Threading {
 				// Invoke the function and alert the context when it completes
 				var t = asyncMethod();
 				Verify.Operation(t != null, "No task provided.");
-				t.ContinueWith(
-					(_, state) => ((SingleThreadSynchronizationContext)state).Complete(),
-					framework.AppliedContext,
-					CancellationToken.None,
-					TaskContinuationOptions.ExecuteSynchronously,
-					TaskScheduler.Default);
+				if (t.IsCompleted) {
+					framework.AppliedContext.Complete();
+				} else {
+					t.ContinueWith(
+						(_, state) => ((SingleThreadSynchronizationContext)state).Complete(),
+						framework.AppliedContext,
+						CancellationToken.None,
+						TaskContinuationOptions.ExecuteSynchronously,
+						TaskScheduler.Default);
 
-				// Pump continuations and propagate any exceptions
-				framework.AppliedContext.RunOnCurrentThread();
-				Assumes.True(t.IsCompleted);
+					// Pump continuations and propagate any exceptions
+					framework.AppliedContext.RunOnCurrentThread();
+					Assumes.True(t.IsCompleted);
+				}
+
 				t.GetAwaiter().GetResult();
 			}
 		}
@@ -181,16 +186,21 @@ namespace Microsoft.Threading {
 				// Invoke the function and alert the context when it completes
 				var t = asyncMethod();
 				Verify.Operation(t != null, "No task provided.");
-				t.ContinueWith(
-					(_, state) => ((SingleThreadSynchronizationContext)state).Complete(),
-					framework.AppliedContext,
-					CancellationToken.None,
-					TaskContinuationOptions.ExecuteSynchronously,
-					TaskScheduler.Default);
+				if (t.IsCompleted) {
+					framework.AppliedContext.Complete();
+				} else {
+					t.ContinueWith(
+						(_, state) => ((SingleThreadSynchronizationContext)state).Complete(),
+						framework.AppliedContext,
+						CancellationToken.None,
+						TaskContinuationOptions.ExecuteSynchronously,
+						TaskScheduler.Default);
 
-				// Pump continuations and propagate any exceptions
-				framework.AppliedContext.RunOnCurrentThread();
-				Assumes.True(t.IsCompleted);
+					// Pump continuations and propagate any exceptions
+					framework.AppliedContext.RunOnCurrentThread();
+					Assumes.True(t.IsCompleted);
+				}
+
 				return t.GetAwaiter().GetResult();
 			}
 		}
@@ -527,9 +537,9 @@ namespace Microsoft.Threading {
 			private object state;
 
 			/// <summary>
-			/// Backing field for the <see cref="Executing"/> event.
+			/// Stores execution callbacks for <see cref="AddExecutingCallback"/>.
 			/// </summary>
-			private event EventHandler executing;
+			private ListOfOftenOne<SingleThreadSynchronizationContext.ExecutionQueue> executingCallbacks;
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class.
@@ -541,18 +551,19 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>
-			/// An event raised when this instance is being executed.
+			/// Registers for a callback when this instance is executed.
 			/// </summary>
-			internal event EventHandler Executing {
-				add {
-					if (!this.HasBeenExecuted) {
-						this.executing += value;
-					}
+			internal void AddExecutingCallback(SingleThreadSynchronizationContext.ExecutionQueue callbackReceiver) {
+				if (!this.HasBeenExecuted) {
+					this.executingCallbacks.Add(callbackReceiver);
 				}
+			}
 
-				remove {
-					this.executing -= value;
-				}
+			/// <summary>
+			/// Unregisters a callback for when this instance is executed.
+			/// </summary>
+			internal void RemoveExecutingCallback(SingleThreadSynchronizationContext.ExecutionQueue callbackReceiver) {
+				this.executingCallbacks.Remove(callbackReceiver);
 			}
 
 			/// <summary>
@@ -636,15 +647,16 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>
-			/// Raises the <see cref="Executing"/> event.
+			/// Invokes <see cref="SingleThreadSynchronizationContext.ExecutionQueue.OnExecuting"/> handler.
 			/// </summary>
 			private void OnExecuting() {
 				// While raising the event, automatically remove the handlers since we'll only
 				// raise them once, and we'd like to avoid holding references that may extend
 				// the lifetime of our recipients.
-				var executing = Interlocked.Exchange(ref this.executing, null);
-				if (executing != null) {
-					executing(this, EventArgs.Empty);
+				using (var enumerator = this.executingCallbacks.EnumerateAndClear()) {
+					while (enumerator.MoveNext()) {
+						enumerator.Current.OnExecuting(this, EventArgs.Empty);
+					}
 				}
 			}
 		}
@@ -847,9 +859,9 @@ namespace Microsoft.Threading {
 				}
 			}
 
-			internal void AddJoinChild(SingleThreadSynchronizationContext syncContext) {
+			internal bool AddJoinChild(SingleThreadSynchronizationContext syncContext) {
 				Requires.NotNull(syncContext, "syncContext");
-				this.joinChildren.Add(syncContext);
+				return this.joinChildren.Add(syncContext);
 			}
 
 			internal IDisposable AddParent(SingleThreadSynchronizationContext syncContext) {
@@ -882,32 +894,29 @@ namespace Microsoft.Threading {
 				}
 			}
 
-			private void JoinParents_Changed(object sender, NotifyCollectionChangedEventArgs e) {
+			private void JoinParents_Changed(object sender, NotifyCollectionChangedEventArgs<SingleThreadSynchronizationContext> e) {
 				lock (this.syncObject) {
 					switch (e.Action) {
 						case NotifyCollectionChangedAction.Add:
-							foreach (SingleThreadSynchronizationContext parent in e.NewItems) {
-								List<JoinRelease> parentJoinList;
-								if (!this.releasers.TryGetValue(parent, out parentJoinList)) {
-									this.releasers[parent] = parentJoinList = new List<JoinRelease>();
-								}
+							SingleThreadSynchronizationContext parent = e.Value;
+							List<JoinRelease> parentJoinList;
+							if (!this.releasers.TryGetValue(parent, out parentJoinList)) {
+								this.releasers[parent] = parentJoinList = new List<JoinRelease>();
+							}
 
-								foreach (var child in this.joinChildren) {
-									parentJoinList.Add(parent.Join(child));
-								}
+							foreach (var child in this.joinChildren) {
+								parentJoinList.Add(parent.Join(child));
 							}
 
 							break;
 						case NotifyCollectionChangedAction.Remove:
-							foreach (SingleThreadSynchronizationContext parent in e.OldItems) {
-								List<JoinRelease> parentJoinList;
-								if (this.releasers.TryGetValue(parent, out parentJoinList)) {
-									foreach (var releaser in parentJoinList) {
-										releaser.Dispose();
-									}
-
-									this.releasers.Remove(parent);
+							parent = e.Value;
+							if (this.releasers.TryGetValue(parent, out parentJoinList)) {
+								foreach (var releaser in parentJoinList) {
+									releaser.Dispose();
 								}
+
+								this.releasers.Remove(parent);
 							}
 
 							break;
@@ -917,17 +926,18 @@ namespace Microsoft.Threading {
 				}
 			}
 
-			private void JoinChildren_Changed(object sender, NotifyCollectionChangedEventArgs e) {
+			private void JoinChildren_Changed(object sender, NotifyCollectionChangedEventArgs<SingleThreadSynchronizationContext> e) {
 				Assumes.True(e.Action == NotifyCollectionChangedAction.Add);
 				if (this.disposed) {
 					return;
 				}
 
-				foreach (SingleThreadSynchronizationContext addedChild in e.NewItems) {
-					lock (this.syncObject) {
-						// Add the child to our collection of children so that future parents can join them.
-						if (!this.disposed) {
-							// Also join any existing parents.
+				SingleThreadSynchronizationContext addedChild = e.Value;
+				lock (this.syncObject) {
+					// Add the child to our collection of children so that future parents can join them.
+					if (!this.disposed) {
+						// Also join any existing parents.
+						if (this.joinParents.Count > 0) {
 							foreach (var parent in this.joinParents) {
 								List<JoinRelease> parentJoinList;
 								if (!this.releasers.TryGetValue(parent, out parentJoinList)) {
@@ -997,12 +1007,9 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>Provides a SynchronizationContext that's single-threaded.</summary>
-		[DebuggerDisplay("UIThread: {affinityWithMainThread} Sync: {completingSynchronously} Queue: {queue.Count} Completed: {queue.Completion.IsCompleted}")]
+		[DebuggerDisplay("UIThread: {affinityWithMainThread} Sync: {completingSynchronously} Queue: {QueueLength} Completed: {IsCompleted}")]
 		private class SingleThreadSynchronizationContext : SynchronizationContext {
-			private readonly object syncObject = new object();
-
-			/// <summary>The queue of work items.</summary>
-			private readonly ExecutionQueue queue = new ExecutionQueue();
+			private readonly object syncObject;
 
 			/// <summary>The pump that created this instance.</summary>
 			private readonly AsyncPump asyncPump;
@@ -1027,19 +1034,32 @@ namespace Microsoft.Threading {
 			/// </summary>
 			private volatile bool completingSynchronously;
 
+			/// <summary>The queue of work items. Lazily constructed.</summary>
+			private ExecutionQueue queue;
+
+			/// <summary>A flag indicating that <see cref="Complete"/> has been invoked.</summary>
+			private bool completionRequested;
+
 			/// <summary>
-			/// A map of queues that we should be willing to dequeue from when we control the UI thread.
+			/// A map of queues that we should be willing to dequeue from when we control the UI thread. Lazily constructed.
 			/// </summary>
 			/// <remarks>
 			/// When the value in an entry is decremented to 0, the entry is removed from the map.
 			/// </remarks>
-			private Dictionary<SingleThreadSynchronizationContext, int> extraQueueSources =
-				new Dictionary<SingleThreadSynchronizationContext, int>();
+			private Dictionary<SingleThreadSynchronizationContext, int> extraQueueSources;
 
-			private CancellationTokenSource extraContextsChanged = new CancellationTokenSource();
+			/// <summary>
+			/// A token that is canceled whenever the contents of the <see cref="extraQueueSources"/> has changed.  Lazily constructed.
+			/// </summary>
+			private CancellationTokenSource extraContextsChanged;
 
 			/// <summary>The number of outstanding operations.</summary>
 			private int operationCount = 0;
+
+			/// <summary>
+			/// A list of releasers to dispose of when the queue is completed.
+			/// </summary>
+			private List<JoinRelease> releaseOnCompletion;
 
 			/// <summary>Initializes a new instance of the <see cref="SingleThreadSynchronizationContext"/> class.</summary>
 			/// <param name="asyncPump">The pump that owns this instance.</param>
@@ -1056,12 +1076,13 @@ namespace Microsoft.Threading {
 			internal SingleThreadSynchronizationContext(AsyncPump asyncPump, bool autoCompleteWhenOperationsReachZero, bool completingSynchronously, SynchronizationContext previousSyncContext = null, bool? affinitizedToMainThread = null) {
 				Requires.NotNull(asyncPump, "asyncPump");
 				Assumes.True(previousSyncContext != null || !affinitizedToMainThread.HasValue || !affinitizedToMainThread.Value);
+
+				this.syncObject = this; // these instances should be as cheap as possible, so reuse our own instance for synchronization.
 				this.asyncPump = asyncPump;
 				this.autoCompleteWhenOperationsReachZero = autoCompleteWhenOperationsReachZero;
 				this.previousSyncContext = previousSyncContext ?? SynchronizationContext.Current;
 				this.affinityWithMainThread = affinitizedToMainThread ?? Thread.CurrentThread == asyncPump.mainThread && this.asyncPump.underlyingSynchronizationContext != null;
 				this.completingSynchronously = completingSynchronously;
-				this.JoinMainThreadSyncContextAncestorIfApplicable();
 
 				if (this.affinityWithMainThread && this.previousSyncContext != null && this.previousSyncContext.GetType().IsEquivalentTo(typeof(SynchronizationContext))) {
 					// This is really bad as any code in VS could badly misbehave in this scenario.
@@ -1087,16 +1108,38 @@ namespace Microsoft.Threading {
 				get { return this.affinityWithMainThread; }
 			}
 
+			/// <summary>
+			/// Gets a value indicating whether all tasks this instance wil accept have been completed.
+			/// </summary>
+			internal bool IsCompleted {
+				get { return this.completionRequested && (this.queue == null || this.queue.IsCompleted); }
+			}
+
+			/// <summary>
+			/// Gets the current length of the queue.
+			/// </summary>
+			/// <remarks>
+			/// This property is for the DebuggerDisplay attribute on this class.
+			/// </remarks>
+			private int QueueLength {
+				get { return this.queue == null ? 0 : this.queue.Count; }
+			}
+
 			/// <summary>Dispatches an asynchronous message to the synchronization context.</summary>
 			/// <param name="d">The System.Threading.SendOrPostCallback delegate to call.</param>
 			/// <param name="state">The object passed to the delegate.</param>
 			public override void Post(SendOrPostCallback d, object state) {
 				Requires.NotNull(d, "d");
 
+				this.EnsureQueueInitializedUnlessCompleted();
+
 				// We'll be posting this message to (potentially) multiple queues, so we wrap
 				// the work up in an object that ensures the work executes no more than once.
 				var executor = SingleExecuteProtector.Create(this, d, state);
-				bool enqueuedSuccessfully = this.queue.TryEnqueue(executor);
+				bool enqueuedSuccessfully = false;
+				if (this.queue != null) {
+					enqueuedSuccessfully = this.queue.TryEnqueue(executor);
+				}
 
 				// Avoid posting the message elsewhere for processing when we're on a threadpool thread
 				// that won't be released till this work is done.
@@ -1134,7 +1177,39 @@ namespace Microsoft.Threading {
 
 			/// <summary>Notifies the context that no more work will arrive.</summary>
 			public void Complete() {
-				this.queue.Complete();
+				lock (this.syncObject) {
+					bool firstCompletionRequest = !this.completionRequested;
+					this.completionRequested = true;
+					if (this.queue != null) {
+						this.queue.Complete();
+					}
+
+					if (firstCompletionRequest) {
+						if (this.IsCompleted) {
+							this.OnCompleted();
+						} else {
+							Assumes.NotNull(this.queue);
+							this.queue.Completion.ContinueWith(
+								(_, state) => ((SingleThreadSynchronizationContext)state).OnCompleted(),
+								this,
+								CancellationToken.None,
+								TaskContinuationOptions.ExecuteSynchronously,
+								TaskScheduler.Default);
+						}
+					}
+				}
+			}
+
+			private void OnCompleted() {
+				lock (this.syncObject) {
+					if (this.releaseOnCompletion != null) {
+						foreach (var releaser in this.releaseOnCompletion) {
+							releaser.Dispose();
+						}
+
+						this.releaseOnCompletion = null;
+					}
+				}
 			}
 
 			/// <summary>Invoked when an async operation is started.</summary>
@@ -1160,9 +1235,14 @@ namespace Microsoft.Threading {
 			internal JoinRelease Join(SingleThreadSynchronizationContext other) {
 				Requires.NotNull(other, "other");
 
+				this.JoinMainThreadSyncContextAncestorIfApplicable();
 				if (this.affinityWithMainThread == other.affinityWithMainThread) {
 					CancellationTokenSource extraContextsChanged = null;
 					lock (this.syncObject) {
+						if (this.extraQueueSources == null) {
+							this.extraQueueSources = new Dictionary<SingleThreadSynchronizationContext, int>();
+						}
+
 						int refCount;
 						this.extraQueueSources.TryGetValue(other, out refCount);
 						refCount++;
@@ -1171,7 +1251,7 @@ namespace Microsoft.Threading {
 						// Only if the actual set of queues changed do we want to disrupt the cancellation token.
 						if (refCount == 1) {
 							extraContextsChanged = this.extraContextsChanged;
-							this.extraContextsChanged = new CancellationTokenSource();
+							this.extraContextsChanged = null;
 						}
 					}
 
@@ -1187,12 +1267,7 @@ namespace Microsoft.Threading {
 					var releaser = new JoinRelease(this, other);
 
 					// Arrange to automatically disjoin when the child context completes.
-					other.queue.Completion.ContinueWith(
-						(_, state) => ((JoinRelease)state).Dispose(),
-						releaser,
-						CancellationToken.None,
-						TaskContinuationOptions.None,
-						TaskScheduler.Default);
+					other.ReleaseJoinOnCompletion(releaser);
 
 					return releaser;
 				} else {
@@ -1203,8 +1278,8 @@ namespace Microsoft.Threading {
 			internal void Disjoin(SingleThreadSynchronizationContext other) {
 				CancellationTokenSource extraContextsChanged = null;
 				lock (this.syncObject) {
-					int refCount;
-					if (this.extraQueueSources.TryGetValue(other, out refCount)) {
+					int refCount = 0;
+					if (this.extraQueueSources != null && this.extraQueueSources.TryGetValue(other, out refCount)) {
 						if (--refCount <= 0) {
 							this.extraQueueSources.Remove(other);
 						} else {
@@ -1215,7 +1290,7 @@ namespace Microsoft.Threading {
 					// Only if the actual set of queues changed do we want to disrupt the cancellation token.
 					if (refCount == 0) {
 						extraContextsChanged = this.extraContextsChanged;
-						this.extraContextsChanged = new CancellationTokenSource();
+						this.extraContextsChanged = null;
 					}
 				}
 
@@ -1236,11 +1311,30 @@ namespace Microsoft.Threading {
 				Requires.NotNull(contextSet, "contextSet");
 				Requires.NotNull(context, "context");
 
-				if (!context.queue.Completion.IsCompleted) {
+				context.EnsureQueueInitializedUnlessCompleted();
+				if (!context.IsCompleted) {
 					if (contextSet.Add(context.queue)) {
-						foreach (var childContext in context.extraQueueSources.Keys) {
-							AddDependentQueues(contextSet, childContext);
+						SingleThreadSynchronizationContext[] extraQueueSourceKeys = null;
+						lock (context.syncObject) {
+							if (context.extraQueueSources != null) {
+								extraQueueSourceKeys = context.extraQueueSources.Keys.ToArray();
+							}
 						}
+
+						if (extraQueueSourceKeys != null) {
+							foreach (var childContext in extraQueueSourceKeys) {
+								AddDependentQueues(contextSet, childContext);
+							}
+						}
+					}
+				}
+			}
+
+			private void EnsureQueueInitializedUnlessCompleted() {
+				this.JoinMainThreadSyncContextAncestorIfApplicable();
+				lock (this.syncObject) {
+					if (this.queue == null && !this.completionRequested) {
+						this.queue = new ExecutionQueue();
 					}
 				}
 			}
@@ -1250,15 +1344,16 @@ namespace Microsoft.Threading {
 			/// will also be interesting for our parent to execute.
 			/// </summary>
 			private void JoinMainThreadSyncContextAncestorIfApplicable() {
-				this.asyncPump.ongoingSyncContexts.AddJoinChild(this);
-				if (this.affinityWithMainThread) {
-					// Select our nearest ancestor that will execute messages on the main thread.
-					var ancestor = this.asyncPump.MainThreadControllingSyncContext;
+				if (!this.IsCompleted && this.asyncPump.ongoingSyncContexts.AddJoinChild(this)) {
+					if (this.affinityWithMainThread) {
+						// Select our nearest ancestor that will execute messages on the main thread.
+						var ancestor = this.asyncPump.MainThreadControllingSyncContext;
 
-					// If there is no such ancestor, no joining is necessary.
-					if (ancestor != null) {
-						// Join our ancestor.  We'll automatically disjoin when our work is complete.
-						ancestor.Join(this);
+						// If there is no such ancestor, no joining is necessary.
+						if (ancestor != null) {
+							// Join our ancestor.  We'll automatically disjoin when our work is complete.
+							ancestor.Join(this);
+						}
 					}
 				}
 			}
@@ -1286,27 +1381,52 @@ namespace Microsoft.Threading {
 				}
 			}
 
+			private void ReleaseJoinOnCompletion(JoinRelease releaser) {
+				lock (this.syncObject) {
+					if (this.IsCompleted) {
+						releaser.Dispose();
+					} else {
+						if (this.releaseOnCompletion == null) {
+							this.releaseOnCompletion = new List<JoinRelease>(1);
+						}
+
+						this.releaseOnCompletion.Add(releaser);
+					}
+				}
+			}
+
 			private async Task<SingleExecuteProtector> DequeueFromAllSelfAndJoinedQueuesAsync() {
 				while (true) {
-					if (this.queue.Completion.IsCompleted) {
+					if (this.IsCompleted) {
 						return null;
 					}
 
 					CancellationToken extraContextsChangedToken;
 					HashSet<ExecutionQueue> applicableQueues;
 					lock (this.syncObject) {
+						if (this.extraContextsChanged == null) {
+							this.extraContextsChanged = new CancellationTokenSource();
+						}
+
 						extraContextsChangedToken = this.extraContextsChanged.Token;
 						applicableQueues = new HashSet<ExecutionQueue>();
 						AddDependentQueues(applicableQueues, this);
 					}
 
-					while (!extraContextsChangedToken.IsCancellationRequested && !this.queue.Completion.IsCompleted) {
+					while (!extraContextsChangedToken.IsCancellationRequested && !this.IsCompleted) {
 						// Check all queues to see if any have immediate work.
+						bool applicableQueuesOutdated = false;
 						foreach (var queue in applicableQueues) {
 							SingleExecuteProtector value;
 							if (queue.TryDequeue(out value)) {
 								return value;
+							} else if (queue.IsCompleted) {
+								applicableQueuesOutdated = true;
 							}
+						}
+
+						if (applicableQueuesOutdated) {
+							break;
 						}
 
 						// None of the queues had work to do right away.
@@ -1322,20 +1442,42 @@ namespace Microsoft.Threading {
 			/// A thread-safe queue of <see cref="SingleExecuteProtector"/> elements
 			/// that self-scavenges elements that are executed by other means.
 			/// </summary>
-			private class ExecutionQueue : AsyncQueue<SingleExecuteProtector> {
-				private readonly EventHandler onExecutingHandler;
-				private TaskCompletionSource<object> enqueuedNotification = new TaskCompletionSource<object>();
+			internal class ExecutionQueue : AsyncQueue<SingleExecuteProtector> {
+				private TaskCompletionSource<object> enqueuedNotification;
 
 				internal ExecutionQueue() {
-					this.onExecutingHandler = new EventHandler(this.OnExecuting);
-					this.Completion.ContinueWith((_, that) => ((ExecutionQueue)that).enqueuedNotification.TrySetResult(null), this, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
 				}
 
 				/// <summary>
 				/// Gets a task that completes when the queue is non-empty or completed.
 				/// </summary>
 				internal Task EnqueuedNotify {
-					get { return this.enqueuedNotification.Task; }
+					get {
+						if (this.enqueuedNotification == null) {
+							lock (this.SyncRoot) {
+								if (!this.IsEmpty || this.IsCompleted) {
+									// We're already non-empty or totally done, so avoid allocating a task
+									// by returning a singleton completed task.
+									return TplExtensions.CompletedTask;
+								}
+
+								if (this.enqueuedNotification == null) {
+									var tcs = new TaskCompletionSource<object>();
+									if (!this.IsEmpty) {
+										tcs.TrySetResult(null);
+									}
+
+									this.enqueuedNotification = tcs;
+								}
+							}
+						}
+
+						return this.enqueuedNotification.Task;
+					}
+				}
+
+				protected override int InitialCapacity {
+					get { return 1; } // in non-concurrent cases, 1 is sufficient.
 				}
 
 				protected override void OnEnqueued(SingleExecuteProtector value, bool alreadyDispatched) {
@@ -1344,7 +1486,7 @@ namespace Microsoft.Threading {
 					// We only need to consider scavenging our queue if this item was
 					// actually added to the queue.
 					if (!alreadyDispatched) {
-						value.Executing += this.onExecutingHandler; // Use cached handler to reduce GC pressure
+						value.AddExecutingCallback(this);
 
 						// It's possible this value has already been executed
 						// (before our event wire-up was applied). So check and
@@ -1353,31 +1495,52 @@ namespace Microsoft.Threading {
 							this.Scavenge();
 						}
 
-						// Also cause continuations to execute that may be waiting on a non-empty queue.
-						this.enqueuedNotification.TrySetResult(null);
+						TaskCompletionSource<object> notifyCompletionSource = null;
+						lock (this.SyncRoot) {
+							// Also cause continuations to execute that may be waiting on a non-empty queue.
+							// But be paranoid about whether the queue is still non-empty since this method
+							// isn't called within a lock.
+							if (!this.IsEmpty && this.enqueuedNotification != null && !this.enqueuedNotification.Task.IsCompleted) {
+								// Snag the task source to complete, but don't complete it until
+								// we're outside our lock so 3rd party code doesn't inline.
+								notifyCompletionSource = this.enqueuedNotification;
+							}
+						}
+
+						if (notifyCompletionSource != null) {
+							notifyCompletionSource.TrySetResult(null);
+						}
 					}
 				}
 
 				protected override void OnDequeued(SingleExecuteProtector value) {
 					base.OnDequeued(value);
-					value.Executing -= this.onExecutingHandler;
+					value.RemoveExecutingCallback(this);
 
-					if (this.Count == 0 && this.enqueuedNotification.Task.IsCompleted) {
-						var oldNotify = Interlocked.Exchange(ref this.enqueuedNotification, new TaskCompletionSource<object>());
-
-						// Race conditions suggest this just might be a different task than we observed in the if condition.
-						// We must mitigate the risk that someone has already seen that task and put continuations on it
-						// by unblocking them. They may see an empty queue, but can re-await at that point.
-						oldNotify.TrySetResult(null);
-
-						// Another race is that we're no longer empty, in which case be sure we've completed the task.
-						if (this.Count > 0) {
-							this.enqueuedNotification.TrySetResult(null);
+					lock (this.SyncRoot) {
+						// If the queue is now empty and we have a completed non-empty task, 
+						// clear the task field so that the next person to ask for a task that
+						// signals a non-empty queue will get an incompleted task.
+						if (this.IsEmpty && this.enqueuedNotification != null && this.enqueuedNotification.Task.IsCompleted) {
+							this.enqueuedNotification = null;
 						}
 					}
 				}
 
-				private void OnExecuting(object sender, EventArgs e) {
+				protected override void OnCompleted() {
+					base.OnCompleted();
+
+					TaskCompletionSource<object> notifyCompletionSource;
+					lock (this.SyncRoot) {
+						notifyCompletionSource = this.enqueuedNotification;
+					}
+
+					if (notifyCompletionSource != null) {
+						notifyCompletionSource.TrySetResult(null);
+					}
+				}
+
+				internal void OnExecuting(object sender, EventArgs e) {
 					this.Scavenge();
 				}
 
@@ -1497,11 +1660,34 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// Notifies listeners of dynamic changes, such as when items get added and removed
+		/// or the whole list is refreshed.
+		/// </summary>
+		private interface INotifyCollectionChanged<T> {
+			/// <summary>
+			/// Occurs when the collection changes.
+			/// </summary>
+			event EventHandler<NotifyCollectionChangedEventArgs<T>> CollectionChanged;
+		}
+
+		private struct NotifyCollectionChangedEventArgs<T> {
+			internal NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction action, T value)
+				: this() {
+				this.Action = action;
+				this.Value = value;
+			}
+
+			public NotifyCollectionChangedAction Action { get; private set; }
+
+			public T Value { get; private set; }
+		}
+
+		/// <summary>
 		/// A thread-safe, observable set.
 		/// </summary>
 		/// <typeparam name="T">The type of elements stored by the collection.</typeparam>
 		[DebuggerDisplay("Count = {Count}")]
-		private class ObservableSet<T> : ICollection<T>, INotifyCollectionChanged {
+		private class ObservableSet<T> : ICollection<T>, INotifyCollectionChanged<T> {
 			/// <summary>
 			/// The underlying hash set.
 			/// </summary>
@@ -1512,7 +1698,7 @@ namespace Microsoft.Threading {
 			/// </summary>
 			private readonly object syncObject = new object();
 
-			public event NotifyCollectionChangedEventHandler CollectionChanged;
+			public event EventHandler<NotifyCollectionChangedEventArgs<T>> CollectionChanged;
 
 			public int Count {
 				get {
@@ -1574,6 +1760,10 @@ namespace Microsoft.Threading {
 
 			public IEnumerator<T> GetEnumerator() {
 				lock (this.syncObject) {
+					if (this.collection.Count == 0) {
+						return Enumerable.Empty<T>().GetEnumerator();
+					}
+
 					return new List<T>(this.collection).GetEnumerator();
 				}
 			}
@@ -1585,7 +1775,7 @@ namespace Microsoft.Threading {
 			protected virtual void OnCollectionChanged(NotifyCollectionChangedAction action, T item) {
 				var changed = this.CollectionChanged;
 				if (changed != null) {
-					changed(this, new NotifyCollectionChangedEventArgs(action, item));
+					changed(this, new NotifyCollectionChangedEventArgs<T>(action, item));
 				}
 			}
 		}

@@ -1373,6 +1373,46 @@
 			outerJoinable.Join();
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void RunSynchronouslyTaskNoYieldGCPressure() {
+			this.CheckGCPressure(delegate {
+				this.asyncPump.RunSynchronously(delegate {
+					return TplExtensions.CompletedTask;
+				});
+			}, maxBytesAllocated: 245);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void RunSynchronouslyTaskOfTNoYieldGCPressure() {
+			Task<object> completedTask = Task.FromResult<object>(null);
+
+			this.CheckGCPressure(delegate {
+				this.asyncPump.RunSynchronously(delegate {
+					return completedTask;
+				});
+			}, maxBytesAllocated: 163);
+		}
+
+		[TestMethod/*, Timeout(TestTimeout)*/, Ignore]
+		public void RunSynchronouslyTaskWithYieldGCPressure() {
+			this.CheckGCPressure(delegate {
+				this.asyncPump.RunSynchronously(async delegate {
+					await Task.Yield();
+				});
+			}, maxBytesAllocated: 300);
+		}
+
+		[TestMethod/*, Timeout(TestTimeout)*/, Ignore]
+		public void RunSynchronouslyTaskOfTWithYieldGCPressure() {
+			Task<object> completedTask = Task.FromResult<object>(null);
+
+			this.CheckGCPressure(delegate {
+				this.asyncPump.RunSynchronously(async delegate {
+					await Task.Yield();
+				});
+			}, maxBytesAllocated: 300);
+		}
+
 		private static async void SomeFireAndForgetMethod() {
 			await Task.Yield();
 		}
