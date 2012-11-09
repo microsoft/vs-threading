@@ -81,6 +81,12 @@ namespace Microsoft.Threading {
 		private static readonly RollingLog<DiagnosticLogEntry> recentlyPostedMessages = new RollingLog<DiagnosticLogEntry>(20);
 
 		/// <summary>
+		/// The set of all unexecuted posted messages.  This isn't exposed anywhere publicly because
+		/// it is intended only as a debugging assistant.
+		/// </summary>
+		private static readonly HashSet<SingleExecuteProtector> pendingMessages = new HashSet<SingleExecuteProtector>();
+
+		/// <summary>
 		/// The WPF Dispatcher, or other SynchronizationContext that is applied to the Main thread.
 		/// </summary>
 		private readonly SynchronizationContext underlyingSynchronizationContext;
@@ -612,6 +618,10 @@ namespace Microsoft.Threading {
 			private SingleExecuteProtector(SingleThreadSynchronizationContext syncContext) {
 				Requires.NotNull(syncContext, "syncContext");
 				this.syncContext = syncContext;
+
+				lock (pendingMessages) {
+					pendingMessages.Add(this);
+				}
 			}
 
 			/// <summary>
@@ -714,6 +724,10 @@ namespace Microsoft.Threading {
 			/// Invokes <see cref="SingleThreadSynchronizationContext.ExecutionQueue.OnExecuting"/> handler.
 			/// </summary>
 			private void OnExecuting() {
+				lock (pendingMessages) {
+					pendingMessages.Remove(this);
+				}
+
 				// While raising the event, automatically remove the handlers since we'll only
 				// raise them once, and we'd like to avoid holding references that may extend
 				// the lifetime of our recipients.
