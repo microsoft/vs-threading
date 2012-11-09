@@ -18,6 +18,18 @@ namespace Microsoft.Threading {
 	/// <summary>Provides a pump that supports running asynchronous methods on the current thread.</summary>
 	public class AsyncPump {
 		/// <summary>
+		/// A "global" lock that allows the graph of interconnected sync context and JoinableSet instances
+		/// communicate in a thread-safe way without fear of deadlocks due to each taking their own private
+		/// lock and then calling others, thus leading to deadlocks from lock ordering issues.
+		/// </summary>
+		/// <remarks>
+		/// Yes, global locks should be avoided wherever possible. However even MEF from the .NET Framework
+		/// uses a global lock around critical composition operations because containers can be interconnected
+		/// in arbitrary ways. The code in this file has a very similar problem, so we use the same solution.
+		/// </remarks>
+		private static readonly ReaderWriterLockSlim SyncContextLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+
+		/// <summary>
 		/// A map of all the threads that instances of AsyncPump consider to be "Main" threads
 		/// (so in a typical app this map will contain one element) and access to
 		/// the Main thread's current synchronous SynchronizationContext that is conditionally
@@ -779,7 +791,12 @@ namespace Microsoft.Threading {
 			/// <param name="joinChild">The <see cref="SingleThreadSynchronizationContext"/> to join as a child.</param>
 			internal void AddDependency(object joinChild) {
 				Requires.NotNull(joinChild, "joinChild");
-				this.joinables.AddJoinChild((SingleThreadSynchronizationContext)joinChild);
+				SyncContextLock.EnterWriteLock();
+				try {
+					this.joinables.AddJoinChild((SingleThreadSynchronizationContext)joinChild);
+				} finally {
+					SyncContextLock.ExitWriteLock();
+				}
 			}
 		}
 
@@ -808,8 +825,6 @@ namespace Microsoft.Threading {
 
 		[DebuggerDisplay("Parents: {joinParents.Count} Children: {joinChildren.Count}")]
 		private class JoinableSet : IDisposable {
-			private readonly object syncObject = new object();
-
 			private readonly ObservableSet<SingleThreadSynchronizationContext> joinParents;
 
 			private readonly Dictionary<SingleThreadSynchronizationContext, int> joinedParentsRefCount;
@@ -841,7 +856,8 @@ namespace Microsoft.Threading {
 
 			public void Dispose() {
 				List<JoinRelease> releasers = null;
-				lock (this.syncObject) {
+				SyncContextLock.EnterWriteLock();
+				try {
 					if (this.releasers.Count > 0) {
 						releasers = new List<JoinRelease>(this.releasers.Values.SelectMany(v => v));
 						this.releasers.Clear();
@@ -850,6 +866,8 @@ namespace Microsoft.Threading {
 					this.disposed = true;
 					this.joinParents.CollectionChanged -= this.JoinParents_Changed;
 					this.joinChildren.CollectionChanged -= this.JoinChildren_Changed;
+				} finally {
+					SyncContextLock.ExitWriteLock();
 				}
 
 				if (releasers != null) {
@@ -866,7 +884,8 @@ namespace Microsoft.Threading {
 
 			internal IDisposable AddParent(SingleThreadSynchronizationContext syncContext) {
 				if (syncContext != null) {
-					lock (this.syncObject) {
+					SyncContextLock.EnterWriteLock();
+					try {
 						int oldParentCount;
 						this.joinedParentsRefCount.TryGetValue(syncContext, out oldParentCount);
 						this.joinedParentsRefCount[syncContext] = oldParentCount + 1;
@@ -877,7 +896,8 @@ namespace Microsoft.Threading {
 
 						return new OnDisposeAction(delegate {
 							int parentRefCount;
-							lock (this.syncObject) {
+							SyncContextLock.EnterWriteLock();
+							try {
 								if (this.joinedParentsRefCount.TryGetValue(syncContext, out parentRefCount)) {
 									if (parentRefCount == 1) {
 										this.joinParents.Remove(syncContext);
@@ -886,8 +906,12 @@ namespace Microsoft.Threading {
 										this.joinedParentsRefCount[syncContext] = parentRefCount - 1;
 									}
 								}
+							} finally {
+								SyncContextLock.ExitWriteLock();
 							}
 						});
+					} finally {
+						SyncContextLock.ExitWriteLock();
 					}
 				} else {
 					return OnDisposeAction.NoOpDefault;
@@ -895,57 +919,55 @@ namespace Microsoft.Threading {
 			}
 
 			private void JoinParents_Changed(object sender, NotifyCollectionChangedEventArgs<SingleThreadSynchronizationContext> e) {
-				lock (this.syncObject) {
-					switch (e.Action) {
-						case NotifyCollectionChangedAction.Add:
-							SingleThreadSynchronizationContext parent = e.Value;
-							List<JoinRelease> parentJoinList;
-							if (!this.releasers.TryGetValue(parent, out parentJoinList)) {
-								this.releasers[parent] = parentJoinList = new List<JoinRelease>();
+				Assumes.True(SyncContextLock.IsWriteLockHeld);
+				switch (e.Action) {
+					case NotifyCollectionChangedAction.Add:
+						SingleThreadSynchronizationContext parent = e.Value;
+						List<JoinRelease> parentJoinList;
+						if (!this.releasers.TryGetValue(parent, out parentJoinList)) {
+							this.releasers[parent] = parentJoinList = new List<JoinRelease>();
+						}
+
+						foreach (var child in this.joinChildren) {
+							parentJoinList.Add(parent.Join(child));
+						}
+
+						break;
+					case NotifyCollectionChangedAction.Remove:
+						parent = e.Value;
+						if (this.releasers.TryGetValue(parent, out parentJoinList)) {
+							foreach (var releaser in parentJoinList) {
+								releaser.Dispose();
 							}
 
-							foreach (var child in this.joinChildren) {
-								parentJoinList.Add(parent.Join(child));
-							}
+							this.releasers.Remove(parent);
+						}
 
-							break;
-						case NotifyCollectionChangedAction.Remove:
-							parent = e.Value;
-							if (this.releasers.TryGetValue(parent, out parentJoinList)) {
-								foreach (var releaser in parentJoinList) {
-									releaser.Dispose();
-								}
-
-								this.releasers.Remove(parent);
-							}
-
-							break;
-						default:
-							throw Assumes.Fail();
-					}
+						break;
+					default:
+						throw Assumes.Fail();
 				}
 			}
 
 			private void JoinChildren_Changed(object sender, NotifyCollectionChangedEventArgs<SingleThreadSynchronizationContext> e) {
+				Assumes.True(SyncContextLock.IsWriteLockHeld);
 				Assumes.True(e.Action == NotifyCollectionChangedAction.Add);
 				if (this.disposed) {
 					return;
 				}
 
 				SingleThreadSynchronizationContext addedChild = e.Value;
-				lock (this.syncObject) {
-					// Add the child to our collection of children so that future parents can join them.
-					if (!this.disposed) {
-						// Also join any existing parents.
-						if (this.joinParents.Count > 0) {
-							foreach (var parent in this.joinParents) {
-								List<JoinRelease> parentJoinList;
-								if (!this.releasers.TryGetValue(parent, out parentJoinList)) {
-									this.releasers[parent] = parentJoinList = new List<JoinRelease>();
-								}
-
-								parentJoinList.Add(parent.Join(addedChild));
+				// Add the child to our collection of children so that future parents can join them.
+				if (!this.disposed) {
+					// Also join any existing parents.
+					if (this.joinParents.Count > 0) {
+						foreach (var parent in this.joinParents) {
+							List<JoinRelease> parentJoinList;
+							if (!this.releasers.TryGetValue(parent, out parentJoinList)) {
+								this.releasers[parent] = parentJoinList = new List<JoinRelease>();
 							}
+
+							parentJoinList.Add(parent.Join(addedChild));
 						}
 					}
 				}
@@ -1009,8 +1031,6 @@ namespace Microsoft.Threading {
 		/// <summary>Provides a SynchronizationContext that's single-threaded.</summary>
 		[DebuggerDisplay("UIThread: {affinityWithMainThread} Sync: {completingSynchronously} Queue: {QueueLength} Completed: {IsCompleted}")]
 		private class SingleThreadSynchronizationContext : SynchronizationContext {
-			private readonly object syncObject;
-
 			/// <summary>The pump that created this instance.</summary>
 			private readonly AsyncPump asyncPump;
 
@@ -1077,7 +1097,6 @@ namespace Microsoft.Threading {
 				Requires.NotNull(asyncPump, "asyncPump");
 				Assumes.True(previousSyncContext != null || !affinitizedToMainThread.HasValue || !affinitizedToMainThread.Value);
 
-				this.syncObject = this; // these instances should be as cheap as possible, so reuse our own instance for synchronization.
 				this.asyncPump = asyncPump;
 				this.autoCompleteWhenOperationsReachZero = autoCompleteWhenOperationsReachZero;
 				this.previousSyncContext = previousSyncContext ?? SynchronizationContext.Current;
@@ -1177,7 +1196,8 @@ namespace Microsoft.Threading {
 
 			/// <summary>Notifies the context that no more work will arrive.</summary>
 			public void Complete() {
-				lock (this.syncObject) {
+				SyncContextLock.EnterWriteLock();
+				try {
 					bool firstCompletionRequest = !this.completionRequested;
 					this.completionRequested = true;
 					if (this.queue != null) {
@@ -1197,11 +1217,14 @@ namespace Microsoft.Threading {
 								TaskScheduler.Default);
 						}
 					}
+				} finally {
+					SyncContextLock.ExitWriteLock();
 				}
 			}
 
 			private void OnCompleted() {
-				lock (this.syncObject) {
+				SyncContextLock.EnterWriteLock();
+				try {
 					if (this.releaseOnCompletion != null) {
 						foreach (var releaser in this.releaseOnCompletion) {
 							releaser.Dispose();
@@ -1209,6 +1232,8 @@ namespace Microsoft.Threading {
 
 						this.releaseOnCompletion = null;
 					}
+				} finally {
+					SyncContextLock.ExitWriteLock();
 				}
 			}
 
@@ -1238,7 +1263,8 @@ namespace Microsoft.Threading {
 				this.JoinMainThreadSyncContextAncestorIfApplicable();
 				if (this.affinityWithMainThread == other.affinityWithMainThread) {
 					CancellationTokenSource extraContextsChanged = null;
-					lock (this.syncObject) {
+					SyncContextLock.EnterWriteLock();
+					try {
 						if (this.extraQueueSources == null) {
 							this.extraQueueSources = new Dictionary<SingleThreadSynchronizationContext, int>();
 						}
@@ -1253,6 +1279,8 @@ namespace Microsoft.Threading {
 							extraContextsChanged = this.extraContextsChanged;
 							this.extraContextsChanged = null;
 						}
+					} finally {
+						SyncContextLock.ExitWriteLock();
 					}
 
 					var nestingSyncContext = this.previousSyncContext as SingleThreadSynchronizationContext;
@@ -1277,7 +1305,8 @@ namespace Microsoft.Threading {
 
 			internal void Disjoin(SingleThreadSynchronizationContext other) {
 				CancellationTokenSource extraContextsChanged = null;
-				lock (this.syncObject) {
+				SyncContextLock.EnterWriteLock();
+				try {
 					int refCount = 0;
 					if (this.extraQueueSources != null && this.extraQueueSources.TryGetValue(other, out refCount)) {
 						if (--refCount <= 0) {
@@ -1292,6 +1321,8 @@ namespace Microsoft.Threading {
 						extraContextsChanged = this.extraContextsChanged;
 						this.extraContextsChanged = null;
 					}
+				} finally {
+					SyncContextLock.ExitWriteLock();
 				}
 
 				var nestingSyncContext = this.previousSyncContext as SingleThreadSynchronizationContext;
@@ -1315,27 +1346,38 @@ namespace Microsoft.Threading {
 				if (!context.IsCompleted) {
 					if (contextSet.Add(context.queue)) {
 						SingleThreadSynchronizationContext[] extraQueueSourceKeys = null;
-						lock (context.syncObject) {
+						SyncContextLock.EnterReadLock();
+						try {
 							if (context.extraQueueSources != null) {
 								extraQueueSourceKeys = context.extraQueueSources.Keys.ToArray();
 							}
-						}
 
-						if (extraQueueSourceKeys != null) {
-							foreach (var childContext in extraQueueSourceKeys) {
-								AddDependentQueues(contextSet, childContext);
+							if (extraQueueSourceKeys != null) {
+								foreach (var childContext in extraQueueSourceKeys) {
+									AddDependentQueues(contextSet, childContext);
+								}
 							}
+						} finally {
+							SyncContextLock.ExitReadLock();
 						}
 					}
 				}
 			}
 
 			private void EnsureQueueInitializedUnlessCompleted() {
-				this.JoinMainThreadSyncContextAncestorIfApplicable();
-				lock (this.syncObject) {
+				SyncContextLock.EnterUpgradeableReadLock();
+				try {
+					this.JoinMainThreadSyncContextAncestorIfApplicable();
 					if (this.queue == null && !this.completionRequested) {
-						this.queue = new ExecutionQueue();
+						SyncContextLock.EnterWriteLock();
+						try {
+							this.queue = new ExecutionQueue();
+						} finally {
+							SyncContextLock.ExitWriteLock();
+						}
 					}
+				} finally {
+					SyncContextLock.ExitUpgradeableReadLock();
 				}
 			}
 
@@ -1344,17 +1386,29 @@ namespace Microsoft.Threading {
 			/// will also be interesting for our parent to execute.
 			/// </summary>
 			private void JoinMainThreadSyncContextAncestorIfApplicable() {
-				if (!this.IsCompleted && this.asyncPump.ongoingSyncContexts.AddJoinChild(this)) {
-					if (this.affinityWithMainThread) {
-						// Select our nearest ancestor that will execute messages on the main thread.
-						var ancestor = this.asyncPump.MainThreadControllingSyncContext;
+				SyncContextLock.EnterUpgradeableReadLock();
+				try {
+					if (!this.IsCompleted) {
+						SyncContextLock.EnterWriteLock();
+						try {
+							if (this.asyncPump.ongoingSyncContexts.AddJoinChild(this)) {
+								if (this.affinityWithMainThread) {
+									// Select our nearest ancestor that will execute messages on the main thread.
+									var ancestor = this.asyncPump.MainThreadControllingSyncContext;
 
-						// If there is no such ancestor, no joining is necessary.
-						if (ancestor != null) {
-							// Join our ancestor.  We'll automatically disjoin when our work is complete.
-							ancestor.Join(this);
+									// If there is no such ancestor, no joining is necessary.
+									if (ancestor != null) {
+										// Join our ancestor.  We'll automatically disjoin when our work is complete.
+										ancestor.Join(this);
+									}
+								}
+							}
+						} finally {
+							SyncContextLock.ExitWriteLock();
 						}
 					}
+				} finally {
+					SyncContextLock.ExitUpgradeableReadLock();
 				}
 			}
 
@@ -1382,7 +1436,9 @@ namespace Microsoft.Threading {
 			}
 
 			private void ReleaseJoinOnCompletion(JoinRelease releaser) {
-				lock (this.syncObject) {
+				SyncContextLock.EnterWriteLock();
+				try {
+
 					if (this.IsCompleted) {
 						releaser.Dispose();
 					} else {
@@ -1392,6 +1448,8 @@ namespace Microsoft.Threading {
 
 						this.releaseOnCompletion.Add(releaser);
 					}
+				} finally {
+					SyncContextLock.ExitWriteLock();
 				}
 			}
 
@@ -1403,7 +1461,8 @@ namespace Microsoft.Threading {
 
 					CancellationToken extraContextsChangedToken;
 					HashSet<ExecutionQueue> applicableQueues;
-					lock (this.syncObject) {
+					SyncContextLock.EnterUpgradeableReadLock();
+					try {
 						if (this.extraContextsChanged == null) {
 							this.extraContextsChanged = new CancellationTokenSource();
 						}
@@ -1411,6 +1470,8 @@ namespace Microsoft.Threading {
 						extraContextsChangedToken = this.extraContextsChanged.Token;
 						applicableQueues = new HashSet<ExecutionQueue>();
 						AddDependentQueues(applicableQueues, this);
+					} finally {
+						SyncContextLock.ExitUpgradeableReadLock();
 					}
 
 					while (!extraContextsChangedToken.IsCancellationRequested && !this.IsCompleted) {
