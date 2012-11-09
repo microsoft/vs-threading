@@ -44,6 +44,17 @@ namespace Microsoft.Threading {
 		private static readonly AsyncLocal<Joinable> joinableOperation = new AsyncLocal<Joinable>();
 
 		/// <summary>
+		/// A rolling queue of the last several messages that were posted to any sync context controlled by AsyncPump.
+		/// </summary>
+		/// <remarks>
+		/// The tuple represents:
+		///  Item1: the SynchronizationContext whose queue was posted to. (null if threadpool)
+		///  Item2: the work that was posted.
+		///  Item3: whether the work was actually posted (false if it was considered and skipped).
+		/// </remarks>
+		private static readonly RollingLog<Tuple<SynchronizationContext, SingleExecuteProtector, bool>> recentlyPostedMessages = new RollingLog<Tuple<SynchronizationContext, SingleExecuteProtector, bool>>(20) { IsEnabled = false };
+
+		/// <summary>
 		/// The WPF Dispatcher, or other SynchronizationContext that is applied to the Main thread.
 		/// </summary>
 		private readonly SynchronizationContext underlyingSynchronizationContext;
@@ -82,6 +93,15 @@ namespace Microsoft.Threading {
 			this.promotableSyncContext = new PromotableMainThreadSynchronizationContext(this);
 			this.mainThreadSwitchingSyncContext = new SingleThreadSynchronizationContext(this, false, false, this.underlyingSynchronizationContext, this.underlyingSynchronizationContext != null);
 			this.mainThreadTaskScheduler = new MainThreadScheduler(this);
+		}
+
+		/// <summary>
+		/// Gets or sets a value indicating whether all instances of <see cref="AsyncPump"/>
+		/// in this app domain participate in the rolling diagnostic log.
+		/// </summary>
+		public static bool EnableRollingDiagnosticLog {
+			get { return recentlyPostedMessages.IsEnabled; }
+			set { recentlyPostedMessages.IsEnabled = value; }
 		}
 
 		/// <summary>
@@ -1158,6 +1178,7 @@ namespace Microsoft.Threading {
 				bool enqueuedSuccessfully = false;
 				if (this.queue != null) {
 					enqueuedSuccessfully = this.queue.TryEnqueue(executor);
+					recentlyPostedMessages.Enqueue(Tuple.Create<SynchronizationContext, SingleExecuteProtector, bool>(this, executor, enqueuedSuccessfully));
 				}
 
 				// Avoid posting the message elsewhere for processing when we're on a threadpool thread
@@ -1428,10 +1449,12 @@ namespace Microsoft.Threading {
 					// as our host may want to customize behavior (adjusting message priority for example).
 					if (this.asyncPump.underlyingSynchronizationContext != null) {
 						this.asyncPump.PostToUnderlyingSynchronizationContext(this.asyncPump.underlyingSynchronizationContext, SingleExecuteProtector.ExecuteOnce, wrapper);
+						recentlyPostedMessages.Enqueue(Tuple.Create<SynchronizationContext, SingleExecuteProtector, bool>(this.asyncPump.underlyingSynchronizationContext, wrapper, true));
 					}
 				} else {
 					Assumes.False(wrapper.RequiresMainThread);
 					ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
+					recentlyPostedMessages.Enqueue(Tuple.Create<SynchronizationContext, SingleExecuteProtector, bool>(null, wrapper, true));
 				}
 			}
 
@@ -1643,6 +1666,7 @@ namespace Microsoft.Threading {
 			public override void Post(SendOrPostCallback d, object state) {
 				var executor = SingleExecuteProtector.Create(this.asyncPump.mainThreadSwitchingSyncContext, d, state);
 				this.asyncPump.mainThreadSwitchingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, executor);
+				recentlyPostedMessages.Enqueue(Tuple.Create<SynchronizationContext, SingleExecuteProtector, bool>(this, executor, true));
 			}
 
 			/// <summary>
