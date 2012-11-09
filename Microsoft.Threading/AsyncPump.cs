@@ -41,6 +41,11 @@ namespace Microsoft.Threading {
 			/// Includes stack traces.
 			/// </summary>
 			Callstacks = 0x4,
+
+			/// <summary>
+			/// All logging details included.
+			/// </summary>
+			All = 0xf,
 		}
 
 		/// <summary>
