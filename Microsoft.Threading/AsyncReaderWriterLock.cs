@@ -123,13 +123,6 @@ namespace Microsoft.Threading {
 		private bool captureDiagnostics;
 
 		/// <summary>
-		/// A task that is incomplete during the transition from a write lock
-		/// to an upgradeable read lock when callbacks and other code must be invoked without ANY
-		/// locks being issued.
-		/// </summary>
-		private Task reenterConcurrencyPrep = TplExtensions.CompletedTask;
-
-		/// <summary>
 		/// A flag indicating whether we're currently running code to prepare for re-entering concurrency mode
 		/// after releasing an exclusive lock.
 		/// </summary>
@@ -983,6 +976,7 @@ namespace Microsoft.Threading {
 
 			Task reenterConcurrentOutsideCode = null;
 			Task synchronousCallbackExecution = null;
+			bool synchronousRequired = false;
 			lock (this.syncObject) {
 				// In case this is a sticky write lock, it may also belong to the write locks issued collection.
 				bool upgradedStickyWrite = awaiter.Kind == LockKind.UpgradeableRead
@@ -995,13 +989,12 @@ namespace Microsoft.Threading {
 				int upgradeableReadLocksAfter = upgradeableReadLocksBefore - (awaiter.Kind == LockKind.UpgradeableRead ? 1 : 0);
 				bool finalExclusiveLockRelease = writeLocksBefore > 0 && writeLocksAfter == 0;
 
+				Task callbackExecution = TplExtensions.CompletedTask;
 				if (!lockConsumerCanceled) {
 					// Callbacks should be fired synchronously iff the last write lock is being released and read locks are already issued.
 					// This can occur when upgradeable read locks are held and upgraded, and then downgraded back to an upgradeable read.
-					Task callbackExecution = this.OnBeforeLockReleasedAsync(finalExclusiveLockRelease);
-					bool synchronousRequired = this.issuedReadLocks.Count > 0;
-					synchronousRequired |= this.issuedUpgradeableReadLocks.Count > 1;
-					synchronousRequired |= this.issuedUpgradeableReadLocks.Count == 1 && !this.issuedUpgradeableReadLocks.Contains(awaiter);
+					callbackExecution = this.OnBeforeLockReleasedAsync(finalExclusiveLockRelease) ?? TplExtensions.CompletedTask;
+					synchronousRequired = finalExclusiveLockRelease && upgradeableReadLocksAfter > 0;
 					if (synchronousRequired) {
 						synchronousCallbackExecution = callbackExecution;
 					}
@@ -1015,8 +1008,7 @@ namespace Microsoft.Threading {
 							// The Task.Run is invoked from another method so that C# doesn't allocate the anonymous delegate
 							// it uses unless we actually are going to invoke it -- 
 							if (fireWriteLockReleased) {
-								reenterConcurrentOutsideCode = this.DowngradeLockAsync(awaiter, upgradedStickyWrite, fireUpgradeableReadLockReleased);
-								this.reenterConcurrencyPrep = reenterConcurrentOutsideCode;
+								reenterConcurrentOutsideCode = this.DowngradeLockAsync(awaiter, upgradedStickyWrite, fireUpgradeableReadLockReleased, callbackExecution);
 							} else if (fireUpgradeableReadLockReleased) {
 								this.OnUpgradeableReadLockReleased();
 							}
@@ -1029,21 +1021,42 @@ namespace Microsoft.Threading {
 				}
 			}
 
-			if (reenterConcurrentOutsideCode != null && (synchronousCallbackExecution != null && !synchronousCallbackExecution.IsCompleted)) {
-				return Task.WhenAll(reenterConcurrentOutsideCode, synchronousCallbackExecution);
+			if (synchronousRequired || true) { // the "|| true" bit is to force us to always be synchronous when releasing locks until we can get all tests passing the other way.
+				if (reenterConcurrentOutsideCode != null && (synchronousCallbackExecution != null && !synchronousCallbackExecution.IsCompleted)) {
+					return Task.WhenAll(reenterConcurrentOutsideCode, synchronousCallbackExecution);
+				} else {
+					return reenterConcurrentOutsideCode ?? synchronousCallbackExecution ?? TplExtensions.CompletedTask;
+				}
 			} else {
-				return reenterConcurrentOutsideCode ?? synchronousCallbackExecution ?? TplExtensions.CompletedTask;
+				return TplExtensions.CompletedTask;
 			}
 		}
 
 		/// <summary>
 		/// Schedules work on a background thread that will prepare protected resource(s) for concurrent access.
 		/// </summary>
-		private async Task DowngradeLockAsync(Awaiter awaiter, bool upgradedStickyWrite, bool fireUpgradeableReadLockReleased) {
-			Assumes.True(Monitor.IsEntered(this.syncObject));
+		private async Task DowngradeLockAsync(Awaiter awaiter, bool upgradedStickyWrite, bool fireUpgradeableReadLockReleased, Task beginAfterPrerequisite) {
+			Requires.NotNull(awaiter, "awaiter");
+			Requires.NotNull(beginAfterPrerequisite, "beginAfterPrerequisite");
 
-			this.reenterConcurrencyPrepRunning = true;
-			await this.OnExclusiveLockReleasedAsync().ConfigureAwait(false);
+			Exception prereqException = null;
+			try {
+				if (SynchronizationContext.Current is NonConcurrentSynchronizationContext) {
+					await beginAfterPrerequisite;
+				} else {
+					await beginAfterPrerequisite.ConfigureAwait(false);
+				}
+			} catch (Exception ex) {
+				prereqException = ex;
+			}
+
+			Task onExclusiveLockReleasedTask;
+			lock (this.syncObject) {
+				this.reenterConcurrencyPrepRunning = true;
+				onExclusiveLockReleasedTask = this.OnExclusiveLockReleasedAsync();
+			}
+
+			await onExclusiveLockReleasedTask.ConfigureAwait(false);
 
 			if (fireUpgradeableReadLockReleased) {
 				// This will only fire when the outermost upgradeable read is not itself nested by a write lock,
@@ -1058,6 +1071,11 @@ namespace Microsoft.Threading {
 				// ever impact the client code, and changing the CallContext now would cause the data to be cloned,
 				// allocating more memory wastefully.
 				this.OnReleaseReenterConcurrencyComplete(awaiter, upgradedStickyWrite, searchAllWaiters: true, updateCallContext: false);
+			}
+
+			if (prereqException != null) {
+				// rethrow the exception we experienced before, such that it doesn't wipe out its callstack.
+				System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(prereqException).Throw();
 			}
 		}
 

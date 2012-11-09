@@ -33,8 +33,9 @@
 
 		[TestCleanup]
 		public void Cleanup() {
+			string testName = this.TestContext.TestName;
 			this.asyncLock.Complete();
-			this.asyncLock.Completion.GetAwaiter().GetResult();
+			Assert.IsTrue(this.asyncLock.Completion.Wait(2000));
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -1080,7 +1081,7 @@
 			var asyncLock = new LockDerived();
 			asyncLock.OnBeforeExclusiveLockReleasedAsyncDelegate = async delegate {
 				using (var innerReleaser = await asyncLock.WriteLockAsync()) {
-					await onExclusiveLockReleasedBegun;
+					await Task.WhenAny(onExclusiveLockReleasedBegun.WaitAsync(), Task.Delay(AsyncDelay));
 					await innerReleaser.ReleaseAsync();
 					innerLockReleased.Set();
 				}
@@ -2208,7 +2209,7 @@
 				try {
 					Assert.IsTrue(asyncLock.IsWriteLockHeld);
 					await Task.Yield();
-					Assert.IsFalse(asyncLock.IsWriteLockHeld); // yielding without claiming a lock should lose access to the lock. (TODO: this feels weird)
+					Assert.IsTrue(asyncLock.IsWriteLockHeld);
 					callbackCompleted.SetResult(null);
 				} catch (Exception ex) {
 					callbackCompleted.SetException(ex);
@@ -2231,7 +2232,7 @@
 						Assert.IsTrue(asyncLock.IsWriteLockHeld);
 						Assert.IsTrue(asyncLock.IsReadLockHeld);
 						await Task.Yield();
-						Assert.IsFalse(asyncLock.IsWriteLockHeld);
+						Assert.IsTrue(asyncLock.IsWriteLockHeld);
 						Assert.IsTrue(asyncLock.IsReadLockHeld);
 					}
 
@@ -2395,14 +2396,20 @@
 		public async Task OnBeforeWriteLockReleasedDelegateThrows() {
 			var afterWriteLock = new TaskCompletionSource<object>();
 			var exceptionToThrow = new ApplicationException();
-			using (await this.asyncLock.WriteLockAsync()) {
-				this.asyncLock.OnBeforeWriteLockReleased(delegate {
-					afterWriteLock.SetResult(null);
-					throw exceptionToThrow;
-				});
+			try {
+				using (await this.asyncLock.WriteLockAsync()) {
+					this.asyncLock.OnBeforeWriteLockReleased(delegate {
+						afterWriteLock.SetResult(null);
+						throw exceptionToThrow;
+					});
 
-				Assert.IsFalse(afterWriteLock.Task.IsCompleted);
-				this.asyncLock.Complete();
+					Assert.IsFalse(afterWriteLock.Task.IsCompleted);
+					this.asyncLock.Complete();
+				}
+
+				Assert.Fail("Expected exception not thrown.");
+			} catch (AggregateException ex) {
+				Assert.AreSame(exceptionToThrow, ex.Flatten().InnerException);
 			}
 
 			Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
@@ -2460,7 +2467,13 @@
 						Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 						await Task.Delay(AsyncDelay);
 						Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
-						await releaseCallback.Task;
+
+						// Technically this callback should be able to complete asynchronously
+						// with respect to the thread that released the lock, but for now that
+						// feature is disabled to keep things a bit sane (it also gives us a
+						// listener if one of the exclusive lock callbacks throw an exception).
+						////await releaseCallback.Task;
+
 						callbackEnding.SetResult(null); // don't use Set() extension method because that's asynchronous, and we measure this to verify ordered behavior.
 					});
 				}
@@ -2468,7 +2481,10 @@
 				Assert.IsFalse(callbackBegin.Task.IsCompleted, "This shouldn't have run yet because the upgradeable read lock bounding the write lock is a sticky one.");
 			}
 
-			Assert.IsFalse(callbackEnding.Task.IsCompleted, "This should have completed asynchronously because no read lock remained after the sticky upgraded read lock was released.");
+			// This next assert is commented out because (again), the lock's current behavior is to
+			// synchronously block when releasing locks, even if it's arguably not necessary.
+			////Assert.IsFalse(callbackEnding.Task.IsCompleted, "This should have completed asynchronously because no read lock remained after the sticky upgraded read lock was released.");
+			Assert.IsTrue(callbackEnding.Task.IsCompleted, "Once this fails, uncomment the previous assert and the await earlier in the test if it's intended behavior.");
 			await releaseCallback.SetAsync();
 
 			// Because the callbacks are fired asynchronously, we must wait for it to settle before allowing the test to finish
@@ -2506,8 +2522,13 @@
 
 						await Task.Yield();
 						Assert.IsTrue(asyncLock.IsWriteLockHeld);
-						await releaseCallback.Task;
-						Assert.IsTrue(asyncLock.IsWriteLockHeld);
+
+						// Technically this callback should be able to complete asynchronously
+						// with respect to the thread that released the lock, but for now that
+						// feature is disabled to keep things a bit sane (it also gives us a
+						// listener if one of the exclusive lock callbacks throw an exception).
+						////await releaseCallback.Task;
+						////Assert.IsTrue(asyncLock.IsWriteLockHeld);
 					});
 				}
 			}
