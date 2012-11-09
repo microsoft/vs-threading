@@ -92,9 +92,10 @@
 				if (this.completedSource == null) {
 					lock (this.syncObject) {
 						if (this.completedSource == null) {
-							this.completedSource = new TaskCompletionSource<object>();
 							if (this.IsCompleted) {
-								this.completedSource.SetResult(null);
+								return TplExtensions.CompletedTask;
+							} else {
+								this.completedSource = new TaskCompletionSource<object>();
 							}
 						}
 					}
