@@ -52,7 +52,7 @@ namespace Microsoft.Threading {
 		///  Item2: the work that was posted.
 		///  Item3: whether the work was actually posted (false if it was considered and skipped).
 		/// </remarks>
-		private static readonly RollingLog<Tuple<SynchronizationContext, SingleExecuteProtector, bool>> recentlyPostedMessages = new RollingLog<Tuple<SynchronizationContext, SingleExecuteProtector, bool>>(20) { IsEnabled = false };
+		private static readonly RollingLog<DiagnosticLogEntry> recentlyPostedMessages = new RollingLog<DiagnosticLogEntry>(20) { IsEnabled = false };
 
 		/// <summary>
 		/// The WPF Dispatcher, or other SynchronizationContext that is applied to the Main thread.
@@ -460,6 +460,15 @@ namespace Microsoft.Threading {
 				// significantly simplify investigation if the heap only has live awaitables
 				// remaining (completed ones GC'd). So run the GC now and then keep waiting.
 				GC.Collect();
+			}
+		}
+
+		/// <summary>
+		/// When logging is enabled, this logs the details of this work to the rolling diagnostic log.
+		/// </summary>
+		private static void Log(SynchronizationContext syncContext, SingleExecuteProtector work, bool successful = true) {
+			if (recentlyPostedMessages.IsEnabled) {
+				recentlyPostedMessages.Enqueue(new DiagnosticLogEntry(syncContext, work, successful));
 			}
 		}
 
@@ -1178,7 +1187,7 @@ namespace Microsoft.Threading {
 				bool enqueuedSuccessfully = false;
 				if (this.queue != null) {
 					enqueuedSuccessfully = this.queue.TryEnqueue(executor);
-					recentlyPostedMessages.Enqueue(Tuple.Create<SynchronizationContext, SingleExecuteProtector, bool>(this, executor, enqueuedSuccessfully));
+					Log(this, executor, enqueuedSuccessfully);
 				}
 
 				// Avoid posting the message elsewhere for processing when we're on a threadpool thread
@@ -1449,12 +1458,12 @@ namespace Microsoft.Threading {
 					// as our host may want to customize behavior (adjusting message priority for example).
 					if (this.asyncPump.underlyingSynchronizationContext != null) {
 						this.asyncPump.PostToUnderlyingSynchronizationContext(this.asyncPump.underlyingSynchronizationContext, SingleExecuteProtector.ExecuteOnce, wrapper);
-						recentlyPostedMessages.Enqueue(Tuple.Create<SynchronizationContext, SingleExecuteProtector, bool>(this.asyncPump.underlyingSynchronizationContext, wrapper, true));
+						Log(this.asyncPump.underlyingSynchronizationContext, wrapper);
 					}
 				} else {
 					Assumes.False(wrapper.RequiresMainThread);
 					ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
-					recentlyPostedMessages.Enqueue(Tuple.Create<SynchronizationContext, SingleExecuteProtector, bool>(null, wrapper, true));
+					Log(null, wrapper);
 				}
 			}
 
@@ -1666,7 +1675,7 @@ namespace Microsoft.Threading {
 			public override void Post(SendOrPostCallback d, object state) {
 				var executor = SingleExecuteProtector.Create(this.asyncPump.mainThreadSwitchingSyncContext, d, state);
 				this.asyncPump.mainThreadSwitchingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, executor);
-				recentlyPostedMessages.Enqueue(Tuple.Create<SynchronizationContext, SingleExecuteProtector, bool>(this, executor, true));
+				Log(this, executor);
 			}
 
 			/// <summary>
@@ -2009,6 +2018,24 @@ namespace Microsoft.Threading {
 				}
 
 				joinableOperation.Value = this.previousJoinable;
+			}
+		}
+
+		private struct DiagnosticLogEntry {
+			private readonly SynchronizationContext synchronizationContext;
+			private readonly SingleExecuteProtector work;
+			private readonly bool successfullyQueued;
+			private readonly DateTime timestamp;
+			private readonly StackTrace stackTrace;
+			private readonly string stackTraceString;
+
+			internal DiagnosticLogEntry(SynchronizationContext context, SingleExecuteProtector work, bool successful = true) {
+				this.synchronizationContext = context;
+				this.work = work;
+				this.successfullyQueued = successful;
+				this.timestamp = DateTime.Now;
+				this.stackTrace = new StackTrace(2, true);
+				this.stackTraceString = this.stackTrace.ToString();
 			}
 		}
 	}
