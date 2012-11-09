@@ -1073,6 +1073,27 @@
 			Assert.AreEqual(1, onReleaseInvocations);
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task OnExclusiveLockReleasedAsyncAcquiresProjectLock() {
+			var innerLockReleased = new AsyncManualResetEvent();
+			var onExclusiveLockReleasedBegun = new AsyncManualResetEvent();
+			var asyncLock = new LockDerived();
+			asyncLock.OnBeforeExclusiveLockReleasedAsyncDelegate = async delegate {
+				using (var innerReleaser = await asyncLock.WriteLockAsync()) {
+					await onExclusiveLockReleasedBegun;
+					await innerReleaser.ReleaseAsync();
+					innerLockReleased.Set();
+				}
+			};
+			asyncLock.OnExclusiveLockReleasedAsyncDelegate = async delegate {
+				onExclusiveLockReleasedBegun.Set();
+				await innerLockReleased;
+			};
+			using (var releaser = await asyncLock.WriteLockAsync()) {
+				await releaser.ReleaseAsync();
+			}
+		}
+
 		[TestMethod, Timeout(TestTimeout * 2)]
 		public async Task MitigationAgainstAccidentalUpgradeableReadLockConcurrency() {
 			using (await this.asyncLock.WriteLockAsync()) {
