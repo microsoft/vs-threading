@@ -18,6 +18,32 @@ namespace Microsoft.Threading {
 	/// <summary>Provides a pump that supports running asynchronous methods on the current thread.</summary>
 	public class AsyncPump {
 		/// <summary>
+		/// Describes various options for logging to assist in hang investigations.
+		/// </summary>
+		[Flags]
+		public enum LoggingLevel {
+			/// <summary>
+			/// No logging occurs.
+			/// </summary>
+			None = 0x0,
+
+			/// <summary>
+			/// Recent messages are kept in a rolling log, but stack traces are not collected.
+			/// </summary>
+			Messages = 0x1,
+
+			/// <summary>
+			/// Collects the system time for each posted message.
+			/// </summary>
+			Timestamp = 0x2,
+
+			/// <summary>
+			/// Includes stack traces.
+			/// </summary>
+			Callstacks = 0x4,
+		}
+
+		/// <summary>
 		/// A "global" lock that allows the graph of interconnected sync context and JoinableSet instances
 		/// communicate in a thread-safe way without fear of deadlocks due to each taking their own private
 		/// lock and then calling others, thus leading to deadlocks from lock ordering issues.
@@ -52,7 +78,7 @@ namespace Microsoft.Threading {
 		///  Item2: the work that was posted.
 		///  Item3: whether the work was actually posted (false if it was considered and skipped).
 		/// </remarks>
-		private static readonly RollingLog<DiagnosticLogEntry> recentlyPostedMessages = new RollingLog<DiagnosticLogEntry>(20) { IsEnabled = false };
+		private static readonly RollingLog<DiagnosticLogEntry> recentlyPostedMessages = new RollingLog<DiagnosticLogEntry>(20);
 
 		/// <summary>
 		/// The WPF Dispatcher, or other SynchronizationContext that is applied to the Main thread.
@@ -96,13 +122,10 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
-		/// Gets or sets a value indicating whether all instances of <see cref="AsyncPump"/>
+		/// Gets or sets a value indicating the level that all instances of <see cref="AsyncPump"/>
 		/// in this app domain participate in the rolling diagnostic log.
 		/// </summary>
-		public static bool EnableRollingDiagnosticLog {
-			get { return recentlyPostedMessages.IsEnabled; }
-			set { recentlyPostedMessages.IsEnabled = value; }
-		}
+		public static LoggingLevel DiagnosticLogging { get; set; }
 
 		/// <summary>
 		/// Gets a scheduler that executes tasks on the main thread under the same conditions
@@ -467,8 +490,8 @@ namespace Microsoft.Threading {
 		/// When logging is enabled, this logs the details of this work to the rolling diagnostic log.
 		/// </summary>
 		private static void Log(SynchronizationContext syncContext, SingleExecuteProtector work, bool successful = true) {
-			if (recentlyPostedMessages.IsEnabled) {
-				recentlyPostedMessages.Enqueue(new DiagnosticLogEntry(syncContext, work, successful));
+			if (DiagnosticLogging != LoggingLevel.None) {
+				recentlyPostedMessages.Enqueue(new DiagnosticLogEntry(syncContext, work, successful, DiagnosticLogging));
 			}
 		}
 
@@ -2021,6 +2044,7 @@ namespace Microsoft.Threading {
 			}
 		}
 
+		[DebuggerDisplay("{Executed: {work.HasBeenExecuted}, UIThread: {work.RequiresMainThread}, timestamp: {timestamp}")]
 		private struct DiagnosticLogEntry {
 			private readonly SynchronizationContext synchronizationContext;
 			private readonly SingleExecuteProtector work;
@@ -2029,13 +2053,24 @@ namespace Microsoft.Threading {
 			private readonly StackTrace stackTrace;
 			private readonly string stackTraceString;
 
-			internal DiagnosticLogEntry(SynchronizationContext context, SingleExecuteProtector work, bool successful = true) {
+			internal DiagnosticLogEntry(SynchronizationContext context, SingleExecuteProtector work, bool successful, LoggingLevel logLevel) {
 				this.synchronizationContext = context;
 				this.work = work;
 				this.successfullyQueued = successful;
-				this.timestamp = DateTime.Now;
-				this.stackTrace = new StackTrace(2, true);
-				this.stackTraceString = this.stackTrace.ToString();
+
+				if ((logLevel & LoggingLevel.Timestamp) == LoggingLevel.Timestamp) {
+					this.timestamp = DateTime.Now;
+				} else {
+					this.timestamp = DateTime.MinValue;
+				}
+
+				if ((logLevel & LoggingLevel.Callstacks) == LoggingLevel.Callstacks) {
+					this.stackTrace = new StackTrace(2, true);
+					this.stackTraceString = this.stackTrace.ToString();
+				} else {
+					this.stackTrace = null;
+					this.stackTraceString = null;
+				}
 			}
 		}
 	}
