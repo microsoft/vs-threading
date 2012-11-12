@@ -6,6 +6,7 @@
 	using System.Text;
 	using System.Threading;
 	using System.Threading.Tasks;
+	using System.Windows.Threading;
 
 	public abstract class TestBase {
 		protected const int AsyncDelay = 500;
@@ -32,6 +33,15 @@
 				}
 
 				long allocated = (GC.GetTotalMemory(false) - initialMemory) / iterations;
+
+				// If there is a dispatcher sync context, let it run for a bit.
+				// This allows any posted messages that are now obsolete to be released.
+				if (SynchronizationContext.Current is DispatcherSynchronizationContext) {
+					var frame = new DispatcherFrame();
+					SynchronizationContext.Current.Post(state => frame.Continue = false, null);
+					Dispatcher.PushFrame(frame);
+				}
+
 				long leaked = (GC.GetTotalMemory(true) - initialMemory) / iterations;
 
 				this.TestContext.WriteLine("{0} bytes leaked per iteration.", leaked);
