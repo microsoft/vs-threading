@@ -598,7 +598,7 @@ namespace Microsoft.Threading {
 			/// <summary>
 			/// The instance that created this delegate.
 			/// </summary>
-			private readonly SingleThreadSynchronizationContext syncContext;
+			private SingleThreadSynchronizationContext syncContext;
 
 			/// <summary>
 			/// The delegate to invoke.  <c>null</c> if it has already been invoked.
@@ -713,8 +713,11 @@ namespace Microsoft.Threading {
 							var callback = invokeDelegate as SendOrPostCallback;
 							Assumes.NotNull(callback);
 							callback(this.state);
-							this.state = null;
 						}
+
+						// Release the rest of the memory we're referencing.
+						this.state = null;
+						this.syncContext = null;
 					} finally {
 						SynchronizationContext.SetSynchronizationContext(oldSyncContext);
 					}
