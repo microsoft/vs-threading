@@ -1413,6 +1413,29 @@
 			}, maxBytesAllocated: 300);
 		}
 
+		/// <summary>
+		/// Verifies that when two AsyncPumps are stacked on the main thread by (unrelated) COM reentrancy
+		/// that the bottom one doesn't "steal" the work before the inner one can when the outer one
+		/// isn't on the top of the stack and therefore can't execute it anyway, thereby precluding the
+		/// inner one from executing it either and leading to deadlock.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public void NestedRunSynchronouslyOuterDoesNotStealWorkFromNested() {
+			var asyncPump = new COMReentrantAsyncPump();
+			var nestedWorkBegun = new AsyncManualResetEvent();
+			asyncPump.ReenterWaitWith(() => {
+				asyncPump.RunSynchronously(async delegate {
+					await Task.Yield();
+				});
+
+				nestedWorkBegun.Set();
+			});
+
+			asyncPump.RunSynchronously(async delegate {
+				await nestedWorkBegun;
+			});
+		}
+
 		private static async void SomeFireAndForgetMethod() {
 			await Task.Yield();
 		}
@@ -1491,6 +1514,27 @@
 				return expectedResult;
 			});
 			Assert.AreSame(expectedResult, actualResult);
+		}
+
+		/// <summary>
+		/// Simulates COM message pump reentrancy causing some unrelated work to "pump in" on top of a synchronously blocking wait.
+		/// </summary>
+		private class COMReentrantAsyncPump : AsyncPump {
+			private Action action;
+
+			internal void ReenterWaitWith(Action action) {
+				this.action = action;
+			}
+
+			protected override void WaitSynchronously(Task task) {
+				if (this.action != null) {
+					var action = this.action;
+					this.action = null;
+					action();
+				}
+
+				base.WaitSynchronously(task);
+			}
 		}
 
 		private class DerivedAsyncPump : AsyncPump {

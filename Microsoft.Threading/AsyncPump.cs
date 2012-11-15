@@ -1258,10 +1258,17 @@ namespace Microsoft.Threading {
 						var dequeueTask = this.DequeueFromAllSelfAndJoinedQueuesAsync();
 						this.asyncPump.WaitSynchronously(dequeueTask);
 						Assumes.True(dequeueTask.IsCompleted);
+
+						// A null result can mean either we're completed, or that
+						// there were no work items immediately available for executing.
 						if (dequeueTask.Result != null) {
 							dequeueTask.Result.TryExecute();
-						} else {
+						} else if (this.IsCompleted) {
 							break;
+						} else {
+							// The queue had been empty, but the task we were waiting on completed
+							// because the queue is now non-empty or some other reason warrants
+							// re-attempting to dequeue. Loop around and do so.
 						}
 					}
 				} finally {
@@ -1551,7 +1558,7 @@ namespace Microsoft.Threading {
 						SyncContextLock.ExitUpgradeableReadLock();
 					}
 
-					while (!extraContextsChangedToken.IsCancellationRequested && !this.IsCompleted) {
+					if (!extraContextsChangedToken.IsCancellationRequested && !this.IsCompleted) {
 						// Check all queues to see if any have immediate work.
 						bool applicableQueuesOutdated = false;
 						foreach (var queue in applicableQueues) {
@@ -1564,7 +1571,7 @@ namespace Microsoft.Threading {
 						}
 
 						if (applicableQueuesOutdated) {
-							break;
+							continue;
 						}
 
 						// None of the queues had work to do right away.
@@ -1572,6 +1579,11 @@ namespace Microsoft.Threading {
 							await Task.WhenAny(applicableQueues.Select(q => q.EnqueuedNotify)).WithCancellation(extraContextsChangedToken).ConfigureAwait(false);
 						} catch (OperationCanceledException) {
 						}
+
+						// Don't loop and dequeue right away. We've yielded, so our caller may no longer be
+						// on the top of their callstack. Just return null. Our caller will call us again
+						// when they're in control and we'll try dequeuing at that time.
+						return null;
 					}
 				}
 			}
