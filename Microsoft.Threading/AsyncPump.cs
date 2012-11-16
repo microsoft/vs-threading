@@ -717,7 +717,6 @@ namespace Microsoft.Threading {
 
 						// Release the rest of the memory we're referencing.
 						this.state = null;
-						this.syncContext = null;
 					} finally {
 						SynchronizationContext.SetSynchronizationContext(oldSyncContext);
 					}
