@@ -82,6 +82,22 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void SwitchToMainThreadCancellable() {
+			var task = Task.Run(async delegate {
+				var cts = new CancellationTokenSource(AsyncDelay);
+				try {
+					await this.asyncPump.SwitchToMainThreadAsync(cts.Token);
+					Assert.Fail("Expected OperationCanceledException not thrown.");
+				} catch (OperationCanceledException) {
+				}
+
+				Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
+			});
+
+			Assert.IsTrue(task.Wait(TestTimeout), "Test timed out.");
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void SwitchToSTADoesNotCauseUnrelatedReentrancy() {
 			var frame = new DispatcherFrame();
 
@@ -1538,9 +1554,9 @@
 		}
 
 		private class DerivedAsyncPump : AsyncPump {
-			protected override void SwitchToMainThreadOnCompleted(Action action) {
-				Assert.IsNotNull(action);
-				base.SwitchToMainThreadOnCompleted(action);
+			protected override void SwitchToMainThreadOnCompleted(SendOrPostCallback callback, object state) {
+				Assert.IsNotNull(callback);
+				base.SwitchToMainThreadOnCompleted(callback, state);
 			}
 
 			protected override void WaitSynchronously(Task task) {

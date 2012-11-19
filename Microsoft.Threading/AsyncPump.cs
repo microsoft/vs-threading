@@ -107,7 +107,7 @@ namespace Microsoft.Threading {
 
 		/// <summary>
 		/// A task scheduler that executes tasks on the main thread under the same rules as
-		/// <see cref="SwitchToMainThreadAsync()"/>.
+		/// <see cref="SwitchToMainThreadAsync(CancellationToken)"/>.
 		/// </summary>
 		private readonly MainThreadScheduler mainThreadTaskScheduler;
 
@@ -121,7 +121,7 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AsyncPump"/> class.
 		/// </summary>
-		/// <param name="mainThread">The thread to switch to in <see cref="SwitchToMainThreadAsync()"/>.</param>
+		/// <param name="mainThread">The thread to switch to in <see cref="SwitchToMainThreadAsync(CancellationToken)"/>.</param>
 		/// <param name="synchronizationContext">The synchronization context to use to switch to the main thread.</param>
 		public AsyncPump(Thread mainThread = null, SynchronizationContext synchronizationContext = null) {
 			this.mainThread = mainThread ?? Thread.CurrentThread;
@@ -140,7 +140,7 @@ namespace Microsoft.Threading {
 
 		/// <summary>
 		/// Gets a scheduler that executes tasks on the main thread under the same conditions
-		/// as those used for <see cref="SwitchToMainThreadAsync()"/>.
+		/// as those used for <see cref="SwitchToMainThreadAsync(CancellationToken)"/>.
 		/// </summary>
 		public TaskScheduler MainThreadTaskScheduler {
 			get { return this.mainThreadTaskScheduler; }
@@ -345,6 +345,10 @@ namespace Microsoft.Threading {
 		/// Gets an awaitable whose continuations execute on the synchronization context that this instance was initialized with,
 		/// in such a way as to mitigate both deadlocks and reentrancy.
 		/// </summary>
+		/// <param name="cancellationToken">
+		/// A token whose cancellation will immediately schedule the continuation
+		/// on a threadpool thread.
+		/// </param>
 		/// <returns>An awaitable.</returns>
 		/// <remarks>
 		/// <example>
@@ -362,8 +366,8 @@ namespace Microsoft.Threading {
 		/// }
 		/// </code>
 		/// </example></remarks>
-		public SynchronizationContextAwaitable SwitchToMainThreadAsync() {
-			return new SynchronizationContextAwaitable(this);
+		public SynchronizationContextAwaitable SwitchToMainThreadAsync(CancellationToken cancellationToken = default(CancellationToken)) {
+			return new SynchronizationContextAwaitable(this, cancellationToken);
 		}
 
 		/// <summary>
@@ -399,7 +403,7 @@ namespace Microsoft.Threading {
 		/// invoked on the Main thread, and this work may need to complete while the Main thread
 		/// subsequently synchronously blocks for that work to complete (using the Join method),
 		/// that this async method's first <c>await</c> be with a call to
-		/// <see cref="SwitchToMainThreadAsync()"/> (or one that gets <em>off</em> the Main thread)
+		/// <see cref="SwitchToMainThreadAsync(CancellationToken)"/> (or one that gets <em>off</em> the Main thread)
 		/// so that the await's continuation may execute on the Main thread in cases where the Main
 		/// thread has called <see cref="Join"/> on the async method's work and avoid a deadlock.
 		/// Otherwise a deadlock may result as the async method's continuations will be posted
@@ -454,13 +458,14 @@ namespace Microsoft.Threading {
 		/// Responds to calls to <see cref="SynchronizationContextAwaiter.OnCompleted"/>
 		/// by scheduling a continuation to execute on the Main thread.
 		/// </summary>
-		/// <param name="action">The continuation to execute.</param>
-		protected virtual void SwitchToMainThreadOnCompleted(Action action) {
+		/// <param name="callback">The callback to invoke.</param>
+		/// <param name="state">The state object to pass to the callback.</param>
+		protected virtual void SwitchToMainThreadOnCompleted(SendOrPostCallback callback, object state) {
 			if (joinableOperation.Value != null) {
 				joinableOperation.Value.AddDependency(this.mainThreadSwitchingSyncContext);
 			}
 
-			var wrapper = SingleExecuteProtector.Create(this.mainThreadSwitchingSyncContext, action);
+			var wrapper = SingleExecuteProtector.Create(this.mainThreadSwitchingSyncContext, callback, state);
 			this.mainThreadSwitchingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
 
 			var mainThreadControllingSyncContext = this.MainThreadControllingSyncContext;
@@ -510,7 +515,7 @@ namespace Microsoft.Threading {
 		/// Posts a continuation to the UI thread, always causing the caller to yield if specified.
 		/// </summary>
 		private SynchronizationContextAwaitable SwitchToMainThreadAsync(bool alwaysYield) {
-			return new SynchronizationContextAwaitable(this, alwaysYield);
+			return new SynchronizationContextAwaitable(this, CancellationToken.None, alwaysYield);
 		}
 
 		/// <summary>
@@ -1936,15 +1941,18 @@ namespace Microsoft.Threading {
 		public struct SynchronizationContextAwaitable {
 			private readonly AsyncPump asyncPump;
 
+			private readonly CancellationToken cancellationToken;
+
 			private readonly bool alwaysYield;
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="SynchronizationContextAwaitable"/> struct.
 			/// </summary>
-			internal SynchronizationContextAwaitable(AsyncPump asyncPump, bool alwaysYield = false) {
+			internal SynchronizationContextAwaitable(AsyncPump asyncPump, CancellationToken cancellationToken, bool alwaysYield = false) {
 				Requires.NotNull(asyncPump, "asyncPump");
 
 				this.asyncPump = asyncPump;
+				this.cancellationToken = cancellationToken;
 				this.alwaysYield = alwaysYield;
 			}
 
@@ -1952,7 +1960,7 @@ namespace Microsoft.Threading {
 			/// Gets the awaiter.
 			/// </summary>
 			public SynchronizationContextAwaiter GetAwaiter() {
-				return new SynchronizationContextAwaiter(this.asyncPump, this.alwaysYield);
+				return new SynchronizationContextAwaiter(this.asyncPump, this.cancellationToken, this.alwaysYield);
 			}
 		}
 
@@ -1962,14 +1970,20 @@ namespace Microsoft.Threading {
 		public struct SynchronizationContextAwaiter : INotifyCompletion {
 			private readonly AsyncPump asyncPump;
 
+			private readonly CancellationToken cancellationToken;
+
 			private readonly bool alwaysYield;
+
+			private CancellationTokenRegistration cancellationRegistration;
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="SynchronizationContextAwaiter"/> struct.
 			/// </summary>
-			internal SynchronizationContextAwaiter(AsyncPump asyncPump, bool alwaysYield) {
+			internal SynchronizationContextAwaiter(AsyncPump asyncPump, CancellationToken cancellationToken, bool alwaysYield) {
 				this.asyncPump = asyncPump;
+				this.cancellationToken = cancellationToken;
 				this.alwaysYield = alwaysYield;
+				this.cancellationRegistration = default(CancellationTokenRegistration);
 			}
 
 			/// <summary>
@@ -1992,7 +2006,20 @@ namespace Microsoft.Threading {
 			/// </summary>
 			public void OnCompleted(Action continuation) {
 				Assumes.True(this.asyncPump != null);
-				this.asyncPump.SwitchToMainThreadOnCompleted(continuation);
+
+				// In the event of a cancellation request, it becomes a race as to whether the threadpool
+				// or the main thread will execute the continuation first. So we must wrap the continuation
+				// in a SingleExecuteProtector so that it can't be executed twice by accident.
+				var wrapper = SingleExecuteProtector.Create(this.asyncPump.mainThreadSwitchingSyncContext, continuation);
+
+				// Success case of the main thread.
+				this.asyncPump.SwitchToMainThreadOnCompleted(SingleExecuteProtector.ExecuteOnce, wrapper);
+
+				// Cancellation case of a threadpool thread.
+				this.cancellationRegistration = this.cancellationToken.Register(
+					state => ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, state),
+					wrapper,
+					useSynchronizationContext: false);
 			}
 
 			/// <summary>
@@ -2000,7 +2027,15 @@ namespace Microsoft.Threading {
 			/// </summary>
 			public void GetResult() {
 				Assumes.True(this.asyncPump != null);
-				Assumes.True(this.asyncPump.mainThread == Thread.CurrentThread || this.asyncPump.underlyingSynchronizationContext == null);
+				Assumes.True(this.asyncPump.mainThread == Thread.CurrentThread || this.asyncPump.underlyingSynchronizationContext == null || this.cancellationToken.IsCancellationRequested);
+
+				// Release memory associated with the cancellation request.
+				cancellationRegistration.Dispose();
+
+				// Only throw a cancellation exception if we didn't end up completing what the caller asked us to do (arrive at the main thread).
+				if (Thread.CurrentThread != this.asyncPump.mainThread) {
+					this.cancellationToken.ThrowIfCancellationRequested();
+				}
 
 				// If we don't have a CallContext associated sync context then try applying the one on the current thread.
 				if (this.asyncPump.MainThreadControllingSyncContext == null) {
