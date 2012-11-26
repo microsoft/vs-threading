@@ -54,6 +54,7 @@
     <Compile Include="AsyncReaderWriterLock.cs" />
     <Compile Include="AsyncReaderWriterResourceLock.cs" />
     <Compile Include="AwaitExtensions.cs" />
+    <Compile Include="EmptyStruct.cs" />
     <Compile Include="EnumerateOneOrMany.cs" />
     <Compile Include="IAsyncDisposable.cs" />
     <Compile Include="InternalUtilities.cs" />
