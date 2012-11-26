@@ -61,6 +61,9 @@
     <Compile Include="..\Microsoft.Threading\RollingLog.cs">
       <Link>RollingLog.cs</Link>
     </Compile>
+    <Compile Include="..\Microsoft.Threading\WeakKeyDictionary.cs">
+      <Link>WeakKeyDictionary.cs</Link>
+    </Compile>
     <Compile Include="AsyncAutoResetEventTests.cs" />
     <Compile Include="AsyncBarrierTests.cs" />
     <Compile Include="AsyncCountdownEventTests.cs" />
@@ -83,6 +86,7 @@
     <Compile Include="TestUtilitiesTests.cs" />
     <Compile Include="TestUtilities.cs" />
     <Compile Include="ThreadingToolsTests.cs" />
+    <Compile Include="WeakKeyDictionaryTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Microsoft.Validation\Microsoft.Validation.csproj">

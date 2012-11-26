@@ -69,6 +69,7 @@
     </Compile>
     <Compile Include="TplExtensions.cs" />
     <Compile Include="ThreadingTools.cs" />
+    <Compile Include="WeakKeyDictionary.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Microsoft.Validation\Microsoft.Validation.csproj">
