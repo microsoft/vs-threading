@@ -54,7 +54,7 @@ namespace Microsoft.Threading {
 					// on a ThreadPool thread, and there are various way sto get on those threads.
 					// TaskScheduler.Current is never null.  Even if no scheduler is really active and the current
 					// thread is not a threadpool thread, TaskScheduler.Current == TaskScheduler.Default, so we have
-					// to protect against tha case too.
+					// to protect against that case too.
 					return (this.scheduler == TaskScheduler.Default && Thread.CurrentThread.IsThreadPoolThread)
 						|| (this.scheduler == TaskScheduler.Current && TaskScheduler.Current != TaskScheduler.Default);
 				}
