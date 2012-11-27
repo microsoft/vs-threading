@@ -72,6 +72,14 @@
 		}
 
 		/// <summary>
+		/// Sets and immediately resets this event, allowing all current waiters to unblock.
+		/// </summary>
+		public void PulseAll() {
+			this.Set();
+			this.Reset();
+		}
+
+		/// <summary>
 		/// Gets an awaiter that completes when this event is signaled.
 		/// </summary>
 		[System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
