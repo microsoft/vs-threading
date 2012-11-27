@@ -36,7 +36,7 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// The async pump to Join on calls to <see cref="GetValueAsync"/>.
 		/// </summary>
-		private AsyncPump.JobFactory jobFactory;
+		private JobContext.JobFactory jobFactory;
 
 		/// <summary>
 		/// The result of the value factory.
@@ -46,14 +46,14 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// A joinable task whose result is the value to be cached.
 		/// </summary>
-		private AsyncPump.Joinable<T> joinableTask;
+		private JobContext.Job<T> joinableTask;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AsyncLazy{T}"/> class.
 		/// </summary>
 		/// <param name="valueFactory">The async function that produces the value.  To be invoked at most once.</param>
 		/// <param name="asyncPump">The async pump to <see cref="AsyncPump.Join"/> for calls to <see cref="GetValueAsync"/>.</param>
-		public AsyncLazy(Func<Task<T>> valueFactory, AsyncPump.JobFactory jobFactory = null) {
+		public AsyncLazy(Func<Task<T>> valueFactory, JobContext.JobFactory jobFactory = null) {
 			Requires.NotNull(valueFactory, "valueFactory");
 			this.valueFactory = valueFactory;
 			this.jobFactory = jobFactory;
@@ -96,7 +96,7 @@ namespace Microsoft.Threading {
 								// Wrapping with BeginAsynchronously allows a future caller
 								// to synchronously block the Main thread waiting for the result
 								// without leading to deadlocks.
-								this.joinableTask = this.jobFactory.BeginAsynchronously(valueFactory);
+								this.joinableTask = this.jobFactory.Start(valueFactory);
 								this.value = this.joinableTask.Task;
 								this.value.ContinueWith(
 									(_, state) => {

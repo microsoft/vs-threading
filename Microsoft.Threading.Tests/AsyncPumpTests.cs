@@ -11,8 +11,7 @@
 
 	[TestClass]
 	public class AsyncPumpTests : TestBase {
-		private AsyncPump asyncPumpService;
-		private AsyncPump.JoinableJobFactory asyncPump;
+		private AsyncPump asyncPump;
 		private Thread originalThread;
 		private SynchronizationContext dispatcherContext;
 
@@ -20,8 +19,7 @@
 		public void Initialize() {
 			this.dispatcherContext = new DispatcherSynchronizationContext();
 			SynchronizationContext.SetSynchronizationContext(dispatcherContext);
-			this.asyncPumpService = new DerivedAsyncPump();
-			this.asyncPump = this.asyncPumpService.CreateJoinableFactory();
+			this.asyncPump = new AsyncPump(new DerivedJobContext());
 			this.originalThread = Thread.CurrentThread;
 		}
 
@@ -483,6 +481,8 @@
 					await mainThreadNowBlocking.WaitAsync();
 					await this.asyncPump.SwitchToMainThreadAsync();
 				});
+
+				return TplExtensions.CompletedTask;
 			});
 
 			this.asyncPump.RunSynchronously(async delegate {
@@ -751,6 +751,8 @@
 					}, state);
 					Assert.IsTrue(executed2);
 				});
+
+				return TplExtensions.CompletedTask;
 			});
 
 			// From the Main thread.
@@ -827,7 +829,7 @@
 				var syncContext = SynchronizationContext.Current; // simulate someone who has captured our own sync context.
 				var frame = new DispatcherFrame();
 				Exception ex = null;
-				using (this.asyncPumpService.SuppressRelevance()) { // simulate some kind of sync context hand-off that doesn't flow execution context.
+				using (this.asyncPump.SuppressRelevance()) { // simulate some kind of sync context hand-off that doesn't flow execution context.
 					Task.Run(delegate {
 						// This post will only get a chance for processing 
 						syncContext.Post(
@@ -874,6 +876,8 @@
 
 					return TplExtensions.CompletedTask;
 				});
+
+				return TplExtensions.CompletedTask;
 			});
 
 			mainThreadUnblocked.Set();
@@ -914,6 +918,8 @@
 						throw;
 					}
 				});
+
+				return TplExtensions.CompletedTask;
 			});
 
 			uiBoundWork = Task.Factory.StartNew(
@@ -1199,7 +1205,7 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public void NoMainThreadSyncContextAndKickedOffFromOriginalThread() {
 			SynchronizationContext.SetSynchronizationContext(null);
-			this.asyncPump = new DerivedAsyncPump();
+			this.asyncPump = new AsyncPump(new DerivedJobContext());
 
 			this.asyncPump.RunSynchronously(async delegate {
 				Assert.AreSame(this.originalThread, Thread.CurrentThread);
@@ -1241,7 +1247,7 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public void NoMainThreadSyncContextAndKickedOffFromOtherThread() {
 			SynchronizationContext.SetSynchronizationContext(null);
-			this.asyncPump = new DerivedAsyncPump();
+			this.asyncPump = new AsyncPump(new DerivedJobContext());
 			Thread otherThread = null;
 
 			Task.Run(delegate {
@@ -1436,9 +1442,10 @@
 		/// </summary>
 		[TestMethod, Timeout(TestTimeout)]
 		public void NestedRunSynchronouslyOuterDoesNotStealWorkFromNested() {
-			var asyncPump = new COMReentrantAsyncPump();
+			var comReentrantFactory = new COMReentrantJobContext();
+			var asyncPump = new AsyncPump(comReentrantFactory);
 			var nestedWorkBegun = new AsyncManualResetEvent();
-			asyncPump.ReenterWaitWith(() => {
+			comReentrantFactory.ReenterWaitWith(() => {
 				asyncPump.RunSynchronously(async delegate {
 					await Task.Yield();
 				});
@@ -1476,7 +1483,7 @@
 			Task unrelatedTask;
 
 			// don't let this task be identified as related to the caller, so that the caller has to Join for this to complete.
-			using (this.asyncPumpService.SuppressRelevance()) {
+			using (this.asyncPump.SuppressRelevance()) {
 				unrelatedPump = new AsyncPump();
 				unrelatedTask = Task.Run(async delegate {
 					await unrelatedPump.SwitchToMainThreadAsync().GetAwaiter().YieldAndNotify(unrelatedMainThreadWorkWaiting, unrelatedMainThreadWorkInvoked);
@@ -1525,7 +1532,7 @@
 		/// <summary>
 		/// Simulates COM message pump reentrancy causing some unrelated work to "pump in" on top of a synchronously blocking wait.
 		/// </summary>
-		private class COMReentrantAsyncPump : AsyncPump {
+		private class COMReentrantJobContext : JobContext {
 			private Action action;
 
 			internal void ReenterWaitWith(Action action) {
@@ -1543,7 +1550,7 @@
 			}
 		}
 
-		private class DerivedAsyncPump : AsyncPump {
+		private class DerivedJobContext : JobContext {
 			protected override void SwitchToMainThreadOnCompleted(SendOrPostCallback callback, object state) {
 				Assert.IsNotNull(callback);
 				base.SwitchToMainThreadOnCompleted(callback, state);

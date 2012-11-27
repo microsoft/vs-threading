@@ -59,6 +59,7 @@
     <Compile Include="IAsyncDisposable.cs" />
     <Compile Include="InternalExtensions.cs" />
     <Compile Include="InternalUtilities.cs" />
+    <Compile Include="JobContext.cs" />
     <Compile Include="ListOfOftenOne.cs" />
     <Compile Include="ProgressWithCompletion.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

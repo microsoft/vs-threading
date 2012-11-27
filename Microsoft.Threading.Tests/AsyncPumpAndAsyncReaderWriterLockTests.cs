@@ -10,8 +10,6 @@
 	public class AsyncPumpAndAsyncReaderWriterLockTests : TestBase {
 		private AsyncPump asyncPump;
 
-		private AsyncPump.JobFactory asyncPumpFactory;
-
 		private AsyncReaderWriterLock asyncLock;
 
 		private AsyncManualResetEvent lockRequested;
@@ -20,12 +18,11 @@
 		public void Initialize() {
 			this.asyncLock = new AsyncReaderWriterLock();
 			this.asyncPump = new AsyncPump();
-			this.asyncPumpFactory = this.asyncPump.CreateFactory();
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void LockWithinRunSynchronouslySTA() {
-			this.asyncPumpFactory.RunSynchronously(async delegate {
+			this.asyncPump.RunSynchronously(async delegate {
 				await this.VerifyReadLockAsync();
 			});
 		}
@@ -33,7 +30,7 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public void LockWithinRunSynchronouslyMTA() {
 			Task.Run(delegate {
-				this.asyncPumpFactory.RunSynchronously(async delegate {
+				this.asyncPump.RunSynchronously(async delegate {
 					await this.VerifyReadLockAsync();
 				});
 			}).GetAwaiter().GetResult();
@@ -42,7 +39,7 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public void LockWithinRunSynchronouslyMTAContended() {
 			Task.Run(delegate {
-				this.asyncPumpFactory.RunSynchronously(async delegate {
+				this.asyncPump.RunSynchronously(async delegate {
 					this.ArrangeLockContentionAsync();
 					await this.VerifyReadLockAsync();
 				});
@@ -51,7 +48,7 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void LockWithinRunSynchronouslyAfterYieldSTA() {
-			this.asyncPumpFactory.RunSynchronously(async delegate {
+			this.asyncPump.RunSynchronously(async delegate {
 				await Task.Yield();
 				await this.VerifyReadLockAsync();
 			});
@@ -60,7 +57,7 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public void LockWithinRunSynchronouslyAfterYieldMTA() {
 			Task.Run(delegate {
-				this.asyncPumpFactory.RunSynchronously(async delegate {
+				this.asyncPump.RunSynchronously(async delegate {
 					await Task.Yield();
 					await this.VerifyReadLockAsync();
 				});
@@ -78,7 +75,7 @@
 		}
 
 		private void LockWithinBeginAsynchronouslyAfterYieldHelper() {
-			var joinable = this.asyncPumpFactory.BeginAsynchronously(async delegate {
+			var joinable = this.asyncPump.BeginAsynchronously(async delegate {
 				await Task.Yield();
 				await this.VerifyReadLockAsync();
 			});
