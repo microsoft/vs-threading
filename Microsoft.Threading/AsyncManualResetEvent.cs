@@ -48,7 +48,7 @@
 		public void Set() {
 			var tcs = this.taskCompletionSource;
 			Task.Factory.StartNew(
-				s => ((TaskCompletionSource<object>)s).TrySetResult(true),
+				s => ((TaskCompletionSource<EmptyStruct>)s).TrySetResult(EmptyStruct.Instance),
 				tcs,
 				CancellationToken.None,
 				TaskCreationOptions.PreferFairness,
