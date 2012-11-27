@@ -11,7 +11,8 @@
 
 	[TestClass]
 	public class AsyncPumpTests : TestBase {
-		private AsyncPump asyncPump;
+		private AsyncPump asyncPumpService;
+		private AsyncPump.JoinableJobFactory asyncPump;
 		private Thread originalThread;
 		private SynchronizationContext dispatcherContext;
 
@@ -19,18 +20,9 @@
 		public void Initialize() {
 			this.dispatcherContext = new DispatcherSynchronizationContext();
 			SynchronizationContext.SetSynchronizationContext(dispatcherContext);
-			this.asyncPump = new DerivedAsyncPump();
+			this.asyncPumpService = new DerivedAsyncPump();
+			this.asyncPump = this.asyncPumpService.CreateJoinableFactory();
 			this.originalThread = Thread.CurrentThread;
-		}
-
-		[TestMethod]
-		public void RunActionSTA() {
-			this.RunActionHelper();
-		}
-
-		[TestMethod]
-		public void RunActionMTA() {
-			Task.Run(() => this.RunActionHelper()).Wait();
 		}
 
 		[TestMethod]
@@ -835,7 +827,7 @@
 				var syncContext = SynchronizationContext.Current; // simulate someone who has captured our own sync context.
 				var frame = new DispatcherFrame();
 				Exception ex = null;
-				using (this.asyncPump.SuppressRelevance()) { // simulate some kind of sync context hand-off that doesn't flow execution context.
+				using (this.asyncPumpService.SuppressRelevance()) { // simulate some kind of sync context hand-off that doesn't flow execution context.
 					Task.Run(delegate {
 						// This post will only get a chance for processing 
 						syncContext.Post(
@@ -859,6 +851,8 @@
 				if (ex != null) {
 					Assert.Fail("Posted message threw an exception: {0}", ex);
 				}
+
+				return TplExtensions.CompletedTask;
 			});
 		}
 
@@ -877,6 +871,8 @@
 							frame.Continue = false;
 						}
 					});
+
+					return TplExtensions.CompletedTask;
 				});
 			});
 
@@ -1080,6 +1076,7 @@
 				SynchronizationContext syncContext = null;
 				this.asyncPump.RunSynchronously(delegate {
 					syncContext = SynchronizationContext.Current;
+					return TplExtensions.CompletedTask;
 				});
 				syncContext.Post(
 					delegate {
@@ -1171,6 +1168,7 @@
 						}
 					}
 				});
+				return TplExtensions.CompletedTask;
 			});
 
 			this.asyncPump.RunSynchronously(delegate {
@@ -1188,6 +1186,7 @@
 						}
 					}
 				});
+				return TplExtensions.CompletedTask;
 			});
 
 			Dispatcher.PushFrame(frame);
@@ -1477,7 +1476,7 @@
 			Task unrelatedTask;
 
 			// don't let this task be identified as related to the caller, so that the caller has to Join for this to complete.
-			using (this.asyncPump.SuppressRelevance()) {
+			using (this.asyncPumpService.SuppressRelevance()) {
 				unrelatedPump = new AsyncPump();
 				unrelatedTask = Task.Run(async delegate {
 					await unrelatedPump.SwitchToMainThreadAsync().GetAwaiter().YieldAndNotify(unrelatedMainThreadWorkWaiting, unrelatedMainThreadWorkInvoked);
@@ -1500,15 +1499,6 @@
 				await waitTask;
 				Assert.AreSame(this.originalThread, Thread.CurrentThread);
 			}
-		}
-
-		private void RunActionHelper() {
-			var initialThread = Thread.CurrentThread;
-			this.asyncPump.RunSynchronously((Action)async delegate {
-				Assert.AreSame(initialThread, Thread.CurrentThread);
-				await Task.Yield();
-				Assert.AreSame(initialThread, Thread.CurrentThread);
-			});
 		}
 
 		private void RunFuncOfTaskHelper() {

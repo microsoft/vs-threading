@@ -65,125 +65,6 @@ namespace Microsoft.Threading {
 		protected SynchronizationContext UnderlyingSynchronizationContext {
 			get { return this.underlyingSynchronizationContext; }
 		}
-
-		/// <summary>Runs the specified asynchronous method.</summary>
-		/// <param name="asyncMethod">The asynchronous method to execute.</param>
-		/// <remarks>
-		/// <example>
-		/// <code>
-		/// // On threadpool or Main thread, this method will block
-		/// // the calling thread until all async operations in the
-		/// // delegate complete.
-		/// this.asyncPump.RunSynchronously(async delegate {
-		///     // still on the threadpool or Main thread as before.
-		///     await OperationAsync();
-		///     // still on the threadpool or Main thread as before.
-		///     await Task.Run(async delegate {
-		///          // Now we're on a threadpool thread.
-		///          await Task.Yield();
-		///          // still on a threadpool thread.
-		///     });
-		///     // Now back on the Main thread (or threadpool thread if that's where we started).
-		/// });
-		/// </code>
-		/// </example>
-		/// </remarks>
-		public void RunSynchronously(Func<Task> asyncMethod) {
-			Requires.NotNull(asyncMethod, "asyncMethod");
-
-			using (var framework = new RunFramework(this, new Joinable(this))) {
-				var t = asyncMethod();
-				framework.JoinableOperation.SetWrappedTask(t);
-
-				// Pump continuations and propagate any exceptions
-				framework.JoinableOperation.CompleteOnCurrentThread();
-				t.GetAwaiter().GetResult();
-			}
-		}
-
-		/// <summary>Runs the specified asynchronous method.</summary>
-		/// <param name="asyncMethod">The asynchronous method to execute.</param>
-		/// <remarks>
-		/// See the <see cref="RunSynchronously(Func{Task})"/> overload documentation
-		/// for an example.
-		/// </remarks>
-		public T RunSynchronously<T>(Func<Task<T>> asyncMethod) {
-			Requires.NotNull(asyncMethod, "asyncMethod");
-
-			using (var framework = new RunFramework(this, new Joinable<T>(this))) {
-				var t = asyncMethod();
-				framework.JoinableOperation.SetWrappedTask(t);
-
-				// Pump continuations and propagate any exceptions
-				framework.JoinableOperation.CompleteOnCurrentThread();
-				return t.GetAwaiter().GetResult();
-			}
-		}
-
-		/// <summary>
-		/// Wraps the invocation of an async method such that it may
-		/// execute asynchronously, but may potentially be
-		/// synchronously completed (waited on) in the future.
-		/// </summary>
-		/// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
-		/// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
-		public Joinable BeginAsynchronously(Func<Task> asyncMethod) {
-			Requires.NotNull(asyncMethod, "asyncMethod");
-
-			using (var framework = new RunFramework(this, new Joinable(this))) {
-				var task = asyncMethod();
-				framework.JoinableOperation.SetWrappedTask(task);
-				return framework.JoinableOperation;
-			}
-		}
-
-		/// <summary>
-		/// Wraps the invocation of an async method such that it may
-		/// execute asynchronously, but may potentially be
-		/// synchronously completed (waited on) in the future.
-		/// </summary>
-		/// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
-		/// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
-		/// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
-		public Joinable<T> BeginAsynchronously<T>(Func<Task<T>> asyncMethod) {
-			Requires.NotNull(asyncMethod, "asyncMethod");
-
-			using (var framework = new RunFramework(this, new Joinable<T>(this))) {
-				var task = asyncMethod();
-				framework.JoinableOperation.SetWrappedTask(task);
-				return (Joinable<T>)framework.JoinableOperation;
-			}
-		}
-
-		/// <summary>
-		/// Gets an awaitable whose continuations execute on the synchronization context that this instance was initialized with,
-		/// in such a way as to mitigate both deadlocks and reentrancy.
-		/// </summary>
-		/// <param name="cancellationToken">
-		/// A token whose cancellation will immediately schedule the continuation
-		/// on a threadpool thread.
-		/// </param>
-		/// <returns>An awaitable.</returns>
-		/// <remarks>
-		/// <example>
-		/// <code>
-		/// private async Task SomeOperationAsync() {
-		///     // on the caller's thread.
-		///     await DoAsync();
-		///     
-		///     // Now switch to a threadpool thread explicitly.
-		///     await TaskScheduler.Default;
-		///     
-		///     // Now switch to the Main thread to talk to some STA object.
-		///     await this.asyncPump.SwitchToMainThreadAsync();
-		///     STAService.DoSomething();
-		/// }
-		/// </code>
-		/// </example></remarks>
-		public MainThreadAwaitable SwitchToMainThreadAsync(CancellationToken cancellationToken = default(CancellationToken)) {
-			return new MainThreadAwaitable(this, cancellationToken);
-		}
-
 		/// <summary>
 		/// Conceals any ticket to the Main thread until the returned value is disposed.
 		/// </summary>
@@ -215,6 +96,14 @@ namespace Microsoft.Threading {
 		/// </remarks>
 		public RevertRelevance SuppressRelevance() {
 			return new RevertRelevance(this);
+		}
+
+		public JobFactory CreateFactory() {
+			return new JobFactory(this);
+		}
+
+		public JoinableJobFactory CreateJoinableFactory() {
+			return new JoinableJobFactory(this);
 		}
 
 		/// <summary>
@@ -283,27 +172,28 @@ namespace Microsoft.Threading {
 			get { return this.mainThread == Thread.CurrentThread ? this.mainThreadJobSyncContext : this.threadPoolJobSyncContext; }
 		}
 
-		public class JoinableFactory {
+		/// <summary>
+		/// A collection of asynchronous operations that may be joined.
+		/// </summary>
+		public class JobFactory {
 			/// <summary>
 			/// The <see cref="AsyncPump"/> that owns this instance.
 			/// </summary>
 			private readonly AsyncPump owner;
 
 			/// <summary>
-			/// Initializes a new instance of the <see cref="JoinableFactory"/> class.
+			/// Initializes a new instance of the <see cref="JobFactory"/> class.
 			/// </summary>
-			internal JoinableFactory(AsyncPump owner) {
+			internal JobFactory(AsyncPump owner) {
 				Requires.NotNull(owner, "owner");
 				this.owner = owner;
-				this.Collection = new JoinableCollection(owner);
-				this.MainThreadJobScheduler = new JobTaskScheduler(this.Collection, true);
-				this.ThreadPoolJobScheduler = new JobTaskScheduler(this.Collection, false);
+				this.MainThreadJobScheduler = new JobTaskScheduler(this, true);
+				this.ThreadPoolJobScheduler = new JobTaskScheduler(this, false);
 			}
 
-			/// <summary>
-			/// The collection of joinables that have been created.
-			/// </summary>
-			public JoinableCollection Collection { get; private set; }
+			protected internal AsyncPump Owner {
+				get { return this.owner; }
+			}
 
 			/// <summary>
 			/// Gets a <see cref="TaskScheduler"/> that automatically adds every scheduled task
@@ -316,29 +206,127 @@ namespace Microsoft.Threading {
 			/// to the joinable <see cref="Collection"/> and executes the task on a threadpool thread.
 			/// </summary>
 			public TaskScheduler ThreadPoolJobScheduler { get; private set; }
-		}
-
-		/// <summary>
-		/// A collection of asynchronous operations that may be joined.
-		/// </summary>
-		public class JoinableCollection {
-			/// <summary>
-			/// The <see cref="AsyncPump"/> that owns this instance.
-			/// </summary>
-			private readonly AsyncPump owner;
-
-			private WeakKeyDictionary<Joinable, EmptyStruct> joinables = new WeakKeyDictionary<Joinable, EmptyStruct>();
 
 			/// <summary>
-			/// Initializes a new instance of the <see cref="JoinableCollection"/> class.
+			/// Gets an awaitable whose continuations execute on the synchronization context that this instance was initialized with,
+			/// in such a way as to mitigate both deadlocks and reentrancy.
 			/// </summary>
-			internal JoinableCollection(AsyncPump owner) {
-				Requires.NotNull(owner, "owner");
-				this.owner = owner;
+			/// <param name="cancellationToken">
+			/// A token whose cancellation will immediately schedule the continuation
+			/// on a threadpool thread.
+			/// </param>
+			/// <returns>An awaitable.</returns>
+			/// <remarks>
+			/// <example>
+			/// <code>
+			/// private async Task SomeOperationAsync() {
+			///     // on the caller's thread.
+			///     await DoAsync();
+			///     
+			///     // Now switch to a threadpool thread explicitly.
+			///     await TaskScheduler.Default;
+			///     
+			///     // Now switch to the Main thread to talk to some STA object.
+			///     await this.asyncPump.SwitchToMainThreadAsync();
+			///     STAService.DoSomething();
+			/// }
+			/// </code>
+			/// </example></remarks>
+			public MainThreadAwaitable SwitchToMainThreadAsync(CancellationToken cancellationToken = default(CancellationToken)) {
+				return new MainThreadAwaitable(this.owner, cancellationToken);
 			}
 
-			internal AsyncPump Owner {
-				get { return this.owner; }
+			/// <summary>Runs the specified asynchronous method.</summary>
+			/// <param name="asyncMethod">The asynchronous method to execute.</param>
+			/// <remarks>
+			/// <example>
+			/// <code>
+			/// // On threadpool or Main thread, this method will block
+			/// // the calling thread until all async operations in the
+			/// // delegate complete.
+			/// this.asyncPump.RunSynchronously(async delegate {
+			///     // still on the threadpool or Main thread as before.
+			///     await OperationAsync();
+			///     // still on the threadpool or Main thread as before.
+			///     await Task.Run(async delegate {
+			///          // Now we're on a threadpool thread.
+			///          await Task.Yield();
+			///          // still on a threadpool thread.
+			///     });
+			///     // Now back on the Main thread (or threadpool thread if that's where we started).
+			/// });
+			/// </code>
+			/// </example>
+			/// </remarks>
+			public void RunSynchronously(Func<Task> asyncMethod) {
+				var joinable = this.BeginAsynchronously(asyncMethod);
+				joinable.CompleteOnCurrentThread();
+			}
+
+			/// <summary>Runs the specified asynchronous method.</summary>
+			/// <param name="asyncMethod">The asynchronous method to execute.</param>
+			/// <remarks>
+			/// See the <see cref="RunSynchronously(Func{Task})"/> overload documentation
+			/// for an example.
+			/// </remarks>
+			public T RunSynchronously<T>(Func<Task<T>> asyncMethod) {
+				var joinable = this.BeginAsynchronously(asyncMethod);
+				return joinable.CompleteOnCurrentThread();
+			}
+
+			/// <summary>
+			/// Wraps the invocation of an async method such that it may
+			/// execute asynchronously, but may potentially be
+			/// synchronously completed (waited on) in the future.
+			/// </summary>
+			/// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
+			/// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
+			public Joinable BeginAsynchronously(Func<Task> asyncMethod) {
+				Requires.NotNull(asyncMethod, "asyncMethod");
+
+				using (var framework = new RunFramework(this.owner, new Joinable(this))) {
+					this.Add(framework.JoinableOperation);
+					var task = asyncMethod();
+					framework.JoinableOperation.SetWrappedTask(task);
+					return framework.JoinableOperation;
+				}
+			}
+
+			/// <summary>
+			/// Wraps the invocation of an async method such that it may
+			/// execute asynchronously, but may potentially be
+			/// synchronously completed (waited on) in the future.
+			/// </summary>
+			/// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
+			/// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
+			/// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
+			public Joinable<T> BeginAsynchronously<T>(Func<Task<T>> asyncMethod) {
+				Requires.NotNull(asyncMethod, "asyncMethod");
+
+				using (var framework = new RunFramework(this.owner, new Joinable<T>(this))) {
+					this.Add(framework.JoinableOperation);
+					var task = asyncMethod();
+					framework.JoinableOperation.SetWrappedTask(task);
+					return (Joinable<T>)framework.JoinableOperation;
+				}
+			}
+
+			protected virtual void Add(Joinable joinable) {
+			}
+		}
+
+		public class JoinableJobFactory : JobFactory {
+			private readonly WeakKeyDictionary<Joinable, EmptyStruct> joinables = new WeakKeyDictionary<Joinable, EmptyStruct>();
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="JoinableJobFactory"/> class.
+			/// </summary>
+			internal JoinableJobFactory(AsyncPump owner)
+				: base(owner) {
+			}
+
+			public JoinRelease Join() {
+				throw new NotImplementedException();
 			}
 
 			/// <summary>
@@ -348,31 +336,31 @@ namespace Microsoft.Threading {
 			/// <returns>A task that completes after the asynchronous operation completes and the join is reverted.</returns>
 			public async Task JoinAsync(CancellationToken cancellationToken = default(CancellationToken)) {
 				cancellationToken.ThrowIfCancellationRequested();
-				this.owner.SyncContextLock.EnterUpgradeableReadLock();
+				this.Owner.SyncContextLock.EnterUpgradeableReadLock();
 				try {
 					throw new NotImplementedException();
 				} finally {
-					this.owner.SyncContextLock.ExitUpgradeableReadLock();
+					this.Owner.SyncContextLock.ExitUpgradeableReadLock();
 				}
 			}
 
-			internal void Add(Joinable joinable) {
-				this.owner.SyncContextLock.EnterWriteLock();
+			protected override void Add(Joinable joinable) {
+				this.Owner.SyncContextLock.EnterWriteLock();
 				try {
 					this.joinables[joinable] = EmptyStruct.Instance;
 				} finally {
-					this.owner.SyncContextLock.ExitWriteLock();
+					this.Owner.SyncContextLock.ExitWriteLock();
 				}
 			}
 
 			internal bool Contains(Joinable joinable) {
 				Requires.NotNull(joinable, "joinable");
 
-				this.owner.SyncContextLock.EnterReadLock();
+				this.Owner.SyncContextLock.EnterReadLock();
 				try {
 					return this.joinables.ContainsKey(joinable);
 				} finally {
-					this.owner.SyncContextLock.ExitReadLock();
+					this.Owner.SyncContextLock.ExitReadLock();
 				}
 			}
 		}
@@ -600,7 +588,7 @@ namespace Microsoft.Threading {
 			/// <summary>
 			/// The <see cref="AsyncPump"/> that began the async operation.
 			/// </summary>
-			private readonly AsyncPump owner;
+			private readonly JobFactory owner;
 
 			private Task wrappedTask;
 
@@ -630,7 +618,7 @@ namespace Microsoft.Threading {
 			/// Initializes a new instance of the <see cref="Joinable"/> class.
 			/// </summary>
 			/// <param name="owner">The instance that began the async operation.</param>
-			internal Joinable(AsyncPump owner) {
+			internal Joinable(JobFactory owner) {
 				Requires.NotNull(owner, "owner");
 
 				this.owner = owner;
@@ -638,27 +626,27 @@ namespace Microsoft.Threading {
 
 			internal Task DequeuerResetEvent {
 				get {
-					this.owner.SyncContextLock.EnterUpgradeableReadLock();
+					this.owner.Owner.SyncContextLock.EnterUpgradeableReadLock();
 					try {
 						if (this.dequeuerResetState == null) {
-							this.owner.SyncContextLock.EnterWriteLock();
+							this.owner.Owner.SyncContextLock.EnterWriteLock();
 							try {
 								this.dequeuerResetState = new AsyncManualResetEvent();
 							} finally {
-								this.owner.SyncContextLock.ExitWriteLock();
+								this.owner.Owner.SyncContextLock.ExitWriteLock();
 							}
 						}
 
 						return this.dequeuerResetState.WaitAsync();
 					} finally {
-						this.owner.SyncContextLock.EnterUpgradeableReadLock();
+						this.owner.Owner.SyncContextLock.EnterUpgradeableReadLock();
 					}
 				}
 			}
 
 			internal Task EnqueuedNotify {
 				get {
-					this.owner.SyncContextLock.EnterReadLock();
+					this.owner.Owner.SyncContextLock.EnterReadLock();
 					try {
 						var queue = this.ApplicableQueue;
 						if (queue != null) {
@@ -669,7 +657,7 @@ namespace Microsoft.Threading {
 						// and our caller will call us back when DequeuerResetEvent is signaled.
 						return null;
 					} finally {
-						this.owner.SyncContextLock.ExitReadLock();
+						this.owner.Owner.SyncContextLock.ExitReadLock();
 					}
 				}
 			}
@@ -679,7 +667,7 @@ namespace Microsoft.Threading {
 			/// </summary>
 			public bool IsCompleted {
 				get {
-					this.owner.SyncContextLock.EnterReadLock();
+					this.owner.Owner.SyncContextLock.EnterReadLock();
 					try {
 						if (this.mainThreadQueue != null && !this.mainThreadQueue.IsCompleted) {
 							return false;
@@ -691,7 +679,7 @@ namespace Microsoft.Threading {
 
 						return this.completeRequested;
 					} finally {
-						this.owner.SyncContextLock.ExitReadLock();
+						this.owner.Owner.SyncContextLock.ExitReadLock();
 					}
 				}
 			}
@@ -701,25 +689,25 @@ namespace Microsoft.Threading {
 			/// </summary>
 			public Task Task {
 				get {
-					this.owner.SyncContextLock.EnterReadLock();
+					this.owner.Owner.SyncContextLock.EnterReadLock();
 					try {
 						// If this assumes ever fails, we need to add the ability to synthesize a task
 						// that we'll complete when the wrapped task that we eventually are assigned completes.
 						Assumes.NotNull(this.wrappedTask);
 						return this.wrappedTask;
 					} finally {
-						this.owner.SyncContextLock.ExitReadLock();
+						this.owner.Owner.SyncContextLock.ExitReadLock();
 					}
 				}
 			}
 
 			private ExecutionQueue ApplicableQueue {
 				get {
-					this.owner.SyncContextLock.EnterReadLock();
+					this.owner.Owner.SyncContextLock.EnterReadLock();
 					try {
-						return this.owner.mainThread == Thread.CurrentThread ? this.mainThreadQueue : this.threadPoolQueue;
+						return this.owner.Owner.mainThread == Thread.CurrentThread ? this.mainThreadQueue : this.threadPoolQueue;
 					} finally {
-						this.owner.SyncContextLock.ExitReadLock();
+						this.owner.Owner.SyncContextLock.ExitReadLock();
 					}
 				}
 			}
@@ -750,10 +738,10 @@ namespace Microsoft.Threading {
 			}
 
 			public void Post(SendOrPostCallback d, object state, bool mainThreadAffinitized) {
-				var wrapper = SingleExecuteProtector.Create(this.owner, d, state);
+				var wrapper = SingleExecuteProtector.Create(this.owner.Owner, d, state);
 				AsyncManualResetEvent dequeuerResetState = null; // initialized if we should pulse it at the end of the method
 
-				this.owner.SyncContextLock.EnterWriteLock();
+				this.owner.Owner.SyncContextLock.EnterWriteLock();
 				try {
 					if (this.completeRequested) {
 						// This job has already been marked for completion.
@@ -789,12 +777,12 @@ namespace Microsoft.Threading {
 						}
 					}
 				} finally {
-					this.owner.SyncContextLock.ExitWriteLock();
+					this.owner.Owner.SyncContextLock.ExitWriteLock();
 				}
 
 				if (mainThreadAffinitized) {
 					// We deferred this till after we release our lock earlier in this method since we're calling outside code.
-					this.owner.PostToUnderlyingSynchronizationContextOrThreadPool(SingleExecuteProtector.ExecuteOnce, wrapper);
+					this.owner.Owner.PostToUnderlyingSynchronizationContextOrThreadPool(SingleExecuteProtector.ExecuteOnce, wrapper);
 				}
 
 				if (dequeuerResetState != null) {
@@ -813,7 +801,7 @@ namespace Microsoft.Threading {
 			internal void SetWrappedTask(Task wrappedTask) {
 				Requires.NotNull(wrappedTask, "wrappedTask");
 
-				this.owner.SyncContextLock.EnterWriteLock();
+				this.owner.Owner.SyncContextLock.EnterWriteLock();
 				try {
 					Assumes.Null(this.wrappedTask);
 					this.wrappedTask = wrappedTask;
@@ -830,13 +818,13 @@ namespace Microsoft.Threading {
 							TaskScheduler.Default);
 					}
 				} finally {
-					this.owner.SyncContextLock.ExitWriteLock();
+					this.owner.Owner.SyncContextLock.ExitWriteLock();
 				}
 			}
 
 			internal void Complete() {
 				AsyncManualResetEvent dequeuerResetState = null;
-				this.owner.SyncContextLock.EnterWriteLock();
+				this.owner.Owner.SyncContextLock.EnterWriteLock();
 				try {
 					if (!this.completeRequested) {
 						this.completeRequested = true;
@@ -854,7 +842,7 @@ namespace Microsoft.Threading {
 						}
 					}
 				} finally {
-					this.owner.SyncContextLock.ExitWriteLock();
+					this.owner.Owner.SyncContextLock.ExitWriteLock();
 				}
 
 				if (dequeuerResetState != null) {
@@ -865,7 +853,7 @@ namespace Microsoft.Threading {
 
 			internal void RemoveDependency(Joinable joinChild) {
 				Requires.NotNull(joinChild, "joinChild");
-				this.owner.SyncContextLock.EnterWriteLock();
+				this.owner.Owner.SyncContextLock.EnterWriteLock();
 				try {
 					int refCount;
 					if (this.childOrJoinedJobs != null && this.childOrJoinedJobs.TryGetValue(joinChild, out refCount)) {
@@ -876,7 +864,7 @@ namespace Microsoft.Threading {
 						}
 					}
 				} finally {
-					this.owner.SyncContextLock.ExitWriteLock();
+					this.owner.Owner.SyncContextLock.ExitWriteLock();
 				}
 			}
 
@@ -898,7 +886,7 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>Runs a loop to process all queued work items, returning only when the task is completed.</summary>
-			public void CompleteOnCurrentThread() {
+			internal void CompleteOnCurrentThread() {
 				Assumes.NotNull(this.wrappedTask);
 
 				while (!this.IsCompleted) {
@@ -907,12 +895,13 @@ namespace Microsoft.Threading {
 					if (this.TryDequeueSelfOrDependencies(out work, out tryAgainAfter)) {
 						work.TryExecute();
 					} else if (tryAgainAfter != null) {
-						this.owner.WaitSynchronously(tryAgainAfter);
+						this.owner.Owner.WaitSynchronously(tryAgainAfter);
 						Assumes.True(tryAgainAfter.IsCompleted);
 					}
 				}
 
 				Assumes.True(this.Task.IsCompleted);
+				this.Task.GetAwaiter().GetResult(); // rethrow any exceptions
 			}
 
 			private bool TryDequeueSelfOrDependencies(out SingleExecuteProtector work, out Task tryAgainAfter) {
@@ -923,7 +912,7 @@ namespace Microsoft.Threading {
 				}
 
 				var applicableJobs = new HashSet<Joinable>();
-				this.owner.SyncContextLock.EnterUpgradeableReadLock();
+				this.owner.Owner.SyncContextLock.EnterUpgradeableReadLock();
 				try {
 					this.AddSelfAndDescendentOrJoinedJobs(applicableJobs);
 
@@ -950,12 +939,12 @@ namespace Microsoft.Threading {
 					tryAgainAfter = Task.WhenAny(wakeUpTasks);
 					return false;
 				} finally {
-					this.owner.SyncContextLock.ExitUpgradeableReadLock();
+					this.owner.Owner.SyncContextLock.ExitUpgradeableReadLock();
 				}
 			}
 
 			private bool TryDequeue(out SingleExecuteProtector work) {
-				this.owner.SyncContextLock.EnterWriteLock();
+				this.owner.Owner.SyncContextLock.EnterWriteLock();
 				try {
 					var queue = this.ApplicableQueue;
 					if (queue != null) {
@@ -965,7 +954,7 @@ namespace Microsoft.Threading {
 					work = null;
 					return false;
 				} finally {
-					this.owner.SyncContextLock.ExitWriteLock();
+					this.owner.Owner.SyncContextLock.ExitWriteLock();
 				}
 			}
 
@@ -976,7 +965,7 @@ namespace Microsoft.Threading {
 			private JoinRelease AddDependency(Joinable joinChild) {
 				Requires.NotNull(joinChild, "joinChild");
 				Assumes.True(this != joinChild);
-				this.owner.SyncContextLock.EnterWriteLock();
+				this.owner.Owner.SyncContextLock.EnterWriteLock();
 				try {
 					if (this.childOrJoinedJobs == null) {
 						this.childOrJoinedJobs = new WeakKeyDictionary<Joinable, int>(capacity: 3);
@@ -987,12 +976,12 @@ namespace Microsoft.Threading {
 					this.childOrJoinedJobs[joinChild] = refCount++;
 					return new JoinRelease(this, joinChild);
 				} finally {
-					this.owner.SyncContextLock.ExitWriteLock();
+					this.owner.Owner.SyncContextLock.ExitWriteLock();
 				}
 			}
 
 			private JoinRelease AmbientJobJoinsThis() {
-				var ambientJob = this.owner.joinableOperation.Value;
+				var ambientJob = this.owner.Owner.joinableOperation.Value;
 				if (ambientJob != null && ambientJob != this) {
 					return ambientJob.AddDependency(this);
 				}
@@ -1011,7 +1000,7 @@ namespace Microsoft.Threading {
 			/// Initializes a new instance of the <see cref="Joinable"/> class.
 			/// </summary>
 			/// <param name="owner">The instance that began the async operation.</param>
-			public Joinable(AsyncPump owner)
+			public Joinable(JobFactory owner)
 				: base(owner) {
 			}
 
@@ -1051,6 +1040,11 @@ namespace Microsoft.Threading {
 			/// <returns>A task whose result is the result of the asynchronous operation.</returns>
 			public new TaskAwaiter<T> GetAwaiter() {
 				return this.JoinAsync().GetAwaiter();
+			}
+
+			internal new T CompleteOnCurrentThread() {
+				base.CompleteOnCurrentThread();
+				return this.Task.GetAwaiter().GetResult();
 			}
 		}
 
@@ -1248,7 +1242,7 @@ namespace Microsoft.Threading {
 			private readonly object syncObject = new object();
 
 			/// <summary>The collection that all created jobs will belong to.</summary>
-			private readonly JoinableCollection collection;
+			private readonly JobFactory collection;
 
 			/// <summary>The scheduled tasks that have not yet been executed.</summary>
 			private readonly HashSet<Task> queuedTasks = new HashSet<Task>();
@@ -1261,7 +1255,7 @@ namespace Microsoft.Threading {
 			/// </summary>
 			/// <param name="collection">The collection that all created jobs will belong to.</param>
 			/// <param name="mainThreadAffinitized">A value indicating whether scheduled tasks execute on the main thread; <c>false</c> indicates threadpool execution.</param>
-			internal JobTaskScheduler(JoinableCollection collection, bool mainThreadAffinitized) {
+			internal JobTaskScheduler(JobFactory collection, bool mainThreadAffinitized) {
 				Requires.NotNull(collection, "collection");
 				this.collection = collection;
 			}
@@ -1284,9 +1278,8 @@ namespace Microsoft.Threading {
 				}
 
 				// Wrap this task in a newly created joinable.
-				var joinable = this.collection.Owner.BeginAsynchronously(
+				var joinable = this.collection.BeginAsynchronously(
 					() => this.ExecuteTaskInAppropriateContextAsync(task));
-				this.collection.Add(joinable);
 			}
 
 			private async Task ExecuteTaskInAppropriateContextAsync(Task task) {

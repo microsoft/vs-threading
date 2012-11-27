@@ -146,7 +146,7 @@ namespace Microsoft.Threading.Tests {
 						await Task.Yield();
 						return new object();
 					},
-					asyncPump);
+					asyncPump.CreateFactory());
 			}))();
 
 			Assert.IsTrue(collectible.IsAlive);
@@ -280,13 +280,13 @@ namespace Microsoft.Threading.Tests {
 					await evt; // use an event here to ensure it won't resume till the Main thread is blocked.
 					return new object();
 				},
-				asyncPump);
+				asyncPump.CreateFactory());
 
 			var resultTask = lazy.GetValueAsync();
 			Assert.IsFalse(resultTask.IsCompleted);
 
 			var someRandomPump = new AsyncPump();
-			someRandomPump.RunSynchronously(async delegate {
+			someRandomPump.CreateFactory().RunSynchronously(async delegate {
 				evt.Set(); // setting this event allows the value factory to resume, once it can get the Main thread.
 
 				// The interesting bit we're testing here is that
