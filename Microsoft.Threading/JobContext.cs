@@ -277,10 +277,10 @@
 			public Job Start(Func<Task> asyncMethod) {
 				Requires.NotNull(asyncMethod, "asyncMethod");
 
-				using (var framework = new RunFramework(this, new Job(this))) {
-					var task = asyncMethod();
-					framework.JoinableOperation.SetWrappedTask(task, framework.ParentJob);
-					return framework.JoinableOperation;
+				var job = new Job(this);
+				using (var framework = new RunFramework(this, job)) {
+					framework.SetResult(asyncMethod());
+					return job;
 				}
 			}
 
@@ -295,14 +295,55 @@
 			public Job<T> Start<T>(Func<Task<T>> asyncMethod) {
 				Requires.NotNull(asyncMethod, "asyncMethod");
 
-				using (var framework = new RunFramework(this, new Job<T>(this))) {
-					var task = asyncMethod();
-					framework.JoinableOperation.SetWrappedTask(task, framework.ParentJob);
-					return (Job<T>)framework.JoinableOperation;
+				var job = new Job<T>(this);
+				using (var framework = new RunFramework(this, job)) {
+					framework.SetResult(asyncMethod());
+					return job;
 				}
 			}
 
-			protected internal virtual void Add(Job joinable) {
+			protected virtual void Add(Job joinable) {
+			}
+
+			/// <summary>
+			/// A value to construct with a C# using block in all the Run method overloads
+			/// to setup and teardown the boilerplate stuff.
+			/// </summary>
+			private struct RunFramework : IDisposable {
+				private readonly JobFactory factory;
+				private readonly SpecializedSyncContext syncContextRevert;
+				private readonly Job joinable;
+				private readonly Job previousJoinable;
+
+				/// <summary>
+				/// Initializes a new instance of the <see cref="RunFramework"/> struct
+				/// and sets up the synchronization contexts for the
+				/// <see cref="RunSynchronously(Func{Task})"/> family of methods.
+				/// </summary>
+				internal RunFramework(JobFactory factory, Job joinable) {
+					Requires.NotNull(factory, "factory");
+					Requires.NotNull(joinable, "joinable");
+
+					this.factory = factory;
+					this.joinable = joinable;
+					this.factory.Add(joinable);
+					this.previousJoinable = this.factory.Owner.joinableOperation.Value;
+					this.factory.Owner.joinableOperation.Value = joinable;
+					this.syncContextRevert = this.factory.Owner.ApplicableJobSyncContext.Apply();
+				}
+
+				/// <summary>
+				/// Reverts the execution context to its previous state before this struct was created.
+				/// </summary>
+				public void Dispose() {
+					this.syncContextRevert.Dispose();
+					this.factory.Owner.joinableOperation.Value = this.previousJoinable;
+				}
+
+				internal void SetResult(Task task) {
+					Requires.NotNull(task, "task");
+					this.joinable.SetWrappedTask(task, this.previousJoinable);
+				}
 			}
 		}
 
@@ -335,7 +376,7 @@
 				}
 			}
 
-			protected internal override void Add(Job joinable) {
+			protected override void Add(Job joinable) {
 				this.Owner.SyncContextLock.EnterWriteLock();
 				try {
 					this.joinables[joinable] = EmptyStruct.Instance;
@@ -1412,53 +1453,6 @@
 				}
 
 				this.JobContext.ApplicableJobSyncContext.Apply();
-			}
-		}
-
-		/// <summary>
-		/// A value to construct with a C# using block in all the Run method overloads
-		/// to setup and teardown the boilerplate stuff.
-		/// </summary>
-		private struct RunFramework : IDisposable {
-			private readonly JobFactory factory;
-			private readonly SpecializedSyncContext syncContextRevert;
-			private readonly Job joinable;
-			private readonly Job previousJoinable;
-
-			/// <summary>
-			/// Initializes a new instance of the <see cref="RunFramework"/> struct
-			/// and sets up the synchronization contexts for the
-			/// <see cref="RunSynchronously(Func{Task})"/> family of methods.
-			/// </summary>
-			internal RunFramework(JobFactory factory, Job joinable) {
-				Requires.NotNull(factory, "factory");
-				Requires.NotNull(joinable, "joinable");
-
-				this.factory = factory;
-				this.joinable = joinable;
-				this.factory.Add(joinable);
-				this.previousJoinable = this.factory.Owner.joinableOperation.Value;
-				this.factory.Owner.joinableOperation.Value = joinable;
-				this.syncContextRevert = this.factory.Owner.ApplicableJobSyncContext.Apply();
-			}
-
-			/// <summary>
-			/// Gets the joinable operation this work is affiliated with.
-			/// </summary>
-			internal Job JoinableOperation {
-				get { return this.joinable; }
-			}
-
-			internal Job ParentJob {
-				get { return this.previousJoinable; }
-			}
-
-			/// <summary>
-			/// Reverts the execution context to its previous state before this struct was created.
-			/// </summary>
-			public void Dispose() {
-				this.syncContextRevert.Dispose();
-				this.factory.Owner.joinableOperation.Value = this.previousJoinable;
 			}
 		}
 	}
