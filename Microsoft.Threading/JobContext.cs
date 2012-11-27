@@ -253,7 +253,7 @@
 			/// </example>
 			/// </remarks>
 			public void Run(Func<Task> asyncMethod) {
-				var joinable = this.Start(asyncMethod);
+				var joinable = this.Start(asyncMethod, synchronouslyBlocking: true);
 				joinable.CompleteOnCurrentThread();
 			}
 
@@ -264,7 +264,7 @@
 			/// for an example.
 			/// </remarks>
 			public T Run<T>(Func<Task<T>> asyncMethod) {
-				var joinable = this.Start(asyncMethod);
+				var joinable = this.Start(asyncMethod, synchronouslyBlocking: true);
 				return joinable.CompleteOnCurrentThread();
 			}
 
@@ -276,9 +276,13 @@
 			/// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
 			/// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
 			public Job Start(Func<Task> asyncMethod) {
+				return this.Start(asyncMethod, synchronouslyBlocking: false);
+			}
+
+			private Job Start(Func<Task> asyncMethod, bool synchronouslyBlocking) {
 				Requires.NotNull(asyncMethod, "asyncMethod");
 
-				var job = new Job(this);
+				var job = new Job(this, synchronouslyBlocking);
 				using (var framework = new RunFramework(this, job)) {
 					framework.SetResult(asyncMethod());
 					return job;
@@ -294,9 +298,13 @@
 			/// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
 			/// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
 			public Job<T> Start<T>(Func<Task<T>> asyncMethod) {
+				return this.Start(asyncMethod, synchronouslyBlocking: false);
+			}
+
+			private Job<T> Start<T>(Func<Task<T>> asyncMethod, bool synchronouslyBlocking) {
 				Requires.NotNull(asyncMethod, "asyncMethod");
 
-				var job = new Job<T>(this);
+				var job = new Job<T>(this, synchronouslyBlocking);
 				using (var framework = new RunFramework(this, job)) {
 					framework.SetResult(asyncMethod());
 					return job;
@@ -651,10 +659,12 @@
 			/// Initializes a new instance of the <see cref="Job"/> class.
 			/// </summary>
 			/// <param name="owner">The instance that began the async operation.</param>
-			internal Job(JobFactory owner) {
+			/// <param name="synchronouslyBlocking">A value indicating whether the launching thread will synchronously block for this job's completion.</param>
+			internal Job(JobFactory owner, bool synchronouslyBlocking) {
 				Requires.NotNull(owner, "owner");
 
 				this.owner = owner;
+				this.synchronouslyBlockingThreadPool = synchronouslyBlocking && Thread.CurrentThread.IsThreadPoolThread;
 			}
 
 			internal Task DequeuerResetEvent {
@@ -1040,8 +1050,9 @@
 			/// Initializes a new instance of the <see cref="Job"/> class.
 			/// </summary>
 			/// <param name="owner">The instance that began the async operation.</param>
-			public Job(JobFactory owner)
-				: base(owner) {
+			/// <param name="synchronouslyBlocking">A value indicating whether the launching thread will synchronously block for this job's completion.</param>
+			public Job(JobFactory owner, bool synchronouslyBlocking)
+				: base(owner, synchronouslyBlocking) {
 			}
 
 			/// <summary>
