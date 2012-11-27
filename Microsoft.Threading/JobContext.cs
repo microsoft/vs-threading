@@ -227,6 +227,8 @@
 			/// </code>
 			/// </example></remarks>
 			public MainThreadAwaitable SwitchToMainThreadAsync(CancellationToken cancellationToken = default(CancellationToken)) {
+				// TODO: we need to pass in the factory, not just the context, so that the switch can be part of a joinable factory
+				// when there is no ambient job.
 				return new MainThreadAwaitable(this.owner, cancellationToken);
 			}
 
