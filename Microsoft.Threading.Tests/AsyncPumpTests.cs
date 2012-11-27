@@ -21,6 +21,9 @@
 			SynchronizationContext.SetSynchronizationContext(dispatcherContext);
 			this.asyncPump = new AsyncPump(new DerivedJobContext());
 			this.originalThread = Thread.CurrentThread;
+
+			// Suppress the assert dialog that appears and causes test runs to hang.
+			Trace.Listeners.OfType<DefaultTraceListener>().Single().AssertUiEnabled = false;
 		}
 
 		[TestMethod]

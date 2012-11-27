@@ -277,10 +277,9 @@
 			public Job Start(Func<Task> asyncMethod) {
 				Requires.NotNull(asyncMethod, "asyncMethod");
 
-				using (var framework = new RunFramework(this.owner, new Job(this))) {
-					this.Add(framework.JoinableOperation);
+				using (var framework = new RunFramework(this, new Job(this))) {
 					var task = asyncMethod();
-					framework.JoinableOperation.SetWrappedTask(task);
+					framework.JoinableOperation.SetWrappedTask(task, framework.ParentJob);
 					return framework.JoinableOperation;
 				}
 			}
@@ -296,15 +295,14 @@
 			public Job<T> Start<T>(Func<Task<T>> asyncMethod) {
 				Requires.NotNull(asyncMethod, "asyncMethod");
 
-				using (var framework = new RunFramework(this.owner, new Job<T>(this))) {
-					this.Add(framework.JoinableOperation);
+				using (var framework = new RunFramework(this, new Job<T>(this))) {
 					var task = asyncMethod();
-					framework.JoinableOperation.SetWrappedTask(task);
+					framework.JoinableOperation.SetWrappedTask(task, framework.ParentJob);
 					return (Job<T>)framework.JoinableOperation;
 				}
 			}
 
-			protected virtual void Add(Job joinable) {
+			protected internal virtual void Add(Job joinable) {
 			}
 		}
 
@@ -337,7 +335,7 @@
 				}
 			}
 
-			protected override void Add(Job joinable) {
+			protected internal override void Add(Job joinable) {
 				this.Owner.SyncContextLock.EnterWriteLock();
 				try {
 					this.joinables[joinable] = EmptyStruct.Instance;
@@ -791,7 +789,7 @@
 				return this.JoinAsync().GetAwaiter();
 			}
 
-			internal void SetWrappedTask(Task wrappedTask) {
+			internal void SetWrappedTask(Task wrappedTask, Job parentJob) {
 				Requires.NotNull(wrappedTask, "wrappedTask");
 
 				this.owner.Owner.SyncContextLock.EnterWriteLock();
@@ -809,6 +807,11 @@
 							CancellationToken.None,
 							TaskContinuationOptions.ExecuteSynchronously,
 							TaskScheduler.Default);
+
+						// Join the ambient parent job, so the parent can dequeue this job's work.
+						if (parentJob != null) {
+							parentJob.AddDependency(this);
+						}
 					}
 				} finally {
 					this.owner.Owner.SyncContextLock.ExitWriteLock();
@@ -830,7 +833,9 @@
 							this.threadPoolQueue.Complete();
 						}
 
-						if (this.dequeuerResetState != null && this.mainThreadQueue.IsCompleted && this.threadPoolQueue.IsCompleted) {
+						if (this.dequeuerResetState != null
+							&& (this.mainThreadQueue == null || this.mainThreadQueue.IsCompleted)
+							&& (this.threadPoolQueue == null || this.threadPoolQueue.IsCompleted)) {
 							dequeuerResetState = this.dequeuerResetState;
 						}
 					}
@@ -1415,7 +1420,7 @@
 		/// to setup and teardown the boilerplate stuff.
 		/// </summary>
 		private struct RunFramework : IDisposable {
-			private readonly JobContext pump;
+			private readonly JobFactory factory;
 			private readonly SpecializedSyncContext syncContextRevert;
 			private readonly Job joinable;
 			private readonly Job previousJoinable;
@@ -1425,16 +1430,16 @@
 			/// and sets up the synchronization contexts for the
 			/// <see cref="RunSynchronously(Func{Task})"/> family of methods.
 			/// </summary>
-			internal RunFramework(JobContext pump, Job joinable) {
-				Requires.NotNull(pump, "pump");
+			internal RunFramework(JobFactory factory, Job joinable) {
+				Requires.NotNull(factory, "factory");
 				Requires.NotNull(joinable, "joinable");
 
-				joinable.JoinAsync().Forget(); // join any ambient parent job, so parents can dequeue their children's work.
-				this.pump = pump;
+				this.factory = factory;
 				this.joinable = joinable;
-				this.previousJoinable = this.pump.joinableOperation.Value;
-				this.pump.joinableOperation.Value = joinable;
-				this.syncContextRevert = this.pump.ApplicableJobSyncContext.Apply();
+				this.factory.Add(joinable);
+				this.previousJoinable = this.factory.Owner.joinableOperation.Value;
+				this.factory.Owner.joinableOperation.Value = joinable;
+				this.syncContextRevert = this.factory.Owner.ApplicableJobSyncContext.Apply();
 			}
 
 			/// <summary>
@@ -1444,12 +1449,16 @@
 				get { return this.joinable; }
 			}
 
+			internal Job ParentJob {
+				get { return this.previousJoinable; }
+			}
+
 			/// <summary>
 			/// Reverts the execution context to its previous state before this struct was created.
 			/// </summary>
 			public void Dispose() {
 				this.syncContextRevert.Dispose();
-				this.pump.joinableOperation.Value = this.previousJoinable;
+				this.factory.Owner.joinableOperation.Value = this.previousJoinable;
 			}
 		}
 	}
