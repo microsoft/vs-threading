@@ -43,7 +43,7 @@
 
 		[TestMethod]
 		public void RunFuncOfTaskOfTMTA() {
-			Task.Run(() => RunFuncOfTaskOfTHelper()).Wait();
+			Task.Run(() => RunFuncOfTaskOfTHelper()).GetAwaiter().GetResult();
 		}
 
 		[TestMethod, Timeout(TestTimeout)]

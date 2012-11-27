@@ -58,6 +58,7 @@
 		protected SynchronizationContext UnderlyingSynchronizationContext {
 			get { return this.underlyingSynchronizationContext; }
 		}
+
 		/// <summary>
 		/// Conceals any ticket to the Main thread until the returned value is disposed.
 		/// </summary>
@@ -671,7 +672,7 @@
 
 						return this.dequeuerResetState.WaitAsync();
 					} finally {
-						this.owner.Owner.SyncContextLock.EnterUpgradeableReadLock();
+						this.owner.Owner.SyncContextLock.ExitUpgradeableReadLock();
 					}
 				}
 			}
@@ -944,15 +945,15 @@
 			}
 
 			private bool TryDequeueSelfOrDependencies(out SingleExecuteProtector work, out Task tryAgainAfter) {
-				if (this.IsCompleted) {
-					work = null;
-					tryAgainAfter = null;
-					return false;
-				}
-
 				var applicableJobs = new HashSet<Job>();
 				this.owner.Owner.SyncContextLock.EnterUpgradeableReadLock();
 				try {
+					if (this.IsCompleted) {
+						work = null;
+						tryAgainAfter = null;
+						return false;
+					}
+
 					this.AddSelfAndDescendentOrJoinedJobs(applicableJobs);
 
 					// Check all queues to see if any have immediate work.
