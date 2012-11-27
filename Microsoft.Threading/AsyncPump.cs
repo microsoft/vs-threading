@@ -18,37 +18,6 @@ namespace Microsoft.Threading {
 	/// <summary>Provides a pump that supports running asynchronous methods on the current thread.</summary>
 	public class AsyncPump {
 		/// <summary>
-		/// Describes various options for logging to assist in hang investigations.
-		/// </summary>
-		[Flags]
-		public enum LoggingLevel {
-			/// <summary>
-			/// No logging occurs.
-			/// </summary>
-			None = 0x0,
-
-			/// <summary>
-			/// Recent messages are kept in a rolling log, but stack traces are not collected.
-			/// </summary>
-			Messages = 0x1,
-
-			/// <summary>
-			/// Collects the system time for each posted message.
-			/// </summary>
-			Timestamp = 0x2,
-
-			/// <summary>
-			/// Includes stack traces.
-			/// </summary>
-			Callstacks = 0x4,
-
-			/// <summary>
-			/// All logging details included.
-			/// </summary>
-			All = 0xf,
-		}
-
-		/// <summary>
 		/// A "global" lock that allows the graph of interconnected sync context and JoinableSet instances
 		/// communicate in a thread-safe way without fear of deadlocks due to each taking their own private
 		/// lock and then calling others, thus leading to deadlocks from lock ordering issues.
@@ -58,38 +27,12 @@ namespace Microsoft.Threading {
 		/// uses a global lock around critical composition operations because containers can be interconnected
 		/// in arbitrary ways. The code in this file has a very similar problem, so we use the same solution.
 		/// </remarks>
-		private static readonly ReaderWriterLockSlim SyncContextLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
-
-		/// <summary>
-		/// A map of all the threads that instances of AsyncPump consider to be "Main" threads
-		/// (so in a typical app this map will contain one element) and access to
-		/// the Main thread's current synchronous SynchronizationContext that is conditionally
-		/// available based on the calling thread's possession of the "ticket to the Main thread".
-		/// </summary>
-		private static readonly ConditionalWeakTable<Thread, AsyncLocal<SingleThreadSynchronizationContext>> threadControllingSyncContexts
-			= new ConditionalWeakTable<Thread, AsyncLocal<SingleThreadSynchronizationContext>>();
+		private readonly ReaderWriterLockSlim SyncContextLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
 		/// <summary>
 		/// An AsyncLocal value that carries the joinable instance associated with an async operation.
 		/// </summary>
-		private static readonly AsyncLocal<Joinable> joinableOperation = new AsyncLocal<Joinable>();
-
-		/// <summary>
-		/// A rolling queue of the last several messages that were posted to any sync context controlled by AsyncPump.
-		/// </summary>
-		/// <remarks>
-		/// The tuple represents:
-		///  Item1: the SynchronizationContext whose queue was posted to. (null if threadpool)
-		///  Item2: the work that was posted.
-		///  Item3: whether the work was actually posted (false if it was considered and skipped).
-		/// </remarks>
-		private static readonly RollingLog<DiagnosticLogEntry> recentlyPostedMessages = new RollingLog<DiagnosticLogEntry>(20);
-
-		/// <summary>
-		/// The set of all unexecuted posted messages.  This isn't exposed anywhere publicly because
-		/// it is intended only as a debugging assistant.
-		/// </summary>
-		private static readonly HashSet<SingleExecuteProtector> pendingMessages = new HashSet<SingleExecuteProtector>();
+		private readonly AsyncLocal<Joinable> joinableOperation = new AsyncLocal<Joinable>();
 
 		/// <summary>
 		/// The WPF Dispatcher, or other SynchronizationContext that is applied to the Main thread.
@@ -97,26 +40,12 @@ namespace Microsoft.Threading {
 		private readonly SynchronizationContext underlyingSynchronizationContext;
 
 		/// <summary>
-		/// A singleton SynchronizationContext to apply on async methods that may
-		/// be invoked on the Main thread and may eventually need to complete while
-		/// the Main thread is synchronously blocking on its completion.
-		/// </summary>
-		private readonly PromotableMainThreadSynchronizationContext promotableSyncContext;
-
-		private readonly SingleThreadSynchronizationContext mainThreadSwitchingSyncContext;
-
-		/// <summary>
-		/// A task scheduler that executes tasks on the main thread under the same rules as
-		/// <see cref="SwitchToMainThreadAsync(CancellationToken)"/>.
-		/// </summary>
-		private readonly MainThreadScheduler mainThreadTaskScheduler;
-
-		/// <summary>
 		/// The Main thread itself.
 		/// </summary>
 		private readonly Thread mainThread;
 
-		private readonly JoinableSet ongoingSyncContexts;
+		private readonly SynchronizationContext mainThreadJobSyncContext;
+		private readonly SynchronizationContext threadPoolJobSyncContext;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AsyncPump"/> class.
@@ -126,69 +55,15 @@ namespace Microsoft.Threading {
 		public AsyncPump(Thread mainThread = null, SynchronizationContext synchronizationContext = null) {
 			this.mainThread = mainThread ?? Thread.CurrentThread;
 			this.underlyingSynchronizationContext = synchronizationContext ?? SynchronizationContext.Current; // may still be null after this.
-			this.ongoingSyncContexts = new JoinableSet(this);
-			this.promotableSyncContext = new PromotableMainThreadSynchronizationContext(this);
-			this.mainThreadSwitchingSyncContext = new SingleThreadSynchronizationContext(this, false, false, this.underlyingSynchronizationContext, this.underlyingSynchronizationContext != null);
-			this.mainThreadTaskScheduler = new MainThreadScheduler(this);
+			this.mainThreadJobSyncContext = new JobSynchronizationContext(this, true);
+			this.threadPoolJobSyncContext = new JobSynchronizationContext(this, false);
 		}
 
 		/// <summary>
-		/// Gets or sets a value indicating the level that all instances of <see cref="AsyncPump"/>
-		/// in this app domain participate in the rolling diagnostic log.
+		/// Gets the underlying <see cref="SynchronizationContext"/> that controls the main thread in the host.
 		/// </summary>
-		public static LoggingLevel DiagnosticLogging { get; set; }
-
-		/// <summary>
-		/// Gets a scheduler that executes tasks on the main thread under the same conditions
-		/// as those used for <see cref="SwitchToMainThreadAsync(CancellationToken)"/>.
-		/// </summary>
-		public TaskScheduler MainThreadTaskScheduler {
-			get { return this.mainThreadTaskScheduler; }
-		}
-
-		/// <summary>
-		/// Gets or sets the SynchronizationContext that is currently executing the
-		/// <see cref="RunSynchronously(Func{Task})"/> call on the Main thread.
-		/// </summary>
-		/// <remarks>
-		/// This value's persistence is AsyncLocal, so the value propagates with the
-		/// ExecutionContext.  It is effectively the "ticket" to the UI thread when one
-		/// exists for the caller.
-		/// </remarks>
-		private SingleThreadSynchronizationContext MainThreadControllingSyncContext {
-			get {
-				AsyncLocal<SingleThreadSynchronizationContext> local;
-				if (threadControllingSyncContexts.TryGetValue(this.mainThread, out local)) {
-					return local.Value;
-				}
-
-				return null;
-			}
-
-			set {
-				var local = threadControllingSyncContexts.GetValue(this.mainThread, thread => new AsyncLocal<SingleThreadSynchronizationContext>());
-				local.Value = value;
-			}
-		}
-
-		/// <summary>Runs the specified asynchronous method.</summary>
-		/// <param name="asyncMethod">The asynchronous method to execute.</param>
-		/// <remarks>
-		/// See the <see cref="RunSynchronously(Func{Task})"/> overload documentation
-		/// for an example.
-		/// </remarks>
-		public void RunSynchronously(Action asyncMethod) {
-			Requires.NotNull(asyncMethod, "asyncMethod");
-
-			using (var framework = new RunFramework(this, asyncVoidMethod: true, completingSynchronously: true)) {
-				// Invoke the function
-				framework.AppliedContext.OperationStarted();
-				asyncMethod();
-				framework.AppliedContext.OperationCompleted();
-
-				// Pump continuations and propagate any exceptions
-				framework.AppliedContext.RunOnCurrentThread();
-			}
+		protected SynchronizationContext UnderlyingSynchronizationContext {
+			get { return this.underlyingSynchronizationContext; }
 		}
 
 		/// <summary>Runs the specified asynchronous method.</summary>
@@ -216,25 +91,12 @@ namespace Microsoft.Threading {
 		public void RunSynchronously(Func<Task> asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
-			using (var framework = new RunFramework(this, asyncVoidMethod: false, completingSynchronously: true)) {
-				// Invoke the function and alert the context when it completes
+			using (var framework = new RunFramework(this, new Joinable(this))) {
 				var t = asyncMethod();
-				Verify.Operation(t != null, "No task provided.");
-				if (t.IsCompleted) {
-					framework.AppliedContext.Complete();
-				} else {
-					t.ContinueWith(
-						(_, state) => ((SingleThreadSynchronizationContext)state).Complete(),
-						framework.AppliedContext,
-						CancellationToken.None,
-						TaskContinuationOptions.ExecuteSynchronously,
-						TaskScheduler.Default);
+				framework.JoinableOperation.SetWrappedTask(t);
 
-					// Pump continuations and propagate any exceptions
-					framework.AppliedContext.RunOnCurrentThread();
-					Assumes.True(t.IsCompleted);
-				}
-
+				// Pump continuations and propagate any exceptions
+				framework.JoinableOperation.CompleteOnCurrentThread();
 				t.GetAwaiter().GetResult();
 			}
 		}
@@ -248,25 +110,12 @@ namespace Microsoft.Threading {
 		public T RunSynchronously<T>(Func<Task<T>> asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
-			using (var framework = new RunFramework(this, asyncVoidMethod: false, completingSynchronously: true)) {
-				// Invoke the function and alert the context when it completes
+			using (var framework = new RunFramework(this, new Joinable<T>(this))) {
 				var t = asyncMethod();
-				Verify.Operation(t != null, "No task provided.");
-				if (t.IsCompleted) {
-					framework.AppliedContext.Complete();
-				} else {
-					t.ContinueWith(
-						(_, state) => ((SingleThreadSynchronizationContext)state).Complete(),
-						framework.AppliedContext,
-						CancellationToken.None,
-						TaskContinuationOptions.ExecuteSynchronously,
-						TaskScheduler.Default);
+				framework.JoinableOperation.SetWrappedTask(t);
 
-					// Pump continuations and propagate any exceptions
-					framework.AppliedContext.RunOnCurrentThread();
-					Assumes.True(t.IsCompleted);
-				}
-
+				// Pump continuations and propagate any exceptions
+				framework.JoinableOperation.CompleteOnCurrentThread();
 				return t.GetAwaiter().GetResult();
 			}
 		}
@@ -281,18 +130,9 @@ namespace Microsoft.Threading {
 		public Joinable BeginAsynchronously(Func<Task> asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
-			using (var framework = new RunFramework(this, asyncVoidMethod: false, completingSynchronously: false, joinable: new Joinable(this))) {
-				// Invoke the function and alert the context when it completes
+			using (var framework = new RunFramework(this, new Joinable(this))) {
 				var task = asyncMethod();
-				Verify.Operation(task != null, "No task provided.");
-				task.ContinueWith(
-					(_, state) => ((SingleThreadSynchronizationContext)state).Complete(),
-					framework.AppliedContext,
-					CancellationToken.None,
-					TaskContinuationOptions.ExecuteSynchronously,
-					TaskScheduler.Default);
-
-				framework.JoinableOperation.Task = task;
+				framework.JoinableOperation.SetWrappedTask(task);
 				return framework.JoinableOperation;
 			}
 		}
@@ -308,37 +148,11 @@ namespace Microsoft.Threading {
 		public Joinable<T> BeginAsynchronously<T>(Func<Task<T>> asyncMethod) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
-			using (var framework = new RunFramework(this, asyncVoidMethod: false, completingSynchronously: false, joinable: new Joinable<T>(this))) {
-				// Invoke the function and alert the context when it completes
+			using (var framework = new RunFramework(this, new Joinable<T>(this))) {
 				var task = asyncMethod();
-				Verify.Operation(task != null, "No task provided.");
-				task.ContinueWith(
-					(_, state) => ((SingleThreadSynchronizationContext)state).Complete(),
-					framework.AppliedContext,
-					CancellationToken.None,
-					TaskContinuationOptions.ExecuteSynchronously,
-					TaskScheduler.Default);
-
-				framework.JoinableOperation.Task = task;
+				framework.JoinableOperation.SetWrappedTask(task);
 				return (Joinable<T>)framework.JoinableOperation;
 			}
-		}
-
-		/// <summary>
-		/// Synchronously blocks until the specified task has completed,
-		/// which was previously obtained from <see cref="BeginAsynchronously{T}"/>.
-		/// </summary>
-		/// <param name="task">The task to wait on.</param>
-		/// <param name="cancellationToken">A cancellation token that will exit this method before the task is completed.</param>
-		/// <exception cref="Exception">Any exception thrown by a faulted task is rethrown by this method.</exception>
-		public void CompleteSynchronously(Task task, CancellationToken cancellationToken = default(CancellationToken)) {
-			Requires.NotNull(task, "task");
-
-			this.RunSynchronously(async delegate {
-				using (this.Join()) {
-					await task.WithCancellation(cancellationToken);
-				}
-			});
 		}
 
 		/// <summary>
@@ -366,59 +180,8 @@ namespace Microsoft.Threading {
 		/// }
 		/// </code>
 		/// </example></remarks>
-		public SynchronizationContextAwaitable SwitchToMainThreadAsync(CancellationToken cancellationToken = default(CancellationToken)) {
-			return new SynchronizationContextAwaitable(this, cancellationToken);
-		}
-
-		/// <summary>
-		/// Called from within a delegate passed to <see cref="RunSynchronously(Func{Task})"/> 
-		/// to share the caller's ticket to the Main thread with any work that uses this instance
-		/// to switch to the Main thread.  Used to avoid deadlocks when the Main thread must
-		/// synchronously block till some otherwise not obviously related work is done.
-		/// </summary>
-		/// <returns>A value to dispose to discontinue sharing the Main thread.</returns>
-		/// <remarks>
-		/// <para>The Main thread is generally available to asynchronous tasks when it is otherwise not occupied,
-		/// or when the Main thread is blocked waiting for an asynchronous task to complete which it has itself
-		/// spun off while inside a call to <see cref="RunSynchronously(Func{Task})"/>.
-		/// When the Main thread must synchronously block waiting for work to complete that did <em>not</em>
-		/// originate from this same RunSynchronously delegate, then wrapping the <c>await</c> inside a
-		/// <c>using</c> block with this method as the expression will avoid deadlocks.</para>
-		/// <example>
-		/// <code>
-		/// var asyncOperation = Task.Run(async delegate {
-		///     // Some background work.
-		///     await this.asyncPump.SwitchToMainThreadAsync();
-		///     // Some Main thread work.
-		/// });
-		/// 
-		/// someAsyncPump.RunSynchronously(async delegate {
-		///     using(this.asyncPump.Join()) {
-		///         await asyncOperation;
-		///     }
-		/// });
-		/// </code>
-		/// </example>
-		/// <para>It is also critical to avoiding deadlocks that if an asynchronous method may be 
-		/// invoked on the Main thread, and this work may need to complete while the Main thread
-		/// subsequently synchronously blocks for that work to complete (using the Join method),
-		/// that this async method's first <c>await</c> be with a call to
-		/// <see cref="SwitchToMainThreadAsync(CancellationToken)"/> (or one that gets <em>off</em> the Main thread)
-		/// so that the await's continuation may execute on the Main thread in cases where the Main
-		/// thread has called <see cref="Join"/> on the async method's work and avoid a deadlock.
-		/// Otherwise a deadlock may result as the async method's continuations will be posted
-		/// to the WPF Dispatcher (or whatever the default SynchronizationContext is for the Main thread,
-		/// which will not be executed while the Main thread is subsequently in a synchronously
-		/// blocking wait.
-		/// </para>
-		/// </remarks>
-		public JoinRelease Join() {
-			var mainThreadControllingSyncContext = this.MainThreadControllingSyncContext;
-			if (mainThreadControllingSyncContext != null) {
-				return new JoinRelease(this.ongoingSyncContexts.AddParent(mainThreadControllingSyncContext));
-			}
-
-			return new JoinRelease(OnDisposeAction.NoOpDefault);
+		public MainThreadAwaitable SwitchToMainThreadAsync(CancellationToken cancellationToken = default(CancellationToken)) {
+			return new MainThreadAwaitable(this, cancellationToken);
 		}
 
 		/// <summary>
@@ -455,22 +218,17 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
-		/// Responds to calls to <see cref="SynchronizationContextAwaiter.OnCompleted"/>
+		/// Responds to calls to <see cref="MainThreadAwaiter.OnCompleted"/>
 		/// by scheduling a continuation to execute on the Main thread.
 		/// </summary>
 		/// <param name="callback">The callback to invoke.</param>
 		/// <param name="state">The state object to pass to the callback.</param>
 		protected virtual void SwitchToMainThreadOnCompleted(SendOrPostCallback callback, object state) {
-			if (joinableOperation.Value != null) {
-				joinableOperation.Value.AddDependency(this.mainThreadSwitchingSyncContext);
-			}
-
-			var wrapper = SingleExecuteProtector.Create(this.mainThreadSwitchingSyncContext, callback, state);
-			this.mainThreadSwitchingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
-
-			var mainThreadControllingSyncContext = this.MainThreadControllingSyncContext;
-			if (mainThreadControllingSyncContext != null) {
-				mainThreadControllingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, wrapper);
+			var ambientJob = this.joinableOperation.Value;
+			if (ambientJob != null) {
+				ambientJob.Post(callback, state, true);
+			} else {
+				this.PostToUnderlyingSynchronizationContextOrThreadPool(callback, state);
 			}
 		}
 
@@ -478,14 +236,26 @@ namespace Microsoft.Threading {
 		/// Posts a message to the specified underlying SynchronizationContext for processing when the main thread
 		/// is freely available.
 		/// </summary>
-		/// <param name="underlyingSynchronizationContext">The underlying SynchronizationContext (usually the WPF Dispatcher in a WPF app).</param>
 		/// <param name="callback">The callback to invoke.</param>
 		/// <param name="state">State to pass to the callback.</param>
-		protected virtual void PostToUnderlyingSynchronizationContext(SynchronizationContext underlyingSynchronizationContext, SendOrPostCallback callback, object state) {
-			Requires.NotNull(underlyingSynchronizationContext, "underlyingSynchronizationContext");
+		protected virtual void PostToUnderlyingSynchronizationContext(SendOrPostCallback callback, object state) {
+			Requires.NotNull(callback, "callback");
+			Assumes.NotNull(this.UnderlyingSynchronizationContext);
+
+			this.UnderlyingSynchronizationContext.Post(callback, state);
+		}
+
+		private void PostToUnderlyingSynchronizationContextOrThreadPool(SendOrPostCallback callback, object state) {
 			Requires.NotNull(callback, "callback");
 
-			underlyingSynchronizationContext.Post(callback, state);
+			if (this.UnderlyingSynchronizationContext != null) {
+				this.PostToUnderlyingSynchronizationContext(callback, state);
+			} else {
+				// By wrapping first, we may be able to avoid a WaitCallback delegate allocation if
+				// the message is already a wrapped message.
+				var wrapper = SingleExecuteProtector.Create(this, callback, state);
+				ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
+			}
 		}
 
 		/// <summary>
@@ -503,40 +273,107 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
-		/// When logging is enabled, this logs the details of this work to the rolling diagnostic log.
-		/// </summary>
-		private static void Log(SynchronizationContext syncContext, SingleExecuteProtector work, bool successful = true) {
-			if (DiagnosticLogging != LoggingLevel.None) {
-				recentlyPostedMessages.Enqueue(new DiagnosticLogEntry(syncContext, work, successful, DiagnosticLogging));
-			}
-		}
-
-		/// <summary>
 		/// Posts a continuation to the UI thread, always causing the caller to yield if specified.
 		/// </summary>
-		private SynchronizationContextAwaitable SwitchToMainThreadAsync(bool alwaysYield) {
-			return new SynchronizationContextAwaitable(this, CancellationToken.None, alwaysYield);
+		private MainThreadAwaitable SwitchToMainThreadAsync(bool alwaysYield) {
+			return new MainThreadAwaitable(this, CancellationToken.None, alwaysYield);
+		}
+
+		private SynchronizationContext ApplicableJobSyncContext {
+			get { return this.mainThread == Thread.CurrentThread ? this.mainThreadJobSyncContext : this.threadPoolJobSyncContext; }
+		}
+
+		public class JoinableFactory {
+			/// <summary>
+			/// The <see cref="AsyncPump"/> that owns this instance.
+			/// </summary>
+			private readonly AsyncPump owner;
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="JoinableFactory"/> class.
+			/// </summary>
+			internal JoinableFactory(AsyncPump owner) {
+				Requires.NotNull(owner, "owner");
+				this.owner = owner;
+				this.Collection = new JoinableCollection(owner);
+				this.MainThreadJobScheduler = new JobTaskScheduler(this.Collection, true);
+				this.ThreadPoolJobScheduler = new JobTaskScheduler(this.Collection, false);
+			}
+
+			/// <summary>
+			/// The collection of joinables that have been created.
+			/// </summary>
+			public JoinableCollection Collection { get; private set; }
+
+			/// <summary>
+			/// Gets a <see cref="TaskScheduler"/> that automatically adds every scheduled task
+			/// to the joinable <see cref="Collection"/> and executes the task on the main thread.
+			/// </summary>
+			public TaskScheduler MainThreadJobScheduler { get; private set; }
+
+			/// <summary>
+			/// Gets a <see cref="TaskScheduler"/> that automatically adds every scheduled task
+			/// to the joinable <see cref="Collection"/> and executes the task on a threadpool thread.
+			/// </summary>
+			public TaskScheduler ThreadPoolJobScheduler { get; private set; }
 		}
 
 		/// <summary>
-		/// Applies a SynchronizationContext to the calling thread that posts continuations
-		/// to the main thread, such that deadlocks are avoided when the continuation becomes
-		/// synchronously waited on while on the main thread (as long as a Join is made).
+		/// A collection of asynchronous operations that may be joined.
 		/// </summary>
-		private void EnsureDeadlockAvoidingSyncContextIsApplied() {
-			// Applies a SynchronizationContext that mitigates deadlocks in async methods that may be invoked
-			// on the Main thread and while invoked asynchronously may ultimately synchronously block the Main
-			// thread for completion.
-			// It's critical that the SynchronizationContext applied to the caller be one 
-			// that not only posts to the current Dispatcher, but to a queue that can be
-			// forwarded to another one in the event that an async method eventually ends up
-			// being synchronously blocked on.
-			if (!(SynchronizationContext.Current is SingleThreadSynchronizationContext)
-				&& SynchronizationContext.Current != this.promotableSyncContext) {
-				// We don't have to worry about backing up the old context to restore it later
-				// because in an async continuation (which this is), .NET automatically does this.
-				SynchronizationContext.SetSynchronizationContext(
-					(SynchronizationContext)this.MainThreadControllingSyncContext ?? this.promotableSyncContext);
+		public class JoinableCollection {
+			/// <summary>
+			/// The <see cref="AsyncPump"/> that owns this instance.
+			/// </summary>
+			private readonly AsyncPump owner;
+
+			private WeakKeyDictionary<Joinable, EmptyStruct> joinables = new WeakKeyDictionary<Joinable, EmptyStruct>();
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="JoinableCollection"/> class.
+			/// </summary>
+			internal JoinableCollection(AsyncPump owner) {
+				Requires.NotNull(owner, "owner");
+				this.owner = owner;
+			}
+
+			internal AsyncPump Owner {
+				get { return this.owner; }
+			}
+
+			/// <summary>
+			/// Joins any main thread affinity of the caller with all joinables in this collection from now until the join is canceled.
+			/// </summary>
+			/// <param name="cancellationToken">A cancellation token that will exit this method before the task is completed.</param>
+			/// <returns>A task that completes after the asynchronous operation completes and the join is reverted.</returns>
+			public async Task JoinAsync(CancellationToken cancellationToken = default(CancellationToken)) {
+				cancellationToken.ThrowIfCancellationRequested();
+				this.owner.SyncContextLock.EnterUpgradeableReadLock();
+				try {
+					throw new NotImplementedException();
+				} finally {
+					this.owner.SyncContextLock.ExitUpgradeableReadLock();
+				}
+			}
+
+			internal void Add(Joinable joinable) {
+				this.owner.SyncContextLock.EnterWriteLock();
+				try {
+					this.joinables[joinable] = EmptyStruct.Instance;
+				} finally {
+					this.owner.SyncContextLock.ExitWriteLock();
+				}
+			}
+
+			internal bool Contains(Joinable joinable) {
+				Requires.NotNull(joinable, "joinable");
+
+				this.owner.SyncContextLock.EnterReadLock();
+				try {
+					return this.joinables.ContainsKey(joinable);
+				} finally {
+					this.owner.SyncContextLock.ExitReadLock();
+				}
 			}
 		}
 
@@ -546,8 +383,7 @@ namespace Microsoft.Threading {
 		/// </summary>
 		public struct RevertRelevance : IDisposable {
 			private readonly AsyncPump pump;
-			private SingleThreadSynchronizationContext oldCallContextValue;
-			private SingleThreadSynchronizationContext oldCurrentSyncContext;
+			private SpecializedSyncContext temporarySyncContext;
 			private Joinable oldJoinable;
 
 			/// <summary>
@@ -558,15 +394,17 @@ namespace Microsoft.Threading {
 				Requires.NotNull(pump, "pump");
 				this.pump = pump;
 
-				this.oldCallContextValue = pump.MainThreadControllingSyncContext;
-				pump.MainThreadControllingSyncContext = null;
+				this.oldJoinable = pump.joinableOperation.Value;
 
-				this.oldJoinable = joinableOperation.Value;
-				joinableOperation.Value = null;
+				if (SynchronizationContext.Current is JobSynchronizationContext) {
+					SynchronizationContext appliedSyncContext = null;
+					if (pump.mainThreadJobSyncContext == SynchronizationContext.Current) {
+						appliedSyncContext = pump.underlyingSynchronizationContext;
+					}
 
-				this.oldCurrentSyncContext = SynchronizationContext.Current as SingleThreadSynchronizationContext;
-				if (this.oldCurrentSyncContext != null) {
-					SynchronizationContext.SetSynchronizationContext(this.oldCurrentSyncContext.PreviousSyncContext);
+					this.temporarySyncContext = appliedSyncContext.Apply(); // Apply() extension method allows null receiver
+				} else {
+					this.temporarySyncContext = default(SpecializedSyncContext);
 				}
 			}
 
@@ -574,15 +412,8 @@ namespace Microsoft.Threading {
 			/// Reverts the async local and thread static values to their original values.
 			/// </summary>
 			public void Dispose() {
-				if (this.pump != null) {
-					this.pump.MainThreadControllingSyncContext = this.oldCallContextValue;
-				}
-
-				joinableOperation.Value = this.oldJoinable;
-
-				if (this.oldCurrentSyncContext != null) {
-					SynchronizationContext.SetSynchronizationContext(this.oldCurrentSyncContext);
-				}
+				this.pump.joinableOperation.Value = this.oldJoinable;
+				this.temporarySyncContext.Dispose();
 			}
 		}
 
@@ -601,9 +432,9 @@ namespace Microsoft.Threading {
 			internal static WaitCallback ExecuteOnceWaitCallback = state => ((SingleExecuteProtector)state).TryExecute();
 
 			/// <summary>
-			/// The instance that created this delegate.
+			/// The async pump responsible for this instance.
 			/// </summary>
-			private SingleThreadSynchronizationContext syncContext;
+			private AsyncPump owner;
 
 			/// <summary>
 			/// The delegate to invoke.  <c>null</c> if it has already been invoked.
@@ -619,25 +450,20 @@ namespace Microsoft.Threading {
 			/// <summary>
 			/// Stores execution callbacks for <see cref="AddExecutingCallback"/>.
 			/// </summary>
-			private ListOfOftenOne<SingleThreadSynchronizationContext.ExecutionQueue> executingCallbacks;
+			private ListOfOftenOne<ExecutionQueue> executingCallbacks;
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class.
 			/// </summary>
-			/// <param name="syncContext">The synchronization context that created this instance.</param>
-			private SingleExecuteProtector(SingleThreadSynchronizationContext syncContext) {
-				Requires.NotNull(syncContext, "syncContext");
-				this.syncContext = syncContext;
-
-				lock (pendingMessages) {
-					pendingMessages.Add(this);
-				}
+			private SingleExecuteProtector(AsyncPump owner) {
+				Requires.NotNull(owner, "owner");
+				this.owner = owner;
 			}
 
 			/// <summary>
 			/// Registers for a callback when this instance is executed.
 			/// </summary>
-			internal void AddExecutingCallback(SingleThreadSynchronizationContext.ExecutionQueue callbackReceiver) {
+			internal void AddExecutingCallback(ExecutionQueue callbackReceiver) {
 				if (!this.HasBeenExecuted) {
 					this.executingCallbacks.Add(callbackReceiver);
 				}
@@ -646,7 +472,7 @@ namespace Microsoft.Threading {
 			/// <summary>
 			/// Unregisters a callback for when this instance is executed.
 			/// </summary>
-			internal void RemoveExecutingCallback(SingleThreadSynchronizationContext.ExecutionQueue callbackReceiver) {
+			internal void RemoveExecutingCallback(ExecutionQueue callbackReceiver) {
 				this.executingCallbacks.Remove(callbackReceiver);
 			}
 
@@ -658,20 +484,13 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>
-			/// Gets a value indicating whether this delegate must be executed on the main thread.
-			/// </summary>
-			internal bool RequiresMainThread {
-				get { return this.syncContext.AffinitizedToMainThread; }
-			}
-
-			/// <summary>
 			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class.
 			/// </summary>
 			/// <param name="syncContext">The synchronization context that created this instance.</param>
 			/// <param name="action">The delegate being wrapped.</param>
 			/// <returns>An instance of <see cref="SingleExecuteProtector"/>.</returns>
-			internal static SingleExecuteProtector Create(SingleThreadSynchronizationContext syncContext, Action action) {
-				return new SingleExecuteProtector(syncContext) {
+			internal static SingleExecuteProtector Create(AsyncPump owner, Action action) {
+				return new SingleExecuteProtector(owner) {
 					invokeDelegate = action,
 				};
 			}
@@ -684,15 +503,15 @@ namespace Microsoft.Threading {
 			/// <param name="callback">The callback to invoke.</param>
 			/// <param name="state">The state object to pass to the callback.</param>
 			/// <returns>An instance of <see cref="SingleExecuteProtector"/>.</returns>
-			internal static SingleExecuteProtector Create(SingleThreadSynchronizationContext syncContext, SendOrPostCallback callback, object state) {
+			internal static SingleExecuteProtector Create(AsyncPump owner, SendOrPostCallback callback, object state) {
 				// As an optimization, recognize if what we're being handed is already an instance of this type,
 				// because if it is, we don't need to wrap it with yet another instance.
 				var existing = state as SingleExecuteProtector;
-				if (callback == ExecuteOnce && existing != null && existing.syncContext == syncContext) {
+				if (callback == ExecuteOnce && existing != null && existing.owner == owner) {
 					return (SingleExecuteProtector)state;
 				}
 
-				return new SingleExecuteProtector(syncContext) {
+				return new SingleExecuteProtector(owner) {
 					invokeDelegate = callback,
 					state = state,
 				};
@@ -705,25 +524,17 @@ namespace Microsoft.Threading {
 				object invokeDelegate = Interlocked.Exchange(ref this.invokeDelegate, null);
 				if (invokeDelegate != null) {
 					this.OnExecuting();
-					SynchronizationContext oldSyncContext = SynchronizationContext.Current;
-					if (this.syncContext.AffinitizedToMainThread) {
-						this.syncContext.ParentPump.EnsureDeadlockAvoidingSyncContextIsApplied();
-					}
-
-					try {
+					using (this.owner.ApplicableJobSyncContext.Apply()) {
 						var action = invokeDelegate as Action;
 						if (action != null) {
 							action();
 						} else {
-							var callback = invokeDelegate as SendOrPostCallback;
-							Assumes.NotNull(callback);
+							var callback = (SendOrPostCallback)invokeDelegate;
 							callback(this.state);
 						}
 
 						// Release the rest of the memory we're referencing.
 						this.state = null;
-					} finally {
-						SynchronizationContext.SetSynchronizationContext(oldSyncContext);
 					}
 
 					return true;
@@ -733,13 +544,9 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>
-			/// Invokes <see cref="SingleThreadSynchronizationContext.ExecutionQueue.OnExecuting"/> handler.
+			/// Invokes <see cref="ExecutionQueue.OnExecuting"/> handler.
 			/// </summary>
 			private void OnExecuting() {
-				lock (pendingMessages) {
-					pendingMessages.Remove(this);
-				}
-
 				// While raising the event, automatically remove the handlers since we'll only
 				// raise them once, and we'd like to avoid holding references that may extend
 				// the lifetime of our recipients.
@@ -755,32 +562,20 @@ namespace Microsoft.Threading {
 		/// A value whose disposal cancels a <see cref="Join"/> operation.
 		/// </summary>
 		public struct JoinRelease : IDisposable {
-			private SingleThreadSynchronizationContext joined;
-			private SingleThreadSynchronizationContext joiner;
-			private readonly IDisposable disposable;
-
-			/// <summary>
-			/// Initializes a new instance of the <see cref="JoinRelease"/> class.
-			/// </summary>
-			internal JoinRelease(IDisposable disposable) {
-				Requires.NotNull(disposable, "disposable");
-				this.disposable = disposable;
-				this.joined = null;
-				this.joiner = null;
-			}
+			private Joinable joined;
+			private Joinable joiner;
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="JoinRelease"/> class.
 			/// </summary>
 			/// <param name="joined">The Main thread controlling SingleThreadSynchronizationContext to use to accelerate execution of Main thread bound work.</param>
 			/// <param name="joiner">The instance that created this value.</param>
-			internal JoinRelease(object joined, object joiner) {
+			internal JoinRelease(Joinable joined, Joinable joiner) {
 				Requires.NotNull(joined, "joined");
 				Requires.NotNull(joiner, "joiner");
 
-				this.joined = (SingleThreadSynchronizationContext)joined;
-				this.joiner = (SingleThreadSynchronizationContext)joiner;
-				this.disposable = null;
+				this.joined = joined;
+				this.joiner = joiner;
 			}
 
 			/// <summary>
@@ -788,13 +583,9 @@ namespace Microsoft.Threading {
 			/// </summary>
 			public void Dispose() {
 				if (this.joined != null) {
-					this.joined.Disjoin(this.joiner);
+					this.joined.RemoveDependency(this.joiner);
 					this.joined = null;
 					this.joiner = null;
-				}
-
-				if (this.disposable != null) {
-					this.disposable.Dispose();
 				}
 			}
 		}
@@ -804,15 +595,36 @@ namespace Microsoft.Threading {
 		/// deadlocks while synchronously blocking the Main thread for the operation's completion.
 		/// </summary>
 		public class Joinable {
+			private static readonly AsyncManualResetEvent alwaysSignaled = new AsyncManualResetEvent(true);
+
 			/// <summary>
 			/// The <see cref="AsyncPump"/> that began the async operation.
 			/// </summary>
 			private readonly AsyncPump owner;
 
+			private Task wrappedTask;
+
 			/// <summary>
-			/// The set of joinables that have been joined to this.
+			/// A map of jobs that we should be willing to dequeue from when we control the UI thread, and a ref count. Lazily constructed.
 			/// </summary>
-			private readonly JoinableSet joinables;
+			/// <remarks>
+			/// When the value in an entry is decremented to 0, the entry is removed from the map.
+			/// </remarks>
+			private WeakKeyDictionary<Joinable, int> childOrJoinedJobs;
+
+			/// <summary>
+			/// An event that is signaled <see cref="childOrJoinedJobs"/> has changed, or queues are lazily constructed. Lazily constructed.
+			/// </summary>
+			private AsyncManualResetEvent dequeuerResetState;
+
+			/// <summary>The queue of work items. Lazily constructed.</summary>
+			private ExecutionQueue mainThreadQueue;
+
+			private ExecutionQueue threadPoolQueue;
+
+			private bool synchronouslyBlockingThreadPool;
+
+			private bool completeRequested;
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="Joinable"/> class.
@@ -822,13 +634,95 @@ namespace Microsoft.Threading {
 				Requires.NotNull(owner, "owner");
 
 				this.owner = owner;
-				this.joinables = new JoinableSet(owner);
+			}
+
+			internal Task DequeuerResetEvent {
+				get {
+					this.owner.SyncContextLock.EnterUpgradeableReadLock();
+					try {
+						if (this.dequeuerResetState == null) {
+							this.owner.SyncContextLock.EnterWriteLock();
+							try {
+								this.dequeuerResetState = new AsyncManualResetEvent();
+							} finally {
+								this.owner.SyncContextLock.ExitWriteLock();
+							}
+						}
+
+						return this.dequeuerResetState.WaitAsync();
+					} finally {
+						this.owner.SyncContextLock.EnterUpgradeableReadLock();
+					}
+				}
+			}
+
+			internal Task EnqueuedNotify {
+				get {
+					this.owner.SyncContextLock.EnterReadLock();
+					try {
+						var queue = this.ApplicableQueue;
+						if (queue != null) {
+							return queue.EnqueuedNotify;
+						}
+
+						// We haven't created an applicable queue yet. Return null,
+						// and our caller will call us back when DequeuerResetEvent is signaled.
+						return null;
+					} finally {
+						this.owner.SyncContextLock.ExitReadLock();
+					}
+				}
+			}
+
+			/// <summary>
+			/// Gets a flag indicating whether the async operation represented by this instance has completed.
+			/// </summary>
+			public bool IsCompleted {
+				get {
+					this.owner.SyncContextLock.EnterReadLock();
+					try {
+						if (this.mainThreadQueue != null && !this.mainThreadQueue.IsCompleted) {
+							return false;
+						}
+
+						if (this.threadPoolQueue != null && !this.threadPoolQueue.IsCompleted) {
+							return false;
+						}
+
+						return this.completeRequested;
+					} finally {
+						this.owner.SyncContextLock.ExitReadLock();
+					}
+				}
 			}
 
 			/// <summary>
 			/// Gets the asynchronous task that completes when the async operation completes.
 			/// </summary>
-			public Task Task { get; internal set; }
+			public Task Task {
+				get {
+					this.owner.SyncContextLock.EnterReadLock();
+					try {
+						// If this assumes ever fails, we need to add the ability to synthesize a task
+						// that we'll complete when the wrapped task that we eventually are assigned completes.
+						Assumes.NotNull(this.wrappedTask);
+						return this.wrappedTask;
+					} finally {
+						this.owner.SyncContextLock.ExitReadLock();
+					}
+				}
+			}
+
+			private ExecutionQueue ApplicableQueue {
+				get {
+					this.owner.SyncContextLock.EnterReadLock();
+					try {
+						return this.owner.mainThread == Thread.CurrentThread ? this.mainThreadQueue : this.threadPoolQueue;
+					} finally {
+						this.owner.SyncContextLock.ExitReadLock();
+					}
+				}
+			}
 
 			/// <summary>
 			/// Synchronously blocks the calling thread until the operation has completed.
@@ -850,8 +744,61 @@ namespace Microsoft.Threading {
 			public async Task JoinAsync(CancellationToken cancellationToken = default(CancellationToken)) {
 				cancellationToken.ThrowIfCancellationRequested();
 
-				using (this.joinables.AddParent(this.owner.MainThreadControllingSyncContext)) {
+				using (this.AmbientJobJoinsThis()) {
 					await this.Task.WithCancellation(cancellationToken);
+				}
+			}
+
+			public void Post(SendOrPostCallback d, object state, bool mainThreadAffinitized) {
+				var wrapper = SingleExecuteProtector.Create(this.owner, d, state);
+				AsyncManualResetEvent dequeuerResetState = null; // initialized if we should pulse it at the end of the method
+
+				this.owner.SyncContextLock.EnterWriteLock();
+				try {
+					if (this.completeRequested) {
+						// This job has already been marked for completion.
+						// We need to forward the work to the fallback mechanisms. We deal with threadpool here,
+						// and main thread down after we release the lock.
+						if (!mainThreadAffinitized) {
+							ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
+						}
+					} else {
+						if (mainThreadAffinitized) {
+							if (this.mainThreadQueue == null) {
+								this.mainThreadQueue = new ExecutionQueue();
+								dequeuerResetState = this.dequeuerResetState;
+							}
+
+							// Try to post the message here, but we'll also post to the underlying sync context
+							// so if this fails (because the operation has completed) we'll still get the work
+							// done eventually.
+							this.mainThreadQueue.TryEnqueue(wrapper);
+						} else {
+							if (this.synchronouslyBlockingThreadPool) {
+								if (this.threadPoolQueue == null) {
+									this.threadPoolQueue = new ExecutionQueue();
+									dequeuerResetState = this.dequeuerResetState;
+								}
+
+								if (!this.threadPoolQueue.TryEnqueue(wrapper)) {
+									ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
+								}
+							} else {
+								ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
+							}
+						}
+					}
+				} finally {
+					this.owner.SyncContextLock.ExitWriteLock();
+				}
+
+				if (mainThreadAffinitized) {
+					// We deferred this till after we release our lock earlier in this method since we're calling outside code.
+					this.owner.PostToUnderlyingSynchronizationContextOrThreadPool(SingleExecuteProtector.ExecuteOnce, wrapper);
+				}
+
+				if (dequeuerResetState != null) {
+					dequeuerResetState.PulseAll();
 				}
 			}
 
@@ -863,192 +810,194 @@ namespace Microsoft.Threading {
 				return this.JoinAsync().GetAwaiter();
 			}
 
+			internal void SetWrappedTask(Task wrappedTask) {
+				Requires.NotNull(wrappedTask, "wrappedTask");
+
+				this.owner.SyncContextLock.EnterWriteLock();
+				try {
+					Assumes.Null(this.wrappedTask);
+					this.wrappedTask = wrappedTask;
+
+					if (wrappedTask.IsCompleted) {
+						this.Complete();
+					} else {
+						// Arrange for the wrapped task to complete this job when the task completes.
+						this.wrappedTask.ContinueWith(
+							(t, s) => ((Joinable)s).Complete(),
+							this,
+							CancellationToken.None,
+							TaskContinuationOptions.ExecuteSynchronously,
+							TaskScheduler.Default);
+					}
+				} finally {
+					this.owner.SyncContextLock.ExitWriteLock();
+				}
+			}
+
+			internal void Complete() {
+				AsyncManualResetEvent dequeuerResetState = null;
+				this.owner.SyncContextLock.EnterWriteLock();
+				try {
+					if (!this.completeRequested) {
+						this.completeRequested = true;
+
+						if (this.mainThreadQueue != null) {
+							this.mainThreadQueue.Complete();
+						}
+
+						if (this.threadPoolQueue != null) {
+							this.threadPoolQueue.Complete();
+						}
+
+						if (this.dequeuerResetState != null && this.mainThreadQueue.IsCompleted && this.threadPoolQueue.IsCompleted) {
+							dequeuerResetState = this.dequeuerResetState;
+						}
+					}
+				} finally {
+					this.owner.SyncContextLock.ExitWriteLock();
+				}
+
+				if (dequeuerResetState != null) {
+					// We explicitly do this outside our lock.
+					dequeuerResetState.PulseAll();
+				}
+			}
+
+			internal void RemoveDependency(Joinable joinChild) {
+				Requires.NotNull(joinChild, "joinChild");
+				this.owner.SyncContextLock.EnterWriteLock();
+				try {
+					int refCount;
+					if (this.childOrJoinedJobs != null && this.childOrJoinedJobs.TryGetValue(joinChild, out refCount)) {
+						if (refCount == 1) {
+							this.childOrJoinedJobs.Remove(joinChild);
+						} else {
+							this.childOrJoinedJobs[joinChild] = refCount--;
+						}
+					}
+				} finally {
+					this.owner.SyncContextLock.ExitWriteLock();
+				}
+			}
+
+			/// <summary>
+			/// Recursively adds this joinable and all its dependencies to the specified set, that are not yet completed.
+			/// </summary>
+			internal void AddSelfAndDescendentOrJoinedJobs(HashSet<Joinable> joinables) {
+				Requires.NotNull(joinables, "joinables");
+
+				if (!this.IsCompleted) {
+					if (joinables.Add(this)) {
+						if (this.childOrJoinedJobs != null) {
+							foreach (var item in this.childOrJoinedJobs) {
+								item.Key.AddSelfAndDescendentOrJoinedJobs(joinables);
+							}
+						}
+					}
+				}
+			}
+
+			/// <summary>Runs a loop to process all queued work items, returning only when the task is completed.</summary>
+			public void CompleteOnCurrentThread() {
+				Assumes.NotNull(this.wrappedTask);
+
+				while (!this.IsCompleted) {
+					SingleExecuteProtector work;
+					Task tryAgainAfter;
+					if (this.TryDequeueSelfOrDependencies(out work, out tryAgainAfter)) {
+						work.TryExecute();
+					} else if (tryAgainAfter != null) {
+						this.owner.WaitSynchronously(tryAgainAfter);
+						Assumes.True(tryAgainAfter.IsCompleted);
+					}
+				}
+
+				Assumes.True(this.Task.IsCompleted);
+			}
+
+			private bool TryDequeueSelfOrDependencies(out SingleExecuteProtector work, out Task tryAgainAfter) {
+				if (this.IsCompleted) {
+					work = null;
+					tryAgainAfter = null;
+					return false;
+				}
+
+				var applicableJobs = new HashSet<Joinable>();
+				this.owner.SyncContextLock.EnterUpgradeableReadLock();
+				try {
+					this.AddSelfAndDescendentOrJoinedJobs(applicableJobs);
+
+					// Check all queues to see if any have immediate work.
+					foreach (var job in applicableJobs) {
+						if (job.TryDequeue(out work)) {
+							tryAgainAfter = null;
+							return true;
+						}
+					}
+
+					// None of the queues had work to do right away. Create a task that will complete when 
+					// our caller should try again.
+					var wakeUpTasks = new List<Task>(applicableJobs.Count * 2);
+					foreach (var job in applicableJobs) {
+						wakeUpTasks.Add(job.DequeuerResetEvent);
+						var enqueuedTask = job.EnqueuedNotify;
+						if (enqueuedTask != null) {
+							wakeUpTasks.Add(enqueuedTask);
+						}
+					}
+
+					work = null;
+					tryAgainAfter = Task.WhenAny(wakeUpTasks);
+					return false;
+				} finally {
+					this.owner.SyncContextLock.ExitUpgradeableReadLock();
+				}
+			}
+
+			private bool TryDequeue(out SingleExecuteProtector work) {
+				this.owner.SyncContextLock.EnterWriteLock();
+				try {
+					var queue = this.ApplicableQueue;
+					if (queue != null) {
+						return queue.TryDequeue(out work);
+					}
+
+					work = null;
+					return false;
+				} finally {
+					this.owner.SyncContextLock.ExitWriteLock();
+				}
+			}
+
 			/// <summary>
 			/// Adds an <see cref="AsyncPump"/> instance as one that is relevant to the async operation.
 			/// </summary>
 			/// <param name="joinChild">The <see cref="SingleThreadSynchronizationContext"/> to join as a child.</param>
-			internal void AddDependency(object joinChild) {
+			private JoinRelease AddDependency(Joinable joinChild) {
 				Requires.NotNull(joinChild, "joinChild");
-				SyncContextLock.EnterWriteLock();
+				Assumes.True(this != joinChild);
+				this.owner.SyncContextLock.EnterWriteLock();
 				try {
-					this.joinables.AddJoinChild((SingleThreadSynchronizationContext)joinChild);
+					if (this.childOrJoinedJobs == null) {
+						this.childOrJoinedJobs = new WeakKeyDictionary<Joinable, int>(capacity: 3);
+					}
+
+					int refCount;
+					this.childOrJoinedJobs.TryGetValue(joinChild, out refCount);
+					this.childOrJoinedJobs[joinChild] = refCount++;
+					return new JoinRelease(this, joinChild);
 				} finally {
-					SyncContextLock.ExitWriteLock();
-				}
-			}
-		}
-
-		private class OnDisposeAction : IDisposable {
-			private static readonly IDisposable noOpSingleton = new OnDisposeAction(() => { });
-			private Action action;
-
-			internal OnDisposeAction(Action action) {
-				Requires.NotNull(action, "action");
-
-				this.action = action;
-			}
-
-			internal static IDisposable NoOpDefault {
-				get { return noOpSingleton; }
-			}
-
-			public void Dispose() {
-				Action action;
-				action = Interlocked.Exchange(ref this.action, null);
-				if (action != null) {
-					action();
-				}
-			}
-		}
-
-		[DebuggerDisplay("Parents: {joinParents.Count} Children: {joinChildren.Count}")]
-		private class JoinableSet : IDisposable {
-			private readonly ObservableSet<SingleThreadSynchronizationContext> joinParents;
-
-			private readonly Dictionary<SingleThreadSynchronizationContext, int> joinedParentsRefCount;
-
-			private readonly ObservableSet<SingleThreadSynchronizationContext> joinChildren;
-
-			/// <summary>
-			/// A map of joined parent and their releasers.
-			/// </summary>
-			private readonly Dictionary<SingleThreadSynchronizationContext, List<JoinRelease>> releasers;
-
-			private readonly AsyncPump owner;
-
-			private bool disposed;
-
-			internal JoinableSet(AsyncPump owner) {
-				Requires.NotNull(owner, "owner");
-
-				this.owner = owner;
-				this.releasers = new Dictionary<SingleThreadSynchronizationContext, List<JoinRelease>>();
-
-				this.joinedParentsRefCount = new Dictionary<SingleThreadSynchronizationContext, int>();
-				this.joinParents = new ObservableSet<SingleThreadSynchronizationContext>();
-				this.joinParents.CollectionChanged += this.JoinParents_Changed;
-
-				this.joinChildren = new ObservableSet<SingleThreadSynchronizationContext>();
-				this.joinChildren.CollectionChanged += this.JoinChildren_Changed;
-			}
-
-			public void Dispose() {
-				List<JoinRelease> releasers = null;
-				SyncContextLock.EnterWriteLock();
-				try {
-					if (this.releasers.Count > 0) {
-						releasers = new List<JoinRelease>(this.releasers.Values.SelectMany(v => v));
-						this.releasers.Clear();
-					}
-
-					this.disposed = true;
-					this.joinParents.CollectionChanged -= this.JoinParents_Changed;
-					this.joinChildren.CollectionChanged -= this.JoinChildren_Changed;
-				} finally {
-					SyncContextLock.ExitWriteLock();
-				}
-
-				if (releasers != null) {
-					foreach (var releaser in releasers) {
-						releaser.Dispose();
-					}
+					this.owner.SyncContextLock.ExitWriteLock();
 				}
 			}
 
-			internal bool AddJoinChild(SingleThreadSynchronizationContext syncContext) {
-				Requires.NotNull(syncContext, "syncContext");
-				return this.joinChildren.Add(syncContext);
-			}
-
-			internal IDisposable AddParent(SingleThreadSynchronizationContext syncContext) {
-				if (syncContext != null) {
-					SyncContextLock.EnterWriteLock();
-					try {
-						int oldParentCount;
-						this.joinedParentsRefCount.TryGetValue(syncContext, out oldParentCount);
-						this.joinedParentsRefCount[syncContext] = oldParentCount + 1;
-						if (oldParentCount == 0) {
-							bool added = this.joinParents.Add(syncContext);
-							Assumes.True(added);
-						}
-
-						return new OnDisposeAction(delegate {
-							int parentRefCount;
-							SyncContextLock.EnterWriteLock();
-							try {
-								if (this.joinedParentsRefCount.TryGetValue(syncContext, out parentRefCount)) {
-									if (parentRefCount == 1) {
-										this.joinParents.Remove(syncContext);
-										this.joinedParentsRefCount.Remove(syncContext);
-									} else {
-										this.joinedParentsRefCount[syncContext] = parentRefCount - 1;
-									}
-								}
-							} finally {
-								SyncContextLock.ExitWriteLock();
-							}
-						});
-					} finally {
-						SyncContextLock.ExitWriteLock();
-					}
-				} else {
-					return OnDisposeAction.NoOpDefault;
-				}
-			}
-
-			private void JoinParents_Changed(object sender, NotifyCollectionChangedEventArgs<SingleThreadSynchronizationContext> e) {
-				Assumes.True(SyncContextLock.IsWriteLockHeld);
-				switch (e.Action) {
-					case NotifyCollectionChangedAction.Add:
-						SingleThreadSynchronizationContext parent = e.Value;
-						List<JoinRelease> parentJoinList;
-						if (!this.releasers.TryGetValue(parent, out parentJoinList)) {
-							this.releasers[parent] = parentJoinList = new List<JoinRelease>();
-						}
-
-						foreach (var child in this.joinChildren) {
-							parentJoinList.Add(parent.Join(child));
-						}
-
-						break;
-					case NotifyCollectionChangedAction.Remove:
-						parent = e.Value;
-						if (this.releasers.TryGetValue(parent, out parentJoinList)) {
-							foreach (var releaser in parentJoinList) {
-								releaser.Dispose();
-							}
-
-							this.releasers.Remove(parent);
-						}
-
-						break;
-					default:
-						throw Assumes.Fail();
-				}
-			}
-
-			private void JoinChildren_Changed(object sender, NotifyCollectionChangedEventArgs<SingleThreadSynchronizationContext> e) {
-				Assumes.True(SyncContextLock.IsWriteLockHeld);
-				Assumes.True(e.Action == NotifyCollectionChangedAction.Add);
-				if (this.disposed) {
-					return;
+			private JoinRelease AmbientJobJoinsThis() {
+				var ambientJob = this.owner.joinableOperation.Value;
+				if (ambientJob != null && ambientJob != this) {
+					return ambientJob.AddDependency(this);
 				}
 
-				SingleThreadSynchronizationContext addedChild = e.Value;
-				// Add the child to our collection of children so that future parents can join them.
-				if (!this.disposed) {
-					// Also join any existing parents.
-					if (this.joinParents.Count > 0) {
-						foreach (var parent in this.joinParents) {
-							List<JoinRelease> parentJoinList;
-							if (!this.releasers.TryGetValue(parent, out parentJoinList)) {
-								this.releasers[parent] = parentJoinList = new List<JoinRelease>();
-							}
-
-							parentJoinList.Add(parent.Join(addedChild));
-						}
-					}
-				}
+				return new JoinRelease();
 			}
 		}
 
@@ -1071,7 +1020,6 @@ namespace Microsoft.Threading {
 			/// </summary>
 			public new Task<T> Task {
 				get { return (Task<T>)base.Task; }
-				set { base.Task = value; }
 			}
 
 			/// <summary>
@@ -1106,667 +1054,216 @@ namespace Microsoft.Threading {
 			}
 		}
 
-		/// <summary>Provides a SynchronizationContext that's single-threaded.</summary>
-		[DebuggerDisplay("UIThread: {affinityWithMainThread} Sync: {completingSynchronously} Queue: {QueueLength} Completed: {IsCompleted}")]
-		private class SingleThreadSynchronizationContext : SynchronizationContext {
-			/// <summary>The pump that created this instance.</summary>
-			private readonly AsyncPump asyncPump;
+		/// <summary>
+		/// A thread-safe queue of <see cref="SingleExecuteProtector"/> elements
+		/// that self-scavenges elements that are executed by other means.
+		/// </summary>
+		private class ExecutionQueue : AsyncQueue<SingleExecuteProtector> {
+			private TaskCompletionSource<object> enqueuedNotification;
 
-			/// <summary>The sync context to forward messages to after this one is disposed.</summary>
-			private readonly SynchronizationContext previousSyncContext;
-
-			/// <summary>
-			/// Whether to automatically <see cref="Complete"/> queue processing after an 
-			/// equal positive number of OperationStarted and OperationCompleted calls are invoked.
-			/// Should be true only when processing for a root "async void" method.
-			/// </summary>
-			private readonly bool autoCompleteWhenOperationsReachZero;
-
-			/// <summary>
-			/// Indicates whether the synchronization context was initialized on the main thread.
-			/// </summary>
-			private readonly bool affinityWithMainThread;
-
-			/// <summary>
-			/// Indicates whether the <see cref="RunOnCurrentThread"/> method of this class is or will be called.
-			/// </summary>
-			private volatile bool completingSynchronously;
-
-			/// <summary>The queue of work items. Lazily constructed.</summary>
-			private ExecutionQueue queue;
-
-			/// <summary>A flag indicating that <see cref="Complete"/> has been invoked.</summary>
-			private bool completionRequested;
-
-			/// <summary>
-			/// A map of queues that we should be willing to dequeue from when we control the UI thread. Lazily constructed.
-			/// </summary>
-			/// <remarks>
-			/// When the value in an entry is decremented to 0, the entry is removed from the map.
-			/// </remarks>
-			private Dictionary<SingleThreadSynchronizationContext, int> extraQueueSources;
-
-			/// <summary>
-			/// A token that is canceled whenever the contents of the <see cref="extraQueueSources"/> has changed.  Lazily constructed.
-			/// </summary>
-			private CancellationTokenSource extraContextsChanged;
-
-			/// <summary>The number of outstanding operations.</summary>
-			private int operationCount = 0;
-
-			/// <summary>
-			/// A list of releasers to dispose of when the queue is completed.
-			/// </summary>
-			private List<JoinRelease> releaseOnCompletion;
-
-			/// <summary>Initializes a new instance of the <see cref="SingleThreadSynchronizationContext"/> class.</summary>
-			/// <param name="asyncPump">The pump that owns this instance.</param>
-			/// <param name="autoCompleteWhenOperationsReachZero">
-			/// Whether to automatically <see cref="Complete"/> queue processing after an 
-			/// equal positive number of OperationStarted and OperationCompleted calls are invoked.
-			/// Should be true only when processing for a root "async void" method.
-			/// </param>
-			/// <param name="completingSynchronously">
-			/// Indicates whether the <see cref="RunOnCurrentThread"/> method of this class is or will be called.
-			/// </param>
-			/// <param name="previousSyncContext">The synchronization context to consider the active one prior to this one.</param>
-			/// <param name="affinitizedToMainThread">A value to force whether posted messages must run on the main thread.</param>
-			internal SingleThreadSynchronizationContext(AsyncPump asyncPump, bool autoCompleteWhenOperationsReachZero, bool completingSynchronously, SynchronizationContext previousSyncContext = null, bool? affinitizedToMainThread = null) {
-				Requires.NotNull(asyncPump, "asyncPump");
-				Assumes.True(previousSyncContext != null || !affinitizedToMainThread.HasValue || !affinitizedToMainThread.Value);
-
-				this.asyncPump = asyncPump;
-				this.autoCompleteWhenOperationsReachZero = autoCompleteWhenOperationsReachZero;
-				this.previousSyncContext = previousSyncContext ?? SynchronizationContext.Current;
-				this.affinityWithMainThread = affinitizedToMainThread ?? Thread.CurrentThread == asyncPump.mainThread && this.asyncPump.underlyingSynchronizationContext != null;
-				this.completingSynchronously = completingSynchronously;
-
-				if (this.affinityWithMainThread && this.previousSyncContext != null && this.previousSyncContext.GetType().IsEquivalentTo(typeof(SynchronizationContext))) {
-					// This is really bad as any code in VS could badly misbehave in this scenario.
-					// Nevertheless we observe (at least when cancelling Win8 app deployment) that
-					// native code can re-enter the UI thread in such a way that the SynchronizationContext
-					// on the main thread gets set to this default one. So to protect ourselves from
-					// executing main thread work on a background thread, we'll forcibly consider the
-					// known good SyncContext as our previous one.
-					Report.Fail("The main thread was observed to have an ordinary SynchronizationContext applied, which would misbehave causing posted messages to execute on the ThreadPool instead of the main thread.");
-					this.previousSyncContext = asyncPump.underlyingSynchronizationContext;
-				}
-			}
-
-			internal SynchronizationContext PreviousSyncContext {
-				get { return this.previousSyncContext; }
-			}
-
-			internal AsyncPump ParentPump {
-				get { return this.asyncPump; }
-			}
-
-			internal bool AffinitizedToMainThread {
-				get { return this.affinityWithMainThread; }
+			internal ExecutionQueue() {
 			}
 
 			/// <summary>
-			/// Gets a value indicating whether all tasks this instance wil accept have been completed.
+			/// Gets a task that completes when the queue is non-empty or completed.
 			/// </summary>
-			internal bool IsCompleted {
-				get { return this.completionRequested && (this.queue == null || this.queue.IsCompleted); }
-			}
-
-			/// <summary>
-			/// Gets the current length of the queue.
-			/// </summary>
-			/// <remarks>
-			/// This property is for the DebuggerDisplay attribute on this class.
-			/// </remarks>
-			private int QueueLength {
-				get { return this.queue == null ? 0 : this.queue.Count; }
-			}
-
-			/// <summary>Dispatches an asynchronous message to the synchronization context.</summary>
-			/// <param name="d">The System.Threading.SendOrPostCallback delegate to call.</param>
-			/// <param name="state">The object passed to the delegate.</param>
-			public override void Post(SendOrPostCallback d, object state) {
-				Requires.NotNull(d, "d");
-
-				this.EnsureQueueInitializedUnlessCompleted();
-
-				// We'll be posting this message to (potentially) multiple queues, so we wrap
-				// the work up in an object that ensures the work executes no more than once.
-				var executor = SingleExecuteProtector.Create(this, d, state);
-				bool enqueuedSuccessfully = false;
-				if (this.queue != null) {
-					enqueuedSuccessfully = this.queue.TryEnqueue(executor);
-					Log(this, executor, enqueuedSuccessfully);
-				}
-
-				// Avoid posting the message elsewhere for processing when we're on a threadpool thread
-				// that won't be released till this work is done.
-				if (this.affinityWithMainThread || !this.completingSynchronously || !enqueuedSuccessfully) {
-					this.PostToFallbackScheduler(executor);
-				}
-			}
-
-			/// <summary>Not supported.</summary>
-			public override void Send(SendOrPostCallback d, object state) {
-				// Some folks unfortunately capture the SynchronizationContext from the UI thread
-				// while this one is active.  So forward it to
-				// the underlying sync context to not break those folks.
-				// Ideally this method would throw because synchronously crossing threads is a bad idea.
-				this.previousSyncContext.Send(d, state);
-			}
-
-			/// <summary>Runs an loop to process all queued work items.</summary>
-			public void RunOnCurrentThread() {
-				try {
-					while (true) {
-						var dequeueTask = this.DequeueFromAllSelfAndJoinedQueuesAsync();
-						this.asyncPump.WaitSynchronously(dequeueTask);
-						Assumes.True(dequeueTask.IsCompleted);
-
-						// A null result can mean either we're completed, or that
-						// there were no work items immediately available for executing.
-						if (dequeueTask.Result != null) {
-							dequeueTask.Result.TryExecute();
-						} else if (this.IsCompleted) {
-							break;
-						} else {
-							// The queue had been empty, but the task we were waiting on completed
-							// because the queue is now non-empty or some other reason warrants
-							// re-attempting to dequeue. Loop around and do so.
-						}
-					}
-				} finally {
-					this.completingSynchronously = false;
-				}
-			}
-
-			/// <summary>Notifies the context that no more work will arrive.</summary>
-			public void Complete() {
-				SyncContextLock.EnterWriteLock();
-				try {
-					bool firstCompletionRequest = !this.completionRequested;
-					this.completionRequested = true;
-					if (this.queue != null) {
-						this.queue.Complete();
-					}
-
-					if (firstCompletionRequest) {
-						if (this.IsCompleted) {
-							this.OnCompleted();
-						} else {
-							Assumes.NotNull(this.queue);
-							this.queue.Completion.ContinueWith(
-								(_, state) => ((SingleThreadSynchronizationContext)state).OnCompleted(),
-								this,
-								CancellationToken.None,
-								TaskContinuationOptions.ExecuteSynchronously,
-								TaskScheduler.Default);
-						}
-					}
-				} finally {
-					SyncContextLock.ExitWriteLock();
-				}
-			}
-
-			private void OnCompleted() {
-				SyncContextLock.EnterWriteLock();
-				try {
-					if (this.releaseOnCompletion != null) {
-						foreach (var releaser in this.releaseOnCompletion) {
-							releaser.Dispose();
-						}
-
-						this.releaseOnCompletion = null;
-					}
-				} finally {
-					SyncContextLock.ExitWriteLock();
-				}
-			}
-
-			/// <summary>Invoked when an async operation is started.</summary>
-			public override void OperationStarted() {
-				Interlocked.Increment(ref this.operationCount);
-			}
-
-			/// <summary>Invoked when an async operation is completed.</summary>
-			public override void OperationCompleted() {
-				if (Interlocked.Decrement(ref this.operationCount) == 0) {
-					if (this.autoCompleteWhenOperationsReachZero) {
-						this.Complete();
-					}
-				}
-			}
-
-			/// <summary>
-			/// Adds the specified <see cref="SingleThreadSynchronizationContext"/> as a child,
-			/// (i.e. dependency) of this parent.
-			/// </summary>
-			/// <param name="other">The child/dependency.</param>
-			/// <returns>A releaser that can be used to terminate the relationship prior to the child's completion.</returns>
-			internal JoinRelease Join(SingleThreadSynchronizationContext other) {
-				Requires.NotNull(other, "other");
-
-				this.JoinMainThreadSyncContextAncestorIfApplicable();
-				if (this.affinityWithMainThread == other.affinityWithMainThread) {
-					CancellationTokenSource extraContextsChanged = null;
-					SyncContextLock.EnterWriteLock();
-					try {
-						if (this.extraQueueSources == null) {
-							this.extraQueueSources = new Dictionary<SingleThreadSynchronizationContext, int>();
-						}
-
-						int refCount;
-						this.extraQueueSources.TryGetValue(other, out refCount);
-						refCount++;
-						this.extraQueueSources[other] = refCount;
-
-						// Only if the actual set of queues changed do we want to disrupt the cancellation token.
-						if (refCount == 1) {
-							extraContextsChanged = this.extraContextsChanged;
-							this.extraContextsChanged = null;
-						}
-					} finally {
-						SyncContextLock.ExitWriteLock();
-					}
-
-					var nestingSyncContext = this.previousSyncContext as SingleThreadSynchronizationContext;
-					if (nestingSyncContext != null) {
-						nestingSyncContext.Join(other);
-					}
-
-					if (extraContextsChanged != null) {
-						extraContextsChanged.Cancel();
-					}
-
-					var releaser = new JoinRelease(this, other);
-
-					// Arrange to automatically disjoin when the child context completes.
-					other.ReleaseJoinOnCompletion(releaser);
-
-					return releaser;
-				} else {
-					return new JoinRelease();
-				}
-			}
-
-			internal void Disjoin(SingleThreadSynchronizationContext other) {
-				CancellationTokenSource extraContextsChanged = null;
-				SyncContextLock.EnterWriteLock();
-				try {
-					int refCount = 0;
-					if (this.extraQueueSources != null && this.extraQueueSources.TryGetValue(other, out refCount)) {
-						if (--refCount <= 0) {
-							this.extraQueueSources.Remove(other);
-						} else {
-							this.extraQueueSources[other] = refCount;
-						}
-					}
-
-					// Only if the actual set of queues changed do we want to disrupt the cancellation token.
-					if (refCount == 0) {
-						extraContextsChanged = this.extraContextsChanged;
-						this.extraContextsChanged = null;
-					}
-				} finally {
-					SyncContextLock.ExitWriteLock();
-				}
-
-				var nestingSyncContext = this.previousSyncContext as SingleThreadSynchronizationContext;
-				if (nestingSyncContext != null) {
-					nestingSyncContext.Disjoin(other);
-				}
-
-				if (extraContextsChanged != null) {
-					extraContextsChanged.Cancel();
-				}
-			}
-
-			/// <summary>
-			/// Recursively adds the specified context's queue and all its dependency queues to the specified set.
-			/// </summary>
-			private static void AddDependentQueues(ISet<ExecutionQueue> contextSet, SingleThreadSynchronizationContext context) {
-				Requires.NotNull(contextSet, "contextSet");
-				Requires.NotNull(context, "context");
-
-				context.EnsureQueueInitializedUnlessCompleted();
-				if (!context.IsCompleted) {
-					if (contextSet.Add(context.queue)) {
-						SingleThreadSynchronizationContext[] extraQueueSourceKeys = null;
-						SyncContextLock.EnterReadLock();
-						try {
-							if (context.extraQueueSources != null) {
-								extraQueueSourceKeys = context.extraQueueSources.Keys.ToArray();
-							}
-
-							if (extraQueueSourceKeys != null) {
-								foreach (var childContext in extraQueueSourceKeys) {
-									AddDependentQueues(contextSet, childContext);
-								}
-							}
-						} finally {
-							SyncContextLock.ExitReadLock();
-						}
-					}
-				}
-			}
-
-			private void EnsureQueueInitializedUnlessCompleted() {
-				SyncContextLock.EnterUpgradeableReadLock();
-				try {
-					this.JoinMainThreadSyncContextAncestorIfApplicable();
-					if (this.queue == null && !this.completionRequested) {
-						SyncContextLock.EnterWriteLock();
-						try {
-							this.queue = new ExecutionQueue();
-						} finally {
-							SyncContextLock.ExitWriteLock();
-						}
-					}
-				} finally {
-					SyncContextLock.ExitUpgradeableReadLock();
-				}
-			}
-
-			/// <summary>
-			/// Joins our parent sync context where applicable, so that any messages in our own queue
-			/// will also be interesting for our parent to execute.
-			/// </summary>
-			private void JoinMainThreadSyncContextAncestorIfApplicable() {
-				SyncContextLock.EnterUpgradeableReadLock();
-				try {
-					if (!this.IsCompleted) {
-						SyncContextLock.EnterWriteLock();
-						try {
-							if (this.asyncPump.ongoingSyncContexts.AddJoinChild(this)) {
-								if (this.affinityWithMainThread) {
-									// Select our nearest ancestor that will execute messages on the main thread.
-									var ancestor = this.asyncPump.MainThreadControllingSyncContext;
-
-									// If there is no such ancestor, no joining is necessary.
-									if (ancestor != null) {
-										// Join our ancestor.  We'll automatically disjoin when our work is complete.
-										ancestor.Join(this);
-									}
-								}
-							}
-						} finally {
-							SyncContextLock.ExitWriteLock();
-						}
-					}
-				} finally {
-					SyncContextLock.ExitUpgradeableReadLock();
-				}
-			}
-
-			/// <summary>
-			/// Forwards the execution request to occur on the Main thread's primary dispatcher, when applicable.
-			/// </summary>
-			/// <param name="wrapper">The delegate wrapper that guarantees the delegate cannot be invoked more than once.</param>
-			private void PostToFallbackScheduler(SingleExecuteProtector wrapper) {
-				Requires.NotNull(wrapper, "wrapper");
-
-				if (this.affinityWithMainThread) {
-					// We also post this to the underlying sync context (WPF dispatcher) so that when one item
-					// in the queue causes modal UI to appear,
-					// that someone who posts to this SynchronizationContext (which will be active during
-					// that modal dialog) the message has a chance of being executed before the dialog is dismissed.
-					// We're passing the message to the root SynchronizationContext.  Call a virtual method to do this
-					// as our host may want to customize behavior (adjusting message priority for example).
-					if (this.asyncPump.underlyingSynchronizationContext != null) {
-						this.asyncPump.PostToUnderlyingSynchronizationContext(this.asyncPump.underlyingSynchronizationContext, SingleExecuteProtector.ExecuteOnce, wrapper);
-						Log(this.asyncPump.underlyingSynchronizationContext, wrapper);
-					}
-				} else {
-					Assumes.False(wrapper.RequiresMainThread);
-					ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
-					Log(null, wrapper);
-				}
-			}
-
-			private void ReleaseJoinOnCompletion(JoinRelease releaser) {
-				SyncContextLock.EnterWriteLock();
-				try {
-
-					if (this.IsCompleted) {
-						releaser.Dispose();
-					} else {
-						if (this.releaseOnCompletion == null) {
-							this.releaseOnCompletion = new List<JoinRelease>(1);
-						}
-
-						this.releaseOnCompletion.Add(releaser);
-					}
-				} finally {
-					SyncContextLock.ExitWriteLock();
-				}
-			}
-
-			private async Task<SingleExecuteProtector> DequeueFromAllSelfAndJoinedQueuesAsync() {
-				while (true) {
-					if (this.IsCompleted) {
-						return null;
-					}
-
-					CancellationToken extraContextsChangedToken;
-					HashSet<ExecutionQueue> applicableQueues;
-					SyncContextLock.EnterUpgradeableReadLock();
-					try {
-						if (this.extraContextsChanged == null) {
-							this.extraContextsChanged = new CancellationTokenSource();
-						}
-
-						extraContextsChangedToken = this.extraContextsChanged.Token;
-						applicableQueues = new HashSet<ExecutionQueue>();
-						AddDependentQueues(applicableQueues, this);
-					} finally {
-						SyncContextLock.ExitUpgradeableReadLock();
-					}
-
-					if (!extraContextsChangedToken.IsCancellationRequested && !this.IsCompleted) {
-						// Check all queues to see if any have immediate work.
-						bool applicableQueuesOutdated = false;
-						foreach (var queue in applicableQueues) {
-							SingleExecuteProtector value;
-							if (queue.TryDequeue(out value)) {
-								return value;
-							} else if (queue.IsCompleted) {
-								applicableQueuesOutdated = true;
-							}
-						}
-
-						if (applicableQueuesOutdated) {
-							continue;
-						}
-
-						// None of the queues had work to do right away.
-						try {
-							await Task.WhenAny(applicableQueues.Select(q => q.EnqueuedNotify)).WithCancellation(extraContextsChangedToken).ConfigureAwait(false);
-						} catch (OperationCanceledException) {
-						}
-
-						// Don't loop and dequeue right away. We've yielded, so our caller may no longer be
-						// on the top of their callstack. Just return null. Our caller will call us again
-						// when they're in control and we'll try dequeuing at that time.
-						return null;
-					}
-				}
-			}
-
-			/// <summary>
-			/// A thread-safe queue of <see cref="SingleExecuteProtector"/> elements
-			/// that self-scavenges elements that are executed by other means.
-			/// </summary>
-			internal class ExecutionQueue : AsyncQueue<SingleExecuteProtector> {
-				private TaskCompletionSource<object> enqueuedNotification;
-
-				internal ExecutionQueue() {
-				}
-
-				/// <summary>
-				/// Gets a task that completes when the queue is non-empty or completed.
-				/// </summary>
-				internal Task EnqueuedNotify {
-					get {
-						if (this.enqueuedNotification == null) {
-							lock (this.SyncRoot) {
-								if (!this.IsEmpty || this.IsCompleted) {
-									// We're already non-empty or totally done, so avoid allocating a task
-									// by returning a singleton completed task.
-									return TplExtensions.CompletedTask;
-								}
-
-								if (this.enqueuedNotification == null) {
-									var tcs = new TaskCompletionSource<object>();
-									if (!this.IsEmpty) {
-										tcs.TrySetResult(null);
-									}
-
-									this.enqueuedNotification = tcs;
-								}
-							}
-						}
-
-						return this.enqueuedNotification.Task;
-					}
-				}
-
-				protected override int InitialCapacity {
-					get { return 1; } // in non-concurrent cases, 1 is sufficient.
-				}
-
-				protected override void OnEnqueued(SingleExecuteProtector value, bool alreadyDispatched) {
-					base.OnEnqueued(value, alreadyDispatched);
-
-					// We only need to consider scavenging our queue if this item was
-					// actually added to the queue.
-					if (!alreadyDispatched) {
-						value.AddExecutingCallback(this);
-
-						// It's possible this value has already been executed
-						// (before our event wire-up was applied). So check and
-						// scavenge.
-						if (value.HasBeenExecuted) {
-							this.Scavenge();
-						}
-
-						TaskCompletionSource<object> notifyCompletionSource = null;
+			internal Task EnqueuedNotify {
+				get {
+					if (this.enqueuedNotification == null) {
 						lock (this.SyncRoot) {
-							// Also cause continuations to execute that may be waiting on a non-empty queue.
-							// But be paranoid about whether the queue is still non-empty since this method
-							// isn't called within a lock.
-							if (!this.IsEmpty && this.enqueuedNotification != null && !this.enqueuedNotification.Task.IsCompleted) {
-								// Snag the task source to complete, but don't complete it until
-								// we're outside our lock so 3rd party code doesn't inline.
-								notifyCompletionSource = this.enqueuedNotification;
+							if (!this.IsEmpty || this.IsCompleted) {
+								// We're already non-empty or totally done, so avoid allocating a task
+								// by returning a singleton completed task.
+								return TplExtensions.CompletedTask;
+							}
+
+							if (this.enqueuedNotification == null) {
+								var tcs = new TaskCompletionSource<object>();
+								if (!this.IsEmpty) {
+									tcs.TrySetResult(null);
+								}
+
+								this.enqueuedNotification = tcs;
 							}
 						}
-
-						if (notifyCompletionSource != null) {
-							notifyCompletionSource.TrySetResult(null);
-						}
 					}
+
+					return this.enqueuedNotification.Task;
 				}
+			}
 
-				protected override void OnDequeued(SingleExecuteProtector value) {
-					base.OnDequeued(value);
-					value.RemoveExecutingCallback(this);
+			protected override int InitialCapacity {
+				get { return 1; } // in non-concurrent cases, 1 is sufficient.
+			}
 
-					lock (this.SyncRoot) {
-						// If the queue is now empty and we have a completed non-empty task, 
-						// clear the task field so that the next person to ask for a task that
-						// signals a non-empty queue will get an incompleted task.
-						if (this.IsEmpty && this.enqueuedNotification != null && this.enqueuedNotification.Task.IsCompleted) {
-							this.enqueuedNotification = null;
-						}
+			protected override void OnEnqueued(SingleExecuteProtector value, bool alreadyDispatched) {
+				base.OnEnqueued(value, alreadyDispatched);
+
+				// We only need to consider scavenging our queue if this item was
+				// actually added to the queue.
+				if (!alreadyDispatched) {
+					value.AddExecutingCallback(this);
+
+					// It's possible this value has already been executed
+					// (before our event wire-up was applied). So check and
+					// scavenge.
+					if (value.HasBeenExecuted) {
+						this.Scavenge();
 					}
-				}
 
-				protected override void OnCompleted() {
-					base.OnCompleted();
-
-					TaskCompletionSource<object> notifyCompletionSource;
+					TaskCompletionSource<object> notifyCompletionSource = null;
 					lock (this.SyncRoot) {
-						notifyCompletionSource = this.enqueuedNotification;
+						// Also cause continuations to execute that may be waiting on a non-empty queue.
+						// But be paranoid about whether the queue is still non-empty since this method
+						// isn't called within a lock.
+						if (!this.IsEmpty && this.enqueuedNotification != null && !this.enqueuedNotification.Task.IsCompleted) {
+							// Snag the task source to complete, but don't complete it until
+							// we're outside our lock so 3rd party code doesn't inline.
+							notifyCompletionSource = this.enqueuedNotification;
+						}
 					}
 
 					if (notifyCompletionSource != null) {
 						notifyCompletionSource.TrySetResult(null);
 					}
 				}
+			}
 
-				internal void OnExecuting(object sender, EventArgs e) {
-					this.Scavenge();
+			protected override void OnDequeued(SingleExecuteProtector value) {
+				base.OnDequeued(value);
+				value.RemoveExecutingCallback(this);
+
+				lock (this.SyncRoot) {
+					// If the queue is now empty and we have a completed non-empty task, 
+					// clear the task field so that the next person to ask for a task that
+					// signals a non-empty queue will get an incompleted task.
+					if (this.IsEmpty && this.enqueuedNotification != null && this.enqueuedNotification.Task.IsCompleted) {
+						this.enqueuedNotification = null;
+					}
+				}
+			}
+
+			protected override void OnCompleted() {
+				base.OnCompleted();
+
+				TaskCompletionSource<object> notifyCompletionSource;
+				lock (this.SyncRoot) {
+					notifyCompletionSource = this.enqueuedNotification;
 				}
 
-				private void Scavenge() {
-					SingleExecuteProtector stale;
-					while (this.TryDequeue(p => p.HasBeenExecuted, out stale)) { }
+				if (notifyCompletionSource != null) {
+					notifyCompletionSource.TrySetResult(null);
 				}
+			}
+
+			internal void OnExecuting(object sender, EventArgs e) {
+				this.Scavenge();
+			}
+
+			private void Scavenge() {
+				SingleExecuteProtector stale;
+				while (this.TryDequeue(p => p.HasBeenExecuted, out stale)) { }
 			}
 		}
 
 		/// <summary>
-		/// A synchronization context that simply forwards posted messages back to
-		/// the <see cref="SingleThreadSynchronizationContext.Post"/> method.
+		/// A synchronization context that forwards posted messages to the ambient job.
 		/// </summary>
-		private class PromotableMainThreadSynchronizationContext : SynchronizationContext {
+		private class JobSynchronizationContext : SynchronizationContext {
 			/// <summary>
-			/// The instance to forward calls to Post to.
+			/// The pump that created this instance.
 			/// </summary>
 			private readonly AsyncPump asyncPump;
 
 			/// <summary>
-			/// Initializes a new instance of the <see cref="PromotableMainThreadSynchronizationContext"/> class.
+			/// A flag indicating whether messages posted to this instance should execute
+			/// on the main thread.
 			/// </summary>
-			internal PromotableMainThreadSynchronizationContext(AsyncPump asyncPump) {
-				Requires.NotNull(asyncPump, "asyncPump");
-				this.asyncPump = asyncPump;
+			private readonly bool mainThreadAffinitized;
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="JobSynchronizationContext"/> class.
+			/// </summary>
+			/// <param name="owner">The <see cref="AsyncPump"/> that created this instance.</param>
+			/// <param name="mainThreadAffinitized">A value indicating whether messages posted to this instance should execute on the main thread.</param>
+			internal JobSynchronizationContext(AsyncPump owner, bool mainThreadAffinitized) {
+				Requires.NotNull(owner, "owner");
+
+				this.asyncPump = owner;
+				this.mainThreadAffinitized = mainThreadAffinitized;
 			}
 
 			/// <summary>
-			/// Gets the controlling async pump.
-			/// </summary>
-			internal AsyncPump OwningPump {
-				get { return this.asyncPump; }
-			}
-
-			/// <summary>
-			/// Forwards posted delegates to <see cref="SingleThreadSynchronizationContext.Post"/>
+			/// Forwards the specified message to the ambient job if applicable; otherwise to the underlying scheduler.
 			/// </summary>
 			public override void Post(SendOrPostCallback d, object state) {
-				var executor = SingleExecuteProtector.Create(this.asyncPump.mainThreadSwitchingSyncContext, d, state);
-				this.asyncPump.mainThreadSwitchingSyncContext.Post(SingleExecuteProtector.ExecuteOnce, executor);
-				Log(this, executor);
+				var job = this.asyncPump.joinableOperation.Value;
+
+				if (job != null) {
+					job.Post(d, state, this.mainThreadAffinitized);
+				} else if (this.mainThreadAffinitized) {
+					this.asyncPump.PostToUnderlyingSynchronizationContextOrThreadPool(d, state);
+				} else {
+					ThreadPool.QueueUserWorkItem(new WaitCallback(d), state);
+				}
 			}
 
 			/// <summary>
-			/// Executes the delegate on the current thread if called on the Main thread,
-			/// otherwise throws <see cref="NotSupportedException"/>.
+			/// Forwards a message to the ambient job and blocks on its execution.
 			/// </summary>
 			public override void Send(SendOrPostCallback d, object state) {
-				this.asyncPump.underlyingSynchronizationContext.Send(d, state);
+				// Some folks unfortunately capture the SynchronizationContext from the UI thread
+				// while this one is active.  So forward it to the underlying sync context to not break those folks.
+				// Ideally this method would throw because synchronously crossing threads is a bad idea.
+				if (this.mainThreadAffinitized) {
+					if (this.asyncPump.mainThread == Thread.CurrentThread) {
+						d(state);
+					} else {
+						this.asyncPump.underlyingSynchronizationContext.Send(d, state);
+					}
+				} else {
+					if (Thread.CurrentThread.IsThreadPoolThread) {
+						d(state);
+					} else {
+						var callback = new WaitCallback(d);
+						Task.Factory.StartNew(
+							s => {
+								var tuple = (Tuple<SendOrPostCallback, object>)s;
+								tuple.Item1(tuple.Item2);
+							},
+							Tuple.Create<SendOrPostCallback, object>(d, state),
+							CancellationToken.None,
+							TaskCreationOptions.None,
+							TaskScheduler.Default).Wait();
+					}
+				}
 			}
 		}
 
 		/// <summary>
 		/// A TaskScheduler that executes task on the main thread.
 		/// </summary>
-		private class MainThreadScheduler : TaskScheduler {
+		private class JobTaskScheduler : TaskScheduler {
 			/// <summary>The synchronization object for field access.</summary>
 			private readonly object syncObject = new object();
 
-			/// <summary>The owning AsyncPump.</summary>
-			private readonly AsyncPump asyncPump;
+			/// <summary>The collection that all created jobs will belong to.</summary>
+			private readonly JoinableCollection collection;
 
 			/// <summary>The scheduled tasks that have not yet been executed.</summary>
 			private readonly HashSet<Task> queuedTasks = new HashSet<Task>();
 
+			/// <summary>A value indicating whether scheduled tasks execute on the main thread; <c>false</c> indicates threadpool execution.</summary>
+			private readonly bool mainThreadAffinitized;
+
 			/// <summary>
-			/// Initializes a new instance of the <see cref="MainThreadScheduler"/> class.
+			/// Initializes a new instance of the <see cref="JobTaskScheduler"/> class.
 			/// </summary>
-			internal MainThreadScheduler(AsyncPump asyncPump) {
-				Requires.NotNull(asyncPump, "asyncPump");
-				this.asyncPump = asyncPump;
+			/// <param name="collection">The collection that all created jobs will belong to.</param>
+			/// <param name="mainThreadAffinitized">A value indicating whether scheduled tasks execute on the main thread; <c>false</c> indicates threadpool execution.</param>
+			internal JobTaskScheduler(JoinableCollection collection, bool mainThreadAffinitized) {
+				Requires.NotNull(collection, "collection");
+				this.collection = collection;
 			}
 
 			/// <summary>
@@ -1781,13 +1278,29 @@ namespace Microsoft.Threading {
 			/// <summary>
 			/// Enqueues a task.
 			/// </summary>
-			protected override async void QueueTask(Task task) {
+			protected override void QueueTask(Task task) {
 				lock (this.syncObject) {
 					this.queuedTasks.Add(task);
 				}
 
+				// Wrap this task in a newly created joinable.
+				var joinable = this.collection.Owner.BeginAsynchronously(
+					() => this.ExecuteTaskInAppropriateContextAsync(task));
+				this.collection.Add(joinable);
+			}
+
+			private async Task ExecuteTaskInAppropriateContextAsync(Task task) {
+				Requires.NotNull(task, "task");
+
 				// We must never inline task execution in this method
-				await this.asyncPump.SwitchToMainThreadAsync(alwaysYield: true);
+				if (this.mainThreadAffinitized) {
+					await this.collection.Owner.SwitchToMainThreadAsync(alwaysYield: true);
+				} else if (Thread.CurrentThread.IsThreadPoolThread) {
+					await Task.Yield();
+				} else {
+					await TaskScheduler.Default;
+				}
+
 				this.TryExecuteTask(task);
 
 				lock (this.syncObject) {
@@ -1799,146 +1312,16 @@ namespace Microsoft.Threading {
 			/// Executes a task inline if we're on the UI thread.
 			/// </summary>
 			protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued) {
-				if (this.asyncPump.mainThread == Thread.CurrentThread) {
-					bool result = this.TryExecuteTask(task);
-					if (taskWasPreviouslyQueued) {
-						lock (this.syncObject) {
-							this.queuedTasks.Remove(task);
-						}
-					}
-
-					return result;
-				}
-
+				// If we want to support this scenario, we'll still need to create a joinable,
+				// or retrieve the one previously created.
 				return false;
-			}
-		}
-
-		/// <summary>
-		/// Notifies listeners of dynamic changes, such as when items get added and removed
-		/// or the whole list is refreshed.
-		/// </summary>
-		private interface INotifyCollectionChanged<T> {
-			/// <summary>
-			/// Occurs when the collection changes.
-			/// </summary>
-			event EventHandler<NotifyCollectionChangedEventArgs<T>> CollectionChanged;
-		}
-
-		private struct NotifyCollectionChangedEventArgs<T> {
-			internal NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction action, T value)
-				: this() {
-				this.Action = action;
-				this.Value = value;
-			}
-
-			public NotifyCollectionChangedAction Action { get; private set; }
-
-			public T Value { get; private set; }
-		}
-
-		/// <summary>
-		/// A thread-safe, observable set.
-		/// </summary>
-		/// <typeparam name="T">The type of elements stored by the collection.</typeparam>
-		[DebuggerDisplay("Count = {Count}")]
-		private class ObservableSet<T> : ICollection<T>, INotifyCollectionChanged<T> {
-			/// <summary>
-			/// The underlying hash set.
-			/// </summary>
-			private readonly HashSet<T> collection = new HashSet<T>();
-
-			/// <summary>
-			/// The synchronization object.
-			/// </summary>
-			private readonly object syncObject = new object();
-
-			public event EventHandler<NotifyCollectionChangedEventArgs<T>> CollectionChanged;
-
-			public int Count {
-				get {
-					lock (this.syncObject) {
-						return this.collection.Count;
-					}
-				}
-			}
-
-			public bool Add(T item) {
-				bool added;
-				lock (this.syncObject) {
-					added = this.collection.Add(item);
-				}
-
-				if (added) {
-					this.OnCollectionChanged(NotifyCollectionChangedAction.Add, item);
-				}
-
-				return added;
-			}
-
-			void ICollection<T>.Add(T item) {
-				this.Add(item);
-			}
-
-			public void Clear() {
-				bool cleared;
-				lock (this.syncObject) {
-					cleared = this.collection.Count > 0;
-					this.collection.Clear();
-				}
-			}
-
-			public bool Contains(T item) {
-				throw new NotImplementedException();
-			}
-
-			public void CopyTo(T[] array, int arrayIndex) {
-				throw new NotImplementedException();
-			}
-
-			public bool IsReadOnly {
-				get { return false; }
-			}
-
-			public bool Remove(T item) {
-				bool removed;
-				lock (this.syncObject) {
-					removed = this.collection.Remove(item);
-				}
-
-				if (removed) {
-					this.OnCollectionChanged(NotifyCollectionChangedAction.Remove, item);
-				}
-
-				return removed;
-			}
-
-			public IEnumerator<T> GetEnumerator() {
-				lock (this.syncObject) {
-					if (this.collection.Count == 0) {
-						return Enumerable.Empty<T>().GetEnumerator();
-					}
-
-					return new List<T>(this.collection).GetEnumerator();
-				}
-			}
-
-			System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
-				return this.GetEnumerator();
-			}
-
-			protected virtual void OnCollectionChanged(NotifyCollectionChangedAction action, T item) {
-				var changed = this.CollectionChanged;
-				if (changed != null) {
-					changed(this, new NotifyCollectionChangedEventArgs<T>(action, item));
-				}
 			}
 		}
 
 		/// <summary>
 		/// An awaitable struct that facilitates an asynchronous transition to the Main thread.
 		/// </summary>
-		public struct SynchronizationContextAwaitable {
+		public struct MainThreadAwaitable {
 			private readonly AsyncPump asyncPump;
 
 			private readonly CancellationToken cancellationToken;
@@ -1946,9 +1329,9 @@ namespace Microsoft.Threading {
 			private readonly bool alwaysYield;
 
 			/// <summary>
-			/// Initializes a new instance of the <see cref="SynchronizationContextAwaitable"/> struct.
+			/// Initializes a new instance of the <see cref="MainThreadAwaitable"/> struct.
 			/// </summary>
-			internal SynchronizationContextAwaitable(AsyncPump asyncPump, CancellationToken cancellationToken, bool alwaysYield = false) {
+			internal MainThreadAwaitable(AsyncPump asyncPump, CancellationToken cancellationToken, bool alwaysYield = false) {
 				Requires.NotNull(asyncPump, "asyncPump");
 
 				this.asyncPump = asyncPump;
@@ -1959,15 +1342,15 @@ namespace Microsoft.Threading {
 			/// <summary>
 			/// Gets the awaiter.
 			/// </summary>
-			public SynchronizationContextAwaiter GetAwaiter() {
-				return new SynchronizationContextAwaiter(this.asyncPump, this.cancellationToken, this.alwaysYield);
+			public MainThreadAwaiter GetAwaiter() {
+				return new MainThreadAwaiter(this.asyncPump, this.cancellationToken, this.alwaysYield);
 			}
 		}
 
 		/// <summary>
 		/// An awaiter struct that facilitates an asynchronous transition to the Main thread.
 		/// </summary>
-		public struct SynchronizationContextAwaiter : INotifyCompletion {
+		public struct MainThreadAwaiter : INotifyCompletion {
 			private readonly AsyncPump asyncPump;
 
 			private readonly CancellationToken cancellationToken;
@@ -1977,9 +1360,9 @@ namespace Microsoft.Threading {
 			private CancellationTokenRegistration cancellationRegistration;
 
 			/// <summary>
-			/// Initializes a new instance of the <see cref="SynchronizationContextAwaiter"/> struct.
+			/// Initializes a new instance of the <see cref="MainThreadAwaiter"/> struct.
 			/// </summary>
-			internal SynchronizationContextAwaiter(AsyncPump asyncPump, CancellationToken cancellationToken, bool alwaysYield) {
+			internal MainThreadAwaiter(AsyncPump asyncPump, CancellationToken cancellationToken, bool alwaysYield) {
 				this.asyncPump = asyncPump;
 				this.cancellationToken = cancellationToken;
 				this.alwaysYield = alwaysYield;
@@ -2010,7 +1393,7 @@ namespace Microsoft.Threading {
 				// In the event of a cancellation request, it becomes a race as to whether the threadpool
 				// or the main thread will execute the continuation first. So we must wrap the continuation
 				// in a SingleExecuteProtector so that it can't be executed twice by accident.
-				var wrapper = SingleExecuteProtector.Create(this.asyncPump.mainThreadSwitchingSyncContext, continuation);
+				var wrapper = SingleExecuteProtector.Create(this.asyncPump, continuation);
 
 				// Success case of the main thread.
 				this.asyncPump.SwitchToMainThreadOnCompleted(SingleExecuteProtector.ExecuteOnce, wrapper);
@@ -2037,12 +1420,7 @@ namespace Microsoft.Threading {
 					this.cancellationToken.ThrowIfCancellationRequested();
 				}
 
-				// If we don't have a CallContext associated sync context then try applying the one on the current thread.
-				if (this.asyncPump.MainThreadControllingSyncContext == null) {
-					this.asyncPump.MainThreadControllingSyncContext = (SynchronizationContext.Current as SingleThreadSynchronizationContext);
-				}
-
-				this.asyncPump.EnsureDeadlockAvoidingSyncContextIsApplied();
+				this.asyncPump.ApplicableJobSyncContext.Apply();
 			}
 		}
 
@@ -2052,9 +1430,7 @@ namespace Microsoft.Threading {
 		/// </summary>
 		private struct RunFramework : IDisposable {
 			private readonly AsyncPump pump;
-			private readonly SynchronizationContext previousContext;
-			private readonly SingleThreadSynchronizationContext appliedContext;
-			private readonly SingleThreadSynchronizationContext previousAsyncLocalContext;
+			private readonly SpecializedSyncContext syncContextRevert;
 			private readonly Joinable joinable;
 			private readonly Joinable previousJoinable;
 
@@ -2063,33 +1439,16 @@ namespace Microsoft.Threading {
 			/// and sets up the synchronization contexts for the
 			/// <see cref="RunSynchronously(Func{Task})"/> family of methods.
 			/// </summary>
-			internal RunFramework(AsyncPump pump, bool asyncVoidMethod, bool completingSynchronously, Joinable joinable = null) {
+			internal RunFramework(AsyncPump pump, Joinable joinable) {
 				Requires.NotNull(pump, "pump");
+				Requires.NotNull(joinable, "joinable");
 
-				this.joinable = joinable ?? joinableOperation.Value;
+				joinable.JoinAsync().Forget(); // join any ambient parent job, so parents can dequeue their children's work.
 				this.pump = pump;
-				this.previousContext = SynchronizationContext.Current;
-				this.previousAsyncLocalContext = pump.MainThreadControllingSyncContext;
-				this.appliedContext = new SingleThreadSynchronizationContext(pump, asyncVoidMethod, completingSynchronously);
-				SynchronizationContext.SetSynchronizationContext(this.appliedContext);
-
-				if (pump.mainThread == Thread.CurrentThread) {
-					pump.MainThreadControllingSyncContext = this.appliedContext;
-				}
-
-				this.previousJoinable = joinableOperation.Value;
-				if (this.joinable != null) {
-					joinableOperation.Value = this.joinable;
-					this.joinable.AddDependency(this.appliedContext);
-				}
-			}
-
-			/// <summary>
-			/// Gets the SynchronizationContext instance that is running inside
-			/// the <see cref="RunSynchronously(Func{Task})"/> method.
-			/// </summary>
-			internal SingleThreadSynchronizationContext AppliedContext {
-				get { return this.appliedContext; }
+				this.joinable = joinable;
+				this.previousJoinable = this.pump.joinableOperation.Value;
+				this.pump.joinableOperation.Value = joinable;
+				this.syncContextRevert = this.pump.ApplicableJobSyncContext.Apply();
 			}
 
 			/// <summary>
@@ -2103,42 +1462,8 @@ namespace Microsoft.Threading {
 			/// Reverts the execution context to its previous state before this struct was created.
 			/// </summary>
 			public void Dispose() {
-				if (this.pump != null) {
-					this.pump.MainThreadControllingSyncContext = this.previousAsyncLocalContext;
-					SynchronizationContext.SetSynchronizationContext(this.previousContext);
-				}
-
-				joinableOperation.Value = this.previousJoinable;
-			}
-		}
-
-		[DebuggerDisplay("{Executed: {work.HasBeenExecuted}, UIThread: {work.RequiresMainThread}, timestamp: {timestamp}")]
-		private struct DiagnosticLogEntry {
-			private readonly SynchronizationContext synchronizationContext;
-			private readonly SingleExecuteProtector work;
-			private readonly bool successfullyQueued;
-			private readonly DateTime timestamp;
-			private readonly StackTrace stackTrace;
-			private readonly string stackTraceString;
-
-			internal DiagnosticLogEntry(SynchronizationContext context, SingleExecuteProtector work, bool successful, LoggingLevel logLevel) {
-				this.synchronizationContext = context;
-				this.work = work;
-				this.successfullyQueued = successful;
-
-				if ((logLevel & LoggingLevel.Timestamp) == LoggingLevel.Timestamp) {
-					this.timestamp = DateTime.Now;
-				} else {
-					this.timestamp = DateTime.MinValue;
-				}
-
-				if ((logLevel & LoggingLevel.Callstacks) == LoggingLevel.Callstacks) {
-					this.stackTrace = new StackTrace(2, true);
-					this.stackTraceString = this.stackTrace.ToString();
-				} else {
-					this.stackTrace = null;
-					this.stackTraceString = null;
-				}
+				this.syncContextRevert.Dispose();
+				this.pump.joinableOperation.Value = this.previousJoinable;
 			}
 		}
 	}

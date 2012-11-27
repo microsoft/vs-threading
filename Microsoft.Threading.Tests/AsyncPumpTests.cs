@@ -1564,11 +1564,11 @@
 				base.WaitSynchronously(task);
 			}
 
-			protected override void PostToUnderlyingSynchronizationContext(SynchronizationContext underlyingSynchronizationContext, SendOrPostCallback callback, object state) {
-				Assert.IsNotNull(underlyingSynchronizationContext);
+			protected override void PostToUnderlyingSynchronizationContext(SendOrPostCallback callback, object state) {
+				Assert.IsNotNull(this.UnderlyingSynchronizationContext);
 				Assert.IsNotNull(callback);
-				Assert.IsInstanceOfType(underlyingSynchronizationContext, typeof(DispatcherSynchronizationContext));
-				base.PostToUnderlyingSynchronizationContext(underlyingSynchronizationContext, callback, state);
+				Assert.IsInstanceOfType(this.UnderlyingSynchronizationContext, typeof(DispatcherSynchronizationContext));
+				base.PostToUnderlyingSynchronizationContext(callback, state);
 			}
 		}
 
