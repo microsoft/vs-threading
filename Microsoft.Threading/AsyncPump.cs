@@ -67,7 +67,7 @@ namespace Microsoft.Threading {
 		}
 
 		public JobContext.MainThreadAwaitable SwitchToMainThreadAsync(CancellationToken cancellationToken = default(CancellationToken)) {
-			return this.factory.SwitchToMainThreadAsync();
+			return this.factory.SwitchToMainThreadAsync(cancellationToken);
 		}
 
 		public JobContext.RevertRelevance SuppressRelevance() {
