@@ -359,6 +359,17 @@
 		}
 
 		public class JoinableJobFactory : JobFactory {
+			/// <summary>
+			/// The set of jobs that have Joined this collection -- that is, the set of jobs that are interested
+			/// in the completion of any and all jobs that belong to this collection.
+			/// The value is the number of times a particular job has Joined this collection.
+			/// </summary>
+			private readonly WeakKeyDictionary<Job, int> joiners = new WeakKeyDictionary<Job, int>();
+
+			/// <summary>
+			/// The set of jobs that belong to this collection -- that is, the set of jobs that are implicitly Joined
+			/// when folks Join this collection.
+			/// </summary>
 			private readonly WeakKeyDictionary<Job, EmptyStruct> joinables = new WeakKeyDictionary<Job, EmptyStruct>();
 
 			/// <summary>
@@ -369,28 +380,45 @@
 			}
 
 			public JoinRelease Join() {
-				throw new NotImplementedException();
-			}
+				var ambientJob = this.Owner.joinableOperation.Value;
+				if (ambientJob == null) {
+					// The caller isn't running in the context of a job, so there is nothing to join with this collection.
+					return new JoinRelease();
+				}
 
-			/// <summary>
-			/// Joins any main thread affinity of the caller with all joinables in this collection from now until the join is canceled.
-			/// </summary>
-			/// <param name="cancellationToken">A cancellation token that will exit this method before the task is completed.</param>
-			/// <returns>A task that completes after the asynchronous operation completes and the join is reverted.</returns>
-			public async Task JoinAsync(CancellationToken cancellationToken = default(CancellationToken)) {
-				cancellationToken.ThrowIfCancellationRequested();
-				this.Owner.SyncContextLock.EnterUpgradeableReadLock();
+				this.Owner.SyncContextLock.EnterWriteLock();
 				try {
-					throw new NotImplementedException();
+					int count;
+					this.joiners.TryGetValue(ambientJob, out count);
+					this.joiners[ambientJob] = count + 1;
+					if (count == 0) {
+						// The joining job was not previously joined to this collection,
+						// so we need to join each individual job within the collection now.
+						foreach (var joinable in this.joinables) {
+							ambientJob.AddDependency(joinable.Key);
+						}
+					}
+
+					return new JoinRelease(this, ambientJob);
 				} finally {
-					this.Owner.SyncContextLock.ExitUpgradeableReadLock();
+					this.Owner.SyncContextLock.ExitWriteLock();
 				}
 			}
 
 			protected override void Add(Job joinable) {
 				this.Owner.SyncContextLock.EnterWriteLock();
 				try {
-					this.joinables[joinable] = EmptyStruct.Instance;
+					if (!this.joinables.ContainsKey(joinable)) {
+						this.joinables[joinable] = EmptyStruct.Instance;
+
+						// Now that we've added a job to our collection, any folks who
+						// have already joined this collection should be joined to this job.
+						foreach (var joiner in this.joiners) {
+							// We can discard the JoinRelease result of AddDependency
+							// because we directly disjoin without that helper struct.
+							joiner.Key.AddDependency(joinable);
+						}
+					}
 				} finally {
 					this.Owner.SyncContextLock.ExitWriteLock();
 				}
@@ -404,6 +432,28 @@
 					return this.joinables.ContainsKey(joinable);
 				} finally {
 					this.Owner.SyncContextLock.ExitReadLock();
+				}
+			}
+
+			internal void Disjoin(Job job) {
+				Requires.NotNull(job, "job");
+
+				this.Owner.SyncContextLock.EnterWriteLock();
+				try {
+					int count;
+					this.joiners.TryGetValue(job, out count);
+					if (count == 1) {
+						this.joiners.Remove(job);
+
+						// We also need to disjoin this job from all jobs in this collection.
+						foreach (var joinable in this.joinables) {
+							job.RemoveDependency(joinable.Key);
+						}
+					} else {
+						this.joiners[job] = count - 1;
+					}
+				} finally {
+					this.Owner.SyncContextLock.ExitWriteLock();
 				}
 			}
 		}
@@ -593,8 +643,9 @@
 		/// A value whose disposal cancels a <see cref="Join"/> operation.
 		/// </summary>
 		public struct JoinRelease : IDisposable {
-			private Job joined;
+			private Job joinedJob;
 			private Job joiner;
+			private JoinableJobFactory joinedJobCollection;
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="JoinRelease"/> class.
@@ -605,7 +656,22 @@
 				Requires.NotNull(joined, "joined");
 				Requires.NotNull(joiner, "joiner");
 
-				this.joined = joined;
+				this.joinedJobCollection = null;
+				this.joinedJob = joined;
+				this.joiner = joiner;
+			}
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="JoinRelease"/> class.
+			/// </summary>
+			/// <param name="jobCollection">The collection of jobs that has been joined.</param>
+			/// <param name="joiner">The instance that created this value.</param>
+			internal JoinRelease(JoinableJobFactory jobCollection, Job joiner) {
+				Requires.NotNull(jobCollection, "jobCollection");
+				Requires.NotNull(joiner, "joiner");
+
+				this.joinedJobCollection = jobCollection;
+				this.joinedJob = null;
 				this.joiner = joiner;
 			}
 
@@ -613,11 +679,17 @@
 			/// Cancels the <see cref="Join"/> operation.
 			/// </summary>
 			public void Dispose() {
-				if (this.joined != null) {
-					this.joined.RemoveDependency(this.joiner);
-					this.joined = null;
-					this.joiner = null;
+				if (this.joinedJob != null) {
+					this.joinedJob.RemoveDependency(this.joiner);
+					this.joinedJob = null;
 				}
+
+				if (this.joinedJobCollection != null) {
+					this.joinedJobCollection.Disjoin(this.joiner);
+					this.joinedJob = null;
+				}
+
+				this.joiner = null;
 			}
 		}
 
@@ -1014,9 +1086,13 @@
 			/// Adds an <see cref="JobContext"/> instance as one that is relevant to the async operation.
 			/// </summary>
 			/// <param name="joinChild">The <see cref="SingleThreadSynchronizationContext"/> to join as a child.</param>
-			private JoinRelease AddDependency(Job joinChild) {
+			internal JoinRelease AddDependency(Job joinChild) {
 				Requires.NotNull(joinChild, "joinChild");
-				Assumes.True(this != joinChild);
+				if (this == joinChild) {
+					// Joining oneself would be pointless.
+					return new JoinRelease();
+				}
+
 				this.owner.Owner.SyncContextLock.EnterWriteLock();
 				try {
 					if (this.childOrJoinedJobs == null) {
