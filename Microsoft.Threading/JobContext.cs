@@ -533,10 +533,12 @@
 				this.pump = pump;
 
 				this.oldJoinable = pump.joinableOperation.Value;
+				pump.joinableOperation.Value = null;
 
-				if (SynchronizationContext.Current is JobSynchronizationContext) {
+				var jobSyncContext = SynchronizationContext.Current as JobSynchronizationContext;
+				if (jobSyncContext != null) {
 					SynchronizationContext appliedSyncContext = null;
-					if (pump.mainThreadJobSyncContext == SynchronizationContext.Current) {
+					if (jobSyncContext.MainThreadAffinitized) {
 						appliedSyncContext = pump.underlyingSynchronizationContext;
 					}
 
@@ -1398,6 +1400,14 @@
 			internal JobSynchronizationContext(JobFactory owner)
 				: this(Requires.NotNull(owner, "owner").Context, true) {
 				this.jobFactory = owner;
+			}
+
+			/// <summary>
+			/// Gets a value indicating whether messages posted to this instance should execute
+			/// on the main thread.
+			/// </summary>
+			internal bool MainThreadAffinitized {
+				get { return this.mainThreadAffinitized; }
 			}
 
 			/// <summary>
