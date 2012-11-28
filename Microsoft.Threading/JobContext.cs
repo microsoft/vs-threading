@@ -178,7 +178,7 @@
 				this.ThreadPoolJobScheduler = new JobTaskScheduler(this, false);
 			}
 
-			public JobContext Owner {
+			public JobContext Context {
 				get { return this.owner; }
 			}
 
@@ -340,9 +340,9 @@
 					this.factory = factory;
 					this.joinable = joinable;
 					this.factory.Add(joinable);
-					this.previousJoinable = this.factory.Owner.joinableOperation.Value;
-					this.factory.Owner.joinableOperation.Value = joinable;
-					this.syncContextRevert = this.factory.Owner.ApplicableJobSyncContext.Apply();
+					this.previousJoinable = this.factory.Context.joinableOperation.Value;
+					this.factory.Context.joinableOperation.Value = joinable;
+					this.syncContextRevert = this.factory.Context.ApplicableJobSyncContext.Apply();
 				}
 
 				/// <summary>
@@ -350,7 +350,7 @@
 				/// </summary>
 				public void Dispose() {
 					this.syncContextRevert.Dispose();
-					this.factory.Owner.joinableOperation.Value = this.previousJoinable;
+					this.factory.Context.joinableOperation.Value = this.previousJoinable;
 				}
 
 				internal void SetResult(Task task) {
@@ -400,7 +400,7 @@
 
 			protected internal override SynchronizationContext ApplicableJobSyncContext {
 				get {
-					if (Thread.CurrentThread == this.Owner.mainThread) {
+					if (Thread.CurrentThread == this.Context.mainThread) {
 						return this.synchronizationContext;
 					}
 
@@ -409,13 +409,13 @@
 			}
 
 			public JoinRelease Join() {
-				var ambientJob = this.Owner.joinableOperation.Value;
+				var ambientJob = this.Context.joinableOperation.Value;
 				if (ambientJob == null) {
 					// The caller isn't running in the context of a job, so there is nothing to join with this collection.
 					return new JoinRelease();
 				}
 
-				this.Owner.SyncContextLock.EnterWriteLock();
+				this.Context.SyncContextLock.EnterWriteLock();
 				try {
 					int count;
 					this.joiners.TryGetValue(ambientJob, out count);
@@ -430,12 +430,12 @@
 
 					return new JoinRelease(this, ambientJob);
 				} finally {
-					this.Owner.SyncContextLock.ExitWriteLock();
+					this.Context.SyncContextLock.ExitWriteLock();
 				}
 			}
 
 			protected override void Add(Job joinable) {
-				this.Owner.SyncContextLock.EnterWriteLock();
+				this.Context.SyncContextLock.EnterWriteLock();
 				try {
 					if (!this.joinables.ContainsKey(joinable)) {
 						this.joinables[joinable] = EmptyStruct.Instance;
@@ -449,7 +449,7 @@
 						}
 					}
 				} finally {
-					this.Owner.SyncContextLock.ExitWriteLock();
+					this.Context.SyncContextLock.ExitWriteLock();
 				}
 			}
 
@@ -460,10 +460,10 @@
 				// there is no ambient job, or the ambient job does not belong to the collection, we must create
 				// a (child) job and add that to this job factory's collection so that folks joining that factory
 				// can help this switch to complete.
-				var ambientJob = this.Owner.joinableOperation.Value;
+				var ambientJob = this.Context.joinableOperation.Value;
 				if (ambientJob == null || !this.Contains(ambientJob)) {
 					this.Start(delegate {
-						this.Owner.joinableOperation.Value.Post(sendOrPostCallback, state, true);
+						this.Context.joinableOperation.Value.Post(sendOrPostCallback, state, true);
 						return TplExtensions.CompletedTask;
 					});
 				} else {
@@ -476,7 +476,7 @@
 				Assumes.True(mainThreadAffinitized); // our only scenario so far
 
 				this.Start(delegate {
-					this.Owner.joinableOperation.Value.Post(callback, state, true);
+					this.Context.joinableOperation.Value.Post(callback, state, true);
 					return TplExtensions.CompletedTask;
 				});
 			}
@@ -484,18 +484,18 @@
 			internal bool Contains(Job joinable) {
 				Requires.NotNull(joinable, "joinable");
 
-				this.Owner.SyncContextLock.EnterReadLock();
+				this.Context.SyncContextLock.EnterReadLock();
 				try {
 					return this.joinables.ContainsKey(joinable);
 				} finally {
-					this.Owner.SyncContextLock.ExitReadLock();
+					this.Context.SyncContextLock.ExitReadLock();
 				}
 			}
 
 			internal void Disjoin(Job job) {
 				Requires.NotNull(job, "job");
 
-				this.Owner.SyncContextLock.EnterWriteLock();
+				this.Context.SyncContextLock.EnterWriteLock();
 				try {
 					int count;
 					this.joiners.TryGetValue(job, out count);
@@ -510,7 +510,7 @@
 						this.joiners[job] = count - 1;
 					}
 				} finally {
-					this.Owner.SyncContextLock.ExitWriteLock();
+					this.Context.SyncContextLock.ExitWriteLock();
 				}
 			}
 		}
@@ -800,27 +800,27 @@
 
 			internal Task DequeuerResetEvent {
 				get {
-					this.owner.Owner.SyncContextLock.EnterUpgradeableReadLock();
+					this.owner.Context.SyncContextLock.EnterUpgradeableReadLock();
 					try {
 						if (this.dequeuerResetState == null) {
-							this.owner.Owner.SyncContextLock.EnterWriteLock();
+							this.owner.Context.SyncContextLock.EnterWriteLock();
 							try {
 								this.dequeuerResetState = new AsyncManualResetEvent();
 							} finally {
-								this.owner.Owner.SyncContextLock.ExitWriteLock();
+								this.owner.Context.SyncContextLock.ExitWriteLock();
 							}
 						}
 
 						return this.dequeuerResetState.WaitAsync();
 					} finally {
-						this.owner.Owner.SyncContextLock.ExitUpgradeableReadLock();
+						this.owner.Context.SyncContextLock.ExitUpgradeableReadLock();
 					}
 				}
 			}
 
 			internal Task EnqueuedNotify {
 				get {
-					this.owner.Owner.SyncContextLock.EnterReadLock();
+					this.owner.Context.SyncContextLock.EnterReadLock();
 					try {
 						var queue = this.ApplicableQueue;
 						if (queue != null) {
@@ -831,7 +831,7 @@
 						// and our caller will call us back when DequeuerResetEvent is signaled.
 						return null;
 					} finally {
-						this.owner.Owner.SyncContextLock.ExitReadLock();
+						this.owner.Context.SyncContextLock.ExitReadLock();
 					}
 				}
 			}
@@ -841,7 +841,7 @@
 			/// </summary>
 			public bool IsCompleted {
 				get {
-					this.owner.Owner.SyncContextLock.EnterReadLock();
+					this.owner.Context.SyncContextLock.EnterReadLock();
 					try {
 						if (this.mainThreadQueue != null && !this.mainThreadQueue.IsCompleted) {
 							return false;
@@ -853,7 +853,7 @@
 
 						return this.completeRequested;
 					} finally {
-						this.owner.Owner.SyncContextLock.ExitReadLock();
+						this.owner.Context.SyncContextLock.ExitReadLock();
 					}
 				}
 			}
@@ -863,25 +863,25 @@
 			/// </summary>
 			public Task Task {
 				get {
-					this.owner.Owner.SyncContextLock.EnterReadLock();
+					this.owner.Context.SyncContextLock.EnterReadLock();
 					try {
 						// If this assumes ever fails, we need to add the ability to synthesize a task
 						// that we'll complete when the wrapped task that we eventually are assigned completes.
 						Assumes.NotNull(this.wrappedTask);
 						return this.wrappedTask;
 					} finally {
-						this.owner.Owner.SyncContextLock.ExitReadLock();
+						this.owner.Context.SyncContextLock.ExitReadLock();
 					}
 				}
 			}
 
 			private ExecutionQueue ApplicableQueue {
 				get {
-					this.owner.Owner.SyncContextLock.EnterReadLock();
+					this.owner.Context.SyncContextLock.EnterReadLock();
 					try {
-						return this.owner.Owner.mainThread == Thread.CurrentThread ? this.mainThreadQueue : this.threadPoolQueue;
+						return this.owner.Context.mainThread == Thread.CurrentThread ? this.mainThreadQueue : this.threadPoolQueue;
 					} finally {
-						this.owner.Owner.SyncContextLock.ExitReadLock();
+						this.owner.Context.SyncContextLock.ExitReadLock();
 					}
 				}
 			}
@@ -912,10 +912,10 @@
 			}
 
 			public void Post(SendOrPostCallback d, object state, bool mainThreadAffinitized) {
-				var wrapper = SingleExecuteProtector.Create(this.owner.Owner, d, state);
+				var wrapper = SingleExecuteProtector.Create(this.owner.Context, d, state);
 				AsyncManualResetEvent dequeuerResetState = null; // initialized if we should pulse it at the end of the method
 
-				this.owner.Owner.SyncContextLock.EnterWriteLock();
+				this.owner.Context.SyncContextLock.EnterWriteLock();
 				try {
 					if (this.completeRequested) {
 						// This job has already been marked for completion.
@@ -951,12 +951,12 @@
 						}
 					}
 				} finally {
-					this.owner.Owner.SyncContextLock.ExitWriteLock();
+					this.owner.Context.SyncContextLock.ExitWriteLock();
 				}
 
 				if (mainThreadAffinitized) {
 					// We deferred this till after we release our lock earlier in this method since we're calling outside code.
-					this.owner.Owner.PostToUnderlyingSynchronizationContextOrThreadPool(SingleExecuteProtector.ExecuteOnce, wrapper);
+					this.owner.Context.PostToUnderlyingSynchronizationContextOrThreadPool(SingleExecuteProtector.ExecuteOnce, wrapper);
 				}
 
 				if (dequeuerResetState != null) {
@@ -975,7 +975,7 @@
 			internal void SetWrappedTask(Task wrappedTask, Job parentJob) {
 				Requires.NotNull(wrappedTask, "wrappedTask");
 
-				this.owner.Owner.SyncContextLock.EnterWriteLock();
+				this.owner.Context.SyncContextLock.EnterWriteLock();
 				try {
 					Assumes.Null(this.wrappedTask);
 					this.wrappedTask = wrappedTask;
@@ -999,13 +999,13 @@
 						parentJob.AddDependency(this);
 					}
 				} finally {
-					this.owner.Owner.SyncContextLock.ExitWriteLock();
+					this.owner.Context.SyncContextLock.ExitWriteLock();
 				}
 			}
 
 			internal void Complete() {
 				AsyncManualResetEvent dequeuerResetState = null;
-				this.owner.Owner.SyncContextLock.EnterWriteLock();
+				this.owner.Context.SyncContextLock.EnterWriteLock();
 				try {
 					if (!this.completeRequested) {
 						this.completeRequested = true;
@@ -1025,7 +1025,7 @@
 						}
 					}
 				} finally {
-					this.owner.Owner.SyncContextLock.ExitWriteLock();
+					this.owner.Context.SyncContextLock.ExitWriteLock();
 				}
 
 				if (dequeuerResetState != null) {
@@ -1036,7 +1036,7 @@
 
 			internal void RemoveDependency(Job joinChild) {
 				Requires.NotNull(joinChild, "joinChild");
-				this.owner.Owner.SyncContextLock.EnterWriteLock();
+				this.owner.Context.SyncContextLock.EnterWriteLock();
 				try {
 					int refCount;
 					if (this.childOrJoinedJobs != null && this.childOrJoinedJobs.TryGetValue(joinChild, out refCount)) {
@@ -1047,7 +1047,7 @@
 						}
 					}
 				} finally {
-					this.owner.Owner.SyncContextLock.ExitWriteLock();
+					this.owner.Context.SyncContextLock.ExitWriteLock();
 				}
 			}
 
@@ -1078,7 +1078,7 @@
 					if (this.TryDequeueSelfOrDependencies(out work, out tryAgainAfter)) {
 						work.TryExecute();
 					} else if (tryAgainAfter != null) {
-						this.owner.Owner.WaitSynchronously(tryAgainAfter);
+						this.owner.Context.WaitSynchronously(tryAgainAfter);
 						Assumes.True(tryAgainAfter.IsCompleted);
 					}
 				}
@@ -1089,7 +1089,7 @@
 
 			private bool TryDequeueSelfOrDependencies(out SingleExecuteProtector work, out Task tryAgainAfter) {
 				var applicableJobs = new HashSet<Job>();
-				this.owner.Owner.SyncContextLock.EnterUpgradeableReadLock();
+				this.owner.Context.SyncContextLock.EnterUpgradeableReadLock();
 				try {
 					if (this.IsCompleted) {
 						work = null;
@@ -1122,12 +1122,12 @@
 					tryAgainAfter = Task.WhenAny(wakeUpTasks);
 					return false;
 				} finally {
-					this.owner.Owner.SyncContextLock.ExitUpgradeableReadLock();
+					this.owner.Context.SyncContextLock.ExitUpgradeableReadLock();
 				}
 			}
 
 			private bool TryDequeue(out SingleExecuteProtector work) {
-				this.owner.Owner.SyncContextLock.EnterWriteLock();
+				this.owner.Context.SyncContextLock.EnterWriteLock();
 				try {
 					var queue = this.ApplicableQueue;
 					if (queue != null) {
@@ -1137,7 +1137,7 @@
 					work = null;
 					return false;
 				} finally {
-					this.owner.Owner.SyncContextLock.ExitWriteLock();
+					this.owner.Context.SyncContextLock.ExitWriteLock();
 				}
 			}
 
@@ -1153,7 +1153,7 @@
 				}
 
 				AsyncManualResetEvent dequeuerResetState = null;
-				this.owner.Owner.SyncContextLock.EnterWriteLock();
+				this.owner.Context.SyncContextLock.EnterWriteLock();
 				try {
 					if (this.childOrJoinedJobs == null) {
 						this.childOrJoinedJobs = new WeakKeyDictionary<Job, int>(capacity: 3);
@@ -1167,7 +1167,7 @@
 						dequeuerResetState = this.dequeuerResetState;
 					}
 				} finally {
-					this.owner.Owner.SyncContextLock.ExitWriteLock();
+					this.owner.Context.SyncContextLock.ExitWriteLock();
 				}
 
 				if (dequeuerResetState != null) {
@@ -1179,7 +1179,7 @@
 			}
 
 			private JoinRelease AmbientJobJoinsThis() {
-				var ambientJob = this.owner.Owner.joinableOperation.Value;
+				var ambientJob = this.owner.Context.joinableOperation.Value;
 				if (ambientJob != null && ambientJob != this) {
 					return ambientJob.AddDependency(this);
 				}
@@ -1396,7 +1396,7 @@
 			/// </summary>
 			/// <param name="owner">The <see cref="JobFactory"/> that created this instance.</param>
 			internal JobSynchronizationContext(JobFactory owner)
-				: this(Requires.NotNull(owner, "owner").Owner, true) {
+				: this(Requires.NotNull(owner, "owner").Context, true) {
 				this.jobFactory = owner;
 			}
 
@@ -1589,8 +1589,8 @@
 					}
 
 					return this.jobFactory == null
-						|| this.jobFactory.Owner.mainThread == Thread.CurrentThread
-						|| this.jobFactory.Owner.underlyingSynchronizationContext == null;
+						|| this.jobFactory.Context.mainThread == Thread.CurrentThread
+						|| this.jobFactory.Context.underlyingSynchronizationContext == null;
 				}
 			}
 
@@ -1603,7 +1603,7 @@
 				// In the event of a cancellation request, it becomes a race as to whether the threadpool
 				// or the main thread will execute the continuation first. So we must wrap the continuation
 				// in a SingleExecuteProtector so that it can't be executed twice by accident.
-				var wrapper = SingleExecuteProtector.Create(this.jobFactory.Owner, continuation);
+				var wrapper = SingleExecuteProtector.Create(this.jobFactory.Context, continuation);
 
 				// Success case of the main thread. 
 				this.jobFactory.SwitchToMainThreadOnCompleted(SingleExecuteProtector.ExecuteOnce, wrapper);
@@ -1620,13 +1620,13 @@
 			/// </summary>
 			public void GetResult() {
 				Assumes.True(this.jobFactory != null);
-				Assumes.True(this.jobFactory.Owner.mainThread == Thread.CurrentThread || this.jobFactory.Owner.underlyingSynchronizationContext == null || this.cancellationToken.IsCancellationRequested);
+				Assumes.True(this.jobFactory.Context.mainThread == Thread.CurrentThread || this.jobFactory.Context.underlyingSynchronizationContext == null || this.cancellationToken.IsCancellationRequested);
 
 				// Release memory associated with the cancellation request.
 				cancellationRegistration.Dispose();
 
 				// Only throw a cancellation exception if we didn't end up completing what the caller asked us to do (arrive at the main thread).
-				if (Thread.CurrentThread != this.jobFactory.Owner.mainThread) {
+				if (Thread.CurrentThread != this.jobFactory.Context.mainThread) {
 					this.cancellationToken.ThrowIfCancellationRequested();
 				}
 
