@@ -1475,6 +1475,7 @@
 			internal JobTaskScheduler(JobFactory collection, bool mainThreadAffinitized) {
 				Requires.NotNull(collection, "collection");
 				this.collection = collection;
+				this.mainThreadAffinitized = mainThreadAffinitized;
 			}
 
 			/// <summary>
