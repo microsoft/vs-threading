@@ -71,7 +71,7 @@ namespace Microsoft.Threading {
 		}
 
 		public JobContext.RevertRelevance SuppressRelevance() {
-			throw new NotImplementedException();
+			return this.factory.Context.SuppressRelevance();
 		}
 	}
 }
