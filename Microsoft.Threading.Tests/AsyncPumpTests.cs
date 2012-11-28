@@ -313,7 +313,7 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void RunSynchronouslyOffMainThreadRequiresJoinToReenterMainThreadForDifferentAsyncPumpInstance() {
-			var otherAsyncPump = new AsyncPump();
+			var otherAsyncPump = new AsyncPump(this.asyncPump.Factory.Owner);
 			var task = Task.Run(delegate {
 				otherAsyncPump.RunSynchronously(async delegate {
 					await otherAsyncPump.SwitchToMainThreadAsync();
@@ -603,7 +603,7 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void BeginAsyncOnMTAKicksOffOtherAsyncPumpWorkCanCompleteSynchronouslySwitchFirst() {
-			var otherPump = new AsyncPump();
+			var otherPump = new AsyncPump(this.asyncPump.Factory.Owner);
 			bool taskFinished = false;
 			var switchPended = new ManualResetEventSlim();
 
@@ -633,7 +633,7 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void BeginAsyncOnMTAKicksOffOtherAsyncPumpWorkCanCompleteSynchronouslyJoinFirst() {
-			var otherPump = new AsyncPump();
+			var otherPump = new AsyncPump(this.asyncPump.Factory.Owner);
 			bool taskFinished = false;
 			var joinedEvent = new AsyncManualResetEvent();
 
@@ -659,7 +659,7 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void BeginAsyncWithResultOnMTAKicksOffOtherAsyncPumpWorkCanCompleteSynchronously() {
-			var otherPump = new AsyncPump();
+			var otherPump = new AsyncPump(this.asyncPump.Factory.Owner);
 			bool taskFinished = false;
 
 			// Kick off the BeginAsync work from a background thread that has no special
@@ -865,7 +865,7 @@
 		public void StackOverflowAvoidance() {
 			Task backgroundTask = null;
 			var mainThreadUnblocked = new AsyncManualResetEvent();
-			var otherPump = new AsyncPump();
+			var otherPump = new AsyncPump(this.asyncPump.Factory.Owner);
 			var frame = new DispatcherFrame();
 			otherPump.RunSynchronously(delegate {
 				this.asyncPump.RunSynchronously(delegate {
@@ -1065,7 +1065,7 @@
 			// The repro in VS wasn't as concise (or possibly as contrived looking) as this.
 			// This code sets up the minimal scenario for reproducing the bug that came about
 			// through interactions of various CPS/VC components.
-			var otherPump = new AsyncPump();
+			var otherPump = new AsyncPump(this.asyncPump.Factory.Owner);
 			otherPump.RunSynchronously(async delegate {
 				await this.asyncPump.BeginAsynchronously(delegate {
 					return Task.Run(async delegate {
@@ -1158,7 +1158,7 @@
 		public void PostStress() {
 			int outstandingMessages = 0;
 			var cts = new CancellationTokenSource(1000);
-			var pump2 = new AsyncPump();
+			var pump2 = new AsyncPump(this.asyncPump.Factory.Owner);
 			Task t1 = null, t2 = null;
 			var frame = new DispatcherFrame();
 
@@ -1471,7 +1471,7 @@
 		}
 
 		private Task SomeOperationThatUsesMainThreadViaItsOwnAsyncPumpAsync() {
-			var privateAsyncPump = new AsyncPump();
+			var privateAsyncPump = new AsyncPump(this.asyncPump.Factory.Owner);
 			return Task.Run(async delegate {
 				await Task.Yield();
 				await privateAsyncPump.SwitchToMainThreadAsync();
@@ -1487,7 +1487,7 @@
 
 			// don't let this task be identified as related to the caller, so that the caller has to Join for this to complete.
 			using (this.asyncPump.SuppressRelevance()) {
-				unrelatedPump = new AsyncPump();
+				unrelatedPump = new AsyncPump(this.asyncPump.Factory.Owner);
 				unrelatedTask = Task.Run(async delegate {
 					await unrelatedPump.SwitchToMainThreadAsync().GetAwaiter().YieldAndNotify(unrelatedMainThreadWorkWaiting, unrelatedMainThreadWorkInvoked);
 					Assert.AreSame(this.originalThread, Thread.CurrentThread);

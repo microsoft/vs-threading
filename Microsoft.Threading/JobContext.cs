@@ -178,7 +178,7 @@
 				this.ThreadPoolJobScheduler = new JobTaskScheduler(this, false);
 			}
 
-			protected internal JobContext Owner {
+			public JobContext Owner {
 				get { return this.owner; }
 			}
 
@@ -990,11 +990,13 @@
 							CancellationToken.None,
 							TaskContinuationOptions.ExecuteSynchronously,
 							TaskScheduler.Default);
+					}
 
-						// Join the ambient parent job, so the parent can dequeue this job's work.
-						if (parentJob != null) {
-							parentJob.AddDependency(this);
-						}
+					// Join the ambient parent job, so the parent can dequeue this job's work.
+					// Note that although wrappedTask.IsCompleted may be true, this.IsCompleted
+					// may still be false if our work queues are not empty.
+					if (!this.IsCompleted && parentJob != null) {
+						parentJob.AddDependency(this);
 					}
 				} finally {
 					this.owner.Owner.SyncContextLock.ExitWriteLock();
