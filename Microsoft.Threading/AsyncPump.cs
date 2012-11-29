@@ -54,11 +54,11 @@ namespace Microsoft.Threading {
 		}
 
 		public JoinableTask BeginAsynchronously(Func<Task> asyncMethod) {
-			return this.factory.Start(asyncMethod);
+			return this.factory.RunAsync(asyncMethod);
 		}
 
 		public JoinableTask<T> BeginAsynchronously<T>(Func<Task<T>> asyncMethod) {
-			return this.factory.Start(asyncMethod);
+			return this.factory.RunAsync(asyncMethod);
 		}
 
 		public void CompleteSynchronously(Task task) {

@@ -121,7 +121,7 @@ namespace Microsoft.Threading {
 		/// </example>
 		/// </remarks>
 		public void Run(Func<Task> asyncMethod) {
-			var joinable = this.Start(asyncMethod, synchronouslyBlocking: true);
+			var joinable = this.RunAsync(asyncMethod, synchronouslyBlocking: true);
 			joinable.CompleteOnCurrentThread();
 		}
 
@@ -132,7 +132,7 @@ namespace Microsoft.Threading {
 		/// for an example.
 		/// </remarks>
 		public T Run<T>(Func<Task<T>> asyncMethod) {
-			var joinable = this.Start(asyncMethod, synchronouslyBlocking: true);
+			var joinable = this.RunAsync(asyncMethod, synchronouslyBlocking: true);
 			return joinable.CompleteOnCurrentThread();
 		}
 
@@ -143,11 +143,11 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
 		/// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
-		public JoinableTask Start(Func<Task> asyncMethod) {
-			return this.Start(asyncMethod, synchronouslyBlocking: false);
+		public JoinableTask RunAsync(Func<Task> asyncMethod) {
+			return this.RunAsync(asyncMethod, synchronouslyBlocking: false);
 		}
 
-		private JoinableTask Start(Func<Task> asyncMethod, bool synchronouslyBlocking) {
+		private JoinableTask RunAsync(Func<Task> asyncMethod, bool synchronouslyBlocking) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
 			var job = new JoinableTask(this, synchronouslyBlocking);
@@ -165,11 +165,11 @@ namespace Microsoft.Threading {
 		/// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
 		/// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
 		/// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
-		public JoinableTask<T> Start<T>(Func<Task<T>> asyncMethod) {
-			return this.Start(asyncMethod, synchronouslyBlocking: false);
+		public JoinableTask<T> RunAsync<T>(Func<Task<T>> asyncMethod) {
+			return this.RunAsync(asyncMethod, synchronouslyBlocking: false);
 		}
 
-		private JoinableTask<T> Start<T>(Func<Task<T>> asyncMethod, bool synchronouslyBlocking) {
+		private JoinableTask<T> RunAsync<T>(Func<Task<T>> asyncMethod, bool synchronouslyBlocking) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
 			var job = new JoinableTask<T>(this, synchronouslyBlocking);

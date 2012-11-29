@@ -64,7 +64,7 @@ namespace Microsoft.Threading {
 			// can help this switch to complete.
 			var ambientJob = this.Context.AmbientTask;
 			if (ambientJob == null || !this.jobCollection.Contains(ambientJob)) {
-				this.Start(delegate {
+				this.RunAsync(delegate {
 					this.Context.AmbientTask.Post(SingleExecuteProtector.ExecuteOnce, callback, true);
 					return TplExtensions.CompletedTask;
 				});
@@ -77,7 +77,7 @@ namespace Microsoft.Threading {
 			Requires.NotNull(callback, "callback");
 
 			if (mainThreadAffinitized) {
-				this.Start(delegate {
+				this.RunAsync(delegate {
 					this.Context.AmbientTask.Post(callback, state, true);
 					return TplExtensions.CompletedTask;
 				});

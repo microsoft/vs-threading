@@ -96,7 +96,7 @@ namespace Microsoft.Threading {
 								// Wrapping with BeginAsynchronously allows a future caller
 								// to synchronously block the Main thread waiting for the result
 								// without leading to deadlocks.
-								this.joinableTask = this.jobFactory.Start(valueFactory);
+								this.joinableTask = this.jobFactory.RunAsync(valueFactory);
 								this.value = this.joinableTask.Task;
 								this.value.ContinueWith(
 									(_, state) => {

@@ -52,7 +52,7 @@
 				}
 
 				// Wrap this task in a newly created joinable.
-				var joinable = this.collection.Start(
+				var joinable = this.collection.RunAsync(
 					() => this.ExecuteTaskInAppropriateContextAsync(task));
 			}
 
