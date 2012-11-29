@@ -313,6 +313,9 @@
 			protected virtual void Add(Job joinable) {
 			}
 
+			protected internal virtual void Remove(Job joinable) {
+			}
+
 			/// <summary>
 			/// A value to construct with a C# using block in all the Run method overloads
 			/// to setup and teardown the boilerplate stuff.
@@ -445,6 +448,24 @@
 							// We can discard the JoinRelease result of AddDependency
 							// because we directly disjoin without that helper struct.
 							joiner.Key.AddDependency(joinable);
+						}
+					}
+				} finally {
+					this.Context.SyncContextLock.ExitWriteLock();
+				}
+			}
+
+			protected internal override void Remove(Job joinable) {
+				this.Context.SyncContextLock.EnterWriteLock();
+				try {
+					if (this.joinables.Remove(joinable)) {
+						// Now that we've removed a job from our collection, any folks who
+						// have already joined this collection should be disjoined to this job
+						// as an efficiency improvement so we don't grow our weak collections unnecessarily.
+						foreach (var joiner in this.joiners) {
+							// We can discard the JoinRelease result of AddDependency
+							// because we directly disjoin without that helper struct.
+							joiner.Key.RemoveDependency(joinable);
 						}
 					}
 				} finally {
@@ -985,7 +1006,7 @@
 					} else {
 						if (mainThreadAffinitized) {
 							if (this.mainThreadQueue == null) {
-								this.mainThreadQueue = new ExecutionQueue();
+								this.mainThreadQueue = new ExecutionQueue(this);
 								dequeuerResetState = this.dequeuerResetState;
 							}
 
@@ -996,7 +1017,7 @@
 						} else {
 							if (this.synchronouslyBlockingThreadPool) {
 								if (this.threadPoolQueue == null) {
-									this.threadPoolQueue = new ExecutionQueue();
+									this.threadPoolQueue = new ExecutionQueue(this);
 									dequeuerResetState = this.dequeuerResetState;
 								}
 
@@ -1078,6 +1099,10 @@
 							this.threadPoolQueue.Complete();
 						}
 
+						if (this.IsCompleted) {
+							this.Factory.Remove(this);
+						}
+
 						if (this.dequeuerResetState != null
 							&& (this.mainThreadQueue == null || this.mainThreadQueue.IsCompleted)
 							&& (this.threadPoolQueue == null || this.threadPoolQueue.IsCompleted)) {
@@ -1145,6 +1170,12 @@
 
 				Assumes.True(this.Task.IsCompleted);
 				this.Task.GetAwaiter().GetResult(); // rethrow any exceptions
+			}
+
+			internal void OnQueueCompleted() {
+				if (this.IsCompleted) {
+					this.Factory.Remove(this);
+				}
 			}
 
 			private bool TryDequeueSelfOrDependencies(out SingleExecuteProtector work, out Task tryAgainAfter) {
@@ -1312,9 +1343,13 @@
 		/// that self-scavenges elements that are executed by other means.
 		/// </summary>
 		internal class ExecutionQueue : AsyncQueue<SingleExecuteProtector> {
-			private TaskCompletionSource<object> enqueuedNotification;
+			private readonly Job owningJob;
 
-			internal ExecutionQueue() {
+			private TaskCompletionSource<EmptyStruct> enqueuedNotification;
+
+			internal ExecutionQueue(Job owningJob) {
+				Requires.NotNull(owningJob, "owningJob");
+				this.owningJob = owningJob;
 			}
 
 			/// <summary>
@@ -1331,9 +1366,9 @@
 							}
 
 							if (this.enqueuedNotification == null) {
-								var tcs = new TaskCompletionSource<object>();
+								var tcs = new TaskCompletionSource<EmptyStruct>();
 								if (!this.IsEmpty) {
-									tcs.TrySetResult(null);
+									tcs.TrySetResult(EmptyStruct.Instance);
 								}
 
 								this.enqueuedNotification = tcs;
@@ -1364,7 +1399,7 @@
 						this.Scavenge();
 					}
 
-					TaskCompletionSource<object> notifyCompletionSource = null;
+					TaskCompletionSource<EmptyStruct> notifyCompletionSource = null;
 					lock (this.SyncRoot) {
 						// Also cause continuations to execute that may be waiting on a non-empty queue.
 						// But be paranoid about whether the queue is still non-empty since this method
@@ -1377,7 +1412,7 @@
 					}
 
 					if (notifyCompletionSource != null) {
-						notifyCompletionSource.TrySetResult(null);
+						notifyCompletionSource.TrySetResult(EmptyStruct.Instance);
 					}
 				}
 			}
@@ -1399,14 +1434,16 @@
 			protected override void OnCompleted() {
 				base.OnCompleted();
 
-				TaskCompletionSource<object> notifyCompletionSource;
+				TaskCompletionSource<EmptyStruct> notifyCompletionSource;
 				lock (this.SyncRoot) {
 					notifyCompletionSource = this.enqueuedNotification;
 				}
 
 				if (notifyCompletionSource != null) {
-					notifyCompletionSource.TrySetResult(null);
+					notifyCompletionSource.TrySetResult(EmptyStruct.Instance);
 				}
+
+				this.owningJob.OnQueueCompleted();
 			}
 
 			internal void OnExecuting(object sender, EventArgs e) {
