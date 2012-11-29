@@ -9,6 +9,7 @@ namespace Microsoft.Threading.Test {
 	using System;
 	using System.Collections;
 	using System.Collections.Generic;
+	using System.Linq;
 
 	/// <summary>
 	/// Tests for the weak dictionary class
@@ -181,6 +182,27 @@ namespace Microsoft.Threading.Test {
 
 			Console.WriteLine("Removed {0}", removed);
 			Assert.AreEqual(removed, count1 - count2);
+		}
+
+		/// <summary>
+		/// Tests that the enumerator correctly lists contents, skipping over collected elements.
+		/// </summary>
+		[TestMethod]
+		public void Enumerator() {
+			object keepAlive1 = new object();
+			object keepAlive2 = new object();
+			object collected = new object();
+			var dictionary = new WeakKeyDictionary<object, int>();
+			dictionary[keepAlive1] = 0;
+			dictionary[collected] = 1;
+			dictionary[keepAlive2] = 2;
+			collected = null;
+			GC.Collect();
+
+			var enumeratedContents = dictionary.ToList();
+			Assert.AreEqual(2, enumeratedContents.Count);
+			Assert.IsTrue(enumeratedContents.Contains(new KeyValuePair<object, int>(keepAlive1, 0)));
+			Assert.IsTrue(enumeratedContents.Contains(new KeyValuePair<object, int>(keepAlive2, 2)));
 		}
 	}
 }

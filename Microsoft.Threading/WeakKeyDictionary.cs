@@ -161,16 +161,15 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// See IEnumerable&lt;T&gt;
 		/// </summary>
-		public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() {
-			foreach (WeakReference<TKey> weakKey in this.dictionary.Keys) {
-				var pair = new KeyValuePair<TKey, TValue>(weakKey.Target, this.dictionary[weakKey]);
-				if (pair.Key == null) {
-					// Oops... this key has already been garbage collected, so just skip it.
-					continue;
-				}
+		public Enumerator GetEnumerator() {
+			return new Enumerator(this);
+		}
 
-				yield return pair;
-			}
+		/// <summary>
+		/// See IEnumerable&lt;T&gt;
+		/// </summary>
+		IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator() {
+			return this.GetEnumerator();
 		}
 
 		/// <summary>
@@ -178,6 +177,54 @@ namespace Microsoft.Threading {
 		/// </summary>
 		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
 			return this.GetEnumerator();
+		}
+
+		public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>> {
+			private Dictionary<WeakReference<TKey>, TValue>.Enumerator enumerator;
+
+			private KeyValuePair<TKey, TValue> current;
+
+			internal Enumerator(WeakKeyDictionary<TKey, TValue> dictionary) {
+				Requires.NotNull(dictionary, "dictionary");
+
+				this.enumerator = dictionary.dictionary.GetEnumerator();
+				this.current = new KeyValuePair<TKey, TValue>();
+			}
+
+			public KeyValuePair<TKey, TValue> Current {
+				get { return this.current; }
+			}
+
+			object System.Collections.IEnumerator.Current {
+				get { return this.Current; }
+			}
+
+			public bool MoveNext() {
+				TKey key = null;
+
+				while (this.enumerator.MoveNext()) {
+					key = this.enumerator.Current.Key.Target;
+					if (key != null) {
+						this.current = new KeyValuePair<TKey, TValue>(key, this.enumerator.Current.Value);
+						return true;
+					}
+				}
+
+				return false;
+			}
+
+			void System.Collections.IEnumerator.Reset() {
+				// Calling reset on the dictionary enumerator would require boxing it in the cast to the explicit interface method.
+				// But boxing a valuetype means that any changes you make will not be brought back to the value type field
+				// so the Reset() will probably have no effect. 
+				// If we ever have to support this, we'll probably have to do box the enumerator and then retain the boxed
+				// version and use that in this enumerator for the rest of its lifetime.
+				throw new NotSupportedException();
+			}
+
+			public void Dispose() {
+				this.enumerator.Dispose();
+			}
 		}
 
 		/// <summary>
