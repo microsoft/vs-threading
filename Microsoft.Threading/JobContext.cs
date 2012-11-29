@@ -1694,8 +1694,6 @@
 				if (Thread.CurrentThread != this.jobFactory.Context.mainThread) {
 					this.cancellationToken.ThrowIfCancellationRequested();
 				}
-
-				this.jobFactory.ApplicableJobSyncContext.Apply();
 			}
 		}
 	}
