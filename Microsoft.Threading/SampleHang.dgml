@@ -1,25 +1,26 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <DirectedGraph GraphDirection="LeftToRight" Layout="Sugiyama" xmlns="http://schemas.microsoft.com/vs/2009/dgml">
   <Nodes>
-    <Node Id="Factory#4" Bounds="223.926666666667,0,95.4333333333333,86.92" Group="Expanded" Label="Factory #4" />
-    <Node Id="Factory#5" Bounds="13.5,0,180.426666666667,142.92" Group="Expanded" Label="Factory #5" />
-    <Node Id="Job#1" Bounds="118.713333333333,96.96,55.2133333333334,25.96" Label="Job #1" />
-    <Node Id="Job#3" Category="NonEmptyQueue" Bounds="244.036666666667,40.96,55.2133333333334,25.96" Label="Job #3" />
-    <Node Id="Job#6" Category="MainThreadBlocking" Bounds="33.5,40.96,55.2133333333333,25.96" Label="Job #6" />
-    <Node Id="Job#7" Bounds="118.713333333333,40.96,55.2133333333334,25.96" Label="Job #7" />
+    <Node Id="Factory#4" Bounds="222.208543904622,27.999898626709,109.733333333333,86.9202" Group="Expanded" Label="Collection #4" />
+    <Node Id="Factory#5" Bounds="11.7818706385295,-1.37329102756212E-06,180.426666666667,142.92" Group="Expanded" Label="Collection #5" UseManualLocation="True" />
+    <Node Id="Job#1" Bounds="116.995204549121,96.959998626709,55.2133333333334,25.96" Label="Job #1" />
+    <Node Id="Job#3" Category="NonEmptyQueue" Bounds="249.468537882454,68.959998626709,55.2133333333334,25.96" Label="Job #3" />
+    <Node Id="Job#6" Category="MainThreadBlocking" Bounds="31.7818712157872,40.959998626709,55.2133333333333,25.96" Label="Job #6" />
+    <Node Id="Job#7" Bounds="116.995204549121,40.959998626709,55.2133333333334,25.96" Label="Job #7" />
   </Nodes>
   <Links>
     <Link Source="Factory#4" Target="Job#3" Category="Contains" />
     <Link Source="Factory#5" Target="Job#1" Category="Contains" />
     <Link Source="Factory#5" Target="Job#6" Category="Contains" />
     <Link Source="Factory#5" Target="Job#7" Category="Contains" />
-    <Link Source="Job#1" Target="Job#3" Bounds="173.153425425644,69.6020642884721,63.4395132021134,28.3475761841503" />
-    <Link Source="Job#6" Target="Factory#5" Bounds="0,53.939998626709,33.5,12.3222694396973" />
-    <Link Source="Job#6" Target="Job#1" Bounds="80.8579025268555,66.9199981689453,38.1896209716797,25.0972366333008" />
-    <Link Source="Job#6" Target="Job#7" Bounds="88.7133331298828,53.939998626709,21,0" />
+    <Link Source="Job#1" Target="Job#3" Bounds="172.208538157145,89.6361851996675,68.4545462174039,14.4687776981154" />
+    <Link Source="Job#6" Target="Factory#5" Category="JobCollectionJoin" Bounds="-1.7181293964386,53.939998626709,33.4999992847443,12.3222694396973" />
+    <Link Source="Job#6" Target="Job#1" Bounds="79.1397705078125,66.9199981689453,38.1896286010742,25.0972366333008" />
+    <Link Source="Job#6" Target="Job#7" Bounds="86.9952011108398,53.939998626709,21,0" />
   </Links>
   <Categories>
     <Category Id="Contains" Label="Contains" Description="Whether the source of the link contains the target object" CanBeDataDriven="False" CanLinkedNodesBeDataDriven="True" IncomingActionLabel="Contained By" IsContainment="True" OutgoingActionLabel="Contains" />
+    <Category Id="JobCollectionJoin" Label="JobCollectionJoin" IsTag="True" />
     <Category Id="MainThreadBlocking" Label="Blocking main thread" Background="#FFFF7F7F" IsTag="True" />
     <Category Id="NonEmptyQueue" Label="Non-empty queue" IsTag="True" />
   </Categories>
@@ -40,10 +41,15 @@
     <Property Id="Layout" DataType="System.String" />
     <Property Id="OutgoingActionLabel" Label="OutgoingActionLabel" Description="OutgoingActionLabel" DataType="System.String" />
     <Property Id="TargetType" DataType="System.Type" />
+    <Property Id="UseManualLocation" DataType="System.Boolean" />
     <Property Id="Value" DataType="System.String" />
     <Property Id="ValueLabel" DataType="System.String" />
   </Properties>
   <Styles>
+    <Style TargetType="Link" GroupLabel="JobCollectionJoin" ValueLabel="True">
+      <Condition Expression="HasCategory('JobCollectionJoin')" />
+      <Setter Property="Stroke" Value="#FF0053FF" />
+    </Style>
     <Style TargetType="Node" GroupLabel="NonEmptyQueue" ValueLabel="True">
       <Condition Expression="HasCategory('NonEmptyQueue')" />
       <Setter Property="Background" Value="#FFFF0000" />
