@@ -17,8 +17,8 @@ namespace Microsoft.Threading {
 
 	/// <summary>Provides a pump that supports running asynchronous methods on the current thread.</summary>
 	public class AsyncPump {
-		private readonly JoinableTaskContext.JoinableTaskCollection collection;
-		private readonly JoinableTaskContext.JoinableTaskFactory factory;
+		private readonly JoinableTaskCollection collection;
+		private readonly JoinableTaskFactory factory;
 
 		public AsyncPump(Thread mainThread = null, SynchronizationContext syncContext = null) {
 			var context = new JoinableTaskContext(mainThread, syncContext);
@@ -33,7 +33,7 @@ namespace Microsoft.Threading {
 			this.factory = context.CreateFactory(this.collection);
 		}
 
-		public JoinableTaskContext.JoinableTaskFactory Factory {
+		public JoinableTaskFactory Factory {
 			get { return this.factory; }
 		}
 
@@ -41,7 +41,7 @@ namespace Microsoft.Threading {
 			get { return this.factory.MainThreadJobScheduler; }
 		}
 
-		public JoinableTaskContext.JoinRelease Join() {
+		public JoinableTaskCollection.JoinRelease Join() {
 			return this.collection.Join();
 		}
 
@@ -53,11 +53,11 @@ namespace Microsoft.Threading {
 			return this.factory.Run(asyncMethod);
 		}
 
-		public JoinableTaskContext.JoinableTask BeginAsynchronously(Func<Task> asyncMethod) {
+		public JoinableTask BeginAsynchronously(Func<Task> asyncMethod) {
 			return this.factory.Start(asyncMethod);
 		}
 
-		public JoinableTaskContext.JoinableTask<T> BeginAsynchronously<T>(Func<Task<T>> asyncMethod) {
+		public JoinableTask<T> BeginAsynchronously<T>(Func<Task<T>> asyncMethod) {
 			return this.factory.Start(asyncMethod);
 		}
 
@@ -69,7 +69,7 @@ namespace Microsoft.Threading {
 			});
 		}
 
-		public JoinableTaskContext.MainThreadAwaitable SwitchToMainThreadAsync(CancellationToken cancellationToken = default(CancellationToken)) {
+		public JoinableTaskFactory.MainThreadAwaitable SwitchToMainThreadAsync(CancellationToken cancellationToken = default(CancellationToken)) {
 			return this.factory.SwitchToMainThreadAsync(cancellationToken);
 		}
 

@@ -10,8 +10,9 @@ namespace Microsoft.Threading {
 	using System.Linq;
 	using System.Text;
 	using System.Threading.Tasks;
+	using SingleExecuteProtector = Microsoft.Threading.JoinableTaskFactory.SingleExecuteProtector;
 
-	partial class JoinableTaskContext {
+	public partial class JoinableTask {
 		/// <summary>
 		/// A thread-safe queue of <see cref="SingleExecuteProtector"/> elements
 		/// that self-scavenges elements that are executed by other means.

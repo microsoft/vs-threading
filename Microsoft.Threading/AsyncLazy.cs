@@ -36,7 +36,7 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// The async pump to Join on calls to <see cref="GetValueAsync"/>.
 		/// </summary>
-		private JoinableTaskContext.JoinableTaskFactory jobFactory;
+		private JoinableTaskFactory jobFactory;
 
 		/// <summary>
 		/// The result of the value factory.
@@ -46,14 +46,14 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// A joinable task whose result is the value to be cached.
 		/// </summary>
-		private JoinableTaskContext.JoinableTask<T> joinableTask;
+		private JoinableTask<T> joinableTask;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AsyncLazy{T}"/> class.
 		/// </summary>
 		/// <param name="valueFactory">The async function that produces the value.  To be invoked at most once.</param>
 		/// <param name="asyncPump">The async pump to <see cref="AsyncPump.Join"/> for calls to <see cref="GetValueAsync"/>.</param>
-		public AsyncLazy(Func<Task<T>> valueFactory, JoinableTaskContext.JoinableTaskFactory jobFactory = null) {
+		public AsyncLazy(Func<Task<T>> valueFactory, JoinableTaskFactory jobFactory = null) {
 			Requires.NotNull(valueFactory, "valueFactory");
 			this.valueFactory = valueFactory;
 			this.jobFactory = jobFactory;

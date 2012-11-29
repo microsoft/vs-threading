@@ -59,11 +59,13 @@
     <Compile Include="IAsyncDisposable.cs" />
     <Compile Include="InternalExtensions.cs" />
     <Compile Include="InternalUtilities.cs" />
+    <Compile Include="JoinableTask+JoinableTaskSynchronizationContext.cs" />
     <Compile Include="JoinableTaskContext.cs" />
     <Compile Include="JoinableJoinableTaskFactory.cs" />
     <Compile Include="JoinableTask.cs" />
     <Compile Include="JoinableTaskCollection.cs" />
-    <Compile Include="JoinableTaskExecutionQueue.cs" />
+    <Compile Include="JoinableTask+ExecutionQueue.cs" />
+    <Compile Include="JoinableTaskFactory+JoinableTaskScheduler.cs" />
     <Compile Include="JoinableTaskFactory.cs" />
     <Compile Include="JoinableTask`1.cs" />
     <Compile Include="ListOfOftenOne.cs" />
