@@ -17,17 +17,20 @@ namespace Microsoft.Threading {
 
 	/// <summary>Provides a pump that supports running asynchronous methods on the current thread.</summary>
 	public class AsyncPump {
-		private readonly JoinableTaskContext.JoinableJoinableTaskFactory factory;
+		private readonly JoinableTaskContext.JoinableTaskCollection collection;
+		private readonly JoinableTaskContext.JoinableTaskFactory factory;
 
 		public AsyncPump(Thread mainThread = null, SynchronizationContext syncContext = null) {
 			var context = new JoinableTaskContext(mainThread, syncContext);
-			this.factory = context.CreateJoinableFactory();
+			this.collection = context.CreateCollection();
+			this.factory = context.CreateFactory(this.collection);
 		}
 
 		public AsyncPump(JoinableTaskContext context) {
 			Requires.NotNull(context, "context");
 
-			this.factory = context.CreateJoinableFactory();
+			this.collection = context.CreateCollection();
+			this.factory = context.CreateFactory(this.collection);
 		}
 
 		public JoinableTaskContext.JoinableTaskFactory Factory {
@@ -39,7 +42,7 @@ namespace Microsoft.Threading {
 		}
 
 		public JoinableTaskContext.JoinRelease Join() {
-			return this.factory.Join();
+			return this.collection.Join();
 		}
 
 		public void RunSynchronously(Func<Task> asyncMethod) {

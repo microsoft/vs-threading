@@ -59,7 +59,13 @@
     <Compile Include="IAsyncDisposable.cs" />
     <Compile Include="InternalExtensions.cs" />
     <Compile Include="InternalUtilities.cs" />
-    <Compile Include="JobContext.cs" />
+    <Compile Include="JoinableTaskContext.cs" />
+    <Compile Include="JoinableJoinableTaskFactory.cs" />
+    <Compile Include="JoinableTask.cs" />
+    <Compile Include="JoinableTaskCollection.cs" />
+    <Compile Include="JoinableTaskExecutionQueue.cs" />
+    <Compile Include="JoinableTaskFactory.cs" />
+    <Compile Include="JoinableTask`1.cs" />
     <Compile Include="ListOfOftenOne.cs" />
     <Compile Include="ProgressWithCompletion.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
