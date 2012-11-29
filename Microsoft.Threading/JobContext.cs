@@ -9,7 +9,7 @@
 	using System.Threading;
 	using System.Threading.Tasks;
 
-	public class JobContext {
+	public class JoinableTaskContext {
 		/// <summary>
 		/// A "global" lock that allows the graph of interconnected sync context and JoinableSet instances
 		/// communicate in a thread-safe way without fear of deadlocks due to each taking their own private
@@ -25,7 +25,7 @@
 		/// <summary>
 		/// An AsyncLocal value that carries the joinable instance associated with an async operation.
 		/// </summary>
-		private readonly AsyncLocal<Job> joinableOperation = new AsyncLocal<Job>();
+		private readonly AsyncLocal<JoinableTask> joinableOperation = new AsyncLocal<JoinableTask>();
 
 		/// <summary>
 		/// The WPF Dispatcher, or other SynchronizationContext that is applied to the Main thread.
@@ -38,11 +38,11 @@
 		private readonly Thread mainThread;
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="JobContext"/> class.
+		/// Initializes a new instance of the <see cref="JoinableTaskContext"/> class.
 		/// </summary>
 		/// <param name="mainThread">The thread to switch to in <see cref="SwitchToMainThreadAsync(CancellationToken)"/>.</param>
 		/// <param name="synchronizationContext">The synchronization context to use to switch to the main thread.</param>
-		public JobContext(Thread mainThread = null, SynchronizationContext synchronizationContext = null) {
+		public JoinableTaskContext(Thread mainThread = null, SynchronizationContext synchronizationContext = null) {
 			this.mainThread = mainThread ?? Thread.CurrentThread;
 			this.underlyingSynchronizationContext = synchronizationContext ?? SynchronizationContext.Current; // may still be null after this.
 		}
@@ -87,12 +87,12 @@
 			return new RevertRelevance(this);
 		}
 
-		public JobFactory CreateFactory() {
-			return new JobFactory(this);
+		public JoinableTaskFactory CreateFactory() {
+			return new JoinableTaskFactory(this);
 		}
 
-		public JoinableJobFactory CreateJoinableFactory() {
-			return new JoinableJobFactory(new JobCollection(this));
+		public JoinableJoinableTaskFactory CreateJoinableFactory() {
+			return new JoinableJoinableTaskFactory(new JoinableTaskCollection(this));
 		}
 
 		/// <summary>
@@ -101,7 +101,7 @@
 		/// </summary>
 		/// <param name="callback">The callback to invoke.</param>
 		/// <param name="state">The state object to pass to the callback.</param>
-		protected virtual void SwitchToMainThreadOnCompleted(JobFactory factory, SendOrPostCallback callback, object state) {
+		protected virtual void SwitchToMainThreadOnCompleted(JoinableTaskFactory factory, SendOrPostCallback callback, object state) {
 			Requires.NotNull(factory, "factory");
 			Requires.NotNull(callback, "callback");
 
@@ -154,26 +154,26 @@
 		/// <summary>
 		/// A collection of asynchronous operations that may be joined.
 		/// </summary>
-		public class JobFactory {
+		public class JoinableTaskFactory {
 			/// <summary>
-			/// The <see cref="JobContext"/> that owns this instance.
+			/// The <see cref="JoinableTaskContext"/> that owns this instance.
 			/// </summary>
-			private readonly JobContext owner;
+			private readonly JoinableTaskContext owner;
 
 			private readonly SynchronizationContext mainThreadJobSyncContext;
 
 			/// <summary>
-			/// Initializes a new instance of the <see cref="JobFactory"/> class.
+			/// Initializes a new instance of the <see cref="JoinableTaskFactory"/> class.
 			/// </summary>
-			internal JobFactory(JobContext owner) {
+			internal JoinableTaskFactory(JoinableTaskContext owner) {
 				Requires.NotNull(owner, "owner");
 				this.owner = owner;
-				this.mainThreadJobSyncContext = new JobSynchronizationContext(this);
-				this.MainThreadJobScheduler = new JobTaskScheduler(this, true);
-				this.ThreadPoolJobScheduler = new JobTaskScheduler(this, false);
+				this.mainThreadJobSyncContext = new JoinableTaskSynchronizationContext(this);
+				this.MainThreadJobScheduler = new JoinableTaskScheduler(this, true);
+				this.ThreadPoolJobScheduler = new JoinableTaskScheduler(this, false);
 			}
 
-			public JobContext Context {
+			public JoinableTaskContext Context {
 				get { return this.owner; }
 			}
 
@@ -274,14 +274,14 @@
 			/// </summary>
 			/// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
 			/// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
-			public Job Start(Func<Task> asyncMethod) {
+			public JoinableTask Start(Func<Task> asyncMethod) {
 				return this.Start(asyncMethod, synchronouslyBlocking: false);
 			}
 
-			private Job Start(Func<Task> asyncMethod, bool synchronouslyBlocking) {
+			private JoinableTask Start(Func<Task> asyncMethod, bool synchronouslyBlocking) {
 				Requires.NotNull(asyncMethod, "asyncMethod");
 
-				var job = new Job(this, synchronouslyBlocking);
+				var job = new JoinableTask(this, synchronouslyBlocking);
 				using (var framework = new RunFramework(this, job)) {
 					framework.SetResult(asyncMethod());
 					return job;
@@ -296,21 +296,21 @@
 			/// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
 			/// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
 			/// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
-			public Job<T> Start<T>(Func<Task<T>> asyncMethod) {
+			public JoinableTask<T> Start<T>(Func<Task<T>> asyncMethod) {
 				return this.Start(asyncMethod, synchronouslyBlocking: false);
 			}
 
-			private Job<T> Start<T>(Func<Task<T>> asyncMethod, bool synchronouslyBlocking) {
+			private JoinableTask<T> Start<T>(Func<Task<T>> asyncMethod, bool synchronouslyBlocking) {
 				Requires.NotNull(asyncMethod, "asyncMethod");
 
-				var job = new Job<T>(this, synchronouslyBlocking);
+				var job = new JoinableTask<T>(this, synchronouslyBlocking);
 				using (var framework = new RunFramework(this, job)) {
 					framework.SetResult(asyncMethod());
 					return job;
 				}
 			}
 
-			protected virtual void Add(Job joinable) {
+			protected virtual void Add(JoinableTask joinable) {
 			}
 
 			/// <summary>
@@ -318,17 +318,17 @@
 			/// to setup and teardown the boilerplate stuff.
 			/// </summary>
 			private struct RunFramework : IDisposable {
-				private readonly JobFactory factory;
+				private readonly JoinableTaskFactory factory;
 				private readonly SpecializedSyncContext syncContextRevert;
-				private readonly Job joinable;
-				private readonly Job previousJoinable;
+				private readonly JoinableTask joinable;
+				private readonly JoinableTask previousJoinable;
 
 				/// <summary>
 				/// Initializes a new instance of the <see cref="RunFramework"/> struct
 				/// and sets up the synchronization contexts for the
 				/// <see cref="RunSynchronously(Func{Task})"/> family of methods.
 				/// </summary>
-				internal RunFramework(JobFactory factory, Job joinable) {
+				internal RunFramework(JoinableTaskFactory factory, JoinableTask joinable) {
 					Requires.NotNull(factory, "factory");
 					Requires.NotNull(joinable, "joinable");
 
@@ -370,24 +370,24 @@
 			}
 		}
 
-		public class JoinableJobFactory : JobFactory {
+		public class JoinableJoinableTaskFactory : JoinableTaskFactory {
 			/// <summary>
 			/// The synchronization context to apply to <see cref="SwitchToMainThreadOnCompleted"/> continuations.
 			/// </summary>
 			private readonly SynchronizationContext synchronizationContext;
 
-			private readonly JobCollection jobCollection;
+			private readonly JoinableTaskCollection jobCollection;
 
 			/// <summary>
-			/// Initializes a new instance of the <see cref="JoinableJobFactory"/> class.
+			/// Initializes a new instance of the <see cref="JoinableJoinableTaskFactory"/> class.
 			/// </summary>
-			internal JoinableJobFactory(JobCollection jobCollection)
+			internal JoinableJoinableTaskFactory(JoinableTaskCollection jobCollection)
 				: base(Requires.NotNull(jobCollection, "jobCollection").Context) {
-				this.synchronizationContext = new JobSynchronizationContext(this);
+				this.synchronizationContext = new JoinableTaskSynchronizationContext(this);
 				this.jobCollection = jobCollection;
 			}
 
-			public JobCollection Collection {
+			public JoinableTaskCollection Collection {
 				get { return this.jobCollection; }
 			}
 
@@ -405,7 +405,7 @@
 				}
 			}
 
-			protected override void Add(Job joinable) {
+			protected override void Add(JoinableTask joinable) {
 				this.Collection.Add(joinable);
 			}
 
@@ -446,22 +446,22 @@
 		/// restores those values when this structure is disposed.
 		/// </summary>
 		public struct RevertRelevance : IDisposable {
-			private readonly JobContext pump;
+			private readonly JoinableTaskContext pump;
 			private SpecializedSyncContext temporarySyncContext;
-			private Job oldJoinable;
+			private JoinableTask oldJoinable;
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="RevertRelevance"/> struct.
 			/// </summary>
 			/// <param name="pump">The instance that created this value.</param>
-			internal RevertRelevance(JobContext pump) {
+			internal RevertRelevance(JoinableTaskContext pump) {
 				Requires.NotNull(pump, "pump");
 				this.pump = pump;
 
 				this.oldJoinable = pump.joinableOperation.Value;
 				pump.joinableOperation.Value = null;
 
-				var jobSyncContext = SynchronizationContext.Current as JobSynchronizationContext;
+				var jobSyncContext = SynchronizationContext.Current as JoinableTaskSynchronizationContext;
 				if (jobSyncContext != null) {
 					SynchronizationContext appliedSyncContext = null;
 					if (jobSyncContext.MainThreadAffinitized) {
@@ -500,12 +500,12 @@
 			/// <summary>
 			/// The async pump responsible for this instance.
 			/// </summary>
-			private JobFactory factory;
+			private JoinableTaskFactory factory;
 
 			/// <summary>
 			/// The job that created this wrapper.
 			/// </summary>
-			private Job job;
+			private JoinableTask job;
 
 			/// <summary>
 			/// The delegate to invoke.  <c>null</c> if it has already been invoked.
@@ -526,7 +526,7 @@
 			/// <summary>
 			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class.
 			/// </summary>
-			private SingleExecuteProtector(JobFactory factory, Job job) {
+			private SingleExecuteProtector(JoinableTaskFactory factory, JoinableTask job) {
 				Requires.NotNull(factory, "factory");
 				this.factory = factory;
 				this.job = job;
@@ -561,7 +561,7 @@
 			/// <param name="syncContext">The synchronization context that created this instance.</param>
 			/// <param name="action">The delegate being wrapped.</param>
 			/// <returns>An instance of <see cref="SingleExecuteProtector"/>.</returns>
-			internal static SingleExecuteProtector Create(JobFactory factory, Job job, Action action) {
+			internal static SingleExecuteProtector Create(JoinableTaskFactory factory, JoinableTask job, Action action) {
 				return new SingleExecuteProtector(factory, job) {
 					invokeDelegate = action,
 				};
@@ -575,7 +575,7 @@
 			/// <param name="callback">The callback to invoke.</param>
 			/// <param name="state">The state object to pass to the callback.</param>
 			/// <returns>An instance of <see cref="SingleExecuteProtector"/>.</returns>
-			internal static SingleExecuteProtector Create(JobFactory factory, Job job, SendOrPostCallback callback, object state) {
+			internal static SingleExecuteProtector Create(JoinableTaskFactory factory, JoinableTask job, SendOrPostCallback callback, object state) {
 				Requires.NotNull(factory, "factory");
 				Assumes.True(job == null || job.Factory == factory); // job and factory do not match.
 
@@ -638,16 +638,16 @@
 		/// A value whose disposal cancels a <see cref="Join"/> operation.
 		/// </summary>
 		public struct JoinRelease : IDisposable {
-			private Job joinedJob;
-			private Job joiner;
-			private JobCollection joinedJobCollection;
+			private JoinableTask joinedJob;
+			private JoinableTask joiner;
+			private JoinableTaskCollection joinedJobCollection;
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="JoinRelease"/> class.
 			/// </summary>
 			/// <param name="joined">The Main thread controlling SingleThreadSynchronizationContext to use to accelerate execution of Main thread bound work.</param>
 			/// <param name="joiner">The instance that created this value.</param>
-			internal JoinRelease(Job joined, Job joiner) {
+			internal JoinRelease(JoinableTask joined, JoinableTask joiner) {
 				Requires.NotNull(joined, "joined");
 				Requires.NotNull(joiner, "joiner");
 
@@ -661,7 +661,7 @@
 			/// </summary>
 			/// <param name="jobCollection">The collection of jobs that has been joined.</param>
 			/// <param name="joiner">The instance that created this value.</param>
-			internal JoinRelease(JobCollection jobCollection, Job joiner) {
+			internal JoinRelease(JoinableTaskCollection jobCollection, JoinableTask joiner) {
 				Requires.NotNull(jobCollection, "jobCollection");
 				Requires.NotNull(joiner, "joiner");
 
@@ -692,18 +692,18 @@
 		/// Tracks asynchronous operations and provides the ability to Join those operations to avoid
 		/// deadlocks while synchronously blocking the Main thread for the operation's completion.
 		/// </summary>
-		public class Job {
+		public class JoinableTask {
 			private static readonly AsyncManualResetEvent alwaysSignaled = new AsyncManualResetEvent(true);
 
 			/// <summary>
-			/// The <see cref="JobContext"/> that began the async operation.
+			/// The <see cref="JoinableTaskContext"/> that began the async operation.
 			/// </summary>
-			private readonly JobFactory owner;
+			private readonly JoinableTaskFactory owner;
 
 			/// <summary>
 			/// The collections that this job is a member of.
 			/// </summary>
-			private ListOfOftenOne<JobCollection> collectionMembership;
+			private ListOfOftenOne<JoinableTaskCollection> collectionMembership;
 
 			private Task wrappedTask;
 
@@ -713,7 +713,7 @@
 			/// <remarks>
 			/// When the value in an entry is decremented to 0, the entry is removed from the map.
 			/// </remarks>
-			private WeakKeyDictionary<Job, int> childOrJoinedJobs;
+			private WeakKeyDictionary<JoinableTask, int> childOrJoinedJobs;
 
 			/// <summary>
 			/// An event that is signaled <see cref="childOrJoinedJobs"/> has changed, or queues are lazily constructed. Lazily constructed.
@@ -734,11 +734,11 @@
 			private bool completeRequested;
 
 			/// <summary>
-			/// Initializes a new instance of the <see cref="Job"/> class.
+			/// Initializes a new instance of the <see cref="JoinableTask"/> class.
 			/// </summary>
 			/// <param name="owner">The instance that began the async operation.</param>
 			/// <param name="synchronouslyBlocking">A value indicating whether the launching thread will synchronously block for this job's completion.</param>
-			internal Job(JobFactory owner, bool synchronouslyBlocking) {
+			internal JoinableTask(JoinableTaskFactory owner, bool synchronouslyBlocking) {
 				Requires.NotNull(owner, "owner");
 
 				this.owner = owner;
@@ -822,7 +822,7 @@
 				}
 			}
 
-			internal JobFactory Factory {
+			internal JoinableTaskFactory Factory {
 				get { return this.owner; }
 			}
 
@@ -834,7 +834,7 @@
 							if (this.mainThreadJobSyncContext == null) {
 								this.Factory.Context.SyncContextLock.EnterWriteLock();
 								try {
-									this.mainThreadJobSyncContext = new JobSynchronizationContext(this, true);
+									this.mainThreadJobSyncContext = new JoinableTaskSynchronizationContext(this, true);
 								} finally {
 									this.Factory.Context.SyncContextLock.ExitWriteLock();
 								}
@@ -846,7 +846,7 @@
 								if (this.threadPoolJobSyncContext == null) {
 									this.Factory.Context.SyncContextLock.EnterWriteLock();
 									try {
-										this.threadPoolJobSyncContext = new JobSynchronizationContext(this, false);
+										this.threadPoolJobSyncContext = new JoinableTaskSynchronizationContext(this, false);
 									} finally {
 										this.Factory.Context.SyncContextLock.ExitWriteLock();
 									}
@@ -961,7 +961,7 @@
 				return this.JoinAsync().GetAwaiter();
 			}
 
-			internal void SetWrappedTask(Task wrappedTask, Job parentJob) {
+			internal void SetWrappedTask(Task wrappedTask, JoinableTask parentJob) {
 				Requires.NotNull(wrappedTask, "wrappedTask");
 
 				this.owner.Context.SyncContextLock.EnterWriteLock();
@@ -974,7 +974,7 @@
 					} else {
 						// Arrange for the wrapped task to complete this job when the task completes.
 						this.wrappedTask.ContinueWith(
-							(t, s) => ((Job)s).Complete(),
+							(t, s) => ((JoinableTask)s).Complete(),
 							this,
 							CancellationToken.None,
 							TaskContinuationOptions.ExecuteSynchronously,
@@ -1025,7 +1025,7 @@
 				}
 			}
 
-			internal void RemoveDependency(Job joinChild) {
+			internal void RemoveDependency(JoinableTask joinChild) {
 				Requires.NotNull(joinChild, "joinChild");
 				this.owner.Context.SyncContextLock.EnterWriteLock();
 				try {
@@ -1045,7 +1045,7 @@
 			/// <summary>
 			/// Recursively adds this joinable and all its dependencies to the specified set, that are not yet completed.
 			/// </summary>
-			internal void AddSelfAndDescendentOrJoinedJobs(HashSet<Job> joinables) {
+			internal void AddSelfAndDescendentOrJoinedJobs(HashSet<JoinableTask> joinables) {
 				Requires.NotNull(joinables, "joinables");
 
 				if (!this.IsCompleted) {
@@ -1086,18 +1086,18 @@
 				}
 			}
 
-			internal void OnAddedToCollection(JobCollection collection) {
+			internal void OnAddedToCollection(JoinableTaskCollection collection) {
 				Requires.NotNull(collection, "collection");
 				this.collectionMembership.Add(collection);
 			}
 
-			internal void OnRemovedFromCollection(JobCollection collection) {
+			internal void OnRemovedFromCollection(JoinableTaskCollection collection) {
 				Requires.NotNull(collection, "collection");
 				this.collectionMembership.Remove(collection);
 			}
 
 			private bool TryDequeueSelfOrDependencies(out SingleExecuteProtector work, out Task tryAgainAfter) {
-				var applicableJobs = new HashSet<Job>();
+				var applicableJobs = new HashSet<JoinableTask>();
 				this.owner.Context.SyncContextLock.EnterUpgradeableReadLock();
 				try {
 					if (this.IsCompleted) {
@@ -1151,10 +1151,10 @@
 			}
 
 			/// <summary>
-			/// Adds an <see cref="JobContext"/> instance as one that is relevant to the async operation.
+			/// Adds an <see cref="JoinableTaskContext"/> instance as one that is relevant to the async operation.
 			/// </summary>
 			/// <param name="joinChild">The <see cref="SingleThreadSynchronizationContext"/> to join as a child.</param>
-			internal JoinRelease AddDependency(Job joinChild) {
+			internal JoinRelease AddDependency(JoinableTask joinChild) {
 				Requires.NotNull(joinChild, "joinChild");
 				if (this == joinChild) {
 					// Joining oneself would be pointless.
@@ -1165,7 +1165,7 @@
 				this.owner.Context.SyncContextLock.EnterWriteLock();
 				try {
 					if (this.childOrJoinedJobs == null) {
-						this.childOrJoinedJobs = new WeakKeyDictionary<Job, int>(capacity: 3);
+						this.childOrJoinedJobs = new WeakKeyDictionary<JoinableTask, int>(capacity: 3);
 					}
 
 					int refCount;
@@ -1202,13 +1202,13 @@
 		/// deadlocks while synchronously blocking the Main thread for the operation's completion.
 		/// </summary>
 		/// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
-		public class Job<T> : Job {
+		public class JoinableTask<T> : JoinableTask {
 			/// <summary>
-			/// Initializes a new instance of the <see cref="Job"/> class.
+			/// Initializes a new instance of the <see cref="JoinableTask"/> class.
 			/// </summary>
 			/// <param name="owner">The instance that began the async operation.</param>
 			/// <param name="synchronouslyBlocking">A value indicating whether the launching thread will synchronously block for this job's completion.</param>
-			public Job(JobFactory owner, bool synchronouslyBlocking)
+			public JoinableTask(JoinableTaskFactory owner, bool synchronouslyBlocking)
 				: base(owner, synchronouslyBlocking) {
 			}
 
@@ -1259,38 +1259,38 @@
 		/// <summary>
 		/// A joinable collection of jobs.
 		/// </summary>
-		public class JobCollection {
+		public class JoinableTaskCollection {
 			/// <summary>
 			/// The set of jobs that belong to this collection -- that is, the set of jobs that are implicitly Joined
 			/// when folks Join this collection.
 			/// </summary>
-			private readonly WeakKeyDictionary<Job, EmptyStruct> joinables = new WeakKeyDictionary<Job, EmptyStruct>();
+			private readonly WeakKeyDictionary<JoinableTask, EmptyStruct> joinables = new WeakKeyDictionary<JoinableTask, EmptyStruct>();
 
 			/// <summary>
 			/// The set of jobs that have Joined this collection -- that is, the set of jobs that are interested
 			/// in the completion of any and all jobs that belong to this collection.
 			/// The value is the number of times a particular job has Joined this collection.
 			/// </summary>
-			private readonly WeakKeyDictionary<Job, int> joiners = new WeakKeyDictionary<Job, int>();
+			private readonly WeakKeyDictionary<JoinableTask, int> joiners = new WeakKeyDictionary<JoinableTask, int>();
 
 			/// <summary>
-			/// Initializes a new instance of the <see cref="JobCollection"/> class.
+			/// Initializes a new instance of the <see cref="JoinableTaskCollection"/> class.
 			/// </summary>
-			public JobCollection(JobContext context) {
+			public JoinableTaskCollection(JoinableTaskContext context) {
 				Requires.NotNull(context, "context");
 				this.Context = context;
 			}
 
 			/// <summary>
-			/// Gets the <see cref="JobContext"/> to which this collection belongs.
+			/// Gets the <see cref="JoinableTaskContext"/> to which this collection belongs.
 			/// </summary>
-			public JobContext Context { get; private set; }
+			public JoinableTaskContext Context { get; private set; }
 
 			/// <summary>
 			/// Adds the specified job to this collection.
 			/// </summary>
 			/// <param name="job">The job to add to the collection.</param>
-			public void Add(Job job) {
+			public void Add(JoinableTask job) {
 				Requires.NotNull(job, "job");
 				Requires.Argument(job.Factory.Context == this.Context, "joinable", "Job does not belong to the context this collection was instantiated with.");
 
@@ -1320,7 +1320,7 @@
 			/// </summary>
 			/// <param name="job">The job to remove.</param>
 			/// <returns><c>true</c> if the job was removed from this collection; <c>false</c> if it wasn't found in the collection.</returns>
-			public bool Remove(Job job) {
+			public bool Remove(JoinableTask job) {
 				Requires.NotNull(job, "job");
 
 				this.Context.SyncContextLock.EnterWriteLock();
@@ -1380,7 +1380,7 @@
 			/// <summary>
 			/// Checks whether the specified job is a member of this collection.
 			/// </summary>
-			public bool Contains(Job job) {
+			public bool Contains(JoinableTask job) {
 				Requires.NotNull(job, "job");
 
 				this.Context.SyncContextLock.EnterReadLock();
@@ -1395,7 +1395,7 @@
 			/// Breaks a join formed between the specified job and this collection.
 			/// </summary>
 			/// <param name="job">The job that had previously joined this collection, and that now intends to revert it.</param>
-			internal void Disjoin(Job job) {
+			internal void Disjoin(JoinableTask job) {
 				Requires.NotNull(job, "job");
 
 				this.Context.SyncContextLock.EnterWriteLock();
@@ -1423,11 +1423,11 @@
 		/// that self-scavenges elements that are executed by other means.
 		/// </summary>
 		internal class ExecutionQueue : AsyncQueue<SingleExecuteProtector> {
-			private readonly Job owningJob;
+			private readonly JoinableTask owningJob;
 
 			private TaskCompletionSource<EmptyStruct> enqueuedNotification;
 
-			internal ExecutionQueue(Job owningJob) {
+			internal ExecutionQueue(JoinableTask owningJob) {
 				Requires.NotNull(owningJob, "owningJob");
 				this.owningJob = owningJob;
 			}
@@ -1539,16 +1539,16 @@
 		/// <summary>
 		/// A synchronization context that forwards posted messages to the ambient job.
 		/// </summary>
-		private class JobSynchronizationContext : SynchronizationContext {
+		private class JoinableTaskSynchronizationContext : SynchronizationContext {
 			/// <summary>
 			/// The owning job factory.
 			/// </summary>
-			private readonly JobFactory jobFactory;
+			private readonly JoinableTaskFactory jobFactory;
 
 			/// <summary>
 			/// The owning job. May be null.
 			/// </summary>
-			private readonly Job job;
+			private readonly JoinableTask job;
 
 			/// <summary>
 			/// A flag indicating whether messages posted to this instance should execute
@@ -1557,11 +1557,11 @@
 			private readonly bool mainThreadAffinitized;
 
 			/// <summary>
-			/// Initializes a new instance of the <see cref="JobSynchronizationContext"/> class
+			/// Initializes a new instance of the <see cref="JoinableTaskSynchronizationContext"/> class
 			/// that is affinitized to the main thread.
 			/// </summary>
-			/// <param name="owner">The <see cref="JobFactory"/> that created this instance.</param>
-			internal JobSynchronizationContext(JobFactory owner) {
+			/// <param name="owner">The <see cref="JoinableTaskFactory"/> that created this instance.</param>
+			internal JoinableTaskSynchronizationContext(JoinableTaskFactory owner) {
 				Requires.NotNull(owner, "owner");
 
 				this.jobFactory = owner;
@@ -1569,11 +1569,11 @@
 			}
 
 			/// <summary>
-			/// Initializes a new instance of the <see cref="JobSynchronizationContext"/> class.
+			/// Initializes a new instance of the <see cref="JoinableTaskSynchronizationContext"/> class.
 			/// </summary>
-			/// <param name="owner">The <see cref="Job"/> that owns this instance.</param>
+			/// <param name="owner">The <see cref="JoinableTask"/> that owns this instance.</param>
 			/// <param name="mainThreadAffinitized">A value indicating whether messages posted to this instance should execute on the main thread.</param>
-			internal JobSynchronizationContext(Job job, bool mainThreadAffinitized)
+			internal JoinableTaskSynchronizationContext(JoinableTask job, bool mainThreadAffinitized)
 				: this(Requires.NotNull(job, "job").Factory) {
 				this.job = job;
 				this.mainThreadAffinitized = mainThreadAffinitized;
@@ -1633,12 +1633,12 @@
 		/// <summary>
 		/// A TaskScheduler that executes task on the main thread.
 		/// </summary>
-		private class JobTaskScheduler : TaskScheduler {
+		private class JoinableTaskScheduler : TaskScheduler {
 			/// <summary>The synchronization object for field access.</summary>
 			private readonly object syncObject = new object();
 
 			/// <summary>The collection that all created jobs will belong to.</summary>
-			private readonly JobFactory collection;
+			private readonly JoinableTaskFactory collection;
 
 			/// <summary>The scheduled tasks that have not yet been executed.</summary>
 			private readonly HashSet<Task> queuedTasks = new HashSet<Task>();
@@ -1647,11 +1647,11 @@
 			private readonly bool mainThreadAffinitized;
 
 			/// <summary>
-			/// Initializes a new instance of the <see cref="JobTaskScheduler"/> class.
+			/// Initializes a new instance of the <see cref="JoinableTaskScheduler"/> class.
 			/// </summary>
 			/// <param name="collection">The collection that all created jobs will belong to.</param>
 			/// <param name="mainThreadAffinitized">A value indicating whether scheduled tasks execute on the main thread; <c>false</c> indicates threadpool execution.</param>
-			internal JobTaskScheduler(JobFactory collection, bool mainThreadAffinitized) {
+			internal JoinableTaskScheduler(JoinableTaskFactory collection, bool mainThreadAffinitized) {
 				Requires.NotNull(collection, "collection");
 				this.collection = collection;
 				this.mainThreadAffinitized = mainThreadAffinitized;
@@ -1712,9 +1712,9 @@
 		/// An awaitable struct that facilitates an asynchronous transition to the Main thread.
 		/// </summary>
 		public struct MainThreadAwaitable {
-			private readonly JobFactory jobFactory;
+			private readonly JoinableTaskFactory jobFactory;
 
-			private readonly Job job;
+			private readonly JoinableTask job;
 
 			private readonly CancellationToken cancellationToken;
 
@@ -1723,7 +1723,7 @@
 			/// <summary>
 			/// Initializes a new instance of the <see cref="MainThreadAwaitable"/> struct.
 			/// </summary>
-			internal MainThreadAwaitable(JobFactory jobFactory, Job job, CancellationToken cancellationToken, bool alwaysYield = false) {
+			internal MainThreadAwaitable(JoinableTaskFactory jobFactory, JoinableTask job, CancellationToken cancellationToken, bool alwaysYield = false) {
 				Requires.NotNull(jobFactory, "jobFactory");
 
 				this.jobFactory = jobFactory;
@@ -1744,20 +1744,20 @@
 		/// An awaiter struct that facilitates an asynchronous transition to the Main thread.
 		/// </summary>
 		public struct MainThreadAwaiter : INotifyCompletion {
-			private readonly JobFactory jobFactory;
+			private readonly JoinableTaskFactory jobFactory;
 
 			private readonly CancellationToken cancellationToken;
 
 			private readonly bool alwaysYield;
 
-			private readonly Job job;
+			private readonly JoinableTask job;
 
 			private CancellationTokenRegistration cancellationRegistration;
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="MainThreadAwaiter"/> struct.
 			/// </summary>
-			internal MainThreadAwaiter(JobFactory jobFactory, Job job, CancellationToken cancellationToken, bool alwaysYield) {
+			internal MainThreadAwaiter(JoinableTaskFactory jobFactory, JoinableTask job, CancellationToken cancellationToken, bool alwaysYield) {
 				this.jobFactory = jobFactory;
 				this.job = job;
 				this.cancellationToken = cancellationToken;

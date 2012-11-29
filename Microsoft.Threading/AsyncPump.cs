@@ -17,20 +17,20 @@ namespace Microsoft.Threading {
 
 	/// <summary>Provides a pump that supports running asynchronous methods on the current thread.</summary>
 	public class AsyncPump {
-		private readonly JobContext.JoinableJobFactory factory;
+		private readonly JoinableTaskContext.JoinableJoinableTaskFactory factory;
 
 		public AsyncPump(Thread mainThread = null, SynchronizationContext syncContext = null) {
-			var context = new JobContext(mainThread, syncContext);
+			var context = new JoinableTaskContext(mainThread, syncContext);
 			this.factory = context.CreateJoinableFactory();
 		}
 
-		public AsyncPump(JobContext context) {
+		public AsyncPump(JoinableTaskContext context) {
 			Requires.NotNull(context, "context");
 
 			this.factory = context.CreateJoinableFactory();
 		}
 
-		public JobContext.JobFactory Factory {
+		public JoinableTaskContext.JoinableTaskFactory Factory {
 			get { return this.factory; }
 		}
 
@@ -38,7 +38,7 @@ namespace Microsoft.Threading {
 			get { return this.factory.MainThreadJobScheduler; }
 		}
 
-		public JobContext.JoinRelease Join() {
+		public JoinableTaskContext.JoinRelease Join() {
 			return this.factory.Join();
 		}
 
@@ -50,11 +50,11 @@ namespace Microsoft.Threading {
 			return this.factory.Run(asyncMethod);
 		}
 
-		public JobContext.Job BeginAsynchronously(Func<Task> asyncMethod) {
+		public JoinableTaskContext.JoinableTask BeginAsynchronously(Func<Task> asyncMethod) {
 			return this.factory.Start(asyncMethod);
 		}
 
-		public JobContext.Job<T> BeginAsynchronously<T>(Func<Task<T>> asyncMethod) {
+		public JoinableTaskContext.JoinableTask<T> BeginAsynchronously<T>(Func<Task<T>> asyncMethod) {
 			return this.factory.Start(asyncMethod);
 		}
 
@@ -66,11 +66,11 @@ namespace Microsoft.Threading {
 			});
 		}
 
-		public JobContext.MainThreadAwaitable SwitchToMainThreadAsync(CancellationToken cancellationToken = default(CancellationToken)) {
+		public JoinableTaskContext.MainThreadAwaitable SwitchToMainThreadAsync(CancellationToken cancellationToken = default(CancellationToken)) {
 			return this.factory.SwitchToMainThreadAsync(cancellationToken);
 		}
 
-		public JobContext.RevertRelevance SuppressRelevance() {
+		public JoinableTaskContext.RevertRelevance SuppressRelevance() {
 			return this.factory.Context.SuppressRelevance();
 		}
 	}

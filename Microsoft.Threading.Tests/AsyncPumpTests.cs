@@ -1535,7 +1535,7 @@
 		/// <summary>
 		/// Simulates COM message pump reentrancy causing some unrelated work to "pump in" on top of a synchronously blocking wait.
 		/// </summary>
-		private class COMReentrantJobContext : JobContext {
+		private class COMReentrantJobContext : JoinableTaskContext {
 			private Action action;
 
 			internal void ReenterWaitWith(Action action) {
@@ -1553,8 +1553,8 @@
 			}
 		}
 
-		private class DerivedJobContext : JobContext {
-			protected override void SwitchToMainThreadOnCompleted(JobFactory factory, SendOrPostCallback callback, object state) {
+		private class DerivedJobContext : JoinableTaskContext {
+			protected override void SwitchToMainThreadOnCompleted(JoinableTaskFactory factory, SendOrPostCallback callback, object state) {
 				Assert.IsNotNull(callback);
 				base.SwitchToMainThreadOnCompleted(factory, callback, state);
 			}
@@ -1579,7 +1579,7 @@
 			private Task dependentTask;
 			private MockAsyncService dependentService;
 
-			internal MockAsyncService(JobContext context, MockAsyncService dependentService = null) {
+			internal MockAsyncService(JoinableTaskContext context, MockAsyncService dependentService = null) {
 				this.pump = new AsyncPump(context);
 				this.dependentService = dependentService;
 			}
