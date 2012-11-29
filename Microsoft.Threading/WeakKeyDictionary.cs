@@ -5,326 +5,293 @@
 // <summary>Dictionary that does not prevent keys from being garbage collected.</summary>
 //-----------------------------------------------------------------------
 
-namespace Microsoft.Threading
-{
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
+namespace Microsoft.Threading {
+	using System;
+	using System.Collections.Generic;
+	using System.Diagnostics;
+	using System.Diagnostics.CodeAnalysis;
 
-    /// <summary>
-    /// Dictionary that does not prevent keys from being garbage collected.
-    /// </summary>
-    /// <typeparam name="TKey">Type of key, without the WeakReference wrapper.</typeparam>
-    /// <typeparam name="TValue">Type of value</typeparam>
-    /// <remarks>
-    /// See also Microsoft.Build.Collections.WeakDictionary.
-    /// </remarks>
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "This is a dictionary, despite the fact it doesn't implement IDictionary.")]
-    internal class WeakKeyDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
-        where TKey : class
-    {
-        /// <summary>
-        /// The dictionary used internally to store the keys and values.
-        /// </summary>
-        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        private readonly Dictionary<WeakReference<TKey>, TValue> dictionary;
+	/// <summary>
+	/// Dictionary that does not prevent keys from being garbage collected.
+	/// </summary>
+	/// <typeparam name="TKey">Type of key, without the WeakReference wrapper.</typeparam>
+	/// <typeparam name="TValue">Type of value</typeparam>
+	/// <remarks>
+	/// See also Microsoft.Build.Collections.WeakDictionary.
+	/// </remarks>
+	[SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "This is a dictionary, despite the fact it doesn't implement IDictionary.")]
+	internal class WeakKeyDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
+		where TKey : class {
+		/// <summary>
+		/// The dictionary used internally to store the keys and values.
+		/// </summary>
+		[DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+		private readonly Dictionary<WeakReference<TKey>, TValue> dictionary;
 
-        /// <summary>
-        /// The key comparer to use for hashing and equality checks.
-        /// </summary>
-        private readonly IEqualityComparer<TKey> keyComparer;
+		/// <summary>
+		/// The key comparer to use for hashing and equality checks.
+		/// </summary>
+		private readonly IEqualityComparer<TKey> keyComparer;
 
-        /// <summary>
-        /// The dictionary's initial capacity, and the capacity beyond which we will resist to grow
-        /// by scavenging for collected keys first.
-        /// </summary>
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private int capacity;
+		/// <summary>
+		/// The dictionary's initial capacity, and the capacity beyond which we will resist to grow
+		/// by scavenging for collected keys first.
+		/// </summary>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
+		private int capacity;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="WeakKeyDictionary{TKey, TValue}"/> class.
-        /// </summary>
-        /// <param name="keyComparer">The key comparer to use. A <c>null</c> value indicates the default comparer will be used.</param>
-        /// <param name="capacity">The initial capacity of the dictionary. Growth beyond this capacity will first induce a scavenge operation.</param>
-        public WeakKeyDictionary(IEqualityComparer<TKey> keyComparer = null, int capacity = 10)
-        {
-            Requires.Range(capacity > 0, "capacity");
+		/// <summary>
+		/// Initializes a new instance of the <see cref="WeakKeyDictionary{TKey, TValue}"/> class.
+		/// </summary>
+		/// <param name="keyComparer">The key comparer to use. A <c>null</c> value indicates the default comparer will be used.</param>
+		/// <param name="capacity">The initial capacity of the dictionary. Growth beyond this capacity will first induce a scavenge operation.</param>
+		public WeakKeyDictionary(IEqualityComparer<TKey> keyComparer = null, int capacity = 10) {
+			Requires.Range(capacity > 0, "capacity");
 
-            this.keyComparer = keyComparer ?? EqualityComparer<TKey>.Default;
-            this.capacity = capacity;
-            IEqualityComparer<WeakReference<TKey>> equalityComparer = new WeakReferenceEqualityComparer<TKey>(this.keyComparer);
-            this.dictionary = new Dictionary<WeakReference<TKey>, TValue>(this.capacity, equalityComparer);
-        }
+			this.keyComparer = keyComparer ?? EqualityComparer<TKey>.Default;
+			this.capacity = capacity;
+			IEqualityComparer<WeakReference<TKey>> equalityComparer = new WeakReferenceEqualityComparer<TKey>(this.keyComparer);
+			this.dictionary = new Dictionary<WeakReference<TKey>, TValue>(this.capacity, equalityComparer);
+		}
 
-        /// <summary>
-        /// Count of entries.
-        /// Some entries may represent keys or values that have already been garbage collected.
-        /// To clean these out call <see cref="Scavenge"/>.
-        /// </summary>
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        public int Count
-        {
-            get { return this.dictionary.Count; }
-        }
+		/// <summary>
+		/// Count of entries.
+		/// Some entries may represent keys or values that have already been garbage collected.
+		/// To clean these out call <see cref="Scavenge"/>.
+		/// </summary>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
+		public int Count {
+			get { return this.dictionary.Count; }
+		}
 
-        /// <summary>
-        /// Obtains the value for a given key.
-        /// </summary>
-        public TValue this[TKey key]
-        {
-            get
-            {
-                WeakReference<TKey> wrappedKey = new WeakReference<TKey>(key, this.keyComparer, avoidWeakReferenceAllocation: true);
-                TValue value = this.dictionary[wrappedKey];
-                return value;
-            }
+		/// <summary>
+		/// Obtains the value for a given key.
+		/// </summary>
+		public TValue this[TKey key] {
+			get {
+				WeakReference<TKey> wrappedKey = new WeakReference<TKey>(key, this.keyComparer, avoidWeakReferenceAllocation: true);
+				TValue value = this.dictionary[wrappedKey];
+				return value;
+			}
 
-            set
-            {
-                WeakReference<TKey> wrappedKey = new WeakReference<TKey>(key, this.keyComparer);
+			set {
+				WeakReference<TKey> wrappedKey = new WeakReference<TKey>(key, this.keyComparer);
 
-                // Make some attempt to prevent dictionary growing forever with
-                // entries whose underlying key or value has already been collected.
-                // We do not have access to the dictionary's true capacity or growth
-                // method, so we improvise with our own.
-                // So attempt to make room for the upcoming add before we do it.
-                if (this.dictionary.Count == this.capacity && !ContainsKey(key))
-                {
-                    Scavenge();
+				// Make some attempt to prevent dictionary growing forever with
+				// entries whose underlying key or value has already been collected.
+				// We do not have access to the dictionary's true capacity or growth
+				// method, so we improvise with our own.
+				// So attempt to make room for the upcoming add before we do it.
+				if (this.dictionary.Count == this.capacity && !ContainsKey(key)) {
+					Scavenge();
 
-                    // If that didn't do anything, raise the capacity at which 
-                    // we next scavenge. Note that we never shrink, but neither
-                    // does the underlying dictionary.
-                    if (this.dictionary.Count == this.capacity)
-                    {
-                        this.capacity = this.dictionary.Count * 2;
-                    }
-                }
+					// If that didn't do anything, raise the capacity at which 
+					// we next scavenge. Note that we never shrink, but neither
+					// does the underlying dictionary.
+					if (this.dictionary.Count == this.capacity) {
+						this.capacity = this.dictionary.Count * 2;
+					}
+				}
 
-                this.dictionary[wrappedKey] = value;
-            }
-        }
+				this.dictionary[wrappedKey] = value;
+			}
+		}
 
-        /// <summary>
-        /// Whether there is a key present with the specified key
-        /// </summary>
-        /// <remarks>
-        /// As usual, don't just call Contained as the wrapped value may be null.
-        /// </remarks>
-        public bool ContainsKey(TKey key)
-        {
-            TValue value;
-            bool contained = TryGetValue(key, out value);
-            return contained;
-        }
+		/// <summary>
+		/// Whether there is a key present with the specified key
+		/// </summary>
+		/// <remarks>
+		/// As usual, don't just call Contained as the wrapped value may be null.
+		/// </remarks>
+		public bool ContainsKey(TKey key) {
+			TValue value;
+			bool contained = TryGetValue(key, out value);
+			return contained;
+		}
 
-        /// <summary>
-        /// Attempts to get the value for the provided key.
-        /// Returns true if the key is found, otherwise false.
-        /// </summary>
-        public bool TryGetValue(TKey key, out TValue value)
-        {
-            return this.dictionary.TryGetValue(new WeakReference<TKey>(key, this.keyComparer, avoidWeakReferenceAllocation: true), out value);
-        }
+		/// <summary>
+		/// Attempts to get the value for the provided key.
+		/// Returns true if the key is found, otherwise false.
+		/// </summary>
+		public bool TryGetValue(TKey key, out TValue value) {
+			return this.dictionary.TryGetValue(new WeakReference<TKey>(key, this.keyComparer, avoidWeakReferenceAllocation: true), out value);
+		}
 
-        /// <summary>
-        /// Removes an entry with the specified key.
-        /// Returns true if found, false otherwise.
-        /// </summary>
-        public bool Remove(TKey key)
-        {
-            return this.dictionary.Remove(new WeakReference<TKey>(key, this.keyComparer, avoidWeakReferenceAllocation: true));
-        }
+		/// <summary>
+		/// Removes an entry with the specified key.
+		/// Returns true if found, false otherwise.
+		/// </summary>
+		public bool Remove(TKey key) {
+			return this.dictionary.Remove(new WeakReference<TKey>(key, this.keyComparer, avoidWeakReferenceAllocation: true));
+		}
 
-        /// <summary>
-        /// Remove any entries from the dictionary that represent keys
-        /// that have been garbage collected.
-        /// </summary>
-        /// <returns>The number of entries removed.</returns>
-        public int Scavenge()
-        {
-            List<WeakReference<TKey>> remove = null;
+		/// <summary>
+		/// Remove any entries from the dictionary that represent keys
+		/// that have been garbage collected.
+		/// </summary>
+		/// <returns>The number of entries removed.</returns>
+		public int Scavenge() {
+			List<WeakReference<TKey>> remove = null;
 
-            foreach (WeakReference<TKey> weakKey in this.dictionary.Keys)
-            {
-                if (!weakKey.IsAlive)
-                {
-                    remove = remove ?? new List<WeakReference<TKey>>();
-                    remove.Add(weakKey);
-                }
-            }
+			foreach (WeakReference<TKey> weakKey in this.dictionary.Keys) {
+				if (!weakKey.IsAlive) {
+					remove = remove ?? new List<WeakReference<TKey>>();
+					remove.Add(weakKey);
+				}
+			}
 
-            if (remove != null)
-            {
-                foreach (WeakReference<TKey> entry in remove)
-                {
-                    this.dictionary.Remove(entry);
-                }
+			if (remove != null) {
+				foreach (WeakReference<TKey> entry in remove) {
+					this.dictionary.Remove(entry);
+				}
 
-                return remove.Count;
-            }
+				return remove.Count;
+			}
 
-            return 0;
-        }
+			return 0;
+		}
 
-        /// <summary>
-        /// Empty the collection
-        /// </summary>
-        public void Clear()
-        {
-            this.dictionary.Clear();
-        }
+		/// <summary>
+		/// Empty the collection
+		/// </summary>
+		public void Clear() {
+			this.dictionary.Clear();
+		}
 
-        /// <summary>
-        /// See IEnumerable&lt;T&gt;
-        /// </summary>
-        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
-        {
-            foreach (WeakReference<TKey> weakKey in this.dictionary.Keys)
-            {
-                var pair = new KeyValuePair<TKey, TValue>(weakKey.Target, this.dictionary[weakKey]);
-                if (pair.Key == null)
-                {
-                    // Oops... this key has already been garbage collected, so just skip it.
-                    continue;
-                }
+		/// <summary>
+		/// See IEnumerable&lt;T&gt;
+		/// </summary>
+		public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() {
+			foreach (WeakReference<TKey> weakKey in this.dictionary.Keys) {
+				var pair = new KeyValuePair<TKey, TValue>(weakKey.Target, this.dictionary[weakKey]);
+				if (pair.Key == null) {
+					// Oops... this key has already been garbage collected, so just skip it.
+					continue;
+				}
 
-                yield return pair;
-            }
-        }
+				yield return pair;
+			}
+		}
 
-        /// <summary>
-        /// See IEnumerable
-        /// </summary>
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return this.GetEnumerator();
-        }
+		/// <summary>
+		/// See IEnumerable
+		/// </summary>
+		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
+			return this.GetEnumerator();
+		}
 
-        /// <summary>
-        /// Strongly typed wrapper around a weak reference that caches 
-        /// the target's hash code so that it can be used in a hashtable.
-        /// </summary>
-        /// <typeparam name="T">Type of the target of the weak reference</typeparam>
-        private struct WeakReference<T>
-            where T : class
-        {
-            /// <summary>
-            /// Cache the hashcode so that it is still available even if the target has been 
-            /// collected. This allows this object to be still found in a table so it can be removed.
-            /// </summary>
-            private int hashcode;
+		/// <summary>
+		/// Strongly typed wrapper around a weak reference that caches 
+		/// the target's hash code so that it can be used in a hashtable.
+		/// </summary>
+		/// <typeparam name="T">Type of the target of the weak reference</typeparam>
+		private struct WeakReference<T>
+			where T : class {
+			/// <summary>
+			/// Cache the hashcode so that it is still available even if the target has been 
+			/// collected. This allows this object to be still found in a table so it can be removed.
+			/// </summary>
+			private int hashcode;
 
-            /// <summary>
-            /// Backing weak reference
-            /// </summary>
-            private WeakReference weakReference;
+			/// <summary>
+			/// Backing weak reference
+			/// </summary>
+			private WeakReference weakReference;
 
-            /// <summary>
-            /// Some of our instances are around just to do existence checks, and don't want
-            /// to allocate WeakReference objects as they are short-lived.
-            /// </summary>
-            private T notSoWeakTarget;
+			/// <summary>
+			/// Some of our instances are around just to do existence checks, and don't want
+			/// to allocate WeakReference objects as they are short-lived.
+			/// </summary>
+			private T notSoWeakTarget;
 
-            /// <summary>
-            /// Constructor
-            /// </summary>
-            internal WeakReference(T target, IEqualityComparer<T> equalityComparer, bool avoidWeakReferenceAllocation = false)
-            {
-                Requires.NotNull(target, "target");
-                Requires.NotNull(equalityComparer, "equalityComparer");
+			/// <summary>
+			/// Constructor
+			/// </summary>
+			internal WeakReference(T target, IEqualityComparer<T> equalityComparer, bool avoidWeakReferenceAllocation = false) {
+				Requires.NotNull(target, "target");
+				Requires.NotNull(equalityComparer, "equalityComparer");
 
-                this.notSoWeakTarget = avoidWeakReferenceAllocation ? target : null;
-                this.weakReference = avoidWeakReferenceAllocation ? null : new WeakReference(target);
-                this.hashcode = equalityComparer.GetHashCode(target);
-            }
+				this.notSoWeakTarget = avoidWeakReferenceAllocation ? target : null;
+				this.weakReference = avoidWeakReferenceAllocation ? null : new WeakReference(target);
+				this.hashcode = equalityComparer.GetHashCode(target);
+			}
 
-            /// <summary>
-            /// Target wrapped by this weak reference.  Null if the target has already been garbage collected.
-            /// </summary>
-            internal T Target
-            {
-                get { return this.notSoWeakTarget ?? (T)this.weakReference.Target; }
-            }
+			/// <summary>
+			/// Target wrapped by this weak reference.  Null if the target has already been garbage collected.
+			/// </summary>
+			internal T Target {
+				get { return this.notSoWeakTarget ?? (T)this.weakReference.Target; }
+			}
 
-            /// <summary>
-            /// Whether the target has not been garbage collected yet.
-            /// </summary>
-            internal bool IsAlive
-            {
-                get { return this.notSoWeakTarget != null || this.weakReference.IsAlive; }
-            }
+			/// <summary>
+			/// Whether the target has not been garbage collected yet.
+			/// </summary>
+			internal bool IsAlive {
+				get { return this.notSoWeakTarget != null || this.weakReference.IsAlive; }
+			}
 
-            /// <summary>
-            /// Returns the hashcode of the wrapped target
-            /// </summary>
-            public override int GetHashCode()
-            {
-                return this.hashcode;
-            }
+			/// <summary>
+			/// Returns the hashcode of the wrapped target
+			/// </summary>
+			public override int GetHashCode() {
+				return this.hashcode;
+			}
 
-            /// <summary>
-            /// Compares two structures.  
-            /// </summary>
-            public override bool Equals(object obj)
-            {
-                // We can't implement equals in the same terms as GetHashCode() because
-                // our target object may have been collected.  Instead just go based on
-                // equality of our weak references.
-                if (obj is WeakReference<T>)
-                {
-                    var other = (WeakReference<T>)obj;
-                    return this.weakReference.Equals(other.weakReference);
-                }
+			/// <summary>
+			/// Compares two structures.  
+			/// </summary>
+			public override bool Equals(object obj) {
+				// We can't implement equals in the same terms as GetHashCode() because
+				// our target object may have been collected.  Instead just go based on
+				// equality of our weak references.
+				if (obj is WeakReference<T>) {
+					var other = (WeakReference<T>)obj;
+					return this.weakReference.Equals(other.weakReference);
+				}
 
-                return false;
-            }
-        }
+				return false;
+			}
+		}
 
-        /// <summary>
-        /// Equality comparer for weak references that actually compares the 
-        /// targets of the weak references
-        /// </summary>
-        /// <typeparam name="T">Type of the targets of the weak references to be compared</typeparam>
-        private class WeakReferenceEqualityComparer<T> : IEqualityComparer<WeakReference<T>>
-            where T : class
-        {
-            /// <summary>
-            /// Comparer to use if specified, otherwise null
-            /// </summary>
-            private readonly IEqualityComparer<T> underlyingComparer;
+		/// <summary>
+		/// Equality comparer for weak references that actually compares the 
+		/// targets of the weak references
+		/// </summary>
+		/// <typeparam name="T">Type of the targets of the weak references to be compared</typeparam>
+		private class WeakReferenceEqualityComparer<T> : IEqualityComparer<WeakReference<T>>
+			where T : class {
+			/// <summary>
+			/// Comparer to use if specified, otherwise null
+			/// </summary>
+			private readonly IEqualityComparer<T> underlyingComparer;
 
-            /// <summary>
-            /// Constructor to use an explicitly specified comparer.
-            /// Comparer may be null, in which case the default comparer for the type
-            /// will be used.
-            /// </summary>
-            internal WeakReferenceEqualityComparer(IEqualityComparer<T> comparer)
-            {
-                Requires.NotNull(comparer, "comparer");
+			/// <summary>
+			/// Constructor to use an explicitly specified comparer.
+			/// Comparer may be null, in which case the default comparer for the type
+			/// will be used.
+			/// </summary>
+			internal WeakReferenceEqualityComparer(IEqualityComparer<T> comparer) {
+				Requires.NotNull(comparer, "comparer");
 
-                this.underlyingComparer = comparer;
-            }
+				this.underlyingComparer = comparer;
+			}
 
-            /// <summary>
-            /// Gets the hashcode
-            /// </summary>
-            public int GetHashCode(WeakReference<T> item)
-            {
-                // item.GetHashCode() returns a cached value from when the Target was referenced,
-                // and was calculated using this.underlyingComparer.
-                return item.GetHashCode();
-            }
+			/// <summary>
+			/// Gets the hashcode
+			/// </summary>
+			public int GetHashCode(WeakReference<T> item) {
+				// item.GetHashCode() returns a cached value from when the Target was referenced,
+				// and was calculated using this.underlyingComparer.
+				return item.GetHashCode();
+			}
 
-            /// <summary>
-            /// Compares the weak references for equality
-            /// </summary>
-            public bool Equals(WeakReference<T> left, WeakReference<T> right)
-            {
-                // PERF: do not add any code here that will cause the value type parameters to be boxed!
-                return this.underlyingComparer.Equals(left.Target, right.Target);
-            }
-        }
-    }
+			/// <summary>
+			/// Compares the weak references for equality
+			/// </summary>
+			public bool Equals(WeakReference<T> left, WeakReference<T> right) {
+				// PERF: do not add any code here that will cause the value type parameters to be boxed!
+				return this.underlyingComparer.Equals(left.Target, right.Target);
+			}
+		}
+	}
 }
