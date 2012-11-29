@@ -285,7 +285,7 @@ namespace Microsoft.Threading.Tests {
 			var resultTask = lazy.GetValueAsync();
 			Assert.IsFalse(resultTask.IsCompleted);
 
-			var someRandomPump = new AsyncPump();
+			var someRandomPump = new AsyncPump(asyncPump.Factory.Context);
 			someRandomPump.RunSynchronously(async delegate {
 				evt.Set(); // setting this event allows the value factory to resume, once it can get the Main thread.
 
