@@ -42,11 +42,11 @@
 			/// <summary>
 			/// Initializes a new instance of the <see cref="JoinableTaskSynchronizationContext"/> class.
 			/// </summary>
-			/// <param name="owner">The <see cref="JoinableTask"/> that owns this instance.</param>
+			/// <param name="joinableTask">The <see cref="JoinableTask"/> that owns this instance.</param>
 			/// <param name="mainThreadAffinitized">A value indicating whether messages posted to this instance should execute on the main thread.</param>
-			internal JoinableTaskSynchronizationContext(JoinableTask job, bool mainThreadAffinitized)
-				: this(Requires.NotNull(job, "job").Factory) {
-				this.job = job;
+			internal JoinableTaskSynchronizationContext(JoinableTask joinableTask, bool mainThreadAffinitized)
+				: this(Requires.NotNull(joinableTask, "joinableTask").Factory) {
+				this.job = joinableTask;
 				this.mainThreadAffinitized = mainThreadAffinitized;
 			}
 

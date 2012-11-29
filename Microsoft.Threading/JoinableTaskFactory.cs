@@ -36,22 +36,28 @@ namespace Microsoft.Threading {
 			this.ThreadPoolJobScheduler = new JoinableTaskScheduler(this, false);
 		}
 
+		/// <summary>
+		/// Gets the joinable task context to which this factory belongs.
+		/// </summary>
 		public JoinableTaskContext Context {
 			get { return this.owner; }
 		}
 
 		/// <summary>
-		/// Gets a <see cref="TaskScheduler"/> that automatically adds every scheduled task
-		/// to the joinable <see cref="Collection"/> and executes the task on the main thread.
+		/// Gets a <see cref="TaskScheduler"/> that schedules work for the
+		/// main thread, and adds it to the joinable job collection when applicable.
 		/// </summary>
 		public TaskScheduler MainThreadJobScheduler { get; private set; }
 
 		/// <summary>
-		/// Gets a <see cref="TaskScheduler"/> that automatically adds every scheduled task
-		/// to the joinable <see cref="Collection"/> and executes the task on a threadpool thread.
+		/// Gets a <see cref="TaskScheduler"/> that schedules work for the
+		/// thread pool, and adds it to the joinable job collection when applicable.
 		/// </summary>
 		public TaskScheduler ThreadPoolJobScheduler { get; private set; }
 
+		/// <summary>
+		/// Gets the synchronization context to apply before executing work associated with this factory.
+		/// </summary>
 		protected internal virtual SynchronizationContext ApplicableJobSyncContext {
 			get { return this.Context.MainThread == Thread.CurrentThread ? this.mainThreadJobSyncContext : null; }
 		}
@@ -173,7 +179,11 @@ namespace Microsoft.Threading {
 			}
 		}
 
+		/// <summary>
+		/// Adds the specified joinable task to the applicable collection.
+		/// </summary>
 		protected virtual void Add(JoinableTask joinable) {
+			Requires.NotNull(joinable, "joinable");
 		}
 
 		/// <summary>
@@ -309,7 +319,7 @@ namespace Microsoft.Threading {
 			/// <summary>
 			/// Initializes a new instance of the <see cref="RunFramework"/> struct
 			/// and sets up the synchronization contexts for the
-			/// <see cref="RunSynchronously(Func{Task})"/> family of methods.
+			/// <see cref="JoinableTaskFactory.Run(Func{Task})"/> family of methods.
 			/// </summary>
 			internal RunFramework(JoinableTaskFactory factory, JoinableTask joinable) {
 				Requires.NotNull(factory, "factory");
@@ -341,7 +351,7 @@ namespace Microsoft.Threading {
 			this.owner.SwitchToMainThreadOnCompleted(this, SingleExecuteProtector.ExecuteOnce, callback);
 		}
 
-		protected internal virtual void Post(SendOrPostCallback callback, object state, bool mainThreadAffinitized) {
+		internal virtual void Post(SendOrPostCallback callback, object state, bool mainThreadAffinitized) {
 			Requires.NotNull(callback, "callback");
 
 			var wrapper = SingleExecuteProtector.Create(this, null, callback, state);
@@ -427,7 +437,8 @@ namespace Microsoft.Threading {
 			/// <summary>
 			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class.
 			/// </summary>
-			/// <param name="syncContext">The synchronization context that created this instance.</param>
+			/// <param name="factory">The factory that is responsible for this work.</param>
+			/// <param name="job">The joinable task responsible for this work.</param>
 			/// <param name="action">The delegate being wrapped.</param>
 			/// <returns>An instance of <see cref="SingleExecuteProtector"/>.</returns>
 			internal static SingleExecuteProtector Create(JoinableTaskFactory factory, JoinableTask job, Action action) {
@@ -440,7 +451,8 @@ namespace Microsoft.Threading {
 			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class
 			/// that describes the specified callback.
 			/// </summary>
-			/// <param name="syncContext">The synchronization context that created this instance.</param>
+			/// <param name="factory">The factory that is responsible for this work.</param>
+			/// <param name="job">The joinable task responsible for this work.</param>
 			/// <param name="callback">The callback to invoke.</param>
 			/// <param name="state">The state object to pass to the callback.</param>
 			/// <returns>An instance of <see cref="SingleExecuteProtector"/>.</returns>
@@ -489,7 +501,7 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>
-			/// Invokes <see cref="ExecutionQueue.OnExecuting"/> handler.
+			/// Invokes <see cref="JoinableTask.ExecutionQueue.OnExecuting"/> handler.
 			/// </summary>
 			private void OnExecuting() {
 				// While raising the event, automatically remove the handlers since we'll only

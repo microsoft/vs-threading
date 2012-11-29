@@ -19,6 +19,9 @@ namespace Microsoft.Threading {
 		/// </summary>
 		private readonly SynchronizationContext synchronizationContext;
 
+		/// <summary>
+		/// The collection to add all created tasks to.
+		/// </summary>
 		private readonly JoinableTaskCollection jobCollection;
 
 		/// <summary>
@@ -70,7 +73,7 @@ namespace Microsoft.Threading {
 			}
 		}
 
-		protected internal override void Post(SendOrPostCallback callback, object state, bool mainThreadAffinitized) {
+		internal override void Post(SendOrPostCallback callback, object state, bool mainThreadAffinitized) {
 			Requires.NotNull(callback, "callback");
 
 			if (mainThreadAffinitized) {

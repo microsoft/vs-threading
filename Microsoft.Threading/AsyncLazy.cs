@@ -52,11 +52,11 @@ namespace Microsoft.Threading {
 		/// Initializes a new instance of the <see cref="AsyncLazy{T}"/> class.
 		/// </summary>
 		/// <param name="valueFactory">The async function that produces the value.  To be invoked at most once.</param>
-		/// <param name="asyncPump">The async pump to <see cref="AsyncPump.Join"/> for calls to <see cref="GetValueAsync"/>.</param>
-		public AsyncLazy(Func<Task<T>> valueFactory, JoinableTaskFactory jobFactory = null) {
+		/// <param name="joinableTaskFactory">The factory to use when invoking the value factory in <see cref="GetValueAsync"/> to avoid deadlocks when the main thread is required by the value factory.</param>
+		public AsyncLazy(Func<Task<T>> valueFactory, JoinableTaskFactory joinableTaskFactory = null) {
 			Requires.NotNull(valueFactory, "valueFactory");
 			this.valueFactory = valueFactory;
-			this.jobFactory = jobFactory;
+			this.jobFactory = joinableTaskFactory;
 		}
 
 		/// <summary>

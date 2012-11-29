@@ -1,4 +1,10 @@
-﻿namespace Microsoft.Threading {
+﻿//-----------------------------------------------------------------------
+// <copyright file="JoinableTaskContext.cs" company="Microsoft">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
+
+namespace Microsoft.Threading {
 	using System;
 	using System.Collections.Concurrent;
 	using System.Collections.Generic;
@@ -11,6 +17,9 @@
 	using SingleExecuteProtector = Microsoft.Threading.JoinableTaskFactory.SingleExecuteProtector;
 	using JoinableTaskSynchronizationContext = Microsoft.Threading.JoinableTask.JoinableTaskSynchronizationContext;
 
+	/// <summary>
+	/// A common context within which joinable tasks may be created and interact to avoid deadlocks.
+	/// </summary>
 	public partial class JoinableTaskContext {
 		/// <summary>
 		/// A "global" lock that allows the graph of interconnected sync context and JoinableSet instances
@@ -29,12 +38,15 @@
 		/// </summary>
 		private readonly AsyncLocal<JoinableTask> joinableOperation = new AsyncLocal<JoinableTask>();
 
+		/// <summary>
+		/// A single joinable task factory that itself cannot be joined.
+		/// </summary>
 		private readonly JoinableTaskFactory nonJoinableFactory;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="JoinableTaskContext"/> class.
 		/// </summary>
-		/// <param name="mainThread">The thread to switch to in <see cref="SwitchToMainThreadAsync(CancellationToken)"/>.</param>
+		/// <param name="mainThread">The thread to switch to in <see cref="JoinableTaskFactory.SwitchToMainThreadAsync(CancellationToken)"/>.</param>
 		/// <param name="synchronizationContext">The synchronization context to use to switch to the main thread.</param>
 		public JoinableTaskContext(Thread mainThread = null, SynchronizationContext synchronizationContext = null) {
 			this.MainThread = mainThread ?? Thread.CurrentThread;
@@ -42,6 +54,10 @@
 			this.nonJoinableFactory = new JoinableTaskFactory(this);
 		}
 
+		/// <summary>
+		/// Gets the factory which creates joinable tasks
+		/// that do not belong to a joinable task collection.
+		/// </summary>
 		public JoinableTaskFactory Factory {
 			get { return this.nonJoinableFactory; }
 		}
@@ -56,10 +72,16 @@
 		/// </summary>
 		public SynchronizationContext UnderlyingSynchronizationContext { get; private set; }
 
+		/// <summary>
+		/// Gets the context-wide synchronization lock.
+		/// </summary>
 		internal ReaderWriterLockSlim SyncContextLock {
 			get { return this.syncContextLock; }
 		}
 
+		/// <summary>
+		/// Gets the caller's ambient joinable task.
+		/// </summary>
 		internal JoinableTask AmbientTask {
 			get { return this.joinableOperation.Value; }
 			set { this.joinableOperation.Value = value; }
@@ -70,9 +92,9 @@
 		/// </summary>
 		/// <returns>A value to dispose of to restore insight into tickets to the Main thread.</returns>
 		/// <remarks>
-		/// <para>It may be that while inside a delegate supplied to <see cref="RunSynchronously(Func{Task})"/>
+		/// <para>It may be that while inside a delegate supplied to <see cref="JoinableTaskFactory.Run(Func{Task})"/>
 		/// that async work be spun off such that it does not have privileges to re-enter the Main thread
-		/// till the <see cref="RunSynchronously(Func{Task})"/> call has returned and the UI thread is
+		/// till the <see cref="JoinableTaskFactory.Run(Func{Task})"/> call has returned and the UI thread is
 		/// idle.  To prevent the async work from automatically being allowed to re-enter the Main thread,
 		/// wrap the code that calls the async task in a <c>using</c> block with a call to this method 
 		/// as the expression.</para>
@@ -98,18 +120,31 @@
 			return new RevertRelevance(this);
 		}
 
+		/// <summary>
+		/// Creates a joinable task factory that automatically adds all created tasks
+		/// to a collection that can be jointly joined.
+		/// </summary>
+		/// <param name="collection">The collection that all tasks should be added to.</param>
+		/// <returns></returns>
 		public JoinableTaskFactory CreateFactory(JoinableTaskCollection collection) {
+			Requires.NotNull(collection, "collection");
+
 			return new JoinableJoinableTaskFactory(collection);
 		}
 
+		/// <summary>
+		/// Creates a collection for in-flight joinable tasks.
+		/// </summary>
+		/// <returns>A new joinable task collection.</returns>
 		public JoinableTaskCollection CreateCollection() {
 			return new JoinableTaskCollection(this);
 		}
 
 		/// <summary>
-		/// Responds to calls to <see cref="MainThreadAwaiter.OnCompleted"/>
+		/// Responds to calls to <see cref="JoinableTaskFactory.MainThreadAwaiter.OnCompleted"/>
 		/// by scheduling a continuation to execute on the Main thread.
 		/// </summary>
+		/// <param name="factory">The factory to use for creating joinable tasks.</param>
 		/// <param name="callback">The callback to invoke.</param>
 		/// <param name="state">The state object to pass to the callback.</param>
 		protected internal virtual void SwitchToMainThreadOnCompleted(JoinableTaskFactory factory, SendOrPostCallback callback, object state) {
@@ -138,6 +173,10 @@
 			this.UnderlyingSynchronizationContext.Post(callback, state);
 		}
 
+		/// <summary>
+		/// Posts a callback to the main thread via the underlying dispatcher,
+		/// or to the threadpool when no dispatcher exists on the main thread.
+		/// </summary>
 		internal void PostToUnderlyingSynchronizationContextOrThreadPool(SingleExecuteProtector callback) {
 			Requires.NotNull(callback, "callback");
 

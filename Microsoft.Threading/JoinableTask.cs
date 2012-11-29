@@ -227,7 +227,7 @@ namespace Microsoft.Threading {
 			}
 		}
 
-		public void Post(SendOrPostCallback d, object state, bool mainThreadAffinitized) {
+		internal void Post(SendOrPostCallback d, object state, bool mainThreadAffinitized) {
 			var wrapper = SingleExecuteProtector.Create(this.owner, this, d, state);
 			AsyncManualResetEvent dequeuerResetState = null; // initialized if we should pulse it at the end of the method
 			bool postToFactory = false;
@@ -480,7 +480,7 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Adds an <see cref="JoinableTaskContext"/> instance as one that is relevant to the async operation.
 		/// </summary>
-		/// <param name="joinChild">The <see cref="SingleThreadSynchronizationContext"/> to join as a child.</param>
+		/// <param name="joinChild">The <see cref="JoinableTask"/> to join as a child.</param>
 		internal JoinRelease AddDependency(JoinableTask joinChild) {
 			Requires.NotNull(joinChild, "joinChild");
 			if (this == joinChild) {
