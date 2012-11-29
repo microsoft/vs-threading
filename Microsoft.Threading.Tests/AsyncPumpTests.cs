@@ -1417,16 +1417,16 @@
 			}, maxBytesAllocated: 245);
 		}
 
-		[TestMethod/*, Timeout(TestTimeout)*/, Ignore]
+		[TestMethod, Timeout(TestTimeout)]
 		public void RunSynchronouslyTaskWithYieldGCPressure() {
 			this.CheckGCPressure(delegate {
 				this.asyncPump.RunSynchronously(async delegate {
 					await Task.Yield();
 				});
-			}, maxBytesAllocated: 300);
+			}, maxBytesAllocated: 1800);
 		}
 
-		[TestMethod/*, Timeout(TestTimeout)*/, Ignore]
+		[TestMethod, Timeout(TestTimeout)]
 		public void RunSynchronouslyTaskOfTWithYieldGCPressure() {
 			Task<object> completedTask = Task.FromResult<object>(null);
 
@@ -1434,7 +1434,7 @@
 				this.asyncPump.RunSynchronously(async delegate {
 					await Task.Yield();
 				});
-			}, maxBytesAllocated: 300);
+			}, maxBytesAllocated: 1800);
 		}
 
 		/// <summary>
