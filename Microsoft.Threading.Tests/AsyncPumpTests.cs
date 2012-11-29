@@ -1414,7 +1414,7 @@
 				this.asyncPump.RunSynchronously(delegate {
 					return completedTask;
 				});
-			}, maxBytesAllocated: 163);
+			}, maxBytesAllocated: 245);
 		}
 
 		[TestMethod/*, Timeout(TestTimeout)*/, Ignore]
