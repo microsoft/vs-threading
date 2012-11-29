@@ -313,9 +313,6 @@
 			protected virtual void Add(Job joinable) {
 			}
 
-			protected internal virtual void Remove(Job joinable) {
-			}
-
 			/// <summary>
 			/// A value to construct with a C# using block in all the Run method overloads
 			/// to setup and teardown the boilerplate stuff.
@@ -410,10 +407,6 @@
 
 			protected override void Add(Job joinable) {
 				this.Collection.Add(joinable);
-			}
-
-			protected internal override void Remove(Job joinable) {
-				this.Collection.Remove(joinable);
 			}
 
 			internal override void SwitchToMainThreadOnCompleted(SingleExecuteProtector callback) {
@@ -706,6 +699,11 @@
 			/// The <see cref="JobContext"/> that began the async operation.
 			/// </summary>
 			private readonly JobFactory owner;
+
+			/// <summary>
+			/// The collections that this job is a member of.
+			/// </summary>
+			private ListOfOftenOne<JobCollection> collectionMembership;
 
 			private Task wrappedTask;
 
@@ -1009,9 +1007,7 @@
 							this.threadPoolQueue.Complete();
 						}
 
-						if (this.IsCompleted) {
-							this.Factory.Remove(this);
-						}
+						this.OnQueueCompleted();
 
 						if (this.dequeuerResetState != null
 							&& (this.mainThreadQueue == null || this.mainThreadQueue.IsCompleted)
@@ -1084,8 +1080,20 @@
 
 			internal void OnQueueCompleted() {
 				if (this.IsCompleted) {
-					this.Factory.Remove(this);
+					foreach (var collection in this.collectionMembership) {
+						collection.Remove(this);
+					}
 				}
+			}
+
+			internal void OnAddedToCollection(JobCollection collection) {
+				Requires.NotNull(collection, "collection");
+				this.collectionMembership.Add(collection);
+			}
+
+			internal void OnRemovedFromCollection(JobCollection collection) {
+				Requires.NotNull(collection, "collection");
+				this.collectionMembership.Remove(collection);
 			}
 
 			private bool TryDequeueSelfOrDependencies(out SingleExecuteProtector work, out Task tryAgainAfter) {
@@ -1286,21 +1294,24 @@
 				Requires.NotNull(job, "job");
 				Requires.Argument(job.Factory.Context == this.Context, "joinable", "Job does not belong to the context this collection was instantiated with.");
 
-				this.Context.SyncContextLock.EnterWriteLock();
-				try {
-					if (!this.joinables.ContainsKey(job)) {
-						this.joinables[job] = EmptyStruct.Instance;
+				if (!job.IsCompleted) {
+					this.Context.SyncContextLock.EnterWriteLock();
+					try {
+						if (!this.joinables.ContainsKey(job)) {
+							this.joinables[job] = EmptyStruct.Instance;
+							job.OnAddedToCollection(this);
 
-						// Now that we've added a job to our collection, any folks who
-						// have already joined this collection should be joined to this job.
-						foreach (var joiner in this.joiners) {
-							// We can discard the JoinRelease result of AddDependency
-							// because we directly disjoin without that helper struct.
-							joiner.Key.AddDependency(job);
+							// Now that we've added a job to our collection, any folks who
+							// have already joined this collection should be joined to this job.
+							foreach (var joiner in this.joiners) {
+								// We can discard the JoinRelease result of AddDependency
+								// because we directly disjoin without that helper struct.
+								joiner.Key.AddDependency(job);
+							}
 						}
+					} finally {
+						this.Context.SyncContextLock.ExitWriteLock();
 					}
-				} finally {
-					this.Context.SyncContextLock.ExitWriteLock();
 				}
 			}
 
@@ -1315,6 +1326,8 @@
 				this.Context.SyncContextLock.EnterWriteLock();
 				try {
 					if (this.joinables.Remove(job)) {
+						job.OnRemovedFromCollection(this);
+
 						// Now that we've removed a job from our collection, any folks who
 						// have already joined this collection should be disjoined to this job
 						// as an efficiency improvement so we don't grow our weak collections unnecessarily.
