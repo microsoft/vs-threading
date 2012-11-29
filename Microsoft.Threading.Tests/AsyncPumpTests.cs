@@ -1554,9 +1554,9 @@
 		}
 
 		private class DerivedJobContext : JobContext {
-			protected override void SwitchToMainThreadOnCompleted(SendOrPostCallback callback, object state) {
+			protected override void SwitchToMainThreadOnCompleted(JobFactory factory, SendOrPostCallback callback, object state) {
 				Assert.IsNotNull(callback);
-				base.SwitchToMainThreadOnCompleted(callback, state);
+				base.SwitchToMainThreadOnCompleted(factory, callback, state);
 			}
 
 			protected override void WaitSynchronously(Task task) {

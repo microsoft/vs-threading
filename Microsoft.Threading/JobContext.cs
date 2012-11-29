@@ -37,9 +37,6 @@
 		/// </summary>
 		private readonly Thread mainThread;
 
-		private readonly SynchronizationContext mainThreadJobSyncContext;
-		private readonly SynchronizationContext threadPoolJobSyncContext;
-
 		/// <summary>
 		/// Initializes a new instance of the <see cref="JobContext"/> class.
 		/// </summary>
@@ -48,8 +45,6 @@
 		public JobContext(Thread mainThread = null, SynchronizationContext synchronizationContext = null) {
 			this.mainThread = mainThread ?? Thread.CurrentThread;
 			this.underlyingSynchronizationContext = synchronizationContext ?? SynchronizationContext.Current; // may still be null after this.
-			this.mainThreadJobSyncContext = new JobSynchronizationContext(this, true);
-			this.threadPoolJobSyncContext = new JobSynchronizationContext(this, false);
 		}
 
 		/// <summary>
@@ -106,12 +101,16 @@
 		/// </summary>
 		/// <param name="callback">The callback to invoke.</param>
 		/// <param name="state">The state object to pass to the callback.</param>
-		protected virtual void SwitchToMainThreadOnCompleted(SendOrPostCallback callback, object state) {
+		protected virtual void SwitchToMainThreadOnCompleted(JobFactory factory, SendOrPostCallback callback, object state) {
+			Requires.NotNull(factory, "factory");
+			Requires.NotNull(callback, "callback");
+
 			var ambientJob = this.joinableOperation.Value;
+			var wrapper = SingleExecuteProtector.Create(factory, ambientJob, callback, state);
 			if (ambientJob != null) {
-				ambientJob.Post(callback, state, true);
+				ambientJob.Post(SingleExecuteProtector.ExecuteOnce, wrapper, true);
 			} else {
-				this.PostToUnderlyingSynchronizationContextOrThreadPool(callback, state);
+				this.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
 			}
 		}
 
@@ -128,16 +127,13 @@
 			this.UnderlyingSynchronizationContext.Post(callback, state);
 		}
 
-		private void PostToUnderlyingSynchronizationContextOrThreadPool(SendOrPostCallback callback, object state) {
+		private void PostToUnderlyingSynchronizationContextOrThreadPool(SingleExecuteProtector callback) {
 			Requires.NotNull(callback, "callback");
 
 			if (this.UnderlyingSynchronizationContext != null) {
-				this.PostToUnderlyingSynchronizationContext(callback, state);
+				this.PostToUnderlyingSynchronizationContext(SingleExecuteProtector.ExecuteOnce, callback);
 			} else {
-				// By wrapping first, we may be able to avoid a WaitCallback delegate allocation if
-				// the message is already a wrapped message.
-				var wrapper = SingleExecuteProtector.Create(this, callback, state);
-				ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
+				ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, callback);
 			}
 		}
 
@@ -155,10 +151,6 @@
 			}
 		}
 
-		private SynchronizationContext ApplicableJobSyncContext {
-			get { return this.mainThread == Thread.CurrentThread ? this.mainThreadJobSyncContext : this.threadPoolJobSyncContext; }
-		}
-
 		/// <summary>
 		/// A collection of asynchronous operations that may be joined.
 		/// </summary>
@@ -168,12 +160,15 @@
 			/// </summary>
 			private readonly JobContext owner;
 
+			private readonly SynchronizationContext mainThreadJobSyncContext;
+
 			/// <summary>
 			/// Initializes a new instance of the <see cref="JobFactory"/> class.
 			/// </summary>
 			internal JobFactory(JobContext owner) {
 				Requires.NotNull(owner, "owner");
 				this.owner = owner;
+				this.mainThreadJobSyncContext = new JobSynchronizationContext(this);
 				this.MainThreadJobScheduler = new JobTaskScheduler(this, true);
 				this.ThreadPoolJobScheduler = new JobTaskScheduler(this, false);
 			}
@@ -195,7 +190,7 @@
 			public TaskScheduler ThreadPoolJobScheduler { get; private set; }
 
 			protected internal virtual SynchronizationContext ApplicableJobSyncContext {
-				get { return this.owner.ApplicableJobSyncContext; }
+				get { return this.Context.mainThread == Thread.CurrentThread ? this.mainThreadJobSyncContext : null; }
 			}
 
 			/// <summary>
@@ -224,14 +219,14 @@
 			/// </code>
 			/// </example></remarks>
 			public MainThreadAwaitable SwitchToMainThreadAsync(CancellationToken cancellationToken = default(CancellationToken)) {
-				return new MainThreadAwaitable(this, cancellationToken);
+				return new MainThreadAwaitable(this, this.Context.joinableOperation.Value, cancellationToken);
 			}
 
 			/// <summary>
 			/// Posts a continuation to the UI thread, always causing the caller to yield if specified.
 			/// </summary>
 			internal MainThreadAwaitable SwitchToMainThreadAsync(bool alwaysYield) {
-				return new MainThreadAwaitable(this, CancellationToken.None, alwaysYield);
+				return new MainThreadAwaitable(this, this.Context.joinableOperation.Value, CancellationToken.None, alwaysYield);
 			}
 
 			/// <summary>Runs the specified asynchronous method.</summary>
@@ -342,7 +337,7 @@
 					this.factory.Add(joinable);
 					this.previousJoinable = this.factory.Context.joinableOperation.Value;
 					this.factory.Context.joinableOperation.Value = joinable;
-					this.syncContextRevert = this.factory.Context.ApplicableJobSyncContext.Apply();
+					this.syncContextRevert = this.joinable.ApplicableJobSyncContext.Apply();
 				}
 
 				/// <summary>
@@ -359,15 +354,16 @@
 				}
 			}
 
-			protected internal virtual void SwitchToMainThreadOnCompleted(SendOrPostCallback sendOrPostCallback, object state) {
-				this.owner.SwitchToMainThreadOnCompleted(sendOrPostCallback, state);
+			internal virtual void SwitchToMainThreadOnCompleted(SingleExecuteProtector callback) {
+				this.owner.SwitchToMainThreadOnCompleted(this, SingleExecuteProtector.ExecuteOnce, callback);
 			}
 
 			protected internal virtual void Post(SendOrPostCallback callback, object state, bool mainThreadAffinitized) {
 				Requires.NotNull(callback, "callback");
 				Assumes.True(mainThreadAffinitized); // our only scenario so far
 
-				this.owner.PostToUnderlyingSynchronizationContextOrThreadPool(callback, state);
+				var wrapper = SingleExecuteProtector.Create(this, null, callback, state);
+				this.owner.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
 			}
 		}
 
@@ -453,7 +449,7 @@
 				}
 			}
 
-			protected internal override void SwitchToMainThreadOnCompleted(SendOrPostCallback sendOrPostCallback, object state) {
+			internal override void SwitchToMainThreadOnCompleted(SingleExecuteProtector callback) {
 				// Make sure that this thread switch request is in a job that is captured by the job collection
 				// to which this switch request belongs.
 				// If an ambient job already exists and belongs to the collection, that's good enough. But if
@@ -463,11 +459,11 @@
 				var ambientJob = this.Context.joinableOperation.Value;
 				if (ambientJob == null || !this.Contains(ambientJob)) {
 					this.Start(delegate {
-						this.Context.joinableOperation.Value.Post(sendOrPostCallback, state, true);
+						this.Context.joinableOperation.Value.Post(SingleExecuteProtector.ExecuteOnce, callback, true);
 						return TplExtensions.CompletedTask;
 					});
 				} else {
-					base.SwitchToMainThreadOnCompleted(sendOrPostCallback, state);
+					base.SwitchToMainThreadOnCompleted(callback);
 				}
 			}
 
@@ -560,7 +556,7 @@
 		/// <summary>
 		/// A delegate wrapper that ensures the delegate is only invoked at most once.
 		/// </summary>
-		private class SingleExecuteProtector {
+		internal class SingleExecuteProtector {
 			/// <summary>
 			/// Executes the delegate if it has not already executed.
 			/// </summary>
@@ -574,7 +570,12 @@
 			/// <summary>
 			/// The async pump responsible for this instance.
 			/// </summary>
-			private JobContext owner;
+			private JobFactory factory;
+
+			/// <summary>
+			/// The job that created this wrapper.
+			/// </summary>
+			private Job job;
 
 			/// <summary>
 			/// The delegate to invoke.  <c>null</c> if it has already been invoked.
@@ -595,9 +596,10 @@
 			/// <summary>
 			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class.
 			/// </summary>
-			private SingleExecuteProtector(JobContext owner) {
-				Requires.NotNull(owner, "owner");
-				this.owner = owner;
+			private SingleExecuteProtector(JobFactory factory, Job job) {
+				Requires.NotNull(factory, "factory");
+				this.factory = factory;
+				this.job = job;
 			}
 
 			/// <summary>
@@ -629,8 +631,8 @@
 			/// <param name="syncContext">The synchronization context that created this instance.</param>
 			/// <param name="action">The delegate being wrapped.</param>
 			/// <returns>An instance of <see cref="SingleExecuteProtector"/>.</returns>
-			internal static SingleExecuteProtector Create(JobContext owner, Action action) {
-				return new SingleExecuteProtector(owner) {
+			internal static SingleExecuteProtector Create(JobFactory factory, Job job, Action action) {
+				return new SingleExecuteProtector(factory, job) {
 					invokeDelegate = action,
 				};
 			}
@@ -643,15 +645,18 @@
 			/// <param name="callback">The callback to invoke.</param>
 			/// <param name="state">The state object to pass to the callback.</param>
 			/// <returns>An instance of <see cref="SingleExecuteProtector"/>.</returns>
-			internal static SingleExecuteProtector Create(JobContext owner, SendOrPostCallback callback, object state) {
+			internal static SingleExecuteProtector Create(JobFactory factory, Job job, SendOrPostCallback callback, object state) {
+				Requires.NotNull(factory, "factory");
+				Assumes.True(job == null || job.Factory == factory); // job and factory do not match.
+
 				// As an optimization, recognize if what we're being handed is already an instance of this type,
 				// because if it is, we don't need to wrap it with yet another instance.
 				var existing = state as SingleExecuteProtector;
-				if (callback == ExecuteOnce && existing != null && existing.owner == owner) {
+				if (callback == ExecuteOnce && existing != null) {
 					return (SingleExecuteProtector)state;
 				}
 
-				return new SingleExecuteProtector(owner) {
+				return new SingleExecuteProtector(factory, job) {
 					invokeDelegate = callback,
 					state = state,
 				};
@@ -664,7 +669,8 @@
 				object invokeDelegate = Interlocked.Exchange(ref this.invokeDelegate, null);
 				if (invokeDelegate != null) {
 					this.OnExecuting();
-					using (this.owner.ApplicableJobSyncContext.Apply()) {
+					var syncContext = this.job != null ? this.job.ApplicableJobSyncContext : this.factory.ApplicableJobSyncContext;
+					using (syncContext.Apply()) {
 						var action = invokeDelegate as Action;
 						if (action != null) {
 							action();
@@ -786,6 +792,10 @@
 
 			private bool synchronouslyBlockingThreadPool;
 
+			private SynchronizationContext mainThreadJobSyncContext;
+
+			private SynchronizationContext threadPoolJobSyncContext;
+
 			private bool completeRequested;
 
 			/// <summary>
@@ -877,6 +887,48 @@
 				}
 			}
 
+			internal JobFactory Factory {
+				get { return this.owner; }
+			}
+
+			internal SynchronizationContext ApplicableJobSyncContext {
+				get {
+					this.Factory.Context.SyncContextLock.EnterUpgradeableReadLock();
+					try {
+						if (this.Factory.Context.mainThread == Thread.CurrentThread) {
+							if (this.mainThreadJobSyncContext == null) {
+								this.Factory.Context.SyncContextLock.EnterWriteLock();
+								try {
+									this.mainThreadJobSyncContext = new JobSynchronizationContext(this, true);
+								} finally {
+									this.Factory.Context.SyncContextLock.ExitWriteLock();
+								}
+							}
+
+							return this.mainThreadJobSyncContext;
+						} else {
+							if (this.synchronouslyBlockingThreadPool) {
+								if (this.threadPoolJobSyncContext == null) {
+									this.Factory.Context.SyncContextLock.EnterWriteLock();
+									try {
+										this.threadPoolJobSyncContext = new JobSynchronizationContext(this, false);
+									} finally {
+										this.Factory.Context.SyncContextLock.ExitWriteLock();
+									}
+								}
+
+								return this.threadPoolJobSyncContext;
+							} else {
+								// If we're not blocking the threadpool, there is no reason to use a thread pool sync context.
+								return null;
+							}
+						}
+					} finally {
+						this.Factory.Context.SyncContextLock.ExitUpgradeableReadLock();
+					}
+				}
+			}
+
 			private ExecutionQueue ApplicableQueue {
 				get {
 					this.owner.Context.SyncContextLock.EnterReadLock();
@@ -914,7 +966,7 @@
 			}
 
 			public void Post(SendOrPostCallback d, object state, bool mainThreadAffinitized) {
-				var wrapper = SingleExecuteProtector.Create(this.owner.Context, d, state);
+				var wrapper = SingleExecuteProtector.Create(this.owner, this, d, state);
 				AsyncManualResetEvent dequeuerResetState = null; // initialized if we should pulse it at the end of the method
 
 				this.owner.Context.SyncContextLock.EnterWriteLock();
@@ -958,7 +1010,7 @@
 
 				if (mainThreadAffinitized) {
 					// We deferred this till after we release our lock earlier in this method since we're calling outside code.
-					this.owner.Context.PostToUnderlyingSynchronizationContextOrThreadPool(SingleExecuteProtector.ExecuteOnce, wrapper);
+					this.owner.Context.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
 				}
 
 				if (dequeuerResetState != null) {
@@ -1253,7 +1305,7 @@
 		/// A thread-safe queue of <see cref="SingleExecuteProtector"/> elements
 		/// that self-scavenges elements that are executed by other means.
 		/// </summary>
-		private class ExecutionQueue : AsyncQueue<SingleExecuteProtector> {
+		internal class ExecutionQueue : AsyncQueue<SingleExecuteProtector> {
 			private TaskCompletionSource<object> enqueuedNotification;
 
 			internal ExecutionQueue() {
@@ -1366,14 +1418,14 @@
 		/// </summary>
 		private class JobSynchronizationContext : SynchronizationContext {
 			/// <summary>
-			/// The pump that created this instance.
-			/// </summary>
-			private readonly JobContext jobContext;
-
-			/// <summary>
-			/// The owning job factory. May be null.
+			/// The owning job factory.
 			/// </summary>
 			private readonly JobFactory jobFactory;
+
+			/// <summary>
+			/// The owning job. May be null.
+			/// </summary>
+			private readonly Job job;
 
 			/// <summary>
 			/// A flag indicating whether messages posted to this instance should execute
@@ -1382,24 +1434,26 @@
 			private readonly bool mainThreadAffinitized;
 
 			/// <summary>
-			/// Initializes a new instance of the <see cref="JobSynchronizationContext"/> class.
+			/// Initializes a new instance of the <see cref="JobSynchronizationContext"/> class
+			/// that is affinitized to the main thread.
 			/// </summary>
-			/// <param name="owner">The <see cref="JobContext"/> that created this instance.</param>
-			/// <param name="mainThreadAffinitized">A value indicating whether messages posted to this instance should execute on the main thread.</param>
-			internal JobSynchronizationContext(JobContext owner, bool mainThreadAffinitized) {
+			/// <param name="owner">The <see cref="JobFactory"/> that created this instance.</param>
+			internal JobSynchronizationContext(JobFactory owner) {
 				Requires.NotNull(owner, "owner");
 
-				this.jobContext = owner;
-				this.mainThreadAffinitized = mainThreadAffinitized;
+				this.jobFactory = owner;
+				this.mainThreadAffinitized = true;
 			}
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="JobSynchronizationContext"/> class.
 			/// </summary>
-			/// <param name="owner">The <see cref="JobFactory"/> that created this instance.</param>
-			internal JobSynchronizationContext(JobFactory owner)
-				: this(Requires.NotNull(owner, "owner").Context, true) {
-				this.jobFactory = owner;
+			/// <param name="owner">The <see cref="Job"/> that owns this instance.</param>
+			/// <param name="mainThreadAffinitized">A value indicating whether messages posted to this instance should execute on the main thread.</param>
+			internal JobSynchronizationContext(Job job, bool mainThreadAffinitized)
+				: this(Requires.NotNull(job, "job").Factory) {
+				this.job = job;
+				this.mainThreadAffinitized = mainThreadAffinitized;
 			}
 
 			/// <summary>
@@ -1414,16 +1468,10 @@
 			/// Forwards the specified message to the ambient job if applicable; otherwise to the underlying scheduler.
 			/// </summary>
 			public override void Post(SendOrPostCallback d, object state) {
-				var job = this.jobContext.joinableOperation.Value;
-
-				if (job != null) {
-					job.Post(d, state, this.mainThreadAffinitized);
+				if (this.job != null) {
+					this.job.Post(d, state, this.mainThreadAffinitized);
 				} else if (this.mainThreadAffinitized) {
-					if (this.jobFactory != null) {
-						this.jobFactory.Post(d, state, true);
-					} else {
-						this.jobContext.PostToUnderlyingSynchronizationContextOrThreadPool(d, state);
-					}
+					this.jobFactory.Post(d, state, true);
 				} else {
 					ThreadPool.QueueUserWorkItem(new WaitCallback(d), state);
 				}
@@ -1437,10 +1485,10 @@
 				// while this one is active.  So forward it to the underlying sync context to not break those folks.
 				// Ideally this method would throw because synchronously crossing threads is a bad idea.
 				if (this.mainThreadAffinitized) {
-					if (this.jobContext.mainThread == Thread.CurrentThread) {
+					if (this.jobFactory.Context.mainThread == Thread.CurrentThread) {
 						d(state);
 					} else {
-						this.jobContext.underlyingSynchronizationContext.Send(d, state);
+						this.jobFactory.Context.underlyingSynchronizationContext.Send(d, state);
 					}
 				} else {
 					if (Thread.CurrentThread.IsThreadPoolThread) {
@@ -1545,6 +1593,8 @@
 		public struct MainThreadAwaitable {
 			private readonly JobFactory jobFactory;
 
+			private readonly Job job;
+
 			private readonly CancellationToken cancellationToken;
 
 			private readonly bool alwaysYield;
@@ -1552,10 +1602,11 @@
 			/// <summary>
 			/// Initializes a new instance of the <see cref="MainThreadAwaitable"/> struct.
 			/// </summary>
-			internal MainThreadAwaitable(JobFactory jobFactory, CancellationToken cancellationToken, bool alwaysYield = false) {
+			internal MainThreadAwaitable(JobFactory jobFactory, Job job, CancellationToken cancellationToken, bool alwaysYield = false) {
 				Requires.NotNull(jobFactory, "jobFactory");
 
 				this.jobFactory = jobFactory;
+				this.job = job;
 				this.cancellationToken = cancellationToken;
 				this.alwaysYield = alwaysYield;
 			}
@@ -1564,7 +1615,7 @@
 			/// Gets the awaiter.
 			/// </summary>
 			public MainThreadAwaiter GetAwaiter() {
-				return new MainThreadAwaiter(this.jobFactory, this.cancellationToken, this.alwaysYield);
+				return new MainThreadAwaiter(this.jobFactory, this.job, this.cancellationToken, this.alwaysYield);
 			}
 		}
 
@@ -1578,13 +1629,16 @@
 
 			private readonly bool alwaysYield;
 
+			private readonly Job job;
+
 			private CancellationTokenRegistration cancellationRegistration;
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="MainThreadAwaiter"/> struct.
 			/// </summary>
-			internal MainThreadAwaiter(JobFactory jobFactory, CancellationToken cancellationToken, bool alwaysYield) {
+			internal MainThreadAwaiter(JobFactory jobFactory, Job job, CancellationToken cancellationToken, bool alwaysYield) {
 				this.jobFactory = jobFactory;
+				this.job = job;
 				this.cancellationToken = cancellationToken;
 				this.alwaysYield = alwaysYield;
 				this.cancellationRegistration = default(CancellationTokenRegistration);
@@ -1614,10 +1668,10 @@
 				// In the event of a cancellation request, it becomes a race as to whether the threadpool
 				// or the main thread will execute the continuation first. So we must wrap the continuation
 				// in a SingleExecuteProtector so that it can't be executed twice by accident.
-				var wrapper = SingleExecuteProtector.Create(this.jobFactory.Context, continuation);
+				var wrapper = SingleExecuteProtector.Create(this.jobFactory, this.job, continuation);
 
 				// Success case of the main thread. 
-				this.jobFactory.SwitchToMainThreadOnCompleted(SingleExecuteProtector.ExecuteOnce, wrapper);
+				this.jobFactory.SwitchToMainThreadOnCompleted(wrapper);
 
 				// Cancellation case of a threadpool thread.
 				this.cancellationRegistration = this.cancellationToken.Register(
