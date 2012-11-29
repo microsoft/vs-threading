@@ -360,10 +360,13 @@
 
 			protected internal virtual void Post(SendOrPostCallback callback, object state, bool mainThreadAffinitized) {
 				Requires.NotNull(callback, "callback");
-				Assumes.True(mainThreadAffinitized); // our only scenario so far
 
 				var wrapper = SingleExecuteProtector.Create(this, null, callback, state);
-				this.owner.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
+				if (mainThreadAffinitized) {
+					this.owner.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
+				} else {
+					ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
+				}
 			}
 		}
 
@@ -469,12 +472,15 @@
 
 			protected internal override void Post(SendOrPostCallback callback, object state, bool mainThreadAffinitized) {
 				Requires.NotNull(callback, "callback");
-				Assumes.True(mainThreadAffinitized); // our only scenario so far
 
-				this.Start(delegate {
-					this.Context.joinableOperation.Value.Post(callback, state, true);
-					return TplExtensions.CompletedTask;
-				});
+				if (mainThreadAffinitized) {
+					this.Start(delegate {
+						this.Context.joinableOperation.Value.Post(callback, state, true);
+						return TplExtensions.CompletedTask;
+					});
+				} else {
+					ThreadPool.QueueUserWorkItem(new WaitCallback(callback), state);
+				}
 			}
 
 			internal bool Contains(Job joinable) {
@@ -968,16 +974,14 @@
 			public void Post(SendOrPostCallback d, object state, bool mainThreadAffinitized) {
 				var wrapper = SingleExecuteProtector.Create(this.owner, this, d, state);
 				AsyncManualResetEvent dequeuerResetState = null; // initialized if we should pulse it at the end of the method
+				bool postToFactory = false;
 
 				this.owner.Context.SyncContextLock.EnterWriteLock();
 				try {
 					if (this.completeRequested) {
 						// This job has already been marked for completion.
-						// We need to forward the work to the fallback mechanisms. We deal with threadpool here,
-						// and main thread down after we release the lock.
-						if (!mainThreadAffinitized) {
-							ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
-						}
+						// We need to forward the work to the fallback mechanisms. 
+						postToFactory = true;
 					} else {
 						if (mainThreadAffinitized) {
 							if (this.mainThreadQueue == null) {
@@ -1008,8 +1012,10 @@
 					this.owner.Context.SyncContextLock.ExitWriteLock();
 				}
 
-				if (mainThreadAffinitized) {
-					// We deferred this till after we release our lock earlier in this method since we're calling outside code.
+				// We deferred this till after we release our lock earlier in this method since we're calling outside code.
+				if (postToFactory) {
+					this.Factory.Post(SingleExecuteProtector.ExecuteOnce, wrapper, mainThreadAffinitized);
+				} else if (mainThreadAffinitized) {
 					this.owner.Context.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
 				}
 
@@ -1470,10 +1476,8 @@
 			public override void Post(SendOrPostCallback d, object state) {
 				if (this.job != null) {
 					this.job.Post(d, state, this.mainThreadAffinitized);
-				} else if (this.mainThreadAffinitized) {
-					this.jobFactory.Post(d, state, true);
 				} else {
-					ThreadPool.QueueUserWorkItem(new WaitCallback(d), state);
+					this.jobFactory.Post(d, state, this.mainThreadAffinitized);
 				}
 			}
 
@@ -1694,6 +1698,16 @@
 				if (Thread.CurrentThread != this.jobFactory.Context.mainThread) {
 					this.cancellationToken.ThrowIfCancellationRequested();
 				}
+
+				// If this method is called in a continuation after an actual yield, then SingleExecuteProtector.TryExecute
+				// should have already applied the appropriate SynchronizationContext to avoid deadlocks.
+				// However if no yield occurred then no TryExecute would have been invoked, so to avoid deadlocks in those
+				// cases, we apply the synchronization context here.
+				// We don't have an opportunity to revert the sync context change, but it turns out we don't need to because
+				// this method should only be called from async methods, which automatically revert any execution context
+				// changes they apply (including SynchronizationContext) when they complete, thanks to the way .NET 4.5 works.
+				var syncContext = this.job != null ? this.job.ApplicableJobSyncContext : this.jobFactory.ApplicableJobSyncContext;
+				syncContext.Apply();
 			}
 		}
 	}

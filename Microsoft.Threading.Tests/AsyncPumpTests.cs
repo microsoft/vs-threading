@@ -463,7 +463,7 @@
 			const int nestLevels = 3;
 			MockAsyncService outerService = null;
 			for (int level = 0; level < nestLevels; level++) {
-				outerService = new MockAsyncService(outerService);
+				outerService = new MockAsyncService(this.asyncPump.Factory.Context, outerService);
 			}
 
 			var operationTask = outerService.OperationAsync();
@@ -1573,13 +1573,14 @@
 		}
 
 		private class MockAsyncService {
-			private AsyncPump pump = new AsyncPump();
+			private AsyncPump pump;
 			private AsyncManualResetEvent stopRequested = new AsyncManualResetEvent();
 			private Thread originalThread = Thread.CurrentThread;
 			private Task dependentTask;
 			private MockAsyncService dependentService;
 
-			internal MockAsyncService(MockAsyncService dependentService = null) {
+			internal MockAsyncService(JobContext context, MockAsyncService dependentService = null) {
+				this.pump = new AsyncPump(context);
 				this.dependentService = dependentService;
 			}
 
