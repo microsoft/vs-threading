@@ -22,7 +22,7 @@
 		public void Initialize() {
 			this.dispatcherContext = new DispatcherSynchronizationContext();
 			SynchronizationContext.SetSynchronizationContext(dispatcherContext);
-			this.context = new DerivedJobContext();
+			this.context = new DerivedJoinableTaskContext();
 			this.joinableCollection = this.context.CreateCollection();
 			this.asyncPump = this.context.CreateFactory(this.joinableCollection);
 			this.originalThread = Thread.CurrentThread;
@@ -1222,7 +1222,7 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public void NoMainThreadSyncContextAndKickedOffFromOriginalThread() {
 			SynchronizationContext.SetSynchronizationContext(null);
-			var context = new DerivedJobContext();
+			var context = new DerivedJoinableTaskContext();
 			this.joinableCollection = context.CreateCollection();
 			this.asyncPump = context.CreateFactory(this.joinableCollection);
 
@@ -1266,9 +1266,9 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public void NoMainThreadSyncContextAndKickedOffFromOtherThread() {
 			SynchronizationContext.SetSynchronizationContext(null);
-			var context = new DerivedJobContext();
-			this.joinableCollection = context.CreateCollection();
-			this.asyncPump = context.CreateFactory(this.joinableCollection);
+			this.context = new DerivedJoinableTaskContext();
+			this.joinableCollection = this.context.CreateCollection();
+			this.asyncPump = this.context.CreateFactory(this.joinableCollection);
 			Thread otherThread = null;
 
 			Task.Run(delegate {
@@ -1464,11 +1464,10 @@
 		/// </summary>
 		[TestMethod, Timeout(TestTimeout)]
 		public void NestedRunSynchronouslyOuterDoesNotStealWorkFromNested() {
-			var comReentrantContext = new COMReentrantJobContext();
-			var collection = comReentrantContext.CreateCollection();
-			var asyncPump = comReentrantContext.CreateFactory(collection);
+			var collection = this.context.CreateCollection();
+			var asyncPump = new COMReentrantJoinableTaskFactory(collection);
 			var nestedWorkBegun = new AsyncManualResetEvent();
-			comReentrantContext.ReenterWaitWith(() => {
+			asyncPump.ReenterWaitWith(() => {
 				asyncPump.Run(async delegate {
 					await Task.Yield();
 				});
@@ -1558,8 +1557,12 @@
 		/// <summary>
 		/// Simulates COM message pump reentrancy causing some unrelated work to "pump in" on top of a synchronously blocking wait.
 		/// </summary>
-		private class COMReentrantJobContext : JoinableTaskContext {
+		private class COMReentrantJoinableTaskFactory : JoinableJoinableTaskFactory {
 			private Action action;
+
+			internal COMReentrantJoinableTaskFactory(JoinableTaskCollection collection)
+				: base(collection) {
+			}
 
 			internal void ReenterWaitWith(Action action) {
 				this.action = action;
@@ -1576,7 +1579,17 @@
 			}
 		}
 
-		private class DerivedJobContext : JoinableTaskContext {
+		private class DerivedJoinableTaskContext : JoinableTaskContext {
+			public override JoinableJoinableTaskFactory CreateFactory(JoinableTaskCollection collection) {
+				return new DerivedJoinableTaskFactory(collection);
+			}
+		}
+
+		private class DerivedJoinableTaskFactory : JoinableJoinableTaskFactory {
+			internal DerivedJoinableTaskFactory(JoinableTaskCollection collection)
+				: base(collection) {
+			}
+
 			protected override void SwitchToMainThreadOnCompleted(JoinableTaskFactory factory, SendOrPostCallback callback, object state) {
 				Assert.IsNotNull(callback);
 				base.SwitchToMainThreadOnCompleted(factory, callback, state);
@@ -1588,9 +1601,9 @@
 			}
 
 			protected override void PostToUnderlyingSynchronizationContext(SendOrPostCallback callback, object state) {
-				Assert.IsNotNull(this.UnderlyingSynchronizationContext);
+				Assert.IsNotNull(this.Context.UnderlyingSynchronizationContext);
 				Assert.IsNotNull(callback);
-				Assert.IsInstanceOfType(this.UnderlyingSynchronizationContext, typeof(DispatcherSynchronizationContext));
+				Assert.IsInstanceOfType(this.Context.UnderlyingSynchronizationContext, typeof(DispatcherSynchronizationContext));
 				base.PostToUnderlyingSynchronizationContext(callback, state);
 			}
 		}

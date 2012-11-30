@@ -272,7 +272,7 @@ namespace Microsoft.Threading {
 			if (postToFactory) {
 				this.Factory.Post(SingleExecuteProtector.ExecuteOnce, wrapper, mainThreadAffinitized);
 			} else if (mainThreadAffinitized) {
-				this.owner.Context.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
+				this.owner.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
 			}
 
 			if (dequeuerResetState != null) {
@@ -396,7 +396,7 @@ namespace Microsoft.Threading {
 				if (this.TryDequeueSelfOrDependencies(out work, out tryAgainAfter)) {
 					work.TryExecute();
 				} else if (tryAgainAfter != null) {
-					this.owner.Context.WaitSynchronously(tryAgainAfter);
+					this.owner.WaitSynchronously(tryAgainAfter);
 					Assumes.True(tryAgainAfter.IsCompleted);
 				}
 			}

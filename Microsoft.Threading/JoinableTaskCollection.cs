@@ -31,7 +31,7 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Initializes a new instance of the <see cref="JoinableTaskCollection"/> class.
 		/// </summary>
-		internal JoinableTaskCollection(JoinableTaskContext context) {
+		public JoinableTaskCollection(JoinableTaskContext context) {
 			Requires.NotNull(context, "context");
 			this.Context = context;
 		}

@@ -13,7 +13,10 @@ namespace Microsoft.Threading {
 	using System.Threading.Tasks;
 	using JoinableTaskSynchronizationContext = Microsoft.Threading.JoinableTask.JoinableTaskSynchronizationContext;
 
-	internal class JoinableJoinableTaskFactory : JoinableTaskFactory {
+	/// <summary>
+	/// A joinable task factory that adds all tasks to a joinable collection.
+	/// </summary>
+	public class JoinableJoinableTaskFactory : JoinableTaskFactory {
 		/// <summary>
 		/// The synchronization context to apply to <see cref="SwitchToMainThreadOnCompleted"/> continuations.
 		/// </summary>
@@ -27,20 +30,32 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Initializes a new instance of the <see cref="JoinableJoinableTaskFactory"/> class.
 		/// </summary>
-		internal JoinableJoinableTaskFactory(JoinableTaskCollection jobCollection)
+		/// <param name="jobCollection">The collection to add all jobs created by this factory to.</param>
+		public JoinableJoinableTaskFactory(JoinableTaskCollection jobCollection)
 			: base(Requires.NotNull(jobCollection, "jobCollection").Context) {
 			this.synchronizationContext = new JoinableTaskSynchronizationContext(this);
 			this.jobCollection = jobCollection;
 		}
 
+		/// <summary>
+		/// Gets the collection that all joinable tasks created by this factory are added to.
+		/// </summary>
 		public JoinableTaskCollection Collection {
 			get { return this.jobCollection; }
 		}
 
+		/// <summary>
+		/// Shares the main thread that may be held by the ambient job (if any) with all jobs in this collection
+		/// until the returned value is disposed.
+		/// </summary>
+		/// <returns>A value to dispose of to revert the join.</returns>
 		public JoinableTaskCollection.JoinRelease Join() {
 			return this.Collection.Join();
 		}
 
+		/// <summary>
+		/// Gets the synchronization context to apply before executing work associated with this factory.
+		/// </summary>
 		protected internal override SynchronizationContext ApplicableJobSyncContext {
 			get {
 				if (Thread.CurrentThread == this.Context.MainThread) {
@@ -51,6 +66,9 @@ namespace Microsoft.Threading {
 			}
 		}
 
+		/// <summary>
+		/// Adds the specified joinable task to the applicable collection.
+		/// </summary>
 		protected override void Add(JoinableTask joinable) {
 			this.Collection.Add(joinable);
 		}

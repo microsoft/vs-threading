@@ -41,7 +41,7 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// A single joinable task factory that itself cannot be joined.
 		/// </summary>
-		private readonly JoinableTaskFactory nonJoinableFactory;
+		private JoinableTaskFactory nonJoinableFactory;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="JoinableTaskContext"/> class.
@@ -51,7 +51,6 @@ namespace Microsoft.Threading {
 		public JoinableTaskContext(Thread mainThread = null, SynchronizationContext synchronizationContext = null) {
 			this.MainThread = mainThread ?? Thread.CurrentThread;
 			this.UnderlyingSynchronizationContext = synchronizationContext ?? SynchronizationContext.Current; // may still be null after this.
-			this.nonJoinableFactory = new JoinableTaskFactory(this);
 		}
 
 		/// <summary>
@@ -59,7 +58,23 @@ namespace Microsoft.Threading {
 		/// that do not belong to a joinable task collection.
 		/// </summary>
 		public JoinableTaskFactory Factory {
-			get { return this.nonJoinableFactory; }
+			get {
+				this.syncContextLock.EnterUpgradeableReadLock();
+				try {
+					if (this.nonJoinableFactory == null) {
+						this.syncContextLock.EnterWriteLock();
+						try {
+							this.nonJoinableFactory = this.CreateDefaultFactory();
+						} finally {
+							this.syncContextLock.ExitWriteLock();
+						}
+					}
+
+					return this.nonJoinableFactory;
+				} finally {
+					this.syncContextLock.ExitUpgradeableReadLock();
+				}
+			}
 		}
 
 		/// <summary>
@@ -126,7 +141,7 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="collection">The collection that all tasks should be added to.</param>
 		/// <returns></returns>
-		public JoinableTaskFactory CreateFactory(JoinableTaskCollection collection) {
+		public virtual JoinableJoinableTaskFactory CreateFactory(JoinableTaskCollection collection) {
 			Requires.NotNull(collection, "collection");
 
 			return new JoinableJoinableTaskFactory(collection);
@@ -136,69 +151,12 @@ namespace Microsoft.Threading {
 		/// Creates a collection for in-flight joinable tasks.
 		/// </summary>
 		/// <returns>A new joinable task collection.</returns>
-		public JoinableTaskCollection CreateCollection() {
+		public virtual JoinableTaskCollection CreateCollection() {
 			return new JoinableTaskCollection(this);
 		}
 
-		/// <summary>
-		/// Responds to calls to <see cref="JoinableTaskFactory.MainThreadAwaiter.OnCompleted"/>
-		/// by scheduling a continuation to execute on the Main thread.
-		/// </summary>
-		/// <param name="factory">The factory to use for creating joinable tasks.</param>
-		/// <param name="callback">The callback to invoke.</param>
-		/// <param name="state">The state object to pass to the callback.</param>
-		protected internal virtual void SwitchToMainThreadOnCompleted(JoinableTaskFactory factory, SendOrPostCallback callback, object state) {
-			Requires.NotNull(factory, "factory");
-			Requires.NotNull(callback, "callback");
-
-			var ambientJob = this.joinableOperation.Value;
-			var wrapper = SingleExecuteProtector.Create(factory, ambientJob, callback, state);
-			if (ambientJob != null) {
-				ambientJob.Post(SingleExecuteProtector.ExecuteOnce, wrapper, true);
-			} else {
-				this.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
-			}
-		}
-
-		/// <summary>
-		/// Posts a message to the specified underlying SynchronizationContext for processing when the main thread
-		/// is freely available.
-		/// </summary>
-		/// <param name="callback">The callback to invoke.</param>
-		/// <param name="state">State to pass to the callback.</param>
-		protected virtual void PostToUnderlyingSynchronizationContext(SendOrPostCallback callback, object state) {
-			Requires.NotNull(callback, "callback");
-			Assumes.NotNull(this.UnderlyingSynchronizationContext);
-
-			this.UnderlyingSynchronizationContext.Post(callback, state);
-		}
-
-		/// <summary>
-		/// Posts a callback to the main thread via the underlying dispatcher,
-		/// or to the threadpool when no dispatcher exists on the main thread.
-		/// </summary>
-		internal void PostToUnderlyingSynchronizationContextOrThreadPool(SingleExecuteProtector callback) {
-			Requires.NotNull(callback, "callback");
-
-			if (this.UnderlyingSynchronizationContext != null) {
-				this.PostToUnderlyingSynchronizationContext(SingleExecuteProtector.ExecuteOnce, callback);
-			} else {
-				ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, callback);
-			}
-		}
-
-		/// <summary>
-		/// Synchronously blocks the calling thread for the completion of the specified task.
-		/// </summary>
-		/// <param name="task">The task whose completion is being waited on.</param>
-		protected internal virtual void WaitSynchronously(Task task) {
-			Requires.NotNull(task, "task");
-			while (!task.Wait(3000)) {
-				// This could be a hang. If a memory dump with heap is taken, it will
-				// significantly simplify investigation if the heap only has live awaitables
-				// remaining (completed ones GC'd). So run the GC now and then keep waiting.
-				GC.Collect();
-			}
+		protected virtual JoinableTaskFactory CreateDefaultFactory() {
+			return new JoinableTaskFactory(this);
 		}
 
 		/// <summary>

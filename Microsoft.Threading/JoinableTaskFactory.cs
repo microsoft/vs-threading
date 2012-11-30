@@ -28,7 +28,7 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Initializes a new instance of the <see cref="JoinableTaskFactory"/> class.
 		/// </summary>
-		internal JoinableTaskFactory(JoinableTaskContext owner) {
+		public JoinableTaskFactory(JoinableTaskContext owner) {
 			Requires.NotNull(owner, "owner");
 			this.owner = owner;
 			this.mainThreadJobSyncContext = new JoinableTaskSynchronizationContext(this);
@@ -96,6 +96,67 @@ namespace Microsoft.Threading {
 		/// </summary>
 		internal MainThreadAwaitable SwitchToMainThreadAsync(bool alwaysYield) {
 			return new MainThreadAwaitable(this, this.Context.AmbientTask, CancellationToken.None, alwaysYield);
+		}
+
+		/// <summary>
+		/// Responds to calls to <see cref="JoinableTaskFactory.MainThreadAwaiter.OnCompleted"/>
+		/// by scheduling a continuation to execute on the Main thread.
+		/// </summary>
+		/// <param name="factory">The factory to use for creating joinable tasks.</param>
+		/// <param name="callback">The callback to invoke.</param>
+		/// <param name="state">The state object to pass to the callback.</param>
+		protected internal virtual void SwitchToMainThreadOnCompleted(JoinableTaskFactory factory, SendOrPostCallback callback, object state) {
+			Requires.NotNull(factory, "factory");
+			Requires.NotNull(callback, "callback");
+
+			var ambientJob = this.Context.AmbientTask;
+			var wrapper = SingleExecuteProtector.Create(factory, ambientJob, callback, state);
+			if (ambientJob != null) {
+				ambientJob.Post(SingleExecuteProtector.ExecuteOnce, wrapper, true);
+			} else {
+				this.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
+			}
+		}
+
+		/// <summary>
+		/// Posts a message to the specified underlying SynchronizationContext for processing when the main thread
+		/// is freely available.
+		/// </summary>
+		/// <param name="callback">The callback to invoke.</param>
+		/// <param name="state">State to pass to the callback.</param>
+		protected virtual void PostToUnderlyingSynchronizationContext(SendOrPostCallback callback, object state) {
+			Requires.NotNull(callback, "callback");
+			Assumes.NotNull(this.Context.UnderlyingSynchronizationContext);
+
+			this.Context.UnderlyingSynchronizationContext.Post(callback, state);
+		}
+
+		/// <summary>
+		/// Posts a callback to the main thread via the underlying dispatcher,
+		/// or to the threadpool when no dispatcher exists on the main thread.
+		/// </summary>
+		internal void PostToUnderlyingSynchronizationContextOrThreadPool(SingleExecuteProtector callback) {
+			Requires.NotNull(callback, "callback");
+
+			if (this.Context.UnderlyingSynchronizationContext != null) {
+				this.PostToUnderlyingSynchronizationContext(SingleExecuteProtector.ExecuteOnce, callback);
+			} else {
+				ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, callback);
+			}
+		}
+
+		/// <summary>
+		/// Synchronously blocks the calling thread for the completion of the specified task.
+		/// </summary>
+		/// <param name="task">The task whose completion is being waited on.</param>
+		protected internal virtual void WaitSynchronously(Task task) {
+			Requires.NotNull(task, "task");
+			while (!task.Wait(3000)) {
+				// This could be a hang. If a memory dump with heap is taken, it will
+				// significantly simplify investigation if the heap only has live awaitables
+				// remaining (completed ones GC'd). So run the GC now and then keep waiting.
+				GC.Collect();
+			}
 		}
 
 		/// <summary>Runs the specified asynchronous method.</summary>
@@ -348,7 +409,7 @@ namespace Microsoft.Threading {
 		}
 
 		internal virtual void SwitchToMainThreadOnCompleted(SingleExecuteProtector callback) {
-			this.owner.SwitchToMainThreadOnCompleted(this, SingleExecuteProtector.ExecuteOnce, callback);
+			this.SwitchToMainThreadOnCompleted(this, SingleExecuteProtector.ExecuteOnce, callback);
 		}
 
 		internal virtual void Post(SendOrPostCallback callback, object state, bool mainThreadAffinitized) {
@@ -356,7 +417,7 @@ namespace Microsoft.Threading {
 
 			var wrapper = SingleExecuteProtector.Create(this, null, callback, state);
 			if (mainThreadAffinitized) {
-				this.owner.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
+				this.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
 			} else {
 				ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
 			}
