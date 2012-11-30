@@ -255,11 +255,7 @@ namespace Microsoft.Threading {
 		}
 
 		internal void Post(SendOrPostCallback d, object state, bool mainThreadAffinitized) {
-			var wrapper = SingleExecuteProtector.Create(this.owner, this, d, state);
-			if (mainThreadAffinitized && !this.SynchronouslyBlockingMainThread) {
-				wrapper.RaiseTransitioningEvents();
-			}
-
+			SingleExecuteProtector wrapper = null;
 			AsyncManualResetEvent dequeuerResetState = null; // initialized if we should pulse it at the end of the method
 			bool postToFactory = false;
 
@@ -270,6 +266,11 @@ namespace Microsoft.Threading {
 					// We need to forward the work to the fallback mechanisms. 
 					postToFactory = true;
 				} else {
+					wrapper = SingleExecuteProtector.Create(this, d, state);
+					if (mainThreadAffinitized && !this.SynchronouslyBlockingMainThread) {
+						wrapper.RaiseTransitioningEvents();
+					}
+
 					if (mainThreadAffinitized) {
 						if (this.mainThreadQueue == null) {
 							this.mainThreadQueue = new ExecutionQueue(this);
@@ -301,8 +302,10 @@ namespace Microsoft.Threading {
 
 			// We deferred this till after we release our lock earlier in this method since we're calling outside code.
 			if (postToFactory) {
-				this.Factory.Post(SingleExecuteProtector.ExecuteOnce, wrapper, mainThreadAffinitized);
+				Assumes.Null(wrapper); // we avoid using a wrapper in this case because this job transferring ownership to the factory.
+				this.Factory.Post(d, state, mainThreadAffinitized);
 			} else if (mainThreadAffinitized) {
+				Assumes.NotNull(wrapper); // this should have been initialized in the above logic.
 				this.owner.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
 			}
 

@@ -94,18 +94,5 @@ namespace Microsoft.Threading {
 				return base.RequestSwitchToMainThread(callback);
 			}
 		}
-
-		internal override void Post(SendOrPostCallback callback, object state, bool mainThreadAffinitized) {
-			Requires.NotNull(callback, "callback");
-
-			if (mainThreadAffinitized) {
-				this.RunAsync(delegate {
-					this.Context.AmbientTask.Post(callback, state, true);
-					return TplExtensions.CompletedTask;
-				});
-			} else {
-				ThreadPool.QueueUserWorkItem(new WaitCallback(callback), state);
-			}
-		}
 	}
 }

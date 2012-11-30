@@ -111,12 +111,12 @@ namespace Microsoft.Threading {
 			if (ambientJob == null) {
 				this.RunAsync(delegate {
 					ambientJob = this.Context.AmbientTask;
-					wrapper = SingleExecuteProtector.Create(this, ambientJob, callback);
+					wrapper = SingleExecuteProtector.Create(ambientJob, callback);
 					ambientJob.Post(SingleExecuteProtector.ExecuteOnce, wrapper, true);
 					return TplExtensions.CompletedTask;
 				});
 			} else {
-				wrapper = SingleExecuteProtector.Create(this, ambientJob, callback);
+				wrapper = SingleExecuteProtector.Create(ambientJob, callback);
 				ambientJob.Post(SingleExecuteProtector.ExecuteOnce, wrapper, true);
 			}
 
@@ -434,14 +434,16 @@ namespace Microsoft.Threading {
 			}
 		}
 
-		internal virtual void Post(SendOrPostCallback callback, object state, bool mainThreadAffinitized) {
+		internal void Post(SendOrPostCallback callback, object state, bool mainThreadAffinitized) {
 			Requires.NotNull(callback, "callback");
 
-			var wrapper = SingleExecuteProtector.Create(this, null, callback, state);
 			if (mainThreadAffinitized) {
-				this.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
+				this.RunAsync(delegate {
+					this.Context.AmbientTask.Post(callback, state, true);
+					return TplExtensions.CompletedTask;
+				});
 			} else {
-				ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
+				ThreadPool.QueueUserWorkItem(new WaitCallback(callback), state);
 			}
 		}
 
@@ -458,11 +460,6 @@ namespace Microsoft.Threading {
 			/// Executes the delegate if it has not already executed.
 			/// </summary>
 			internal static WaitCallback ExecuteOnceWaitCallback = state => ((SingleExecuteProtector)state).TryExecute();
-
-			/// <summary>
-			/// The async pump responsible for this instance.
-			/// </summary>
-			private JoinableTaskFactory factory;
 
 			/// <summary>
 			/// The job that created this wrapper.
@@ -490,9 +487,8 @@ namespace Microsoft.Threading {
 			/// <summary>
 			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class.
 			/// </summary>
-			private SingleExecuteProtector(JoinableTaskFactory factory, JoinableTask job) {
-				Requires.NotNull(factory, "factory");
-				this.factory = factory;
+			private SingleExecuteProtector(JoinableTask job) {
+				Requires.NotNull(job, "job");
 				this.job = job;
 			}
 
@@ -520,19 +516,19 @@ namespace Microsoft.Threading {
 			}
 
 			internal void RaiseTransitioningEvents() {
+				Assumes.False(this.raiseTransitionComplete); // if this method is called twice, that's the sign of a problem.
 				this.raiseTransitionComplete = true;
-				this.factory.OnTransitioningToMainThread(this.job);
+				this.job.Factory.OnTransitioningToMainThread(this.job);
 			}
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class.
 			/// </summary>
-			/// <param name="factory">The factory that is responsible for this work.</param>
 			/// <param name="job">The joinable task responsible for this work.</param>
 			/// <param name="action">The delegate being wrapped.</param>
 			/// <returns>An instance of <see cref="SingleExecuteProtector"/>.</returns>
-			internal static SingleExecuteProtector Create(JoinableTaskFactory factory, JoinableTask job, Action action) {
-				return new SingleExecuteProtector(factory, job) {
+			internal static SingleExecuteProtector Create(JoinableTask job, Action action) {
+				return new SingleExecuteProtector(job) {
 					invokeDelegate = action,
 				};
 			}
@@ -541,14 +537,12 @@ namespace Microsoft.Threading {
 			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class
 			/// that describes the specified callback.
 			/// </summary>
-			/// <param name="factory">The factory that is responsible for this work.</param>
 			/// <param name="job">The joinable task responsible for this work.</param>
 			/// <param name="callback">The callback to invoke.</param>
 			/// <param name="state">The state object to pass to the callback.</param>
 			/// <returns>An instance of <see cref="SingleExecuteProtector"/>.</returns>
-			internal static SingleExecuteProtector Create(JoinableTaskFactory factory, JoinableTask job, SendOrPostCallback callback, object state) {
-				Requires.NotNull(factory, "factory");
-				Assumes.True(job == null || job.Factory == factory); // job and factory do not match.
+			internal static SingleExecuteProtector Create(JoinableTask job, SendOrPostCallback callback, object state) {
+				Requires.NotNull(job, "job");
 
 				// As an optimization, recognize if what we're being handed is already an instance of this type,
 				// because if it is, we don't need to wrap it with yet another instance.
@@ -557,7 +551,7 @@ namespace Microsoft.Threading {
 					return (SingleExecuteProtector)state;
 				}
 
-				return new SingleExecuteProtector(factory, job) {
+				return new SingleExecuteProtector(job) {
 					invokeDelegate = callback,
 					state = state,
 				};
@@ -570,7 +564,7 @@ namespace Microsoft.Threading {
 				object invokeDelegate = Interlocked.Exchange(ref this.invokeDelegate, null);
 				if (invokeDelegate != null) {
 					this.OnExecuting();
-					var syncContext = this.job != null ? this.job.ApplicableJobSyncContext : this.factory.ApplicableJobSyncContext;
+					var syncContext = this.job != null ? this.job.ApplicableJobSyncContext : this.job.Factory.ApplicableJobSyncContext;
 					using (syncContext.Apply()) {
 						var action = invokeDelegate as Action;
 						if (action != null) {
@@ -604,7 +598,7 @@ namespace Microsoft.Threading {
 				}
 
 				if (this.raiseTransitionComplete) {
-					this.factory.OnTransitionedToMainThread(this.job, Thread.CurrentThread != this.factory.Context.MainThread);
+					this.job.Factory.OnTransitionedToMainThread(this.job, Thread.CurrentThread != this.job.Factory.Context.MainThread);
 				}
 			}
 		}
