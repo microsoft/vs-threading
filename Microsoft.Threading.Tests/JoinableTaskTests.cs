@@ -1436,7 +1436,7 @@
 			}, maxBytesAllocated: 245);
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout * 2)]
 		public void RunSynchronouslyTaskWithYieldGCPressure() {
 			this.CheckGCPressure(delegate {
 				this.asyncPump.Run(async delegate {
@@ -1445,7 +1445,7 @@
 			}, maxBytesAllocated: 1800);
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout * 2)]
 		public void RunSynchronouslyTaskOfTWithYieldGCPressure() {
 			Task<object> completedTask = Task.FromResult<object>(null);
 
