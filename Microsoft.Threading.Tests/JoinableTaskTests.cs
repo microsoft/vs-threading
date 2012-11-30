@@ -213,7 +213,7 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void TransitionToMainThreadNotRaisedWhenAlreadyOnMainThread() {
-			var factory = new TransitionTrackingJoinableTaskFactory(this.context);
+			var factory = (DerivedJoinableTaskFactory)this.asyncPump;
 
 			factory.Run(async delegate {
 				// Switch to main thread when we're already there.
@@ -243,7 +243,7 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void TransitionToMainThreadRaisedWhenSwitchingToMainThread() {
-			var factory = new TransitionTrackingJoinableTaskFactory(this.context);
+			var factory = (DerivedJoinableTaskFactory)this.asyncPump;
 
 			var joinableTask = factory.RunAsync(async delegate {
 				// Switch to main thread when we're already there.
@@ -279,7 +279,7 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void TransitionToMainThreadRaisedFromTaskScheduler() {
-			var factory = new TransitionTrackingJoinableTaskFactory(this.context);
+			var factory = (DerivedJoinableTaskFactory)this.asyncPump;
 
 			var task = Task.Run(async delegate {
 				await factory.MainThreadScheduler;
@@ -1283,6 +1283,9 @@
 			Task t1 = null, t2 = null;
 			var frame = new DispatcherFrame();
 
+			((DerivedJoinableTaskFactory)this.asyncPump).AssumeConcurrentUse = true;
+			((DerivedJoinableTaskFactory)pump2).AssumeConcurrentUse = true;
+
 			pump2.Run(delegate {
 				t1 = Task.Run(delegate {
 					using (this.joinableCollection.Join()) {
@@ -1664,8 +1667,12 @@
 		/// <summary>
 		/// Simulates COM message pump reentrancy causing some unrelated work to "pump in" on top of a synchronously blocking wait.
 		/// </summary>
-		private class COMReentrantJoinableTaskFactory : JoinableTaskTrackingFactory {
+		private class COMReentrantJoinableTaskFactory : JoinableTaskFactory {
 			private Action action;
+
+			internal COMReentrantJoinableTaskFactory(JoinableTaskContext context)
+				: base(context) {
+			}
 
 			internal COMReentrantJoinableTaskFactory(JoinableTaskCollection collection)
 				: base(collection) {
@@ -1687,51 +1694,67 @@
 		}
 
 		private class DerivedJoinableTaskContext : JoinableTaskContext {
-			public override JoinableTaskTrackingFactory CreateFactory(JoinableTaskCollection collection) {
+			public override JoinableTaskFactory CreateFactory(JoinableTaskCollection collection) {
 				return new DerivedJoinableTaskFactory(collection);
 			}
 		}
 
-		private class TransitionTrackingJoinableTaskFactory : JoinableTaskFactory {
-			private HashSet<JoinableTask> transitioningTasks = new HashSet<JoinableTask>();
+		private class DerivedJoinableTaskFactory : JoinableTaskFactory {
+			private readonly HashSet<JoinableTask> transitioningTasks = new HashSet<JoinableTask>();
+			private int transitioningToMainThreadHitCount;
+			private int transitionedToMainThreadHitCount;
 
-			internal TransitionTrackingJoinableTaskFactory(JoinableTaskContext context)
+			internal DerivedJoinableTaskFactory(JoinableTaskContext context)
 				: base(context) {
 			}
 
-			internal int TransitionedToMainThreadHitCount { get; private set; }
+			internal DerivedJoinableTaskFactory(JoinableTaskCollection collection)
+				: base(collection) {
+			}
 
-			internal int TransitioningToMainThreadHitCount { get; private set; }
+			internal int TransitionedToMainThreadHitCount {
+				get { return this.transitionedToMainThreadHitCount; }
+			}
+
+			internal int TransitioningToMainThreadHitCount {
+				get { return this.transitioningToMainThreadHitCount; }
+			}
+
+			internal bool AssumeConcurrentUse { get; set; }
 
 			protected override void OnTransitioningToMainThread(JoinableTask joinableTask) {
 				base.OnTransitioningToMainThread(joinableTask);
+				Interlocked.Increment(ref this.transitioningToMainThreadHitCount);
 
-				// These statements and assertions assume that the test does not have concurrently executing code.
-				Assert.IsTrue(this.transitioningTasks.Add(joinableTask));
-				this.TransitioningToMainThreadHitCount++;
-				Assert.AreEqual(this.TransitionedToMainThreadHitCount + 1, this.TransitioningToMainThreadHitCount, "Imbalance of transition events.");
+				// These statements and assertions assume that the test does not have jobs that execute code concurrently.
+				lock (this.transitioningTasks) {
+					Assert.IsTrue(this.transitioningTasks.Add(joinableTask));
+				}
+
+				if (!this.AssumeConcurrentUse) {
+					Assert.AreEqual(this.TransitionedToMainThreadHitCount + 1, this.TransitioningToMainThreadHitCount, "Imbalance of transition events.");
+				}
 			}
 
 			protected override void OnTransitionedToMainThread(JoinableTask joinableTask, bool canceled) {
 				base.OnTransitionedToMainThread(joinableTask, canceled);
+				Interlocked.Increment(ref this.transitionedToMainThreadHitCount);
+
 				if (canceled) {
 					Assert.AreNotSame(this.Context.MainThread, Thread.CurrentThread, "A canceled transition should not complete on the main thread.");
 				} else {
 					Assert.AreSame(this.Context.MainThread, Thread.CurrentThread, "We should be on the main thread if we've just transitioned.");
 				}
 
-				// These statements and assertions assume that the test does not have concurrently executing code.
-				Assert.IsTrue(this.transitioningTasks.Remove(joinableTask));
-				this.TransitionedToMainThreadHitCount++;
-				Assert.AreEqual(this.TransitionedToMainThreadHitCount, this.TransitioningToMainThreadHitCount, "Imbalance of transition events.");
-			}
-		}
+				// These statements and assertions assume that the test does not have jobs that execute code concurrently.
+				lock (this.transitioningTasks) {
+					Assert.IsTrue(this.transitioningTasks.Remove(joinableTask));
+				}
 
-		private class DerivedJoinableTaskFactory : JoinableTaskTrackingFactory {
-			internal DerivedJoinableTaskFactory(JoinableTaskCollection collection)
-				: base(collection) {
+				if (!this.AssumeConcurrentUse) {
+					Assert.AreEqual(this.TransitionedToMainThreadHitCount, this.TransitioningToMainThreadHitCount, "Imbalance of transition events.");
+				}
 			}
-
 			protected override void WaitSynchronously(Task task) {
 				Assert.IsNotNull(task);
 				base.WaitSynchronously(task);

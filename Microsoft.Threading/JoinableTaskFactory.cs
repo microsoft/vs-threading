@@ -26,11 +26,34 @@ namespace Microsoft.Threading {
 		private readonly SynchronizationContext mainThreadJobSyncContext;
 
 		/// <summary>
+		/// The collection to add all created tasks to. May be <c>null</c>.
+		/// </summary>
+		private readonly JoinableTaskCollection jobCollection;
+
+		/// <summary>
 		/// Initializes a new instance of the <see cref="JoinableTaskFactory"/> class.
 		/// </summary>
-		public JoinableTaskFactory(JoinableTaskContext owner) {
+		public JoinableTaskFactory(JoinableTaskContext owner)
+			: this(owner, null) {
+		}
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="JoinableTaskFactory"/> class
+		/// that adds all generated jobs to the specified collection.
+		/// </summary>
+		public JoinableTaskFactory(JoinableTaskCollection collection)
+			: this(Requires.NotNull(collection, "collection").Context, collection) {
+		}
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="JoinableTaskFactory"/> class.
+		/// </summary>
+		private JoinableTaskFactory(JoinableTaskContext owner, JoinableTaskCollection collection) {
 			Requires.NotNull(owner, "owner");
+			Assumes.True(collection == null || collection.Context == owner);
+
 			this.owner = owner;
+			this.jobCollection = collection;
 			this.mainThreadJobSyncContext = new JoinableTaskSynchronizationContext(this);
 			this.MainThreadScheduler = new JoinableTaskScheduler(this, true);
 			this.ThreadPoolScheduler = new JoinableTaskScheduler(this, false);
@@ -103,12 +126,18 @@ namespace Microsoft.Threading {
 		/// by scheduling a continuation to execute on the Main thread.
 		/// </summary>
 		/// <param name="callback">The callback to invoke.</param>
-		internal virtual SingleExecuteProtector RequestSwitchToMainThread(Action callback) {
+		internal SingleExecuteProtector RequestSwitchToMainThread(Action callback) {
 			Requires.NotNull(callback, "callback");
 
+			// Make sure that this thread switch request is in a job that is captured by the job collection
+			// to which this switch request belongs.
+			// If an ambient job already exists and belongs to the collection, that's good enough. But if
+			// there is no ambient job, or the ambient job does not belong to the collection, we must create
+			// a (child) job and add that to this job factory's collection so that folks joining that factory
+			// can help this switch to complete.
 			var ambientJob = this.Context.AmbientTask;
 			SingleExecuteProtector wrapper = null;
-			if (ambientJob == null) {
+			if (ambientJob == null || (this.jobCollection != null && !this.jobCollection.Contains(ambientJob))) {
 				this.RunAsync(delegate {
 					ambientJob = this.Context.AmbientTask;
 					wrapper = SingleExecuteProtector.Create(ambientJob, callback);
@@ -120,6 +149,7 @@ namespace Microsoft.Threading {
 				ambientJob.Post(SingleExecuteProtector.ExecuteOnce, wrapper, true);
 			}
 
+			Assumes.NotNull(wrapper);
 			return wrapper;
 		}
 
@@ -271,8 +301,11 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Adds the specified joinable task to the applicable collection.
 		/// </summary>
-		protected virtual void Add(JoinableTask joinable) {
+		protected void Add(JoinableTask joinable) {
 			Requires.NotNull(joinable, "joinable");
+			if (this.jobCollection != null) {
+				this.jobCollection.Add(joinable);
+			}
 		}
 
 		/// <summary>

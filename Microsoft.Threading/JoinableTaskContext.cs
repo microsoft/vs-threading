@@ -141,10 +141,16 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="collection">The collection that all tasks should be added to.</param>
 		/// <returns></returns>
-		public virtual JoinableTaskTrackingFactory CreateFactory(JoinableTaskCollection collection) {
+		public virtual JoinableTaskFactory CreateFactory(JoinableTaskCollection collection) {
 			Requires.NotNull(collection, "collection");
+			return new JoinableTaskFactory(collection);
+		}
 
-			return new JoinableTaskTrackingFactory(collection);
+		/// <summary>
+		/// Creates a factory without a <see cref="JoinableTaskCollection"/>.
+		/// </summary>
+		public virtual JoinableTaskFactory CreateDefaultFactory() {
+			return new JoinableTaskFactory(this);
 		}
 
 		/// <summary>
@@ -153,13 +159,6 @@ namespace Microsoft.Threading {
 		/// <returns>A new joinable task collection.</returns>
 		public virtual JoinableTaskCollection CreateCollection() {
 			return new JoinableTaskCollection(this);
-		}
-
-		/// <summary>
-		/// Creates a factory without a <see cref="JoinableTaskCollection"/>.
-		/// </summary>
-		protected virtual JoinableTaskFactory CreateDefaultFactory() {
-			return new JoinableTaskFactory(this);
 		}
 
 		/// <summary>
