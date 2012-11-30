@@ -102,15 +102,13 @@ namespace Microsoft.Threading {
 		/// Responds to calls to <see cref="JoinableTaskFactory.MainThreadAwaiter.OnCompleted"/>
 		/// by scheduling a continuation to execute on the Main thread.
 		/// </summary>
-		/// <param name="factory">The factory to use for creating joinable tasks.</param>
 		/// <param name="callback">The callback to invoke.</param>
 		/// <param name="state">The state object to pass to the callback.</param>
-		internal virtual void RequestSwitchToMainThread(JoinableTaskFactory factory, SendOrPostCallback callback, object state) {
-			Requires.NotNull(factory, "factory");
+		internal virtual void RequestSwitchToMainThread(SendOrPostCallback callback, object state) {
 			Requires.NotNull(callback, "callback");
 
 			var ambientJob = this.Context.AmbientTask;
-			var wrapper = SingleExecuteProtector.Create(factory, ambientJob, callback, state);
+			var wrapper = SingleExecuteProtector.Create(this, ambientJob, callback, state);
 			if (ambientJob != null) {
 				ambientJob.Post(SingleExecuteProtector.ExecuteOnce, wrapper, true);
 			} else {
@@ -350,8 +348,8 @@ namespace Microsoft.Threading {
 				// in a SingleExecuteProtector so that it can't be executed twice by accident.
 				var wrapper = SingleExecuteProtector.Create(this.jobFactory, this.job, continuation);
 
-				// Success case of the main thread. 
-				this.jobFactory.RequestSwitchToMainThread(wrapper);
+				// Success case of the main thread.
+				this.jobFactory.RequestSwitchToMainThread(SingleExecuteProtector.ExecuteOnce, wrapper);
 
 				// Cancellation case of a threadpool thread.
 				this.cancellationRegistration = this.cancellationToken.Register(
@@ -426,10 +424,6 @@ namespace Microsoft.Threading {
 				Requires.NotNull(task, "task");
 				this.joinable.SetWrappedTask(task, this.previousJoinable);
 			}
-		}
-
-		internal virtual void RequestSwitchToMainThread(SingleExecuteProtector callback) {
-			this.RequestSwitchToMainThread(this, SingleExecuteProtector.ExecuteOnce, callback);
 		}
 
 		internal virtual void Post(SendOrPostCallback callback, object state, bool mainThreadAffinitized) {
