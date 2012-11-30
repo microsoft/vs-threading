@@ -108,11 +108,16 @@ namespace Microsoft.Threading {
 			Requires.NotNull(callback, "callback");
 
 			var ambientJob = this.Context.AmbientTask;
-			var wrapper = SingleExecuteProtector.Create(this, ambientJob, callback, state);
-			if (ambientJob != null) {
-				ambientJob.Post(SingleExecuteProtector.ExecuteOnce, wrapper, true);
+			if (ambientJob == null) {
+				this.RunAsync(delegate {
+					ambientJob = this.Context.AmbientTask;
+					var wrapper = SingleExecuteProtector.Create(this, ambientJob, callback, state);
+					ambientJob.Post(SingleExecuteProtector.ExecuteOnce, wrapper, true);
+					return TplExtensions.CompletedTask;
+				});
 			} else {
-				this.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
+				var wrapper = SingleExecuteProtector.Create(this, ambientJob, callback, state);
+				ambientJob.Post(SingleExecuteProtector.ExecuteOnce, wrapper, true);
 			}
 		}
 
@@ -132,8 +137,9 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Raised when a joinable task has requested a transition to the main thread.
 		/// </summary>
+		/// <param name="joinableTask">The task requesting the transition to the main thread.</param>
 		/// <remarks>
-		/// This event is never raised on the main thread.
+		/// This event may be raised on any thread, including the main thread.
 		/// </remarks>
 		protected virtual void OnTransitioningToMainThread(JoinableTask joinableTask) {
 			Requires.NotNull(joinableTask, "joinableTask");
@@ -142,10 +148,12 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Raised whenever a joinable task has completed a transition to the main thread.
 		/// </summary>
+		/// <param name="joinableTask">The task whose request to transition to the main thread has completed.</param>
+		/// <param name="canceled">A value indicating whether the transition was cancelled before it was fulfilled.</param>
 		/// <remarks>
-		/// This event is always raised on the main thread.
+		/// This event is usually raised on the main thread, but can be on another thread when <paramref name="canceled"/> is <c>true</c>.
 		/// </remarks>
-		protected virtual void OnTransitionedToMainThread(JoinableTask joinableTask) {
+		protected virtual void OnTransitionedToMainThread(JoinableTask joinableTask, bool canceled) {
 			Requires.NotNull(joinableTask, "joinableTask");
 		}
 
@@ -461,6 +469,8 @@ namespace Microsoft.Threading {
 			/// </summary>
 			private JoinableTask job;
 
+			private bool raiseTransitionComplete;
+
 			/// <summary>
 			/// The delegate to invoke.  <c>null</c> if it has already been invoked.
 			/// </summary>
@@ -507,6 +517,11 @@ namespace Microsoft.Threading {
 			/// </summary>
 			internal bool HasBeenExecuted {
 				get { return this.invokeDelegate == null; }
+			}
+
+			internal void RaiseTransitioningEvents() {
+				this.raiseTransitionComplete = true;
+				this.factory.OnTransitioningToMainThread(this.job);
 			}
 
 			/// <summary>
@@ -586,6 +601,10 @@ namespace Microsoft.Threading {
 					while (enumerator.MoveNext()) {
 						enumerator.Current.OnExecuting(this, EventArgs.Empty);
 					}
+				}
+
+				if (this.raiseTransitionComplete) {
+					this.factory.OnTransitionedToMainThread(this.job, Thread.CurrentThread != this.factory.Context.MainThread);
 				}
 			}
 		}

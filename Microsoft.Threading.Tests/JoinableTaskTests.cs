@@ -297,6 +297,18 @@
 				await factory.MainThreadScheduler;
 				Assert.AreEqual(2, factory.TransitioningToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
 				Assert.AreEqual(2, factory.TransitionedToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
+
+				// Asynchronously re-acquire the main thread.
+				await Task.Factory.StartNew(
+					delegate {
+						Assert.AreEqual(3, factory.TransitioningToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
+						Assert.AreEqual(3, factory.TransitionedToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
+					},
+					CancellationToken.None,
+					TaskCreationOptions.None,
+					factory.MainThreadScheduler);
+				Assert.AreEqual(4, factory.TransitioningToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
+				Assert.AreEqual(4, factory.TransitionedToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
 			});
 
 			// Simulate the UI thread just pumping ordinary messages
@@ -1681,6 +1693,8 @@
 		}
 
 		private class TransitionTrackingJoinableTaskFactory : JoinableTaskFactory {
+			private HashSet<JoinableTask> transitioningTasks = new HashSet<JoinableTask>();
+
 			internal TransitionTrackingJoinableTaskFactory(JoinableTaskContext context)
 				: base(context) {
 			}
@@ -1691,18 +1705,23 @@
 
 			protected override void OnTransitioningToMainThread(JoinableTask joinableTask) {
 				base.OnTransitioningToMainThread(joinableTask);
-				Assert.AreNotSame(this.Context.MainThread, Thread.CurrentThread, "We're transitioning to the main thread when we're already there?!");
 
 				// These statements and assertions assume that the test does not have concurrently executing code.
+				Assert.IsTrue(this.transitioningTasks.Add(joinableTask));
 				this.TransitioningToMainThreadHitCount++;
 				Assert.AreEqual(this.TransitionedToMainThreadHitCount + 1, this.TransitioningToMainThreadHitCount, "Imbalance of transition events.");
 			}
 
-			protected override void OnTransitionedToMainThread(JoinableTask joinableTask) {
-				base.OnTransitionedToMainThread(joinableTask);
-				Assert.AreSame(this.Context.MainThread, Thread.CurrentThread, "We should be on the main thread if we've just transitioned.");
+			protected override void OnTransitionedToMainThread(JoinableTask joinableTask, bool canceled) {
+				base.OnTransitionedToMainThread(joinableTask, canceled);
+				if (canceled) {
+					Assert.AreNotSame(this.Context.MainThread, Thread.CurrentThread, "A canceled transition should not complete on the main thread.");
+				} else {
+					Assert.AreSame(this.Context.MainThread, Thread.CurrentThread, "We should be on the main thread if we've just transitioned.");
+				}
 
 				// These statements and assertions assume that the test does not have concurrently executing code.
+				Assert.IsTrue(this.transitioningTasks.Remove(joinableTask));
 				this.TransitionedToMainThreadHitCount++;
 				Assert.AreEqual(this.TransitionedToMainThreadHitCount, this.TransitioningToMainThreadHitCount, "Imbalance of transition events.");
 			}
