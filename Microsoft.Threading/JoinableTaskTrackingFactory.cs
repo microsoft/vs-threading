@@ -73,7 +73,9 @@ namespace Microsoft.Threading {
 			this.Collection.Add(joinable);
 		}
 
-		internal override void RequestSwitchToMainThread(SendOrPostCallback callback, object state) {
+		internal override SingleExecuteProtector RequestSwitchToMainThread(Action callback) {
+			Requires.NotNull(callback, "callback");
+
 			// Make sure that this thread switch request is in a job that is captured by the job collection
 			// to which this switch request belongs.
 			// If an ambient job already exists and belongs to the collection, that's good enough. But if
@@ -82,12 +84,14 @@ namespace Microsoft.Threading {
 			// can help this switch to complete.
 			var ambientJob = this.Context.AmbientTask;
 			if (ambientJob == null || !this.jobCollection.Contains(ambientJob)) {
+				SingleExecuteProtector wrapper = null;
 				this.RunAsync(delegate {
-					base.RequestSwitchToMainThread(callback, state);
+					wrapper = base.RequestSwitchToMainThread(callback);
 					return TplExtensions.CompletedTask;
 				});
+				return wrapper;
 			} else {
-				base.RequestSwitchToMainThread(callback, state);
+				return base.RequestSwitchToMainThread(callback);
 			}
 		}
 

@@ -103,22 +103,24 @@ namespace Microsoft.Threading {
 		/// by scheduling a continuation to execute on the Main thread.
 		/// </summary>
 		/// <param name="callback">The callback to invoke.</param>
-		/// <param name="state">The state object to pass to the callback.</param>
-		internal virtual void RequestSwitchToMainThread(SendOrPostCallback callback, object state) {
+		internal virtual SingleExecuteProtector RequestSwitchToMainThread(Action callback) {
 			Requires.NotNull(callback, "callback");
 
 			var ambientJob = this.Context.AmbientTask;
+			SingleExecuteProtector wrapper = null;
 			if (ambientJob == null) {
 				this.RunAsync(delegate {
 					ambientJob = this.Context.AmbientTask;
-					var wrapper = SingleExecuteProtector.Create(this, ambientJob, callback, state);
+					wrapper = SingleExecuteProtector.Create(this, ambientJob, callback);
 					ambientJob.Post(SingleExecuteProtector.ExecuteOnce, wrapper, true);
 					return TplExtensions.CompletedTask;
 				});
 			} else {
-				var wrapper = SingleExecuteProtector.Create(this, ambientJob, callback, state);
+				wrapper = SingleExecuteProtector.Create(this, ambientJob, callback);
 				ambientJob.Post(SingleExecuteProtector.ExecuteOnce, wrapper, true);
 			}
+
+			return wrapper;
 		}
 
 		/// <summary>
@@ -354,10 +356,8 @@ namespace Microsoft.Threading {
 				// In the event of a cancellation request, it becomes a race as to whether the threadpool
 				// or the main thread will execute the continuation first. So we must wrap the continuation
 				// in a SingleExecuteProtector so that it can't be executed twice by accident.
-				var wrapper = SingleExecuteProtector.Create(this.jobFactory, this.job, continuation);
-
 				// Success case of the main thread.
-				this.jobFactory.RequestSwitchToMainThread(SingleExecuteProtector.ExecuteOnce, wrapper);
+				var wrapper = this.jobFactory.RequestSwitchToMainThread(continuation);
 
 				// Cancellation case of a threadpool thread.
 				this.cancellationRegistration = this.cancellationToken.Register(
