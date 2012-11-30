@@ -155,6 +155,9 @@ namespace Microsoft.Threading {
 			return new JoinableTaskCollection(this);
 		}
 
+		/// <summary>
+		/// Creates a factory without a <see cref="JoinableTaskCollection"/>.
+		/// </summary>
 		protected virtual JoinableTaskFactory CreateDefaultFactory() {
 			return new JoinableTaskFactory(this);
 		}
