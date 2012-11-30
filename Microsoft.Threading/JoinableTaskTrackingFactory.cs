@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------
-// <copyright file="JoinableJoinableTaskFactory.cs" company="Microsoft">
+// <copyright file="JoinableTaskTrackingFactory.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
@@ -16,7 +16,7 @@ namespace Microsoft.Threading {
 	/// <summary>
 	/// A joinable task factory that adds all tasks to a joinable collection.
 	/// </summary>
-	public class JoinableJoinableTaskFactory : JoinableTaskFactory {
+	public class JoinableTaskTrackingFactory : JoinableTaskFactory {
 		/// <summary>
 		/// The synchronization context to apply to <see cref="SwitchToMainThreadOnCompleted"/> continuations.
 		/// </summary>
@@ -28,10 +28,10 @@ namespace Microsoft.Threading {
 		private readonly JoinableTaskCollection jobCollection;
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="JoinableJoinableTaskFactory"/> class.
+		/// Initializes a new instance of the <see cref="JoinableTaskTrackingFactory"/> class.
 		/// </summary>
 		/// <param name="jobCollection">The collection to add all jobs created by this factory to.</param>
-		public JoinableJoinableTaskFactory(JoinableTaskCollection jobCollection)
+		public JoinableTaskTrackingFactory(JoinableTaskCollection jobCollection)
 			: base(Requires.NotNull(jobCollection, "jobCollection").Context) {
 			this.synchronizationContext = new JoinableTaskSynchronizationContext(this);
 			this.jobCollection = jobCollection;

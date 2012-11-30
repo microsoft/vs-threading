@@ -1557,7 +1557,7 @@
 		/// <summary>
 		/// Simulates COM message pump reentrancy causing some unrelated work to "pump in" on top of a synchronously blocking wait.
 		/// </summary>
-		private class COMReentrantJoinableTaskFactory : JoinableJoinableTaskFactory {
+		private class COMReentrantJoinableTaskFactory : JoinableTaskTrackingFactory {
 			private Action action;
 
 			internal COMReentrantJoinableTaskFactory(JoinableTaskCollection collection)
@@ -1580,12 +1580,12 @@
 		}
 
 		private class DerivedJoinableTaskContext : JoinableTaskContext {
-			public override JoinableJoinableTaskFactory CreateFactory(JoinableTaskCollection collection) {
+			public override JoinableTaskTrackingFactory CreateFactory(JoinableTaskCollection collection) {
 				return new DerivedJoinableTaskFactory(collection);
 			}
 		}
 
-		private class DerivedJoinableTaskFactory : JoinableJoinableTaskFactory {
+		private class DerivedJoinableTaskFactory : JoinableTaskTrackingFactory {
 			internal DerivedJoinableTaskFactory(JoinableTaskCollection collection)
 				: base(collection) {
 			}

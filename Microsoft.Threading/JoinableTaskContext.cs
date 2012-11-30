@@ -141,10 +141,10 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="collection">The collection that all tasks should be added to.</param>
 		/// <returns></returns>
-		public virtual JoinableJoinableTaskFactory CreateFactory(JoinableTaskCollection collection) {
+		public virtual JoinableTaskTrackingFactory CreateFactory(JoinableTaskCollection collection) {
 			Requires.NotNull(collection, "collection");
 
-			return new JoinableJoinableTaskFactory(collection);
+			return new JoinableTaskTrackingFactory(collection);
 		}
 
 		/// <summary>
