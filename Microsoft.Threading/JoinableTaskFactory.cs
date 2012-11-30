@@ -32,8 +32,8 @@ namespace Microsoft.Threading {
 			Requires.NotNull(owner, "owner");
 			this.owner = owner;
 			this.mainThreadJobSyncContext = new JoinableTaskSynchronizationContext(this);
-			this.MainThreadJobScheduler = new JoinableTaskScheduler(this, true);
-			this.ThreadPoolJobScheduler = new JoinableTaskScheduler(this, false);
+			this.MainThreadScheduler = new JoinableTaskScheduler(this, true);
+			this.ThreadPoolScheduler = new JoinableTaskScheduler(this, false);
 		}
 
 		/// <summary>
@@ -47,13 +47,13 @@ namespace Microsoft.Threading {
 		/// Gets a <see cref="TaskScheduler"/> that schedules work for the
 		/// main thread, and adds it to the joinable job collection when applicable.
 		/// </summary>
-		public TaskScheduler MainThreadJobScheduler { get; private set; }
+		public TaskScheduler MainThreadScheduler { get; private set; }
 
 		/// <summary>
 		/// Gets a <see cref="TaskScheduler"/> that schedules work for the
 		/// thread pool, and adds it to the joinable job collection when applicable.
 		/// </summary>
-		public TaskScheduler ThreadPoolJobScheduler { get; private set; }
+		public TaskScheduler ThreadPoolScheduler { get; private set; }
 
 		/// <summary>
 		/// Gets the synchronization context to apply before executing work associated with this factory.

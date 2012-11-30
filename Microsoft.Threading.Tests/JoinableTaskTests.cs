@@ -717,7 +717,7 @@
 					},
 					CancellationToken.None,
 					TaskCreationOptions.None,
-					this.asyncPump.MainThreadJobScheduler).Unwrap();
+					this.asyncPump.MainThreadScheduler).Unwrap();
 				Assert.IsTrue(completed);
 			});
 		}
@@ -907,7 +907,7 @@
 				delegate { frame.Continue = false; },
 				CancellationToken.None,
 				TaskCreationOptions.None,
-				this.asyncPump.MainThreadJobScheduler);
+				this.asyncPump.MainThreadScheduler);
 
 			Assert.IsTrue(frame.Continue, "The UI bound work should not have executed yet.");
 			Dispatcher.PushFrame(frame);
@@ -939,7 +939,7 @@
 				delegate { frame.Continue = false; },
 				CancellationToken.None,
 				TaskCreationOptions.None,
-				this.asyncPump.MainThreadJobScheduler);
+				this.asyncPump.MainThreadScheduler);
 
 			runSynchronouslyExited.Set();
 			unblockMainThread.Wait();
@@ -1143,7 +1143,7 @@
 			},
 			CancellationToken.None,
 			TaskCreationOptions.None,
-			this.asyncPump.MainThreadJobScheduler
+			this.asyncPump.MainThreadScheduler
 			).Unwrap();
 
 			this.asyncPump.Run(async delegate {
