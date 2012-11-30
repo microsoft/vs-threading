@@ -1416,7 +1416,7 @@
 			outerJoinable.Join();
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout * 2)]
 		public void RunSynchronouslyTaskNoYieldGCPressure() {
 			this.CheckGCPressure(delegate {
 				this.asyncPump.Run(delegate {
@@ -1425,7 +1425,7 @@
 			}, maxBytesAllocated: 245);
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout * 2)]
 		public void RunSynchronouslyTaskOfTNoYieldGCPressure() {
 			Task<object> completedTask = Task.FromResult<object>(null);
 
