@@ -70,7 +70,7 @@
     <Compile Include="AsyncLazyTests.cs" />
     <Compile Include="AsyncLocalTests.cs" />
     <Compile Include="AsyncPumpAndAsyncReaderWriterLockTests.cs" />
-    <Compile Include="AsyncPumpTests.cs" />
+    <Compile Include="JoinableTaskTests.cs" />
     <Compile Include="AsyncQueueTests.cs" />
     <Compile Include="AsyncSemaphoreTests.cs" />
     <Compile Include="AsyncManualResetEventTests.cs" />
