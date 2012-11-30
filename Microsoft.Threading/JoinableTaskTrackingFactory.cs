@@ -83,7 +83,7 @@ namespace Microsoft.Threading {
 			var ambientJob = this.Context.AmbientTask;
 			if (ambientJob == null || !this.jobCollection.Contains(ambientJob)) {
 				this.RunAsync(delegate {
-					this.Context.AmbientTask.Post(SingleExecuteProtector.ExecuteOnce, callback, true);
+					base.RequestSwitchToMainThread(callback);
 					return TplExtensions.CompletedTask;
 				});
 			} else {

@@ -105,7 +105,7 @@ namespace Microsoft.Threading {
 		/// <param name="factory">The factory to use for creating joinable tasks.</param>
 		/// <param name="callback">The callback to invoke.</param>
 		/// <param name="state">The state object to pass to the callback.</param>
-		protected internal virtual void RequestSwitchToMainThread(JoinableTaskFactory factory, SendOrPostCallback callback, object state) {
+		internal virtual void RequestSwitchToMainThread(JoinableTaskFactory factory, SendOrPostCallback callback, object state) {
 			Requires.NotNull(factory, "factory");
 			Requires.NotNull(callback, "callback");
 
