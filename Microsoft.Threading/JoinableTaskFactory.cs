@@ -132,6 +132,26 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// Raised when a joinable task has requested a transition to the main thread.
+		/// </summary>
+		/// <remarks>
+		/// This event is never raised on the main thread.
+		/// </remarks>
+		protected virtual void OnTransitioningToMainThread(JoinableTask joinableTask) {
+			Requires.NotNull(joinableTask, "joinableTask");
+		}
+
+		/// <summary>
+		/// Raised whenever a joinable task has completed a transition to the main thread.
+		/// </summary>
+		/// <remarks>
+		/// This event is always raised on the main thread.
+		/// </remarks>
+		protected virtual void OnTransitionedToMainThread(JoinableTask joinableTask) {
+			Requires.NotNull(joinableTask, "joinableTask");
+		}
+
+		/// <summary>
 		/// Posts a callback to the main thread via the underlying dispatcher,
 		/// or to the threadpool when no dispatcher exists on the main thread.
 		/// </summary>
