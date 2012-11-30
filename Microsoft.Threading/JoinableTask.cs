@@ -20,6 +20,13 @@ namespace Microsoft.Threading {
 	/// deadlocks while synchronously blocking the Main thread for the operation's completion.
 	/// </summary>
 	public partial class JoinableTask {
+		[Flags]
+		private enum State {
+			None = 0x0,
+			RunningSynchronously = 0x1,
+			StartedOnMainThread = 0x2,
+		}
+
 		private static readonly AsyncManualResetEvent alwaysSignaled = new AsyncManualResetEvent(true);
 
 		/// <summary>
@@ -52,7 +59,7 @@ namespace Microsoft.Threading {
 
 		private ExecutionQueue threadPoolQueue;
 
-		private bool synchronouslyBlockingThreadPool;
+		private readonly State state;
 
 		private SynchronizationContext mainThreadJobSyncContext;
 
@@ -69,7 +76,13 @@ namespace Microsoft.Threading {
 			Requires.NotNull(owner, "owner");
 
 			this.owner = owner;
-			this.synchronouslyBlockingThreadPool = synchronouslyBlocking && Thread.CurrentThread.IsThreadPoolThread;
+			if (synchronouslyBlocking) {
+				this.state |= State.RunningSynchronously;
+			}
+
+			if (Thread.CurrentThread == owner.Context.MainThread) {
+				this.state |= State.StartedOnMainThread;
+			}
 		}
 
 		internal Task DequeuerResetEvent {
@@ -169,7 +182,7 @@ namespace Microsoft.Threading {
 
 						return this.mainThreadJobSyncContext;
 					} else {
-						if (this.synchronouslyBlockingThreadPool) {
+						if (this.SynchronouslyBlockingThreadPool) {
 							if (this.threadPoolJobSyncContext == null) {
 								this.Factory.Context.SyncContextLock.EnterWriteLock();
 								try {
@@ -202,6 +215,20 @@ namespace Microsoft.Threading {
 			}
 		}
 
+		private bool SynchronouslyBlockingThreadPool {
+			get {
+				return (this.state & State.RunningSynchronously) == State.RunningSynchronously
+					&& (this.state & State.StartedOnMainThread) == State.None;
+			}
+		}
+
+		private bool SynchronouslyBlockingMainThread {
+			get {
+				return (this.state & State.RunningSynchronously) == State.RunningSynchronously
+				&& (this.state & State.StartedOnMainThread) == State.StartedOnMainThread;
+			}
+		}
+
 		/// <summary>
 		/// Synchronously blocks the calling thread until the operation has completed.
 		/// If the calling thread is the Main thread, deadlocks are mitigated.
@@ -228,7 +255,7 @@ namespace Microsoft.Threading {
 		}
 
 		internal void Post(SendOrPostCallback d, object state, bool mainThreadAffinitized) {
-			var wrapper = SingleExecuteProtector.Create(this.owner, this, d, state);
+			SingleExecuteProtector wrapper = null;
 			AsyncManualResetEvent dequeuerResetState = null; // initialized if we should pulse it at the end of the method
 			bool postToFactory = false;
 
@@ -239,6 +266,11 @@ namespace Microsoft.Threading {
 					// We need to forward the work to the fallback mechanisms. 
 					postToFactory = true;
 				} else {
+					wrapper = SingleExecuteProtector.Create(this, d, state);
+					if (mainThreadAffinitized && !this.SynchronouslyBlockingMainThread) {
+						wrapper.RaiseTransitioningEvents();
+					}
+
 					if (mainThreadAffinitized) {
 						if (this.mainThreadQueue == null) {
 							this.mainThreadQueue = new ExecutionQueue(this);
@@ -250,7 +282,7 @@ namespace Microsoft.Threading {
 						// done eventually.
 						this.mainThreadQueue.TryEnqueue(wrapper);
 					} else {
-						if (this.synchronouslyBlockingThreadPool) {
+						if (this.SynchronouslyBlockingThreadPool) {
 							if (this.threadPoolQueue == null) {
 								this.threadPoolQueue = new ExecutionQueue(this);
 								dequeuerResetState = this.dequeuerResetState;
@@ -270,8 +302,10 @@ namespace Microsoft.Threading {
 
 			// We deferred this till after we release our lock earlier in this method since we're calling outside code.
 			if (postToFactory) {
-				this.Factory.Post(SingleExecuteProtector.ExecuteOnce, wrapper, mainThreadAffinitized);
+				Assumes.Null(wrapper); // we avoid using a wrapper in this case because this job transferring ownership to the factory.
+				this.Factory.Post(d, state, mainThreadAffinitized);
 			} else if (mainThreadAffinitized) {
+				Assumes.NotNull(wrapper); // this should have been initialized in the above logic.
 				this.owner.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
 			}
 

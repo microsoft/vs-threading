@@ -26,11 +26,34 @@ namespace Microsoft.Threading {
 		private readonly SynchronizationContext mainThreadJobSyncContext;
 
 		/// <summary>
+		/// The collection to add all created tasks to. May be <c>null</c>.
+		/// </summary>
+		private readonly JoinableTaskCollection jobCollection;
+
+		/// <summary>
 		/// Initializes a new instance of the <see cref="JoinableTaskFactory"/> class.
 		/// </summary>
-		public JoinableTaskFactory(JoinableTaskContext owner) {
+		public JoinableTaskFactory(JoinableTaskContext owner)
+			: this(owner, null) {
+		}
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="JoinableTaskFactory"/> class
+		/// that adds all generated jobs to the specified collection.
+		/// </summary>
+		public JoinableTaskFactory(JoinableTaskCollection collection)
+			: this(Requires.NotNull(collection, "collection").Context, collection) {
+		}
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="JoinableTaskFactory"/> class.
+		/// </summary>
+		private JoinableTaskFactory(JoinableTaskContext owner, JoinableTaskCollection collection) {
 			Requires.NotNull(owner, "owner");
+			Assumes.True(collection == null || collection.Context == owner);
+
 			this.owner = owner;
+			this.jobCollection = collection;
 			this.mainThreadJobSyncContext = new JoinableTaskSynchronizationContext(this);
 			this.MainThreadScheduler = new JoinableTaskScheduler(this, true);
 			this.ThreadPoolScheduler = new JoinableTaskScheduler(this, false);
@@ -58,7 +81,7 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Gets the synchronization context to apply before executing work associated with this factory.
 		/// </summary>
-		protected internal virtual SynchronizationContext ApplicableJobSyncContext {
+		internal SynchronizationContext ApplicableJobSyncContext {
 			get { return this.Context.MainThread == Thread.CurrentThread ? this.mainThreadJobSyncContext : null; }
 		}
 
@@ -102,20 +125,32 @@ namespace Microsoft.Threading {
 		/// Responds to calls to <see cref="JoinableTaskFactory.MainThreadAwaiter.OnCompleted"/>
 		/// by scheduling a continuation to execute on the Main thread.
 		/// </summary>
-		/// <param name="factory">The factory to use for creating joinable tasks.</param>
 		/// <param name="callback">The callback to invoke.</param>
-		/// <param name="state">The state object to pass to the callback.</param>
-		protected internal virtual void SwitchToMainThreadOnCompleted(JoinableTaskFactory factory, SendOrPostCallback callback, object state) {
-			Requires.NotNull(factory, "factory");
+		internal SingleExecuteProtector RequestSwitchToMainThread(Action callback) {
 			Requires.NotNull(callback, "callback");
 
+			// Make sure that this thread switch request is in a job that is captured by the job collection
+			// to which this switch request belongs.
+			// If an ambient job already exists and belongs to the collection, that's good enough. But if
+			// there is no ambient job, or the ambient job does not belong to the collection, we must create
+			// a (child) job and add that to this job factory's collection so that folks joining that factory
+			// can help this switch to complete.
 			var ambientJob = this.Context.AmbientTask;
-			var wrapper = SingleExecuteProtector.Create(factory, ambientJob, callback, state);
-			if (ambientJob != null) {
-				ambientJob.Post(SingleExecuteProtector.ExecuteOnce, wrapper, true);
+			SingleExecuteProtector wrapper = null;
+			if (ambientJob == null || (this.jobCollection != null && !this.jobCollection.Contains(ambientJob))) {
+				this.RunAsync(delegate {
+					ambientJob = this.Context.AmbientTask;
+					wrapper = SingleExecuteProtector.Create(ambientJob, callback);
+					ambientJob.Post(SingleExecuteProtector.ExecuteOnce, wrapper, true);
+					return TplExtensions.CompletedTask;
+				});
 			} else {
-				this.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
+				wrapper = SingleExecuteProtector.Create(ambientJob, callback);
+				ambientJob.Post(SingleExecuteProtector.ExecuteOnce, wrapper, true);
 			}
+
+			Assumes.NotNull(wrapper);
+			return wrapper;
 		}
 
 		/// <summary>
@@ -129,6 +164,29 @@ namespace Microsoft.Threading {
 			Assumes.NotNull(this.Context.UnderlyingSynchronizationContext);
 
 			this.Context.UnderlyingSynchronizationContext.Post(callback, state);
+		}
+
+		/// <summary>
+		/// Raised when a joinable task has requested a transition to the main thread.
+		/// </summary>
+		/// <param name="joinableTask">The task requesting the transition to the main thread.</param>
+		/// <remarks>
+		/// This event may be raised on any thread, including the main thread.
+		/// </remarks>
+		protected virtual void OnTransitioningToMainThread(JoinableTask joinableTask) {
+			Requires.NotNull(joinableTask, "joinableTask");
+		}
+
+		/// <summary>
+		/// Raised whenever a joinable task has completed a transition to the main thread.
+		/// </summary>
+		/// <param name="joinableTask">The task whose request to transition to the main thread has completed.</param>
+		/// <param name="canceled">A value indicating whether the transition was cancelled before it was fulfilled.</param>
+		/// <remarks>
+		/// This event is usually raised on the main thread, but can be on another thread when <paramref name="canceled"/> is <c>true</c>.
+		/// </remarks>
+		protected virtual void OnTransitionedToMainThread(JoinableTask joinableTask, bool canceled) {
+			Requires.NotNull(joinableTask, "joinableTask");
 		}
 
 		/// <summary>
@@ -243,8 +301,11 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Adds the specified joinable task to the applicable collection.
 		/// </summary>
-		protected virtual void Add(JoinableTask joinable) {
+		protected void Add(JoinableTask joinable) {
 			Requires.NotNull(joinable, "joinable");
+			if (this.jobCollection != null) {
+				this.jobCollection.Add(joinable);
+			}
 		}
 
 		/// <summary>
@@ -328,10 +389,8 @@ namespace Microsoft.Threading {
 				// In the event of a cancellation request, it becomes a race as to whether the threadpool
 				// or the main thread will execute the continuation first. So we must wrap the continuation
 				// in a SingleExecuteProtector so that it can't be executed twice by accident.
-				var wrapper = SingleExecuteProtector.Create(this.jobFactory, this.job, continuation);
-
-				// Success case of the main thread. 
-				this.jobFactory.SwitchToMainThreadOnCompleted(wrapper);
+				// Success case of the main thread.
+				var wrapper = this.jobFactory.RequestSwitchToMainThread(continuation);
 
 				// Cancellation case of a threadpool thread.
 				this.cancellationRegistration = this.cancellationToken.Register(
@@ -408,18 +467,16 @@ namespace Microsoft.Threading {
 			}
 		}
 
-		internal virtual void SwitchToMainThreadOnCompleted(SingleExecuteProtector callback) {
-			this.SwitchToMainThreadOnCompleted(this, SingleExecuteProtector.ExecuteOnce, callback);
-		}
-
-		internal virtual void Post(SendOrPostCallback callback, object state, bool mainThreadAffinitized) {
+		internal void Post(SendOrPostCallback callback, object state, bool mainThreadAffinitized) {
 			Requires.NotNull(callback, "callback");
 
-			var wrapper = SingleExecuteProtector.Create(this, null, callback, state);
 			if (mainThreadAffinitized) {
-				this.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
+				this.RunAsync(delegate {
+					this.Context.AmbientTask.Post(callback, state, true);
+					return TplExtensions.CompletedTask;
+				});
 			} else {
-				ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
+				ThreadPool.QueueUserWorkItem(new WaitCallback(callback), state);
 			}
 		}
 
@@ -438,14 +495,11 @@ namespace Microsoft.Threading {
 			internal static WaitCallback ExecuteOnceWaitCallback = state => ((SingleExecuteProtector)state).TryExecute();
 
 			/// <summary>
-			/// The async pump responsible for this instance.
-			/// </summary>
-			private JoinableTaskFactory factory;
-
-			/// <summary>
 			/// The job that created this wrapper.
 			/// </summary>
 			private JoinableTask job;
+
+			private bool raiseTransitionComplete;
 
 			/// <summary>
 			/// The delegate to invoke.  <c>null</c> if it has already been invoked.
@@ -466,9 +520,8 @@ namespace Microsoft.Threading {
 			/// <summary>
 			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class.
 			/// </summary>
-			private SingleExecuteProtector(JoinableTaskFactory factory, JoinableTask job) {
-				Requires.NotNull(factory, "factory");
-				this.factory = factory;
+			private SingleExecuteProtector(JoinableTask job) {
+				Requires.NotNull(job, "job");
 				this.job = job;
 			}
 
@@ -495,15 +548,20 @@ namespace Microsoft.Threading {
 				get { return this.invokeDelegate == null; }
 			}
 
+			internal void RaiseTransitioningEvents() {
+				Assumes.False(this.raiseTransitionComplete); // if this method is called twice, that's the sign of a problem.
+				this.raiseTransitionComplete = true;
+				this.job.Factory.OnTransitioningToMainThread(this.job);
+			}
+
 			/// <summary>
 			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class.
 			/// </summary>
-			/// <param name="factory">The factory that is responsible for this work.</param>
 			/// <param name="job">The joinable task responsible for this work.</param>
 			/// <param name="action">The delegate being wrapped.</param>
 			/// <returns>An instance of <see cref="SingleExecuteProtector"/>.</returns>
-			internal static SingleExecuteProtector Create(JoinableTaskFactory factory, JoinableTask job, Action action) {
-				return new SingleExecuteProtector(factory, job) {
+			internal static SingleExecuteProtector Create(JoinableTask job, Action action) {
+				return new SingleExecuteProtector(job) {
 					invokeDelegate = action,
 				};
 			}
@@ -512,14 +570,12 @@ namespace Microsoft.Threading {
 			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class
 			/// that describes the specified callback.
 			/// </summary>
-			/// <param name="factory">The factory that is responsible for this work.</param>
 			/// <param name="job">The joinable task responsible for this work.</param>
 			/// <param name="callback">The callback to invoke.</param>
 			/// <param name="state">The state object to pass to the callback.</param>
 			/// <returns>An instance of <see cref="SingleExecuteProtector"/>.</returns>
-			internal static SingleExecuteProtector Create(JoinableTaskFactory factory, JoinableTask job, SendOrPostCallback callback, object state) {
-				Requires.NotNull(factory, "factory");
-				Assumes.True(job == null || job.Factory == factory); // job and factory do not match.
+			internal static SingleExecuteProtector Create(JoinableTask job, SendOrPostCallback callback, object state) {
+				Requires.NotNull(job, "job");
 
 				// As an optimization, recognize if what we're being handed is already an instance of this type,
 				// because if it is, we don't need to wrap it with yet another instance.
@@ -528,7 +584,7 @@ namespace Microsoft.Threading {
 					return (SingleExecuteProtector)state;
 				}
 
-				return new SingleExecuteProtector(factory, job) {
+				return new SingleExecuteProtector(job) {
 					invokeDelegate = callback,
 					state = state,
 				};
@@ -541,7 +597,7 @@ namespace Microsoft.Threading {
 				object invokeDelegate = Interlocked.Exchange(ref this.invokeDelegate, null);
 				if (invokeDelegate != null) {
 					this.OnExecuting();
-					var syncContext = this.job != null ? this.job.ApplicableJobSyncContext : this.factory.ApplicableJobSyncContext;
+					var syncContext = this.job != null ? this.job.ApplicableJobSyncContext : this.job.Factory.ApplicableJobSyncContext;
 					using (syncContext.Apply()) {
 						var action = invokeDelegate as Action;
 						if (action != null) {
@@ -572,6 +628,10 @@ namespace Microsoft.Threading {
 					while (enumerator.MoveNext()) {
 						enumerator.Current.OnExecuting(this, EventArgs.Empty);
 					}
+				}
+
+				if (this.raiseTransitionComplete) {
+					this.job.Factory.OnTransitionedToMainThread(this.job, Thread.CurrentThread != this.job.Factory.Context.MainThread);
 				}
 			}
 		}

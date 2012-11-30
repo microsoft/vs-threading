@@ -60,7 +60,6 @@
     <Compile Include="InternalUtilities.cs" />
     <Compile Include="JoinableTask+JoinableTaskSynchronizationContext.cs" />
     <Compile Include="JoinableTaskContext.cs" />
-    <Compile Include="JoinableTaskTrackingFactory.cs" />
     <Compile Include="JoinableTask.cs" />
     <Compile Include="JoinableTaskCollection.cs" />
     <Compile Include="JoinableTask+ExecutionQueue.cs" />

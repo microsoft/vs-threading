@@ -212,6 +212,113 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void TransitionToMainThreadNotRaisedWhenAlreadyOnMainThread() {
+			var factory = (DerivedJoinableTaskFactory)this.asyncPump;
+
+			factory.Run(async delegate {
+				// Switch to main thread when we're already there.
+				await factory.SwitchToMainThreadAsync();
+				Assert.AreEqual(0, factory.TransitioningToMainThreadHitCount, "No transition expected since we're already on the main thread.");
+				Assert.AreEqual(0, factory.TransitionedToMainThreadHitCount, "No transition expected since we're already on the main thread.");
+
+				// While on the main thread, await something that executes on a background thread.
+				await Task.Run(delegate {
+					Assert.AreEqual(0, factory.TransitioningToMainThreadHitCount, "No transition expected when moving off the main thread.");
+					Assert.AreEqual(0, factory.TransitionedToMainThreadHitCount, "No transition expected when moving off the main thread.");
+				});
+				Assert.AreEqual(0, factory.TransitioningToMainThreadHitCount, "No transition expected since the main thread was ultimately blocked for this job.");
+				Assert.AreEqual(0, factory.TransitionedToMainThreadHitCount, "No transition expected since the main thread was ultimately blocked for this job.");
+
+				// Now switch explicitly to a threadpool thread.
+				await TaskScheduler.Default;
+				Assert.AreEqual(0, factory.TransitioningToMainThreadHitCount, "No transition expected when moving off the main thread.");
+				Assert.AreEqual(0, factory.TransitionedToMainThreadHitCount, "No transition expected when moving off the main thread.");
+
+				// Now switch back to the main thread.
+				await factory.SwitchToMainThreadAsync();
+				Assert.AreEqual(0, factory.TransitioningToMainThreadHitCount, "No transition expected because the main thread was ultimately blocked for this job.");
+				Assert.AreEqual(0, factory.TransitionedToMainThreadHitCount, "No transition expected because the main thread was ultimately blocked for this job.");
+			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void TransitionToMainThreadRaisedWhenSwitchingToMainThread() {
+			var factory = (DerivedJoinableTaskFactory)this.asyncPump;
+
+			var joinableTask = factory.RunAsync(async delegate {
+				// Switch to main thread when we're already there.
+				await factory.SwitchToMainThreadAsync();
+				Assert.AreEqual(0, factory.TransitioningToMainThreadHitCount, "No transition expected since we're already on the main thread.");
+				Assert.AreEqual(0, factory.TransitionedToMainThreadHitCount, "No transition expected since we're already on the main thread.");
+
+				// While on the main thread, await something that executes on a background thread.
+				await Task.Run(delegate {
+					Assert.AreEqual(0, factory.TransitioningToMainThreadHitCount, "No transition expected when moving off the main thread.");
+					Assert.AreEqual(0, factory.TransitionedToMainThreadHitCount, "No transition expected when moving off the main thread.");
+				});
+				Assert.AreEqual(1, factory.TransitioningToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
+				Assert.AreEqual(1, factory.TransitionedToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
+
+				// Now switch explicitly to a threadpool thread.
+				await TaskScheduler.Default;
+				Assert.AreEqual(1, factory.TransitioningToMainThreadHitCount, "No transition expected when moving off the main thread.");
+				Assert.AreEqual(1, factory.TransitionedToMainThreadHitCount, "No transition expected when moving off the main thread.");
+
+				// Now switch back to the main thread.
+				await factory.SwitchToMainThreadAsync();
+				Assert.AreEqual(2, factory.TransitioningToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
+				Assert.AreEqual(2, factory.TransitionedToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
+			});
+
+			// Simulate the UI thread just pumping ordinary messages
+			var frame = new DispatcherFrame();
+			joinableTask.Task.ContinueWith(_ => frame.Continue = false, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+			Dispatcher.PushFrame(frame);
+			joinableTask.Join(); // Throw exceptions thrown by the async task.
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void TransitionToMainThreadRaisedFromTaskScheduler() {
+			var factory = (DerivedJoinableTaskFactory)this.asyncPump;
+
+			var task = Task.Run(async delegate {
+				await factory.MainThreadScheduler;
+				Assert.AreEqual(1, factory.TransitioningToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
+				Assert.AreEqual(1, factory.TransitionedToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
+
+				await factory.MainThreadScheduler;
+				Assert.AreEqual(1, factory.TransitioningToMainThreadHitCount, "No transition events expected since we're already on the main thread.");
+				Assert.AreEqual(1, factory.TransitionedToMainThreadHitCount, "No transition events expected since we're already on the main thread.");
+
+				await factory.ThreadPoolScheduler;
+				Assert.AreEqual(1, factory.TransitioningToMainThreadHitCount, "No transition events expected when switching to threadpool.");
+				Assert.AreEqual(1, factory.TransitionedToMainThreadHitCount, "No transition events expected when switching to threadpool.");
+
+				await factory.MainThreadScheduler;
+				Assert.AreEqual(2, factory.TransitioningToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
+				Assert.AreEqual(2, factory.TransitionedToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
+
+				// Asynchronously re-acquire the main thread.
+				await Task.Factory.StartNew(
+					delegate {
+						Assert.AreEqual(3, factory.TransitioningToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
+						Assert.AreEqual(3, factory.TransitionedToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
+					},
+					CancellationToken.None,
+					TaskCreationOptions.None,
+					factory.MainThreadScheduler);
+				Assert.AreEqual(4, factory.TransitioningToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
+				Assert.AreEqual(4, factory.TransitionedToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
+			});
+
+			// Simulate the UI thread just pumping ordinary messages
+			var frame = new DispatcherFrame();
+			task.ContinueWith(_ => frame.Continue = false, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+			Dispatcher.PushFrame(frame);
+			task.GetAwaiter().GetResult(); // observe exceptions.
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void RunSynchronouslyNestedNoJoins() {
 			bool outerCompleted = false, innerCompleted = false;
 			this.asyncPump.Run(async delegate {
@@ -1176,6 +1283,9 @@
 			Task t1 = null, t2 = null;
 			var frame = new DispatcherFrame();
 
+			((DerivedJoinableTaskFactory)this.asyncPump).AssumeConcurrentUse = true;
+			((DerivedJoinableTaskFactory)pump2).AssumeConcurrentUse = true;
+
 			pump2.Run(delegate {
 				t1 = Task.Run(delegate {
 					using (this.joinableCollection.Join()) {
@@ -1557,8 +1667,12 @@
 		/// <summary>
 		/// Simulates COM message pump reentrancy causing some unrelated work to "pump in" on top of a synchronously blocking wait.
 		/// </summary>
-		private class COMReentrantJoinableTaskFactory : JoinableTaskTrackingFactory {
+		private class COMReentrantJoinableTaskFactory : JoinableTaskFactory {
 			private Action action;
+
+			internal COMReentrantJoinableTaskFactory(JoinableTaskContext context)
+				: base(context) {
+			}
 
 			internal COMReentrantJoinableTaskFactory(JoinableTaskCollection collection)
 				: base(collection) {
@@ -1580,21 +1694,67 @@
 		}
 
 		private class DerivedJoinableTaskContext : JoinableTaskContext {
-			public override JoinableTaskTrackingFactory CreateFactory(JoinableTaskCollection collection) {
+			public override JoinableTaskFactory CreateFactory(JoinableTaskCollection collection) {
 				return new DerivedJoinableTaskFactory(collection);
 			}
 		}
 
-		private class DerivedJoinableTaskFactory : JoinableTaskTrackingFactory {
+		private class DerivedJoinableTaskFactory : JoinableTaskFactory {
+			private readonly HashSet<JoinableTask> transitioningTasks = new HashSet<JoinableTask>();
+			private int transitioningToMainThreadHitCount;
+			private int transitionedToMainThreadHitCount;
+
+			internal DerivedJoinableTaskFactory(JoinableTaskContext context)
+				: base(context) {
+			}
+
 			internal DerivedJoinableTaskFactory(JoinableTaskCollection collection)
 				: base(collection) {
 			}
 
-			protected override void SwitchToMainThreadOnCompleted(JoinableTaskFactory factory, SendOrPostCallback callback, object state) {
-				Assert.IsNotNull(callback);
-				base.SwitchToMainThreadOnCompleted(factory, callback, state);
+			internal int TransitionedToMainThreadHitCount {
+				get { return this.transitionedToMainThreadHitCount; }
 			}
 
+			internal int TransitioningToMainThreadHitCount {
+				get { return this.transitioningToMainThreadHitCount; }
+			}
+
+			internal bool AssumeConcurrentUse { get; set; }
+
+			protected override void OnTransitioningToMainThread(JoinableTask joinableTask) {
+				base.OnTransitioningToMainThread(joinableTask);
+				Interlocked.Increment(ref this.transitioningToMainThreadHitCount);
+
+				// These statements and assertions assume that the test does not have jobs that execute code concurrently.
+				lock (this.transitioningTasks) {
+					Assert.IsTrue(this.transitioningTasks.Add(joinableTask));
+				}
+
+				if (!this.AssumeConcurrentUse) {
+					Assert.AreEqual(this.TransitionedToMainThreadHitCount + 1, this.TransitioningToMainThreadHitCount, "Imbalance of transition events.");
+				}
+			}
+
+			protected override void OnTransitionedToMainThread(JoinableTask joinableTask, bool canceled) {
+				base.OnTransitionedToMainThread(joinableTask, canceled);
+				Interlocked.Increment(ref this.transitionedToMainThreadHitCount);
+
+				if (canceled) {
+					Assert.AreNotSame(this.Context.MainThread, Thread.CurrentThread, "A canceled transition should not complete on the main thread.");
+				} else {
+					Assert.AreSame(this.Context.MainThread, Thread.CurrentThread, "We should be on the main thread if we've just transitioned.");
+				}
+
+				// These statements and assertions assume that the test does not have jobs that execute code concurrently.
+				lock (this.transitioningTasks) {
+					Assert.IsTrue(this.transitioningTasks.Remove(joinableTask));
+				}
+
+				if (!this.AssumeConcurrentUse) {
+					Assert.AreEqual(this.TransitionedToMainThreadHitCount, this.TransitioningToMainThreadHitCount, "Imbalance of transition events.");
+				}
+			}
 			protected override void WaitSynchronously(Task task) {
 				Assert.IsNotNull(task);
 				base.WaitSynchronously(task);

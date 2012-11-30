@@ -59,7 +59,7 @@
 			}
 
 			/// <summary>
-			/// Forwards the specified message to the ambient job if applicable; otherwise to the underlying scheduler.
+			/// Forwards the specified message to the job this instance belongs to if applicable; otherwise to the factory.
 			/// </summary>
 			public override void Post(SendOrPostCallback d, object state) {
 				if (this.job != null) {
