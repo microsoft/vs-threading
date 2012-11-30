@@ -14,7 +14,7 @@ namespace Microsoft.Threading {
 	/// <summary>
 	/// A joinable collection of jobs.
 	/// </summary>
-	public class JoinableTaskCollection {
+	public class JoinableTaskCollection : IEnumerable<JoinableTask> {
 		/// <summary>
 		/// The set of jobs that belong to this collection -- that is, the set of jobs that are implicitly Joined
 		/// when folks Join this collection.
@@ -224,6 +224,30 @@ namespace Microsoft.Threading {
 
 				this.joiner = null;
 			}
+		}
+
+		/// <summary>
+		/// Enumerates the tasks in this collection.
+		/// </summary>
+		public IEnumerator<JoinableTask> GetEnumerator() {
+			var joinables = new List<JoinableTask>();
+			this.Context.SyncContextLock.EnterReadLock();
+			try {
+				foreach (var item in this.joinables) {
+					joinables.Add(item.Key);
+				}
+			} finally {
+				this.Context.SyncContextLock.ExitReadLock();
+			}
+
+			return joinables.GetEnumerator();
+		}
+
+		/// <summary>
+		/// Enumerates the tasks in this collection.
+		/// </summary>
+		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
+			return this.GetEnumerator();
 		}
 	}
 }
