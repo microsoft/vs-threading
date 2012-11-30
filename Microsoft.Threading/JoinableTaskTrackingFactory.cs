@@ -18,11 +18,6 @@ namespace Microsoft.Threading {
 	/// </summary>
 	public class JoinableTaskTrackingFactory : JoinableTaskFactory {
 		/// <summary>
-		/// The synchronization context to apply to <see cref="RequestSwitchToMainThread"/> continuations.
-		/// </summary>
-		private readonly SynchronizationContext synchronizationContext;
-
-		/// <summary>
 		/// The collection to add all created tasks to.
 		/// </summary>
 		private readonly JoinableTaskCollection jobCollection;
@@ -33,7 +28,6 @@ namespace Microsoft.Threading {
 		/// <param name="jobCollection">The collection to add all jobs created by this factory to.</param>
 		public JoinableTaskTrackingFactory(JoinableTaskCollection jobCollection)
 			: base(Requires.NotNull(jobCollection, "jobCollection").Context) {
-			this.synchronizationContext = new JoinableTaskSynchronizationContext(this);
 			this.jobCollection = jobCollection;
 		}
 
@@ -51,19 +45,6 @@ namespace Microsoft.Threading {
 		/// <returns>A value to dispose of to revert the join.</returns>
 		public JoinableTaskCollection.JoinRelease Join() {
 			return this.Collection.Join();
-		}
-
-		/// <summary>
-		/// Gets the synchronization context to apply before executing work associated with this factory.
-		/// </summary>
-		protected internal override SynchronizationContext ApplicableJobSyncContext {
-			get {
-				if (Thread.CurrentThread == this.Context.MainThread) {
-					return this.synchronizationContext;
-				}
-
-				return base.ApplicableJobSyncContext;
-			}
 		}
 
 		/// <summary>

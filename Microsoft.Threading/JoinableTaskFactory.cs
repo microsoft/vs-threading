@@ -58,7 +58,7 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Gets the synchronization context to apply before executing work associated with this factory.
 		/// </summary>
-		protected internal virtual SynchronizationContext ApplicableJobSyncContext {
+		internal SynchronizationContext ApplicableJobSyncContext {
 			get { return this.Context.MainThread == Thread.CurrentThread ? this.mainThreadJobSyncContext : null; }
 		}
 
