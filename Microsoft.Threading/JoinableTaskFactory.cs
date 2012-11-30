@@ -105,7 +105,7 @@ namespace Microsoft.Threading {
 		/// <param name="factory">The factory to use for creating joinable tasks.</param>
 		/// <param name="callback">The callback to invoke.</param>
 		/// <param name="state">The state object to pass to the callback.</param>
-		protected internal virtual void SwitchToMainThreadOnCompleted(JoinableTaskFactory factory, SendOrPostCallback callback, object state) {
+		protected internal virtual void RequestSwitchToMainThread(JoinableTaskFactory factory, SendOrPostCallback callback, object state) {
 			Requires.NotNull(factory, "factory");
 			Requires.NotNull(callback, "callback");
 
@@ -351,7 +351,7 @@ namespace Microsoft.Threading {
 				var wrapper = SingleExecuteProtector.Create(this.jobFactory, this.job, continuation);
 
 				// Success case of the main thread. 
-				this.jobFactory.SwitchToMainThreadOnCompleted(wrapper);
+				this.jobFactory.RequestSwitchToMainThread(wrapper);
 
 				// Cancellation case of a threadpool thread.
 				this.cancellationRegistration = this.cancellationToken.Register(
@@ -428,8 +428,8 @@ namespace Microsoft.Threading {
 			}
 		}
 
-		internal virtual void SwitchToMainThreadOnCompleted(SingleExecuteProtector callback) {
-			this.SwitchToMainThreadOnCompleted(this, SingleExecuteProtector.ExecuteOnce, callback);
+		internal virtual void RequestSwitchToMainThread(SingleExecuteProtector callback) {
+			this.RequestSwitchToMainThread(this, SingleExecuteProtector.ExecuteOnce, callback);
 		}
 
 		internal virtual void Post(SendOrPostCallback callback, object state, bool mainThreadAffinitized) {

@@ -18,7 +18,7 @@ namespace Microsoft.Threading {
 	/// </summary>
 	public class JoinableTaskTrackingFactory : JoinableTaskFactory {
 		/// <summary>
-		/// The synchronization context to apply to <see cref="SwitchToMainThreadOnCompleted"/> continuations.
+		/// The synchronization context to apply to <see cref="RequestSwitchToMainThread"/> continuations.
 		/// </summary>
 		private readonly SynchronizationContext synchronizationContext;
 
@@ -73,7 +73,7 @@ namespace Microsoft.Threading {
 			this.Collection.Add(joinable);
 		}
 
-		internal override void SwitchToMainThreadOnCompleted(SingleExecuteProtector callback) {
+		internal override void RequestSwitchToMainThread(SingleExecuteProtector callback) {
 			// Make sure that this thread switch request is in a job that is captured by the job collection
 			// to which this switch request belongs.
 			// If an ambient job already exists and belongs to the collection, that's good enough. But if
@@ -87,7 +87,7 @@ namespace Microsoft.Threading {
 					return TplExtensions.CompletedTask;
 				});
 			} else {
-				base.SwitchToMainThreadOnCompleted(callback);
+				base.RequestSwitchToMainThread(callback);
 			}
 		}
 
