@@ -407,7 +407,7 @@ namespace Microsoft.Threading {
 				Assumes.True(this.jobFactory.Context.MainThread == Thread.CurrentThread || this.jobFactory.Context.UnderlyingSynchronizationContext == null || this.cancellationToken.IsCancellationRequested);
 
 				// Release memory associated with the cancellation request.
-				cancellationRegistration.Dispose();
+				this.cancellationRegistration.Dispose();
 
 				// Only throw a cancellation exception if we didn't end up completing what the caller asked us to do (arrive at the main thread).
 				if (Thread.CurrentThread != this.jobFactory.Context.MainThread) {

@@ -533,7 +533,7 @@
 				// already disposed of this object, in which case we'll immediately dispose
 				// of the registration to avoid memory leaks.
 				if (this.disposed) {
-					cancellationRegistration.Dispose();
+					this.cancellationRegistration.Dispose();
 				} else {
 					this.cancellationRegistration = cancellationRegistration;
 				}
