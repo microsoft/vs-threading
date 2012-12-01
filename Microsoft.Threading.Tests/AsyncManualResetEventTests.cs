@@ -57,5 +57,13 @@
 			this.evt.Set();
 			task.Wait();
 		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void PulseAll() {
+			var task = this.evt.WaitAsync();
+			this.evt.PulseAll();
+			Assert.IsTrue(task.IsCompleted);
+			Assert.IsFalse(this.evt.WaitAsync().IsCompleted);
+		}
 	}
 }

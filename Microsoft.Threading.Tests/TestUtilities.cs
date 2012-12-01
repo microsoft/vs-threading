@@ -82,6 +82,18 @@
 			return new DebugAssertionRevert();
 		}
 
+		internal static void CompleteSynchronously(this JoinableTaskFactory factory, JoinableTaskCollection collection, Task task) {
+			Requires.NotNull(factory, "factory");
+			Requires.NotNull(collection, "collection");
+			Requires.NotNull(task, "task");
+
+			factory.Run(async delegate {
+				using (collection.Join()) {
+					await task;
+				}
+			});
+		}
+
 		/// <summary>
 		/// Forces an awaitable to yield, setting signals after the continuation has been pended and when the continuation has begun execution.
 		/// </summary>

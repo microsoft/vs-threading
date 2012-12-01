@@ -36,7 +36,7 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// The async pump to Join on calls to <see cref="GetValueAsync"/>.
 		/// </summary>
-		private AsyncPump asyncPump;
+		private JoinableTaskFactory jobFactory;
 
 		/// <summary>
 		/// The result of the value factory.
@@ -46,17 +46,17 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// A joinable task whose result is the value to be cached.
 		/// </summary>
-		private AsyncPump.Joinable<T> joinableTask;
+		private JoinableTask<T> joinableTask;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AsyncLazy{T}"/> class.
 		/// </summary>
 		/// <param name="valueFactory">The async function that produces the value.  To be invoked at most once.</param>
-		/// <param name="asyncPump">The async pump to <see cref="AsyncPump.Join"/> for calls to <see cref="GetValueAsync"/>.</param>
-		public AsyncLazy(Func<Task<T>> valueFactory, AsyncPump asyncPump = null) {
+		/// <param name="joinableTaskFactory">The factory to use when invoking the value factory in <see cref="GetValueAsync"/> to avoid deadlocks when the main thread is required by the value factory.</param>
+		public AsyncLazy(Func<Task<T>> valueFactory, JoinableTaskFactory joinableTaskFactory = null) {
 			Requires.NotNull(valueFactory, "valueFactory");
 			this.valueFactory = valueFactory;
-			this.asyncPump = asyncPump;
+			this.jobFactory = joinableTaskFactory;
 		}
 
 		/// <summary>
@@ -92,16 +92,16 @@ namespace Microsoft.Threading {
 							var valueFactory = this.valueFactory;
 							this.valueFactory = null;
 
-							if (this.asyncPump != null) {
+							if (this.jobFactory != null) {
 								// Wrapping with BeginAsynchronously allows a future caller
 								// to synchronously block the Main thread waiting for the result
 								// without leading to deadlocks.
-								this.joinableTask = this.asyncPump.BeginAsynchronously(valueFactory);
+								this.joinableTask = this.jobFactory.RunAsync(valueFactory);
 								this.value = this.joinableTask.Task;
 								this.value.ContinueWith(
 									(_, state) => {
 										var that = (AsyncLazy<T>)state;
-										that.asyncPump = null;
+										that.jobFactory = null;
 										that.joinableTask = null;
 									},
 									this,
@@ -120,7 +120,6 @@ namespace Microsoft.Threading {
 				}
 			}
 
-			var asyncPump = this.asyncPump;
 			if (!this.value.IsCompleted && this.joinableTask != null) {
 				this.joinableTask.JoinAsync().Forget();
 			}

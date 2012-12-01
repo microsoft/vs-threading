@@ -139,14 +139,14 @@ namespace Microsoft.Threading.Tests {
 			WeakReference collectible = null;
 			AsyncLazy<object> lazy = null;
 			((Action)(() => {
-				var asyncPump = new AsyncPump();
-				collectible = new WeakReference(asyncPump);
+				var context = new JoinableTaskContext();
+				collectible = new WeakReference(context.Factory);
 				lazy = new AsyncLazy<object>(
 					async delegate {
 						await Task.Yield();
 						return new object();
 					},
-					asyncPump);
+					context.Factory);
 			}))();
 
 			Assert.IsTrue(collectible.IsAlive);
@@ -271,7 +271,8 @@ namespace Microsoft.Threading.Tests {
 		public void ValueFactoryRequiresMainThreadHeldByOther() {
 			var ctxt = new DispatcherSynchronizationContext();
 			SynchronizationContext.SetSynchronizationContext(ctxt);
-			var asyncPump = new AsyncPump();
+			var context = new JoinableTaskContext();
+			var asyncPump = context.Factory;
 			var originalThread = Thread.CurrentThread;
 
 			var evt = new AsyncManualResetEvent();
@@ -285,8 +286,9 @@ namespace Microsoft.Threading.Tests {
 			var resultTask = lazy.GetValueAsync();
 			Assert.IsFalse(resultTask.IsCompleted);
 
-			var someRandomPump = new AsyncPump();
-			someRandomPump.RunSynchronously(async delegate {
+			var collection = context.CreateCollection();
+			var someRandomPump = context.CreateFactory(collection);
+			someRandomPump.Run(async delegate {
 				evt.Set(); // setting this event allows the value factory to resume, once it can get the Main thread.
 
 				// The interesting bit we're testing here is that

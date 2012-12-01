@@ -16,7 +16,7 @@
 		/// <summary>
 		/// The task to return from <see cref="WaitAsync"/>
 		/// </summary>
-		private volatile TaskCompletionSource<object> taskCompletionSource = new TaskCompletionSource<object>();
+		private volatile TaskCompletionSource<EmptyStruct> taskCompletionSource = new TaskCompletionSource<EmptyStruct>();
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AsyncManualResetEvent"/> class.
@@ -24,7 +24,7 @@
 		/// <param name="initialState">A value indicating whether the event should be initially signaled.</param>
 		public AsyncManualResetEvent(bool initialState = false) {
 			if (initialState) {
-				this.taskCompletionSource.SetResult(false);
+				this.taskCompletionSource.SetResult(EmptyStruct.Instance);
 			}
 		}
 
@@ -48,7 +48,7 @@
 		public void Set() {
 			var tcs = this.taskCompletionSource;
 			Task.Factory.StartNew(
-				s => ((TaskCompletionSource<object>)s).TrySetResult(true),
+				s => ((TaskCompletionSource<EmptyStruct>)s).TrySetResult(EmptyStruct.Instance),
 				tcs,
 				CancellationToken.None,
 				TaskCreationOptions.PreferFairness,
@@ -64,11 +64,19 @@
 				var tcs = this.taskCompletionSource;
 #pragma warning disable 0420
 				if (!tcs.Task.IsCompleted ||
-					Interlocked.CompareExchange(ref this.taskCompletionSource, new TaskCompletionSource<object>(), tcs) == tcs) {
+					Interlocked.CompareExchange(ref this.taskCompletionSource, new TaskCompletionSource<EmptyStruct>(), tcs) == tcs) {
 					return;
 				}
 #pragma warning restore 0420
 			}
+		}
+
+		/// <summary>
+		/// Sets and immediately resets this event, allowing all current waiters to unblock.
+		/// </summary>
+		public void PulseAll() {
+			this.Set();
+			this.Reset();
 		}
 
 		/// <summary>
