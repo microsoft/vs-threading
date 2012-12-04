@@ -78,26 +78,28 @@ namespace Microsoft.Threading {
 		public bool Remove(JoinableTask job) {
 			Requires.NotNull(job, "job");
 
-			this.Context.SyncContextLock.EnterWriteLock();
-			try {
-				if (this.joinables.Remove(job)) {
-					job.OnRemovedFromCollection(this);
+			using (NoMessagePumpSyncContext.Default.Apply()) {
+				this.Context.SyncContextLock.EnterWriteLock();
+				try {
+					if (this.joinables.Remove(job)) {
+						job.OnRemovedFromCollection(this);
 
-					// Now that we've removed a job from our collection, any folks who
-					// have already joined this collection should be disjoined to this job
-					// as an efficiency improvement so we don't grow our weak collections unnecessarily.
-					foreach (var joiner in this.joiners) {
-						// We can discard the JoinRelease result of AddDependency
-						// because we directly disjoin without that helper struct.
-						joiner.Key.RemoveDependency(job);
+						// Now that we've removed a job from our collection, any folks who
+						// have already joined this collection should be disjoined to this job
+						// as an efficiency improvement so we don't grow our weak collections unnecessarily.
+						foreach (var joiner in this.joiners) {
+							// We can discard the JoinRelease result of AddDependency
+							// because we directly disjoin without that helper struct.
+							joiner.Key.RemoveDependency(job);
+						}
+
+						return true;
 					}
 
-					return true;
+					return false;
+				} finally {
+					this.Context.SyncContextLock.ExitWriteLock();
 				}
-
-				return false;
-			} finally {
-				this.Context.SyncContextLock.ExitWriteLock();
 			}
 		}
 
@@ -113,22 +115,24 @@ namespace Microsoft.Threading {
 				return new JoinRelease();
 			}
 
-			this.Context.SyncContextLock.EnterWriteLock();
-			try {
-				int count;
-				this.joiners.TryGetValue(ambientJob, out count);
-				this.joiners[ambientJob] = count + 1;
-				if (count == 0) {
-					// The joining job was not previously joined to this collection,
-					// so we need to join each individual job within the collection now.
-					foreach (var joinable in this.joinables) {
-						ambientJob.AddDependency(joinable.Key);
+			using (NoMessagePumpSyncContext.Default.Apply()) {
+				this.Context.SyncContextLock.EnterWriteLock();
+				try {
+					int count;
+					this.joiners.TryGetValue(ambientJob, out count);
+					this.joiners[ambientJob] = count + 1;
+					if (count == 0) {
+						// The joining job was not previously joined to this collection,
+						// so we need to join each individual job within the collection now.
+						foreach (var joinable in this.joinables) {
+							ambientJob.AddDependency(joinable.Key);
+						}
 					}
-				}
 
-				return new JoinRelease(this, ambientJob);
-			} finally {
-				this.Context.SyncContextLock.ExitWriteLock();
+					return new JoinRelease(this, ambientJob);
+				} finally {
+					this.Context.SyncContextLock.ExitWriteLock();
+				}
 			}
 		}
 
@@ -138,11 +142,13 @@ namespace Microsoft.Threading {
 		public bool Contains(JoinableTask job) {
 			Requires.NotNull(job, "job");
 
-			this.Context.SyncContextLock.EnterReadLock();
-			try {
-				return this.joinables.ContainsKey(job);
-			} finally {
-				this.Context.SyncContextLock.ExitReadLock();
+			using (NoMessagePumpSyncContext.Default.Apply()) {
+				this.Context.SyncContextLock.EnterReadLock();
+				try {
+					return this.joinables.ContainsKey(job);
+				} finally {
+					this.Context.SyncContextLock.ExitReadLock();
+				}
 			}
 		}
 
@@ -153,22 +159,24 @@ namespace Microsoft.Threading {
 		internal void Disjoin(JoinableTask job) {
 			Requires.NotNull(job, "job");
 
-			this.Context.SyncContextLock.EnterWriteLock();
-			try {
-				int count;
-				this.joiners.TryGetValue(job, out count);
-				if (count == 1) {
-					this.joiners.Remove(job);
+			using (NoMessagePumpSyncContext.Default.Apply()) {
+				this.Context.SyncContextLock.EnterWriteLock();
+				try {
+					int count;
+					this.joiners.TryGetValue(job, out count);
+					if (count == 1) {
+						this.joiners.Remove(job);
 
-					// We also need to disjoin this job from all jobs in this collection.
-					foreach (var joinable in this.joinables) {
-						job.RemoveDependency(joinable.Key);
+						// We also need to disjoin this job from all jobs in this collection.
+						foreach (var joinable in this.joinables) {
+							job.RemoveDependency(joinable.Key);
+						}
+					} else {
+						this.joiners[job] = count - 1;
 					}
-				} else {
-					this.joiners[job] = count - 1;
+				} finally {
+					this.Context.SyncContextLock.ExitWriteLock();
 				}
-			} finally {
-				this.Context.SyncContextLock.ExitWriteLock();
 			}
 		}
 
@@ -230,17 +238,20 @@ namespace Microsoft.Threading {
 		/// Enumerates the tasks in this collection.
 		/// </summary>
 		public IEnumerator<JoinableTask> GetEnumerator() {
-			var joinables = new List<JoinableTask>();
-			this.Context.SyncContextLock.EnterReadLock();
-			try {
-				foreach (var item in this.joinables) {
-					joinables.Add(item.Key);
-				}
-			} finally {
-				this.Context.SyncContextLock.ExitReadLock();
-			}
 
-			return joinables.GetEnumerator();
+			using (NoMessagePumpSyncContext.Default.Apply()) {
+				var joinables = new List<JoinableTask>();
+				this.Context.SyncContextLock.EnterReadLock();
+				try {
+					foreach (var item in this.joinables) {
+						joinables.Add(item.Key);
+					}
+				} finally {
+					this.Context.SyncContextLock.ExitReadLock();
+				}
+
+				return joinables.GetEnumerator();
+			}
 		}
 
 		/// <summary>

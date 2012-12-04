@@ -87,38 +87,42 @@ namespace Microsoft.Threading {
 
 		internal Task DequeuerResetEvent {
 			get {
-				this.owner.Context.SyncContextLock.EnterUpgradeableReadLock();
-				try {
-					if (this.dequeuerResetState == null) {
-						this.owner.Context.SyncContextLock.EnterWriteLock();
-						try {
-							this.dequeuerResetState = new AsyncManualResetEvent();
-						} finally {
-							this.owner.Context.SyncContextLock.ExitWriteLock();
+				using (NoMessagePumpSyncContext.Default.Apply()) {
+					this.owner.Context.SyncContextLock.EnterUpgradeableReadLock();
+					try {
+						if (this.dequeuerResetState == null) {
+							this.owner.Context.SyncContextLock.EnterWriteLock();
+							try {
+								this.dequeuerResetState = new AsyncManualResetEvent();
+							} finally {
+								this.owner.Context.SyncContextLock.ExitWriteLock();
+							}
 						}
-					}
 
-					return this.dequeuerResetState.WaitAsync();
-				} finally {
-					this.owner.Context.SyncContextLock.ExitUpgradeableReadLock();
+						return this.dequeuerResetState.WaitAsync();
+					} finally {
+						this.owner.Context.SyncContextLock.ExitUpgradeableReadLock();
+					}
 				}
 			}
 		}
 
 		internal Task EnqueuedNotify {
 			get {
-				this.owner.Context.SyncContextLock.EnterReadLock();
-				try {
-					var queue = this.ApplicableQueue;
-					if (queue != null) {
-						return queue.EnqueuedNotify;
-					}
+				using (NoMessagePumpSyncContext.Default.Apply()) {
+					this.owner.Context.SyncContextLock.EnterReadLock();
+					try {
+						var queue = this.ApplicableQueue;
+						if (queue != null) {
+							return queue.EnqueuedNotify;
+						}
 
-					// We haven't created an applicable queue yet. Return null,
-					// and our caller will call us back when DequeuerResetEvent is signaled.
-					return null;
-				} finally {
-					this.owner.Context.SyncContextLock.ExitReadLock();
+						// We haven't created an applicable queue yet. Return null,
+						// and our caller will call us back when DequeuerResetEvent is signaled.
+						return null;
+					} finally {
+						this.owner.Context.SyncContextLock.ExitReadLock();
+					}
 				}
 			}
 		}
@@ -128,19 +132,21 @@ namespace Microsoft.Threading {
 		/// </summary>
 		public bool IsCompleted {
 			get {
-				this.owner.Context.SyncContextLock.EnterReadLock();
-				try {
-					if (this.mainThreadQueue != null && !this.mainThreadQueue.IsCompleted) {
-						return false;
-					}
+				using (NoMessagePumpSyncContext.Default.Apply()) {
+					this.owner.Context.SyncContextLock.EnterReadLock();
+					try {
+						if (this.mainThreadQueue != null && !this.mainThreadQueue.IsCompleted) {
+							return false;
+						}
 
-					if (this.threadPoolQueue != null && !this.threadPoolQueue.IsCompleted) {
-						return false;
-					}
+						if (this.threadPoolQueue != null && !this.threadPoolQueue.IsCompleted) {
+							return false;
+						}
 
-					return this.completeRequested;
-				} finally {
-					this.owner.Context.SyncContextLock.ExitReadLock();
+						return this.completeRequested;
+					} finally {
+						this.owner.Context.SyncContextLock.ExitReadLock();
+					}
 				}
 			}
 		}
@@ -150,14 +156,16 @@ namespace Microsoft.Threading {
 		/// </summary>
 		public Task Task {
 			get {
-				this.owner.Context.SyncContextLock.EnterReadLock();
-				try {
-					// If this assumes ever fails, we need to add the ability to synthesize a task
-					// that we'll complete when the wrapped task that we eventually are assigned completes.
-					Assumes.NotNull(this.wrappedTask);
-					return this.wrappedTask;
-				} finally {
-					this.owner.Context.SyncContextLock.ExitReadLock();
+				using (NoMessagePumpSyncContext.Default.Apply()) {
+					this.owner.Context.SyncContextLock.EnterReadLock();
+					try {
+						// If this assumes ever fails, we need to add the ability to synthesize a task
+						// that we'll complete when the wrapped task that we eventually are assigned completes.
+						Assumes.NotNull(this.wrappedTask);
+						return this.wrappedTask;
+					} finally {
+						this.owner.Context.SyncContextLock.ExitReadLock();
+					}
 				}
 			}
 		}
@@ -168,49 +176,53 @@ namespace Microsoft.Threading {
 
 		internal SynchronizationContext ApplicableJobSyncContext {
 			get {
-				this.Factory.Context.SyncContextLock.EnterUpgradeableReadLock();
-				try {
-					if (this.Factory.Context.MainThread == Thread.CurrentThread) {
-						if (this.mainThreadJobSyncContext == null) {
-							this.Factory.Context.SyncContextLock.EnterWriteLock();
-							try {
-								this.mainThreadJobSyncContext = new JoinableTaskSynchronizationContext(this, true);
-							} finally {
-								this.Factory.Context.SyncContextLock.ExitWriteLock();
-							}
-						}
-
-						return this.mainThreadJobSyncContext;
-					} else {
-						if (this.SynchronouslyBlockingThreadPool) {
-							if (this.threadPoolJobSyncContext == null) {
+				using (NoMessagePumpSyncContext.Default.Apply()) {
+					this.Factory.Context.SyncContextLock.EnterUpgradeableReadLock();
+					try {
+						if (this.Factory.Context.MainThread == Thread.CurrentThread) {
+							if (this.mainThreadJobSyncContext == null) {
 								this.Factory.Context.SyncContextLock.EnterWriteLock();
 								try {
-									this.threadPoolJobSyncContext = new JoinableTaskSynchronizationContext(this, false);
+									this.mainThreadJobSyncContext = new JoinableTaskSynchronizationContext(this, true);
 								} finally {
 									this.Factory.Context.SyncContextLock.ExitWriteLock();
 								}
 							}
 
-							return this.threadPoolJobSyncContext;
+							return this.mainThreadJobSyncContext;
 						} else {
-							// If we're not blocking the threadpool, there is no reason to use a thread pool sync context.
-							return null;
+							if (this.SynchronouslyBlockingThreadPool) {
+								if (this.threadPoolJobSyncContext == null) {
+									this.Factory.Context.SyncContextLock.EnterWriteLock();
+									try {
+										this.threadPoolJobSyncContext = new JoinableTaskSynchronizationContext(this, false);
+									} finally {
+										this.Factory.Context.SyncContextLock.ExitWriteLock();
+									}
+								}
+
+								return this.threadPoolJobSyncContext;
+							} else {
+								// If we're not blocking the threadpool, there is no reason to use a thread pool sync context.
+								return null;
+							}
 						}
+					} finally {
+						this.Factory.Context.SyncContextLock.ExitUpgradeableReadLock();
 					}
-				} finally {
-					this.Factory.Context.SyncContextLock.ExitUpgradeableReadLock();
 				}
 			}
 		}
 
 		private ExecutionQueue ApplicableQueue {
 			get {
-				this.owner.Context.SyncContextLock.EnterReadLock();
-				try {
-					return this.owner.Context.MainThread == Thread.CurrentThread ? this.mainThreadQueue : this.threadPoolQueue;
-				} finally {
-					this.owner.Context.SyncContextLock.ExitReadLock();
+				using (NoMessagePumpSyncContext.Default.Apply()) {
+					this.owner.Context.SyncContextLock.EnterReadLock();
+					try {
+						return this.owner.Context.MainThread == Thread.CurrentThread ? this.mainThreadQueue : this.threadPoolQueue;
+					} finally {
+						this.owner.Context.SyncContextLock.ExitReadLock();
+					}
 				}
 			}
 		}
@@ -255,62 +267,64 @@ namespace Microsoft.Threading {
 		}
 
 		internal void Post(SendOrPostCallback d, object state, bool mainThreadAffinitized) {
-			SingleExecuteProtector wrapper = null;
-			AsyncManualResetEvent dequeuerResetState = null; // initialized if we should pulse it at the end of the method
-			bool postToFactory = false;
+			using (NoMessagePumpSyncContext.Default.Apply()) {
+				SingleExecuteProtector wrapper = null;
+				AsyncManualResetEvent dequeuerResetState = null; // initialized if we should pulse it at the end of the method
+				bool postToFactory = false;
 
-			this.owner.Context.SyncContextLock.EnterWriteLock();
-			try {
-				if (this.completeRequested) {
-					// This job has already been marked for completion.
-					// We need to forward the work to the fallback mechanisms. 
-					postToFactory = true;
-				} else {
-					wrapper = SingleExecuteProtector.Create(this, d, state);
-					if (mainThreadAffinitized && !this.SynchronouslyBlockingMainThread) {
-						wrapper.RaiseTransitioningEvents();
-					}
-
-					if (mainThreadAffinitized) {
-						if (this.mainThreadQueue == null) {
-							this.mainThreadQueue = new ExecutionQueue(this);
-							dequeuerResetState = this.dequeuerResetState;
+				this.owner.Context.SyncContextLock.EnterWriteLock();
+				try {
+					if (this.completeRequested) {
+						// This job has already been marked for completion.
+						// We need to forward the work to the fallback mechanisms. 
+						postToFactory = true;
+					} else {
+						wrapper = SingleExecuteProtector.Create(this, d, state);
+						if (mainThreadAffinitized && !this.SynchronouslyBlockingMainThread) {
+							wrapper.RaiseTransitioningEvents();
 						}
 
-						// Try to post the message here, but we'll also post to the underlying sync context
-						// so if this fails (because the operation has completed) we'll still get the work
-						// done eventually.
-						this.mainThreadQueue.TryEnqueue(wrapper);
-					} else {
-						if (this.SynchronouslyBlockingThreadPool) {
-							if (this.threadPoolQueue == null) {
-								this.threadPoolQueue = new ExecutionQueue(this);
+						if (mainThreadAffinitized) {
+							if (this.mainThreadQueue == null) {
+								this.mainThreadQueue = new ExecutionQueue(this);
 								dequeuerResetState = this.dequeuerResetState;
 							}
 
-							if (!this.threadPoolQueue.TryEnqueue(wrapper)) {
+							// Try to post the message here, but we'll also post to the underlying sync context
+							// so if this fails (because the operation has completed) we'll still get the work
+							// done eventually.
+							this.mainThreadQueue.TryEnqueue(wrapper);
+						} else {
+							if (this.SynchronouslyBlockingThreadPool) {
+								if (this.threadPoolQueue == null) {
+									this.threadPoolQueue = new ExecutionQueue(this);
+									dequeuerResetState = this.dequeuerResetState;
+								}
+
+								if (!this.threadPoolQueue.TryEnqueue(wrapper)) {
+									ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
+								}
+							} else {
 								ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
 							}
-						} else {
-							ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
 						}
 					}
+				} finally {
+					this.owner.Context.SyncContextLock.ExitWriteLock();
 				}
-			} finally {
-				this.owner.Context.SyncContextLock.ExitWriteLock();
-			}
 
-			// We deferred this till after we release our lock earlier in this method since we're calling outside code.
-			if (postToFactory) {
-				Assumes.Null(wrapper); // we avoid using a wrapper in this case because this job transferring ownership to the factory.
-				this.Factory.Post(d, state, mainThreadAffinitized);
-			} else if (mainThreadAffinitized) {
-				Assumes.NotNull(wrapper); // this should have been initialized in the above logic.
-				this.owner.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
-			}
+				// We deferred this till after we release our lock earlier in this method since we're calling outside code.
+				if (postToFactory) {
+					Assumes.Null(wrapper); // we avoid using a wrapper in this case because this job transferring ownership to the factory.
+					this.Factory.Post(d, state, mainThreadAffinitized);
+				} else if (mainThreadAffinitized) {
+					Assumes.NotNull(wrapper); // this should have been initialized in the above logic.
+					this.owner.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
+				}
 
-			if (dequeuerResetState != null) {
-				dequeuerResetState.PulseAll();
+				if (dequeuerResetState != null) {
+					dequeuerResetState.PulseAll();
+				}
 			}
 		}
 
@@ -325,81 +339,88 @@ namespace Microsoft.Threading {
 		internal void SetWrappedTask(Task wrappedTask, JoinableTask parentJob) {
 			Requires.NotNull(wrappedTask, "wrappedTask");
 
-			this.owner.Context.SyncContextLock.EnterWriteLock();
-			try {
-				Assumes.Null(this.wrappedTask);
-				this.wrappedTask = wrappedTask;
+			using (NoMessagePumpSyncContext.Default.Apply()) {
+				this.owner.Context.SyncContextLock.EnterWriteLock();
+				try {
+					Assumes.Null(this.wrappedTask);
+					this.wrappedTask = wrappedTask;
 
-				if (wrappedTask.IsCompleted) {
-					this.Complete();
-				} else {
-					// Arrange for the wrapped task to complete this job when the task completes.
-					this.wrappedTask.ContinueWith(
-						(t, s) => ((JoinableTask)s).Complete(),
-						this,
-						CancellationToken.None,
-						TaskContinuationOptions.ExecuteSynchronously,
-						TaskScheduler.Default);
-				}
+					if (wrappedTask.IsCompleted) {
+						this.Complete();
+					} else {
+						// Arrange for the wrapped task to complete this job when the task completes.
+						this.wrappedTask.ContinueWith(
+							(t, s) => ((JoinableTask)s).Complete(),
+							this,
+							CancellationToken.None,
+							TaskContinuationOptions.ExecuteSynchronously,
+							TaskScheduler.Default);
+					}
 
-				// Join the ambient parent job, so the parent can dequeue this job's work.
-				// Note that although wrappedTask.IsCompleted may be true, this.IsCompleted
-				// may still be false if our work queues are not empty.
-				if (!this.IsCompleted && parentJob != null) {
-					parentJob.AddDependency(this);
+					// Join the ambient parent job, so the parent can dequeue this job's work.
+					// Note that although wrappedTask.IsCompleted may be true, this.IsCompleted
+					// may still be false if our work queues are not empty.
+					if (!this.IsCompleted && parentJob != null) {
+						parentJob.AddDependency(this);
+					}
+				} finally {
+					this.owner.Context.SyncContextLock.ExitWriteLock();
 				}
-			} finally {
-				this.owner.Context.SyncContextLock.ExitWriteLock();
 			}
 		}
 
 		internal void Complete() {
-			AsyncManualResetEvent dequeuerResetState = null;
-			this.owner.Context.SyncContextLock.EnterWriteLock();
-			try {
-				if (!this.completeRequested) {
-					this.completeRequested = true;
+			using (NoMessagePumpSyncContext.Default.Apply()) {
+				AsyncManualResetEvent dequeuerResetState = null;
+				this.owner.Context.SyncContextLock.EnterWriteLock();
+				try {
+					if (!this.completeRequested) {
+						this.completeRequested = true;
 
-					if (this.mainThreadQueue != null) {
-						this.mainThreadQueue.Complete();
+						if (this.mainThreadQueue != null) {
+							this.mainThreadQueue.Complete();
+						}
+
+						if (this.threadPoolQueue != null) {
+							this.threadPoolQueue.Complete();
+						}
+
+						this.OnQueueCompleted();
+
+						if (this.dequeuerResetState != null
+							&& (this.mainThreadQueue == null || this.mainThreadQueue.IsCompleted)
+							&& (this.threadPoolQueue == null || this.threadPoolQueue.IsCompleted)) {
+							dequeuerResetState = this.dequeuerResetState;
+						}
 					}
-
-					if (this.threadPoolQueue != null) {
-						this.threadPoolQueue.Complete();
-					}
-
-					this.OnQueueCompleted();
-
-					if (this.dequeuerResetState != null
-						&& (this.mainThreadQueue == null || this.mainThreadQueue.IsCompleted)
-						&& (this.threadPoolQueue == null || this.threadPoolQueue.IsCompleted)) {
-						dequeuerResetState = this.dequeuerResetState;
-					}
+				} finally {
+					this.owner.Context.SyncContextLock.ExitWriteLock();
 				}
-			} finally {
-				this.owner.Context.SyncContextLock.ExitWriteLock();
-			}
 
-			if (dequeuerResetState != null) {
-				// We explicitly do this outside our lock.
-				dequeuerResetState.PulseAll();
+				if (dequeuerResetState != null) {
+					// We explicitly do this outside our lock.
+					dequeuerResetState.PulseAll();
+				}
 			}
 		}
 
 		internal void RemoveDependency(JoinableTask joinChild) {
 			Requires.NotNull(joinChild, "joinChild");
-			this.owner.Context.SyncContextLock.EnterWriteLock();
-			try {
-				int refCount;
-				if (this.childOrJoinedJobs != null && this.childOrJoinedJobs.TryGetValue(joinChild, out refCount)) {
-					if (refCount == 1) {
-						this.childOrJoinedJobs.Remove(joinChild);
-					} else {
-						this.childOrJoinedJobs[joinChild] = refCount--;
+
+			using (NoMessagePumpSyncContext.Default.Apply()) {
+				this.owner.Context.SyncContextLock.EnterWriteLock();
+				try {
+					int refCount;
+					if (this.childOrJoinedJobs != null && this.childOrJoinedJobs.TryGetValue(joinChild, out refCount)) {
+						if (refCount == 1) {
+							this.childOrJoinedJobs.Remove(joinChild);
+						} else {
+							this.childOrJoinedJobs[joinChild] = refCount--;
+						}
 					}
+				} finally {
+					this.owner.Context.SyncContextLock.ExitWriteLock();
 				}
-			} finally {
-				this.owner.Context.SyncContextLock.ExitWriteLock();
 			}
 		}
 
@@ -458,56 +479,60 @@ namespace Microsoft.Threading {
 		}
 
 		private bool TryDequeueSelfOrDependencies(out SingleExecuteProtector work, out Task tryAgainAfter) {
-			var applicableJobs = new HashSet<JoinableTask>();
-			this.owner.Context.SyncContextLock.EnterUpgradeableReadLock();
-			try {
-				if (this.IsCompleted) {
-					work = null;
-					tryAgainAfter = null;
-					return false;
-				}
-
-				this.AddSelfAndDescendentOrJoinedJobs(applicableJobs);
-
-				// Check all queues to see if any have immediate work.
-				foreach (var job in applicableJobs) {
-					if (job.TryDequeue(out work)) {
+			using (NoMessagePumpSyncContext.Default.Apply()) {
+				var applicableJobs = new HashSet<JoinableTask>();
+				this.owner.Context.SyncContextLock.EnterUpgradeableReadLock();
+				try {
+					if (this.IsCompleted) {
+						work = null;
 						tryAgainAfter = null;
-						return true;
+						return false;
 					}
-				}
 
-				// None of the queues had work to do right away. Create a task that will complete when 
-				// our caller should try again.
-				var wakeUpTasks = new List<Task>(applicableJobs.Count * 2);
-				foreach (var job in applicableJobs) {
-					wakeUpTasks.Add(job.DequeuerResetEvent);
-					var enqueuedTask = job.EnqueuedNotify;
-					if (enqueuedTask != null) {
-						wakeUpTasks.Add(enqueuedTask);
+					this.AddSelfAndDescendentOrJoinedJobs(applicableJobs);
+
+					// Check all queues to see if any have immediate work.
+					foreach (var job in applicableJobs) {
+						if (job.TryDequeue(out work)) {
+							tryAgainAfter = null;
+							return true;
+						}
 					}
-				}
 
-				work = null;
-				tryAgainAfter = Task.WhenAny(wakeUpTasks);
-				return false;
-			} finally {
-				this.owner.Context.SyncContextLock.ExitUpgradeableReadLock();
+					// None of the queues had work to do right away. Create a task that will complete when 
+					// our caller should try again.
+					var wakeUpTasks = new List<Task>(applicableJobs.Count * 2);
+					foreach (var job in applicableJobs) {
+						wakeUpTasks.Add(job.DequeuerResetEvent);
+						var enqueuedTask = job.EnqueuedNotify;
+						if (enqueuedTask != null) {
+							wakeUpTasks.Add(enqueuedTask);
+						}
+					}
+
+					work = null;
+					tryAgainAfter = Task.WhenAny(wakeUpTasks);
+					return false;
+				} finally {
+					this.owner.Context.SyncContextLock.ExitUpgradeableReadLock();
+				}
 			}
 		}
 
 		private bool TryDequeue(out SingleExecuteProtector work) {
-			this.owner.Context.SyncContextLock.EnterWriteLock();
-			try {
-				var queue = this.ApplicableQueue;
-				if (queue != null) {
-					return queue.TryDequeue(out work);
-				}
+			using (NoMessagePumpSyncContext.Default.Apply()) {
+				this.owner.Context.SyncContextLock.EnterWriteLock();
+				try {
+					var queue = this.ApplicableQueue;
+					if (queue != null) {
+						return queue.TryDequeue(out work);
+					}
 
-				work = null;
-				return false;
-			} finally {
-				this.owner.Context.SyncContextLock.ExitWriteLock();
+					work = null;
+					return false;
+				} finally {
+					this.owner.Context.SyncContextLock.ExitWriteLock();
+				}
 			}
 		}
 
@@ -522,30 +547,32 @@ namespace Microsoft.Threading {
 				return new JoinRelease();
 			}
 
-			AsyncManualResetEvent dequeuerResetState = null;
-			this.owner.Context.SyncContextLock.EnterWriteLock();
-			try {
-				if (this.childOrJoinedJobs == null) {
-					this.childOrJoinedJobs = new WeakKeyDictionary<JoinableTask, int>(capacity: 3);
+			using (NoMessagePumpSyncContext.Default.Apply()) {
+				AsyncManualResetEvent dequeuerResetState = null;
+				this.owner.Context.SyncContextLock.EnterWriteLock();
+				try {
+					if (this.childOrJoinedJobs == null) {
+						this.childOrJoinedJobs = new WeakKeyDictionary<JoinableTask, int>(capacity: 3);
+					}
+
+					int refCount;
+					this.childOrJoinedJobs.TryGetValue(joinChild, out refCount);
+					this.childOrJoinedJobs[joinChild] = refCount++;
+					if (refCount == 1) {
+						// This constitutes a significant change, so we should reset any dequeuers.
+						dequeuerResetState = this.dequeuerResetState;
+					}
+				} finally {
+					this.owner.Context.SyncContextLock.ExitWriteLock();
 				}
 
-				int refCount;
-				this.childOrJoinedJobs.TryGetValue(joinChild, out refCount);
-				this.childOrJoinedJobs[joinChild] = refCount++;
-				if (refCount == 1) {
-					// This constitutes a significant change, so we should reset any dequeuers.
-					dequeuerResetState = this.dequeuerResetState;
+				if (dequeuerResetState != null) {
+					// We explicitly do this outside our lock.
+					dequeuerResetState.PulseAll();
 				}
-			} finally {
-				this.owner.Context.SyncContextLock.ExitWriteLock();
-			}
 
-			if (dequeuerResetState != null) {
-				// We explicitly do this outside our lock.
-				dequeuerResetState.PulseAll();
+				return new JoinRelease(this, joinChild);
 			}
-
-			return new JoinRelease(this, joinChild);
 		}
 
 		private JoinRelease AmbientJobJoinsThis() {

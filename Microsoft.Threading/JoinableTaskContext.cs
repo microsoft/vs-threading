@@ -59,20 +59,22 @@ namespace Microsoft.Threading {
 		/// </summary>
 		public JoinableTaskFactory Factory {
 			get {
-				this.syncContextLock.EnterUpgradeableReadLock();
-				try {
-					if (this.nonJoinableFactory == null) {
-						this.syncContextLock.EnterWriteLock();
-						try {
-							this.nonJoinableFactory = this.CreateDefaultFactory();
-						} finally {
-							this.syncContextLock.ExitWriteLock();
+				using (NoMessagePumpSyncContext.Default.Apply()) {
+					this.SyncContextLock.EnterUpgradeableReadLock();
+					try {
+						if (this.nonJoinableFactory == null) {
+							this.SyncContextLock.EnterWriteLock();
+							try {
+								this.nonJoinableFactory = this.CreateDefaultFactory();
+							} finally {
+								this.SyncContextLock.ExitWriteLock();
+							}
 						}
-					}
 
-					return this.nonJoinableFactory;
-				} finally {
-					this.syncContextLock.ExitUpgradeableReadLock();
+						return this.nonJoinableFactory;
+					} finally {
+						this.SyncContextLock.ExitUpgradeableReadLock();
+					}
 				}
 			}
 		}

@@ -53,7 +53,9 @@
 				CancellationToken.None,
 				TaskCreationOptions.PreferFairness,
 				TaskScheduler.Default);
-			tcs.Task.Wait();
+			using (NoMessagePumpSyncContext.Default.Apply()) {
+				tcs.Task.Wait();
+			}
 		}
 
 		/// <summary>
