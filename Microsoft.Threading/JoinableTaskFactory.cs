@@ -598,7 +598,7 @@ namespace Microsoft.Threading {
 				if (invokeDelegate != null) {
 					this.OnExecuting();
 					var syncContext = this.job != null ? this.job.ApplicableJobSyncContext : this.job.Factory.ApplicableJobSyncContext;
-					using (syncContext.Apply()) {
+					using (syncContext.Apply(checkForChangesOnRevert: false)) {
 						var action = invokeDelegate as Action;
 						if (action != null) {
 							action();
