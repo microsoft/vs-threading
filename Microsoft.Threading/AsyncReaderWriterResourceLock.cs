@@ -372,11 +372,11 @@ namespace Microsoft.Threading {
 				Assumes.True(Monitor.IsEntered(this.service.SyncObject));
 				ResourcePreparationTaskAndValidity preparationTask;
 
-				bool forConcurrentUse = !forcePrepareConcurrent && this.service.IsWriteLockHeld;
+				bool forConcurrentUse = forcePrepareConcurrent || !this.service.IsWriteLockHeld;
 				if (!this.resourcePreparationTasks.TryGetValue(resource, out preparationTask)) {
 					var preparationDelegate = forConcurrentUse
-						? (cancellationToken.CanBeCanceled ? state => this.service.PrepareResourceForExclusiveAccessAsync((TResource)state, cancellationToken) : this.prepareResourceExclusiveDelegate)
-						: (cancellationToken.CanBeCanceled ? state => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state, cancellationToken) : this.prepareResourceConcurrentDelegate);
+						? (cancellationToken.CanBeCanceled ? state => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state, cancellationToken) : this.prepareResourceConcurrentDelegate)
+						: (cancellationToken.CanBeCanceled ? state => this.service.PrepareResourceForExclusiveAccessAsync((TResource)state, cancellationToken) : this.prepareResourceExclusiveDelegate);
 
 					// We kick this off on a new task because we're currently holding a private lock
 					// and don't want to execute arbitrary code.  Let's also hide the ARWL from the delegate.
@@ -387,8 +387,8 @@ namespace Microsoft.Threading {
 					}
 				} else if (preparationTask.ForConcurrentUse != forConcurrentUse) {
 					var preparationDelegate = forConcurrentUse
-						? (cancellationToken.CanBeCanceled ? (prev, state) => this.service.PrepareResourceForExclusiveAccessAsync((TResource)state, cancellationToken) : this.prepareResourceExclusiveContinuationDelegate)
-						: (cancellationToken.CanBeCanceled ? (prev, state) => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state, cancellationToken) : this.prepareResourceConcurrentContinuationDelegate);
+						? (cancellationToken.CanBeCanceled ? (prev, state) => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state, cancellationToken) : this.prepareResourceConcurrentContinuationDelegate)
+						: (cancellationToken.CanBeCanceled ? (prev, state) => this.service.PrepareResourceForExclusiveAccessAsync((TResource)state, cancellationToken) : this.prepareResourceExclusiveContinuationDelegate);
 
 					// We kick this off on a new task because we're currently holding a private lock
 					// and don't want to execute arbitrary code.  Let's also hide the ARWL from the delegate.
