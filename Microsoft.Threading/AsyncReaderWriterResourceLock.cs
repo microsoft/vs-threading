@@ -309,12 +309,11 @@ namespace Microsoft.Threading {
 			/// </summary>
 			internal Task OnExclusiveLockReleasedAsync() {
 				lock (this.service.SyncObject) {
-					// Reset any resources acquired within the write lock to an unknown state.
-					foreach (var resource in this.resourcesAcquiredWithinWriteLock) {
-						this.SetUnknownResourceState(resource);
-					}
-
-					this.resourcesAcquiredWithinWriteLock.Clear();
+					// Reset any resources acquired within the write lock or a surrounding
+					// upgradeable read to an unknown state.
+					this.SetUnknownResourceState(this.resourcesAcquiredWithinWriteLock);
+					this.SetUnknownResourceState(this.resourcesAcquiredWithinUpgradeableRead);
+					this.resourcesAcquiredWithinWriteLock.Clear(); // the write lock is gone now.
 
 					if (this.service.IsUpgradeableReadLockHeld && this.resourcesAcquiredWithinUpgradeableRead.Count > 0) {
 						// We must also synchronously prepare all resources that were acquired within the upgradeable read lock
@@ -392,6 +391,16 @@ namespace Microsoft.Threading {
 					this.resourcePreparationTasks[resource] = new ResourcePreparationTaskAndValidity(
 						previousState.PreparationTask ?? TplExtensions.CompletedTask, // preserve the original task if it exists in case it's not finished
 						ResourceState.Unknown);
+				}
+			}
+
+			/// <summary>
+			/// Sets the specified resources to be considered in an unknown state. Any subsequent access (exclusive or concurrent) will prepare the resource.
+			/// </summary>
+			private void SetUnknownResourceState(IEnumerable<TResource> resources) {
+				Requires.NotNull(resources, "resources");
+				foreach (var resource in resources) {
+					this.SetUnknownResourceState(resource);
 				}
 			}
 

@@ -246,6 +246,31 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public async Task ResourceHeldByUpgradeableReadPreparedWhenWriteLockReleasedWithoutResource() {
+			using (var access = await this.resourceLock.UpgradeableReadLockAsync()) {
+				await access.GetResourceAsync(1);
+				Assert.AreEqual(1, this.resources[1].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, this.resources[1].ExclusiveAccessPreparationCount);
+
+				using (var access2 = await this.resourceLock.WriteLockAsync()) {
+				}
+
+				// Although the write lock above did not ask for the resources,
+				// it's conceivable that the upgradeable read lock holder passed
+				// the resources it acquired into the write lock and used them there.
+				// Therefore it's imperative that when the write lock is released
+				// any resources obtained by the surrounding upgradeable read be
+				// re-prepared for concurrent access.
+				Assert.AreEqual(2, this.resources[1].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, this.resources[1].ExclusiveAccessPreparationCount);
+
+				// Make sure that unretrieved resources remain untouched.
+				Assert.AreEqual(0, this.resources[2].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, this.resources[2].ExclusiveAccessPreparationCount);
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task ResourceHeldByUpgradeableReadPreparedWhenWriteLockReleased() {
 			using (var access = await this.resourceLock.UpgradeableReadLockAsync()) {
 				var resource = await access.GetResourceAsync(1);
