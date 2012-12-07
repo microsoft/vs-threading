@@ -3247,7 +3247,7 @@
 						try {
 							switch (kind) {
 								case 0: // read
-									while (--depth > 0) {
+									while (depth-- > 0) {
 										log += ReadChar;
 										lockStack.Push(await this.asyncLock.ReadLockAsync(token));
 									}
@@ -3257,7 +3257,7 @@
 									log += UpgradeableReadChar;
 									lockStack.Push(await this.asyncLock.UpgradeableReadLockAsync(token));
 									depth--;
-									while (--depth > 0) {
+									while (depth-- > 0) {
 										switch (random.Next(3)) {
 											case 0:
 												log += ReadChar;
@@ -3279,7 +3279,7 @@
 									log += WriteChar;
 									lockStack.Push(await this.asyncLock.WriteLockAsync(token));
 									depth--;
-									while (--depth > 0) {
+									while (depth-- > 0) {
 										switch (random.Next(3)) {
 											case 0:
 												log += ReadChar;

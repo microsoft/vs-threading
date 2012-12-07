@@ -283,7 +283,7 @@ namespace Microsoft.Threading {
 			/// <summary>
 			/// A map of resources to the tasks that most recently began evaluating them.
 			/// </summary>
-			private ConditionalWeakTable<TResource, Task> resourcePreparationTasks = new ConditionalWeakTable<TResource, Task>();
+			private WeakKeyDictionary<TResource, ResourcePreparationTaskAndValidity> resourcePreparationTasks = new WeakKeyDictionary<TResource, ResourcePreparationTaskAndValidity>();
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="Helper"/> class.
@@ -303,20 +303,13 @@ namespace Microsoft.Threading {
 			/// Ensures that all resources are marked as unprepared so at next request they are prepared again.
 			/// </summary>
 			internal Task OnExclusiveLockReleasedAsync() {
-				// We need to mark all resource preparations that may have already occurred as needing to occur again
-				// now that we're releasing the exclusive lock.
-				// This arbitrary clearing of the table seems like it should introduce the risk of preparing a given
-				// resource multiple times concurrently, since no evidence remains of an asynchronous operation still
-				// in progress.  In practice, various other designs in this class prevent it from ever actually occurring.
-				this.resourcePreparationTasks = new ConditionalWeakTable<TResource, Task>();
-
 				if (this.service.IsUpgradeableReadLockHeld && this.resourcesAcquiredWithinUpgradeableRead.Count > 0) {
 					// We must also synchronously prepare all resources that were acquired within the upgradeable read lock
 					// because as soon as this method returns these resources may be access concurrently again.
 					var preparationTasks = new Task[this.resourcesAcquiredWithinUpgradeableRead.Count];
 					int taskIndex = 0;
 					foreach (var resource in this.resourcesAcquiredWithinUpgradeableRead) {
-						preparationTasks[taskIndex++] = this.PrepareResourceAsync(resource, CancellationToken.None, evenIfPreviouslyPrepared: true, forcePrepareConcurrent: true);
+						preparationTasks[taskIndex++] = this.PrepareResourceAsync(resource, CancellationToken.None, forcePrepareConcurrent: true);
 					}
 
 					if (preparationTasks.Length == 1) {
@@ -372,33 +365,42 @@ namespace Microsoft.Threading {
 			/// </summary>
 			/// <param name="resource">The resource to prepare.</param>
 			/// <param name="cancellationToken">The token whose cancellation signals lost interest in this resource.</param>
-			/// <param name="evenIfPreviouslyPrepared">Whether to force preparation of the resource even if it had been previously prepared.</param>
 			/// <param name="forcePrepareConcurrent">Force preparation of the resource for concurrent access, even if an exclusive lock is currently held.</param>
 			/// <returns>A task that is completed when preparation has completed.</returns>
-			private Task PrepareResourceAsync(TResource resource, CancellationToken cancellationToken, bool evenIfPreviouslyPrepared = false, bool forcePrepareConcurrent = false) {
-				Task preparationTask;
+			private Task PrepareResourceAsync(TResource resource, CancellationToken cancellationToken, bool forcePrepareConcurrent = false) {
+				Requires.NotNull(resource, "resource");
+				Assumes.True(Monitor.IsEntered(this.service.SyncObject));
+				ResourcePreparationTaskAndValidity preparationTask;
+
+				bool forConcurrentUse = !forcePrepareConcurrent && this.service.IsWriteLockHeld;
 				if (!this.resourcePreparationTasks.TryGetValue(resource, out preparationTask)) {
-					var preparationDelegate = (this.service.IsWriteLockHeld && !forcePrepareConcurrent)
+					var preparationDelegate = forConcurrentUse
 						? (cancellationToken.CanBeCanceled ? state => this.service.PrepareResourceForExclusiveAccessAsync((TResource)state, cancellationToken) : this.prepareResourceExclusiveDelegate)
 						: (cancellationToken.CanBeCanceled ? state => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state, cancellationToken) : this.prepareResourceConcurrentDelegate);
 
 					// We kick this off on a new task because we're currently holding a private lock
 					// and don't want to execute arbitrary code.  Let's also hide the ARWL from the delegate.
 					using (this.service.HideLocks()) {
-						preparationTask = Task.Factory.StartNew(preparationDelegate, resource, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap();
+						preparationTask = new ResourcePreparationTaskAndValidity(
+							Task.Factory.StartNew(preparationDelegate, resource, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap(),
+							forConcurrentUse);
 					}
-
-					this.resourcePreparationTasks.Add(resource, preparationTask);
-				} else if (evenIfPreviouslyPrepared) {
-					var preparationDelegate = (this.service.IsWriteLockHeld && !forcePrepareConcurrent)
+				} else if (preparationTask.ForConcurrentUse != forConcurrentUse) {
+					var preparationDelegate = forConcurrentUse
 						? (cancellationToken.CanBeCanceled ? (prev, state) => this.service.PrepareResourceForExclusiveAccessAsync((TResource)state, cancellationToken) : this.prepareResourceExclusiveContinuationDelegate)
 						: (cancellationToken.CanBeCanceled ? (prev, state) => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state, cancellationToken) : this.prepareResourceConcurrentContinuationDelegate);
-					preparationTask = preparationTask.ContinueWith(preparationDelegate, resource, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap();
-					this.resourcePreparationTasks.Remove(resource);
-					this.resourcePreparationTasks.Add(resource, preparationTask);
+
+					// We kick this off on a new task because we're currently holding a private lock
+					// and don't want to execute arbitrary code.  Let's also hide the ARWL from the delegate.
+					using (this.service.HideLocks()) {
+						preparationTask = new ResourcePreparationTaskAndValidity(
+							preparationTask.PreparationTask.ContinueWith(preparationDelegate, resource, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap(),
+							forConcurrentUse);
+					}
 				}
 
-				return preparationTask;
+				this.resourcePreparationTasks[resource] = preparationTask;
+				return preparationTask.PreparationTask;
 			}
 
 			/// <summary>
@@ -409,6 +411,18 @@ namespace Microsoft.Threading {
 			private ResourceReleaser AcquirePreexistingLockOrThrow() {
 				Verify.Operation(this.service.IsAnyLockHeld, "A lock is required");
 				return this.service.ReadLock(CancellationToken.None);
+			}
+
+			private class ResourcePreparationTaskAndValidity {
+				internal ResourcePreparationTaskAndValidity(Task preparationTask, bool concurrentPreparation) {
+					Requires.NotNull(preparationTask, "preparationTask");
+					this.PreparationTask = preparationTask;
+					this.ForConcurrentUse = concurrentPreparation;
+				}
+
+				internal Task PreparationTask { get; private set; }
+
+				internal bool ForConcurrentUse { get; private set; }
 			}
 		}
 

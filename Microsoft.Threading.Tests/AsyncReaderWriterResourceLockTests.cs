@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.Threading.Tests {
 	using System;
 	using System.Collections.Generic;
+	using System.Diagnostics;
 	using System.Linq;
 	using System.Text;
 	using System.Threading;
@@ -9,6 +10,12 @@
 
 	[TestClass]
 	public class AsyncReaderWriterResourceLockTests : TestBase {
+		private const char ReadChar = 'R';
+		private const char UpgradeableReadChar = 'U';
+		private const char StickyUpgradeableReadChar = 'S';
+		private const char WriteChar = 'W';
+		private const bool VerboseLogEnabled = false;
+
 		private ResourceLockWrapper resourceLock;
 
 		private List<Resource> resources;
@@ -55,7 +62,7 @@
 				var resource = await access.GetResourceAsync(1);
 				Assert.AreSame(this.resources[1], resource);
 				Assert.AreEqual(0, resource.ConcurrentAccessPreparationCount);
-				Assert.AreEqual(2, resource.ExclusiveAccessPreparationCount);
+				Assert.AreEqual(1, resource.ExclusiveAccessPreparationCount);
 			}
 		}
 
@@ -164,7 +171,7 @@
 					var resource1Again = await access2.GetResourceAsync(1);
 					Assert.AreSame(resource, resource1Again);
 					Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
-					Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount); // not incremented because it was prepared for concurrent access earlier.
+					Assert.AreEqual(1, resource.ExclusiveAccessPreparationCount);
 
 					resource2 = await access2.GetResourceAsync(2);
 					Assert.AreSame(this.resources[2], resource2);
@@ -173,7 +180,7 @@
 				}
 
 				Assert.AreEqual(2, resource.ConcurrentAccessPreparationCount); // re-entering concurrent access should always be prepared on exit of exclusive access
-				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
+				Assert.AreEqual(1, resource.ExclusiveAccessPreparationCount);
 
 				// Cheat a little and peak at the resource held only by the write lock,
 				// in order to verify that no further preparation was performed when the write lock was released.
@@ -194,17 +201,17 @@
 					var resource1Again = await access2.GetResourceAsync(1);
 					Assert.AreSame(resource, resource1Again);
 					Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
-					Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount); // doesn't increment because concurrent preparation already performed.
+					Assert.AreEqual(1, resource.ExclusiveAccessPreparationCount);
 				}
 
 				Assert.IsTrue(this.resourceLock.IsWriteLockHeld, "UpgradeableRead with StickyWrite was expected to hold the write lock.");
 				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
-				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
+				Assert.AreEqual(1, resource.ExclusiveAccessPreparationCount);
 
 				// Preparation should still skip because we're in a sticky write lock and the resource was issued before.
 				resource = await access.GetResourceAsync(1);
 				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
-				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
+				Assert.AreEqual(1, resource.ExclusiveAccessPreparationCount);
 			}
 		}
 
@@ -346,19 +353,19 @@
 				using (var writeAccess = await this.resourceLock.WriteLockAsync()) {
 					resource = await writeAccess.GetResourceAsync(1);
 					Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
-					Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
+					Assert.AreEqual(1, resource.ExclusiveAccessPreparationCount);
 
 					await writeAccess.ReleaseAsync();
 					Assert.IsFalse(this.resourceLock.IsWriteLockHeld);
 					Assert.IsTrue(this.resourceLock.IsUpgradeableReadLockHeld);
 					Assert.AreEqual(2, resource.ConcurrentAccessPreparationCount);
-					Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
+					Assert.AreEqual(1, resource.ExclusiveAccessPreparationCount);
 				}
 
 				Assert.IsFalse(this.resourceLock.IsWriteLockHeld);
 				Assert.IsTrue(this.resourceLock.IsUpgradeableReadLockHeld);
 				Assert.AreEqual(2, resource.ConcurrentAccessPreparationCount);
-				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
+				Assert.AreEqual(1, resource.ExclusiveAccessPreparationCount);
 			}
 		}
 
@@ -395,10 +402,187 @@
 			});
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ResourcePreparationSwitchesFromExclusiveToConcurrent() {
+			using (var access = await this.resourceLock.WriteLockAsync()) {
+				var resource = await access.GetResourceAsync(1);
+				Assert.AreEqual(Resource.State.Exclusive, resource.CurrentState);
+			}
+
+			using (var access = await this.resourceLock.ReadLockAsync()) {
+				var resource = await access.GetResourceAsync(1);
+				Assert.AreEqual(Resource.State.Concurrent, resource.CurrentState);
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ResourcePreparationSwitchesFromConcurrenToExclusive() {
+			using (var access = await this.resourceLock.ReadLockAsync()) {
+				var resource = await access.GetResourceAsync(1);
+				Assert.AreEqual(Resource.State.Concurrent, resource.CurrentState);
+			}
+
+			using (var access = await this.resourceLock.WriteLockAsync()) {
+				var resource = await access.GetResourceAsync(1);
+				Assert.AreEqual(Resource.State.Exclusive, resource.CurrentState);
+			}
+		}
+
+		[TestMethod, TestCategory("Stress"), Timeout(5000)]
+		public async Task ResourceLockStress() {
+			const int MaxLockAcquisitions = -1;
+			const int MaxLockHeldDelay = 0;// 80;
+			const int overallTimeout = 4000;
+			const int iterationTimeout = overallTimeout;
+			const int maxResources = 2;
+			int maxWorkers = Environment.ProcessorCount * 4; // we do a lot of awaiting, but still want to flood all cores.
+			bool testCancellation = false;
+			await this.StressHelper(MaxLockAcquisitions, MaxLockHeldDelay, overallTimeout, iterationTimeout, maxWorkers, maxResources, testCancellation);
+		}
+
+		private async Task StressHelper(int maxLockAcquisitions, int maxLockHeldDelay, int overallTimeout, int iterationTimeout, int maxWorkers, int maxResources, bool testCancellation) {
+			var overallCancellation = new CancellationTokenSource(overallTimeout);
+			const int MaxDepth = 5;
+			bool attached = Debugger.IsAttached;
+			int lockAcquisitions = 0;
+			while (!overallCancellation.IsCancellationRequested) {
+				// Construct a cancellation token that is canceled when either the overall or the iteration timeout has expired.
+				var cancellation = CancellationTokenSource.CreateLinkedTokenSource(
+					overallCancellation.Token,
+					new CancellationTokenSource(iterationTimeout).Token);
+				var token = testCancellation ? cancellation.Token : CancellationToken.None;
+
+				Func<int, Task> worker = async workerId => {
+					var random = new Random();
+					var lockStack = new Stack<ResourceLockWrapper.ResourceReleaser>(MaxDepth);
+					while (testCancellation || !cancellation.Token.IsCancellationRequested) {
+						string log = string.Empty;
+						Assert.IsFalse(this.resourceLock.IsReadLockHeld || this.resourceLock.IsUpgradeableReadLockHeld || this.resourceLock.IsWriteLockHeld);
+						int depth = random.Next(MaxDepth) + 1;
+						int kind = random.Next(3);
+						try {
+							try {
+								switch (kind) {
+									case 0: // read
+										while (depth-- > 0) {
+											log += ReadChar;
+											lockStack.Push(await this.resourceLock.ReadLockAsync(token));
+										}
+
+										break;
+									case 1: // upgradeable read
+										log += UpgradeableReadChar;
+										lockStack.Push(await this.resourceLock.UpgradeableReadLockAsync(token));
+										depth--;
+										while (depth-- > 0) {
+											switch (random.Next(3)) {
+												case 0:
+													log += ReadChar;
+													lockStack.Push(await this.resourceLock.ReadLockAsync(token));
+													break;
+												case 1:
+													log += UpgradeableReadChar;
+													lockStack.Push(await this.resourceLock.UpgradeableReadLockAsync(token));
+													break;
+												case 2:
+													log += WriteChar;
+													lockStack.Push(await this.resourceLock.WriteLockAsync(token));
+													break;
+											}
+										}
+
+										break;
+									case 2: // write
+										log += WriteChar;
+										lockStack.Push(await this.resourceLock.WriteLockAsync(token));
+										depth--;
+										while (depth-- > 0) {
+											switch (random.Next(3)) {
+												case 0:
+													log += ReadChar;
+													lockStack.Push(await this.resourceLock.ReadLockAsync(token));
+													break;
+												case 1:
+													log += UpgradeableReadChar;
+													lockStack.Push(await this.resourceLock.UpgradeableReadLockAsync(token));
+													break;
+												case 2:
+													log += WriteChar;
+													lockStack.Push(await this.resourceLock.WriteLockAsync(token));
+													break;
+											}
+										}
+
+										break;
+								}
+
+								var expectedState = this.resourceLock.IsWriteLockHeld ? Resource.State.Exclusive : Resource.State.Concurrent;
+								int resourceIndex = random.Next(maxResources) + 1;
+								VerboseLog("Worker {0} is requesting resource {1}, expects {2}", workerId, resourceIndex, expectedState);
+								var resource = await lockStack.Peek().GetResourceAsync(resourceIndex);
+								var currentState = resource.CurrentState;
+								VerboseLog("Worker {0} has received resource {1}, as {2}", workerId, resourceIndex, currentState);
+								Assert.AreEqual(expectedState, currentState);
+								await Task.Delay(random.Next(maxLockHeldDelay));
+							} finally {
+								log += " ";
+								while (lockStack.Count > 0) {
+									if (Interlocked.Increment(ref lockAcquisitions) > maxLockAcquisitions && maxLockAcquisitions > 0) {
+										cancellation.Cancel();
+									}
+
+									var releaser = lockStack.Pop();
+									log += '_';
+									releaser.Dispose();
+								}
+							}
+
+							VerboseLog("Worker {0} completed {1}", workerId, log);
+						} catch (Exception ex) {
+							VerboseLog("Worker {0} threw {1} \"{2}\" with log: {3}", workerId, ex.GetType().Name, ex.Message, log);
+							throw;
+						}
+					}
+				};
+
+				await Task.Run(async delegate {
+					var workers = new Task[maxWorkers];
+					for (int i = 0; i < workers.Length; i++) {
+						int scopedWorkerId = i;
+						workers[i] = Task.Run(() => worker(scopedWorkerId), cancellation.Token);
+						var nowait = workers[i].ContinueWith(_ => cancellation.Cancel(), TaskContinuationOptions.OnlyOnFaulted);
+					}
+
+					try {
+						await Task.WhenAll(workers);
+					} catch (OperationCanceledException) {
+					} finally {
+						Console.WriteLine("Stress tested {0} lock acquisitions.", lockAcquisitions);
+					}
+				});
+			}
+		}
+
+		private static void VerboseLog(string message, params object[] args) {
+			if (VerboseLogEnabled) {
+				Console.WriteLine(message, args);
+			}
+		}
+
 		private class Resource {
+			internal enum State {
+				None,
+				Concurrent,
+				Exclusive,
+				PreparingConcurrent,
+				PreparingExclusive,
+			}
+
 			public int ConcurrentAccessPreparationCount { get; set; }
 
 			public int ExclusiveAccessPreparationCount { get; set; }
+
+			internal State CurrentState { get; set; }
 		}
 
 		private class ResourceLockWrapper : AsyncReaderWriterResourceLock<int, Resource> {
@@ -432,16 +616,24 @@
 				return Task.FromResult(this.resources[resourceMoniker]);
 			}
 
-			protected override Task PrepareResourceForConcurrentAccessAsync(Resource resource, CancellationToken cancellationToken) {
+			protected override async Task PrepareResourceForConcurrentAccessAsync(Resource resource, CancellationToken cancellationToken) {
+				VerboseLog("Preparing resource {0} for concurrent access started.", this.resources.IndexOf(resource));
 				resource.ConcurrentAccessPreparationCount++;
+				resource.CurrentState = Resource.State.PreparingConcurrent;
 				this.preparationTaskBegun.Set();
-				return this.GetPreparationTask(resource);
+				await this.GetPreparationTask(resource);
+				resource.CurrentState = Resource.State.Concurrent;
+				VerboseLog("Preparing resource {0} for concurrent access finished.", this.resources.IndexOf(resource));
 			}
 
-			protected override Task PrepareResourceForExclusiveAccessAsync(Resource resource, CancellationToken cancellationToken) {
+			protected override async Task PrepareResourceForExclusiveAccessAsync(Resource resource, CancellationToken cancellationToken) {
+				VerboseLog("Preparing resource {0} for exclusive access started.", this.resources.IndexOf(resource));
 				resource.ExclusiveAccessPreparationCount++;
+				resource.CurrentState = Resource.State.PreparingExclusive;
 				this.preparationTaskBegun.Set();
-				return this.GetPreparationTask(resource);
+				await this.GetPreparationTask(resource);
+				resource.CurrentState = Resource.State.Exclusive;
+				VerboseLog("Preparing resource {0} for exclusive access finished.", this.resources.IndexOf(resource));
 			}
 
 			private async Task GetPreparationTask(Resource resource) {
