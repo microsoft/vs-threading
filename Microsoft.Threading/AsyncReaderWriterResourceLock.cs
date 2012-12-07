@@ -346,6 +346,10 @@ namespace Microsoft.Threading {
 						}
 
 						if (this.service.IsWriteLockHeld && this.service.LockStackContains((AsyncReaderWriterLock.LockFlags)LockFlags.SkipInitialPreparation)) {
+							// We don't want to prepare the resource, but we must still wait for any previously scheduled preparations to complete,
+							// and most importantly, we must mark the resource as in a non-deterministic state so that the next consumer will prepare it
+							// regardless as to whether they are concurrent or exclusive.
+							this.SetUnknownResourceState(resource);
 							return resource;
 						} else {
 							// We can't currently use the caller's cancellation token for this task because 
@@ -357,6 +361,21 @@ namespace Microsoft.Threading {
 
 					await preparationTask.ConfigureAwait(false);
 					return resource;
+				}
+			}
+
+			/// <summary>
+			/// Sets the specified resource to be considered in an unknown state. Any subsequent access (exclusive or concurrent) will prepare the resource.
+			/// </summary>
+			private void SetUnknownResourceState(TResource resource) {
+				Requires.NotNull(resource, "resource");
+
+				lock (this.service.SyncObject) {
+					ResourcePreparationTaskAndValidity previousState;
+					this.resourcePreparationTasks.TryGetValue(resource, out previousState);
+					this.resourcePreparationTasks[resource] = new ResourcePreparationTaskAndValidity(
+						previousState.PreparationTask ?? TplExtensions.CompletedTask, // preserve the original task if it exists in case it's not finished
+						ResourceState.Unknown);
 				}
 			}
 
@@ -373,6 +392,7 @@ namespace Microsoft.Threading {
 				ResourcePreparationTaskAndValidity preparationTask;
 
 				bool forConcurrentUse = forcePrepareConcurrent || !this.service.IsWriteLockHeld;
+				var finalState = forConcurrentUse ? ResourceState.Concurrent : ResourceState.Exclusive;
 				if (!this.resourcePreparationTasks.TryGetValue(resource, out preparationTask)) {
 					var preparationDelegate = forConcurrentUse
 						? (cancellationToken.CanBeCanceled ? state => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state, cancellationToken) : this.prepareResourceConcurrentDelegate)
@@ -383,9 +403,9 @@ namespace Microsoft.Threading {
 					using (this.service.HideLocks()) {
 						preparationTask = new ResourcePreparationTaskAndValidity(
 							Task.Factory.StartNew(preparationDelegate, resource, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap(),
-							forConcurrentUse);
+							finalState);
 					}
-				} else if (preparationTask.ForConcurrentUse != forConcurrentUse) {
+				} else if (preparationTask.State != finalState) {
 					var preparationDelegate = forConcurrentUse
 						? (cancellationToken.CanBeCanceled ? (prev, state) => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state, cancellationToken) : this.prepareResourceConcurrentContinuationDelegate)
 						: (cancellationToken.CanBeCanceled ? (prev, state) => this.service.PrepareResourceForExclusiveAccessAsync((TResource)state, cancellationToken) : this.prepareResourceExclusiveContinuationDelegate);
@@ -395,7 +415,7 @@ namespace Microsoft.Threading {
 					using (this.service.HideLocks()) {
 						preparationTask = new ResourcePreparationTaskAndValidity(
 							preparationTask.PreparationTask.ContinueWith(preparationDelegate, resource, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap(),
-							forConcurrentUse);
+							finalState);
 					}
 				}
 
@@ -420,11 +440,11 @@ namespace Microsoft.Threading {
 				/// <summary>
 				/// Initializes a new instance of the <see cref="ResourcePreparationTaskAndValidity"/> class.
 				/// </summary>
-				internal ResourcePreparationTaskAndValidity(Task preparationTask, bool concurrentPreparation)
+				internal ResourcePreparationTaskAndValidity(Task preparationTask, ResourceState finalState)
 					: this() {
 					Requires.NotNull(preparationTask, "preparationTask");
 					this.PreparationTask = preparationTask;
-					this.ForConcurrentUse = concurrentPreparation;
+					this.State = finalState;
 				}
 
 				/// <summary>
@@ -433,10 +453,29 @@ namespace Microsoft.Threading {
 				internal Task PreparationTask { get; private set; }
 
 				/// <summary>
-				/// Gets a flag indicating whether the task is preparing the resource for concurrent use
-				/// (as opposed to exclusive use).
+				/// Gets the state the resource will be in when <see cref="PreparationTask"/> has completed.
 				/// </summary>
-				internal bool ForConcurrentUse { get; private set; }
+				internal ResourceState State { get; private set; }
+			}
+
+			/// <summary>
+			/// Describes the states a resource can be in.
+			/// </summary>
+			private enum ResourceState {
+				/// <summary>
+				/// The resource is neither prepared for concurrent nor exclusive access.
+				/// </summary>
+				Unknown,
+
+				/// <summary>
+				/// The resource is prepared for concurrent access.
+				/// </summary>
+				Concurrent,
+
+				/// <summary>
+				/// The resource is prepared for exclusive access.
+				/// </summary>
+				Exclusive,
 			}
 		}
 
