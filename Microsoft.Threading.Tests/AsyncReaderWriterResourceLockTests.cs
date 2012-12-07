@@ -453,6 +453,42 @@
 			}
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ResourcePreparationOccursForEachTopLevelExclusiveWrite() {
+			using (var access = await this.resourceLock.WriteLockAsync()) {
+				await access.GetResourceAsync(1);
+				Assert.AreEqual(0, this.resources[1].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(1, this.resources[1].ExclusiveAccessPreparationCount);
+
+				Assert.AreEqual(0, this.resources[2].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, this.resources[2].ExclusiveAccessPreparationCount);
+			}
+
+			using (var access = await this.resourceLock.WriteLockAsync()) {
+				// Although the resource was already prepared for exclusive access, each exclusive access
+				// is its own entity and requires preparation. In particular the CPS ProjectLockService
+				// has to prepare resources with consideration to exclusive lock flags, so preparation
+				// may be unique to each invocation.
+				await access.GetResourceAsync(1);
+				Assert.AreEqual(0, this.resources[1].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(2, this.resources[1].ExclusiveAccessPreparationCount);
+
+				Assert.AreEqual(0, this.resources[2].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, this.resources[2].ExclusiveAccessPreparationCount);
+
+				await access.GetResourceAsync(2);
+				Assert.AreEqual(0, this.resources[2].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(1, this.resources[2].ExclusiveAccessPreparationCount);
+
+				using (var access2 = await this.resourceLock.WriteLockAsync()) {
+					// This is the same top-level exclusive lock, so preparation should *not* occur a 3rd time.
+					await access2.GetResourceAsync(1);
+					Assert.AreEqual(0, this.resources[1].ConcurrentAccessPreparationCount);
+					Assert.AreEqual(2, this.resources[1].ExclusiveAccessPreparationCount);
+				}
+			}
+		}
+
 		[TestMethod, TestCategory("Stress"), Timeout(5000)]
 		public async Task ResourceLockStress() {
 			const int MaxLockAcquisitions = -1;
