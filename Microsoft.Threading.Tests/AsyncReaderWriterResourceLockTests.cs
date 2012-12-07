@@ -159,6 +159,93 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public async Task PreparationSwitchesFromExclusiveToConcurrent() {
+			using (var access = await this.resourceLock.WriteLockAsync()) {
+				var resource = await access.GetResourceAsync(1);
+				Assert.AreEqual(Resource.State.Exclusive, resource.CurrentState);
+			}
+
+			using (var access = await this.resourceLock.ReadLockAsync()) {
+				var resource = await access.GetResourceAsync(1);
+				Assert.AreEqual(Resource.State.Concurrent, resource.CurrentState);
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task PreparationSwitchesFromConcurrenToExclusive() {
+			using (var access = await this.resourceLock.ReadLockAsync()) {
+				var resource = await access.GetResourceAsync(1);
+				Assert.AreEqual(Resource.State.Concurrent, resource.CurrentState);
+			}
+
+			using (var access = await this.resourceLock.WriteLockAsync()) {
+				var resource = await access.GetResourceAsync(1);
+				Assert.AreEqual(Resource.State.Exclusive, resource.CurrentState);
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task PreparationSwitchesWithSkipInitialPreparation() {
+			using (var access = await this.resourceLock.ReadLockAsync()) {
+				var resource = await access.GetResourceAsync(1);
+				Assert.AreEqual(Resource.State.Concurrent, resource.CurrentState);
+				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
+			}
+
+			// Obtain a resource via a write lock with SkipInitialPreparation on.
+			using (var writeAccess = await this.resourceLock.WriteLockAsync(ResourceLockWrapper.LockFlags.SkipInitialPreparation)) {
+				var resource = await writeAccess.GetResourceAsync(1);
+				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
+				Assert.AreEqual(Resource.State.Concurrent, resource.CurrentState);
+			}
+
+			using (var access = await this.resourceLock.ReadLockAsync()) {
+				var resource = await access.GetResourceAsync(1);
+				Assert.AreEqual(Resource.State.Concurrent, resource.CurrentState);
+				Assert.AreEqual(2, resource.ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task PreparationOccursForEachTopLevelExclusiveWrite() {
+			using (var access = await this.resourceLock.WriteLockAsync()) {
+				await access.GetResourceAsync(1);
+				Assert.AreEqual(0, this.resources[1].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(1, this.resources[1].ExclusiveAccessPreparationCount);
+
+				Assert.AreEqual(0, this.resources[2].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, this.resources[2].ExclusiveAccessPreparationCount);
+			}
+
+			using (var access = await this.resourceLock.WriteLockAsync()) {
+				// Although the resource was already prepared for exclusive access, each exclusive access
+				// is its own entity and requires preparation. In particular the CPS ProjectLockService
+				// has to prepare resources with consideration to exclusive lock flags, so preparation
+				// may be unique to each invocation.
+				await access.GetResourceAsync(1);
+				Assert.AreEqual(0, this.resources[1].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(2, this.resources[1].ExclusiveAccessPreparationCount);
+
+				Assert.AreEqual(0, this.resources[2].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, this.resources[2].ExclusiveAccessPreparationCount);
+
+				await access.GetResourceAsync(2);
+				Assert.AreEqual(0, this.resources[2].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(1, this.resources[2].ExclusiveAccessPreparationCount);
+
+				using (var access2 = await this.resourceLock.WriteLockAsync()) {
+					// This is the same top-level exclusive lock, so preparation should *not* occur a 3rd time.
+					await access2.GetResourceAsync(1);
+					Assert.AreEqual(0, this.resources[1].ConcurrentAccessPreparationCount);
+					Assert.AreEqual(2, this.resources[1].ExclusiveAccessPreparationCount);
+				}
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task ResourceHeldByUpgradeableReadPreparedWhenWriteLockReleased() {
 			using (var access = await this.resourceLock.UpgradeableReadLockAsync()) {
 				var resource = await access.GetResourceAsync(1);
@@ -400,93 +487,6 @@
 				using (this.resourceLock.WriteLock(AsyncReaderWriterResourceLock<int, Resource>.LockFlags.None)) {
 				}
 			});
-		}
-
-		[TestMethod, Timeout(TestTimeout)]
-		public async Task ResourcePreparationSwitchesFromExclusiveToConcurrent() {
-			using (var access = await this.resourceLock.WriteLockAsync()) {
-				var resource = await access.GetResourceAsync(1);
-				Assert.AreEqual(Resource.State.Exclusive, resource.CurrentState);
-			}
-
-			using (var access = await this.resourceLock.ReadLockAsync()) {
-				var resource = await access.GetResourceAsync(1);
-				Assert.AreEqual(Resource.State.Concurrent, resource.CurrentState);
-			}
-		}
-
-		[TestMethod, Timeout(TestTimeout)]
-		public async Task ResourcePreparationSwitchesFromConcurrenToExclusive() {
-			using (var access = await this.resourceLock.ReadLockAsync()) {
-				var resource = await access.GetResourceAsync(1);
-				Assert.AreEqual(Resource.State.Concurrent, resource.CurrentState);
-			}
-
-			using (var access = await this.resourceLock.WriteLockAsync()) {
-				var resource = await access.GetResourceAsync(1);
-				Assert.AreEqual(Resource.State.Exclusive, resource.CurrentState);
-			}
-		}
-
-		[TestMethod, Timeout(TestTimeout)]
-		public async Task ResourcePreparationSwitchesWithSkipInitialPreparation() {
-			using (var access = await this.resourceLock.ReadLockAsync()) {
-				var resource = await access.GetResourceAsync(1);
-				Assert.AreEqual(Resource.State.Concurrent, resource.CurrentState);
-				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
-				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
-			}
-
-			// Obtain a resource via a write lock with SkipInitialPreparation on.
-			using (var writeAccess = await this.resourceLock.WriteLockAsync(ResourceLockWrapper.LockFlags.SkipInitialPreparation)) {
-				var resource = await writeAccess.GetResourceAsync(1);
-				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
-				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
-				Assert.AreEqual(Resource.State.Concurrent, resource.CurrentState);
-			}
-
-			using (var access = await this.resourceLock.ReadLockAsync()) {
-				var resource = await access.GetResourceAsync(1);
-				Assert.AreEqual(Resource.State.Concurrent, resource.CurrentState);
-				Assert.AreEqual(2, resource.ConcurrentAccessPreparationCount);
-				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
-			}
-		}
-
-		[TestMethod, Timeout(TestTimeout)]
-		public async Task ResourcePreparationOccursForEachTopLevelExclusiveWrite() {
-			using (var access = await this.resourceLock.WriteLockAsync()) {
-				await access.GetResourceAsync(1);
-				Assert.AreEqual(0, this.resources[1].ConcurrentAccessPreparationCount);
-				Assert.AreEqual(1, this.resources[1].ExclusiveAccessPreparationCount);
-
-				Assert.AreEqual(0, this.resources[2].ConcurrentAccessPreparationCount);
-				Assert.AreEqual(0, this.resources[2].ExclusiveAccessPreparationCount);
-			}
-
-			using (var access = await this.resourceLock.WriteLockAsync()) {
-				// Although the resource was already prepared for exclusive access, each exclusive access
-				// is its own entity and requires preparation. In particular the CPS ProjectLockService
-				// has to prepare resources with consideration to exclusive lock flags, so preparation
-				// may be unique to each invocation.
-				await access.GetResourceAsync(1);
-				Assert.AreEqual(0, this.resources[1].ConcurrentAccessPreparationCount);
-				Assert.AreEqual(2, this.resources[1].ExclusiveAccessPreparationCount);
-
-				Assert.AreEqual(0, this.resources[2].ConcurrentAccessPreparationCount);
-				Assert.AreEqual(0, this.resources[2].ExclusiveAccessPreparationCount);
-
-				await access.GetResourceAsync(2);
-				Assert.AreEqual(0, this.resources[2].ConcurrentAccessPreparationCount);
-				Assert.AreEqual(1, this.resources[2].ExclusiveAccessPreparationCount);
-
-				using (var access2 = await this.resourceLock.WriteLockAsync()) {
-					// This is the same top-level exclusive lock, so preparation should *not* occur a 3rd time.
-					await access2.GetResourceAsync(1);
-					Assert.AreEqual(0, this.resources[1].ConcurrentAccessPreparationCount);
-					Assert.AreEqual(2, this.resources[1].ExclusiveAccessPreparationCount);
-				}
-			}
 		}
 
 		[TestMethod, TestCategory("Stress"), Timeout(5000)]
