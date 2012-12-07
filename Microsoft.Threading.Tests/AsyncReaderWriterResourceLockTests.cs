@@ -428,6 +428,31 @@
 			}
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ResourcePreparationSwitchesWithSkipInitialPreparation() {
+			using (var access = await this.resourceLock.ReadLockAsync()) {
+				var resource = await access.GetResourceAsync(1);
+				Assert.AreEqual(Resource.State.Concurrent, resource.CurrentState);
+				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
+			}
+
+			// Obtain a resource via a write lock with SkipInitialPreparation on.
+			using (var writeAccess = await this.resourceLock.WriteLockAsync(ResourceLockWrapper.LockFlags.SkipInitialPreparation)) {
+				var resource = await writeAccess.GetResourceAsync(1);
+				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
+				Assert.AreEqual(Resource.State.Concurrent, resource.CurrentState);
+			}
+
+			using (var access = await this.resourceLock.ReadLockAsync()) {
+				var resource = await access.GetResourceAsync(1);
+				Assert.AreEqual(Resource.State.Concurrent, resource.CurrentState);
+				Assert.AreEqual(2, resource.ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
+			}
+		}
+
 		[TestMethod, TestCategory("Stress"), Timeout(5000)]
 		public async Task ResourceLockStress() {
 			const int MaxLockAcquisitions = -1;
