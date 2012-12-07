@@ -302,6 +302,95 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public async Task PreparationIsAppliedToResourceImpactedByOutsideChange() {
+			using (var access = await this.resourceLock.ReadLockAsync()) {
+				this.resourceLock.SetResourceAsAccessed(this.resources[1]);
+				await access.GetResourceAsync(2);
+
+				Assert.AreEqual(0, this.resources[1].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, this.resources[1].ExclusiveAccessPreparationCount);
+				Assert.AreEqual(1, this.resources[2].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, this.resources[2].ExclusiveAccessPreparationCount);
+			}
+
+			using (var access = await this.resourceLock.WriteLockAsync()) {
+				this.resourceLock.SetResourceAsAccessed(this.resources[1]);
+				await access.GetResourceAsync(2);
+
+				Assert.AreEqual(0, this.resources[1].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, this.resources[1].ExclusiveAccessPreparationCount);
+				Assert.AreEqual(1, this.resources[2].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(1, this.resources[2].ExclusiveAccessPreparationCount);
+			}
+
+			Assert.AreEqual(0, this.resources[1].ConcurrentAccessPreparationCount);
+			Assert.AreEqual(0, this.resources[1].ExclusiveAccessPreparationCount);
+			Assert.AreEqual(1, this.resources[2].ConcurrentAccessPreparationCount);
+			Assert.AreEqual(1, this.resources[2].ExclusiveAccessPreparationCount);
+
+			using (var access = await this.resourceLock.ReadLockAsync()) {
+				Assert.AreEqual(0, this.resources[1].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, this.resources[1].ExclusiveAccessPreparationCount);
+				Assert.AreEqual(1, this.resources[2].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(1, this.resources[2].ExclusiveAccessPreparationCount);
+
+				await access.GetResourceAsync(1);
+				await access.GetResourceAsync(2);
+
+				Assert.AreEqual(1, this.resources[1].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, this.resources[1].ExclusiveAccessPreparationCount);
+				Assert.AreEqual(2, this.resources[2].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(1, this.resources[2].ExclusiveAccessPreparationCount);
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task PreparationIsAppliedToResourceImpactedByOutsideChangePredicate() {
+			using (var access = await this.resourceLock.ReadLockAsync()) {
+				this.resourceLock.SetResourceAsAccessed(resource => {
+					Assert.Fail("Read locks should not invoke this.");
+					return false;
+				});
+				await access.GetResourceAsync(2);
+
+				Assert.AreEqual(0, this.resources[1].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, this.resources[1].ExclusiveAccessPreparationCount);
+				Assert.AreEqual(1, this.resources[2].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, this.resources[2].ExclusiveAccessPreparationCount);
+			}
+
+			using (var access = await this.resourceLock.WriteLockAsync()) {
+				this.resourceLock.SetResourceAsAccessed(resource => resource == this.resources[1]);
+				await access.GetResourceAsync(2);
+
+				Assert.AreEqual(0, this.resources[1].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, this.resources[1].ExclusiveAccessPreparationCount);
+				Assert.AreEqual(1, this.resources[2].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(1, this.resources[2].ExclusiveAccessPreparationCount);
+			}
+
+			Assert.AreEqual(0, this.resources[1].ConcurrentAccessPreparationCount);
+			Assert.AreEqual(0, this.resources[1].ExclusiveAccessPreparationCount);
+			Assert.AreEqual(1, this.resources[2].ConcurrentAccessPreparationCount);
+			Assert.AreEqual(1, this.resources[2].ExclusiveAccessPreparationCount);
+
+			using (var access = await this.resourceLock.ReadLockAsync()) {
+				Assert.AreEqual(0, this.resources[1].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, this.resources[1].ExclusiveAccessPreparationCount);
+				Assert.AreEqual(1, this.resources[2].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(1, this.resources[2].ExclusiveAccessPreparationCount);
+
+				await access.GetResourceAsync(1);
+				await access.GetResourceAsync(2);
+
+				Assert.AreEqual(1, this.resources[1].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, this.resources[1].ExclusiveAccessPreparationCount);
+				Assert.AreEqual(2, this.resources[2].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(1, this.resources[2].ExclusiveAccessPreparationCount);
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task ResourceHeldByStickyUpgradeableReadNotPreparedWhenExplicitWriteLockReleased() {
 			using (var access = await this.resourceLock.UpgradeableReadLockAsync(AsyncReaderWriterResourceLock<int, Resource>.LockFlags.StickyWrite)) {
 				var resource = await access.GetResourceAsync(1);
@@ -696,6 +785,14 @@
 
 			internal AsyncAutoResetEvent PreparationTaskBegun {
 				get { return this.preparationTaskBegun; }
+			}
+
+			internal new void SetResourceAsAccessed(Resource resource) {
+				base.SetResourceAsAccessed(resource);
+			}
+
+			internal new void SetResourceAsAccessed(Predicate<Resource> resourceCheck) {
+				base.SetResourceAsAccessed(resourceCheck);
 			}
 
 			protected override Task<Resource> GetResourceAsync(int resourceMoniker, CancellationToken cancellationToken) {

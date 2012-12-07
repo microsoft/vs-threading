@@ -203,6 +203,22 @@ namespace Microsoft.Threading {
 		protected abstract Task<TResource> GetResourceAsync(TMoniker resourceMoniker, CancellationToken cancellationToken);
 
 		/// <summary>
+		/// Marks a resource as having been retrieved under a lock.
+		/// </summary>
+		protected void SetResourceAsAccessed(TResource resource) {
+			this.helper.SetResourceAsAccessed(resource);
+		}
+
+		/// <summary>
+		/// Marks any loaded resources as having been retrieved under a lock if they
+		/// satisfy some predicate.
+		/// </summary>
+		/// <param name="resourceCheck">A function that returns <c>true</c> if the provided resource should be considered retrieved.</param>
+		protected void SetResourceAsAccessed(Predicate<TResource> resourceCheck) {
+			this.helper.SetResourceAsAccessed(resourceCheck);
+		}
+
+		/// <summary>
 		/// Prepares a resource for concurrent access.
 		/// </summary>
 		/// <param name="resource"></param>
@@ -305,6 +321,40 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>
+			/// Marks a resource as having been retrieved under a lock.
+			/// </summary>
+			internal void SetResourceAsAccessed(TResource resource) {
+				Requires.NotNull(resource, "resource");
+
+				lock (this.service.SyncObject) {
+					if (this.service.IsWriteLockHeld) {
+						this.resourcesAcquiredWithinWriteLock.Add(resource);
+					} else if (this.service.IsUpgradeableReadLockHeld) {
+						this.resourcesAcquiredWithinUpgradeableRead.Add(resource);
+					}
+				}
+			}
+
+			/// <summary>
+			/// Marks any loaded resources as having been retrieved under a lock if they
+			/// satisfy some predicate.
+			/// </summary>
+			/// <param name="resourceCheck">A function that returns <c>true</c> if the provided resource should be considered retrieved.</param>
+			internal void SetResourceAsAccessed(Predicate<TResource> resourceCheck) {
+				Requires.NotNull(resourceCheck, "resourceCheck");
+
+				lock (this.service.SyncObject) {
+					if (this.service.IsWriteLockHeld  || this.service.IsUpgradeableReadLockHeld) {
+						foreach (var resource in this.resourcePreparationTasks) {
+							if (resourceCheck(resource.Key)) {
+								this.SetResourceAsAccessed(resource.Key);
+							}
+						}
+					}
+				}
+			}
+
+			/// <summary>
 			/// Ensures that all resources are marked as unprepared so at next request they are prepared again.
 			/// </summary>
 			internal Task OnExclusiveLockReleasedAsync() {
@@ -354,11 +404,7 @@ namespace Microsoft.Threading {
 					Task preparationTask;
 
 					lock (this.service.SyncObject) {
-						if (this.service.IsWriteLockHeld) {
-							this.resourcesAcquiredWithinWriteLock.Add(resource);
-						} else if (this.service.IsUpgradeableReadLockHeld) {
-							this.resourcesAcquiredWithinUpgradeableRead.Add(resource);
-						}
+						this.SetResourceAsAccessed(resource);
 
 						if (this.service.IsWriteLockHeld && this.service.LockStackContains((AsyncReaderWriterLock.LockFlags)LockFlags.SkipInitialPreparation)) {
 							// We don't want to prepare the resource, but we must still wait for any previously scheduled preparations to complete,
