@@ -391,6 +391,45 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public async Task PreparationIsAssumedUnknownForAllResourcesAfterExclusiveLockReleased() {
+			using (var access = await this.resourceLock.ReadLockAsync()) {
+				await access.GetResourceAsync(1);
+				await access.GetResourceAsync(2);
+			}
+
+			Assert.AreEqual(1, this.resources[1].ConcurrentAccessPreparationCount);
+			Assert.AreEqual(0, this.resources[1].ExclusiveAccessPreparationCount);
+			Assert.AreEqual(1, this.resources[2].ConcurrentAccessPreparationCount);
+			Assert.AreEqual(0, this.resources[2].ExclusiveAccessPreparationCount);
+
+			using (var access = await this.resourceLock.WriteLockAsync()) {
+			}
+
+			Assert.AreEqual(1, this.resources[1].ConcurrentAccessPreparationCount);
+			Assert.AreEqual(0, this.resources[1].ExclusiveAccessPreparationCount);
+			Assert.AreEqual(1, this.resources[2].ConcurrentAccessPreparationCount);
+			Assert.AreEqual(0, this.resources[2].ExclusiveAccessPreparationCount);
+
+			using (var access = await this.resourceLock.ReadLockAsync()) {
+				// Although the write lock above did not explicitly request access to this
+				// resource, requesting access is just a convenience. If the resource is available
+				// by some other means or can be altered indirectly (and in CPS it is, via XML!)
+				// then it's still invalidated and must be re-prepared for concurrent access.
+				await access.GetResourceAsync(1);
+				Assert.AreEqual(2, this.resources[1].ConcurrentAccessPreparationCount);
+				Assert.AreEqual(0, this.resources[1].ExclusiveAccessPreparationCount);
+			}
+
+			Assert.AreEqual(2, this.resources[1].ConcurrentAccessPreparationCount);
+			Assert.AreEqual(0, this.resources[1].ExclusiveAccessPreparationCount);
+
+			// Resource #2 doesn't get reprepared (yet) because no one has asked for it since
+			// the write lock was released.
+			Assert.AreEqual(1, this.resources[2].ConcurrentAccessPreparationCount);
+			Assert.AreEqual(0, this.resources[2].ExclusiveAccessPreparationCount);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task ResourceHeldByStickyUpgradeableReadNotPreparedWhenExplicitWriteLockReleased() {
 			using (var access = await this.resourceLock.UpgradeableReadLockAsync(AsyncReaderWriterResourceLock<int, Resource>.LockFlags.StickyWrite)) {
 				var resource = await access.GetResourceAsync(1);

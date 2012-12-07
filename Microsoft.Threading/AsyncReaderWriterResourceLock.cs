@@ -344,7 +344,7 @@ namespace Microsoft.Threading {
 				Requires.NotNull(resourceCheck, "resourceCheck");
 
 				lock (this.service.SyncObject) {
-					if (this.service.IsWriteLockHeld  || this.service.IsUpgradeableReadLockHeld) {
+					if (this.service.IsWriteLockHeld || this.service.IsUpgradeableReadLockHeld) {
 						foreach (var resource in this.resourcePreparationTasks) {
 							if (resourceCheck(resource.Key)) {
 								this.SetResourceAsAccessed(resource.Key);
@@ -359,10 +359,10 @@ namespace Microsoft.Threading {
 			/// </summary>
 			internal Task OnExclusiveLockReleasedAsync() {
 				lock (this.service.SyncObject) {
-					// Reset any resources acquired within the write lock or a surrounding
-					// upgradeable read to an unknown state.
-					this.SetUnknownResourceState(this.resourcesAcquiredWithinWriteLock);
-					this.SetUnknownResourceState(this.resourcesAcquiredWithinUpgradeableRead);
+					// Reset ALL resources to an unknown state. Not just the ones explicitly requested
+					// because backdoors can and legitimately do (as in CPS) exist for tampering
+					// with a resource without going through our access methods.
+					this.SetUnknownResourceState(this.resourcePreparationTasks.Select(rp => rp.Key).ToList());
 					this.resourcesAcquiredWithinWriteLock.Clear(); // the write lock is gone now.
 
 					if (this.service.IsUpgradeableReadLockHeld && this.resourcesAcquiredWithinUpgradeableRead.Count > 0) {
