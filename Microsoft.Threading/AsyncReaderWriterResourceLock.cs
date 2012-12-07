@@ -281,6 +281,11 @@ namespace Microsoft.Threading {
 			private readonly HashSet<TResource> resourcesAcquiredWithinUpgradeableRead = new HashSet<TResource>();
 
 			/// <summary>
+			/// A collection of all the resources requested within the outermost write lock.
+			/// </summary>
+			private readonly HashSet<TResource> resourcesAcquiredWithinWriteLock = new HashSet<TResource>();
+
+			/// <summary>
 			/// A map of resources to the tasks that most recently began evaluating them.
 			/// </summary>
 			private WeakKeyDictionary<TResource, ResourcePreparationTaskAndValidity> resourcePreparationTasks = new WeakKeyDictionary<TResource, ResourcePreparationTaskAndValidity>();
@@ -303,19 +308,28 @@ namespace Microsoft.Threading {
 			/// Ensures that all resources are marked as unprepared so at next request they are prepared again.
 			/// </summary>
 			internal Task OnExclusiveLockReleasedAsync() {
-				if (this.service.IsUpgradeableReadLockHeld && this.resourcesAcquiredWithinUpgradeableRead.Count > 0) {
-					// We must also synchronously prepare all resources that were acquired within the upgradeable read lock
-					// because as soon as this method returns these resources may be access concurrently again.
-					var preparationTasks = new Task[this.resourcesAcquiredWithinUpgradeableRead.Count];
-					int taskIndex = 0;
-					foreach (var resource in this.resourcesAcquiredWithinUpgradeableRead) {
-						preparationTasks[taskIndex++] = this.PrepareResourceAsync(resource, CancellationToken.None, forcePrepareConcurrent: true);
+				lock (this.service.SyncObject) {
+					// Reset any resources acquired within the write lock to an unknown state.
+					foreach (var resource in this.resourcesAcquiredWithinWriteLock) {
+						this.SetUnknownResourceState(resource);
 					}
 
-					if (preparationTasks.Length == 1) {
-						return preparationTasks[0];
-					} else if (preparationTasks.Length > 1) {
-						return Task.WhenAll(preparationTasks);
+					this.resourcesAcquiredWithinWriteLock.Clear();
+
+					if (this.service.IsUpgradeableReadLockHeld && this.resourcesAcquiredWithinUpgradeableRead.Count > 0) {
+						// We must also synchronously prepare all resources that were acquired within the upgradeable read lock
+						// because as soon as this method returns these resources may be access concurrently again.
+						var preparationTasks = new Task[this.resourcesAcquiredWithinUpgradeableRead.Count];
+						int taskIndex = 0;
+						foreach (var resource in this.resourcesAcquiredWithinUpgradeableRead) {
+							preparationTasks[taskIndex++] = this.PrepareResourceAsync(resource, CancellationToken.None, forcePrepareConcurrent: true);
+						}
+
+						if (preparationTasks.Length == 1) {
+							return preparationTasks[0];
+						} else if (preparationTasks.Length > 1) {
+							return Task.WhenAll(preparationTasks);
+						}
 					}
 				}
 
@@ -341,7 +355,9 @@ namespace Microsoft.Threading {
 					Task preparationTask;
 
 					lock (this.service.SyncObject) {
-						if (this.service.IsUpgradeableReadLockHeld && !this.service.IsWriteLockHeld) {
+						if (this.service.IsWriteLockHeld) {
+							this.resourcesAcquiredWithinWriteLock.Add(resource);
+						} else if (this.service.IsUpgradeableReadLockHeld) {
 							this.resourcesAcquiredWithinUpgradeableRead.Add(resource);
 						}
 

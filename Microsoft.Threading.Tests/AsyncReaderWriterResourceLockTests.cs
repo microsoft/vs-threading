@@ -62,7 +62,7 @@
 				var resource = await access.GetResourceAsync(1);
 				Assert.AreSame(this.resources[1], resource);
 				Assert.AreEqual(0, resource.ConcurrentAccessPreparationCount);
-				Assert.AreEqual(1, resource.ExclusiveAccessPreparationCount);
+				Assert.AreEqual(2, resource.ExclusiveAccessPreparationCount);
 			}
 		}
 
