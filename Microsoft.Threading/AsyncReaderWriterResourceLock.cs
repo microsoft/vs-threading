@@ -413,15 +413,29 @@ namespace Microsoft.Threading {
 				return this.service.ReadLock(CancellationToken.None);
 			}
 
-			private class ResourcePreparationTaskAndValidity {
-				internal ResourcePreparationTaskAndValidity(Task preparationTask, bool concurrentPreparation) {
+			/// <summary>
+			/// Tracks a task that prepares a resource for either concurrent or exclusive use.
+			/// </summary>
+			private struct ResourcePreparationTaskAndValidity {
+				/// <summary>
+				/// Initializes a new instance of the <see cref="ResourcePreparationTaskAndValidity"/> class.
+				/// </summary>
+				internal ResourcePreparationTaskAndValidity(Task preparationTask, bool concurrentPreparation)
+					: this() {
 					Requires.NotNull(preparationTask, "preparationTask");
 					this.PreparationTask = preparationTask;
 					this.ForConcurrentUse = concurrentPreparation;
 				}
 
+				/// <summary>
+				/// Gets the task that is preparing the resource.
+				/// </summary>
 				internal Task PreparationTask { get; private set; }
 
+				/// <summary>
+				/// Gets a flag indicating whether the task is preparing the resource for concurrent use
+				/// (as opposed to exclusive use).
+				/// </summary>
 				internal bool ForConcurrentUse { get; private set; }
 			}
 		}
