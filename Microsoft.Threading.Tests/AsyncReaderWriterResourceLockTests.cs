@@ -172,7 +172,7 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task PreparationSwitchesFromConcurrenToExclusive() {
+		public async Task PreparationSwitchesFromConcurrentToExclusive() {
 			using (var access = await this.resourceLock.ReadLockAsync()) {
 				var resource = await access.GetResourceAsync(1);
 				Assert.AreEqual(Resource.State.Concurrent, resource.CurrentState);
