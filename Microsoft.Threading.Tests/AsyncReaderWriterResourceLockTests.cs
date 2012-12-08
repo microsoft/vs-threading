@@ -246,6 +246,49 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public async Task PreparationSucceedsForConcurrentReadersWhenOneCancels() {
+			var preparationComplete = new TaskCompletionSource<object>();
+			this.resourceLock.SetPreparationTask(this.resources[1], preparationComplete.Task).Forget();
+
+			var cts = new CancellationTokenSource();
+			var reader1Waiting = new AsyncManualResetEvent();
+			var reader2Waiting = new AsyncManualResetEvent();
+			var reader1 = Task.Run(async delegate {
+				using (var access = await this.resourceLock.ReadLockAsync()) {
+					var resourceTask = access.GetResourceAsync(1, cts.Token);
+					Assert.IsFalse(resourceTask.IsCompleted);
+					reader1Waiting.Set();
+					try {
+						await resourceTask;
+						Assert.Fail("Expected OperationCanceledException not thrown.");
+					} catch (OperationCanceledException) {
+					}
+				}
+			});
+			var reader2 = Task.Run(async delegate {
+				using (var access = await this.resourceLock.ReadLockAsync()) {
+					var resourceTask = access.GetResourceAsync(1);
+					Assert.IsFalse(resourceTask.IsCompleted);
+					reader2Waiting.Set();
+					var resource = await resourceTask;
+					Assert.AreSame(resource, this.resources[1]);
+				}
+			});
+
+			// Make sure we have two readers concurrently waiting for the resource.
+			await reader1Waiting;
+			await reader2Waiting;
+
+			// Verify that cancelling immediately releases the cancellable reader before the resource preparation is completed.
+			cts.Cancel();
+			await reader1;
+
+			// Now complete the resource preparation and verify that the second reader completes successfully.
+			preparationComplete.SetResult(null);
+			await reader2;
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task ResourceHeldByUpgradeableReadPreparedWhenWriteLockReleasedWithoutResource() {
 			using (var access = await this.resourceLock.UpgradeableReadLockAsync()) {
 				await access.GetResourceAsync(1);
@@ -839,6 +882,7 @@
 			}
 
 			protected override async Task PrepareResourceForConcurrentAccessAsync(Resource resource, CancellationToken cancellationToken) {
+				cancellationToken.ThrowIfCancellationRequested();
 				VerboseLog("Preparing resource {0} for concurrent access started.", this.resources.IndexOf(resource));
 				resource.ConcurrentAccessPreparationCount++;
 				resource.CurrentState = Resource.State.PreparingConcurrent;
@@ -849,6 +893,7 @@
 			}
 
 			protected override async Task PrepareResourceForExclusiveAccessAsync(Resource resource, CancellationToken cancellationToken) {
+				cancellationToken.ThrowIfCancellationRequested();
 				VerboseLog("Preparing resource {0} for exclusive access started.", this.resources.IndexOf(resource));
 				resource.ExclusiveAccessPreparationCount++;
 				resource.CurrentState = Resource.State.PreparingExclusive;

@@ -462,12 +462,15 @@ namespace Microsoft.Threading {
 				Assumes.True(Monitor.IsEntered(this.service.SyncObject));
 				ResourcePreparationTaskAndValidity preparationTask;
 
+				// We deliberately ignore the cancellation token in the tasks we create and save because the tasks can be shared
+				// across requests and we can't have task continuation chains where tasks within the chain get canceled
+				// as that can cause premature starting of the next task in the chain.
 				bool forConcurrentUse = forcePrepareConcurrent || !this.service.IsWriteLockHeld;
 				var finalState = forConcurrentUse ? ResourceState.Concurrent : ResourceState.Exclusive;
 				if (!this.resourcePreparationTasks.TryGetValue(resource, out preparationTask)) {
 					var preparationDelegate = forConcurrentUse
-						? (cancellationToken.CanBeCanceled ? state => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state, cancellationToken) : this.prepareResourceConcurrentDelegate)
-						: (cancellationToken.CanBeCanceled ? state => this.service.PrepareResourceForExclusiveAccessAsync((TResource)state, cancellationToken) : this.prepareResourceExclusiveDelegate);
+						? this.prepareResourceConcurrentDelegate
+						: this.prepareResourceExclusiveDelegate;
 
 					// We kick this off on a new task because we're currently holding a private lock
 					// and don't want to execute arbitrary code.  Let's also hide the ARWL from the delegate.
@@ -478,8 +481,8 @@ namespace Microsoft.Threading {
 					}
 				} else if (preparationTask.State != finalState) {
 					var preparationDelegate = forConcurrentUse
-						? (cancellationToken.CanBeCanceled ? (prev, state) => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state, cancellationToken) : this.prepareResourceConcurrentContinuationDelegate)
-						: (cancellationToken.CanBeCanceled ? (prev, state) => this.service.PrepareResourceForExclusiveAccessAsync((TResource)state, cancellationToken) : this.prepareResourceExclusiveContinuationDelegate);
+						? this.prepareResourceConcurrentContinuationDelegate
+						: this.prepareResourceExclusiveContinuationDelegate;
 
 					// We kick this off on a new task because we're currently holding a private lock
 					// and don't want to execute arbitrary code.  Let's also hide the ARWL from the delegate.
@@ -490,8 +493,13 @@ namespace Microsoft.Threading {
 					}
 				}
 
+				Assumes.NotNull(preparationTask.PreparationTask);
 				this.resourcePreparationTasks[resource] = preparationTask;
-				return preparationTask.PreparationTask;
+
+				// We tack cancellation onto the task that we actually return to the caller.
+				// This doesn't cancel resource preparation, but it does allow the caller to return early
+				// in the event of their own cancellation token being canceled.
+				return preparationTask.PreparationTask.WithCancellation(cancellationToken);
 			}
 
 			/// <summary>
