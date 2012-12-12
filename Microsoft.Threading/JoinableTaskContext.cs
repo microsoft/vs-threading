@@ -180,8 +180,8 @@ namespace Microsoft.Threading {
 				Requires.NotNull(pump, "pump");
 				this.pump = pump;
 
-				this.oldJoinable = pump.joinableOperation.Value;
-				pump.joinableOperation.Value = null;
+				this.oldJoinable = pump.AmbientTask;
+				pump.AmbientTask = null;
 
 				var jobSyncContext = SynchronizationContext.Current as JoinableTaskSynchronizationContext;
 				if (jobSyncContext != null) {
@@ -200,7 +200,7 @@ namespace Microsoft.Threading {
 			/// Reverts the async local and thread static values to their original values.
 			/// </summary>
 			public void Dispose() {
-				this.pump.joinableOperation.Value = this.oldJoinable;
+				this.pump.AmbientTask = this.oldJoinable;
 				this.temporarySyncContext.Dispose();
 			}
 		}
