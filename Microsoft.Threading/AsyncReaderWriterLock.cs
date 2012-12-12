@@ -972,7 +972,9 @@ namespace Microsoft.Threading {
 			// This method does NOT use the async keyword in its signature to avoid CallContext changes that we make
 			// causing a fork/clone of the CallContext, which defeats our alloc-free uncontested lock story.
 			Assumes.False(this.reenterConcurrencyPrepRunning); // No one should have any locks to release (and be executing code) if we're in our intermediate state.
-			Assumes.True(this.IsLockActive(awaiter, considerStaActive: true));
+			if (!this.IsLockActive(awaiter, considerStaActive: true)) {
+				return TplExtensions.CompletedTask;
+			}
 
 			Task reenterConcurrentOutsideCode = null;
 			Task synchronousCallbackExecution = null;
@@ -1540,12 +1542,12 @@ namespace Microsoft.Threading {
 						}
 					}
 
-					ThrowIfStaOrUnsupportedSyncContext();
 					if (this.fault != null) {
 						throw fault;
 					}
 
 					if (this.LockIssued) {
+						ThrowIfStaOrUnsupportedSyncContext();
 						var priorSynchronizationContext = SynchronizationContext.Current;
 						try {
 							bool clearSynchronizationContext = false;
@@ -1570,6 +1572,7 @@ namespace Microsoft.Threading {
 						throw new OperationCanceledException();
 					}
 
+					ThrowIfStaOrUnsupportedSyncContext();
 					throw Assumes.NotReachable();
 				} catch (OperationCanceledException) {
 					// Don't release at this point, or else it would recycle this instance prematurely

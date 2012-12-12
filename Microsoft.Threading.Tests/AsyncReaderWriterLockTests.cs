@@ -1959,6 +1959,19 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void PrecancelledWriteLockAsyncRequestOnSTA() {
+			var cts = new CancellationTokenSource();
+			cts.Cancel();
+			var awaiter = this.asyncLock.WriteLockAsync(cts.Token).GetAwaiter();
+			Assert.IsTrue(awaiter.IsCompleted);
+			try {
+				awaiter.GetResult();
+				Assert.Fail("Expected OperationCanceledException not thrown.");
+			} catch (OperationCanceledException) {
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task PrecancelledReadLockRequest() {
 			await Task.Run(delegate { // get onto an MTA
 				var cts = new CancellationTokenSource();
