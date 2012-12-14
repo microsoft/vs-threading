@@ -1442,44 +1442,25 @@
 			assertDialogListener.AssertUiEnabled = true;
 		}
 
-		[TestMethod, Timeout(TestTimeout), Ignore] // allocation traces and windbg inspection suggests there are no leaks, but this test misfires for some reason.
+		[TestMethod, Timeout(5000), TestCategory("Stress")]
 		public void SwitchToMainThreadMemoryLeak() {
-			const long iterations = 5000;
-			const long allowedAllocatedMemory = 4000; // should be fewer than iterations
-
-			var frame = new DispatcherFrame();
-
-			Task.Run(async delegate {
-				for (int i = 0; i < 2; i++) {
-					await this.asyncPump.SwitchToMainThreadAsync();
+			this.CheckGCPressure(
+				async delegate {
 					await TaskScheduler.Default;
-				}
+					await this.asyncPump.SwitchToMainThreadAsync(CancellationToken.None);
+				},
+				2500);
+		}
 
-				frame.Continue = false;
-			});
-
-			Dispatcher.PushFrame(frame);
-			long memory1 = GC.GetTotalMemory(true);
-
-			frame.Continue = true;
-			Task.Run(async delegate {
-				for (int i = 0; i < iterations; i++) {
-					await this.asyncPump.SwitchToMainThreadAsync();
+		[TestMethod, Timeout(5000), TestCategory("Stress")]
+		public void SwitchToMainThreadMemoryLeakWithCancellationToken() {
+			CancellationTokenSource tokenSource = new CancellationTokenSource();
+			this.CheckGCPressure(
+				async delegate {
 					await TaskScheduler.Default;
-					await Task.Yield();
-				}
-
-				frame.Continue = false;
-			});
-
-			Dispatcher.PushFrame(frame);
-
-			GC.Collect();
-			long memory2 = GC.GetTotalMemory(true);
-
-			long actualAllocatedMemory = memory2 - memory1;
-			Assert.IsTrue(actualAllocatedMemory <= allowedAllocatedMemory, "Allocated bytes {0} > {1} allowed bytes.", actualAllocatedMemory, allowedAllocatedMemory);
-			this.TestContext.WriteLine("Allocated bytes {0} <= {1} allowed bytes.", actualAllocatedMemory, allowedAllocatedMemory);
+					await this.asyncPump.SwitchToMainThreadAsync(tokenSource.Token);
+				},
+				2500);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
