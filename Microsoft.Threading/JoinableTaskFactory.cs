@@ -352,7 +352,7 @@ namespace Microsoft.Threading {
 
 			private readonly JoinableTask job;
 
-			private CancellationTokenRegistration cancellationRegistration;
+			private StrongBox<CancellationTokenRegistration> cancellationRegistrationPtr;
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="MainThreadAwaiter"/> struct.
@@ -362,7 +362,11 @@ namespace Microsoft.Threading {
 				this.job = job;
 				this.cancellationToken = cancellationToken;
 				this.alwaysYield = alwaysYield;
-				this.cancellationRegistration = default(CancellationTokenRegistration);
+
+				// Don't allocate the pointer if the cancellation token can't be canceled:
+				this.cancellationRegistrationPtr = (cancellationToken.CanBeCanceled)
+					? new StrongBox<CancellationTokenRegistration>()
+					: null;
 			}
 
 			/// <summary>
@@ -393,10 +397,15 @@ namespace Microsoft.Threading {
 				var wrapper = this.jobFactory.RequestSwitchToMainThread(continuation);
 
 				// Cancellation case of a threadpool thread.
-				this.cancellationRegistration = this.cancellationToken.Register(
-					state => ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, state),
-					wrapper,
-					useSynchronizationContext: false);
+				if (this.cancellationRegistrationPtr != null) {
+					// Store the cancellation token registration in the struct pointer. This way,
+					// if the awaiter has been copied (since it's a struct), each copy of the awaiter
+					// points to the same registration. Without this we can have a memory leak.
+					this.cancellationRegistrationPtr.Value = this.cancellationToken.Register(
+						state => ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, state),
+						wrapper,
+						useSynchronizationContext: false);
+				}
 			}
 
 			/// <summary>
@@ -407,7 +416,17 @@ namespace Microsoft.Threading {
 				Assumes.True(this.jobFactory.Context.MainThread == Thread.CurrentThread || this.jobFactory.Context.UnderlyingSynchronizationContext == null || this.cancellationToken.IsCancellationRequested);
 
 				// Release memory associated with the cancellation request.
-				this.cancellationRegistration.Dispose();
+				if (this.cancellationRegistrationPtr != null) {
+					this.cancellationRegistrationPtr.Value.Dispose();
+
+					// The reason we set this is to effectively null the struct that
+					// the strong box points to. Dispose does not seem to do this. If we
+					// have two copies of MainThreadAwaiter pointing to the same strongbox,
+					// then if one copy executes but the other does not, we could end
+					// up holding onto the memory pointed to through this pointer. By
+					// resetting the value here we make sure it gets cleaned.
+					this.cancellationRegistrationPtr.Value = default(CancellationTokenRegistration);
+				}
 
 				// Only throw a cancellation exception if we didn't end up completing what the caller asked us to do (arrive at the main thread).
 				if (Thread.CurrentThread != this.jobFactory.Context.MainThread) {
