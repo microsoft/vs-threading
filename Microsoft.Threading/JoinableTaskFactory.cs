@@ -209,10 +209,12 @@ namespace Microsoft.Threading {
 		/// <param name="task">The task whose completion is being waited on.</param>
 		protected internal virtual void WaitSynchronously(Task task) {
 			Requires.NotNull(task, "task");
+			int collections = 0; // useful for debugging dump files to see how many collections occurred.
 			while (!task.Wait(3000)) {
 				// This could be a hang. If a memory dump with heap is taken, it will
 				// significantly simplify investigation if the heap only has live awaitables
 				// remaining (completed ones GC'd). So run the GC now and then keep waiting.
+				collections++;
 				GC.Collect();
 			}
 		}
