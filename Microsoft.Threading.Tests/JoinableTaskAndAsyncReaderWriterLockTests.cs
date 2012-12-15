@@ -4,7 +4,9 @@
 	using System.Collections.Generic;
 	using System.Linq;
 	using System.Text;
+	using System.Threading;
 	using System.Threading.Tasks;
+	using System.Windows.Threading;
 
 	[TestClass]
 	public class JoinableTaskAndAsyncReaderWriterLockTests : TestBase {
@@ -19,9 +21,7 @@
 		[TestInitialize]
 		public void Initialize() {
 			this.asyncLock = new AsyncReaderWriterLock();
-			var context = new JoinableTaskContext();
-			this.joinableCollection = context.CreateCollection();
-			this.asyncPump = context.CreateFactory(this.joinableCollection);
+			this.InitializeJoinableTaskFactory();
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -88,7 +88,7 @@
 			}
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout), Ignore] // Ignored because this scenario violates threading rules and is difficult to accomodate in the product.
 		public async Task RunWithinExclusiveLockWithYields() {
 			using (var releaser1 = await this.asyncLock.WriteLockAsync()) {
 				await Task.Yield();
@@ -98,6 +98,39 @@
 					}
 				});
 			}
+		}
+
+		/// <summary>
+		/// Verifies that an important scenario of write lock + main thread switch + synchronous callback into the write lock works.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public void RunWithinExclusiveLockWithYieldsOntoMainThread() {
+			this.ExecuteOnDispatcher(
+				async delegate {
+					this.InitializeJoinableTaskFactory();
+					using (var releaser1 = await this.asyncLock.WriteLockAsync()) {
+						// This part of the scenario is where we switch back to the main thread
+						// in preparation to call 3rd party code.
+						await this.asyncPump.SwitchToMainThreadAsync();
+
+						// Calling the 3rd party code would go here in the scenario.
+						//// Call would go here, but isn't important for the test.
+
+						// This is the part of the scenario where 3rd party code calls back
+						// into code that may require the same write lock, via a synchronous interface.
+						this.asyncPump.Run(async delegate {
+							using (var releaser2 = await this.asyncLock.WriteLockAsync()) {
+								await Task.Yield();
+							}
+						});
+					}
+				});
+		}
+
+		private void InitializeJoinableTaskFactory() {
+			var context = new JoinableTaskContext();
+			this.joinableCollection = context.CreateCollection();
+			this.asyncPump = context.CreateFactory(this.joinableCollection);
 		}
 
 		private void LockWithinRunAsyncAfterYieldHelper() {
