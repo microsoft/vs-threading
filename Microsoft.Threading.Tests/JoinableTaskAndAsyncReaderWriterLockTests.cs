@@ -25,14 +25,14 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void LockWithinRunSynchronouslySTA() {
+		public void LockWithinRunSTA() {
 			this.asyncPump.Run(async delegate {
 				await this.VerifyReadLockAsync();
 			});
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void LockWithinRunSynchronouslyMTA() {
+		public void LockWithinRunMTA() {
 			Task.Run(delegate {
 				this.asyncPump.Run(async delegate {
 					await this.VerifyReadLockAsync();
@@ -41,7 +41,7 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void LockWithinRunSynchronouslyMTAContended() {
+		public void LockWithinRunMTAContended() {
 			Task.Run(delegate {
 				this.asyncPump.Run(async delegate {
 					this.ArrangeLockContentionAsync();
@@ -51,7 +51,7 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void LockWithinRunSynchronouslyAfterYieldSTA() {
+		public void LockWithinRunAfterYieldSTA() {
 			this.asyncPump.Run(async delegate {
 				await Task.Yield();
 				await this.VerifyReadLockAsync();
@@ -59,7 +59,7 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void LockWithinRunSynchronouslyAfterYieldMTA() {
+		public void LockWithinRunAfterYieldMTA() {
 			Task.Run(delegate {
 				this.asyncPump.Run(async delegate {
 					await Task.Yield();
@@ -69,16 +69,16 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void LockWithinBeginAsynchronouslyAfterYieldSTA() {
-			this.LockWithinBeginAsynchronouslyAfterYieldHelper();
+		public void LockWithinRunAsyncAfterYieldSTA() {
+			this.LockWithinRunAsyncAfterYieldHelper();
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void LockWithinBeginAsynchronouslyAfterYieldMTA() {
-			Task.Run(() => this.LockWithinBeginAsynchronouslyAfterYieldHelper()).GetAwaiter().GetResult();
+		public void LockWithinRunAsyncAfterYieldMTA() {
+			Task.Run(() => this.LockWithinRunAsyncAfterYieldHelper()).GetAwaiter().GetResult();
 		}
 
-		private void LockWithinBeginAsynchronouslyAfterYieldHelper() {
+		private void LockWithinRunAsyncAfterYieldHelper() {
 			var joinable = this.asyncPump.RunAsync(async delegate {
 				await Task.Yield();
 				await this.VerifyReadLockAsync();
