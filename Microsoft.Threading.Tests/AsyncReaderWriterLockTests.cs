@@ -1102,6 +1102,13 @@
 			}
 		}
 
+		[TestMethod, Timeout(TestTimeout * 2)]
+		public async Task MitigationAgainstAccidentalUpgradeableReadLockConcurrencyBeforeFirstYield() {
+			using (await this.asyncLock.UpgradeableReadLockAsync()) {
+				await this.CheckContinuationsConcurrencyBeforeYieldHelper();
+			}
+		}
+
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task UpgradeableReadLockAsyncYieldsIfSyncContextSet() {
 			await Task.Run(async delegate {
@@ -1406,6 +1413,13 @@
 		public async Task MitigationAgainstAccidentalWriteLockConcurrency() {
 			using (await this.asyncLock.WriteLockAsync()) {
 				await this.CheckContinuationsConcurrencyHelper();
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task MitigationAgainstAccidentalWriteLockConcurrencyBeforeFirstYield() {
+			using (await this.asyncLock.WriteLockAsync()) {
+				await this.CheckContinuationsConcurrencyBeforeYieldHelper();
 			}
 		}
 
@@ -3236,6 +3250,38 @@
 			// pattern in async code.  The async lock should protect against the continuatoins accidentally
 			// running concurrently, thereby forking the write lock across multiple threads.
 			await Task.WhenAll(asyncFuncs.Select(f => f()));
+		}
+
+		private async Task CheckContinuationsConcurrencyBeforeYieldHelper() {
+			bool hasReadLock = this.asyncLock.IsReadLockHeld;
+			bool hasUpgradeableReadLock = this.asyncLock.IsUpgradeableReadLockHeld;
+			bool hasWriteLock = this.asyncLock.IsWriteLockHeld;
+			bool concurrencyExpected = !(hasWriteLock || hasUpgradeableReadLock);
+
+			var barrier = new Barrier(2); // we use a *synchronous* style Barrier since we are deliberately measuring multi-thread concurrency
+
+			Func<Task> worker = async delegate {
+				await Task.Yield();
+
+				// This shouldn't timeout because by the time this continuation executes,
+				// our caller should have already yielded after signaling the barrier.
+				Assert.IsTrue(barrier.SignalAndWait(AsyncDelay));
+
+				Assert.AreEqual(hasReadLock, this.asyncLock.IsReadLockHeld);
+				Assert.AreEqual(hasUpgradeableReadLock, this.asyncLock.IsUpgradeableReadLockHeld);
+				Assert.AreEqual(hasWriteLock, this.asyncLock.IsWriteLockHeld);
+			};
+
+			var workerTask = worker();
+
+			// A timeout will indicate the async worker can't execute concurrently with this thread.
+			Assert.AreEqual(concurrencyExpected, barrier.SignalAndWait(AsyncDelay));
+			Assert.AreEqual(hasReadLock, this.asyncLock.IsReadLockHeld);
+			Assert.AreEqual(hasUpgradeableReadLock, this.asyncLock.IsUpgradeableReadLockHeld);
+			Assert.AreEqual(hasWriteLock, this.asyncLock.IsWriteLockHeld);
+
+			// *now* wait for the worker in a yielding fashion.
+			await workerTask;
 		}
 
 		private async Task StressHelper(int maxLockAcquisitions, int maxLockHeldDelay, int overallTimeout, int iterationTimeout, int maxWorkers, bool testCancellation) {
