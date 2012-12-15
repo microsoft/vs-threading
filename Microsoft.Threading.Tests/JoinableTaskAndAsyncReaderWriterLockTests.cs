@@ -7,7 +7,7 @@
 	using System.Threading.Tasks;
 
 	[TestClass]
-	public class AsyncPumpAndAsyncReaderWriterLockTests : TestBase {
+	public class JoinableTaskAndAsyncReaderWriterLockTests : TestBase {
 		private JoinableTaskCollection joinableCollection;
 
 		private JoinableTaskFactory asyncPump;
