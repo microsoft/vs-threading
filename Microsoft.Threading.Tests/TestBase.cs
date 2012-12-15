@@ -101,12 +101,28 @@
 		}
 
 		protected void CheckGCPressure(Func<Task> scenario, int maxBytesAllocated, int iterations = 100, int allowedAttempts = GCAllocationAttempts) {
+			this.ExecuteOnDispatcher(() => this.CheckGCPressureAsync(scenario, maxBytesAllocated));
+		}
+
+		protected void ExecuteOnDispatcher(Action action) {
+			this.ExecuteOnDispatcher(delegate {
+				action();
+				return TplExtensions.CompletedTask;
+			});
+		}
+
+		protected void ExecuteOnDispatcher(Func<Task> action) {
+			Assumes.True(Thread.CurrentThread.GetApartmentState() == ApartmentState.STA);
+			if (!(SynchronizationContext.Current is DispatcherSynchronizationContext)) {
+				SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext());
+			}
+
 			var frame = new DispatcherFrame();
 			Exception failure = null;
 			SynchronizationContext.Current.Post(
 				async _ => {
 					try {
-						await this.CheckGCPressureAsync(scenario, maxBytesAllocated);
+						await action();
 					} catch (Exception ex) {
 						failure = ex;
 					} finally {
