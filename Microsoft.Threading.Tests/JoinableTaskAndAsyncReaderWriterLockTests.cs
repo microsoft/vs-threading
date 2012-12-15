@@ -78,6 +78,28 @@
 			Task.Run(() => this.LockWithinRunAsyncAfterYieldHelper()).GetAwaiter().GetResult();
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task RunWithinExclusiveLock() {
+			using (var releaser1 = await this.asyncLock.WriteLockAsync()) {
+				this.asyncPump.Run(async delegate {
+					using (var releaser2 = await this.asyncLock.WriteLockAsync()) {
+					}
+				});
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task RunWithinExclusiveLockWithYields() {
+			using (var releaser1 = await this.asyncLock.WriteLockAsync()) {
+				await Task.Yield();
+				this.asyncPump.Run(async delegate {
+					using (var releaser2 = await this.asyncLock.WriteLockAsync()) {
+						await Task.Yield();
+					}
+				});
+			}
+		}
+
 		private void LockWithinRunAsyncAfterYieldHelper() {
 			var joinable = this.asyncPump.RunAsync(async delegate {
 				await Task.Yield();
