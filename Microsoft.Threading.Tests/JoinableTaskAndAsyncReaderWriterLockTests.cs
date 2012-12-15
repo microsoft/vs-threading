@@ -78,7 +78,7 @@
 			Task.Run(() => this.LockWithinRunAsyncAfterYieldHelper()).GetAwaiter().GetResult();
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout), Ignore] // Ignored because it conflicts with the RunWithinWriteLockThrows test.
 		public async Task RunWithinExclusiveLock() {
 			using (var releaser1 = await this.asyncLock.WriteLockAsync()) {
 				this.asyncPump.Run(async delegate {
@@ -97,6 +97,54 @@
 						await Task.Yield();
 					}
 				});
+			}
+		}
+
+		/// <summary>
+		/// Verifies that synchronously blocking works within read locks.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task RunWithinReadLock() {
+			using (await this.asyncLock.ReadLockAsync()) {
+				this.asyncPump.Run(() => TplExtensions.CompletedTask);
+			}
+		}
+
+		/// <summary>
+		/// Verifies that a pattern that usually causes deadlocks is not allowed to occur.
+		/// Basically because the <see cref="RunWithinExclusiveLockWithYields"/> test hangs (and is ignored),
+		/// this test verifies that anyone using that pattern will be quickly disallowed to avoid hangs
+		/// whenever the async code happens to yield.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task RunWithinUpgradeableReadLockThrows() {
+			using (await this.asyncLock.UpgradeableReadLockAsync()) {
+				try {
+					this.asyncPump.Run(() => TplExtensions.CompletedTask);
+					Assert.Fail("Expected InvalidOperationException not thrown.");
+				} catch (InvalidOperationException) {
+					// This exception must be thrown because otherwise deadlocks can occur
+					// when the Run method's delegate yields and then asks for another lock.
+				}
+			}
+		}
+
+		/// <summary>
+		/// Verifies that a pattern that usually causes deadlocks is not allowed to occur.
+		/// Basically because the <see cref="RunWithinExclusiveLockWithYields"/> test hangs (and is ignored),
+		/// this test verifies that anyone using that pattern will be quickly disallowed to avoid hangs
+		/// whenever the async code happens to yield.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task RunWithinWriteLockThrows() {
+			using (await this.asyncLock.WriteLockAsync()) {
+				try {
+					this.asyncPump.Run(() => TplExtensions.CompletedTask);
+					Assert.Fail("Expected InvalidOperationException not thrown.");
+				} catch (InvalidOperationException) {
+					// This exception must be thrown because otherwise deadlocks can occur
+					// when the Run method's delegate yields and then asks for another lock.
+				}
 			}
 		}
 

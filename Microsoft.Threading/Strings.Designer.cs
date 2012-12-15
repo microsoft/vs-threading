@@ -97,6 +97,15 @@ namespace Microsoft.Threading {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to This operation is not allowed while holding an active lock from an AsyncReaderWriterLock..
+        /// </summary>
+        internal static string NotAllowedUnderLock {
+            get {
+                return ResourceManager.GetString("NotAllowedUnderLock", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The value factory has called for the value on the same instance..
         /// </summary>
         internal static string ValueFactoryReentrancy {

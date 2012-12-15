@@ -1636,7 +1636,7 @@ namespace Microsoft.Threading {
 			}
 		}
 
-		private class NonConcurrentSynchronizationContext : SynchronizationContext {
+		internal class NonConcurrentSynchronizationContext : SynchronizationContext {
 			private readonly SemaphoreSlim semaphore = new SemaphoreSlim(1);
 
 			public override void Send(SendOrPostCallback d, object state) {
