@@ -1097,7 +1097,7 @@
 
 		[TestMethod, Timeout(TestTimeout * 2)]
 		public async Task MitigationAgainstAccidentalUpgradeableReadLockConcurrency() {
-			using (await this.asyncLock.WriteLockAsync()) {
+			using (await this.asyncLock.UpgradeableReadLockAsync()) {
 				await this.CheckContinuationsConcurrencyHelper();
 			}
 		}
