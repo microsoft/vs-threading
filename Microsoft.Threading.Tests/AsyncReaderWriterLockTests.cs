@@ -1103,10 +1103,19 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout * 2)]
-		public async Task MitigationAgainstAccidentalUpgradeableReadLockConcurrencyBeforeFirstYield() {
+		public async Task MitigationAgainstAccidentalUpgradeableReadLockConcurrencyBeforeFirstYieldSTA() {
 			using (await this.asyncLock.UpgradeableReadLockAsync()) {
 				await this.CheckContinuationsConcurrencyBeforeYieldHelper();
 			}
+		}
+
+		[TestMethod, Timeout(TestTimeout * 2)]
+		public void MitigationAgainstAccidentalUpgradeableReadLockConcurrencyBeforeFirstYieldMTA() {
+			Task.Run(async delegate {
+				using (await this.asyncLock.UpgradeableReadLockAsync()) {
+					await this.CheckContinuationsConcurrencyBeforeYieldHelper();
+				}
+			}).GetAwaiter().GetResult();
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -1417,10 +1426,19 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task MitigationAgainstAccidentalWriteLockConcurrencyBeforeFirstYield() {
+		public async Task MitigationAgainstAccidentalWriteLockConcurrencyBeforeFirstYieldSTA() {
 			using (await this.asyncLock.WriteLockAsync()) {
 				await this.CheckContinuationsConcurrencyBeforeYieldHelper();
 			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void MitigationAgainstAccidentalWriteLockConcurrencyBeforeFirstYieldMTA() {
+			Task.Run(async delegate {
+				using (await this.asyncLock.WriteLockAsync()) {
+					await this.CheckContinuationsConcurrencyBeforeYieldHelper();
+				}
+			}).GetAwaiter().GetResult();
 		}
 
 		/// <summary>
@@ -1460,6 +1478,31 @@
 				});
 				await lockAcquired.Task;
 			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void WriteLockAsyncSynchronousReleaseAllowsOtherWriters() {
+			var testComplete = new ManualResetEventSlim(); // deliberately synchronous
+			var firstLockReleased = new AsyncManualResetEvent();
+			var firstLockTask = Task.Run(async delegate {
+				using (await this.asyncLock.WriteLockAsync()) {
+				}
+
+				// Synchronously block until the test is complete.
+				firstLockReleased.Set();
+				Assert.IsTrue(testComplete.Wait(AsyncDelay));
+			});
+
+			var secondLockTask = Task.Run(async delegate {
+				await firstLockReleased;
+
+				using (await this.asyncLock.WriteLockAsync()) {
+				}
+			});
+
+			Assert.IsTrue(secondLockTask.Wait(TestTimeout));
+			testComplete.Set();
+			Assert.IsTrue(firstLockTask.Wait(TestTimeout)); // rethrow any exceptions
 		}
 
 		#endregion
