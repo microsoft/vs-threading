@@ -557,9 +557,21 @@ namespace Microsoft.Threading {
 		/// Gets a value indicating whether the caller's thread apartment model and SynchronizationContext
 		/// is compatible with a lock.
 		/// </summary>
-		private static bool IsLockSupportingContext {
+		private bool IsLockSupportingContext {
 			get {
-				return Thread.CurrentThread.GetApartmentState() == ApartmentState.MTA && !IsUnsupportedSynchronizationContext;
+				if (Thread.CurrentThread.GetApartmentState() != ApartmentState.MTA || IsUnsupportedSynchronizationContext) {
+					return false;
+				}
+
+				if (this.IsLockHeld(LockKind.Write, allowNonLockSupportingContext: true, checkSyncContextCompatibility: false) ||
+					this.IsLockHeld(LockKind.UpgradeableRead, allowNonLockSupportingContext: true, checkSyncContextCompatibility: false)) {
+					if (!(SynchronizationContext.Current is NonConcurrentSynchronizationContext)) {
+						// Upgradeable read and write locks *must* have the NonConcurrentSynchronizationContext applied.
+						return false;
+					}
+				}
+
+				return true;
 			}
 		}
 
@@ -714,7 +726,7 @@ namespace Microsoft.Threading {
 		/// <param name="allowNonLockSupportingContext"><c>true</c> to return true when a lock is held but unusable because of the context of the caller.</param>
 		/// <returns><c>true</c> if the caller holds active locks of the given type; <c>false</c> otherwise.</returns>
 		private bool IsLockHeld(LockKind kind, Awaiter awaiter = null, bool checkSyncContextCompatibility = true, bool allowNonLockSupportingContext = false) {
-			if (allowNonLockSupportingContext || IsLockSupportingContext) {
+			if (allowNonLockSupportingContext || this.IsLockSupportingContext) {
 				lock (this.syncObject) {
 					awaiter = awaiter ?? this.topAwaiter.Value;
 					if (checkSyncContextCompatibility) {
@@ -739,7 +751,7 @@ namespace Microsoft.Threading {
 		private bool IsLockActive(Awaiter awaiter, bool considerStaActive, bool checkSyncContextCompatibility = false) {
 			Requires.NotNull(awaiter, "awaiter");
 
-			if (considerStaActive || IsLockSupportingContext) {
+			if (considerStaActive || this.IsLockSupportingContext) {
 				lock (this.syncObject) {
 					bool activeLock = this.GetActiveLockSet(awaiter.Kind).Contains(awaiter);
 					if (checkSyncContextCompatibility && activeLock) {
@@ -1605,7 +1617,15 @@ namespace Microsoft.Threading {
 				var continuation = Interlocked.Exchange(ref this.continuation, null);
 
 				if (continuation != null) {
-					Task.Run(continuation);
+					// Only read locks can be executed trivially. The locks that have some level of exclusivity (upgradeable read and write)
+					// must be executed via the NonConcurrentSynchronizationContext.
+					if (this.lck.LockStackContains(LockKind.UpgradeableRead, this) ||
+						this.lck.LockStackContains(LockKind.Write, this)) {
+						this.lck.nonConcurrentSyncContext.Post(state => ((Action)state)(), continuation);
+					} else {
+						Task.Run(continuation);
+					}
+
 					return true;
 				} else {
 					return false;

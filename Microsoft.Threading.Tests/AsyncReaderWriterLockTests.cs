@@ -1102,7 +1102,7 @@
 			}
 		}
 
-		[TestMethod, Timeout(TestTimeout * 2), Ignore] // Ignored because I can't think of a way to make this work without more allocations for non-contested locks on MTA threads, which would be sad.
+		[TestMethod, Timeout(TestTimeout * 2)]
 		public async Task MitigationAgainstAccidentalUpgradeableReadLockConcurrencyBeforeFirstYield() {
 			using (await this.asyncLock.UpgradeableReadLockAsync()) {
 				await this.CheckContinuationsConcurrencyBeforeYieldHelper();
@@ -1416,7 +1416,7 @@
 			}
 		}
 
-		[TestMethod, Timeout(TestTimeout), Ignore] // Ignored because I can't think of a way to make this work without more allocations for non-contested locks on MTA threads, which would be sad.
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task MitigationAgainstAccidentalWriteLockConcurrencyBeforeFirstYield() {
 			using (await this.asyncLock.WriteLockAsync()) {
 				await this.CheckContinuationsConcurrencyBeforeYieldHelper();
@@ -2826,7 +2826,7 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		[Description("Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by marshaling back to an MTA.")]
+		[Description("Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by requesting it and moving back to an MTA.")]
 		public async Task UpgradeableReadLockTraversesAcrossSta() {
 			using (await this.asyncLock.UpgradeableReadLockAsync()) {
 				var testComplete = new TaskCompletionSource<object>();
@@ -2834,16 +2834,17 @@
 					try {
 						Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld, "STA should not be told it holds an upgradeable read lock.");
 
-						Thread mtaThread = new Thread((ThreadStart)delegate {
+						Task.Run(async delegate {
 							try {
-								Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld, "MTA thread couldn't access lock across STA.");
-								testComplete.SetAsync();
+								using (await this.asyncLock.UpgradeableReadLockAsync()) {
+									Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld, "MTA thread couldn't access lock across STA.");
+								}
+
+								testComplete.SetAsync().Forget();
 							} catch (Exception ex) {
 								testComplete.TrySetException(ex);
 							}
 						});
-						mtaThread.SetApartmentState(ApartmentState.MTA);
-						mtaThread.Start();
 					} catch (Exception ex) {
 						testComplete.TrySetException(ex);
 					}
@@ -2855,7 +2856,7 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		[Description("Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by marshaling back to an MTA.")]
+		[Description("Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by requesting it and moving back to an MTA.")]
 		public async Task WriteLockTraversesAcrossSta() {
 			using (await this.asyncLock.WriteLockAsync()) {
 				var testComplete = new TaskCompletionSource<object>();
@@ -2863,16 +2864,17 @@
 					try {
 						Assert.IsFalse(this.asyncLock.IsWriteLockHeld, "STA should not be told it holds an upgradeable read lock.");
 
-						Thread mtaThread = new Thread((ThreadStart)delegate {
+						Task.Run(async delegate {
 							try {
-								Assert.IsTrue(this.asyncLock.IsWriteLockHeld, "MTA thread couldn't access lock across STA.");
-								testComplete.SetAsync();
+								using (await this.asyncLock.WriteLockAsync()) {
+									Assert.IsTrue(this.asyncLock.IsWriteLockHeld, "MTA thread couldn't access lock across STA.");
+								}
+
+								testComplete.SetAsync().Forget();
 							} catch (Exception ex) {
 								testComplete.TrySetException(ex);
 							}
 						});
-						mtaThread.SetApartmentState(ApartmentState.MTA);
-						mtaThread.Start();
 					} catch (Exception ex) {
 						testComplete.TrySetException(ex);
 					}
@@ -3259,13 +3261,14 @@
 			bool concurrencyExpected = !(hasWriteLock || hasUpgradeableReadLock);
 
 			var barrier = new Barrier(2); // we use a *synchronous* style Barrier since we are deliberately measuring multi-thread concurrency
+			bool primaryCompleted = false;
 
 			Func<Task> worker = async delegate {
 				await Task.Yield();
 
-				// This shouldn't timeout because by the time this continuation executes,
+				// By the time this continuation executes,
 				// our caller should have already yielded after signaling the barrier.
-				Assert.IsTrue(barrier.SignalAndWait(AsyncDelay));
+				Assert.IsTrue(primaryCompleted);
 
 				Assert.AreEqual(hasReadLock, this.asyncLock.IsReadLockHeld);
 				Assert.AreEqual(hasUpgradeableReadLock, this.asyncLock.IsUpgradeableReadLockHeld);
@@ -3281,6 +3284,7 @@
 			Assert.AreEqual(hasWriteLock, this.asyncLock.IsWriteLockHeld);
 
 			// *now* wait for the worker in a yielding fashion.
+			primaryCompleted = true;
 			await workerTask;
 		}
 
