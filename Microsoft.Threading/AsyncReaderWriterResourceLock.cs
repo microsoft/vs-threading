@@ -216,6 +216,13 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// Returns the aggregate of the lock flags for all nested locks.
+		/// </summary>
+		protected new LockFlags GetAggregateLockFlags() {
+			return (LockFlags)base.GetAggregateLockFlags();
+		}
+
+		/// <summary>
 		/// Prepares a resource for concurrent access.
 		/// </summary>
 		/// <param name="resource">The resource to prepare.</param>
@@ -231,6 +238,7 @@ namespace Microsoft.Threading {
 		/// Prepares a resource for access by one thread.
 		/// </summary>
 		/// <param name="resource">The resource to prepare.</param>
+		/// <param name="lockFlags">The aggregate of all flags from the active and nesting locks.</param>
 		/// <param name="cancellationToken">The token whose cancellation signals lost interest in the resource.</param>
 		/// <returns>A task whose completion signals the resource has been prepared.</returns>
 		/// <remarks>
@@ -238,7 +246,7 @@ namespace Microsoft.Threading {
 		/// but only when transitioning from no access -- it is not invoked when transitioning
 		/// from concurrent access to exclusive access.
 		/// </remarks>
-		protected abstract Task PrepareResourceForExclusiveAccessAsync(TResource resource, CancellationToken cancellationToken);
+		protected abstract Task PrepareResourceForExclusiveAccessAsync(TResource resource, LockFlags lockFlags, CancellationToken cancellationToken);
 
 		/// <summary>
 		/// Invoked after an exclusive lock is released but before anyone has a chance to enter the lock.
@@ -312,9 +320,15 @@ namespace Microsoft.Threading {
 
 				this.service = service;
 				this.prepareResourceConcurrentDelegate = state => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state, CancellationToken.None);
-				this.prepareResourceExclusiveDelegate = state => this.service.PrepareResourceForExclusiveAccessAsync((TResource)state, CancellationToken.None);
+				this.prepareResourceExclusiveDelegate = state => {
+					var tuple = (Tuple<TResource, LockFlags>)state;
+					return this.service.PrepareResourceForExclusiveAccessAsync(tuple.Item1, tuple.Item2, CancellationToken.None);
+				};
 				this.prepareResourceConcurrentContinuationDelegate = (prev, state) => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state, CancellationToken.None);
-				this.prepareResourceExclusiveContinuationDelegate = (prev, state) => this.service.PrepareResourceForExclusiveAccessAsync((TResource)state, CancellationToken.None);
+				this.prepareResourceExclusiveContinuationDelegate = (prev, state) => {
+					var tuple = (Tuple<TResource, LockFlags>)state;
+					return this.service.PrepareResourceForExclusiveAccessAsync(tuple.Item1, tuple.Item2, CancellationToken.None);
+				};
 			}
 
 			/// <summary>
@@ -403,18 +417,10 @@ namespace Microsoft.Threading {
 					lock (this.service.SyncObject) {
 						this.SetResourceAsAccessed(resource);
 
-						if (this.service.IsWriteLockHeld && this.service.LockStackContains((AsyncReaderWriterLock.LockFlags)LockFlags.SkipInitialPreparation)) {
-							// We don't want to prepare the resource, but we must still wait for any previously scheduled preparations to complete,
-							// and most importantly, we must mark the resource as in a non-deterministic state so that the next consumer will prepare it
-							// regardless as to whether they are concurrent or exclusive.
-							this.SetUnknownResourceState(resource);
-							return resource;
-						} else {
-							// We can't currently use the caller's cancellation token for this task because 
-							// this task may be shared with others or call this method later, and we wouldn't 
-							// want their requests to be cancelled as a result of this first caller cancelling.
-							preparationTask = this.PrepareResourceAsync(resource, cancellationToken);
-						}
+						// We can't currently use the caller's cancellation token for this task because 
+						// this task may be shared with others or call this method later, and we wouldn't 
+						// want their requests to be cancelled as a result of this first caller cancelling.
+						preparationTask = this.PrepareResourceAsync(resource, cancellationToken);
 					}
 
 					await preparationTask.ConfigureAwait(false);
@@ -464,6 +470,10 @@ namespace Microsoft.Threading {
 				// as that can cause premature starting of the next task in the chain.
 				bool forConcurrentUse = forcePrepareConcurrent || !this.service.IsWriteLockHeld;
 				var finalState = forConcurrentUse ? ResourceState.Concurrent : ResourceState.Exclusive;
+				object stateObject = forConcurrentUse
+					? (object)resource
+					: Tuple.Create(resource, this.service.GetAggregateLockFlags());
+
 				if (!this.resourcePreparationTasks.TryGetValue(resource, out preparationTask)) {
 					var preparationDelegate = forConcurrentUse
 						? this.prepareResourceConcurrentDelegate
@@ -473,7 +483,7 @@ namespace Microsoft.Threading {
 					// and don't want to execute arbitrary code.  Let's also hide the ARWL from the delegate.
 					using (this.service.HideLocks()) {
 						preparationTask = new ResourcePreparationTaskAndValidity(
-							Task.Factory.StartNew(preparationDelegate, resource, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap(),
+							Task.Factory.StartNew(preparationDelegate, stateObject, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap(),
 							finalState);
 					}
 				} else if (preparationTask.State != finalState) {
@@ -485,7 +495,7 @@ namespace Microsoft.Threading {
 					// and don't want to execute arbitrary code.  Let's also hide the ARWL from the delegate.
 					using (this.service.HideLocks()) {
 						preparationTask = new ResourcePreparationTaskAndValidity(
-							preparationTask.PreparationTask.ContinueWith(preparationDelegate, resource, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap(),
+							preparationTask.PreparationTask.ContinueWith(preparationDelegate, stateObject, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap(),
 							finalState);
 					}
 				}

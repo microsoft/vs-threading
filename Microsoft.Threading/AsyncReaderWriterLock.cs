@@ -485,6 +485,32 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// Returns the aggregate of the lock flags for all nested locks.
+		/// </summary>
+		/// <remarks>
+		/// This is not redundant with <see cref="LockStackContains(LockFlags, Awaiter)"/> because that returns fast
+		/// once the presence of certain flag(s) is determined, whereas this will aggregate all flags,
+		/// some of which may be defined by derived types.
+		/// </remarks>
+		protected LockFlags GetAggregateLockFlags() {
+			LockFlags aggregateFlags = LockFlags.None;
+			var awaiter = this.topAwaiter.Value;
+			if (awaiter != null) {
+				lock (this.syncObject) {
+					while (awaiter != null) {
+						if (this.IsLockActive(awaiter, considerStaActive: true, checkSyncContextCompatibility: true)) {
+							aggregateFlags |= awaiter.Options;
+						}
+
+						awaiter = awaiter.NestingLock;
+					}
+				}
+			}
+
+			return aggregateFlags;
+		}
+
+		/// <summary>
 		/// Fired when any lock is being released.
 		/// </summary>
 		/// <param name="exclusiveLockRelease">A flag indicating whether the last write lock that the caller holds is being released.</param>

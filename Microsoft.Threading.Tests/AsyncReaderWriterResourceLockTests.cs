@@ -133,6 +133,7 @@
 				Assert.AreSame(this.resources[1], resource);
 				Assert.AreEqual(0, resource.ConcurrentAccessPreparationCount);
 				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
+				Assert.AreEqual(1, resource.ExclusiveAccessPreparationSkippedCount);
 			}
 		}
 
@@ -154,6 +155,7 @@
 					Assert.AreSame(this.resources[1], resource);
 					Assert.AreEqual(0, resource.ConcurrentAccessPreparationCount);
 					Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
+					Assert.AreEqual(1, resource.ExclusiveAccessPreparationSkippedCount);
 				}
 			}
 		}
@@ -198,6 +200,7 @@
 				var resource = await writeAccess.GetResourceAsync(1);
 				Assert.AreEqual(1, resource.ConcurrentAccessPreparationCount);
 				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
+				Assert.AreEqual(1, resource.ExclusiveAccessPreparationSkippedCount);
 				Assert.AreEqual(Resource.State.Concurrent, resource.CurrentState);
 			}
 
@@ -206,6 +209,7 @@
 				Assert.AreEqual(Resource.State.Concurrent, resource.CurrentState);
 				Assert.AreEqual(2, resource.ConcurrentAccessPreparationCount);
 				Assert.AreEqual(0, resource.ExclusiveAccessPreparationCount);
+				Assert.AreEqual(1, resource.ExclusiveAccessPreparationSkippedCount);
 			}
 		}
 
@@ -839,6 +843,8 @@
 
 			public int ExclusiveAccessPreparationCount { get; set; }
 
+			public int ExclusiveAccessPreparationSkippedCount { get; set; }
+
 			internal State CurrentState { get; set; }
 		}
 
@@ -892,15 +898,19 @@
 				VerboseLog("Preparing resource {0} for concurrent access finished.", this.resources.IndexOf(resource));
 			}
 
-			protected override async Task PrepareResourceForExclusiveAccessAsync(Resource resource, CancellationToken cancellationToken) {
+			protected override async Task PrepareResourceForExclusiveAccessAsync(Resource resource, LockFlags lockFlags, CancellationToken cancellationToken) {
 				cancellationToken.ThrowIfCancellationRequested();
-				VerboseLog("Preparing resource {0} for exclusive access started.", this.resources.IndexOf(resource));
-				resource.ExclusiveAccessPreparationCount++;
-				resource.CurrentState = Resource.State.PreparingExclusive;
-				this.preparationTaskBegun.Set();
-				await this.GetPreparationTask(resource);
-				resource.CurrentState = Resource.State.Exclusive;
-				VerboseLog("Preparing resource {0} for exclusive access finished.", this.resources.IndexOf(resource));
+				if (lockFlags.HasFlag(LockFlags.SkipInitialPreparation)) {
+					resource.ExclusiveAccessPreparationSkippedCount++;
+				} else {
+					VerboseLog("Preparing resource {0} for exclusive access started.", this.resources.IndexOf(resource));
+					resource.ExclusiveAccessPreparationCount++;
+					resource.CurrentState = Resource.State.PreparingExclusive;
+					this.preparationTaskBegun.Set();
+					await this.GetPreparationTask(resource);
+					resource.CurrentState = Resource.State.Exclusive;
+					VerboseLog("Preparing resource {0} for exclusive access finished.", this.resources.IndexOf(resource));
+				}
 			}
 
 			private async Task GetPreparationTask(Resource resource) {
