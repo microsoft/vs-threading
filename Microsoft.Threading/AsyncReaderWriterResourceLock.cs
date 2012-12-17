@@ -68,10 +68,7 @@ namespace Microsoft.Threading {
 			StickyWrite = 0x1,
 
 			/// <summary>
-			/// Skips a step to make sure that a project is initially evaluated when retrieved using GetResourceAsync.
-			/// Setting this flag can have negative side effects to components that write to the MSBuild project,
-			/// so use to improve performance of bulk operations where you know re-evaluating the project
-			/// is not necessary to maintain a consistent state.
+			/// Skips a step to make sure that the resource is initially prepared when retrieved using GetResourceAsync.
 			/// </summary>
 			/// <remarks>
 			/// This flag is dormant for non-write locks.  But if present on an upgradeable read lock,
@@ -221,7 +218,7 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Prepares a resource for concurrent access.
 		/// </summary>
-		/// <param name="resource"></param>
+		/// <param name="resource">The resource to prepare.</param>
 		/// <param name="cancellationToken">The token whose cancellation signals lost interest in the resource.</param>
 		/// <returns>A task whose completion signals the resource has been prepared.</returns>
 		/// <remarks>
@@ -233,7 +230,7 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Prepares a resource for access by one thread.
 		/// </summary>
-		/// <param name="resource"></param>
+		/// <param name="resource">The resource to prepare.</param>
 		/// <param name="cancellationToken">The token whose cancellation signals lost interest in the resource.</param>
 		/// <returns>A task whose completion signals the resource has been prepared.</returns>
 		/// <remarks>
