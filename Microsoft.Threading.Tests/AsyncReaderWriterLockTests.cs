@@ -3438,6 +3438,7 @@
 			}
 
 			protected override async Task OnBeforeExclusiveLockReleasedAsync() {
+				await Task.Yield();
 				await base.OnBeforeExclusiveLockReleasedAsync();
 				if (this.OnBeforeExclusiveLockReleasedAsyncDelegate != null) {
 					await this.OnBeforeExclusiveLockReleasedAsyncDelegate();
