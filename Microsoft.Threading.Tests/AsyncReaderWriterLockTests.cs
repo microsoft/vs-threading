@@ -2918,10 +2918,10 @@
 			lck.SetLockData(null);
 		}
 
-		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
+		[TestMethod, Timeout(TestTimeout)]
 		public void GetLockDataWithoutLock() {
 			var lck = new LockDerived();
-			lck.GetLockData();
+			Assert.IsNull(lck.GetLockData());
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -3424,16 +3424,17 @@
 				get { return base.IsAnyLockHeld; }
 			}
 
-			internal new bool LockStackContains(LockFlags flags, Awaiter awaiter = null) {
-				return base.LockStackContains(flags, awaiter);
+			internal void SetLockData(object data) {
+				var lck = this.AmbientLock;
+				lck.Data = data;
 			}
 
-			internal new void SetLockData(object value) {
-				base.SetLockData(value);
+			internal object GetLockData() {
+				return this.AmbientLock.Data;
 			}
 
-			internal new object GetLockData() {
-				return base.GetLockData();
+			internal bool LockStackContains(LockFlags flags) {
+				return this.LockStackContains(flags, this.AmbientLock);
 			}
 
 			protected override async Task OnBeforeExclusiveLockReleasedAsync() {

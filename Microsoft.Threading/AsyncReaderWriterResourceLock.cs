@@ -480,8 +480,9 @@ namespace Microsoft.Threading {
 						: this.prepareResourceExclusiveDelegate;
 
 					// We kick this off on a new task because we're currently holding a private lock
-					// and don't want to execute arbitrary code.  Let's also hide the ARWL from the delegate.
-					using (this.service.HideLocks()) {
+					// and don't want to execute arbitrary code.
+					// Let's also hide the ARWL from the delegate if this is a shared lock request.
+					using (forConcurrentUse ? this.service.HideLocks() : default(Suppression)) {
 						preparationTask = new ResourcePreparationTaskAndValidity(
 							Task.Factory.StartNew(preparationDelegate, stateObject, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap(),
 							finalState);
@@ -492,8 +493,9 @@ namespace Microsoft.Threading {
 						: this.prepareResourceExclusiveContinuationDelegate;
 
 					// We kick this off on a new task because we're currently holding a private lock
-					// and don't want to execute arbitrary code.  Let's also hide the ARWL from the delegate.
-					using (this.service.HideLocks()) {
+					// and don't want to execute arbitrary code.
+					// Let's also hide the ARWL from the delegate if this is a shared lock request.
+					using (forConcurrentUse ? this.service.HideLocks() : default(Suppression)) {
 						preparationTask = new ResourcePreparationTaskAndValidity(
 							preparationTask.PreparationTask.ContinueWith(preparationDelegate, stateObject, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap(),
 							finalState);
