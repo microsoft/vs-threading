@@ -8,7 +8,6 @@
 	using System.Threading.Tasks;
 	using System.Windows.Threading;
 	using Microsoft.Threading;
-	using Microsoft.Threading.Fakes;
 	using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 	/// <summary>
@@ -259,17 +258,16 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task OnLockReleaseCallbacksWithOuterWriteLock() {
-			var stub = new StubAsyncReaderWriterLock();
-			stub.CallBase = true;
+			var stub = new LockDerived();
 
 			int onExclusiveLockReleasedAsyncInvocationCount = 0;
-			stub.OnExclusiveLockReleasedAsync01 = delegate {
+			stub.OnExclusiveLockReleasedAsyncDelegate = delegate {
 				onExclusiveLockReleasedAsyncInvocationCount++;
 				return Task.FromResult<object>(null);
 			};
 
 			int onUpgradeableReadLockReleasedInvocationCount = 0;
-			stub.OnUpgradeableReadLockReleased01 = delegate {
+			stub.OnUpgradeableReadLockReleasedDelegate = delegate {
 				onUpgradeableReadLockReleasedInvocationCount++;
 			};
 
@@ -295,17 +293,16 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task OnLockReleaseCallbacksWithOuterUpgradeableReadLock() {
-			var stub = new StubAsyncReaderWriterLock();
-			stub.CallBase = true;
+			var stub = new LockDerived();
 
 			int onExclusiveLockReleasedAsyncInvocationCount = 0;
-			stub.OnExclusiveLockReleasedAsync01 = delegate {
+			stub.OnExclusiveLockReleasedAsyncDelegate = delegate {
 				onExclusiveLockReleasedAsyncInvocationCount++;
 				return Task.FromResult<object>(null);
 			};
 
 			int onUpgradeableReadLockReleasedInvocationCount = 0;
-			stub.OnUpgradeableReadLockReleased01 = delegate {
+			stub.OnUpgradeableReadLockReleasedDelegate = delegate {
 				onUpgradeableReadLockReleasedInvocationCount++;
 			};
 
@@ -2754,12 +2751,12 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task OnBeforeWriteLockReleasedAndReenterConcurrency() {
-			var stub = new StubAsyncReaderWriterLock();
+			var stub = new LockDerived();
 
 			var beforeWriteLockReleasedTaskSource = new TaskCompletionSource<object>();
 			var exclusiveLockReleasedTaskSource = new TaskCompletionSource<object>();
 
-			stub.OnExclusiveLockReleasedAsync01 = () => exclusiveLockReleasedTaskSource.Task;
+			stub.OnExclusiveLockReleasedAsyncDelegate = () => exclusiveLockReleasedTaskSource.Task;
 
 			using (var releaser = await stub.WriteLockAsync()) {
 				stub.OnBeforeWriteLockReleased(() => beforeWriteLockReleasedTaskSource.Task);
@@ -2977,10 +2974,10 @@
 			lck.SetLockData(null);
 		}
 
-		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
+		[TestMethod, Timeout(TestTimeout)]
 		public void GetLockDataWithoutLock() {
 			var lck = new LockDerived();
-			lck.GetLockData();
+			Assert.IsNull(lck.GetLockData());
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -3512,24 +3509,35 @@
 			internal Func<Task> OnBeforeExclusiveLockReleasedAsyncDelegate { get; set; }
 			internal Func<Task> OnExclusiveLockReleasedAsyncDelegate { get; set; }
 			internal Func<Task> OnBeforeLockReleasedAsyncDelegate { get; set; }
+			internal Action OnUpgradeableReadLockReleasedDelegate { get; set; }
 
 			internal new bool IsAnyLockHeld {
 				get { return base.IsAnyLockHeld; }
 			}
 
-			internal new bool LockStackContains(LockFlags flags, Awaiter awaiter = null) {
-				return base.LockStackContains(flags, awaiter);
+			internal void SetLockData(object data) {
+				var lck = this.AmbientLock;
+				lck.Data = data;
 			}
 
-			internal new void SetLockData(object value) {
-				base.SetLockData(value);
+			internal object GetLockData() {
+				return this.AmbientLock.Data;
 			}
 
-			internal new object GetLockData() {
-				return base.GetLockData();
+			internal bool LockStackContains(LockFlags flags) {
+				return this.LockStackContains(flags, this.AmbientLock);
+			}
+
+			protected override void OnUpgradeableReadLockReleased() {
+				base.OnUpgradeableReadLockReleased();
+
+				if (this.OnUpgradeableReadLockReleasedDelegate != null) {
+					this.OnUpgradeableReadLockReleasedDelegate();
+				}
 			}
 
 			protected override async Task OnBeforeExclusiveLockReleasedAsync() {
+				await Task.Yield();
 				await base.OnBeforeExclusiveLockReleasedAsync();
 				if (this.OnBeforeExclusiveLockReleasedAsyncDelegate != null) {
 					await this.OnBeforeExclusiveLockReleasedAsyncDelegate();

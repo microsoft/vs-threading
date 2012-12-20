@@ -271,6 +271,13 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// Gets the lock held by the caller's execution context.
+		/// </summary>
+		protected LockHandle AmbientLock {
+			get { return new LockHandle(this.topAwaiter.Value); }
+		}
+
+		/// <summary>
 		/// Gets or sets a value indicating whether additional resources should be spent to collect
 		/// information that would be useful in diagnosing deadlocks, etc.
 		/// </summary>
@@ -461,11 +468,11 @@ namespace Microsoft.Threading {
 		/// Checks whether the aggregated flags from all locks in the lock stack satisfy the specified flag(s).
 		/// </summary>
 		/// <param name="flags">The flag(s) that must be specified for a <c>true</c> result.</param>
-		/// <param name="awaiter">The head of the lock stack, or <c>null</c> to use the one on the top of the caller's context.</param>
+		/// <param name="handle">The head of the lock stack to consider.</param>
 		/// <returns><c>true</c> if all flags are found somewhere in the lock stack; <c>false</c> otherwise.</returns>
-		protected internal bool LockStackContains(LockFlags flags, Awaiter awaiter = null) {
+		protected bool LockStackContains(LockFlags flags, LockHandle handle) {
 			LockFlags aggregateFlags = LockFlags.None;
-			awaiter = awaiter ?? this.topAwaiter.Value;
+			var awaiter = handle.Awaiter;
 			if (awaiter != null) {
 				lock (this.syncObject) {
 					while (awaiter != null) {
@@ -482,6 +489,32 @@ namespace Microsoft.Threading {
 			}
 
 			return (aggregateFlags & flags) == flags;
+		}
+
+		/// <summary>
+		/// Returns the aggregate of the lock flags for all nested locks.
+		/// </summary>
+		/// <remarks>
+		/// This is not redundant with <see cref="LockStackContains(LockFlags, LockHandle)"/> because that returns fast
+		/// once the presence of certain flag(s) is determined, whereas this will aggregate all flags,
+		/// some of which may be defined by derived types.
+		/// </remarks>
+		protected LockFlags GetAggregateLockFlags() {
+			LockFlags aggregateFlags = LockFlags.None;
+			var awaiter = this.topAwaiter.Value;
+			if (awaiter != null) {
+				lock (this.syncObject) {
+					while (awaiter != null) {
+						if (this.IsLockActive(awaiter, considerStaActive: true, checkSyncContextCompatibility: true)) {
+							aggregateFlags |= awaiter.Options;
+						}
+
+						awaiter = awaiter.NestingLock;
+					}
+				}
+			}
+
+			return aggregateFlags;
 		}
 
 		/// <summary>
@@ -506,42 +539,17 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <returns>A task whose completion signals the conclusion of the asynchronous operation.</returns>
 		protected virtual Task OnBeforeExclusiveLockReleasedAsync() {
-			// While this method is called when the last write lock is about to be released,
-			// a derived type may override this method and have already taken an additional write lock,
-			// so only state our assumption in the non-derivation case.
-			Assumes.True(this.issuedWriteLocks.Count == 1 || !this.GetType().IsEquivalentTo(typeof(AsyncReaderWriterLock)));
+			lock (this.SyncObject) {
+				// While this method is called when the last write lock is about to be released,
+				// a derived type may override this method and have already taken an additional write lock,
+				// so only state our assumption in the non-derivation case.
+				Assumes.True(this.issuedWriteLocks.Count == 1 || !this.GetType().IsEquivalentTo(typeof(AsyncReaderWriterLock)));
 
-			if (this.beforeWriteReleasedCallbacks.Count > 0) {
-				return this.InvokeBeforeWriteLockReleaseHandlersAsync();
-			} else {
-				return TplExtensions.CompletedTask;
-			}
-		}
-
-		/// <summary>
-		/// Associates some object to the active lock that can be obtained later using <see cref="GetLockData"/>.
-		/// </summary>
-		/// <param name="value">The value to save.  Use <c>null</c> to clear a previously stored value.</param>
-		/// <remarks>
-		/// The value stored here is automatically cleared when the lock is released.
-		/// </remarks>
-		protected void SetLockData(object value) {
-			lock (this.syncObject) {
-				var awaiter = this.GetFirstActiveSelfOrAncestor(this.topAwaiter.Value);
-				Verify.Operation(awaiter != null, "No active lock.");
-				awaiter.Data = value;
-			}
-		}
-
-		/// <summary>
-		/// Gets the object associated with the active lock, as previously stored using <see cref="SetLockData"/>.
-		/// </summary>
-		/// <returns>The stored object, or <c>null</c> if no object was associated with this lock.</returns>
-		protected object GetLockData() {
-			lock (this.syncObject) {
-				var awaiter = this.GetFirstActiveSelfOrAncestor(this.topAwaiter.Value);
-				Verify.Operation(awaiter != null, "No active lock.");
-				return awaiter.Data;
+				if (this.beforeWriteReleasedCallbacks.Count > 0) {
+					return this.InvokeBeforeWriteLockReleaseHandlersAsync();
+				} else {
+					return TplExtensions.CompletedTask;
+				}
 			}
 		}
 
@@ -1479,6 +1487,13 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>
+			/// Gets the lock instance that owns this awaiter.
+			/// </summary>
+			internal AsyncReaderWriterLock OwningLock {
+				get { return this.lck; }
+			}
+
+			/// <summary>
 			/// Sets the delegate to execute when the lock is available.
 			/// </summary>
 			/// <param name="continuation">The delegate.</param>
@@ -1795,6 +1810,93 @@ namespace Microsoft.Threading {
 				if (this.lck != null) {
 					this.lck.ApplyLockToCallContext(this.awaiter);
 				}
+			}
+		}
+
+		/// <summary>
+		/// A "public" representation of a specific lock.
+		/// </summary>
+		protected struct LockHandle {
+			/// <summary>
+			/// The awaiter this lock handle wraps.
+			/// </summary>
+			private readonly Awaiter awaiter;
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="LockHandle"/> struct.
+			/// </summary>
+			internal LockHandle(Awaiter awaiter) {
+				this.awaiter = awaiter;
+			}
+
+			/// <summary>
+			/// Gets a value indicating whether this handle is to a lock which was actually acquired.
+			/// </summary>
+			public bool IsValid {
+				get { return this.awaiter != null; }
+			}
+
+			/// <summary>
+			/// Gets a value indicating whether this lock is still active.
+			/// </summary>
+			public bool IsActive {
+				get { return this.awaiter.OwningLock.IsLockActive(this.awaiter, considerStaActive: true); }
+			}
+
+			/// <summary>
+			/// Gets a value indicating whether this lock represents a read lock.
+			/// </summary>
+			public bool IsReadLock {
+				get { return this.IsValid ? this.awaiter.Kind == LockKind.Read : false; }
+			}
+
+			/// <summary>
+			/// Gets a value indicating whether this lock represents an upgradeable read lock.
+			/// </summary>
+			public bool IsUpgradeableReadLock {
+				get { return this.IsValid ? this.awaiter.Kind == LockKind.UpgradeableRead : false; }
+			}
+
+			/// <summary>
+			/// Gets a value indicating whether this lock represents a write lock.
+			/// </summary>
+			public bool IsWriteLock {
+				get { return this.IsValid ? this.awaiter.Kind == LockKind.Write : false; }
+			}
+
+			/// <summary>
+			/// Gets the flags that were passed into this lock.
+			/// </summary>
+			public LockFlags Flags {
+				get { return this.IsValid ? this.awaiter.Options : LockFlags.None; }
+			}
+
+			/// <summary>
+			/// Gets or sets some object associated to this specific lock.
+			/// </summary>
+			public object Data {
+				get {
+					return this.IsValid ? this.awaiter.Data : null;
+				}
+
+				set {
+					Verify.Operation(this.IsValid, Strings.InvalidLock);
+					this.awaiter.Data = value;
+				}
+			}
+
+			/// <summary>
+			/// Gets the lock within which this lock was acquired.
+			/// </summary>
+			public LockHandle NestingLock {
+				get { return this.IsValid ? new LockHandle(this.awaiter.NestingLock) : default(LockHandle); }
+			}
+
+			/// <summary>
+			/// Gets the wrapped awaiter.
+			/// </summary>
+			internal Awaiter Awaiter {
+				get { return this.awaiter; }
 			}
 		}
 	}

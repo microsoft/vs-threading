@@ -120,6 +120,9 @@
   <data name="CannotUpgradeNonUpgradeableLock" xml:space="preserve">
     <value>A non-upgradeable read lock is held by the caller and cannot be upgraded.</value>
   </data>
+  <data name="InvalidLock" xml:space="preserve">
+    <value>This operation can only be executed against a valid lock.</value>
+  </data>
   <data name="LazyValueFaulted" xml:space="preserve">
     <value>Lazily created value faulted during construction.</value>
   </data>

@@ -70,6 +70,15 @@ namespace Microsoft.Threading {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to This operation can only be executed against a valid lock..
+        /// </summary>
+        internal static string InvalidLock {
+            get {
+                return ResourceManager.GetString("InvalidLock", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Lazily created value faulted during construction..
         /// </summary>
         internal static string LazyValueFaulted {

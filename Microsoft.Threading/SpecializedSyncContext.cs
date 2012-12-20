@@ -11,7 +11,7 @@ namespace Microsoft.Threading {
 	/// <summary>
 	/// A structure that applies and reverts changes to the <see cref="SynchronizationContext"/>.
 	/// </summary>
-	internal struct SpecializedSyncContext : IDisposable {
+	public struct SpecializedSyncContext : IDisposable {
 		/// <summary>
 		/// A flag indicating whether the non-default constructor was invoked.
 		/// </summary>
@@ -48,7 +48,7 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="syncContext">The synchronization context to apply.</param>
 		/// <param name="checkForChangesOnRevert">A value indicating whether to check that the applied SyncContext is still the current one when the original is restored.</param>
-		internal static SpecializedSyncContext Apply(SynchronizationContext syncContext, bool checkForChangesOnRevert = true) {
+		public static SpecializedSyncContext Apply(SynchronizationContext syncContext, bool checkForChangesOnRevert = true) {
 			return new SpecializedSyncContext(syncContext, checkForChangesOnRevert);
 		}
 
