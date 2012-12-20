@@ -335,9 +335,9 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void OnEnqueuedNotAlreadyDispatched() {
-			var queue = new Fakes.StubAsyncQueue<int>();
+			var queue = new DerivedQueue<int>();
 			bool callbackFired = false;
-			queue.OnEnqueuedT0Boolean = (value, alreadyDispatched) => {
+			queue.OnEnqueuedDelegate = (value, alreadyDispatched) => {
 				Assert.AreEqual(5, value);
 				Assert.IsFalse(alreadyDispatched);
 				callbackFired = true;
@@ -348,9 +348,9 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void OnEnqueuedAlreadyDispatched() {
-			var queue = new Fakes.StubAsyncQueue<int>();
+			var queue = new DerivedQueue<int>();
 			bool callbackFired = false;
-			queue.OnEnqueuedT0Boolean = (value, alreadyDispatched) => {
+			queue.OnEnqueuedDelegate = (value, alreadyDispatched) => {
 				Assert.AreEqual(5, value);
 				Assert.IsTrue(alreadyDispatched);
 				callbackFired = true;
@@ -364,9 +364,9 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void OnDequeued() {
-			var queue = new Fakes.StubAsyncQueue<int>();
+			var queue = new DerivedQueue<int>();
 			bool callbackFired = false;
-			queue.OnDequeuedT0 = value => {
+			queue.OnDequeuedDelegate = value => {
 				Assert.AreEqual(5, value);
 				callbackFired = true;
 			};
@@ -379,9 +379,9 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void OnCompletedInvoked() {
-			var queue = new Fakes.StubAsyncQueue<GenericParameterHelper>();
+			var queue = new DerivedQueue<GenericParameterHelper>();
 			int invoked = 0;
-			queue.OnCompleted01 = () => invoked++;
+			queue.OnCompletedDelegate = () => invoked++;
 			queue.Complete();
 			Assert.AreEqual(1, invoked);
 
@@ -399,6 +399,38 @@
 					Assert.IsTrue(queue.IsCompleted);
 				},
 				maxBytesAllocated: 81);
+		}
+
+		private class DerivedQueue<T> : AsyncQueue<T> {
+			internal Action<T, bool> OnEnqueuedDelegate { get; set; }
+
+			internal Action OnCompletedDelegate { get; set; }
+
+			internal Action<T> OnDequeuedDelegate { get; set; }
+
+			protected override void OnEnqueued(T value, bool alreadyDispatched) {
+				base.OnEnqueued(value, alreadyDispatched);
+
+				if (this.OnEnqueuedDelegate != null) {
+					this.OnEnqueuedDelegate(value, alreadyDispatched);
+				}
+			}
+
+			protected override void OnDequeued(T value) {
+				base.OnDequeued(value);
+
+				if (this.OnDequeuedDelegate != null) {
+					this.OnDequeuedDelegate(value);
+				}
+			}
+
+			protected override void OnCompleted() {
+				base.OnCompleted();
+
+				if (this.OnCompletedDelegate != null) {
+					this.OnCompletedDelegate();
+				}
+			}
 		}
 	}
 }
