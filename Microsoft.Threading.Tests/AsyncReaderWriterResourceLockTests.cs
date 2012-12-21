@@ -668,23 +668,23 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task UpgradeableReadLock() {
-			await Task.Run(delegate {
-				using (this.resourceLock.UpgradeableReadLock()) {
+		public async Task UpgradeableReadLockAsync() {
+			await Task.Run(async delegate {
+				using (await this.resourceLock.UpgradeableReadLockAsync()) {
 				}
 
-				using (this.resourceLock.UpgradeableReadLock(AsyncReaderWriterResourceLock<int, Resource>.LockFlags.None)) {
+				using (await this.resourceLock.UpgradeableReadLockAsync(AsyncReaderWriterResourceLock<int, Resource>.LockFlags.None)) {
 				}
 			});
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task WriteLock() {
-			await Task.Run(delegate {
-				using (this.resourceLock.WriteLock()) {
+		public async Task WriteLockAsync() {
+			await Task.Run(async delegate {
+				using (await this.resourceLock.WriteLockAsync()) {
 				}
 
-				using (this.resourceLock.WriteLock(AsyncReaderWriterResourceLock<int, Resource>.LockFlags.None)) {
+				using (await this.resourceLock.WriteLockAsync(AsyncReaderWriterResourceLock<int, Resource>.LockFlags.None)) {
 				}
 			});
 		}

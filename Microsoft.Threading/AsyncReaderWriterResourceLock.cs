@@ -78,15 +78,6 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
-		/// Obtains a read lock, synchronously blocking for the lock if it is not immediately available.
-		/// </summary>
-		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
-		/// <returns>A lock releaser.</returns>
-		public new ResourceReleaser ReadLock(CancellationToken cancellationToken = default(CancellationToken)) {
-			return new ResourceReleaser(base.ReadLock(cancellationToken), this.helper);
-		}
-
-		/// <summary>
 		/// Obtains a read lock, asynchronously awaiting for the lock if it is not immediately available.
 		/// </summary>
 		/// <param name="cancellationToken">
@@ -97,25 +88,6 @@ namespace Microsoft.Threading {
 		/// <returns>An awaitable object whose result is the lock releaser.</returns>
 		public new ResourceAwaitable ReadLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
 			return new ResourceAwaitable(base.ReadLockAsync(cancellationToken), this.helper);
-		}
-
-		/// <summary>
-		/// Obtains an upgradeable read lock, synchronously blocking for the lock if it is not immediately available.
-		/// </summary>
-		/// <param name="options">Modifications to normal lock behavior.</param>
-		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
-		/// <returns>A lock releaser.</returns>
-		public ResourceReleaser UpgradeableReadLock(LockFlags options, CancellationToken cancellationToken = default(CancellationToken)) {
-			return new ResourceReleaser(base.UpgradeableReadLock((AsyncReaderWriterLock.LockFlags)options, cancellationToken), this.helper);
-		}
-
-		/// <summary>
-		/// Obtains an upgradeable read lock, synchronously blocking for the lock if it is not immediately available.
-		/// </summary>
-		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
-		/// <returns>A lock releaser.</returns>
-		public new ResourceReleaser UpgradeableReadLock(CancellationToken cancellationToken = default(CancellationToken)) {
-			return new ResourceReleaser(base.UpgradeableReadLock(cancellationToken), this.helper);
 		}
 
 		/// <summary>
@@ -143,25 +115,6 @@ namespace Microsoft.Threading {
 		/// <returns>An awaitable object whose result is the lock releaser.</returns>
 		public new ResourceAwaitable UpgradeableReadLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
 			return new ResourceAwaitable(base.UpgradeableReadLockAsync(cancellationToken), this.helper);
-		}
-
-		/// <summary>
-		/// Obtains a write lock, synchronously blocking for the lock if it is not immediately available.
-		/// </summary>
-		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
-		/// <returns>A lock releaser.</returns>
-		public new ResourceReleaser WriteLock(CancellationToken cancellationToken = default(CancellationToken)) {
-			return new ResourceReleaser(base.WriteLock(cancellationToken), this.helper);
-		}
-
-		/// <summary>
-		/// Obtains a write lock, synchronously blocking for the lock if it is not immediately available.
-		/// </summary>
-		/// <param name="options">Modifications to normal lock behavior.</param>
-		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
-		/// <returns>A lock releaser.</returns>
-		public ResourceReleaser WriteLock(LockFlags options, CancellationToken cancellationToken = default(CancellationToken)) {
-			return new ResourceReleaser(base.WriteLock((AsyncReaderWriterLock.LockFlags)options, cancellationToken), this.helper);
 		}
 
 		/// <summary>
@@ -518,7 +471,9 @@ namespace Microsoft.Threading {
 			/// <exception cref="InvalidOperationException">Thrown if no lock is held by the caller.</exception>
 			private ResourceReleaser AcquirePreexistingLockOrThrow() {
 				Verify.Operation(this.service.IsAnyLockHeld, "A lock is required");
-				return this.service.ReadLock(CancellationToken.None);
+				var awaiter = this.service.ReadLockAsync(CancellationToken.None).GetAwaiter();
+				Assumes.True(awaiter.IsCompleted);
+				return awaiter.GetResult();
 			}
 
 			/// <summary>

@@ -189,11 +189,11 @@
 		[TestMethod, Timeout(TestTimeout * 2)]
 		public async Task NoMemoryLeakForManyLocks() {
 			// Get on an MTA thread so that locks do not necessarily yield.
-			await Task.Run(delegate {
+			await Task.Run(async delegate {
 				// First prime the pump to allocate some fixed cost memory.
 				{
 					var lck = new AsyncReaderWriterLock();
-					using (lck.ReadLock()) {
+					using (await lck.ReadLockAsync()) {
 					}
 				}
 
@@ -203,7 +203,7 @@
 					long memory1 = GC.GetTotalMemory(true);
 					for (int i = 0; i < iterations; i++) {
 						var lck = new AsyncReaderWriterLock();
-						using (lck.ReadLock()) {
+						using (await lck.ReadLockAsync()) {
 						}
 					}
 
@@ -418,11 +418,11 @@
 					OnExclusiveLockReleasedAsyncDelegate = yieldingDelegate,
 				};
 
-				using (asyncLock.WriteLock()) {
+				using (await asyncLock.WriteLockAsync()) {
 				}
 
-				using (asyncLock.UpgradeableReadLock()) {
-					using (asyncLock.WriteLock()) {
+				using (await asyncLock.UpgradeableReadLockAsync()) {
+					using (await asyncLock.WriteLockAsync()) {
 					}
 				}
 
@@ -443,19 +443,19 @@
 			var asyncLock = new LockDerived();
 
 			Assert.IsFalse(asyncLock.IsAnyLockHeld);
-			await Task.Run(delegate {
+			await Task.Run(async delegate {
 				Assert.IsFalse(asyncLock.IsAnyLockHeld);
-				using (asyncLock.ReadLock()) {
+				using (await asyncLock.ReadLockAsync()) {
 					Assert.IsTrue(asyncLock.IsAnyLockHeld);
 				}
 
 				Assert.IsFalse(asyncLock.IsAnyLockHeld);
-				using (asyncLock.UpgradeableReadLock()) {
+				using (await asyncLock.UpgradeableReadLockAsync()) {
 					Assert.IsTrue(asyncLock.IsAnyLockHeld);
 				}
 
 				Assert.IsFalse(asyncLock.IsAnyLockHeld);
-				using (asyncLock.WriteLock()) {
+				using (await asyncLock.WriteLockAsync()) {
 					Assert.IsTrue(asyncLock.IsAnyLockHeld);
 				}
 
@@ -751,56 +751,13 @@
 			});
 		}
 
-		#endregion
-
-		#region ReadLock tests
-
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task ReadLockSimple() {
-			// Get onto an MTA thread so that a lock may be synchronously granted.
-			await Task.Run(async delegate {
-				using (this.asyncLock.ReadLock()) {
-					Assert.IsTrue(this.asyncLock.IsReadLockHeld);
-					await Task.Yield();
-					Assert.IsTrue(this.asyncLock.IsReadLockHeld);
-				}
-
-				Assert.IsFalse(this.asyncLock.IsReadLockHeld);
-			});
-		}
-
-		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
-		public void ReadLockRejectedOnSta() {
-			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
-				Assert.Inconclusive("Not an STA thread.");
-			}
-
-			this.asyncLock.ReadLock(CancellationToken.None);
-		}
-
-		[TestMethod, Timeout(TestTimeout)]
-		public async Task ReadLockRejectedOnMtaWithSynchronizationContext() {
-			await Task.Run(delegate {
-				SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
-				AsyncReaderWriterLock.Releaser releaser = new AsyncReaderWriterLock.Releaser();
-				try {
-					releaser = this.asyncLock.ReadLock(CancellationToken.None);
-					Assert.Fail("Expected exception not thrown.");
-				} catch (InvalidOperationException) {
-					// Expected
-				} finally {
-					releaser.Dispose();
-				}
-			});
-		}
-
-		[TestMethod, Timeout(TestTimeout)]
-		public async Task ReadLockConcurrent() {
+		public async Task ReadLockAsyncConcurrent() {
 			var firstReadLockObtained = new TaskCompletionSource<object>();
 			var secondReadLockObtained = new TaskCompletionSource<object>();
 			await Task.WhenAll(
 				Task.Run(async delegate {
-				using (this.asyncLock.ReadLock()) {
+				using (await this.asyncLock.ReadLockAsync()) {
 					Assert.IsTrue(this.asyncLock.IsReadLockHeld);
 					await firstReadLockObtained.SetAsync();
 					Assert.IsTrue(this.asyncLock.IsReadLockHeld);
@@ -811,7 +768,7 @@
 			}),
 			Task.Run(async delegate {
 				await firstReadLockObtained.Task;
-				using (this.asyncLock.ReadLock()) {
+				using (await this.asyncLock.ReadLockAsync()) {
 					Assert.IsTrue(this.asyncLock.IsReadLockHeld);
 					await secondReadLockObtained.SetAsync();
 					Assert.IsTrue(this.asyncLock.IsReadLockHeld);
@@ -823,7 +780,7 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task ReadLockContention() {
+		public async Task ReadLockAsyncContention() {
 			var firstLockObtained = new TaskCompletionSource<object>();
 			await Task.WhenAll(
 				Task.Run(async delegate {
@@ -838,7 +795,7 @@
 			}),
 			Task.Run(async delegate {
 				await firstLockObtained.Task;
-				using (this.asyncLock.ReadLock()) {
+				using (await this.asyncLock.ReadLockAsync()) {
 					Assert.IsTrue(this.asyncLock.IsReadLockHeld);
 					await Task.Yield();
 					Assert.IsTrue(this.asyncLock.IsReadLockHeld);
@@ -846,17 +803,6 @@
 
 				Assert.IsFalse(this.asyncLock.IsReadLockHeld);
 			}));
-		}
-
-		[TestMethod, Timeout(TestTimeout)]
-		public async Task UncontestedTopLevelReadLockGarbageCheck() {
-			var cts = new CancellationTokenSource();
-			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLock(cts.Token));
-		}
-
-		[TestMethod, Timeout(TestTimeout)]
-		public async Task NestedReadLockGarbageCheck() {
-			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLock());
 		}
 
 		#endregion
@@ -1138,15 +1084,11 @@
 				() => this.asyncLock.UpgradeableReadLockAsync());
 		}
 
-		#endregion
-
-		#region UpgradeableReadLock tests
-
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task UpgradeableReadLockSimple() {
+		public async Task UpgradeableReadLockAsyncSimple() {
 			// Get onto an MTA thread so that a lock may be synchronously granted.
 			await Task.Run(async delegate {
-				using (this.asyncLock.UpgradeableReadLock()) {
+				using (await this.asyncLock.UpgradeableReadLockAsync()) {
 					Assert.IsTrue(this.asyncLock.IsAnyLockHeld);
 					Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
 					await Task.Yield();
@@ -1156,7 +1098,7 @@
 
 				Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
 
-				using (this.asyncLock.UpgradeableReadLock(AsyncReaderWriterLock.LockFlags.None)) {
+				using (await this.asyncLock.UpgradeableReadLockAsync(AsyncReaderWriterLock.LockFlags.None)) {
 					Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
 					await Task.Yield();
 					Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
@@ -1166,33 +1108,8 @@
 			});
 		}
 
-		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
-		public void UpgradeableReadLockRejectedOnSta() {
-			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
-				Assert.Inconclusive("Not an STA thread.");
-			}
-
-			this.asyncLock.UpgradeableReadLock(CancellationToken.None);
-		}
-
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task UpgradeableReadLockRejectedOnMtaWithSynchronizationContext() {
-			await Task.Run(delegate {
-				SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
-				AsyncReaderWriterLock.Releaser releaser = new AsyncReaderWriterLock.Releaser();
-				try {
-					releaser = this.asyncLock.UpgradeableReadLock(CancellationToken.None);
-					Assert.Fail("Expected exception not thrown.");
-				} catch (InvalidOperationException) {
-					// Expected
-				} finally {
-					releaser.Dispose();
-				}
-			});
-		}
-
-		[TestMethod, Timeout(TestTimeout)]
-		public async Task UpgradeableReadLockContention() {
+		public async Task UpgradeableReadLockAsyncContention() {
 			var firstLockObtained = new TaskCompletionSource<object>();
 			await Task.WhenAll(
 				Task.Run(async delegate {
@@ -1207,7 +1124,7 @@
 			}),
 			Task.Run(async delegate {
 				await firstLockObtained.Task;
-				using (this.asyncLock.UpgradeableReadLock()) {
+				using (await this.asyncLock.UpgradeableReadLockAsync()) {
 					Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
 					await Task.Yield();
 					Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
@@ -1215,17 +1132,6 @@
 
 				Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
 			}));
-		}
-
-		[TestMethod, Timeout(TestTimeout)]
-		public async Task UncontestedTopLevelUpgradeableReadLockGarbageCheck() {
-			var cts = new CancellationTokenSource();
-			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLock(cts.Token));
-		}
-
-		[TestMethod, Timeout(TestTimeout)]
-		public async Task NestedUpgradeableReadLockGarbageCheck() {
-			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLock());
 		}
 
 		#endregion
@@ -1445,15 +1351,11 @@
 			});
 		}
 
-		#endregion
-
-		#region WriteLock tests
-
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task WriteLockSimple() {
+		public async Task WriteLockAsyncSimple() {
 			// Get onto an MTA thread so that a lock may be synchronously granted.
 			await Task.Run(async delegate {
-				using (this.asyncLock.WriteLock()) {
+				using (await this.asyncLock.WriteLockAsync()) {
 					Assert.IsTrue(this.asyncLock.IsAnyLockHeld);
 					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 					await Task.Yield();
@@ -1463,7 +1365,7 @@
 
 				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 
-				using (this.asyncLock.WriteLock(AsyncReaderWriterLock.LockFlags.None)) {
+				using (await this.asyncLock.WriteLockAsync(AsyncReaderWriterLock.LockFlags.None)) {
 					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 					await Task.Yield();
 					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
@@ -1473,33 +1375,8 @@
 			});
 		}
 
-		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
-		public void WriteLockRejectedOnSta() {
-			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) {
-				Assert.Inconclusive("Not an STA thread.");
-			}
-
-			this.asyncLock.WriteLock(CancellationToken.None);
-		}
-
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task WriteLockRejectedOnMtaWithSynchronizationContext() {
-			await Task.Run(delegate {
-				SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
-				AsyncReaderWriterLock.Releaser releaser = new AsyncReaderWriterLock.Releaser();
-				try {
-					releaser = this.asyncLock.WriteLock(CancellationToken.None);
-					Assert.Fail("Expected exception not thrown.");
-				} catch (InvalidOperationException) {
-					// Expected
-				} finally {
-					releaser.Dispose();
-				}
-			});
-		}
-
-		[TestMethod, Timeout(TestTimeout)]
-		public async Task WriteLockContention() {
+		public async Task WriteLockAsyncContention() {
 			var firstLockObtained = new TaskCompletionSource<object>();
 			await Task.WhenAll(
 				Task.Run(async delegate {
@@ -1514,7 +1391,7 @@
 			}),
 			Task.Run(async delegate {
 				await firstLockObtained.Task;
-				using (this.asyncLock.WriteLock()) {
+				using (await this.asyncLock.WriteLockAsync()) {
 					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
 					await Task.Yield();
 					Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
@@ -1522,17 +1399,6 @@
 
 				Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
 			}));
-		}
-
-		[TestMethod, Timeout(TestTimeout)]
-		public async Task UncontestedTopLevelWriteLockGarbageCheck() {
-			var cts = new CancellationTokenSource();
-			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLock(cts.Token));
-		}
-
-		[TestMethod, Timeout(TestTimeout)]
-		public async Task NestedWriteLockGarbageCheck() {
-			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLock());
 		}
 
 		#endregion
@@ -1966,19 +1832,6 @@
 				Assert.Fail("Expected OperationCanceledException not thrown.");
 			} catch (OperationCanceledException) {
 			}
-		}
-
-		[TestMethod, Timeout(TestTimeout)]
-		public async Task PrecancelledReadLockRequest() {
-			await Task.Run(delegate { // get onto an MTA
-				var cts = new CancellationTokenSource();
-				cts.Cancel();
-				try {
-					this.asyncLock.ReadLock(cts.Token);
-					Assert.Fail("Expected OperationCanceledException not thrown.");
-				} catch (OperationCanceledException) {
-				}
-			});
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
