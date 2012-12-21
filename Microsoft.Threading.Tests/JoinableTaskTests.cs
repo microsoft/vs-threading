@@ -1141,6 +1141,7 @@
 			var frame = new DispatcherFrame();
 			var firstYield = new AsyncManualResetEvent();
 			var startingJoin = new AsyncManualResetEvent();
+			((DerivedJoinableTaskFactory)this.asyncPump).AssumeConcurrentUse = true;
 
 			var joinable = this.asyncPump.RunAsync(async delegate {
 				await Task.Yield();
