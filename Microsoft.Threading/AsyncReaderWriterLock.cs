@@ -354,63 +354,6 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
-		/// Obtains a read lock, synchronously blocking for the lock if it is not immediately available.
-		/// </summary>
-		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
-		/// <returns>A lock releaser.</returns>
-		public Releaser ReadLock(CancellationToken cancellationToken = default(CancellationToken)) {
-			ThrowIfStaOrUnsupportedSyncContext();
-			var awaiter = this.ReadLockAsync(cancellationToken).GetAwaiter();
-			return awaiter.GetResult();
-		}
-
-		/// <summary>
-		/// Obtains an upgradeable read lock, synchronously blocking for the lock if it is not immediately available.
-		/// </summary>
-		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
-		/// <returns>A lock releaser.</returns>
-		public Releaser UpgradeableReadLock(CancellationToken cancellationToken = default(CancellationToken)) {
-			ThrowIfStaOrUnsupportedSyncContext();
-			var awaiter = this.UpgradeableReadLockAsync(cancellationToken).GetAwaiter();
-			return awaiter.GetResult();
-		}
-
-		/// <summary>
-		/// Obtains an upgradeable read lock, synchronously blocking for the lock if it is not immediately available.
-		/// </summary>
-		/// <param name="options">Modifications to normal lock behavior.</param>
-		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
-		/// <returns>A lock releaser.</returns>
-		public Releaser UpgradeableReadLock(LockFlags options, CancellationToken cancellationToken = default(CancellationToken)) {
-			ThrowIfStaOrUnsupportedSyncContext();
-			var awaiter = this.UpgradeableReadLockAsync(options, cancellationToken).GetAwaiter();
-			return awaiter.GetResult();
-		}
-
-		/// <summary>
-		/// Obtains a write lock, synchronously blocking for the lock if it is not immediately available.
-		/// </summary>
-		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
-		/// <returns>A lock releaser.</returns>
-		public Releaser WriteLock(CancellationToken cancellationToken = default(CancellationToken)) {
-			ThrowIfStaOrUnsupportedSyncContext();
-			var awaiter = this.WriteLockAsync(cancellationToken).GetAwaiter();
-			return awaiter.GetResult();
-		}
-
-		/// <summary>
-		/// Obtains a write lock, synchronously blocking for the lock if it is not immediately available.
-		/// </summary>
-		/// <param name="options">Modifications to normal lock behavior.</param>
-		/// <param name="cancellationToken">A token whose cancellation indicates lost interest in obtaining the lock.</param>
-		/// <returns>A lock releaser.</returns>
-		public Releaser WriteLock(LockFlags options, CancellationToken cancellationToken = default(CancellationToken)) {
-			ThrowIfStaOrUnsupportedSyncContext();
-			var awaiter = this.WriteLockAsync(options, cancellationToken).GetAwaiter();
-			return awaiter.GetResult();
-		}
-
-		/// <summary>
 		/// Prevents use or visibility of the caller's lock(s) until the returned value is disposed.
 		/// </summary>
 		/// <returns>The value to dispose to restore lock visibility.</returns>
