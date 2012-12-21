@@ -41,7 +41,7 @@ namespace Microsoft.Threading.Tests {
 			Assert.IsFalse(lazy.IsValueCreated);
 			var resultTask = lazy.GetValueAsync();
 			Assert.IsTrue(lazy.IsValueCreated);
-			evt.Set();
+			await evt.SetAsync();
 			Assert.AreEqual(5, (await resultTask).Data);
 			Assert.IsTrue(lazy.IsValueCreated);
 		}
@@ -289,7 +289,7 @@ namespace Microsoft.Threading.Tests {
 			var collection = context.CreateCollection();
 			var someRandomPump = context.CreateFactory(collection);
 			someRandomPump.Run(async delegate {
-				evt.Set(); // setting this event allows the value factory to resume, once it can get the Main thread.
+				await evt.SetAsync(); // setting this event allows the value factory to resume, once it can get the Main thread.
 
 				// The interesting bit we're testing here is that
 				// the value factory has already been invoked.  It cannot
@@ -327,14 +327,14 @@ namespace Microsoft.Threading.Tests {
 					using (writeAwaiter.GetResult()) {
 					}
 				});
-				writeLockWaitingByOther.Set();
+				await writeLockWaitingByOther.SetAsync();
 			});
 
 			// Kick off the value factory without any lock context.
 			var resultTask = lazy.GetValueAsync();
 
 			using (await lck.ReadLockAsync()) {
-				readLockAcquiredByOther.Set();
+				readLockAcquiredByOther.SetAsync().Forget();
 
 				// Now request the lazy task again.
 				// This would traditionally deadlock because the value factory won't

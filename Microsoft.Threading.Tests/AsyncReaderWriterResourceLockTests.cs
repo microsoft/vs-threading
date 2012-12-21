@@ -261,7 +261,7 @@
 				using (var access = await this.resourceLock.ReadLockAsync()) {
 					var resourceTask = access.GetResourceAsync(1, cts.Token);
 					Assert.IsFalse(resourceTask.IsCompleted);
-					reader1Waiting.Set();
+					await reader1Waiting.SetAsync();
 					try {
 						await resourceTask;
 						Assert.Fail("Expected OperationCanceledException not thrown.");
@@ -273,7 +273,7 @@
 				using (var access = await this.resourceLock.ReadLockAsync()) {
 					var resourceTask = access.GetResourceAsync(1);
 					Assert.IsFalse(resourceTask.IsCompleted);
-					reader2Waiting.Set();
+					await reader2Waiting.SetAsync();
 					var resource = await resourceTask;
 					Assert.AreSame(resource, this.resources[1]);
 				}

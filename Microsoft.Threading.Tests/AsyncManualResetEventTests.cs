@@ -28,8 +28,8 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void NonBlocking() {
-			this.evt.Set();
+		public async Task NonBlocking() {
+			await this.evt.SetAsync();
 			Assert.IsTrue(this.evt.WaitAsync().IsCompleted);
 		}
 
@@ -37,16 +37,16 @@
 		/// Verifies that inlining continuations do not have to complete execution before Set() returns.
 		/// </summary>
 		[TestMethod, Timeout(TestTimeout)]
-		public void SetReturnsBeforeInlinedContinuations() {
+		public async Task SetReturnsBeforeInlinedContinuations() {
 			var setReturned = new ManualResetEventSlim();
 			var inlinedContinuation = this.evt.WaitAsync()
 				.ContinueWith(delegate {
-				// Arrange to synchronously block the continuation until Set() has returned,
-				// which would deadlock if Set does not return until inlined continuations complete.
-				Assert.IsTrue(setReturned.Wait(AsyncDelay));
-			},
+					// Arrange to synchronously block the continuation until Set() has returned,
+					// which would deadlock if Set does not return until inlined continuations complete.
+					Assert.IsTrue(setReturned.Wait(AsyncDelay));
+				},
 				TaskContinuationOptions.ExecuteSynchronously);
-			this.evt.Set();
+			await this.evt.SetAsync();
 			Assert.IsTrue(this.evt.IsSet);
 			setReturned.Set();
 			Assert.IsTrue(inlinedContinuation.Wait(AsyncDelay));
@@ -57,13 +57,13 @@
 			this.evt.Reset();
 			var result = this.evt.WaitAsync();
 			Assert.IsFalse(result.IsCompleted);
-			this.evt.Set();
+			await this.evt.SetAsync();
 			await result;
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void Reset() {
-			this.evt.Set();
+		public async Task Reset() {
+			await this.evt.SetAsync();
 			this.evt.Reset();
 			var result = this.evt.WaitAsync();
 			Assert.IsFalse(result.IsCompleted);
@@ -74,14 +74,14 @@
 			var task = Task.Run(async delegate {
 				await this.evt;
 			});
-			this.evt.Set();
+			this.evt.SetAsync();
 			task.Wait();
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void PulseAll() {
+		public async Task PulseAllAsync() {
 			var task = this.evt.WaitAsync();
-			this.evt.PulseAll();
+			await this.evt.PulseAllAsync();
 			Assert.IsTrue(task.IsCompleted);
 			Assert.IsFalse(this.evt.WaitAsync().IsCompleted);
 		}
