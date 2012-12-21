@@ -91,10 +91,10 @@ namespace Microsoft.Threading {
 						if (this.dequeuerResetState == null) {
 							this.owner.Context.SyncContextLock.EnterWriteLock();
 							try {
-								// TODO: consider passing in allowInliningWaiters: true,
-								// since I think we control all waiters and their continuations
-								// should be benign.
-								this.dequeuerResetState = new AsyncManualResetEvent();
+								// We pass in allowInliningWaiters: true,
+								// since we control all waiters and their continuations
+								// are be benign, and it makes it more efficient.
+								this.dequeuerResetState = new AsyncManualResetEvent(allowInliningWaiters: true);
 							} finally {
 								this.owner.Context.SyncContextLock.ExitWriteLock();
 							}
