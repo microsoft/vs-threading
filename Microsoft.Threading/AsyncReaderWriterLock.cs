@@ -709,12 +709,12 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="awaiter">The awaiter whose lock should be considered.</param>
 		private void CheckSynchronizationContextAppropriateForLock(Awaiter awaiter) {
-			bool syncContextRequired = this.LockStackContains(LockKind.UpgradeableRead, awaiter) || this.LockStackContains(LockKind.Write, awaiter);
-			if (syncContextRequired) {
-				if (!(SynchronizationContext.Current is NonConcurrentSynchronizationContext)) {
-					////Assumes.Fail();
-				}
-			}
+			////bool syncContextRequired = this.LockStackContains(LockKind.UpgradeableRead, awaiter) || this.LockStackContains(LockKind.Write, awaiter);
+			////if (syncContextRequired) {
+			////	if (!(SynchronizationContext.Current is NonConcurrentSynchronizationContext)) {
+			////		Assumes.Fail();
+			////	}
+			////}
 		}
 
 		/// <summary>
