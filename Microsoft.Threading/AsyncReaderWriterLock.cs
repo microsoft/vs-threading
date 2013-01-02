@@ -1792,6 +1792,27 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>
+			/// Gets a value indicating whether this lock is an active read lock or is nested by one.
+			/// </summary>
+			public bool HasReadLock {
+				get { return this.IsValid ? this.awaiter.OwningLock.IsLockHeld(LockKind.Read, this.awaiter, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true) : false; }
+			}
+
+			/// <summary>
+			/// Gets a value indicating whether this lock is an active upgradeable read lock or is nested by one.
+			/// </summary>
+			public bool HasUpgradeableReadLock {
+				get { return this.IsValid ? this.awaiter.OwningLock.IsLockHeld(LockKind.UpgradeableRead, this.awaiter, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true) : false; }
+			}
+
+			/// <summary>
+			/// Gets a value indicating whether this lock is an active write lock or is nested by one.
+			/// </summary>
+			public bool HasWriteLock {
+				get { return this.IsValid ? this.awaiter.OwningLock.IsLockHeld(LockKind.Write, this.awaiter, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true) : false; }
+			}
+
+			/// <summary>
 			/// Gets the flags that were passed into this lock.
 			/// </summary>
 			public LockFlags Flags {

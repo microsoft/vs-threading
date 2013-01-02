@@ -290,10 +290,16 @@ namespace Microsoft.Threading {
 			internal void SetResourceAsAccessed(TResource resource) {
 				Requires.NotNull(resource, "resource");
 
+				// Capture the ambient lock and use it for the two lock checks rather than
+				// call AsyncReaderWriterLock.IsWriteLockHeld and IsUpgradeableReadLockHeld
+				// to reduce the number of slow AsyncLocal<T>.get_Value calls we make.
+				// Also do it before we acquire the lock, since a lock isn't necessary.
+				// (verified to be a perf bottleneck in ETL traces).
+				var ambientLock = this.service.AmbientLock;
 				lock (this.service.SyncObject) {
-					if (this.service.IsWriteLockHeld) {
+					if (ambientLock.HasWriteLock) {
 						this.resourcesAcquiredWithinWriteLock.Add(resource);
-					} else if (this.service.IsUpgradeableReadLockHeld) {
+					} else if (ambientLock.HasUpgradeableReadLock) {
 						this.resourcesAcquiredWithinUpgradeableRead.Add(resource);
 					}
 				}
@@ -307,8 +313,14 @@ namespace Microsoft.Threading {
 			internal void SetResourceAsAccessed(Predicate<TResource> resourceCheck) {
 				Requires.NotNull(resourceCheck, "resourceCheck");
 
+				// Capture the ambient lock and use it for the two lock checks rather than
+				// call AsyncReaderWriterLock.IsWriteLockHeld and IsUpgradeableReadLockHeld
+				// to reduce the number of slow AsyncLocal<T>.get_Value calls we make.
+				// Also do it before we acquire the lock, since a lock isn't necessary.
+				// (verified to be a perf bottleneck in ETL traces).
+				var ambientLock = this.service.AmbientLock;
 				lock (this.service.SyncObject) {
-					if (this.service.IsWriteLockHeld || this.service.IsUpgradeableReadLockHeld) {
+					if (ambientLock.HasWriteLock || ambientLock.HasUpgradeableReadLock) {
 						foreach (var resource in this.resourcePreparationTasks) {
 							if (resourceCheck(resource.Key)) {
 								this.SetResourceAsAccessed(resource.Key);
