@@ -3311,8 +3311,8 @@
 				}
 			}
 
-			protected override async Task OnBeforeLockReleasedAsync(bool exclusiveLockRelease) {
-				await base.OnBeforeLockReleasedAsync(exclusiveLockRelease);
+			protected override async Task OnBeforeLockReleasedAsync(bool exclusiveLockRelease, LockHandle releasingLock) {
+				await base.OnBeforeLockReleasedAsync(exclusiveLockRelease, releasingLock);
 				if (this.OnBeforeLockReleasedAsyncDelegate != null) {
 					await this.OnBeforeLockReleasedAsyncDelegate();
 				}

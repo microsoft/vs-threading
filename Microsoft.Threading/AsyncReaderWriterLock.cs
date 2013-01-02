@@ -464,8 +464,9 @@ namespace Microsoft.Threading {
 		/// Fired when any lock is being released.
 		/// </summary>
 		/// <param name="exclusiveLockRelease">A flag indicating whether the last write lock that the caller holds is being released.</param>
+		/// <param name="releasingLock">The lock being released.</param>
 		/// <returns>A task whose completion signals the conclusion of the asynchronous operation.</returns>
-		protected virtual Task OnBeforeLockReleasedAsync(bool exclusiveLockRelease) {
+		protected virtual Task OnBeforeLockReleasedAsync(bool exclusiveLockRelease, LockHandle releasingLock) {
 			// Raise the write release lock event if and only if this is the last write that is about to be released.
 			// Also check that issued read lock count is 0, because these callbacks themselves may acquire read locks
 			// on top of this write lock that hasn't quite gone away yet, and when they release their read lock,
@@ -947,7 +948,7 @@ namespace Microsoft.Threading {
 				if (!lockConsumerCanceled) {
 					// Callbacks should be fired synchronously iff the last write lock is being released and read locks are already issued.
 					// This can occur when upgradeable read locks are held and upgraded, and then downgraded back to an upgradeable read.
-					callbackExecution = this.OnBeforeLockReleasedAsync(finalExclusiveLockRelease) ?? TplExtensions.CompletedTask;
+					callbackExecution = this.OnBeforeLockReleasedAsync(finalExclusiveLockRelease, new LockHandle(awaiter)) ?? TplExtensions.CompletedTask;
 					synchronousRequired = finalExclusiveLockRelease && upgradeableReadLocksAfter > 0;
 					if (synchronousRequired) {
 						synchronousCallbackExecution = callbackExecution;
