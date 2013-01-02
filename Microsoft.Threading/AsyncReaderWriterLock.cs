@@ -930,6 +930,7 @@ namespace Microsoft.Threading {
 			Task reenterConcurrentOutsideCode = null;
 			Task synchronousCallbackExecution = null;
 			bool synchronousRequired = false;
+			Awaiter remainingAwaiter = null;
 			lock (this.syncObject) {
 				// In case this is a sticky write lock, it may also belong to the write locks issued collection.
 				bool upgradedStickyWrite = awaiter.Kind == LockKind.UpgradeableRead
@@ -970,8 +971,15 @@ namespace Microsoft.Threading {
 				}
 
 				if (reenterConcurrentOutsideCode == null) {
-					this.OnReleaseReenterConcurrencyComplete(awaiter, upgradedStickyWrite, searchAllWaiters: false, updateCallContext: true);
+					this.OnReleaseReenterConcurrencyComplete(awaiter, upgradedStickyWrite, searchAllWaiters: false);
+					remainingAwaiter = this.GetFirstActiveSelfOrAncestor(this.topAwaiter.Value);
 				}
+			}
+
+			if (reenterConcurrentOutsideCode == null) {
+				// This assignment is outside the lock because it doesn't need the lock and it's a relatively expensive call
+				// that we needn't hold the lock for.
+				this.topAwaiter.Value = remainingAwaiter;
 			}
 
 			if (synchronousRequired || true) { // the "|| true" bit is to force us to always be synchronous when releasing locks until we can get all tests passing the other way.
@@ -1023,7 +1031,7 @@ namespace Microsoft.Threading {
 				// Skip updating the call context because we're in a forked execution context that won't
 				// ever impact the client code, and changing the CallContext now would cause the data to be cloned,
 				// allocating more memory wastefully.
-				this.OnReleaseReenterConcurrencyComplete(awaiter, upgradedStickyWrite, searchAllWaiters: true, updateCallContext: false);
+				this.OnReleaseReenterConcurrencyComplete(awaiter, upgradedStickyWrite, searchAllWaiters: true);
 			}
 
 			if (prereqException != null) {
@@ -1038,8 +1046,7 @@ namespace Microsoft.Threading {
 		/// <param name="awaiter">The awaiter being released.</param>
 		/// <param name="upgradedStickyWrite">A flag indicating whether the lock being released was an upgraded read lock with the sticky write flag set.</param>
 		/// <param name="searchAllWaiters"><c>true</c> to scan the entire queue for pending lock requests that might qualify; used when qualifying locks were delayed for some reason besides lock contention.</param>
-		/// <param name="updateCallContext">A flag indicating whether the CallContext should be updated with the remaining active lock awaiter.</param>
-		private void OnReleaseReenterConcurrencyComplete(Awaiter awaiter, bool upgradedStickyWrite, bool searchAllWaiters, bool updateCallContext) {
+		private void OnReleaseReenterConcurrencyComplete(Awaiter awaiter, bool upgradedStickyWrite, bool searchAllWaiters) {
 			Requires.NotNull(awaiter, "awaiter");
 
 			lock (this.syncObject) {
@@ -1047,10 +1054,6 @@ namespace Microsoft.Threading {
 				if (upgradedStickyWrite) {
 					Assumes.True(awaiter.Kind == LockKind.UpgradeableRead);
 					Assumes.True(this.issuedWriteLocks.Remove(awaiter));
-				}
-
-				if (updateCallContext) {
-					this.ApplyLockToCallContext(this.topAwaiter.Value);
 				}
 
 				this.CompleteIfAppropriate();
