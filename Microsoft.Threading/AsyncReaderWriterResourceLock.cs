@@ -165,8 +165,9 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="resourceCheck">A function that returns <c>true</c> if the provided resource should be considered retrieved.</param>
 		/// <param name="state">The state object to pass as a second parameter to <paramref name="resourceCheck"/></param>
-		protected void SetResourceAsAccessed(Func<TResource, object, bool> resourceCheck, object state) {
-			this.helper.SetResourceAsAccessed(resourceCheck, state);
+		/// <returns><c>true</c> if the delegate returned <c>true</c> on any of the invocations.</returns>
+		protected bool SetResourceAsAccessed(Func<TResource, object, bool> resourceCheck, object state) {
+			return this.helper.SetResourceAsAccessed(resourceCheck, state);
 		}
 
 		/// <summary>
@@ -312,7 +313,8 @@ namespace Microsoft.Threading {
 			/// </summary>
 			/// <param name="resourceCheck">A function that returns <c>true</c> if the provided resource should be considered retrieved.</param>
 			/// <param name="state">The state object to pass as a second parameter to <paramref name="resourceCheck"/></param>
-			internal void SetResourceAsAccessed(Func<TResource, object, bool> resourceCheck, object state) {
+			/// <returns><c>true</c> if the delegate returned <c>true</c> on any of the invocations.</returns>
+			internal bool SetResourceAsAccessed(Func<TResource, object, bool> resourceCheck, object state) {
 				Requires.NotNull(resourceCheck, "resourceCheck");
 
 				// Capture the ambient lock and use it for the two lock checks rather than
@@ -321,15 +323,19 @@ namespace Microsoft.Threading {
 				// Also do it before we acquire the lock, since a lock isn't necessary.
 				// (verified to be a perf bottleneck in ETL traces).
 				var ambientLock = this.service.AmbientLock;
+				bool match = false;
 				lock (this.service.SyncObject) {
 					if (ambientLock.HasWriteLock || ambientLock.HasUpgradeableReadLock) {
 						foreach (var resource in this.resourcePreparationTasks) {
 							if (resourceCheck(resource.Key, state)) {
+								match = true;
 								this.SetResourceAsAccessed(resource.Key);
 							}
 						}
 					}
 				}
+
+				return match;
 			}
 
 			/// <summary>
