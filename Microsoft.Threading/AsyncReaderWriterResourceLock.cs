@@ -164,8 +164,9 @@ namespace Microsoft.Threading {
 		/// satisfy some predicate.
 		/// </summary>
 		/// <param name="resourceCheck">A function that returns <c>true</c> if the provided resource should be considered retrieved.</param>
-		protected void SetResourceAsAccessed(Predicate<TResource> resourceCheck) {
-			this.helper.SetResourceAsAccessed(resourceCheck);
+		/// <param name="state">The state object to pass as a second parameter to <paramref name="resourceCheck"/></param>
+		protected void SetResourceAsAccessed(Func<TResource, object, bool> resourceCheck, object state) {
+			this.helper.SetResourceAsAccessed(resourceCheck, state);
 		}
 
 		/// <summary>
@@ -310,7 +311,8 @@ namespace Microsoft.Threading {
 			/// satisfy some predicate.
 			/// </summary>
 			/// <param name="resourceCheck">A function that returns <c>true</c> if the provided resource should be considered retrieved.</param>
-			internal void SetResourceAsAccessed(Predicate<TResource> resourceCheck) {
+			/// <param name="state">The state object to pass as a second parameter to <paramref name="resourceCheck"/></param>
+			internal void SetResourceAsAccessed(Func<TResource, object, bool> resourceCheck, object state) {
 				Requires.NotNull(resourceCheck, "resourceCheck");
 
 				// Capture the ambient lock and use it for the two lock checks rather than
@@ -322,7 +324,7 @@ namespace Microsoft.Threading {
 				lock (this.service.SyncObject) {
 					if (ambientLock.HasWriteLock || ambientLock.HasUpgradeableReadLock) {
 						foreach (var resource in this.resourcePreparationTasks) {
-							if (resourceCheck(resource.Key)) {
+							if (resourceCheck(resource.Key, state)) {
 								this.SetResourceAsAccessed(resource.Key);
 							}
 						}

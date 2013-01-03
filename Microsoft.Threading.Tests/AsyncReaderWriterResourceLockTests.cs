@@ -394,10 +394,12 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task PreparationIsAppliedToResourceImpactedByOutsideChangePredicate() {
 			using (var access = await this.resourceLock.ReadLockAsync()) {
-				this.resourceLock.SetResourceAsAccessed(resource => {
+				object state = new object();
+				this.resourceLock.SetResourceAsAccessed((resource, s) => {
+					Assert.AreSame(state, s);
 					Assert.Fail("Read locks should not invoke this.");
 					return false;
-				});
+				}, state);
 				await access.GetResourceAsync(2);
 
 				Assert.AreEqual(0, this.resources[1].ConcurrentAccessPreparationCount);
@@ -407,7 +409,7 @@
 			}
 
 			using (var access = await this.resourceLock.WriteLockAsync()) {
-				this.resourceLock.SetResourceAsAccessed(resource => resource == this.resources[1]);
+				this.resourceLock.SetResourceAsAccessed((resource, state) => resource == this.resources[1], null);
 				await access.GetResourceAsync(2);
 
 				Assert.AreEqual(0, this.resources[1].ConcurrentAccessPreparationCount);
@@ -879,8 +881,8 @@
 				base.SetResourceAsAccessed(resource);
 			}
 
-			internal new void SetResourceAsAccessed(Predicate<Resource> resourceCheck) {
-				base.SetResourceAsAccessed(resourceCheck);
+			internal new void SetResourceAsAccessed(Func<Resource, object, bool> resourceCheck, object state) {
+				base.SetResourceAsAccessed(resourceCheck, state);
 			}
 
 			protected override Task<Resource> GetResourceAsync(int resourceMoniker, CancellationToken cancellationToken) {
