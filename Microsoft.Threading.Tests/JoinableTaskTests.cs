@@ -1572,6 +1572,40 @@
 			});
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void RunAsyncExceptionsCapturedInResult() {
+			var exception = new InvalidOperationException();
+			var joinableTask = this.asyncPump.RunAsync(delegate {
+				throw exception;
+			});
+			Assert.IsTrue(joinableTask.IsCompleted);
+			Assert.AreSame(exception, joinableTask.Task.Exception.InnerException);
+			var awaiter = joinableTask.GetAwaiter();
+			try {
+				awaiter.GetResult();
+				Assert.Fail("Expected exception not rethrown.");
+			} catch (InvalidOperationException ex) {
+				Assert.AreSame(ex, exception);
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void RunAsyncOfTExceptionsCapturedInResult() {
+			var exception = new InvalidOperationException();
+			var joinableTask = this.asyncPump.RunAsync<int>(delegate {
+				throw exception;
+			});
+			Assert.IsTrue(joinableTask.IsCompleted);
+			Assert.AreSame(exception, joinableTask.Task.Exception.InnerException);
+			var awaiter = joinableTask.GetAwaiter();
+			try {
+				awaiter.GetResult();
+				Assert.Fail("Expected exception not rethrown.");
+			} catch (InvalidOperationException ex) {
+				Assert.AreSame(ex, exception);
+			}
+		}
+
 		private static async void SomeFireAndForgetMethod() {
 			await Task.Yield();
 		}
