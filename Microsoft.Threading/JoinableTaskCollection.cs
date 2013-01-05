@@ -9,6 +9,7 @@ namespace Microsoft.Threading {
 	using System.Collections.Generic;
 	using System.Linq;
 	using System.Text;
+	using System.Threading;
 	using System.Threading.Tasks;
 
 	/// <summary>
@@ -27,6 +28,11 @@ namespace Microsoft.Threading {
 		/// The value is the number of times a particular job has Joined this collection.
 		/// </summary>
 		private readonly WeakKeyDictionary<JoinableTask, int> joiners = new WeakKeyDictionary<JoinableTask, int>();
+
+		/// <summary>
+		/// An event that is set when the collection is empty. (lazily initialized)
+		/// </summary>
+		private AsyncManualResetEvent emptyEvent;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="JoinableTaskCollection"/> class.
@@ -64,6 +70,10 @@ namespace Microsoft.Threading {
 							joiner.Key.AddDependency(job);
 						}
 					}
+
+					if (this.emptyEvent != null) {
+						this.emptyEvent.Reset();
+					}
 				} finally {
 					this.Context.SyncContextLock.ExitWriteLock();
 				}
@@ -91,6 +101,10 @@ namespace Microsoft.Threading {
 							// We can discard the JoinRelease result of AddDependency
 							// because we directly disjoin without that helper struct.
 							joiner.Key.RemoveDependency(job);
+						}
+
+						if (this.emptyEvent != null && this.joinables.Count == 0) {
+							this.emptyEvent.SetAsync();
 						}
 
 						return true;
@@ -134,6 +148,29 @@ namespace Microsoft.Threading {
 					this.Context.SyncContextLock.ExitWriteLock();
 				}
 			}
+		}
+
+		/// <summary>
+		/// Gets an awaitable that completes when this collection is empty.
+		/// </summary>
+		/// <returns>A task.</returns>
+		public Task WaitTillEmptyAsync() {
+			if (this.emptyEvent == null) {
+				// We need a read lock to protect against the emptiness of this collection changing
+				// while we're setting the initial set state of the new event.
+				using (NoMessagePumpSyncContext.Default.Apply()) {
+					this.Context.SyncContextLock.EnterReadLock();
+					try {
+						// We use interlocked here to mitigate race conditions in lazily initializing this field.
+						// We *could* take a write lock above, but that would needlessly increase lock contention.
+						Interlocked.CompareExchange(ref this.emptyEvent, new AsyncManualResetEvent(this.joinables.Count == 0), null);
+					} finally {
+						this.Context.SyncContextLock.ExitReadLock();
+					}
+				}
+			}
+
+			return this.emptyEvent.WaitAsync();
 		}
 
 		/// <summary>
