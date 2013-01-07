@@ -3430,7 +3430,7 @@
 				get { return base.IsAnyLockHeld; }
 			}
 
-			internal new InternalLockHandle AmbientLockInternal {
+			internal InternalLockHandle AmbientLockInternal {
 				get {
 					var ambient = this.AmbientLock;
 					return new InternalLockHandle(ambient.IsUpgradeableReadLock, ambient.IsWriteLock);
