@@ -991,9 +991,14 @@ namespace Microsoft.Threading {
 				remainingAwaiter = this.GetFirstActiveSelfOrAncestor(topAwaiterAtStart);
 			}
 
-			// This assignment is outside the lock because it doesn't need the lock and it's a relatively expensive call
-			// that we needn't hold the lock for.
-			this.topAwaiter.Value = remainingAwaiter;
+			// Updating the topAwaiter requires touching the CallContext, which significantly increases the perf/GC hit
+			// for releasing locks. So we prefer to leave a released lock in the context and walk up the lock stack when
+			// necessary. But we will clean it up if it's the last lock released.
+			if (remainingAwaiter == null) {
+				// This assignment is outside the lock because it doesn't need the lock and it's a relatively expensive call
+				// that we needn't hold the lock for.
+				//this.topAwaiter.Value = remainingAwaiter;
+			}
 
 			if (synchronousRequired || true) { // the "|| true" bit is to force us to always be synchronous when releasing locks until we can get all tests passing the other way.
 				if (reenterConcurrentOutsideCode != null && (synchronousCallbackExecution != null && !synchronousCallbackExecution.IsCompleted)) {
