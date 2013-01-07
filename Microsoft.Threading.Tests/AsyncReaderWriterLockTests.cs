@@ -209,7 +209,7 @@
 
 					long memory2 = GC.GetTotalMemory(true);
 					long allocated = (memory2 - memory1) / iterations;
-					this.TestContext.WriteLine("Allocated bytes: {0}", allocated);
+					this.TestContext.WriteLine("Allocated bytes: {0} ({1} allowed)", allocated, MaxGarbagePerLock);
 					passingAttemptObserved = allocated <= MaxGarbagePerLock;
 				}
 
