@@ -2995,10 +2995,11 @@
 					}
 
 					long memory2 = GC.GetTotalMemory(false);
-					long allocated = (memory2 - memory1) / iterations;
-					this.TestContext.WriteLine("Allocated bytes: {0}", allocated);
 					const int NestingLevel = 3;
-					passingAttemptObserved = allocated <= MaxGarbagePerLock * NestingLevel;
+					long allocated = (memory2 - memory1) / iterations;
+					long allowed = MaxGarbagePerLock * NestingLevel;
+					this.TestContext.WriteLine("Allocated bytes: {0} ({1} allowed)", allocated, allowed);
+					passingAttemptObserved = allocated <= allowed;
 				}
 
 				Assert.IsTrue(passingAttemptObserved);
