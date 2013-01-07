@@ -1648,7 +1648,7 @@ namespace Microsoft.Threading {
 			}
 
 			internal LoanBack LoanBackAnyHeldResource() {
-				return this.semaphore.CurrentCount == 0
+				return (this.semaphore.CurrentCount == 0 && this.threadHoldingSemaphore == Thread.CurrentThread)
 					 ? new LoanBack(this)
 					 : default(LoanBack);
 			}
@@ -1670,12 +1670,14 @@ namespace Microsoft.Threading {
 				internal LoanBack(NonConcurrentSynchronizationContext syncContext) {
 					Requires.NotNull(syncContext, "syncContext");
 					this.syncContext = syncContext;
+					this.syncContext.threadHoldingSemaphore = null;
 					this.syncContext.semaphore.Release();
 				}
 
 				public void Dispose() {
 					if (this.syncContext != null) {
 						this.syncContext.semaphore.Wait();
+						this.syncContext.threadHoldingSemaphore = Thread.CurrentThread;
 					}
 				}
 			}
@@ -1705,15 +1707,10 @@ namespace Microsoft.Threading {
 			public void Dispose() {
 				if (this.awaiter != null) {
 					var nonConcurrentSyncContext = SynchronizationContext.Current as NonConcurrentSynchronizationContext;
-					var loan = nonConcurrentSyncContext != null
-						? nonConcurrentSyncContext.LoanBackAnyHeldResource()
-						: default(NonConcurrentSynchronizationContext.LoanBack);
-					try {
+					using (nonConcurrentSyncContext != null ? nonConcurrentSyncContext.LoanBackAnyHeldResource() : default(NonConcurrentSynchronizationContext.LoanBack)) {
 						var releaseTask = this.ReleaseAsync();
 						while (!releaseTask.Wait(1000)) { // this loop allows us to break into the debugger and step into managed code to analyze a hang.
 						}
-					} finally {
-						loan.Dispose();
 					}
 
 					if (nonConcurrentSyncContext != null && !this.awaiter.OwningLock.AmbientLock.IsValid) {
