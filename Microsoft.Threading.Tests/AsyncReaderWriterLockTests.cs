@@ -22,6 +22,7 @@
 
 		private const int GCAllocationAttempts = 3;
 		private const int MaxGarbagePerLock = 165;
+		private const int MaxGarbagePerYield = 1000;
 
 		private AsyncReaderWriterLock asyncLock;
 
@@ -676,12 +677,12 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task UncontestedTopLevelReadLockAsyncGarbageCheck() {
 			var cts = new CancellationTokenSource();
-			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync(cts.Token));
+			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync(cts.Token), false);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task NestedReadLockAsyncGarbageCheck() {
-			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync());
+			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync(), false);
 		}
 
 		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
@@ -913,12 +914,12 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task UncontestedTopLevelUpgradeableReadLockAsyncGarbageCheck() {
 			var cts = new CancellationTokenSource();
-			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync(cts.Token));
+			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync(cts.Token), true);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task NestedUpgradeableReadLockAsyncGarbageCheck() {
-			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync());
+			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync(), true);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -1350,12 +1351,12 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task UncontestedTopLevelWriteLockAsyncGarbageCheck() {
 			var cts = new CancellationTokenSource();
-			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync(cts.Token));
+			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync(cts.Token), true);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task NestedWriteLockAsyncGarbageCheck() {
-			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync());
+			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync(), true);
 		}
 
 		[TestMethod, Timeout(TestTimeout * 2)]
@@ -2955,7 +2956,7 @@
 			});
 		}
 
-		private Task UncontestedTopLevelLocksAllocFreeHelperAsync(Func<AsyncReaderWriterLock.Awaitable> locker) {
+		private Task UncontestedTopLevelLocksAllocFreeHelperAsync(Func<AsyncReaderWriterLock.Awaitable> locker, bool yieldingLock) {
 			// Get on an MTA thread so that locks do not necessarily yield.
 			return Task.Run(async delegate {
 				// First prime the pump to allocate some fixed cost memory.
@@ -2974,15 +2975,16 @@
 
 					long memory2 = GC.GetTotalMemory(false);
 					long allocated = (memory2 - memory1) / iterations;
-					this.TestContext.WriteLine("Allocated bytes: {0}", allocated);
-					passingAttemptObserved = allocated <= MaxGarbagePerLock;
+					long allowed = MaxGarbagePerLock + (yieldingLock ? MaxGarbagePerYield : 0);
+					this.TestContext.WriteLine("Allocated bytes: {0} ({1} allowed)", allocated, allowed);
+					passingAttemptObserved = allocated <= allowed;
 				}
 
 				Assert.IsTrue(passingAttemptObserved);
 			});
 		}
 
-		private Task NestedLocksAllocFreeHelperAsync(Func<AsyncReaderWriterLock.Awaitable> locker) {
+		private Task NestedLocksAllocFreeHelperAsync(Func<AsyncReaderWriterLock.Awaitable> locker, bool yieldingLock) {
 			// Get on an MTA thread so that locks do not necessarily yield.
 			return Task.Run(async delegate {
 				// First prime the pump to allocate some fixed cost memory.
@@ -3010,7 +3012,7 @@
 					long memory2 = GC.GetTotalMemory(false);
 					const int NestingLevel = 3;
 					long allocated = (memory2 - memory1) / iterations;
-					long allowed = MaxGarbagePerLock * NestingLevel;
+					long allowed = MaxGarbagePerLock * NestingLevel + (yieldingLock ? MaxGarbagePerYield : 0);
 					this.TestContext.WriteLine("Allocated bytes: {0} ({1} allowed)", allocated, allowed);
 					passingAttemptObserved = allocated <= allowed;
 				}
