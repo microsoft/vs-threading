@@ -1392,7 +1392,7 @@
 				}
 
 				// Synchronously block until the test is complete.
-				firstLockReleased.Set();
+				await firstLockReleased.SetAsync();
 				Assert.IsTrue(testComplete.Wait(AsyncDelay));
 			});
 
