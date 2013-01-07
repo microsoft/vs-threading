@@ -943,6 +943,8 @@ namespace Microsoft.Threading {
 			Task synchronousCallbackExecution = null;
 			bool synchronousRequired = false;
 			Awaiter remainingAwaiter = null;
+			Awaiter topAwaiterAtStart = this.topAwaiter.Value; // do this outside the lock because it's fairly expensive and doesn't require the lock.
+
 			lock (this.syncObject) {
 				// In case this is a sticky write lock, it may also belong to the write locks issued collection.
 				bool upgradedStickyWrite = awaiter.Kind == LockKind.UpgradeableRead
@@ -984,15 +986,14 @@ namespace Microsoft.Threading {
 
 				if (reenterConcurrentOutsideCode == null) {
 					this.OnReleaseReenterConcurrencyComplete(awaiter, upgradedStickyWrite, searchAllWaiters: false);
-					remainingAwaiter = this.GetFirstActiveSelfOrAncestor(this.topAwaiter.Value);
 				}
+
+				remainingAwaiter = this.GetFirstActiveSelfOrAncestor(topAwaiterAtStart);
 			}
 
-			if (reenterConcurrentOutsideCode == null) {
-				// This assignment is outside the lock because it doesn't need the lock and it's a relatively expensive call
-				// that we needn't hold the lock for.
-				this.topAwaiter.Value = remainingAwaiter;
-			}
+			// This assignment is outside the lock because it doesn't need the lock and it's a relatively expensive call
+			// that we needn't hold the lock for.
+			this.topAwaiter.Value = remainingAwaiter;
 
 			if (synchronousRequired || true) { // the "|| true" bit is to force us to always be synchronous when releasing locks until we can get all tests passing the other way.
 				if (reenterConcurrentOutsideCode != null && (synchronousCallbackExecution != null && !synchronousCallbackExecution.IsCompleted)) {
@@ -1611,6 +1612,15 @@ namespace Microsoft.Threading {
 		internal class NonConcurrentSynchronizationContext : SynchronizationContext {
 			private readonly SemaphoreSlim semaphore = new SemaphoreSlim(1);
 
+			/// <summary>
+			/// The thread that has entered the semaphore.
+			/// </summary>
+			/// <remarks>
+			/// No reason to lock around access to this field because it is only ever set to
+			/// or compared against the current thread, so the activity of other threads is irrelevant.
+			/// </remarks>
+			private Thread threadHoldingSemaphore;
+
 			public override void Send(SendOrPostCallback d, object state) {
 				throw new NotSupportedException();
 			}
@@ -1618,11 +1628,16 @@ namespace Microsoft.Threading {
 			public override void Post(SendOrPostCallback d, object state) {
 				Task.Run(async delegate {
 					await this.semaphore.WaitAsync().ConfigureAwait(false);
+					this.threadHoldingSemaphore = Thread.CurrentThread;
 					try {
 						SynchronizationContext.SetSynchronizationContext(this);
 						d(state);
 					} finally {
-						this.semaphore.Release();
+						// The semaphore *may* have been released already, so take care to not release it again.
+						if (this.threadHoldingSemaphore == Thread.CurrentThread) {
+							this.threadHoldingSemaphore = null;
+							this.semaphore.Release();
+						}
 					}
 				});
 			}
@@ -1631,6 +1646,17 @@ namespace Microsoft.Threading {
 				return this.semaphore.CurrentCount == 0
 					 ? new LoanBack(this)
 					 : default(LoanBack);
+			}
+
+			internal void EarlyExitSynchronizationContext() {
+				if (this.threadHoldingSemaphore == Thread.CurrentThread) {
+					this.threadHoldingSemaphore = null;
+					this.semaphore.Release();
+				}
+
+				if (SynchronizationContext.Current == this) {
+					SynchronizationContext.SetSynchronizationContext(null);
+				}
 			}
 
 			internal struct LoanBack : IDisposable {
@@ -1673,9 +1699,9 @@ namespace Microsoft.Threading {
 			/// </summary>
 			public void Dispose() {
 				if (this.awaiter != null) {
-					var syncContext = SynchronizationContext.Current as NonConcurrentSynchronizationContext;
-					var loan = syncContext != null
-						? syncContext.LoanBackAnyHeldResource()
+					var nonConcurrentSyncContext = SynchronizationContext.Current as NonConcurrentSynchronizationContext;
+					var loan = nonConcurrentSyncContext != null
+						? nonConcurrentSyncContext.LoanBackAnyHeldResource()
 						: default(NonConcurrentSynchronizationContext.LoanBack);
 					try {
 						var releaseTask = this.ReleaseAsync();
@@ -1683,6 +1709,14 @@ namespace Microsoft.Threading {
 						}
 					} finally {
 						loan.Dispose();
+					}
+
+					if (nonConcurrentSyncContext != null && this.awaiter.OwningLock.topAwaiter.Value == null) {
+						// The lock holder is taking the synchronous path to release the last UR/W lock held.
+						// Since they may go synchronously on their merry way for a while, forcibly release
+						// the sync context's semaphore that they otherwise would hold until their synchronous
+						// method returns.
+						nonConcurrentSyncContext.EarlyExitSynchronizationContext();
 					}
 				}
 			}
