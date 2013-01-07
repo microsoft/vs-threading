@@ -997,7 +997,7 @@ namespace Microsoft.Threading {
 			if (remainingAwaiter == null) {
 				// This assignment is outside the lock because it doesn't need the lock and it's a relatively expensive call
 				// that we needn't hold the lock for.
-				//this.topAwaiter.Value = remainingAwaiter;
+				this.topAwaiter.Value = remainingAwaiter;
 			}
 
 			if (synchronousRequired || true) { // the "|| true" bit is to force us to always be synchronous when releasing locks until we can get all tests passing the other way.
