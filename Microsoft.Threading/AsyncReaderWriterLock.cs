@@ -1711,7 +1711,7 @@ namespace Microsoft.Threading {
 						loan.Dispose();
 					}
 
-					if (nonConcurrentSyncContext != null && this.awaiter.OwningLock.topAwaiter.Value == null) {
+					if (nonConcurrentSyncContext != null && !this.awaiter.OwningLock.AmbientLock.IsValid) {
 						// The lock holder is taking the synchronous path to release the last UR/W lock held.
 						// Since they may go synchronously on their merry way for a while, forcibly release
 						// the sync context's semaphore that they otherwise would hold until their synchronous
