@@ -1150,6 +1150,43 @@
 			}));
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void ReleasingUpgradeableReadLockAsyncSynchronouslyClearsSyncContext() {
+			Task.Run(async delegate {
+				Assert.IsNull(SynchronizationContext.Current);
+				using (await this.asyncLock.UpgradeableReadLockAsync()) {
+					Assert.IsNotNull(SynchronizationContext.Current);
+				}
+
+				Assert.IsNull(SynchronizationContext.Current);
+			}).GetAwaiter().GetResult();
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void UpgradeableReadLockAsyncSynchronousReleaseAllowsOtherUpgradeableReaders() {
+			var testComplete = new ManualResetEventSlim(); // deliberately synchronous
+			var firstLockReleased = new AsyncManualResetEvent();
+			var firstLockTask = Task.Run(async delegate {
+				using (await this.asyncLock.UpgradeableReadLockAsync()) {
+				}
+
+				// Synchronously block until the test is complete.
+				await firstLockReleased.SetAsync();
+				Assert.IsTrue(testComplete.Wait(AsyncDelay));
+			});
+
+			var secondLockTask = Task.Run(async delegate {
+				await firstLockReleased;
+
+				using (await this.asyncLock.UpgradeableReadLockAsync()) {
+				}
+			});
+
+			Assert.IsTrue(secondLockTask.Wait(TestTimeout));
+			testComplete.Set();
+			Assert.IsTrue(firstLockTask.Wait(TestTimeout)); // rethrow any exceptions
+		}
+
 		#endregion
 
 		#region WriteLockAsync tests
@@ -1381,6 +1418,18 @@
 				});
 				await lockAcquired.Task;
 			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void ReleasingWriteLockAsyncSynchronouslyClearsSyncContext() {
+			Task.Run(async delegate {
+				Assert.IsNull(SynchronizationContext.Current);
+				using (await this.asyncLock.WriteLockAsync()) {
+					Assert.IsNotNull(SynchronizationContext.Current);
+				}
+
+				Assert.IsNull(SynchronizationContext.Current);
+			}).GetAwaiter().GetResult();
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
