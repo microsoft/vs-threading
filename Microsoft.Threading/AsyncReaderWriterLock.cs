@@ -274,7 +274,7 @@ namespace Microsoft.Threading {
 		/// Gets the lock held by the caller's execution context.
 		/// </summary>
 		protected LockHandle AmbientLock {
-			get { return new LockHandle(this.topAwaiter.Value); }
+			get { return new LockHandle(this.GetFirstActiveSelfOrAncestor(this.topAwaiter.Value)); }
 		}
 
 		/// <summary>

@@ -2866,6 +2866,19 @@
 			}
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task AmbientLockReflectsCurrentLock() {
+			var asyncLock = new LockDerived();
+			using (await asyncLock.UpgradeableReadLockAsync()) {
+				Assert.IsTrue(asyncLock.AmbientLockInternal.IsUpgradeableReadLock);
+				using (await asyncLock.WriteLockAsync()) {
+					Assert.IsTrue(asyncLock.AmbientLockInternal.IsWriteLock);
+				}
+
+				Assert.IsTrue(asyncLock.AmbientLockInternal.IsUpgradeableReadLock);
+			}
+		}
+
 		#endregion
 
 		#region Lock data tests
@@ -3417,6 +3430,13 @@
 				get { return base.IsAnyLockHeld; }
 			}
 
+			internal new InternalLockHandle AmbientLockInternal {
+				get {
+					var ambient = this.AmbientLock;
+					return new InternalLockHandle(ambient.IsUpgradeableReadLock, ambient.IsWriteLock);
+				}
+			}
+
 			internal void SetLockData(object data) {
 				var lck = this.AmbientLock;
 				lck.Data = data;
@@ -3458,6 +3478,18 @@
 				if (this.OnBeforeLockReleasedAsyncDelegate != null) {
 					await this.OnBeforeLockReleasedAsyncDelegate();
 				}
+			}
+
+			internal struct InternalLockHandle {
+				internal InternalLockHandle(bool upgradeableRead, bool write)
+					: this() {
+					this.IsUpgradeableReadLock = upgradeableRead;
+					this.IsWriteLock = write;
+				}
+
+				internal bool IsUpgradeableReadLock { get; private set; }
+
+				internal bool IsWriteLock { get; private set; }
 			}
 		}
 
