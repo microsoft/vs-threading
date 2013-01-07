@@ -458,7 +458,7 @@
 
 				// STEP 4
 				Assert.AreSame(this.originalThread, Thread.CurrentThread);
-				await dependentWorkCompleted.SetAsync();
+				dependentWorkCompleted.SetAsync().Wait();
 				await joinReverted.WaitAsync().ConfigureAwait(false);
 
 				// STEP 6
