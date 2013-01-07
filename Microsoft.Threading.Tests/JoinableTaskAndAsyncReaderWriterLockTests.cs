@@ -78,7 +78,7 @@
 			Task.Run(() => this.LockWithinRunAsyncAfterYieldHelper()).GetAwaiter().GetResult();
 		}
 
-		[TestMethod, Timeout(TestTimeout), Ignore] // Ignored because it conflicts with the RunWithinWriteLockThrows test.
+		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
 		public async Task RunWithinExclusiveLock() {
 			using (var releaser1 = await this.asyncLock.WriteLockAsync()) {
 				this.asyncPump.Run(async delegate {
@@ -88,7 +88,7 @@
 			}
 		}
 
-		[TestMethod, Timeout(TestTimeout), Ignore] // Ignored because this scenario violates threading rules and is difficult to accomodate in the product.
+		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
 		public async Task RunWithinExclusiveLockWithYields() {
 			using (var releaser1 = await this.asyncLock.WriteLockAsync()) {
 				await Task.Yield();
