@@ -266,6 +266,7 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
 		/// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
+		/// <remarks>Exceptions thrown by the delegate are captured by the returned <see cref="JoinableTask"/>.</remarks>
 		public JoinableTask RunAsync(Func<Task> asyncMethod) {
 			return this.RunAsync(asyncMethod, synchronouslyBlocking: false);
 		}
@@ -275,7 +276,16 @@ namespace Microsoft.Threading {
 
 			var job = new JoinableTask(this, synchronouslyBlocking);
 			using (var framework = new RunFramework(this, job)) {
-				framework.SetResult(asyncMethod());
+				Task asyncMethodResult;
+				try {
+					asyncMethodResult = asyncMethod();
+				} catch (Exception ex) {
+					var tcs = new TaskCompletionSource<EmptyStruct>();
+					tcs.SetException(ex);
+					asyncMethodResult = tcs.Task;
+				}
+
+				framework.SetResult(asyncMethodResult);
 				return job;
 			}
 		}
@@ -288,6 +298,7 @@ namespace Microsoft.Threading {
 		/// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
 		/// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
 		/// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
+		/// <remarks>Exceptions thrown by the delegate are captured by the returned <see cref="JoinableTask"/>.</remarks>
 		public JoinableTask<T> RunAsync<T>(Func<Task<T>> asyncMethod) {
 			return this.RunAsync(asyncMethod, synchronouslyBlocking: false);
 		}
@@ -297,7 +308,16 @@ namespace Microsoft.Threading {
 
 			var job = new JoinableTask<T>(this, synchronouslyBlocking);
 			using (var framework = new RunFramework(this, job)) {
-				framework.SetResult(asyncMethod());
+				Task<T> asyncMethodResult;
+				try {
+					asyncMethodResult = asyncMethod();
+				} catch (Exception ex) {
+					var tcs = new TaskCompletionSource<T>();
+					tcs.SetException(ex);
+					asyncMethodResult = tcs.Task;
+				}
+
+				framework.SetResult(asyncMethodResult);
 				return job;
 			}
 		}

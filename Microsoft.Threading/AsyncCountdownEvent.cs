@@ -41,14 +41,16 @@
 		/// <summary>
 		/// Decrements the counter by one.
 		/// </summary>
-		public void Signal() {
+		public Task SignalAsync() {
 			Verify.Operation(this.remainingCount > 0, "Count already at zero.");
 
 			int newCount = Interlocked.Decrement(ref this.remainingCount);
 			if (newCount == 0) {
-				this.manualEvent.Set();
+				return this.manualEvent.SetAsync();
 			} else if (newCount < 0) {
 				throw new InvalidOperationException();
+			} else {
+				return TplExtensions.CompletedTask;
 			}
 		}
 
@@ -56,9 +58,9 @@
 		/// Decrements the counter by one and returns an awaitable that executes the continuation when the countdown reaches zero.
 		/// </summary>
 		/// <returns>An awaitable.</returns>
-		public Task SignalAndWaitAsync() {
-			this.Signal();
-			return this.WaitAsync();
+		public async Task SignalAndWaitAsync() {
+			await this.SignalAsync();
+			await this.WaitAsync();
 		}
 	}
 }

@@ -77,9 +77,19 @@ namespace Microsoft.Threading {
 		/// Thrown when the value factory calls <see cref="GetValueAsync"/> on this instance.
 		/// </exception>
 		public Task<T> GetValueAsync() {
-			Verify.Operation((this.value != null && this.value.IsCompleted) || CallContext.LogicalGetData(identity) == null, Strings.ValueFactoryReentrancy);
+			if (!((this.value != null && this.value.IsCompleted) || CallContext.LogicalGetData(this.identity) == null)) {
+				// PERF: we check the condition and *then* retrieve the string resource only on failure
+				// because the string retrieval has shown up as significant on ETL traces.
+				Verify.FailOperation(Strings.ValueFactoryReentrancy);
+			}
+
 			if (this.value == null) {
-				Verify.Operation(!Monitor.IsEntered(this.syncObject), Strings.ValueFactoryReentrancy);
+				if (Monitor.IsEntered(this.syncObject)) {
+					// PERF: we check the condition and *then* retrieve the string resource only on failure
+					// because the string retrieval has shown up as significant on ETL traces.
+					Verify.FailOperation(Strings.ValueFactoryReentrancy);
+				}
+
 				lock (this.syncObject) {
 					// Note that if multiple threads hit GetValueAsync() before
 					// the valueFactory has completed its synchronous execution,
@@ -87,7 +97,7 @@ namespace Microsoft.Threading {
 					// other threads synchronously block till the synchronous portion
 					// has completed.
 					if (this.value == null) {
-						CallContext.LogicalSetData(identity, new object());
+						CallContext.LogicalSetData(this.identity, new object());
 						try {
 							var valueFactory = this.valueFactory;
 							this.valueFactory = null;
@@ -114,7 +124,7 @@ namespace Microsoft.Threading {
 							tcs.SetException(ex);
 							this.value = tcs.Task;
 						} finally {
-							CallContext.FreeNamedDataSlot(identity);
+							CallContext.FreeNamedDataSlot(this.identity);
 						}
 					}
 				}

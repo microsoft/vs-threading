@@ -54,7 +54,7 @@
 		private async Task PreSignalHelperAsync(int initialCount) {
 			var evt = new AsyncCountdownEvent(initialCount);
 			for (int i = 0; i < initialCount; i++) {
-				evt.Signal();
+				evt.SignalAsync().Forget();
 			}
 
 			await evt.WaitAsync();
@@ -65,7 +65,7 @@
 			var waiter = evt.WaitAsync();
 
 			for (int i = 0; i < initialCount; i++) {
-				evt.Signal();
+				await evt.SignalAsync();
 			}
 
 			await waiter;

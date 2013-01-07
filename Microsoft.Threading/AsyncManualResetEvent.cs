@@ -14,6 +14,12 @@
 	[DebuggerDisplay("Signaled: {IsSet}")]
 	public class AsyncManualResetEvent {
 		/// <summary>
+		/// Whether to complete our task synchronously in our <see cref="SetAsync"/> method,
+		/// as opposed to asynchronously.
+		/// </summary>
+		private readonly bool allowInliningWaiters;
+
+		/// <summary>
 		/// The task to return from <see cref="WaitAsync"/>
 		/// </summary>
 		private volatile TaskCompletionSource<EmptyStruct> taskCompletionSource = new TaskCompletionSource<EmptyStruct>();
@@ -22,10 +28,17 @@
 		/// Initializes a new instance of the <see cref="AsyncManualResetEvent"/> class.
 		/// </summary>
 		/// <param name="initialState">A value indicating whether the event should be initially signaled.</param>
-		public AsyncManualResetEvent(bool initialState = false) {
+		/// <param name="allowInliningWaiters">
+		/// A value indicating whether to complete our task synchronously in our <see cref="SetAsync"/> method,
+		/// as opposed to asynchronously. <c>false</c> better simulates the behavior of the
+		/// <see cref="ManualResetEventSlim"/> class, but <c>true</c> can result in better performance.
+		/// </param>
+		public AsyncManualResetEvent(bool initialState = false, bool allowInliningWaiters = false) {
 			if (initialState) {
 				this.taskCompletionSource.SetResult(EmptyStruct.Instance);
 			}
+
+			this.allowInliningWaiters = allowInliningWaiters;
 		}
 
 		/// <summary>
@@ -45,17 +58,24 @@
 		/// <summary>
 		/// Sets this event to unblock callers of <see cref="WaitAsync"/>.
 		/// </summary>
-		public void Set() {
+		/// <remarks>
+		/// This method may return before the signal set has propagated (so <see cref="IsSet"/> may return <c>false</c> for a bit more if called immediately).
+		/// The returned task completes when the signal has definitely been set.
+		/// </remarks>
+		public Task SetAsync() {
 			var tcs = this.taskCompletionSource;
-			Task.Factory.StartNew(
-				s => ((TaskCompletionSource<EmptyStruct>)s).TrySetResult(EmptyStruct.Instance),
-				tcs,
-				CancellationToken.None,
-				TaskCreationOptions.PreferFairness,
-				TaskScheduler.Default);
-			using (NoMessagePumpSyncContext.Default.Apply()) {
-				tcs.Task.Wait();
+			if (this.allowInliningWaiters) {
+				tcs.TrySetResult(EmptyStruct.Instance);
+			} else {
+				Task.Factory.StartNew(
+					s => ((TaskCompletionSource<EmptyStruct>)s).TrySetResult(EmptyStruct.Instance),
+					tcs,
+					CancellationToken.None,
+					TaskCreationOptions.PreferFairness,
+					TaskScheduler.Default);
 			}
+
+			return tcs.Task;
 		}
 
 		/// <summary>
@@ -76,9 +96,21 @@
 		/// <summary>
 		/// Sets and immediately resets this event, allowing all current waiters to unblock.
 		/// </summary>
-		public void PulseAll() {
-			this.Set();
-			this.Reset();
+		public Task PulseAllAsync() {
+			var setTask = this.SetAsync();
+
+			// Avoid allocating another task for the follow-up work when possible.
+			if (setTask.IsCompleted) {
+				this.Reset();
+				return TplExtensions.CompletedTask;
+			} else {
+				return setTask.ContinueWith(
+					(prev, state) => ((AsyncManualResetEvent)state).Reset(),
+					this,
+					CancellationToken.None,
+					TaskContinuationOptions.None,
+					TaskScheduler.Default);
+			}
 		}
 
 		/// <summary>

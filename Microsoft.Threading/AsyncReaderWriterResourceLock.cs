@@ -164,8 +164,10 @@ namespace Microsoft.Threading {
 		/// satisfy some predicate.
 		/// </summary>
 		/// <param name="resourceCheck">A function that returns <c>true</c> if the provided resource should be considered retrieved.</param>
-		protected void SetResourceAsAccessed(Predicate<TResource> resourceCheck) {
-			this.helper.SetResourceAsAccessed(resourceCheck);
+		/// <param name="state">The state object to pass as a second parameter to <paramref name="resourceCheck"/></param>
+		/// <returns><c>true</c> if the delegate returned <c>true</c> on any of the invocations.</returns>
+		protected bool SetResourceAsAccessed(Func<TResource, object, bool> resourceCheck, object state) {
+			return this.helper.SetResourceAsAccessed(resourceCheck, state);
 		}
 
 		/// <summary>
@@ -290,10 +292,16 @@ namespace Microsoft.Threading {
 			internal void SetResourceAsAccessed(TResource resource) {
 				Requires.NotNull(resource, "resource");
 
+				// Capture the ambient lock and use it for the two lock checks rather than
+				// call AsyncReaderWriterLock.IsWriteLockHeld and IsUpgradeableReadLockHeld
+				// to reduce the number of slow AsyncLocal<T>.get_Value calls we make.
+				// Also do it before we acquire the lock, since a lock isn't necessary.
+				// (verified to be a perf bottleneck in ETL traces).
+				var ambientLock = this.service.AmbientLock;
 				lock (this.service.SyncObject) {
-					if (this.service.IsWriteLockHeld) {
+					if (ambientLock.HasWriteLock) {
 						this.resourcesAcquiredWithinWriteLock.Add(resource);
-					} else if (this.service.IsUpgradeableReadLockHeld) {
+					} else if (ambientLock.HasUpgradeableReadLock) {
 						this.resourcesAcquiredWithinUpgradeableRead.Add(resource);
 					}
 				}
@@ -304,18 +312,30 @@ namespace Microsoft.Threading {
 			/// satisfy some predicate.
 			/// </summary>
 			/// <param name="resourceCheck">A function that returns <c>true</c> if the provided resource should be considered retrieved.</param>
-			internal void SetResourceAsAccessed(Predicate<TResource> resourceCheck) {
+			/// <param name="state">The state object to pass as a second parameter to <paramref name="resourceCheck"/></param>
+			/// <returns><c>true</c> if the delegate returned <c>true</c> on any of the invocations.</returns>
+			internal bool SetResourceAsAccessed(Func<TResource, object, bool> resourceCheck, object state) {
 				Requires.NotNull(resourceCheck, "resourceCheck");
 
+				// Capture the ambient lock and use it for the two lock checks rather than
+				// call AsyncReaderWriterLock.IsWriteLockHeld and IsUpgradeableReadLockHeld
+				// to reduce the number of slow AsyncLocal<T>.get_Value calls we make.
+				// Also do it before we acquire the lock, since a lock isn't necessary.
+				// (verified to be a perf bottleneck in ETL traces).
+				var ambientLock = this.service.AmbientLock;
+				bool match = false;
 				lock (this.service.SyncObject) {
-					if (this.service.IsWriteLockHeld || this.service.IsUpgradeableReadLockHeld) {
+					if (ambientLock.HasWriteLock || ambientLock.HasUpgradeableReadLock) {
 						foreach (var resource in this.resourcePreparationTasks) {
-							if (resourceCheck(resource.Key)) {
+							if (resourceCheck(resource.Key, state)) {
+								match = true;
 								this.SetResourceAsAccessed(resource.Key);
 							}
 						}
 					}
 				}
+
+				return match;
 			}
 
 			/// <summary>

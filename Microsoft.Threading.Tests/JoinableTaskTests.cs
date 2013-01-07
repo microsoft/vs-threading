@@ -458,7 +458,7 @@
 
 				// STEP 4
 				Assert.AreSame(this.originalThread, Thread.CurrentThread);
-				dependentWorkCompleted.Set();
+				await dependentWorkCompleted.SetAsync();
 				await joinReverted.WaitAsync().ConfigureAwait(false);
 
 				// STEP 6
@@ -482,7 +482,7 @@
 				}
 
 				// STEP 5
-				joinReverted.Set();
+				await joinReverted.SetAsync();
 				await postJoinRevertedWorkQueued.WaitAsync();
 
 				// STEP 7
@@ -602,7 +602,7 @@
 			});
 
 			this.asyncPump.Run(async delegate {
-				mainThreadNowBlocking.Set();
+				await mainThreadNowBlocking.SetAsync();
 				Assert.AreNotSame(task, await Task.WhenAny(task, Task.Delay(AsyncDelay / 2)));
 				using (this.joinableCollection.Join()) {
 					await task;
@@ -667,7 +667,7 @@
 			}).Task;
 
 			Assert.IsFalse(afterYieldReached);
-			backgroundThreadWorkDoneEvent.Set();
+			backgroundThreadWorkDoneEvent.SetAsync().Forget();
 			this.asyncPump.CompleteSynchronously(this.joinableCollection, task);
 			Assert.IsTrue(afterYieldReached);
 		}
@@ -731,7 +731,7 @@
 					var continuationFinished = new AsyncManualResetEvent();
 					awaiter.OnCompleted(delegate {
 						taskFinished = true;
-						continuationFinished.Set();
+						continuationFinished.SetAsync().Forget();
 					});
 					switchPended.Set();
 					await continuationFinished;
@@ -765,7 +765,7 @@
 			Assert.IsFalse(joinable.Task.IsCompleted);
 			this.asyncPump.Run(async delegate {
 				var awaitable = joinable.JoinAsync();
-				joinedEvent.Set();
+				await joinedEvent.SetAsync();
 				await awaitable;
 			});
 			Assert.IsTrue(taskFinished);
@@ -865,7 +865,7 @@
 							executed2 = true;
 						} finally {
 							// Allow the message pump to exit.
-							countdownEvent.Signal();
+							countdownEvent.SignalAsync();
 						}
 					}, state);
 					Assert.IsTrue(executed2);
@@ -892,7 +892,7 @@
 					Assert.IsTrue(executed4);
 				} finally {
 					// Allow the message pump to exit.
-					countdownEvent.Signal();
+					countdownEvent.SignalAsync();
 				}
 			});
 
@@ -1000,7 +1000,7 @@
 				return TplExtensions.CompletedTask;
 			});
 
-			mainThreadUnblocked.Set();
+			mainThreadUnblocked.SetAsync();
 
 			// The rest of this isn't strictly necessary for the hang, but it gets the test
 			// to wait till the background task has either succeeded, or failed.
@@ -1048,7 +1048,7 @@
 				TaskCreationOptions.None,
 				this.asyncPump.MainThreadScheduler);
 
-			runSynchronouslyExited.Set();
+			runSynchronouslyExited.SetAsync();
 			unblockMainThread.Wait();
 			Dispatcher.PushFrame(frame);
 			backgroundTask.GetAwaiter().GetResult(); // rethrow any exceptions
@@ -1141,10 +1141,11 @@
 			var frame = new DispatcherFrame();
 			var firstYield = new AsyncManualResetEvent();
 			var startingJoin = new AsyncManualResetEvent();
+			((DerivedJoinableTaskFactory)this.asyncPump).AssumeConcurrentUse = true;
 
 			var joinable = this.asyncPump.RunAsync(async delegate {
 				await Task.Yield();
-				firstYield.Set();
+				await firstYield.SetAsync();
 				await startingJoin;
 				frame.Continue = false;
 			});
@@ -1152,7 +1153,7 @@
 			var forcingFactor = Task.Run(async delegate {
 				await this.asyncPump.SwitchToMainThreadAsync();
 				await firstYield;
-				startingJoin.Set();
+				await startingJoin.SetAsync();
 				joinable.Join();
 			});
 
@@ -1209,7 +1210,7 @@
 				});
 				syncContext.Post(
 					delegate {
-						delegateExecuted.Set();
+						delegateExecuted.SetAsync();
 					},
 					null);
 				await delegateExecuted;
@@ -1563,12 +1564,46 @@
 					await Task.Yield();
 				});
 
-				nestedWorkBegun.Set();
+				nestedWorkBegun.SetAsync();
 			});
 
 			asyncPump.Run(async delegate {
 				await nestedWorkBegun;
 			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void RunAsyncExceptionsCapturedInResult() {
+			var exception = new InvalidOperationException();
+			var joinableTask = this.asyncPump.RunAsync(delegate {
+				throw exception;
+			});
+			Assert.IsTrue(joinableTask.IsCompleted);
+			Assert.AreSame(exception, joinableTask.Task.Exception.InnerException);
+			var awaiter = joinableTask.GetAwaiter();
+			try {
+				awaiter.GetResult();
+				Assert.Fail("Expected exception not rethrown.");
+			} catch (InvalidOperationException ex) {
+				Assert.AreSame(ex, exception);
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void RunAsyncOfTExceptionsCapturedInResult() {
+			var exception = new InvalidOperationException();
+			var joinableTask = this.asyncPump.RunAsync<int>(delegate {
+				throw exception;
+			});
+			Assert.IsTrue(joinableTask.IsCompleted);
+			Assert.AreSame(exception, joinableTask.Task.Exception.InnerException);
+			var awaiter = joinableTask.GetAwaiter();
+			try {
+				awaiter.GetResult();
+				Assert.Fail("Expected exception not rethrown.");
+			} catch (InvalidOperationException ex) {
+				Assert.AreSame(ex, exception);
+			}
 		}
 
 		private static async void SomeFireAndForgetMethod() {
@@ -1736,6 +1771,7 @@
 					Assert.AreEqual(this.TransitionedToMainThreadHitCount, this.TransitioningToMainThreadHitCount, "Imbalance of transition events.");
 				}
 			}
+
 			protected override void WaitSynchronously(Task task) {
 				Assert.IsNotNull(task);
 				base.WaitSynchronously(task);
@@ -1780,7 +1816,7 @@
 					await this.dependentService.StopAsync(this.dependentTask);
 				}
 
-				this.stopRequested.Set();
+				await this.stopRequested.SetAsync();
 				using (this.joinableCollection.Join()) {
 					await operation;
 				}

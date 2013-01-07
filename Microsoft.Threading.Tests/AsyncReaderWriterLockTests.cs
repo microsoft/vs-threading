@@ -1026,11 +1026,11 @@
 				using (var innerReleaser = await asyncLock.WriteLockAsync()) {
 					await Task.WhenAny(onExclusiveLockReleasedBegun.WaitAsync(), Task.Delay(AsyncDelay));
 					await innerReleaser.ReleaseAsync();
-					innerLockReleased.Set();
+					await innerLockReleased.SetAsync();
 				}
 			};
 			asyncLock.OnExclusiveLockReleasedAsyncDelegate = async delegate {
-				onExclusiveLockReleasedBegun.Set();
+				await onExclusiveLockReleasedBegun.SetAsync();
 				await innerLockReleased;
 			};
 			using (var releaser = await asyncLock.WriteLockAsync()) {
@@ -3404,8 +3404,8 @@
 				}
 			}
 
-			protected override async Task OnBeforeLockReleasedAsync(bool exclusiveLockRelease) {
-				await base.OnBeforeLockReleasedAsync(exclusiveLockRelease);
+			protected override async Task OnBeforeLockReleasedAsync(bool exclusiveLockRelease, LockHandle releasingLock) {
+				await base.OnBeforeLockReleasedAsync(exclusiveLockRelease, releasingLock);
 				if (this.OnBeforeLockReleasedAsyncDelegate != null) {
 					await this.OnBeforeLockReleasedAsyncDelegate();
 				}

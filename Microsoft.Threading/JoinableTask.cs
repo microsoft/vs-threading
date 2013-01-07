@@ -27,8 +27,6 @@ namespace Microsoft.Threading {
 			StartedOnMainThread = 0x2,
 		}
 
-		private static readonly AsyncManualResetEvent alwaysSignaled = new AsyncManualResetEvent(true);
-
 		/// <summary>
 		/// The <see cref="JoinableTaskContext"/> that began the async operation.
 		/// </summary>
@@ -93,7 +91,10 @@ namespace Microsoft.Threading {
 						if (this.dequeuerResetState == null) {
 							this.owner.Context.SyncContextLock.EnterWriteLock();
 							try {
-								this.dequeuerResetState = new AsyncManualResetEvent();
+								// We pass in allowInliningWaiters: true,
+								// since we control all waiters and their continuations
+								// are be benign, and it makes it more efficient.
+								this.dequeuerResetState = new AsyncManualResetEvent(allowInliningWaiters: true);
 							} finally {
 								this.owner.Context.SyncContextLock.ExitWriteLock();
 							}
@@ -323,7 +324,7 @@ namespace Microsoft.Threading {
 				}
 
 				if (dequeuerResetState != null) {
-					dequeuerResetState.PulseAll();
+					dequeuerResetState.PulseAllAsync().Forget();
 				}
 			}
 		}
@@ -399,7 +400,7 @@ namespace Microsoft.Threading {
 
 				if (dequeuerResetState != null) {
 					// We explicitly do this outside our lock.
-					dequeuerResetState.PulseAll();
+					dequeuerResetState.PulseAllAsync().Forget();
 				}
 			}
 		}
@@ -568,7 +569,7 @@ namespace Microsoft.Threading {
 
 				if (dequeuerResetState != null) {
 					// We explicitly do this outside our lock.
-					dequeuerResetState.PulseAll();
+					dequeuerResetState.PulseAllAsync().Forget();
 				}
 
 				return new JoinRelease(this, joinChild);

@@ -50,7 +50,7 @@
 			Assert.IsFalse(progressAwaitable.GetAwaiter().IsCompleted);
 			await Task.Delay(AsyncDelay);
 			Assert.IsFalse(progressAwaitable.GetAwaiter().IsCompleted);
-			handlerMayComplete.Set();
+			await handlerMayComplete.SetAsync();
 			await progressAwaitable;
 		}
 

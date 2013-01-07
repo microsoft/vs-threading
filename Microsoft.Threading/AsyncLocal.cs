@@ -48,7 +48,11 @@
 			set {
 				if (value != null) {
 					lock (this.syncObject) {
-						object callContextValue = this.reverseLookupTable.GetOrCreateValue(value);
+						object callContextValue;
+						if (!this.reverseLookupTable.TryGetValue(value, out callContextValue)) {
+							callContextValue = new object();
+						}
+
 						CallContext.LogicalSetData(this.callContextKey, callContextValue);
 						this.valueTable.Remove(callContextValue);
 						this.valueTable.Add(callContextValue, value);

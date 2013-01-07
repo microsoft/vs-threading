@@ -464,8 +464,9 @@ namespace Microsoft.Threading {
 		/// Fired when any lock is being released.
 		/// </summary>
 		/// <param name="exclusiveLockRelease">A flag indicating whether the last write lock that the caller holds is being released.</param>
+		/// <param name="releasingLock">The lock being released.</param>
 		/// <returns>A task whose completion signals the conclusion of the asynchronous operation.</returns>
-		protected virtual Task OnBeforeLockReleasedAsync(bool exclusiveLockRelease) {
+		protected virtual Task OnBeforeLockReleasedAsync(bool exclusiveLockRelease, LockHandle releasingLock) {
 			// Raise the write release lock event if and only if this is the last write that is about to be released.
 			// Also check that issued read lock count is 0, because these callbacks themselves may acquire read locks
 			// on top of this write lock that hasn't quite gone away yet, and when they release their read lock,
@@ -721,12 +722,12 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="awaiter">The awaiter whose lock should be considered.</param>
 		private void CheckSynchronizationContextAppropriateForLock(Awaiter awaiter) {
-			bool syncContextRequired = this.LockStackContains(LockKind.UpgradeableRead, awaiter) || this.LockStackContains(LockKind.Write, awaiter);
-			if (syncContextRequired) {
-				if (!(SynchronizationContext.Current is NonConcurrentSynchronizationContext)) {
-					////Assumes.Fail();
-				}
-			}
+			////bool syncContextRequired = this.LockStackContains(LockKind.UpgradeableRead, awaiter) || this.LockStackContains(LockKind.Write, awaiter);
+			////if (syncContextRequired) {
+			////	if (!(SynchronizationContext.Current is NonConcurrentSynchronizationContext)) {
+			////		Assumes.Fail();
+			////	}
+			////}
 		}
 
 		/// <summary>
@@ -942,6 +943,7 @@ namespace Microsoft.Threading {
 			Task reenterConcurrentOutsideCode = null;
 			Task synchronousCallbackExecution = null;
 			bool synchronousRequired = false;
+			Awaiter remainingAwaiter = null;
 			lock (this.syncObject) {
 				// In case this is a sticky write lock, it may also belong to the write locks issued collection.
 				bool upgradedStickyWrite = awaiter.Kind == LockKind.UpgradeableRead
@@ -958,7 +960,7 @@ namespace Microsoft.Threading {
 				if (!lockConsumerCanceled) {
 					// Callbacks should be fired synchronously iff the last write lock is being released and read locks are already issued.
 					// This can occur when upgradeable read locks are held and upgraded, and then downgraded back to an upgradeable read.
-					callbackExecution = this.OnBeforeLockReleasedAsync(finalExclusiveLockRelease) ?? TplExtensions.CompletedTask;
+					callbackExecution = this.OnBeforeLockReleasedAsync(finalExclusiveLockRelease, new LockHandle(awaiter)) ?? TplExtensions.CompletedTask;
 					synchronousRequired = finalExclusiveLockRelease && upgradeableReadLocksAfter > 0;
 					if (synchronousRequired) {
 						synchronousCallbackExecution = callbackExecution;
@@ -982,8 +984,15 @@ namespace Microsoft.Threading {
 				}
 
 				if (reenterConcurrentOutsideCode == null) {
-					this.OnReleaseReenterConcurrencyComplete(awaiter, upgradedStickyWrite, searchAllWaiters: false, updateCallContext: true);
+					this.OnReleaseReenterConcurrencyComplete(awaiter, upgradedStickyWrite, searchAllWaiters: false);
+					remainingAwaiter = this.GetFirstActiveSelfOrAncestor(this.topAwaiter.Value);
 				}
+			}
+
+			if (reenterConcurrentOutsideCode == null) {
+				// This assignment is outside the lock because it doesn't need the lock and it's a relatively expensive call
+				// that we needn't hold the lock for.
+				this.topAwaiter.Value = remainingAwaiter;
 			}
 
 			if (synchronousRequired || true) { // the "|| true" bit is to force us to always be synchronous when releasing locks until we can get all tests passing the other way.
@@ -1035,7 +1044,7 @@ namespace Microsoft.Threading {
 				// Skip updating the call context because we're in a forked execution context that won't
 				// ever impact the client code, and changing the CallContext now would cause the data to be cloned,
 				// allocating more memory wastefully.
-				this.OnReleaseReenterConcurrencyComplete(awaiter, upgradedStickyWrite, searchAllWaiters: true, updateCallContext: false);
+				this.OnReleaseReenterConcurrencyComplete(awaiter, upgradedStickyWrite, searchAllWaiters: true);
 			}
 
 			if (prereqException != null) {
@@ -1050,8 +1059,7 @@ namespace Microsoft.Threading {
 		/// <param name="awaiter">The awaiter being released.</param>
 		/// <param name="upgradedStickyWrite">A flag indicating whether the lock being released was an upgraded read lock with the sticky write flag set.</param>
 		/// <param name="searchAllWaiters"><c>true</c> to scan the entire queue for pending lock requests that might qualify; used when qualifying locks were delayed for some reason besides lock contention.</param>
-		/// <param name="updateCallContext">A flag indicating whether the CallContext should be updated with the remaining active lock awaiter.</param>
-		private void OnReleaseReenterConcurrencyComplete(Awaiter awaiter, bool upgradedStickyWrite, bool searchAllWaiters, bool updateCallContext) {
+		private void OnReleaseReenterConcurrencyComplete(Awaiter awaiter, bool upgradedStickyWrite, bool searchAllWaiters) {
 			Requires.NotNull(awaiter, "awaiter");
 
 			lock (this.syncObject) {
@@ -1059,10 +1067,6 @@ namespace Microsoft.Threading {
 				if (upgradedStickyWrite) {
 					Assumes.True(awaiter.Kind == LockKind.UpgradeableRead);
 					Assumes.True(this.issuedWriteLocks.Remove(awaiter));
-				}
-
-				if (updateCallContext) {
-					this.ApplyLockToCallContext(this.topAwaiter.Value);
 				}
 
 				this.CompleteIfAppropriate();
@@ -1805,6 +1809,27 @@ namespace Microsoft.Threading {
 			/// </summary>
 			public bool IsWriteLock {
 				get { return this.IsValid ? this.awaiter.Kind == LockKind.Write : false; }
+			}
+
+			/// <summary>
+			/// Gets a value indicating whether this lock is an active read lock or is nested by one.
+			/// </summary>
+			public bool HasReadLock {
+				get { return this.IsValid ? this.awaiter.OwningLock.IsLockHeld(LockKind.Read, this.awaiter, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true) : false; }
+			}
+
+			/// <summary>
+			/// Gets a value indicating whether this lock is an active upgradeable read lock or is nested by one.
+			/// </summary>
+			public bool HasUpgradeableReadLock {
+				get { return this.IsValid ? this.awaiter.OwningLock.IsLockHeld(LockKind.UpgradeableRead, this.awaiter, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true) : false; }
+			}
+
+			/// <summary>
+			/// Gets a value indicating whether this lock is an active write lock or is nested by one.
+			/// </summary>
+			public bool HasWriteLock {
+				get { return this.IsValid ? this.awaiter.OwningLock.IsLockHeld(LockKind.Write, this.awaiter, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true) : false; }
 			}
 
 			/// <summary>
