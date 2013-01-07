@@ -3153,7 +3153,6 @@
 			bool hasWriteLock = this.asyncLock.IsWriteLockHeld;
 			bool concurrencyExpected = !(hasWriteLock || hasUpgradeableReadLock);
 
-			var barrier = new Barrier(2); // we use a *synchronous* style Barrier since we are deliberately measuring multi-thread concurrency
 			bool primaryCompleted = false;
 
 			Func<Task> worker = async delegate {
@@ -3170,8 +3169,8 @@
 
 			var workerTask = worker();
 
-			// A timeout will indicate the async worker can't execute concurrently with this thread.
-			Assert.AreEqual(concurrencyExpected, barrier.SignalAndWait(AsyncDelay));
+			Thread.Sleep(AsyncDelay); // give the worker plenty of time to execute if it's going to. (we don't expect it)
+			Assert.IsFalse(workerTask.IsCompleted);
 			Assert.AreEqual(hasReadLock, this.asyncLock.IsReadLockHeld);
 			Assert.AreEqual(hasUpgradeableReadLock, this.asyncLock.IsUpgradeableReadLockHeld);
 			Assert.AreEqual(hasWriteLock, this.asyncLock.IsWriteLockHeld);

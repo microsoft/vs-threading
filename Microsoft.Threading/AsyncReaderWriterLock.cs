@@ -509,22 +509,21 @@ namespace Microsoft.Threading {
 		/// Gets a value indicating whether the caller's thread apartment model and SynchronizationContext
 		/// is compatible with a lock.
 		/// </summary>
-		private bool IsLockSupportingContext {
-			get {
-				if (Thread.CurrentThread.GetApartmentState() != ApartmentState.MTA || IsUnsupportedSynchronizationContext) {
+		private bool IsLockSupportingContext(Awaiter awaiter = null) {
+			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.MTA || IsUnsupportedSynchronizationContext) {
+				return false;
+			}
+
+			awaiter = awaiter ?? this.topAwaiter.Value;
+			if (this.IsLockHeld(LockKind.Write, awaiter, allowNonLockSupportingContext: true, checkSyncContextCompatibility: false) ||
+				this.IsLockHeld(LockKind.UpgradeableRead, awaiter, allowNonLockSupportingContext: true, checkSyncContextCompatibility: false)) {
+				if (SynchronizationContext.Current != this.nonConcurrentSyncContext) {
+					// Upgradeable read and write locks *must* have the NonConcurrentSynchronizationContext applied.
 					return false;
 				}
-
-				if (this.IsLockHeld(LockKind.Write, allowNonLockSupportingContext: true, checkSyncContextCompatibility: false) ||
-					this.IsLockHeld(LockKind.UpgradeableRead, allowNonLockSupportingContext: true, checkSyncContextCompatibility: false)) {
-					if (!(SynchronizationContext.Current is NonConcurrentSynchronizationContext)) {
-						// Upgradeable read and write locks *must* have the NonConcurrentSynchronizationContext applied.
-						return false;
-					}
-				}
-
-				return true;
 			}
+
+			return true;
 		}
 
 		/// <summary>
@@ -678,7 +677,7 @@ namespace Microsoft.Threading {
 		/// <param name="allowNonLockSupportingContext"><c>true</c> to return true when a lock is held but unusable because of the context of the caller.</param>
 		/// <returns><c>true</c> if the caller holds active locks of the given type; <c>false</c> otherwise.</returns>
 		private bool IsLockHeld(LockKind kind, Awaiter awaiter = null, bool checkSyncContextCompatibility = true, bool allowNonLockSupportingContext = false) {
-			if (allowNonLockSupportingContext || this.IsLockSupportingContext) {
+			if (allowNonLockSupportingContext || this.IsLockSupportingContext(awaiter)) {
 				lock (this.syncObject) {
 					awaiter = awaiter ?? this.topAwaiter.Value;
 					if (checkSyncContextCompatibility) {
@@ -703,7 +702,7 @@ namespace Microsoft.Threading {
 		private bool IsLockActive(Awaiter awaiter, bool considerStaActive, bool checkSyncContextCompatibility = false) {
 			Requires.NotNull(awaiter, "awaiter");
 
-			if (considerStaActive || this.IsLockSupportingContext) {
+			if (considerStaActive || this.IsLockSupportingContext(awaiter)) {
 				lock (this.syncObject) {
 					bool activeLock = this.GetActiveLockSet(awaiter.Kind).Contains(awaiter);
 					if (checkSyncContextCompatibility && activeLock) {
@@ -1522,22 +1521,13 @@ namespace Microsoft.Threading {
 
 					if (this.LockIssued) {
 						ThrowIfStaOrUnsupportedSyncContext();
-						var priorSynchronizationContext = SynchronizationContext.Current;
-						try {
-							bool clearSynchronizationContext = false;
-							if ((this.Kind & (LockKind.UpgradeableRead | LockKind.Write)) != 0
-								&& !(priorSynchronizationContext is NonConcurrentSynchronizationContext)) {
-								clearSynchronizationContext = true;
-								SynchronizationContext.SetSynchronizationContext(this.lck.nonConcurrentSyncContext);
-							}
-
-							this.lck.ApplyLockToCallContext(this);
-
-							return new Releaser(this, clearSynchronizationContext);
-						} catch {
-							SynchronizationContext.SetSynchronizationContext(priorSynchronizationContext);
-							throw;
+						if ((this.Kind & (LockKind.UpgradeableRead | LockKind.Write)) != 0) {
+							Assumes.True(SynchronizationContext.Current == this.lck.nonConcurrentSyncContext);
 						}
+
+						this.lck.ApplyLockToCallContext(this);
+
+						return new Releaser(this);
 					} else if (this.cancellationToken.IsCancellationRequested) {
 						// At this point, someone called GetResult who wasn't registered as a synchronous waiter,
 						// and before the lock was issued.
@@ -1670,16 +1660,12 @@ namespace Microsoft.Threading {
 			/// </summary>
 			private readonly Awaiter awaiter;
 
-			private readonly bool clearSynchronizationContext;
-
 			/// <summary>
 			/// Initializes a new instance of the <see cref="Releaser"/> struct.
 			/// </summary>
 			/// <param name="awaiter">The awaiter.</param>
-			/// <param name="clearSynchronizationContext"><c>true</c> to clear <see cref="SynchronizationContext.Current"/> when the lock is released.</param>
-			internal Releaser(Awaiter awaiter, bool clearSynchronizationContext) {
+			internal Releaser(Awaiter awaiter) {
 				this.awaiter = awaiter;
-				this.clearSynchronizationContext = clearSynchronizationContext;
 			}
 
 			/// <summary>
@@ -1714,10 +1700,6 @@ namespace Microsoft.Threading {
 					result = this.awaiter.ReleaseAsync();
 				} else {
 					result = TplExtensions.CompletedTask;
-				}
-
-				if (this.clearSynchronizationContext && SynchronizationContext.Current is NonConcurrentSynchronizationContext) {
-					SynchronizationContext.SetSynchronizationContext(null);
 				}
 
 				return result;
