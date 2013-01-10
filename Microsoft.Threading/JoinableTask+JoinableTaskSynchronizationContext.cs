@@ -17,15 +17,15 @@
 			private readonly JoinableTaskFactory jobFactory;
 
 			/// <summary>
-			/// The owning job. May be null.
-			/// </summary>
-			private readonly JoinableTask job;
-
-			/// <summary>
 			/// A flag indicating whether messages posted to this instance should execute
 			/// on the main thread.
 			/// </summary>
 			private readonly bool mainThreadAffinitized;
+
+			/// <summary>
+			/// The owning job. May be null from the beginning, or cleared after task completion.
+			/// </summary>
+			private JoinableTask job;
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="JoinableTaskSynchronizationContext"/> class
@@ -98,6 +98,22 @@
 							TaskScheduler.Default).Wait();
 					}
 				}
+			}
+
+			/// <summary>
+			/// Called by the joinable task when it has completed.
+			/// </summary>
+			internal void OnCompleted() {
+				// Clear out our reference to the job.
+				// This SynchronizationContext may have been "captured" as part of an ExecutionContext
+				// and stored away someplace indefinitely, and the task we're holding may be a
+				// JoinableTask<T> where T is a very expensive object or (worse) be part of the last
+				// chain holding a huge object graph in memory.
+				// In any case, this sync context does not need a reference to completed jobs since
+				// once a job has completed, posting to it is equivalent to posting to the job's factory.
+				// And clearing out this field will cause our own Post method to post to the factory
+				// so behavior is equivalent.
+				this.job = null;
 			}
 		}
 	}

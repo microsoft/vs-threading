@@ -1486,6 +1486,20 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void JoinableTaskReleasedBySyncContextAfterCompletion() {
+			SynchronizationContext syncContext = null;
+			var job = new WeakReference(this.asyncPump.RunAsync(() => {
+				syncContext = SynchronizationContext.Current; // simulate someone who has captured the sync context.
+				return TplExtensions.CompletedTask;
+			}));
+
+			// We intentionally still have a reference to the SyncContext that represents the task.
+			// We want to make sure that even with that, the JoinableTask itself can be collected.
+			GC.Collect();
+			Assert.IsFalse(job.IsAlive);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void JoinTwice() {
 			var joinable = this.asyncPump.RunAsync(async delegate {
 				await Task.Yield();

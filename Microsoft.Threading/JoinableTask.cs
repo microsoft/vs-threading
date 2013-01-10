@@ -59,9 +59,9 @@ namespace Microsoft.Threading {
 
 		private readonly State state;
 
-		private SynchronizationContext mainThreadJobSyncContext;
+		private JoinableTaskSynchronizationContext mainThreadJobSyncContext;
 
-		private SynchronizationContext threadPoolJobSyncContext;
+		private JoinableTaskSynchronizationContext threadPoolJobSyncContext;
 
 		private bool completeRequested;
 
@@ -465,6 +465,14 @@ namespace Microsoft.Threading {
 			if (this.IsCompleted) {
 				foreach (var collection in this.collectionMembership) {
 					collection.Remove(this);
+				}
+
+				if (this.mainThreadJobSyncContext != null) {
+					this.mainThreadJobSyncContext.OnCompleted();
+				}
+
+				if (this.threadPoolJobSyncContext != null) {
+					this.threadPoolJobSyncContext.OnCompleted();
 				}
 			}
 		}
