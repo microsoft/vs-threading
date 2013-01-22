@@ -16,11 +16,17 @@ namespace Microsoft.Threading {
 	using System.Threading.Tasks;
 	using SingleExecuteProtector = Microsoft.Threading.JoinableTaskFactory.SingleExecuteProtector;
 	using JoinableTaskSynchronizationContext = Microsoft.Threading.JoinableTask.JoinableTaskSynchronizationContext;
+	using System.Xml.Linq;
 
 	/// <summary>
 	/// A common context within which joinable tasks may be created and interact to avoid deadlocks.
 	/// </summary>
-	public partial class JoinableTaskContext {
+	public partial class JoinableTaskContext : IHangReportContributor {
+		/// <summary>
+		/// The namespace that all DGML nodes appear in.
+		/// </summary>
+		private const string DgmlNamespace = "http://schemas.microsoft.com/vs/2009/dgml";
+
 		/// <summary>
 		/// A "global" lock that allows the graph of interconnected sync context and JoinableSet instances
 		/// communicate in a thread-safe way without fear of deadlocks due to each taking their own private
@@ -161,6 +167,29 @@ namespace Microsoft.Threading {
 		/// <returns>A new joinable task collection.</returns>
 		public virtual JoinableTaskCollection CreateCollection() {
 			return new JoinableTaskCollection(this);
+		}
+
+		/// <summary>
+		/// Contributes data for a hang report.
+		/// </summary>
+		/// <returns>The hang report contribution.</returns>
+		HangReportContribution IHangReportContributor.GetHangReport() {
+			using (NoMessagePumpSyncContext.Default.Apply()) {
+				this.SyncContextLock.EnterReadLock();
+				try {
+					var dgml = new XDocument();
+					dgml.Add(
+						new XElement(XName.Get("DirectedGraph", DgmlNamespace),
+							new XAttribute("Layout", "Sugiyama")));
+
+					return new HangReportContribution(
+						dgml.ToString(),
+						"application/xml",
+						"JoinableTaskContext.dgml");
+				} finally {
+					this.SyncContextLock.ExitReadLock();
+				}
+			}
 		}
 
 		/// <summary>

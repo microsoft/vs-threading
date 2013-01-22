@@ -6,6 +6,7 @@
 	using System.Text;
 	using System.Threading;
 	using System.Threading.Tasks;
+	using System.Xml.Linq;
 
 	[TestClass]
 	public class JoinableTaskContextTests : TestBase {
@@ -88,6 +89,19 @@
 				await releaseTaskSource.Task;
 			});
 			joinableTask.Join();
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void GetHangReport() {
+			var context = new JoinableTaskContextDerived();
+			IHangReportContributor contributor = context;
+			var report = contributor.GetHangReport();
+			Assert.AreEqual("application/xml", report.ContentType);
+			Assert.IsNotNull(report.ContentName);
+			Console.WriteLine(report.Content);
+			var dgml = XDocument.Parse(report.Content);
+			Assert.AreEqual("DirectedGraph", dgml.Root.Name.LocalName);
+			Assert.AreEqual("http://schemas.microsoft.com/vs/2009/dgml", dgml.Root.Name.Namespace);
 		}
 
 		private class JoinableTaskContextDerived : JoinableTaskContext {
