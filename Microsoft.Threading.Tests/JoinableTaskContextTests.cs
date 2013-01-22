@@ -58,7 +58,7 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task ReportHangOnRunAsyncThenJoin() {
+		public void ReportHangOnRunAsyncThenJoin() {
 			var context = new JoinableTaskContextDerived();
 			var factory = new JoinableTaskFactoryDerived(context);
 			factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
@@ -82,7 +82,7 @@
 				} catch (Exception ex) {
 					releaseTaskSource.SetException(ex);
 				}
-			});
+			}).Forget();
 
 			var joinableTask = factory.RunAsync(async delegate {
 				await releaseTaskSource.Task;
