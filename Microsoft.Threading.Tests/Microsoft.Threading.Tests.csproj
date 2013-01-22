@@ -67,6 +67,7 @@
     <Compile Include="AsyncLocalTests.cs" />
     <Compile Include="JoinableTaskAndAsyncReaderWriterLockTests.cs" />
     <Compile Include="JoinableTaskCollectionTests.cs" />
+    <Compile Include="JoinableTaskContextTests.cs" />
     <Compile Include="JoinableTaskTests.cs" />
     <Compile Include="AsyncQueueTests.cs" />
     <Compile Include="AsyncSemaphoreTests.cs" />

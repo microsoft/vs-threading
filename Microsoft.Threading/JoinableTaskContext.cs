@@ -164,6 +164,17 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// Invoked when a hang is suspected to have occurred involving the main thread.
+		/// </summary>
+		/// <param name="hangDuration">The duration of the current hang.</param>
+		/// <remarks>
+		/// A single hang occurrence may invoke this method multiple times, with increasing
+		/// values in the <paramref name="hangDuration"/> parameter.
+		/// </remarks>
+		protected internal virtual void ReportHang(TimeSpan hangDuration) {
+		}
+
+		/// <summary>
 		/// A structure that clears CallContext and SynchronizationContext async/thread statics and
 		/// restores those values when this structure is disposed.
 		/// </summary>
