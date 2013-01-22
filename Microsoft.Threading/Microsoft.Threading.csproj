@@ -55,7 +55,9 @@
     <Compile Include="AwaitExtensions.cs" />
     <Compile Include="EmptyStruct.cs" />
     <Compile Include="EnumerateOneOrMany.cs" />
+    <Compile Include="HangReportContribution.cs" />
     <Compile Include="IAsyncDisposable.cs" />
+    <Compile Include="IHangReportContributor.cs" />
     <Compile Include="InternalUtilities.cs" />
     <Compile Include="JoinableTask+JoinableTaskSynchronizationContext.cs" />
     <Compile Include="JoinableTaskContext.cs" />
