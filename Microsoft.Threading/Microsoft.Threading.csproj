@@ -60,6 +60,7 @@
     <Compile Include="IHangReportContributor.cs" />
     <Compile Include="InternalUtilities.cs" />
     <Compile Include="JoinableTask+JoinableTaskSynchronizationContext.cs" />
+    <Compile Include="JoinableTaskContext+HangReportContributor.cs" />
     <Compile Include="JoinableTaskContext.cs" />
     <Compile Include="JoinableTask.cs" />
     <Compile Include="JoinableTaskCollection.cs" />

@@ -21,7 +21,7 @@ namespace Microsoft.Threading {
 	/// </summary>
 	public partial class JoinableTask {
 		[Flags]
-		private enum State {
+		internal enum JoinableTaskFlags {
 			None = 0x0,
 			RunningSynchronously = 0x1,
 			StartedOnMainThread = 0x2,
@@ -57,7 +57,7 @@ namespace Microsoft.Threading {
 
 		private ExecutionQueue threadPoolQueue;
 
-		private readonly State state;
+		private readonly JoinableTaskFlags state;
 
 		private JoinableTaskSynchronizationContext mainThreadJobSyncContext;
 
@@ -75,12 +75,14 @@ namespace Microsoft.Threading {
 
 			this.owner = owner;
 			if (synchronouslyBlocking) {
-				this.state |= State.RunningSynchronously;
+				this.state |= JoinableTaskFlags.RunningSynchronously;
 			}
 
 			if (Thread.CurrentThread == owner.Context.MainThread) {
-				this.state |= State.StartedOnMainThread;
+				this.state |= JoinableTaskFlags.StartedOnMainThread;
 			}
+
+			this.owner.Context.OnJoinableTaskStarted(this);
 		}
 
 		internal Task DequeuerResetEvent {
@@ -215,6 +217,56 @@ namespace Microsoft.Threading {
 			}
 		}
 
+		#region Diagnostics collection
+
+		/// <summary>
+		/// Gets a value indicating whether this task has a non-empty queue.
+		/// FOR DIAGNOSTICS COLLECTION ONLY.
+		/// </summary>
+		internal bool HasNonEmptyQueue {
+			get {
+				Assumes.True(this.owner.Context.SyncContextLock.IsReadLockHeld);
+				return (this.mainThreadQueue != null && this.mainThreadQueue.Count > 0)
+					|| (this.threadPoolQueue != null && this.threadPoolQueue.Count > 0);
+			}
+		}
+
+		/// <summary>
+		/// Gets a snapshot of all joined tasks.
+		/// FOR DIAGNOSTICS COLLECTION ONLY.
+		/// </summary>
+		internal IEnumerable<JoinableTask> ChildOrJoinedJobs {
+			get {
+				Assumes.True(this.owner.Context.SyncContextLock.IsReadLockHeld);
+				if (this.childOrJoinedJobs == null) {
+					return Enumerable.Empty<JoinableTask>();
+				}
+
+				return this.childOrJoinedJobs.Select(p => p.Key).ToArray();
+			}
+		}
+
+		/// <summary>
+		/// Gets the flags set on this task.
+		/// FOR DIAGNOSTICS COLLECTION ONLY.
+		/// </summary>
+		internal JoinableTaskFlags DiagnosticFlags {
+			get { return this.state; }
+		}
+
+		/// <summary>
+		/// Gets the collections this task belongs to.
+		/// FOR DIAGNOSTICS COLLECTION ONLY.
+		/// </summary>
+		internal IEnumerable<JoinableTaskCollection> ContainingCollections {
+			get {
+				Assumes.True(this.owner.Context.SyncContextLock.IsReadLockHeld);
+				return this.collectionMembership.ToArray();
+			}
+		}
+
+		#endregion
+
 		private ExecutionQueue ApplicableQueue {
 			get {
 				using (NoMessagePumpSyncContext.Default.Apply()) {
@@ -230,15 +282,15 @@ namespace Microsoft.Threading {
 
 		private bool SynchronouslyBlockingThreadPool {
 			get {
-				return (this.state & State.RunningSynchronously) == State.RunningSynchronously
-					&& (this.state & State.StartedOnMainThread) == State.None;
+				return (this.state & JoinableTaskFlags.RunningSynchronously) == JoinableTaskFlags.RunningSynchronously
+					&& (this.state & JoinableTaskFlags.StartedOnMainThread) == JoinableTaskFlags.None;
 			}
 		}
 
 		private bool SynchronouslyBlockingMainThread {
 			get {
-				return (this.state & State.RunningSynchronously) == State.RunningSynchronously
-				&& (this.state & State.StartedOnMainThread) == State.StartedOnMainThread;
+				return (this.state & JoinableTaskFlags.RunningSynchronously) == JoinableTaskFlags.RunningSynchronously
+				&& (this.state & JoinableTaskFlags.StartedOnMainThread) == JoinableTaskFlags.StartedOnMainThread;
 			}
 		}
 
@@ -370,6 +422,9 @@ namespace Microsoft.Threading {
 			}
 		}
 
+		/// <summary>
+		/// Fires when the underlying Task is completed.
+		/// </summary>
 		internal void Complete() {
 			using (NoMessagePumpSyncContext.Default.Apply()) {
 				AsyncManualResetEvent dequeuerResetState = null;
@@ -403,6 +458,8 @@ namespace Microsoft.Threading {
 					dequeuerResetState.PulseAllAsync().Forget();
 				}
 			}
+
+			this.owner.Context.OnJoinableTaskCompleted(this);
 		}
 
 		internal void RemoveDependency(JoinableTask joinChild) {

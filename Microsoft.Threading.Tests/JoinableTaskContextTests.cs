@@ -2,22 +2,42 @@
 	using Microsoft.VisualStudio.TestTools.UnitTesting;
 	using System;
 	using System.Collections.Generic;
+	using System.Diagnostics;
 	using System.Linq;
 	using System.Text;
 	using System.Threading;
 	using System.Threading.Tasks;
+	using System.Windows.Threading;
 	using System.Xml.Linq;
 
 	[TestClass]
 	public class JoinableTaskContextTests : TestBase {
+		private JoinableTaskContextDerived context;
+		private JoinableTaskFactoryDerived factory;
+		private JoinableTaskCollection joinableCollection;
+
+		private Thread originalThread;
+		private SynchronizationContext dispatcherContext;
+
+		[TestInitialize]
+		public void Initialize() {
+			this.dispatcherContext = new DispatcherSynchronizationContext();
+			SynchronizationContext.SetSynchronizationContext(dispatcherContext);
+			this.context = new JoinableTaskContextDerived();
+			this.joinableCollection = this.context.CreateCollection();
+			this.factory = new JoinableTaskFactoryDerived(this.joinableCollection);
+			this.originalThread = Thread.CurrentThread;
+
+			// Suppress the assert dialog that appears and causes test runs to hang.
+			Trace.Listeners.OfType<DefaultTraceListener>().Single().AssertUiEnabled = false;
+		}
+
 		[TestMethod, Timeout(TestTimeout)]
 		public void ReportHangOnRun() {
-			var context = new JoinableTaskContextDerived();
-			var factory = new JoinableTaskFactoryDerived(context);
-			factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
+			this.factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
 			var releaseTaskSource = new TaskCompletionSource<object>();
 			var hangQueue = new AsyncQueue<TimeSpan>();
-			context.OnReportHang = hangDuration => {
+			this.context.OnReportHang = hangDuration => {
 				hangQueue.Enqueue(hangDuration);
 			};
 
@@ -43,29 +63,24 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task NoReportHangOnRunAsync() {
-			var context = new JoinableTaskContextDerived();
-			var factory = new JoinableTaskFactoryDerived(context);
-			factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
+		public void NoReportHangOnRunAsync() {
+			this.factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
 			bool hangReported = false;
-			context.OnReportHang = hangDuration => hangReported = true;
+			this.context.OnReportHang = hangDuration => hangReported = true;
 
-			var joinableTask = factory.RunAsync(async delegate {
-				await Task.Delay((int)factory.HangDetectionTimeout.TotalMilliseconds * 3);
-			});
+			var joinableTask = this.factory.RunAsync(
+				() => Task.Delay((int)this.factory.HangDetectionTimeout.TotalMilliseconds * 3));
 
-			await joinableTask;
+			joinableTask.Task.Wait(); // don't Join, since we're trying to simulate RunAsync not becoming synchronous.
 			Assert.IsFalse(hangReported);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void ReportHangOnRunAsyncThenJoin() {
-			var context = new JoinableTaskContextDerived();
-			var factory = new JoinableTaskFactoryDerived(context);
-			factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
+			this.factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
 			var releaseTaskSource = new TaskCompletionSource<object>();
 			var hangQueue = new AsyncQueue<TimeSpan>();
-			context.OnReportHang = hangDuration => {
+			this.context.OnReportHang = hangDuration => {
 				hangQueue.Enqueue(hangDuration);
 			};
 
@@ -85,15 +100,14 @@
 				}
 			}).Forget();
 
-			var joinableTask = factory.RunAsync(async delegate {
+			var joinableTask = this.factory.RunAsync(async delegate {
 				await releaseTaskSource.Task;
 			});
 			joinableTask.Join();
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void GetHangReport() {
-			var context = new JoinableTaskContextDerived();
+		public void GetHangReportSimple() {
 			IHangReportContributor contributor = context;
 			var report = contributor.GetHangReport();
 			Assert.AreEqual("application/xml", report.ContentType);
@@ -104,10 +118,45 @@
 			Assert.AreEqual("http://schemas.microsoft.com/vs/2009/dgml", dgml.Root.Name.Namespace);
 		}
 
+		[TestMethod]//, Timeout(TestTimeout)]
+		public void GetHangReportWithActualHang() {
+			var endTestTokenSource = new CancellationTokenSource();
+			this.context.OnReportHang = hangDuration => {
+				IHangReportContributor contributor = context;
+				var report = contributor.GetHangReport();
+				Console.WriteLine(report.Content);
+				endTestTokenSource.Cancel();
+				this.context.OnReportHang = null;
+			};
+
+			this.factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
+			try {
+				this.factory.Run(delegate {
+					using (this.context.SuppressRelevance()) {
+						return Task.Run(async delegate {
+							await this.factory.RunAsync(async delegate {
+								await this.factory.SwitchToMainThreadAsync(endTestTokenSource.Token);
+							});
+						});
+					}
+				});
+			} catch (OperationCanceledException) {
+				// we expect this.
+			}
+		}
+
 		private class JoinableTaskContextDerived : JoinableTaskContext {
 			internal Action<TimeSpan> OnReportHang { get; set; }
 
-			protected override void ReportHang(TimeSpan hangDuration) {
+			public override JoinableTaskFactory CreateDefaultFactory() {
+				return new JoinableTaskFactoryDerived(this);
+			}
+
+			public override JoinableTaskFactory CreateFactory(JoinableTaskCollection collection) {
+				return new JoinableTaskFactoryDerived(collection);
+			}
+
+			protected override void OnHangDetected(TimeSpan hangDuration) {
 				if (this.OnReportHang != null) {
 					this.OnReportHang(hangDuration);
 				}
@@ -117,6 +166,10 @@
 		private class JoinableTaskFactoryDerived : JoinableTaskFactory {
 			internal JoinableTaskFactoryDerived(JoinableTaskContext context)
 				: base(context) {
+			}
+
+			internal JoinableTaskFactoryDerived(JoinableTaskCollection collection)
+				: base(collection) {
 			}
 
 			internal new TimeSpan HangDetectionTimeout {

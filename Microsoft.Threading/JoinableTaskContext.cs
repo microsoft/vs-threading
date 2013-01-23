@@ -14,19 +14,13 @@ namespace Microsoft.Threading {
 	using System.Runtime.CompilerServices;
 	using System.Threading;
 	using System.Threading.Tasks;
-	using SingleExecuteProtector = Microsoft.Threading.JoinableTaskFactory.SingleExecuteProtector;
 	using JoinableTaskSynchronizationContext = Microsoft.Threading.JoinableTask.JoinableTaskSynchronizationContext;
-	using System.Xml.Linq;
+	using SingleExecuteProtector = Microsoft.Threading.JoinableTaskFactory.SingleExecuteProtector;
 
 	/// <summary>
 	/// A common context within which joinable tasks may be created and interact to avoid deadlocks.
 	/// </summary>
-	public partial class JoinableTaskContext : IHangReportContributor {
-		/// <summary>
-		/// The namespace that all DGML nodes appear in.
-		/// </summary>
-		private const string DgmlNamespace = "http://schemas.microsoft.com/vs/2009/dgml";
-
+	public partial class JoinableTaskContext {
 		/// <summary>
 		/// A "global" lock that allows the graph of interconnected sync context and JoinableSet instances
 		/// communicate in a thread-safe way without fear of deadlocks due to each taking their own private
@@ -43,6 +37,14 @@ namespace Microsoft.Threading {
 		/// An AsyncLocal value that carries the joinable instance associated with an async operation.
 		/// </summary>
 		private readonly AsyncLocal<JoinableTask> joinableOperation = new AsyncLocal<JoinableTask>();
+
+		/// <summary>
+		/// The set of tasks that have started but have not yet completed.
+		/// </summary>
+		/// <remarks>
+		/// All access to this collection should be guarded by locking this collection.
+		/// </remarks>
+		private readonly HashSet<JoinableTask> pendingTasks = new HashSet<JoinableTask>();
 
 		/// <summary>
 		/// A single joinable task factory that itself cannot be joined.
@@ -170,29 +172,6 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
-		/// Contributes data for a hang report.
-		/// </summary>
-		/// <returns>The hang report contribution.</returns>
-		HangReportContribution IHangReportContributor.GetHangReport() {
-			using (NoMessagePumpSyncContext.Default.Apply()) {
-				this.SyncContextLock.EnterReadLock();
-				try {
-					var dgml = new XDocument();
-					dgml.Add(
-						new XElement(XName.Get("DirectedGraph", DgmlNamespace),
-							new XAttribute("Layout", "Sugiyama")));
-
-					return new HangReportContribution(
-						dgml.ToString(),
-						"application/xml",
-						"JoinableTaskContext.dgml");
-				} finally {
-					this.SyncContextLock.ExitReadLock();
-				}
-			}
-		}
-
-		/// <summary>
 		/// Invoked when a hang is suspected to have occurred involving the main thread.
 		/// </summary>
 		/// <param name="hangDuration">The duration of the current hang.</param>
@@ -200,7 +179,31 @@ namespace Microsoft.Threading {
 		/// A single hang occurrence may invoke this method multiple times, with increasing
 		/// values in the <paramref name="hangDuration"/> parameter.
 		/// </remarks>
-		protected internal virtual void ReportHang(TimeSpan hangDuration) {
+		protected internal virtual void OnHangDetected(TimeSpan hangDuration) {
+		}
+
+		/// <summary>
+		/// Raised when a joinable task starts.
+		/// </summary>
+		/// <param name="task">The task that has started.</param>
+		internal void OnJoinableTaskStarted(JoinableTask task) {
+			Requires.NotNull(task, "task");
+
+			lock (this.pendingTasks) {
+				Assumes.True(this.pendingTasks.Add(task));
+			}
+		}
+
+		/// <summary>
+		/// Raised when a joinable task completes.
+		/// </summary>
+		/// <param name="task">The completing task.</param>
+		internal void OnJoinableTaskCompleted(JoinableTask task) {
+			Requires.NotNull(task, "task");
+
+			lock (this.pendingTasks) {
+				Assumes.True(this.pendingTasks.Remove(task));
+			}
 		}
 
 		/// <summary>
