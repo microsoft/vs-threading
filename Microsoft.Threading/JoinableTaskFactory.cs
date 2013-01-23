@@ -31,6 +31,11 @@ namespace Microsoft.Threading {
 		private readonly JoinableTaskCollection jobCollection;
 
 		/// <summary>
+		/// Backing field for the <see cref="HangDetectionTimeout"/> property.
+		/// </summary>
+		private TimeSpan hangDetectionTimeout = TimeSpan.FromSeconds(3);
+
+		/// <summary>
 		/// Initializes a new instance of the <see cref="JoinableTaskFactory"/> class.
 		/// </summary>
 		public JoinableTaskFactory(JoinableTaskContext owner)
@@ -83,6 +88,21 @@ namespace Microsoft.Threading {
 		/// </summary>
 		internal SynchronizationContext ApplicableJobSyncContext {
 			get { return this.Context.MainThread == Thread.CurrentThread ? this.mainThreadJobSyncContext : null; }
+		}
+
+		/// <summary>
+		/// Gets or sets the timeout after which no activity while synchronously blocking
+		/// suggests a hang has occurred.
+		/// </summary>
+		protected TimeSpan HangDetectionTimeout {
+			get {
+				return this.hangDetectionTimeout;
+			}
+
+			set {
+				Requires.Range(value > TimeSpan.Zero, "value");
+				this.hangDetectionTimeout = value;
+			}
 		}
 
 		/// <summary>
@@ -210,12 +230,13 @@ namespace Microsoft.Threading {
 		protected internal virtual void WaitSynchronously(Task task) {
 			Requires.NotNull(task, "task");
 			int collections = 0; // useful for debugging dump files to see how many collections occurred.
-			while (!task.Wait(3000)) {
+			while (!task.Wait(this.HangDetectionTimeout)) {
 				// This could be a hang. If a memory dump with heap is taken, it will
 				// significantly simplify investigation if the heap only has live awaitables
 				// remaining (completed ones GC'd). So run the GC now and then keep waiting.
 				collections++;
 				GC.Collect();
+				this.Context.OnHangDetected(TimeSpan.FromMilliseconds(this.HangDetectionTimeout.TotalMilliseconds * collections));
 			}
 		}
 

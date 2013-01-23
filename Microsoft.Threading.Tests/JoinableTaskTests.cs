@@ -96,6 +96,22 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void SwitchToMainThreadCancellableWithinRun() {
+			var endTestTokenSource = new CancellationTokenSource(AsyncDelay);
+			try {
+				this.asyncPump.Run(delegate {
+					using (this.context.SuppressRelevance()) {
+						return Task.Run(async delegate {
+							await this.asyncPump.SwitchToMainThreadAsync(endTestTokenSource.Token);
+						});
+					}
+				});
+				Assert.Fail("Expected OperationCanceledException not thrown.");
+			} catch (OperationCanceledException) {
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void SwitchToSTADoesNotCauseUnrelatedReentrancy() {
 			var frame = new DispatcherFrame();
 
@@ -418,6 +434,7 @@
 				// Joined in order to execute here.
 				Assert.AreNotSame(task, await Task.WhenAny(task, Task.Delay(AsyncDelay / 2)), "The unrelated main thread work completed before the Main thread was joined.");
 				using (this.joinableCollection.Join()) {
+					PrintActiveTasksReport();
 					await task;
 				}
 			});
@@ -1695,6 +1712,18 @@
 				return expectedResult;
 			});
 			Assert.AreSame(expectedResult, actualResult);
+		}
+
+		/// <summary>
+		/// Writes out a DGML graph of pending tasks and collections to the test context.
+		/// </summary>
+		/// <param name="context">A specific context to collect data from; <c>null</c> will use <see cref="this.context"/></param>
+		private void PrintActiveTasksReport(JoinableTaskContext context = null) {
+			context = context ?? this.context;
+			IHangReportContributor contributor = context;
+			var report = contributor.GetHangReport();
+			this.TestContext.WriteLine("DGML task graph");
+			this.TestContext.WriteLine(report.Content);
 		}
 
 		/// <summary>
