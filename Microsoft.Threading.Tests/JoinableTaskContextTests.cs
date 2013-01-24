@@ -37,7 +37,7 @@
 			this.factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
 			var releaseTaskSource = new TaskCompletionSource<object>();
 			var hangQueue = new AsyncQueue<TimeSpan>();
-			this.context.OnReportHang = hangDuration => {
+			this.context.OnReportHang = (hangDuration, iterations) => {
 				hangQueue.Enqueue(hangDuration);
 			};
 
@@ -66,7 +66,7 @@
 		public void NoReportHangOnRunAsync() {
 			this.factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
 			bool hangReported = false;
-			this.context.OnReportHang = hangDuration => hangReported = true;
+			this.context.OnReportHang = (hangDuration, iterations) => hangReported = true;
 
 			var joinableTask = this.factory.RunAsync(
 				() => Task.Delay((int)this.factory.HangDetectionTimeout.TotalMilliseconds * 3));
@@ -80,7 +80,7 @@
 			this.factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
 			var releaseTaskSource = new TaskCompletionSource<object>();
 			var hangQueue = new AsyncQueue<TimeSpan>();
-			this.context.OnReportHang = hangDuration => {
+			this.context.OnReportHang = (hangDuration, iterations) => {
 				hangQueue.Enqueue(hangDuration);
 			};
 
@@ -118,10 +118,10 @@
 			Assert.AreEqual("http://schemas.microsoft.com/vs/2009/dgml", dgml.Root.Name.Namespace);
 		}
 
-		[TestMethod]//, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout)]
 		public void GetHangReportWithActualHang() {
 			var endTestTokenSource = new CancellationTokenSource();
-			this.context.OnReportHang = hangDuration => {
+			this.context.OnReportHang = (hangDuration, iterations) => {
 				IHangReportContributor contributor = context;
 				var report = contributor.GetHangReport();
 				Console.WriteLine(report.Content);
@@ -146,7 +146,7 @@
 		}
 
 		private class JoinableTaskContextDerived : JoinableTaskContext {
-			internal Action<TimeSpan> OnReportHang { get; set; }
+			internal Action<TimeSpan, int> OnReportHang { get; set; }
 
 			public override JoinableTaskFactory CreateDefaultFactory() {
 				return new JoinableTaskFactoryDerived(this);
@@ -156,9 +156,9 @@
 				return new JoinableTaskFactoryDerived(collection);
 			}
 
-			protected override void OnHangDetected(TimeSpan hangDuration) {
+			protected override void OnHangDetected(TimeSpan hangDuration, int notificationCount) {
 				if (this.OnReportHang != null) {
-					this.OnReportHang(hangDuration);
+					this.OnReportHang(hangDuration, notificationCount);
 				}
 			}
 		}

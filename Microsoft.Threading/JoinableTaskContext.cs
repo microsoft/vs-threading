@@ -175,11 +175,12 @@ namespace Microsoft.Threading {
 		/// Invoked when a hang is suspected to have occurred involving the main thread.
 		/// </summary>
 		/// <param name="hangDuration">The duration of the current hang.</param>
+		/// <param name="notificationCount">The number of times this hang has been reported, including this one.</param>
 		/// <remarks>
 		/// A single hang occurrence may invoke this method multiple times, with increasing
 		/// values in the <paramref name="hangDuration"/> parameter.
 		/// </remarks>
-		protected internal virtual void OnHangDetected(TimeSpan hangDuration) {
+		protected internal virtual void OnHangDetected(TimeSpan hangDuration, int notificationCount) {
 		}
 
 		/// <summary>

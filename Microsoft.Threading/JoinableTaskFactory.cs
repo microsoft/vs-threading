@@ -236,7 +236,8 @@ namespace Microsoft.Threading {
 				// remaining (completed ones GC'd). So run the GC now and then keep waiting.
 				collections++;
 				GC.Collect();
-				this.Context.OnHangDetected(TimeSpan.FromMilliseconds(this.HangDetectionTimeout.TotalMilliseconds * collections));
+				TimeSpan hangDuration = TimeSpan.FromMilliseconds(this.HangDetectionTimeout.TotalMilliseconds * collections);
+				this.Context.OnHangDetected(hangDuration, collections);
 			}
 		}
 
