@@ -176,11 +176,12 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="hangDuration">The duration of the current hang.</param>
 		/// <param name="notificationCount">The number of times this hang has been reported, including this one.</param>
+		/// <param name="hangId">A random GUID that uniquely identifies this particular hang.</param>
 		/// <remarks>
 		/// A single hang occurrence may invoke this method multiple times, with increasing
 		/// values in the <paramref name="hangDuration"/> parameter.
 		/// </remarks>
-		protected internal virtual void OnHangDetected(TimeSpan hangDuration, int notificationCount) {
+		protected internal virtual void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId) {
 		}
 
 		/// <summary>

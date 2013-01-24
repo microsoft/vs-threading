@@ -230,14 +230,20 @@ namespace Microsoft.Threading {
 		protected internal virtual void WaitSynchronously(Task task) {
 			Requires.NotNull(task, "task");
 			int collections = 0; // useful for debugging dump files to see how many collections occurred.
+			Guid hangId = Guid.Empty;
 			while (!task.Wait(this.HangDetectionTimeout)) {
 				// This could be a hang. If a memory dump with heap is taken, it will
 				// significantly simplify investigation if the heap only has live awaitables
 				// remaining (completed ones GC'd). So run the GC now and then keep waiting.
-				collections++;
 				GC.Collect();
+
+				collections++;
 				TimeSpan hangDuration = TimeSpan.FromMilliseconds(this.HangDetectionTimeout.TotalMilliseconds * collections);
-				this.Context.OnHangDetected(hangDuration, collections);
+				if (hangId == Guid.Empty) {
+					hangId = Guid.NewGuid();
+				}
+
+				this.Context.OnHangDetected(hangDuration, collections, hangId);
 			}
 		}
 

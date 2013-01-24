@@ -36,19 +36,29 @@
 		public void ReportHangOnRun() {
 			this.factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
 			var releaseTaskSource = new TaskCompletionSource<object>();
-			var hangQueue = new AsyncQueue<TimeSpan>();
-			this.context.OnReportHang = (hangDuration, iterations) => {
-				hangQueue.Enqueue(hangDuration);
+			var hangQueue = new AsyncQueue<Tuple<TimeSpan, int, Guid>>();
+			this.context.OnReportHang = (hangDuration, iterations, id) => {
+				hangQueue.Enqueue(Tuple.Create(hangDuration, iterations, id));
 			};
 
 			Task.Run(async delegate {
 				var ct = new CancellationTokenSource(TestTimeout).Token;
 				try {
 					TimeSpan lastDuration = TimeSpan.Zero;
+					int lastIteration = 0;
+					Guid lastId = Guid.Empty;
 					for (int i = 0; i < 3; i++) {
-						var duration = await hangQueue.DequeueAsync(ct);
+						var tuple = await hangQueue.DequeueAsync(ct);
+						var duration = tuple.Item1;
+						var iterations = tuple.Item2;
+						var id = tuple.Item3;
 						Assert.IsTrue(lastDuration == TimeSpan.Zero || lastDuration < duration);
+						Assert.AreEqual(lastIteration + 1, iterations);
+						Assert.AreNotEqual(Guid.Empty, id);
+						Assert.IsTrue(lastId == Guid.Empty || lastId == id);
 						lastDuration = duration;
+						lastIteration = iterations;
+						lastId = id;
 					}
 
 					releaseTaskSource.SetResult(null);
@@ -66,7 +76,7 @@
 		public void NoReportHangOnRunAsync() {
 			this.factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
 			bool hangReported = false;
-			this.context.OnReportHang = (hangDuration, iterations) => hangReported = true;
+			this.context.OnReportHang = (hangDuration, iterations, id) => hangReported = true;
 
 			var joinableTask = this.factory.RunAsync(
 				() => Task.Delay((int)this.factory.HangDetectionTimeout.TotalMilliseconds * 3));
@@ -80,7 +90,7 @@
 			this.factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
 			var releaseTaskSource = new TaskCompletionSource<object>();
 			var hangQueue = new AsyncQueue<TimeSpan>();
-			this.context.OnReportHang = (hangDuration, iterations) => {
+			this.context.OnReportHang = (hangDuration, iterations, id) => {
 				hangQueue.Enqueue(hangDuration);
 			};
 
@@ -121,7 +131,7 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public void GetHangReportWithActualHang() {
 			var endTestTokenSource = new CancellationTokenSource();
-			this.context.OnReportHang = (hangDuration, iterations) => {
+			this.context.OnReportHang = (hangDuration, iterations, id) => {
 				IHangReportContributor contributor = context;
 				var report = contributor.GetHangReport();
 				Console.WriteLine(report.Content);
@@ -146,7 +156,7 @@
 		}
 
 		private class JoinableTaskContextDerived : JoinableTaskContext {
-			internal Action<TimeSpan, int> OnReportHang { get; set; }
+			internal Action<TimeSpan, int, Guid> OnReportHang { get; set; }
 
 			public override JoinableTaskFactory CreateDefaultFactory() {
 				return new JoinableTaskFactoryDerived(this);
@@ -156,9 +166,9 @@
 				return new JoinableTaskFactoryDerived(collection);
 			}
 
-			protected override void OnHangDetected(TimeSpan hangDuration, int notificationCount) {
+			protected override void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId) {
 				if (this.OnReportHang != null) {
-					this.OnReportHang(hangDuration, notificationCount);
+					this.OnReportHang(hangDuration, notificationCount, hangId);
 				}
 			}
 		}
