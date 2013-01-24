@@ -36,7 +36,7 @@ namespace Microsoft.Threading {
 	///    ------------- 
 	/// ]]>
 	/// </devnotes>
-	public class AsyncReaderWriterLock {
+	public partial class AsyncReaderWriterLock {
 		/// <summary>
 		/// The object to acquire a Monitor-style lock on for all field access on this instance.
 		/// </summary>
@@ -1582,6 +1582,28 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>
+			/// Appends awaiter hang report details to the specified builder.
+			/// </summary>
+			internal void AppendHangReportDetails(StringBuilder reportBuilder) {
+				Requires.NotNull(reportBuilder, "reportBuilder");
+
+				reportBuilder.AppendFormat("Awaiter ID: {0}{1}", this.GetHashCode(), Environment.NewLine);
+				if (this.NestingLock != null) {
+					reportBuilder.AppendFormat("NestingLock ID: {0}{1}", this.NestingLock.GetHashCode(), Environment.NewLine);
+				}
+
+				reportBuilder.AppendFormat("Kind: {0}{1}", this.Kind, Environment.NewLine);
+				reportBuilder.AppendFormat("Options: {0}{1}", this.Options, Environment.NewLine);
+
+				if (this.requestingStackTrace != null) {
+					reportBuilder.AppendLine("Lock owner callstack");
+					reportBuilder.AppendLine(this.requestingStackTrace.ToString());
+				} else {
+					reportBuilder.AppendLine("No lock owner callstack available.");
+				}
+			}
+
+			/// <summary>
 			/// Responds to lock request cancellation.
 			/// </summary>
 			/// <param name="state">The <see cref="Awaiter"/> instance being canceled.</param>
@@ -1600,6 +1622,13 @@ namespace Microsoft.Threading {
 
 		private class NonConcurrentSynchronizationContext : SynchronizationContext {
 			private readonly SemaphoreSlim semaphore = new SemaphoreSlim(1);
+
+			/// <summary>
+			/// Gets a value indicating whether the semaphore is currently occupied.
+			/// </summary>
+			internal bool IsSemaphoreOccupied {
+				get { return this.semaphore.CurrentCount == 0; }
+			}
 
 			public override void Send(SendOrPostCallback d, object state) {
 				throw new NotSupportedException();

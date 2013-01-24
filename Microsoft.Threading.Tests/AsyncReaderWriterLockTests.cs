@@ -1461,6 +1461,7 @@
 					await writeRequestPending.Task;
 					using (await this.asyncLock.WriteLockAsync()) {
 						Assert.IsFalse(writeLockObtained.Task.IsCompleted, "The upgradeable read should have received its write lock first.");
+						PrintHangReport();
 						await upgradeableReadUpgraded.SetAsync();
 					}
 				}
@@ -2798,6 +2799,23 @@
 		}
 
 		#endregion
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void GetHangReportSimple() {
+			IHangReportContributor reportContributor = this.asyncLock;
+			var report = reportContributor.GetHangReport();
+			Assert.IsNotNull(report);
+			Assert.IsNotNull(report.Content);
+			Assert.IsNotNull(report.ContentType);
+			Assert.IsNotNull(report.ContentName);
+			Console.WriteLine(report.Content);
+		}
+
+		private void PrintHangReport() {
+			IHangReportContributor reportContributor = this.asyncLock;
+			var report = reportContributor.GetHangReport();
+			Console.WriteLine(report.Content);
+		}
 
 		private void LockReleaseTestHelper(AsyncReaderWriterLock.Awaitable initialLock) {
 			TestUtilities.Run(async delegate {
