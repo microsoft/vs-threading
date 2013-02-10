@@ -89,7 +89,7 @@
     <Compile Include="WeakKeyDictionaryTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Microsoft.Validation\Microsoft.Validation.csproj">
+    <ProjectReference Include="..\Microsoft.Validation\Microsoft.Validation.csproj">
       <Project>{e016a630-a79b-4b5d-8997-e66581d62b81}</Project>
       <Name>Microsoft.Validation</Name>
     </ProjectReference>
