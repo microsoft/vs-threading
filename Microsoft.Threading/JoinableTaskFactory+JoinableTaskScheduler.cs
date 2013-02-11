@@ -62,10 +62,8 @@
 				// We must never inline task execution in this method
 				if (this.mainThreadAffinitized) {
 					await this.collection.SwitchToMainThreadAsync(alwaysYield: true);
-				} else if (Thread.CurrentThread.IsThreadPoolThread) {
-					await Task.Yield();
 				} else {
-					await TaskScheduler.Default;
+					await TaskScheduler.Default.SwitchTo(alwaysYield: true);
 				}
 
 				this.TryExecuteTask(task);

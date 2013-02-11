@@ -10,26 +10,11 @@
 	using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 	[TestClass]
-	public class JoinableTaskTests : TestBase {
-		private JoinableTaskContext context;
-		private JoinableTaskFactory asyncPump;
-		private JoinableTaskCollection joinableCollection;
-
-		private Thread originalThread;
-		private SynchronizationContext dispatcherContext;
-
-		[TestInitialize]
-		public void Initialize() {
-			this.dispatcherContext = new DispatcherSynchronizationContext();
-			SynchronizationContext.SetSynchronizationContext(dispatcherContext);
-			this.context = new DerivedJoinableTaskContext();
-			this.joinableCollection = this.context.CreateCollection();
-			this.asyncPump = this.context.CreateFactory(this.joinableCollection);
-			this.originalThread = Thread.CurrentThread;
-
-			// Suppress the assert dialog that appears and causes test runs to hang.
-			Trace.Listeners.OfType<DefaultTraceListener>().Single().AssertUiEnabled = false;
-		}
+	public class JoinableTaskTests : JoinableTaskTestBase {
+        protected override JoinableTaskContext CreateJoinableTaskContext()
+        {
+            return new DerivedJoinableTaskContext();
+        }
 
 		[TestMethod]
 		public void RunFuncOfTaskSTA() {
