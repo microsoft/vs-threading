@@ -75,6 +75,29 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// Applies one task's results to another.
+		/// </summary>
+		/// <typeparam name="T">The type of value returned by a task.</typeparam>
+		/// <param name="task">The task whose completion should be applied to another.</param>
+		/// <param name="tcs">The task that should receive the completion status.</param>
+		public static void ApplyResultTo<T>(this Task task, TaskCompletionSource<T> tcs) {
+			Requires.NotNull(task, "task");
+			Requires.NotNull(tcs, "tcs");
+
+			if (task.IsCompleted) {
+				ApplyCompletedTaskResultTo<T>(task, tcs, default(T));
+			} else {
+				// Using a minimum of allocations (just one task, and no closure) ensure that one task's completion sets equivalent completion on another task.
+				task.ContinueWith(
+					(t, s) => ApplyCompletedTaskResultTo(t, (TaskCompletionSource<T>)s, default(T)),
+					tcs,
+					CancellationToken.None,
+					TaskContinuationOptions.ExecuteSynchronously,
+					TaskScheduler.Default);
+			}
+		}
+
+		/// <summary>
 		/// Creates a task that is attached to the parent task, but produces the same result as an existing task.
 		/// </summary>
 		/// <typeparam name="T">The type of value produced by the task.</typeparam>
@@ -97,21 +120,7 @@ namespace Microsoft.Threading {
 			Requires.NotNull(task, "task");
 
 			var tcs = new TaskCompletionSource<EmptyStruct>(TaskCreationOptions.AttachedToParent);
-			task.ContinueWith(
-				(t, s) => {
-					var _tcs = (TaskCompletionSource<EmptyStruct>)s;
-					if (t.IsCanceled) {
-						_tcs.TrySetCanceled();
-					} else if (t.IsFaulted) {
-						_tcs.TrySetException(t.Exception);
-					} else {
-						_tcs.TrySetResult(EmptyStruct.Instance);
-					}
-				},
-				tcs,
-				CancellationToken.None,
-				TaskContinuationOptions.ExecuteSynchronously,
-				TaskScheduler.Default);
+			task.ApplyResultTo(tcs);
 			return tcs.Task;
 		}
 
@@ -270,6 +279,27 @@ namespace Microsoft.Threading {
 				taskCompletionSource.TrySetException(completedTask.Exception.InnerExceptions);
 			} else {
 				taskCompletionSource.TrySetResult(completedTask.Result);
+			}
+		}
+
+		/// <summary>
+		/// Applies a completed task's results to another.
+		/// </summary>
+		/// <typeparam name="T">The type of value returned by a task.</typeparam>
+		/// <param name="completedTask">The task whose completion should be applied to another.</param>
+		/// <param name="taskCompletionSource">The task that should receive the completion status.</param>
+		/// <param name="valueOnRanToCompletion">The value to set on the completion source when the source task runs to completion.</param>
+		private static void ApplyCompletedTaskResultTo<T>(Task completedTask, TaskCompletionSource<T> taskCompletionSource, T valueOnRanToCompletion) {
+			Assumes.NotNull(completedTask);
+			Assumes.True(completedTask.IsCompleted);
+			Assumes.NotNull(taskCompletionSource);
+
+			if (completedTask.IsCanceled) {
+				taskCompletionSource.TrySetCanceled();
+			} else if (completedTask.IsFaulted) {
+				taskCompletionSource.TrySetException(completedTask.Exception.InnerExceptions);
+			} else {
+				taskCompletionSource.TrySetResult(valueOnRanToCompletion);
 			}
 		}
 	}
