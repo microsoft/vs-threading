@@ -259,6 +259,77 @@
 			}
 		}
 
+		[TestMethod]
+		public void FollowCancelableTaskToCompletionEndsInCompletion() {
+			var currentTCS = new TaskCompletionSource<int>();
+			Task<int> latestTask = currentTCS.Task;
+			var followingTask = TplExtensions.FollowCancelableTaskToCompletion(() => latestTask, CancellationToken.None);
+
+			for (int i = 0; i < 3; i++) {
+				var oldTCS = currentTCS;
+				currentTCS = new TaskCompletionSource<int>();
+				latestTask = currentTCS.Task;
+				oldTCS.SetCanceled();
+			}
+
+			currentTCS.SetResult(3);
+			Assert.AreEqual(3, followingTask.Result);
+		}
+
+		[TestMethod]
+		public void FollowCancelableTaskToCompletionEndsInCompletionWithSpecifiedTaskSource() {
+			var specifiedTaskSource = new TaskCompletionSource<int>();
+			var currentTCS = new TaskCompletionSource<int>();
+			Task<int> latestTask = currentTCS.Task;
+			var followingTask = TplExtensions.FollowCancelableTaskToCompletion(() => latestTask, CancellationToken.None, specifiedTaskSource);
+			Assert.AreSame(specifiedTaskSource.Task, followingTask);
+
+			for (int i = 0; i < 3; i++) {
+				var oldTCS = currentTCS;
+				currentTCS = new TaskCompletionSource<int>();
+				latestTask = currentTCS.Task;
+				oldTCS.SetCanceled();
+			}
+
+			currentTCS.SetResult(3);
+			Assert.AreEqual(3, followingTask.Result);
+		}
+
+		[TestMethod]
+		public void FollowCancelableTaskToCompletionEndsInUltimateCancellation() {
+			var currentTCS = new TaskCompletionSource<int>();
+			Task<int> latestTask = currentTCS.Task;
+			var cts = new CancellationTokenSource();
+			var followingTask = TplExtensions.FollowCancelableTaskToCompletion(() => latestTask, cts.Token);
+
+			for (int i = 0; i < 3; i++) {
+				var oldTCS = currentTCS;
+				currentTCS = new TaskCompletionSource<int>();
+				latestTask = currentTCS.Task;
+				oldTCS.SetCanceled();
+			}
+
+			cts.Cancel();
+			Assert.IsTrue(followingTask.IsCanceled);
+		}
+
+		[TestMethod]
+		public void FollowCancelableTaskToCompletionEndsInFault() {
+			var currentTCS = new TaskCompletionSource<int>();
+			Task<int> latestTask = currentTCS.Task;
+			var followingTask = TplExtensions.FollowCancelableTaskToCompletion(() => latestTask, CancellationToken.None);
+
+			for (int i = 0; i < 3; i++) {
+				var oldTCS = currentTCS;
+				currentTCS = new TaskCompletionSource<int>();
+				latestTask = currentTCS.Task;
+				oldTCS.SetCanceled();
+			}
+
+			currentTCS.SetException(new InvalidOperationException());
+			Assert.IsInstanceOfType(followingTask.Exception.InnerException, typeof(InvalidOperationException));
+		}
+
 		private static void InvokeAsyncHelper(object sender, EventArgs args) {
 			int invoked = 0;
 			AsyncEventHandler handler = (s, a) => {
