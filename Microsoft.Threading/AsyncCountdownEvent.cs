@@ -58,9 +58,8 @@
 		/// Decrements the counter by one and returns an awaitable that executes the continuation when the countdown reaches zero.
 		/// </summary>
 		/// <returns>An awaitable.</returns>
-		public async Task SignalAndWaitAsync() {
-			await this.SignalAsync();
-			await this.WaitAsync();
+		public Task SignalAndWaitAsync() {
+			return Task.WhenAll(this.SignalAsync(), this.WaitAsync());
 		}
 	}
 }
