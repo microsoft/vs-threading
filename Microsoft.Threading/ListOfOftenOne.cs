@@ -48,7 +48,7 @@
 			object priorValue;
 			object fieldBeforeExchange;
 			do {
-				priorValue = this.value;
+				priorValue = Volatile.Read(ref this.value);
 				var newValue = Combine(priorValue, value);
 				fieldBeforeExchange = Interlocked.CompareExchange(ref this.value, newValue, priorValue);
 			} while (priorValue != fieldBeforeExchange);
@@ -61,7 +61,7 @@
 			object priorValue;
 			object fieldBeforeExchange;
 			do {
-				priorValue = this.value;
+				priorValue = Volatile.Read(ref this.value);
 				var newValue = Remove(priorValue, value);
 				fieldBeforeExchange = Interlocked.CompareExchange(ref this.value, newValue, priorValue);
 			} while (priorValue != fieldBeforeExchange);
