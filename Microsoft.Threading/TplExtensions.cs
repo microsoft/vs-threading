@@ -75,26 +75,6 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
-		/// Applies a completed task's results to another.
-		/// </summary>
-		/// <typeparam name="T">The type of value returned by a task.</typeparam>
-		/// <param name="task">The task whose completion should be applied to another.</param>
-		/// <param name="tcs">The task that should receive the completion status.</param>
-		private static void ApplyCompletedTaskResultTo<T>(Task<T> completedTask, TaskCompletionSource<T> taskCompletionSource) {
-			Assumes.NotNull(completedTask);
-			Assumes.True(completedTask.IsCompleted);
-			Assumes.NotNull(taskCompletionSource);
-
-			if (completedTask.IsCanceled) {
-				taskCompletionSource.TrySetCanceled();
-			} else if (completedTask.IsFaulted) {
-				taskCompletionSource.TrySetException(completedTask.Exception.InnerExceptions);
-			} else {
-				taskCompletionSource.TrySetResult(completedTask.Result);
-			}
-		}
-
-		/// <summary>
 		/// Creates a task that is attached to the parent task, but produces the same result as an existing task.
 		/// </summary>
 		/// <typeparam name="T">The type of value produced by the task.</typeparam>
@@ -271,6 +251,26 @@ namespace Microsoft.Threading {
 			var tcs = new TaskCompletionSource<EmptyStruct>();
 			tcs.SetCanceled();
 			return tcs.Task;
+		}
+
+		/// <summary>
+		/// Applies a completed task's results to another.
+		/// </summary>
+		/// <typeparam name="T">The type of value returned by a task.</typeparam>
+		/// <param name="task">The task whose completion should be applied to another.</param>
+		/// <param name="tcs">The task that should receive the completion status.</param>
+		private static void ApplyCompletedTaskResultTo<T>(Task<T> completedTask, TaskCompletionSource<T> taskCompletionSource) {
+			Assumes.NotNull(completedTask);
+			Assumes.True(completedTask.IsCompleted);
+			Assumes.NotNull(taskCompletionSource);
+
+			if (completedTask.IsCanceled) {
+				taskCompletionSource.TrySetCanceled();
+			} else if (completedTask.IsFaulted) {
+				taskCompletionSource.TrySetException(completedTask.Exception.InnerExceptions);
+			} else {
+				taskCompletionSource.TrySetResult(completedTask.Result);
+			}
 		}
 	}
 }
