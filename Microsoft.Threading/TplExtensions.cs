@@ -24,6 +24,11 @@ namespace Microsoft.Threading
         public static readonly Task CompletedTask = Task.FromResult<object>(null);
 
         /// <summary>
+        /// A task that is already canceled.
+        /// </summary>
+        public static readonly Task CanceledTask = CreateCanceledTask();
+
+        /// <summary>
         /// A completed task with a <c>true</c> result.
         /// </summary>
         public static readonly Task<bool> TrueTask = Task.FromResult(true);
@@ -284,6 +289,16 @@ namespace Microsoft.Threading
                     throw new AggregateException(exceptions);
                 }
             }
+        }
+
+        /// <summary>
+        /// Creates a canceled task.
+        /// </summary>
+        private static Task CreateCanceledTask()
+        {
+            var tcs = new TaskCompletionSource<EmptyStruct>();
+            tcs.SetCanceled();
+            return tcs.Task;
         }
     }
 }
