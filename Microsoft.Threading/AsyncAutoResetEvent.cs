@@ -4,6 +4,7 @@
 	using System.Diagnostics;
 	using System.Linq;
 	using System.Text;
+	using System.Threading;
 	using System.Threading.Tasks;
 
 	/// <summary>
@@ -50,8 +51,9 @@
 					this.signaled = true;
 				}
 			}
+
 			if (toRelease != null) {
-				toRelease.SetResult(true);
+				ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<bool>)state).SetResult(true), toRelease);
 			}
 		}
 	}
