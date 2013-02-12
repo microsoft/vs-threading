@@ -61,22 +61,37 @@ namespace Microsoft.Threading {
 			Requires.NotNull(task, "task");
 			Requires.NotNull(tcs, "tcs");
 
-			// Using a minimum of allocations (just one task, and no closure) ensure that one task's completion sets equivalent completion on another task.
-			task.ContinueWith(
-				(t, s) => {
-					var _tcs = (TaskCompletionSource<T>)s;
-					if (t.IsCanceled) {
-						_tcs.TrySetCanceled();
-					} else if (t.IsFaulted) {
-						_tcs.TrySetException(t.Exception);
-					} else {
-						_tcs.TrySetResult(t.Result);
-					}
-				},
-				tcs,
-				CancellationToken.None,
-				TaskContinuationOptions.ExecuteSynchronously,
-				TaskScheduler.Default);
+			if (task.IsCompleted) {
+				ApplyCompletedTaskResultTo(task, tcs);
+			} else {
+				// Using a minimum of allocations (just one task, and no closure) ensure that one task's completion sets equivalent completion on another task.
+				task.ContinueWith(
+					(t, s) => ApplyCompletedTaskResultTo(t, (TaskCompletionSource<T>)s),
+					tcs,
+					CancellationToken.None,
+					TaskContinuationOptions.ExecuteSynchronously,
+					TaskScheduler.Default);
+			}
+		}
+
+		/// <summary>
+		/// Applies a completed task's results to another.
+		/// </summary>
+		/// <typeparam name="T">The type of value returned by a task.</typeparam>
+		/// <param name="task">The task whose completion should be applied to another.</param>
+		/// <param name="tcs">The task that should receive the completion status.</param>
+		private static void ApplyCompletedTaskResultTo<T>(Task<T> completedTask, TaskCompletionSource<T> taskCompletionSource) {
+			Assumes.NotNull(completedTask);
+			Assumes.True(completedTask.IsCompleted);
+			Assumes.NotNull(taskCompletionSource);
+
+			if (completedTask.IsCanceled) {
+				taskCompletionSource.TrySetCanceled();
+			} else if (completedTask.IsFaulted) {
+				taskCompletionSource.TrySetException(completedTask.Exception.InnerExceptions);
+			} else {
+				taskCompletionSource.TrySetResult(completedTask.Result);
+			}
 		}
 
 		/// <summary>

@@ -25,6 +25,17 @@
 			Assert.IsTrue(evt.Wait(TestTimeout));
 		}
 
+		[TestMethod, ExpectedException(typeof(ArgumentNullException))]
+		public void ApplyResultToNullTask() {
+			TplExtensions.ApplyResultTo(null, new TaskCompletionSource<object>());
+		}
+
+		[TestMethod, ExpectedException(typeof(ArgumentNullException))]
+		public void ApplyResultToNullTaskSource() {
+			var tcs = new TaskCompletionSource<object>();
+			TplExtensions.ApplyResultTo(tcs.Task, null);
+		}
+
 		[TestMethod]
 		public void ApplyResultTo() {
 			var tcs1 = new TaskCompletionSource<GenericParameterHelper>();
@@ -43,7 +54,28 @@
 			tcs2 = new TaskCompletionSource<GenericParameterHelper>();
 			tcs1.Task.ApplyResultTo(tcs2);
 			tcs1.SetException(new ApplicationException());
-			Assert.IsInstanceOfType(tcs2.Task.Exception.InnerException.InnerException, typeof(ApplicationException));
+			Assert.AreSame(tcs1.Task.Exception.InnerException, tcs2.Task.Exception.InnerException);
+		}
+
+		[TestMethod]
+		public void ApplyResultToPreCompleted() {
+			var tcs1 = new TaskCompletionSource<GenericParameterHelper>();
+			var tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+			tcs1.SetResult(new GenericParameterHelper(2));
+			tcs1.Task.ApplyResultTo(tcs2);
+			Assert.AreEqual(2, tcs2.Task.Result.Data);
+
+			tcs1 = new TaskCompletionSource<GenericParameterHelper>();
+			tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+			tcs1.SetCanceled();
+			tcs1.Task.ApplyResultTo(tcs2);
+			Assert.IsTrue(tcs2.Task.IsCanceled);
+
+			tcs1 = new TaskCompletionSource<GenericParameterHelper>();
+			tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+			tcs1.SetException(new ApplicationException());
+			tcs1.Task.ApplyResultTo(tcs2);
+			Assert.AreSame(tcs1.Task.Exception.InnerException, tcs2.Task.Exception.InnerException);
 		}
 
 		[TestMethod]
