@@ -96,21 +96,21 @@ namespace Microsoft.Threading {
 		public static Task AttachToParent(this Task task) {
 			Requires.NotNull(task, "task");
 
-			var tcs = new TaskCompletionSource<object>(TaskCreationOptions.AttachedToParent);
+			var tcs = new TaskCompletionSource<EmptyStruct>(TaskCreationOptions.AttachedToParent);
 			task.ContinueWith(
 				(t, s) => {
-					var _tcs = (TaskCompletionSource<object>)s;
+					var _tcs = (TaskCompletionSource<EmptyStruct>)s;
 					if (t.IsCanceled) {
 						_tcs.TrySetCanceled();
 					} else if (t.IsFaulted) {
 						_tcs.TrySetException(t.Exception);
 					} else {
-						_tcs.TrySetResult(null);
+						_tcs.TrySetResult(EmptyStruct.Instance);
 					}
 				},
 				tcs,
 				CancellationToken.None,
-				TaskContinuationOptions.None,
+				TaskContinuationOptions.ExecuteSynchronously,
 				TaskScheduler.Default);
 			return tcs.Task;
 		}
