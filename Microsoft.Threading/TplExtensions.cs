@@ -257,8 +257,8 @@ namespace Microsoft.Threading {
 		/// Applies a completed task's results to another.
 		/// </summary>
 		/// <typeparam name="T">The type of value returned by a task.</typeparam>
-		/// <param name="task">The task whose completion should be applied to another.</param>
-		/// <param name="tcs">The task that should receive the completion status.</param>
+		/// <param name="completedTask">The task whose completion should be applied to another.</param>
+		/// <param name="taskCompletionSource">The task that should receive the completion status.</param>
 		private static void ApplyCompletedTaskResultTo<T>(Task<T> completedTask, TaskCompletionSource<T> taskCompletionSource) {
 			Assumes.NotNull(completedTask);
 			Assumes.True(completedTask.IsCompleted);
