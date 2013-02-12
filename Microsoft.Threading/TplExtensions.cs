@@ -8,6 +8,7 @@ namespace Microsoft.Threading {
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
+	using System.Runtime.CompilerServices;
 	using System.Text;
 	using System.Threading;
 	using System.Threading.Tasks;
@@ -170,8 +171,8 @@ namespace Microsoft.Threading {
 		/// Returns an awaitable for the specified task that will never throw, even if the source task
 		/// faults or is canceled.
 		/// </summary>
-		public static Task NoThrowAwaitable(this Task task) {
-			return task.ContinueWith(_ => { }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+		public static NoThrowTaskAwaitable NoThrowAwaitable(this Task task, bool captureContext = true) {
+			return new NoThrowTaskAwaitable(task, captureContext);
 		}
 
 		/// <summary>
@@ -356,6 +357,88 @@ namespace Microsoft.Threading {
 			/// Gets or sets the state passed into the constructor.
 			/// </summary>
 			internal TState SourceState { get; set; }
+		}
+
+		/// <summary>
+		/// An awaitable that wraps a task and never throws an exception when waited on.
+		/// </summary>
+		public struct NoThrowTaskAwaitable {
+			/// <summary>
+			/// The task.
+			/// </summary>
+			private readonly Task task;
+
+			/// <summary>
+			/// A value indicating whether the continuation should be scheduled on the current sync context.
+			/// </summary>
+			private readonly bool captureContext;
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="NoThrowTaskAwaitable" /> struct.
+			/// </summary>
+			/// <param name="task">The task.</param>
+			/// <param name="captureContext">Whether the continuation should be scheduled on the current sync context.</param>
+			public NoThrowTaskAwaitable(Task task, bool captureContext) {
+				Requires.NotNull(task, "task");
+				this.task = task;
+				this.captureContext = captureContext;
+			}
+
+			/// <summary>
+			/// Gets the awaiter.
+			/// </summary>
+			/// <returns></returns>
+			public NoThrowTaskAwaiter GetAwaiter() {
+				return new NoThrowTaskAwaiter(this.task, this.captureContext);
+			}
+		}
+
+		/// <summary>
+		/// An awaiter that wraps a task and never throws an exception when waited on.
+		/// </summary>
+		public struct NoThrowTaskAwaiter : INotifyCompletion {
+			/// <summary>
+			/// The task
+			/// </summary>
+			private readonly Task task;
+
+			/// <summary>
+			/// A value indicating whether the continuation should be scheduled on the current sync context.
+			/// </summary>
+			private readonly bool captureContext;
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="NoThrowTaskAwaiter"/> struct.
+			/// </summary>
+			/// <param name="task">The task.</param>
+			/// <param name="captureContext">if set to <c>true</c> [capture context].</param>
+			public NoThrowTaskAwaiter(Task task, bool captureContext) {
+				Requires.NotNull(task, "task");
+				this.task = task;
+				this.captureContext = captureContext;
+			}
+
+			/// <summary>
+			/// Gets a value indicating whether the task has completed.
+			/// </summary>
+			public bool IsCompleted {
+				get { return this.task.IsCompleted; }
+			}
+
+			/// <summary>
+			/// Schedules a delegate for execution at the conclusion of a task's execution.
+			/// </summary>
+			/// <param name="action">The action.</param>
+			public void OnCompleted(Action action) {
+				this.task.ConfigureAwait(this.captureContext).GetAwaiter().OnCompleted(action);
+			}
+
+			/// <summary>
+			/// Does nothing.
+			/// </summary>
+			public void GetResult() {
+				// Never throw here.
+			}
 		}
 
 		/// <summary>

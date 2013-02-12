@@ -141,18 +141,18 @@
 		}
 
 		[TestMethod]
-		public void NoThrowAwaitable() {
+		public async Task NoThrowAwaitable() {
 			var tcs = new TaskCompletionSource<object>();
 			var nothrowTask = tcs.Task.NoThrowAwaitable();
-			Assert.IsFalse(nothrowTask.IsCompleted);
+			Assert.IsFalse(nothrowTask.GetAwaiter().IsCompleted);
 			tcs.SetException(new InvalidOperationException());
-			nothrowTask.Wait();
+			await nothrowTask;
 
 			tcs = new TaskCompletionSource<object>();
 			nothrowTask = tcs.Task.NoThrowAwaitable();
-			Assert.IsFalse(nothrowTask.IsCompleted);
+			Assert.IsFalse(nothrowTask.GetAwaiter().IsCompleted);
 			tcs.SetCanceled();
-			nothrowTask.Wait();
+			await nothrowTask;
 		}
 
 		[TestMethod]
