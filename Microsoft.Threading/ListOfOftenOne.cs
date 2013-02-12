@@ -24,8 +24,7 @@
 		/// Returns an enumerator for a current snapshot of the collection.
 		/// </summary>
 		public Enumerator GetEnumerator() {
-			Thread.MemoryBarrier();
-			return new Enumerator(this.value);
+			return new Enumerator(Volatile.Read(ref this.value));
 		}
 
 		/// <summary>
