@@ -61,6 +61,17 @@
 			Assert.IsTrue(evt.SignalAndWaitAsync().Wait(AsyncDelay), "Hang");
 		}
 
+		/// <summary>
+		/// Verifies that the exception is returned in a task rather than thrown from the synchronous method.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public void SignalAsyncReturnsFaultedTaskOnError() {
+			var evt = new AsyncCountdownEvent(0);
+			var result = evt.SignalAsync();
+			Assert.IsTrue(result.IsFaulted);
+			Assert.IsInstanceOfType(result.Exception.InnerException, typeof(InvalidOperationException));
+		}
+
 		private async Task PreSignalHelperAsync(int initialCount) {
 			var evt = new AsyncCountdownEvent(initialCount);
 			for (int i = 0; i < initialCount; i++) {

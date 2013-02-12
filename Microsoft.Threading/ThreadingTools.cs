@@ -100,5 +100,23 @@ namespace Microsoft.Threading {
 		public static SpecializedSyncContext Apply(this SynchronizationContext syncContext, bool checkForChangesOnRevert = true) {
 			return SpecializedSyncContext.Apply(syncContext, checkForChangesOnRevert);
 		}
+
+		/// <summary>
+		/// Creates a faulted task with the specified exception.
+		/// </summary>
+		/// <param name="exception">The exception to fault the task with.</param>
+		/// <returns>The faulted task.</returns>
+		internal static Task CreateFaultedTask(Exception exception) {
+			Requires.NotNull(exception, "exception");
+
+			try {
+				// We must throw so the callstack is set on the exception.
+				throw exception;
+			} catch (Exception ex) {
+				var faultedTaskSource = new TaskCompletionSource<EmptyStruct>();
+				faultedTaskSource.SetException(ex);
+				return faultedTaskSource.Task;
+			}
+		}
 	}
 }
