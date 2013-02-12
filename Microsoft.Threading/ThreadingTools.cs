@@ -28,8 +28,7 @@ namespace Microsoft.Threading {
 
 			bool successful;
 			do {
-				Thread.MemoryBarrier();
-				T oldValue = hotLocation;
+				T oldValue = Volatile.Read(ref hotLocation);
 				T newValue = applyChange(oldValue);
 				if (Object.ReferenceEquals(oldValue, newValue)) {
 					// No change was actually required.
@@ -41,7 +40,6 @@ namespace Microsoft.Threading {
 			}
 			while (!successful);
 
-			Thread.MemoryBarrier();
 			return true;
 		}
 
