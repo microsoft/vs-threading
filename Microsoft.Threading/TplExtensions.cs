@@ -177,7 +177,7 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Consumes a task and doesn't do anything with it.  Useful for fire-and-forget calls to async methods within async methods.
 		/// </summary>
-		public static void Forget(this Task taks) {
+		public static void Forget(this Task task) {
 		}
 
 		/// <summary>
