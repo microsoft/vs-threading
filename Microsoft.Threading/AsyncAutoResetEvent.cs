@@ -12,11 +12,6 @@
 	[DebuggerDisplay("Signaled: {signaled}")]
 	public class AsyncAutoResetEvent {
 		/// <summary>
-		/// A task that is already completed.
-		/// </summary>
-		private readonly static Task completedTask = Task.FromResult(true);
-
-		/// <summary>
 		/// A queue of folks awaiting signals.
 		/// </summary>
 		private readonly Queue<TaskCompletionSource<bool>> signalAwaiters = new Queue<TaskCompletionSource<bool>>();
@@ -34,7 +29,7 @@
 			lock (this.signalAwaiters) {
 				if (this.signaled) {
 					this.signaled = false;
-					return completedTask;
+					return TplExtensions.CompletedTask;
 				} else {
 					var tcs = new TaskCompletionSource<bool>();
 					this.signalAwaiters.Enqueue(tcs);
