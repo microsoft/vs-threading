@@ -78,6 +78,59 @@
 			Assert.AreSame(tcs1.Task.Exception.InnerException, tcs2.Task.Exception.InnerException);
 		}
 
+		[TestMethod, ExpectedException(typeof(ArgumentNullException))]
+		public void ApplyResultToNullTaskNonGeneric() {
+			TplExtensions.ApplyResultTo((Task)null, new TaskCompletionSource<object>());
+		}
+
+		[TestMethod, ExpectedException(typeof(ArgumentNullException))]
+		public void ApplyResultToNullTaskSourceNonGeneric() {
+			var tcs = new TaskCompletionSource<object>();
+			TplExtensions.ApplyResultTo((Task)tcs.Task, (TaskCompletionSource<object>)null);
+		}
+
+		[TestMethod]
+		public void ApplyResultToNonGeneric() {
+			var tcs1 = new TaskCompletionSource<GenericParameterHelper>();
+			var tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+			((Task)tcs1.Task).ApplyResultTo(tcs2);
+			tcs1.SetResult(null);
+			Assert.AreEqual(TaskStatus.RanToCompletion, tcs2.Task.Status);
+
+			tcs1 = new TaskCompletionSource<GenericParameterHelper>();
+			tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+			((Task)tcs1.Task).ApplyResultTo(tcs2);
+			tcs1.SetCanceled();
+			Assert.IsTrue(tcs2.Task.IsCanceled);
+
+			tcs1 = new TaskCompletionSource<GenericParameterHelper>();
+			tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+			((Task)tcs1.Task).ApplyResultTo(tcs2);
+			tcs1.SetException(new ApplicationException());
+			Assert.AreSame(tcs1.Task.Exception.InnerException, tcs2.Task.Exception.InnerException);
+		}
+
+		[TestMethod]
+		public void ApplyResultToPreCompletedNonGeneric() {
+			var tcs1 = new TaskCompletionSource<GenericParameterHelper>();
+			var tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+			tcs1.SetResult(null);
+			((Task)tcs1.Task).ApplyResultTo(tcs2);
+			Assert.AreEqual(TaskStatus.RanToCompletion, tcs2.Task.Status);
+
+			tcs1 = new TaskCompletionSource<GenericParameterHelper>();
+			tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+			tcs1.SetCanceled();
+			((Task)tcs1.Task).ApplyResultTo(tcs2);
+			Assert.IsTrue(tcs2.Task.IsCanceled);
+
+			tcs1 = new TaskCompletionSource<GenericParameterHelper>();
+			tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+			tcs1.SetException(new ApplicationException());
+			((Task)tcs1.Task).ApplyResultTo(tcs2);
+			Assert.AreSame(tcs1.Task.Exception.InnerException, tcs2.Task.Exception.InnerException);
+		}
+
 		[TestMethod]
 		public void WaitWithoutInlining() {
 			var originalThread = Thread.CurrentThread;
