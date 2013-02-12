@@ -246,6 +246,86 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// Converts a TPL task to the APM Begin-End pattern.
+		/// </summary>
+		/// <typeparam name="TResult">The result value to be returned from the End method.</typeparam>
+		/// <param name="task">The task that came from the async method.</param>
+		/// <param name="callback">The optional callback to invoke when the task is completed.</param>
+		/// <param name="state">The state object provided by the caller of the Begin method.</param>
+		/// <returns>A task (that implements <see cref="IAsyncResult"/> that should be returned from the Begin method.</returns>
+		public static Task<TResult> ToApm<TResult>(this Task<TResult> task, AsyncCallback callback, object state) {
+			Requires.NotNull(task, "task");
+
+			if (task.AsyncState == state) {
+				if (callback != null) {
+					task.ContinueWith(
+						(t, cb) => ((AsyncCallback)cb)(t),
+						callback,
+						CancellationToken.None,
+						TaskContinuationOptions.None,
+						TaskScheduler.Default);
+				}
+
+				return task;
+			}
+
+			var tcs = new TaskCompletionSource<TResult>(state);
+			task.ContinueWith(
+				t => {
+					ApplyCompletedTaskResultTo(t, tcs);
+
+					if (callback != null) {
+						callback(tcs.Task);
+					}
+
+				},
+				CancellationToken.None,
+				TaskContinuationOptions.None,
+				TaskScheduler.Default);
+
+			return tcs.Task;
+		}
+
+		/// <summary>
+		/// Converts a TPL task to the APM Begin-End pattern.
+		/// </summary>
+		/// <param name="task">The task that came from the async method.</param>
+		/// <param name="callback">The optional callback to invoke when the task is completed.</param>
+		/// <param name="state">The state object provided by the caller of the Begin method.</param>
+		/// <returns>A task (that implements <see cref="IAsyncResult"/> that should be returned from the Begin method.</returns>
+		public static Task ToApm(this Task task, AsyncCallback callback, object state) {
+			Requires.NotNull(task, "task");
+
+			if (task.AsyncState == state) {
+				if (callback != null) {
+					task.ContinueWith(
+						(t, cb) => ((AsyncCallback)cb)(t),
+						callback,
+						CancellationToken.None,
+						TaskContinuationOptions.None,
+						TaskScheduler.Default);
+				}
+
+				return task;
+			}
+
+			var tcs = new TaskCompletionSource<object>(state);
+			task.ContinueWith(
+				t => {
+					ApplyCompletedTaskResultTo(t, tcs, null);
+
+					if (callback != null) {
+						callback(tcs.Task);
+					}
+				},
+				CancellationToken.None,
+				TaskContinuationOptions.None,
+				TaskScheduler.Default);
+
+			return tcs.Task;
+		}
+
+		/// <summary>
 		/// Creates a canceled task.
 		/// </summary>
 		private static Task CreateCanceledTask() {

@@ -330,6 +330,94 @@
 			Assert.IsInstanceOfType(followingTask.Exception.InnerException, typeof(InvalidOperationException));
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ToApmOfTWithNoTaskState() {
+			var state = new object();
+			var tcs = new TaskCompletionSource<int>();
+			IAsyncResult beginResult = null;
+
+			var callbackResult = new TaskCompletionSource<object>();
+			AsyncCallback callback = ar => {
+				try {
+					Assert.AreSame(beginResult, ar);
+					Assert.AreEqual(5, EndTestOperation<int>(ar));
+					callbackResult.SetResult(null);
+				} catch (Exception ex) {
+					callbackResult.SetException(ex);
+				}
+			};
+			beginResult = BeginTestOperation(callback, state, tcs.Task);
+			Assert.AreSame(state, beginResult.AsyncState);
+			tcs.SetResult(5);
+			await callbackResult.Task;
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ToApmOfTWithMatchingTaskState() {
+			var state = new object();
+			var tcs = new TaskCompletionSource<int>(state);
+			IAsyncResult beginResult = null;
+
+			var callbackResult = new TaskCompletionSource<object>();
+			AsyncCallback callback = ar => {
+				try {
+					Assert.AreSame(beginResult, ar);
+					Assert.AreEqual(5, EndTestOperation<int>(ar));
+					callbackResult.SetResult(null);
+				} catch (Exception ex) {
+					callbackResult.SetException(ex);
+				}
+			};
+			beginResult = BeginTestOperation(callback, state, tcs.Task);
+			Assert.AreSame(state, beginResult.AsyncState);
+			tcs.SetResult(5);
+			await callbackResult.Task;
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ToApmWithNoTaskState() {
+			var state = new object();
+			var tcs = new TaskCompletionSource<object>();
+			IAsyncResult beginResult = null;
+
+			var callbackResult = new TaskCompletionSource<object>();
+			AsyncCallback callback = ar => {
+				try {
+					Assert.AreSame(beginResult, ar);
+					EndTestOperation(ar);
+					callbackResult.SetResult(null);
+				} catch (Exception ex) {
+					callbackResult.SetException(ex);
+				}
+			};
+			beginResult = BeginTestOperation(callback, state, (Task)tcs.Task);
+			Assert.AreSame(state, beginResult.AsyncState);
+			tcs.SetResult(null);
+			await callbackResult.Task;
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ToApmWithMatchingTaskState() {
+			var state = new object();
+			var tcs = new TaskCompletionSource<object>(state);
+			IAsyncResult beginResult = null;
+
+			var callbackResult = new TaskCompletionSource<object>();
+			AsyncCallback callback = ar => {
+				try {
+					Assert.AreSame(beginResult, ar);
+					EndTestOperation(ar);
+					callbackResult.SetResult(null);
+				} catch (Exception ex) {
+					callbackResult.SetException(ex);
+				}
+			};
+			beginResult = BeginTestOperation(callback, state, (Task)tcs.Task);
+			Assert.AreSame(state, beginResult.AsyncState);
+			tcs.SetResult(null);
+			await callbackResult.Task;
+		}
+
 		private static void InvokeAsyncHelper(object sender, EventArgs args) {
 			int invoked = 0;
 			AsyncEventHandler handler = (s, a) => {
@@ -354,6 +442,22 @@
 			var task = handler.InvokeAsync(sender, args);
 			Assert.IsTrue(task.IsCompleted);
 			Assert.AreEqual(1, invoked);
+		}
+
+		private static IAsyncResult BeginTestOperation<T>(AsyncCallback callback, object state, Task<T> asyncTask) {
+			return asyncTask.ToApm(callback, state);
+		}
+
+		private static IAsyncResult BeginTestOperation(AsyncCallback callback, object state, Task asyncTask) {
+			return asyncTask.ToApm(callback, state);
+		}
+
+		private static T EndTestOperation<T>(IAsyncResult asyncResult) {
+			return ((Task<T>)asyncResult).Result;
+		}
+
+		private static void EndTestOperation(IAsyncResult asyncResult) {
+			((Task)asyncResult).Wait(); // rethrow exceptions
 		}
 	}
 }
