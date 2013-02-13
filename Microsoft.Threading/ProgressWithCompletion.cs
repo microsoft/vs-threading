@@ -48,7 +48,7 @@ namespace Microsoft.Threading {
 			Requires.NotNull(handler, "handler");
 			this.handler = value => {
 				handler(value);
-				return Task.FromResult<object>(null);
+				return TplExtensions.CompletedTask;
 			};
 		}
 

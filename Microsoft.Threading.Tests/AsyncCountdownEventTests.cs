@@ -3,7 +3,10 @@
 	using System.Collections.Generic;
 	using System.Linq;
 	using System.Text;
+	using System.Threading;
 	using System.Threading.Tasks;
+	using System.Windows.Threading;
+
 	using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 	[TestClass]
@@ -49,6 +52,24 @@
 
 			var second = evt.SignalAndWaitAsync();
 			await Task.WhenAll(first, second);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void SignalAndWaitSynchronousBlockDoesNotHang() {
+			SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext());
+			var evt = new AsyncCountdownEvent(1);
+			Assert.IsTrue(evt.SignalAndWaitAsync().Wait(AsyncDelay), "Hang");
+		}
+
+		/// <summary>
+		/// Verifies that the exception is returned in a task rather than thrown from the synchronous method.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public void SignalAsyncReturnsFaultedTaskOnError() {
+			var evt = new AsyncCountdownEvent(0);
+			var result = evt.SignalAsync();
+			Assert.IsTrue(result.IsFaulted);
+			Assert.IsInstanceOfType(result.Exception.InnerException, typeof(InvalidOperationException));
 		}
 
 		private async Task PreSignalHelperAsync(int initialCount) {

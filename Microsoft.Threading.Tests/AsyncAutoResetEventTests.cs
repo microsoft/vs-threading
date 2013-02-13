@@ -3,6 +3,7 @@
 	using System.Collections.Generic;
 	using System.Linq;
 	using System.Text;
+	using System.Threading;
 	using System.Threading.Tasks;
 	using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -47,6 +48,24 @@
 				this.evt.Set();
 				await waiters[i];
 			}
+		}
+
+		/// <summary>
+		/// Verifies that inlining continuations do not have to complete execution before Set() returns.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public void SetReturnsBeforeInlinedContinuations() {
+			var setReturned = new ManualResetEventSlim();
+			var inlinedContinuation = this.evt.WaitAsync()
+				.ContinueWith(delegate {
+					// Arrange to synchronously block the continuation until Set() has returned,
+					// which would deadlock if Set does not return until inlined continuations complete.
+					Assert.IsTrue(setReturned.Wait(AsyncDelay));
+				},
+				TaskContinuationOptions.ExecuteSynchronously);
+			this.evt.Set();
+			setReturned.Set();
+			Assert.IsTrue(inlinedContinuation.Wait(AsyncDelay));
 		}
 	}
 }
