@@ -3,18 +3,19 @@
 	using System.Collections.Generic;
 	using System.Diagnostics;
 	using System.Linq;
+	using System.Reflection;
 	using System.Text;
 	using System.Threading;
 	using System.Threading.Tasks;
 	using System.Windows.Threading;
+	using System.Xml.Linq;
 	using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 	[TestClass]
 	public class JoinableTaskTests : JoinableTaskTestBase {
-        protected override JoinableTaskContext CreateJoinableTaskContext()
-        {
-            return new DerivedJoinableTaskContext();
-        }
+		protected override JoinableTaskContext CreateJoinableTaskContext() {
+			return new DerivedJoinableTaskContext();
+		}
 
 		[TestMethod]
 		public void RunFuncOfTaskSTA() {
@@ -62,6 +63,43 @@
 			Task.Run(
 				() => Assert.IsFalse(this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().IsCompleted, "Yield did not occur when off Main thread."))
 				.GetAwaiter().GetResult();
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void SwitchToMainThreadAsyncContributesToHangReportsAndCollections() {
+			var mainThreadRequestedPended = new ManualResetEventSlim();
+			var frame = new DispatcherFrame();
+			Exception delegateFailure = null;
+
+			Task.Run(delegate {
+				var awaiter = this.asyncPump.SwitchToMainThreadAsync().GetAwaiter();
+				awaiter.OnCompleted(delegate {
+					try {
+						Assert.AreSame(this.originalThread, Thread.CurrentThread);
+					} catch (Exception ex) {
+						delegateFailure = ex;
+					} finally {
+						frame.Continue = false;
+					}
+				});
+				mainThreadRequestedPended.Set();
+			});
+
+			Assert.IsTrue(mainThreadRequestedPended.Wait(TestTimeout));
+
+			// Verify here that pendingTasks includes one task.
+			Assert.AreEqual(1, this.GetPendingTasksCount());
+			Assert.AreEqual(1, this.joinableCollection.Count());
+
+			// Now let the request proceed through.
+			Dispatcher.PushFrame(frame);
+
+			Assert.AreEqual(0, this.GetPendingTasksCount());
+			Assert.AreEqual(0, this.joinableCollection.Count());
+
+			if (delegateFailure != null) {
+				throw new TargetInvocationException(delegateFailure);
+			}
 		}
 
 		[TestMethod, Timeout(TestTimeout)]

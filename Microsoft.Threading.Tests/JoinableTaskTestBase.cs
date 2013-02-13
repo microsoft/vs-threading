@@ -8,10 +8,13 @@
     using System.Threading;
     using System.Threading.Tasks;
     using System.Windows.Threading;
+    using System.Xml.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public abstract class JoinableTaskTestBase : TestBase
     {
+        protected const string DgmlNamespace = "http://schemas.microsoft.com/vs/2009/dgml";
+
         protected JoinableTaskContext context;
         protected JoinableTaskFactory asyncPump;
         protected JoinableTaskCollection joinableCollection;
@@ -36,6 +39,13 @@
         protected virtual JoinableTaskContext CreateJoinableTaskContext()
         {
             return new JoinableTaskContext();
+        }
+
+        protected int GetPendingTasksCount() {
+            IHangReportContributor hangContributor = this.context;
+            var contribution = hangContributor.GetHangReport();
+            var dgml = XDocument.Parse(contribution.Content);
+            return dgml.Descendants(XName.Get("Node", DgmlNamespace)).Count(n=>n.Attributes("Category").Any(c=> c.Value == "Task"));
         }
     }
 }

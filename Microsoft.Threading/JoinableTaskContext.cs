@@ -204,7 +204,7 @@ namespace Microsoft.Threading {
 			Requires.NotNull(task, "task");
 
 			lock (this.pendingTasks) {
-				Assumes.True(this.pendingTasks.Remove(task));
+				this.pendingTasks.Remove(task);
 			}
 		}
 

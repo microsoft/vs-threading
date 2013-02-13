@@ -25,6 +25,8 @@ namespace Microsoft.Threading {
 			None = 0x0,
 			RunningSynchronously = 0x1,
 			StartedOnMainThread = 0x2,
+			CompleteRequested = 0x4,
+			CompleteFinalized = 0x8,
 		}
 
 		/// <summary>
@@ -57,13 +59,11 @@ namespace Microsoft.Threading {
 
 		private ExecutionQueue threadPoolQueue;
 
-		private readonly JoinableTaskFlags state;
+		private JoinableTaskFlags state;
 
 		private JoinableTaskSynchronizationContext mainThreadJobSyncContext;
 
 		private JoinableTaskSynchronizationContext threadPoolJobSyncContext;
-
-		private bool completeRequested;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="JoinableTask"/> class.
@@ -146,7 +146,7 @@ namespace Microsoft.Threading {
 							return false;
 						}
 
-						return this.completeRequested;
+						return this.IsCompleteRequested;
 					} finally {
 						this.owner.Context.SyncContextLock.ExitReadLock();
 					}
@@ -267,6 +267,20 @@ namespace Microsoft.Threading {
 
 		#endregion
 
+		/// <summary>
+		/// Gets or sets a value indicating whether this task has had its Complete() method called..
+		/// </summary>
+		private bool IsCompleteRequested {
+			get {
+				return (this.state & JoinableTaskFlags.CompleteRequested) != 0;
+			}
+
+			set {
+				Assumes.True(value);
+				this.state |= JoinableTaskFlags.CompleteRequested;
+			}
+		}
+
 		private ExecutionQueue ApplicableQueue {
 			get {
 				using (NoMessagePumpSyncContext.Default.Apply()) {
@@ -327,7 +341,7 @@ namespace Microsoft.Threading {
 
 				this.owner.Context.SyncContextLock.EnterWriteLock();
 				try {
-					if (this.completeRequested) {
+					if (this.IsCompleteRequested) {
 						// This job has already been marked for completion.
 						// We need to forward the work to the fallback mechanisms. 
 						postToFactory = true;
@@ -430,8 +444,8 @@ namespace Microsoft.Threading {
 				AsyncManualResetEvent dequeuerResetState = null;
 				this.owner.Context.SyncContextLock.EnterWriteLock();
 				try {
-					if (!this.completeRequested) {
-						this.completeRequested = true;
+					if (!this.IsCompleteRequested) {
+						this.IsCompleteRequested = true;
 
 						if (this.mainThreadQueue != null) {
 							this.mainThreadQueue.Complete();
@@ -458,8 +472,6 @@ namespace Microsoft.Threading {
 					dequeuerResetState.PulseAllAsync().Forget();
 				}
 			}
-
-			this.owner.Context.OnJoinableTaskCompleted(this);
 		}
 
 		internal void RemoveDependency(JoinableTask joinChild) {
@@ -520,6 +532,10 @@ namespace Microsoft.Threading {
 
 		internal void OnQueueCompleted() {
 			if (this.IsCompleted) {
+				// Note this code may execute more than once, as multiple queue completion
+				// notifications come in.
+				this.owner.Context.OnJoinableTaskCompleted(this);
+
 				foreach (var collection in this.collectionMembership) {
 					collection.Remove(this);
 				}
@@ -531,6 +547,8 @@ namespace Microsoft.Threading {
 				if (this.threadPoolJobSyncContext != null) {
 					this.threadPoolJobSyncContext.OnCompleted();
 				}
+
+				this.state |= JoinableTaskFlags.CompleteFinalized;
 			}
 		}
 

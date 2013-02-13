@@ -143,6 +143,7 @@
 				element.SetAttributeValue("Id", "Collection#" + collectionId);
 				element.SetAttributeValue("Label", "Collection #" + collectionId);
 				element.SetAttributeValue("Group", "Expanded");
+				AddCategory(element, "Collection");
 				result.Add(collection, element);
 			}
 
@@ -170,6 +171,7 @@
 						XName.Get("Node", DgmlNamespace),
 						new XAttribute("Id", "Task#" + taskId),
 						new XAttribute("Label", "Task #" + taskId));
+					AddCategory(node, "Task");
 					if (pendingTask.HasNonEmptyQueue) {
 						AddCategory(node, "NonEmptyQueue");
 					}
