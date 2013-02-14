@@ -161,6 +161,51 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void SwitchToMainThreadAsyncTransitionsCanSeeAsyncLocals() {
+			var mainThreadRequestPended = new ManualResetEventSlim();
+			var frame = new DispatcherFrame();
+			Exception delegateFailure = null;
+
+			var asyncLocal = new AsyncLocal<object>();
+			var asyncLocalValue = new object();
+
+			// The point of this test is to verify that the transitioning/transitioned
+			// methods on the JoinableTaskFactory can see into the AsyncLocal<T>.Value
+			// as defined in the context that is requesting the transition.
+			// The ProjectLockService depends on this behavior to identify UI thread
+			// requestors that hold a project lock, on both sides of the transition.
+			((DerivedJoinableTaskFactory)this.asyncPump).TransitioningToMainThreadCallback =
+				jt => { Assert.AreSame(asyncLocalValue, asyncLocal.Value); };
+			((DerivedJoinableTaskFactory)this.asyncPump).TransitionedToMainThreadCallback =
+				jt => { Assert.AreSame(asyncLocalValue, asyncLocal.Value); };
+
+			Task.Run(delegate {
+				asyncLocal.Value = asyncLocalValue;
+				var awaiter = this.asyncPump.SwitchToMainThreadAsync().GetAwaiter();
+				awaiter.OnCompleted(delegate {
+					try {
+						Assert.AreSame(this.originalThread, Thread.CurrentThread);
+						Assert.AreSame(asyncLocalValue, asyncLocal.Value);
+					} catch (Exception ex) {
+						delegateFailure = ex;
+					} finally {
+						frame.Continue = false;
+					}
+				});
+				mainThreadRequestPended.Set();
+			});
+
+			Assert.IsTrue(mainThreadRequestPended.Wait(TestTimeout));
+
+			// Now let the request proceed through.
+			Dispatcher.PushFrame(frame);
+
+			if (delegateFailure != null) {
+				throw new TargetInvocationException(delegateFailure);
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void SwitchToMainThreadCancellable() {
 			var task = Task.Run(async delegate {
 				var cts = new CancellationTokenSource(AsyncDelay);
@@ -1873,6 +1918,10 @@
 				get { return this.transitioningTasksCollection.Count(); }
 			}
 
+			internal Action<JoinableTask> TransitioningToMainThreadCallback { get; set; }
+
+			internal Action<JoinableTask> TransitionedToMainThreadCallback { get; set; }
+
 			protected override void OnTransitioningToMainThread(JoinableTask joinableTask) {
 				base.OnTransitioningToMainThread(joinableTask);
 				Interlocked.Increment(ref this.transitioningToMainThreadHitCount);
@@ -1886,6 +1935,10 @@
 
 				if (!this.AssumeConcurrentUse) {
 					Assert.AreEqual(this.TransitionedToMainThreadHitCount + 1, this.TransitioningToMainThreadHitCount, "Imbalance of transition events.");
+				}
+
+				if (this.TransitioningToMainThreadCallback != null) {
+					this.TransitioningToMainThreadCallback(joinableTask);
 				}
 			}
 
@@ -1908,6 +1961,10 @@
 
 				if (!this.AssumeConcurrentUse) {
 					Assert.AreEqual(this.TransitionedToMainThreadHitCount, this.TransitioningToMainThreadHitCount, "Imbalance of transition events.");
+				}
+
+				if (this.TransitionedToMainThreadCallback != null) {
+					this.TransitionedToMainThreadCallback(joinableTask);
 				}
 			}
 
