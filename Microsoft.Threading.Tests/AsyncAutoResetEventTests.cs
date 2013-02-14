@@ -58,14 +58,35 @@
 			var setReturned = new ManualResetEventSlim();
 			var inlinedContinuation = this.evt.WaitAsync()
 				.ContinueWith(delegate {
-					// Arrange to synchronously block the continuation until Set() has returned,
-					// which would deadlock if Set does not return until inlined continuations complete.
-					Assert.IsTrue(setReturned.Wait(AsyncDelay));
-				},
+				// Arrange to synchronously block the continuation until Set() has returned,
+				// which would deadlock if Set does not return until inlined continuations complete.
+				Assert.IsTrue(setReturned.Wait(AsyncDelay));
+			},
 				TaskContinuationOptions.ExecuteSynchronously);
 			this.evt.Set();
 			setReturned.Set();
 			Assert.IsTrue(inlinedContinuation.Wait(AsyncDelay));
+		}
+
+		/// <summary>
+		/// Verifies that inlining continuations works when the option is set.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public void SetInlinesContinuationsUnderSwitch() {
+			this.evt = new AsyncAutoResetEvent(allowInliningWaiters: true);
+			Thread settingThread = Thread.CurrentThread;
+			bool setReturned = false;
+			var inlinedContinuation = this.evt.WaitAsync()
+				.ContinueWith(delegate {
+					// Arrange to synchronously block the continuation until Set() has returned,
+					// which would deadlock if Set does not return until inlined continuations complete.
+					Assert.IsFalse(setReturned);
+					Assert.AreSame(settingThread, Thread.CurrentThread);
+				},
+				TaskContinuationOptions.ExecuteSynchronously);
+			this.evt.Set();
+			setReturned = true;
+			Assert.IsTrue(inlinedContinuation.IsCompleted);
 		}
 	}
 }

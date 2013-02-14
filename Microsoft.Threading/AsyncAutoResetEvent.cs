@@ -18,9 +18,34 @@
 		private readonly Queue<TaskCompletionSource<bool>> signalAwaiters = new Queue<TaskCompletionSource<bool>>();
 
 		/// <summary>
+		/// Whether to complete our task synchronously in our <see cref="SetAsync"/> method,
+		/// as opposed to asynchronously.
+		/// </summary>
+		private readonly bool allowInliningWaiters;
+
+		/// <summary>
 		/// A value indicating whether this event is already in a signaled state.
 		/// </summary>
 		private bool signaled;
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="AsyncAutoResetEvent"/> class
+		/// that does not inline awaiters.
+		/// </summary>
+		public AsyncAutoResetEvent() {
+		}
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="AsyncAutoResetEvent"/> class.
+		/// </summary>
+		/// <param name="allowInliningWaiters">
+		/// A value indicating whether to complete our task synchronously in our <see cref="Set"/> method,
+		/// as opposed to asynchronously. <c>false</c> better simulates the behavior of the
+		/// <see cref="AutoResetEvent"/> class, but <c>true</c> can result in slightly better performance.
+		/// </param>
+		public AsyncAutoResetEvent(bool allowInliningWaiters) {
+			this.allowInliningWaiters = allowInliningWaiters;
+		}
 
 		/// <summary>
 		/// Returns an awaitable that may be used to asynchronously acquire the next signal.
@@ -53,7 +78,11 @@
 			}
 
 			if (toRelease != null) {
-				ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<bool>)state).SetResult(true), toRelease);
+				if (this.allowInliningWaiters) {
+					toRelease.SetResult(true);
+				} else {
+					ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<bool>)state).SetResult(true), toRelease);
+				}
 			}
 		}
 	}
