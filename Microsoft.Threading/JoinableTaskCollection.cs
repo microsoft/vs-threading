@@ -19,8 +19,10 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// The set of jobs that belong to this collection -- that is, the set of jobs that are implicitly Joined
 		/// when folks Join this collection.
+		/// The value is the number of times the joinable was added to this collection (and not yet removed)
+		/// if this collection is ref counted; otherwise the value is always 1.
 		/// </summary>
-		private readonly WeakKeyDictionary<JoinableTask, EmptyStruct> joinables = new WeakKeyDictionary<JoinableTask, EmptyStruct>();
+		private readonly WeakKeyDictionary<JoinableTask, int> joinables = new WeakKeyDictionary<JoinableTask, int>();
 
 		/// <summary>
 		/// The set of jobs that have Joined this collection -- that is, the set of jobs that are interested
@@ -30,6 +32,11 @@ namespace Microsoft.Threading {
 		private readonly WeakKeyDictionary<JoinableTask, int> joiners = new WeakKeyDictionary<JoinableTask, int>();
 
 		/// <summary>
+		/// A value indicating whether jobs are only removed when completed or removed as many times as they were added.
+		/// </summary>
+		private readonly bool refCountAddedJobs;
+
+		/// <summary>
 		/// An event that is set when the collection is empty. (lazily initialized)
 		/// </summary>
 		private AsyncManualResetEvent emptyEvent;
@@ -37,9 +44,16 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Initializes a new instance of the <see cref="JoinableTaskCollection"/> class.
 		/// </summary>
-		public JoinableTaskCollection(JoinableTaskContext context) {
+		/// <param name="context">The <see cref="JoinableTaskContext"/> instance to which this collection applies.</param>
+		/// <param name="refCountAddedJobs">
+		/// <c>true</c> if JoinableTask instances added to the collection multiple times should remain in the collection until they are
+		/// either removed the same number of times or until they are completed;
+		/// <c>false</c> causes the first Remove call for a JoinableTask to remove it from this collection regardless
+		/// how many times it had been added.</param>
+		public JoinableTaskCollection(JoinableTaskContext context, bool refCountAddedJobs = false) {
 			Requires.NotNull(context, "context");
 			this.Context = context;
+			this.refCountAddedJobs = refCountAddedJobs;
 		}
 
 		/// <summary>
@@ -58,16 +72,19 @@ namespace Microsoft.Threading {
 			if (!job.IsCompleted) {
 				this.Context.SyncContextLock.EnterWriteLock();
 				try {
-					if (!this.joinables.ContainsKey(job)) {
-						this.joinables[job] = EmptyStruct.Instance;
-						job.OnAddedToCollection(this);
+					int refCount;
+					if (!this.joinables.TryGetValue(job, out refCount) || this.refCountAddedJobs) {
+						this.joinables[job] = refCount + 1;
+						if (refCount == 0) {
+							job.OnAddedToCollection(this);
 
-						// Now that we've added a job to our collection, any folks who
-						// have already joined this collection should be joined to this job.
-						foreach (var joiner in this.joiners) {
-							// We can discard the JoinRelease result of AddDependency
-							// because we directly disjoin without that helper struct.
-							joiner.Key.AddDependency(job);
+							// Now that we've added a job to our collection, any folks who
+							// have already joined this collection should be joined to this job.
+							foreach (var joiner in this.joiners) {
+								// We can discard the JoinRelease result of AddDependency
+								// because we directly disjoin without that helper struct.
+								joiner.Key.AddDependency(job);
+							}
 						}
 					}
 
@@ -81,36 +98,38 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
-		/// Removes the specified job from this collection.
+		/// Removes the specified job from this collection,
+		/// or decrements the ref count if this collection tracks that.
 		/// </summary>
 		/// <param name="job">The job to remove.</param>
-		/// <returns><c>true</c> if the job was removed from this collection; <c>false</c> if it wasn't found in the collection.</returns>
-		public bool Remove(JoinableTask job) {
+		public void Remove(JoinableTask job) {
 			Requires.NotNull(job, "job");
 
 			using (NoMessagePumpSyncContext.Default.Apply()) {
 				this.Context.SyncContextLock.EnterWriteLock();
 				try {
-					if (this.joinables.Remove(job)) {
-						job.OnRemovedFromCollection(this);
+					int refCount;
+					if (this.joinables.TryGetValue(job, out refCount)) {
+						if (refCount == 1 || job.IsCompleted) { // remove regardless of ref count if job is completed
+							this.joinables.Remove(job);
+							job.OnRemovedFromCollection(this);
 
-						// Now that we've removed a job from our collection, any folks who
-						// have already joined this collection should be disjoined to this job
-						// as an efficiency improvement so we don't grow our weak collections unnecessarily.
-						foreach (var joiner in this.joiners) {
-							// We can discard the JoinRelease result of AddDependency
-							// because we directly disjoin without that helper struct.
-							joiner.Key.RemoveDependency(job);
+							// Now that we've removed a job from our collection, any folks who
+							// have already joined this collection should be disjoined to this job
+							// as an efficiency improvement so we don't grow our weak collections unnecessarily.
+							foreach (var joiner in this.joiners) {
+								// We can discard the JoinRelease result of AddDependency
+								// because we directly disjoin without that helper struct.
+								joiner.Key.RemoveDependency(job);
+							}
+
+							if (this.emptyEvent != null && this.joinables.Count == 0) {
+								this.emptyEvent.SetAsync();
+							}
+						} else {
+							this.joinables[job] = refCount - 1;
 						}
-
-						if (this.emptyEvent != null && this.joinables.Count == 0) {
-							this.emptyEvent.SetAsync();
-						}
-
-						return true;
 					}
-
-					return false;
 				} finally {
 					this.Context.SyncContextLock.ExitWriteLock();
 				}

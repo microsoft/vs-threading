@@ -67,7 +67,7 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void SwitchToMainThreadAsyncContributesToHangReportsAndCollections() {
-			var mainThreadRequestedPended = new ManualResetEventSlim();
+			var mainThreadRequestPended = new ManualResetEventSlim();
 			var frame = new DispatcherFrame();
 			Exception delegateFailure = null;
 
@@ -82,10 +82,10 @@
 						frame.Continue = false;
 					}
 				});
-				mainThreadRequestedPended.Set();
+				mainThreadRequestPended.Set();
 			});
 
-			Assert.IsTrue(mainThreadRequestedPended.Wait(TestTimeout));
+			Assert.IsTrue(mainThreadRequestPended.Wait(TestTimeout));
 
 			// Verify here that pendingTasks includes one task.
 			Assert.AreEqual(1, this.GetPendingTasksCount());
@@ -96,6 +96,64 @@
 
 			Assert.AreEqual(0, this.GetPendingTasksCount());
 			Assert.AreEqual(0, this.joinableCollection.Count());
+
+			if (delegateFailure != null) {
+				throw new TargetInvocationException(delegateFailure);
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void SwitchToMainThreadAsyncTwiceRemainsInJoinableCollection() {
+			((DerivedJoinableTaskFactory)this.asyncPump).AssumeConcurrentUse = true;
+			var mainThreadRequestPended = new ManualResetEventSlim();
+			var frame = new DispatcherFrame();
+			Exception delegateFailure = null;
+
+			Task.Run(delegate {
+				this.asyncPump.RunAsync(
+					delegate {
+						var awaiter = this.asyncPump.SwitchToMainThreadAsync().GetAwaiter();
+						awaiter.OnCompleted(
+							delegate {
+								try {
+									Assert.AreSame(this.originalThread, Thread.CurrentThread);
+								} catch (Exception ex) {
+									delegateFailure = ex;
+								} finally {
+									frame.Continue = false;
+								}
+							});
+						awaiter.OnCompleted(
+							delegate {
+								try {
+									Assert.AreSame(this.originalThread, Thread.CurrentThread);
+								} catch (Exception ex) {
+									delegateFailure = ex;
+								} finally {
+									frame.Continue = false;
+								}
+							});
+						return TplExtensions.CompletedTask;
+					});
+				mainThreadRequestPended.Set();
+			});
+
+			Assert.IsTrue(mainThreadRequestPended.Wait(TestTimeout));
+
+			// Verify here that pendingTasks includes one task.
+			Assert.AreEqual(1, ((DerivedJoinableTaskFactory)this.asyncPump).TransitioningTasksCount);
+
+			// Now let the request proceed through.
+			Dispatcher.PushFrame(frame);
+			frame.Continue = true; // reset for next time
+
+			// Verify here that pendingTasks includes one task.
+			Assert.AreEqual(1, ((DerivedJoinableTaskFactory)this.asyncPump).TransitioningTasksCount);
+
+			// Now let the request proceed through.
+			Dispatcher.PushFrame(frame);
+
+			Assert.AreEqual(0, ((DerivedJoinableTaskFactory)this.asyncPump).TransitioningTasksCount);
 
 			if (delegateFailure != null) {
 				throw new TargetInvocationException(delegateFailure);
@@ -1789,12 +1847,16 @@
 			private int transitioningToMainThreadHitCount;
 			private int transitionedToMainThreadHitCount;
 
+			private JoinableTaskCollection transitioningTasksCollection;
+
 			internal DerivedJoinableTaskFactory(JoinableTaskContext context)
 				: base(context) {
+				this.transitioningTasksCollection = new JoinableTaskCollection(context, refCountAddedJobs: true);
 			}
 
 			internal DerivedJoinableTaskFactory(JoinableTaskCollection collection)
 				: base(collection) {
+				this.transitioningTasksCollection = new JoinableTaskCollection(collection.Context, refCountAddedJobs: true);
 			}
 
 			internal int TransitionedToMainThreadHitCount {
@@ -1807,13 +1869,19 @@
 
 			internal bool AssumeConcurrentUse { get; set; }
 
+			internal int TransitioningTasksCount {
+				get { return this.transitioningTasksCollection.Count(); }
+			}
+
 			protected override void OnTransitioningToMainThread(JoinableTask joinableTask) {
 				base.OnTransitioningToMainThread(joinableTask);
 				Interlocked.Increment(ref this.transitioningToMainThreadHitCount);
 
+				this.transitioningTasksCollection.Add(joinableTask);
+
 				// These statements and assertions assume that the test does not have jobs that execute code concurrently.
 				lock (this.transitioningTasks) {
-					Assert.IsTrue(this.transitioningTasks.Add(joinableTask));
+					Assert.IsTrue(this.transitioningTasks.Add(joinableTask) || this.AssumeConcurrentUse);
 				}
 
 				if (!this.AssumeConcurrentUse) {
@@ -1825,6 +1893,8 @@
 				base.OnTransitionedToMainThread(joinableTask, canceled);
 				Interlocked.Increment(ref this.transitionedToMainThreadHitCount);
 
+				this.transitioningTasksCollection.Remove(joinableTask);
+
 				if (canceled) {
 					Assert.AreNotSame(this.Context.MainThread, Thread.CurrentThread, "A canceled transition should not complete on the main thread.");
 				} else {
@@ -1833,7 +1903,7 @@
 
 				// These statements and assertions assume that the test does not have jobs that execute code concurrently.
 				lock (this.transitioningTasks) {
-					Assert.IsTrue(this.transitioningTasks.Remove(joinableTask));
+					Assert.IsTrue(this.transitioningTasks.Remove(joinableTask) || this.AssumeConcurrentUse);
 				}
 
 				if (!this.AssumeConcurrentUse) {

@@ -62,5 +62,57 @@
 			await evt.SetAsync();
 			await waiter;
 		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void AddTwiceRemoveOnceRemovesWhenNotRefCounting() {
+			var finishTaskEvent = new AsyncManualResetEvent();
+			var task = this.joinableFactory.RunAsync(async delegate { await finishTaskEvent; });
+
+			var collection = new JoinableTaskCollection(this.context, refCountAddedJobs: false);
+			collection.Add(task);
+			Assert.IsTrue(collection.Contains(task));
+			collection.Add(task);
+			Assert.IsTrue(collection.Contains(task));
+			collection.Remove(task);
+			Assert.IsFalse(collection.Contains(task));
+
+			finishTaskEvent.SetAsync();
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void AddTwiceRemoveTwiceRemovesWhenRefCounting() {
+			var finishTaskEvent = new AsyncManualResetEvent();
+			var task = this.joinableFactory.RunAsync(async delegate { await finishTaskEvent; });
+
+			var collection = new JoinableTaskCollection(this.context, refCountAddedJobs: true);
+			collection.Add(task);
+			Assert.IsTrue(collection.Contains(task));
+			collection.Add(task);
+			Assert.IsTrue(collection.Contains(task));
+			collection.Remove(task);
+			Assert.IsTrue(collection.Contains(task));
+			collection.Remove(task);
+			Assert.IsFalse(collection.Contains(task));
+
+			finishTaskEvent.SetAsync();
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void AddTwiceRemoveOnceRemovesCompletedTaskWhenRefCounting() {
+			var finishTaskEvent = new AsyncManualResetEvent();
+			var task = this.joinableFactory.RunAsync(async delegate { await finishTaskEvent; });
+
+			var collection = new JoinableTaskCollection(this.context, refCountAddedJobs: true);
+			collection.Add(task);
+			Assert.IsTrue(collection.Contains(task));
+			collection.Add(task);
+			Assert.IsTrue(collection.Contains(task));
+
+			finishTaskEvent.SetAsync();
+			task.Join();
+
+			collection.Remove(task); // technically the JoinableTask is probably gone from the collection by now anyway.
+			Assert.IsFalse(collection.Contains(task));
+		}
 	}
 }
