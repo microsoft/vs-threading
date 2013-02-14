@@ -7,6 +7,7 @@
 namespace Microsoft.Threading {
 	using System;
 	using System.Collections.Generic;
+	using System.Diagnostics;
 	using System.Linq;
 	using System.Runtime.CompilerServices;
 	using System.Text;
@@ -243,6 +244,36 @@ namespace Microsoft.Threading {
 				}
 
 				return this.childOrJoinedJobs.Select(p => p.Key).ToArray();
+			}
+		}
+
+		/// <summary>
+		/// Gets a snapshot of all work queued to the main thread.
+		/// FOR DIAGNOSTICS COLLECTION ONLY.
+		/// </summary>
+		internal IEnumerable<SingleExecuteProtector> MainThreadQueueContents {
+			get {
+				Assumes.True(this.owner.Context.SyncContextLock.IsReadLockHeld);
+				if (this.mainThreadQueue == null) {
+					return Enumerable.Empty<SingleExecuteProtector>();
+				}
+
+				return this.mainThreadQueue.ToArray();
+			}
+		}
+
+		/// <summary>
+		/// Gets a snapshot of all work queued to synchronously blocking threadpool thread.
+		/// FOR DIAGNOSTICS COLLECTION ONLY.
+		/// </summary>
+		internal IEnumerable<SingleExecuteProtector> ThreadPoolQueueContents {
+			get {
+				Assumes.True(this.owner.Context.SyncContextLock.IsReadLockHeld);
+				if (this.threadPoolQueue == null) {
+					return Enumerable.Empty<SingleExecuteProtector>();
+				}
+
+				return this.threadPoolQueue.ToArray();
 			}
 		}
 

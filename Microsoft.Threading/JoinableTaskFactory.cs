@@ -7,7 +7,10 @@
 namespace Microsoft.Threading {
 	using System;
 	using System.Collections.Generic;
+	using System.Diagnostics;
+	using System.Globalization;
 	using System.Linq;
+	using System.Reflection;
 	using System.Runtime.CompilerServices;
 	using System.Text;
 	using System.Threading;
@@ -552,6 +555,7 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// A delegate wrapper that ensures the delegate is only invoked at most once.
 		/// </summary>
+		[DebuggerDisplay("{DelegateLabel}")]
 		internal class SingleExecuteProtector {
 			/// <summary>
 			/// Executes the delegate if it has not already executed.
@@ -615,6 +619,37 @@ namespace Microsoft.Threading {
 			/// </summary>
 			internal bool HasBeenExecuted {
 				get { return this.invokeDelegate == null; }
+			}
+
+			/// <summary>
+			/// Gets a string that describes the delegate that this instance invokes.
+			/// FOR DIAGNOSTIC PURPOSES ONLY.
+			/// </summary>
+			internal string DelegateLabel {
+				get {
+					var invokeDelegate = this.invokeDelegate;
+					var method = (Delegate)invokeDelegate;
+					if (method != null) {
+						var targetType = method.Target.GetType();
+						var stateMachineField = targetType.GetField("m_stateMachine", BindingFlags.Instance | BindingFlags.NonPublic);
+						if (stateMachineField != null) {
+							var stateMachine = stateMachineField.GetValue(method.Target) as IAsyncStateMachine;
+							if (stateMachine != null) {
+								// TODO: enhance this to also retrieve state field (which await is to be resumed at)
+								return stateMachine.GetType().FullName;
+							}
+						}
+
+						return string.Format(
+							CultureInfo.CurrentCulture,
+							"{0}.{1} ({2})",
+							method.Method.DeclaringType.FullName,
+							method.Method.Name,
+							method.Target.GetType().FullName);
+					} else {
+						return "<COMPLETED>";
+					}
+				}
 			}
 
 			internal void RaiseTransitioningEvents() {

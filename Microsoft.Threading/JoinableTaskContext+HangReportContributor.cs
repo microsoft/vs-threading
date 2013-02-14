@@ -25,11 +25,14 @@
 					var dgml = CreateTemplateDgml(out nodes, out links);
 
 					var pendingTasksElements = this.CreateNodesForPendingTasks();
+					var taskLabels = this.CreateNodeLabels(pendingTasksElements);
 					var pendingTaskCollections = CreateNodesForJoinableTaskCollections(pendingTasksElements.Keys);
 					nodes.Add(pendingTasksElements.Values);
 					nodes.Add(pendingTaskCollections.Values);
+					nodes.Add(taskLabels.Select(t => t.Item1));
 					links.Add(CreatesLinksBetweenNodes(pendingTasksElements));
 					links.Add(CreateCollectionContainingTaskLinks(pendingTasksElements, pendingTaskCollections));
+					links.Add(taskLabels.Select(t => t.Item2));
 
 					return new HangReportContribution(
 						dgml.ToString(),
@@ -186,6 +189,44 @@
 			}
 
 			return pendingTasksElements;
+		}
+
+		private List<Tuple<XElement, XElement>> CreateNodeLabels(Dictionary<JoinableTask, XElement> tasksAndElements) {
+			Requires.NotNull(tasksAndElements, "tasksAndElements");
+
+			var result = new List<Tuple<XElement, XElement>>();
+			foreach (var tasksAndElement in tasksAndElements) {
+				var pendingTask = tasksAndElement.Key;
+				var node = tasksAndElement.Value;
+				int queueIndex = 0;
+				foreach (var pendingTasksElement in pendingTask.MainThreadQueueContents) {
+					queueIndex++;
+					var callstackNode = new XElement(
+						XName.Get("Node", DgmlNamespace),
+						new XAttribute("Id", node.Attribute("Id").Value + "MTQueue#" + queueIndex),
+						new XAttribute("Label", pendingTasksElement.DelegateLabel));
+					var callstackLink = new XElement(
+						XName.Get("Link", DgmlNamespace),
+						new XAttribute("Source", callstackNode.Attribute("Id").Value),
+						new XAttribute("Target", node.Attribute("Id").Value));
+					result.Add(Tuple.Create(callstackNode, callstackLink));
+				}
+
+				foreach (var pendingTasksElement in pendingTask.ThreadPoolQueueContents) {
+					queueIndex++;
+					var callstackNode = new XElement(
+						XName.Get("Node", DgmlNamespace),
+						new XAttribute("Id", node.Attribute("Id").Value + "TPQueue#" + queueIndex),
+						new XAttribute("Label", pendingTasksElement.DelegateLabel));
+					var callstackLink = new XElement(
+						XName.Get("Link", DgmlNamespace),
+						new XAttribute("Source", callstackNode.Attribute("Id").Value),
+						new XAttribute("Target", node.Attribute("Id").Value));
+					result.Add(Tuple.Create(callstackNode, callstackLink));
+				}
+			}
+
+			return result;
 		}
 	}
 }

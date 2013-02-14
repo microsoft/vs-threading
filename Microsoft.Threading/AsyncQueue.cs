@@ -302,6 +302,15 @@
 		}
 
 		/// <summary>
+		/// Returns a copy of this queue as an array.
+		/// </summary>
+		internal T[] ToArray() {
+			lock (this.SyncRoot) {
+				return this.queueElements.ToArray();
+			}
+		}
+
+		/// <summary>
 		/// Immediately dequeues the element from the head of the queue if one is available
 		/// that satisfies the specified check;
 		/// otherwise returns without an element.
