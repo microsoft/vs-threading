@@ -18,7 +18,7 @@
 		private readonly Queue<TaskCompletionSource<bool>> signalAwaiters = new Queue<TaskCompletionSource<bool>>();
 
 		/// <summary>
-		/// Whether to complete our task synchronously in our <see cref="SetAsync"/> method,
+		/// Whether to complete our task synchronously in our <see cref="Set"/> method,
 		/// as opposed to asynchronously.
 		/// </summary>
 		private readonly bool allowInliningWaiters;
