@@ -646,7 +646,7 @@ namespace Microsoft.Threading {
 				get {
 					var invokeDelegate = this.invokeDelegate;
 					var method = (Delegate)invokeDelegate;
-					if (method != null) {
+					if (method != null && method.Target != null) {
 						var targetType = method.Target.GetType();
 						var stateMachineField = targetType.GetField("m_stateMachine", BindingFlags.Instance | BindingFlags.NonPublic);
 						if (stateMachineField != null) {
