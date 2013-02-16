@@ -701,7 +701,7 @@ namespace Microsoft.Threading {
 				// As an optimization, recognize if what we're being handed is already an instance of this type,
 				// because if it is, we don't need to wrap it with yet another instance.
 				var existing = state as SingleExecuteProtector;
-				if (callback == ExecuteOnce && existing != null) {
+				if (callback == ExecuteOnce && existing != null && job == existing.job) {
 					return (SingleExecuteProtector)state;
 				}
 
