@@ -103,6 +103,40 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void SwitchToMainThreadAsyncWithinCompleteTaskGetsNewTask() {
+			// For this test, the JoinableTaskFactory we use shouldn't have its own collection.
+			// This is important for hitting the code path that was buggy before this test was written.
+			this.joinableCollection = null;
+			this.asyncPump = new DerivedJoinableTaskFactory(this.context);
+
+			var frame = new DispatcherFrame();
+			var outerTaskCompleted = new AsyncManualResetEvent();
+			Task innerTask = null;
+			this.asyncPump.RunAsync(delegate {
+				innerTask = Task.Run(async delegate {
+					await outerTaskCompleted;
+
+					// This thread transition runs within the context of a completed task.
+					// In this transition, the JoinableTaskFactory should create a new, incompleted
+					// task to represent the transition.
+					// This is verified by our DerivedJoinableTaskFactory which will throw if
+					// the task has already completed.
+					await this.asyncPump.SwitchToMainThreadAsync();
+				});
+
+				return TplExtensions.CompletedTask;
+			});
+			outerTaskCompleted.SetAsync();
+
+			innerTask.ContinueWith(_ => frame.Continue = false);
+
+			// Now let the request proceed through.
+			Dispatcher.PushFrame(frame);
+
+			innerTask.Wait(); // rethrow exceptions
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void SwitchToMainThreadAsyncTwiceRemainsInJoinableCollection() {
 			((DerivedJoinableTaskFactory)this.asyncPump).AssumeConcurrentUse = true;
 			var mainThreadRequestPended = new ManualResetEventSlim();
@@ -1924,6 +1958,7 @@
 
 			protected override void OnTransitioningToMainThread(JoinableTask joinableTask) {
 				base.OnTransitioningToMainThread(joinableTask);
+				Assert.IsFalse(joinableTask.IsCompleted, "A task should not be completed until at least the transition has completed.");
 				Interlocked.Increment(ref this.transitioningToMainThreadHitCount);
 
 				this.transitioningTasksCollection.Add(joinableTask);

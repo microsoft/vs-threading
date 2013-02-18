@@ -161,12 +161,17 @@ namespace Microsoft.Threading {
 			var ambientJob = this.Context.AmbientTask;
 			SingleExecuteProtector wrapper = null;
 			if (ambientJob == null || (this.jobCollection != null && !this.jobCollection.Contains(ambientJob))) {
-				this.RunAsync(delegate {
+				var transient = this.RunAsync(delegate {
 					ambientJob = this.Context.AmbientTask;
 					wrapper = SingleExecuteProtector.Create(ambientJob, callback);
 					ambientJob.Post(SingleExecuteProtector.ExecuteOnce, wrapper, true);
 					return TplExtensions.CompletedTask;
 				});
+
+				if (transient.Task.IsFaulted) {
+					// rethrow the exception.
+					transient.Task.GetAwaiter().GetResult();
+				}
 			} else {
 				wrapper = SingleExecuteProtector.Create(ambientJob, callback);
 				ambientJob.Post(SingleExecuteProtector.ExecuteOnce, wrapper, true);
@@ -443,21 +448,28 @@ namespace Microsoft.Threading {
 			public void OnCompleted(Action continuation) {
 				Assumes.True(this.jobFactory != null);
 
-				// In the event of a cancellation request, it becomes a race as to whether the threadpool
-				// or the main thread will execute the continuation first. So we must wrap the continuation
-				// in a SingleExecuteProtector so that it can't be executed twice by accident.
-				// Success case of the main thread.
-				var wrapper = this.jobFactory.RequestSwitchToMainThread(continuation);
+				try {
+					// In the event of a cancellation request, it becomes a race as to whether the threadpool
+					// or the main thread will execute the continuation first. So we must wrap the continuation
+					// in a SingleExecuteProtector so that it can't be executed twice by accident.
+					// Success case of the main thread.
+					var wrapper = this.jobFactory.RequestSwitchToMainThread(continuation);
 
-				// Cancellation case of a threadpool thread.
-				if (this.cancellationRegistrationPtr != null) {
-					// Store the cancellation token registration in the struct pointer. This way,
-					// if the awaiter has been copied (since it's a struct), each copy of the awaiter
-					// points to the same registration. Without this we can have a memory leak.
-					this.cancellationRegistrationPtr.Value = this.cancellationToken.Register(
-						state => ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, state),
-						wrapper,
-						useSynchronizationContext: false);
+					// Cancellation case of a threadpool thread.
+					if (this.cancellationRegistrationPtr != null) {
+						// Store the cancellation token registration in the struct pointer. This way,
+						// if the awaiter has been copied (since it's a struct), each copy of the awaiter
+						// points to the same registration. Without this we can have a memory leak.
+						this.cancellationRegistrationPtr.Value = this.cancellationToken.Register(
+							state => ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, state),
+							wrapper,
+							useSynchronizationContext: false);
+					}
+				} catch (Exception ex) {
+					// This is bad. It would cause a hang without a trace as to why, since we if can't
+					// schedule the continuation, stuff would just never happen.
+					// Crash now, so that a Watson report would capture the original error.
+					Environment.FailFast("Failed to schedule time on the UI thread. A continuation would never execute.", ex);
 				}
 			}
 
@@ -543,10 +555,15 @@ namespace Microsoft.Threading {
 			Requires.NotNull(callback, "callback");
 
 			if (mainThreadAffinitized) {
-				this.RunAsync(delegate {
+				var transient = this.RunAsync(delegate {
 					this.Context.AmbientTask.Post(callback, state, true);
 					return TplExtensions.CompletedTask;
 				});
+
+				if (transient.Task.IsFaulted) {
+					// rethrow the exception.
+					transient.Task.GetAwaiter().GetResult();
+				}
 			} else {
 				ThreadPool.QueueUserWorkItem(new WaitCallback(callback), state);
 			}
@@ -629,7 +646,7 @@ namespace Microsoft.Threading {
 				get {
 					var invokeDelegate = this.invokeDelegate;
 					var method = (Delegate)invokeDelegate;
-					if (method != null) {
+					if (method != null && method.Target != null) {
 						var targetType = method.Target.GetType();
 						var stateMachineField = targetType.GetField("m_stateMachine", BindingFlags.Instance | BindingFlags.NonPublic);
 						if (stateMachineField != null) {
@@ -684,7 +701,7 @@ namespace Microsoft.Threading {
 				// As an optimization, recognize if what we're being handed is already an instance of this type,
 				// because if it is, we don't need to wrap it with yet another instance.
 				var existing = state as SingleExecuteProtector;
-				if (callback == ExecuteOnce && existing != null) {
+				if (callback == ExecuteOnce && existing != null && job == existing.job) {
 					return (SingleExecuteProtector)state;
 				}
 
