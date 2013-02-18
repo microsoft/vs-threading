@@ -11,25 +11,17 @@
 	using System.Xml.Linq;
 
 	[TestClass]
-	public class JoinableTaskContextTests : TestBase {
-		private JoinableTaskContextDerived context;
-		private JoinableTaskFactoryDerived factory;
-		private JoinableTaskCollection joinableCollection;
+	public class JoinableTaskContextTests : JoinableTaskTestBase {
+		private JoinableTaskFactoryDerived factory {
+			get { return (JoinableTaskFactoryDerived)this.asyncPump; }
+		}
 
-		private Thread originalThread;
-		private SynchronizationContext dispatcherContext;
+		private new JoinableTaskContextDerived context {
+			get { return (JoinableTaskContextDerived)base.context; }
+		}
 
-		[TestInitialize]
-		public void Initialize() {
-			this.dispatcherContext = new DispatcherSynchronizationContext();
-			SynchronizationContext.SetSynchronizationContext(dispatcherContext);
-			this.context = new JoinableTaskContextDerived();
-			this.joinableCollection = this.context.CreateCollection();
-			this.factory = new JoinableTaskFactoryDerived(this.joinableCollection);
-			this.originalThread = Thread.CurrentThread;
-
-			// Suppress the assert dialog that appears and causes test runs to hang.
-			Trace.Listeners.OfType<DefaultTraceListener>().Single().AssertUiEnabled = false;
+		protected override JoinableTaskContext CreateJoinableTaskContext() {
+			return new JoinableTaskContextDerived();
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
