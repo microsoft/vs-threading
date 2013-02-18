@@ -147,6 +147,94 @@
 			}
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void IsMainThreadBlockedFalseWithNoTask() {
+			Assert.IsFalse(this.context.IsMainThreadBlocked());
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void IsMainThreadBlockedFalseWhenAsync() {
+			var frame = new DispatcherFrame();
+			var joinable = this.factory.RunAsync(async delegate {
+				Assert.IsFalse(this.context.IsMainThreadBlocked());
+				await Task.Yield();
+				Assert.IsFalse(this.context.IsMainThreadBlocked());
+				frame.Continue = false;
+			});
+
+			Dispatcher.PushFrame(frame);
+			joinable.Join(); // rethrow exceptions
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void IsMainThreadBlockedTrueWhenAsyncBecomesBlocking() {
+			var joinable = this.factory.RunAsync(async delegate {
+				Assert.IsFalse(this.context.IsMainThreadBlocked());
+				await Task.Yield();
+				Assert.IsTrue(this.context.IsMainThreadBlocked()); // we're now running on top of Join()
+				await TaskScheduler.Default.SwitchTo(alwaysYield: true);
+				Assert.IsTrue(this.context.IsMainThreadBlocked()); // although we're on background thread, we're blocking main thread.
+
+				await this.factory.RunAsync(async delegate {
+					Assert.IsTrue(this.context.IsMainThreadBlocked());
+					await Task.Yield();
+					Assert.IsTrue(this.context.IsMainThreadBlocked());
+					await this.factory.SwitchToMainThreadAsync();
+					Assert.IsTrue(this.context.IsMainThreadBlocked());
+				});
+			});
+
+			joinable.Join();
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void IsMainThreadBlockedTrueWhenAsyncBecomesBlockingWithNestedTask() {
+			var frame = new DispatcherFrame();
+			var joinable = this.factory.RunAsync(async delegate {
+				Assert.IsFalse(this.context.IsMainThreadBlocked());
+				await Task.Yield();
+				Assert.IsFalse(this.context.IsMainThreadBlocked());
+				await TaskScheduler.Default.SwitchTo(alwaysYield: true);
+				Assert.IsFalse(this.context.IsMainThreadBlocked());
+
+				await this.factory.RunAsync(async delegate {
+					Assert.IsFalse(this.context.IsMainThreadBlocked());
+
+					// Now release the message pump so we hit the Join() call
+					await this.factory.SwitchToMainThreadAsync();
+					frame.Continue = false;
+					await Task.Yield();
+
+					// From now on, we're blocking.
+					Assert.IsTrue(this.context.IsMainThreadBlocked());
+					await TaskScheduler.Default.SwitchTo(alwaysYield: true);
+					Assert.IsTrue(this.context.IsMainThreadBlocked());
+				});
+			});
+
+			Dispatcher.PushFrame(frame); // for duration of this, it appears to be non-blocking.
+			joinable.Join();
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void IsMainThreadBlockedTrueWhenOriginallySync() {
+			this.factory.Run(async delegate {
+				Assert.IsTrue(this.context.IsMainThreadBlocked());
+				await Task.Yield();
+				Assert.IsTrue(this.context.IsMainThreadBlocked());
+				await TaskScheduler.Default.SwitchTo(alwaysYield: true);
+				Assert.IsTrue(this.context.IsMainThreadBlocked());
+
+				await this.factory.RunAsync(async delegate {
+					Assert.IsTrue(this.context.IsMainThreadBlocked());
+					await Task.Yield();
+					Assert.IsTrue(this.context.IsMainThreadBlocked());
+					await this.factory.SwitchToMainThreadAsync();
+					Assert.IsTrue(this.context.IsMainThreadBlocked());
+				});
+			});
+		}
+
 		private class JoinableTaskContextDerived : JoinableTaskContext {
 			internal Action<TimeSpan, int, Guid> OnReportHang { get; set; }
 

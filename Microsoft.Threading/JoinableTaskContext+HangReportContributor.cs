@@ -179,8 +179,7 @@
 						AddCategory(node, "NonEmptyQueue");
 					}
 
-					if (pendingTask.DiagnosticFlags.HasFlag(JoinableTask.JoinableTaskFlags.RunningSynchronously) &&
-						pendingTask.DiagnosticFlags.HasFlag(JoinableTask.JoinableTaskFlags.StartedOnMainThread)) {
+					if (pendingTask.State.HasFlag(JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)) {
 						AddCategory(node, "MainThreadBlocking");
 					}
 

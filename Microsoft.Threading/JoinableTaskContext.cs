@@ -146,6 +146,38 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// Gets a value indicating whether the main thread is blocked for the caller's completion.
+		/// </summary>
+		public bool IsMainThreadBlocked() {
+			var ambientTask = this.AmbientTask;
+			if (ambientTask != null) {
+				using (NoMessagePumpSyncContext.Default.Apply()) {
+					this.SyncContextLock.EnterReadLock();
+					try {
+						var allJoinedJobs = new HashSet<JoinableTask>();
+						foreach (var pendingTask in this.pendingTasks) {
+							if ((pendingTask.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) {
+								// This task blocks the main thread. If it has joined the ambient task
+								// directly or indirectly, then our ambient task is considered blocking
+								// the main thread.
+								pendingTask.AddSelfAndDescendentOrJoinedJobs(allJoinedJobs);
+								if (allJoinedJobs.Contains(ambientTask)) {
+									return true;
+								}
+
+								allJoinedJobs.Clear();
+							}
+						}
+					} finally {
+						this.SyncContextLock.ExitReadLock();
+					}
+				}
+			}
+
+			return false;
+		}
+
+		/// <summary>
 		/// Creates a joinable task factory that automatically adds all created tasks
 		/// to a collection that can be jointly joined.
 		/// </summary>

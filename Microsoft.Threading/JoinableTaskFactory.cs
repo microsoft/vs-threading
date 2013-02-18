@@ -535,6 +535,11 @@ namespace Microsoft.Threading {
 				this.previousJoinable = this.factory.Context.AmbientTask;
 				this.factory.Context.AmbientTask = joinable;
 				this.syncContextRevert = this.joinable.ApplicableJobSyncContext.Apply();
+
+				// Join the ambient parent job, so the parent can dequeue this job's work.
+				if (this.previousJoinable != null) {
+					this.previousJoinable.AddDependency(joinable);
+				}
 			}
 
 			/// <summary>
@@ -547,7 +552,7 @@ namespace Microsoft.Threading {
 
 			internal void SetResult(Task task) {
 				Requires.NotNull(task, "task");
-				this.joinable.SetWrappedTask(task, this.previousJoinable);
+				this.joinable.SetWrappedTask(task);
 			}
 		}
 
