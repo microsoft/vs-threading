@@ -235,6 +235,39 @@
 			});
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void IsMainThreadBlockedFalseWhenSyncBlockingOtherThread() {
+			var task = Task.Run(delegate {
+				this.factory.Run(async delegate {
+					Assert.IsFalse(this.context.IsMainThreadBlocked());
+					await Task.Yield();
+					Assert.IsFalse(this.context.IsMainThreadBlocked());
+				});
+			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void IsMainThreadBlockedTrueWhenAsyncOnOtherThreadBecomesSyncOnMainThread() {
+			var nonBlockingStateObserved = new AsyncManualResetEvent();
+			var nowBlocking = new AsyncManualResetEvent();
+			JoinableTask joinableTask = null;
+			Task.Run(delegate {
+				joinableTask = this.factory.RunAsync(async delegate {
+					Assert.IsFalse(this.context.IsMainThreadBlocked());
+					await nonBlockingStateObserved.SetAsync();
+					await Task.Yield();
+					await nowBlocking;
+					Assert.IsTrue(this.context.IsMainThreadBlocked());
+				});
+			}).Wait();
+
+			this.factory.Run(async delegate {
+				await nonBlockingStateObserved;
+				joinableTask.JoinAsync().Forget();
+				await nowBlocking.SetAsync();
+			});
+		}
+
 		private class JoinableTaskContextDerived : JoinableTaskContext {
 			internal Action<TimeSpan, int, Guid> OnReportHang { get; set; }
 
