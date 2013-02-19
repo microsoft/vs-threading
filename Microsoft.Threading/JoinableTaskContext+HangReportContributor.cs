@@ -170,10 +170,19 @@
 				int taskId = 0;
 				foreach (var pendingTask in this.pendingTasks) {
 					taskId++;
+
+					string methodName = string.Empty;
+					if (pendingTask.EntryMethodInfo != null) {
+						methodName = string.Format(
+							" ({0}.{1})",
+							pendingTask.EntryMethodInfo.DeclaringType.FullName,
+							pendingTask.EntryMethodInfo.Name);
+					}
+
 					var node = new XElement(
 						XName.Get("Node", DgmlNamespace),
 						new XAttribute("Id", "Task#" + taskId),
-						new XAttribute("Label", "Task #" + taskId));
+						new XAttribute("Label", "Task #" + taskId + methodName));
 					AddCategory(node, "Task");
 					if (pendingTask.HasNonEmptyQueue) {
 						AddCategory(node, "NonEmptyQueue");

@@ -310,6 +310,7 @@ namespace Microsoft.Threading {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
 			var job = new JoinableTask(this, synchronouslyBlocking);
+			job.EntryMethodInfo = asyncMethod.Method;
 			using (var framework = new RunFramework(this, job)) {
 				Task asyncMethodResult;
 				try {
@@ -342,6 +343,7 @@ namespace Microsoft.Threading {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
 			var job = new JoinableTask<T>(this, synchronouslyBlocking);
+			job.EntryMethodInfo = asyncMethod.Method;
 			using (var framework = new RunFramework(this, job)) {
 				Task<T> asyncMethodResult;
 				try {

@@ -9,6 +9,7 @@ namespace Microsoft.Threading {
 	using System.Collections.Generic;
 	using System.Diagnostics;
 	using System.Linq;
+	using System.Reflection;
 	using System.Runtime.CompilerServices;
 	using System.Text;
 	using System.Threading;
@@ -259,6 +260,11 @@ namespace Microsoft.Threading {
 		}
 
 		#region Diagnostics collection
+
+		/// <summary>
+		/// Save the entry method's info so we could show its full name in hang report.
+		/// </summary>
+		internal MethodInfo EntryMethodInfo { get; set; }
 
 		/// <summary>
 		/// Gets a value indicating whether this task has a non-empty queue.
