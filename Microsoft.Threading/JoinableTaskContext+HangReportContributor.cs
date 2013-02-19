@@ -203,7 +203,7 @@
 					var callstackNode = new XElement(
 						XName.Get("Node", DgmlNamespace),
 						new XAttribute("Id", node.Attribute("Id").Value + "MTQueue#" + queueIndex),
-						new XAttribute("Label", pendingTasksElement.DelegateLabel));
+						new XAttribute("Label", RepresentCallstack(pendingTasksElement)));
 					var callstackLink = new XElement(
 						XName.Get("Link", DgmlNamespace),
 						new XAttribute("Source", callstackNode.Attribute("Id").Value),
@@ -216,7 +216,7 @@
 					var callstackNode = new XElement(
 						XName.Get("Node", DgmlNamespace),
 						new XAttribute("Id", node.Attribute("Id").Value + "TPQueue#" + queueIndex),
-						new XAttribute("Label", pendingTasksElement.DelegateLabel));
+						new XAttribute("Label", RepresentCallstack(pendingTasksElement)));
 					var callstackLink = new XElement(
 						XName.Get("Link", DgmlNamespace),
 						new XAttribute("Source", callstackNode.Attribute("Id").Value),
@@ -226,6 +226,24 @@
 			}
 
 			return result;
+		}
+
+		private static string RepresentCallstack(JoinableTaskFactory.SingleExecuteProtector singleExecuteProtector) {
+			Requires.NotNull(singleExecuteProtector, "singleExecuteProtector");
+
+			var stringBuilder = new StringBuilder();
+			var frameIndex = 0;
+
+			try {
+				foreach (var frame in singleExecuteProtector.ReturnCallstackFrames) {
+					stringBuilder.AppendFormat("{0}. {1}\r\n", frameIndex, frame);
+					frameIndex++;
+				}
+			} catch {
+				// Eat any exception as we don't want the diagnostic code to crash the app.
+			}
+
+			return stringBuilder.ToString().TrimEnd();
 		}
 	}
 }
