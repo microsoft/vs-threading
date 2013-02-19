@@ -235,12 +235,12 @@
 			var frameIndex = 0;
 
 			try {
-				foreach (var frame in singleExecuteProtector.ReturnCallstackFrames) {
+				foreach (var frame in singleExecuteProtector.WalkReturnCallstack()) {
 					stringBuilder.AppendFormat("{0}. {1}\r\n", frameIndex, frame);
 					frameIndex++;
 				}
-			} catch {
-				// Eat any exception as we don't want the diagnostic code to crash the app.
+			} catch (Exception e) {
+				Report.Fail("RepresentCallstack caught exception: ", e);
 			}
 
 			return stringBuilder.ToString().TrimEnd();

@@ -645,58 +645,66 @@ namespace Microsoft.Threading {
 			}
 
 			/// <summary>
+			/// Gets a string that describes the delegate that this instance invokes.
+			/// FOR DIAGNOSTIC PURPOSES ONLY.
+			/// </summary>
+			internal string DelegateLabel {
+				get {
+					return this.WalkReturnCallstack().First(); // Top frame of the return callstack.
+				}
+			}
+
+			/// <summary>
 			/// Walk the continuation objects inside "async state machines" to generate the return callstack.
 			/// FOR DIAGNOSTIC PURPOSES ONLY.
 			/// </summary>
-			internal IEnumerable<string> ReturnCallstackFrames {
-				get {
-					var invokeDelegate = this.invokeDelegate as Delegate;
-					var stateDelegate = this.state as Delegate;
-
-					// We are in favor of "state" when "invokeDelegate" is a static method like "SingleExecuteProtector.ExecuteOnce"
-					// and "state" is the actual delegate.
-					Delegate actualDelegate;
-					if (stateDelegate != null && stateDelegate.Target != null) {
-						actualDelegate = stateDelegate;
-					} else {
-						actualDelegate = invokeDelegate;
-					}
-
-					if (actualDelegate == null) {
-						yield return "<COMPLETED>";
-						yield break;
-					}
-
-					var stateMachine = FindAsyncStateMachine(actualDelegate);
-					if (stateMachine == null) {
-						// Did not find the async state machine, so returns the method name as top frame and stop walking.
-						yield return GetDelegateLabel(actualDelegate);
-						yield break;
-					}
-
-					do {
-						var state = GetStateMachineFieldValueOnSuffix(stateMachine, "__state");
-						yield return string.Format(
-							CultureInfo.CurrentCulture,
-							"{0} ({1})",
-							stateMachine.GetType().FullName,
-							state);
-
-						var continuationDelegates = FindContinuationDelegates(stateMachine).ToArray();
-						if (continuationDelegates.Length == 0) {
-							break;
-						}
-
-						// TODO: It's possible but uncommon scenario to have multiple "async methods" being awaiting for one "async method".
-						// Here we just choose the first awaiting "async method" as that should be good enough for postmortem.
-						// In future we might want to revisit this to cover the other awaiting "async methods".
-						stateMachine = continuationDelegates.Select((d) => FindAsyncStateMachine(d))
-							.FirstOrDefault((s) => s != null);
-						if (stateMachine == null) {
-							yield return GetDelegateLabel(continuationDelegates.First());
-						}
-					} while (stateMachine != null);
+			internal IEnumerable<string> WalkReturnCallstack() {
+				// This instance might be a wrapper of another instance of "SingleExecuteProtector".
+				// If that is true, we need to follow the chain to find the inner instance of "SingleExecuteProtector".
+				var singleExecuteProtector = this;
+				while (singleExecuteProtector.state is SingleExecuteProtector) {
+					singleExecuteProtector = (SingleExecuteProtector)singleExecuteProtector.state;
 				}
+
+				var invokeDelegate = singleExecuteProtector.invokeDelegate as Delegate;
+				var stateDelegate = singleExecuteProtector.state as Delegate;
+
+				// We are in favor of "state" when "invokeDelegate" is a static method and "state" is the actual delegate.
+				Delegate actualDelegate = (stateDelegate != null && stateDelegate.Target != null) ? stateDelegate : invokeDelegate;
+				if (actualDelegate == null) {
+					yield return "<COMPLETED>";
+					yield break;
+				}
+
+				var stateMachine = FindAsyncStateMachine(actualDelegate);
+				if (stateMachine == null) {
+					// Did not find the async state machine, so returns the method name as top frame and stop walking.
+					yield return GetDelegateLabel(actualDelegate);
+					yield break;
+				}
+
+				do {
+					var state = GetStateMachineFieldValueOnSuffix(stateMachine, "__state");
+					yield return string.Format(
+						CultureInfo.CurrentCulture,
+						"{0} ({1})",
+						stateMachine.GetType().FullName,
+						state);
+
+					var continuationDelegates = FindContinuationDelegates(stateMachine).ToArray();
+					if (continuationDelegates.Length == 0) {
+						break;
+					}
+
+					// TODO: It's possible but uncommon scenario to have multiple "async methods" being awaiting for one "async method".
+					// Here we just choose the first awaiting "async method" as that should be good enough for postmortem.
+					// In future we might want to revisit this to cover the other awaiting "async methods".
+					stateMachine = continuationDelegates.Select((d) => FindAsyncStateMachine(d))
+						.FirstOrDefault((s) => s != null);
+					if (stateMachine == null) {
+						yield return GetDelegateLabel(continuationDelegates.First());
+					}
+				} while (stateMachine != null);
 			}
 
 			internal void RaiseTransitioningEvents() {
@@ -846,7 +854,7 @@ namespace Microsoft.Threading {
 				Requires.NotNullOrEmpty(suffix, "suffix");
 
 				var fields = stateMachine.GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-				var field = fields.FirstOrDefault((f) => f.Name.EndsWith(suffix));
+				var field = fields.FirstOrDefault((f) => f.Name.EndsWith(suffix, StringComparison.Ordinal));
 				if (field != null) {
 					return field.GetValue(stateMachine);
 				}
