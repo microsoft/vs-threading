@@ -170,10 +170,19 @@
 				int taskId = 0;
 				foreach (var pendingTask in this.pendingTasks) {
 					taskId++;
+
+					string methodName = string.Empty;
+					if (pendingTask.EntryMethodInfo != null) {
+						methodName = string.Format(
+							" ({0}.{1})",
+							pendingTask.EntryMethodInfo.DeclaringType.FullName,
+							pendingTask.EntryMethodInfo.Name);
+					}
+
 					var node = new XElement(
 						XName.Get("Node", DgmlNamespace),
 						new XAttribute("Id", "Task#" + taskId),
-						new XAttribute("Label", "Task #" + taskId));
+						new XAttribute("Label", "Task #" + taskId + methodName));
 					AddCategory(node, "Task");
 					if (pendingTask.HasNonEmptyQueue) {
 						AddCategory(node, "NonEmptyQueue");
@@ -203,7 +212,7 @@
 					var callstackNode = new XElement(
 						XName.Get("Node", DgmlNamespace),
 						new XAttribute("Id", node.Attribute("Id").Value + "MTQueue#" + queueIndex),
-						new XAttribute("Label", pendingTasksElement.DelegateLabel));
+						new XAttribute("Label", RepresentCallstack(pendingTasksElement)));
 					var callstackLink = new XElement(
 						XName.Get("Link", DgmlNamespace),
 						new XAttribute("Source", callstackNode.Attribute("Id").Value),
@@ -216,7 +225,7 @@
 					var callstackNode = new XElement(
 						XName.Get("Node", DgmlNamespace),
 						new XAttribute("Id", node.Attribute("Id").Value + "TPQueue#" + queueIndex),
-						new XAttribute("Label", pendingTasksElement.DelegateLabel));
+						new XAttribute("Label", RepresentCallstack(pendingTasksElement)));
 					var callstackLink = new XElement(
 						XName.Get("Link", DgmlNamespace),
 						new XAttribute("Source", callstackNode.Attribute("Id").Value),
@@ -226,6 +235,24 @@
 			}
 
 			return result;
+		}
+
+		private static string RepresentCallstack(JoinableTaskFactory.SingleExecuteProtector singleExecuteProtector) {
+			Requires.NotNull(singleExecuteProtector, "singleExecuteProtector");
+
+			var stringBuilder = new StringBuilder();
+			var frameIndex = 0;
+
+			try {
+				foreach (var frame in singleExecuteProtector.WalkReturnCallstack()) {
+					stringBuilder.AppendFormat("{0}. {1}\r\n", frameIndex, frame);
+					frameIndex++;
+				}
+			} catch (Exception e) {
+				Report.Fail("RepresentCallstack caught exception: ", e);
+			}
+
+			return stringBuilder.ToString().TrimEnd();
 		}
 	}
 }
