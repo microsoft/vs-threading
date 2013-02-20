@@ -8,6 +8,7 @@ namespace Microsoft.Threading {
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
+	using System.Reflection;
 	using System.Runtime.CompilerServices;
 	using System.Text;
 	using System.Threading;
@@ -24,8 +25,9 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="owner">The instance that began the async operation.</param>
 		/// <param name="synchronouslyBlocking">A value indicating whether the launching thread will synchronously block for this job's completion.</param>
-		public JoinableTask(JoinableTaskFactory owner, bool synchronouslyBlocking)
-			: base(owner, synchronouslyBlocking) {
+		/// <param name="entryMethodInfo">The entry method's info for diagnostics.</param>
+		public JoinableTask(JoinableTaskFactory owner, bool synchronouslyBlocking, MethodInfo entryMethodInfo)
+			: base(owner, synchronouslyBlocking, entryMethodInfo) {
 		}
 
 		/// <summary>

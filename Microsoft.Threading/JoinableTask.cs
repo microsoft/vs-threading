@@ -98,11 +98,17 @@ namespace Microsoft.Threading {
 		private JoinableTaskSynchronizationContext threadPoolJobSyncContext;
 
 		/// <summary>
+		/// Store the entry method's info so we could show its full name in hang report.
+		/// </summary>
+		private MethodInfo entryMethodInfo;
+
+		/// <summary>
 		/// Initializes a new instance of the <see cref="JoinableTask"/> class.
 		/// </summary>
 		/// <param name="owner">The instance that began the async operation.</param>
 		/// <param name="synchronouslyBlocking">A value indicating whether the launching thread will synchronously block for this job's completion.</param>
-		internal JoinableTask(JoinableTaskFactory owner, bool synchronouslyBlocking) {
+		/// <param name="entryMethodInfo">The entry method's info for diagnostics.</param>
+		internal JoinableTask(JoinableTaskFactory owner, bool synchronouslyBlocking, MethodInfo entryMethodInfo) {
 			Requires.NotNull(owner, "owner");
 
 			this.owner = owner;
@@ -118,6 +124,7 @@ namespace Microsoft.Threading {
 			}
 
 			this.owner.Context.OnJoinableTaskStarted(this);
+			this.entryMethodInfo = entryMethodInfo;
 		}
 
 		internal Task DequeuerResetEvent {
@@ -262,9 +269,12 @@ namespace Microsoft.Threading {
 		#region Diagnostics collection
 
 		/// <summary>
-		/// Save the entry method's info so we could show its full name in hang report.
+		/// Gets the entry method's info so we could show its full name in hang report.
 		/// </summary>
-		internal MethodInfo EntryMethodInfo { get; set; }
+		internal MethodInfo EntryMethodInfo
+		{
+			get { return this.entryMethodInfo; }
+		}
 
 		/// <summary>
 		/// Gets a value indicating whether this task has a non-empty queue.
