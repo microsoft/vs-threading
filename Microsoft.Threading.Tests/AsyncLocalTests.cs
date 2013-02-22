@@ -2,6 +2,7 @@
 	using Microsoft.VisualStudio.TestTools.UnitTesting;
 	using System;
 	using System.Collections.Generic;
+	using System.Diagnostics;
 	using System.Linq;
 	using System.Reflection;
 	using System.Text;
@@ -108,6 +109,29 @@
 
 			Assert.IsNotNull(this.asyncLocal.Value);
 			Assert.AreSame(value, this.asyncLocal.Value);
+		}
+
+		[TestMethod, TestCategory("Performance")]
+		public void AsyncLocalPerfTest() {
+			var values = Enumerable.Range(1, 50000).Select(n => new GenericParameterHelper(n)).ToArray();
+
+			var writes = Stopwatch.StartNew();
+			for (int i = 0; i < values.Length; i++) {
+				this.asyncLocal.Value = values[0];
+			}
+
+			writes.Stop();
+
+			var reads = Stopwatch.StartNew();
+			for (int i = 0; i < values.Length; i++) {
+				var value = this.asyncLocal.Value;
+			}
+
+			reads.Stop();
+
+			// We don't actually validate the perf here. We just print out the results.
+			Console.WriteLine("Saving {0} values took {1} ms", values.Length, writes.ElapsedMilliseconds);
+			Console.WriteLine("Reading {0} values took {1} ms", values.Length, reads.ElapsedMilliseconds);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
