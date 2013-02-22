@@ -149,6 +149,11 @@
 				proxy.SomeMethod(AppDomain.CurrentDomain.Id);
 				Assert.AreSame(value, this.asyncLocal.Value);
 
+				// Nothing permanently damaged in the ability to set/get values.
+				this.asyncLocal.Value = null;
+				this.asyncLocal.Value = value;
+				Assert.AreSame(value, this.asyncLocal.Value);
+
 				// Verify we can call it after clearing the value.
 				this.asyncLocal.Value = null;
 				proxy.SomeMethod(AppDomain.CurrentDomain.Id);
