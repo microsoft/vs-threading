@@ -1662,7 +1662,7 @@
 			task.GetAwaiter().GetResult(); // rethrow any failures
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout), TestCategory("GC")]
 		public void JoinableTaskReleasedBySyncContextAfterCompletion() {
 			SynchronizationContext syncContext = null;
 			var job = new WeakReference(this.asyncPump.RunAsync(() => {
@@ -1702,7 +1702,7 @@
 			outerJoinable.Join();
 		}
 
-		[TestMethod, Timeout(TestTimeout * 2)]
+		[TestMethod, Timeout(TestTimeout * 2), TestCategory("GC")]
 		public void RunSynchronouslyTaskNoYieldGCPressure() {
 			this.CheckGCPressure(delegate {
 				this.asyncPump.Run(delegate {
@@ -1711,7 +1711,7 @@
 			}, maxBytesAllocated: 245);
 		}
 
-		[TestMethod, Timeout(TestTimeout * 2)]
+		[TestMethod, Timeout(TestTimeout * 2), TestCategory("GC")]
 		public void RunSynchronouslyTaskOfTNoYieldGCPressure() {
 			Task<object> completedTask = Task.FromResult<object>(null);
 
@@ -1722,7 +1722,7 @@
 			}, maxBytesAllocated: 245);
 		}
 
-		[TestMethod, Timeout(TestTimeout * 2)]
+		[TestMethod, Timeout(TestTimeout * 2), TestCategory("GC")]
 		public void RunSynchronouslyTaskWithYieldGCPressure() {
 			this.CheckGCPressure(delegate {
 				this.asyncPump.Run(async delegate {
@@ -1731,7 +1731,7 @@
 			}, maxBytesAllocated: 1800);
 		}
 
-		[TestMethod, Timeout(TestTimeout * 2)]
+		[TestMethod, Timeout(TestTimeout * 2), TestCategory("GC")]
 		public void RunSynchronouslyTaskOfTWithYieldGCPressure() {
 			Task<object> completedTask = Task.FromResult<object>(null);
 

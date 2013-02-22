@@ -81,7 +81,7 @@
 			Assert.IsNull(this.asyncLocal.Value);
 		}
 
-		[TestMethod]
+		[TestMethod, TestCategory("GC")]
 		public void SurvivesGC() {
 			var value = new GenericParameterHelper(5);
 			this.asyncLocal.Value = value;
