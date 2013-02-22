@@ -134,7 +134,7 @@
 			Console.WriteLine("Reading {0} values took {1} ms", values.Length, reads.ElapsedMilliseconds);
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		[TestMethod]
 		public void CallAcrossAppDomainBoundariesWithNonSerializableData() {
 			var otherDomain = AppDomain.CreateDomain("test domain");
 			try {
@@ -144,8 +144,10 @@
 				proxy.SomeMethod(AppDomain.CurrentDomain.Id);
 
 				// Verify we can call it while AsyncLocal has a non-serializable value.
-				this.asyncLocal.Value = new GenericParameterHelper();
+				var value = new GenericParameterHelper();
+				this.asyncLocal.Value = value;
 				proxy.SomeMethod(AppDomain.CurrentDomain.Id);
+				Assert.AreSame(value, this.asyncLocal.Value);
 
 				// Verify we can call it after clearing the value.
 				this.asyncLocal.Value = null;
