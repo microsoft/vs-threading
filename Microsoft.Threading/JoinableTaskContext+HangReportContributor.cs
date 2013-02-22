@@ -172,11 +172,12 @@
 					taskId++;
 
 					string methodName = string.Empty;
-					if (pendingTask.EntryMethodInfo != null) {
+					var entryMethodInfo = pendingTask.EntryMethodInfo;
+					if (entryMethodInfo != null) {
 						methodName = string.Format(
 							" ({0}.{1})",
-							pendingTask.EntryMethodInfo.DeclaringType.FullName,
-							pendingTask.EntryMethodInfo.Name);
+							entryMethodInfo.DeclaringType.FullName,
+							entryMethodInfo.Name);
 					}
 
 					var node = new XElement(
