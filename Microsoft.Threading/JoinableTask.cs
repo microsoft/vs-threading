@@ -98,17 +98,17 @@ namespace Microsoft.Threading {
 		private JoinableTaskSynchronizationContext threadPoolJobSyncContext;
 
 		/// <summary>
-		/// Store the entry method's info so we could show its full name in hang report.
+		/// Store the task's initial delegate so we could show its full name in hang report.
 		/// </summary>
-		private MethodInfo entryMethodInfo;
+		private Delegate initialDelegate;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="JoinableTask"/> class.
 		/// </summary>
 		/// <param name="owner">The instance that began the async operation.</param>
 		/// <param name="synchronouslyBlocking">A value indicating whether the launching thread will synchronously block for this job's completion.</param>
-		/// <param name="entryMethodInfo">The entry method's info for diagnostics.</param>
-		internal JoinableTask(JoinableTaskFactory owner, bool synchronouslyBlocking, MethodInfo entryMethodInfo) {
+		/// <param name="initialDelegate">The entry method's info for diagnostics.</param>
+		internal JoinableTask(JoinableTaskFactory owner, bool synchronouslyBlocking, Delegate initialDelegate) {
 			Requires.NotNull(owner, "owner");
 
 			this.owner = owner;
@@ -124,7 +124,7 @@ namespace Microsoft.Threading {
 			}
 
 			this.owner.Context.OnJoinableTaskStarted(this);
-			this.entryMethodInfo = entryMethodInfo;
+			this.initialDelegate = initialDelegate;
 		}
 
 		internal Task DequeuerResetEvent {
@@ -271,9 +271,11 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Gets the entry method's info so we could show its full name in hang report.
 		/// </summary>
-		internal MethodInfo EntryMethodInfo
-		{
-			get { return this.entryMethodInfo; }
+		internal MethodInfo EntryMethodInfo {
+			get {
+				var del = this.initialDelegate;
+				return del != null ? del.Method : null;
+			}
 		}
 
 		/// <summary>
@@ -626,6 +628,7 @@ namespace Microsoft.Threading {
 					this.threadPoolJobSyncContext.OnCompleted();
 				}
 
+				this.initialDelegate = null;
 				this.state |= JoinableTaskFlags.CompleteFinalized;
 			}
 		}

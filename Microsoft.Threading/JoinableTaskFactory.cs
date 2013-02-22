@@ -309,7 +309,7 @@ namespace Microsoft.Threading {
 		private JoinableTask RunAsync(Func<Task> asyncMethod, bool synchronouslyBlocking) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
-			var job = new JoinableTask(this, synchronouslyBlocking, asyncMethod.Method);
+			var job = new JoinableTask(this, synchronouslyBlocking, asyncMethod);
 			using (var framework = new RunFramework(this, job)) {
 				Task asyncMethodResult;
 				try {
@@ -341,7 +341,7 @@ namespace Microsoft.Threading {
 		private JoinableTask<T> RunAsync<T>(Func<Task<T>> asyncMethod, bool synchronouslyBlocking) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
-			var job = new JoinableTask<T>(this, synchronouslyBlocking, asyncMethod.Method);
+			var job = new JoinableTask<T>(this, synchronouslyBlocking, asyncMethod);
 			using (var framework = new RunFramework(this, job)) {
 				Task<T> asyncMethodResult;
 				try {

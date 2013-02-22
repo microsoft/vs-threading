@@ -25,9 +25,9 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="owner">The instance that began the async operation.</param>
 		/// <param name="synchronouslyBlocking">A value indicating whether the launching thread will synchronously block for this job's completion.</param>
-		/// <param name="entryMethodInfo">The entry method's info for diagnostics.</param>
-		public JoinableTask(JoinableTaskFactory owner, bool synchronouslyBlocking, MethodInfo entryMethodInfo)
-			: base(owner, synchronouslyBlocking, entryMethodInfo) {
+		/// <param name="initialDelegate">The entry method's info for diagnostics.</param>
+		public JoinableTask(JoinableTaskFactory owner, bool synchronouslyBlocking, Delegate initialDelegate)
+			: base(owner, synchronouslyBlocking, initialDelegate) {
 		}
 
 		/// <summary>
