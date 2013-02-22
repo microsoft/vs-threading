@@ -20,12 +20,20 @@
 		/// </summary>
 		private readonly ConditionalWeakTable<object, T> valueTable = new ConditionalWeakTable<object, T>();
 
+		/// <summary>
+		/// A table that is used to look up a previously stored simple object to represent a given value.
+		/// </summary>
 		private readonly ConditionalWeakTable<T, object> reverseLookupTable = new ConditionalWeakTable<T, object>();
 
 		/// <summary>
 		/// A unique GUID that prevents this instance from conflicting with other instances.
 		/// </summary>
 		private readonly string callContextKey = Guid.NewGuid().ToString();
+
+		/// <summary>
+		/// An ever-incrementing unique value counter for boxing novel simple objects.
+		/// </summary>
+		private uint boxedValueCounter;
 
 		/// <summary>
 		/// Gets or sets the value to associate with the current CallContext.
@@ -50,7 +58,11 @@
 					lock (this.syncObject) {
 						object callContextValue;
 						if (!this.reverseLookupTable.TryGetValue(value, out callContextValue)) {
-							callContextValue = new object();
+							// We box an incremented integer and use that as our key.
+							// We need a ref type because we need the dictionary to based on references,
+							// but an ordinary "new object" doesn't serialize/deserialize and maintain identity.
+							// So we box an int so that it can be recognized across serialization.
+							callContextValue = ++boxedValueCounter;
 						}
 
 						CallContext.LogicalSetData(this.callContextKey, callContextValue);
