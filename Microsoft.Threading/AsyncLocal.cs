@@ -18,7 +18,7 @@
 		/// <summary>
 		/// A weak reference table that associates simple objects with some specific type that cannot be marshaled.
 		/// </summary>
-		private readonly WeakKeyDictionary<object, T> valueTable = new WeakKeyDictionary<object, T>();
+		private readonly ConditionalWeakTable<object, T> valueTable = new ConditionalWeakTable<object, T>();
 
 		/// <summary>
 		/// A table that is used to look up a previously stored simple object to represent a given value.
@@ -66,7 +66,8 @@
 						}
 
 						CallContext.LogicalSetData(this.callContextKey, callContextValue);
-						this.valueTable[callContextValue] = value;
+						this.valueTable.Remove(callContextValue);
+						this.valueTable.Add(callContextValue, value);
 					}
 				} else {
 					CallContext.FreeNamedDataSlot(this.callContextKey);
