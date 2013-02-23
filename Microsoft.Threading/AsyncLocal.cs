@@ -23,6 +23,10 @@
 		/// <summary>
 		/// A table that is used to look up a previously stored simple object to represent a given value.
 		/// </summary>
+		/// <remarks>
+		/// This is just an optimization. We could totally remove this field and all use of it and the tests still pass,
+		/// amazingly enough.
+		/// </remarks>
 		private readonly ConditionalWeakTable<T, object> reverseLookupTable = new ConditionalWeakTable<T, object>();
 
 		/// <summary>
@@ -63,6 +67,7 @@
 							// but an ordinary "new object" doesn't serialize/deserialize and maintain identity.
 							// So we box an int so that it can be recognized across serialization.
 							callContextValue = ++boxedValueCounter;
+							this.reverseLookupTable.Add(value, callContextValue);
 						}
 
 						CallContext.LogicalSetData(this.callContextKey, callContextValue);
