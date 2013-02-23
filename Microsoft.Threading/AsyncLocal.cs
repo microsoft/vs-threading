@@ -35,11 +35,6 @@
 		private readonly string callContextKey = Guid.NewGuid().ToString();
 
 		/// <summary>
-		/// An ever-incrementing unique value counter for boxing novel simple objects.
-		/// </summary>
-		private uint boxedValueCounter;
-
-		/// <summary>
 		/// Gets or sets the value to associate with the current CallContext.
 		/// </summary>
 		public T Value {
@@ -66,7 +61,7 @@
 							// We need a ref type because we need the dictionary to based on references,
 							// but an ordinary "new object" doesn't serialize/deserialize and maintain identity.
 							// So we box an int so that it can be recognized across serialization.
-							callContextValue = ++boxedValueCounter;
+							callContextValue = 1; // "new object()" loses identity across remoting calls, but boxing any value preserves it, somehow.
 							this.reverseLookupTable.Add(value, callContextValue);
 						}
 

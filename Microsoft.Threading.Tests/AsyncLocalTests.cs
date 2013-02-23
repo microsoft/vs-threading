@@ -57,6 +57,12 @@
 			Assert.IsNull(this.asyncLocal.Value);
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task IndependentValuesBetweenContexts() {
+			await IndependentValuesBetweenContextsHelper<GenericParameterHelper>();
+			await IndependentValuesBetweenContextsHelper<object>();
+		}
+
 		[TestMethod]
 		public void SetNewValuesRepeatedly() {
 			for (int i = 0; i < 10; i++) {
@@ -103,8 +109,9 @@
 			// TestContext.WriteLine causes the CallContext to be serialized.
 			// When a .testsettings file is applied to the test runner, the
 			// original contents of the CallContext are replaced with a
-			// serialize->deserialize clone, which breaks the reference equality
-			// of the objects stored in the AsyncLocal class's private fields.
+			// serialize->deserialize clone, which can break the reference equality
+			// of the objects stored in the AsyncLocal class's private fields
+			// if it's not done properly.
 			this.TestContext.WriteLine("Foobar");
 
 			Assert.IsNotNull(this.asyncLocal.Value);
@@ -160,6 +167,33 @@
 			} finally {
 				AppDomain.Unload(otherDomain);
 			}
+		}
+
+		private static async Task IndependentValuesBetweenContextsHelper<T>() where T : class, new() {
+			var asyncLocal = new AsyncLocal<T>();
+			var player1 = new AsyncAutoResetEvent();
+			var player2 = new AsyncAutoResetEvent();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+					Assert.IsNull(asyncLocal.Value);
+					var value = new T();
+					asyncLocal.Value = value;
+					Assert.AreSame(value, asyncLocal.Value);
+					player1.Set();
+					await player2.WaitAsync();
+					Assert.AreSame(value, asyncLocal.Value);
+				}),
+				Task.Run(async delegate {
+					await player1.WaitAsync();
+					Assert.IsNull(asyncLocal.Value);
+					var value = new T();
+					asyncLocal.Value = value;
+					Assert.AreSame(value, asyncLocal.Value);
+					asyncLocal.Value = null;
+					player2.Set();
+				}));
+
+			Assert.IsNull(asyncLocal.Value);
 		}
 
 		private class OtherDomainProxy : MarshalByRefObject {
