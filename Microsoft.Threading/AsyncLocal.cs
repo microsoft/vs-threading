@@ -59,6 +59,9 @@
 						if (!this.reverseLookupTable.TryGetValue(value, out callContextValue)) {
 							// Use a MarshalByRefObject for the value so it doesn't
 							// lose reference identity across appdomain transitions.
+							// We don't yet have a unit test that proves it's necessary,
+							// but T4 templates in VS managed to wipe out the AsyncLocal<T>.Value
+							// if we don't use a MarshalByRefObject-derived value here.
 							callContextValue = new IdentityNode();
 							this.reverseLookupTable.Add(value, callContextValue);
 						}
