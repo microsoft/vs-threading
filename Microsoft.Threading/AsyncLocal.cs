@@ -57,11 +57,9 @@
 					lock (this.syncObject) {
 						object callContextValue;
 						if (!this.reverseLookupTable.TryGetValue(value, out callContextValue)) {
-							// We box an incremented integer and use that as our key.
-							// We need a ref type because we need the dictionary to based on references,
-							// but an ordinary "new object" doesn't serialize/deserialize and maintain identity.
-							// So we box an int so that it can be recognized across serialization.
-							callContextValue = 1; // "new object()" loses identity across remoting calls, but boxing any value preserves it, somehow.
+							// Use a MarshalByRefObject for the value so it doesn't
+							// lose reference identity across appdomain transitions.
+							callContextValue = new IdentityNode();
 							this.reverseLookupTable.Add(value, callContextValue);
 						}
 
@@ -73,6 +71,12 @@
 					CallContext.FreeNamedDataSlot(this.callContextKey);
 				}
 			}
+		}
+
+		/// <summary>
+		/// A simple marshalable object that can retain identity across app domain transitions.
+		/// </summary>
+		private class IdentityNode : MarshalByRefObject {
 		}
 	}
 }
