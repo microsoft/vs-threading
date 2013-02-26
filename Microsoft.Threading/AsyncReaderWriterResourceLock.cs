@@ -460,7 +460,7 @@ namespace Microsoft.Threading {
 							Task.Factory.StartNew(preparationDelegate, stateObject, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap(),
 							finalState);
 					}
-				} else if (preparationTask.State != finalState) {
+				} else if (preparationTask.State != finalState || preparationTask.PreparationTask.IsFaulted) {
 					var preparationDelegate = forConcurrentUse
 						? this.prepareResourceConcurrentContinuationDelegate
 						: this.prepareResourceExclusiveContinuationDelegate;
