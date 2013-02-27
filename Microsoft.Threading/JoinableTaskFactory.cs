@@ -57,7 +57,7 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// Initializes a new instance of the <see cref="JoinableTaskFactory"/> class.
 		/// </summary>
-		private JoinableTaskFactory(JoinableTaskContext owner, JoinableTaskCollection collection) {
+		internal JoinableTaskFactory(JoinableTaskContext owner, JoinableTaskCollection collection) {
 			Requires.NotNull(owner, "owner");
 			Assumes.True(collection == null || collection.Context == owner);
 
@@ -92,6 +92,13 @@ namespace Microsoft.Threading {
 		/// </summary>
 		internal SynchronizationContext ApplicableJobSyncContext {
 			get { return this.Context.MainThread == Thread.CurrentThread ? this.mainThreadJobSyncContext : null; }
+		}
+
+		/// <summary>
+		/// Gets the collection to which created tasks belong until they complete. May be null.
+		/// </summary>
+		internal JoinableTaskCollection Collection {
+			get { return this.jobCollection; }
 		}
 
 		/// <summary>
@@ -188,7 +195,7 @@ namespace Microsoft.Threading {
 		/// </summary>
 		/// <param name="callback">The callback to invoke.</param>
 		/// <param name="state">State to pass to the callback.</param>
-		protected virtual void PostToUnderlyingSynchronizationContext(SendOrPostCallback callback, object state) {
+		protected internal virtual void PostToUnderlyingSynchronizationContext(SendOrPostCallback callback, object state) {
 			Requires.NotNull(callback, "callback");
 			Assumes.NotNull(this.Context.UnderlyingSynchronizationContext);
 
@@ -202,7 +209,7 @@ namespace Microsoft.Threading {
 		/// <remarks>
 		/// This event may be raised on any thread, including the main thread.
 		/// </remarks>
-		protected virtual void OnTransitioningToMainThread(JoinableTask joinableTask) {
+		protected internal virtual void OnTransitioningToMainThread(JoinableTask joinableTask) {
 			Requires.NotNull(joinableTask, "joinableTask");
 		}
 
@@ -214,7 +221,7 @@ namespace Microsoft.Threading {
 		/// <remarks>
 		/// This event is usually raised on the main thread, but can be on another thread when <paramref name="canceled"/> is <c>true</c>.
 		/// </remarks>
-		protected virtual void OnTransitionedToMainThread(JoinableTask joinableTask, bool canceled) {
+		protected internal virtual void OnTransitionedToMainThread(JoinableTask joinableTask, bool canceled) {
 			Requires.NotNull(joinableTask, "joinableTask");
 		}
 
