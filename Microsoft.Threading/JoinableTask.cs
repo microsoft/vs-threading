@@ -758,9 +758,11 @@ namespace Microsoft.Threading {
 		}
 
 		private JoinRelease AmbientJobJoinsThis() {
-			var ambientJob = this.owner.Context.AmbientTask;
-			if (ambientJob != null && ambientJob != this) {
-				return ambientJob.AddDependency(this);
+			if (!this.IsCompleted) {
+				var ambientJob = this.owner.Context.AmbientTask;
+				if (ambientJob != null && ambientJob != this) {
+					return ambientJob.AddDependency(this);
+				}
 			}
 
 			return new JoinRelease();
