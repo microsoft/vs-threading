@@ -189,13 +189,6 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
-		/// Creates a factory without a <see cref="JoinableTaskCollection"/>.
-		/// </summary>
-		public virtual JoinableTaskFactory CreateDefaultFactory() {
-			return new JoinableTaskFactory(this);
-		}
-
-		/// <summary>
 		/// Creates a collection for in-flight joinable tasks.
 		/// </summary>
 		/// <returns>A new joinable task collection.</returns>
@@ -214,6 +207,16 @@ namespace Microsoft.Threading {
 		/// values in the <paramref name="hangDuration"/> parameter.
 		/// </remarks>
 		protected internal virtual void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId) {
+		}
+
+		/// <summary>
+		/// Creates a factory without a <see cref="JoinableTaskCollection"/>.
+		/// </summary>
+		/// <remarks>
+		/// Used for initializing the <see cref="Factory"/> property.
+		/// </remarks>
+		protected virtual JoinableTaskFactory CreateDefaultFactory() {
+			return new JoinableTaskFactory(this);
 		}
 
 		/// <summary>
