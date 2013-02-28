@@ -31,6 +31,7 @@ namespace Microsoft.Threading {
 		/// uses a global lock around critical composition operations because containers can be interconnected
 		/// in arbitrary ways. The code in this file has a very similar problem, so we use the same solution.
 		/// </remarks>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private readonly ReaderWriterLockSlim syncContextLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
 		/// <summary>
@@ -57,6 +58,7 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// A single joinable task factory that itself cannot be joined.
 		/// </summary>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private JoinableTaskFactory nonJoinableFactory;
 
 		/// <summary>

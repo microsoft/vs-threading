@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.Threading {
 	using System;
 	using System.Collections.Generic;
+	using System.Diagnostics;
 	using System.Linq;
 	using System.Text;
 	using System.Threading;
@@ -13,11 +14,13 @@
 		/// <summary>
 		/// The inner JoinableTaskContext.
 		/// </summary>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private readonly JoinableTaskContext context;
 
 		/// <summary>
 		/// A single joinable task factory that itself cannot be joined.
 		/// </summary>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private JoinableTaskFactory nonJoinableFactory;
 
 		/// <summary>
