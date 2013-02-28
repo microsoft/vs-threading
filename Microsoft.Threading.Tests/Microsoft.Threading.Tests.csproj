@@ -70,6 +70,7 @@
     <Compile Include="DelegatingJoinableTaskFactoryTests.cs" />
     <Compile Include="JoinableTaskAndAsyncReaderWriterLockTests.cs" />
     <Compile Include="JoinableTaskCollectionTests.cs" />
+    <Compile Include="JoinableTaskContextNodeTests.cs" />
     <Compile Include="JoinableTaskContextTests.cs" />
     <Compile Include="JoinableTaskFactoryTests.cs" />
     <Compile Include="JoinableTaskTestBase.cs" />
