@@ -674,13 +674,13 @@
 			this.LockReleaseTestHelper(this.asyncLock.ReadLockAsync());
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout), TestCategory("GC")]
 		public async Task UncontestedTopLevelReadLockAsyncGarbageCheck() {
 			var cts = new CancellationTokenSource();
 			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync(cts.Token), false);
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout), TestCategory("GC")]
 		public async Task NestedReadLockAsyncGarbageCheck() {
 			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync(), false);
 		}
@@ -911,13 +911,13 @@
 			this.LockReleaseTestHelper(this.asyncLock.UpgradeableReadLockAsync());
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout), TestCategory("GC")]
 		public async Task UncontestedTopLevelUpgradeableReadLockAsyncGarbageCheck() {
 			var cts = new CancellationTokenSource();
 			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync(cts.Token), true);
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout), TestCategory("GC")]
 		public async Task NestedUpgradeableReadLockAsyncGarbageCheck() {
 			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync(), true);
 		}
@@ -1348,13 +1348,13 @@
 			}));
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout), TestCategory("GC")]
 		public async Task UncontestedTopLevelWriteLockAsyncGarbageCheck() {
 			var cts = new CancellationTokenSource();
 			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync(cts.Token), true);
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout), TestCategory("GC")]
 		public async Task NestedWriteLockAsyncGarbageCheck() {
 			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync(), true);
 		}
@@ -1568,6 +1568,7 @@
 					await writeRequestPending.Task;
 					using (await this.asyncLock.WriteLockAsync()) {
 						Assert.IsFalse(writeLockObtained.Task.IsCompleted, "The upgradeable read should have received its write lock first.");
+						PrintHangReport();
 						await upgradeableReadUpgraded.SetAsync();
 					}
 				}
@@ -2921,6 +2922,23 @@
 
 		#endregion
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void GetHangReportSimple() {
+			IHangReportContributor reportContributor = this.asyncLock;
+			var report = reportContributor.GetHangReport();
+			Assert.IsNotNull(report);
+			Assert.IsNotNull(report.Content);
+			Assert.IsNotNull(report.ContentType);
+			Assert.IsNotNull(report.ContentName);
+			Console.WriteLine(report.Content);
+		}
+
+		private void PrintHangReport() {
+			IHangReportContributor reportContributor = this.asyncLock;
+			var report = reportContributor.GetHangReport();
+			Console.WriteLine(report.Content);
+		}
+
 		private void LockReleaseTestHelper(AsyncReaderWriterLock.Awaitable initialLock) {
 			TestUtilities.Run(async delegate {
 				var staScheduler = TaskScheduler.FromCurrentSynchronizationContext();
@@ -3010,8 +3028,8 @@
 					}
 
 					long memory2 = GC.GetTotalMemory(false);
-					const int NestingLevel = 3;
 					long allocated = (memory2 - memory1) / iterations;
+					const int NestingLevel = 3;
 					long allowed = MaxGarbagePerLock * NestingLevel + (yieldingLock ? MaxGarbagePerYield : 0);
 					this.TestContext.WriteLine("Allocated bytes: {0} ({1} allowed)", allocated, allowed);
 					passingAttemptObserved = allocated <= allowed;

@@ -17,6 +17,98 @@
 			Assert.AreEqual(2, n.Data);
 		}
 
+		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(ArgumentNullException))]
+		public void WithCancellationNull() {
+			ThreadingTools.WithCancellation(null, CancellationToken.None);
+		}
+
+		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(ArgumentNullException))]
+		public void WithCancellationOfTNull() {
+			ThreadingTools.WithCancellation<object>(null, CancellationToken.None);
+		}
+
+		/// <summary>
+		/// Verifies that a fast path returns the original task if it has already completed.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public void WithCancellationOfPrecompletedTask() {
+			var tcs = new TaskCompletionSource<object>();
+			tcs.SetResult(null);
+			var cts = new CancellationTokenSource();
+			Assert.AreSame(tcs.Task, ((Task)tcs.Task).WithCancellation(cts.Token));
+		}
+
+		/// <summary>
+		/// Verifies that a fast path returns the original task if it has already completed.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public void WithCancellationOfPrecompletedTaskOfT() {
+			var tcs = new TaskCompletionSource<object>();
+			tcs.SetResult(null);
+			var cts = new CancellationTokenSource();
+			Assert.AreSame(tcs.Task, tcs.Task.WithCancellation(cts.Token));
+		}
+
+		/// <summary>
+		/// Verifies that a fast path returns the original task if it has already completed.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public void WithCancellationOfPrefaultedTask() {
+			var tcs = new TaskCompletionSource<object>();
+			tcs.SetException(new InvalidOperationException());
+			var cts = new CancellationTokenSource();
+			Assert.AreSame(tcs.Task, ((Task)tcs.Task).WithCancellation(cts.Token));
+		}
+
+		/// <summary>
+		/// Verifies that a fast path returns the original task if it has already completed.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public void WithCancellationOfPrefaultedTaskOfT() {
+			var tcs = new TaskCompletionSource<object>();
+			tcs.SetException(new InvalidOperationException());
+			var cts = new CancellationTokenSource();
+			Assert.AreSame(tcs.Task, tcs.Task.WithCancellation(cts.Token));
+		}
+		
+		/// <summary>
+		/// Verifies that a fast path returns the original task if it has already completed.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public void WithCancellationOfPrecanceledTask() {
+			var tcs = new TaskCompletionSource<object>();
+			tcs.SetCanceled();
+			var cts = new CancellationTokenSource();
+			Assert.AreSame(tcs.Task, ((Task)tcs.Task).WithCancellation(cts.Token));
+		}
+
+		/// <summary>
+		/// Verifies that a fast path returns the original task if it has already completed.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public void WithCancellationOfPrecanceledTaskOfT() {
+			var tcs = new TaskCompletionSource<object>();
+			tcs.SetCanceled();
+			var cts = new CancellationTokenSource();
+			Assert.AreSame(tcs.Task, tcs.Task.WithCancellation(cts.Token));
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void WithCancellationAndPrecancelledToken() {
+			var tcs = new TaskCompletionSource<object>();
+			var cts = new CancellationTokenSource();
+			cts.Cancel();
+			Assert.IsTrue(((Task)tcs.Task).WithCancellation(cts.Token).IsCanceled);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void WithCancellationOfTAndPrecancelledToken() {
+			var tcs = new TaskCompletionSource<object>();
+			var cts = new CancellationTokenSource();
+			cts.Cancel();
+			Assert.IsTrue(tcs.Task.WithCancellation(cts.Token).IsCanceled);
+		}
+
 		[TestMethod, Timeout(TestTimeout)]
 		public void WithCancellationOfTCanceled() {
 			var tcs = new TaskCompletionSource<object>();

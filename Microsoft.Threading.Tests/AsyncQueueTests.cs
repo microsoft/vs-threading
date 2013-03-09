@@ -390,7 +390,7 @@
 			Assert.AreEqual(1, invoked);
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout), TestCategory("GC")]
 		public void UnusedQueueGCPressure() {
 			this.CheckGCPressure(
 				delegate {

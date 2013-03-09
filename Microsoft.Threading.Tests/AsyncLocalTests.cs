@@ -2,6 +2,7 @@
 	using Microsoft.VisualStudio.TestTools.UnitTesting;
 	using System;
 	using System.Collections.Generic;
+	using System.Diagnostics;
 	using System.Linq;
 	using System.Reflection;
 	using System.Text;
@@ -56,6 +57,12 @@
 			Assert.IsNull(this.asyncLocal.Value);
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task IndependentValuesBetweenContexts() {
+			await IndependentValuesBetweenContextsHelper<GenericParameterHelper>();
+			await IndependentValuesBetweenContextsHelper<object>();
+		}
+
 		[TestMethod]
 		public void SetNewValuesRepeatedly() {
 			for (int i = 0; i < 10; i++) {
@@ -80,7 +87,7 @@
 			Assert.IsNull(this.asyncLocal.Value);
 		}
 
-		[TestMethod]
+		[TestMethod, TestCategory("GC")]
 		public void SurvivesGC() {
 			var value = new GenericParameterHelper(5);
 			this.asyncLocal.Value = value;
@@ -102,15 +109,39 @@
 			// TestContext.WriteLine causes the CallContext to be serialized.
 			// When a .testsettings file is applied to the test runner, the
 			// original contents of the CallContext are replaced with a
-			// serialize->deserialize clone, which breaks the reference equality
-			// of the objects stored in the AsyncLocal class's private fields.
+			// serialize->deserialize clone, which can break the reference equality
+			// of the objects stored in the AsyncLocal class's private fields
+			// if it's not done properly.
 			this.TestContext.WriteLine("Foobar");
 
 			Assert.IsNotNull(this.asyncLocal.Value);
 			Assert.AreSame(value, this.asyncLocal.Value);
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		[TestMethod, TestCategory("Performance")]
+		public void AsyncLocalPerfTest() {
+			var values = Enumerable.Range(1, 50000).Select(n => new GenericParameterHelper(n)).ToArray();
+
+			var writes = Stopwatch.StartNew();
+			for (int i = 0; i < values.Length; i++) {
+				this.asyncLocal.Value = values[0];
+			}
+
+			writes.Stop();
+
+			var reads = Stopwatch.StartNew();
+			for (int i = 0; i < values.Length; i++) {
+				var value = this.asyncLocal.Value;
+			}
+
+			reads.Stop();
+
+			// We don't actually validate the perf here. We just print out the results.
+			Console.WriteLine("Saving {0} values took {1} ms", values.Length, writes.ElapsedMilliseconds);
+			Console.WriteLine("Reading {0} values took {1} ms", values.Length, reads.ElapsedMilliseconds);
+		}
+
+		[TestMethod]
 		public void CallAcrossAppDomainBoundariesWithNonSerializableData() {
 			var otherDomain = AppDomain.CreateDomain("test domain");
 			try {
@@ -120,8 +151,15 @@
 				proxy.SomeMethod(AppDomain.CurrentDomain.Id);
 
 				// Verify we can call it while AsyncLocal has a non-serializable value.
-				this.asyncLocal.Value = new GenericParameterHelper();
+				var value = new GenericParameterHelper();
+				this.asyncLocal.Value = value;
 				proxy.SomeMethod(AppDomain.CurrentDomain.Id);
+				Assert.AreSame(value, this.asyncLocal.Value);
+
+				// Nothing permanently damaged in the ability to set/get values.
+				this.asyncLocal.Value = null;
+				this.asyncLocal.Value = value;
+				Assert.AreSame(value, this.asyncLocal.Value);
 
 				// Verify we can call it after clearing the value.
 				this.asyncLocal.Value = null;
@@ -129,6 +167,33 @@
 			} finally {
 				AppDomain.Unload(otherDomain);
 			}
+		}
+
+		private static async Task IndependentValuesBetweenContextsHelper<T>() where T : class, new() {
+			var asyncLocal = new AsyncLocal<T>();
+			var player1 = new AsyncAutoResetEvent();
+			var player2 = new AsyncAutoResetEvent();
+			await Task.WhenAll(
+				Task.Run(async delegate {
+					Assert.IsNull(asyncLocal.Value);
+					var value = new T();
+					asyncLocal.Value = value;
+					Assert.AreSame(value, asyncLocal.Value);
+					player1.Set();
+					await player2.WaitAsync();
+					Assert.AreSame(value, asyncLocal.Value);
+				}),
+				Task.Run(async delegate {
+					await player1.WaitAsync();
+					Assert.IsNull(asyncLocal.Value);
+					var value = new T();
+					asyncLocal.Value = value;
+					Assert.AreSame(value, asyncLocal.Value);
+					asyncLocal.Value = null;
+					player2.Set();
+				}));
+
+			Assert.IsNull(asyncLocal.Value);
 		}
 
 		private class OtherDomainProxy : MarshalByRefObject {

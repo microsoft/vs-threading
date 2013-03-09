@@ -25,6 +25,17 @@
 			Assert.IsTrue(evt.Wait(TestTimeout));
 		}
 
+		[TestMethod, ExpectedException(typeof(ArgumentNullException))]
+		public void ApplyResultToNullTask() {
+			TplExtensions.ApplyResultTo(null, new TaskCompletionSource<object>());
+		}
+
+		[TestMethod, ExpectedException(typeof(ArgumentNullException))]
+		public void ApplyResultToNullTaskSource() {
+			var tcs = new TaskCompletionSource<object>();
+			TplExtensions.ApplyResultTo(tcs.Task, null);
+		}
+
 		[TestMethod]
 		public void ApplyResultTo() {
 			var tcs1 = new TaskCompletionSource<GenericParameterHelper>();
@@ -43,7 +54,81 @@
 			tcs2 = new TaskCompletionSource<GenericParameterHelper>();
 			tcs1.Task.ApplyResultTo(tcs2);
 			tcs1.SetException(new ApplicationException());
-			Assert.IsInstanceOfType(tcs2.Task.Exception.InnerException.InnerException, typeof(ApplicationException));
+			Assert.AreSame(tcs1.Task.Exception.InnerException, tcs2.Task.Exception.InnerException);
+		}
+
+		[TestMethod]
+		public void ApplyResultToPreCompleted() {
+			var tcs1 = new TaskCompletionSource<GenericParameterHelper>();
+			var tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+			tcs1.SetResult(new GenericParameterHelper(2));
+			tcs1.Task.ApplyResultTo(tcs2);
+			Assert.AreEqual(2, tcs2.Task.Result.Data);
+
+			tcs1 = new TaskCompletionSource<GenericParameterHelper>();
+			tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+			tcs1.SetCanceled();
+			tcs1.Task.ApplyResultTo(tcs2);
+			Assert.IsTrue(tcs2.Task.IsCanceled);
+
+			tcs1 = new TaskCompletionSource<GenericParameterHelper>();
+			tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+			tcs1.SetException(new ApplicationException());
+			tcs1.Task.ApplyResultTo(tcs2);
+			Assert.AreSame(tcs1.Task.Exception.InnerException, tcs2.Task.Exception.InnerException);
+		}
+
+		[TestMethod, ExpectedException(typeof(ArgumentNullException))]
+		public void ApplyResultToNullTaskNonGeneric() {
+			TplExtensions.ApplyResultTo((Task)null, new TaskCompletionSource<object>());
+		}
+
+		[TestMethod, ExpectedException(typeof(ArgumentNullException))]
+		public void ApplyResultToNullTaskSourceNonGeneric() {
+			var tcs = new TaskCompletionSource<object>();
+			TplExtensions.ApplyResultTo((Task)tcs.Task, (TaskCompletionSource<object>)null);
+		}
+
+		[TestMethod]
+		public void ApplyResultToNonGeneric() {
+			var tcs1 = new TaskCompletionSource<GenericParameterHelper>();
+			var tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+			((Task)tcs1.Task).ApplyResultTo(tcs2);
+			tcs1.SetResult(null);
+			Assert.AreEqual(TaskStatus.RanToCompletion, tcs2.Task.Status);
+
+			tcs1 = new TaskCompletionSource<GenericParameterHelper>();
+			tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+			((Task)tcs1.Task).ApplyResultTo(tcs2);
+			tcs1.SetCanceled();
+			Assert.IsTrue(tcs2.Task.IsCanceled);
+
+			tcs1 = new TaskCompletionSource<GenericParameterHelper>();
+			tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+			((Task)tcs1.Task).ApplyResultTo(tcs2);
+			tcs1.SetException(new ApplicationException());
+			Assert.AreSame(tcs1.Task.Exception.InnerException, tcs2.Task.Exception.InnerException);
+		}
+
+		[TestMethod]
+		public void ApplyResultToPreCompletedNonGeneric() {
+			var tcs1 = new TaskCompletionSource<GenericParameterHelper>();
+			var tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+			tcs1.SetResult(null);
+			((Task)tcs1.Task).ApplyResultTo(tcs2);
+			Assert.AreEqual(TaskStatus.RanToCompletion, tcs2.Task.Status);
+
+			tcs1 = new TaskCompletionSource<GenericParameterHelper>();
+			tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+			tcs1.SetCanceled();
+			((Task)tcs1.Task).ApplyResultTo(tcs2);
+			Assert.IsTrue(tcs2.Task.IsCanceled);
+
+			tcs1 = new TaskCompletionSource<GenericParameterHelper>();
+			tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+			tcs1.SetException(new ApplicationException());
+			((Task)tcs1.Task).ApplyResultTo(tcs2);
+			Assert.AreSame(tcs1.Task.Exception.InnerException, tcs2.Task.Exception.InnerException);
 		}
 
 		[TestMethod]
@@ -56,18 +141,18 @@
 		}
 
 		[TestMethod]
-		public void NoThrowAwaitable() {
+		public async Task NoThrowAwaitable() {
 			var tcs = new TaskCompletionSource<object>();
 			var nothrowTask = tcs.Task.NoThrowAwaitable();
-			Assert.IsFalse(nothrowTask.IsCompleted);
+			Assert.IsFalse(nothrowTask.GetAwaiter().IsCompleted);
 			tcs.SetException(new InvalidOperationException());
-			nothrowTask.Wait();
+			await nothrowTask;
 
 			tcs = new TaskCompletionSource<object>();
 			nothrowTask = tcs.Task.NoThrowAwaitable();
-			Assert.IsFalse(nothrowTask.IsCompleted);
+			Assert.IsFalse(nothrowTask.GetAwaiter().IsCompleted);
 			tcs.SetCanceled();
-			nothrowTask.Wait();
+			await nothrowTask;
 		}
 
 		[TestMethod]
@@ -174,6 +259,165 @@
 			}
 		}
 
+		[TestMethod]
+		public void FollowCancelableTaskToCompletionEndsInCompletion() {
+			var currentTCS = new TaskCompletionSource<int>();
+			Task<int> latestTask = currentTCS.Task;
+			var followingTask = TplExtensions.FollowCancelableTaskToCompletion(() => latestTask, CancellationToken.None);
+
+			for (int i = 0; i < 3; i++) {
+				var oldTCS = currentTCS;
+				currentTCS = new TaskCompletionSource<int>();
+				latestTask = currentTCS.Task;
+				oldTCS.SetCanceled();
+			}
+
+			currentTCS.SetResult(3);
+			Assert.AreEqual(3, followingTask.Result);
+		}
+
+		[TestMethod]
+		public void FollowCancelableTaskToCompletionEndsInCompletionWithSpecifiedTaskSource() {
+			var specifiedTaskSource = new TaskCompletionSource<int>();
+			var currentTCS = new TaskCompletionSource<int>();
+			Task<int> latestTask = currentTCS.Task;
+			var followingTask = TplExtensions.FollowCancelableTaskToCompletion(() => latestTask, CancellationToken.None, specifiedTaskSource);
+			Assert.AreSame(specifiedTaskSource.Task, followingTask);
+
+			for (int i = 0; i < 3; i++) {
+				var oldTCS = currentTCS;
+				currentTCS = new TaskCompletionSource<int>();
+				latestTask = currentTCS.Task;
+				oldTCS.SetCanceled();
+			}
+
+			currentTCS.SetResult(3);
+			Assert.AreEqual(3, followingTask.Result);
+		}
+
+		[TestMethod]
+		public void FollowCancelableTaskToCompletionEndsInUltimateCancellation() {
+			var currentTCS = new TaskCompletionSource<int>();
+			Task<int> latestTask = currentTCS.Task;
+			var cts = new CancellationTokenSource();
+			var followingTask = TplExtensions.FollowCancelableTaskToCompletion(() => latestTask, cts.Token);
+
+			for (int i = 0; i < 3; i++) {
+				var oldTCS = currentTCS;
+				currentTCS = new TaskCompletionSource<int>();
+				latestTask = currentTCS.Task;
+				oldTCS.SetCanceled();
+			}
+
+			cts.Cancel();
+			Assert.IsTrue(followingTask.IsCanceled);
+		}
+
+		[TestMethod]
+		public void FollowCancelableTaskToCompletionEndsInFault() {
+			var currentTCS = new TaskCompletionSource<int>();
+			Task<int> latestTask = currentTCS.Task;
+			var followingTask = TplExtensions.FollowCancelableTaskToCompletion(() => latestTask, CancellationToken.None);
+
+			for (int i = 0; i < 3; i++) {
+				var oldTCS = currentTCS;
+				currentTCS = new TaskCompletionSource<int>();
+				latestTask = currentTCS.Task;
+				oldTCS.SetCanceled();
+			}
+
+			currentTCS.SetException(new InvalidOperationException());
+			Assert.IsInstanceOfType(followingTask.Exception.InnerException, typeof(InvalidOperationException));
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ToApmOfTWithNoTaskState() {
+			var state = new object();
+			var tcs = new TaskCompletionSource<int>();
+			IAsyncResult beginResult = null;
+
+			var callbackResult = new TaskCompletionSource<object>();
+			AsyncCallback callback = ar => {
+				try {
+					Assert.AreSame(beginResult, ar);
+					Assert.AreEqual(5, EndTestOperation<int>(ar));
+					callbackResult.SetResult(null);
+				} catch (Exception ex) {
+					callbackResult.SetException(ex);
+				}
+			};
+			beginResult = BeginTestOperation(callback, state, tcs.Task);
+			Assert.AreSame(state, beginResult.AsyncState);
+			tcs.SetResult(5);
+			await callbackResult.Task;
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ToApmOfTWithMatchingTaskState() {
+			var state = new object();
+			var tcs = new TaskCompletionSource<int>(state);
+			IAsyncResult beginResult = null;
+
+			var callbackResult = new TaskCompletionSource<object>();
+			AsyncCallback callback = ar => {
+				try {
+					Assert.AreSame(beginResult, ar);
+					Assert.AreEqual(5, EndTestOperation<int>(ar));
+					callbackResult.SetResult(null);
+				} catch (Exception ex) {
+					callbackResult.SetException(ex);
+				}
+			};
+			beginResult = BeginTestOperation(callback, state, tcs.Task);
+			Assert.AreSame(state, beginResult.AsyncState);
+			tcs.SetResult(5);
+			await callbackResult.Task;
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ToApmWithNoTaskState() {
+			var state = new object();
+			var tcs = new TaskCompletionSource<object>();
+			IAsyncResult beginResult = null;
+
+			var callbackResult = new TaskCompletionSource<object>();
+			AsyncCallback callback = ar => {
+				try {
+					Assert.AreSame(beginResult, ar);
+					EndTestOperation(ar);
+					callbackResult.SetResult(null);
+				} catch (Exception ex) {
+					callbackResult.SetException(ex);
+				}
+			};
+			beginResult = BeginTestOperation(callback, state, (Task)tcs.Task);
+			Assert.AreSame(state, beginResult.AsyncState);
+			tcs.SetResult(null);
+			await callbackResult.Task;
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ToApmWithMatchingTaskState() {
+			var state = new object();
+			var tcs = new TaskCompletionSource<object>(state);
+			IAsyncResult beginResult = null;
+
+			var callbackResult = new TaskCompletionSource<object>();
+			AsyncCallback callback = ar => {
+				try {
+					Assert.AreSame(beginResult, ar);
+					EndTestOperation(ar);
+					callbackResult.SetResult(null);
+				} catch (Exception ex) {
+					callbackResult.SetException(ex);
+				}
+			};
+			beginResult = BeginTestOperation(callback, state, (Task)tcs.Task);
+			Assert.AreSame(state, beginResult.AsyncState);
+			tcs.SetResult(null);
+			await callbackResult.Task;
+		}
+
 		private static void InvokeAsyncHelper(object sender, EventArgs args) {
 			int invoked = 0;
 			AsyncEventHandler handler = (s, a) => {
@@ -198,6 +442,22 @@
 			var task = handler.InvokeAsync(sender, args);
 			Assert.IsTrue(task.IsCompleted);
 			Assert.AreEqual(1, invoked);
+		}
+
+		private static IAsyncResult BeginTestOperation<T>(AsyncCallback callback, object state, Task<T> asyncTask) {
+			return asyncTask.ToApm(callback, state);
+		}
+
+		private static IAsyncResult BeginTestOperation(AsyncCallback callback, object state, Task asyncTask) {
+			return asyncTask.ToApm(callback, state);
+		}
+
+		private static T EndTestOperation<T>(IAsyncResult asyncResult) {
+			return ((Task<T>)asyncResult).Result;
+		}
+
+		private static void EndTestOperation(IAsyncResult asyncResult) {
+			((Task)asyncResult).Wait(); // rethrow exceptions
 		}
 	}
 }

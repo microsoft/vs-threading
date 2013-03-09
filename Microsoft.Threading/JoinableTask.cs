@@ -7,7 +7,9 @@
 namespace Microsoft.Threading {
 	using System;
 	using System.Collections.Generic;
+	using System.Diagnostics;
 	using System.Linq;
+	using System.Reflection;
 	using System.Runtime.CompilerServices;
 	using System.Text;
 	using System.Threading;
@@ -21,10 +23,42 @@ namespace Microsoft.Threading {
 	/// </summary>
 	public partial class JoinableTask {
 		[Flags]
-		private enum State {
+		internal enum JoinableTaskFlags {
+			/// <summary>
+			/// No other flags defined.
+			/// </summary>
 			None = 0x0,
-			RunningSynchronously = 0x1,
+
+			/// <summary>
+			/// This task was originally started as a synchronously executing one.
+			/// </summary>
+			StartedSynchronously = 0x1,
+
+			/// <summary>
+			/// This task was originally started on the main thread.
+			/// </summary>
 			StartedOnMainThread = 0x2,
+
+			/// <summary>
+			/// This task has had its Complete method called, but has lingering continuations to execute.
+			/// </summary>
+			CompleteRequested = 0x4,
+
+			/// <summary>
+			/// This task has completed.
+			/// </summary>
+			CompleteFinalized = 0x8,
+
+			/// <summary>
+			/// This exact task has been passed to the <see cref="JoinableTask.CompleteOnCurrentThread"/> method.
+			/// </summary>
+			CompletingSynchronously = 0x10,
+
+			/// <summary>
+			/// This exact task has been passed to the <see cref="JoinableTask.CompleteOnCurrentThread"/> method
+			/// on the main thread.
+			/// </summary>
+			SynchronouslyBlockingMainThread = 0x20,
 		}
 
 		/// <summary>
@@ -57,30 +91,40 @@ namespace Microsoft.Threading {
 
 		private ExecutionQueue threadPoolQueue;
 
-		private readonly State state;
+		private JoinableTaskFlags state;
 
-		private SynchronizationContext mainThreadJobSyncContext;
+		private JoinableTaskSynchronizationContext mainThreadJobSyncContext;
 
-		private SynchronizationContext threadPoolJobSyncContext;
+		private JoinableTaskSynchronizationContext threadPoolJobSyncContext;
 
-		private bool completeRequested;
+		/// <summary>
+		/// Store the task's initial delegate so we could show its full name in hang report.
+		/// </summary>
+		private Delegate initialDelegate;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="JoinableTask"/> class.
 		/// </summary>
 		/// <param name="owner">The instance that began the async operation.</param>
 		/// <param name="synchronouslyBlocking">A value indicating whether the launching thread will synchronously block for this job's completion.</param>
-		internal JoinableTask(JoinableTaskFactory owner, bool synchronouslyBlocking) {
+		/// <param name="initialDelegate">The entry method's info for diagnostics.</param>
+		internal JoinableTask(JoinableTaskFactory owner, bool synchronouslyBlocking, Delegate initialDelegate) {
 			Requires.NotNull(owner, "owner");
 
 			this.owner = owner;
 			if (synchronouslyBlocking) {
-				this.state |= State.RunningSynchronously;
+				this.state |= JoinableTaskFlags.StartedSynchronously | JoinableTaskFlags.CompletingSynchronously;
 			}
 
 			if (Thread.CurrentThread == owner.Context.MainThread) {
-				this.state |= State.StartedOnMainThread;
+				this.state |= JoinableTaskFlags.StartedOnMainThread;
+				if (synchronouslyBlocking) {
+					this.state |= JoinableTaskFlags.SynchronouslyBlockingMainThread;
+				}
 			}
+
+			this.owner.Context.OnJoinableTaskStarted(this);
+			this.initialDelegate = initialDelegate;
 		}
 
 		internal Task DequeuerResetEvent {
@@ -144,7 +188,7 @@ namespace Microsoft.Threading {
 							return false;
 						}
 
-						return this.completeRequested;
+						return this.IsCompleteRequested;
 					} finally {
 						this.owner.Context.SyncContextLock.ExitReadLock();
 					}
@@ -215,6 +259,109 @@ namespace Microsoft.Threading {
 			}
 		}
 
+		/// <summary>
+		/// Gets the flags set on this task.
+		/// </summary>
+		internal JoinableTaskFlags State {
+			get { return this.state; }
+		}
+
+		#region Diagnostics collection
+
+		/// <summary>
+		/// Gets the entry method's info so we could show its full name in hang report.
+		/// </summary>
+		internal MethodInfo EntryMethodInfo {
+			get {
+				var del = this.initialDelegate;
+				return del != null ? del.Method : null;
+			}
+		}
+
+		/// <summary>
+		/// Gets a value indicating whether this task has a non-empty queue.
+		/// FOR DIAGNOSTICS COLLECTION ONLY.
+		/// </summary>
+		internal bool HasNonEmptyQueue {
+			get {
+				Assumes.True(this.owner.Context.SyncContextLock.IsReadLockHeld);
+				return (this.mainThreadQueue != null && this.mainThreadQueue.Count > 0)
+					|| (this.threadPoolQueue != null && this.threadPoolQueue.Count > 0);
+			}
+		}
+
+		/// <summary>
+		/// Gets a snapshot of all joined tasks.
+		/// FOR DIAGNOSTICS COLLECTION ONLY.
+		/// </summary>
+		internal IEnumerable<JoinableTask> ChildOrJoinedJobs {
+			get {
+				Assumes.True(this.owner.Context.SyncContextLock.IsReadLockHeld);
+				if (this.childOrJoinedJobs == null) {
+					return Enumerable.Empty<JoinableTask>();
+				}
+
+				return this.childOrJoinedJobs.Select(p => p.Key).ToArray();
+			}
+		}
+
+		/// <summary>
+		/// Gets a snapshot of all work queued to the main thread.
+		/// FOR DIAGNOSTICS COLLECTION ONLY.
+		/// </summary>
+		internal IEnumerable<SingleExecuteProtector> MainThreadQueueContents {
+			get {
+				Assumes.True(this.owner.Context.SyncContextLock.IsReadLockHeld);
+				if (this.mainThreadQueue == null) {
+					return Enumerable.Empty<SingleExecuteProtector>();
+				}
+
+				return this.mainThreadQueue.ToArray();
+			}
+		}
+
+		/// <summary>
+		/// Gets a snapshot of all work queued to synchronously blocking threadpool thread.
+		/// FOR DIAGNOSTICS COLLECTION ONLY.
+		/// </summary>
+		internal IEnumerable<SingleExecuteProtector> ThreadPoolQueueContents {
+			get {
+				Assumes.True(this.owner.Context.SyncContextLock.IsReadLockHeld);
+				if (this.threadPoolQueue == null) {
+					return Enumerable.Empty<SingleExecuteProtector>();
+				}
+
+				return this.threadPoolQueue.ToArray();
+			}
+		}
+
+		/// <summary>
+		/// Gets the collections this task belongs to.
+		/// FOR DIAGNOSTICS COLLECTION ONLY.
+		/// </summary>
+		internal IEnumerable<JoinableTaskCollection> ContainingCollections {
+			get {
+				Assumes.True(this.owner.Context.SyncContextLock.IsReadLockHeld);
+				return this.collectionMembership.ToArray();
+			}
+		}
+
+		#endregion
+
+		/// <summary>
+		/// Gets or sets a value indicating whether this task has had its Complete() method called..
+		/// </summary>
+		private bool IsCompleteRequested {
+			get {
+				return (this.state & JoinableTaskFlags.CompleteRequested) != 0;
+			}
+
+			set {
+				Assumes.True(value);
+				this.state |= JoinableTaskFlags.CompleteRequested;
+			}
+		}
+
 		private ExecutionQueue ApplicableQueue {
 			get {
 				using (NoMessagePumpSyncContext.Default.Apply()) {
@@ -230,15 +377,15 @@ namespace Microsoft.Threading {
 
 		private bool SynchronouslyBlockingThreadPool {
 			get {
-				return (this.state & State.RunningSynchronously) == State.RunningSynchronously
-					&& (this.state & State.StartedOnMainThread) == State.None;
+				return (this.state & JoinableTaskFlags.StartedSynchronously) == JoinableTaskFlags.StartedSynchronously
+					&& (this.state & JoinableTaskFlags.StartedOnMainThread) == JoinableTaskFlags.None;
 			}
 		}
 
 		private bool SynchronouslyBlockingMainThread {
 			get {
-				return (this.state & State.RunningSynchronously) == State.RunningSynchronously
-				&& (this.state & State.StartedOnMainThread) == State.StartedOnMainThread;
+				return (this.state & JoinableTaskFlags.StartedSynchronously) == JoinableTaskFlags.StartedSynchronously
+				&& (this.state & JoinableTaskFlags.StartedOnMainThread) == JoinableTaskFlags.StartedOnMainThread;
 			}
 		}
 
@@ -275,7 +422,7 @@ namespace Microsoft.Threading {
 
 				this.owner.Context.SyncContextLock.EnterWriteLock();
 				try {
-					if (this.completeRequested) {
+					if (this.IsCompleteRequested) {
 						// This job has already been marked for completion.
 						// We need to forward the work to the fallback mechanisms. 
 						postToFactory = true;
@@ -337,7 +484,7 @@ namespace Microsoft.Threading {
 			return this.JoinAsync().GetAwaiter();
 		}
 
-		internal void SetWrappedTask(Task wrappedTask, JoinableTask parentJob) {
+		internal void SetWrappedTask(Task wrappedTask) {
 			Requires.NotNull(wrappedTask, "wrappedTask");
 
 			using (NoMessagePumpSyncContext.Default.Apply()) {
@@ -357,26 +504,22 @@ namespace Microsoft.Threading {
 							TaskContinuationOptions.ExecuteSynchronously,
 							TaskScheduler.Default);
 					}
-
-					// Join the ambient parent job, so the parent can dequeue this job's work.
-					// Note that although wrappedTask.IsCompleted may be true, this.IsCompleted
-					// may still be false if our work queues are not empty.
-					if (!this.IsCompleted && parentJob != null) {
-						parentJob.AddDependency(this);
-					}
 				} finally {
 					this.owner.Context.SyncContextLock.ExitWriteLock();
 				}
 			}
 		}
 
+		/// <summary>
+		/// Fires when the underlying Task is completed.
+		/// </summary>
 		internal void Complete() {
 			using (NoMessagePumpSyncContext.Default.Apply()) {
 				AsyncManualResetEvent dequeuerResetState = null;
 				this.owner.Context.SyncContextLock.EnterWriteLock();
 				try {
-					if (!this.completeRequested) {
-						this.completeRequested = true;
+					if (!this.IsCompleteRequested) {
+						this.IsCompleteRequested = true;
 
 						if (this.mainThreadQueue != null) {
 							this.mainThreadQueue.Complete();
@@ -447,6 +590,12 @@ namespace Microsoft.Threading {
 			Assumes.NotNull(this.wrappedTask);
 
 			while (!this.IsCompleted) {
+				var additionalFlags = JoinableTaskFlags.CompletingSynchronously;
+				if (this.owner.Context.MainThread == Thread.CurrentThread) {
+					additionalFlags |= JoinableTaskFlags.SynchronouslyBlockingMainThread;
+				}
+
+				this.AddStateFlags(additionalFlags);
 				SingleExecuteProtector work;
 				Task tryAgainAfter;
 				if (this.TryDequeueSelfOrDependencies(out work, out tryAgainAfter)) {
@@ -463,9 +612,24 @@ namespace Microsoft.Threading {
 
 		internal void OnQueueCompleted() {
 			if (this.IsCompleted) {
+				// Note this code may execute more than once, as multiple queue completion
+				// notifications come in.
+				this.owner.Context.OnJoinableTaskCompleted(this);
+
 				foreach (var collection in this.collectionMembership) {
 					collection.Remove(this);
 				}
+
+				if (this.mainThreadJobSyncContext != null) {
+					this.mainThreadJobSyncContext.OnCompleted();
+				}
+
+				if (this.threadPoolJobSyncContext != null) {
+					this.threadPoolJobSyncContext.OnCompleted();
+				}
+
+				this.initialDelegate = null;
+				this.state |= JoinableTaskFlags.CompleteFinalized;
 			}
 		}
 
@@ -477,6 +641,23 @@ namespace Microsoft.Threading {
 		internal void OnRemovedFromCollection(JoinableTaskCollection collection) {
 			Requires.NotNull(collection, "collection");
 			this.collectionMembership.Remove(collection);
+		}
+
+		/// <summary>
+		/// Adds the specified flags to the <see cref="state"/> field.
+		/// </summary>
+		private void AddStateFlags(JoinableTaskFlags flags) {
+			// Try to avoid taking a lock if the flags are already set appropriately.
+			if ((this.state & flags) != flags) {
+				using (NoMessagePumpSyncContext.Default.Apply()) {
+					this.owner.Context.SyncContextLock.EnterWriteLock();
+					try {
+						this.state |= flags;
+					} finally {
+						this.owner.Context.SyncContextLock.ExitWriteLock();
+					}
+				}
+			}
 		}
 
 		private bool TryDequeueSelfOrDependencies(out SingleExecuteProtector work, out Task tryAgainAfter) {
@@ -577,9 +758,11 @@ namespace Microsoft.Threading {
 		}
 
 		private JoinRelease AmbientJobJoinsThis() {
-			var ambientJob = this.owner.Context.AmbientTask;
-			if (ambientJob != null && ambientJob != this) {
-				return ambientJob.AddDependency(this);
+			if (!this.IsCompleted) {
+				var ambientJob = this.owner.Context.AmbientTask;
+				if (ambientJob != null && ambientJob != this) {
+					return ambientJob.AddDependency(this);
+				}
 			}
 
 			return new JoinRelease();

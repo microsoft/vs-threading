@@ -4,6 +4,7 @@
 	using System.Diagnostics;
 	using System.Linq;
 	using System.Text;
+	using System.Threading;
 	using System.Threading.Tasks;
 
 	/// <summary>
@@ -12,19 +13,39 @@
 	[DebuggerDisplay("Signaled: {signaled}")]
 	public class AsyncAutoResetEvent {
 		/// <summary>
-		/// A task that is already completed.
-		/// </summary>
-		private readonly static Task completedTask = Task.FromResult(true);
-
-		/// <summary>
 		/// A queue of folks awaiting signals.
 		/// </summary>
 		private readonly Queue<TaskCompletionSource<bool>> signalAwaiters = new Queue<TaskCompletionSource<bool>>();
 
 		/// <summary>
+		/// Whether to complete our task synchronously in our <see cref="Set"/> method,
+		/// as opposed to asynchronously.
+		/// </summary>
+		private readonly bool allowInliningWaiters;
+
+		/// <summary>
 		/// A value indicating whether this event is already in a signaled state.
 		/// </summary>
 		private bool signaled;
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="AsyncAutoResetEvent"/> class
+		/// that does not inline awaiters.
+		/// </summary>
+		public AsyncAutoResetEvent() {
+		}
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="AsyncAutoResetEvent"/> class.
+		/// </summary>
+		/// <param name="allowInliningWaiters">
+		/// A value indicating whether to complete our task synchronously in our <see cref="Set"/> method,
+		/// as opposed to asynchronously. <c>false</c> better simulates the behavior of the
+		/// <see cref="AutoResetEvent"/> class, but <c>true</c> can result in slightly better performance.
+		/// </param>
+		public AsyncAutoResetEvent(bool allowInliningWaiters) {
+			this.allowInliningWaiters = allowInliningWaiters;
+		}
 
 		/// <summary>
 		/// Returns an awaitable that may be used to asynchronously acquire the next signal.
@@ -34,7 +55,7 @@
 			lock (this.signalAwaiters) {
 				if (this.signaled) {
 					this.signaled = false;
-					return completedTask;
+					return TplExtensions.CompletedTask;
 				} else {
 					var tcs = new TaskCompletionSource<bool>();
 					this.signalAwaiters.Enqueue(tcs);
@@ -55,8 +76,13 @@
 					this.signaled = true;
 				}
 			}
+
 			if (toRelease != null) {
-				toRelease.SetResult(true);
+				if (this.allowInliningWaiters) {
+					toRelease.SetResult(true);
+				} else {
+					ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<bool>)state).SetResult(true), toRelease);
+				}
 			}
 		}
 	}

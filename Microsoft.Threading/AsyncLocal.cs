@@ -20,6 +20,13 @@
 		/// </summary>
 		private readonly ConditionalWeakTable<object, T> valueTable = new ConditionalWeakTable<object, T>();
 
+		/// <summary>
+		/// A table that is used to look up a previously stored simple object to represent a given value.
+		/// </summary>
+		/// <remarks>
+		/// This is just an optimization. We could totally remove this field and all use of it and the tests still pass,
+		/// amazingly enough.
+		/// </remarks>
 		private readonly ConditionalWeakTable<T, object> reverseLookupTable = new ConditionalWeakTable<T, object>();
 
 		/// <summary>
@@ -50,7 +57,13 @@
 					lock (this.syncObject) {
 						object callContextValue;
 						if (!this.reverseLookupTable.TryGetValue(value, out callContextValue)) {
-							callContextValue = new object();
+							// Use a MarshalByRefObject for the value so it doesn't
+							// lose reference identity across appdomain transitions.
+							// We don't yet have a unit test that proves it's necessary,
+							// but T4 templates in VS managed to wipe out the AsyncLocal<T>.Value
+							// if we don't use a MarshalByRefObject-derived value here.
+							callContextValue = new IdentityNode();
+							this.reverseLookupTable.Add(value, callContextValue);
 						}
 
 						CallContext.LogicalSetData(this.callContextKey, callContextValue);
@@ -61,6 +74,12 @@
 					CallContext.FreeNamedDataSlot(this.callContextKey);
 				}
 			}
+		}
+
+		/// <summary>
+		/// A simple marshalable object that can retain identity across app domain transitions.
+		/// </summary>
+		private class IdentityNode : MarshalByRefObject {
 		}
 	}
 }

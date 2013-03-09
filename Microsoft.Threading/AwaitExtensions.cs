@@ -28,6 +28,53 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// Gets an awaitable that schedules continuations on the specified scheduler.
+		/// </summary>
+		/// <param name="scheduler">The task scheduler used to execute continuations.</param>
+		/// <param name="alwaysYield">A value indicating whether the caller should yield even if
+		/// already executing on the desired task scheduler.</param>
+		/// <returns>An awaitable.</returns>
+		public static TaskSchedulerAwaitable SwitchTo(this TaskScheduler scheduler, bool alwaysYield = false) {
+			Requires.NotNull(scheduler, "scheduler");
+			return new TaskSchedulerAwaitable(scheduler, alwaysYield);
+		}
+
+		/// <summary>
+		/// An awaitable that executes continuations on the specified task scheduler.
+		/// </summary>
+		public struct TaskSchedulerAwaitable {
+			/// <summary>
+			/// The scheduler for continuations.
+			/// </summary>
+			private readonly TaskScheduler taskScheduler;
+
+			/// <summary>
+			/// A value indicating whether the awaitable will always call the caller to yield.
+			/// </summary>
+			private readonly bool alwaysYield;
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="TaskSchedulerAwaitable"/> struct.
+			/// </summary>
+			/// <param name="taskScheduler">The task scheduler used to execute continuations.</param>
+			/// <param name="alwaysYield">A value indicating whether the caller should yield even if
+			/// already executing on the desired task scheduler.</param>
+			public TaskSchedulerAwaitable(TaskScheduler taskScheduler, bool alwaysYield = false) {
+				Requires.NotNull(taskScheduler, "taskScheduler");
+
+				this.taskScheduler = taskScheduler;
+				this.alwaysYield = alwaysYield;
+			}
+
+			/// <summary>
+			/// Gets an awaitable that schedules continuations on the specified scheduler.
+			/// </summary>
+			public TaskSchedulerAwaiter GetAwaiter() {
+				return new TaskSchedulerAwaiter(this.taskScheduler, this.alwaysYield);
+			}
+		}
+
+		/// <summary>
 		/// An awaiter returned from <see cref="GetAwaiter(TaskScheduler)"/>.
 		/// </summary>
 		public struct TaskSchedulerAwaiter : INotifyCompletion {
@@ -37,11 +84,20 @@ namespace Microsoft.Threading {
 			private readonly TaskScheduler scheduler;
 
 			/// <summary>
+			/// A value indicating whether <see cref="IsCompleted"/>
+			/// should always return false.
+			/// </summary>
+			private readonly bool alwaysYield;
+
+			/// <summary>
 			/// Initializes a new instance of the <see cref="TaskSchedulerAwaiter"/> class.
 			/// </summary>
 			/// <param name="scheduler">The scheduler for continuations.</param>
-			public TaskSchedulerAwaiter(TaskScheduler scheduler) {
+			/// <param name="alwaysYield">A value indicating whether the caller should yield even if
+			/// already executing on the desired task scheduler.</param>
+			public TaskSchedulerAwaiter(TaskScheduler scheduler, bool alwaysYield = false) {
 				this.scheduler = scheduler;
+				this.alwaysYield = alwaysYield;
 			}
 
 			/// <summary>
@@ -50,8 +106,12 @@ namespace Microsoft.Threading {
 			/// <value><c>true</c> if the caller is already running on that TaskScheduler.</value>
 			public bool IsCompleted {
 				get {
+					if (this.alwaysYield) {
+						return false;
+					}
+
 					// We special case the TaskScheduler.Default since that is semantically equivalent to being
-					// on a ThreadPool thread, and there are various way sto get on those threads.
+					// on a ThreadPool thread, and there are various ways to get on those threads.
 					// TaskScheduler.Current is never null.  Even if no scheduler is really active and the current
 					// thread is not a threadpool thread, TaskScheduler.Current == TaskScheduler.Default, so we have
 					// to protect against that case too.

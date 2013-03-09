@@ -31,7 +31,7 @@
 		/// <param name="allowInliningWaiters">
 		/// A value indicating whether to complete our task synchronously in our <see cref="SetAsync"/> method,
 		/// as opposed to asynchronously. <c>false</c> better simulates the behavior of the
-		/// <see cref="ManualResetEventSlim"/> class, but <c>true</c> can result in better performance.
+		/// <see cref="ManualResetEventSlim"/> class, but <c>true</c> can result in slightly better performance.
 		/// </param>
 		public AsyncManualResetEvent(bool initialState = false, bool allowInliningWaiters = false) {
 			if (initialState) {

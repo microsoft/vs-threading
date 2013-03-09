@@ -36,6 +36,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.XML" />
+    <Reference Include="System.Xml.Linq" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <Choose>
@@ -67,6 +69,9 @@
     <Compile Include="AsyncLocalTests.cs" />
     <Compile Include="JoinableTaskAndAsyncReaderWriterLockTests.cs" />
     <Compile Include="JoinableTaskCollectionTests.cs" />
+    <Compile Include="JoinableTaskContextTests.cs" />
+    <Compile Include="JoinableTaskFactoryTests.cs" />
+    <Compile Include="JoinableTaskTestBase.cs" />
     <Compile Include="JoinableTaskTests.cs" />
     <Compile Include="AsyncQueueTests.cs" />
     <Compile Include="AsyncSemaphoreTests.cs" />
@@ -86,7 +91,7 @@
     <Compile Include="WeakKeyDictionaryTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Microsoft.Validation\Microsoft.Validation.csproj">
+    <ProjectReference Include="..\Microsoft.Validation\Microsoft.Validation.csproj">
       <Project>{e016a630-a79b-4b5d-8997-e66581d62b81}</Project>
       <Name>Microsoft.Validation</Name>
     </ProjectReference>

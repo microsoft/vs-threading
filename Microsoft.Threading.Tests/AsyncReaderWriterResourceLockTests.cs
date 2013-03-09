@@ -691,6 +691,27 @@
 			});
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task GetResourceAsyncRetriesFaultedPreparation() {
+			var resourceTask = new TaskCompletionSource<object>();
+			resourceTask.SetException(new ApplicationException());
+			this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task).Forget();
+
+			using (var access = await this.resourceLock.WriteLockAsync()) {
+				try {
+					await access.GetResourceAsync(1);
+					Assert.Fail("Expected exception not thrown.");
+				} catch (ApplicationException) {
+				}
+
+				resourceTask = new TaskCompletionSource<object>();
+				resourceTask.SetResult(new object());
+				this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task).Forget();
+				Resource resource = await access.GetResourceAsync(1);
+				Assert.AreSame(resources[1], resource);
+			}
+		}
+
 		[TestMethod, TestCategory("Stress"), Timeout(5000)]
 		public async Task ResourceLockStress() {
 			const int MaxLockAcquisitions = -1;

@@ -48,6 +48,7 @@
     <Compile Include="AsyncLazy.cs" />
     <Compile Include="AsyncLocal.cs" />
     <Compile Include="AsyncQueue.cs" />
+    <Compile Include="AsyncReaderWriterLock+HangReportContributor.cs" />
     <Compile Include="AsyncSemaphore.cs" />
     <Compile Include="AsyncManualResetEvent.cs" />
     <Compile Include="AsyncReaderWriterLock.cs" />
@@ -55,9 +56,12 @@
     <Compile Include="AwaitExtensions.cs" />
     <Compile Include="EmptyStruct.cs" />
     <Compile Include="EnumerateOneOrMany.cs" />
+    <Compile Include="HangReportContribution.cs" />
     <Compile Include="IAsyncDisposable.cs" />
+    <Compile Include="IHangReportContributor.cs" />
     <Compile Include="InternalUtilities.cs" />
     <Compile Include="JoinableTask+JoinableTaskSynchronizationContext.cs" />
+    <Compile Include="JoinableTaskContext+HangReportContributor.cs" />
     <Compile Include="JoinableTaskContext.cs" />
     <Compile Include="JoinableTask.cs" />
     <Compile Include="JoinableTaskCollection.cs" />
@@ -82,7 +86,7 @@
     <Compile Include="WeakKeyDictionary.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Microsoft.Validation\Microsoft.Validation.csproj">
+    <ProjectReference Include="..\Microsoft.Validation\Microsoft.Validation.csproj">
       <Project>{e016a630-a79b-4b5d-8997-e66581d62b81}</Project>
       <Name>Microsoft.Validation</Name>
     </ProjectReference>

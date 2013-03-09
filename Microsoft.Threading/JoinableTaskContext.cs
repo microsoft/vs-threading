@@ -14,8 +14,8 @@ namespace Microsoft.Threading {
 	using System.Runtime.CompilerServices;
 	using System.Threading;
 	using System.Threading.Tasks;
-	using SingleExecuteProtector = Microsoft.Threading.JoinableTaskFactory.SingleExecuteProtector;
 	using JoinableTaskSynchronizationContext = Microsoft.Threading.JoinableTask.JoinableTaskSynchronizationContext;
+	using SingleExecuteProtector = Microsoft.Threading.JoinableTaskFactory.SingleExecuteProtector;
 
 	/// <summary>
 	/// A common context within which joinable tasks may be created and interact to avoid deadlocks.
@@ -37,6 +37,14 @@ namespace Microsoft.Threading {
 		/// An AsyncLocal value that carries the joinable instance associated with an async operation.
 		/// </summary>
 		private readonly AsyncLocal<JoinableTask> joinableOperation = new AsyncLocal<JoinableTask>();
+
+		/// <summary>
+		/// The set of tasks that have started but have not yet completed.
+		/// </summary>
+		/// <remarks>
+		/// All access to this collection should be guarded by locking this collection.
+		/// </remarks>
+		private readonly HashSet<JoinableTask> pendingTasks = new HashSet<JoinableTask>();
 
 		/// <summary>
 		/// A single joinable task factory that itself cannot be joined.
@@ -138,6 +146,38 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// Gets a value indicating whether the main thread is blocked for the caller's completion.
+		/// </summary>
+		public bool IsMainThreadBlocked() {
+			var ambientTask = this.AmbientTask;
+			if (ambientTask != null) {
+				using (NoMessagePumpSyncContext.Default.Apply()) {
+					this.SyncContextLock.EnterReadLock();
+					try {
+						var allJoinedJobs = new HashSet<JoinableTask>();
+						foreach (var pendingTask in this.pendingTasks) {
+							if ((pendingTask.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) {
+								// This task blocks the main thread. If it has joined the ambient task
+								// directly or indirectly, then our ambient task is considered blocking
+								// the main thread.
+								pendingTask.AddSelfAndDescendentOrJoinedJobs(allJoinedJobs);
+								if (allJoinedJobs.Contains(ambientTask)) {
+									return true;
+								}
+
+								allJoinedJobs.Clear();
+							}
+						}
+					} finally {
+						this.SyncContextLock.ExitReadLock();
+					}
+				}
+			}
+
+			return false;
+		}
+
+		/// <summary>
 		/// Creates a joinable task factory that automatically adds all created tasks
 		/// to a collection that can be jointly joined.
 		/// </summary>
@@ -161,6 +201,43 @@ namespace Microsoft.Threading {
 		/// <returns>A new joinable task collection.</returns>
 		public virtual JoinableTaskCollection CreateCollection() {
 			return new JoinableTaskCollection(this);
+		}
+
+		/// <summary>
+		/// Invoked when a hang is suspected to have occurred involving the main thread.
+		/// </summary>
+		/// <param name="hangDuration">The duration of the current hang.</param>
+		/// <param name="notificationCount">The number of times this hang has been reported, including this one.</param>
+		/// <param name="hangId">A random GUID that uniquely identifies this particular hang.</param>
+		/// <remarks>
+		/// A single hang occurrence may invoke this method multiple times, with increasing
+		/// values in the <paramref name="hangDuration"/> parameter.
+		/// </remarks>
+		protected internal virtual void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId) {
+		}
+
+		/// <summary>
+		/// Raised when a joinable task starts.
+		/// </summary>
+		/// <param name="task">The task that has started.</param>
+		internal void OnJoinableTaskStarted(JoinableTask task) {
+			Requires.NotNull(task, "task");
+
+			lock (this.pendingTasks) {
+				Assumes.True(this.pendingTasks.Add(task));
+			}
+		}
+
+		/// <summary>
+		/// Raised when a joinable task completes.
+		/// </summary>
+		/// <param name="task">The completing task.</param>
+		internal void OnJoinableTaskCompleted(JoinableTask task) {
+			Requires.NotNull(task, "task");
+
+			lock (this.pendingTasks) {
+				this.pendingTasks.Remove(task);
+			}
 		}
 
 		/// <summary>

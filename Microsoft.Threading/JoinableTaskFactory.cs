@@ -6,8 +6,12 @@
 
 namespace Microsoft.Threading {
 	using System;
+	using System.Collections;
 	using System.Collections.Generic;
+	using System.Diagnostics;
+	using System.Globalization;
 	using System.Linq;
+	using System.Reflection;
 	using System.Runtime.CompilerServices;
 	using System.Text;
 	using System.Threading;
@@ -29,6 +33,11 @@ namespace Microsoft.Threading {
 		/// The collection to add all created tasks to. May be <c>null</c>.
 		/// </summary>
 		private readonly JoinableTaskCollection jobCollection;
+
+		/// <summary>
+		/// Backing field for the <see cref="HangDetectionTimeout"/> property.
+		/// </summary>
+		private TimeSpan hangDetectionTimeout = TimeSpan.FromSeconds(3);
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="JoinableTaskFactory"/> class.
@@ -86,6 +95,21 @@ namespace Microsoft.Threading {
 		}
 
 		/// <summary>
+		/// Gets or sets the timeout after which no activity while synchronously blocking
+		/// suggests a hang has occurred.
+		/// </summary>
+		protected TimeSpan HangDetectionTimeout {
+			get {
+				return this.hangDetectionTimeout;
+			}
+
+			set {
+				Requires.Range(value > TimeSpan.Zero, "value");
+				this.hangDetectionTimeout = value;
+			}
+		}
+
+		/// <summary>
 		/// Gets an awaitable whose continuations execute on the synchronization context that this instance was initialized with,
 		/// in such a way as to mitigate both deadlocks and reentrancy.
 		/// </summary>
@@ -138,12 +162,17 @@ namespace Microsoft.Threading {
 			var ambientJob = this.Context.AmbientTask;
 			SingleExecuteProtector wrapper = null;
 			if (ambientJob == null || (this.jobCollection != null && !this.jobCollection.Contains(ambientJob))) {
-				this.RunAsync(delegate {
+				var transient = this.RunAsync(delegate {
 					ambientJob = this.Context.AmbientTask;
 					wrapper = SingleExecuteProtector.Create(ambientJob, callback);
 					ambientJob.Post(SingleExecuteProtector.ExecuteOnce, wrapper, true);
 					return TplExtensions.CompletedTask;
 				});
+
+				if (transient.Task.IsFaulted) {
+					// rethrow the exception.
+					transient.Task.GetAwaiter().GetResult();
+				}
 			} else {
 				wrapper = SingleExecuteProtector.Create(ambientJob, callback);
 				ambientJob.Post(SingleExecuteProtector.ExecuteOnce, wrapper, true);
@@ -210,12 +239,20 @@ namespace Microsoft.Threading {
 		protected internal virtual void WaitSynchronously(Task task) {
 			Requires.NotNull(task, "task");
 			int collections = 0; // useful for debugging dump files to see how many collections occurred.
-			while (!task.Wait(3000)) {
+			Guid hangId = Guid.Empty;
+			while (!task.Wait(this.HangDetectionTimeout)) {
 				// This could be a hang. If a memory dump with heap is taken, it will
 				// significantly simplify investigation if the heap only has live awaitables
 				// remaining (completed ones GC'd). So run the GC now and then keep waiting.
-				collections++;
 				GC.Collect();
+
+				collections++;
+				TimeSpan hangDuration = TimeSpan.FromMilliseconds(this.HangDetectionTimeout.TotalMilliseconds * collections);
+				if (hangId == Guid.Empty) {
+					hangId = Guid.NewGuid();
+				}
+
+				this.Context.OnHangDetected(hangDuration, collections, hangId);
 			}
 		}
 
@@ -274,7 +311,7 @@ namespace Microsoft.Threading {
 		private JoinableTask RunAsync(Func<Task> asyncMethod, bool synchronouslyBlocking) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
-			var job = new JoinableTask(this, synchronouslyBlocking);
+			var job = new JoinableTask(this, synchronouslyBlocking, asyncMethod);
 			using (var framework = new RunFramework(this, job)) {
 				Task asyncMethodResult;
 				try {
@@ -306,7 +343,7 @@ namespace Microsoft.Threading {
 		private JoinableTask<T> RunAsync<T>(Func<Task<T>> asyncMethod, bool synchronouslyBlocking) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
-			var job = new JoinableTask<T>(this, synchronouslyBlocking);
+			var job = new JoinableTask<T>(this, synchronouslyBlocking, asyncMethod);
 			using (var framework = new RunFramework(this, job)) {
 				Task<T> asyncMethodResult;
 				try {
@@ -414,21 +451,28 @@ namespace Microsoft.Threading {
 			public void OnCompleted(Action continuation) {
 				Assumes.True(this.jobFactory != null);
 
-				// In the event of a cancellation request, it becomes a race as to whether the threadpool
-				// or the main thread will execute the continuation first. So we must wrap the continuation
-				// in a SingleExecuteProtector so that it can't be executed twice by accident.
-				// Success case of the main thread.
-				var wrapper = this.jobFactory.RequestSwitchToMainThread(continuation);
+				try {
+					// In the event of a cancellation request, it becomes a race as to whether the threadpool
+					// or the main thread will execute the continuation first. So we must wrap the continuation
+					// in a SingleExecuteProtector so that it can't be executed twice by accident.
+					// Success case of the main thread.
+					var wrapper = this.jobFactory.RequestSwitchToMainThread(continuation);
 
-				// Cancellation case of a threadpool thread.
-				if (this.cancellationRegistrationPtr != null) {
-					// Store the cancellation token registration in the struct pointer. This way,
-					// if the awaiter has been copied (since it's a struct), each copy of the awaiter
-					// points to the same registration. Without this we can have a memory leak.
-					this.cancellationRegistrationPtr.Value = this.cancellationToken.Register(
-						state => ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, state),
-						wrapper,
-						useSynchronizationContext: false);
+					// Cancellation case of a threadpool thread.
+					if (this.cancellationRegistrationPtr != null) {
+						// Store the cancellation token registration in the struct pointer. This way,
+						// if the awaiter has been copied (since it's a struct), each copy of the awaiter
+						// points to the same registration. Without this we can have a memory leak.
+						this.cancellationRegistrationPtr.Value = this.cancellationToken.Register(
+							state => ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, state),
+							wrapper,
+							useSynchronizationContext: false);
+					}
+				} catch (Exception ex) {
+					// This is bad. It would cause a hang without a trace as to why, since we if can't
+					// schedule the continuation, stuff would just never happen.
+					// Crash now, so that a Watson report would capture the original error.
+					Environment.FailFast("Failed to schedule time on the UI thread. A continuation would never execute.", ex);
 				}
 			}
 
@@ -494,6 +538,11 @@ namespace Microsoft.Threading {
 				this.previousJoinable = this.factory.Context.AmbientTask;
 				this.factory.Context.AmbientTask = joinable;
 				this.syncContextRevert = this.joinable.ApplicableJobSyncContext.Apply();
+
+				// Join the ambient parent job, so the parent can dequeue this job's work.
+				if (this.previousJoinable != null) {
+					this.previousJoinable.AddDependency(joinable);
+				}
 			}
 
 			/// <summary>
@@ -506,7 +555,7 @@ namespace Microsoft.Threading {
 
 			internal void SetResult(Task task) {
 				Requires.NotNull(task, "task");
-				this.joinable.SetWrappedTask(task, this.previousJoinable);
+				this.joinable.SetWrappedTask(task);
 			}
 		}
 
@@ -514,10 +563,15 @@ namespace Microsoft.Threading {
 			Requires.NotNull(callback, "callback");
 
 			if (mainThreadAffinitized) {
-				this.RunAsync(delegate {
+				var transient = this.RunAsync(delegate {
 					this.Context.AmbientTask.Post(callback, state, true);
 					return TplExtensions.CompletedTask;
 				});
+
+				if (transient.Task.IsFaulted) {
+					// rethrow the exception.
+					transient.Task.GetAwaiter().GetResult();
+				}
 			} else {
 				ThreadPool.QueueUserWorkItem(new WaitCallback(callback), state);
 			}
@@ -526,6 +580,7 @@ namespace Microsoft.Threading {
 		/// <summary>
 		/// A delegate wrapper that ensures the delegate is only invoked at most once.
 		/// </summary>
+		[DebuggerDisplay("{DelegateLabel}")]
 		internal class SingleExecuteProtector {
 			/// <summary>
 			/// Executes the delegate if it has not already executed.
@@ -591,6 +646,69 @@ namespace Microsoft.Threading {
 				get { return this.invokeDelegate == null; }
 			}
 
+			/// <summary>
+			/// Gets a string that describes the delegate that this instance invokes.
+			/// FOR DIAGNOSTIC PURPOSES ONLY.
+			/// </summary>
+			internal string DelegateLabel {
+				get {
+					return this.WalkReturnCallstack().First(); // Top frame of the return callstack.
+				}
+			}
+
+			/// <summary>
+			/// Walk the continuation objects inside "async state machines" to generate the return callstack.
+			/// FOR DIAGNOSTIC PURPOSES ONLY.
+			/// </summary>
+			internal IEnumerable<string> WalkReturnCallstack() {
+				// This instance might be a wrapper of another instance of "SingleExecuteProtector".
+				// If that is true, we need to follow the chain to find the inner instance of "SingleExecuteProtector".
+				var singleExecuteProtector = this;
+				while (singleExecuteProtector.state is SingleExecuteProtector) {
+					singleExecuteProtector = (SingleExecuteProtector)singleExecuteProtector.state;
+				}
+
+				var invokeDelegate = singleExecuteProtector.invokeDelegate as Delegate;
+				var stateDelegate = singleExecuteProtector.state as Delegate;
+
+				// We are in favor of "state" when "invokeDelegate" is a static method and "state" is the actual delegate.
+				Delegate actualDelegate = (stateDelegate != null && stateDelegate.Target != null) ? stateDelegate : invokeDelegate;
+				if (actualDelegate == null) {
+					yield return "<COMPLETED>";
+					yield break;
+				}
+
+				var stateMachine = FindAsyncStateMachine(actualDelegate);
+				if (stateMachine == null) {
+					// Did not find the async state machine, so returns the method name as top frame and stop walking.
+					yield return GetDelegateLabel(actualDelegate);
+					yield break;
+				}
+
+				do {
+					var state = GetStateMachineFieldValueOnSuffix(stateMachine, "__state");
+					yield return string.Format(
+						CultureInfo.CurrentCulture,
+						"{0} ({1})",
+						stateMachine.GetType().FullName,
+						state);
+
+					var continuationDelegates = FindContinuationDelegates(stateMachine).ToArray();
+					if (continuationDelegates.Length == 0) {
+						break;
+					}
+
+					// TODO: It's possible but uncommon scenario to have multiple "async methods" being awaiting for one "async method".
+					// Here we just choose the first awaiting "async method" as that should be good enough for postmortem.
+					// In future we might want to revisit this to cover the other awaiting "async methods".
+					stateMachine = continuationDelegates.Select((d) => FindAsyncStateMachine(d))
+						.FirstOrDefault((s) => s != null);
+					if (stateMachine == null) {
+						yield return GetDelegateLabel(continuationDelegates.First());
+					}
+				} while (stateMachine != null);
+			}
+
 			internal void RaiseTransitioningEvents() {
 				Assumes.False(this.raiseTransitionComplete); // if this method is called twice, that's the sign of a problem.
 				this.raiseTransitionComplete = true;
@@ -623,7 +741,7 @@ namespace Microsoft.Threading {
 				// As an optimization, recognize if what we're being handed is already an instance of this type,
 				// because if it is, we don't need to wrap it with yet another instance.
 				var existing = state as SingleExecuteProtector;
-				if (callback == ExecuteOnce && existing != null) {
+				if (callback == ExecuteOnce && existing != null && job == existing.job) {
 					return (SingleExecuteProtector)state;
 				}
 
@@ -677,6 +795,134 @@ namespace Microsoft.Threading {
 					this.job.Factory.OnTransitionedToMainThread(this.job, Thread.CurrentThread != this.job.Factory.Context.MainThread);
 				}
 			}
+
+			#region FOR DIAGNOSTIC PURPOSES ONLY
+
+			/// <summary>
+			/// A helper method to get the label of the given delegate.
+			/// </summary>
+			private static string GetDelegateLabel(Delegate invokeDelegate) {
+				Requires.NotNull(invokeDelegate, "invokeDelegate");
+
+				if (invokeDelegate.Target != null) {
+					return string.Format(
+						CultureInfo.CurrentCulture,
+						"{0}.{1} ({2})",
+						invokeDelegate.Method.DeclaringType.FullName,
+						invokeDelegate.Method.Name,
+						invokeDelegate.Target.GetType().FullName);
+				}
+
+				return string.Format(
+					CultureInfo.CurrentCulture,
+					"{0}.{1}",
+					invokeDelegate.Method.DeclaringType.FullName,
+					invokeDelegate.Method.Name);
+			}
+
+			/// <summary>
+			/// A helper method to find the async state machine from the given delegate.
+			/// </summary>
+			private static IAsyncStateMachine FindAsyncStateMachine(Delegate invokeDelegate) {
+				Requires.NotNull(invokeDelegate, "invokeDelegate");
+
+				if (invokeDelegate.Target != null) {
+					return GetFieldValue(invokeDelegate.Target, "m_stateMachine") as IAsyncStateMachine;
+				}
+
+				return null;
+			}
+
+			/// <summary>
+			/// A helper method to get field's value given the object and the field name.
+			/// </summary>
+			private static object GetFieldValue(object obj, string fieldName) {
+				Requires.NotNull(obj, "obj");
+				Requires.NotNullOrEmpty(fieldName, "fieldName");
+
+				var field = obj.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+				if (field != null) {
+					return field.GetValue(obj);
+				}
+
+				return null;
+			}
+
+			/// <summary>
+			/// The field names of "async state machine" are not fixed; the workaround is to find the field based on the suffix.
+			/// </summary>
+			private static object GetStateMachineFieldValueOnSuffix(IAsyncStateMachine stateMachine, string suffix) {
+				Requires.NotNull(stateMachine, "stateMachine");
+				Requires.NotNullOrEmpty(suffix, "suffix");
+
+				var fields = stateMachine.GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+				var field = fields.FirstOrDefault((f) => f.Name.EndsWith(suffix, StringComparison.Ordinal));
+				if (field != null) {
+					return field.GetValue(stateMachine);
+				}
+
+				return null;
+			}
+
+			/// <summary>
+			/// This is the core to find the continuation delegate(s) inside the given async state machine.
+			/// The chain of objects is like this: async state machine -> async method builder -> task -> continuation object -> action.
+			/// </summary>
+			/// <remarks>
+			/// There are 3 types of "async method builder": AsyncVoidMethodBuilder, AsyncTaskMethodBuilder, AsyncTaskMethodBuilder&lt;T&gt;.
+			/// We don't cover AsyncVoidMethodBuilder as it is used rarely and it can't be awaited either;
+			/// AsyncTaskMethodBuilder is a wrapper on top of AsyncTaskMethodBuilder&lt;VoidTaskResult&gt;.
+			/// </remarks>
+			private static IEnumerable<Delegate> FindContinuationDelegates(IAsyncStateMachine stateMachine) {
+				Requires.NotNull(stateMachine, "stateMachine");
+
+				var builder = GetStateMachineFieldValueOnSuffix(stateMachine, "__builder");
+				if (builder == null) {
+					yield break;
+				}
+
+				var task = GetFieldValue(builder, "m_task");
+				if (task == null) {
+					// Probably this builder is an instance of "AsyncTaskMethodBuilder", so we need to get its inner "AsyncTaskMethodBuilder<VoidTaskResult>"
+					builder = GetFieldValue(builder, "m_builder");
+					if (builder != null) {
+						task = GetFieldValue(builder, "m_task");
+					}
+				}
+
+				if (task == null) {
+					yield break;
+				}
+
+				// "task" might be an instance of the type deriving from "Task", but "m_continuationObject" is a private field in "Task",
+				// so we need to use "typeof(Task)" to access "m_continuationObject".
+				var continuationField = typeof(Task).GetField("m_continuationObject", BindingFlags.Instance | BindingFlags.NonPublic);
+				if (continuationField == null) {
+					yield break;
+				}
+
+				var continuationObject = continuationField.GetValue(task);
+				if (continuationObject == null) {
+					yield break;
+				}
+
+				var items = continuationObject as IEnumerable;
+				if (items != null) {
+					foreach (var item in items) {
+						var action = item as Delegate ?? GetFieldValue(item, "m_action") as Delegate;
+						if (action != null) {
+							yield return action;
+						}
+					}
+				} else {
+					var action = continuationObject as Delegate ?? GetFieldValue(continuationObject, "m_action") as Delegate;
+					if (action != null) {
+						yield return action;
+					}
+				}
+			}
+
+			#endregion
 		}
 	}
 }

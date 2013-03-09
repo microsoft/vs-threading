@@ -1,0 +1,3 @@
+[submodule "Microsoft.Validation"]
+	path = Microsoft.Validation
+	url = https://andrewarnott.visualstudio.com/defaultcollection/_git/Microsoft.Validation
