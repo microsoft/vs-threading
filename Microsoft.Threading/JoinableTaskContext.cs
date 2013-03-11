@@ -31,6 +31,7 @@ namespace Microsoft.Threading {
 		/// uses a global lock around critical composition operations because containers can be interconnected
 		/// in arbitrary ways. The code in this file has a very similar problem, so we use the same solution.
 		/// </remarks>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private readonly ReaderWriterLockSlim syncContextLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
 		/// <summary>
@@ -47,8 +48,17 @@ namespace Microsoft.Threading {
 		private readonly HashSet<JoinableTask> pendingTasks = new HashSet<JoinableTask>();
 
 		/// <summary>
+		/// A set of receivers of hang notifications.
+		/// </summary>
+		/// <remarks>
+		/// All access to this collection should be guarded by locking this collection.
+		/// </remarks>
+		private readonly HashSet<JoinableTaskContextNode> hangNotifications = new HashSet<JoinableTaskContextNode>();
+
+		/// <summary>
 		/// A single joinable task factory that itself cannot be joined.
 		/// </summary>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private JoinableTaskFactory nonJoinableFactory;
 
 		/// <summary>
@@ -182,24 +192,16 @@ namespace Microsoft.Threading {
 		/// to a collection that can be jointly joined.
 		/// </summary>
 		/// <param name="collection">The collection that all tasks should be added to.</param>
-		/// <returns></returns>
 		public virtual JoinableTaskFactory CreateFactory(JoinableTaskCollection collection) {
 			Requires.NotNull(collection, "collection");
 			return new JoinableTaskFactory(collection);
 		}
 
 		/// <summary>
-		/// Creates a factory without a <see cref="JoinableTaskCollection"/>.
-		/// </summary>
-		public virtual JoinableTaskFactory CreateDefaultFactory() {
-			return new JoinableTaskFactory(this);
-		}
-
-		/// <summary>
 		/// Creates a collection for in-flight joinable tasks.
 		/// </summary>
 		/// <returns>A new joinable task collection.</returns>
-		public virtual JoinableTaskCollection CreateCollection() {
+		public JoinableTaskCollection CreateCollection() {
 			return new JoinableTaskCollection(this);
 		}
 
@@ -214,6 +216,30 @@ namespace Microsoft.Threading {
 		/// values in the <paramref name="hangDuration"/> parameter.
 		/// </remarks>
 		protected internal virtual void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId) {
+			List<JoinableTaskContextNode> listeners;
+			lock (this.hangNotifications) {
+				listeners = this.hangNotifications.ToList();
+			}
+
+			foreach (var listener in listeners) {
+				try {
+					listener.OnHangDetected(hangDuration, notificationCount, hangId);
+				} catch (Exception ex) {
+					// Report it in CHK, but don't throw. In a hang situation, we don't want the product
+					// to fail for another reason, thus hiding the hang issue.
+					Report.Fail("Exception thrown from OnHangDetected listener. {0}", ex);
+				}
+			}
+		}
+
+		/// <summary>
+		/// Creates a factory without a <see cref="JoinableTaskCollection"/>.
+		/// </summary>
+		/// <remarks>
+		/// Used for initializing the <see cref="Factory"/> property.
+		/// </remarks>
+		protected internal virtual JoinableTaskFactory CreateDefaultFactory() {
+			return new JoinableTaskFactory(this);
 		}
 
 		/// <summary>
@@ -237,6 +263,52 @@ namespace Microsoft.Threading {
 
 			lock (this.pendingTasks) {
 				this.pendingTasks.Remove(task);
+			}
+		}
+
+		/// <summary>
+		/// Registers a node for notification when a hang is detected.
+		/// </summary>
+		/// <param name="node"></param>
+		/// <returns></returns>
+		internal IDisposable RegisterHangNotifications(JoinableTaskContextNode node) {
+			Requires.NotNull(node, "node");
+			lock (this.hangNotifications) {
+				Verify.Operation(this.hangNotifications.Add(node), "This node already registered.");
+			}
+
+			return new HangNotificationRegistration(node);
+		}
+
+		/// <summary>
+		/// A value whose disposal cancels hang registration.
+		/// </summary>
+		private class HangNotificationRegistration : IDisposable {
+			/// <summary>
+			/// The node to receive notifications. May be <c>null</c> if <see cref="Dispose"/> has already been called.
+			/// </summary>
+			private JoinableTaskContextNode node;
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="HangNotificationRegistration"/> class.
+			/// </summary>
+			internal HangNotificationRegistration(JoinableTaskContextNode node) {
+				Requires.NotNull(node, "node");
+				this.node = node;
+			}
+
+			/// <summary>
+			/// Removes the node from hang notifications.
+			/// </summary>
+			public void Dispose() {
+				var node = this.node;
+				if (node != null) {
+					lock (node.Context.hangNotifications) {
+						Assumes.True(node.Context.hangNotifications.Remove(node));
+					}
+
+					this.node = null;
+				}
 			}
 		}
 

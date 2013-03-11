@@ -54,6 +54,7 @@
     <Compile Include="AsyncReaderWriterLock.cs" />
     <Compile Include="AsyncReaderWriterResourceLock.cs" />
     <Compile Include="AwaitExtensions.cs" />
+    <Compile Include="DelegatingJoinableTaskFactory.cs" />
     <Compile Include="EmptyStruct.cs" />
     <Compile Include="EnumerateOneOrMany.cs" />
     <Compile Include="HangReportContribution.cs" />
@@ -66,6 +67,7 @@
     <Compile Include="JoinableTask.cs" />
     <Compile Include="JoinableTaskCollection.cs" />
     <Compile Include="JoinableTask+ExecutionQueue.cs" />
+    <Compile Include="JoinableTaskContextNode.cs" />
     <Compile Include="JoinableTaskFactory+JoinableTaskScheduler.cs" />
     <Compile Include="JoinableTaskFactory.cs" />
     <Compile Include="JoinableTask`1.cs" />

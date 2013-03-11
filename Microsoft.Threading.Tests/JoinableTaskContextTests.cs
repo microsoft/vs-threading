@@ -271,12 +271,12 @@
 		private class JoinableTaskContextDerived : JoinableTaskContext {
 			internal Action<TimeSpan, int, Guid> OnReportHang { get; set; }
 
-			public override JoinableTaskFactory CreateDefaultFactory() {
-				return new JoinableTaskFactoryDerived(this);
-			}
-
 			public override JoinableTaskFactory CreateFactory(JoinableTaskCollection collection) {
 				return new JoinableTaskFactoryDerived(collection);
+			}
+
+			protected override JoinableTaskFactory CreateDefaultFactory() {
+				return new JoinableTaskFactoryDerived(this);
 			}
 
 			protected override void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId) {
