@@ -286,7 +286,7 @@ namespace Microsoft.Threading {
 		/// </example>
 		/// </remarks>
 		public void Run(Func<Task> asyncMethod) {
-			Verify.Operation(!(SynchronizationContext.Current is AsyncReaderWriterLock.NonConcurrentSynchronizationContext), Strings.NotAllowedUnderLock);
+			Verify.Operation(!(SynchronizationContext.Current is AsyncReaderWriterLock.NonConcurrentSynchronizationContext), Strings.NotAllowedUnderURorWLock);
 			var joinable = this.RunAsync(asyncMethod, synchronouslyBlocking: true);
 			joinable.CompleteOnCurrentThread();
 		}
@@ -298,7 +298,7 @@ namespace Microsoft.Threading {
 		/// for an example.
 		/// </remarks>
 		public T Run<T>(Func<Task<T>> asyncMethod) {
-			Verify.Operation(!(SynchronizationContext.Current is AsyncReaderWriterLock.NonConcurrentSynchronizationContext), Strings.NotAllowedUnderLock);
+			Verify.Operation(!(SynchronizationContext.Current is AsyncReaderWriterLock.NonConcurrentSynchronizationContext), Strings.NotAllowedUnderURorWLock);
 			var joinable = this.RunAsync(asyncMethod, synchronouslyBlocking: true);
 			return joinable.CompleteOnCurrentThread();
 		}
