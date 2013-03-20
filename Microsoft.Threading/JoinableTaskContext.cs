@@ -165,17 +165,19 @@ namespace Microsoft.Threading {
 					this.SyncContextLock.EnterReadLock();
 					try {
 						var allJoinedJobs = new HashSet<JoinableTask>();
-						foreach (var pendingTask in this.pendingTasks) {
-							if ((pendingTask.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) {
-								// This task blocks the main thread. If it has joined the ambient task
-								// directly or indirectly, then our ambient task is considered blocking
-								// the main thread.
-								pendingTask.AddSelfAndDescendentOrJoinedJobs(allJoinedJobs);
-								if (allJoinedJobs.Contains(ambientTask)) {
-									return true;
-								}
+						lock (this.pendingTasks) { // our read lock doesn't cover this collection
+							foreach (var pendingTask in this.pendingTasks) {
+								if ((pendingTask.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) {
+									// This task blocks the main thread. If it has joined the ambient task
+									// directly or indirectly, then our ambient task is considered blocking
+									// the main thread.
+									pendingTask.AddSelfAndDescendentOrJoinedJobs(allJoinedJobs);
+									if (allJoinedJobs.Contains(ambientTask)) {
+										return true;
+									}
 
-								allJoinedJobs.Clear();
+									allJoinedJobs.Clear();
+								}
 							}
 						}
 					} finally {
