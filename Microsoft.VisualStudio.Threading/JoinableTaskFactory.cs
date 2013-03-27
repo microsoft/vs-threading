@@ -64,8 +64,6 @@ namespace Microsoft.VisualStudio.Threading {
 			this.owner = owner;
 			this.jobCollection = collection;
 			this.mainThreadJobSyncContext = new JoinableTaskSynchronizationContext(this);
-			this.MainThreadScheduler = new JoinableTaskScheduler(this, true);
-			this.ThreadPoolScheduler = new JoinableTaskScheduler(this, false);
 		}
 
 		/// <summary>
@@ -74,18 +72,6 @@ namespace Microsoft.VisualStudio.Threading {
 		public JoinableTaskContext Context {
 			get { return this.owner; }
 		}
-
-		/// <summary>
-		/// Gets a <see cref="TaskScheduler"/> that schedules work for the
-		/// main thread, and adds it to the joinable job collection when applicable.
-		/// </summary>
-		public TaskScheduler MainThreadScheduler { get; private set; }
-
-		/// <summary>
-		/// Gets a <see cref="TaskScheduler"/> that schedules work for the
-		/// thread pool, and adds it to the joinable job collection when applicable.
-		/// </summary>
-		public TaskScheduler ThreadPoolScheduler { get; private set; }
 
 		/// <summary>
 		/// Gets the synchronization context to apply before executing work associated with this factory.

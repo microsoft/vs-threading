@@ -72,7 +72,6 @@
     <Compile Include="JoinableTaskCollectionTests.cs" />
     <Compile Include="JoinableTaskContextNodeTests.cs" />
     <Compile Include="JoinableTaskContextTests.cs" />
-    <Compile Include="JoinableTaskFactoryTests.cs" />
     <Compile Include="JoinableTaskTestBase.cs" />
     <Compile Include="JoinableTaskTests.cs" />
     <Compile Include="AsyncQueueTests.cs" />

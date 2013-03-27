@@ -454,47 +454,6 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void TransitionToMainThreadRaisedFromTaskScheduler() {
-			var factory = (DerivedJoinableTaskFactory)this.asyncPump;
-
-			var task = Task.Run(async delegate {
-				await factory.MainThreadScheduler;
-				Assert.AreEqual(1, factory.TransitioningToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
-				Assert.AreEqual(1, factory.TransitionedToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
-
-				await factory.MainThreadScheduler;
-				Assert.AreEqual(1, factory.TransitioningToMainThreadHitCount, "No transition events expected since we're already on the main thread.");
-				Assert.AreEqual(1, factory.TransitionedToMainThreadHitCount, "No transition events expected since we're already on the main thread.");
-
-				await factory.ThreadPoolScheduler;
-				Assert.AreEqual(1, factory.TransitioningToMainThreadHitCount, "No transition events expected when switching to threadpool.");
-				Assert.AreEqual(1, factory.TransitionedToMainThreadHitCount, "No transition events expected when switching to threadpool.");
-
-				await factory.MainThreadScheduler;
-				Assert.AreEqual(2, factory.TransitioningToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
-				Assert.AreEqual(2, factory.TransitionedToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
-
-				// Asynchronously re-acquire the main thread.
-				await Task.Factory.StartNew(
-					delegate {
-						Assert.AreEqual(3, factory.TransitioningToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
-						Assert.AreEqual(3, factory.TransitionedToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
-					},
-					CancellationToken.None,
-					TaskCreationOptions.None,
-					factory.MainThreadScheduler);
-				Assert.AreEqual(4, factory.TransitioningToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
-				Assert.AreEqual(4, factory.TransitionedToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
-			});
-
-			// Simulate the UI thread just pumping ordinary messages
-			var frame = new DispatcherFrame();
-			task.ContinueWith(_ => frame.Continue = false, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
-			Dispatcher.PushFrame(frame);
-			task.GetAwaiter().GetResult(); // observe exceptions.
-		}
-
-		[TestMethod, Timeout(TestTimeout)]
 		public void RunSynchronouslyNestedNoJoins() {
 			bool outerCompleted = false, innerCompleted = false;
 			this.asyncPump.Run(async delegate {
@@ -992,24 +951,6 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void MainThreadTaskScheduler() {
-			this.asyncPump.Run(async delegate {
-				bool completed = false;
-				await Task.Factory.StartNew(
-					async delegate {
-						Assert.AreSame(this.originalThread, Thread.CurrentThread);
-						await Task.Yield();
-						Assert.AreSame(this.originalThread, Thread.CurrentThread);
-						completed = true;
-					},
-					CancellationToken.None,
-					TaskCreationOptions.None,
-					this.asyncPump.MainThreadScheduler).Unwrap();
-				Assert.IsTrue(completed);
-			});
-		}
-
-		[TestMethod, Timeout(TestTimeout)]
 		public void RunSynchronouslyTaskOfTWithFireAndForgetMethod() {
 			this.asyncPump.Run(async delegate {
 				await Task.Yield();
@@ -1190,11 +1131,11 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public void MainThreadTaskSchedulerDoesNotInlineWhileQueuingTasks() {
 			var frame = new DispatcherFrame();
-			var uiBoundWork = Task.Factory.StartNew(
-				delegate { frame.Continue = false; },
-				CancellationToken.None,
-				TaskCreationOptions.None,
-				this.asyncPump.MainThreadScheduler);
+			var uiBoundWork = Task.Run(
+				async delegate {
+					await this.asyncPump.SwitchToMainThreadAsync();
+					frame.Continue = false;
+				});
 
 			Assert.IsTrue(frame.Continue, "The UI bound work should not have executed yet.");
 			Dispatcher.PushFrame(frame);
@@ -1222,11 +1163,11 @@
 				return TplExtensions.CompletedTask;
 			});
 
-			uiBoundWork = Task.Factory.StartNew(
-				delegate { frame.Continue = false; },
-				CancellationToken.None,
-				TaskCreationOptions.None,
-				this.asyncPump.MainThreadScheduler);
+			uiBoundWork = Task.Run(
+				async delegate {
+					await this.asyncPump.SwitchToMainThreadAsync();
+					frame.Continue = false;
+				});
 
 			runSynchronouslyExited.SetAsync();
 			unblockMainThread.Wait();
@@ -1414,11 +1355,12 @@
 			// 4. This is the task which the UI thread is waiting for,
 			//    and it's scheduled on UI thread.
 			//    As UI thread did "Join" before "await", so this task can reenter UI thread.
-			var task = Task.Factory.StartNew(async delegate {
+			var task = Task.Run(async delegate {
+				await this.asyncPump.SwitchToMainThreadAsync();
 				// 4.1 Now this anonymous method is on UI thread,
 				//     and it needs to acquire a read lock.
 				//
-				//     The attemp to acquire a lock would lead to a deadlock!
+				//     The attempt to acquire a lock would lead to a deadlock!
 				//     Because the call context was overwritten by this reentrance,
 				//     this method didn't know the write lock was already acquired at
 				//     the bottom of the call stack. Therefore, it will issue a new request
@@ -1428,21 +1370,17 @@
 				//     This test would be timeout here.
 				using (await asyncLock.ReadLockAsync()) {
 				}
-			},
-			CancellationToken.None,
-			TaskCreationOptions.None,
-			this.asyncPump.MainThreadScheduler
-			).Unwrap();
+			});
 
 			this.asyncPump.Run(async delegate {
 				// 1. Acquire write lock on worker thread
 				using (await asyncLock.WriteLockAsync()) {
 					// 2. Hold the write lock but switch to UI thread.
-					//    That's to simulate the scenario to call into IVs services
+					//    That's to simulate the scenario to call into IVs* services
 					await this.asyncPump.SwitchToMainThreadAsync();
 
 					// 3. Join and wait for another BG task.
-					//    That's to simulate the scenario when the IVs service also calls into CPS,
+					//    That's to simulate the scenario when the IVs* service also calls into CPS,
 					//    and CPS join and wait for another task.
 					using (this.joinableCollection.Join()) {
 						await task;
