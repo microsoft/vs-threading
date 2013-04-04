@@ -92,9 +92,9 @@
     <Compile Include="WeakKeyDictionaryTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Microsoft.Validation\Microsoft.Validation.csproj">
+    <ProjectReference Include="..\Microsoft.Validation\Microsoft.VisualStudio.Validation.csproj">
       <Project>{e016a630-a79b-4b5d-8997-e66581d62b81}</Project>
-      <Name>Microsoft.Validation</Name>
+      <Name>Microsoft.VisualStudio.Validation</Name>
     </ProjectReference>
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj">
       <Project>{2c0dffbd-49c8-4f12-a964-e3096ad4c7f4}</Project>

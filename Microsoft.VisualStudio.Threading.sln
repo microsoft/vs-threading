@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 12
+VisualStudioVersion = 12.0.20328.0 VSPRO_PLATFORM
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Threading", "Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj", "{2C0DFFBD-49C8-4F12-A964-E3096AD4C7F4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Threading.Tests", "Microsoft.VisualStudio.Threading.Tests\Microsoft.VisualStudio.Threading.Tests.csproj", "{7B8BF2E6-7D7B-4F4E-B1A4-B08312F6294F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Validation", "Microsoft.Validation\Microsoft.Validation.csproj", "{E016A630-A79B-4B5D-8997-E66581D62B81}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Validation", "Microsoft.Validation\Microsoft.VisualStudio.Validation.csproj", "{E016A630-A79B-4B5D-8997-E66581D62B81}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
