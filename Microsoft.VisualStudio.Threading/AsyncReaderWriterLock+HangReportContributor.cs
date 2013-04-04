@@ -37,7 +37,7 @@ namespace Microsoft.VisualStudio.Threading {
 				AppendAwaiterDetailToReport(report, this.waitingUpgradeableReaders, "waitingUpgradeableReaders");
 				AppendAwaiterDetailToReport(report, this.waitingWriters, "waitingWriters");
 
-				return new HangReportContribution(report.ToString(), "text/plain", this.GetType().Name);
+				return new HangReportContribution(report.ToString(), "text/plain", this.GetType().Name + ".txt");
 			} finally {
 				if (lockAcquired) {
 					Monitor.Exit(this.syncObject);
