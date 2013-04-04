@@ -227,9 +227,27 @@ namespace Microsoft.VisualStudio.Threading {
 
 		/// <summary>
 		/// Synchronously blocks the calling thread for the completion of the specified task.
+		/// If running on the main thread, any applicable message pump is suppressed
+		/// while the thread sleeps.
 		/// </summary>
 		/// <param name="task">The task whose completion is being waited on.</param>
 		protected internal virtual void WaitSynchronously(Task task) {
+			if (this.Context.MainThread == Thread.CurrentThread) {
+				// Suppress any reentrancy by causing this synchronously blocking wait
+				// to not pump any messages at all.
+				using (NoMessagePumpSyncContext.Default.Apply()) {
+					this.WaitSynchronouslyCore(task);
+				}
+			} else {
+				this.WaitSynchronouslyCore(task);
+			}
+		}
+
+		/// <summary>
+		/// Synchronously blocks the calling thread for the completion of the specified task.
+		/// </summary>
+		/// <param name="task">The task whose completion is being waited on.</param>
+		protected virtual void WaitSynchronouslyCore(Task task) {
 			Requires.NotNull(task, "task");
 			int collections = 0; // useful for debugging dump files to see how many collections occurred.
 			Guid hangId = Guid.Empty;
