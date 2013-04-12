@@ -103,6 +103,19 @@ namespace Microsoft.VisualStudio.Threading {
 		public Thread MainThread { get; private set; }
 
 		/// <summary>
+		/// Gets a value indicating whether the caller is currently running within the context of a joinable task.
+		/// </summary>
+		/// <remarks>
+		/// Use of this property is generally discouraged, as any operation that becomes a no-op when no
+		/// ambient JoinableTask is present is very cheap. For clients that have complex algorithms that are
+		/// only relevant if an ambient joinable task is present, this property may serve to skip that for
+		/// performance reasons.
+		/// </remarks>
+		public bool IsWithinJoinableTask {
+			get { return this.AmbientTask != null; }
+		}
+
+		/// <summary>
 		/// Gets the underlying <see cref="SynchronizationContext"/> that controls the main thread in the host.
 		/// </summary>
 		public SynchronizationContext UnderlyingSynchronizationContext { get; private set; }

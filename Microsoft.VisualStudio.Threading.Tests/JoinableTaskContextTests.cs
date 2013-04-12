@@ -25,6 +25,20 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void IsWithinJoinableTask() {
+			Assert.IsFalse(this.context.IsWithinJoinableTask);
+			this.factory.Run(async delegate {
+				Assert.IsTrue(this.context.IsWithinJoinableTask);
+				await Task.Yield();
+				Assert.IsTrue(this.context.IsWithinJoinableTask);
+				await Task.Run(delegate {
+					Assert.IsTrue(this.context.IsWithinJoinableTask);
+					return TplExtensions.CompletedTask;
+				});
+			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void ReportHangOnRun() {
 			this.factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
 			var releaseTaskSource = new TaskCompletionSource<object>();
