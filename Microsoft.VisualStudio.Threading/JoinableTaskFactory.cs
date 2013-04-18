@@ -19,8 +19,13 @@ namespace Microsoft.VisualStudio.Threading {
 	using JoinableTaskSynchronizationContext = Microsoft.VisualStudio.Threading.JoinableTask.JoinableTaskSynchronizationContext;
 
 	/// <summary>
-	/// A collection of asynchronous operations that may be joined.
+	/// A factory for starting asynchronous tasks that can mitigate deadlocks
+	/// when the tasks require the Main thread of an application and the Main
+	/// thread may itself be blocking on the completion of a task.
 	/// </summary>
+	/// <remarks>
+	/// For more complete comments please see the <see cref="JoinableTaskContext"/>.
+	/// </remarks>
 	public partial class JoinableTaskFactory {
 		/// <summary>
 		/// The <see cref="JoinableTaskContext"/> that owns this instance.

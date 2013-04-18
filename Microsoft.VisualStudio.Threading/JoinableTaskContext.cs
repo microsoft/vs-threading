@@ -20,6 +20,50 @@ namespace Microsoft.VisualStudio.Threading {
 	/// <summary>
 	/// A common context within which joinable tasks may be created and interact to avoid deadlocks.
 	/// </summary>
+	/// <devremarks>
+	/// Lots of documentation and FAQ on Joinable Tasks is available on OneNote:
+	/// http://devdiv/sites/vspe/prjbld/_layouts/OneNote.aspx?id=%2fsites%2fvspe%2fprjbld%2fOneNote%2fTeamInfo&wd=target%28VS%20Threading.one%7c46FEAAD0-0131-45EE-8C52-C9893F1FD331%2fThreading%20Rules%7cD0EEFAB9-99C0-4B8F-AA5F-4287DD69A38F%2f%29
+	/// </devremarks>
+	/// <remarks>
+	/// There are three rules that should be strictly followed when using or interacting
+	/// with JoinableTasks:
+	///  1. If a method has certain thread apartment requirements (STA or MTA) it must either:
+	///       a) Have an asynchronous signature, and asynchronously marshal to the appropriate 
+	///          thread if it isn't originally invoked on a compatible thread. 
+	///          The recommended way to switch to the main thread is:
+	///          <code>
+	///          await JoinableTaskFactory.SwitchToMainThreadAsync();
+	///          </code>
+	///       b) Have a synchronous signature, and throw an exception when called on the wrong thread.
+	///     In particular, no method is allowed to synchronously marshal work to another thread
+	///     (blocking while that work is done). Synchronous blocks in general are to be avoided
+	///     whenever possible.
+	///  2. When an implementation of an already-shipped public API must call asynchronous code
+	///     and block for its completion, it must do so by following this simple pattern:
+	///     <code>
+	///     JoinableTaskFactory.Run(async delegate {
+	///         await SomeOperationAsync(...);
+	///     });
+	///     </code>
+	///  3. If ever awaiting work that was started earlier, that work must be Joined.
+	///     For example, one service kicks off some asynchronous work that may later become
+	///     synchronously blocking:
+	///     <code>
+	///     JoinableTask longRunningAsyncWork = JoinableTaskFactory.RunAsync(async delegate {
+	///         await SomeOperationAsync(...);
+	///     });
+	///     </code>
+	///     Then later that async work becomes blocking:
+	///     <code>
+	///     longRunningAsyncWork.Join();
+	///     </code>
+	///     or perhaps:
+	///     <code>
+	///     await longRunningAsyncWork;
+	///     </code>
+	///     Note however that this extra step is not necessary when awaiting is done
+	///     immediately after kicking off an asynchronous operation.
+	/// </remarks>
 	public partial class JoinableTaskContext {
 		/// <summary>
 		/// A "global" lock that allows the graph of interconnected sync context and JoinableSet instances

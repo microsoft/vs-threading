@@ -19,6 +19,9 @@ namespace Microsoft.VisualStudio.Threading {
 	/// deadlocks while synchronously blocking the Main thread for the operation's completion.
 	/// </summary>
 	/// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
+	/// <remarks>
+	/// For more complete comments please see the <see cref="JoinableTaskContext"/>.
+	/// </remarks>
 	public class JoinableTask<T> : JoinableTask {
 		/// <summary>
 		/// Initializes a new instance of the <see cref="JoinableTask"/> class.

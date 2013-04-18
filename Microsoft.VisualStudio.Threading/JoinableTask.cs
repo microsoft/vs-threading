@@ -21,6 +21,9 @@ namespace Microsoft.VisualStudio.Threading {
 	/// Tracks asynchronous operations and provides the ability to Join those operations to avoid
 	/// deadlocks while synchronously blocking the Main thread for the operation's completion.
 	/// </summary>
+	/// <remarks>
+	/// For more complete comments please see the <see cref="JoinableTaskContext"/>.
+	/// </remarks>
 	public partial class JoinableTask {
 		[Flags]
 		internal enum JoinableTaskFlags {
