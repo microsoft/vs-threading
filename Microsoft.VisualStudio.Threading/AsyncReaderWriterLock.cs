@@ -274,7 +274,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Gets the lock held by the caller's execution context.
 		/// </summary>
 		protected LockHandle AmbientLock {
-			get { return new LockHandle(this.topAwaiter.Value); }
+			get { return new LockHandle(this.GetFirstActiveSelfOrAncestor(this.topAwaiter.Value)); }
 		}
 
 		/// <summary>
@@ -509,10 +509,21 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Gets a value indicating whether the caller's thread apartment model and SynchronizationContext
 		/// is compatible with a lock.
 		/// </summary>
-		private static bool IsLockSupportingContext {
-			get {
-				return Thread.CurrentThread.GetApartmentState() == ApartmentState.MTA && !IsUnsupportedSynchronizationContext;
+		private bool IsLockSupportingContext(Awaiter awaiter = null) {
+			if (Thread.CurrentThread.GetApartmentState() != ApartmentState.MTA || IsUnsupportedSynchronizationContext) {
+				return false;
 			}
+
+			awaiter = awaiter ?? this.topAwaiter.Value;
+			if (this.IsLockHeld(LockKind.Write, awaiter, allowNonLockSupportingContext: true, checkSyncContextCompatibility: false) ||
+				this.IsLockHeld(LockKind.UpgradeableRead, awaiter, allowNonLockSupportingContext: true, checkSyncContextCompatibility: false)) {
+				if (SynchronizationContext.Current != this.nonConcurrentSyncContext) {
+					// Upgradeable read and write locks *must* have the NonConcurrentSynchronizationContext applied.
+					return false;
+				}
+			}
+
+			return true;
 		}
 
 		/// <summary>
@@ -666,7 +677,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="allowNonLockSupportingContext"><c>true</c> to return true when a lock is held but unusable because of the context of the caller.</param>
 		/// <returns><c>true</c> if the caller holds active locks of the given type; <c>false</c> otherwise.</returns>
 		private bool IsLockHeld(LockKind kind, Awaiter awaiter = null, bool checkSyncContextCompatibility = true, bool allowNonLockSupportingContext = false) {
-			if (allowNonLockSupportingContext || IsLockSupportingContext) {
+			if (allowNonLockSupportingContext || this.IsLockSupportingContext(awaiter)) {
 				lock (this.syncObject) {
 					awaiter = awaiter ?? this.topAwaiter.Value;
 					if (checkSyncContextCompatibility) {
@@ -691,7 +702,7 @@ namespace Microsoft.VisualStudio.Threading {
 		private bool IsLockActive(Awaiter awaiter, bool considerStaActive, bool checkSyncContextCompatibility = false) {
 			Requires.NotNull(awaiter, "awaiter");
 
-			if (considerStaActive || IsLockSupportingContext) {
+			if (considerStaActive || this.IsLockSupportingContext(awaiter)) {
 				lock (this.syncObject) {
 					bool activeLock = this.GetActiveLockSet(awaiter.Kind).Contains(awaiter);
 					if (checkSyncContextCompatibility && activeLock) {
@@ -932,6 +943,8 @@ namespace Microsoft.VisualStudio.Threading {
 			Task synchronousCallbackExecution = null;
 			bool synchronousRequired = false;
 			Awaiter remainingAwaiter = null;
+			Awaiter topAwaiterAtStart = this.topAwaiter.Value; // do this outside the lock because it's fairly expensive and doesn't require the lock.
+
 			lock (this.syncObject) {
 				// In case this is a sticky write lock, it may also belong to the write locks issued collection.
 				bool upgradedStickyWrite = awaiter.Kind == LockKind.UpgradeableRead
@@ -973,11 +986,15 @@ namespace Microsoft.VisualStudio.Threading {
 
 				if (reenterConcurrentOutsideCode == null) {
 					this.OnReleaseReenterConcurrencyComplete(awaiter, upgradedStickyWrite, searchAllWaiters: false);
-					remainingAwaiter = this.GetFirstActiveSelfOrAncestor(this.topAwaiter.Value);
 				}
+
+				remainingAwaiter = this.GetFirstActiveSelfOrAncestor(topAwaiterAtStart);
 			}
 
-			if (reenterConcurrentOutsideCode == null) {
+			// Updating the topAwaiter requires touching the CallContext, which significantly increases the perf/GC hit
+			// for releasing locks. So we prefer to leave a released lock in the context and walk up the lock stack when
+			// necessary. But we will clean it up if it's the last lock released.
+			if (remainingAwaiter == null) {
 				// This assignment is outside the lock because it doesn't need the lock and it's a relatively expensive call
 				// that we needn't hold the lock for.
 				this.topAwaiter.Value = remainingAwaiter;
@@ -1510,22 +1527,13 @@ namespace Microsoft.VisualStudio.Threading {
 
 					if (this.LockIssued) {
 						ThrowIfStaOrUnsupportedSyncContext();
-						var priorSynchronizationContext = SynchronizationContext.Current;
-						try {
-							bool clearSynchronizationContext = false;
-							if ((this.Kind & (LockKind.UpgradeableRead | LockKind.Write)) != 0
-								&& !(priorSynchronizationContext is NonConcurrentSynchronizationContext)) {
-								clearSynchronizationContext = true;
-								SynchronizationContext.SetSynchronizationContext(this.lck.nonConcurrentSyncContext);
-							}
-
-							this.lck.ApplyLockToCallContext(this);
-
-							return new Releaser(this, clearSynchronizationContext);
-						} catch {
-							SynchronizationContext.SetSynchronizationContext(priorSynchronizationContext);
-							throw;
+						if ((this.Kind & (LockKind.UpgradeableRead | LockKind.Write)) != 0) {
+							Assumes.True(SynchronizationContext.Current == this.lck.nonConcurrentSyncContext);
 						}
+
+						this.lck.ApplyLockToCallContext(this);
+
+						return new Releaser(this);
 					} else if (this.cancellationToken.IsCancellationRequested) {
 						// At this point, someone called GetResult who wasn't registered as a synchronous waiter,
 						// and before the lock was issued.
@@ -1567,7 +1575,15 @@ namespace Microsoft.VisualStudio.Threading {
 				var continuation = Interlocked.Exchange(ref this.continuation, null);
 
 				if (continuation != null) {
-					Task.Run(continuation);
+					// Only read locks can be executed trivially. The locks that have some level of exclusivity (upgradeable read and write)
+					// must be executed via the NonConcurrentSynchronizationContext.
+					if (this.lck.LockStackContains(LockKind.UpgradeableRead, this) ||
+						this.lck.LockStackContains(LockKind.Write, this)) {
+						this.lck.nonConcurrentSyncContext.Post(state => ((Action)state)(), continuation);
+					} else {
+						Task.Run(continuation);
+					}
+
 					return true;
 				} else {
 					return false;
@@ -1620,8 +1636,17 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 		}
 
-		private class NonConcurrentSynchronizationContext : SynchronizationContext {
+		internal class NonConcurrentSynchronizationContext : SynchronizationContext {
 			private readonly SemaphoreSlim semaphore = new SemaphoreSlim(1);
+
+			/// <summary>
+			/// The thread that has entered the semaphore.
+			/// </summary>
+			/// <remarks>
+			/// No reason to lock around access to this field because it is only ever set to
+			/// or compared against the current thread, so the activity of other threads is irrelevant.
+			/// </remarks>
+			private Thread threadHoldingSemaphore;
 
 			/// <summary>
 			/// Gets a value indicating whether the semaphore is currently occupied.
@@ -1637,19 +1662,35 @@ namespace Microsoft.VisualStudio.Threading {
 			public override void Post(SendOrPostCallback d, object state) {
 				Task.Run(async delegate {
 					await this.semaphore.WaitAsync().ConfigureAwait(false);
+					this.threadHoldingSemaphore = Thread.CurrentThread;
 					try {
 						SynchronizationContext.SetSynchronizationContext(this);
 						d(state);
 					} finally {
-						this.semaphore.Release();
+						// The semaphore *may* have been released already, so take care to not release it again.
+						if (this.threadHoldingSemaphore == Thread.CurrentThread) {
+							this.threadHoldingSemaphore = null;
+							this.semaphore.Release();
+						}
 					}
 				});
 			}
 
 			internal LoanBack LoanBackAnyHeldResource() {
-				return this.semaphore.CurrentCount == 0
+				return (this.semaphore.CurrentCount == 0 && this.threadHoldingSemaphore == Thread.CurrentThread)
 					 ? new LoanBack(this)
 					 : default(LoanBack);
+			}
+
+			internal void EarlyExitSynchronizationContext() {
+				if (this.threadHoldingSemaphore == Thread.CurrentThread) {
+					this.threadHoldingSemaphore = null;
+					this.semaphore.Release();
+				}
+
+				if (SynchronizationContext.Current == this) {
+					SynchronizationContext.SetSynchronizationContext(null);
+				}
 			}
 
 			internal struct LoanBack : IDisposable {
@@ -1658,12 +1699,14 @@ namespace Microsoft.VisualStudio.Threading {
 				internal LoanBack(NonConcurrentSynchronizationContext syncContext) {
 					Requires.NotNull(syncContext, "syncContext");
 					this.syncContext = syncContext;
+					this.syncContext.threadHoldingSemaphore = null;
 					this.syncContext.semaphore.Release();
 				}
 
 				public void Dispose() {
 					if (this.syncContext != null) {
 						this.syncContext.semaphore.Wait();
+						this.syncContext.threadHoldingSemaphore = Thread.CurrentThread;
 					}
 				}
 			}
@@ -1679,16 +1722,12 @@ namespace Microsoft.VisualStudio.Threading {
 			/// </summary>
 			private readonly Awaiter awaiter;
 
-			private readonly bool clearSynchronizationContext;
-
 			/// <summary>
 			/// Initializes a new instance of the <see cref="Releaser"/> struct.
 			/// </summary>
 			/// <param name="awaiter">The awaiter.</param>
-			/// <param name="clearSynchronizationContext"><c>true</c> to clear <see cref="SynchronizationContext.Current"/> when the lock is released.</param>
-			internal Releaser(Awaiter awaiter, bool clearSynchronizationContext) {
+			internal Releaser(Awaiter awaiter) {
 				this.awaiter = awaiter;
-				this.clearSynchronizationContext = clearSynchronizationContext;
 			}
 
 			/// <summary>
@@ -1696,16 +1735,19 @@ namespace Microsoft.VisualStudio.Threading {
 			/// </summary>
 			public void Dispose() {
 				if (this.awaiter != null) {
-					var syncContext = SynchronizationContext.Current as NonConcurrentSynchronizationContext;
-					var loan = syncContext != null
-						? syncContext.LoanBackAnyHeldResource()
-						: default(NonConcurrentSynchronizationContext.LoanBack);
-					try {
+					var nonConcurrentSyncContext = SynchronizationContext.Current as NonConcurrentSynchronizationContext;
+					using (nonConcurrentSyncContext != null ? nonConcurrentSyncContext.LoanBackAnyHeldResource() : default(NonConcurrentSynchronizationContext.LoanBack)) {
 						var releaseTask = this.ReleaseAsync();
 						while (!releaseTask.Wait(1000)) { // this loop allows us to break into the debugger and step into managed code to analyze a hang.
 						}
-					} finally {
-						loan.Dispose();
+					}
+
+					if (nonConcurrentSyncContext != null && !this.awaiter.OwningLock.AmbientLock.IsValid) {
+						// The lock holder is taking the synchronous path to release the last UR/W lock held.
+						// Since they may go synchronously on their merry way for a while, forcibly release
+						// the sync context's semaphore that they otherwise would hold until their synchronous
+						// method returns.
+						nonConcurrentSyncContext.EarlyExitSynchronizationContext();
 					}
 				}
 			}
@@ -1723,10 +1765,6 @@ namespace Microsoft.VisualStudio.Threading {
 					result = this.awaiter.ReleaseAsync();
 				} else {
 					result = TplExtensions.CompletedTask;
-				}
-
-				if (this.clearSynchronizationContext && SynchronizationContext.Current is NonConcurrentSynchronizationContext) {
-					SynchronizationContext.SetSynchronizationContext(null);
 				}
 
 				return result;

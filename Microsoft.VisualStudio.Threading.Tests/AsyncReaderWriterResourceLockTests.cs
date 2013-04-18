@@ -14,7 +14,7 @@
 		private const char UpgradeableReadChar = 'U';
 		private const char StickyUpgradeableReadChar = 'S';
 		private const char WriteChar = 'W';
-		private const bool VerboseLogEnabled = false;
+		private static bool VerboseLogEnabled = false;
 
 		private ResourceLockWrapper resourceLock;
 

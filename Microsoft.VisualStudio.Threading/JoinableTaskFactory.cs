@@ -295,6 +295,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </example>
 		/// </remarks>
 		public void Run(Func<Task> asyncMethod) {
+			VerifyNoNonConcurrentSyncContext();
 			var joinable = this.RunAsync(asyncMethod, synchronouslyBlocking: true);
 			joinable.CompleteOnCurrentThread();
 		}
@@ -306,6 +307,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// for an example.
 		/// </remarks>
 		public T Run<T>(Func<Task<T>> asyncMethod) {
+			VerifyNoNonConcurrentSyncContext();
 			var joinable = this.RunAsync(asyncMethod, synchronouslyBlocking: true);
 			return joinable.CompleteOnCurrentThread();
 		}
@@ -380,6 +382,29 @@ namespace Microsoft.VisualStudio.Threading {
 			Requires.NotNull(joinable, "joinable");
 			if (this.jobCollection != null) {
 				this.jobCollection.Add(joinable);
+			}
+		}
+
+		/// <summary>
+		/// Throws an exception if an active AsyncReaderWriterLock
+		/// upgradeable read or write lock is held by the caller.
+		/// </summary>
+		/// <remarks>
+		/// This is important to call from the Run and Run{T} methods because
+		/// if they are called from within an ARWL upgradeable read or write lock,
+		/// then Run will synchronously block while inside the semaphore held
+		/// by the ARWL that prevents concurrency. If the delegate within Run
+		/// yields and then tries to reacquire the ARWL lock, it will be unable
+		/// to re-enter the semaphore, leading to a deadlock.
+		/// Instead, callers who hold UR/W locks should never call Run, or should
+		/// switch to the STA thread first in order to exit the semaphore before
+		/// calling the Run method.
+		/// </remarks>
+		private static void VerifyNoNonConcurrentSyncContext() {
+			// Don't use Verify.Operation here to avoid loading a string resource in success cases.
+			if (SynchronizationContext.Current is AsyncReaderWriterLock.NonConcurrentSynchronizationContext) {
+				Report.Fail(Strings.NotAllowedUnderURorWLock); // pops a CHK assert dialog, but doesn't throw.
+				Verify.FailOperation(Strings.NotAllowedUnderURorWLock); // actually throws, even in RET.
 			}
 		}
 

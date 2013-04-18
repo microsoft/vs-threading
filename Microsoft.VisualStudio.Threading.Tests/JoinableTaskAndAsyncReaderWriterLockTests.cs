@@ -4,7 +4,9 @@
 	using System.Collections.Generic;
 	using System.Linq;
 	using System.Text;
+	using System.Threading;
 	using System.Threading.Tasks;
+	using System.Windows.Threading;
 
 	[TestClass]
 	public class JoinableTaskAndAsyncReaderWriterLockTests : TestBase {
@@ -19,9 +21,7 @@
 		[TestInitialize]
 		public void Initialize() {
 			this.asyncLock = new AsyncReaderWriterLock();
-			var context = new JoinableTaskContext();
-			this.joinableCollection = context.CreateCollection();
-			this.asyncPump = context.CreateFactory(this.joinableCollection);
+			this.InitializeJoinableTaskFactory();
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -76,6 +76,109 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public void LockWithinRunAsyncAfterYieldMTA() {
 			Task.Run(() => this.LockWithinRunAsyncAfterYieldHelper()).GetAwaiter().GetResult();
+		}
+
+		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
+		public async Task RunWithinExclusiveLock() {
+			using (var releaser1 = await this.asyncLock.WriteLockAsync()) {
+				this.asyncPump.Run(async delegate {
+					using (var releaser2 = await this.asyncLock.WriteLockAsync()) {
+					}
+				});
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
+		public async Task RunWithinExclusiveLockWithYields() {
+			using (var releaser1 = await this.asyncLock.WriteLockAsync()) {
+				await Task.Yield();
+				this.asyncPump.Run(async delegate {
+					using (var releaser2 = await this.asyncLock.WriteLockAsync()) {
+						await Task.Yield();
+					}
+				});
+			}
+		}
+
+		/// <summary>
+		/// Verifies that synchronously blocking works within read locks.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task RunWithinReadLock() {
+			using (await this.asyncLock.ReadLockAsync()) {
+				this.asyncPump.Run(() => TplExtensions.CompletedTask);
+			}
+		}
+
+		/// <summary>
+		/// Verifies that a pattern that usually causes deadlocks is not allowed to occur.
+		/// Basically because the <see cref="RunWithinExclusiveLockWithYields"/> test hangs (and is ignored),
+		/// this test verifies that anyone using that pattern will be quickly disallowed to avoid hangs
+		/// whenever the async code happens to yield.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task RunWithinUpgradeableReadLockThrows() {
+			using (await this.asyncLock.UpgradeableReadLockAsync()) {
+				try {
+					this.asyncPump.Run(() => TplExtensions.CompletedTask);
+					Assert.Fail("Expected InvalidOperationException not thrown.");
+				} catch (InvalidOperationException) {
+					// This exception must be thrown because otherwise deadlocks can occur
+					// when the Run method's delegate yields and then asks for another lock.
+				}
+			}
+		}
+
+		/// <summary>
+		/// Verifies that a pattern that usually causes deadlocks is not allowed to occur.
+		/// Basically because the <see cref="RunWithinExclusiveLockWithYields"/> test hangs (and is ignored),
+		/// this test verifies that anyone using that pattern will be quickly disallowed to avoid hangs
+		/// whenever the async code happens to yield.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task RunWithinWriteLockThrows() {
+			using (await this.asyncLock.WriteLockAsync()) {
+				try {
+					this.asyncPump.Run(() => TplExtensions.CompletedTask);
+					Assert.Fail("Expected InvalidOperationException not thrown.");
+				} catch (InvalidOperationException) {
+					// This exception must be thrown because otherwise deadlocks can occur
+					// when the Run method's delegate yields and then asks for another lock.
+				}
+			}
+		}
+
+		/// <summary>
+		/// Verifies that an important scenario of write lock + main thread switch + synchronous callback into the write lock works.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public void RunWithinExclusiveLockWithYieldsOntoMainThread() {
+			this.ExecuteOnDispatcher(
+				async delegate {
+					this.InitializeJoinableTaskFactory();
+					using (var releaser1 = await this.asyncLock.WriteLockAsync()) {
+						// This part of the scenario is where we switch back to the main thread
+						// in preparation to call 3rd party code.
+						await this.asyncPump.SwitchToMainThreadAsync();
+
+						// Calling the 3rd party code would go here in the scenario.
+						//// Call would go here, but isn't important for the test.
+
+						// This is the part of the scenario where 3rd party code calls back
+						// into code that may require the same write lock, via a synchronous interface.
+						this.asyncPump.Run(async delegate {
+							using (var releaser2 = await this.asyncLock.WriteLockAsync()) {
+								await Task.Yield();
+							}
+						});
+					}
+				});
+		}
+
+		private void InitializeJoinableTaskFactory() {
+			var context = new JoinableTaskContext();
+			this.joinableCollection = context.CreateCollection();
+			this.asyncPump = context.CreateFactory(this.joinableCollection);
 		}
 
 		private void LockWithinRunAsyncAfterYieldHelper() {
