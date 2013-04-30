@@ -182,7 +182,7 @@ namespace Microsoft.VisualStudio.Threading {
 					try {
 						// We use interlocked here to mitigate race conditions in lazily initializing this field.
 						// We *could* take a write lock above, but that would needlessly increase lock contention.
-						Interlocked.CompareExchange(ref this.emptyEvent, new AsyncManualResetEvent(this.joinables.Count == 0), null);
+						var nowait = Interlocked.CompareExchange(ref this.emptyEvent, new AsyncManualResetEvent(this.joinables.Count == 0), null);
 					} finally {
 						this.Context.SyncContextLock.ExitReadLock();
 					}
