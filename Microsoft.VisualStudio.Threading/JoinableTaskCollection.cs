@@ -173,7 +173,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Joins the caller's context to this collection till the collection is empty.
 		/// </summary>
 		/// <returns>A task that completes when this collection is empty.</returns>
-		public async Task WaitTillEmptyAsync() {
+		public async Task JoinTillEmptyAsync() {
 			if (this.emptyEvent == null) {
 				// We need a read lock to protect against the emptiness of this collection changing
 				// while we're setting the initial set state of the new event.

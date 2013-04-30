@@ -16,19 +16,19 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void WaitTillEmptyAlreadyCompleted() {
-			var awaiter = this.joinableCollection.WaitTillEmptyAsync().GetAwaiter();
+		public void JoinTillEmptyAlreadyCompleted() {
+			var awaiter = this.joinableCollection.JoinTillEmptyAsync().GetAwaiter();
 			Assert.IsTrue(awaiter.IsCompleted);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void WaitTillEmptyWithOne() {
+		public void JoinTillEmptyWithOne() {
 			var evt = new AsyncManualResetEvent();
 			var joinable = this.joinableFactory.RunAsync(async delegate {
 				await evt;
 			});
 
-			var waiter = this.joinableCollection.WaitTillEmptyAsync();
+			var waiter = this.joinableCollection.JoinTillEmptyAsync();
 			Assert.IsFalse(waiter.GetAwaiter().IsCompleted);
 			Task.Run(async delegate {
 				await evt.SetAsync();
@@ -40,7 +40,7 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void EmptyThenMore() {
-			var awaiter = this.joinableCollection.WaitTillEmptyAsync().GetAwaiter();
+			var awaiter = this.joinableCollection.JoinTillEmptyAsync().GetAwaiter();
 			Assert.IsTrue(awaiter.IsCompleted);
 
 			var evt = new AsyncManualResetEvent();
@@ -48,7 +48,7 @@
 				await evt;
 			});
 
-			var waiter = this.joinableCollection.WaitTillEmptyAsync();
+			var waiter = this.joinableCollection.JoinTillEmptyAsync();
 			Assert.IsFalse(waiter.GetAwaiter().IsCompleted);
 			Task.Run(async delegate {
 				await evt.SetAsync();
@@ -59,13 +59,13 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void WaitTillEmptyAsyncJoinsCollection() {
+		public void JoinTillEmptyAsyncJoinsCollection() {
 			var joinable = this.joinableFactory.RunAsync(async delegate {
 				await Task.Yield();
 			});
 
 			this.context.Factory.Run(async delegate {
-				await this.joinableCollection.WaitTillEmptyAsync();
+				await this.joinableCollection.JoinTillEmptyAsync();
 			});
 		}
 
