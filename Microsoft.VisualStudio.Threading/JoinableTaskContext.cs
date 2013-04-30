@@ -21,8 +21,9 @@ namespace Microsoft.VisualStudio.Threading {
 	/// A common context within which joinable tasks may be created and interact to avoid deadlocks.
 	/// </summary>
 	/// <devremarks>
-	/// Lots of documentation and FAQ on Joinable Tasks is available on OneNote:
+	/// Lots of documentation and FAQ on Joinable Tasks is available on OneNote: <![CDATA[
 	/// http://devdiv/sites/vspe/prjbld/_layouts/OneNote.aspx?id=%2fsites%2fvspe%2fprjbld%2fOneNote%2fTeamInfo&wd=target%28VS%20Threading.one%7c46FEAAD0-0131-45EE-8C52-C9893F1FD331%2fThreading%20Rules%7cD0EEFAB9-99C0-4B8F-AA5F-4287DD69A38F%2f%29
+	/// ]]>
 	/// </devremarks>
 	/// <remarks>
 	/// There are three rules that should be strictly followed when using or interacting
