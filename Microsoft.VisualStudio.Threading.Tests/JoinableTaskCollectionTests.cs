@@ -59,6 +59,17 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void WaitTillEmptyAsyncJoinsCollection() {
+			var joinable = this.joinableFactory.RunAsync(async delegate {
+				await Task.Yield();
+			});
+
+			this.context.Factory.Run(async delegate {
+				await this.joinableCollection.WaitTillEmptyAsync();
+			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void AddTwiceRemoveOnceRemovesWhenNotRefCounting() {
 			var finishTaskEvent = new AsyncManualResetEvent();
 			var task = this.joinableFactory.RunAsync(async delegate { await finishTaskEvent; });
