@@ -19,6 +19,7 @@
 
 		protected Thread originalThread;
 		protected SynchronizationContext dispatcherContext;
+		protected DispatcherFrame testFrame;
 
 		[TestInitialize]
 		public virtual void Initialize() {
@@ -28,6 +29,7 @@
 			this.joinableCollection = this.context.CreateCollection();
 			this.asyncPump = this.context.CreateFactory(this.joinableCollection);
 			this.originalThread = Thread.CurrentThread;
+			this.testFrame = new DispatcherFrame();
 
 			// Suppress the assert dialog that appears and causes test runs to hang.
 			Trace.Listeners.OfType<DefaultTraceListener>().Single().AssertUiEnabled = false;

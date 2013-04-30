@@ -10,22 +10,9 @@
 	using System.Windows.Threading;
 
 	[TestClass]
-	public class JoinableTaskCollectionTests : TestBase {
-		private JoinableTaskContext context;
-		private JoinableTaskFactory joinableFactory;
-		private JoinableTaskCollection joinableCollection;
-
-		private Thread originalThread;
-
-		[TestInitialize]
-		public void Initialize() {
-			this.context = new JoinableTaskContext();
-			this.joinableCollection = this.context.CreateCollection();
-			this.joinableFactory = this.context.CreateFactory(this.joinableCollection);
-			this.originalThread = Thread.CurrentThread;
-
-			// Suppress the assert dialog that appears and causes test runs to hang.
-			Trace.Listeners.OfType<DefaultTraceListener>().Single().AssertUiEnabled = false;
+	public class JoinableTaskCollectionTests : JoinableTaskTestBase {
+		protected JoinableTaskFactory joinableFactory {
+			get { return this.asyncPump; }
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -35,7 +22,7 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task WaitTillEmptyWithOne() {
+		public void WaitTillEmptyWithOne() {
 			var evt = new AsyncManualResetEvent();
 			var joinable = this.joinableFactory.RunAsync(async delegate {
 				await evt;
@@ -43,12 +30,16 @@
 
 			var waiter = this.joinableCollection.WaitTillEmptyAsync();
 			Assert.IsFalse(waiter.GetAwaiter().IsCompleted);
-			await evt.SetAsync();
-			await waiter;
+			Task.Run(async delegate {
+				await evt.SetAsync();
+				await waiter;
+				this.testFrame.Continue = false;
+			});
+			Dispatcher.PushFrame(this.testFrame);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task EmptyThenMore() {
+		public void EmptyThenMore() {
 			var awaiter = this.joinableCollection.WaitTillEmptyAsync().GetAwaiter();
 			Assert.IsTrue(awaiter.IsCompleted);
 
@@ -59,8 +50,12 @@
 
 			var waiter = this.joinableCollection.WaitTillEmptyAsync();
 			Assert.IsFalse(waiter.GetAwaiter().IsCompleted);
-			await evt.SetAsync();
-			await waiter;
+			Task.Run(async delegate {
+				await evt.SetAsync();
+				await waiter;
+				this.testFrame.Continue = false;
+			});
+			Dispatcher.PushFrame(this.testFrame);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
