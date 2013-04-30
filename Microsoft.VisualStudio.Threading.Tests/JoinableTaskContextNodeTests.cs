@@ -56,12 +56,6 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 		}
 
 		[TestMethod]
-		public void UnderlyingSynchronizationContext() {
-			Assert.AreSame(this.context.UnderlyingSynchronizationContext, this.defaultNode.UnderlyingSynchronizationContext);
-			Assert.AreSame(this.context.UnderlyingSynchronizationContext, this.derivedNode.UnderlyingSynchronizationContext);
-		}
-
-		[TestMethod]
 		public void IsMainThreadBlocked() {
 			Assert.IsFalse(this.defaultNode.IsMainThreadBlocked());
 			Assert.IsFalse(this.derivedNode.IsMainThreadBlocked());

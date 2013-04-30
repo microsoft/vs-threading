@@ -1947,9 +1947,9 @@
 			}
 
 			protected override void PostToUnderlyingSynchronizationContext(SendOrPostCallback callback, object state) {
-				Assert.IsNotNull(this.Context.UnderlyingSynchronizationContext);
+				Assert.IsNotNull(this.UnderlyingSynchronizationContext);
 				Assert.IsNotNull(callback);
-				Assert.IsInstanceOfType(this.Context.UnderlyingSynchronizationContext, typeof(DispatcherSynchronizationContext));
+				Assert.IsInstanceOfType(this.UnderlyingSynchronizationContext, typeof(DispatcherSynchronizationContext));
 				base.PostToUnderlyingSynchronizationContext(callback, state);
 			}
 		}

@@ -108,6 +108,13 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
+		/// Gets the underlying <see cref="SynchronizationContext"/> that controls the main thread in the host.
+		/// </summary>
+		protected SynchronizationContext UnderlyingSynchronizationContext {
+			get { return this.Context.UnderlyingSynchronizationContext; }
+		}
+
+		/// <summary>
 		/// Gets an awaitable whose continuations execute on the synchronization context that this instance was initialized with,
 		/// in such a way as to mitigate both deadlocks and reentrancy.
 		/// </summary>
@@ -188,9 +195,9 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="state">State to pass to the callback.</param>
 		protected internal virtual void PostToUnderlyingSynchronizationContext(SendOrPostCallback callback, object state) {
 			Requires.NotNull(callback, "callback");
-			Assumes.NotNull(this.Context.UnderlyingSynchronizationContext);
+			Assumes.NotNull(this.UnderlyingSynchronizationContext);
 
-			this.Context.UnderlyingSynchronizationContext.Post(callback, state);
+			this.UnderlyingSynchronizationContext.Post(callback, state);
 		}
 
 		/// <summary>
@@ -223,7 +230,7 @@ namespace Microsoft.VisualStudio.Threading {
 		internal void PostToUnderlyingSynchronizationContextOrThreadPool(SingleExecuteProtector callback) {
 			Requires.NotNull(callback, "callback");
 
-			if (this.Context.UnderlyingSynchronizationContext != null) {
+			if (this.UnderlyingSynchronizationContext != null) {
 				this.PostToUnderlyingSynchronizationContext(SingleExecuteProtector.ExecuteOnce, callback);
 			} else {
 				ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, callback);

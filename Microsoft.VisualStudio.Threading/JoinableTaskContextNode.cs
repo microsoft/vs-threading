@@ -55,13 +55,6 @@
 		}
 
 		/// <summary>
-		/// Gets the underlying <see cref="SynchronizationContext"/> that controls the main thread in the host.
-		/// </summary>
-		public SynchronizationContext UnderlyingSynchronizationContext {
-			get { return this.context.UnderlyingSynchronizationContext; }
-		}
-
-		/// <summary>
 		/// Gets the inner wrapped context.
 		/// </summary>
 		public JoinableTaskContext Context {
