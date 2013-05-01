@@ -21,7 +21,7 @@
 		/// Whether to complete our task synchronously in our <see cref="Set"/> method,
 		/// as opposed to asynchronously.
 		/// </summary>
-		private readonly bool allowInliningWaiters;
+		private readonly bool allowInliningAwaiters;
 
 		/// <summary>
 		/// A value indicating whether this event is already in a signaled state.
@@ -38,13 +38,13 @@
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AsyncAutoResetEvent"/> class.
 		/// </summary>
-		/// <param name="allowInliningWaiters">
+		/// <param name="allowInliningAwaiters">
 		/// A value indicating whether to complete our task synchronously in our <see cref="Set"/> method,
 		/// as opposed to asynchronously. <c>false</c> better simulates the behavior of the
 		/// <see cref="AutoResetEvent"/> class, but <c>true</c> can result in slightly better performance.
 		/// </param>
-		public AsyncAutoResetEvent(bool allowInliningWaiters) {
-			this.allowInliningWaiters = allowInliningWaiters;
+		public AsyncAutoResetEvent(bool allowInliningAwaiters) {
+			this.allowInliningAwaiters = allowInliningAwaiters;
 		}
 
 		/// <summary>
@@ -78,7 +78,7 @@
 			}
 
 			if (toRelease != null) {
-				if (this.allowInliningWaiters) {
+				if (this.allowInliningAwaiters) {
 					toRelease.SetResult(true);
 				} else {
 					ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<bool>)state).SetResult(true), toRelease);

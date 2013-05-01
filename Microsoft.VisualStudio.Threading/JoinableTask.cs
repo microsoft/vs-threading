@@ -141,7 +141,7 @@ namespace Microsoft.VisualStudio.Threading {
 								// We pass in allowInliningWaiters: true,
 								// since we control all waiters and their continuations
 								// are be benign, and it makes it more efficient.
-								this.dequeuerResetState = new AsyncManualResetEvent(allowInliningWaiters: true);
+								this.dequeuerResetState = new AsyncManualResetEvent(allowInliningAwaiters: true);
 							} finally {
 								this.owner.Context.SyncContextLock.ExitWriteLock();
 							}

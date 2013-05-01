@@ -73,7 +73,7 @@
 		/// </summary>
 		[TestMethod, Timeout(TestTimeout)]
 		public void SetInlinesContinuationsUnderSwitch() {
-			this.evt = new AsyncAutoResetEvent(allowInliningWaiters: true);
+			this.evt = new AsyncAutoResetEvent(allowInliningAwaiters: true);
 			Thread settingThread = Thread.CurrentThread;
 			bool setReturned = false;
 			var inlinedContinuation = this.evt.WaitAsync()

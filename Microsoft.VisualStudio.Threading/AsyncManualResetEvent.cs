@@ -17,7 +17,7 @@
 		/// Whether to complete our task synchronously in our <see cref="SetAsync"/> method,
 		/// as opposed to asynchronously.
 		/// </summary>
-		private readonly bool allowInliningWaiters;
+		private readonly bool allowInliningAwaiters;
 
 		/// <summary>
 		/// The task to return from <see cref="WaitAsync"/>
@@ -28,17 +28,17 @@
 		/// Initializes a new instance of the <see cref="AsyncManualResetEvent"/> class.
 		/// </summary>
 		/// <param name="initialState">A value indicating whether the event should be initially signaled.</param>
-		/// <param name="allowInliningWaiters">
+		/// <param name="allowInliningAwaiters">
 		/// A value indicating whether to complete our task synchronously in our <see cref="SetAsync"/> method,
 		/// as opposed to asynchronously. <c>false</c> better simulates the behavior of the
 		/// <see cref="ManualResetEventSlim"/> class, but <c>true</c> can result in slightly better performance.
 		/// </param>
-		public AsyncManualResetEvent(bool initialState = false, bool allowInliningWaiters = false) {
+		public AsyncManualResetEvent(bool initialState = false, bool allowInliningAwaiters = false) {
 			if (initialState) {
 				this.taskCompletionSource.SetResult(EmptyStruct.Instance);
 			}
 
-			this.allowInliningWaiters = allowInliningWaiters;
+			this.allowInliningAwaiters = allowInliningAwaiters;
 		}
 
 		/// <summary>
@@ -64,7 +64,7 @@
 		/// </remarks>
 		public Task SetAsync() {
 			var tcs = this.taskCompletionSource;
-			if (this.allowInliningWaiters) {
+			if (this.allowInliningAwaiters) {
 				tcs.TrySetResult(EmptyStruct.Instance);
 			} else {
 				Task.Factory.StartNew(
