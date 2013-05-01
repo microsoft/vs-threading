@@ -79,9 +79,9 @@
 		}
 
 		/// <summary>
-		/// Conceals any ticket to the Main thread until the returned value is disposed.
+		/// Conceals any JoinableTask the caller is associate with until the returned value is disposed.
 		/// </summary>
-		/// <returns>A value to dispose of to restore insight into tickets to the Main thread.</returns>
+		/// <returns>A value to dispose of to restore visibility into the caller's associated JoinableTask, if any.</returns>
 		/// <remarks>
 		/// <para>It may be that while inside a delegate supplied to <see cref="JoinableTaskFactory.Run(Func{Task})"/>
 		/// that async work be spun off such that it does not have privileges to re-enter the Main thread

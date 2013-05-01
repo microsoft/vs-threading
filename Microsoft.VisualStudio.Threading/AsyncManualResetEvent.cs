@@ -29,9 +29,11 @@
 		/// </summary>
 		/// <param name="initialState">A value indicating whether the event should be initially signaled.</param>
 		/// <param name="allowInliningAwaiters">
-		/// A value indicating whether to complete our task synchronously in our <see cref="SetAsync"/> method,
-		/// as opposed to asynchronously. <c>false</c> better simulates the behavior of the
-		/// <see cref="ManualResetEventSlim"/> class, but <c>true</c> can result in slightly better performance.
+		/// A value indicating whether to allow <see cref="WaitAsync"/> callers' continuations to execute
+		/// on the thread that calls <see cref="SetAsync"/> before the call returns.
+		/// <see cref="SetAsync"/> callers should not hold private locks if this value is <c>true</c> to avoid deadlocks.
+		/// When <c>false</c>, the task returned from <see cref="WaitAsync"/> may not have fully transitioned to
+		/// its completed state by the time <see cref="SetAsync"/> returns to its caller.
 		/// </param>
 		public AsyncManualResetEvent(bool initialState = false, bool allowInliningAwaiters = false) {
 			if (initialState) {

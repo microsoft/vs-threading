@@ -394,7 +394,8 @@ namespace Microsoft.VisualStudio.Threading {
 
 		/// <summary>
 		/// Synchronously blocks the calling thread until the operation has completed.
-		/// If the calling thread is the Main thread, deadlocks are mitigated.
+		/// If the caller is on the Main thread (or is executing within a JoinableTask that has access to the main thread)
+		/// the caller's access to the Main thread propagates to this JoinableTask so that it may also access the main thread.
 		/// </summary>
 		/// <param name="cancellationToken">A cancellation token that will exit this method before the task is completed.</param>
 		public void Join(CancellationToken cancellationToken = default(CancellationToken)) {
@@ -404,10 +405,14 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
+		/// Shares any access to the main thread the caller may have 
 		/// Joins any main thread affinity of the caller with the asynchronous operation to avoid deadlocks
 		/// in the event that the main thread ultimately synchronously blocks waiting for the operation to complete.
 		/// </summary>
-		/// <param name="cancellationToken">A cancellation token that will exit this method before the task is completed.</param>
+		/// <param name="cancellationToken">
+		/// A cancellation token that will revert the Join and cause the returned task to complete
+		/// before the async operation has completed.
+		/// </param>
 		/// <returns>A task that completes after the asynchronous operation completes and the join is reverted.</returns>
 		public async Task JoinAsync(CancellationToken cancellationToken = default(CancellationToken)) {
 			cancellationToken.ThrowIfCancellationRequested();

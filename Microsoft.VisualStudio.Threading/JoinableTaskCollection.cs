@@ -137,10 +137,13 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
-		/// Shares the main thread that may be held by the ambient job (if any) with all jobs in this collection
-		/// until the returned value is disposed.
+		/// Shares access to the main thread that the caller's JoinableTask may have (if any) with all
+		/// JoinableTask instances in this collection until the returned value is disposed.
 		/// </summary>
 		/// <returns>A value to dispose of to revert the join.</returns>
+		/// <remarks>
+		/// Calling this method when the caller is not executing within a JoinableTask safely no-ops.
+		/// </remarks>
 		public JoinRelease Join() {
 			var ambientJob = this.Context.AmbientTask;
 			if (ambientJob == null) {
