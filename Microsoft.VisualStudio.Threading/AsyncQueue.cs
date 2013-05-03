@@ -14,7 +14,7 @@
 	[DebuggerDisplay("Count = {Count}, Completed = {completeSignaled}")]
 	public class AsyncQueue<T> {
 		/// <summary>
-		/// The object to lock when reading/writing our internal data structures.
+		/// The object to lock when reading/writing the internal data structures.
 		/// </summary>
 		private readonly object syncObject;
 
@@ -27,7 +27,7 @@
 		/// The source of the task returned by <see cref="Completion"/>. Lazily constructed.
 		/// </summary>
 		/// <remarks>
-		/// Volatile to allow our check-lock-check pattern in <see cref="Completion"/> to be reliable,
+		/// Volatile to allow the check-lock-check pattern in <see cref="Completion"/> to be reliable,
 		/// in the event that within the lock, one thread initializes the value and assigns the field
 		/// and the weak memory model allows the assignment prior to the initialization. Another thread
 		/// outside the lock might observe the non-null field and start accessing the Task property

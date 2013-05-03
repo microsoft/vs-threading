@@ -22,7 +22,7 @@ namespace Microsoft.VisualStudio.Threading {
 	public abstract class AsyncReaderWriterResourceLock<TMoniker, TResource> : AsyncReaderWriterLock
 		where TResource : class {
 		/// <summary>
-		/// A private nested class we use to isolate some of our behavior.
+		/// A private nested class we use to isolate some of the behavior.
 		/// </summary>
 		private readonly Helper helper;
 
