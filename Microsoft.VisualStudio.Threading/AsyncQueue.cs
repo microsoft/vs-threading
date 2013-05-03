@@ -8,7 +8,7 @@
 	using System.Threading.Tasks;
 
 	/// <summary>
-	/// A thread-safe, asynchronously dequeable queue.
+	/// A thread-safe, asynchronously dequeuable queue.
 	/// </summary>
 	/// <typeparam name="T">The type of values kept by the queue.</typeparam>
 	[DebuggerDisplay("Count = {Count}, Completed = {completeSignaled}")]
