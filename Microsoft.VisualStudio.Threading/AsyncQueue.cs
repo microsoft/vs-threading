@@ -249,7 +249,7 @@
 		/// A token whose cancellation signals lost interest in the item.
 		/// Cancelling this token does *not* guarantee that the task will be canceled
 		/// before it is assigned a resulting element from the head of the queue.
-		/// It is the responsiblity of the caller to ensure after cancellation that 
+		/// It is the responsibility of the caller to ensure after cancellation that 
 		/// either the task is canceled, or it has a result which the caller is responsible
 		/// for then handling.
 		/// </param>
