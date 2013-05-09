@@ -79,7 +79,7 @@
 		}
 
 		/// <summary>
-		/// Conceals any JoinableTask the caller is associate with until the returned value is disposed.
+		/// Conceals any JoinableTask the caller is associated with until the returned value is disposed.
 		/// </summary>
 		/// <returns>A value to dispose of to restore visibility into the caller's associated JoinableTask, if any.</returns>
 		/// <remarks>
