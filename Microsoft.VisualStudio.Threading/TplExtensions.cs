@@ -126,9 +126,15 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
-		/// Schedules some action for execution at the conclusion of a task.
+		/// Schedules some action for execution at the conclusion of a task, regardless of the task's outcome.
 		/// </summary>
-		/// <returns>The task that will execute the action.</returns>
+		/// <param name="task">The task that should complete before the posted <paramref name="action"/> is invoked.</param>
+		/// <param name="action">The action to execute after <paramref name="task"/> has completed.</param>
+		/// <param name="options">The task continuation options to apply.</param>
+		/// <param name="cancellation">The cancellation token that signals the continuation should not execute (if it has not already begun).</param>
+		/// <returns>
+		/// The task that will execute the action.
+		/// </returns>
 		public static Task AppendAction(this Task task, Action action, TaskContinuationOptions options = TaskContinuationOptions.None, CancellationToken cancellation = default(CancellationToken)) {
 			Requires.NotNull(task, "task");
 			Requires.NotNull(action, "action");
@@ -171,6 +177,9 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Returns an awaitable for the specified task that will never throw, even if the source task
 		/// faults or is canceled.
 		/// </summary>
+		/// <param name="task">The task whose completion should signal the completion of the returned awaitable.</param>
+		/// <param name="captureContext">if set to <c>true</c> the continuation will be scheduled on the caller's context; <c>false</c> to always execute the continuation on the threadpool.</param>
+		/// <returns>An awaitable.</returns>
 		public static NoThrowTaskAwaitable NoThrowAwaitable(this Task task, bool captureContext = true) {
 			return new NoThrowTaskAwaitable(task, captureContext);
 		}
@@ -178,6 +187,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// Consumes a task and doesn't do anything with it.  Useful for fire-and-forget calls to async methods within async methods.
 		/// </summary>
+		/// <param name="task">The task whose result is to be ignored.</param>
 		public static void Forget(this Task task) {
 		}
 
