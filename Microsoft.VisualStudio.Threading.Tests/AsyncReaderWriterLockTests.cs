@@ -2931,7 +2931,6 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task WriteNestsReadWithWriteReleasedFirstWithoutTaskRun() {
-			var readLockAcquired = new AsyncManualResetEvent();
 			var readLockReleased = new AsyncManualResetEvent();
 			var writeLockCallbackBegun = new AsyncManualResetEvent();
 
@@ -2939,32 +2938,29 @@
 			this.asyncLock = asyncLock;
 
 			Task writeLockReleaseTask;
-			using (var access = await this.asyncLock.WriteLockAsync()) {
-				asyncLock.OnExclusiveLockReleasedAsyncDelegate = async delegate {
-					await writeLockCallbackBegun.SetAsync();
+			var writerLock = await this.asyncLock.WriteLockAsync();
+			asyncLock.OnExclusiveLockReleasedAsyncDelegate = async delegate {
+				await writeLockCallbackBegun.SetAsync();
 
-					// Stay in the critical region until the read lock has been released.
-					await readLockReleased;
-				};
+				// Stay in the critical region until the read lock has been released.
+				await readLockReleased;
+			};
 
-				var readerLock = await this.asyncLock.ReadLockAsync();
+			var readerLock = await this.asyncLock.ReadLockAsync();
 
-				// This is really unnatural, to release a lock without awaiting it.
-				// In fact I daresay we could call it illegal.
-				// It is critical for the repro that code either execute concurrently
-				// or that we don't await while releasing this lock.
-				writeLockReleaseTask = access.ReleaseAsync();
+			// This is really unnatural, to release a lock without awaiting it.
+			// In fact I daresay we could call it illegal.
+			// It is critical for the repro that code either execute concurrently
+			// or that we don't await while releasing this lock.
+			writeLockReleaseTask = writerLock.ReleaseAsync();
 
-				// Hold the read lock until the lock class has entered the
-				// critical region called reenterConcurrencyPrep.
-				await writeLockCallbackBegun;
+			// Hold the read lock until the lock class has entered the
+			// critical region called reenterConcurrencyPrep.
+			await writeLockCallbackBegun;
 
-				await readerLock.ReleaseAsync();
-				await readLockReleased.SetAsync();
-
-				// Don't release the write lock until the nested read lock has been acquired.
-				await readLockAcquired;
-			}
+			await readerLock.ReleaseAsync();
+			await readLockReleased.SetAsync();
+			await writerLock.ReleaseAsync();
 
 			// Wait for, and rethrow any exceptions from our child task.
 			await writeLockReleaseTask;
@@ -3587,6 +3583,14 @@
 				if (this.OnBeforeLockReleasedAsyncDelegate != null) {
 					await this.OnBeforeLockReleasedAsyncDelegate();
 				}
+			}
+
+			/// <summary>
+			/// We override this to cause test failures instead of crashing te test runner.
+			/// </summary>
+			protected override Exception OnCriticalFailure(Exception ex) {
+				Assert.Fail(ex.Message);
+				throw Assumes.NotReachable();
 			}
 
 			internal struct InternalLockHandle {

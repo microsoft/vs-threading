@@ -9,6 +9,7 @@ namespace Microsoft.VisualStudio.Threading {
 	using System.Collections.Concurrent;
 	using System.Collections.Generic;
 	using System.Diagnostics;
+	using System.Globalization;
 	using System.Linq;
 	using System.Runtime.CompilerServices;
 	using System.Runtime.Remoting.Messaging;
@@ -124,9 +125,9 @@ namespace Microsoft.VisualStudio.Threading {
 
 		/// <summary>
 		/// A flag indicating whether we're currently running code to prepare for re-entering concurrency mode
-		/// after releasing an exclusive lock.
+		/// after releasing an exclusive lock. The Awaiter being released is the non-null value.
 		/// </summary>
-		private volatile bool reenterConcurrencyPrepRunning;
+		private volatile Awaiter reenterConcurrencyPrepRunning;
 
 		/// <summary>
 		/// A flag indicating that the <see cref="Complete"/> method has been called, indicating that no
@@ -547,7 +548,7 @@ namespace Microsoft.VisualStudio.Threading {
 
 			if (this.completeInvoked &&
 				!this.completionSource.Task.IsCompleted &&
-				!this.reenterConcurrencyPrepRunning &&
+				this.reenterConcurrencyPrepRunning == null &&
 				this.issuedReadLocks.Count == 0 && this.issuedUpgradeableReadLocks.Count == 0 && this.issuedWriteLocks.Count == 0 &&
 				this.waitingReaders.Count == 0 && this.waitingUpgradeableReaders.Count == 0 && this.waitingWriters.Count == 0) {
 
@@ -750,7 +751,7 @@ namespace Microsoft.VisualStudio.Threading {
 				}
 
 				bool issued = false;
-				if (!this.reenterConcurrencyPrepRunning) {
+				if (this.reenterConcurrencyPrepRunning == null) {
 					if (this.issuedWriteLocks.Count == 0 && this.issuedUpgradeableReadLocks.Count == 0 && this.issuedReadLocks.Count == 0) {
 						issued = true;
 					} else {
@@ -920,6 +921,18 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
+		/// Invoked when the lock detects an internal error or illegal usage pattern that
+		/// indicates a serious flaw that should be immediately reported to the application
+		/// and/or bring down the process to avoid hangs or data corruption.
+		/// </summary>
+		/// <param name="ex">The exception that captures the details of the failure.</param>
+		/// <returns>An exception that may be returned by some implementations of tis method for he caller to rethrow.</returns>
+		protected virtual Exception OnCriticalFailure(Exception ex) {
+			Environment.FailFast(ex.ToString(), ex);
+			throw Assumes.NotReachable();
+		}
+
+		/// <summary>
 		/// Releases the lock held by the specified awaiter.
 		/// </summary>
 		/// <param name="awaiter">The awaiter holding an active lock.</param>
@@ -934,7 +947,24 @@ namespace Microsoft.VisualStudio.Threading {
 		private Task ReleaseAsync(Awaiter awaiter, bool lockConsumerCanceled = false) {
 			// This method does NOT use the async keyword in its signature to avoid CallContext changes that we make
 			// causing a fork/clone of the CallContext, which defeats our alloc-free uncontested lock story.
-			Assumes.False(this.reenterConcurrencyPrepRunning); // No one should have any locks to release (and be executing code) if we're in our intermediate state.
+
+			// No one should have any locks to release (and be executing code) if we're in our intermediate state.
+			// When this test fails, it's because someone had an exclusive lock and allowed concurrently executing
+			// code to fork off and acquire a read (or upgradeable read?) lock, then outlive the parent write lock.
+			// This is an illegal pattern both because it means an exclusive lock is used concurrently (while the
+			// parent write lock is active) and when the write lock is released, it means that the child "read"
+			// lock suddenly became a "concurrent" lock, but we can't transition all the resources from exclusive
+			// access to concurrent access while someone is actually holding a lock (as such transition requires
+			// the lock class itself to have the exclusive lock to protect the resources going through the transition).
+			Awaiter illegalConcurrentLock = this.reenterConcurrencyPrepRunning; // capture to local to preserve evidence in a concurrently reset field.
+			if (illegalConcurrentLock != null) {
+				try {
+					Assumes.Fail(String.Format(CultureInfo.CurrentCulture, "Illegal concurrent use of exclusive lock. Exclusive lock: {0}, Nested lock that outlived parent: {1}", illegalConcurrentLock, awaiter));
+				} catch (Exception ex) {
+					throw this.OnCriticalFailure(ex);
+				}
+			}
+
 			if (!this.IsLockActive(awaiter, considerStaActive: true)) {
 				return TplExtensions.CompletedTask;
 			}
@@ -1031,7 +1061,7 @@ namespace Microsoft.VisualStudio.Threading {
 
 			Task onExclusiveLockReleasedTask;
 			lock (this.syncObject) {
-				this.reenterConcurrencyPrepRunning = true;
+				this.reenterConcurrencyPrepRunning = awaiter;
 				onExclusiveLockReleasedTask = this.OnExclusiveLockReleasedAsync();
 			}
 
@@ -1044,7 +1074,7 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			lock (this.syncObject) {
-				this.reenterConcurrencyPrepRunning = false;
+				this.reenterConcurrencyPrepRunning = null;
 
 				// Skip updating the call context because we're in a forked execution context that won't
 				// ever impact the client code, and changing the CallContext now would cause the data to be cloned,
