@@ -761,7 +761,18 @@ namespace Microsoft.VisualStudio.Threading {
 							case LockKind.Read:
 								if (this.issuedWriteLocks.Count == 0 && this.waitingWriters.Count == 0) {
 									issued = true;
-								} else if (hasWrite || hasRead || hasUpgradeableRead) {
+								} else if (hasWrite) {
+									// We allow STA threads to not have the sync context applied because it never has it applied,
+									// and a write lock holder is allowed to transition to an STA tread.
+									// But if an MTA thread has the write lock but not the sync context, then they're likely
+									// an accidental execution fork that is exposing concurrency inappropriately.
+									if (Thread.CurrentThread.GetApartmentState() == ApartmentState.MTA && !(SynchronizationContext.Current is NonConcurrentSynchronizationContext)) {
+										Report.Fail("Dangerous request for read lock from fork of write lock.");
+										Verify.FailOperation("Dangerous request for read lock from fork of write lock.");
+									}
+
+									issued = true;
+								} else if (hasRead || hasUpgradeableRead) {
 									issued = true;
 								}
 
@@ -928,8 +939,24 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="ex">The exception that captures the details of the failure.</param>
 		/// <returns>An exception that may be returned by some implementations of tis method for he caller to rethrow.</returns>
 		protected virtual Exception OnCriticalFailure(Exception ex) {
+			Report.Fail(ex.Message);
 			Environment.FailFast(ex.ToString(), ex);
 			throw Assumes.NotReachable();
+		}
+
+		/// <summary>
+		/// Invoked when the lock detects an internal error or illegal usage pattern that
+		/// indicates a serious flaw that should be immediately reported to the application
+		/// and/or bring down the process to avoid hangs or data corruption.
+		/// </summary>
+		/// <param name="message">The message to use for the exception.</param>
+		/// <returns>An exception that may be returned by some implementations of tis method for he caller to rethrow.</returns>
+		protected Exception OnCriticalFailure(string message) {
+			try {
+				throw Assumes.Fail(message);
+			} catch (Exception ex) {
+				throw this.OnCriticalFailure(ex);
+			}
 		}
 
 		/// <summary>
@@ -1061,6 +1088,19 @@ namespace Microsoft.VisualStudio.Threading {
 
 			Task onExclusiveLockReleasedTask;
 			lock (this.syncObject) {
+				// Check that no read locks are held. If they are, then that's a sign that
+				// within this write lock, someone took a read lock that is outliving the nesting
+				// write lock, which is a very dangerous situation.
+				if (this.issuedReadLocks.Count > 0) {
+					if (this.HasAnyNestedLocks(awaiter)) {
+						try {
+							throw new InvalidOperationException("Write lock out-lived by a nested read lock, which is not allowed.");
+						} catch (InvalidOperationException ex) {
+							this.OnCriticalFailure(ex);
+						}
+					}
+				}
+
 				this.reenterConcurrencyPrepRunning = awaiter;
 				onExclusiveLockReleasedTask = this.OnExclusiveLockReleasedAsync();
 			}
@@ -1086,6 +1126,43 @@ namespace Microsoft.VisualStudio.Threading {
 				// rethrow the exception we experienced before, such that it doesn't wipe out its callstack.
 				System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(prereqException).Throw();
 			}
+		}
+
+		/// <summary>
+		/// Checks whether the specified lock has any active nested locks.
+		/// </summary>
+		private bool HasAnyNestedLocks(Awaiter lck) {
+			Requires.NotNull(lck, "lck");
+			Assumes.True(Monitor.IsEntered(this.SyncObject));
+
+			return this.HasAnyNestedLocks(lck, this.issuedReadLocks)
+				|| this.HasAnyNestedLocks(lck, this.issuedUpgradeableReadLocks)
+				|| this.HasAnyNestedLocks(lck, this.issuedWriteLocks);
+		}
+
+		/// <summary>
+		/// Checks whether the specified lock has any active nested locks.
+		/// </summary>
+		private bool HasAnyNestedLocks(Awaiter lck, HashSet<Awaiter> lockCollection) {
+			Requires.NotNull(lck, "lck");
+			Requires.NotNull(lockCollection, "lockCollection");
+
+			if (lockCollection.Count > 0) {
+				foreach (var nestedCandidate in lockCollection) {
+					if (nestedCandidate == lck) {
+						// This isn't nested -- it's the lock itself.
+						continue;
+					}
+
+					for (Awaiter a = nestedCandidate.NestingLock; a != null; a = a.NestingLock) {
+						if (a == lck) {
+							return true;
+						}
+					}
+				}
+			}
+
+			return false;
 		}
 
 		/// <summary>
