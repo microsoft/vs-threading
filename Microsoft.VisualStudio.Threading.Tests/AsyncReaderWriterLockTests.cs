@@ -2900,15 +2900,21 @@
 				};
 
 				readerTask = Task.Run(async delegate {
-					using (await this.asyncLock.ReadLockAsync()) {
-						await readLockAcquired.SetAsync();
+					try {
+						using (await this.asyncLock.ReadLockAsync()) {
+							await readLockAcquired.SetAsync();
 
-						// Hold the read lock until the lock class has entered the
-						// critical region called reenterConcurrencyPrep.
-						await writeLockCallbackBegun;
+							// Hold the read lock until the lock class has entered the
+							// critical region called reenterConcurrencyPrep.
+							await writeLockCallbackBegun;
+						}
+					} finally {
+						// Signal the read lock is released. Actually, it may not have been
+						// (if a bug causes the read lock release call to throw and the lock gets
+						// orphaned), but we want to avoid a deadlock in the test itself.
+						// If an exception was thrown, the test will still fail because we rethrow it.
+						readLockReleased.SetAsync().Forget();
 					}
-
-					await readLockReleased.SetAsync();
 				});
 
 				// Don't release the write lock until the nested read lock has been acquired.

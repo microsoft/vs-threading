@@ -1561,7 +1561,17 @@ namespace Microsoft.VisualStudio.Threading {
 				if (this.releaseAsyncTask == null) {
 					// This method does NOT use the async keyword in its signature to avoid CallContext changes that we make
 					// causing a fork/clone of the CallContext, which defeats our alloc-free uncontested lock story.
-					this.releaseAsyncTask = this.lck.ReleaseAsync(this, lockConsumerCanceled);
+					try {
+						this.releaseAsyncTask = this.lck.ReleaseAsync(this, lockConsumerCanceled);
+					} catch (Exception ex) {
+						// An exception here is *really* bad, because a project lock will get orphaned and
+						// a deadlock will soon result.
+						// Do what we can to save some evidence by capturing the exception in a faulted task.
+						// We don't need to rethrow the exception because we return the faulted task.
+						var tcs = new TaskCompletionSource<object>();
+						tcs.SetException(ex);
+						this.releaseAsyncTask = tcs.Task;
+					}
 				}
 
 				return this.releaseAsyncTask ?? TplExtensions.CompletedTask;
@@ -1738,7 +1748,12 @@ namespace Microsoft.VisualStudio.Threading {
 					var nonConcurrentSyncContext = SynchronizationContext.Current as NonConcurrentSynchronizationContext;
 					using (nonConcurrentSyncContext != null ? nonConcurrentSyncContext.LoanBackAnyHeldResource() : default(NonConcurrentSynchronizationContext.LoanBack)) {
 						var releaseTask = this.ReleaseAsync();
-						while (!releaseTask.Wait(1000)) { // this loop allows us to break into the debugger and step into managed code to analyze a hang.
+						try {
+							while (!releaseTask.Wait(1000)) { // this loop allows us to break into the debugger and step into managed code to analyze a hang.
+							}
+						} catch (AggregateException ex) {
+							// We want to throw the inner exception itself -- not the AggregateException.
+							releaseTask.GetAwaiter().GetResult();
 						}
 					}
 
