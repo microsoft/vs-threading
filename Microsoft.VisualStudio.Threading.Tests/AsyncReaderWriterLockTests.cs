@@ -2899,6 +2899,10 @@
 					await readLockReleased;
 				};
 
+				// Kicking off a concurrent task while holding a write lock is not allowed
+				// unless the original execution awaits that task. Otherwise, it introduces
+				// concurrency in what is supposed to be an exclusive lock.
+				// So what we're doing here is Bad, but it's how we get the repro.
 				readerTask = Task.Run(async delegate {
 					try {
 						using (await this.asyncLock.ReadLockAsync()) {
@@ -2923,6 +2927,47 @@
 
 			// Wait for, and rethrow any exceptions from our child task.
 			await readerTask;
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task WriteNestsReadWithWriteReleasedFirstWithoutTaskRun() {
+			var readLockAcquired = new AsyncManualResetEvent();
+			var readLockReleased = new AsyncManualResetEvent();
+			var writeLockCallbackBegun = new AsyncManualResetEvent();
+
+			var asyncLock = new LockDerived();
+			this.asyncLock = asyncLock;
+
+			Task writeLockReleaseTask;
+			using (var access = await this.asyncLock.WriteLockAsync()) {
+				asyncLock.OnExclusiveLockReleasedAsyncDelegate = async delegate {
+					await writeLockCallbackBegun.SetAsync();
+
+					// Stay in the critical region until the read lock has been released.
+					await readLockReleased;
+				};
+
+				var readerLock = await this.asyncLock.ReadLockAsync();
+
+				// This is really unnatural, to release a lock without awaiting it.
+				// In fact I daresay we could call it illegal.
+				// It is critical for the repro that code either execute concurrently
+				// or that we don't await while releasing this lock.
+				writeLockReleaseTask = access.ReleaseAsync();
+
+				// Hold the read lock until the lock class has entered the
+				// critical region called reenterConcurrencyPrep.
+				await writeLockCallbackBegun;
+
+				await readerLock.ReleaseAsync();
+				await readLockReleased.SetAsync();
+
+				// Don't release the write lock until the nested read lock has been acquired.
+				await readLockAcquired;
+			}
+
+			// Wait for, and rethrow any exceptions from our child task.
+			await writeLockReleaseTask;
 		}
 
 		#endregion
