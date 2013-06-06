@@ -80,23 +80,27 @@
 
 		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
 		public async Task RunWithinExclusiveLock() {
-			using (var releaser1 = await this.asyncLock.WriteLockAsync()) {
-				this.asyncPump.Run(async delegate {
-					using (var releaser2 = await this.asyncLock.WriteLockAsync()) {
-					}
-				});
+			using (TestUtilities.DisableAssertionDialog()) {
+				using (var releaser1 = await this.asyncLock.WriteLockAsync()) {
+					this.asyncPump.Run(async delegate {
+						using (var releaser2 = await this.asyncLock.WriteLockAsync()) {
+						}
+					});
+				}
 			}
 		}
 
 		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
 		public async Task RunWithinExclusiveLockWithYields() {
-			using (var releaser1 = await this.asyncLock.WriteLockAsync()) {
-				await Task.Yield();
-				this.asyncPump.Run(async delegate {
-					using (var releaser2 = await this.asyncLock.WriteLockAsync()) {
-						await Task.Yield();
-					}
-				});
+			using (TestUtilities.DisableAssertionDialog()) {
+				using (var releaser1 = await this.asyncLock.WriteLockAsync()) {
+					await Task.Yield();
+					this.asyncPump.Run(async delegate {
+						using (var releaser2 = await this.asyncLock.WriteLockAsync()) {
+							await Task.Yield();
+						}
+					});
+				}
 			}
 		}
 
@@ -118,13 +122,15 @@
 		/// </summary>
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task RunWithinUpgradeableReadLockThrows() {
-			using (await this.asyncLock.UpgradeableReadLockAsync()) {
-				try {
-					this.asyncPump.Run(() => TplExtensions.CompletedTask);
-					Assert.Fail("Expected InvalidOperationException not thrown.");
-				} catch (InvalidOperationException) {
-					// This exception must be thrown because otherwise deadlocks can occur
-					// when the Run method's delegate yields and then asks for another lock.
+			using (TestUtilities.DisableAssertionDialog()) {
+				using (await this.asyncLock.UpgradeableReadLockAsync()) {
+					try {
+						this.asyncPump.Run(() => TplExtensions.CompletedTask);
+						Assert.Fail("Expected InvalidOperationException not thrown.");
+					} catch (InvalidOperationException) {
+						// This exception must be thrown because otherwise deadlocks can occur
+						// when the Run method's delegate yields and then asks for another lock.
+					}
 				}
 			}
 		}
@@ -137,13 +143,15 @@
 		/// </summary>
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task RunWithinWriteLockThrows() {
-			using (await this.asyncLock.WriteLockAsync()) {
-				try {
-					this.asyncPump.Run(() => TplExtensions.CompletedTask);
-					Assert.Fail("Expected InvalidOperationException not thrown.");
-				} catch (InvalidOperationException) {
-					// This exception must be thrown because otherwise deadlocks can occur
-					// when the Run method's delegate yields and then asks for another lock.
+			using (TestUtilities.DisableAssertionDialog()) {
+				using (await this.asyncLock.WriteLockAsync()) {
+					try {
+						this.asyncPump.Run(() => TplExtensions.CompletedTask);
+						Assert.Fail("Expected InvalidOperationException not thrown.");
+					} catch (InvalidOperationException) {
+						// This exception must be thrown because otherwise deadlocks can occur
+						// when the Run method's delegate yields and then asks for another lock.
+					}
 				}
 			}
 		}
