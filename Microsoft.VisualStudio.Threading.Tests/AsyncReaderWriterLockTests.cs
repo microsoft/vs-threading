@@ -2881,6 +2881,44 @@
 			}
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task WriteNestsReadWithWriteReleasedFirst() {
+			var readLockAcquired = new AsyncManualResetEvent();
+			var readLockReleased = new AsyncManualResetEvent();
+			var writeLockCallbackBegun = new AsyncManualResetEvent();
+
+			var asyncLock = new LockDerived();
+			this.asyncLock = asyncLock;
+
+			Task readerTask;
+			using (var access = await this.asyncLock.WriteLockAsync()) {
+				asyncLock.OnExclusiveLockReleasedAsyncDelegate = async delegate {
+					await writeLockCallbackBegun.SetAsync();
+
+					// Stay in the critical region until the read lock has been released.
+					await readLockReleased;
+				};
+
+				readerTask = Task.Run(async delegate {
+					using (await this.asyncLock.ReadLockAsync()) {
+						await readLockAcquired.SetAsync();
+
+						// Hold the read lock until the lock class has entered the
+						// critical region called reenterConcurrencyPrep.
+						await writeLockCallbackBegun;
+					}
+
+					await readLockReleased.SetAsync();
+				});
+
+				// Don't release the write lock until the nested read lock has been acquired.
+				await readLockAcquired;
+			}
+
+			// Wait for, and rethrow any exceptions from our child task.
+			await readerTask;
+		}
+
 		#endregion
 
 		#region Lock data tests
