@@ -2881,17 +2881,67 @@
 			}
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout * 3)]
 		public async Task WriteNestsReadWithWriteReleasedFirst() {
-			var readLockAcquired = new AsyncManualResetEvent();
-			var readLockReleased = new AsyncManualResetEvent();
-			var writeLockCallbackBegun = new AsyncManualResetEvent();
+			using (TestUtilities.DisableAssertionDialog()) {
+				var readLockAcquired = new AsyncManualResetEvent();
+				var readLockReleased = new AsyncManualResetEvent();
+				var writeLockCallbackBegun = new AsyncManualResetEvent();
 
-			var asyncLock = new LockDerived();
-			this.asyncLock = asyncLock;
+				var asyncLock = new LockDerived();
+				this.asyncLock = asyncLock;
 
-			Task readerTask;
-			using (var access = await this.asyncLock.WriteLockAsync()) {
+				Task readerTask;
+				using (var access = await this.asyncLock.WriteLockAsync()) {
+					asyncLock.OnExclusiveLockReleasedAsyncDelegate = async delegate {
+						await writeLockCallbackBegun.SetAsync();
+
+						// Stay in the critical region until the read lock has been released.
+						await readLockReleased;
+					};
+
+					// Kicking off a concurrent task while holding a write lock is not allowed
+					// unless the original execution awaits that task. Otherwise, it introduces
+					// concurrency in what is supposed to be an exclusive lock.
+					// So what we're doing here is Bad, but it's how we get the repro.
+					readerTask = Task.Run(async delegate {
+						try {
+							using (await this.asyncLock.ReadLockAsync()) {
+								await readLockAcquired.SetAsync();
+
+								// Hold the read lock until the lock class has entered the
+								// critical region called reenterConcurrencyPrep.
+								await writeLockCallbackBegun;
+							}
+						} finally {
+							// Signal the read lock is released. Actually, it may not have been
+							// (if a bug causes the read lock release call to throw and the lock gets
+							// orphaned), but we want to avoid a deadlock in the test itself.
+							// If an exception was thrown, the test will still fail because we rethrow it.
+							readLockReleased.SetAsync().Forget();
+						}
+					});
+
+					// Don't release the write lock until the nested read lock has been acquired.
+					await readLockAcquired;
+				}
+
+				// Wait for, and rethrow any exceptions from our child task.
+				await readerTask;
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout * 3)]
+		public async Task WriteNestsReadWithWriteReleasedFirstWithoutTaskRun() {
+			using (TestUtilities.DisableAssertionDialog()) {
+				var readLockReleased = new AsyncManualResetEvent();
+				var writeLockCallbackBegun = new AsyncManualResetEvent();
+
+				var asyncLock = new LockDerived();
+				this.asyncLock = asyncLock;
+
+				Task writeLockReleaseTask;
+				var writerLock = await this.asyncLock.WriteLockAsync();
 				asyncLock.OnExclusiveLockReleasedAsyncDelegate = async delegate {
 					await writeLockCallbackBegun.SetAsync();
 
@@ -2899,71 +2949,25 @@
 					await readLockReleased;
 				};
 
-				// Kicking off a concurrent task while holding a write lock is not allowed
-				// unless the original execution awaits that task. Otherwise, it introduces
-				// concurrency in what is supposed to be an exclusive lock.
-				// So what we're doing here is Bad, but it's how we get the repro.
-				readerTask = Task.Run(async delegate {
-					try {
-						using (await this.asyncLock.ReadLockAsync()) {
-							await readLockAcquired.SetAsync();
+				var readerLock = await this.asyncLock.ReadLockAsync();
 
-							// Hold the read lock until the lock class has entered the
-							// critical region called reenterConcurrencyPrep.
-							await writeLockCallbackBegun;
-						}
-					} finally {
-						// Signal the read lock is released. Actually, it may not have been
-						// (if a bug causes the read lock release call to throw and the lock gets
-						// orphaned), but we want to avoid a deadlock in the test itself.
-						// If an exception was thrown, the test will still fail because we rethrow it.
-						readLockReleased.SetAsync().Forget();
-					}
-				});
+				// This is really unnatural, to release a lock without awaiting it.
+				// In fact I daresay we could call it illegal.
+				// It is critical for the repro that code either execute concurrently
+				// or that we don't await while releasing this lock.
+				writeLockReleaseTask = writerLock.ReleaseAsync();
 
-				// Don't release the write lock until the nested read lock has been acquired.
-				await readLockAcquired;
+				// Hold the read lock until the lock class has entered the
+				// critical region called reenterConcurrencyPrep.
+				await writeLockCallbackBegun;
+
+				await readerLock.ReleaseAsync();
+				await readLockReleased.SetAsync();
+				await writerLock.ReleaseAsync();
+
+				// Wait for, and rethrow any exceptions from our child task.
+				await writeLockReleaseTask;
 			}
-
-			// Wait for, and rethrow any exceptions from our child task.
-			await readerTask;
-		}
-
-		[TestMethod, Timeout(TestTimeout)]
-		public async Task WriteNestsReadWithWriteReleasedFirstWithoutTaskRun() {
-			var readLockReleased = new AsyncManualResetEvent();
-			var writeLockCallbackBegun = new AsyncManualResetEvent();
-
-			var asyncLock = new LockDerived();
-			this.asyncLock = asyncLock;
-
-			Task writeLockReleaseTask;
-			var writerLock = await this.asyncLock.WriteLockAsync();
-			asyncLock.OnExclusiveLockReleasedAsyncDelegate = async delegate {
-				await writeLockCallbackBegun.SetAsync();
-
-				// Stay in the critical region until the read lock has been released.
-				await readLockReleased;
-			};
-
-			var readerLock = await this.asyncLock.ReadLockAsync();
-
-			// This is really unnatural, to release a lock without awaiting it.
-			// In fact I daresay we could call it illegal.
-			// It is critical for the repro that code either execute concurrently
-			// or that we don't await while releasing this lock.
-			writeLockReleaseTask = writerLock.ReleaseAsync();
-
-			// Hold the read lock until the lock class has entered the
-			// critical region called reenterConcurrencyPrep.
-			await writeLockCallbackBegun;
-
-			await readerLock.ReleaseAsync();
-			await readLockReleased.SetAsync();
-			await writerLock.ReleaseAsync();
-
-			// Wait for, and rethrow any exceptions from our child task.
-			await writeLockReleaseTask;
 		}
 
 		#endregion
