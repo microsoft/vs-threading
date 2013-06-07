@@ -12,15 +12,11 @@
 		/// </summary>
 		internal const string Namespace = "http://schemas.microsoft.com/vs/2009/dgml";
 
-		internal static readonly XName NodeName = XName.Get("Node", Namespace);
-
-		internal static readonly XName LinkName = XName.Get("Link", Namespace);
-
-		internal static readonly XName CategoriesName = XName.Get("Categories", Namespace);
-
-		internal static readonly XName StylesName = XName.Get("Styles", Namespace);
-
-		internal static readonly XName StyleName = XName.Get("Style", Namespace);
+		private static readonly XName NodeName = XName.Get("Node", Namespace);
+		private static readonly XName LinkName = XName.Get("Link", Namespace);
+		private static readonly XName CategoriesName = XName.Get("Categories", Namespace);
+		private static readonly XName StylesName = XName.Get("Styles", Namespace);
+		private static readonly XName StyleName = XName.Get("Style", Namespace);
 
 		internal static XDocument Create(out XElement nodes, out XElement links, string layout = "Sugiyama", string direction = null) {
 			var dgml = new XDocument();
@@ -38,7 +34,7 @@
 			return dgml;
 		}
 
-		internal static XDocument WithCategories(this XDocument document, params string[] categories) {
+		private static XElement GetCategoriesElement(XDocument document) {
 			Requires.NotNull(document, "document");
 
 			var container = document.Root.Element(CategoriesName);
@@ -46,11 +42,26 @@
 				document.Root.Add(container = new XElement(CategoriesName));
 			}
 
-			container.Add(categories.Select(Category));
+			return container;
+		}
+
+		internal static XDocument WithCategories(this XDocument document, params string[] categories) {
+			Requires.NotNull(document, "document");
+			Requires.NotNull(categories, "categories");
+
+			GetCategoriesElement(document).Add(categories.Select(c => Category(c)));
 			return document;
 		}
 
-		internal static XElement Node(string id = null, string label = null) {
+		internal static XDocument WithCategories(this XDocument document, params XElement[] categories) {
+			Requires.NotNull(document, "document");
+			Requires.NotNull(categories, "categories");
+
+			GetCategoriesElement(document).Add(categories);
+			return document;
+		}
+
+		internal static XElement Node(string id = null, string label = null, string group = null) {
 			Requires.NotNullOrEmpty(id, "id");
 			Requires.NotNullOrEmpty(label, "label");
 
@@ -62,6 +73,10 @@
 
 			if (!string.IsNullOrEmpty(label)) {
 				element.SetAttributeValue("Label", label);
+			}
+
+			if (!string.IsNullOrEmpty(group)) {
+				element.SetAttributeValue("Group", group);
 			}
 
 			return element;
@@ -81,8 +96,31 @@
 			return Link(source.Attribute("Id").Value, target.Attribute("Id").Value);
 		}
 
-		internal static XElement Category(string id) {
-			return new XElement(XName.Get("Category", Namespace), new XAttribute("Id", id));
+		internal static XElement Category(string id, string label = null, string background = null, string foreground = null, string icon = null, bool? isTag = null) {
+			Requires.NotNullOrEmpty(id, "id");
+
+			var category = new XElement(XName.Get("Category", Namespace), new XAttribute("Id", id));
+			if (!string.IsNullOrEmpty(label)) {
+				category.SetAttributeValue("Label", label);
+			}
+
+			if (!string.IsNullOrEmpty(background)) {
+				category.SetAttributeValue("Background", background);
+			}
+
+			if (!string.IsNullOrEmpty(foreground)) {
+				category.SetAttributeValue("Foreground", foreground);
+			}
+
+			if (!string.IsNullOrEmpty(icon)) {
+				category.SetAttributeValue("Icon", icon);
+			}
+
+			if (isTag.HasValue) {
+				category.SetAttributeValue("IsTag", isTag.Value ? "True" : "False");
+			}
+
+			return category;
 		}
 
 		internal static XElement Comment(string label) {

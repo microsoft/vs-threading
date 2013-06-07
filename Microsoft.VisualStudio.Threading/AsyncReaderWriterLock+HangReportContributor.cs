@@ -67,15 +67,13 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		private static XDocument CreateDgml(out XElement nodes, out XElement links) {
-			var dgml = Dgml.Create(out nodes, out links, layout: "ForceDirected", direction: "BottomToTop")
-				.WithCategories("Issued", "Waiting", "ReadLock", "UpgradeableReadLock", "WriteLock")
-				.WithStyle("Issued", icon: "pack://application:,,,/Microsoft.VisualStudio.Progression.GraphControl;component/Icons/kpi_green_cat2_large.png")
-				.WithStyle("Waiting", icon: "pack://application:,,,/Microsoft.VisualStudio.Progression.GraphControl;component/Icons/kpi_yellow_cat1_large.png")
-				.WithStyle("WriteLock", background: "#FFC79393")
-				.WithStyle("UpgradeableReadLock", background: "#FFFFBF00")
-				.WithStyle("ReadLock", background: "#FF7476AF");
-
-			return dgml;
+			return Dgml.Create(out nodes, out links, layout: "ForceDirected", direction: "BottomToTop")
+				.WithCategories(
+					Dgml.Category("Issued", icon: "pack://application:,,,/Microsoft.VisualStudio.Progression.GraphControl;component/Icons/kpi_green_cat2_large.png"),
+					Dgml.Category("Waiting", icon: "pack://application:,,,/Microsoft.VisualStudio.Progression.GraphControl;component/Icons/kpi_yellow_cat1_large.png"),
+					Dgml.Category("ReadLock", background: "#FF7476AF"),
+					Dgml.Category("UpgradeableReadLock", background: "#FFFFBF00"),
+					Dgml.Category("WriteLock", background: "#FFC79393"));
 		}
 
 		/// <summary>
