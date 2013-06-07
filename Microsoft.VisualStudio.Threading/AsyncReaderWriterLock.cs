@@ -1553,6 +1553,16 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			/// <summary>
+			/// Gets the stack trace of the requestor of this lock.
+			/// </summary>
+			/// <remarks>
+			/// Used for diagnostic purposes only.
+			/// </remarks>
+			internal StackTrace RequestingStackTrace {
+				get { return this.requestingStackTrace; }
+			}
+
+			/// <summary>
 			/// Sets the delegate to execute when the lock is available.
 			/// </summary>
 			/// <param name="continuation">The delegate.</param>
@@ -1712,28 +1722,6 @@ namespace Microsoft.VisualStudio.Threading {
 			/// </summary>
 			internal void SetFault(Exception ex) {
 				this.fault = ex;
-			}
-
-			/// <summary>
-			/// Appends awaiter hang report details to the specified builder.
-			/// </summary>
-			internal void AppendHangReportDetails(StringBuilder reportBuilder) {
-				Requires.NotNull(reportBuilder, "reportBuilder");
-
-				reportBuilder.AppendFormat("Awaiter ID: {0}{1}", this.GetHashCode(), Environment.NewLine);
-				if (this.NestingLock != null) {
-					reportBuilder.AppendFormat("NestingLock ID: {0}{1}", this.NestingLock.GetHashCode(), Environment.NewLine);
-				}
-
-				reportBuilder.AppendFormat("Kind: {0}{1}", this.Kind, Environment.NewLine);
-				reportBuilder.AppendFormat("Options: {0}{1}", this.Options, Environment.NewLine);
-
-				if (this.requestingStackTrace != null) {
-					reportBuilder.AppendLine("Lock owner callstack");
-					reportBuilder.AppendLine(this.requestingStackTrace.ToString());
-				} else {
-					reportBuilder.AppendLine("No lock owner callstack available.");
-				}
 			}
 
 			/// <summary>
