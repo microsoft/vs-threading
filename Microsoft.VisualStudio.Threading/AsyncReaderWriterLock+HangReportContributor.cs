@@ -39,19 +39,25 @@ namespace Microsoft.VisualStudio.Threading {
 						nodes.Add(Dgml.Comment("WARNING: failed to acquire our own lock in formulating this report."));
 					}
 
-					nodes.Add(this.issuedReadLocks.Select(a => CreateAwaiterNode(a).WithCategories("Issued", "ReadLock")));
-					nodes.Add(this.issuedUpgradeableReadLocks.Select(a => CreateAwaiterNode(a).WithCategories("Issued", "UpgradeableReadLock")));
-					nodes.Add(this.issuedWriteLocks.Select(a => CreateAwaiterNode(a).WithCategories("Issued", "WriteLock")));
-					nodes.Add(this.waitingReaders.Select(a => CreateAwaiterNode(a).WithCategories("Waiting", "ReadLock")));
-					nodes.Add(this.waitingUpgradeableReaders.Select(a => CreateAwaiterNode(a).WithCategories("Waiting", "UpgradeableReadLock")));
-					nodes.Add(this.waitingWriters.Select(a => CreateAwaiterNode(a).WithCategories("Waiting", "WriteLock")));
-
 					var allAwaiters = this.issuedReadLocks
 						.Concat(this.issuedUpgradeableReadLocks)
 						.Concat(this.issuedWriteLocks)
 						.Concat(this.waitingReaders)
 						.Concat(this.waitingUpgradeableReaders)
 						.Concat(this.waitingWriters);
+
+					// Build the lock stack containers.
+					dgml.WithContainers(allAwaiters.Select(GetAwaiterGroupId).Distinct().Select(id => Dgml.Container(id, "Lock stack")));
+
+					// Add each lock awaiter.
+					nodes.Add(this.issuedReadLocks.Select(a => CreateAwaiterNode(a).WithCategories("Issued", "ReadLock").ContainedBy(GetAwaiterGroupId(a), dgml)));
+					nodes.Add(this.issuedUpgradeableReadLocks.Select(a => CreateAwaiterNode(a).WithCategories("Issued", "UpgradeableReadLock").ContainedBy(GetAwaiterGroupId(a), dgml)));
+					nodes.Add(this.issuedWriteLocks.Select(a => CreateAwaiterNode(a).WithCategories("Issued", "WriteLock").ContainedBy(GetAwaiterGroupId(a), dgml)));
+					nodes.Add(this.waitingReaders.Select(a => CreateAwaiterNode(a).WithCategories("Waiting", "ReadLock").ContainedBy(GetAwaiterGroupId(a), dgml)));
+					nodes.Add(this.waitingUpgradeableReaders.Select(a => CreateAwaiterNode(a).WithCategories("Waiting", "UpgradeableReadLock").ContainedBy(GetAwaiterGroupId(a), dgml)));
+					nodes.Add(this.waitingWriters.Select(a => CreateAwaiterNode(a).WithCategories("Waiting", "WriteLock").ContainedBy(GetAwaiterGroupId(a), dgml)));
+
+					// Link the lock stacks among themselves.
 					links.Add(allAwaiters.Where(a => a.NestingLock != null).Select(a => Dgml.Link(GetAwaiterId(a.NestingLock), GetAwaiterId(a))));
 
 					return new HangReportContribution(
@@ -99,6 +105,15 @@ namespace Microsoft.VisualStudio.Threading {
 		private static string GetAwaiterId(Awaiter awaiter) {
 			Requires.NotNull(awaiter, "awaiter");
 			return awaiter.GetHashCode().ToString(CultureInfo.InvariantCulture);
+		}
+
+		private static string GetAwaiterGroupId(Awaiter awaiter) {
+			Requires.NotNull(awaiter, "awaiter");
+			while (awaiter.NestingLock != null) {
+				awaiter = awaiter.NestingLock;
+			}
+
+			return "LockStack" + GetAwaiterId(awaiter);
 		}
 	}
 }
