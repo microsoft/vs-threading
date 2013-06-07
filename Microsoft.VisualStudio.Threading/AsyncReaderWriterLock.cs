@@ -9,6 +9,7 @@ namespace Microsoft.VisualStudio.Threading {
 	using System.Collections.Concurrent;
 	using System.Collections.Generic;
 	using System.Diagnostics;
+	using System.Globalization;
 	using System.Linq;
 	using System.Runtime.CompilerServices;
 	using System.Runtime.Remoting.Messaging;
@@ -124,9 +125,9 @@ namespace Microsoft.VisualStudio.Threading {
 
 		/// <summary>
 		/// A flag indicating whether we're currently running code to prepare for re-entering concurrency mode
-		/// after releasing an exclusive lock.
+		/// after releasing an exclusive lock. The Awaiter being released is the non-null value.
 		/// </summary>
-		private volatile bool reenterConcurrencyPrepRunning;
+		private volatile Awaiter reenterConcurrencyPrepRunning;
 
 		/// <summary>
 		/// A flag indicating that the <see cref="Complete"/> method has been called, indicating that no
@@ -547,7 +548,7 @@ namespace Microsoft.VisualStudio.Threading {
 
 			if (this.completeInvoked &&
 				!this.completionSource.Task.IsCompleted &&
-				!this.reenterConcurrencyPrepRunning &&
+				this.reenterConcurrencyPrepRunning == null &&
 				this.issuedReadLocks.Count == 0 && this.issuedUpgradeableReadLocks.Count == 0 && this.issuedWriteLocks.Count == 0 &&
 				this.waitingReaders.Count == 0 && this.waitingUpgradeableReaders.Count == 0 && this.waitingWriters.Count == 0) {
 
@@ -750,7 +751,7 @@ namespace Microsoft.VisualStudio.Threading {
 				}
 
 				bool issued = false;
-				if (!this.reenterConcurrencyPrepRunning) {
+				if (this.reenterConcurrencyPrepRunning == null) {
 					if (this.issuedWriteLocks.Count == 0 && this.issuedUpgradeableReadLocks.Count == 0 && this.issuedReadLocks.Count == 0) {
 						issued = true;
 					} else {
@@ -760,7 +761,18 @@ namespace Microsoft.VisualStudio.Threading {
 							case LockKind.Read:
 								if (this.issuedWriteLocks.Count == 0 && this.waitingWriters.Count == 0) {
 									issued = true;
-								} else if (hasWrite || hasRead || hasUpgradeableRead) {
+								} else if (hasWrite) {
+									// We allow STA threads to not have the sync context applied because it never has it applied,
+									// and a write lock holder is allowed to transition to an STA tread.
+									// But if an MTA thread has the write lock but not the sync context, then they're likely
+									// an accidental execution fork that is exposing concurrency inappropriately.
+									if (Thread.CurrentThread.GetApartmentState() == ApartmentState.MTA && !(SynchronizationContext.Current is NonConcurrentSynchronizationContext)) {
+										Report.Fail("Dangerous request for read lock from fork of write lock.");
+										Verify.FailOperation("Dangerous request for read lock from fork of write lock.");
+									}
+
+									issued = true;
+								} else if (hasRead || hasUpgradeableRead) {
 									issued = true;
 								}
 
@@ -920,6 +932,34 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
+		/// Invoked when the lock detects an internal error or illegal usage pattern that
+		/// indicates a serious flaw that should be immediately reported to the application
+		/// and/or bring down the process to avoid hangs or data corruption.
+		/// </summary>
+		/// <param name="ex">The exception that captures the details of the failure.</param>
+		/// <returns>An exception that may be returned by some implementations of tis method for he caller to rethrow.</returns>
+		protected virtual Exception OnCriticalFailure(Exception ex) {
+			Report.Fail(ex.Message);
+			Environment.FailFast(ex.ToString(), ex);
+			throw Assumes.NotReachable();
+		}
+
+		/// <summary>
+		/// Invoked when the lock detects an internal error or illegal usage pattern that
+		/// indicates a serious flaw that should be immediately reported to the application
+		/// and/or bring down the process to avoid hangs or data corruption.
+		/// </summary>
+		/// <param name="message">The message to use for the exception.</param>
+		/// <returns>An exception that may be returned by some implementations of tis method for he caller to rethrow.</returns>
+		protected Exception OnCriticalFailure(string message) {
+			try {
+				throw Assumes.Fail(message);
+			} catch (Exception ex) {
+				throw this.OnCriticalFailure(ex);
+			}
+		}
+
+		/// <summary>
 		/// Releases the lock held by the specified awaiter.
 		/// </summary>
 		/// <param name="awaiter">The awaiter holding an active lock.</param>
@@ -934,7 +974,24 @@ namespace Microsoft.VisualStudio.Threading {
 		private Task ReleaseAsync(Awaiter awaiter, bool lockConsumerCanceled = false) {
 			// This method does NOT use the async keyword in its signature to avoid CallContext changes that we make
 			// causing a fork/clone of the CallContext, which defeats our alloc-free uncontested lock story.
-			Assumes.False(this.reenterConcurrencyPrepRunning); // No one should have any locks to release (and be executing code) if we're in our intermediate state.
+
+			// No one should have any locks to release (and be executing code) if we're in our intermediate state.
+			// When this test fails, it's because someone had an exclusive lock and allowed concurrently executing
+			// code to fork off and acquire a read (or upgradeable read?) lock, then outlive the parent write lock.
+			// This is an illegal pattern both because it means an exclusive lock is used concurrently (while the
+			// parent write lock is active) and when the write lock is released, it means that the child "read"
+			// lock suddenly became a "concurrent" lock, but we can't transition all the resources from exclusive
+			// access to concurrent access while someone is actually holding a lock (as such transition requires
+			// the lock class itself to have the exclusive lock to protect the resources going through the transition).
+			Awaiter illegalConcurrentLock = this.reenterConcurrencyPrepRunning; // capture to local to preserve evidence in a concurrently reset field.
+			if (illegalConcurrentLock != null) {
+				try {
+					Assumes.Fail(String.Format(CultureInfo.CurrentCulture, "Illegal concurrent use of exclusive lock. Exclusive lock: {0}, Nested lock that outlived parent: {1}", illegalConcurrentLock, awaiter));
+				} catch (Exception ex) {
+					throw this.OnCriticalFailure(ex);
+				}
+			}
+
 			if (!this.IsLockActive(awaiter, considerStaActive: true)) {
 				return TplExtensions.CompletedTask;
 			}
@@ -1031,7 +1088,20 @@ namespace Microsoft.VisualStudio.Threading {
 
 			Task onExclusiveLockReleasedTask;
 			lock (this.syncObject) {
-				this.reenterConcurrencyPrepRunning = true;
+				// Check that no read locks are held. If they are, then that's a sign that
+				// within this write lock, someone took a read lock that is outliving the nesting
+				// write lock, which is a very dangerous situation.
+				if (this.issuedReadLocks.Count > 0) {
+					if (this.HasAnyNestedLocks(awaiter)) {
+						try {
+							throw new InvalidOperationException("Write lock out-lived by a nested read lock, which is not allowed.");
+						} catch (InvalidOperationException ex) {
+							this.OnCriticalFailure(ex);
+						}
+					}
+				}
+
+				this.reenterConcurrencyPrepRunning = awaiter;
 				onExclusiveLockReleasedTask = this.OnExclusiveLockReleasedAsync();
 			}
 
@@ -1044,7 +1114,7 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			lock (this.syncObject) {
-				this.reenterConcurrencyPrepRunning = false;
+				this.reenterConcurrencyPrepRunning = null;
 
 				// Skip updating the call context because we're in a forked execution context that won't
 				// ever impact the client code, and changing the CallContext now would cause the data to be cloned,
@@ -1056,6 +1126,43 @@ namespace Microsoft.VisualStudio.Threading {
 				// rethrow the exception we experienced before, such that it doesn't wipe out its callstack.
 				System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(prereqException).Throw();
 			}
+		}
+
+		/// <summary>
+		/// Checks whether the specified lock has any active nested locks.
+		/// </summary>
+		private bool HasAnyNestedLocks(Awaiter lck) {
+			Requires.NotNull(lck, "lck");
+			Assumes.True(Monitor.IsEntered(this.SyncObject));
+
+			return this.HasAnyNestedLocks(lck, this.issuedReadLocks)
+				|| this.HasAnyNestedLocks(lck, this.issuedUpgradeableReadLocks)
+				|| this.HasAnyNestedLocks(lck, this.issuedWriteLocks);
+		}
+
+		/// <summary>
+		/// Checks whether the specified lock has any active nested locks.
+		/// </summary>
+		private bool HasAnyNestedLocks(Awaiter lck, HashSet<Awaiter> lockCollection) {
+			Requires.NotNull(lck, "lck");
+			Requires.NotNull(lockCollection, "lockCollection");
+
+			if (lockCollection.Count > 0) {
+				foreach (var nestedCandidate in lockCollection) {
+					if (nestedCandidate == lck) {
+						// This isn't nested -- it's the lock itself.
+						continue;
+					}
+
+					for (Awaiter a = nestedCandidate.NestingLock; a != null; a = a.NestingLock) {
+						if (a == lck) {
+							return true;
+						}
+					}
+				}
+			}
+
+			return false;
 		}
 
 		/// <summary>
@@ -1561,7 +1668,17 @@ namespace Microsoft.VisualStudio.Threading {
 				if (this.releaseAsyncTask == null) {
 					// This method does NOT use the async keyword in its signature to avoid CallContext changes that we make
 					// causing a fork/clone of the CallContext, which defeats our alloc-free uncontested lock story.
-					this.releaseAsyncTask = this.lck.ReleaseAsync(this, lockConsumerCanceled);
+					try {
+						this.releaseAsyncTask = this.lck.ReleaseAsync(this, lockConsumerCanceled);
+					} catch (Exception ex) {
+						// An exception here is *really* bad, because a project lock will get orphaned and
+						// a deadlock will soon result.
+						// Do what we can to save some evidence by capturing the exception in a faulted task.
+						// We don't need to rethrow the exception because we return the faulted task.
+						var tcs = new TaskCompletionSource<object>();
+						tcs.SetException(ex);
+						this.releaseAsyncTask = tcs.Task;
+					}
 				}
 
 				return this.releaseAsyncTask ?? TplExtensions.CompletedTask;
@@ -1738,7 +1855,12 @@ namespace Microsoft.VisualStudio.Threading {
 					var nonConcurrentSyncContext = SynchronizationContext.Current as NonConcurrentSynchronizationContext;
 					using (nonConcurrentSyncContext != null ? nonConcurrentSyncContext.LoanBackAnyHeldResource() : default(NonConcurrentSynchronizationContext.LoanBack)) {
 						var releaseTask = this.ReleaseAsync();
-						while (!releaseTask.Wait(1000)) { // this loop allows us to break into the debugger and step into managed code to analyze a hang.
+						try {
+							while (!releaseTask.Wait(1000)) { // this loop allows us to break into the debugger and step into managed code to analyze a hang.
+							}
+						} catch (AggregateException) {
+							// We want to throw the inner exception itself -- not the AggregateException.
+							releaseTask.GetAwaiter().GetResult();
 						}
 					}
 

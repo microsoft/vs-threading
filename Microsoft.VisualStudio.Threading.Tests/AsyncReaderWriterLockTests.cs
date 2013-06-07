@@ -26,16 +26,26 @@
 
 		private AsyncReaderWriterLock asyncLock;
 
+		/// <summary>
+		/// A flag that should be set to true by tests that verify some anti-pattern
+		/// and as a result corrupts the lock or otherwise orphans outstanding locks,
+		/// which would cause the test to hang if it waited for the lock to "complete".
+		/// </summary>
+		private static bool DoNotWaitForLockCompletionAtTestCleanup;
+
 		[TestInitialize]
 		public void Initialize() {
 			this.asyncLock = new AsyncReaderWriterLock();
+			DoNotWaitForLockCompletionAtTestCleanup = false;
 		}
 
 		[TestCleanup]
 		public void Cleanup() {
 			string testName = this.TestContext.TestName;
 			this.asyncLock.Complete();
-			Assert.IsTrue(this.asyncLock.Completion.Wait(2000));
+			if (!DoNotWaitForLockCompletionAtTestCleanup || this.TestContext.CurrentTestOutcome == UnitTestOutcome.Failed) {
+				Assert.IsTrue(this.asyncLock.Completion.Wait(2000));
+			}
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -2881,6 +2891,125 @@
 			}
 		}
 
+		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
+		public async Task WriteLockForksAndAsksForReadLock() {
+			using (TestUtilities.DisableAssertionDialog()) {
+				using (await this.asyncLock.WriteLockAsync()) {
+					await Task.Run(async delegate {
+						// This throws because it's a dangerous pattern for a read lock to fork off
+						// from a write lock. For instance, if this Task.Run hadn't had an "await"
+						// in front of it (which the lock can't have insight into), then this would
+						// represent concurrent execution within what should be an exclusive lock.
+						// Also, if the read lock out-lived the nesting write lock, we'd have real
+						// trouble on our hands as it's impossible to prepare resources for concurrent
+						// access (as the exclusive lock gets released) while an existing read lock is held.
+						using (await this.asyncLock.ReadLockAsync()) {
+						}
+					});
+				}
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout * 3), ExpectedException(typeof(InvalidOperationException))]
+		public async Task WriteNestsReadWithWriteReleasedFirst() {
+			using (TestUtilities.DisableAssertionDialog()) {
+				var readLockAcquired = new AsyncManualResetEvent();
+				var readLockReleased = new AsyncManualResetEvent();
+				var writeLockCallbackBegun = new AsyncManualResetEvent();
+
+				var asyncLock = new LockDerived();
+				this.asyncLock = asyncLock;
+
+				Task readerTask;
+				using (var access = await this.asyncLock.WriteLockAsync()) {
+					asyncLock.OnExclusiveLockReleasedAsyncDelegate = async delegate {
+						await writeLockCallbackBegun.SetAsync();
+
+						// Stay in the critical region until the read lock has been released.
+						await readLockReleased;
+					};
+
+					// Kicking off a concurrent task while holding a write lock is not allowed
+					// unless the original execution awaits that task. Otherwise, it introduces
+					// concurrency in what is supposed to be an exclusive lock.
+					// So what we're doing here is Bad, but it's how we get the repro.
+					readerTask = Task.Run(async delegate {
+						try {
+							using (await this.asyncLock.ReadLockAsync()) {
+								await readLockAcquired.SetAsync();
+
+								// Hold the read lock until the lock class has entered the
+								// critical region called reenterConcurrencyPrep.
+								await writeLockCallbackBegun;
+							}
+						} finally {
+							// Signal the read lock is released. Actually, it may not have been
+							// (if a bug causes the read lock release call to throw and the lock gets
+							// orphaned), but we want to avoid a deadlock in the test itself.
+							// If an exception was thrown, the test will still fail because we rethrow it.
+							readLockAcquired.SetAsync().Forget();
+							readLockReleased.SetAsync().Forget();
+						}
+					});
+
+					// Don't release the write lock until the nested read lock has been acquired.
+					await readLockAcquired;
+				}
+
+				// Wait for, and rethrow any exceptions from our child task.
+				await readerTask;
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout * 3)]
+		public async Task WriteNestsReadWithWriteReleasedFirstWithoutTaskRun() {
+			using (TestUtilities.DisableAssertionDialog()) {
+				var readLockReleased = new AsyncManualResetEvent();
+				var writeLockCallbackBegun = new AsyncManualResetEvent();
+
+				var asyncLock = new LockDerived();
+				this.asyncLock = asyncLock;
+
+				Task writeLockReleaseTask;
+				var writerLock = await this.asyncLock.WriteLockAsync();
+				asyncLock.OnExclusiveLockReleasedAsyncDelegate = async delegate {
+					await writeLockCallbackBegun.SetAsync();
+
+					// Stay in the critical region until the read lock has been released.
+					await readLockReleased;
+				};
+
+				var readerLock = await this.asyncLock.ReadLockAsync();
+
+				// This is really unnatural, to release a lock without awaiting it.
+				// In fact I daresay we could call it illegal.
+				// It is critical for the repro that code either execute concurrently
+				// or that we don't await while releasing this lock.
+				writeLockReleaseTask = writerLock.ReleaseAsync();
+
+				// Hold the read lock until the lock class has entered the
+				// critical region called reenterConcurrencyPrep.
+				Task completingTask = await Task.WhenAny(writeLockCallbackBegun.WaitAsync(), writeLockReleaseTask);
+				try {
+					await completingTask; // observe any exception.
+					Assert.Fail("Expected exception not thrown.");
+				} catch (AssertFailedException ex) {
+					Assert.IsTrue(asyncLock.CriticalErrorDetected, "The lock should have raised a critical error.");
+					Assert.IsInstanceOfType(ex.InnerException, typeof(InvalidOperationException));
+					return; // the test is over
+				}
+
+				// The rest of this never executes, but serves to illustrate the anti-pattern that lock users
+				// may try to use, that this test verifies the lock detects and throws exceptions about.
+				await readerLock.ReleaseAsync();
+				await readLockReleased.SetAsync();
+				await writerLock.ReleaseAsync();
+
+				// Wait for, and rethrow any exceptions from our child task.
+				await writeLockReleaseTask;
+			}
+		}
+
 		#endregion
 
 		#region Lock data tests
@@ -3441,6 +3570,8 @@
 		}
 
 		private class LockDerived : AsyncReaderWriterLock {
+			internal bool CriticalErrorDetected { get; set; }
+
 			internal Func<Task> OnBeforeExclusiveLockReleasedAsyncDelegate { get; set; }
 			internal Func<Task> OnExclusiveLockReleasedAsyncDelegate { get; set; }
 			internal Func<Task> OnBeforeLockReleasedAsyncDelegate { get; set; }
@@ -3498,6 +3629,15 @@
 				if (this.OnBeforeLockReleasedAsyncDelegate != null) {
 					await this.OnBeforeLockReleasedAsyncDelegate();
 				}
+			}
+
+			/// <summary>
+			/// We override this to cause test failures instead of crashing te test runner.
+			/// </summary>
+			protected override Exception OnCriticalFailure(Exception ex) {
+				this.CriticalErrorDetected = true;
+				DoNotWaitForLockCompletionAtTestCleanup = true; // we expect this to corrupt the lock.
+				throw new AssertFailedException(ex.Message, ex);
 			}
 
 			internal struct InternalLockHandle {
