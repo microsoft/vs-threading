@@ -39,26 +39,26 @@ namespace Microsoft.VisualStudio.Threading {
 						nodes.Add(Dgml.Comment("WARNING: failed to acquire our own lock in formulating this report."));
 					}
 
-					var allAwaiters = this.issuedReadLocks
-						.Concat(this.issuedUpgradeableReadLocks)
-						.Concat(this.issuedWriteLocks)
-						.Concat(this.waitingReaders)
-						.Concat(this.waitingUpgradeableReaders)
-						.Concat(this.waitingWriters);
+					var liveAwaiterMetadata = new HashSet<AwaiterMetadata>();
+					liveAwaiterMetadata.UnionWith(this.waitingReaders.Select(a => new AwaiterMetadata(a, AwaiterCollection.Waiting | AwaiterCollection.ReadLock)));
+					liveAwaiterMetadata.UnionWith(this.waitingUpgradeableReaders.Select(a => new AwaiterMetadata(a, AwaiterCollection.Waiting | AwaiterCollection.UpgradeableReadLock)));
+					liveAwaiterMetadata.UnionWith(this.waitingWriters.Select(a => new AwaiterMetadata(a, AwaiterCollection.Waiting | AwaiterCollection.WriteLock)));
+					liveAwaiterMetadata.UnionWith(this.issuedReadLocks.Select(a => new AwaiterMetadata(a, AwaiterCollection.Issued | AwaiterCollection.ReadLock)));
+					liveAwaiterMetadata.UnionWith(this.issuedUpgradeableReadLocks.Select(a => new AwaiterMetadata(a, AwaiterCollection.Issued | AwaiterCollection.UpgradeableReadLock)));
+					liveAwaiterMetadata.UnionWith(this.issuedWriteLocks.Select(a => new AwaiterMetadata(a, AwaiterCollection.Issued | AwaiterCollection.WriteLock)));
+
+					var liveAwaiters = liveAwaiterMetadata.Select(am => am.Awaiter);
+					var releasedAwaiterMetadata = new HashSet<AwaiterMetadata>(liveAwaiters.SelectMany(GetLockStack).Distinct().Except(liveAwaiters).Select(AwaiterMetadata.Released));
+					var allAwaiterMetadata = new HashSet<AwaiterMetadata>(liveAwaiterMetadata.Concat(releasedAwaiterMetadata));
 
 					// Build the lock stack containers.
-					dgml.WithContainers(allAwaiters.Select(GetAwaiterGroupId).Distinct().Select(id => Dgml.Container(id, "Lock stack")));
+					dgml.WithContainers(allAwaiterMetadata.Select(am => am.GroupId).Distinct().Select(id => Dgml.Container(id, "Lock stack")));
 
 					// Add each lock awaiter.
-					nodes.Add(this.issuedReadLocks.Select(a => CreateAwaiterNode(a).WithCategories("Issued", "ReadLock").ContainedBy(GetAwaiterGroupId(a), dgml)));
-					nodes.Add(this.issuedUpgradeableReadLocks.Select(a => CreateAwaiterNode(a).WithCategories("Issued", "UpgradeableReadLock").ContainedBy(GetAwaiterGroupId(a), dgml)));
-					nodes.Add(this.issuedWriteLocks.Select(a => CreateAwaiterNode(a).WithCategories("Issued", "WriteLock").ContainedBy(GetAwaiterGroupId(a), dgml)));
-					nodes.Add(this.waitingReaders.Select(a => CreateAwaiterNode(a).WithCategories("Waiting", "ReadLock").ContainedBy(GetAwaiterGroupId(a), dgml)));
-					nodes.Add(this.waitingUpgradeableReaders.Select(a => CreateAwaiterNode(a).WithCategories("Waiting", "UpgradeableReadLock").ContainedBy(GetAwaiterGroupId(a), dgml)));
-					nodes.Add(this.waitingWriters.Select(a => CreateAwaiterNode(a).WithCategories("Waiting", "WriteLock").ContainedBy(GetAwaiterGroupId(a), dgml)));
+					nodes.Add(allAwaiterMetadata.Select(am => CreateAwaiterNode(am.Awaiter).WithCategories(am.Categories.ToArray()).ContainedBy(am.GroupId, dgml)));
 
 					// Link the lock stacks among themselves.
-					links.Add(allAwaiters.Where(a => a.NestingLock != null).Select(a => Dgml.Link(GetAwaiterId(a.NestingLock), GetAwaiterId(a))));
+					links.Add(allAwaiterMetadata.Where(a => a.Awaiter.NestingLock != null).Select(a => Dgml.Link(GetAwaiterId(a.Awaiter.NestingLock), GetAwaiterId(a.Awaiter))));
 
 					return new HangReportContribution(
 						dgml.ToString(),
@@ -75,8 +75,9 @@ namespace Microsoft.VisualStudio.Threading {
 		private static XDocument CreateDgml(out XElement nodes, out XElement links) {
 			return Dgml.Create(out nodes, out links, layout: "ForceDirected", direction: "BottomToTop")
 				.WithCategories(
-					Dgml.Category("Issued", icon: "pack://application:,,,/Microsoft.VisualStudio.Progression.GraphControl;component/Icons/kpi_green_cat2_large.png"),
-					Dgml.Category("Waiting", icon: "pack://application:,,,/Microsoft.VisualStudio.Progression.GraphControl;component/Icons/kpi_yellow_cat1_large.png"),
+                    Dgml.Category("Waiting", icon: "pack://application:,,,/Microsoft.VisualStudio.Progression.GraphControl;component/Icons/kpi_yellow_cat1_large.png"),
+                    Dgml.Category("Issued", icon: "pack://application:,,,/Microsoft.VisualStudio.Progression.GraphControl;component/Icons/kpi_green_sym2_large.png"),
+					Dgml.Category("Released", icon: "pack://application:,,,/Microsoft.VisualStudio.Progression.GraphControl;component/Icons/kpi_red_sym2_large.png"),
 					Dgml.Category("ReadLock", background: "#FF7476AF"),
 					Dgml.Category("UpgradeableReadLock", background: "#FFFFBF00"),
 					Dgml.Category("WriteLock", background: "#FFC79393"));
@@ -114,6 +115,81 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			return "LockStack" + GetAwaiterId(awaiter);
+		}
+
+		private static IEnumerable<Awaiter> GetLockStack(Awaiter awaiter) {
+			Requires.NotNull(awaiter, "awaiter");
+			while (awaiter != null) {
+				yield return awaiter;
+				awaiter = awaiter.NestingLock;
+			}
+		}
+
+		[Flags]
+		private enum AwaiterCollection {
+			None = 0x0,
+			Waiting = 0x1,
+			Issued = 0x2,
+			Released = 0x4,
+			ReadLock = 0x10,
+			UpgradeableReadLock = 0x20,
+			WriteLock = 0x40,
+		}
+
+		private class AwaiterMetadata {
+			internal AwaiterMetadata(Awaiter awaiter, AwaiterCollection membership) {
+				Requires.NotNull(awaiter, "awaiter");
+
+				this.Awaiter = awaiter;
+				this.Membership = membership;
+			}
+
+			internal static AwaiterMetadata Released(Awaiter awaiter) {
+				Requires.NotNull(awaiter, "awaiter");
+
+				var membership = AwaiterCollection.Released;
+				switch (awaiter.Kind) {
+					case LockKind.Read:
+						membership |= AwaiterCollection.ReadLock;
+						break;
+					case LockKind.UpgradeableRead:
+						membership |= AwaiterCollection.UpgradeableReadLock;
+						break;
+					case LockKind.Write:
+						membership |= AwaiterCollection.WriteLock;
+						break;
+					default:
+						break;
+				}
+
+				return new AwaiterMetadata(awaiter, membership);
+			}
+
+			public Awaiter Awaiter { get; private set; }
+
+			public AwaiterCollection Membership { get; private set; }
+
+			public IEnumerable<string> Categories {
+				get {
+					foreach (AwaiterCollection value in Enum.GetValues(typeof(AwaiterCollection))) {
+						if (this.Membership.HasFlag(value)) {
+							yield return value.ToString();
+						}
+					}
+				}
+			}
+
+			public string GroupId {
+				get { return GetAwaiterGroupId(this.Awaiter); }
+			}
+
+			public override int GetHashCode() {
+				return this.Awaiter.GetHashCode();
+			}
+
+			public override bool Equals(object obj) {
+				return this.Awaiter.Equals(obj);
+			}
 		}
 	}
 }
