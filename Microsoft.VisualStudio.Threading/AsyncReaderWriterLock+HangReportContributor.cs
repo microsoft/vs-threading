@@ -75,8 +75,8 @@ namespace Microsoft.VisualStudio.Threading {
 		private static XDocument CreateDgml(out XElement nodes, out XElement links) {
 			return Dgml.Create(out nodes, out links, layout: "ForceDirected", direction: "BottomToTop")
 				.WithCategories(
-                    Dgml.Category("Waiting", icon: "pack://application:,,,/Microsoft.VisualStudio.Progression.GraphControl;component/Icons/kpi_yellow_cat1_large.png"),
-                    Dgml.Category("Issued", icon: "pack://application:,,,/Microsoft.VisualStudio.Progression.GraphControl;component/Icons/kpi_green_sym2_large.png"),
+					Dgml.Category("Waiting", icon: "pack://application:,,,/Microsoft.VisualStudio.Progression.GraphControl;component/Icons/kpi_yellow_cat1_large.png"),
+					Dgml.Category("Issued", icon: "pack://application:,,,/Microsoft.VisualStudio.Progression.GraphControl;component/Icons/kpi_green_sym2_large.png"),
 					Dgml.Category("Released", icon: "pack://application:,,,/Microsoft.VisualStudio.Progression.GraphControl;component/Icons/kpi_red_sym2_large.png"),
 					Dgml.Category("ReadLock", background: "#FF7476AF"),
 					Dgml.Category("UpgradeableReadLock", background: "#FFFFBF00"),
