@@ -55,6 +55,7 @@
     <Compile Include="AsyncReaderWriterResourceLock.cs" />
     <Compile Include="AwaitExtensions.cs" />
     <Compile Include="DelegatingJoinableTaskFactory.cs" />
+    <Compile Include="Dgml.cs" />
     <Compile Include="EmptyStruct.cs" />
     <Compile Include="EnumerateOneOrMany.cs" />
     <Compile Include="HangReportContribution.cs" />

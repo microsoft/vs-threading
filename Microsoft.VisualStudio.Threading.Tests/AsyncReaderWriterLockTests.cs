@@ -3062,6 +3062,54 @@
 			Console.WriteLine(report.Content);
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task GetHangReportWithReleasedNestingOuterLock() {
+			using (var lock1 = await this.asyncLock.ReadLockAsync()) {
+				using (var lock2 = await this.asyncLock.ReadLockAsync()) {
+					using (var lock3 = await this.asyncLock.ReadLockAsync()) {
+						await lock1.ReleaseAsync();
+						this.PrintHangReport();
+					}
+				}
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task GetHangReportWithReleasedNestingMiddleLock() {
+			using (var lock1 = await this.asyncLock.ReadLockAsync()) {
+				using (var lock2 = await this.asyncLock.ReadLockAsync()) {
+					using (var lock3 = await this.asyncLock.ReadLockAsync()) {
+						await lock2.ReleaseAsync();
+						this.PrintHangReport();
+					}
+				}
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task GetHangReportWithWriteLockUpgradeWaiting() {
+			var readLockObtained = new AsyncManualResetEvent();
+			var hangReportComplete = new AsyncManualResetEvent();
+			var writerTask = Task.Run(async delegate {
+				using (await this.asyncLock.UpgradeableReadLockAsync()) {
+					await readLockObtained;
+					var writeWaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
+					writeWaiter.OnCompleted(delegate {
+						writeWaiter.GetResult().Dispose();
+					});
+					this.PrintHangReport();
+					await hangReportComplete.SetAsync();
+				}
+			});
+			using (var lock1 = await this.asyncLock.ReadLockAsync()) {
+				using (var lock2 = await this.asyncLock.ReadLockAsync()) {
+					await readLockObtained.SetAsync();
+					await hangReportComplete;
+				}
+			}
+			await writerTask;
+		}
+
 		private void PrintHangReport() {
 			IHangReportContributor reportContributor = this.asyncLock;
 			var report = reportContributor.GetHangReport();
