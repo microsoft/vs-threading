@@ -24,6 +24,7 @@ namespace Microsoft.VisualStudio.Threading {
 	/// <remarks>
 	/// For more complete comments please see the <see cref="JoinableTaskContext"/>.
 	/// </remarks>
+	[DebuggerDisplay("IsCompleted: {IsCompleted}, Method = {EntryMethodInfo != null ? EntryMethodInfo.Name : null}")]
 	public partial class JoinableTask {
 		[Flags]
 		internal enum JoinableTaskFlags {
@@ -67,13 +68,16 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// The <see cref="JoinableTaskContext"/> that began the async operation.
 		/// </summary>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private readonly JoinableTaskFactory owner;
 
 		/// <summary>
 		/// The collections that this job is a member of.
 		/// </summary>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private ListOfOftenOne<JoinableTaskCollection> collectionMembership;
 
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private Task wrappedTask;
 
 		/// <summary>
@@ -82,27 +86,35 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <remarks>
 		/// When the value in an entry is decremented to 0, the entry is removed from the map.
 		/// </remarks>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private WeakKeyDictionary<JoinableTask, int> childOrJoinedJobs;
 
 		/// <summary>
 		/// An event that is signaled <see cref="childOrJoinedJobs"/> has changed, or queues are lazily constructed. Lazily constructed.
 		/// </summary>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private AsyncManualResetEvent dequeuerResetState;
 
 		/// <summary>The queue of work items. Lazily constructed.</summary>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private ExecutionQueue mainThreadQueue;
 
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private ExecutionQueue threadPoolQueue;
 
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private JoinableTaskFlags state;
 
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private JoinableTaskSynchronizationContext mainThreadJobSyncContext;
 
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private JoinableTaskSynchronizationContext threadPoolJobSyncContext;
 
 		/// <summary>
 		/// Store the task's initial delegate so we could show its full name in hang report.
 		/// </summary>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private Delegate initialDelegate;
 
 		/// <summary>
@@ -130,6 +142,7 @@ namespace Microsoft.VisualStudio.Threading {
 			this.initialDelegate = initialDelegate;
 		}
 
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		internal Task DequeuerResetEvent {
 			get {
 				using (NoMessagePumpSyncContext.Default.Apply()) {
@@ -155,6 +168,7 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 		}
 
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		internal Task EnqueuedNotify {
 			get {
 				using (NoMessagePumpSyncContext.Default.Apply()) {
@@ -222,6 +236,7 @@ namespace Microsoft.VisualStudio.Threading {
 			get { return this.owner; }
 		}
 
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		internal SynchronizationContext ApplicableJobSyncContext {
 			get {
 				using (NoMessagePumpSyncContext.Default.Apply()) {
@@ -359,6 +374,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// Gets or sets a value indicating whether this task has had its Complete() method called..
 		/// </summary>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private bool IsCompleteRequested {
 			get {
 				return (this.state & JoinableTaskFlags.CompleteRequested) != 0;
@@ -370,6 +386,7 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 		}
 
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private ExecutionQueue ApplicableQueue {
 			get {
 				using (NoMessagePumpSyncContext.Default.Apply()) {
@@ -383,6 +400,7 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 		}
 
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private bool SynchronouslyBlockingThreadPool {
 			get {
 				return (this.state & JoinableTaskFlags.StartedSynchronously) == JoinableTaskFlags.StartedSynchronously
@@ -390,6 +408,7 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 		}
 
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private bool SynchronouslyBlockingMainThread {
 			get {
 				return (this.state & JoinableTaskFlags.StartedSynchronously) == JoinableTaskFlags.StartedSynchronously

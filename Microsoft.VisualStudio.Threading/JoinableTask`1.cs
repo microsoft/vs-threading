@@ -7,6 +7,7 @@
 namespace Microsoft.VisualStudio.Threading {
 	using System;
 	using System.Collections.Generic;
+	using System.Diagnostics;
 	using System.Linq;
 	using System.Reflection;
 	using System.Runtime.CompilerServices;
@@ -22,6 +23,7 @@ namespace Microsoft.VisualStudio.Threading {
 	/// <remarks>
 	/// For more complete comments please see the <see cref="JoinableTaskContext"/>.
 	/// </remarks>
+	[DebuggerDisplay("IsCompleted: {IsCompleted}, Method = {EntryMethodInfo != null ? EntryMethodInfo.Name : null}")]
 	public class JoinableTask<T> : JoinableTask {
 		/// <summary>
 		/// Initializes a new instance of the <see cref="JoinableTask"/> class.
