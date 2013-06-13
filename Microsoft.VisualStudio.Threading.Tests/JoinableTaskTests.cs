@@ -1815,7 +1815,7 @@
 		/// <summary>
 		/// Writes out a DGML graph of pending tasks and collections to the test context.
 		/// </summary>
-		/// <param name="context">A specific context to collect data from; <c>null</c> will use <see cref="this.context"/></param>
+		/// <param name="context">A specific context to collect data from; <c>null</c> will use this.context</param>
 		private void PrintActiveTasksReport(JoinableTaskContext context = null) {
 			context = context ?? this.context;
 			IHangReportContributor contributor = context;
