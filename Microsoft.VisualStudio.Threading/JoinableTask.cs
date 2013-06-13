@@ -285,6 +285,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Gets a value indicating whether this task has a non-empty queue.
 		/// FOR DIAGNOSTICS COLLECTION ONLY.
 		/// </summary>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		internal bool HasNonEmptyQueue {
 			get {
 				Assumes.True(this.owner.Context.SyncContextLock.IsReadLockHeld);
@@ -297,6 +298,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Gets a snapshot of all joined tasks.
 		/// FOR DIAGNOSTICS COLLECTION ONLY.
 		/// </summary>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		internal IEnumerable<JoinableTask> ChildOrJoinedJobs {
 			get {
 				Assumes.True(this.owner.Context.SyncContextLock.IsReadLockHeld);
@@ -312,6 +314,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Gets a snapshot of all work queued to the main thread.
 		/// FOR DIAGNOSTICS COLLECTION ONLY.
 		/// </summary>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		internal IEnumerable<SingleExecuteProtector> MainThreadQueueContents {
 			get {
 				Assumes.True(this.owner.Context.SyncContextLock.IsReadLockHeld);
@@ -327,6 +330,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Gets a snapshot of all work queued to synchronously blocking threadpool thread.
 		/// FOR DIAGNOSTICS COLLECTION ONLY.
 		/// </summary>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		internal IEnumerable<SingleExecuteProtector> ThreadPoolQueueContents {
 			get {
 				Assumes.True(this.owner.Context.SyncContextLock.IsReadLockHeld);
@@ -342,6 +346,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Gets the collections this task belongs to.
 		/// FOR DIAGNOSTICS COLLECTION ONLY.
 		/// </summary>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		internal IEnumerable<JoinableTaskCollection> ContainingCollections {
 			get {
 				Assumes.True(this.owner.Context.SyncContextLock.IsReadLockHeld);
