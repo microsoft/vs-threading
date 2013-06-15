@@ -233,6 +233,18 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
+		/// Gets a value indicating whether a read lock is held by the caller without regard
+		/// to the lock compatibility of the caller's context.
+		/// </summary>
+		/// <remarks>
+		/// This property returns <c>false</c> if any other lock type is held, unless
+		/// within that alternate lock type this lock is also nested.
+		/// </remarks>
+		public bool IsPassiveReadLockHeld {
+			get { return this.IsLockHeld(LockKind.Read, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true); }
+		}
+
+		/// <summary>
 		/// Gets a value indicating whether the caller holds an upgradeable read lock.
 		/// </summary>
 		/// <remarks>
@@ -244,6 +256,18 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
+		/// Gets a value indicating whether an upgradeable read lock is held by the caller without regard
+		/// to the lock compatibility of the caller's context.
+		/// </summary>
+		/// <remarks>
+		/// This property returns <c>false</c> if any other lock type is held, unless
+		/// within that alternate lock type this lock is also nested.
+		/// </remarks>
+		public bool IsPassiveUpgradeableReadLockHeld {
+			get { return this.IsLockHeld(LockKind.UpgradeableRead, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true); }
+		}
+
+		/// <summary>
 		/// Gets a value indicating whether the caller holds a write lock.
 		/// </summary>
 		/// <remarks>
@@ -252,6 +276,18 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </remarks>
 		public bool IsWriteLockHeld {
 			get { return this.IsLockHeld(LockKind.Write); }
+		}
+
+		/// <summary>
+		/// Gets a value indicating whether a write lock is held by the caller without regard
+		/// to the lock compatibility of the caller's context.
+		/// </summary>
+		/// <remarks>
+		/// This property returns <c>false</c> if any other lock type is held, unless
+		/// within that alternate lock type this lock is also nested.
+		/// </remarks>
+		public bool IsPassiveWriteLockHeld {
+			get { return this.IsLockHeld(LockKind.Write, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true); }
 		}
 
 		/// <summary>

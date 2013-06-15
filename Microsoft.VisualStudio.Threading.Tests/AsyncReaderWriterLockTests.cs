@@ -496,6 +496,37 @@
 			}
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task IsPassiveReadLockHeldReturnsTrueForIncompatibleSyncContexts() {
+			var dispatcher = new DispatcherSynchronizationContext();
+			using (await this.asyncLock.ReadLockAsync()) {
+				Assert.IsTrue(this.asyncLock.IsPassiveReadLockHeld);
+				SynchronizationContext.SetSynchronizationContext(dispatcher);
+				Assert.IsTrue(this.asyncLock.IsPassiveReadLockHeld);
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task IsPassiveUpgradeableReadLockHeldReturnsTrueForIncompatibleSyncContexts() {
+			var dispatcher = new DispatcherSynchronizationContext();
+			using (await this.asyncLock.UpgradeableReadLockAsync()) {
+				Assert.IsTrue(this.asyncLock.IsPassiveUpgradeableReadLockHeld);
+				SynchronizationContext.SetSynchronizationContext(dispatcher);
+				Assert.IsTrue(this.asyncLock.IsPassiveUpgradeableReadLockHeld);
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task IsPassiveWriteLockHeldReturnsTrueForIncompatibleSyncContexts() {
+			var dispatcher = new DispatcherSynchronizationContext();
+			using (var releaser = await this.asyncLock.WriteLockAsync()) {
+				Assert.IsTrue(this.asyncLock.IsPassiveWriteLockHeld);
+				SynchronizationContext.SetSynchronizationContext(dispatcher);
+				Assert.IsTrue(this.asyncLock.IsPassiveWriteLockHeld);
+				await releaser.ReleaseAsync();
+			}
+		}
+
 		#region ReadLockAsync tests
 
 		[TestMethod, Timeout(TestTimeout)]
