@@ -72,8 +72,6 @@
 		}
 
 		internal static XElement Node(string id = null, string label = null, string group = null) {
-			Requires.NotNullOrEmpty(id, "id");
-
 			var element = new XElement(NodeName);
 
 			if (!string.IsNullOrEmpty(id)) {
