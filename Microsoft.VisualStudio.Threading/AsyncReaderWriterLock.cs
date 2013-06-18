@@ -214,11 +214,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// to the lock compatibility of the caller's context.
 		/// </summary>
 		public bool IsAnyPassiveLockHeld {
-			get {
-				return this.IsLockHeld(LockKind.Read, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true)
-					|| this.IsLockHeld(LockKind.UpgradeableRead, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true)
-					|| this.IsLockHeld(LockKind.Write, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true);
-			}
+			get { return this.IsPassiveReadLockHeld || this.IsPassiveUpgradeableReadLockHeld || this.IsPassiveWriteLockHeld; }
 		}
 
 		/// <summary>
