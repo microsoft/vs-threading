@@ -621,13 +621,14 @@ namespace Microsoft.VisualStudio.Threading {
 		internal void CompleteOnCurrentThread() {
 			Assumes.NotNull(this.wrappedTask);
 
-			while (!this.IsCompleted) {
-				var additionalFlags = JoinableTaskFlags.CompletingSynchronously;
-				if (this.owner.Context.MainThread == Thread.CurrentThread) {
-					additionalFlags |= JoinableTaskFlags.SynchronouslyBlockingMainThread;
-				}
+			var additionalFlags = JoinableTaskFlags.CompletingSynchronously;
+			if (this.owner.Context.MainThread == Thread.CurrentThread) {
+				additionalFlags |= JoinableTaskFlags.SynchronouslyBlockingMainThread;
+			}
 
-				this.AddStateFlags(additionalFlags);
+			this.AddStateFlags(additionalFlags);
+
+			while (!this.IsCompleted) {
 				SingleExecuteProtector work;
 				Task tryAgainAfter;
 				if (this.TryDequeueSelfOrDependencies(out work, out tryAgainAfter)) {
