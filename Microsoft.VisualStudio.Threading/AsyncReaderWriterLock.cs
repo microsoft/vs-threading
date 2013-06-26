@@ -1828,6 +1828,13 @@ namespace Microsoft.VisualStudio.Threading {
 				}
 			}
 
+			/// <summary>
+			/// Executes the specified delegate.
+			/// </summary>
+			/// <remarks>
+			/// We use async void instead of async Task because the caller will never
+			/// use the result, and this way the compiler doesn't have to create the Task object.
+			/// </remarks>
 			private async void PostHelper(SendOrPostCallback d, object state) {
 				await this.semaphore.WaitAsync().ConfigureAwait(false);
 				this.threadHoldingSemaphore = Thread.CurrentThread;
