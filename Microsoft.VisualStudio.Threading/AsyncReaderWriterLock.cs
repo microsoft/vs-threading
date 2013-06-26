@@ -1797,20 +1797,18 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			public override void Post(SendOrPostCallback d, object state) {
-				Task.Run(async delegate {
-					await this.semaphore.WaitAsync().ConfigureAwait(false);
-					this.threadHoldingSemaphore = Thread.CurrentThread;
-					try {
-						SynchronizationContext.SetSynchronizationContext(this);
-						d(state);
-					} finally {
-						// The semaphore *may* have been released already, so take care to not release it again.
-						if (this.threadHoldingSemaphore == Thread.CurrentThread) {
-							this.threadHoldingSemaphore = null;
-							this.semaphore.Release();
-						}
-					}
-				});
+				Requires.NotNull(d, "d");
+
+				// Take special care to minimize allocations and overhead by avoiding implicit delegates and closures.
+				// The C# compiler caches this delegate in a static field because it never touches "this"
+				// nor any other local variables, which means the only allocations from this call
+				// are our Tuple and the ThreadPool's bare-minimum necessary to track the work.
+				ThreadPool.QueueUserWorkItem(
+					s => {
+						var tuple = (Tuple<NonConcurrentSynchronizationContext, SendOrPostCallback, object>)s;
+						tuple.Item1.PostHelper(tuple.Item2, tuple.Item3);
+					},
+					Tuple.Create(this, d, state));
 			}
 
 			internal LoanBack LoanBackAnyHeldResource() {
@@ -1827,6 +1825,24 @@ namespace Microsoft.VisualStudio.Threading {
 
 				if (SynchronizationContext.Current == this) {
 					SynchronizationContext.SetSynchronizationContext(null);
+				}
+			}
+
+			private async void PostHelper(SendOrPostCallback d, object state) {
+				await this.semaphore.WaitAsync().ConfigureAwait(false);
+				this.threadHoldingSemaphore = Thread.CurrentThread;
+				try {
+					SynchronizationContext.SetSynchronizationContext(this);
+					d(state);
+				} catch (Exception ex) {
+					// We just eat these up to avoid crashing the process by throwing on a threadpool thread.
+					Report.Fail("An unhandled exception was thrown from within a posted message. {0}", ex);
+				} finally {
+					// The semaphore *may* have been released already, so take care to not release it again.
+					if (this.threadHoldingSemaphore == Thread.CurrentThread) {
+						this.threadHoldingSemaphore = null;
+						this.semaphore.Release();
+					}
 				}
 			}
 
