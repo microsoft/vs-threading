@@ -25,7 +25,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="applyChange">A function that receives the unchanged value and returns the changed value.</param>
 		/// <returns>
 		/// <c>true</c> if the location's value is changed by applying the result of the <paramref name="applyChange"/> function;
-		/// <c>false</c> if the location value remained the same because the last invocation of <paramref name="applyChange"/> returned the existing value.
+		/// <c>false</c> if the location's value remained the same because the last invocation of <paramref name="applyChange"/> returned the existing value.
 		/// </returns>
 		public static bool ApplyChangeOptimistically<T>(ref T hotLocation, Func<T, T> applyChange) where T : class {
 			Requires.NotNull(applyChange, "applyChange");
