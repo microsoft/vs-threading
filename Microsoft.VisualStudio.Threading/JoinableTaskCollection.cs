@@ -13,11 +13,11 @@ namespace Microsoft.VisualStudio.Threading {
 	using System.Threading.Tasks;
 
 	/// <summary>
-	/// A joinable collection of jobs.
+	/// A collection of joinable tasks.
 	/// </summary>
 	public class JoinableTaskCollection : IEnumerable<JoinableTask> {
 		/// <summary>
-		/// The set of jobs that belong to this collection -- that is, the set of jobs that are implicitly Joined
+		/// The set of joinable tasks that belong to this collection -- that is, the set of joinable tasks that are implicitly Joined
 		/// when folks Join this collection.
 		/// The value is the number of times the joinable was added to this collection (and not yet removed)
 		/// if this collection is ref counted; otherwise the value is always 1.
@@ -25,14 +25,14 @@ namespace Microsoft.VisualStudio.Threading {
 		private readonly WeakKeyDictionary<JoinableTask, int> joinables = new WeakKeyDictionary<JoinableTask, int>();
 
 		/// <summary>
-		/// The set of jobs that have Joined this collection -- that is, the set of jobs that are interested
-		/// in the completion of any and all jobs that belong to this collection.
-		/// The value is the number of times a particular job has Joined this collection.
+		/// The set of joinable tasks that have Joined this collection -- that is, the set of joinable tasks that are interested
+		/// in the completion of any and all joinable tasks that belong to this collection.
+		/// The value is the number of times a particular joinable task has Joined this collection.
 		/// </summary>
 		private readonly WeakKeyDictionary<JoinableTask, int> joiners = new WeakKeyDictionary<JoinableTask, int>();
 
 		/// <summary>
-		/// A value indicating whether jobs are only removed when completed or removed as many times as they were added.
+		/// A value indicating whether joinable tasks are only removed when completed or removed as many times as they were added.
 		/// </summary>
 		private readonly bool refCountAddedJobs;
 
@@ -62,28 +62,28 @@ namespace Microsoft.VisualStudio.Threading {
 		public JoinableTaskContext Context { get; private set; }
 
 		/// <summary>
-		/// Adds the specified job to this collection.
+		/// Adds the specified joinable task to this collection.
 		/// </summary>
-		/// <param name="job">The job to add to the collection.</param>
-		public void Add(JoinableTask job) {
-			Requires.NotNull(job, "job");
-			Requires.Argument(job.Factory.Context == this.Context, "joinable", "Job does not belong to the context this collection was instantiated with.");
+		/// <param name="joinableTask">The joinable task to add to the collection.</param>
+		public void Add(JoinableTask joinableTask) {
+			Requires.NotNull(joinableTask, "joinableTask");
+			Requires.Argument(joinableTask.Factory.Context == this.Context, "joinable", "Job does not belong to the context this collection was instantiated with.");
 
-			if (!job.IsCompleted) {
+			if (!joinableTask.IsCompleted) {
 				this.Context.SyncContextLock.EnterWriteLock();
 				try {
 					int refCount;
-					if (!this.joinables.TryGetValue(job, out refCount) || this.refCountAddedJobs) {
-						this.joinables[job] = refCount + 1;
+					if (!this.joinables.TryGetValue(joinableTask, out refCount) || this.refCountAddedJobs) {
+						this.joinables[joinableTask] = refCount + 1;
 						if (refCount == 0) {
-							job.OnAddedToCollection(this);
+							joinableTask.OnAddedToCollection(this);
 
-							// Now that we've added a job to our collection, any folks who
-							// have already joined this collection should be joined to this job.
+							// Now that we've added a joinable task to our collection, any folks who
+							// have already joined this collection should be joined to this joinable task.
 							foreach (var joiner in this.joiners) {
 								// We can discard the JoinRelease result of AddDependency
 								// because we directly disjoin without that helper struct.
-								joiner.Key.AddDependency(job);
+								joiner.Key.AddDependency(joinableTask);
 							}
 						}
 					}
@@ -98,36 +98,36 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
-		/// Removes the specified job from this collection,
+		/// Removes the specified joinable task from this collection,
 		/// or decrements the ref count if this collection tracks that.
 		/// </summary>
-		/// <param name="job">The job to remove.</param>
-		public void Remove(JoinableTask job) {
-			Requires.NotNull(job, "job");
+		/// <param name="joinableTask">The joinable task to remove.</param>
+		public void Remove(JoinableTask joinableTask) {
+			Requires.NotNull(joinableTask, "joinableTask");
 
 			using (NoMessagePumpSyncContext.Default.Apply()) {
 				this.Context.SyncContextLock.EnterWriteLock();
 				try {
 					int refCount;
-					if (this.joinables.TryGetValue(job, out refCount)) {
-						if (refCount == 1 || job.IsCompleted) { // remove regardless of ref count if job is completed
-							this.joinables.Remove(job);
-							job.OnRemovedFromCollection(this);
+					if (this.joinables.TryGetValue(joinableTask, out refCount)) {
+						if (refCount == 1 || joinableTask.IsCompleted) { // remove regardless of ref count if job is completed
+							this.joinables.Remove(joinableTask);
+							joinableTask.OnRemovedFromCollection(this);
 
-							// Now that we've removed a job from our collection, any folks who
-							// have already joined this collection should be disjoined to this job
+							// Now that we've removed a joinable task from our collection, any folks who
+							// have already joined this collection should be disjoined to this joinable task
 							// as an efficiency improvement so we don't grow our weak collections unnecessarily.
 							foreach (var joiner in this.joiners) {
 								// We can discard the JoinRelease result of AddDependency
 								// because we directly disjoin without that helper struct.
-								joiner.Key.RemoveDependency(job);
+								joiner.Key.RemoveDependency(joinableTask);
 							}
 
 							if (this.emptyEvent != null && this.joinables.Count == 0) {
 								this.emptyEvent.SetAsync();
 							}
 						} else {
-							this.joinables[job] = refCount - 1;
+							this.joinables[joinableTask] = refCount - 1;
 						}
 					}
 				} finally {
@@ -147,7 +147,7 @@ namespace Microsoft.VisualStudio.Threading {
 		public JoinRelease Join() {
 			var ambientJob = this.Context.AmbientTask;
 			if (ambientJob == null) {
-				// The caller isn't running in the context of a job, so there is nothing to join with this collection.
+				// The caller isn't running in the context of a joinable task, so there is nothing to join with this collection.
 				return new JoinRelease();
 			}
 
@@ -198,15 +198,15 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
-		/// Checks whether the specified job is a member of this collection.
+		/// Checks whether the specified joinable task is a member of this collection.
 		/// </summary>
-		public bool Contains(JoinableTask job) {
-			Requires.NotNull(job, "job");
+		public bool Contains(JoinableTask joinableTask) {
+			Requires.NotNull(joinableTask, "joinableTask");
 
 			using (NoMessagePumpSyncContext.Default.Apply()) {
 				this.Context.SyncContextLock.EnterReadLock();
 				try {
-					return this.joinables.ContainsKey(job);
+					return this.joinables.ContainsKey(joinableTask);
 				} finally {
 					this.Context.SyncContextLock.ExitReadLock();
 				}
@@ -214,26 +214,26 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
-		/// Breaks a join formed between the specified job and this collection.
+		/// Breaks a join formed between the specified joinable task and this collection.
 		/// </summary>
-		/// <param name="job">The job that had previously joined this collection, and that now intends to revert it.</param>
-		internal void Disjoin(JoinableTask job) {
-			Requires.NotNull(job, "job");
+		/// <param name="joinableTask">The joinable task that had previously joined this collection, and that now intends to revert it.</param>
+		internal void Disjoin(JoinableTask joinableTask) {
+			Requires.NotNull(joinableTask, "joinableTask");
 
 			using (NoMessagePumpSyncContext.Default.Apply()) {
 				this.Context.SyncContextLock.EnterWriteLock();
 				try {
 					int count;
-					this.joiners.TryGetValue(job, out count);
+					this.joiners.TryGetValue(joinableTask, out count);
 					if (count == 1) {
-						this.joiners.Remove(job);
+						this.joiners.Remove(joinableTask);
 
-						// We also need to disjoin this job from all jobs in this collection.
+						// We also need to disjoin this joinable task from all joinable tasks in this collection.
 						foreach (var joinable in this.joinables) {
-							job.RemoveDependency(joinable.Key);
+							joinableTask.RemoveDependency(joinable.Key);
 						}
 					} else {
-						this.joiners[job] = count - 1;
+						this.joiners[joinableTask] = count - 1;
 					}
 				} finally {
 					this.Context.SyncContextLock.ExitWriteLock();
@@ -266,7 +266,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <summary>
 			/// Initializes a new instance of the <see cref="JoinRelease"/> class.
 			/// </summary>
-			/// <param name="jobCollection">The collection of jobs that has been joined.</param>
+			/// <param name="jobCollection">The collection of joinable tasks that has been joined.</param>
 			/// <param name="joiner">The instance that created this value.</param>
 			internal JoinRelease(JoinableTaskCollection jobCollection, JoinableTask joiner) {
 				Requires.NotNull(jobCollection, "jobCollection");
