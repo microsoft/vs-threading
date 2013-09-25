@@ -469,6 +469,13 @@
 			handle.Set();
 		}
 
+		[TestMethod, ExpectedException(typeof(ObjectDisposedException))]
+		public void ToTaskOnDisposedHandle() {
+			var handle = new ManualResetEvent(false);
+			handle.Dispose();
+			TplExtensions.ToTask(handle);
+		}
+
 		private static void InvokeAsyncHelper(object sender, EventArgs args) {
 			int invoked = 0;
 			AsyncEventHandler handler = (s, a) => {
