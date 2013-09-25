@@ -418,6 +418,57 @@
 			await callbackResult.Task;
 		}
 
+		[TestMethod]
+		public void ToTaskReturnsCompletedTaskPreSignaled() {
+			var handle = new ManualResetEvent(initialState: true);
+			Task actual = TplExtensions.ToTask(handle);
+			Assert.AreSame(TplExtensions.CompletedTask, actual);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ToTaskOnHandleSignaledLater() {
+			var handle = new ManualResetEvent(initialState: false);
+			Task actual = TplExtensions.ToTask(handle);
+			Assert.IsFalse(actual.IsCompleted);
+			handle.Set();
+			await actual;
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void ToTaskUnsignaledHandleWithZeroTimeout() {
+			var handle = new ManualResetEvent(initialState: false);
+			Task actual = TplExtensions.ToTask(handle, timeout: 0);
+			Assert.IsTrue(actual.IsFaulted);
+			Assert.IsInstanceOfType(actual.Exception.InnerException, typeof(TimeoutException));
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void ToTaskSignaledHandleWithZeroTimeout() {
+			var handle = new ManualResetEvent(initialState: true);
+			Task actual = TplExtensions.ToTask(handle, timeout: 0);
+			Assert.AreEqual(TaskStatus.RanToCompletion, actual.Status);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ToTaskOnHandleSignaledAfterNonZeroTimeout() {
+			var handle = new ManualResetEvent(initialState: false);
+			Task actual = TplExtensions.ToTask(handle, timeout: 1);
+			await Task.Delay(2);
+			handle.Set();
+			Assert.IsTrue(actual.IsFaulted);
+			Assert.IsInstanceOfType(actual.Exception.InnerException, typeof(TimeoutException));
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void ToTaskOnHandleSignaledAfterCancellation() {
+			var handle = new ManualResetEvent(initialState: false);
+			var cts = new CancellationTokenSource();
+			Task actual = TplExtensions.ToTask(handle, cancellationToken: cts.Token);
+			cts.Cancel();
+			Assert.IsTrue(actual.IsCanceled);
+			handle.Set();
+		}
+
 		private static void InvokeAsyncHelper(object sender, EventArgs args) {
 			int invoked = 0;
 			AsyncEventHandler handler = (s, a) => {

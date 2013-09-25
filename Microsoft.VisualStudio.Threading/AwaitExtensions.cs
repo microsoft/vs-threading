@@ -40,6 +40,16 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
+		/// Provides await functionality for ordinary <see cref="WaitHandle"/>s.
+		/// </summary>
+		/// <param name="handle">The handle to wait on.</param>
+		/// <returns>The awaiter.</returns>
+		public static TaskAwaiter GetAwaiter(this WaitHandle handle) {
+			Requires.NotNull(handle, "handle");
+			return handle.ToTask().GetAwaiter();
+		}
+
+		/// <summary>
 		/// An awaitable that executes continuations on the specified task scheduler.
 		/// </summary>
 		public struct TaskSchedulerAwaitable {
