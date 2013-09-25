@@ -46,6 +46,18 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 			}).GetAwaiter().GetResult();
 		}
 
+		[TestMethod]
+		public void AwaitWaitHandle() {
+			var handle = new ManualResetEvent(initialState: false);
+			Func<Task> awaitHelper = async delegate {
+				await handle;
+			};
+			Task awaitHelperResult = awaitHelper();
+			Assert.IsFalse(awaitHelperResult.IsCompleted);
+			handle.Set();
+			awaitHelperResult.Wait();
+		}
+
 		private class MockTaskScheduler : TaskScheduler {
 			internal int QueueTaskInvocations { get; set; }
 

@@ -418,6 +418,64 @@
 			await callbackResult.Task;
 		}
 
+		[TestMethod]
+		public void ToTaskReturnsCompletedTaskPreSignaled() {
+			var handle = new ManualResetEvent(initialState: true);
+			Task<bool> actual = TplExtensions.ToTask(handle);
+			Assert.AreSame(TplExtensions.TrueTask, actual);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ToTaskOnHandleSignaledLater() {
+			var handle = new ManualResetEvent(initialState: false);
+			Task<bool> actual = TplExtensions.ToTask(handle);
+			Assert.IsFalse(actual.IsCompleted);
+			handle.Set();
+			bool result = await actual;
+			Assert.IsTrue(result);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void ToTaskUnsignaledHandleWithZeroTimeout() {
+			var handle = new ManualResetEvent(initialState: false);
+			Task<bool> actual = TplExtensions.ToTask(handle, timeout: 0);
+			Assert.AreSame(TplExtensions.FalseTask, actual);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void ToTaskSignaledHandleWithZeroTimeout() {
+			var handle = new ManualResetEvent(initialState: true);
+			Task<bool> actual = TplExtensions.ToTask(handle, timeout: 0);
+			Assert.AreSame(TplExtensions.TrueTask, actual);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ToTaskOnHandleSignaledAfterNonZeroTimeout() {
+			var handle = new ManualResetEvent(initialState: false);
+			Task<bool> actual = TplExtensions.ToTask(handle, timeout: 1);
+			await Task.Delay(2);
+			handle.Set();
+			bool result = await actual;
+			Assert.IsFalse(result);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void ToTaskOnHandleSignaledAfterCancellation() {
+			var handle = new ManualResetEvent(initialState: false);
+			var cts = new CancellationTokenSource();
+			Task<bool> actual = TplExtensions.ToTask(handle, cancellationToken: cts.Token);
+			cts.Cancel();
+			Assert.IsTrue(actual.IsCanceled);
+			handle.Set();
+		}
+
+		[TestMethod, ExpectedException(typeof(ObjectDisposedException))]
+		public void ToTaskOnDisposedHandle() {
+			var handle = new ManualResetEvent(false);
+			handle.Dispose();
+			TplExtensions.ToTask(handle);
+		}
+
 		private static void InvokeAsyncHelper(object sender, EventArgs args) {
 			int invoked = 0;
 			AsyncEventHandler handler = (s, a) => {
