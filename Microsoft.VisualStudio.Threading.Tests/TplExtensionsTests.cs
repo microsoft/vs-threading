@@ -421,49 +421,49 @@
 		[TestMethod]
 		public void ToTaskReturnsCompletedTaskPreSignaled() {
 			var handle = new ManualResetEvent(initialState: true);
-			Task actual = TplExtensions.ToTask(handle);
-			Assert.AreSame(TplExtensions.CompletedTask, actual);
+			Task<bool> actual = TplExtensions.ToTask(handle);
+			Assert.AreSame(TplExtensions.TrueTask, actual);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task ToTaskOnHandleSignaledLater() {
 			var handle = new ManualResetEvent(initialState: false);
-			Task actual = TplExtensions.ToTask(handle);
+			Task<bool> actual = TplExtensions.ToTask(handle);
 			Assert.IsFalse(actual.IsCompleted);
 			handle.Set();
-			await actual;
+			bool result = await actual;
+			Assert.IsTrue(result);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void ToTaskUnsignaledHandleWithZeroTimeout() {
 			var handle = new ManualResetEvent(initialState: false);
-			Task actual = TplExtensions.ToTask(handle, timeout: 0);
-			Assert.IsTrue(actual.IsFaulted);
-			Assert.IsInstanceOfType(actual.Exception.InnerException, typeof(TimeoutException));
+			Task<bool> actual = TplExtensions.ToTask(handle, timeout: 0);
+			Assert.AreSame(TplExtensions.FalseTask, actual);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void ToTaskSignaledHandleWithZeroTimeout() {
 			var handle = new ManualResetEvent(initialState: true);
-			Task actual = TplExtensions.ToTask(handle, timeout: 0);
-			Assert.AreEqual(TaskStatus.RanToCompletion, actual.Status);
+			Task<bool> actual = TplExtensions.ToTask(handle, timeout: 0);
+			Assert.AreSame(TplExtensions.TrueTask, actual);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task ToTaskOnHandleSignaledAfterNonZeroTimeout() {
 			var handle = new ManualResetEvent(initialState: false);
-			Task actual = TplExtensions.ToTask(handle, timeout: 1);
+			Task<bool> actual = TplExtensions.ToTask(handle, timeout: 1);
 			await Task.Delay(2);
 			handle.Set();
-			Assert.IsTrue(actual.IsFaulted);
-			Assert.IsInstanceOfType(actual.Exception.InnerException, typeof(TimeoutException));
+			bool result = await actual;
+			Assert.IsFalse(result);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void ToTaskOnHandleSignaledAfterCancellation() {
 			var handle = new ManualResetEvent(initialState: false);
 			var cts = new CancellationTokenSource();
-			Task actual = TplExtensions.ToTask(handle, cancellationToken: cts.Token);
+			Task<bool> actual = TplExtensions.ToTask(handle, cancellationToken: cts.Token);
 			cts.Cancel();
 			Assert.IsTrue(actual.IsCanceled);
 			handle.Set();

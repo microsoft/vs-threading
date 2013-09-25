@@ -40,11 +40,6 @@ namespace Microsoft.VisualStudio.Threading {
 		public static readonly Task<bool> FalseTask = Task.FromResult(false);
 
 		/// <summary>
-		/// A task that is already faulted with a <see cref="TimeoutException"/>.
-		/// </summary>
-		private static readonly Task TimedOutTask = CreateTimedOutTask();
-
-		/// <summary>
 		/// Wait on a task without possibly inlining it to the current thread.
 		/// </summary>
 		/// <param name="task">The task to wait on.</param>
@@ -343,16 +338,20 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
-		/// Creates a TPL Task that is marked as completed when a <see cref="WaitHandle"/> is signaled.
+		/// Creates a TPL Task that returns <c>true</c> when a <see cref="WaitHandle"/> is signaled or returns <c>false</c> if a timeout occurs first.
 		/// </summary>
 		/// <param name="handle">The handle whose signal triggers the task to be completed.  Do not use a <see cref="Mutex"/> here.</param>
-		/// <param name="timeout">The timeout (in milliseconds) after which the task will fault with a <see cref="TimeoutException"/> if the handle is not signaled by that time.</param>
+		/// <param name="timeout">The timeout (in milliseconds) after which the task will return <c>false</c> if the handle is not signaled by that time.</param>
 		/// <param name="cancellationToken">A token whose cancellation will cause the returned Task to immediately complete in a canceled state.</param>
-		/// <returns>A Task that completes when the handle is signaled or when canceled.</returns>
+		/// <returns>
+		/// A Task that completes when the handle is signaled or times out, or when the caller's cancellation token is canceled.
+		/// If the task completes because the handle is signaled, the task's result is <c>true</c>.
+		/// If the task completes because the handle is not signaled prior to the timeout, the task's result is <c>false</c>.
+		/// </returns>
 		/// <remarks>
 		/// The completion of the returned task is asynchronous with respect to the code that actually signals the wait handle.
 		/// </remarks>
-		public static Task ToTask(this WaitHandle handle, int timeout = Timeout.Infinite, CancellationToken cancellationToken = default(CancellationToken)) {
+		public static Task<bool> ToTask(this WaitHandle handle, int timeout = Timeout.Infinite, CancellationToken cancellationToken = default(CancellationToken)) {
 			Requires.NotNull(handle, "handle");
 
 			// Check whether the handle is already signaled as an optimization.
@@ -365,11 +364,11 @@ namespace Microsoft.VisualStudio.Threading {
 				int waitResult = NativeMethods.WaitForSingleObject(waitHandle.DangerousGetHandle(), 0);
 				switch (waitResult) {
 					case NativeMethods.WAIT_OBJECT_0:
-						return CompletedTask;
+						return TrueTask;
 					case NativeMethods.WAIT_TIMEOUT:
 						if (timeout == 0) {
 							// The caller doesn't want to wait any longer, so return failure immediately.
-							return TimedOutTask;
+							return FalseTask;
 						}
 
 						break;
@@ -385,23 +384,17 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			cancellationToken.ThrowIfCancellationRequested();
-			var tcs = new TaskCompletionSource<object>();
+			var tcs = new TaskCompletionSource<bool>();
 
 			// Arrange that if the caller signals their cancellation token that we complete the task
 			// we return immediately. Because of the continuation we've scheduled on that task, this
 			// will automatically release the wait handle notification as well.
 			CancellationTokenRegistration cancellationRegistration =
-				cancellationToken.Register(state => ((TaskCompletionSource<object>)state).TrySetCanceled(), tcs);
+				cancellationToken.Register(state => ((TaskCompletionSource<bool>)state).TrySetCanceled(), tcs);
 
 			RegisteredWaitHandle callbackHandle = ThreadPool.RegisterWaitForSingleObject(
 				handle,
-				(state, timedOut) => {
-					if (timedOut) {
-						tcs.TrySetException(TimedOutTask.Exception.InnerException);
-					} else {
-						tcs.TrySetResult(null);
-					}
-				},
+				(state, timedOut) => tcs.TrySetResult(!timedOut),
 				state: null,
 				millisecondsTimeOutInterval: timeout,
 				executeOnlyOnce: true);
@@ -441,15 +434,6 @@ namespace Microsoft.VisualStudio.Threading {
 		private static Task CreateCanceledTask() {
 			var tcs = new TaskCompletionSource<EmptyStruct>();
 			tcs.SetCanceled();
-			return tcs.Task;
-		}
-
-		/// <summary>
-		/// Creates a faulted task with a TimeoutException.
-		/// </summary>
-		private static Task CreateTimedOutTask() {
-			var tcs = new TaskCompletionSource<EmptyStruct>();
-			tcs.SetException(new TimeoutException());
 			return tcs.Task;
 		}
 

@@ -46,7 +46,8 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <returns>The awaiter.</returns>
 		public static TaskAwaiter GetAwaiter(this WaitHandle handle) {
 			Requires.NotNull(handle, "handle");
-			return handle.ToTask().GetAwaiter();
+			Task task = handle.ToTask();
+			return task.GetAwaiter();
 		}
 
 		/// <summary>
