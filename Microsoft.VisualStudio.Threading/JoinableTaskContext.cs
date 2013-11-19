@@ -409,7 +409,10 @@ namespace Microsoft.VisualStudio.Threading {
 			/// Reverts the async local and thread static values to their original values.
 			/// </summary>
 			public void Dispose() {
-				this.pump.AmbientTask = this.oldJoinable;
+				if (this.pump != null) {
+					this.pump.AmbientTask = this.oldJoinable;
+				}
+
 				this.temporarySyncContext.Dispose();
 			}
 		}

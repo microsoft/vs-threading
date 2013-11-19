@@ -282,6 +282,12 @@
 			});
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void RevertRelevanceDefaultValue() {
+			var revert = new JoinableTaskContext.RevertRelevance();
+			revert.Dispose();
+		}
+
 		private class JoinableTaskContextDerived : JoinableTaskContext {
 			internal Action<TimeSpan, int, Guid> OnReportHang { get; set; }
 
