@@ -35,8 +35,8 @@ namespace Microsoft.VisualStudio.Threading {
 				T oldValue = Volatile.Read(ref hotLocation);
 				T newValue = applyChange(oldValue);
 				if (Object.ReferenceEquals(oldValue, newValue)) {
-					// No change was actually required.
-					return false;
+                    // No change was actually required.
+                    return false;
 				}
 
 				T actualOldValue = Interlocked.CompareExchange<T>(ref hotLocation, newValue, oldValue);
@@ -108,8 +108,8 @@ namespace Microsoft.VisualStudio.Threading {
 			Requires.NotNull(exception, "exception");
 
 			try {
-				// We must throw so the callstack is set on the exception.
-				throw exception;
+                // We must throw so the callstack is set on the exception.
+                throw exception;
 			} catch (Exception ex) {
 				var faultedTaskSource = new TaskCompletionSource<EmptyStruct>();
 				faultedTaskSource.SetException(ex);
@@ -136,10 +136,10 @@ namespace Microsoft.VisualStudio.Threading {
 				}
 			}
 
-			// Rethrow any fault/cancellation exception, even if we awaited above.
-			// But if we skipped the above if branch, this will actually yield
-			// on an incompleted task.
-			return await task.ConfigureAwait(false);
+            // Rethrow any fault/cancellation exception, even if we awaited above.
+            // But if we skipped the above if branch, this will actually yield
+            // on an incompleted task.
+            return await task.ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -160,10 +160,10 @@ namespace Microsoft.VisualStudio.Threading {
 				}
 			}
 
-			// Rethrow any fault/cancellation exception, even if we awaited above.
-			// But if we skipped the above if branch, this will actually yield
-			// on an incompleted task.
-			await task.ConfigureAwait(false);
+            // Rethrow any fault/cancellation exception, even if we awaited above.
+            // But if we skipped the above if branch, this will actually yield
+            // on an incompleted task.
+            await task.ConfigureAwait(false);
 		}
 
 		/// <summary>
