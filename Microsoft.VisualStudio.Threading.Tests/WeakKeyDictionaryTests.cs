@@ -4,7 +4,7 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-namespace Microsoft.VisualStudio.Threading.Test {
+namespace Microsoft.VisualStudio.Threading.Tests {
 	using Microsoft.VisualStudio.TestTools.UnitTesting;
 	using System;
 	using System.Collections;
