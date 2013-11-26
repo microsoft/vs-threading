@@ -1363,6 +1363,9 @@
 				});
 			});
 
+			// Verify that the loPriFactory received the message.
+			Assert.AreEqual(1, loPriFactory.JoinableTasksPendingMainthread.Count());
+
 			// Simulate a modal dialog, with a message pump that is willing
 			// to execute hiPriFactory messages but not loPriFactory messages.
 			hiPriFactory.DoModalLoopTillEmpty();
@@ -1981,6 +1984,10 @@
 
 			internal ModalPumpingJoinableTaskFactory(JoinableTaskContext context)
 				: base(context) {
+			}
+
+			internal IEnumerable<Tuple<SendOrPostCallback, object>> JoinableTasksPendingMainthread {
+				get { return this.queuedMessages; }
 			}
 
 			/// <summary>
