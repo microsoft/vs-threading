@@ -1,5 +1,6 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Tests {
 	using System;
+	using System.Collections.Concurrent;
 	using System.Collections.Generic;
 	using System.Diagnostics;
 	using System.Linq;
@@ -1347,6 +1348,27 @@
 			});
 		}
 
+		/// <summary>
+		/// Verifies when JoinableTasks are nested that all factories' policies are involved
+		/// in trying to get to the UI thread.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout), Ignore] // Known failing case
+		public void NestedFactoriesCombinedMainThreadPolicies() {
+			var loPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
+			var hiPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
+
+			var outer = hiPriFactory.RunAsync(async delegate {
+				await loPriFactory.RunAsync(async delegate {
+					await Task.Yield();
+				});
+			});
+
+			// Simulate a modal dialog, with a message pump that is willing
+			// to execute hiPriFactory messages but not loPriFactory messages.
+			hiPriFactory.DoModalLoopTillEmpty();
+			Assert.IsTrue(outer.IsCompleted);
+		}
+
 		// This is a known issue and we haven't a fix yet
 		[TestMethod, Timeout(TestTimeout), Ignore]
 		public void CallContextWasOverwrittenByReentrance() {
@@ -1950,6 +1972,29 @@
 				Assert.IsNotNull(this.UnderlyingSynchronizationContext);
 				Assert.IsNotNull(callback);
 				Assert.IsInstanceOfType(this.UnderlyingSynchronizationContext, typeof(DispatcherSynchronizationContext));
+				base.PostToUnderlyingSynchronizationContext(callback, state);
+			}
+		}
+
+		private class ModalPumpingJoinableTaskFactory : JoinableTaskFactory {
+			private ConcurrentQueue<Tuple<SendOrPostCallback, object>> queuedMessages = new ConcurrentQueue<Tuple<SendOrPostCallback, object>>();
+
+			internal ModalPumpingJoinableTaskFactory(JoinableTaskContext context)
+				: base(context) {
+			}
+
+			/// <summary>
+			/// Executes all work posted to this factory.
+			/// </summary>
+			internal void DoModalLoopTillEmpty() {
+				Tuple<SendOrPostCallback, object> work;
+				while (this.queuedMessages.TryDequeue(out work)) {
+					work.Item1(work.Item2);
+				}
+			}
+
+			protected override void PostToUnderlyingSynchronizationContext(SendOrPostCallback callback, object state) {
+				this.queuedMessages.Enqueue(Tuple.Create(callback, state));
 				base.PostToUnderlyingSynchronizationContext(callback, state);
 			}
 		}
