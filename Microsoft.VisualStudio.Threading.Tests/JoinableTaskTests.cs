@@ -1372,6 +1372,35 @@
 			Assert.IsTrue(outer.IsCompleted);
 		}
 
+		/// <summary>
+		/// Verifes that each instance of JTF is only notified once of
+		/// a nested JoinableTask's attempt to get to the UI thread.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public void NestedFactoriesDoNotDuplicateEffort() {
+			var loPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
+			var hiPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
+
+			var outer = hiPriFactory.RunAsync(async delegate {
+				await hiPriFactory.RunAsync(async delegate {
+					await loPriFactory.RunAsync(async delegate {
+						await loPriFactory.RunAsync(async delegate {
+							await Task.Yield();
+						});
+					});
+				});
+			});
+
+			// Verify that each factory received the message exactly once.
+			Assert.AreEqual(1, loPriFactory.JoinableTasksPendingMainthread.Count());
+			Assert.AreEqual(1, hiPriFactory.JoinableTasksPendingMainthread.Count());
+
+			// Simulate a modal dialog, with a message pump that is willing
+			// to execute hiPriFactory messages but not loPriFactory messages.
+			hiPriFactory.DoModalLoopTillEmpty();
+			Assert.IsTrue(outer.IsCompleted);
+		}
+
 		// This is a known issue and we haven't a fix yet
 		[TestMethod, Timeout(TestTimeout), Ignore]
 		public void CallContextWasOverwrittenByReentrance() {

@@ -197,6 +197,15 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
+		/// Gets or sets the set of nesting factories (excluding <see cref="owner"/>)
+		/// that own JoinableTasks that are nesting this one.
+		/// </summary>
+		internal ListOfOftenOne<JoinableTaskFactory> NestingFactories {
+			get { return this.nestingFactories; }
+			set { this.nestingFactories = value; }
+		}
+
+		/// <summary>
 		/// Gets a flag indicating whether the async operation represented by this instance has completed.
 		/// </summary>
 		public bool IsCompleted {
@@ -799,14 +808,6 @@ namespace Microsoft.VisualStudio.Threading {
 
 				return new JoinRelease(this, joinChild);
 			}
-		}
-
-		/// <summary>
-		/// Sets the set of nesting factories to the specified value.
-		/// </summary>
-		/// <param name="nestingFactories">The set of nesting factories.</param>
-		internal void SetNestingFactories(ListOfOftenOne<JoinableTaskFactory> nestingFactories) {
-			this.nestingFactories = nestingFactories;
 		}
 
 		private JoinRelease AmbientJobJoinsThis() {

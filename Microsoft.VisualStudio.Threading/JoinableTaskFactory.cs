@@ -605,9 +605,12 @@ namespace Microsoft.VisualStudio.Threading {
 				if (this.previousJoinable != null) {
 					this.previousJoinable.AddDependency(joinable);
 
-					var nestingFactories = new ListOfOftenOne<JoinableTaskFactory>();
-					nestingFactories.Add(this.previousJoinable.Factory);
-					this.joinable.SetNestingFactories(nestingFactories);
+					var nestingFactories = this.previousJoinable.NestingFactories;
+					if (this.previousJoinable.Factory != this.factory) {
+						nestingFactories.Add(this.previousJoinable.Factory);
+					}
+
+					this.joinable.NestingFactories = nestingFactories;
 				}
 			}
 
