@@ -72,6 +72,13 @@ namespace Microsoft.VisualStudio.Threading {
 		private readonly JoinableTaskFactory owner;
 
 		/// <summary>
+		/// Other instances of <see cref="JoinableTaskFactory"/> that should be posted
+		/// to with any main thread bound work.
+		/// </summary>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
+		private ListOfOftenOne<JoinableTaskFactory> nestingFactories;
+
+		/// <summary>
 		/// The collections that this job is a member of.
 		/// </summary>
 		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -500,6 +507,10 @@ namespace Microsoft.VisualStudio.Threading {
 				} else if (mainThreadAffinitized) {
 					Assumes.NotNull(wrapper); // this should have been initialized in the above logic.
 					this.owner.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
+
+					foreach (var nestingFactory in this.nestingFactories) {
+						nestingFactory.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
+					}
 				}
 
 				if (dequeuerResetState != null) {
@@ -788,6 +799,14 @@ namespace Microsoft.VisualStudio.Threading {
 
 				return new JoinRelease(this, joinChild);
 			}
+		}
+
+		/// <summary>
+		/// Sets the set of nesting factories to the specified value.
+		/// </summary>
+		/// <param name="nestingFactories">The set of nesting factories.</param>
+		internal void SetNestingFactories(ListOfOftenOne<JoinableTaskFactory> nestingFactories) {
+			this.nestingFactories = nestingFactories;
 		}
 
 		private JoinRelease AmbientJobJoinsThis() {

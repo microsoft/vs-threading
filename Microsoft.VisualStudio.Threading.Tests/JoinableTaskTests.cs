@@ -1352,7 +1352,7 @@
 		/// Verifies when JoinableTasks are nested that all factories' policies are involved
 		/// in trying to get to the UI thread.
 		/// </summary>
-		[TestMethod, Timeout(TestTimeout), Ignore] // Known failing case
+		[TestMethod, Timeout(TestTimeout)]
 		public void NestedFactoriesCombinedMainThreadPolicies() {
 			var loPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
 			var hiPriFactory = new ModalPumpingJoinableTaskFactory(this.context);

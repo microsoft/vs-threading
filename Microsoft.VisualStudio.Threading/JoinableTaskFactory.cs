@@ -604,6 +604,10 @@ namespace Microsoft.VisualStudio.Threading {
 				// Join the ambient parent job, so the parent can dequeue this job's work.
 				if (this.previousJoinable != null) {
 					this.previousJoinable.AddDependency(joinable);
+
+					var nestingFactories = new ListOfOftenOne<JoinableTaskFactory>();
+					nestingFactories.Add(this.previousJoinable.Factory);
+					this.joinable.SetNestingFactories(nestingFactories);
 				}
 			}
 
