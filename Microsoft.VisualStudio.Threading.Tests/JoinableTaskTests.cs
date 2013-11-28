@@ -1381,9 +1381,41 @@
 			var loPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
 			var hiPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
 
+			// For this test, we intentionally use each factory twice in a row.
+			// We mix up the order in another test.
 			var outer = hiPriFactory.RunAsync(async delegate {
 				await hiPriFactory.RunAsync(async delegate {
 					await loPriFactory.RunAsync(async delegate {
+						await loPriFactory.RunAsync(async delegate {
+							await Task.Yield();
+						});
+					});
+				});
+			});
+
+			// Verify that each factory received the message exactly once.
+			Assert.AreEqual(1, loPriFactory.JoinableTasksPendingMainthread.Count());
+			Assert.AreEqual(1, hiPriFactory.JoinableTasksPendingMainthread.Count());
+
+			// Simulate a modal dialog, with a message pump that is willing
+			// to execute hiPriFactory messages but not loPriFactory messages.
+			hiPriFactory.DoModalLoopTillEmpty();
+			Assert.IsTrue(outer.IsCompleted);
+		}
+
+		/// <summary>
+		/// Verifes that each instance of JTF is only notified once of
+		/// a nested JoinableTask's attempt to get to the UI thread.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public void NestedFactoriesDoNotDuplicateEffortMixed() {
+			var loPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
+			var hiPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
+
+			// In this particular test, we intentionally mix up the JTFs in hi-lo-hi-lo order.
+			var outer = hiPriFactory.RunAsync(async delegate {
+				await loPriFactory.RunAsync(async delegate {
+					await hiPriFactory.RunAsync(async delegate {
 						await loPriFactory.RunAsync(async delegate {
 							await Task.Yield();
 						});

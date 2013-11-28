@@ -518,7 +518,9 @@ namespace Microsoft.VisualStudio.Threading {
 					this.owner.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
 
 					foreach (var nestingFactory in this.nestingFactories) {
-						nestingFactory.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
+						if (nestingFactory != this.owner) {
+							nestingFactory.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
+						}
 					}
 				}
 

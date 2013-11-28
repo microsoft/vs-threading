@@ -68,6 +68,25 @@
 		}
 
 		/// <summary>
+		/// Checks for reference equality between the specified value and an element of this collection.
+		/// </summary>
+		/// <param name="value">The value to check for.</param>
+		/// <returns><c>true</c> if a match is found; <c>false</c> otherwise.</returns>
+		/// <remarks>
+		/// This method is intended to hide the Linq Contains extension method to avoid
+		/// the boxing of this struct and its Enumerator.
+		/// </remarks>
+		public bool Contains(T value) {
+			foreach (var item in this) {
+				if (item == value) {
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		/// <summary>
 		/// Atomically clears the collection's contents and returns an enumerator over the prior contents.
 		/// </summary>
 		internal Enumerator EnumerateAndClear() {

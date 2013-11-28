@@ -605,9 +605,15 @@ namespace Microsoft.VisualStudio.Threading {
 				if (this.previousJoinable != null) {
 					this.previousJoinable.AddDependency(joinable);
 
+					// By definition we inherit the nesting factories of our immediate nesting task.
 					var nestingFactories = this.previousJoinable.NestingFactories;
+					
+					// And we may add our immediate nesting parent's factory to the list of
+					// ancestors if it isn't already in the list.
 					if (this.previousJoinable.Factory != this.factory) {
-						nestingFactories.Add(this.previousJoinable.Factory);
+						if (!nestingFactories.Contains(this.previousJoinable.Factory)) {
+							nestingFactories.Add(this.previousJoinable.Factory);
+						}
 					}
 
 					this.joinable.NestingFactories = nestingFactories;
