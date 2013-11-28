@@ -495,7 +495,10 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <returns>The releaser for the read lock.</returns>
 			/// <exception cref="InvalidOperationException">Thrown if no lock is held by the caller.</exception>
 			private ResourceReleaser AcquirePreexistingLockOrThrow() {
-				Verify.Operation(this.service.IsAnyLockHeld, "A lock is required");
+				if (!this.service.IsAnyLockHeld) {
+					Verify.FailOperation(Strings.InvalidWithoutLock);
+				}
+
 				var awaiter = this.service.ReadLockAsync(CancellationToken.None).GetAwaiter();
 				Assumes.True(awaiter.IsCompleted);
 				return awaiter.GetResult();

@@ -146,7 +146,9 @@
 		/// </summary>
 		/// <param name="value">The value to add.</param>
 		public void Enqueue(T value) {
-			Verify.Operation(this.TryEnqueue(value), "Queue already completed.");
+			if (!this.TryEnqueue(value)) {
+				Verify.FailOperation(Strings.InvalidAfterCompleted);
+			}
 		}
 
 		/// <summary>
@@ -239,7 +241,10 @@
 		/// <exception cref="InvalidOperationException">Thrown if the queue is empty.</exception>
 		public T Peek() {
 			T value;
-			Verify.Operation(this.TryPeek(out value), "Queue empty.");
+			if (!this.TryPeek(out value)) {
+				Verify.FailOperation(Strings.QueueEmpty);
+			}
+
 			return value;
 		}
 

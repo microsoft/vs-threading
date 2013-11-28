@@ -553,8 +553,13 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Throws an exception if called on an STA thread.
 		/// </summary>
 		private static void ThrowIfStaOrUnsupportedSyncContext() {
-			Verify.Operation(Thread.CurrentThread.GetApartmentState() != ApartmentState.STA, "This operation is not allowed on an STA thread.");
-			Verify.Operation(!IsUnsupportedSynchronizationContext, "Acquiring locks on threads with a SynchronizationContext applied is not allowed.");
+			if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA) {
+				Verify.FailOperation(Strings.STAThreadCallerNotAllowed);
+			}
+
+			if (IsUnsupportedSynchronizationContext) {
+				Verify.FailOperation(Strings.AppliedSynchronizationContextNotAllowed);
+			}
 		}
 
 		/// <summary>
@@ -819,7 +824,7 @@ namespace Microsoft.VisualStudio.Threading {
 									// an accidental execution fork that is exposing concurrency inappropriately.
 									if (Thread.CurrentThread.GetApartmentState() == ApartmentState.MTA && !(SynchronizationContext.Current is NonConcurrentSynchronizationContext)) {
 										Report.Fail("Dangerous request for read lock from fork of write lock.");
-										Verify.FailOperation("Dangerous request for read lock from fork of write lock.");
+										Verify.FailOperation(Strings.DangerousReadLockRequestFromWriteLockFork);
 									}
 
 									issued = true;

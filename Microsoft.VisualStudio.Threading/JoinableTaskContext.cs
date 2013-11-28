@@ -351,7 +351,9 @@ namespace Microsoft.VisualStudio.Threading {
 		internal IDisposable RegisterHangNotifications(JoinableTaskContextNode node) {
 			Requires.NotNull(node, "node");
 			lock (this.hangNotifications) {
-				Verify.Operation(this.hangNotifications.Add(node), "This node already registered.");
+				if (!this.hangNotifications.Add(node)) {
+					Verify.FailOperation(Strings.JoinableTaskContextNodeAlreadyRegistered);
+				}
 			}
 
 			return new HangNotificationRegistration(node);
