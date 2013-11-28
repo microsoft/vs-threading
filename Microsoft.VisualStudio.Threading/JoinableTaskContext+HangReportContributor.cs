@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.VisualStudio.Threading {
 	using System;
 	using System.Collections.Generic;
+	using System.Globalization;
 	using System.Linq;
 	using System.Text;
 	using System.Threading.Tasks;
@@ -104,6 +105,7 @@
 					var entryMethodInfo = pendingTask.EntryMethodInfo;
 					if (entryMethodInfo != null) {
 						methodName = string.Format(
+							CultureInfo.InvariantCulture,
 							" ({0}.{1})",
 							entryMethodInfo.DeclaringType.FullName,
 							entryMethodInfo.Name);
