@@ -21,6 +21,8 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Debug\Microsoft.VisualStudio.Threading.xml</DocumentationFile>
+    <CodeAnalysisRuleSet>FxCopRules.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -58,6 +60,7 @@
     <Compile Include="Dgml.cs" />
     <Compile Include="EmptyStruct.cs" />
     <Compile Include="EnumerateOneOrMany.cs" />
+    <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="HangReportContribution.cs" />
     <Compile Include="IAsyncDisposable.cs" />
     <Compile Include="IHangReportContributor.cs" />
