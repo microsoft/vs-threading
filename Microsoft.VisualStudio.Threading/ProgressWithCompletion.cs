@@ -66,6 +66,14 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		/// <param name="value">The value representing the updated progress.</param>
 		void IProgress<T>.Report(T value) {
+			this.Report(value);
+		}
+
+		/// <summary>
+		/// Receives a progress update.
+		/// </summary>
+		/// <param name="value">The value representing the updated progress.</param>
+		protected virtual void Report(T value) {
 			var reported = this.taskFactory.StartNew(() => this.handler(value)).Unwrap();
 			lock (this.syncObject) {
 				this.outstandingTasks.Add(reported);
