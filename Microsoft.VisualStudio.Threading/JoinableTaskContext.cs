@@ -291,6 +291,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// A single hang occurrence may invoke this method multiple times, with increasing
 		/// values in the <paramref name="hangDuration"/> parameter.
 		/// </remarks>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
 		protected internal virtual void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId) {
 			List<JoinableTaskContextNode> listeners;
 			lock (this.hangNotifications) {

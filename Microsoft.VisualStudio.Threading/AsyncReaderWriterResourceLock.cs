@@ -51,6 +51,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <summary>
 			/// The default behavior applies.
 			/// </summary>
+			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
 			None = 0x0,
 
 			/// <summary>
@@ -65,6 +66,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// potential changes because it doesn't defeat concurrent readers until it knows there
 			/// is a change to actually make.
 			/// </remarks>
+			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
 			StickyWrite = 0x1,
 
 			/// <summary>

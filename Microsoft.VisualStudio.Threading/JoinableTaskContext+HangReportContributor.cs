@@ -154,6 +154,7 @@
 			return result;
 		}
 
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
 		private static string RepresentCallstack(JoinableTaskFactory.SingleExecuteProtector singleExecuteProtector) {
 			Requires.NotNull(singleExecuteProtector, "singleExecuteProtector");
 

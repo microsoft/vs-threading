@@ -343,6 +343,7 @@ namespace Microsoft.VisualStudio.Threading {
 			return this.RunAsync(asyncMethod, synchronouslyBlocking: false);
 		}
 
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
 		private JoinableTask RunAsync(Func<Task> asyncMethod, bool synchronouslyBlocking) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
@@ -379,6 +380,7 @@ namespace Microsoft.VisualStudio.Threading {
 			return this.RunAsync(asyncMethod, synchronouslyBlocking: false);
 		}
 
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
 		private JoinableTask<T> RunAsync<T>(Func<Task<T>> asyncMethod, bool synchronouslyBlocking) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
@@ -514,6 +516,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// Schedules a continuation for execution on the Main thread.
 			/// </summary>
 			/// <param name="continuation">The action to invoke when the operation completes.</param>
+			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
 			public void OnCompleted(Action continuation) {
 				Assumes.True(this.jobFactory != null);
 
