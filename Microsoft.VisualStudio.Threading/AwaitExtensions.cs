@@ -137,9 +137,9 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <summary>
 			/// Schedules a continuation to execute using the specified task scheduler.
 			/// </summary>
-			/// <param name="action">The delegate to invoke.</param>
-			public void OnCompleted(Action action) {
-				Task.Factory.StartNew(action, CancellationToken.None, TaskCreationOptions.None, this.scheduler);
+			/// <param name="continuation">The delegate to invoke.</param>
+			public void OnCompleted(Action continuation) {
+				Task.Factory.StartNew(continuation, CancellationToken.None, TaskCreationOptions.None, this.scheduler);
 			}
 
 			/// <summary>

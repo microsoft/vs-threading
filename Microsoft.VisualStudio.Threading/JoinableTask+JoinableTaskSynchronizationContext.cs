@@ -73,6 +73,8 @@
 			/// Forwards a message to the ambient job and blocks on its execution.
 			/// </summary>
 			public override void Send(SendOrPostCallback d, object state) {
+				Requires.NotNull(d, "d");
+
 				// Some folks unfortunately capture the SynchronizationContext from the UI thread
 				// while this one is active.  So forward it to the underlying sync context to not break those folks.
 				// Ideally this method would throw because synchronously crossing threads is a bad idea.

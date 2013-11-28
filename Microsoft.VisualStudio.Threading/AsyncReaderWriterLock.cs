@@ -492,6 +492,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// once the presence of certain flag(s) is determined, whereas this will aggregate all flags,
 		/// some of which may be defined by derived types.
 		/// </remarks>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1726:UsePreferredTerms", MessageId = "Flags")]
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
 		protected LockFlags GetAggregateLockFlags() {
 			LockFlags aggregateFlags = LockFlags.None;
@@ -989,6 +990,8 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="ex">The exception that captures the details of the failure.</param>
 		/// <returns>An exception that may be returned by some implementations of tis method for he caller to rethrow.</returns>
 		protected virtual Exception OnCriticalFailure(Exception ex) {
+			Requires.NotNull(ex, "ex");
+
 			Report.Fail(ex.Message);
 			Environment.FailFast(ex.ToString(), ex);
 			throw Assumes.NotReachable();

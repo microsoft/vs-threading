@@ -23,21 +23,25 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// A singleton completed task.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
 		public static readonly Task CompletedTask = Task.FromResult<object>(null);
 
 		/// <summary>
 		/// A task that is already canceled.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
 		public static readonly Task CanceledTask = CreateCanceledTask();
 
 		/// <summary>
 		/// A completed task with a <c>true</c> result.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
 		public static readonly Task<bool> TrueTask = Task.FromResult(true);
 
 		/// <summary>
 		/// A completed task with a <c>false</c> result.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
 		public static readonly Task<bool> FalseTask = Task.FromResult(false);
 
 		/// <summary>
@@ -619,9 +623,9 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <summary>
 			/// Schedules a delegate for execution at the conclusion of a task's execution.
 			/// </summary>
-			/// <param name="action">The action.</param>
-			public void OnCompleted(Action action) {
-				this.task.ConfigureAwait(this.captureContext).GetAwaiter().OnCompleted(action);
+			/// <param name="continuation">The action.</param>
+			public void OnCompleted(Action continuation) {
+				this.task.ConfigureAwait(this.captureContext).GetAwaiter().OnCompleted(continuation);
 			}
 
 			/// <summary>

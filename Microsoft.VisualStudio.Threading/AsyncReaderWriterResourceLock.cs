@@ -29,7 +29,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// Initializes a new instance of the AsyncReaderWriterResourceLock class.
 		/// </summary>
-		public AsyncReaderWriterResourceLock() {
+		protected AsyncReaderWriterResourceLock() {
 			this.helper = new Helper(this);
 		}
 
@@ -39,14 +39,14 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="captureDiagnostics">
 		/// <c>true</c> to spend additional resources capturing diagnostic details that can be used
 		/// to analyze deadlocks or other issues.</param>
-		public AsyncReaderWriterResourceLock(bool captureDiagnostics)
+		protected AsyncReaderWriterResourceLock(bool captureDiagnostics)
 			: base(captureDiagnostics) {
 		}
 
 		/// <summary>
 		/// Flags that modify default lock behavior.
 		/// </summary>
-		[Flags]
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1726:UsePreferredTerms", MessageId = "Flags"), Flags]
 		public new enum LockFlags {
 			/// <summary>
 			/// The default behavior applies.

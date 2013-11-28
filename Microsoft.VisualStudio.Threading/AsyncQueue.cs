@@ -11,6 +11,7 @@
 	/// A thread-safe, asynchronously dequeuable queue.
 	/// </summary>
 	/// <typeparam name="T">The type of values kept by the queue.</typeparam>
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
 	[DebuggerDisplay("Count = {Count}, Completed = {completeSignaled}")]
 	public class AsyncQueue<T> {
 		/// <summary>
