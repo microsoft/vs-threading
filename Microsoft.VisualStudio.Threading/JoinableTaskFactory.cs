@@ -324,6 +324,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// See the <see cref="Run(Func{Task})" /> overload documentation
 		/// for an example.
 		/// </remarks>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
 		public T Run<T>(Func<Task<T>> asyncMethod) {
 			VerifyNoNonConcurrentSyncContext();
 			var joinable = this.RunAsync(asyncMethod, synchronouslyBlocking: true);
@@ -433,6 +434,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// An awaitable struct that facilitates an asynchronous transition to the Main thread.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
 		public struct MainThreadAwaitable {
 			private readonly JoinableTaskFactory jobFactory;
 
@@ -457,6 +459,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <summary>
 			/// Gets the awaiter.
 			/// </summary>
+			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
 			public MainThreadAwaiter GetAwaiter() {
 				return new MainThreadAwaiter(this.jobFactory, this.job, this.cancellationToken, this.alwaysYield);
 			}
@@ -465,6 +468,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// An awaiter struct that facilitates an asynchronous transition to the Main thread.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
 		public struct MainThreadAwaiter : INotifyCompletion {
 			private readonly JoinableTaskFactory jobFactory;
 

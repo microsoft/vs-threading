@@ -244,6 +244,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// A value whose disposal cancels a <see cref="Join"/> operation.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
 		public struct JoinRelease : IDisposable {
 			private JoinableTask joinedJob;
 			private JoinableTask joiner;

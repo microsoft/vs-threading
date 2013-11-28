@@ -53,6 +53,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// An awaitable that executes continuations on the specified task scheduler.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
 		public struct TaskSchedulerAwaitable {
 			/// <summary>
 			/// The scheduler for continuations.
@@ -80,6 +81,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <summary>
 			/// Gets an awaitable that schedules continuations on the specified scheduler.
 			/// </summary>
+			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
 			public TaskSchedulerAwaiter GetAwaiter() {
 				return new TaskSchedulerAwaiter(this.taskScheduler, this.alwaysYield);
 			}
@@ -88,6 +90,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// An awaiter returned from <see cref="GetAwaiter(TaskScheduler)"/>.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
 		public struct TaskSchedulerAwaiter : INotifyCompletion {
 			/// <summary>
 			/// The scheduler for continuations.

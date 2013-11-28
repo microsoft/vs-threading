@@ -462,6 +462,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="flags">The flag(s) that must be specified for a <c>true</c> result.</param>
 		/// <param name="handle">The head of the lock stack to consider.</param>
 		/// <returns><c>true</c> if all the specified flags are found somewhere in the lock stack; <c>false</c> otherwise.</returns>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1726:UsePreferredTerms", MessageId = "flags")]
 		protected bool LockStackContains(LockFlags flags, LockHandle handle) {
 			LockFlags aggregateFlags = LockFlags.None;
 			var awaiter = handle.Awaiter;
@@ -491,6 +492,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// once the presence of certain flag(s) is determined, whereas this will aggregate all flags,
 		/// some of which may be defined by derived types.
 		/// </remarks>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
 		protected LockFlags GetAggregateLockFlags() {
 			LockFlags aggregateFlags = LockFlags.None;
 			var awaiter = this.topAwaiter.Value;

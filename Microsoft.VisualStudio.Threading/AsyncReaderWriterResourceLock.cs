@@ -74,6 +74,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// This flag is dormant for non-write locks.  But if present on an upgradeable read lock,
 			/// this flag will activate for a nested write lock.
 			/// </remarks>
+			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
 			SkipInitialPreparation = 0x1000,
 		}
 
@@ -173,6 +174,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// Returns the aggregate of the lock flags for all nested locks.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1726:UsePreferredTerms", MessageId = "Flags")]
 		protected new LockFlags GetAggregateLockFlags() {
 			return (LockFlags)base.GetAggregateLockFlags();
 		}
@@ -201,6 +203,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// but only when transitioning from no access -- it is not invoked when transitioning
 		/// from concurrent access to exclusive access.
 		/// </remarks>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1726:UsePreferredTerms", MessageId = "Flags")]
 		protected abstract Task PrepareResourceForExclusiveAccessAsync(TResource resource, LockFlags lockFlags, CancellationToken cancellationToken);
 
 		/// <summary>
@@ -545,6 +548,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// An awaitable that is returned from asynchronous lock requests.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
 		public struct ResourceAwaitable {
 			/// <summary>
 			/// The underlying lock awaitable.
@@ -569,6 +573,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <summary>
 			/// Gets the awaiter value.
 			/// </summary>
+			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
 			public ResourceAwaiter GetAwaiter() {
 				return new ResourceAwaiter(this.awaitable.GetAwaiter(), this.helper);
 			}
@@ -577,6 +582,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// Manages asynchronous access to a lock.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
 		[DebuggerDisplay("{awaiter.kind}")]
 		public struct ResourceAwaiter : INotifyCompletion {
 			/// <summary>
@@ -631,6 +637,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// Applies the issued lock to the caller and returns the value used to release the lock.
 			/// </summary>
 			/// <returns>The value to dispose of to release the lock.</returns>
+			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
 			public ResourceReleaser GetResult() {
 				if (this.awaiter == null) {
 					throw new InvalidOperationException();
@@ -643,6 +650,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// A value whose disposal releases a held lock.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
 		[DebuggerDisplay("{releaser.awaiter.kind}")]
 		public struct ResourceReleaser : IDisposable {
 			/// <summary>

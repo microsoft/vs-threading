@@ -35,6 +35,7 @@
 		/// When <c>false</c>, the task returned from <see cref="WaitAsync"/> may not have fully transitioned to
 		/// its completed state by the time <see cref="SetAsync"/> returns to its caller.
 		/// </param>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Awaiters")]
 		public AsyncManualResetEvent(bool initialState = false, bool allowInliningAwaiters = false) {
 			if (initialState) {
 				this.taskCompletionSource.SetResult(EmptyStruct.Instance);
@@ -118,6 +119,7 @@
 		/// <summary>
 		/// Gets an awaiter that completes when this event is signaled.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
 		[System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
 		public TaskAwaiter GetAwaiter() {
 			return this.WaitAsync().GetAwaiter();

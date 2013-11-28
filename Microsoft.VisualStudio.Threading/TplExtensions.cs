@@ -545,6 +545,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// An awaitable that wraps a task and never throws an exception when waited on.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
 		public struct NoThrowTaskAwaitable {
 			/// <summary>
 			/// The task.
@@ -571,6 +572,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// Gets the awaiter.
 			/// </summary>
 			/// <returns></returns>
+			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
 			public NoThrowTaskAwaiter GetAwaiter() {
 				return new NoThrowTaskAwaiter(this.task, this.captureContext);
 			}
@@ -579,6 +581,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// An awaiter that wraps a task and never throws an exception when waited on.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
 		public struct NoThrowTaskAwaiter : INotifyCompletion {
 			/// <summary>
 			/// The task
