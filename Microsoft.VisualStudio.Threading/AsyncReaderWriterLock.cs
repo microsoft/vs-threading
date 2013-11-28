@@ -37,7 +37,7 @@ namespace Microsoft.VisualStudio.Threading {
 	///    ------------- 
 	/// ]]>
 	/// </devnotes>
-	public partial class AsyncReaderWriterLock {
+	public partial class AsyncReaderWriterLock : IDisposable {
 		/// <summary>
 		/// The object to acquire a Monitor-style lock on for all field access on this instance.
 		/// </summary>
@@ -437,6 +437,22 @@ namespace Microsoft.VisualStudio.Threading {
 				}
 
 				this.beforeWriteReleasedCallbacks.Enqueue(action);
+			}
+		}
+
+		/// <inheritdoc/>
+		public void Dispose() {
+			this.Dispose(true);
+			GC.SuppressFinalize(this);
+		}
+
+		/// <summary>
+		/// Disposes managed and unmanaged resources held by this instance.
+		/// </summary>
+		/// <param name="disposing"><c>true</c> if <see cref="Dispose()"/> was called; <c>false</c> if the object is being finalized.</param>
+		protected virtual void Dispose(bool disposing) {
+			if (disposing) {
+				this.nonConcurrentSyncContext.Dispose();
 			}
 		}
 
@@ -1773,7 +1789,7 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 		}
 
-		internal class NonConcurrentSynchronizationContext : SynchronizationContext {
+		internal sealed class NonConcurrentSynchronizationContext : SynchronizationContext, IDisposable {
 			private readonly SemaphoreSlim semaphore = new SemaphoreSlim(1);
 
 			/// <summary>
@@ -1809,6 +1825,11 @@ namespace Microsoft.VisualStudio.Threading {
 						tuple.Item1.PostHelper(tuple.Item2, tuple.Item3);
 					},
 					Tuple.Create(this, d, state));
+			}
+
+			/// <inheritdoc/>
+			public void Dispose() {
+				this.semaphore.Dispose();
 			}
 
 			internal LoanBack LoanBackAnyHeldResource() {

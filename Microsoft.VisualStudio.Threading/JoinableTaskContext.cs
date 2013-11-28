@@ -65,7 +65,7 @@ namespace Microsoft.VisualStudio.Threading {
 	///     Note however that this extra step is not necessary when awaiting is done
 	///     immediately after kicking off an asynchronous operation.
 	/// </remarks>
-	public partial class JoinableTaskContext {
+	public partial class JoinableTaskContext : IDisposable {
 		/// <summary>
 		/// A "global" lock that allows the graph of interconnected sync context and JoinableSet instances
 		/// communicate in a thread-safe way without fear of deadlocks due to each taking their own private
@@ -263,6 +263,22 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <returns>A new joinable task collection.</returns>
 		public JoinableTaskCollection CreateCollection() {
 			return new JoinableTaskCollection(this);
+		}
+
+		/// <inheritdoc/>
+		public void Dispose() {
+			this.Dispose(true);
+			GC.SuppressFinalize(this);
+		}
+
+		/// <summary>
+		/// Disposes managed and unmanaged resources held by this instance.
+		/// </summary>
+		/// <param name="disposing"><c>true</c> if <see cref="Dispose()"/> was called; <c>false</c> if the object is being finalized.</param>
+		protected virtual void Dispose(bool disposing) {
+			if (disposing) {
+				this.syncContextLock.Dispose();
+			}
 		}
 
 		/// <summary>
