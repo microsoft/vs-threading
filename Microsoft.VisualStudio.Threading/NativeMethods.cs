@@ -25,7 +25,7 @@
 		/// <param name="waitAll">A flag indicating whether all handles must be signaled before returning.</param>
 		/// <param name="millisecondsTimeout">A timeout that will cause this method to return.</param>
 		[DllImport("kernel32.dll", SetLastError = true, ExactSpelling = true)]
-		internal static extern Int32 WaitForMultipleObjects(uint handleCount, IntPtr[] waitHandles, bool waitAll, uint millisecondsTimeout);
+		internal static extern Int32 WaitForMultipleObjects(uint handleCount, IntPtr[] waitHandles, [MarshalAs(UnmanagedType.Bool)] bool waitAll, uint millisecondsTimeout);
 
 		/// <summary>
 		/// Really truly non pumping wait.
