@@ -752,7 +752,7 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
-		/// Adds an <see cref="JoinableTaskContext"/> instance as one that is relevant to the async operation.
+		/// Adds a <see cref="JoinableTask"/> instance as one that is relevant to the async operation.
 		/// </summary>
 		/// <param name="joinChild">The <see cref="JoinableTask"/> to join as a child.</param>
 		internal JoinRelease AddDependency(JoinableTask joinChild) {
