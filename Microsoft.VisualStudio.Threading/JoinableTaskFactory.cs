@@ -516,7 +516,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// Schedules a continuation for execution on the Main thread.
 			/// </summary>
 			/// <param name="continuation">The action to invoke when the operation completes.</param>
-			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters", MessageId = "System.Environment.FailFast(System.String,System.Exception)"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
 			public void OnCompleted(Action continuation) {
 				Assumes.True(this.jobFactory != null);
 
