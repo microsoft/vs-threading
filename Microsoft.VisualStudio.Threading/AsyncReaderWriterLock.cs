@@ -777,6 +777,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Checks whether the specified awaiter's lock type has an associated SynchronizationContext if one is applicable.
 		/// </summary>
 		/// <param name="awaiter">The awaiter whose lock should be considered.</param>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "awaiter")]
 		private void CheckSynchronizationContextAppropriateForLock(Awaiter awaiter) {
 			////bool syncContextRequired = this.LockStackContains(LockKind.UpgradeableRead, awaiter) || this.LockStackContains(LockKind.Write, awaiter);
@@ -1020,6 +1021,31 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
+		/// Checks whether the specified lock has any active nested locks.
+		/// </summary>
+		private static bool HasAnyNestedLocks(Awaiter lck, HashSet<Awaiter> lockCollection) {
+			Requires.NotNull(lck, "lck");
+			Requires.NotNull(lockCollection, "lockCollection");
+
+			if (lockCollection.Count > 0) {
+				foreach (var nestedCandidate in lockCollection) {
+					if (nestedCandidate == lck) {
+						// This isn't nested -- it's the lock itself.
+						continue;
+					}
+
+					for (Awaiter a = nestedCandidate.NestingLock; a != null; a = a.NestingLock) {
+						if (a == lck) {
+							return true;
+						}
+					}
+				}
+			}
+
+			return false;
+		}
+
+		/// <summary>
 		/// Releases the lock held by the specified awaiter.
 		/// </summary>
 		/// <param name="awaiter">The awaiter holding an active lock.</param>
@@ -1196,34 +1222,9 @@ namespace Microsoft.VisualStudio.Threading {
 			Requires.NotNull(lck, "lck");
 			Assumes.True(Monitor.IsEntered(this.SyncObject));
 
-			return this.HasAnyNestedLocks(lck, this.issuedReadLocks)
-				|| this.HasAnyNestedLocks(lck, this.issuedUpgradeableReadLocks)
-				|| this.HasAnyNestedLocks(lck, this.issuedWriteLocks);
-		}
-
-		/// <summary>
-		/// Checks whether the specified lock has any active nested locks.
-		/// </summary>
-		private bool HasAnyNestedLocks(Awaiter lck, HashSet<Awaiter> lockCollection) {
-			Requires.NotNull(lck, "lck");
-			Requires.NotNull(lockCollection, "lockCollection");
-
-			if (lockCollection.Count > 0) {
-				foreach (var nestedCandidate in lockCollection) {
-					if (nestedCandidate == lck) {
-						// This isn't nested -- it's the lock itself.
-						continue;
-					}
-
-					for (Awaiter a = nestedCandidate.NestingLock; a != null; a = a.NestingLock) {
-						if (a == lck) {
-							return true;
-						}
-					}
-				}
-			}
-
-			return false;
+			return HasAnyNestedLocks(lck, this.issuedReadLocks)
+				|| HasAnyNestedLocks(lck, this.issuedUpgradeableReadLocks)
+				|| HasAnyNestedLocks(lck, this.issuedWriteLocks);
 		}
 
 		/// <summary>

@@ -21,7 +21,7 @@
 					var dgml = CreateTemplateDgml(out nodes, out links);
 
 					var pendingTasksElements = this.CreateNodesForPendingTasks();
-					var taskLabels = this.CreateNodeLabels(pendingTasksElements);
+					var taskLabels = CreateNodeLabels(pendingTasksElements);
 					var pendingTaskCollections = CreateNodesForJoinableTaskCollections(pendingTasksElements.Keys);
 					nodes.Add(pendingTasksElements.Values);
 					nodes.Add(pendingTaskCollections.Values);
@@ -94,6 +94,32 @@
 			return result;
 		}
 
+		private static List<Tuple<XElement, XElement>> CreateNodeLabels(Dictionary<JoinableTask, XElement> tasksAndElements) {
+			Requires.NotNull(tasksAndElements, "tasksAndElements");
+
+			var result = new List<Tuple<XElement, XElement>>();
+			foreach (var tasksAndElement in tasksAndElements) {
+				var pendingTask = tasksAndElement.Key;
+				var node = tasksAndElement.Value;
+				int queueIndex = 0;
+				foreach (var pendingTasksElement in pendingTask.MainThreadQueueContents) {
+					queueIndex++;
+					var callstackNode = Dgml.Node(node.Attribute("Id").Value + "MTQueue#" + queueIndex, RepresentCallstack(pendingTasksElement));
+					var callstackLink = Dgml.Link(callstackNode, node);
+					result.Add(Tuple.Create(callstackNode, callstackLink));
+				}
+
+				foreach (var pendingTasksElement in pendingTask.ThreadPoolQueueContents) {
+					queueIndex++;
+					var callstackNode = Dgml.Node(node.Attribute("Id").Value + "TPQueue#" + queueIndex, RepresentCallstack(pendingTasksElement));
+					var callstackLink = Dgml.Link(callstackNode, node);
+					result.Add(Tuple.Create(callstackNode, callstackLink));
+				}
+			}
+
+			return result;
+		}
+
 		private Dictionary<JoinableTask, XElement> CreateNodesForPendingTasks() {
 			var pendingTasksElements = new Dictionary<JoinableTask, XElement>();
 			lock (this.pendingTasks) {
@@ -126,32 +152,6 @@
 			}
 
 			return pendingTasksElements;
-		}
-
-		private List<Tuple<XElement, XElement>> CreateNodeLabels(Dictionary<JoinableTask, XElement> tasksAndElements) {
-			Requires.NotNull(tasksAndElements, "tasksAndElements");
-
-			var result = new List<Tuple<XElement, XElement>>();
-			foreach (var tasksAndElement in tasksAndElements) {
-				var pendingTask = tasksAndElement.Key;
-				var node = tasksAndElement.Value;
-				int queueIndex = 0;
-				foreach (var pendingTasksElement in pendingTask.MainThreadQueueContents) {
-					queueIndex++;
-					var callstackNode = Dgml.Node(node.Attribute("Id").Value + "MTQueue#" + queueIndex, RepresentCallstack(pendingTasksElement));
-					var callstackLink = Dgml.Link(callstackNode, node);
-					result.Add(Tuple.Create(callstackNode, callstackLink));
-				}
-
-				foreach (var pendingTasksElement in pendingTask.ThreadPoolQueueContents) {
-					queueIndex++;
-					var callstackNode = Dgml.Node(node.Attribute("Id").Value + "TPQueue#" + queueIndex, RepresentCallstack(pendingTasksElement));
-					var callstackLink = Dgml.Link(callstackNode, node);
-					result.Add(Tuple.Create(callstackNode, callstackLink));
-				}
-			}
-
-			return result;
 		}
 
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
