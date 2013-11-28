@@ -132,13 +132,11 @@
 		/// Signals that no further elements will be enqueued.
 		/// </summary>
 		public void Complete() {
-			bool signaledJustNow;
 			lock (this.syncObject) {
-				signaledJustNow = !this.completeSignaled;
 				this.completeSignaled = true;
 			}
 
-			this.CompleteIfNecessary(signaledJustNow);
+			this.CompleteIfNecessary();
 		}
 
 		/// <summary>
@@ -420,7 +418,7 @@
 		/// <summary>
 		/// Transitions this queue to a completed state if signaled and the queue is empty.
 		/// </summary>
-		private void CompleteIfNecessary(bool signaledJustNow = false) {
+		private void CompleteIfNecessary() {
 			Assumes.False(Monitor.IsEntered(this.syncObject)); // important because we'll transition a task to complete.
 
 			bool transitionTaskSource, invokeOnCompleted = false;

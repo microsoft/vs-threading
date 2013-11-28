@@ -55,6 +55,7 @@
 			return GetRootElement(document, XName.Get(elementName, Namespace));
 		}
 
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
 		internal static XDocument WithCategories(this XDocument document, params string[] categories) {
 			Requires.NotNull(document, "document");
 			Requires.NotNull(categories, "categories");
@@ -168,6 +169,7 @@
 			return document;
 		}
 
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
 		internal static XElement ContainedBy(this XElement node, XElement container) {
 			Requires.NotNull(node, "node");
 			Requires.NotNull(container, "container");
@@ -206,6 +208,7 @@
 			return element;
 		}
 
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
 		internal static XDocument WithStyle(this XDocument document, string categoryId, IEnumerable<KeyValuePair<string, string>> properties, string targetType = "Node") {
 			Requires.NotNull(document, "document");
 			Requires.NotNullOrEmpty(categoryId, "categoryId");
@@ -229,6 +232,7 @@
 			return document;
 		}
 
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
 		internal static XDocument WithStyle(this XDocument document, string categoryId, string targetType = "Node", string foreground = null, string background = null, string icon = null) {
 			var properties = new Dictionary<string, string>();
 			if (!string.IsNullOrEmpty(foreground)) {

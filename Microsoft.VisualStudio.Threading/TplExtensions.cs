@@ -197,6 +197,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Consumes a task and doesn't do anything with it.  Useful for fire-and-forget calls to async methods within async methods.
 		/// </summary>
 		/// <param name="task">The task whose result is to be ignored.</param>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "task")]
 		public static void Forget(this Task task) {
 		}
 

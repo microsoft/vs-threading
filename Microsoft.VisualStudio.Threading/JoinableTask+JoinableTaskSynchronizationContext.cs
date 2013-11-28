@@ -88,7 +88,6 @@
 					if (Thread.CurrentThread.IsThreadPoolThread) {
 						d(state);
 					} else {
-						var callback = new WaitCallback(d);
 						Task.Factory.StartNew(
 							s => {
 								var tuple = (Tuple<SendOrPostCallback, object>)s;

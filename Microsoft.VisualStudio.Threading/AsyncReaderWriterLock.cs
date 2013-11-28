@@ -777,6 +777,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Checks whether the specified awaiter's lock type has an associated SynchronizationContext if one is applicable.
 		/// </summary>
 		/// <param name="awaiter">The awaiter whose lock should be considered.</param>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "awaiter")]
 		private void CheckSynchronizationContextAppropriateForLock(Awaiter awaiter) {
 			////bool syncContextRequired = this.LockStackContains(LockKind.UpgradeableRead, awaiter) || this.LockStackContains(LockKind.Write, awaiter);
 			////if (syncContextRequired) {
@@ -796,6 +797,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// is a new top-level request.
 		/// </param>
 		/// <returns>A value indicating whether the lock was issued.</returns>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
 		private bool TryIssueLock(Awaiter awaiter, bool previouslyQueued) {
 			lock (this.syncObject) {
 				if (this.completeInvoked && !previouslyQueued) {
@@ -1029,6 +1031,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// This method guarantees that the lock is effectively released from the caller, and the <paramref name="awaiter"/>
 		/// can be safely recycled, before the synchronous portion of this method completes.
 		/// </returns>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
 		private Task ReleaseAsync(Awaiter awaiter, bool lockConsumerCanceled = false) {
 			// This method does NOT use the async keyword in its signature to avoid CallContext changes that we make
 			// causing a fork/clone of the CallContext, which defeats our alloc-free uncontested lock story.
@@ -1810,13 +1813,6 @@ namespace Microsoft.VisualStudio.Threading {
 			/// or compared against the current thread, so the activity of other threads is irrelevant.
 			/// </remarks>
 			private Thread threadHoldingSemaphore;
-
-			/// <summary>
-			/// Gets a value indicating whether the semaphore is currently occupied.
-			/// </summary>
-			internal bool IsSemaphoreOccupied {
-				get { return this.semaphore.CurrentCount == 0; }
-			}
 
 			public override void Send(SendOrPostCallback d, object state) {
 				throw new NotSupportedException();
