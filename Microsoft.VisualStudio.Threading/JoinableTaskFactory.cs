@@ -149,15 +149,6 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
-		/// Posts a continuation to the main thread, always causing the caller to yield if specified.
-		/// </summary>
-		/// <param name="alwaysYield">if set to <c>true</c>, the awaitable will always cause the caller to yield, even if already on the main thread.</param>
-		/// <returns>An awaitable.</returns>
-		internal MainThreadAwaitable SwitchToMainThreadAsync(bool alwaysYield) {
-			return new MainThreadAwaitable(this, this.Context.AmbientTask, CancellationToken.None, alwaysYield);
-		}
-
-		/// <summary>
 		/// Responds to calls to <see cref="JoinableTaskFactory.MainThreadAwaiter.OnCompleted"/>
 		/// by scheduling a continuation to execute on the Main thread.
 		/// </summary>
@@ -720,6 +711,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// Gets a string that describes the delegate that this instance invokes.
 			/// FOR DIAGNOSTIC PURPOSES ONLY.
 			/// </summary>
+			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Justification = "Used in DebuggerDisplay attributes.")]
 			internal string DelegateLabel {
 				get {
 					return this.WalkReturnCallstack().First(); // Top frame of the return callstack.
