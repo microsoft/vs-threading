@@ -811,7 +811,7 @@ namespace Microsoft.VisualStudio.Threading {
 				// because if it is, we don't need to wrap it with yet another instance.
 				var existing = state as SingleExecuteProtector;
 				if (callback == ExecuteOnce && existing != null && job == existing.job) {
-					return (SingleExecuteProtector)state;
+					return existing;
 				}
 
 				return new SingleExecuteProtector(job) {
