@@ -18,6 +18,7 @@ namespace Microsoft.VisualStudio.Threading {
 	/// <summary>
 	/// Extensions to the Task Parallel Library.
 	/// </summary>
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Tpl")]
 	public static class TplExtensions {
 		/// <summary>
 		/// A singleton completed task.
@@ -60,6 +61,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <typeparam name="T">The type of value returned by a task.</typeparam>
 		/// <param name="task">The task whose completion should be applied to another.</param>
 		/// <param name="tcs">The task that should receive the completion status.</param>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "tcs")]
 		public static void ApplyResultTo<T>(this Task<T> task, TaskCompletionSource<T> tcs) {
 			Requires.NotNull(task, "task");
 			Requires.NotNull(tcs, "tcs");
@@ -83,6 +85,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <typeparam name="T">The type of value returned by a task.</typeparam>
 		/// <param name="task">The task whose completion should be applied to another.</param>
 		/// <param name="tcs">The task that should receive the completion status.</param>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "tcs")]
 		public static void ApplyResultTo<T>(this Task task, TaskCompletionSource<T> tcs) {
 			Requires.NotNull(task, "task");
 			Requires.NotNull(tcs, "tcs");
@@ -265,6 +268,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="callback">The optional callback to invoke when the task is completed.</param>
 		/// <param name="state">The state object provided by the caller of the Begin method.</param>
 		/// <returns>A task (that implements <see cref="IAsyncResult"/> that should be returned from the Begin method.</returns>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Apm")]
 		public static Task<TResult> ToApm<TResult>(this Task<TResult> task, AsyncCallback callback, object state) {
 			Requires.NotNull(task, "task");
 
@@ -305,6 +309,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="callback">The optional callback to invoke when the task is completed.</param>
 		/// <param name="state">The state object provided by the caller of the Begin method.</param>
 		/// <returns>A task (that implements <see cref="IAsyncResult"/> that should be returned from the Begin method.</returns>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Apm")]
 		public static Task ToApm(this Task task, AsyncCallback callback, object state) {
 			Requires.NotNull(task, "task");
 

@@ -3,7 +3,10 @@
 	<Words>
 		<Recognized>
 			<Word>awaiter</Word>
+			<Word>awaiters</Word>
 			<Word>awaitable</Word>
+			<Word>dequeued</Word>
+			<Word>enqueued</Word>
 		</Recognized>
 	</Words>
 </Dictionary>
