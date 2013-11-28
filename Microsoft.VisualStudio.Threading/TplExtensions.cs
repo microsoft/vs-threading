@@ -360,6 +360,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <remarks>
 		/// The completion of the returned task is asynchronous with respect to the code that actually signals the wait handle.
 		/// </remarks>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Runtime.InteropServices.SafeHandle.DangerousGetHandle")]
 		public static Task<bool> ToTask(this WaitHandle handle, int timeout = Timeout.Infinite, CancellationToken cancellationToken = default(CancellationToken)) {
 			Requires.NotNull(handle, "handle");
 
@@ -631,6 +632,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <summary>
 			/// Does nothing.
 			/// </summary>
+			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
 			public void GetResult() {
 				// Never throw here.
 			}

@@ -260,6 +260,7 @@
 		/// for then handling.
 		/// </param>
 		/// <returns>A task whose result is the head element.</returns>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
 		public Task<T> DequeueAsync(CancellationToken cancellationToken = default(CancellationToken)) {
 			var tcs = new TaskCompletionSource<T>();
 			CancellableDequeuers existingAwaiters = null;

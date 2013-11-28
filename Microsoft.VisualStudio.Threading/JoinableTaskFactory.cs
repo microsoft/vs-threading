@@ -266,6 +266,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Synchronously blocks the calling thread for the completion of the specified task.
 		/// </summary>
 		/// <param name="task">The task whose completion is being waited on.</param>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.GC.Collect")]
 		protected virtual void WaitSynchronouslyCore(Task task) {
 			Requires.NotNull(task, "task");
 			int collections = 0; // useful for debugging dump files to see how many collections occurred.
