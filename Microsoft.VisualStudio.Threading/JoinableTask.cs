@@ -683,6 +683,7 @@ namespace Microsoft.VisualStudio.Threading {
 					this.threadPoolJobSyncContext.OnCompleted();
 				}
 
+				this.nestingFactories = default(ListOfOftenOne<JoinableTaskFactory>);
 				this.initialDelegate = null;
 				this.state |= JoinableTaskFlags.CompleteFinalized;
 			}

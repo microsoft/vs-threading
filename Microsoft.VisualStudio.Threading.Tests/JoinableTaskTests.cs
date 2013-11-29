@@ -1433,6 +1433,38 @@
 			Assert.IsTrue(outer.IsCompleted);
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void NestedFactoriesCanBeCollected() {
+			var outerFactory = new ModalPumpingJoinableTaskFactory(this.context);
+			var innerFactory = new ModalPumpingJoinableTaskFactory(this.context);
+
+			JoinableTask inner = null;
+			var outer = outerFactory.RunAsync(async delegate {
+				inner = innerFactory.RunAsync(async delegate {
+					await Task.Yield();
+				});
+				await inner;
+			});
+
+			outerFactory.DoModalLoopTillEmpty();
+			if (!outer.IsCompleted) {
+				Assert.Inconclusive(); // this is a product defect, but this test assumes this works to test something else.
+			}
+
+			// Allow the dispatcher to drain all messages that may be holding references.
+			var frame = new DispatcherFrame();
+			SynchronizationContext.Current.Post(s => frame.Continue = false, null);
+			Dispatcher.PushFrame(frame);
+
+			// Now we verify that while 'inner' is non-null that it doesn't hold outerFactory in memory
+			// once 'inner' has completed.
+			var weakOuterFactory = new WeakReference(outerFactory);
+			outer = null;
+			outerFactory = null;
+			GC.Collect();
+			Assert.IsFalse(weakOuterFactory.IsAlive);
+		}
+
 		// This is a known issue and we haven't a fix yet
 		[TestMethod, Timeout(TestTimeout), Ignore]
 		public void CallContextWasOverwrittenByReentrance() {
