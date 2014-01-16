@@ -30,8 +30,8 @@ namespace Microsoft.VisualStudio.Threading {
 				// so while we're reporting the hang, don't accidentally deadlock ourselves
 				// while trying to do the right thing by taking the lock.
 				bool lockAcquired = false;
-				Monitor.TryEnter(this.syncObject, 1000, ref lockAcquired);
 				try {
+					Monitor.TryEnter(this.syncObject, 1000, ref lockAcquired);
 					XElement nodes, links;
 					var dgml = CreateDgml(out nodes, out links);
 
