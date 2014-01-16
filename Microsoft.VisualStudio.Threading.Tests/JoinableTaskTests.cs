@@ -1352,7 +1352,7 @@
 		/// Verifies when JoinableTasks are nested that all factories' policies are involved
 		/// in trying to get to the UI thread.
 		/// </summary>
-		[TestMethod, Timeout(TestTimeout), Ignore] // Known failing case
+		[TestMethod, Timeout(TestTimeout)]
 		public void NestedFactoriesCombinedMainThreadPolicies() {
 			var loPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
 			var hiPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
@@ -1370,6 +1370,99 @@
 			// to execute hiPriFactory messages but not loPriFactory messages.
 			hiPriFactory.DoModalLoopTillEmpty();
 			Assert.IsTrue(outer.IsCompleted);
+		}
+
+		/// <summary>
+		/// Verifes that each instance of JTF is only notified once of
+		/// a nested JoinableTask's attempt to get to the UI thread.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public void NestedFactoriesDoNotDuplicateEffort() {
+			var loPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
+			var hiPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
+
+			// For this test, we intentionally use each factory twice in a row.
+			// We mix up the order in another test.
+			var outer = hiPriFactory.RunAsync(async delegate {
+				await hiPriFactory.RunAsync(async delegate {
+					await loPriFactory.RunAsync(async delegate {
+						await loPriFactory.RunAsync(async delegate {
+							await Task.Yield();
+						});
+					});
+				});
+			});
+
+			// Verify that each factory received the message exactly once.
+			Assert.AreEqual(1, loPriFactory.JoinableTasksPendingMainthread.Count());
+			Assert.AreEqual(1, hiPriFactory.JoinableTasksPendingMainthread.Count());
+
+			// Simulate a modal dialog, with a message pump that is willing
+			// to execute hiPriFactory messages but not loPriFactory messages.
+			hiPriFactory.DoModalLoopTillEmpty();
+			Assert.IsTrue(outer.IsCompleted);
+		}
+
+		/// <summary>
+		/// Verifes that each instance of JTF is only notified once of
+		/// a nested JoinableTask's attempt to get to the UI thread.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public void NestedFactoriesDoNotDuplicateEffortMixed() {
+			var loPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
+			var hiPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
+
+			// In this particular test, we intentionally mix up the JTFs in hi-lo-hi-lo order.
+			var outer = hiPriFactory.RunAsync(async delegate {
+				await loPriFactory.RunAsync(async delegate {
+					await hiPriFactory.RunAsync(async delegate {
+						await loPriFactory.RunAsync(async delegate {
+							await Task.Yield();
+						});
+					});
+				});
+			});
+
+			// Verify that each factory received the message exactly once.
+			Assert.AreEqual(1, loPriFactory.JoinableTasksPendingMainthread.Count());
+			Assert.AreEqual(1, hiPriFactory.JoinableTasksPendingMainthread.Count());
+
+			// Simulate a modal dialog, with a message pump that is willing
+			// to execute hiPriFactory messages but not loPriFactory messages.
+			hiPriFactory.DoModalLoopTillEmpty();
+			Assert.IsTrue(outer.IsCompleted);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void NestedFactoriesCanBeCollected() {
+			var outerFactory = new ModalPumpingJoinableTaskFactory(this.context);
+			var innerFactory = new ModalPumpingJoinableTaskFactory(this.context);
+
+			JoinableTask inner = null;
+			var outer = outerFactory.RunAsync(async delegate {
+				inner = innerFactory.RunAsync(async delegate {
+					await Task.Yield();
+				});
+				await inner;
+			});
+
+			outerFactory.DoModalLoopTillEmpty();
+			if (!outer.IsCompleted) {
+				Assert.Inconclusive(); // this is a product defect, but this test assumes this works to test something else.
+			}
+
+			// Allow the dispatcher to drain all messages that may be holding references.
+			var frame = new DispatcherFrame();
+			SynchronizationContext.Current.Post(s => frame.Continue = false, null);
+			Dispatcher.PushFrame(frame);
+
+			// Now we verify that while 'inner' is non-null that it doesn't hold outerFactory in memory
+			// once 'inner' has completed.
+			var weakOuterFactory = new WeakReference(outerFactory);
+			outer = null;
+			outerFactory = null;
+			GC.Collect();
+			Assert.IsFalse(weakOuterFactory.IsAlive);
 		}
 
 		// This is a known issue and we haven't a fix yet

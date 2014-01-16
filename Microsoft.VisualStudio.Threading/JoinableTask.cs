@@ -72,6 +72,13 @@ namespace Microsoft.VisualStudio.Threading {
 		private readonly JoinableTaskFactory owner;
 
 		/// <summary>
+		/// Other instances of <see cref="JoinableTaskFactory"/> that should be posted
+		/// to with any main thread bound work.
+		/// </summary>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
+		private ListOfOftenOne<JoinableTaskFactory> nestingFactories;
+
+		/// <summary>
 		/// The collections that this job is a member of.
 		/// </summary>
 		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -187,6 +194,15 @@ namespace Microsoft.VisualStudio.Threading {
 					}
 				}
 			}
+		}
+
+		/// <summary>
+		/// Gets or sets the set of nesting factories (excluding <see cref="owner"/>)
+		/// that own JoinableTasks that are nesting this one.
+		/// </summary>
+		internal ListOfOftenOne<JoinableTaskFactory> NestingFactories {
+			get { return this.nestingFactories; }
+			set { this.nestingFactories = value; }
 		}
 
 		/// <summary>
@@ -500,6 +516,12 @@ namespace Microsoft.VisualStudio.Threading {
 				} else if (mainThreadAffinitized) {
 					Assumes.NotNull(wrapper); // this should have been initialized in the above logic.
 					this.owner.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
+
+					foreach (var nestingFactory in this.nestingFactories) {
+						if (nestingFactory != this.owner) {
+							nestingFactory.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
+						}
+					}
 				}
 
 				if (dequeuerResetState != null) {
@@ -661,6 +683,7 @@ namespace Microsoft.VisualStudio.Threading {
 					this.threadPoolJobSyncContext.OnCompleted();
 				}
 
+				this.nestingFactories = default(ListOfOftenOne<JoinableTaskFactory>);
 				this.initialDelegate = null;
 				this.state |= JoinableTaskFlags.CompleteFinalized;
 			}

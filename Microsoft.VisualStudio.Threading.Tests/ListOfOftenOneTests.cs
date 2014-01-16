@@ -125,5 +125,25 @@
 				Assert.IsFalse(enumerator.MoveNext());
 			}
 		}
+
+		[TestMethod]
+		public void Contains() {
+			Assert.IsFalse(this.list.Contains(null));
+
+			var val1 = new GenericParameterHelper();
+			Assert.IsFalse(this.list.Contains(val1));
+			this.list.Add(val1);
+			Assert.IsTrue(this.list.Contains(val1));
+			Assert.IsFalse(this.list.Contains(null));
+
+			var val2 = new GenericParameterHelper();
+			Assert.IsFalse(this.list.Contains(val2));
+			this.list.Add(val2);
+			Assert.IsTrue(this.list.Contains(val2));
+
+			Assert.IsTrue(this.list.Contains(val1));
+			Assert.IsFalse(this.list.Contains(null));
+			Assert.IsFalse(this.list.Contains(new GenericParameterHelper()));
+		}
 	}
 }
