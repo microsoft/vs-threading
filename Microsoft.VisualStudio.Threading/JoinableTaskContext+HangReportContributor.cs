@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.VisualStudio.Threading {
 	using System;
 	using System.Collections.Generic;
+	using System.Globalization;
 	using System.Linq;
 	using System.Text;
 	using System.Threading.Tasks;
@@ -12,6 +13,15 @@
 		/// </summary>
 		/// <returns>The hang report contribution.</returns>
 		HangReportContribution IHangReportContributor.GetHangReport() {
+			return this.GetHangReport();
+		}
+
+		/// <summary>
+		/// Contributes data for a hang report.
+		/// </summary>
+		/// <returns>The hang report contribution. Null values should be ignored.</returns>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
+		protected virtual HangReportContribution GetHangReport() {
 			using (NoMessagePumpSyncContext.Default.Apply()) {
 				this.SyncContextLock.EnterReadLock();
 				try {
@@ -20,7 +30,7 @@
 					var dgml = CreateTemplateDgml(out nodes, out links);
 
 					var pendingTasksElements = this.CreateNodesForPendingTasks();
-					var taskLabels = this.CreateNodeLabels(pendingTasksElements);
+					var taskLabels = CreateNodeLabels(pendingTasksElements);
 					var pendingTaskCollections = CreateNodesForJoinableTaskCollections(pendingTasksElements.Keys);
 					nodes.Add(pendingTasksElements.Values);
 					nodes.Add(pendingTaskCollections.Values);
@@ -93,40 +103,7 @@
 			return result;
 		}
 
-		private Dictionary<JoinableTask, XElement> CreateNodesForPendingTasks() {
-			var pendingTasksElements = new Dictionary<JoinableTask, XElement>();
-			lock (this.pendingTasks) {
-				int taskId = 0;
-				foreach (var pendingTask in this.pendingTasks) {
-					taskId++;
-
-					string methodName = string.Empty;
-					var entryMethodInfo = pendingTask.EntryMethodInfo;
-					if (entryMethodInfo != null) {
-						methodName = string.Format(
-							" ({0}.{1})",
-							entryMethodInfo.DeclaringType.FullName,
-							entryMethodInfo.Name);
-					}
-
-					var node = Dgml.Node("Task#" + taskId, "Task #" + taskId + methodName)
-						.WithCategories("Task");
-					if (pendingTask.HasNonEmptyQueue) {
-						node.WithCategories("NonEmptyQueue");
-					}
-
-					if (pendingTask.State.HasFlag(JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)) {
-						node.WithCategories("MainThreadBlocking");
-					}
-
-					pendingTasksElements.Add(pendingTask, node);
-				}
-			}
-
-			return pendingTasksElements;
-		}
-
-		private List<Tuple<XElement, XElement>> CreateNodeLabels(Dictionary<JoinableTask, XElement> tasksAndElements) {
+		private static List<Tuple<XElement, XElement>> CreateNodeLabels(Dictionary<JoinableTask, XElement> tasksAndElements) {
 			Requires.NotNull(tasksAndElements, "tasksAndElements");
 
 			var result = new List<Tuple<XElement, XElement>>();
@@ -152,6 +129,41 @@
 			return result;
 		}
 
+		private Dictionary<JoinableTask, XElement> CreateNodesForPendingTasks() {
+			var pendingTasksElements = new Dictionary<JoinableTask, XElement>();
+			lock (this.pendingTasks) {
+				int taskId = 0;
+				foreach (var pendingTask in this.pendingTasks) {
+					taskId++;
+
+					string methodName = string.Empty;
+					var entryMethodInfo = pendingTask.EntryMethodInfo;
+					if (entryMethodInfo != null) {
+						methodName = string.Format(
+							CultureInfo.InvariantCulture,
+							" ({0}.{1})",
+							entryMethodInfo.DeclaringType.FullName,
+							entryMethodInfo.Name);
+					}
+
+					var node = Dgml.Node("Task#" + taskId, "Task #" + taskId + methodName)
+						.WithCategories("Task");
+					if (pendingTask.HasNonEmptyQueue) {
+						node.WithCategories("NonEmptyQueue");
+					}
+
+					if (pendingTask.State.HasFlag(JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)) {
+						node.WithCategories("MainThreadBlocking");
+					}
+
+					pendingTasksElements.Add(pendingTask, node);
+				}
+			}
+
+			return pendingTasksElements;
+		}
+
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
 		private static string RepresentCallstack(JoinableTaskFactory.SingleExecuteProtector singleExecuteProtector) {
 			Requires.NotNull(singleExecuteProtector, "singleExecuteProtector");
 

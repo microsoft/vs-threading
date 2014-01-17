@@ -11,6 +11,7 @@
 	/// A thread-safe, asynchronously dequeuable queue.
 	/// </summary>
 	/// <typeparam name="T">The type of values kept by the queue.</typeparam>
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
 	[DebuggerDisplay("Count = {Count}, Completed = {completeSignaled}")]
 	public class AsyncQueue<T> {
 		/// <summary>
@@ -131,13 +132,11 @@
 		/// Signals that no further elements will be enqueued.
 		/// </summary>
 		public void Complete() {
-			bool signaledJustNow;
 			lock (this.syncObject) {
-				signaledJustNow = !this.completeSignaled;
 				this.completeSignaled = true;
 			}
 
-			this.CompleteIfNecessary(signaledJustNow);
+			this.CompleteIfNecessary();
 		}
 
 		/// <summary>
@@ -145,7 +144,9 @@
 		/// </summary>
 		/// <param name="value">The value to add.</param>
 		public void Enqueue(T value) {
-			Verify.Operation(this.TryEnqueue(value), "Queue already completed.");
+			if (!this.TryEnqueue(value)) {
+				Verify.FailOperation(Strings.InvalidAfterCompleted);
+			}
 		}
 
 		/// <summary>
@@ -238,7 +239,10 @@
 		/// <exception cref="InvalidOperationException">Thrown if the queue is empty.</exception>
 		public T Peek() {
 			T value;
-			Verify.Operation(this.TryPeek(out value), "Queue empty.");
+			if (!this.TryPeek(out value)) {
+				Verify.FailOperation(Strings.QueueEmpty);
+			}
+
 			return value;
 		}
 
@@ -254,6 +258,7 @@
 		/// for then handling.
 		/// </param>
 		/// <returns>A task whose result is the head element.</returns>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
 		public Task<T> DequeueAsync(CancellationToken cancellationToken = default(CancellationToken)) {
 			var tcs = new TaskCompletionSource<T>();
 			CancellableDequeuers existingAwaiters = null;
@@ -413,7 +418,7 @@
 		/// <summary>
 		/// Transitions this queue to a completed state if signaled and the queue is empty.
 		/// </summary>
-		private void CompleteIfNecessary(bool signaledJustNow = false) {
+		private void CompleteIfNecessary() {
 			Assumes.False(Monitor.IsEntered(this.syncObject)); // important because we'll transition a task to complete.
 
 			bool transitionTaskSource, invokeOnCompleted = false;

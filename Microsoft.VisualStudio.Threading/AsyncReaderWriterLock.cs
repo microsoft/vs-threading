@@ -37,7 +37,7 @@ namespace Microsoft.VisualStudio.Threading {
 	///    ------------- 
 	/// ]]>
 	/// </devnotes>
-	public partial class AsyncReaderWriterLock {
+	public partial class AsyncReaderWriterLock : IDisposable {
 		/// <summary>
 		/// The object to acquire a Monitor-style lock on for all field access on this instance.
 		/// </summary>
@@ -440,12 +440,29 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 		}
 
+		/// <inheritdoc/>
+		public void Dispose() {
+			this.Dispose(true);
+			GC.SuppressFinalize(this);
+		}
+
+		/// <summary>
+		/// Disposes managed and unmanaged resources held by this instance.
+		/// </summary>
+		/// <param name="disposing"><c>true</c> if <see cref="Dispose()"/> was called; <c>false</c> if the object is being finalized.</param>
+		protected virtual void Dispose(bool disposing) {
+			if (disposing) {
+				this.nonConcurrentSyncContext.Dispose();
+			}
+		}
+
 		/// <summary>
 		/// Checks whether the aggregated flags from all locks in the lock stack satisfy the specified flag(s).
 		/// </summary>
 		/// <param name="flags">The flag(s) that must be specified for a <c>true</c> result.</param>
 		/// <param name="handle">The head of the lock stack to consider.</param>
 		/// <returns><c>true</c> if all the specified flags are found somewhere in the lock stack; <c>false</c> otherwise.</returns>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1726:UsePreferredTerms", MessageId = "flags")]
 		protected bool LockStackContains(LockFlags flags, LockHandle handle) {
 			LockFlags aggregateFlags = LockFlags.None;
 			var awaiter = handle.Awaiter;
@@ -475,6 +492,8 @@ namespace Microsoft.VisualStudio.Threading {
 		/// once the presence of certain flag(s) is determined, whereas this will aggregate all flags,
 		/// some of which may be defined by derived types.
 		/// </remarks>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1726:UsePreferredTerms", MessageId = "Flags")]
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
 		protected LockFlags GetAggregateLockFlags() {
 			LockFlags aggregateFlags = LockFlags.None;
 			var awaiter = this.topAwaiter.Value;
@@ -534,8 +553,13 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Throws an exception if called on an STA thread.
 		/// </summary>
 		private static void ThrowIfStaOrUnsupportedSyncContext() {
-			Verify.Operation(Thread.CurrentThread.GetApartmentState() != ApartmentState.STA, "This operation is not allowed on an STA thread.");
-			Verify.Operation(!IsUnsupportedSynchronizationContext, "Acquiring locks on threads with a SynchronizationContext applied is not allowed.");
+			if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA) {
+				Verify.FailOperation(Strings.STAThreadCallerNotAllowed);
+			}
+
+			if (IsUnsupportedSynchronizationContext) {
+				Verify.FailOperation(Strings.AppliedSynchronizationContextNotAllowed);
+			}
 		}
 
 		/// <summary>
@@ -753,6 +777,8 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Checks whether the specified awaiter's lock type has an associated SynchronizationContext if one is applicable.
 		/// </summary>
 		/// <param name="awaiter">The awaiter whose lock should be considered.</param>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "awaiter")]
 		private void CheckSynchronizationContextAppropriateForLock(Awaiter awaiter) {
 			////bool syncContextRequired = this.LockStackContains(LockKind.UpgradeableRead, awaiter) || this.LockStackContains(LockKind.Write, awaiter);
 			////if (syncContextRequired) {
@@ -772,6 +798,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// is a new top-level request.
 		/// </param>
 		/// <returns>A value indicating whether the lock was issued.</returns>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
 		private bool TryIssueLock(Awaiter awaiter, bool previouslyQueued) {
 			lock (this.syncObject) {
 				if (this.completeInvoked && !previouslyQueued) {
@@ -800,7 +827,7 @@ namespace Microsoft.VisualStudio.Threading {
 									// an accidental execution fork that is exposing concurrency inappropriately.
 									if (Thread.CurrentThread.GetApartmentState() == ApartmentState.MTA && !(SynchronizationContext.Current is NonConcurrentSynchronizationContext)) {
 										Report.Fail("Dangerous request for read lock from fork of write lock.");
-										Verify.FailOperation("Dangerous request for read lock from fork of write lock.");
+										Verify.FailOperation(Strings.DangerousReadLockRequestFromWriteLockFork);
 									}
 
 									issued = true;
@@ -971,6 +998,8 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="ex">The exception that captures the details of the failure.</param>
 		/// <returns>An exception that may be returned by some implementations of tis method for he caller to rethrow.</returns>
 		protected virtual Exception OnCriticalFailure(Exception ex) {
+			Requires.NotNull(ex, "ex");
+
 			Report.Fail(ex.Message);
 			Environment.FailFast(ex.ToString(), ex);
 			throw Assumes.NotReachable();
@@ -992,6 +1021,31 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
+		/// Checks whether the specified lock has any active nested locks.
+		/// </summary>
+		private static bool HasAnyNestedLocks(Awaiter lck, HashSet<Awaiter> lockCollection) {
+			Requires.NotNull(lck, "lck");
+			Requires.NotNull(lockCollection, "lockCollection");
+
+			if (lockCollection.Count > 0) {
+				foreach (var nestedCandidate in lockCollection) {
+					if (nestedCandidate == lck) {
+						// This isn't nested -- it's the lock itself.
+						continue;
+					}
+
+					for (Awaiter a = nestedCandidate.NestingLock; a != null; a = a.NestingLock) {
+						if (a == lck) {
+							return true;
+						}
+					}
+				}
+			}
+
+			return false;
+		}
+
+		/// <summary>
 		/// Releases the lock held by the specified awaiter.
 		/// </summary>
 		/// <param name="awaiter">The awaiter holding an active lock.</param>
@@ -1003,6 +1057,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// This method guarantees that the lock is effectively released from the caller, and the <paramref name="awaiter"/>
 		/// can be safely recycled, before the synchronous portion of this method completes.
 		/// </returns>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
 		private Task ReleaseAsync(Awaiter awaiter, bool lockConsumerCanceled = false) {
 			// This method does NOT use the async keyword in its signature to avoid CallContext changes that we make
 			// causing a fork/clone of the CallContext, which defeats our alloc-free uncontested lock story.
@@ -1167,34 +1222,9 @@ namespace Microsoft.VisualStudio.Threading {
 			Requires.NotNull(lck, "lck");
 			Assumes.True(Monitor.IsEntered(this.SyncObject));
 
-			return this.HasAnyNestedLocks(lck, this.issuedReadLocks)
-				|| this.HasAnyNestedLocks(lck, this.issuedUpgradeableReadLocks)
-				|| this.HasAnyNestedLocks(lck, this.issuedWriteLocks);
-		}
-
-		/// <summary>
-		/// Checks whether the specified lock has any active nested locks.
-		/// </summary>
-		private bool HasAnyNestedLocks(Awaiter lck, HashSet<Awaiter> lockCollection) {
-			Requires.NotNull(lck, "lck");
-			Requires.NotNull(lockCollection, "lockCollection");
-
-			if (lockCollection.Count > 0) {
-				foreach (var nestedCandidate in lockCollection) {
-					if (nestedCandidate == lck) {
-						// This isn't nested -- it's the lock itself.
-						continue;
-					}
-
-					for (Awaiter a = nestedCandidate.NestingLock; a != null; a = a.NestingLock) {
-						if (a == lck) {
-							return true;
-						}
-					}
-				}
-			}
-
-			return false;
+			return HasAnyNestedLocks(lck, this.issuedReadLocks)
+				|| HasAnyNestedLocks(lck, this.issuedUpgradeableReadLocks)
+				|| HasAnyNestedLocks(lck, this.issuedWriteLocks);
 		}
 
 		/// <summary>
@@ -1773,7 +1803,7 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 		}
 
-		internal class NonConcurrentSynchronizationContext : SynchronizationContext {
+		internal sealed class NonConcurrentSynchronizationContext : SynchronizationContext, IDisposable {
 			private readonly SemaphoreSlim semaphore = new SemaphoreSlim(1);
 
 			/// <summary>
@@ -1784,13 +1814,6 @@ namespace Microsoft.VisualStudio.Threading {
 			/// or compared against the current thread, so the activity of other threads is irrelevant.
 			/// </remarks>
 			private Thread threadHoldingSemaphore;
-
-			/// <summary>
-			/// Gets a value indicating whether the semaphore is currently occupied.
-			/// </summary>
-			internal bool IsSemaphoreOccupied {
-				get { return this.semaphore.CurrentCount == 0; }
-			}
 
 			public override void Send(SendOrPostCallback d, object state) {
 				throw new NotSupportedException();
@@ -1809,6 +1832,11 @@ namespace Microsoft.VisualStudio.Threading {
 						tuple.Item1.PostHelper(tuple.Item2, tuple.Item3);
 					},
 					Tuple.Create(this, d, state));
+			}
+
+			/// <inheritdoc/>
+			public void Dispose() {
+				this.semaphore.Dispose();
 			}
 
 			internal LoanBack LoanBackAnyHeldResource() {

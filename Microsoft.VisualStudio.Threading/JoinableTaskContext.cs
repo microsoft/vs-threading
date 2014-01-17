@@ -65,7 +65,7 @@ namespace Microsoft.VisualStudio.Threading {
 	///     Note however that this extra step is not necessary when awaiting is done
 	///     immediately after kicking off an asynchronous operation.
 	/// </remarks>
-	public partial class JoinableTaskContext {
+	public partial class JoinableTaskContext : IDisposable {
 		/// <summary>
 		/// A "global" lock that allows the graph of interconnected sync context and JoinableSet instances
 		/// communicate in a thread-safe way without fear of deadlocks due to each taking their own private
@@ -265,6 +265,22 @@ namespace Microsoft.VisualStudio.Threading {
 			return new JoinableTaskCollection(this);
 		}
 
+		/// <inheritdoc/>
+		public void Dispose() {
+			this.Dispose(true);
+			GC.SuppressFinalize(this);
+		}
+
+		/// <summary>
+		/// Disposes managed and unmanaged resources held by this instance.
+		/// </summary>
+		/// <param name="disposing"><c>true</c> if <see cref="Dispose()"/> was called; <c>false</c> if the object is being finalized.</param>
+		protected virtual void Dispose(bool disposing) {
+			if (disposing) {
+				this.syncContextLock.Dispose();
+			}
+		}
+
 		/// <summary>
 		/// Invoked when a hang is suspected to have occurred involving the main thread.
 		/// </summary>
@@ -275,6 +291,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// A single hang occurrence may invoke this method multiple times, with increasing
 		/// values in the <paramref name="hangDuration"/> parameter.
 		/// </remarks>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
 		protected internal virtual void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId) {
 			List<JoinableTaskContextNode> listeners;
 			lock (this.hangNotifications) {
@@ -334,7 +351,9 @@ namespace Microsoft.VisualStudio.Threading {
 		internal IDisposable RegisterHangNotifications(JoinableTaskContextNode node) {
 			Requires.NotNull(node, "node");
 			lock (this.hangNotifications) {
-				Verify.Operation(this.hangNotifications.Add(node), "This node already registered.");
+				if (!this.hangNotifications.Add(node)) {
+					Verify.FailOperation(Strings.JoinableTaskContextNodeAlreadyRegistered);
+				}
 			}
 
 			return new HangNotificationRegistration(node);

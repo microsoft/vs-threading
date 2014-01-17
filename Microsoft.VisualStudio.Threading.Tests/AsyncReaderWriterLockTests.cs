@@ -3141,6 +3141,12 @@
 			await writerTask;
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void Disposable() {
+			IDisposable disposable = this.asyncLock;
+			disposable.Dispose();
+		}
+
 		private void PrintHangReport() {
 			IHangReportContributor reportContributor = this.asyncLock;
 			var report = reportContributor.GetHangReport();

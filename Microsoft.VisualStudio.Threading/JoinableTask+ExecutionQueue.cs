@@ -65,6 +65,7 @@ namespace Microsoft.VisualStudio.Threading {
 				// We only need to consider scavenging our queue if this item was
 				// actually added to the queue.
 				if (!alreadyDispatched) {
+					Requires.NotNull(value, "value");
 					value.AddExecutingCallback(this);
 
 					// It's possible this value has already been executed
@@ -93,6 +94,8 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			protected override void OnDequeued(SingleExecuteProtector value) {
+				Requires.NotNull(value, "value");
+
 				base.OnDequeued(value);
 				value.RemoveExecutingCallback(this);
 

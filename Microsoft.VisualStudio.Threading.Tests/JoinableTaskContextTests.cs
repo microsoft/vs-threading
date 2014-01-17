@@ -288,6 +288,12 @@
 			revert.Dispose();
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void Disposable() {
+			IDisposable disposable = this.context;
+			disposable.Dispose();
+		}
+
 		private class JoinableTaskContextDerived : JoinableTaskContext {
 			internal Action<TimeSpan, int, Guid> OnReportHang { get; set; }
 

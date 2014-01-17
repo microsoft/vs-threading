@@ -95,5 +95,11 @@
 			Assert.AreEqual(TaskStatus.RanToCompletion, second.Status);
 			Assert.IsFalse(third.IsCompleted);
 		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void Disposable() {
+			IDisposable disposable = this.lck;
+			disposable.Dispose();
+		}
 	}
 }

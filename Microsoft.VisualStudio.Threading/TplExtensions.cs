@@ -18,25 +18,30 @@ namespace Microsoft.VisualStudio.Threading {
 	/// <summary>
 	/// Extensions to the Task Parallel Library.
 	/// </summary>
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Tpl")]
 	public static class TplExtensions {
 		/// <summary>
 		/// A singleton completed task.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
 		public static readonly Task CompletedTask = Task.FromResult<object>(null);
 
 		/// <summary>
 		/// A task that is already canceled.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
 		public static readonly Task CanceledTask = CreateCanceledTask();
 
 		/// <summary>
 		/// A completed task with a <c>true</c> result.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
 		public static readonly Task<bool> TrueTask = Task.FromResult(true);
 
 		/// <summary>
 		/// A completed task with a <c>false</c> result.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
 		public static readonly Task<bool> FalseTask = Task.FromResult(false);
 
 		/// <summary>
@@ -60,6 +65,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <typeparam name="T">The type of value returned by a task.</typeparam>
 		/// <param name="task">The task whose completion should be applied to another.</param>
 		/// <param name="tcs">The task that should receive the completion status.</param>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "tcs")]
 		public static void ApplyResultTo<T>(this Task<T> task, TaskCompletionSource<T> tcs) {
 			Requires.NotNull(task, "task");
 			Requires.NotNull(tcs, "tcs");
@@ -83,6 +89,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <typeparam name="T">The type of value returned by a task.</typeparam>
 		/// <param name="task">The task whose completion should be applied to another.</param>
 		/// <param name="tcs">The task that should receive the completion status.</param>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "tcs")]
 		public static void ApplyResultTo<T>(this Task task, TaskCompletionSource<T> tcs) {
 			Requires.NotNull(task, "task");
 			Requires.NotNull(tcs, "tcs");
@@ -190,6 +197,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Consumes a task and doesn't do anything with it.  Useful for fire-and-forget calls to async methods within async methods.
 		/// </summary>
 		/// <param name="task">The task whose result is to be ignored.</param>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "task")]
 		public static void Forget(this Task task) {
 		}
 
@@ -265,6 +273,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="callback">The optional callback to invoke when the task is completed.</param>
 		/// <param name="state">The state object provided by the caller of the Begin method.</param>
 		/// <returns>A task (that implements <see cref="IAsyncResult"/> that should be returned from the Begin method.</returns>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Apm")]
 		public static Task<TResult> ToApm<TResult>(this Task<TResult> task, AsyncCallback callback, object state) {
 			Requires.NotNull(task, "task");
 
@@ -305,6 +314,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="callback">The optional callback to invoke when the task is completed.</param>
 		/// <param name="state">The state object provided by the caller of the Begin method.</param>
 		/// <returns>A task (that implements <see cref="IAsyncResult"/> that should be returned from the Begin method.</returns>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Apm")]
 		public static Task ToApm(this Task task, AsyncCallback callback, object state) {
 			Requires.NotNull(task, "task");
 
@@ -351,6 +361,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <remarks>
 		/// The completion of the returned task is asynchronous with respect to the code that actually signals the wait handle.
 		/// </remarks>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Runtime.InteropServices.SafeHandle.DangerousGetHandle")]
 		public static Task<bool> ToTask(this WaitHandle handle, int timeout = Timeout.Infinite, CancellationToken cancellationToken = default(CancellationToken)) {
 			Requires.NotNull(handle, "handle");
 
@@ -545,6 +556,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// An awaitable that wraps a task and never throws an exception when waited on.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
 		public struct NoThrowTaskAwaitable {
 			/// <summary>
 			/// The task.
@@ -571,6 +583,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// Gets the awaiter.
 			/// </summary>
 			/// <returns></returns>
+			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
 			public NoThrowTaskAwaiter GetAwaiter() {
 				return new NoThrowTaskAwaiter(this.task, this.captureContext);
 			}
@@ -579,6 +592,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// An awaiter that wraps a task and never throws an exception when waited on.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
 		public struct NoThrowTaskAwaiter : INotifyCompletion {
 			/// <summary>
 			/// The task
@@ -611,14 +625,15 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <summary>
 			/// Schedules a delegate for execution at the conclusion of a task's execution.
 			/// </summary>
-			/// <param name="action">The action.</param>
-			public void OnCompleted(Action action) {
-				this.task.ConfigureAwait(this.captureContext).GetAwaiter().OnCompleted(action);
+			/// <param name="continuation">The action.</param>
+			public void OnCompleted(Action continuation) {
+				this.task.ConfigureAwait(this.captureContext).GetAwaiter().OnCompleted(continuation);
 			}
 
 			/// <summary>
 			/// Does nothing.
 			/// </summary>
+			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
 			public void GetResult() {
 				// Never throw here.
 			}

@@ -67,7 +67,9 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="joinableTask">The joinable task to add to the collection.</param>
 		public void Add(JoinableTask joinableTask) {
 			Requires.NotNull(joinableTask, "joinableTask");
-			Requires.Argument(joinableTask.Factory.Context == this.Context, "joinable", "Job does not belong to the context this collection was instantiated with.");
+			if (joinableTask.Factory.Context != this.Context) {
+				Requires.Argument(false, "joinableTask", Strings.JoinableTaskContextAndCollectionMismatch);
+			}
 
 			if (!joinableTask.IsCompleted) {
 				this.Context.SyncContextLock.EnterWriteLock();
@@ -244,6 +246,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// A value whose disposal cancels a <see cref="Join"/> operation.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
 		public struct JoinRelease : IDisposable {
 			private JoinableTask joinedJob;
 			private JoinableTask joiner;

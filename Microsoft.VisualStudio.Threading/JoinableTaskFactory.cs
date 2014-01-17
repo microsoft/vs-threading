@@ -149,15 +149,6 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
-		/// Posts a continuation to the main thread, always causing the caller to yield if specified.
-		/// </summary>
-		/// <param name="alwaysYield">if set to <c>true</c>, the awaitable will always cause the caller to yield, even if already on the main thread.</param>
-		/// <returns>An awaitable.</returns>
-		internal MainThreadAwaitable SwitchToMainThreadAsync(bool alwaysYield) {
-			return new MainThreadAwaitable(this, this.Context.AmbientTask, CancellationToken.None, alwaysYield);
-		}
-
-		/// <summary>
 		/// Responds to calls to <see cref="JoinableTaskFactory.MainThreadAwaiter.OnCompleted"/>
 		/// by scheduling a continuation to execute on the Main thread.
 		/// </summary>
@@ -266,6 +257,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Synchronously blocks the calling thread for the completion of the specified task.
 		/// </summary>
 		/// <param name="task">The task whose completion is being waited on.</param>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.GC.Collect")]
 		protected virtual void WaitSynchronouslyCore(Task task) {
 			Requires.NotNull(task, "task");
 			int collections = 0; // useful for debugging dump files to see how many collections occurred.
@@ -324,6 +316,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// See the <see cref="Run(Func{Task})" /> overload documentation
 		/// for an example.
 		/// </remarks>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
 		public T Run<T>(Func<Task<T>> asyncMethod) {
 			VerifyNoNonConcurrentSyncContext();
 			var joinable = this.RunAsync(asyncMethod, synchronouslyBlocking: true);
@@ -342,6 +335,7 @@ namespace Microsoft.VisualStudio.Threading {
 			return this.RunAsync(asyncMethod, synchronouslyBlocking: false);
 		}
 
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
 		private JoinableTask RunAsync(Func<Task> asyncMethod, bool synchronouslyBlocking) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
@@ -378,6 +372,7 @@ namespace Microsoft.VisualStudio.Threading {
 			return this.RunAsync(asyncMethod, synchronouslyBlocking: false);
 		}
 
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
 		private JoinableTask<T> RunAsync<T>(Func<Task<T>> asyncMethod, bool synchronouslyBlocking) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
@@ -433,6 +428,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// An awaitable struct that facilitates an asynchronous transition to the Main thread.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
 		public struct MainThreadAwaitable {
 			private readonly JoinableTaskFactory jobFactory;
 
@@ -457,6 +453,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <summary>
 			/// Gets the awaiter.
 			/// </summary>
+			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
 			public MainThreadAwaiter GetAwaiter() {
 				return new MainThreadAwaiter(this.jobFactory, this.job, this.cancellationToken, this.alwaysYield);
 			}
@@ -465,6 +462,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// An awaiter struct that facilitates an asynchronous transition to the Main thread.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
 		public struct MainThreadAwaiter : INotifyCompletion {
 			private readonly JoinableTaskFactory jobFactory;
 
@@ -510,6 +508,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// Schedules a continuation for execution on the Main thread.
 			/// </summary>
 			/// <param name="continuation">The action to invoke when the operation completes.</param>
+			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters", MessageId = "System.Environment.FailFast(System.String,System.Exception)"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
 			public void OnCompleted(Action continuation) {
 				Assumes.True(this.jobFactory != null);
 
@@ -725,6 +724,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// Gets a string that describes the delegate that this instance invokes.
 			/// FOR DIAGNOSTIC PURPOSES ONLY.
 			/// </summary>
+			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Justification = "Used in DebuggerDisplay attributes.")]
 			internal string DelegateLabel {
 				get {
 					return this.WalkReturnCallstack().First(); // Top frame of the return callstack.
@@ -817,7 +817,7 @@ namespace Microsoft.VisualStudio.Threading {
 				// because if it is, we don't need to wrap it with yet another instance.
 				var existing = state as SingleExecuteProtector;
 				if (callback == ExecuteOnce && existing != null && job == existing.job) {
-					return (SingleExecuteProtector)state;
+					return existing;
 				}
 
 				return new SingleExecuteProtector(job) {

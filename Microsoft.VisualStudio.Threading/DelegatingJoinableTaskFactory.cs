@@ -31,8 +31,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		/// <param name="innerFactory">The inner factory that will create the tasks.</param>
 		protected DelegatingJoinableTaskFactory(JoinableTaskFactory innerFactory)
-			: base(innerFactory.Context, innerFactory.Collection) {
-			Requires.NotNull(innerFactory, "innerFactory");
+			: base(Requires.NotNull(innerFactory, "innerFactory").Context, innerFactory.Collection) {
 			this.innerFactory = innerFactory;
 		}
 

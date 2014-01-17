@@ -25,6 +25,15 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		/// <returns>The hang report contribution. Null values should be ignored.</returns>
 		HangReportContribution IHangReportContributor.GetHangReport() {
+			return this.GetHangReport();
+		}
+
+		/// <summary>
+		/// Contributes data for a hang report.
+		/// </summary>
+		/// <returns>The hang report contribution. Null values should be ignored.</returns>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
+		protected virtual HangReportContribution GetHangReport() {
 			using (NoMessagePumpSyncContext.Default.Apply()) {
 				// It's possible that the hang is due to a deadlock on our own private lock,
 				// so while we're reporting the hang, don't accidentally deadlock ourselves

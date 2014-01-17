@@ -9,7 +9,7 @@
 	/// <summary>
 	/// An asynchronous <see cref="SemaphoreSlim"/> like class with more convenient release syntax.
 	/// </summary>
-	public class AsyncSemaphore {
+	public class AsyncSemaphore : IDisposable {
 		/// <summary>
 		/// The semaphore used to keep concurrent access to this lock to just 1.
 		/// </summary>
@@ -67,6 +67,22 @@
 			return this.LockWaitingHelper(this.semaphore.WaitAsync(timeout, cancellationToken));
 		}
 
+		/// <inheritdoc/>
+		public void Dispose() {
+			this.Dispose(true);
+			GC.SuppressFinalize(this);
+		}
+
+		/// <summary>
+		/// Disposes managed and unmanaged resources held by this instance.
+		/// </summary>
+		/// <param name="disposing"><c>true</c> if <see cref="Dispose()"/> was called; <c>false</c> if the object is being finalized.</param>
+		protected virtual void Dispose(bool disposing) {
+			if (disposing) {
+				this.semaphore.Dispose();
+			}
+		}
+
 		/// <summary>
 		/// Requests access to the lock.
 		/// </summary>
@@ -118,6 +134,7 @@
 		/// <summary>
 		/// A value whose disposal triggers the release of a lock.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
 		public struct Releaser : IDisposable {
 			/// <summary>
 			/// The lock instance to release.

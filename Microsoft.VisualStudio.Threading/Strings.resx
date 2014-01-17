@@ -117,11 +117,29 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AppliedSynchronizationContextNotAllowed" xml:space="preserve">
+    <value>Acquiring locks on threads with a SynchronizationContext applied is not allowed.</value>
+  </data>
   <data name="CannotUpgradeNonUpgradeableLock" xml:space="preserve">
     <value>A non-upgradeable read lock is held by the caller and cannot be upgraded.</value>
   </data>
+  <data name="DangerousReadLockRequestFromWriteLockFork" xml:space="preserve">
+    <value>Dangerous request for read lock from fork of write lock.</value>
+  </data>
+  <data name="InvalidAfterCompleted" xml:space="preserve">
+    <value>Already transitioned to the Completed state.</value>
+  </data>
   <data name="InvalidLock" xml:space="preserve">
     <value>This operation can only be executed against a valid lock.</value>
+  </data>
+  <data name="InvalidWithoutLock" xml:space="preserve">
+    <value>A lock is required.</value>
+  </data>
+  <data name="JoinableTaskContextAndCollectionMismatch" xml:space="preserve">
+    <value>JoinableTask does not belong to the context this collection was instantiated with.</value>
+  </data>
+  <data name="JoinableTaskContextNodeAlreadyRegistered" xml:space="preserve">
+    <value>This node already registered.</value>
   </data>
   <data name="LazyValueFaulted" xml:space="preserve">
     <value>Lazily created value faulted during construction.</value>
@@ -134,6 +152,12 @@
   </data>
   <data name="NotAllowedUnderURorWLock" xml:space="preserve">
     <value>This operation is not allowed while holding an active upgradeable read or write lock from an AsyncReaderWriterLock.</value>
+  </data>
+  <data name="QueueEmpty" xml:space="preserve">
+    <value>The queue is empty.</value>
+  </data>
+  <data name="STAThreadCallerNotAllowed" xml:space="preserve">
+    <value>This operation cannot be completed on an STA thread.</value>
   </data>
   <data name="ValueFactoryReentrancy" xml:space="preserve">
     <value>The value factory has called for the value on the same instance.</value>
