@@ -76,7 +76,8 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <exception cref="InvalidOperationException">
 		/// Thrown when the value factory calls <see cref="GetValueAsync"/> on this instance.
 		/// </exception>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
 		public Task<T> GetValueAsync() {
 			if (!((this.value != null && this.value.IsCompleted) || CallContext.LogicalGetData(this.identity) == null)) {
 				// PERF: we check the condition and *then* retrieve the string resource only on failure

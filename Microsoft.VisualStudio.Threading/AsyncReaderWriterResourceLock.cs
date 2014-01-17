@@ -46,7 +46,8 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// Flags that modify default lock behavior.
 		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1726:UsePreferredTerms", MessageId = "Flags"), Flags]
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1726:UsePreferredTerms", MessageId = "Flags")]
+		[Flags]
 		public new enum LockFlags {
 			/// <summary>
 			/// The default behavior applies.
@@ -176,7 +177,8 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// Returns the aggregate of the lock flags for all nested locks.
 		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1726:UsePreferredTerms", MessageId = "Flags")]
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1726:UsePreferredTerms", MessageId = "Flags")]
 		protected new LockFlags GetAggregateLockFlags() {
 			return (LockFlags)base.GetAggregateLockFlags();
 		}
