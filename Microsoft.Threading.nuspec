@@ -7,18 +7,19 @@
     <authors>Microsoft Corp.</authors>
     <owners>Microsoft Corp.</owners>
     <licenseUrl>http://lcaweb/</licenseUrl>
-    <projectUrl>file:////andarno4/public/git/Microsoft.Threading</projectUrl>
+    <projectUrl>https://andrewarnott.visualstudio.com/DefaultCollection/Microsoft.Threading</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Additional lock classes, TPL and dataflow extensions.</description>
     <releaseNotes></releaseNotes>
-    <copyright>Copyright 2012</copyright>
+    <copyright>Copyright 2012-2014</copyright>
     <tags>Threading Async Lock Synchronization Threadsafe</tags>
     <dependencies>
       <dependency id="Microsoft.Validation" version="[1.0.4,2.0)" />
     </dependencies>
   </metadata>
   <files>
-    <file src="Microsoft.Threading\bin\release\Microsoft.Threading.dll" target="lib\net45-client" />
-    <file src="Microsoft.Threading\bin\release\Microsoft.Threading.xml" target="lib\net45-client" />
+    <file src="Microsoft.VisualStudio.Threading\bin\release\Microsoft.VisualStudio.Threading.dll" target="lib\net45-client" />
+    <file src="Microsoft.VisualStudio.Threading\bin\release\Microsoft.VisualStudio.Threading.pdb" target="lib\net45-client" />
+    <file src="Microsoft.VisualStudio.Threading\bin\release\Microsoft.VisualStudio.Threading.xml" target="lib\net45-client" />
   </files>
 </package>
