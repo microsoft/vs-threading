@@ -579,6 +579,31 @@
 			});
 		}
 
+		/// <summary>
+		/// Checks that posting to the SynchronizationContext.Current doesn't cause a hang.
+		/// </summary>
+		/// <remarks>
+		/// DevDiv bug 874540 represents a hang that this test repros.
+		/// </remarks>
+		[TestMethod, Timeout(TestTimeout)]
+		public void RunSwitchesToMainThreadAndPosts() {
+			var frame = new DispatcherFrame();
+			var task = Task.Run(delegate {
+				try {
+					this.asyncPump.Run(async delegate {
+						await this.asyncPump.SwitchToMainThreadAsync();
+						SynchronizationContext.Current.Post(s => { }, null);
+					});
+				} finally {
+					frame.Continue = false;
+				}
+			});
+
+			// Now let the request proceed through.
+			Dispatcher.PushFrame(frame);
+			task.Wait(); // rethrow exceptions.
+		}
+
 		[TestMethod, Timeout(TestTimeout)]
 		public void JoinRejectsSubsequentWork() {
 			bool outerCompleted = false;
