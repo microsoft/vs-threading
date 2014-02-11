@@ -604,6 +604,66 @@
 			task.Wait(); // rethrow exceptions.
 		}
 
+		/// <summary>
+		/// Checks that posting to the SynchronizationContext.Current doesn't cause a hang.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public void RunSwitchesToMainThreadAndPostsTwice() {
+			((DerivedJoinableTaskFactory)this.asyncPump).AssumeConcurrentUse = true;
+			var frame = new DispatcherFrame();
+			var task = Task.Run(delegate {
+				try {
+					this.asyncPump.Run(async delegate {
+						await this.asyncPump.SwitchToMainThreadAsync();
+						SynchronizationContext.Current.Post(s => { }, null);
+						SynchronizationContext.Current.Post(s => { }, null);
+					});
+				} finally {
+					frame.Continue = false;
+				}
+			});
+
+			// Now let the request proceed through.
+			Dispatcher.PushFrame(frame);
+			task.Wait(); // rethrow exceptions.
+		}
+
+		/// <summary>
+		/// Checks that posting to the SynchronizationContext.Current doesn't cause a hang.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public void RunSwitchesToMainThreadAndPostsTwiceDoesNotImpactJoinableTaskCompletion() {
+			((DerivedJoinableTaskFactory)this.asyncPump).AssumeConcurrentUse = true;
+			var frame = new DispatcherFrame();
+			Task task = null;
+			task = Task.Run(delegate {
+				try {
+					this.asyncPump.Run(async delegate {
+						await this.asyncPump.SwitchToMainThreadAsync();
+
+						// Kick off work that should *not* impact the completion of
+						// the JoinableTask that lives within this Run delegate.
+						// And enforce the assertion by blocking the main thread until
+						// the JoinableTask is done, which would deadlock if the
+						// JoinableTask were inappropriately blocking on the completion
+						// of the posted message.
+						SynchronizationContext.Current.Post(s => { task.Wait(); }, null);
+
+						// Post one more time, since an implementation detail may unblock
+						// the JoinableTask for the very last posted message for reasons that
+						// don't apply for other messages.
+						SynchronizationContext.Current.Post(s => { }, null);
+					});
+				} finally {
+					frame.Continue = false;
+				}
+			});
+
+			// Now let the request proceed through.
+			Dispatcher.PushFrame(frame);
+			task.Wait(); // rethrow exceptions.
+		}
+
 		[TestMethod, Timeout(TestTimeout)]
 		public void JoinRejectsSubsequentWork() {
 			bool outerCompleted = false;
