@@ -571,7 +571,6 @@ namespace Microsoft.VisualStudio.Threading {
 		internal void Complete() {
 			using (NoMessagePumpSyncContext.Default.Apply()) {
 				AsyncManualResetEvent dequeuerResetState = null;
-				Task predecessor = null;
 				this.owner.Context.SyncContextLock.EnterWriteLock();
 				try {
 					if (!this.IsCompleteRequested) {
@@ -590,20 +589,6 @@ namespace Microsoft.VisualStudio.Threading {
 						// Always arrange to pulse the dequeuer event since folks waiting
 						// will likely want to know that the JoinableTask has completed.
 						dequeuerResetState = this.dequeuerResetState;
-
-						// Arrange to pulse the dequeuer event after queues have completed
-						// if they haven't completed already as well.
-						if (this.dequeuerResetState != null) {
-							bool mainThreadQueueCompleted = this.mainThreadQueue == null || this.mainThreadQueue.IsCompleted;
-							bool threadPoolQueueCompleted = this.threadPoolQueue == null || this.threadPoolQueue.IsCompleted;
-							if (mainThreadQueueCompleted && !threadPoolQueueCompleted) {
-								predecessor = threadPoolQueue.Completion;
-							} else if (threadPoolQueueCompleted && !mainThreadQueueCompleted) {
-								predecessor = mainThreadQueue.Completion;
-							} else if (!mainThreadQueueCompleted && !threadPoolQueueCompleted) {
-								predecessor = Task.WhenAll(mainThreadQueue.Completion, threadPoolQueue.Completion);
-							}
-						}
 					}
 				} finally {
 					this.owner.Context.SyncContextLock.ExitWriteLock();
@@ -612,13 +597,6 @@ namespace Microsoft.VisualStudio.Threading {
 				if (dequeuerResetState != null) {
 					// We explicitly do this outside our lock.
 					dequeuerResetState.PulseAllAsync().Forget();
-				}
-
-				// In some cases the queues may not have been empty (if async work was posted to the sync context but
-				// the async task didn't await on it, for example). In that case, arrange to pulse the event
-				// when the queues are actually flushed.
-				if (predecessor != null) {
-					predecessor.ContinueWith((_, s) => ((JoinableTask)s).PulseDequeuerResetState(), this, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
 				}
 			}
 		}
@@ -846,26 +824,6 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			return new JoinRelease();
-		}
-
-		/// <summary>
-		/// Pulses the <see cref="dequeuerResetState"/> event, if that field is non-null.
-		/// </summary>
-		private void PulseDequeuerResetState() {
-			using (NoMessagePumpSyncContext.Default.Apply()) {
-				AsyncManualResetEvent dequeuerResetState = null;
-				this.owner.Context.SyncContextLock.EnterReadLock();
-				try {
-					dequeuerResetState = this.dequeuerResetState;
-				} finally {
-					this.owner.Context.SyncContextLock.ExitReadLock();
-				}
-
-				if (dequeuerResetState != null) {
-					// We explicitly do this outside our lock.
-					dequeuerResetState.PulseAllAsync().Forget();
-				}
-			}
 		}
 	}
 }
