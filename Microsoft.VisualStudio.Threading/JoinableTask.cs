@@ -586,11 +586,9 @@ namespace Microsoft.VisualStudio.Threading {
 
 						this.OnQueueCompleted();
 
-						if (this.dequeuerResetState != null
-							&& (this.mainThreadQueue == null || this.mainThreadQueue.IsCompleted)
-							&& (this.threadPoolQueue == null || this.threadPoolQueue.IsCompleted)) {
-							dequeuerResetState = this.dequeuerResetState;
-						}
+						// Always arrange to pulse the dequeuer event since folks waiting
+						// will likely want to know that the JoinableTask has completed.
+						dequeuerResetState = this.dequeuerResetState;
 					}
 				} finally {
 					this.owner.Context.SyncContextLock.ExitWriteLock();
@@ -651,7 +649,10 @@ namespace Microsoft.VisualStudio.Threading {
 
 			this.AddStateFlags(additionalFlags);
 
-			while (!this.IsCompleted) {
+			// Don't use IsCompleted as the condition because that
+			// includes queues of posted work that don't have to complete for the
+			// JoinableTask to be ready to return from the JTF.Run method.
+			while (!this.IsCompleteRequested) {
 				SingleExecuteProtector work;
 				Task tryAgainAfter;
 				if (this.TryDequeueSelfOrDependencies(out work, out tryAgainAfter)) {
