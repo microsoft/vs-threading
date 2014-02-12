@@ -751,7 +751,20 @@ namespace Microsoft.VisualStudio.Threading {
 					}
 
 					work = null;
-					tryAgainAfter = Task.WhenAny(wakeUpTasks);
+
+					// As an optimization, avoid a call to Task.WhenAny
+					// in the common case that we have just one task to
+					// wait for. It avoids a Task<Task> allocation.
+					// NOTICE: this optimization *does* mean we could
+					// return a Task that might fault or cancel, whereas
+					// Task.WhenAny tasks never do. But at present,
+					// the optimization is worthwhile and the tasks we
+					// include in the list above are only expected to
+					// complete successfully.
+					// And besides, our caller can deal with faulted tasks.
+					tryAgainAfter = wakeUpTasks.Count == 1
+						? wakeUpTasks[0]
+						: Task.WhenAny(wakeUpTasks);
 					return false;
 				} finally {
 					this.owner.Context.SyncContextLock.ExitUpgradeableReadLock();

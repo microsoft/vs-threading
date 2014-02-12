@@ -241,6 +241,10 @@ namespace Microsoft.VisualStudio.Threading {
 		/// while the thread sleeps.
 		/// </summary>
 		/// <param name="task">The task whose completion is being waited on.</param>
+		/// <remarks>
+		/// Implementations should take care that exceptions from faulted or canceled tasks
+		/// not be thrown back to the caller.
+		/// </remarks>
 		protected internal virtual void WaitSynchronously(Task task) {
 			if (this.Context.MainThread == Thread.CurrentThread) {
 				// Suppress any reentrancy by causing this synchronously blocking wait
@@ -257,24 +261,34 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Synchronously blocks the calling thread for the completion of the specified task.
 		/// </summary>
 		/// <param name="task">The task whose completion is being waited on.</param>
+		/// <remarks>
+		/// Implementations should take care that exceptions from faulted or canceled tasks
+		/// not be thrown back to the caller.
+		/// </remarks>
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.GC.Collect")]
 		protected virtual void WaitSynchronouslyCore(Task task) {
 			Requires.NotNull(task, "task");
 			int collections = 0; // useful for debugging dump files to see how many collections occurred.
 			Guid hangId = Guid.Empty;
-			while (!task.Wait(this.HangDetectionTimeout)) {
-				// This could be a hang. If a memory dump with heap is taken, it will
-				// significantly simplify investigation if the heap only has live awaitables
-				// remaining (completed ones GC'd). So run the GC now and then keep waiting.
-				GC.Collect();
+			try {
+				while (!task.Wait(this.HangDetectionTimeout)) {
+					// This could be a hang. If a memory dump with heap is taken, it will
+					// significantly simplify investigation if the heap only has live awaitables
+					// remaining (completed ones GC'd). So run the GC now and then keep waiting.
+					GC.Collect();
 
-				collections++;
-				TimeSpan hangDuration = TimeSpan.FromMilliseconds(this.HangDetectionTimeout.TotalMilliseconds * collections);
-				if (hangId == Guid.Empty) {
-					hangId = Guid.NewGuid();
+					collections++;
+					TimeSpan hangDuration = TimeSpan.FromMilliseconds(this.HangDetectionTimeout.TotalMilliseconds * collections);
+					if (hangId == Guid.Empty) {
+						hangId = Guid.NewGuid();
+					}
+
+					this.Context.OnHangDetected(hangDuration, collections, hangId);
 				}
-
-				this.Context.OnHangDetected(hangDuration, collections, hangId);
+			} catch (AggregateException) {
+				// Swallow exceptions thrown by Task.Wait().
+				// Our caller just wants to know when the Task completes,
+				// whether successfully or not.
 			}
 		}
 
