@@ -859,6 +859,7 @@ namespace Microsoft.VisualStudio.Threading {
 
 						// Release the rest of the memory we're referencing.
 						this.state = null;
+						this.job = null;
 					}
 
 					return true;
