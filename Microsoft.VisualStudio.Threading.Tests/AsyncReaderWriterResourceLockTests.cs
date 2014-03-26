@@ -628,6 +628,53 @@
 		}
 
 		/// <summary>
+		/// Verifies the behavior of AsyncReaderWriterResourceLock.SetAllResourcesToUnknownState()
+		/// that sets all accessed or not-yet-accessed resources to Unknown state.
+		/// This helps the callers get a lock on a resource with the exact set of options desired.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ResetPreparationTest() {
+			Resource resource;
+
+			using (var access = await this.resourceLock.WriteLockAsync()) {
+				using (var access1 = await this.resourceLock.WriteLockAsync()) {
+					resource = await access1.GetResourceAsync(1);
+
+					Assert.AreEqual(Resource.State.Exclusive, resource.CurrentState);
+					Assert.AreEqual(1, resource.ExclusiveAccessPreparationCount);
+				}
+
+				Assert.AreEqual(Resource.State.Exclusive, resource.CurrentState);
+
+				this.resourceLock.SetAllResourcesToUnknownState();
+				resource.CurrentState = Resource.State.None;
+
+				resource = await access.GetResourceAsync(1);
+				Assert.AreEqual(Resource.State.Exclusive, resource.CurrentState);
+				Assert.AreEqual(2, resource.ExclusiveAccessPreparationCount);
+
+				using (var access2 = await this.resourceLock.WriteLockAsync(ResourceLockWrapper.LockFlags.SkipInitialPreparation)) {
+					var resource2 = await access2.GetResourceAsync(1);
+					Assert.AreSame(resource, resource2);
+
+					Assert.AreEqual(Resource.State.Exclusive, resource2.CurrentState);
+					Assert.AreEqual(2, resource2.ExclusiveAccessPreparationCount);
+				}
+
+				this.resourceLock.SetAllResourcesToUnknownState();
+				resource.CurrentState = Resource.State.None;
+
+				using (var access3 = await this.resourceLock.WriteLockAsync(ResourceLockWrapper.LockFlags.SkipInitialPreparation)) {
+					var resource3 = await access3.GetResourceAsync(1);
+					Assert.AreSame(resource, resource3);
+
+					Assert.AreEqual(Resource.State.None, resource3.CurrentState);
+					Assert.AreEqual(2, resource3.ExclusiveAccessPreparationCount);
+				}
+			}
+		}
+
+		/// <summary>
 		/// Demonstrates that a conscientious lock holder may asynchronously release a write lock
 		/// so that blocking the thread isn't necessary while preparing resource for concurrent access again.
 		/// </summary>
@@ -904,6 +951,10 @@
 
 			internal new void SetResourceAsAccessed(Func<Resource, object, bool> resourceCheck, object state) {
 				base.SetResourceAsAccessed(resourceCheck, state);
+			}
+
+			internal new void SetAllResourcesToUnknownState() {
+				base.SetAllResourcesToUnknownState();
 			}
 
 			protected override Task<Resource> GetResourceAsync(int resourceMoniker, CancellationToken cancellationToken) {

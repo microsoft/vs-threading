@@ -175,6 +175,14 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
+		/// Sets all the resources to be considered in an unknown state.
+		/// </summary>
+		protected void SetAllResourcesToUnknownState() {
+			Verify.Operation(this.IsWriteLockHeld, Strings.InvalidLock);
+			this.helper.SetAllResourcesToUnknownState();
+		}
+
+		/// <summary>
 		/// Returns the aggregate of the lock flags for all nested locks.
 		/// </summary>
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
@@ -353,7 +361,7 @@ namespace Microsoft.VisualStudio.Threading {
 					// Reset ALL resources to an unknown state. Not just the ones explicitly requested
 					// because backdoors can and legitimately do (as in CPS) exist for tampering
 					// with a resource without going through our access methods.
-					this.SetUnknownResourceState(this.resourcePreparationTasks.Select(rp => rp.Key).ToList());
+					this.SetAllResourcesToUnknownState();
 					this.resourcesAcquiredWithinWriteLock.Clear(); // the write lock is gone now.
 
 					if (this.service.IsUpgradeableReadLockHeld && this.resourcesAcquiredWithinUpgradeableRead.Count > 0) {
@@ -406,6 +414,13 @@ namespace Microsoft.VisualStudio.Threading {
 					await preparationTask.ConfigureAwait(false);
 					return resource;
 				}
+			}
+
+			/// <summary>
+			/// Sets all the resources to be considered in an unknown state. Any subsequent access (exclusive or concurrent) will prepare the resource.
+			/// </summary>
+			internal void SetAllResourcesToUnknownState() {
+				this.SetUnknownResourceState(this.resourcePreparationTasks.Select(rp => rp.Key).ToList());
 			}
 
 			/// <summary>
