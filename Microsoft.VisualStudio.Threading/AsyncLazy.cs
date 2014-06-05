@@ -70,6 +70,16 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
+		/// Gets a value indicating whether the value factory has been invoked and has run to completion.
+		/// </summary>
+		public bool IsValueFactoryCompleted {
+			get {
+				Thread.MemoryBarrier();
+				return this.value != null && this.value.IsCompleted;
+			}
+		}
+
+		/// <summary>
 		/// Gets the task that produces or has produced the value.
 		/// </summary>
 		/// <returns>A task whose result is the lazily constructed value.</returns>

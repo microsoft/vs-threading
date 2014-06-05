@@ -46,6 +46,22 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 			Assert.IsTrue(lazy.IsValueCreated);
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task IsValueFactoryCompleted() {
+			var evt = new AsyncManualResetEvent();
+			var lazy = new AsyncLazy<GenericParameterHelper>(async delegate {
+				await evt;
+				return new GenericParameterHelper(5);
+			});
+
+			Assert.IsFalse(lazy.IsValueFactoryCompleted);
+			var resultTask = lazy.GetValueAsync();
+			Assert.IsFalse(lazy.IsValueFactoryCompleted);
+			await evt.SetAsync();
+			Assert.AreEqual(5, (await resultTask).Data);
+			Assert.IsTrue(lazy.IsValueFactoryCompleted);
+		}
+
 		[TestMethod, Timeout(TestTimeout), ExpectedException(typeof(ArgumentNullException))]
 		public void CtorNullArgs() {
 			new AsyncLazy<object>(null);
