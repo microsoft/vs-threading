@@ -34,7 +34,7 @@ namespace Microsoft.VisualStudio.Threading {
 		private Func<Task<T>> valueFactory;
 
 		/// <summary>
-		/// The async pump to Join on calls to <see cref="GetValueAsync"/>.
+		/// The async pump to Join on calls to <see cref="GetValueAsync(CancellationToken)"/>.
 		/// </summary>
 		private JoinableTaskFactory jobFactory;
 
@@ -52,7 +52,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Initializes a new instance of the <see cref="AsyncLazy{T}"/> class.
 		/// </summary>
 		/// <param name="valueFactory">The async function that produces the value.  To be invoked at most once.</param>
-		/// <param name="joinableTaskFactory">The factory to use when invoking the value factory in <see cref="GetValueAsync"/> to avoid deadlocks when the main thread is required by the value factory.</param>
+		/// <param name="joinableTaskFactory">The factory to use when invoking the value factory in <see cref="GetValueAsync(CancellationToken)"/> to avoid deadlocks when the main thread is required by the value factory.</param>
 		public AsyncLazy(Func<Task<T>> valueFactory, JoinableTaskFactory joinableTaskFactory = null) {
 			Requires.NotNull(valueFactory, "valueFactory");
 			this.valueFactory = valueFactory;
