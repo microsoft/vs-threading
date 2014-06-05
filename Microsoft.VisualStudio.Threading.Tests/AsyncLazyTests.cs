@@ -249,6 +249,57 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public async Task GetValueAsyncWithCancellationToken() {
+			var evt = new AsyncManualResetEvent();
+			var lazy = new AsyncLazy<GenericParameterHelper>(async delegate {
+				await evt;
+				return new GenericParameterHelper(5);
+			});
+
+			var cts = new CancellationTokenSource();
+			var task1 = lazy.GetValueAsync(cts.Token);
+			var task2 = lazy.GetValueAsync();
+			cts.Cancel();
+
+			// Verify that the task returned from the canceled request actually completes before the value factory does.
+			try {
+				await task1;
+				Assert.Fail("Expected exception not thrown.");
+			} catch (OperationCanceledException) { }
+
+			// Now verify that the value factory does actually complete anyway for other callers.
+			await evt.SetAsync();
+			var task2Result = await task2;
+			Assert.AreEqual(5, task2Result.Data);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task GetValueAsyncWithCancellationTokenPreCanceled() {
+			var lazy = new AsyncLazy<GenericParameterHelper>(() => Task.FromResult(new GenericParameterHelper(5)));
+			var cts = new CancellationTokenSource();
+			cts.Cancel();
+			try {
+				await lazy.GetValueAsync(cts.Token);
+				Assert.Fail("Expected exception not thrown.");
+			} catch (OperationCanceledException) { }
+
+			Assert.IsFalse(lazy.IsValueCreated, "Value factory should not have been invoked for a pre-canceled token.");
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task GetValueAsyncAlreadyCompletedWithCancellationTokenPreCanceled() {
+			var lazy = new AsyncLazy<GenericParameterHelper>(() => Task.FromResult(new GenericParameterHelper(5)));
+			await lazy.GetValueAsync();
+
+			var cts = new CancellationTokenSource();
+			cts.Cancel();
+			var result = await lazy.GetValueAsync(cts.Token); // this shouldn't throw canceled because it was already done.
+			Assert.AreEqual(5, result.Data);
+			Assert.IsTrue(lazy.IsValueCreated);
+			Assert.IsTrue(lazy.IsValueFactoryCompleted);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void ToStringForUncreatedValue() {
 			var lazy = new AsyncLazy<object>(() => Task.FromResult<object>(null));
 			string result = lazy.ToString();

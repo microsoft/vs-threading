@@ -84,11 +84,28 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		/// <returns>A task whose result is the lazily constructed value.</returns>
 		/// <exception cref="InvalidOperationException">
-		/// Thrown when the value factory calls <see cref="GetValueAsync"/> on this instance.
+		/// Thrown when the value factory calls <see cref="GetValueAsync()"/> on this instance.
 		/// </exception>
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
 		public Task<T> GetValueAsync() {
+			return this.GetValueAsync(CancellationToken.None);
+		}
+
+		/// <summary>
+		/// Gets the task that produces or has produced the value.
+		/// </summary>
+		/// <param name="cancellationToken">
+		/// A token whose cancellation indicates that the caller no longer is interested in the result.
+		/// Note that this will not cancel the value factory (since other callers may exist).
+		/// But this token will result in an expediant cancellation of the returned Task,
+		/// and a dis-joining of any <see cref="JoinableTask"/> that may have occurred as a result of this call.
+		/// </param>
+		/// <returns>A task whose result is the lazily constructed value.</returns>
+		/// <exception cref="InvalidOperationException">
+		/// Thrown when the value factory calls <see cref="GetValueAsync()"/> on this instance.
+		/// </exception>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+		public Task<T> GetValueAsync(CancellationToken cancellationToken) {
 			if (!((this.value != null && this.value.IsCompleted) || CallContext.LogicalGetData(this.identity) == null)) {
 				// PERF: we check the condition and *then* retrieve the string resource only on failure
 				// because the string retrieval has shown up as significant on ETL traces.
@@ -109,6 +126,7 @@ namespace Microsoft.VisualStudio.Threading {
 					// other threads synchronously block till the synchronous portion
 					// has completed.
 					if (this.value == null) {
+						cancellationToken.ThrowIfCancellationRequested();
 						CallContext.LogicalSetData(this.identity, new object());
 						try {
 							var valueFactory = this.valueFactory;
@@ -143,10 +161,10 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			if (!this.value.IsCompleted && this.joinableTask != null) {
-				this.joinableTask.JoinAsync().Forget();
+				this.joinableTask.JoinAsync(cancellationToken).Forget();
 			}
 
-			return this.value;
+			return this.value.WithCancellation(cancellationToken);
 		}
 
 		/// <summary>
