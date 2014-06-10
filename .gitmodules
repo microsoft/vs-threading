@@ -1,3 +1,6 @@
 [submodule "Microsoft.Validation"]
 	path = Microsoft.Validation
 	url = //andarno3/public/git/Microsoft.Validation
+[submodule "Microsoft.VisualStudio.Validation"]
+	path = Microsoft.VisualStudio.Validation
+	url = https://vspnb.visualstudio.com/DefaultCollection/CPS/_git/Validation
