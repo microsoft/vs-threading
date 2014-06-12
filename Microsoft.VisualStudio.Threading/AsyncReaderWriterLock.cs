@@ -852,7 +852,7 @@ namespace Microsoft.VisualStudio.Threading {
 									issued = true;
 								} else if (hasRead && !hasUpgradeableRead) {
 									// We cannot issue a write lock when the caller already holds a read lock.
-									throw new InvalidOperationException();
+									throw new InvalidOperationException(Strings.CannotUpgradeNonUpgradeableLock);
 								} else if (this.AllHeldLocksAreByThisStack(awaiter.NestingLock)) {
 									issued = true;
 
