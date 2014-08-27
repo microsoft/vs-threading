@@ -1695,7 +1695,7 @@ namespace Microsoft.VisualStudio.Threading {
 
 					if (!this.LockIssued && this.continuation == null && !this.cancellationToken.IsCancellationRequested) {
 						using (var synchronousBlock = new ManualResetEventSlim()) {
-							this.OnCompleted(() => synchronousBlock.Set());
+							this.OnCompleted(synchronousBlock.Set);
 							synchronousBlock.Wait(this.cancellationToken);
 						}
 					}
