@@ -1870,7 +1870,7 @@ namespace Microsoft.VisualStudio.Threading {
 					this.threadHoldingSemaphore = Thread.CurrentThread;
 					try {
 						SynchronizationContext.SetSynchronizationContext(this);
-						delegateInvoked = true;
+						delegateInvoked = true; // set now, before the delegate might throw.
 						d(state);
 					} catch (Exception ex) {
 						// We just eat these up to avoid crashing the process by throwing on a threadpool thread.
@@ -1889,7 +1889,13 @@ namespace Microsoft.VisualStudio.Threading {
 					// to execute the delegate, so just execute it.
 					if (!delegateInvoked) {
 						SynchronizationContext.SetSynchronizationContext(null);
-						d(state);
+						try {
+							delegateInvoked = true; // set now, before the delegate might throw.
+							d(state);
+						} catch (Exception ex) {
+							// We just eat these up to avoid crashing the process by throwing on a threadpool thread.
+							Report.Fail("An unhandled exception was thrown from within a posted message. {0}", ex);
+						}
 					}
 				}
 			}
