@@ -1864,19 +1864,38 @@ namespace Microsoft.VisualStudio.Threading {
 			/// use the result, and this way the compiler doesn't have to create the Task object.
 			/// </remarks>
 			private async void PostHelper(SendOrPostCallback d, object state) {
-				await this.semaphore.WaitAsync().ConfigureAwait(false);
-				this.threadHoldingSemaphore = Thread.CurrentThread;
+				bool delegateInvoked = false;
 				try {
-					SynchronizationContext.SetSynchronizationContext(this);
-					d(state);
-				} catch (Exception ex) {
-					// We just eat these up to avoid crashing the process by throwing on a threadpool thread.
-					Report.Fail("An unhandled exception was thrown from within a posted message. {0}", ex);
-				} finally {
-					// The semaphore *may* have been released already, so take care to not release it again.
-					if (this.threadHoldingSemaphore == Thread.CurrentThread) {
-						this.threadHoldingSemaphore = null;
-						this.semaphore.Release();
+					await this.semaphore.WaitAsync().ConfigureAwait(false);
+					this.threadHoldingSemaphore = Thread.CurrentThread;
+					try {
+						SynchronizationContext.SetSynchronizationContext(this);
+						delegateInvoked = true; // set now, before the delegate might throw.
+						d(state);
+					} catch (Exception ex) {
+						// We just eat these up to avoid crashing the process by throwing on a threadpool thread.
+						Report.Fail("An unhandled exception was thrown from within a posted message. {0}", ex);
+					} finally {
+						// The semaphore *may* have been released already, so take care to not release it again.
+						if (this.threadHoldingSemaphore == Thread.CurrentThread) {
+							this.threadHoldingSemaphore = null;
+							this.semaphore.Release();
+						}
+					}
+				} catch (ObjectDisposedException) {
+					// It can happen that this SynchronizationContext was disposed of
+					// but someone who captured it is still trying to use it.
+					// In that case, we're not protecting anything any more and we're obliged
+					// to execute the delegate, so just execute it.
+					if (!delegateInvoked) {
+						SynchronizationContext.SetSynchronizationContext(null);
+						try {
+							delegateInvoked = true; // set now, before the delegate might throw.
+							d(state);
+						} catch (Exception ex) {
+							// We just eat these up to avoid crashing the process by throwing on a threadpool thread.
+							Report.Fail("An unhandled exception was thrown from within a posted message. {0}", ex);
+						}
 					}
 				}
 			}
