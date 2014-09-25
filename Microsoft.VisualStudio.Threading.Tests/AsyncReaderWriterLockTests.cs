@@ -3083,6 +3083,24 @@
 		#endregion
 
 		[TestMethod, Timeout(TestTimeout)]
+		public async Task DisposeWhileExclusiveLockContextCaptured() {
+			var signal = new AsyncManualResetEvent();
+			Task helperTask;
+			using (await this.asyncLock.WriteLockAsync()) {
+				helperTask = this.DisposeWhileExclusiveLockContextCaptured_HelperAsync(signal);
+			}
+
+			await signal.SetAsync();
+			this.asyncLock.Dispose();
+			await helperTask;
+		}
+
+		private async Task DisposeWhileExclusiveLockContextCaptured_HelperAsync(AsyncManualResetEvent signal) {
+			await signal;
+			await Task.Yield();
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void GetHangReportSimple() {
 			IHangReportContributor reportContributor = this.asyncLock;
 			var report = reportContributor.GetHangReport();
