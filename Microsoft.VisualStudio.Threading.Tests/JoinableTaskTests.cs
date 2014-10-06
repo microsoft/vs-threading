@@ -1943,12 +1943,42 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void RunAsyncWithNonYieldingDelegateNestedInRunOverhead() {
-			this.asyncPump.Run(async delegate {
+			var waitCountingJTF = new WaitCountingJoinableTaskFactory(this.asyncPump.Context);
+			waitCountingJTF.Run(async delegate {
 				await TaskScheduler.Default;
-				for (int i = 0; i < 5000; i++) {
+				for (int i = 0; i < 1000; i++) {
+					// TIP: spinning gives the blocking thread longer to wake up, which
+					// if it wakes up at all tends to mean it will wake up in time for more
+					// of the iterations, showing that doing real work exercerbates the problem.
+					////for (int j = 0; j < 5000; j++) { }
+
 					await this.asyncPump.RunAsync(delegate { return TplExtensions.CompletedTask; });
 				}
 			});
+
+			// We assert that since the blocking thread didn't need to wake up at all,
+			// it should have only slept once. Any more than that constitutes unnecessary overhead.
+			Assert.AreEqual(1, waitCountingJTF.WaitCount);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void RunAsyncWithYieldingDelegateNestedInRunOverhead() {
+			var waitCountingJTF = new WaitCountingJoinableTaskFactory(this.asyncPump.Context);
+			waitCountingJTF.Run(async delegate {
+				await TaskScheduler.Default;
+				for (int i = 0; i < 1000; i++) {
+					// TIP: spinning gives the blocking thread longer to wake up, which
+					// if it wakes up at all tends to mean it will wake up in time for more
+					// of the iterations, showing that doing real work exercerbates the problem.
+					////for (int j = 0; j < 5000; j++) { }
+
+					await this.asyncPump.RunAsync(async delegate { await Task.Yield(); });
+				}
+			});
+
+			// We assert that since the blocking thread didn't need to wake up at all,
+			// it should have only slept once. Any more than that constitutes unnecessary overhead.
+			Assert.AreEqual(1, waitCountingJTF.WaitCount);
 		}
 
 		private static async void SomeFireAndForgetMethod() {
@@ -2062,6 +2092,23 @@
 					action();
 				}
 
+				base.WaitSynchronously(task);
+			}
+		}
+
+		private class WaitCountingJoinableTaskFactory : JoinableTaskFactory {
+			private int waitCount;
+
+			internal WaitCountingJoinableTaskFactory(JoinableTaskContext owner)
+				: base(owner) {
+			}
+
+			internal int WaitCount {
+				get { return this.waitCount; }
+			}
+
+			protected override void WaitSynchronously(Task task) {
+				Interlocked.Increment(ref this.waitCount);
 				base.WaitSynchronously(task);
 			}
 		}
