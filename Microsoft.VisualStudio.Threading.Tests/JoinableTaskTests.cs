@@ -1941,6 +1941,16 @@
 			}
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void RunAsyncWithNonYieldingDelegateNestedInRunOverhead() {
+			this.asyncPump.Run(async delegate {
+				await TaskScheduler.Default;
+				for (int i = 0; i < 5000; i++) {
+					await this.asyncPump.RunAsync(delegate { return TplExtensions.CompletedTask; });
+				}
+			});
+		}
+
 		private static async void SomeFireAndForgetMethod() {
 			await Task.Yield();
 		}
