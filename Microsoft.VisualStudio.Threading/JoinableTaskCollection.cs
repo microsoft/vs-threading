@@ -72,8 +72,7 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			if (!joinableTask.IsCompleted) {
-				this.Context.SyncContextLock.EnterWriteLock();
-				try {
+				lock (this.Context.SyncContextLock) {
 					int refCount;
 					if (!this.joinables.TryGetValue(joinableTask, out refCount) || this.refCountAddedJobs) {
 						this.joinables[joinableTask] = refCount + 1;
@@ -93,8 +92,6 @@ namespace Microsoft.VisualStudio.Threading {
 					if (this.emptyEvent != null) {
 						this.emptyEvent.Reset();
 					}
-				} finally {
-					this.Context.SyncContextLock.ExitWriteLock();
 				}
 			}
 		}
@@ -108,8 +105,7 @@ namespace Microsoft.VisualStudio.Threading {
 			Requires.NotNull(joinableTask, "joinableTask");
 
 			using (NoMessagePumpSyncContext.Default.Apply()) {
-				this.Context.SyncContextLock.EnterWriteLock();
-				try {
+				lock (this.Context.SyncContextLock) {
 					int refCount;
 					if (this.joinables.TryGetValue(joinableTask, out refCount)) {
 						if (refCount == 1 || joinableTask.IsCompleted) { // remove regardless of ref count if job is completed
@@ -132,8 +128,6 @@ namespace Microsoft.VisualStudio.Threading {
 							this.joinables[joinableTask] = refCount - 1;
 						}
 					}
-				} finally {
-					this.Context.SyncContextLock.ExitWriteLock();
 				}
 			}
 		}
@@ -154,8 +148,7 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			using (NoMessagePumpSyncContext.Default.Apply()) {
-				this.Context.SyncContextLock.EnterWriteLock();
-				try {
+				lock (this.Context.SyncContextLock) {
 					int count;
 					this.joiners.TryGetValue(ambientJob, out count);
 					this.joiners[ambientJob] = count + 1;
@@ -168,8 +161,6 @@ namespace Microsoft.VisualStudio.Threading {
 					}
 
 					return new JoinRelease(this, ambientJob);
-				} finally {
-					this.Context.SyncContextLock.ExitWriteLock();
 				}
 			}
 		}
@@ -183,13 +174,10 @@ namespace Microsoft.VisualStudio.Threading {
 				// We need a read lock to protect against the emptiness of this collection changing
 				// while we're setting the initial set state of the new event.
 				using (NoMessagePumpSyncContext.Default.Apply()) {
-					this.Context.SyncContextLock.EnterReadLock();
-					try {
+					lock (this.Context.SyncContextLock) {
 						// We use interlocked here to mitigate race conditions in lazily initializing this field.
 						// We *could* take a write lock above, but that would needlessly increase lock contention.
 						var nowait = Interlocked.CompareExchange(ref this.emptyEvent, new AsyncManualResetEvent(this.joinables.Count == 0), null);
-					} finally {
-						this.Context.SyncContextLock.ExitReadLock();
 					}
 				}
 			}
@@ -206,11 +194,8 @@ namespace Microsoft.VisualStudio.Threading {
 			Requires.NotNull(joinableTask, "joinableTask");
 
 			using (NoMessagePumpSyncContext.Default.Apply()) {
-				this.Context.SyncContextLock.EnterReadLock();
-				try {
+				lock (this.Context.SyncContextLock) {
 					return this.joinables.ContainsKey(joinableTask);
-				} finally {
-					this.Context.SyncContextLock.ExitReadLock();
 				}
 			}
 		}
@@ -223,8 +208,7 @@ namespace Microsoft.VisualStudio.Threading {
 			Requires.NotNull(joinableTask, "joinableTask");
 
 			using (NoMessagePumpSyncContext.Default.Apply()) {
-				this.Context.SyncContextLock.EnterWriteLock();
-				try {
+				lock (this.Context.SyncContextLock) {
 					int count;
 					this.joiners.TryGetValue(joinableTask, out count);
 					if (count == 1) {
@@ -237,8 +221,6 @@ namespace Microsoft.VisualStudio.Threading {
 					} else {
 						this.joiners[joinableTask] = count - 1;
 					}
-				} finally {
-					this.Context.SyncContextLock.ExitWriteLock();
 				}
 			}
 		}
@@ -305,13 +287,10 @@ namespace Microsoft.VisualStudio.Threading {
 
 			using (NoMessagePumpSyncContext.Default.Apply()) {
 				var joinables = new List<JoinableTask>();
-				this.Context.SyncContextLock.EnterReadLock();
-				try {
+				lock (this.Context.SyncContextLock) {
 					foreach (var item in this.joinables) {
 						joinables.Add(item.Key);
 					}
-				} finally {
-					this.Context.SyncContextLock.ExitReadLock();
 				}
 
 				return joinables.GetEnumerator();

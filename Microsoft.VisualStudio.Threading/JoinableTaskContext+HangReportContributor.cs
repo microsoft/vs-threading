@@ -23,8 +23,7 @@
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
 		protected virtual HangReportContribution GetHangReport() {
 			using (NoMessagePumpSyncContext.Default.Apply()) {
-				this.SyncContextLock.EnterReadLock();
-				try {
+				lock (this.SyncContextLock) {
 					XElement nodes;
 					XElement links;
 					var dgml = CreateTemplateDgml(out nodes, out links);
@@ -43,8 +42,6 @@
 						dgml.ToString(),
 						"application/xml",
 						"JoinableTaskContext.dgml");
-				} finally {
-					this.SyncContextLock.ExitReadLock();
 				}
 			}
 		}
