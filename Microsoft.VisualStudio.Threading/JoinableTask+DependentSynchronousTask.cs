@@ -63,7 +63,7 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(task, "task");
             Assumes.True(this.owner.Context.SyncContextLock.IsWriteLockHeld);
 
-            if (this.IsCompleteRequested) {
+            if (this.IsCompleted || this.IsCompleteRequested) {
                 return false;
             }
 
@@ -114,7 +114,9 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(task, "task");
             Assumes.True(this.owner.Context.SyncContextLock.IsWriteLockHeld);
 
-            RemoveDependingSynchronousTaskFrom(new JoinableTask[] { this }, task, force);
+            if (task.dependingSynchronousTaskTracking != null) {
+                RemoveDependingSynchronousTaskFrom(new JoinableTask[] { this }, task, force);
+            }
         }
 
         private static void RemoveDependingSynchronousTaskFrom(IReadOnlyList<JoinableTask> tasks, JoinableTask syncTask, bool force) {
@@ -126,28 +128,27 @@ namespace Microsoft.VisualStudio.Threading
 
             if (force) {
                 reachableTasks = new HashSet<JoinableTask>();
-            } else {
-                remainTasks = new HashSet<JoinableTask>();
             }
 
             foreach (var task in tasks) {
-                task.RemoveDependingSynchronousTask(syncTask, remainTasks, reachableTasks);
+                task.RemoveDependingSynchronousTask(syncTask, reachableTasks, ref remainTasks);
             }
 
-            if (!force && remainTasks.Count > 0) {
+            if (!force && remainTasks != null && remainTasks.Count > 0) {
                 // We need do extra work to prevent loops in unreachable tasks
                 reachableTasks = new HashSet<JoinableTask>();
                 syncTask.AddSelfAndDescendentOrJoinedJobs(reachableTasks);
 
                 // force to remove all invalid items
                 remainTasks.RemoveWhere(t => reachableTasks.Contains(t));
+                HashSet<JoinableTask> remainPlaceHold = null;
                 foreach (var remainTask in remainTasks) {
-                    remainTask.RemoveDependingSynchronousTask(syncTask, null, reachableTasks);
+                    remainTask.RemoveDependingSynchronousTask(syncTask, reachableTasks, ref remainPlaceHold);
                 }
             }
         }
 
-        private void RemoveDependingSynchronousTask(JoinableTask task, HashSet<JoinableTask> dependentTaskRemains, HashSet<JoinableTask> reachableTasks) {
+        private void RemoveDependingSynchronousTask(JoinableTask task, HashSet<JoinableTask> reachableTasks, ref HashSet<JoinableTask> dependentTaskRemains) {
             Requires.NotNull(task, "task");
 
             DependentSynchronousTask previousTaskTracking = null;
@@ -173,7 +174,11 @@ namespace Microsoft.VisualStudio.Threading
                         }
                     }
 
-                    if (dependentTaskRemains != null) {
+                    if (reachableTasks == null) {
+                        if (dependentTaskRemains == null) {
+                            dependentTaskRemains = new HashSet<JoinableTask>();
+                        }
+
                         if (removed) {
                             dependentTaskRemains.Remove(this);
                         } else {
@@ -190,7 +195,7 @@ namespace Microsoft.VisualStudio.Threading
 
             if (removed && this.childOrJoinedJobs != null) {
                 foreach (var item in this.childOrJoinedJobs) {
-                    item.Key.RemoveDependingSynchronousTask(task, dependentTaskRemains, reachableTasks);
+                    item.Key.RemoveDependingSynchronousTask(task, reachableTasks, ref dependentTaskRemains);
                 }
             }
         }
