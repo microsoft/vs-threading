@@ -96,11 +96,10 @@ namespace Microsoft.VisualStudio.Threading {
 		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private WeakKeyDictionary<JoinableTask, int> childOrJoinedJobs;
 
-		/// <summary>
-		/// An event that is signaled <see cref="childOrJoinedJobs"/> has changed, or queues are lazily constructed. Lazily constructed.
-		/// </summary>
-		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
-		private AsyncManualResetEvent dequeuerResetState;
+        /// <summary>
+        /// An event that is signaled when any queue in the dependent has item to process
+        /// </summary>
+        private AsyncManualResetEvent queueNeedProcessEvent;
 
 		/// <summary>The queue of work items. Lazily constructed.</summary>
 		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -149,52 +148,33 @@ namespace Microsoft.VisualStudio.Threading {
 			this.initialDelegate = initialDelegate;
 		}
 
-		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
-		internal Task DequeuerResetEvent {
-			get {
-				using (NoMessagePumpSyncContext.Default.Apply()) {
-					this.owner.Context.SyncContextLock.EnterUpgradeableReadLock();
-					try {
-						if (this.dequeuerResetState == null) {
-							this.owner.Context.SyncContextLock.EnterWriteLock();
-							try {
-								// We pass in allowInliningWaiters: true,
-								// since we control all waiters and their continuations
-								// are be benign, and it makes it more efficient.
-								this.dequeuerResetState = new AsyncManualResetEvent(allowInliningAwaiters: true);
-							} finally {
-								this.owner.Context.SyncContextLock.ExitWriteLock();
-							}
-						}
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        internal Task QueueNeedProcessEvent {
+            get {
+                using (NoMessagePumpSyncContext.Default.Apply()) {
+                    this.owner.Context.SyncContextLock.EnterUpgradeableReadLock();
+                    try {
+                        if (this.queueNeedProcessEvent == null) {
+                            this.owner.Context.SyncContextLock.EnterWriteLock();
+                            try {
+                                // We pass in allowInliningWaiters: true,
+                                // since we control all waiters and their continuations
+                                // are be benign, and it makes it more efficient.
+                                this.queueNeedProcessEvent = new AsyncManualResetEvent(allowInliningAwaiters: true);
+                            }
+                            finally {
+                                this.owner.Context.SyncContextLock.ExitWriteLock();
+                            }
+                        }
 
-						return this.dequeuerResetState.WaitAsync();
-					} finally {
-						this.owner.Context.SyncContextLock.ExitUpgradeableReadLock();
-					}
-				}
-			}
-		}
-
-		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
-		internal Task EnqueuedNotify {
-			get {
-				using (NoMessagePumpSyncContext.Default.Apply()) {
-					this.owner.Context.SyncContextLock.EnterReadLock();
-					try {
-						var queue = this.ApplicableQueue;
-						if (queue != null) {
-							return queue.EnqueuedNotify;
-						}
-
-						// We haven't created an applicable queue yet. Return null,
-						// and our caller will call us back when DequeuerResetEvent is signaled.
-						return null;
-					} finally {
-						this.owner.Context.SyncContextLock.ExitReadLock();
-					}
-				}
-			}
-		}
+                        return this.queueNeedProcessEvent.WaitAsync();
+                    }
+                    finally {
+                        this.owner.Context.SyncContextLock.ExitUpgradeableReadLock();
+                    }
+                }
+            }
+        }
 
 		/// <summary>
 		/// Gets or sets the set of nesting factories (excluding <see cref="owner"/>)
@@ -319,7 +299,7 @@ namespace Microsoft.VisualStudio.Threading {
 		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		internal bool HasNonEmptyQueue {
 			get {
-				Assumes.True(this.owner.Context.SyncContextLock.IsReadLockHeld);
+				Assumes.True(this.owner.Context.SyncContextLock.IsReadLockHeld || this.owner.Context.SyncContextLock.IsWriteLockHeld);
 				return (this.mainThreadQueue != null && this.mainThreadQueue.Count > 0)
 					|| (this.threadPoolQueue != null && this.threadPoolQueue.Count > 0);
 			}
@@ -465,7 +445,7 @@ namespace Microsoft.VisualStudio.Threading {
 		internal void Post(SendOrPostCallback d, object state, bool mainThreadAffinitized) {
 			using (NoMessagePumpSyncContext.Default.Apply()) {
 				SingleExecuteProtector wrapper = null;
-				AsyncManualResetEvent dequeuerResetState = null; // initialized if we should pulse it at the end of the method
+                List<AsyncManualResetEvent> tasksNeedNotify = null; // initialized if we should pulse it at the end of the method
 				bool postToFactory = false;
 
 				this.owner.Context.SyncContextLock.EnterWriteLock();
@@ -475,7 +455,8 @@ namespace Microsoft.VisualStudio.Threading {
 						// We need to forward the work to the fallback mechanisms. 
 						postToFactory = true;
 					} else {
-						wrapper = SingleExecuteProtector.Create(this, d, state);
+                        ExecutionQueue queueUpdated = null;
+                        wrapper = SingleExecuteProtector.Create(this, d, state);
 						if (mainThreadAffinitized && !this.SynchronouslyBlockingMainThread) {
 							wrapper.RaiseTransitioningEvents();
 						}
@@ -483,27 +464,32 @@ namespace Microsoft.VisualStudio.Threading {
 						if (mainThreadAffinitized) {
 							if (this.mainThreadQueue == null) {
 								this.mainThreadQueue = new ExecutionQueue(this);
-								dequeuerResetState = this.dequeuerResetState;
 							}
 
 							// Try to post the message here, but we'll also post to the underlying sync context
 							// so if this fails (because the operation has completed) we'll still get the work
 							// done eventually.
 							this.mainThreadQueue.TryEnqueue(wrapper);
-						} else {
+                            queueUpdated = this.mainThreadQueue;
+                        } else {
 							if (this.SynchronouslyBlockingThreadPool) {
 								if (this.threadPoolQueue == null) {
 									this.threadPoolQueue = new ExecutionQueue(this);
-									dequeuerResetState = this.dequeuerResetState;
 								}
 
 								if (!this.threadPoolQueue.TryEnqueue(wrapper)) {
 									ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
-								}
+								} else {
+                                    queueUpdated = this.threadPoolQueue;
+                                }
 							} else {
 								ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
 							}
 						}
+
+                        if (queueUpdated != null) {
+                            tasksNeedNotify = this.GetDependingSynchronousTasksEvents();
+                        }
 					}
 				} finally {
 					this.owner.Context.SyncContextLock.ExitWriteLock();
@@ -524,10 +510,12 @@ namespace Microsoft.VisualStudio.Threading {
 					}
 				}
 
-				if (dequeuerResetState != null) {
-					dequeuerResetState.PulseAllAsync().Forget();
-				}
-			}
+                if (tasksNeedNotify != null) {
+                    foreach (var queueEvent in tasksNeedNotify) {
+                        queueEvent.PulseAllAsync().Forget();
+                    }
+                }
+            }
 		}
 
 		/// <summary>
@@ -570,7 +558,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		internal void Complete() {
 			using (NoMessagePumpSyncContext.Default.Apply()) {
-				AsyncManualResetEvent dequeuerResetState = null;
+				AsyncManualResetEvent queueNeedProcessEvent = null;
 				this.owner.Context.SyncContextLock.EnterWriteLock();
 				try {
 					if (!this.IsCompleteRequested) {
@@ -586,17 +574,19 @@ namespace Microsoft.VisualStudio.Threading {
 
 						this.OnQueueCompleted();
 
-						// Always arrange to pulse the dequeuer event since folks waiting
-						// will likely want to know that the JoinableTask has completed.
-						dequeuerResetState = this.dequeuerResetState;
-					}
+                        // Always arrange to pulse the event since folks waiting
+                        // will likely want to know that the JoinableTask has completed.
+                        queueNeedProcessEvent = this.queueNeedProcessEvent;
+
+                        CleanupDependingSynchronousTask();
+                    }
 				} finally {
 					this.owner.Context.SyncContextLock.ExitWriteLock();
 				}
 
-				if (dequeuerResetState != null) {
-					// We explicitly do this outside our lock.
-					dequeuerResetState.PulseAllAsync().Forget();
+				if (queueNeedProcessEvent != null) {
+                    // We explicitly do this outside our lock.
+                    queueNeedProcessEvent.PulseAllAsync().Forget();
 				}
 			}
 		}
@@ -611,6 +601,7 @@ namespace Microsoft.VisualStudio.Threading {
 					if (this.childOrJoinedJobs != null && this.childOrJoinedJobs.TryGetValue(joinChild, out refCount)) {
 						if (refCount == 1) {
 							this.childOrJoinedJobs.Remove(joinChild);
+                            this.RemoveDependingSynchronousTaskToChild(joinChild);
 						} else {
 							this.childOrJoinedJobs[joinChild] = refCount--;
 						}
@@ -649,19 +640,42 @@ namespace Microsoft.VisualStudio.Threading {
 
 			this.AddStateFlags(additionalFlags);
 
-			// Don't use IsCompleted as the condition because that
-			// includes queues of posted work that don't have to complete for the
-			// JoinableTask to be ready to return from the JTF.Run method.
-			while (!this.IsCompleteRequested) {
-				SingleExecuteProtector work;
-				Task tryAgainAfter;
-				if (this.TryDequeueSelfOrDependencies(out work, out tryAgainAfter)) {
-					work.TryExecute();
-				} else if (tryAgainAfter != null) {
-					this.owner.WaitSynchronously(tryAgainAfter);
-					Assumes.True(tryAgainAfter.IsCompleted);
-				}
-			}
+            using (NoMessagePumpSyncContext.Default.Apply()) {
+                this.owner.Context.SyncContextLock.EnterWriteLock();
+                try {
+                    this.AddDependingSynchronousTask(this);
+                }
+                finally {
+                    this.owner.Context.SyncContextLock.ExitWriteLock();
+                }
+            }
+
+            try {
+                // Don't use IsCompleted as the condition because that
+                // includes queues of posted work that don't have to complete for the
+                // JoinableTask to be ready to return from the JTF.Run method.
+                while (!this.IsCompleteRequested) {
+				    SingleExecuteProtector work;
+                    Task tryAgainAfter;
+                    if (this.TryDequeueSelfOrDependencies(out work, out tryAgainAfter)) {
+					    work.TryExecute();
+				    } else if (tryAgainAfter != null) {
+                        this.owner.WaitSynchronously(tryAgainAfter);
+					    Assumes.True(tryAgainAfter.IsCompleted);
+				    }
+			    }
+            }
+            finally {
+                using (NoMessagePumpSyncContext.Default.Apply()) {
+                    this.owner.Context.SyncContextLock.EnterWriteLock();
+                    try {
+                        this.RemoveDependingSynchronousTask(this, true);
+                    }
+                    finally {
+                        this.owner.Context.SyncContextLock.ExitWriteLock();
+                    }
+                }
+            }
 
 			Assumes.True(this.Task.IsCompleted);
 			this.Task.GetAwaiter().GetResult(); // rethrow any exceptions
@@ -720,59 +734,47 @@ namespace Microsoft.VisualStudio.Threading {
 
 		private bool TryDequeueSelfOrDependencies(out SingleExecuteProtector work, out Task tryAgainAfter) {
 			using (NoMessagePumpSyncContext.Default.Apply()) {
-				var applicableJobs = new HashSet<JoinableTask>();
 				this.owner.Context.SyncContextLock.EnterUpgradeableReadLock();
 				try {
-					if (this.IsCompleted) {
+                    if (this.IsCompleted) {
 						work = null;
-						tryAgainAfter = null;
-						return false;
+                        tryAgainAfter = null;
+                        return false;
 					}
 
-					this.AddSelfAndDescendentOrJoinedJobs(applicableJobs);
+                    if (this.TryDequeueSelfOrDependencies(new HashSet<JoinableTask>(), out work)) {
+                        tryAgainAfter = null;
+                        return true;
+                    }
 
-					// Check all queues to see if any have immediate work.
-					foreach (var job in applicableJobs) {
-						if (job.TryDequeue(out work)) {
-							tryAgainAfter = null;
-							return true;
-						}
-					}
-
-					// None of the queues had work to do right away. Create a task that will complete when 
-					// our caller should try again.
-					var wakeUpTasks = new List<Task>(applicableJobs.Count * 2);
-					foreach (var job in applicableJobs) {
-						wakeUpTasks.Add(job.DequeuerResetEvent);
-						var enqueuedTask = job.EnqueuedNotify;
-						if (enqueuedTask != null) {
-							wakeUpTasks.Add(enqueuedTask);
-						}
-					}
-
-					work = null;
-
-					// As an optimization, avoid a call to Task.WhenAny
-					// in the common case that we have just one task to
-					// wait for. It avoids a Task<Task> allocation.
-					// NOTICE: this optimization *does* mean we could
-					// return a Task that might fault or cancel, whereas
-					// Task.WhenAny tasks never do. But at present,
-					// the optimization is worthwhile and the tasks we
-					// include in the list above are only expected to
-					// complete successfully.
-					// And besides, our caller can deal with faulted tasks.
-					tryAgainAfter = wakeUpTasks.Count == 1
-						? wakeUpTasks[0]
-						: Task.WhenAny(wakeUpTasks);
-					return false;
+                    tryAgainAfter = this.QueueNeedProcessEvent;
+                    return false;
 				} finally {
 					this.owner.Context.SyncContextLock.ExitUpgradeableReadLock();
 				}
 			}
 		}
 
-		private bool TryDequeue(out SingleExecuteProtector work) {
+        private bool TryDequeueSelfOrDependencies(HashSet<JoinableTask> visited, out SingleExecuteProtector work) {
+            Assumes.True(this.owner.Context.SyncContextLock.IsUpgradeableReadLockHeld);
+
+            work = null;
+            if (!this.IsCompleted && visited.Add(this)) {
+                if (!this.TryDequeue(out work)) {
+                    if (this.childOrJoinedJobs != null) {
+                        foreach (var item in this.childOrJoinedJobs) {
+                            if (item.Key.TryDequeueSelfOrDependencies(visited, out work)) {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return work != null;
+        }
+
+        private bool TryDequeue(out SingleExecuteProtector work) {
 			using (NoMessagePumpSyncContext.Default.Apply()) {
 				this.owner.Context.SyncContextLock.EnterWriteLock();
 				try {
@@ -801,7 +803,7 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			using (NoMessagePumpSyncContext.Default.Apply()) {
-				AsyncManualResetEvent dequeuerResetState = null;
+                List<AsyncManualResetEvent> tasksNeedNotify = null;
 				this.owner.Context.SyncContextLock.EnterWriteLock();
 				try {
 					if (this.childOrJoinedJobs == null) {
@@ -812,16 +814,18 @@ namespace Microsoft.VisualStudio.Threading {
 					this.childOrJoinedJobs.TryGetValue(joinChild, out refCount);
 					this.childOrJoinedJobs[joinChild] = refCount++;
 					if (refCount == 1) {
-						// This constitutes a significant change, so we should reset any dequeuers.
-						dequeuerResetState = this.dequeuerResetState;
+                        // This constitutes a significant change, so we should apply synchronous task tracking to the new child.
+                        tasksNeedNotify = this.AddDependingSynchronousTaskToChild(joinChild);
 					}
 				} finally {
 					this.owner.Context.SyncContextLock.ExitWriteLock();
 				}
 
-				if (dequeuerResetState != null) {
-					// We explicitly do this outside our lock.
-					dequeuerResetState.PulseAllAsync().Forget();
+                // We explicitly do this outside our lock.
+                if (tasksNeedNotify != null) {
+                    foreach (var queueEvent in tasksNeedNotify) {
+                        queueEvent.PulseAllAsync().Forget();
+                    }
 				}
 
 				return new JoinRelease(this, joinChild);
