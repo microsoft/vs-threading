@@ -74,10 +74,11 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <remarks>
 		/// Yes, global locks should be avoided wherever possible. However even MEF from the .NET Framework
 		/// uses a global lock around critical composition operations because containers can be interconnected
-		/// in arbitrary ways. The code in this file has a very similar problem, so we use the same solution.
+		/// in arbitrary ways. The code in this file has a very similar problem, so we use a similar solution.
+		/// Except that our lock is only as global as the JoinableTaskContext. It isn't static.
 		/// </remarks>
 		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
-		private readonly ReaderWriterLockSlim syncContextLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+		private readonly object syncContextLock = new object();
 
 		/// <summary>
 		/// An AsyncLocal value that carries the joinable instance associated with an async operation.
@@ -123,20 +124,12 @@ namespace Microsoft.VisualStudio.Threading {
 		public JoinableTaskFactory Factory {
 			get {
 				using (NoMessagePumpSyncContext.Default.Apply()) {
-					this.SyncContextLock.EnterUpgradeableReadLock();
-					try {
+					lock (this.SyncContextLock) {
 						if (this.nonJoinableFactory == null) {
-							this.SyncContextLock.EnterWriteLock();
-							try {
-								this.nonJoinableFactory = this.CreateDefaultFactory();
-							} finally {
-								this.SyncContextLock.ExitWriteLock();
-							}
+							this.nonJoinableFactory = this.CreateDefaultFactory();
 						}
 
 						return this.nonJoinableFactory;
-					} finally {
-						this.SyncContextLock.ExitUpgradeableReadLock();
 					}
 				}
 			}
@@ -168,7 +161,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// Gets the context-wide synchronization lock.
 		/// </summary>
-		internal ReaderWriterLockSlim SyncContextLock {
+		internal object SyncContextLock {
 			get { return this.syncContextLock; }
 		}
 
@@ -220,10 +213,9 @@ namespace Microsoft.VisualStudio.Threading {
 			var ambientTask = this.AmbientTask;
 			if (ambientTask != null) {
 				using (NoMessagePumpSyncContext.Default.Apply()) {
-					this.SyncContextLock.EnterReadLock();
-					try {
+					lock (this.SyncContextLock) {
 						var allJoinedJobs = new HashSet<JoinableTask>();
-						lock (this.pendingTasks) { // our read lock doesn't cover this collection
+						lock (this.pendingTasks) {	 // our read lock doesn't cover this collection
 							foreach (var pendingTask in this.pendingTasks) {
 								if ((pendingTask.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) {
 									// This task blocks the main thread. If it has joined the ambient task
@@ -238,8 +230,6 @@ namespace Microsoft.VisualStudio.Threading {
 								}
 							}
 						}
-					} finally {
-						this.SyncContextLock.ExitReadLock();
 					}
 				}
 			}
@@ -276,9 +266,6 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		/// <param name="disposing"><c>true</c> if <see cref="Dispose()"/> was called; <c>false</c> if the object is being finalized.</param>
 		protected virtual void Dispose(bool disposing) {
-			if (disposing) {
-				this.syncContextLock.Dispose();
-			}
 		}
 
 		/// <summary>

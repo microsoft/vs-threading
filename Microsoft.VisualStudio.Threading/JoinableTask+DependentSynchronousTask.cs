@@ -8,13 +8,14 @@ namespace Microsoft.VisualStudio.Threading
 {
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
 
     partial class JoinableTask
     {
         private DependentSynchronousTask dependingSynchronousTaskTracking;
 
         private List<AsyncManualResetEvent> GetDependingSynchronousTasksEvents() {
-            Assumes.True(this.owner.Context.SyncContextLock.IsWriteLockHeld);
+            Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
             var eventNeedNotify = new List<AsyncManualResetEvent>();
             DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
@@ -31,7 +32,7 @@ namespace Microsoft.VisualStudio.Threading
 
         private List<AsyncManualResetEvent> AddDependingSynchronousTaskToChild(JoinableTask child) {
             Requires.NotNull(child, "child");
-            Assumes.True(this.owner.Context.SyncContextLock.IsWriteLockHeld);
+            Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
             var eventNeedNotify = new List<AsyncManualResetEvent>();
             DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
@@ -50,7 +51,7 @@ namespace Microsoft.VisualStudio.Threading
 
         private void RemoveDependingSynchronousTaskToChild(JoinableTask child) {
             Requires.NotNull(child, "child");
-            Assumes.True(this.owner.Context.SyncContextLock.IsWriteLockHeld);
+            Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
             DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
             while (existingTaskTracking != null) {
@@ -61,7 +62,7 @@ namespace Microsoft.VisualStudio.Threading
 
         private bool AddDependingSynchronousTask(JoinableTask task) {
             Requires.NotNull(task, "task");
-            Assumes.True(this.owner.Context.SyncContextLock.IsWriteLockHeld);
+            Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
             if (this.IsCompleted || this.IsCompleteRequested) {
                 return false;
@@ -112,7 +113,7 @@ namespace Microsoft.VisualStudio.Threading
 
         private void RemoveDependingSynchronousTask(JoinableTask task, bool force = false) {
             Requires.NotNull(task, "task");
-            Assumes.True(this.owner.Context.SyncContextLock.IsWriteLockHeld);
+            Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
             if (task.dependingSynchronousTaskTracking != null) {
                 RemoveDependingSynchronousTaskFrom(new JoinableTask[] { this }, task, force);
