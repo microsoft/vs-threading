@@ -422,7 +422,8 @@ namespace Microsoft.VisualStudio.Threading {
 						// We need to forward the work to the fallback mechanisms. 
 						postToFactory = true;
 					} else {
-                        ExecutionQueue queueUpdated = null;
+                        bool mainThreadQueueUpdated = false;
+                        bool backgroundThreadQueueUpdated = false;
                         wrapper = SingleExecuteProtector.Create(this, d, state);
 						if (mainThreadAffinitized && !this.SynchronouslyBlockingMainThread) {
 							wrapper.RaiseTransitioningEvents();
@@ -437,7 +438,7 @@ namespace Microsoft.VisualStudio.Threading {
 							// so if this fails (because the operation has completed) we'll still get the work
 							// done eventually.
 							this.mainThreadQueue.TryEnqueue(wrapper);
-                            queueUpdated = this.mainThreadQueue;
+                            mainThreadQueueUpdated = true;
                         } else {
 							if (this.SynchronouslyBlockingThreadPool) {
 								if (this.threadPoolQueue == null) {
@@ -447,15 +448,15 @@ namespace Microsoft.VisualStudio.Threading {
 								if (!this.threadPoolQueue.TryEnqueue(wrapper)) {
 									ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
 								} else {
-                                    queueUpdated = this.threadPoolQueue;
+                                    backgroundThreadQueueUpdated = true;
                                 }
 							} else {
 								ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
 							}
 						}
 
-                        if (queueUpdated != null) {
-                            tasksNeedNotify = this.GetDependingSynchronousTasksEvents();
+                        if (mainThreadQueueUpdated || backgroundThreadQueueUpdated) {
+                            tasksNeedNotify = this.GetDependingSynchronousTasksEvents(mainThreadQueueUpdated);
                         }
 					}
 				}

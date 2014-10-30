@@ -14,16 +14,21 @@ namespace Microsoft.VisualStudio.Threading
     {
         private DependentSynchronousTask dependingSynchronousTaskTracking;
 
-        private List<AsyncManualResetEvent> GetDependingSynchronousTasksEvents() {
+        private List<AsyncManualResetEvent> GetDependingSynchronousTasksEvents(bool forMainThread) {
             Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
             var eventNeedNotify = new List<AsyncManualResetEvent>();
             DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
             while (existingTaskTracking != null) {
-                var notifyEvent = existingTaskTracking.SynchronousTask.queueNeedProcessEvent;
-                if (notifyEvent != null) {
-                    eventNeedNotify.Add(notifyEvent);
+                var syncTask = existingTaskTracking.SynchronousTask;
+                JoinableTaskFlags state = syncTask.state & JoinableTaskFlags.SynchronouslyBlockingMainThread;
+                if ( (forMainThread && state != 0) || (!forMainThread && state == 0)) {
+                    var notifyEvent = syncTask.queueNeedProcessEvent;
+                    if (notifyEvent != null) {
+                        eventNeedNotify.Add(notifyEvent);
+                    }
                 }
+
                 existingTaskTracking = existingTaskTracking.Next;
             }
 
@@ -43,6 +48,7 @@ namespace Microsoft.VisualStudio.Threading
                         eventNeedNotify.Add(notifyEvent);
                     }
                 }
+
                 existingTaskTracking = existingTaskTracking.Next;
             }
 
@@ -74,10 +80,14 @@ namespace Microsoft.VisualStudio.Threading
                     existingTaskTracking.ReferenceCount++;
                     return false;
                 }
+
                 existingTaskTracking = existingTaskTracking.Next;
             }
 
-            bool needTriggerEvent = this.HasNonEmptyQueue;
+            bool needTriggerEvent = ((task.state & JoinableTaskFlags.SynchronouslyBlockingMainThread) != 0) ?
+                (this.mainThreadQueue != null && !this.mainThreadQueue.IsEmpty) :
+                (this.threadPoolQueue != null && !this.threadPoolQueue.IsEmpty);
+
             DependentSynchronousTask newTaskTracking = new DependentSynchronousTask(task);
             newTaskTracking.Next = this.dependingSynchronousTaskTracking;
             this.dependingSynchronousTaskTracking = newTaskTracking;
