@@ -563,7 +563,7 @@ namespace Microsoft.VisualStudio.Threading {
 							this.childOrJoinedJobs.Remove(joinChild);
 							this.RemoveDependingSynchronousTaskToChild(joinChild);
 						} else {
-							this.childOrJoinedJobs[joinChild] = refCount--;
+							this.childOrJoinedJobs[joinChild] = --refCount;
 						}
 					}
 				}
@@ -755,7 +755,7 @@ namespace Microsoft.VisualStudio.Threading {
 
 					int refCount;
 					this.childOrJoinedJobs.TryGetValue(joinChild, out refCount);
-					this.childOrJoinedJobs[joinChild] = refCount++;
+					this.childOrJoinedJobs[joinChild] = ++refCount;
 					if (refCount == 1) {
 						// This constitutes a significant change, so we should apply synchronous task tracking to the new child.
 						tasksNeedNotify = this.AddDependingSynchronousTaskToChild(joinChild);
