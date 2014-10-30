@@ -187,7 +187,7 @@ namespace Microsoft.VisualStudio.Threading
                 // the reference count, we will calculate the entire reachable tree from the root.  That will
                 // tell us the exactly tasks which need track the synchronous task, and we will clean up the rest.
                 reachableTasks = new HashSet<JoinableTask>();
-                syncTask.ComputeSelfAndDescendentOrJoinedJobsForRemainTasks(reachableTasks, remainTasks);
+                syncTask.ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(reachableTasks, remainTasks);
 
                 // force to remove all invalid items
                 HashSet<JoinableTask> remainPlaceHold = null;
@@ -201,9 +201,9 @@ namespace Microsoft.VisualStudio.Threading
         /// Compute all reachable tasks from a synchronous task. Because we use the result to clean up invalid
         /// items from the remain task, we will remove valid task from the collection, and stop immediately if nothing is left.
         /// </summary>
-        /// <param name="reachableTasks"></param>
-        /// <param name="remainTasks"></param>
-        private void ComputeSelfAndDescendentOrJoinedJobsForRemainTasks(HashSet<JoinableTask> reachableTasks, HashSet<JoinableTask> remainTasks) {
+        /// <param name="reachableTasks">All reachable tasks. This is not a completed list, if there is no remain task.</param>
+        /// <param name="remainTasks">The remain tasks we want to check. After the execution, it will retain non-reachable tasks.</param>
+        private void ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(HashSet<JoinableTask> reachableTasks, HashSet<JoinableTask> remainTasks) {
             Requires.NotNull(remainTasks, "remainTasks");
             Requires.NotNull(reachableTasks, "reachableTasks");
             if (!this.IsCompleted) {
@@ -215,7 +215,7 @@ namespace Microsoft.VisualStudio.Threading
 
                     if (this.childOrJoinedJobs != null) {
                         foreach (var item in this.childOrJoinedJobs) {
-                            item.Key.ComputeSelfAndDescendentOrJoinedJobsForRemainTasks(reachableTasks, remainTasks);
+                            item.Key.ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(reachableTasks, remainTasks);
                         }
                     }
                 }
