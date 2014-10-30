@@ -569,7 +569,7 @@ namespace Microsoft.VisualStudio.Threading {
 						if (refCount == 1) {
 							this.childOrJoinedJobs.Remove(joinChild);
 						} else {
-							this.childOrJoinedJobs[joinChild] = refCount--;
+							this.childOrJoinedJobs[joinChild] = --refCount;
 						}
 					}
 				}
@@ -755,7 +755,7 @@ namespace Microsoft.VisualStudio.Threading {
 
 					int refCount;
 					this.childOrJoinedJobs.TryGetValue(joinChild, out refCount);
-					this.childOrJoinedJobs[joinChild] = refCount++;
+					this.childOrJoinedJobs[joinChild] = ++refCount;
 					if (refCount == 1) {
 						// This constitutes a significant change, so we should reset any dequeuers.
 						dequeuerResetState = this.dequeuerResetState;
