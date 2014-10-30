@@ -476,6 +476,7 @@ namespace Microsoft.VisualStudio.Threading {
 					}
 				}
 
+                // Notify tasks which can process the event queue.
                 if (tasksNeedNotify != null) {
                     foreach (var queueEvent in tasksNeedNotify) {
                         queueEvent.PulseAllAsync().Forget();
@@ -599,6 +600,7 @@ namespace Microsoft.VisualStudio.Threading {
 
             using (NoMessagePumpSyncContext.Default.Apply()) {
                 lock (this.owner.Context.SyncContextLock) {
+                    // Add the task to the depending tracking list of itself, so it will monitor the event queue.
                     this.AddDependingSynchronousTask(this);
                 }
             }
@@ -621,6 +623,7 @@ namespace Microsoft.VisualStudio.Threading {
             finally {
                 using (NoMessagePumpSyncContext.Default.Apply()) {
                     lock (this.owner.Context.SyncContextLock) {
+                        // Remove itself from the tracking list, after the task is completed.
                         this.RemoveDependingSynchronousTask(this, true);
                     }
                 }
@@ -701,6 +704,7 @@ namespace Microsoft.VisualStudio.Threading {
         private bool TryDequeueSelfOrDependencies(HashSet<JoinableTask> visited, out SingleExecuteProtector work) {
             Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
+            // We only need find the first work item.
             work = null;
             if (!this.IsCompleted && visited.Add(this)) {
                 if (!this.TryDequeue(out work)) {
