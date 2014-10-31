@@ -46,6 +46,7 @@ namespace Microsoft.VisualStudio.Threading
                 var syncTask = existingTaskTracking.SynchronousTask;
                 bool syncTaskInOnMainThread = (syncTask.state & JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTaskFlags.SynchronouslyBlockingMainThread;
                 if (forMainThread == syncTaskInOnMainThread) {
+                    // Only synchronous tasks are in the list, so we don't need do further check for the CompletingSynchronously flag
                     var notifyEvent = syncTask.queueNeedProcessEvent;
                     if (notifyEvent != null) {
                         eventNeedNotify.Add(notifyEvent);
