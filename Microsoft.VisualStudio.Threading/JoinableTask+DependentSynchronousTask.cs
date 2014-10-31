@@ -13,10 +13,24 @@ namespace Microsoft.VisualStudio.Threading
     partial class JoinableTask
     {
         /// <summary>
-        /// Holds a single linked list of records to track which task may process events of this task.
+        /// The head of a singly linked list of records to track which task may process events of this task.
         /// This list should contain only tasks which need be completed synchronously, and depends on this task.
         /// </summary>
         private DependentSynchronousTask dependingSynchronousTaskTracking;
+
+        /// <summary>
+        /// Get how many number of synchronous tasks in our tracking list.
+        /// </summary>
+        private int CountOfDependingSynchronousTasks() {
+            int count = 0;
+            DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
+            while (existingTaskTracking != null) {
+                count++;
+                existingTaskTracking = existingTaskTracking.Next;
+            }
+
+            return count;
+        }
 
         /// <summary>
         /// Calculate the collection of events we need trigger after we enqueue a request.
@@ -26,12 +40,12 @@ namespace Microsoft.VisualStudio.Threading
         private List<AsyncManualResetEvent> GetDependingSynchronousTasksEvents(bool forMainThread) {
             Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
-            var eventNeedNotify = new List<AsyncManualResetEvent>();
+            var eventNeedNotify = new List<AsyncManualResetEvent>(this.CountOfDependingSynchronousTasks());
             DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
             while (existingTaskTracking != null) {
                 var syncTask = existingTaskTracking.SynchronousTask;
-                JoinableTaskFlags state = syncTask.state & JoinableTaskFlags.SynchronouslyBlockingMainThread;
-                if ( (forMainThread && state != 0) || (!forMainThread && state == 0)) {
+                bool syncTaskInOnMainThread = (syncTask.state & JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTaskFlags.SynchronouslyBlockingMainThread;
+                if (forMainThread == syncTaskInOnMainThread) {
                     var notifyEvent = syncTask.queueNeedProcessEvent;
                     if (notifyEvent != null) {
                         eventNeedNotify.Add(notifyEvent);
@@ -53,7 +67,7 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(child, "child");
             Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
-            var eventNeedNotify = new List<AsyncManualResetEvent>();
+            var eventNeedNotify = new List<AsyncManualResetEvent>(this.CountOfDependingSynchronousTasks());
             DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
             while (existingTaskTracking != null) {
                 if (child.AddDependingSynchronousTask(existingTaskTracking.SynchronousTask)) {
@@ -73,7 +87,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Removes all synchronous tasks we applies to a dependent task, after the relationship is removed.
         /// </summary>
         /// <param name="child">The original dependent task</param>
-        private void RemoveDependingSynchronousTaskToChild(JoinableTask child) {
+        private void RemoveDependingSynchronousTaskFromChild(JoinableTask child) {
             Requires.NotNull(child, "child");
             Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
@@ -86,6 +100,8 @@ namespace Microsoft.VisualStudio.Threading
 
         /// <summary>
         /// Tracks a new synchronous task for this task.
+        /// A synchronous task is a task blocking a thread and waits it to be completed.  We may want the blocking thread
+        /// to process events from this task.
         /// </summary>
         /// <param name="task">The synchronous task</param>
         /// <returns>True means we need trigger the event of the synchronous task, so it can process new events</returns>
@@ -108,7 +124,7 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             // For a new synchronous task, we need apply it to our child tasks.
-            bool needTriggerEvent = ((task.state & JoinableTaskFlags.SynchronouslyBlockingMainThread) != 0) ?
+            bool needTriggerEvent = ((task.state & JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTaskFlags.SynchronouslyBlockingMainThread) ?
                 (this.mainThreadQueue != null && !this.mainThreadQueue.IsEmpty) :
                 (this.threadPoolQueue != null && !this.threadPoolQueue.IsEmpty);
 
@@ -128,7 +144,8 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Remove all synchronous tasks tracked by the current task when it is completed
+        /// Remove all synchronous tasks tracked by the this task.
+        /// This is called when this task is completed
         /// </summary>
         private void CleanupDependingSynchronousTask() {
             if (this.dependingSynchronousTaskTracking != null) {
@@ -209,7 +226,7 @@ namespace Microsoft.VisualStudio.Threading
             if (!this.IsCompleted) {
                 if (reachableTasks.Add(this)) {
                     if (remainTasks.Remove(this) && reachableTasks.Count == 0) {
-                        // no remain task left, quite the loop earlier
+                        // no remain task left, quit the loop earlier
                         return;
                     }
 
@@ -229,8 +246,8 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="reachableTasks">
         /// If it is not null, it will contain all task which can track the synchronous task. We will ignore reference count in that case.
         /// </param>
-        /// <param name="dependentTaskRemains">This will retain the tasks which still tracks the synchronous task.</param>
-        private void RemoveDependingSynchronousTask(JoinableTask task, HashSet<JoinableTask> reachableTasks, ref HashSet<JoinableTask> dependentTaskRemains) {
+        /// <param name="remainingDependentTasks">This will retain the tasks which still tracks the synchronous task.</param>
+        private void RemoveDependingSynchronousTask(JoinableTask task, HashSet<JoinableTask> reachableTasks, ref HashSet<JoinableTask> remainingDependentTasks) {
             Requires.NotNull(task, "task");
 
             DependentSynchronousTask previousTaskTracking = null;
@@ -258,15 +275,15 @@ namespace Microsoft.VisualStudio.Threading
 
                     if (reachableTasks == null) {
                         if (removed) {
-                            if (dependentTaskRemains != null) {
-                                dependentTaskRemains.Remove(this);
+                            if (remainingDependentTasks != null) {
+                                remainingDependentTasks.Remove(this);
                             }
                         } else {
-                            if (dependentTaskRemains == null) {
-                                dependentTaskRemains = new HashSet<JoinableTask>();
+                            if (remainingDependentTasks == null) {
+                                remainingDependentTasks = new HashSet<JoinableTask>();
                             }
 
-                            dependentTaskRemains.Add(this);
+                            remainingDependentTasks.Add(this);
                         }
                     }
                     
@@ -279,7 +296,7 @@ namespace Microsoft.VisualStudio.Threading
 
             if (removed && this.childOrJoinedJobs != null) {
                 foreach (var item in this.childOrJoinedJobs) {
-                    item.Key.RemoveDependingSynchronousTask(task, reachableTasks, ref dependentTaskRemains);
+                    item.Key.RemoveDependingSynchronousTask(task, reachableTasks, ref remainingDependentTasks);
                 }
             }
         }

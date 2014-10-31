@@ -97,8 +97,9 @@ namespace Microsoft.VisualStudio.Threading {
 		private WeakKeyDictionary<JoinableTask, int> childOrJoinedJobs;
 
 		/// <summary>
-		/// An event that is signaled when any queue in the dependent has item to process
+		/// An event that is signaled when any queue in the dependent has item to process.  Lazily constructed.
 		/// </summary>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private AsyncManualResetEvent queueNeedProcessEvent;
 
 		/// <summary>The queue of work items. Lazily constructed.</summary>
@@ -445,10 +446,9 @@ namespace Microsoft.VisualStudio.Threading {
 									this.threadPoolQueue = new ExecutionQueue(this);
 								}
 
-								if (!this.threadPoolQueue.TryEnqueue(wrapper)) {
+								backgroundThreadQueueUpdated = this.threadPoolQueue.TryEnqueue(wrapper);
+								if (!backgroundThreadQueueUpdated) {
 									ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
-								} else {
-									backgroundThreadQueueUpdated = true;
 								}
 							} else {
 								ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, wrapper);
@@ -541,7 +541,7 @@ namespace Microsoft.VisualStudio.Threading {
 						// will likely want to know that the JoinableTask has completed.
 						queueNeedProcessEvent = this.queueNeedProcessEvent;
 
-						CleanupDependingSynchronousTask();
+						this.CleanupDependingSynchronousTask();
 					}
 				}
 
@@ -561,7 +561,7 @@ namespace Microsoft.VisualStudio.Threading {
 					if (this.childOrJoinedJobs != null && this.childOrJoinedJobs.TryGetValue(joinChild, out refCount)) {
 						if (refCount == 1) {
 							this.childOrJoinedJobs.Remove(joinChild);
-							this.RemoveDependingSynchronousTaskToChild(joinChild);
+							this.RemoveDependingSynchronousTaskFromChild(joinChild);
 						} else {
 							this.childOrJoinedJobs[joinChild] = --refCount;
 						}
@@ -702,6 +702,7 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		private bool TryDequeueSelfOrDependencies(HashSet<JoinableTask> visited, out SingleExecuteProtector work) {
+			Requires.NotNull(visited, "visited");
 			Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
 			// We only need find the first work item.
