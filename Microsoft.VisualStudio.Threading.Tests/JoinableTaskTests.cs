@@ -904,6 +904,117 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void TestDeepLoopedJoinedTaskDisjoinCorrectly() {
+			JoinableTask task1 = null, task2 = null, task3 = null, task4 = null, task5 = null;
+			var taskStarted = new AsyncManualResetEvent();
+			var task2Prepared = new AsyncManualResetEvent();
+			var task3Prepared = new AsyncManualResetEvent();
+			var task4Prepared = new AsyncManualResetEvent();
+			var dependentFirstWorkCompleted = new AsyncManualResetEvent();
+			var dependentSecondWorkAllowed = new AsyncManualResetEvent();
+			var mainThreadDependentSecondWorkQueued = new AsyncManualResetEvent();
+			var testEnded = new AsyncManualResetEvent();
+
+			var seperatedTask = Task.Run(async delegate {
+				using (this.asyncPump.Context.SuppressRelevance()) {
+					task1 = this.asyncPump.RunAsync(async delegate {
+						await taskStarted;
+
+						var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+						collection.Add(task1);
+						using (collection.Join()) {
+							await this.asyncPump.SwitchToMainThreadAsync();
+							await TaskScheduler.Default;
+
+							await dependentFirstWorkCompleted.SetAsync();
+							await dependentSecondWorkAllowed;
+
+							await this.asyncPump.SwitchToMainThreadAsync()
+								.GetAwaiter().YieldAndNotify(mainThreadDependentSecondWorkQueued);
+						}
+					});
+
+					task2 = this.asyncPump.RunAsync(async delegate {
+						var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+						collection.Add(task1);
+						using (collection.Join()) {
+							await task2Prepared.SetAsync();
+							await testEnded;
+						}
+					});
+
+					task3 = this.asyncPump.RunAsync(async delegate {
+						await taskStarted;
+
+						var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+						collection.Add(task2);
+						collection.Add(task4);
+						using (collection.Join()) {
+							await task3Prepared.SetAsync();
+							await testEnded;
+						}
+					});
+
+					task4 = this.asyncPump.RunAsync(async delegate {
+						var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+						collection.Add(task2);
+						collection.Add(task3);
+						using (collection.Join()) {
+							await task4Prepared.SetAsync();
+							await testEnded;
+						}
+					});
+
+					task5 = this.asyncPump.RunAsync(async delegate {
+						var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+						collection.Add(task3);
+						using (collection.Join()) {
+							await testEnded;
+						}
+					});
+				}
+
+				await taskStarted.SetAsync();
+				await testEnded;
+			});
+
+			this.asyncPump.Run(async delegate {
+				await taskStarted;
+				await task2Prepared;
+				await task3Prepared;
+				await task4Prepared;
+
+				var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+				collection.Add(task5);
+
+				using (collection.Join()) {
+					await dependentFirstWorkCompleted;
+				}
+
+				await dependentSecondWorkAllowed.SetAsync();
+				await mainThreadDependentSecondWorkQueued;
+
+				await Task.Delay(AsyncDelay);
+				await Task.Yield();
+
+				Assert.IsFalse(task1.IsCompleted);
+
+				await testEnded.SetAsync();
+			});
+
+			this.asyncPump.Run(async delegate {
+				using (this.joinableCollection.Join()) {
+					await task1;
+					await task2;
+					await task3;
+					await task4;
+					await task5;
+					await seperatedTask;
+				}
+			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void JoinRejectsSubsequentWork() {
 			bool outerCompleted = false;
 
