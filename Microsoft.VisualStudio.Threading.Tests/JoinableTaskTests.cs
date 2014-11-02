@@ -2180,7 +2180,7 @@
 			}
 		}
 
-		[TestMethod, Timeout(TestTimeout), Ignore]
+		[TestMethod, Timeout(TestTimeout)]
 		public void RunAsyncWithNonYieldingDelegateNestedInRunOverhead() {
 			var waitCountingJTF = new WaitCountingJoinableTaskFactory(this.asyncPump.Context);
 			waitCountingJTF.Run(async delegate {
