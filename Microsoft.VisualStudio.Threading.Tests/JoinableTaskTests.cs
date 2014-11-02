@@ -1941,7 +1941,7 @@
 			}
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout), Ignore]
 		public void RunAsyncWithNonYieldingDelegateNestedInRunOverhead() {
 			this.asyncPump.Run(async delegate {
 				await TaskScheduler.Default;
