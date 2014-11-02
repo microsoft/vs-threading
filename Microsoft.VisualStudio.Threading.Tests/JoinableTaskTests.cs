@@ -1764,7 +1764,7 @@
 			assertDialogListener.AssertUiEnabled = true;
 		}
 
-		[TestMethod, Timeout(5000), TestCategory("Stress"), TestCategory("FailsInBatch")]
+		[TestMethod, Timeout(5000), TestCategory("Stress"), TestCategory("FailsInCloudTest"), TestCategory("FailsInLocalBatch")]
 		public void SwitchToMainThreadMemoryLeak() {
 			this.CheckGCPressure(
 				async delegate {
@@ -1774,7 +1774,7 @@
 				2500);
 		}
 
-		[TestMethod, Timeout(5000), TestCategory("Stress"), TestCategory("FailsInBatch")]
+		[TestMethod, Timeout(5000), TestCategory("Stress"), TestCategory("FailsInCloudTest"), TestCategory("FailsInLocalBatch")]
 		public void SwitchToMainThreadMemoryLeakWithCancellationToken() {
 			CancellationTokenSource tokenSource = new CancellationTokenSource();
 			this.CheckGCPressure(
@@ -1863,7 +1863,7 @@
 			}, maxBytesAllocated: 245);
 		}
 
-		[TestMethod, Timeout(TestTimeout * 2), TestCategory("GC"), TestCategory("FailsInBatch")]
+		[TestMethod, Timeout(TestTimeout * 2), TestCategory("GC"), TestCategory("FailsInCloudTest"), TestCategory("FailsInLocalBatch")]
 		public void RunSynchronouslyTaskWithYieldGCPressure() {
 			this.CheckGCPressure(delegate {
 				this.asyncPump.Run(async delegate {
@@ -1872,7 +1872,7 @@
 			}, maxBytesAllocated: 1800);
 		}
 
-		[TestMethod, Timeout(TestTimeout * 2), TestCategory("GC"), TestCategory("FailsInBatch")]
+		[TestMethod, Timeout(TestTimeout * 2), TestCategory("GC"), TestCategory("FailsInCloudTest"), TestCategory("FailsInLocalBatch")]
 		public void RunSynchronouslyTaskOfTWithYieldGCPressure() {
 			Task<object> completedTask = Task.FromResult<object>(null);
 

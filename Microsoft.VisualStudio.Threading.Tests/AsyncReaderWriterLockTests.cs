@@ -228,7 +228,7 @@
 			});
 		}
 
-		[TestMethod, Timeout(TestTimeout), TestCategory("FailsInBatch")]
+		[TestMethod, Timeout(TestTimeout), TestCategory("FailsInCloudTest")]
 		public async Task CallAcrossAppDomainBoundariesWithLock() {
 			var otherDomain = AppDomain.CreateDomain("test domain");
 			try {
@@ -952,13 +952,13 @@
 			this.LockReleaseTestHelper(this.asyncLock.UpgradeableReadLockAsync());
 		}
 
-		[TestMethod, Timeout(TestTimeout), TestCategory("GC"), TestCategory("FailsInBatch")]
+		[TestMethod, Timeout(TestTimeout), TestCategory("GC"), TestCategory("FailsInCloudTest")]
 		public async Task UncontestedTopLevelUpgradeableReadLockAsyncGarbageCheck() {
 			var cts = new CancellationTokenSource();
 			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync(cts.Token), true);
 		}
 
-		[TestMethod, Timeout(TestTimeout), TestCategory("GC"), TestCategory("FailsInBatch")]
+		[TestMethod, Timeout(TestTimeout), TestCategory("GC"), TestCategory("FailsInCloudTest")]
 		public async Task NestedUpgradeableReadLockAsyncGarbageCheck() {
 			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync(), true);
 		}
@@ -1389,13 +1389,13 @@
 			}));
 		}
 
-		[TestMethod, Timeout(TestTimeout), TestCategory("GC"), TestCategory("FailsInBatch")]
+		[TestMethod, Timeout(TestTimeout), TestCategory("GC"), TestCategory("FailsInCloudTest")]
 		public async Task UncontestedTopLevelWriteLockAsyncGarbageCheck() {
 			var cts = new CancellationTokenSource();
 			await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync(cts.Token), true);
 		}
 
-		[TestMethod, Timeout(TestTimeout), TestCategory("GC"), TestCategory("FailsInBatch")]
+		[TestMethod, Timeout(TestTimeout), TestCategory("GC"), TestCategory("FailsInCloudTest")]
 		public async Task NestedWriteLockAsyncGarbageCheck() {
 			await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync(), true);
 		}
