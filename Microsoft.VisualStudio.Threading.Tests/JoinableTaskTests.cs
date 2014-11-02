@@ -665,6 +665,145 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void TestDoubleJoinedTaskDisjoinCorrectly() {
+			JoinableTask task1 = null;
+			var taskStarted = new AsyncManualResetEvent();
+			var dependentFirstWorkCompleted = new AsyncManualResetEvent();
+			var dependentSecondWorkAllowed = new AsyncManualResetEvent();
+			var mainThreadDependentSecondWorkQueued = new AsyncManualResetEvent();
+			var testEnded = new AsyncManualResetEvent();
+
+			var seperatedTask = Task.Run(async delegate {
+				using (this.asyncPump.Context.SuppressRelevance()) {
+					task1 = this.asyncPump.RunAsync(async delegate {
+						await this.asyncPump.SwitchToMainThreadAsync();
+						await TaskScheduler.Default;
+
+						await dependentFirstWorkCompleted.SetAsync();
+						await dependentSecondWorkAllowed;
+
+						await this.asyncPump.SwitchToMainThreadAsync()
+							.GetAwaiter().YieldAndNotify(mainThreadDependentSecondWorkQueued);
+					});
+				}
+
+				await taskStarted.SetAsync();
+				await testEnded;
+			});
+
+			this.asyncPump.Run(async delegate {
+				await taskStarted;
+
+				var collection1 = new JoinableTaskCollection(this.joinableCollection.Context);
+				collection1.Add(task1);
+				var collection2 = new JoinableTaskCollection(this.joinableCollection.Context);
+				collection2.Add(task1);
+
+				using (collection1.Join()) {
+					using (collection2.Join()) {
+					}
+
+					await dependentFirstWorkCompleted;
+				}
+
+				await dependentSecondWorkAllowed.SetAsync();
+				await mainThreadDependentSecondWorkQueued;
+
+				await Task.Delay(AsyncDelay);
+				await Task.Yield();
+
+				Assert.IsFalse(task1.IsCompleted);
+
+				await testEnded.SetAsync();
+			});
+
+			this.asyncPump.Run(async delegate {
+				using (this.joinableCollection.Join()) {
+					await task1;
+					await seperatedTask;
+				}
+			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void TestDoubleIndirectJoinedTaskDisjoinCorrectly() {
+			JoinableTask task1 = null, task2 = null, task3 = null;
+			var taskStarted = new AsyncManualResetEvent();
+			var dependentFirstWorkCompleted = new AsyncManualResetEvent();
+			var dependentSecondWorkAllowed = new AsyncManualResetEvent();
+			var mainThreadDependentSecondWorkQueued = new AsyncManualResetEvent();
+			var testEnded = new AsyncManualResetEvent();
+
+			var seperatedTask = Task.Run(async delegate {
+				using (this.asyncPump.Context.SuppressRelevance()) {
+					task1 = this.asyncPump.RunAsync(async delegate {
+						await this.asyncPump.SwitchToMainThreadAsync();
+						await TaskScheduler.Default;
+
+						await dependentFirstWorkCompleted.SetAsync();
+						await dependentSecondWorkAllowed;
+
+						await this.asyncPump.SwitchToMainThreadAsync()
+							.GetAwaiter().YieldAndNotify(mainThreadDependentSecondWorkQueued);
+					});
+
+					task2 = this.asyncPump.RunAsync(async delegate {
+						var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+						collection.Add(task1);
+						using (collection.Join()) {
+							await testEnded;
+						}
+					});
+
+					task3 = this.asyncPump.RunAsync(async delegate {
+						var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+						collection.Add(task1);
+						using (collection.Join()) {
+							await testEnded;
+						}
+					});
+				}
+
+				await taskStarted.SetAsync();
+				await testEnded;
+			});
+
+			this.asyncPump.Run(async delegate {
+				await taskStarted;
+
+				var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+				collection.Add(task2);
+				collection.Add(task3);
+
+				using (collection.Join()) {
+					await dependentFirstWorkCompleted;
+				}
+
+				await dependentSecondWorkAllowed.SetAsync();
+				await mainThreadDependentSecondWorkQueued;
+
+				await Task.Delay(AsyncDelay);
+				await Task.Yield();
+
+				Assert.IsFalse(task1.IsCompleted);
+
+				await testEnded.SetAsync();
+			});
+
+			this.asyncPump.Run(async delegate {
+				using (this.joinableCollection.Join()) {
+					await task1;
+					await task2;
+					await task3;
+					await seperatedTask;
+				}
+			});
+		}
+
+		/// <summary>
+		/// Main -> Task1, Main -> Task2, Task1 <==> Task2
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
 		public void TestJoinWithLoopDependentTasks() {
 			JoinableTask task1 = null, task2 = null;
 			var taskStarted = new AsyncManualResetEvent();
@@ -1656,21 +1795,21 @@
 			var asyncLock = new AsyncReaderWriterLock();
 
 			// 4. This is the task which the UI thread is waiting for,
-			//    and it's scheduled on UI thread.
-			//    As UI thread did "Join" before "await", so this task can reenter UI thread.
+			//	and it's scheduled on UI thread.
+			//	As UI thread did "Join" before "await", so this task can reenter UI thread.
 			var task = Task.Run(async delegate {
 				await this.asyncPump.SwitchToMainThreadAsync();
 				// 4.1 Now this anonymous method is on UI thread,
-				//     and it needs to acquire a read lock.
+				//	 and it needs to acquire a read lock.
 				//
-				//     The attempt to acquire a lock would lead to a deadlock!
-				//     Because the call context was overwritten by this reentrance,
-				//     this method didn't know the write lock was already acquired at
-				//     the bottom of the call stack. Therefore, it will issue a new request
-				//     to acquire the read lock. However, that request won't be completed as
-				//     the write lock holder is also waiting for this method to complete.
+				//	 The attempt to acquire a lock would lead to a deadlock!
+				//	 Because the call context was overwritten by this reentrance,
+				//	 this method didn't know the write lock was already acquired at
+				//	 the bottom of the call stack. Therefore, it will issue a new request
+				//	 to acquire the read lock. However, that request won't be completed as
+				//	 the write lock holder is also waiting for this method to complete.
 				//
-				//     This test would be timeout here.
+				//	 This test would be timeout here.
 				using (await asyncLock.ReadLockAsync()) {
 				}
 			});
@@ -1679,12 +1818,12 @@
 				// 1. Acquire write lock on worker thread
 				using (await asyncLock.WriteLockAsync()) {
 					// 2. Hold the write lock but switch to UI thread.
-					//    That's to simulate the scenario to call into IVs* services
+					//	That's to simulate the scenario to call into IVs* services
 					await this.asyncPump.SwitchToMainThreadAsync();
 
 					// 3. Join and wait for another BG task.
-					//    That's to simulate the scenario when the IVs* service also calls into CPS,
-					//    and CPS join and wait for another task.
+					//	That's to simulate the scenario when the IVs* service also calls into CPS,
+					//	and CPS join and wait for another task.
 					using (this.joinableCollection.Join()) {
 						await task;
 					}
