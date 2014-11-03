@@ -768,7 +768,8 @@
 				await testEnded;
 			});
 
-			this.asyncPump.Run(async delegate {
+			var waitCountingJTF = new WaitCountingJoinableTaskFactory(this.asyncPump.Context);
+			waitCountingJTF.Run(async delegate {
 				await taskStarted;
 
 				var collection = new JoinableTaskCollection(this.joinableCollection.Context);
@@ -779,12 +780,15 @@
 					await dependentFirstWorkCompleted;
 				}
 
+				int waitCountBeforeSecondWork = waitCountingJTF.WaitCount;
 				await dependentSecondWorkAllowed.SetAsync();
+				await Task.Delay(AsyncDelay/2);
 				await mainThreadDependentSecondWorkQueued;
 
-				await Task.Delay(AsyncDelay);
+				await Task.Delay(AsyncDelay/2);
 				await Task.Yield();
 
+				Assert.AreEqual(3, waitCountingJTF.WaitCount - waitCountBeforeSecondWork);
 				Assert.IsFalse(task1.IsCompleted);
 
 				await testEnded.SetAsync();
@@ -862,7 +866,8 @@
 				await testEnded;
 			});
 
-			this.asyncPump.Run(async delegate {
+			var waitCountingJTF = new WaitCountingJoinableTaskFactory(this.asyncPump.Context);
+			waitCountingJTF.Run(async delegate {
 				await taskStarted;
 				await testStarted.SetAsync();
 				await task1Prepared;
@@ -883,12 +888,16 @@
 					await dependentSecondWorkCompleted;
 				}
 
+				int waitCountBeforeSecondWork = waitCountingJTF.WaitCount;
 				await dependentThirdWorkAllowed.SetAsync();
+
+				await Task.Delay(AsyncDelay/2);
 				await mainThreadDependentThirdWorkQueued;
 
-				await Task.Delay(AsyncDelay);
+				await Task.Delay(AsyncDelay/2);
 				await Task.Yield();
 
+				Assert.AreEqual(3, waitCountingJTF.WaitCount - waitCountBeforeSecondWork);
 				Assert.IsFalse(task1.IsCompleted);
 
 				await testEnded.SetAsync();
@@ -978,7 +987,8 @@
 				await testEnded;
 			});
 
-			this.asyncPump.Run(async delegate {
+			var waitCountingJTF = new WaitCountingJoinableTaskFactory(this.asyncPump.Context);
+			waitCountingJTF.Run(async delegate {
 				await taskStarted;
 				await task2Prepared;
 				await task3Prepared;
@@ -991,12 +1001,16 @@
 					await dependentFirstWorkCompleted;
 				}
 
+				int waitCountBeforeSecondWork = waitCountingJTF.WaitCount;
 				await dependentSecondWorkAllowed.SetAsync();
+
+				await Task.Delay(AsyncDelay / 2);
 				await mainThreadDependentSecondWorkQueued;
 
-				await Task.Delay(AsyncDelay);
+				await Task.Delay(AsyncDelay/2);
 				await Task.Yield();
 
+				Assert.AreEqual(3, waitCountingJTF.WaitCount - waitCountBeforeSecondWork);
 				Assert.IsFalse(task1.IsCompleted);
 
 				await testEnded.SetAsync();
