@@ -1818,12 +1818,12 @@
 				// 1. Acquire write lock on worker thread
 				using (await asyncLock.WriteLockAsync()) {
 					// 2. Hold the write lock but switch to UI thread.
-					//  That's to simulate the scenario to call into IVs* services
+					//    That's to simulate the scenario to call into IVs* services
 					await this.asyncPump.SwitchToMainThreadAsync();
 
 					// 3. Join and wait for another BG task.
-					//  That's to simulate the scenario when the IVs* service also calls into CPS,
-					//  and CPS join and wait for another task.
+					//    That's to simulate the scenario when the IVs* service also calls into CPS,
+					//    and CPS join and wait for another task.
 					using (this.joinableCollection.Join()) {
 						await task;
 					}
