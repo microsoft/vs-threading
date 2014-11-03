@@ -665,7 +665,7 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void TestDoubleJoinedTaskDisjoinCorrectly() {
+		public void DoubleJoinedTaskDisjoinCorrectly() {
 			JoinableTask task1 = null;
 			var taskStarted = new AsyncManualResetEvent();
 			var dependentFirstWorkCompleted = new AsyncManualResetEvent();
@@ -724,7 +724,7 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void TestDoubleIndirectJoinedTaskDisjoinCorrectly() {
+		public void DoubleIndirectJoinedTaskDisjoinCorrectly() {
 			JoinableTask task1 = null, task2 = null, task3 = null;
 			var taskStarted = new AsyncManualResetEvent();
 			var dependentFirstWorkCompleted = new AsyncManualResetEvent();
@@ -778,12 +778,13 @@
 
 				int waitCountBeforeSecondWork = waitCountingJTF.WaitCount;
 				await dependentSecondWorkAllowed.SetAsync();
-				await Task.Delay(AsyncDelay/2);
+				await Task.Delay(AsyncDelay / 2);
 				await mainThreadDependentSecondWorkQueued;
 
-				await Task.Delay(AsyncDelay/2);
+				await Task.Delay(AsyncDelay / 2);
 				await Task.Yield();
 
+                // we expect 3 switching from two delay one yield call.  We don't want one triggered by Task1.
                 Assert.IsTrue(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
                 Assert.IsFalse(task1.IsCompleted);
 
@@ -804,7 +805,7 @@
 		/// Main -> Task1, Main -> Task2, Task1 <-> Task2 (loop dependency between Task1 and Task2.
 		/// </summary>
 		[TestMethod, Timeout(TestTimeout)]
-		public void TestJoinWithLoopDependentTasks() {
+		public void JoinWithLoopDependentTasks() {
 			JoinableTask task1 = null, task2 = null;
 			var taskStarted = new AsyncManualResetEvent();
 			var testStarted = new AsyncManualResetEvent();
@@ -885,12 +886,13 @@
 				int waitCountBeforeSecondWork = waitCountingJTF.WaitCount;
 				await dependentThirdWorkAllowed.SetAsync();
 
-				await Task.Delay(AsyncDelay/2);
+				await Task.Delay(AsyncDelay / 2);
 				await mainThreadDependentThirdWorkQueued;
 
-				await Task.Delay(AsyncDelay/2);
+				await Task.Delay(AsyncDelay / 2);
 				await Task.Yield();
 
+                // we expect 3 switching from two delay one yield call.  We don't want one triggered by Task1.
                 Assert.IsTrue(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
 				Assert.IsFalse(task1.IsCompleted);
 
@@ -907,7 +909,7 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void TestDeepLoopedJoinedTaskDisjoinCorrectly() {
+		public void DeepLoopedJoinedTaskDisjoinCorrectly() {
 			JoinableTask task1 = null, task2 = null, task3 = null, task4 = null, task5 = null;
 			var taskStarted = new AsyncManualResetEvent();
 			var task2Prepared = new AsyncManualResetEvent();
@@ -999,9 +1001,10 @@
 				await Task.Delay(AsyncDelay / 2);
 				await mainThreadDependentSecondWorkQueued;
 
-				await Task.Delay(AsyncDelay/2);
+				await Task.Delay(AsyncDelay / 2);
 				await Task.Yield();
 
+                // we expect 3 switching from two delay one yield call.  We don't want one triggered by Task1.
                 Assert.IsTrue(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
                 Assert.IsFalse(task1.IsCompleted);
 
