@@ -797,7 +797,7 @@
 		}
 
 		/// <summary>
-		/// Main -> Task1, Main -> Task2, Task1 <==> Task2
+		/// Main -> Task1, Main -> Task2, Task1 <-> Task2 (loop dependency between Task1 and Task2.
 		/// </summary>
 		[TestMethod, Timeout(TestTimeout)]
 		public void TestJoinWithLoopDependentTasks() {
