@@ -65,6 +65,7 @@
     <Compile Include="IAsyncDisposable.cs" />
     <Compile Include="IHangReportContributor.cs" />
     <Compile Include="InternalUtilities.cs" />
+    <Compile Include="JoinableTask+DependentSynchronousTask.cs" />
     <Compile Include="JoinableTask+JoinableTaskSynchronizationContext.cs" />
     <Compile Include="JoinableTaskContext+HangReportContributor.cs" />
     <Compile Include="JoinableTaskContext.cs" />

@@ -665,6 +665,362 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void TestDoubleJoinedTaskDisjoinCorrectly() {
+			JoinableTask task1 = null;
+			var taskStarted = new AsyncManualResetEvent();
+			var dependentFirstWorkCompleted = new AsyncManualResetEvent();
+			var dependentSecondWorkAllowed = new AsyncManualResetEvent();
+			var mainThreadDependentSecondWorkQueued = new AsyncManualResetEvent();
+			var testEnded = new AsyncManualResetEvent();
+
+			var separatedTask = Task.Run(async delegate {
+					task1 = this.asyncPump.RunAsync(async delegate {
+					await this.asyncPump.SwitchToMainThreadAsync();
+					await TaskScheduler.Default;
+
+					await dependentFirstWorkCompleted.SetAsync();
+					await dependentSecondWorkAllowed;
+
+					await this.asyncPump.SwitchToMainThreadAsync()
+						.GetAwaiter().YieldAndNotify(mainThreadDependentSecondWorkQueued);
+				});
+
+				await taskStarted.SetAsync();
+				await testEnded;
+			});
+
+			this.asyncPump.Run(async delegate {
+				await taskStarted;
+
+				var collection1 = new JoinableTaskCollection(this.joinableCollection.Context);
+				collection1.Add(task1);
+				var collection2 = new JoinableTaskCollection(this.joinableCollection.Context);
+				collection2.Add(task1);
+
+				using (collection1.Join()) {
+					using (collection2.Join()) {
+					}
+
+					await dependentFirstWorkCompleted;
+				}
+
+				await dependentSecondWorkAllowed.SetAsync();
+				await mainThreadDependentSecondWorkQueued;
+
+				await Task.Delay(AsyncDelay);
+				await Task.Yield();
+
+				Assert.IsFalse(task1.IsCompleted);
+
+				await testEnded.SetAsync();
+			});
+
+			this.asyncPump.Run(async delegate {
+				using (this.joinableCollection.Join()) {
+					await task1;
+					await separatedTask;
+				}
+			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void TestDoubleIndirectJoinedTaskDisjoinCorrectly() {
+			JoinableTask task1 = null, task2 = null, task3 = null;
+			var taskStarted = new AsyncManualResetEvent();
+			var dependentFirstWorkCompleted = new AsyncManualResetEvent();
+			var dependentSecondWorkAllowed = new AsyncManualResetEvent();
+			var mainThreadDependentSecondWorkQueued = new AsyncManualResetEvent();
+			var testEnded = new AsyncManualResetEvent();
+
+			var separatedTask = Task.Run(async delegate {
+				task1 = this.asyncPump.RunAsync(async delegate {
+					await this.asyncPump.SwitchToMainThreadAsync();
+					await TaskScheduler.Default;
+
+					await dependentFirstWorkCompleted.SetAsync();
+					await dependentSecondWorkAllowed;
+
+					await this.asyncPump.SwitchToMainThreadAsync()
+						.GetAwaiter().YieldAndNotify(mainThreadDependentSecondWorkQueued);
+				});
+
+				task2 = this.asyncPump.RunAsync(async delegate {
+					var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+					collection.Add(task1);
+					using (collection.Join()) {
+						await testEnded;
+					}
+				});
+
+				task3 = this.asyncPump.RunAsync(async delegate {
+					var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+					collection.Add(task1);
+					using (collection.Join()) {
+						await testEnded;
+					}
+				});
+
+				await taskStarted.SetAsync();
+				await testEnded;
+			});
+
+			var waitCountingJTF = new WaitCountingJoinableTaskFactory(this.asyncPump.Context);
+			waitCountingJTF.Run(async delegate {
+				await taskStarted;
+
+				var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+				collection.Add(task2);
+				collection.Add(task3);
+
+				using (collection.Join()) {
+					await dependentFirstWorkCompleted;
+				}
+
+				int waitCountBeforeSecondWork = waitCountingJTF.WaitCount;
+				await dependentSecondWorkAllowed.SetAsync();
+				await Task.Delay(AsyncDelay/2);
+				await mainThreadDependentSecondWorkQueued;
+
+				await Task.Delay(AsyncDelay/2);
+				await Task.Yield();
+
+                Assert.IsTrue(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
+                Assert.IsFalse(task1.IsCompleted);
+
+				await testEnded.SetAsync();
+			});
+
+			this.asyncPump.Run(async delegate {
+				using (this.joinableCollection.Join()) {
+					await task1;
+					await task2;
+					await task3;
+					await separatedTask;
+				}
+			});
+		}
+
+		/// <summary>
+		/// Main -> Task1, Main -> Task2, Task1 <-> Task2 (loop dependency between Task1 and Task2.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public void TestJoinWithLoopDependentTasks() {
+			JoinableTask task1 = null, task2 = null;
+			var taskStarted = new AsyncManualResetEvent();
+			var testStarted = new AsyncManualResetEvent();
+			var task1Prepared = new AsyncManualResetEvent();
+			var task2Prepared = new AsyncManualResetEvent();
+			var mainThreadDependentFirstWorkQueued = new AsyncManualResetEvent();
+			var dependentFirstWorkCompleted = new AsyncManualResetEvent();
+			var dependentSecondWorkAllowed = new AsyncManualResetEvent();
+			var dependentSecondWorkCompleted = new AsyncManualResetEvent();
+			var dependentThirdWorkAllowed = new AsyncManualResetEvent();
+			var mainThreadDependentThirdWorkQueued = new AsyncManualResetEvent();
+			var testEnded = new AsyncManualResetEvent();
+
+			var separatedTask = Task.Run(async delegate {
+				task1 = this.asyncPump.RunAsync(async delegate {
+					await taskStarted;
+					await testStarted;
+					var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+					collection.Add(task2);
+					using (collection.Join()) {
+						await task1Prepared.SetAsync();
+
+						await this.asyncPump.SwitchToMainThreadAsync()
+							.GetAwaiter().YieldAndNotify(mainThreadDependentFirstWorkQueued);
+						await TaskScheduler.Default;
+
+						await dependentFirstWorkCompleted.SetAsync();
+
+						await dependentSecondWorkAllowed;
+						await this.asyncPump.SwitchToMainThreadAsync();
+						await TaskScheduler.Default;
+
+						await dependentSecondWorkCompleted.SetAsync();
+
+						await dependentThirdWorkAllowed;
+						await this.asyncPump.SwitchToMainThreadAsync()
+							.GetAwaiter().YieldAndNotify(mainThreadDependentThirdWorkQueued);
+					}
+				});
+
+				task2 = this.asyncPump.RunAsync(async delegate {
+					await taskStarted;
+					await testStarted;
+					var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+					collection.Add(task1);
+					using (collection.Join()) {
+						await task2Prepared.SetAsync();
+						await testEnded;
+					}
+				});
+
+				await taskStarted.SetAsync();
+				await testEnded;
+			});
+
+			var waitCountingJTF = new WaitCountingJoinableTaskFactory(this.asyncPump.Context);
+			waitCountingJTF.Run(async delegate {
+				await taskStarted;
+				await testStarted.SetAsync();
+				await task1Prepared;
+				await task2Prepared;
+
+				var collection1 = new JoinableTaskCollection(this.joinableCollection.Context);
+				collection1.Add(task1);
+				var collection2 = new JoinableTaskCollection(this.joinableCollection.Context);
+				collection2.Add(task2);
+				await mainThreadDependentFirstWorkQueued;
+
+				using (collection2.Join()) {
+					using (collection1.Join()) {
+						await dependentFirstWorkCompleted;
+					}
+
+					await dependentSecondWorkAllowed.SetAsync();
+					await dependentSecondWorkCompleted;
+				}
+
+				int waitCountBeforeSecondWork = waitCountingJTF.WaitCount;
+				await dependentThirdWorkAllowed.SetAsync();
+
+				await Task.Delay(AsyncDelay/2);
+				await mainThreadDependentThirdWorkQueued;
+
+				await Task.Delay(AsyncDelay/2);
+				await Task.Yield();
+
+                Assert.IsTrue(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
+				Assert.IsFalse(task1.IsCompleted);
+
+				await testEnded.SetAsync();
+			});
+			
+			this.asyncPump.Run(async delegate {
+				using (this.joinableCollection.Join()) {
+					await task1;
+					await task2;
+					await separatedTask;
+				}
+			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void TestDeepLoopedJoinedTaskDisjoinCorrectly() {
+			JoinableTask task1 = null, task2 = null, task3 = null, task4 = null, task5 = null;
+			var taskStarted = new AsyncManualResetEvent();
+			var task2Prepared = new AsyncManualResetEvent();
+			var task3Prepared = new AsyncManualResetEvent();
+			var task4Prepared = new AsyncManualResetEvent();
+			var dependentFirstWorkCompleted = new AsyncManualResetEvent();
+			var dependentSecondWorkAllowed = new AsyncManualResetEvent();
+			var mainThreadDependentSecondWorkQueued = new AsyncManualResetEvent();
+			var testEnded = new AsyncManualResetEvent();
+
+			var separatedTask = Task.Run(async delegate {
+				task1 = this.asyncPump.RunAsync(async delegate {
+					await taskStarted;
+
+					var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+					collection.Add(task1);
+					using (collection.Join()) {
+						await this.asyncPump.SwitchToMainThreadAsync();
+						await TaskScheduler.Default;
+
+						await dependentFirstWorkCompleted.SetAsync();
+						await dependentSecondWorkAllowed;
+
+						await this.asyncPump.SwitchToMainThreadAsync()
+							.GetAwaiter().YieldAndNotify(mainThreadDependentSecondWorkQueued);
+					}
+				});
+
+				task2 = this.asyncPump.RunAsync(async delegate {
+					var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+					collection.Add(task1);
+					using (collection.Join()) {
+						await task2Prepared.SetAsync();
+						await testEnded;
+					}
+				});
+
+				task3 = this.asyncPump.RunAsync(async delegate {
+					await taskStarted;
+
+					var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+					collection.Add(task2);
+					collection.Add(task4);
+					using (collection.Join()) {
+						await task3Prepared.SetAsync();
+						await testEnded;
+					}
+				});
+
+				task4 = this.asyncPump.RunAsync(async delegate {
+					var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+					collection.Add(task2);
+					collection.Add(task3);
+					using (collection.Join()) {
+						await task4Prepared.SetAsync();
+						await testEnded;
+					}
+				});
+
+				task5 = this.asyncPump.RunAsync(async delegate {
+					var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+					collection.Add(task3);
+					using (collection.Join()) {
+						await testEnded;
+					}
+				});
+
+				await taskStarted.SetAsync();
+				await testEnded;
+			});
+
+			var waitCountingJTF = new WaitCountingJoinableTaskFactory(this.asyncPump.Context);
+			waitCountingJTF.Run(async delegate {
+				await taskStarted;
+				await task2Prepared;
+				await task3Prepared;
+				await task4Prepared;
+
+				var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+				collection.Add(task5);
+
+				using (collection.Join()) {
+					await dependentFirstWorkCompleted;
+				}
+
+				int waitCountBeforeSecondWork = waitCountingJTF.WaitCount;
+				await dependentSecondWorkAllowed.SetAsync();
+
+				await Task.Delay(AsyncDelay / 2);
+				await mainThreadDependentSecondWorkQueued;
+
+				await Task.Delay(AsyncDelay/2);
+				await Task.Yield();
+
+                Assert.IsTrue(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
+                Assert.IsFalse(task1.IsCompleted);
+
+				await testEnded.SetAsync();
+			});
+
+			this.asyncPump.Run(async delegate {
+				using (this.joinableCollection.Join()) {
+					await task1;
+					await task2;
+					await task3;
+					await task4;
+					await task5;
+					await separatedTask;
+				}
+			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void JoinRejectsSubsequentWork() {
 			bool outerCompleted = false;
 
@@ -1941,14 +2297,44 @@
 			}
 		}
 
-		[TestMethod, Timeout(TestTimeout), Ignore]
+		[TestMethod, Timeout(TestTimeout)]
 		public void RunAsyncWithNonYieldingDelegateNestedInRunOverhead() {
-			this.asyncPump.Run(async delegate {
+			var waitCountingJTF = new WaitCountingJoinableTaskFactory(this.asyncPump.Context);
+			waitCountingJTF.Run(async delegate {
 				await TaskScheduler.Default;
-				for (int i = 0; i < 5000; i++) {
+				for (int i = 0; i < 1000; i++) {
+					// TIP: spinning gives the blocking thread longer to wake up, which
+					// if it wakes up at all tends to mean it will wake up in time for more
+					// of the iterations, showing that doing real work exercerbates the problem.
+					////for (int j = 0; j < 5000; j++) { }
+
 					await this.asyncPump.RunAsync(delegate { return TplExtensions.CompletedTask; });
 				}
 			});
+
+			// We assert that since the blocking thread didn't need to wake up at all,
+			// it should have only slept once. Any more than that constitutes unnecessary overhead.
+			Assert.AreEqual(1, waitCountingJTF.WaitCount);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void RunAsyncWithYieldingDelegateNestedInRunOverhead() {
+			var waitCountingJTF = new WaitCountingJoinableTaskFactory(this.asyncPump.Context);
+			waitCountingJTF.Run(async delegate {
+				await TaskScheduler.Default;
+				for (int i = 0; i < 1000; i++) {
+					// TIP: spinning gives the blocking thread longer to wake up, which
+					// if it wakes up at all tends to mean it will wake up in time for more
+					// of the iterations, showing that doing real work exercerbates the problem.
+					////for (int j = 0; j < 5000; j++) { }
+
+					await this.asyncPump.RunAsync(async delegate { await Task.Yield(); });
+				}
+			});
+
+			// We assert that since the blocking thread didn't need to wake up at all,
+			// it should have only slept once. Any more than that constitutes unnecessary overhead.
+			Assert.AreEqual(1, waitCountingJTF.WaitCount);
 		}
 
 		private static async void SomeFireAndForgetMethod() {
@@ -2062,6 +2448,23 @@
 					action();
 				}
 
+				base.WaitSynchronously(task);
+			}
+		}
+
+		private class WaitCountingJoinableTaskFactory : JoinableTaskFactory {
+			private int waitCount;
+
+			internal WaitCountingJoinableTaskFactory(JoinableTaskContext owner)
+				: base(owner) {
+			}
+
+			internal int WaitCount {
+				get { return this.waitCount; }
+			}
+
+			protected override void WaitSynchronously(Task task) {
+				Interlocked.Increment(ref this.waitCount);
 				base.WaitSynchronously(task);
 			}
 		}
