@@ -1795,21 +1795,21 @@
 			var asyncLock = new AsyncReaderWriterLock();
 
 			// 4. This is the task which the UI thread is waiting for,
-			//	and it's scheduled on UI thread.
-			//	As UI thread did "Join" before "await", so this task can reenter UI thread.
+			//  and it's scheduled on UI thread.
+			//  As UI thread did "Join" before "await", so this task can reenter UI thread.
 			var task = Task.Run(async delegate {
 				await this.asyncPump.SwitchToMainThreadAsync();
 				// 4.1 Now this anonymous method is on UI thread,
-				//	 and it needs to acquire a read lock.
+				//   and it needs to acquire a read lock.
 				//
-				//	 The attempt to acquire a lock would lead to a deadlock!
-				//	 Because the call context was overwritten by this reentrance,
-				//	 this method didn't know the write lock was already acquired at
-				//	 the bottom of the call stack. Therefore, it will issue a new request
-				//	 to acquire the read lock. However, that request won't be completed as
-				//	 the write lock holder is also waiting for this method to complete.
+				//   The attempt to acquire a lock would lead to a deadlock!
+				//   Because the call context was overwritten by this reentrance,
+				//   this method didn't know the write lock was already acquired at
+				//   the bottom of the call stack. Therefore, it will issue a new request
+				//   to acquire the read lock. However, that request won't be completed as
+				//   the write lock holder is also waiting for this method to complete.
 				//
-				//	 This test would be timeout here.
+				//   This test would be timeout here.
 				using (await asyncLock.ReadLockAsync()) {
 				}
 			});
@@ -1818,12 +1818,12 @@
 				// 1. Acquire write lock on worker thread
 				using (await asyncLock.WriteLockAsync()) {
 					// 2. Hold the write lock but switch to UI thread.
-					//	That's to simulate the scenario to call into IVs* services
+					//  That's to simulate the scenario to call into IVs* services
 					await this.asyncPump.SwitchToMainThreadAsync();
 
 					// 3. Join and wait for another BG task.
-					//	That's to simulate the scenario when the IVs* service also calls into CPS,
-					//	and CPS join and wait for another task.
+					//  That's to simulate the scenario when the IVs* service also calls into CPS,
+					//  and CPS join and wait for another task.
 					using (this.joinableCollection.Join()) {
 						await task;
 					}
