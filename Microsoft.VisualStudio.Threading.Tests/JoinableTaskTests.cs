@@ -673,19 +673,17 @@
 			var mainThreadDependentSecondWorkQueued = new AsyncManualResetEvent();
 			var testEnded = new AsyncManualResetEvent();
 
-			var seperatedTask = Task.Run(async delegate {
-				using (this.asyncPump.Context.SuppressRelevance()) {
+			var separatedTask = Task.Run(async delegate {
 					task1 = this.asyncPump.RunAsync(async delegate {
-						await this.asyncPump.SwitchToMainThreadAsync();
-						await TaskScheduler.Default;
+					await this.asyncPump.SwitchToMainThreadAsync();
+					await TaskScheduler.Default;
 
-						await dependentFirstWorkCompleted.SetAsync();
-						await dependentSecondWorkAllowed;
+					await dependentFirstWorkCompleted.SetAsync();
+					await dependentSecondWorkAllowed;
 
-						await this.asyncPump.SwitchToMainThreadAsync()
-							.GetAwaiter().YieldAndNotify(mainThreadDependentSecondWorkQueued);
-					});
-				}
+					await this.asyncPump.SwitchToMainThreadAsync()
+						.GetAwaiter().YieldAndNotify(mainThreadDependentSecondWorkQueued);
+				});
 
 				await taskStarted.SetAsync();
 				await testEnded;
@@ -720,7 +718,7 @@
 			this.asyncPump.Run(async delegate {
 				using (this.joinableCollection.Join()) {
 					await task1;
-					await seperatedTask;
+					await separatedTask;
 				}
 			});
 		}
@@ -734,35 +732,33 @@
 			var mainThreadDependentSecondWorkQueued = new AsyncManualResetEvent();
 			var testEnded = new AsyncManualResetEvent();
 
-			var seperatedTask = Task.Run(async delegate {
-				using (this.asyncPump.Context.SuppressRelevance()) {
-					task1 = this.asyncPump.RunAsync(async delegate {
-						await this.asyncPump.SwitchToMainThreadAsync();
-						await TaskScheduler.Default;
+			var separatedTask = Task.Run(async delegate {
+				task1 = this.asyncPump.RunAsync(async delegate {
+					await this.asyncPump.SwitchToMainThreadAsync();
+					await TaskScheduler.Default;
 
-						await dependentFirstWorkCompleted.SetAsync();
-						await dependentSecondWorkAllowed;
+					await dependentFirstWorkCompleted.SetAsync();
+					await dependentSecondWorkAllowed;
 
-						await this.asyncPump.SwitchToMainThreadAsync()
-							.GetAwaiter().YieldAndNotify(mainThreadDependentSecondWorkQueued);
-					});
+					await this.asyncPump.SwitchToMainThreadAsync()
+						.GetAwaiter().YieldAndNotify(mainThreadDependentSecondWorkQueued);
+				});
 
-					task2 = this.asyncPump.RunAsync(async delegate {
-						var collection = new JoinableTaskCollection(this.joinableCollection.Context);
-						collection.Add(task1);
-						using (collection.Join()) {
-							await testEnded;
-						}
-					});
+				task2 = this.asyncPump.RunAsync(async delegate {
+					var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+					collection.Add(task1);
+					using (collection.Join()) {
+						await testEnded;
+					}
+				});
 
-					task3 = this.asyncPump.RunAsync(async delegate {
-						var collection = new JoinableTaskCollection(this.joinableCollection.Context);
-						collection.Add(task1);
-						using (collection.Join()) {
-							await testEnded;
-						}
-					});
-				}
+				task3 = this.asyncPump.RunAsync(async delegate {
+					var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+					collection.Add(task1);
+					using (collection.Join()) {
+						await testEnded;
+					}
+				});
 
 				await taskStarted.SetAsync();
 				await testEnded;
@@ -795,7 +791,7 @@
 					await task1;
 					await task2;
 					await task3;
-					await seperatedTask;
+					await separatedTask;
 				}
 			});
 		}
@@ -818,45 +814,43 @@
 			var mainThreadDependentThirdWorkQueued = new AsyncManualResetEvent();
 			var testEnded = new AsyncManualResetEvent();
 
-			var seperatedTask = Task.Run(async delegate {
-				using (this.asyncPump.Context.SuppressRelevance()) {
-					task1 = this.asyncPump.RunAsync(async delegate {
-						await taskStarted;
-						await testStarted;
-						var collection = new JoinableTaskCollection(this.joinableCollection.Context);
-						collection.Add(task2);
-						using (collection.Join()) {
-							await task1Prepared.SetAsync();
+			var separatedTask = Task.Run(async delegate {
+				task1 = this.asyncPump.RunAsync(async delegate {
+					await taskStarted;
+					await testStarted;
+					var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+					collection.Add(task2);
+					using (collection.Join()) {
+						await task1Prepared.SetAsync();
 
-							await this.asyncPump.SwitchToMainThreadAsync()
-								.GetAwaiter().YieldAndNotify(mainThreadDependentFirstWorkQueued);
-							await TaskScheduler.Default;
+						await this.asyncPump.SwitchToMainThreadAsync()
+							.GetAwaiter().YieldAndNotify(mainThreadDependentFirstWorkQueued);
+						await TaskScheduler.Default;
 
-							await dependentFirstWorkCompleted.SetAsync();
+						await dependentFirstWorkCompleted.SetAsync();
 
-							await dependentSecondWorkAllowed;
-							await this.asyncPump.SwitchToMainThreadAsync();
-							await TaskScheduler.Default;
+						await dependentSecondWorkAllowed;
+						await this.asyncPump.SwitchToMainThreadAsync();
+						await TaskScheduler.Default;
 
-							await dependentSecondWorkCompleted.SetAsync();
+						await dependentSecondWorkCompleted.SetAsync();
 
-							await dependentThirdWorkAllowed;
-							await this.asyncPump.SwitchToMainThreadAsync()
-								.GetAwaiter().YieldAndNotify(mainThreadDependentThirdWorkQueued);
-						}
-					});
+						await dependentThirdWorkAllowed;
+						await this.asyncPump.SwitchToMainThreadAsync()
+							.GetAwaiter().YieldAndNotify(mainThreadDependentThirdWorkQueued);
+					}
+				});
 
-					task2 = this.asyncPump.RunAsync(async delegate {
-						await taskStarted;
-						await testStarted;
-						var collection = new JoinableTaskCollection(this.joinableCollection.Context);
-						collection.Add(task1);
-						using (collection.Join()) {
-							await task2Prepared.SetAsync();
-							await testEnded;
-						}
-					});
-				}
+				task2 = this.asyncPump.RunAsync(async delegate {
+					await taskStarted;
+					await testStarted;
+					var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+					collection.Add(task1);
+					using (collection.Join()) {
+						await task2Prepared.SetAsync();
+						await testEnded;
+					}
+				});
 
 				await taskStarted.SetAsync();
 				await testEnded;
@@ -898,7 +892,7 @@
 				using (this.joinableCollection.Join()) {
 					await task1;
 					await task2;
-					await seperatedTask;
+					await separatedTask;
 				}
 			});
 		}
