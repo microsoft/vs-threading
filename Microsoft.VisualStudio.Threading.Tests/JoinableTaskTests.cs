@@ -665,6 +665,70 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void SwitchToMainThreadWithDelayedDependencyShouldNotHang() {
+			JoinableTask task1 = null, task2 = null;
+			var taskStarted = new AsyncManualResetEvent();
+			var testEnded = new AsyncManualResetEvent();
+			var dependentWorkAllowed = new AsyncManualResetEvent();
+			var indirectDependencyAllowed = new AsyncManualResetEvent();
+			var dependentWorkQueued = new AsyncManualResetEvent();
+			var dependentWorkFinished = new AsyncManualResetEvent();
+
+			var separatedTask = Task.Run(async delegate {
+				using (this.asyncPump.Context.SuppressRelevance()) {
+					var taskCollection = new JoinableTaskCollection(this.joinableCollection.Context);
+					var factory = new JoinableTaskFactory(taskCollection);
+					task1 = this.asyncPump.RunAsync(async delegate {
+						await dependentWorkAllowed;
+						await factory.SwitchToMainThreadAsync()
+							.GetAwaiter().YieldAndNotify(dependentWorkQueued);
+
+						await dependentWorkFinished.SetAsync();
+					});
+
+					task2 = this.asyncPump.RunAsync(async delegate {
+						await indirectDependencyAllowed;
+
+						var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+						collection.Add(task1);
+
+						await Task.Delay(AsyncDelay);
+						collection.Join();
+
+						await testEnded;
+					});
+				}
+
+				await taskStarted.SetAsync();
+				await testEnded;
+			});
+
+			this.asyncPump.Run(async delegate {
+				await taskStarted;
+				await dependentWorkAllowed.SetAsync();
+				await dependentWorkQueued;
+
+				var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+				collection.Add(task2);
+
+				collection.Join();
+				await indirectDependencyAllowed.SetAsync();
+
+				await dependentWorkFinished;
+
+				await testEnded.SetAsync();
+			});
+
+			this.asyncPump.Run(async delegate {
+				using (this.joinableCollection.Join()) {
+					await task1;
+					await task2;
+					await separatedTask;
+				}
+			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void DoubleJoinedTaskDisjoinCorrectly() {
 			JoinableTask task1 = null;
 			var taskStarted = new AsyncManualResetEvent();

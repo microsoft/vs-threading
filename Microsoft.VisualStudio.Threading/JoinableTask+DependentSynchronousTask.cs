@@ -110,8 +110,15 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(task, "task");
             Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
-            if (this.IsCompleted || this.IsCompleteRequested) {
+            if (this.IsCompleted) {
                 return false;
+            }
+
+            if (this.IsCompleteRequested) {
+                // A completed task might still have pending items in the queue.
+                return ((task.state & JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTaskFlags.SynchronouslyBlockingMainThread) ?
+                    (this.mainThreadQueue != null && !this.mainThreadQueue.IsEmpty) :
+                    (this.threadPoolQueue != null && !this.threadPoolQueue.IsEmpty);
             }
 
             DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
