@@ -675,29 +675,27 @@
 			var dependentWorkFinished = new AsyncManualResetEvent();
 
 			var separatedTask = Task.Run(async delegate {
-				using (this.asyncPump.Context.SuppressRelevance()) {
-					var taskCollection = new JoinableTaskCollection(this.joinableCollection.Context);
-					var factory = new JoinableTaskFactory(taskCollection);
-					task1 = this.asyncPump.RunAsync(async delegate {
-						await dependentWorkAllowed;
-						await factory.SwitchToMainThreadAsync()
-							.GetAwaiter().YieldAndNotify(dependentWorkQueued);
+                var taskCollection = new JoinableTaskCollection(this.context);
+				var factory = new JoinableTaskFactory(taskCollection);
+				task1 = this.asyncPump.RunAsync(async delegate {
+					await dependentWorkAllowed;
+					await factory.SwitchToMainThreadAsync()
+						.GetAwaiter().YieldAndNotify(dependentWorkQueued);
 
-						await dependentWorkFinished.SetAsync();
-					});
+					await dependentWorkFinished.SetAsync();
+				});
 
-					task2 = this.asyncPump.RunAsync(async delegate {
-						await indirectDependencyAllowed;
+				task2 = this.asyncPump.RunAsync(async delegate {
+					await indirectDependencyAllowed;
 
-						var collection = new JoinableTaskCollection(this.joinableCollection.Context);
-						collection.Add(task1);
+					var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+					collection.Add(task1);
 
-						await Task.Delay(AsyncDelay);
-						collection.Join();
+					await Task.Delay(AsyncDelay);
+					collection.Join();
 
-						await testEnded;
-					});
-				}
+					await testEnded;
+				});
 
 				await taskStarted.SetAsync();
 				await testEnded;
