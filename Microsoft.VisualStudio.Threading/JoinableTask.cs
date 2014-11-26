@@ -183,6 +183,10 @@ namespace Microsoft.VisualStudio.Threading {
 			get {
 				using (NoMessagePumpSyncContext.Default.Apply()) {
 					lock (this.owner.Context.SyncContextLock) {
+						if (!this.IsCompleteRequested) {
+							return false;
+						}
+
 						if (this.mainThreadQueue != null && !this.mainThreadQueue.IsCompleted) {
 							return false;
 						}
@@ -191,7 +195,7 @@ namespace Microsoft.VisualStudio.Threading {
 							return false;
 						}
 
-						return this.IsCompleteRequested;
+						return true;
 					}
 				}
 			}
@@ -357,11 +361,8 @@ namespace Microsoft.VisualStudio.Threading {
 		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private ExecutionQueue ApplicableQueue {
 			get {
-				using (NoMessagePumpSyncContext.Default.Apply()) {
-					lock (this.owner.Context.SyncContextLock) {
-						return this.owner.Context.MainThread == Thread.CurrentThread ? this.mainThreadQueue : this.threadPoolQueue;
-					}
-				}
+				Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
+				return this.owner.Context.MainThread == Thread.CurrentThread ? this.mainThreadQueue : this.threadPoolQueue;
 			}
 		}
 
@@ -707,9 +708,9 @@ namespace Microsoft.VisualStudio.Threading {
 
 			// We only need find the first work item.
 			work = null;
-			if (!this.IsCompleted && visited.Add(this)) {
+			if (visited.Add(this)) {
 				if (!this.TryDequeue(out work)) {
-					if (this.childOrJoinedJobs != null) {
+					if (this.childOrJoinedJobs != null && !this.IsCompleted) {
 						foreach (var item in this.childOrJoinedJobs) {
 							if (item.Key.TryDequeueSelfOrDependencies(visited, out work)) {
 								break;
@@ -723,17 +724,14 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		private bool TryDequeue(out SingleExecuteProtector work) {
-			using (NoMessagePumpSyncContext.Default.Apply()) {
-				lock (this.owner.Context.SyncContextLock) {
-					var queue = this.ApplicableQueue;
-					if (queue != null) {
-						return queue.TryDequeue(out work);
-					}
-
-					work = null;
-					return false;
-				}
+			Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
+			var queue = this.ApplicableQueue;
+			if (queue != null && !queue.IsCompleted) {
+				return queue.TryDequeue(out work);
 			}
+
+			work = null;
+			return false;
 		}
 
 		/// <summary>
