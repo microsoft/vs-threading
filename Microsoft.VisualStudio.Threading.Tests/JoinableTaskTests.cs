@@ -1878,6 +1878,26 @@
 			Assert.IsTrue(outer.IsCompleted);
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void NestedFactoriesDoNotAssistChildrenOfCompletedTasks() {
+			var loPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
+			var hiPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
+
+			var outerFinished = new AsyncManualResetEvent(allowInliningAwaiters: true);
+			JoinableTask innerTask;
+			var outer = hiPriFactory.RunAsync(delegate {
+				innerTask = loPriFactory.RunAsync(async delegate {
+					await outerFinished;
+				});
+				return TplExtensions.CompletedTask;
+			});
+			outerFinished.SetAsync();
+
+			// Verify that the loPriFactory received the message and hiPriFactory did not.
+			Assert.AreEqual(1, loPriFactory.JoinableTasksPendingMainthread.Count());
+			Assert.AreEqual(0, hiPriFactory.JoinableTasksPendingMainthread.Count());
+		}
+
 		/// <summary>
 		/// Verifes that each instance of JTF is only notified once of
 		/// a nested JoinableTask's attempt to get to the UI thread.
