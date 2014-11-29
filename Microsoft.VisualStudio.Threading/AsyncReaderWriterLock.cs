@@ -872,9 +872,12 @@ namespace Microsoft.VisualStudio.Threading {
 
 				if (issued) {
 					this.GetActiveLockSet(awaiter.Kind).Add(awaiter);
+					Etw.Issued(this.issuedWriteLocks.Count, this.issuedUpgradeableReadLocks.Count, this.issuedReadLocks.Count);
 				}
 
 				if (!issued) {
+					Etw.Waiting(this.waitingWriters.Count, this.waitingUpgradeableReaders.Count, this.waitingReaders.Count);
+
 					// If the lock is immediately available, we don't need to coordinate with other threads.
 					// But if it is NOT available, we'd have to wait potentially for other threads to do more work.
 					Debugger.NotifyOfCrossThreadDependency();

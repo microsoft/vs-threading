@@ -60,6 +60,7 @@
     <Compile Include="Dgml.cs" />
     <Compile Include="EmptyStruct.cs" />
     <Compile Include="EnumerateOneOrMany.cs" />
+    <Compile Include="AsyncReaderWriterLock+Events.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="HangReportContribution.cs" />
     <Compile Include="IAsyncDisposable.cs" />
