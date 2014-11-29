@@ -1879,7 +1879,32 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void NestedFactoriesDoNotAssistChildrenOfCompletedTasks() {
+		public void NestedFactoriesDoNotAssistChildrenOfTaskThatCompletedBeforeStart() {
+			var loPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
+			var hiPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
+
+			var outerFinished = new AsyncManualResetEvent(allowInliningAwaiters: true);
+			JoinableTask innerTask;
+			AsyncManualResetEvent loPriSwitchPosted = new AsyncManualResetEvent();
+			var outer = hiPriFactory.RunAsync(delegate {
+				Task.Run(async delegate {
+					await outerFinished;
+					innerTask = loPriFactory.RunAsync(async delegate {
+						await loPriFactory.SwitchToMainThreadAsync().GetAwaiter().YieldAndNotify(loPriSwitchPosted);
+					});
+				});
+				return TplExtensions.CompletedTask;
+			});
+			outerFinished.SetAsync();
+			loPriSwitchPosted.WaitAsync().Wait();
+
+			// Verify that the loPriFactory received the message and hiPriFactory did not.
+			Assert.AreEqual(1, loPriFactory.JoinableTasksPendingMainthread.Count());
+			Assert.AreEqual(0, hiPriFactory.JoinableTasksPendingMainthread.Count());
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void NestedFactoriesDoNotAssistChildrenOfTaskThatCompletedAfterStart() {
 			var loPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
 			var hiPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
 
