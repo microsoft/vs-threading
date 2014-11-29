@@ -1878,6 +1878,18 @@
 			Assert.IsTrue(outer.IsCompleted);
 		}
 
+		/// <summary>
+		/// Verifies when JoinableTasks are nested that nesting (parent) factories
+		/// do not assist in reaching the main thread if the nesting JoinableTask
+		/// completed before the child JoinableTask even started.
+		/// </summary>
+		/// <remarks>
+		/// This is for efficiency as well as an accuracy assistance since the nested JTF
+		/// may have a lower priority to get to the main thread (e.g. idle priority) than the
+		/// parent JTF. If the parent JTF assists just because it happened to be active for a
+		/// brief time when the child JoinableTask was created, it could forever defeat the
+		/// intended lower priority of the child.
+		/// </remarks>
 		[TestMethod, Timeout(TestTimeout)]
 		public void NestedFactoriesDoNotAssistChildrenOfTaskThatCompletedBeforeStart() {
 			var loPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
@@ -1903,6 +1915,18 @@
 			Assert.AreEqual(0, hiPriFactory.JoinableTasksPendingMainthread.Count());
 		}
 
+		/// <summary>
+		/// Verifies when JoinableTasks are nested that nesting (parent) factories
+		/// do not assist in reaching the main thread once the nesting JoinableTask
+		/// completes (assuming it completes after the child JoinableTask starts).
+		/// </summary>
+		/// <remarks>
+		/// This is for efficiency as well as an accuracy assistance since the nested JTF
+		/// may have a lower priority to get to the main thread (e.g. idle priority) than the
+		/// parent JTF. If the parent JTF assists just because it happened to be active for a
+		/// brief time when the child JoinableTask was created, it could forever defeat the
+		/// intended lower priority of the child.
+		/// </remarks>
 		[TestMethod, Timeout(TestTimeout)]
 		public void NestedFactoriesDoNotAssistChildrenOfTaskThatCompletedAfterStart() {
 			var loPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
