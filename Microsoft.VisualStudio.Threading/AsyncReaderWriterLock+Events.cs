@@ -37,6 +37,11 @@ namespace Microsoft.VisualStudio.Threading {
 			private const int WaitingLockCountsEvent = 2;
 
 			/// <summary>
+			/// The event ID for the <see cref="IssuedAfterContention(LockKind)"/> event.
+			/// </summary>
+			private const int IssuedAfterContentionEvent = 3;
+
+			/// <summary>
 			/// The singleton instance used for logging.
 			/// </summary>
 			internal static readonly Events Log = new Events();
@@ -51,9 +56,19 @@ namespace Microsoft.VisualStudio.Threading {
 			/// Logs an issued lock.
 			/// </summary>
 			[Event(IssuedLockCountsEvent, Version = 1, Task = Tasks.LockRequest, Opcode = Opcodes.Issued,
-			Level = EventLevel.Informational, Keywords = Keywords.SomeKeyword)]
+				Level = EventLevel.Informational, Keywords = Keywords.SomeKeyword)]
 			public void Issued(LockKind kind, int issuedUpgradeableReadCount, int issuedReadCount) {
 				WriteEvent(IssuedLockCountsEvent, (int)kind, issuedUpgradeableReadCount, issuedReadCount);
+			}
+
+			/// <summary>
+			/// Logs a lock that was issued after a contending lock was released.
+			/// </summary>
+			/// <param name="kind">The kind of lock that was issued.</param>
+			[Event(IssuedAfterContentionEvent, Version = 1, Task = Tasks.LockRequest, Opcode = Opcodes.IssuedAfterContention,
+				Level = EventLevel.Informational, Keywords = Keywords.SomeKeyword)]
+			public void IssuedAfterContention(LockKind kind) {
+				WriteEvent(IssuedAfterContentionEvent, (int)kind);
 			}
 
 			/// <summary>
@@ -101,6 +116,7 @@ namespace Microsoft.VisualStudio.Threading {
 				// Custom opcodes should range 11 - 239; see http://msdn.microsoft.com/en-us/library/windows/desktop/dd996918(v=vs.85).aspx
 				public const EventOpcode Waiting = (EventOpcode)100;
 				public const EventOpcode Issued = (EventOpcode)101;
+				public const EventOpcode IssuedAfterContention = (EventOpcode)102;
 			}
 		}
 	}

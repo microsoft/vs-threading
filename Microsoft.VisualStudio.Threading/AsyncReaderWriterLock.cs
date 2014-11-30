@@ -973,6 +973,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		/// <param name="awaiter">The awaiter to issue a lock to and execute.</param>
 		private void IssueAndExecute(Awaiter awaiter) {
+			Etw.IssuedAfterContention(awaiter.Kind);
 			Assumes.True(this.TryIssueLock(awaiter, previouslyQueued: true));
 			Assumes.True(this.ExecuteOrHandleCancellation(awaiter, stillInQueue: false));
 		}
@@ -1416,6 +1417,8 @@ namespace Microsoft.VisualStudio.Threading {
 						if (breakOnFirstIssue) {
 							return true;
 						}
+
+						Etw.IssuedAfterContention(lockWaiter.Kind);
 
 						// At this point, the waiter was removed from the queue, so we can't keep
 						// enumerating the queue or we'll get an InvalidOperationException.
