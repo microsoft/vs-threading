@@ -79,6 +79,10 @@ namespace Microsoft.VisualStudio.Threading {
 			public void Waiting(LockKind kind, int issuedWriteCount, int issuedUpgradeableReadCount, int issuedReadCount) {
 				unsafe
 				{
+					// WriteEvent overloads only allow up to 3 args. To get more into it
+					// we have to use an n-arg overload (via an array).
+					// We use stackalloc to prepare an array without introducing any GC pressure
+					// from the array itself or boxing integers into object to fit an object[].
 					EventData* eventPayload = stackalloc EventData[4];
 					eventPayload[0].Size = 4;
 					eventPayload[0].DataPointer = (IntPtr)(&kind);
