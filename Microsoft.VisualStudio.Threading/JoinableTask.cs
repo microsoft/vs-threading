@@ -359,14 +359,6 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
-		private ExecutionQueue ApplicableQueue {
-			get {
-				Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
-				return this.owner.Context.MainThread == Thread.CurrentThread ? this.mainThreadQueue : this.threadPoolQueue;
-			}
-		}
-
-		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private bool SynchronouslyBlockingThreadPool {
 			get {
 				return (this.state & JoinableTaskFlags.StartedSynchronously) == JoinableTaskFlags.StartedSynchronously
@@ -592,9 +584,11 @@ namespace Microsoft.VisualStudio.Threading {
 		internal void CompleteOnCurrentThread() {
 			Assumes.NotNull(this.wrappedTask);
 
+			bool onMainThread = false;
 			var additionalFlags = JoinableTaskFlags.CompletingSynchronously;
 			if (this.owner.Context.MainThread == Thread.CurrentThread) {
 				additionalFlags |= JoinableTaskFlags.SynchronouslyBlockingMainThread;
+				onMainThread = true;
 			}
 
 			this.AddStateFlags(additionalFlags);
@@ -610,10 +604,11 @@ namespace Microsoft.VisualStudio.Threading {
 				// Don't use IsCompleted as the condition because that
 				// includes queues of posted work that don't have to complete for the
 				// JoinableTask to be ready to return from the JTF.Run method.
+				HashSet<JoinableTask> visited = null;
 				while (!this.IsCompleteRequested) {
 					SingleExecuteProtector work;
 					Task tryAgainAfter;
-					if (this.TryDequeueSelfOrDependencies(out work, out tryAgainAfter)) {
+					if (this.TryDequeueSelfOrDependencies(onMainThread, ref visited, out work, out tryAgainAfter)) {
 						work.TryExecute();
 					} else if (tryAgainAfter != null) {
 						this.owner.WaitSynchronously(tryAgainAfter);
@@ -682,7 +677,7 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 		}
 
-		private bool TryDequeueSelfOrDependencies(out SingleExecuteProtector work, out Task tryAgainAfter) {
+		private bool TryDequeueSelfOrDependencies(bool onMainThread, ref HashSet<JoinableTask> visited, out SingleExecuteProtector work, out Task tryAgainAfter) {
 			using (NoMessagePumpSyncContext.Default.Apply()) {
 				lock (this.owner.Context.SyncContextLock) {
 					if (this.IsCompleted) {
@@ -691,7 +686,13 @@ namespace Microsoft.VisualStudio.Threading {
 						return false;
 					}
 
-					if (this.TryDequeueSelfOrDependencies(new HashSet<JoinableTask>(), out work)) {
+					if (visited == null) {
+						visited = new HashSet<JoinableTask>();
+					} else {
+						visited.Clear();
+					}
+
+					if (this.TryDequeueSelfOrDependencies(onMainThread, visited, out work)) {
 						tryAgainAfter = null;
 						return true;
 					}
@@ -702,17 +703,22 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 		}
 
-		private bool TryDequeueSelfOrDependencies(HashSet<JoinableTask> visited, out SingleExecuteProtector work) {
+		private bool TryDequeueSelfOrDependencies(bool onMainThread, HashSet<JoinableTask> visited, out SingleExecuteProtector work) {
 			Requires.NotNull(visited, "visited");
-			Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
+			// Commented out to reduce overhead in the recursive function: Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
 			// We only need find the first work item.
 			work = null;
 			if (visited.Add(this)) {
-				if (!this.TryDequeue(out work)) {
+				var queue = onMainThread ? this.mainThreadQueue : this.threadPoolQueue;
+				if (queue != null && !queue.IsCompleted) {
+					queue.TryDequeue(out work);
+				}
+
+				if (work == null) {
 					if (this.childOrJoinedJobs != null && !this.IsCompleted) {
 						foreach (var item in this.childOrJoinedJobs) {
-							if (item.Key.TryDequeueSelfOrDependencies(visited, out work)) {
+							if (item.Key.TryDequeueSelfOrDependencies(onMainThread, visited, out work)) {
 								break;
 							}
 						}
@@ -721,17 +727,6 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			return work != null;
-		}
-
-		private bool TryDequeue(out SingleExecuteProtector work) {
-			Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
-			var queue = this.ApplicableQueue;
-			if (queue != null && !queue.IsCompleted) {
-				return queue.TryDequeue(out work);
-			}
-
-			work = null;
-			return false;
 		}
 
 		/// <summary>
