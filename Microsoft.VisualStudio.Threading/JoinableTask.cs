@@ -106,7 +106,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// The queueNeedProcessEvent is triggered by this JoinableTask, this allows a quick access to the event.
 		/// </summary>
 		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
-		private JoinableTask pendingEventSource;
+		private WeakReference<JoinableTask> pendingEventSource;
 
 		/// <summary>
 		/// The uplimit of the number pending events. The real number can be less because dependency can be removed, or a pending event can be processed.
@@ -464,8 +464,8 @@ namespace Microsoft.VisualStudio.Threading {
 							var tasksNeedNotify = this.GetDependingSynchronousTasks(mainThreadQueueUpdated);
 							eventsNeedNotify = new List<AsyncManualResetEvent>();
 							foreach (var taskToNotify in tasksNeedNotify) {
-								if (taskToNotify.pendingEventSource != taskToNotify) {
-									taskToNotify.pendingEventSource = this;
+								if (taskToNotify.pendingEventSource == null || taskToNotify == this) {
+									taskToNotify.pendingEventSource = new WeakReference<JoinableTask>(this);
 								}
 
 								taskToNotify.pendingEventCount++;
@@ -620,7 +620,7 @@ namespace Microsoft.VisualStudio.Threading {
 				lock (this.owner.Context.SyncContextLock) {
 					this.pendingEventCount = 0;
 					// Add the task to the depending tracking list of itself, so it will monitor the event queue.
-					this.pendingEventSource = this.AddDependingSynchronousTask(this, ref this.pendingEventCount);
+					this.pendingEventSource = new WeakReference<JoinableTask>(this.AddDependingSynchronousTask(this, ref this.pendingEventCount));
 				}
 			}
 
@@ -714,16 +714,20 @@ namespace Microsoft.VisualStudio.Threading {
 						this.pendingEventCount--;
 
 						if (this.pendingEventSource != null) {
-							var pendingSource = this.pendingEventSource;
-							this.pendingEventSource = null;
-
-							if (pendingSource.IsDependingSynchronsousTask(this)) {
+							JoinableTask pendingSource;
+							if (this.pendingEventSource.TryGetTarget(out pendingSource) && pendingSource.IsDependingSynchronsousTask(this)) {
 								var queue = onMainThread ? pendingSource.mainThreadQueue : pendingSource.threadPoolQueue;
 								if (queue != null && !queue.IsCompleted && queue.TryDequeue(out work)) {
+									if (queue.Count == 0) {
+										this.pendingEventSource = null;
+									}
+
 									tryAgainAfter = null;
 									return true;
 								}
 							}
+
+							this.pendingEventSource = null;
 						}
 
 						if (visited == null) {
@@ -800,8 +804,8 @@ namespace Microsoft.VisualStudio.Threading {
 						eventsNeedNotify = new List<AsyncManualResetEvent>();
 
 						foreach (var taskToNotify in tasksNeedNotify) {
-							if (taskToNotify.Item1.pendingEventSource != taskToNotify.Item1) {
-								taskToNotify.Item1.pendingEventSource = taskToNotify.Item2;
+							if (taskToNotify.Item1.pendingEventSource == null || taskToNotify.Item2 == taskToNotify.Item1) {
+								taskToNotify.Item1.pendingEventSource = new WeakReference<JoinableTask>(taskToNotify.Item2);
 							}
 
 							taskToNotify.Item1.pendingEventCount += taskToNotify.Item3;

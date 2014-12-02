@@ -33,6 +33,9 @@ namespace Microsoft.VisualStudio.Threading
             return count;
         }
 
+        /// <summary>
+        /// Check whether a task is being tracked in our tracking list.
+        /// </summary>
         private bool IsDependingSynchronsousTask(JoinableTask syncTask) {
             DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
             while (existingTaskTracking != null) {
@@ -136,6 +139,17 @@ namespace Microsoft.VisualStudio.Threading
                 return null;
             }
 
+            if (this.IsCompleteRequested) {
+                // A completed task might still have pending items in the queue.
+                int pendingCount = this.GetPendingEventCountForTask(task);
+                if (pendingCount > 0) {
+                    totalEventsPending += pendingCount;
+                    return this;
+                }
+
+                return null;
+            }
+
             DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
             while (existingTaskTracking != null) {
                 if (existingTaskTracking.SynchronousTask == task) {
@@ -146,17 +160,12 @@ namespace Microsoft.VisualStudio.Threading
                 existingTaskTracking = existingTaskTracking.Next;
             }
 
-            int pendingItemCount = GetPendingEventCountForTask(task);
+            int pendingItemCount = this.GetPendingEventCountForTask(task);
             JoinableTask eventTriggeringTask = null;
 
             if (pendingItemCount > 0) {
                 totalEventsPending += pendingItemCount;
                 eventTriggeringTask = this;
-            }
-
-            if (this.IsCompleteRequested) {
-                // A completed task might still have pending items in the queue.
-                return eventTriggeringTask;
             }
 
             // For a new synchronous task, we need apply it to our child tasks.
