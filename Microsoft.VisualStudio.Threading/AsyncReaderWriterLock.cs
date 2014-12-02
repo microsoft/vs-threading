@@ -149,6 +149,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <c>true</c> to spend additional resources capturing diagnostic details that can be used
 		/// to analyze deadlocks or other issues.</param>
 		public AsyncReaderWriterLock(bool captureDiagnostics) {
+			this.Etw = new EventsHelper(this);
 			this.captureDiagnostics = captureDiagnostics;
 		}
 
@@ -872,11 +873,11 @@ namespace Microsoft.VisualStudio.Threading {
 
 				if (issued) {
 					this.GetActiveLockSet(awaiter.Kind).Add(awaiter);
-					Etw.Issued(awaiter.Kind, this.issuedUpgradeableReadLocks.Count, this.issuedReadLocks.Count);
+					Etw.Issued(awaiter);
 				}
 
 				if (!issued) {
-					Etw.Waiting(awaiter.Kind, this.issuedWriteLocks.Count, this.issuedUpgradeableReadLocks.Count, this.issuedReadLocks.Count);
+					Etw.WaitStart(awaiter);
 
 					// If the lock is immediately available, we don't need to coordinate with other threads.
 					// But if it is NOT available, we'd have to wait potentially for other threads to do more work.
@@ -973,7 +974,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		/// <param name="awaiter">The awaiter to issue a lock to and execute.</param>
 		private void IssueAndExecute(Awaiter awaiter) {
-			Etw.IssuedAfterContention(awaiter.Kind);
+			Etw.WaitStop(awaiter);
 			Assumes.True(this.TryIssueLock(awaiter, previouslyQueued: true));
 			Assumes.True(this.ExecuteOrHandleCancellation(awaiter, stillInQueue: false));
 		}
@@ -1418,7 +1419,7 @@ namespace Microsoft.VisualStudio.Threading {
 							return true;
 						}
 
-						Etw.IssuedAfterContention(lockWaiter.Kind);
+						Etw.WaitStop(lockWaiter);
 
 						// At this point, the waiter was removed from the queue, so we can't keep
 						// enumerating the queue or we'll get an InvalidOperationException.

@@ -15,7 +15,34 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// The instance of the ETW logger to use.
 		/// </summary>
-		private static Events Etw = Events.Log;
+		private EventsHelper Etw;
+
+		internal class EventsHelper {
+			private readonly AsyncReaderWriterLock lck;
+
+			internal EventsHelper(AsyncReaderWriterLock lck) {
+				Requires.NotNull(lck, "lck");
+				this.lck = lck;
+			}
+
+			public void Issued(Awaiter lckAwaiter) {
+				if (Events.Log.IsEnabled()) {
+					Events.Log.Issued(lckAwaiter.GetHashCode(), lckAwaiter.Kind, this.lck.issuedUpgradeableReadLocks.Count, this.lck.issuedReadLocks.Count);
+				}
+			}
+
+			public void WaitStart(Awaiter lckAwaiter) {
+				if (Events.Log.IsEnabled()) {
+					Events.Log.WaitStart(lckAwaiter.GetHashCode(), lckAwaiter.Kind, this.lck.issuedWriteLocks.Count, this.lck.issuedUpgradeableReadLocks.Count, this.lck.issuedReadLocks.Count);
+				}
+			}
+
+			public void WaitStop(Awaiter lckAwaiter) {
+				if (Events.Log.IsEnabled()) {
+					Events.Log.WaitStop(lckAwaiter.GetHashCode(), lckAwaiter.Kind);
+				}
+			}
+		}
 
 		/// <summary>
 		/// The ETW source for logging events for the <see cref="AsyncReaderWriterLock"/>.
@@ -27,19 +54,19 @@ namespace Microsoft.VisualStudio.Threading {
 		[EventSource(Name = "AsyncReaderWriterLock")]
 		internal sealed class Events : EventSource {
 			/// <summary>
-			/// The event ID for the <see cref="Issued(LockKind, int, int)"/> event.
+			/// The event ID for the <see cref="Issued(int, LockKind, int, int)"/> event.
 			/// </summary>
 			private const int IssuedLockCountsEvent = 1;
 
 			/// <summary>
-			/// The event ID for the <see cref="Waiting(LockKind, int, int, int)"/> event.
+			/// The event ID for the <see cref="WaitStart(int, LockKind, int, int, int)"/> event.
 			/// </summary>
-			private const int WaitingLockCountsEvent = 2;
+			private const int WaitStartEvent = 2;
 
 			/// <summary>
-			/// The event ID for the <see cref="IssuedAfterContention(LockKind)"/> event.
+			/// The event ID for the <see cref="WaitStop(int, LockKind)"/> event.
 			/// </summary>
-			private const int IssuedAfterContentionEvent = 3;
+			private const int WaitStopEvent = 3;
 
 			/// <summary>
 			/// The singleton instance used for logging.
@@ -55,45 +82,43 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <summary>
 			/// Logs an issued lock.
 			/// </summary>
-			[Event(IssuedLockCountsEvent, Version = 1, Task = Tasks.LockRequest, Opcode = Opcodes.Issued,
-				Level = EventLevel.Informational, Keywords = Keywords.SomeKeyword)]
-			public void Issued(LockKind kind, int issuedUpgradeableReadCount, int issuedReadCount) {
+			[Event(IssuedLockCountsEvent, Task = Tasks.LockRequest, Opcode = Opcodes.Issued)]
+			public void Issued(int lockId, LockKind kind, int issuedUpgradeableReadCount, int issuedReadCount) {
 				WriteEvent(IssuedLockCountsEvent, (int)kind, issuedUpgradeableReadCount, issuedReadCount);
-			}
-
-			/// <summary>
-			/// Logs a lock that was issued after a contending lock was released.
-			/// </summary>
-			/// <param name="kind">The kind of lock that was issued.</param>
-			[Event(IssuedAfterContentionEvent, Version = 1, Task = Tasks.LockRequest, Opcode = Opcodes.IssuedAfterContention,
-				Level = EventLevel.Informational, Keywords = Keywords.SomeKeyword)]
-			public void IssuedAfterContention(LockKind kind) {
-				WriteEvent(IssuedAfterContentionEvent, (int)kind);
 			}
 
 			/// <summary>
 			/// Logs a wait for a lock.
 			/// </summary>
-			[Event(WaitingLockCountsEvent, Version = 1, Task = Tasks.LockRequest, Opcode = Opcodes.Waiting,
-				Level = EventLevel.Informational, Keywords = Keywords.SomeKeyword)]
-			public void Waiting(LockKind kind, int issuedWriteCount, int issuedUpgradeableReadCount, int issuedReadCount) {
+			[Event(WaitStartEvent, Task = Tasks.LockRequestContention, Opcode = EventOpcode.Start)]
+			public void WaitStart(int lockId, LockKind kind, int issuedWriteCount, int issuedUpgradeableReadCount, int issuedReadCount) {
 				unsafe
 				{
 					// WriteEvent overloads only allow up to 3 args. To get more into it
 					// we have to use an n-arg overload (via an array).
 					// We use stackalloc to prepare an array without introducing any GC pressure
 					// from the array itself or boxing integers into object to fit an object[].
-					EventData* eventPayload = stackalloc EventData[4];
+					EventData* eventPayload = stackalloc EventData[5];
 					eventPayload[0].Size = 4;
-					eventPayload[0].DataPointer = (IntPtr)(&kind);
+					eventPayload[0].DataPointer = (IntPtr)(&lockId);
 					eventPayload[1].Size = 4;
-					eventPayload[1].DataPointer = (IntPtr)(&issuedWriteCount);
+					eventPayload[1].DataPointer = (IntPtr)(&kind);
 					eventPayload[2].Size = 4;
-					eventPayload[2].DataPointer = (IntPtr)(&issuedUpgradeableReadCount);
+					eventPayload[2].DataPointer = (IntPtr)(&issuedWriteCount);
 					eventPayload[3].Size = 4;
-					eventPayload[3].DataPointer = (IntPtr)(&issuedReadCount);
-					WriteEventCore(WaitingLockCountsEvent, 4, eventPayload);
+					eventPayload[3].DataPointer = (IntPtr)(&issuedUpgradeableReadCount);
+					eventPayload[4].Size = 4;
+					eventPayload[4].DataPointer = (IntPtr)(&issuedReadCount);
+					WriteEventCore(WaitStartEvent, 4, eventPayload);
 				}
+			}
+
+			/// <summary>
+			/// Logs a lock that was issued after a contending lock was released.
+			/// </summary>
+			[Event(WaitStopEvent, Task = Tasks.LockRequestContention, Opcode = EventOpcode.Stop)]
+			public void WaitStop(int lockId, LockKind kind) {
+				WriteEvent(WaitStopEvent, lockId, (int)kind);
 			}
 
 			/// <summary>
@@ -103,12 +128,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <remarks>The name of this class is important for EventSource.</remarks>
 			public class Tasks {
 				public const EventTask LockRequest = (EventTask)1;
-			}
-
-			/// <summary>I don't know what this is for yet.</summary>
-			/// <remarks>The name of this class is important for EventSource.</remarks>
-			public class Keywords {
-				public const EventKeywords SomeKeyword = (EventKeywords)1;
+				public const EventTask LockRequestContention = (EventTask)2;
 			}
 
 			/// <summary>
