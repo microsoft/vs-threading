@@ -6,6 +6,7 @@
 
 namespace Microsoft.VisualStudio.Threading
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
@@ -32,56 +33,65 @@ namespace Microsoft.VisualStudio.Threading
             return count;
         }
 
+        private bool IsDependingSynchronsousTask(JoinableTask syncTask) {
+            DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
+            while (existingTaskTracking != null) {
+                if (existingTaskTracking.SynchronousTask == syncTask) {
+                    return true;
+                }
+
+                existingTaskTracking = existingTaskTracking.Next;
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// Calculate the collection of events we need trigger after we enqueue a request.
         /// </summary>
         /// <param name="forMainThread">True if we want to find tasks to process the main thread queue. Otherwise tasks to process the background queue.</param>
-        /// <returns>The collection of events we need trigger.</returns>
-        private List<AsyncManualResetEvent> GetDependingSynchronousTasksEvents(bool forMainThread) {
+        /// <returns>The collection of synchronous tasks we need notify.</returns>
+        private List<JoinableTask> GetDependingSynchronousTasks(bool forMainThread) {
             Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
-            var eventNeedNotify = new List<AsyncManualResetEvent>(this.CountOfDependingSynchronousTasks());
+            var tasksNeedNotify = new List<JoinableTask>(this.CountOfDependingSynchronousTasks());
             DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
             while (existingTaskTracking != null) {
                 var syncTask = existingTaskTracking.SynchronousTask;
                 bool syncTaskInOnMainThread = (syncTask.state & JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTaskFlags.SynchronouslyBlockingMainThread;
                 if (forMainThread == syncTaskInOnMainThread) {
                     // Only synchronous tasks are in the list, so we don't need do further check for the CompletingSynchronously flag
-                    var notifyEvent = syncTask.queueNeedProcessEvent;
-                    if (notifyEvent != null) {
-                        eventNeedNotify.Add(notifyEvent);
-                    }
+                    tasksNeedNotify.Add(syncTask);
                 }
 
                 existingTaskTracking = existingTaskTracking.Next;
             }
 
-            return eventNeedNotify;
+            return tasksNeedNotify;
         }
 
         /// <summary>
         /// Applies all synchronous tasks tracked by this task to a new child/dependent task.
         /// </summary>
         /// <param name="child">The new child task.</param>
-        /// <returns>Events we need trigger because of those new dependencies added.</returns>
-        private List<AsyncManualResetEvent> AddDependingSynchronousTaskToChild(JoinableTask child) {
+        /// <returns>Pairs of synchronous tasks we need notify and the event source triggering it, plus the number of pending events.</returns>
+        private List<Tuple<JoinableTask, JoinableTask, int>> AddDependingSynchronousTaskToChild(JoinableTask child) {
             Requires.NotNull(child, "child");
             Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
-            var eventNeedNotify = new List<AsyncManualResetEvent>(this.CountOfDependingSynchronousTasks());
+            var tasksNeedNotify = new List<Tuple<JoinableTask, JoinableTask, int>>(this.CountOfDependingSynchronousTasks());
             DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
             while (existingTaskTracking != null) {
-                if (child.AddDependingSynchronousTask(existingTaskTracking.SynchronousTask)) {
-                    var notifyEvent = existingTaskTracking.SynchronousTask.queueNeedProcessEvent;
-                    if (notifyEvent != null) {
-                        eventNeedNotify.Add(notifyEvent);
-                    }
+                int totalEventNumber = 0;
+                var eventTriggeringTask = child.AddDependingSynchronousTask(existingTaskTracking.SynchronousTask, ref totalEventNumber);
+                if (eventTriggeringTask != null) {
+                    tasksNeedNotify.Add(new Tuple<JoinableTask, JoinableTask, int>(existingTaskTracking.SynchronousTask, eventTriggeringTask, totalEventNumber));
                 }
 
                 existingTaskTracking = existingTaskTracking.Next;
             }
 
-            return eventNeedNotify;
+            return tasksNeedNotify;
         }
 
         /// <summary>
@@ -100,55 +110,70 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Whether we have pending event to be process for the synchronous task. 
+        /// </summary>
+        /// <param name="task">The synchronous task</param>
+        /// <returns>The number of events need be processced by the synchronous task in the current JoinableTask.</returns>
+        private int GetPendingEventCountForTask(JoinableTask task) {
+            return ((task.state & JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTaskFlags.SynchronouslyBlockingMainThread) ?
+                (this.mainThreadQueue != null ? this.mainThreadQueue.Count : 0) :
+                (this.threadPoolQueue != null ? this.threadPoolQueue.Count : 0);
+        }
+
+        /// <summary>
         /// Tracks a new synchronous task for this task.
         /// A synchronous task is a task blocking a thread and waits it to be completed.  We may want the blocking thread
         /// to process events from this task.
         /// </summary>
         /// <param name="task">The synchronous task</param>
-        /// <returns>True means we need trigger the event of the synchronous task, so it can process new events</returns>
-        private bool AddDependingSynchronousTask(JoinableTask task) {
+        /// <param name="totalEventsPending">The total events need be processed</param>
+        /// <returns>The task causes us to trigger the event of the synchronous task, so it can process new events.  Null means we don't need trigger any event</returns>
+        private JoinableTask AddDependingSynchronousTask(JoinableTask task, ref int totalEventsPending) {
             Requires.NotNull(task, "task");
             Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
             if (this.IsCompleted) {
-                return false;
-            }
-
-            if (this.IsCompleteRequested) {
-                // A completed task might still have pending items in the queue.
-                return ((task.state & JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTaskFlags.SynchronouslyBlockingMainThread) ?
-                    (this.mainThreadQueue != null && !this.mainThreadQueue.IsEmpty) :
-                    (this.threadPoolQueue != null && !this.threadPoolQueue.IsEmpty);
+                return null;
             }
 
             DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
             while (existingTaskTracking != null) {
                 if (existingTaskTracking.SynchronousTask == task) {
                     existingTaskTracking.ReferenceCount++;
-                    return false;
+                    return null;
                 }
 
                 existingTaskTracking = existingTaskTracking.Next;
             }
 
-            // For a new synchronous task, we need apply it to our child tasks.
-            bool needTriggerEvent = ((task.state & JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTaskFlags.SynchronouslyBlockingMainThread) ?
-                (this.mainThreadQueue != null && !this.mainThreadQueue.IsEmpty) :
-                (this.threadPoolQueue != null && !this.threadPoolQueue.IsEmpty);
+            int pendingItemCount = GetPendingEventCountForTask(task);
+            JoinableTask eventTriggeringTask = null;
 
+            if (pendingItemCount > 0) {
+                totalEventsPending += pendingItemCount;
+                eventTriggeringTask = this;
+            }
+
+            if (this.IsCompleteRequested) {
+                // A completed task might still have pending items in the queue.
+                return eventTriggeringTask;
+            }
+
+            // For a new synchronous task, we need apply it to our child tasks.
             DependentSynchronousTask newTaskTracking = new DependentSynchronousTask(task);
             newTaskTracking.Next = this.dependingSynchronousTaskTracking;
             this.dependingSynchronousTaskTracking = newTaskTracking;
 
             if (this.childOrJoinedJobs != null) {
                 foreach (var item in this.childOrJoinedJobs) {
-                    if (item.Key.AddDependingSynchronousTask(task)) {
-                        needTriggerEvent = true;
+                    var childTiggeringTask = item.Key.AddDependingSynchronousTask(task, ref totalEventsPending);
+                    if (eventTriggeringTask == null) {
+                        eventTriggeringTask = childTiggeringTask;
                     }
                 }
             }
 
-            return needTriggerEvent;
+            return eventTriggeringTask;
         }
 
         /// <summary>
