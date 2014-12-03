@@ -675,7 +675,7 @@
 			var dependentWorkFinished = new AsyncManualResetEvent();
 
 			var separatedTask = Task.Run(async delegate {
-                var taskCollection = new JoinableTaskCollection(this.context);
+				var taskCollection = new JoinableTaskCollection(this.context);
 				var factory = new JoinableTaskFactory(taskCollection);
 				task1 = this.asyncPump.RunAsync(async delegate {
 					await dependentWorkAllowed;
@@ -846,9 +846,10 @@
 				await Task.Delay(AsyncDelay / 2);
 				await Task.Yield();
 
-                // we expect 3 switching from two delay one yield call.  We don't want one triggered by Task1.
-                Assert.IsTrue(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
-                Assert.IsFalse(task1.IsCompleted);
+				// we expect 3 switching from two delay one yield call.  We don't want one triggered by Task1.
+				Assert.IsTrue(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
+				//Assert.IsTrue(waitCountingJTF.TotalWaitCount <= 2 * waitCountingJTF.WaitCount);
+				Assert.IsFalse(task1.IsCompleted);
 
 				await testEnded.SetAsync();
 			});
@@ -954,8 +955,9 @@
 				await Task.Delay(AsyncDelay / 2);
 				await Task.Yield();
 
-                // we expect 3 switching from two delay one yield call.  We don't want one triggered by Task1.
-                Assert.IsTrue(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
+				// we expect 3 switching from two delay one yield call.  We don't want one triggered by Task1.
+				Assert.IsTrue(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
+				//Assert.IsTrue(waitCountingJTF.TotalWaitCount <= 2 * waitCountingJTF.WaitCount);
 				Assert.IsFalse(task1.IsCompleted);
 
 				await testEnded.SetAsync();
@@ -1066,9 +1068,10 @@
 				await Task.Delay(AsyncDelay / 2);
 				await Task.Yield();
 
-                // we expect 3 switching from two delay one yield call.  We don't want one triggered by Task1.
-                Assert.IsTrue(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
-                Assert.IsFalse(task1.IsCompleted);
+				// we expect 3 switching from two delay one yield call.  We don't want one triggered by Task1.
+				Assert.IsTrue(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
+				//Assert.IsTrue(waitCountingJTF.TotalWaitCount <= 2 * waitCountingJTF.WaitCount);
+				Assert.IsFalse(task1.IsCompleted);
 
 				await testEnded.SetAsync();
 			});
@@ -2519,6 +2522,7 @@
 
 		private class WaitCountingJoinableTaskFactory : JoinableTaskFactory {
 			private int waitCount;
+			private int totalWaitCount;
 
 			internal WaitCountingJoinableTaskFactory(JoinableTaskContext owner)
 				: base(owner) {
@@ -2528,8 +2532,15 @@
 				get { return this.waitCount; }
 			}
 
+			internal int TotalWaitCount {
+				get { return this.totalWaitCount; }
+			}
+
 			protected override void WaitSynchronously(Task task) {
-				Interlocked.Increment(ref this.waitCount);
+				Interlocked.Increment(ref this.totalWaitCount);
+				if (!task.IsCompleted) {
+					Interlocked.Increment(ref this.waitCount);
+				}
 				base.WaitSynchronously(task);
 			}
 		}
