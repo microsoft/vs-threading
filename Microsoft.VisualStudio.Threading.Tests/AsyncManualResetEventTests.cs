@@ -85,5 +85,15 @@
 			Assert.IsTrue(task.IsCompleted);
 			Assert.IsFalse(this.evt.WaitAsync().IsCompleted);
 		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void PulseAllAsyncDoesNotUnblockFutureWaiters() {
+			Task task1 = this.evt.WaitAsync();
+			this.evt.PulseAllAsync();
+			Task task2 = this.evt.WaitAsync();
+			Assert.AreNotSame(task1, task2);
+			task1.Wait();
+			Assert.IsFalse(task2.IsCompleted);
+		}
 	}
 }

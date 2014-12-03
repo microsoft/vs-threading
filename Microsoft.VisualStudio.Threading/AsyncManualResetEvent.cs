@@ -65,19 +65,7 @@
 		/// The returned task completes when the signal has definitely been set.
 		/// </remarks>
 		public Task SetAsync() {
-			var tcs = this.taskCompletionSource;
-			if (this.allowInliningAwaiters) {
-				tcs.TrySetResult(EmptyStruct.Instance);
-			} else {
-				Task.Factory.StartNew(
-					s => ((TaskCompletionSource<EmptyStruct>)s).TrySetResult(EmptyStruct.Instance),
-					tcs,
-					CancellationToken.None,
-					TaskCreationOptions.PreferFairness,
-					TaskScheduler.Default);
-			}
-
-			return tcs.Task;
+			return this.SetAsync(this.taskCompletionSource);
 		}
 
 		/// <summary>
@@ -99,20 +87,15 @@
 		/// Sets and immediately resets this event, allowing all current waiters to unblock.
 		/// </summary>
 		public Task PulseAllAsync() {
-			var setTask = this.SetAsync();
+			// Atomically replace the completion source with a new, uncompleted source
+			// while capturing the previous one so we can complete it.
+			// This ensures that we don't leave a gap in time where WaitAsync() will
+			// continue to return completed Tasks due to a Pulse method which should
+			// execute instantaneously.
+			var oldSource = Interlocked.Exchange(ref this.taskCompletionSource, new TaskCompletionSource<EmptyStruct>());
 
-			// Avoid allocating another task for the follow-up work when possible.
-			if (setTask.IsCompleted) {
-				this.Reset();
-				return TplExtensions.CompletedTask;
-			} else {
-				return setTask.ContinueWith(
-					(prev, state) => ((AsyncManualResetEvent)state).Reset(),
-					this,
-					CancellationToken.None,
-					TaskContinuationOptions.None,
-					TaskScheduler.Default);
-			}
+			// Now set the old source, allowing any waiters from before the exchange to resume.
+			return this.SetAsync(oldSource);
 		}
 
 		/// <summary>
@@ -122,6 +105,28 @@
 		[System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
 		public TaskAwaiter GetAwaiter() {
 			return this.WaitAsync().GetAwaiter();
+		}
+
+		/// <summary>
+		/// Completes a task, safely guarding against inlining continuations when appropriate.
+		/// </summary>
+		/// <param name="tcs">The completion source of the task to complete.</param>
+		/// <returns>The task that is (or will shortly be) completed.</returns>
+		private Task SetAsync(TaskCompletionSource<EmptyStruct> tcs) {
+			if (!tcs.Task.IsCompleted) {
+				if (this.allowInliningAwaiters) {
+					tcs.TrySetResult(EmptyStruct.Instance);
+				} else {
+					Task.Factory.StartNew(
+						s => ((TaskCompletionSource<EmptyStruct>)s).TrySetResult(EmptyStruct.Instance),
+						tcs,
+						CancellationToken.None,
+						TaskCreationOptions.PreferFairness,
+						TaskScheduler.Default);
+				}
+			}
+
+			return tcs.Task;
 		}
 	}
 }
