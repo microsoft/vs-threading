@@ -639,8 +639,7 @@ namespace Microsoft.VisualStudio.Threading {
 						Assumes.True(tryAgainAfter.IsCompleted);
 					}
 				}
-			}
-			finally {
+			} finally {
 				using (NoMessagePumpSyncContext.Default.Apply()) {
 					lock (this.owner.Context.SyncContextLock) {
 						// Remove itself from the tracking list, after the task is completed.

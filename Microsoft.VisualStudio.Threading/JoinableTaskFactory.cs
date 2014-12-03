@@ -42,7 +42,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// Backing field for the <see cref="HangDetectionTimeout"/> property.
 		/// </summary>
-		private TimeSpan hangDetectionTimeout = TimeSpan.FromSeconds(3);
+		private TimeSpan hangDetectionTimeout = TimeSpan.FromSeconds(6);
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="JoinableTaskFactory" /> class.
@@ -268,22 +268,24 @@ namespace Microsoft.VisualStudio.Threading {
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.GC.Collect")]
 		protected virtual void WaitSynchronouslyCore(Task task) {
 			Requires.NotNull(task, "task");
-			int collections = 0; // useful for debugging dump files to see how many collections occurred.
+			int hangTimeoutsCount = 0; // useful for debugging dump files to see how many times we looped.
 			Guid hangId = Guid.Empty;
 			try {
 				while (!task.Wait(this.HangDetectionTimeout)) {
 					// This could be a hang. If a memory dump with heap is taken, it will
 					// significantly simplify investigation if the heap only has live awaitables
-					// remaining (completed ones GC'd). So run the GC now and then keep waiting.
-					GC.Collect();
+					// remaining (completed ones GC'd). So run the GC now if this is the first time.
+					if (hangTimeoutsCount == 0) {
+						GC.Collect();
+					}
 
-					collections++;
-					TimeSpan hangDuration = TimeSpan.FromMilliseconds(this.HangDetectionTimeout.TotalMilliseconds * collections);
+					hangTimeoutsCount++;
+					TimeSpan hangDuration = TimeSpan.FromMilliseconds(this.HangDetectionTimeout.TotalMilliseconds * hangTimeoutsCount);
 					if (hangId == Guid.Empty) {
 						hangId = Guid.NewGuid();
 					}
 
-					this.Context.OnHangDetected(hangDuration, collections, hangId);
+					this.Context.OnHangDetected(hangDuration, hangTimeoutsCount, hangId);
 				}
 			} catch (AggregateException) {
 				// Swallow exceptions thrown by Task.Wait().
