@@ -848,7 +848,7 @@
 
 				// we expect 3 switching from two delay one yield call.  We don't want one triggered by Task1.
 				Assert.IsTrue(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
-				//Assert.IsTrue(waitCountingJTF.TotalWaitCount <= 2 * waitCountingJTF.WaitCount);
+				Assert.IsTrue(waitCountingJTF.TotalWaitCount <= 2 * waitCountingJTF.WaitCount);
 				Assert.IsFalse(task1.IsCompleted);
 
 				await testEnded.SetAsync();
@@ -957,7 +957,7 @@
 
 				// we expect 3 switching from two delay one yield call.  We don't want one triggered by Task1.
 				Assert.IsTrue(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
-				//Assert.IsTrue(waitCountingJTF.TotalWaitCount <= 2 * waitCountingJTF.WaitCount);
+				Assert.IsTrue(waitCountingJTF.TotalWaitCount <= 2 * waitCountingJTF.WaitCount);
 				Assert.IsFalse(task1.IsCompleted);
 
 				await testEnded.SetAsync();
@@ -1070,7 +1070,7 @@
 
 				// we expect 3 switching from two delay one yield call.  We don't want one triggered by Task1.
 				Assert.IsTrue(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
-				//Assert.IsTrue(waitCountingJTF.TotalWaitCount <= 2 * waitCountingJTF.WaitCount);
+				Assert.IsTrue(waitCountingJTF.TotalWaitCount <= 2 * waitCountingJTF.WaitCount);
 				Assert.IsFalse(task1.IsCompleted);
 
 				await testEnded.SetAsync();
