@@ -88,7 +88,7 @@
 		public bool IsCompleted {
 			get {
 				lock (this.syncObject) {
-					return this.completeSignaled && (this.queueElements == null || this.queueElements.Count == 0);
+					return this.completeSignaled && this.IsEmpty;
 				}
 			}
 		}

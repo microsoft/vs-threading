@@ -103,13 +103,14 @@ namespace Microsoft.VisualStudio.Threading {
 		private AsyncManualResetEvent queueNeedProcessEvent;
 
 		/// <summary>
-		/// The queueNeedProcessEvent is triggered by this JoinableTask, this allows a quick access to the event.
+		/// The <see cref="queueNeedProcessEvent"/> is triggered by this JoinableTask, this allows a quick access to the event.
 		/// </summary>
 		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private WeakReference<JoinableTask> pendingEventSource;
 
 		/// <summary>
 		/// The uplimit of the number pending events. The real number can be less because dependency can be removed, or a pending event can be processed.
+		/// The number is critical, so it should only be updated in the lock region.
 		/// </summary>
 		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private int pendingEventCount;
