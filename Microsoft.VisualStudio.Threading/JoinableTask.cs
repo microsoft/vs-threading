@@ -463,15 +463,17 @@ namespace Microsoft.VisualStudio.Threading {
 
 						if (mainThreadQueueUpdated || backgroundThreadQueueUpdated) {
 							var tasksNeedNotify = this.GetDependingSynchronousTasks(mainThreadQueueUpdated);
-							eventsNeedNotify = new List<AsyncManualResetEvent>();
-							foreach (var taskToNotify in tasksNeedNotify) {
-								if (taskToNotify.pendingEventSource == null || taskToNotify == this) {
-									taskToNotify.pendingEventSource = new WeakReference<JoinableTask>(this);
-								}
+							if (tasksNeedNotify.Count > 0) {
+								eventsNeedNotify = new List<AsyncManualResetEvent>(tasksNeedNotify.Count);
+								foreach (var taskToNotify in tasksNeedNotify) {
+									if (taskToNotify.pendingEventSource == null || taskToNotify == this) {
+										taskToNotify.pendingEventSource = new WeakReference<JoinableTask>(this);
+									}
 
-								taskToNotify.pendingEventCount++;
-								if (taskToNotify.queueNeedProcessEvent != null) {
-									eventsNeedNotify.Add(taskToNotify.queueNeedProcessEvent);
+									taskToNotify.pendingEventCount++;
+									if (taskToNotify.queueNeedProcessEvent != null) {
+										eventsNeedNotify.Add(taskToNotify.queueNeedProcessEvent);
+									}
 								}
 							}
 						}
@@ -715,7 +717,7 @@ namespace Microsoft.VisualStudio.Threading {
 
 						if (this.pendingEventSource != null) {
 							JoinableTask pendingSource;
-							if (this.pendingEventSource.TryGetTarget(out pendingSource) && pendingSource.IsDependingSynchronsousTask(this)) {
+							if (this.pendingEventSource.TryGetTarget(out pendingSource) && pendingSource.IsDependingSynchronousTask(this)) {
 								var queue = onMainThread ? pendingSource.mainThreadQueue : pendingSource.threadPoolQueue;
 								if (queue != null && !queue.IsCompleted && queue.TryDequeue(out work)) {
 									if (queue.Count == 0) {
@@ -801,18 +803,19 @@ namespace Microsoft.VisualStudio.Threading {
 					if (refCount == 1) {
 						// This constitutes a significant change, so we should apply synchronous task tracking to the new child.
 						var tasksNeedNotify = this.AddDependingSynchronousTaskToChild(joinChild);
-						eventsNeedNotify = new List<AsyncManualResetEvent>();
+						if (tasksNeedNotify.Count > 0) {
+							eventsNeedNotify = new List<AsyncManualResetEvent>(tasksNeedNotify.Count);
+							foreach (var taskToNotify in tasksNeedNotify) {
+								if (taskToNotify.SynchronousTask.pendingEventSource == null || taskToNotify.TaskHasPendingMessages == taskToNotify.SynchronousTask) {
+									taskToNotify.SynchronousTask.pendingEventSource = new WeakReference<JoinableTask>(taskToNotify.TaskHasPendingMessages);
+								}
 
-						foreach (var taskToNotify in tasksNeedNotify) {
-							if (taskToNotify.Item1.pendingEventSource == null || taskToNotify.Item2 == taskToNotify.Item1) {
-								taskToNotify.Item1.pendingEventSource = new WeakReference<JoinableTask>(taskToNotify.Item2);
-							}
+								taskToNotify.SynchronousTask.pendingEventCount += taskToNotify.NewPendingMessagesCount;
 
-							taskToNotify.Item1.pendingEventCount += taskToNotify.Item3;
-
-							var notifyEvent = taskToNotify.Item1.queueNeedProcessEvent;
-							if (notifyEvent != null) {
-								eventsNeedNotify.Add(notifyEvent);
+								var notifyEvent = taskToNotify.SynchronousTask.queueNeedProcessEvent;
+								if (notifyEvent != null) {
+									eventsNeedNotify.Add(notifyEvent);
+								}
 							}
 						}
 					}

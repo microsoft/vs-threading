@@ -36,7 +36,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Check whether a task is being tracked in our tracking list.
         /// </summary>
-        private bool IsDependingSynchronsousTask(JoinableTask syncTask) {
+        private bool IsDependingSynchronousTask(JoinableTask syncTask) {
             DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
             while (existingTaskTracking != null) {
                 if (existingTaskTracking.SynchronousTask == syncTask) {
@@ -78,17 +78,17 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="child">The new child task.</param>
         /// <returns>Pairs of synchronous tasks we need notify and the event source triggering it, plus the number of pending events.</returns>
-        private List<Tuple<JoinableTask, JoinableTask, int>> AddDependingSynchronousTaskToChild(JoinableTask child) {
+        private List<PendingNotification> AddDependingSynchronousTaskToChild(JoinableTask child) {
             Requires.NotNull(child, "child");
             Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
-            var tasksNeedNotify = new List<Tuple<JoinableTask, JoinableTask, int>>(this.CountOfDependingSynchronousTasks());
+            var tasksNeedNotify = new List<PendingNotification>(this.CountOfDependingSynchronousTasks());
             DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
             while (existingTaskTracking != null) {
                 int totalEventNumber = 0;
                 var eventTriggeringTask = child.AddDependingSynchronousTask(existingTaskTracking.SynchronousTask, ref totalEventNumber);
                 if (eventTriggeringTask != null) {
-                    tasksNeedNotify.Add(new Tuple<JoinableTask, JoinableTask, int>(existingTaskTracking.SynchronousTask, eventTriggeringTask, totalEventNumber));
+                    tasksNeedNotify.Add(new PendingNotification(existingTaskTracking.SynchronousTask, eventTriggeringTask, totalEventNumber));
                 }
 
                 existingTaskTracking = existingTaskTracking.Next;
@@ -113,14 +113,15 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Whether we have pending event to be process for the synchronous task. 
+        /// Get the number of pending messages to be process for the synchronous task. 
         /// </summary>
         /// <param name="task">The synchronous task</param>
-        /// <returns>The number of events need be processced by the synchronous task in the current JoinableTask.</returns>
+        /// <returns>The number of events need be processed by the synchronous task in the current JoinableTask.</returns>
         private int GetPendingEventCountForTask(JoinableTask task) {
-            return ((task.state & JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTaskFlags.SynchronouslyBlockingMainThread) ?
-                (this.mainThreadQueue != null ? this.mainThreadQueue.Count : 0) :
-                (this.threadPoolQueue != null ? this.threadPoolQueue.Count : 0);
+            var queue = ((task.state & JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTaskFlags.SynchronouslyBlockingMainThread)
+                ? this.mainThreadQueue
+                : this.threadPoolQueue;
+            return queue != null ? queue.Count : 0;
         }
 
         /// <summary>
@@ -366,6 +367,46 @@ namespace Microsoft.VisualStudio.Threading
             public DependentSynchronousTask(JoinableTask task) {
                 this.SynchronousTask = task;
                 this.ReferenceCount = 1;
+            }
+        }
+
+        /// <summary>
+        /// The record of a pending notification we need send to the synchronous task that we have some new messages to process.
+        /// </summary>
+        private struct PendingNotification {
+            private readonly JoinableTask synchronousTask;
+            private readonly JoinableTask taskHasPendingMessages;
+            private readonly int newPendingMessagesCount;
+
+            /// <summary>
+            /// The synchronous task which need process new messages.
+            /// </summary>
+            public JoinableTask SynchronousTask {
+                get { return this.synchronousTask; }
+            }
+
+            /// <summary>
+            /// One JoinableTask which has pending messages. We may have multiple new JoinableTasks which contains pending messages.
+            /// This is just one of them.  It gives the synchronous task a way to start quickly without searching all messages.
+            /// </summary>
+            public JoinableTask TaskHasPendingMessages {
+                get { return this.taskHasPendingMessages; }
+            }
+
+            /// <summary>
+            /// The total number of new pending messages.  The real number could be less than that, but should not be more than that.
+            /// </summary>
+            public int NewPendingMessagesCount {
+                get { return this.newPendingMessagesCount; }
+            }
+
+            public PendingNotification(JoinableTask synchronousTask, JoinableTask taskHasPendingMessages, int newPendingMessagesCount) {
+                Requires.NotNull(synchronousTask, "synchronousTask");
+                Requires.NotNull(taskHasPendingMessages, "taskHasPendingMessages");
+
+                this.synchronousTask = synchronousTask;
+                this.taskHasPendingMessages = taskHasPendingMessages;
+                this.newPendingMessagesCount = newPendingMessagesCount;
             }
         }
     }
