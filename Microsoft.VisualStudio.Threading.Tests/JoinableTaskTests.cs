@@ -1879,6 +1879,82 @@
 		}
 
 		/// <summary>
+		/// Verifies when JoinableTasks are nested that nesting (parent) factories
+		/// do not assist in reaching the main thread if the nesting JoinableTask
+		/// completed before the child JoinableTask even started.
+		/// </summary>
+		/// <remarks>
+		/// This is for efficiency as well as an accuracy assistance since the nested JTF
+		/// may have a lower priority to get to the main thread (e.g. idle priority) than the
+		/// parent JTF. If the parent JTF assists just because it happened to be active for a
+		/// brief time when the child JoinableTask was created, it could forever defeat the
+		/// intended lower priority of the child.
+		/// </remarks>
+		[TestMethod, Timeout(TestTimeout)]
+		public void NestedFactoriesDoNotAssistChildrenOfTaskThatCompletedBeforeStart() {
+			var loPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
+			var hiPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
+
+			var outerFinished = new AsyncManualResetEvent(allowInliningAwaiters: true);
+			JoinableTask innerTask;
+			AsyncManualResetEvent loPriSwitchPosted = new AsyncManualResetEvent();
+			var outer = hiPriFactory.RunAsync(delegate {
+				Task.Run(async delegate {
+					await outerFinished;
+					innerTask = loPriFactory.RunAsync(async delegate {
+						await loPriFactory.SwitchToMainThreadAsync().GetAwaiter().YieldAndNotify(loPriSwitchPosted);
+					});
+				});
+				return TplExtensions.CompletedTask;
+			});
+			outerFinished.SetAsync();
+			loPriSwitchPosted.WaitAsync().Wait();
+
+			// Verify that the loPriFactory received the message and hiPriFactory did not.
+			Assert.AreEqual(1, loPriFactory.JoinableTasksPendingMainthread.Count());
+			Assert.AreEqual(0, hiPriFactory.JoinableTasksPendingMainthread.Count());
+		}
+
+		/// <summary>
+		/// Verifies when JoinableTasks are nested that nesting (parent) factories
+		/// do not assist in reaching the main thread once the nesting JoinableTask
+		/// completes (assuming it completes after the child JoinableTask starts).
+		/// </summary>
+		/// <remarks>
+		/// This is for efficiency as well as an accuracy assistance since the nested JTF
+		/// may have a lower priority to get to the main thread (e.g. idle priority) than the
+		/// parent JTF. If the parent JTF assists just because it happened to be active for a
+		/// brief time when the child JoinableTask was created, it could forever defeat the
+		/// intended lower priority of the child.
+		/// 
+		/// This test is Ignored because fixing it would require a JoinableTask to have
+		/// a reference to its antecedant, or the antecedant to maintain a collection of
+		/// child tasks. The first possibility is unpaletable (because it would create a
+		/// memory leak for those who chain tasks together). The second one we sort of already
+		/// do through the JoinableTask.childOrJoinedJobs field, and we may wire it up through
+		/// there in the future.
+		/// </remarks>
+		[TestMethod, Timeout(TestTimeout), Ignore]
+		public void NestedFactoriesDoNotAssistChildrenOfTaskThatCompletedAfterStart() {
+			var loPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
+			var hiPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
+
+			var outerFinished = new AsyncManualResetEvent(allowInliningAwaiters: true);
+			JoinableTask innerTask;
+			var outer = hiPriFactory.RunAsync(delegate {
+				innerTask = loPriFactory.RunAsync(async delegate {
+					await outerFinished;
+				});
+				return TplExtensions.CompletedTask;
+			});
+			outerFinished.SetAsync();
+
+			// Verify that the loPriFactory received the message and hiPriFactory did not.
+			Assert.AreEqual(1, loPriFactory.JoinableTasksPendingMainthread.Count());
+			Assert.AreEqual(0, hiPriFactory.JoinableTasksPendingMainthread.Count());
+		}
+
+		/// <summary>
 		/// Verifes that each instance of JTF is only notified once of
 		/// a nested JoinableTask's attempt to get to the UI thread.
 		/// </summary>

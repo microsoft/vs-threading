@@ -617,7 +617,7 @@ namespace Microsoft.VisualStudio.Threading {
 				this.syncContextRevert = this.joinable.ApplicableJobSyncContext.Apply();
 
 				// Join the ambient parent job, so the parent can dequeue this job's work.
-				if (this.previousJoinable != null) {
+				if (this.previousJoinable != null && !this.previousJoinable.IsCompleted) {
 					this.previousJoinable.AddDependency(joinable);
 
 					// By definition we inherit the nesting factories of our immediate nesting task.

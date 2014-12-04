@@ -84,6 +84,13 @@ namespace Microsoft.VisualStudio.Threading {
 		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private ListOfOftenOne<JoinableTaskCollection> collectionMembership;
 
+		/// <summary>
+		/// The Task returned by the async delegate that this JoinableTask originally executed.
+		/// </summary>
+		/// <value>
+		/// This is <c>null</c> until after the async delegate returns a Task,
+		/// and retains its value even after this JoinableTask completes.
+		/// </value>
 		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private Task wrappedTask;
 
