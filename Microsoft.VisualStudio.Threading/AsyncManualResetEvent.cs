@@ -14,7 +14,7 @@
 	[DebuggerDisplay("Signaled: {IsSet}")]
 	public class AsyncManualResetEvent {
 		/// <summary>
-		/// Whether to complete the task synchronously in the <see cref="SetAsync"/> method,
+		/// Whether to complete the task synchronously in the <see cref="SetAsync(TaskCompletionSource{EmptyStruct})"/> method,
 		/// as opposed to asynchronously.
 		/// </summary>
 		private readonly bool allowInliningAwaiters;
@@ -30,10 +30,10 @@
 		/// <param name="initialState">A value indicating whether the event should be initially signaled.</param>
 		/// <param name="allowInliningAwaiters">
 		/// A value indicating whether to allow <see cref="WaitAsync"/> callers' continuations to execute
-		/// on the thread that calls <see cref="SetAsync"/> before the call returns.
-		/// <see cref="SetAsync"/> callers should not hold private locks if this value is <c>true</c> to avoid deadlocks.
+		/// on the thread that calls <see cref="SetAsync()"/> before the call returns.
+		/// <see cref="SetAsync()"/> callers should not hold private locks if this value is <c>true</c> to avoid deadlocks.
 		/// When <c>false</c>, the task returned from <see cref="WaitAsync"/> may not have fully transitioned to
-		/// its completed state by the time <see cref="SetAsync"/> returns to its caller.
+		/// its completed state by the time <see cref="SetAsync()"/> returns to its caller.
 		/// </param>
 		public AsyncManualResetEvent(bool initialState = false, bool allowInliningAwaiters = false) {
 			if (initialState) {
