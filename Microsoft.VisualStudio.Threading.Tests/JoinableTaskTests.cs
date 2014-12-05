@@ -665,6 +665,90 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void SwitchToMainThreadImmediatelyShouldNotHang() {
+			((DerivedJoinableTaskFactory)this.asyncPump).AssumeConcurrentUse = true;
+
+			var task1Started = new AsyncManualResetEvent(false);
+			var task2Started = new AsyncManualResetEvent(false);
+
+			this.asyncPump.Run(async delegate {
+				var child1Task = Task.Run(async delegate {
+					await this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().YieldAndNotify(task1Started);
+				});
+
+				var child2Task = Task.Run(async delegate {
+					await this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().YieldAndNotify(task2Started);
+				});
+
+				task1Started.WaitAsync().Wait();
+				task2Started.WaitAsync().Wait();
+
+				await child1Task;
+				await child2Task;
+			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void MultipleSwitchToMainThreadShouldNotHang() {
+			((DerivedJoinableTaskFactory)this.asyncPump).AssumeConcurrentUse = true;
+
+			JoinableTask task1 = null, task2 = null;
+			var taskStarted = new AsyncManualResetEvent();
+			var testEnded = new AsyncManualResetEvent();
+			var dependentWork1Queued = new AsyncManualResetEvent();
+			var dependentWork2Queued = new AsyncManualResetEvent();
+			var dependentWork1Finished = new AsyncManualResetEvent();
+			var dependentWork2Finished = new AsyncManualResetEvent();
+
+			var separatedTask = Task.Run(async delegate {
+				task1 = this.asyncPump.RunAsync(async delegate {
+					await this.asyncPump.SwitchToMainThreadAsync()
+						.GetAwaiter().YieldAndNotify(dependentWork1Queued);
+
+					await dependentWork1Finished.SetAsync();
+				});
+
+				task2 = this.asyncPump.RunAsync(async delegate {
+					var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+					collection.Add(task1);
+					collection.Join();
+
+					await this.asyncPump.SwitchToMainThreadAsync()
+						.GetAwaiter().YieldAndNotify(dependentWork2Queued);
+
+					await dependentWork2Finished.SetAsync();
+					await testEnded;
+				});
+
+				await taskStarted.SetAsync();
+				await testEnded;
+			});
+
+			this.asyncPump.Run(async delegate {
+				await taskStarted;
+				await dependentWork1Queued;
+				await dependentWork2Queued;
+
+				var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+				collection.Add(task2);
+				collection.Join();
+
+				await dependentWork1Finished;
+				await dependentWork2Finished;
+
+				await testEnded.SetAsync();
+			});
+
+			this.asyncPump.Run(async delegate {
+				using (this.joinableCollection.Join()) {
+					await task1;
+					await task2;
+					await separatedTask;
+				}
+			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void SwitchToMainThreadWithDelayedDependencyShouldNotHang() {
 			JoinableTask task1 = null, task2 = null;
 			var taskStarted = new AsyncManualResetEvent();
