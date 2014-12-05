@@ -109,6 +109,19 @@ namespace Microsoft.VisualStudio.Threading {
 		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private AsyncManualResetEvent queueNeedProcessEvent;
 
+		/// <summary>
+		/// The <see cref="queueNeedProcessEvent"/> is triggered by this JoinableTask, this allows a quick access to the event.
+		/// </summary>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
+		private WeakReference<JoinableTask> pendingEventSource;
+
+		/// <summary>
+		/// The uplimit of the number pending events. The real number can be less because dependency can be removed, or a pending event can be processed.
+		/// The number is critical, so it should only be updated in the lock region.
+		/// </summary>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
+		private int pendingEventCount;
+
 		/// <summary>The queue of work items. Lazily constructed.</summary>
 		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private ExecutionQueue mainThreadQueue;
@@ -157,7 +170,7 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
-		internal Task QueueNeedProcessEvent {
+		private Task QueueNeedProcessEvent {
 			get {
 				using (NoMessagePumpSyncContext.Default.Apply()) {
 					lock (this.owner.Context.SyncContextLock) {
@@ -190,6 +203,10 @@ namespace Microsoft.VisualStudio.Threading {
 			get {
 				using (NoMessagePumpSyncContext.Default.Apply()) {
 					lock (this.owner.Context.SyncContextLock) {
+						if (!this.IsCompleteRequested) {
+							return false;
+						}
+
 						if (this.mainThreadQueue != null && !this.mainThreadQueue.IsCompleted) {
 							return false;
 						}
@@ -198,7 +215,7 @@ namespace Microsoft.VisualStudio.Threading {
 							return false;
 						}
 
-						return this.IsCompleteRequested;
+						return true;
 					}
 				}
 			}
@@ -362,17 +379,6 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
-		private ExecutionQueue ApplicableQueue {
-			get {
-				using (NoMessagePumpSyncContext.Default.Apply()) {
-					lock (this.owner.Context.SyncContextLock) {
-						return this.owner.Context.MainThread == Thread.CurrentThread ? this.mainThreadQueue : this.threadPoolQueue;
-					}
-				}
-			}
-		}
-
-		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private bool SynchronouslyBlockingThreadPool {
 			get {
 				return (this.state & JoinableTaskFlags.StartedSynchronously) == JoinableTaskFlags.StartedSynchronously
@@ -421,7 +427,7 @@ namespace Microsoft.VisualStudio.Threading {
 		internal void Post(SendOrPostCallback d, object state, bool mainThreadAffinitized) {
 			using (NoMessagePumpSyncContext.Default.Apply()) {
 				SingleExecuteProtector wrapper = null;
-				List<AsyncManualResetEvent> tasksNeedNotify = null; // initialized if we should pulse it at the end of the method
+				List<AsyncManualResetEvent> eventsNeedNotify = null; // initialized if we should pulse it at the end of the method
 				bool postToFactory = false;
 
 				lock (this.owner.Context.SyncContextLock) {
@@ -463,7 +469,20 @@ namespace Microsoft.VisualStudio.Threading {
 						}
 
 						if (mainThreadQueueUpdated || backgroundThreadQueueUpdated) {
-							tasksNeedNotify = this.GetDependingSynchronousTasksEvents(mainThreadQueueUpdated);
+							var tasksNeedNotify = this.GetDependingSynchronousTasks(mainThreadQueueUpdated);
+							if (tasksNeedNotify.Count > 0) {
+								eventsNeedNotify = new List<AsyncManualResetEvent>(tasksNeedNotify.Count);
+								foreach (var taskToNotify in tasksNeedNotify) {
+									if (taskToNotify.pendingEventSource == null || taskToNotify == this) {
+										taskToNotify.pendingEventSource = new WeakReference<JoinableTask>(this);
+									}
+
+									taskToNotify.pendingEventCount++;
+									if (taskToNotify.queueNeedProcessEvent != null) {
+										eventsNeedNotify.Add(taskToNotify.queueNeedProcessEvent);
+									}
+								}
+							}
 						}
 					}
 				}
@@ -484,8 +503,8 @@ namespace Microsoft.VisualStudio.Threading {
 				}
 
 				// Notify tasks which can process the event queue.
-				if (tasksNeedNotify != null) {
-					foreach (var queueEvent in tasksNeedNotify) {
+				if (eventsNeedNotify != null) {
+					foreach (var queueEvent in eventsNeedNotify) {
 						queueEvent.PulseAllAsync().Forget();
 					}
 				}
@@ -598,17 +617,21 @@ namespace Microsoft.VisualStudio.Threading {
 		internal void CompleteOnCurrentThread() {
 			Assumes.NotNull(this.wrappedTask);
 
+			bool onMainThread = false;
 			var additionalFlags = JoinableTaskFlags.CompletingSynchronously;
 			if (this.owner.Context.MainThread == Thread.CurrentThread) {
 				additionalFlags |= JoinableTaskFlags.SynchronouslyBlockingMainThread;
+				onMainThread = true;
 			}
 
 			this.AddStateFlags(additionalFlags);
 
 			using (NoMessagePumpSyncContext.Default.Apply()) {
 				lock (this.owner.Context.SyncContextLock) {
+					this.pendingEventCount = 0;
+
 					// Add the task to the depending tracking list of itself, so it will monitor the event queue.
-					this.AddDependingSynchronousTask(this);
+					this.pendingEventSource = new WeakReference<JoinableTask>(this.AddDependingSynchronousTask(this, ref this.pendingEventCount));
 				}
 			}
 
@@ -616,10 +639,11 @@ namespace Microsoft.VisualStudio.Threading {
 				// Don't use IsCompleted as the condition because that
 				// includes queues of posted work that don't have to complete for the
 				// JoinableTask to be ready to return from the JTF.Run method.
+				HashSet<JoinableTask> visited = null;
 				while (!this.IsCompleteRequested) {
 					SingleExecuteProtector work;
 					Task tryAgainAfter;
-					if (this.TryDequeueSelfOrDependencies(out work, out tryAgainAfter)) {
+					if (this.TryDequeueSelfOrDependencies(onMainThread, ref visited, out work, out tryAgainAfter)) {
 						work.TryExecute();
 					} else if (tryAgainAfter != null) {
 						this.owner.WaitSynchronously(tryAgainAfter);
@@ -687,7 +711,7 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 		}
 
-		private bool TryDequeueSelfOrDependencies(out SingleExecuteProtector work, out Task tryAgainAfter) {
+		private bool TryDequeueSelfOrDependencies(bool onMainThread, ref HashSet<JoinableTask> visited, out SingleExecuteProtector work, out Task tryAgainAfter) {
 			using (NoMessagePumpSyncContext.Default.Apply()) {
 				lock (this.owner.Context.SyncContextLock) {
 					if (this.IsCompleted) {
@@ -696,28 +720,63 @@ namespace Microsoft.VisualStudio.Threading {
 						return false;
 					}
 
-					if (this.TryDequeueSelfOrDependencies(new HashSet<JoinableTask>(), out work)) {
-						tryAgainAfter = null;
-						return true;
+					if (this.pendingEventCount > 0) {
+						this.pendingEventCount--;
+
+						if (this.pendingEventSource != null) {
+							JoinableTask pendingSource;
+							if (this.pendingEventSource.TryGetTarget(out pendingSource) && pendingSource.IsDependingSynchronousTask(this)) {
+								var queue = onMainThread ? pendingSource.mainThreadQueue : pendingSource.threadPoolQueue;
+								if (queue != null && !queue.IsCompleted && queue.TryDequeue(out work)) {
+									if (queue.Count == 0) {
+										this.pendingEventSource = null;
+									}
+
+									tryAgainAfter = null;
+									return true;
+								}
+							}
+
+							this.pendingEventSource = null;
+						}
+
+						if (visited == null) {
+							visited = new HashSet<JoinableTask>();
+						} else {
+							visited.Clear();
+						}
+
+						if (this.TryDequeueSelfOrDependencies(onMainThread, visited, out work)) {
+							tryAgainAfter = null;
+							return true;
+						}
 					}
 
+					this.pendingEventCount = 0;
+
+					work = null;
 					tryAgainAfter = this.QueueNeedProcessEvent;
 					return false;
 				}
 			}
 		}
 
-		private bool TryDequeueSelfOrDependencies(HashSet<JoinableTask> visited, out SingleExecuteProtector work) {
+		private bool TryDequeueSelfOrDependencies(bool onMainThread, HashSet<JoinableTask> visited, out SingleExecuteProtector work) {
 			Requires.NotNull(visited, "visited");
-			Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
+            Report.IfNot(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
 			// We only need find the first work item.
 			work = null;
-			if (!this.IsCompleted && visited.Add(this)) {
-				if (!this.TryDequeue(out work)) {
-					if (this.childOrJoinedJobs != null) {
+			if (visited.Add(this)) {
+				var queue = onMainThread ? this.mainThreadQueue : this.threadPoolQueue;
+				if (queue != null && !queue.IsCompleted) {
+					queue.TryDequeue(out work);
+				}
+
+				if (work == null) {
+					if (this.childOrJoinedJobs != null && !this.IsCompleted) {
 						foreach (var item in this.childOrJoinedJobs) {
-							if (item.Key.TryDequeueSelfOrDependencies(visited, out work)) {
+							if (item.Key.TryDequeueSelfOrDependencies(onMainThread, visited, out work)) {
 								break;
 							}
 						}
@@ -726,20 +785,6 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			return work != null;
-		}
-
-		private bool TryDequeue(out SingleExecuteProtector work) {
-			using (NoMessagePumpSyncContext.Default.Apply()) {
-				lock (this.owner.Context.SyncContextLock) {
-					var queue = this.ApplicableQueue;
-					if (queue != null) {
-						return queue.TryDequeue(out work);
-					}
-
-					work = null;
-					return false;
-				}
-			}
 		}
 
 		/// <summary>
@@ -754,7 +799,7 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			using (NoMessagePumpSyncContext.Default.Apply()) {
-				List<AsyncManualResetEvent> tasksNeedNotify = null;
+				List<AsyncManualResetEvent> eventsNeedNotify = null;
 				lock (this.owner.Context.SyncContextLock) {
 					if (this.childOrJoinedJobs == null) {
 						this.childOrJoinedJobs = new WeakKeyDictionary<JoinableTask, int>(capacity: 3);
@@ -765,13 +810,28 @@ namespace Microsoft.VisualStudio.Threading {
 					this.childOrJoinedJobs[joinChild] = ++refCount;
 					if (refCount == 1) {
 						// This constitutes a significant change, so we should apply synchronous task tracking to the new child.
-						tasksNeedNotify = this.AddDependingSynchronousTaskToChild(joinChild);
+						var tasksNeedNotify = this.AddDependingSynchronousTaskToChild(joinChild);
+						if (tasksNeedNotify.Count > 0) {
+							eventsNeedNotify = new List<AsyncManualResetEvent>(tasksNeedNotify.Count);
+							foreach (var taskToNotify in tasksNeedNotify) {
+								if (taskToNotify.SynchronousTask.pendingEventSource == null || taskToNotify.TaskHasPendingMessages == taskToNotify.SynchronousTask) {
+									taskToNotify.SynchronousTask.pendingEventSource = new WeakReference<JoinableTask>(taskToNotify.TaskHasPendingMessages);
+								}
+
+								taskToNotify.SynchronousTask.pendingEventCount += taskToNotify.NewPendingMessagesCount;
+
+								var notifyEvent = taskToNotify.SynchronousTask.queueNeedProcessEvent;
+								if (notifyEvent != null) {
+									eventsNeedNotify.Add(notifyEvent);
+								}
+							}
+						}
 					}
 				}
 
 				// We explicitly do this outside our lock.
-				if (tasksNeedNotify != null) {
-					foreach (var queueEvent in tasksNeedNotify) {
+				if (eventsNeedNotify != null) {
+					foreach (var queueEvent in eventsNeedNotify) {
 						queueEvent.PulseAllAsync().Forget();
 					}
 				}
