@@ -622,6 +622,7 @@ namespace Microsoft.VisualStudio.Threading {
 			using (NoMessagePumpSyncContext.Default.Apply()) {
 				lock (this.owner.Context.SyncContextLock) {
 					this.pendingEventCount = 0;
+
 					// Add the task to the depending tracking list of itself, so it will monitor the event queue.
 					this.pendingEventSource = new WeakReference<JoinableTask>(this.AddDependingSynchronousTask(this, ref this.pendingEventCount));
 				}
@@ -755,7 +756,7 @@ namespace Microsoft.VisualStudio.Threading {
 
 		private bool TryDequeueSelfOrDependencies(bool onMainThread, HashSet<JoinableTask> visited, out SingleExecuteProtector work) {
 			Requires.NotNull(visited, "visited");
-			// Commented out to reduce overhead in the recursive function: Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
+            Report.IfNot(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
 			// We only need find the first work item.
 			work = null;

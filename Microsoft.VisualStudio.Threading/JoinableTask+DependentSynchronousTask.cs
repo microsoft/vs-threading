@@ -378,6 +378,16 @@ namespace Microsoft.VisualStudio.Threading
             private readonly JoinableTask taskHasPendingMessages;
             private readonly int newPendingMessagesCount;
 
+            public PendingNotification(JoinableTask synchronousTask, JoinableTask taskHasPendingMessages, int newPendingMessagesCount)
+            {
+                Requires.NotNull(synchronousTask, "synchronousTask");
+                Requires.NotNull(taskHasPendingMessages, "taskHasPendingMessages");
+
+                this.synchronousTask = synchronousTask;
+                this.taskHasPendingMessages = taskHasPendingMessages;
+                this.newPendingMessagesCount = newPendingMessagesCount;
+            }
+
             /// <summary>
             /// The synchronous task which need process new messages.
             /// </summary>
@@ -386,7 +396,7 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
-            /// One JoinableTask which has pending messages. We may have multiple new JoinableTasks which contains pending messages.
+            /// One JoinableTask which may have pending messages. We may have multiple new JoinableTasks which contains pending messages.
             /// This is just one of them.  It gives the synchronous task a way to start quickly without searching all messages.
             /// </summary>
             public JoinableTask TaskHasPendingMessages {
@@ -398,15 +408,6 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             public int NewPendingMessagesCount {
                 get { return this.newPendingMessagesCount; }
-            }
-
-            public PendingNotification(JoinableTask synchronousTask, JoinableTask taskHasPendingMessages, int newPendingMessagesCount) {
-                Requires.NotNull(synchronousTask, "synchronousTask");
-                Requires.NotNull(taskHasPendingMessages, "taskHasPendingMessages");
-
-                this.synchronousTask = synchronousTask;
-                this.taskHasPendingMessages = taskHasPendingMessages;
-                this.newPendingMessagesCount = newPendingMessagesCount;
             }
         }
     }
