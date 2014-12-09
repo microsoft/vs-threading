@@ -11,8 +11,8 @@ namespace Microsoft.VisualStudio.Threading {
 	using System.Collections.Specialized;
 	using System.Diagnostics;
 	using System.Linq;
-    using System.Reflection;
-    using System.Runtime.CompilerServices;
+	using System.Reflection;
+	using System.Runtime.CompilerServices;
 	using System.Threading;
 	using System.Threading.Tasks;
 	using JoinableTaskSynchronizationContext = Microsoft.VisualStudio.Threading.JoinableTask.JoinableTaskSynchronizationContext;
@@ -294,7 +294,7 @@ namespace Microsoft.VisualStudio.Threading {
 				}
 			}
 
-            foreach (var listener in listeners) {
+			foreach (var listener in listeners) {
 				try {
 					listener.OnHangDetected(hangDuration, notificationCount, hangId, methodBlockingMainThread);
 				} catch (Exception ex) {
