@@ -401,9 +401,14 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		/// <param name="cancellationToken">A cancellation token that will exit this method before the task is completed.</param>
 		public void Join(CancellationToken cancellationToken = default(CancellationToken)) {
-			this.owner.Run(async delegate {
-				await this.JoinAsync(cancellationToken);
-			});
+			// We don't simply call this.CompleteOnCurrentThread because that doesn't take CancellationToken.
+			// And it really can't be made to, since it sets state flags indicating the JoinableTask is
+			// blocking till completion. 
+			// So instead, we new up a new JoinableTask to do the blocking. But we preserve the initial delegate
+			// so that if a hang occurs it blames the original JoinableTask.
+			this.owner.Run(
+				() => this.JoinAsync(cancellationToken),
+				this.initialDelegate);
 		}
 
 		/// <summary>
@@ -763,7 +768,7 @@ namespace Microsoft.VisualStudio.Threading {
 
 		private bool TryDequeueSelfOrDependencies(bool onMainThread, HashSet<JoinableTask> visited, out SingleExecuteProtector work) {
 			Requires.NotNull(visited, "visited");
-            Report.IfNot(Monitor.IsEntered(this.owner.Context.SyncContextLock));
+			Report.IfNot(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
 			// We only need find the first work item.
 			work = null;

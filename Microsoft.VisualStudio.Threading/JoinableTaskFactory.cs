@@ -317,9 +317,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </example>
 		/// </remarks>
 		public void Run(Func<Task> asyncMethod) {
-			VerifyNoNonConcurrentSyncContext();
-			var joinable = this.RunAsync(asyncMethod, synchronouslyBlocking: true);
-			joinable.CompleteOnCurrentThread();
+			this.Run(asyncMethod, entrypointOverride: null);
 		}
 
 		/// <summary>
@@ -351,11 +349,20 @@ namespace Microsoft.VisualStudio.Threading {
 			return this.RunAsync(asyncMethod, synchronouslyBlocking: false);
 		}
 
+		/// <summary>Runs the specified asynchronous method.</summary>
+		/// <param name="asyncMethod">The asynchronous method to execute.</param>
+		/// <param name="entrypointOverride">The delegate to record as the entrypoint for this JoinableTask.</param>
+		internal void Run(Func<Task> asyncMethod, Delegate entrypointOverride) {
+			VerifyNoNonConcurrentSyncContext();
+			var joinable = this.RunAsync(asyncMethod, synchronouslyBlocking: true, entrypointOverride: entrypointOverride);
+			joinable.CompleteOnCurrentThread();
+		}
+
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-		private JoinableTask RunAsync(Func<Task> asyncMethod, bool synchronouslyBlocking) {
+		private JoinableTask RunAsync(Func<Task> asyncMethod, bool synchronouslyBlocking, Delegate entrypointOverride = null) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
 
-			var job = new JoinableTask(this, synchronouslyBlocking, asyncMethod);
+			var job = new JoinableTask(this, synchronouslyBlocking, entrypointOverride ?? asyncMethod);
 			using (var framework = new RunFramework(this, job)) {
 				Task asyncMethodResult;
 				try {
