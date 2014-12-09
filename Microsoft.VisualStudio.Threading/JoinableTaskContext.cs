@@ -11,7 +11,8 @@ namespace Microsoft.VisualStudio.Threading {
 	using System.Collections.Specialized;
 	using System.Diagnostics;
 	using System.Linq;
-	using System.Runtime.CompilerServices;
+    using System.Reflection;
+    using System.Runtime.CompilerServices;
 	using System.Threading;
 	using System.Threading.Tasks;
 	using JoinableTaskSynchronizationContext = Microsoft.VisualStudio.Threading.JoinableTask.JoinableTaskSynchronizationContext;
@@ -285,9 +286,17 @@ namespace Microsoft.VisualStudio.Threading {
 				listeners = this.hangNotifications.ToList();
 			}
 
-			foreach (var listener in listeners) {
+			MethodInfo methodBlockingMainThread = null;
+			lock (this.pendingTasks) {
+				var firstTaskBlockingMainThread = this.pendingTasks.Where(pendingTask => pendingTask.State.HasFlag(JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)).FirstOrDefault();
+				if (firstTaskBlockingMainThread != null) {
+					methodBlockingMainThread = firstTaskBlockingMainThread.EntryMethodInfo;
+				}
+			}
+
+            foreach (var listener in listeners) {
 				try {
-					listener.OnHangDetected(hangDuration, notificationCount, hangId);
+					listener.OnHangDetected(hangDuration, notificationCount, hangId, methodBlockingMainThread);
 				} catch (Exception ex) {
 					// Report it in CHK, but don't throw. In a hang situation, we don't want the product
 					// to fail for another reason, thus hiding the hang issue.

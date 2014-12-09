@@ -9,7 +9,8 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
-	using System.Text;
+    using System.Reflection;
+    using System.Text;
 	using System.Threading.Tasks;
 
 	[TestClass]
@@ -115,9 +116,9 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 				return base.RegisterOnHangDetected();
 			}
 
-			protected override void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId) {
+			protected override void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId, MethodInfo methodBlockingMainThread) {
 				this.HangDetected.SetAsync().Forget();
-				base.OnHangDetected(hangDuration, notificationCount, hangId);
+				base.OnHangDetected(hangDuration, notificationCount, hangId, methodBlockingMainThread);
 			}
 		}
 
