@@ -72,7 +72,7 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void OnHangDetected_Run_OnMainThread() {
+		public void OnHangDetected_Registration() {
 			var factory = (DerivedFactory)this.derivedNode.Factory;
 			factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(1);
 			factory.Run(async delegate {
@@ -87,11 +87,31 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 					Assert.AreNotSame(timeout, result, "Timed out waiting for hang detection.");
 				});
 				Assert.IsTrue(this.derivedNode.HangDetected.IsSet);
-				Assert.IsNotNull(this.derivedNode.HangDetails);
-				Assert.IsNotNull(this.derivedNode.HangDetails.JoinableTaskEntrypointMethod);
-				Assert.AreSame(this.GetType(), this.derivedNode.HangDetails.JoinableTaskEntrypointMethod.DeclaringType);
-				Assert.IsTrue(this.derivedNode.HangDetails.JoinableTaskEntrypointMethod.Name.Contains("OnHangDetected"));
+				this.derivedNode.HangDetected.Reset(); // reset for the next test
 			}
+
+			factory.Run(async delegate {
+				await Task.Delay(2);
+			});
+			Assert.IsFalse(this.derivedNode.HangDetected.IsSet); // registration should have been canceled.
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void OnHangDetected_Run_OnMainThread() {
+			var factory = (DerivedFactory)this.derivedNode.Factory;
+			factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(1);
+			this.derivedNode.RegisterOnHangDetected();
+
+			factory.Run(async delegate {
+				var timeout = Task.Delay(AsyncDelay);
+				var result = await Task.WhenAny(timeout, this.derivedNode.HangDetected.WaitAsync());
+				Assert.AreNotSame(timeout, result, "Timed out waiting for hang detection.");
+			});
+			Assert.IsTrue(this.derivedNode.HangDetected.IsSet);
+			Assert.IsNotNull(this.derivedNode.HangDetails);
+			Assert.IsNotNull(this.derivedNode.HangDetails.JoinableTaskEntrypointMethod);
+			Assert.AreSame(this.GetType(), this.derivedNode.HangDetails.JoinableTaskEntrypointMethod.DeclaringType);
+			Assert.IsTrue(this.derivedNode.HangDetails.JoinableTaskEntrypointMethod.Name.Contains("OnHangDetected"));
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -106,26 +126,21 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 		public void OnHangDetected_RunAsync_OnMainThread_BlamedMethodIsEntrypointNotBlockingMethod() {
 			var factory = (DerivedFactory)this.derivedNode.Factory;
 			factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(1);
-			factory.Run(async delegate {
-				await Task.Delay(2);
+			this.derivedNode.RegisterOnHangDetected();
+
+			var jt = factory.RunAsync(async delegate {
+				var timeout = Task.Delay(AsyncDelay);
+				var result = await Task.WhenAny(timeout, this.derivedNode.HangDetected.WaitAsync());
+				Assert.AreNotSame(timeout, result, "Timed out waiting for hang detection.");
 			});
-			Assert.IsFalse(this.derivedNode.HangDetected.IsSet); // we didn't register, so we shouldn't get notifications.
+			OnHangDetected_BlockingMethodHelper(jt);
+			Assert.IsTrue(this.derivedNode.HangDetected.IsSet);
+			Assert.IsNotNull(this.derivedNode.HangDetails);
+			Assert.IsNotNull(this.derivedNode.HangDetails.JoinableTaskEntrypointMethod);
 
-			using (this.derivedNode.RegisterOnHangDetected()) {
-				var jt = factory.RunAsync(async delegate {
-					var timeout = Task.Delay(AsyncDelay);
-					var result = await Task.WhenAny(timeout, this.derivedNode.HangDetected.WaitAsync());
-					Assert.AreNotSame(timeout, result, "Timed out waiting for hang detection.");
-				});
-				OnHangDetected_BlockingMethodHelper(jt);
-				Assert.IsTrue(this.derivedNode.HangDetected.IsSet);
-				Assert.IsNotNull(this.derivedNode.HangDetails);
-				Assert.IsNotNull(this.derivedNode.HangDetails.JoinableTaskEntrypointMethod);
-
-				// Verify that the original method that spawned the JoinableTask is the one identified as the entrypoint method.
-				Assert.AreSame(this.GetType(), this.derivedNode.HangDetails.JoinableTaskEntrypointMethod.DeclaringType);
-				Assert.IsTrue(this.derivedNode.HangDetails.JoinableTaskEntrypointMethod.Name.Contains("OnHangDetected_BlamedMethodIsEntrypointNotBlockingMethod"));
-			}
+			// Verify that the original method that spawned the JoinableTask is the one identified as the entrypoint method.
+			Assert.AreSame(this.GetType(), this.derivedNode.HangDetails.JoinableTaskEntrypointMethod.DeclaringType);
+			Assert.IsTrue(this.derivedNode.HangDetails.JoinableTaskEntrypointMethod.Name.Contains("OnHangDetected_BlamedMethodIsEntrypointNotBlockingMethod"));
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
