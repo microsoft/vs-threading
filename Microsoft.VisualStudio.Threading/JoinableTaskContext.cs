@@ -433,16 +433,21 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
-		/// A class to encapsulate the details of the hang being detected.
-		/// An instance of this <see cref="HangDetails"/> class will be passed to the <see cref="JoinableTaskContextNode"/> instances who registered the hang notifications.
+		/// A class to encapsulate the details of a possible hang.
+		/// An instance of this <see cref="HangDetails"/> class will be passed to the 
+		/// <see cref="JoinableTaskContextNode"/> instances who registered the hang notifications.
 		/// </summary>
 		public class HangDetails {
 			/// <summary>
-			/// The method who is blocking the main thread when the hang occurs.
+			/// Gets the method that served as the entrypoint for the JoinableTask that now blocks a thread.
 			/// </summary>
 			/// <remarks>
-			/// The method is not the root cause normally but it is the most relevant info that we could get at this point.
-			/// For instance, it could be used to assign the hangs to different buckets based on this method info.
+			/// The method indicated here may not be the one that is actually blocking a thread,
+			/// but typically a deadlock is caused by a violation of a threading rule which is under
+			/// the entrypoint's control. So usually regardless of where someone chooses the block
+			/// a thread for the completion of a <see cref="JoinableTask"/>, a hang usually indicates
+			/// a bug in the code that created it.
+			/// This value may be used to assign the hangs to different buckets based on this method info.
 			/// </remarks>
 			public MethodInfo MethodBlockingMainThread { get; internal set; }
 		}
