@@ -87,6 +87,10 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 					Assert.AreNotSame(timeout, result, "Timed out waiting for hang detection.");
 				});
 				Assert.IsTrue(this.derivedNode.HangDetected.IsSet);
+				Assert.IsNotNull(this.derivedNode.HangDetails);
+				Assert.IsNotNull(this.derivedNode.HangDetails.MethodBlockingMainThread);
+				Assert.AreSame(this.GetType(), this.derivedNode.HangDetails.MethodBlockingMainThread.DeclaringType);
+				Assert.IsTrue(this.derivedNode.HangDetails.MethodBlockingMainThread.Name.Contains("OnHangDetected"));
 				this.derivedNode.HangDetected.Reset(); // reset for the next test
 			}
 
@@ -104,6 +108,8 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 
 			internal AsyncManualResetEvent HangDetected { get; private set; }
 
+			internal JoinableTaskContext.HangDetails HangDetails { get; private set; }
+
 			public override JoinableTaskFactory CreateFactory(JoinableTaskCollection collection) {
 				return new DerivedFactory(collection);
 			}
@@ -116,9 +122,10 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 				return base.RegisterOnHangDetected();
 			}
 
-			protected override void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId, MethodInfo methodBlockingMainThread) {
+			protected override void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId, JoinableTaskContext.HangDetails hangDetails) {
+				this.HangDetails = hangDetails;
 				this.HangDetected.SetAsync().Forget();
-				base.OnHangDetected(hangDuration, notificationCount, hangId, methodBlockingMainThread);
+				base.OnHangDetected(hangDuration, notificationCount, hangId, hangDetails);
 			}
 		}
 

@@ -125,12 +125,26 @@
 		/// <param name="hangDuration">The duration of the current hang.</param>
 		/// <param name="notificationCount">The number of times this hang has been reported, including this one.</param>
 		/// <param name="hangId">A random GUID that uniquely identifies this particular hang.</param>
-		/// <param name="methodBlockingMainThread">The method that is blocking the main thread.</param>
 		/// <remarks>
 		/// A single hang occurrence may invoke this method multiple times, with increasing
 		/// values in the <paramref name="hangDuration"/> parameter.
 		/// </remarks>
-		protected internal virtual void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId, MethodInfo methodBlockingMainThread) {
+		protected virtual void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId) {
+		}
+
+		/// <summary>
+		/// Invoked when a hang is suspected to have occurred involving the main thread.
+		/// </summary>
+		/// <param name="hangDuration">The duration of the current hang.</param>
+		/// <param name="notificationCount">The number of times this hang has been reported, including this one.</param>
+		/// <param name="hangId">A random GUID that uniquely identifies this particular hang.</param>
+		/// <param name="hangDetails">Encapsulate the details of this hang.</param>
+		/// <remarks>
+		/// A single hang occurrence may invoke this method multiple times, with increasing
+		/// values in the <paramref name="hangDuration"/> parameter.
+		/// </remarks>
+		protected internal virtual void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId, JoinableTaskContext.HangDetails hangDetails) {
+			this.OnHangDetected(hangDuration, notificationCount, hangId);
 		}
 
 		/// <summary>

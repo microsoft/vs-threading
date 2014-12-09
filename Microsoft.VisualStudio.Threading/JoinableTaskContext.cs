@@ -286,17 +286,17 @@ namespace Microsoft.VisualStudio.Threading {
 				listeners = this.hangNotifications.ToList();
 			}
 
-			MethodInfo methodBlockingMainThread = null;
+			var hangDetails = new HangDetails();
 			lock (this.pendingTasks) {
 				var firstTaskBlockingMainThread = this.pendingTasks.Where(pendingTask => pendingTask.State.HasFlag(JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)).FirstOrDefault();
 				if (firstTaskBlockingMainThread != null) {
-					methodBlockingMainThread = firstTaskBlockingMainThread.EntryMethodInfo;
+					hangDetails.MethodBlockingMainThread = firstTaskBlockingMainThread.EntryMethodInfo;
 				}
 			}
 
 			foreach (var listener in listeners) {
 				try {
-					listener.OnHangDetected(hangDuration, notificationCount, hangId, methodBlockingMainThread);
+					listener.OnHangDetected(hangDuration, notificationCount, hangId, hangDetails);
 				} catch (Exception ex) {
 					// Report it in CHK, but don't throw. In a hang situation, we don't want the product
 					// to fail for another reason, thus hiding the hang issue.
@@ -430,6 +430,21 @@ namespace Microsoft.VisualStudio.Threading {
 
 				this.temporarySyncContext.Dispose();
 			}
+		}
+
+		/// <summary>
+		/// A class to encapsulate the details of the hang being detected.
+		/// An instance of this <see cref="HangDetails"/> class will be passed to the <see cref="JoinableTaskContextNode"/> instances who registered the hang notifications.
+		/// </summary>
+		public class HangDetails {
+			/// <summary>
+			/// The method who is blocking the main thread when the hang occurs.
+			/// </summary>
+			/// <remarks>
+			/// The method is not the root cause normally but it is the most relevant info that we could get at this point.
+			/// For instance, it could be used to assign the hangs to different buckets based on this method info.
+			/// </remarks>
+			public MethodInfo MethodBlockingMainThread { get; internal set; }
 		}
 	}
 }
