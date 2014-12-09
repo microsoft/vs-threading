@@ -88,9 +88,9 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 				});
 				Assert.IsTrue(this.derivedNode.HangDetected.IsSet);
 				Assert.IsNotNull(this.derivedNode.HangDetails);
-				Assert.IsNotNull(this.derivedNode.HangDetails.MethodBlockingMainThread);
-				Assert.AreSame(this.GetType(), this.derivedNode.HangDetails.MethodBlockingMainThread.DeclaringType);
-				Assert.IsTrue(this.derivedNode.HangDetails.MethodBlockingMainThread.Name.Contains("OnHangDetected"));
+				Assert.IsNotNull(this.derivedNode.HangDetails.JoinableTaskEntrypointMethod);
+				Assert.AreSame(this.GetType(), this.derivedNode.HangDetails.JoinableTaskEntrypointMethod.DeclaringType);
+				Assert.IsTrue(this.derivedNode.HangDetails.JoinableTaskEntrypointMethod.Name.Contains("OnHangDetected"));
 				this.derivedNode.HangDetected.Reset(); // reset for the next test
 			}
 

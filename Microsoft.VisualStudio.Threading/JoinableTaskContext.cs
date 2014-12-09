@@ -290,7 +290,7 @@ namespace Microsoft.VisualStudio.Threading {
 			lock (this.pendingTasks) {
 				var firstTaskBlockingMainThread = this.pendingTasks.Where(pendingTask => pendingTask.State.HasFlag(JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)).FirstOrDefault();
 				if (firstTaskBlockingMainThread != null) {
-					hangDetails.MethodBlockingMainThread = firstTaskBlockingMainThread.EntryMethodInfo;
+					hangDetails.JoinableTaskEntrypointMethod = firstTaskBlockingMainThread.EntryMethodInfo;
 				}
 			}
 
@@ -449,7 +449,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// a bug in the code that created it.
 			/// This value may be used to assign the hangs to different buckets based on this method info.
 			/// </remarks>
-			public MethodInfo MethodBlockingMainThread { get; internal set; }
+			public MethodInfo JoinableTaskEntrypointMethod { get; internal set; }
 		}
 	}
 }
