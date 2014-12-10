@@ -109,9 +109,9 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 			});
 			Assert.IsTrue(this.derivedNode.HangDetected.IsSet);
 			Assert.IsNotNull(this.derivedNode.HangDetails);
-			Assert.IsNotNull(this.derivedNode.HangDetails.JoinableTaskEntrypointMethod);
-			Assert.AreSame(this.GetType(), this.derivedNode.HangDetails.JoinableTaskEntrypointMethod.DeclaringType);
-			Assert.IsTrue(this.derivedNode.HangDetails.JoinableTaskEntrypointMethod.Name.Contains(nameof(OnHangDetected_Run_OnMainThread)));
+			Assert.IsNotNull(this.derivedNode.HangDetails.EntryMethod);
+			Assert.AreSame(this.GetType(), this.derivedNode.HangDetails.EntryMethod.DeclaringType);
+			Assert.IsTrue(this.derivedNode.HangDetails.EntryMethod.Name.Contains(nameof(OnHangDetected_Run_OnMainThread)));
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -136,11 +136,11 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 			OnHangDetected_BlockingMethodHelper(jt);
 			Assert.IsTrue(this.derivedNode.HangDetected.IsSet);
 			Assert.IsNotNull(this.derivedNode.HangDetails);
-			Assert.IsNotNull(this.derivedNode.HangDetails.JoinableTaskEntrypointMethod);
+			Assert.IsNotNull(this.derivedNode.HangDetails.EntryMethod);
 
 			// Verify that the original method that spawned the JoinableTask is the one identified as the entrypoint method.
-			Assert.AreSame(this.GetType(), this.derivedNode.HangDetails.JoinableTaskEntrypointMethod.DeclaringType);
-			Assert.IsTrue(this.derivedNode.HangDetails.JoinableTaskEntrypointMethod.Name.Contains(nameof(OnHangDetected_RunAsync_OnMainThread_BlamedMethodIsEntrypointNotBlockingMethod)));
+			Assert.AreSame(this.GetType(), this.derivedNode.HangDetails.EntryMethod.DeclaringType);
+			Assert.IsTrue(this.derivedNode.HangDetails.EntryMethod.Name.Contains(nameof(OnHangDetected_RunAsync_OnMainThread_BlamedMethodIsEntrypointNotBlockingMethod)));
 		}
 
 		[TestMethod, Timeout(TestTimeout)]

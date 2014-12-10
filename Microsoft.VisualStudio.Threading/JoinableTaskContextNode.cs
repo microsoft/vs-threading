@@ -3,7 +3,6 @@
 	using System.Collections.Generic;
 	using System.Diagnostics;
 	using System.Linq;
-	using System.Reflection;
 	using System.Text;
 	using System.Threading;
 	using System.Threading.Tasks;
@@ -142,6 +141,8 @@
 		/// in the <paramref name="details"/> parameter.
 		/// </remarks>
 		protected internal virtual void OnHangDetected(JoinableTaskContext.HangDetails details) {
+			Requires.NotNull(details, "details");
+
 			// Preserve backward compatibility by forwarding the call to the older overload.
 			this.OnHangDetected(details.HangDuration, details.NotificationCount, details.HangId);
 		}
