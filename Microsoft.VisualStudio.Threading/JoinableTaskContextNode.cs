@@ -128,7 +128,23 @@
 		/// A single hang occurrence may invoke this method multiple times, with increasing
 		/// values in the <paramref name="hangDuration"/> parameter.
 		/// </remarks>
-		protected internal virtual void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId) {
+		protected virtual void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId) {
+		}
+
+		/// <summary>
+		/// Invoked when a hang is suspected to have occurred involving the main thread.
+		/// </summary>
+		/// <param name="details">Describes the hang in detail.</param>
+		/// <remarks>
+		/// A single hang occurrence may invoke this method multiple times, with increasing
+		/// values in the <see cref="JoinableTaskContext.HangDetails.NotificationCount"/> values
+		/// in the <paramref name="details"/> parameter.
+		/// </remarks>
+		protected internal virtual void OnHangDetected(JoinableTaskContext.HangDetails details) {
+			Requires.NotNull(details, "details");
+
+			// Preserve backward compatibility by forwarding the call to the older overload.
+			this.OnHangDetected(details.HangDuration, details.NotificationCount, details.HangId);
 		}
 
 		/// <summary>

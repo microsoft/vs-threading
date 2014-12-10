@@ -9,6 +9,7 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
+	using System.Reflection;
 	using System.Text;
 	using System.Threading.Tasks;
 
@@ -71,7 +72,7 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void OnHangDetected() {
+		public void OnHangDetected_Registration() {
 			var factory = (DerivedFactory)this.derivedNode.Factory;
 			factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(1);
 			factory.Run(async delegate {
@@ -95,6 +96,73 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 			Assert.IsFalse(this.derivedNode.HangDetected.IsSet); // registration should have been canceled.
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void OnHangDetected_Run_OnMainThread() {
+			var factory = (DerivedFactory)this.derivedNode.Factory;
+			factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(1);
+			this.derivedNode.RegisterOnHangDetected();
+
+			factory.Run(async delegate {
+				var timeout = Task.Delay(AsyncDelay);
+				var result = await Task.WhenAny(timeout, this.derivedNode.HangDetected.WaitAsync());
+				Assert.AreNotSame(timeout, result, "Timed out waiting for hang detection.");
+			});
+			Assert.IsTrue(this.derivedNode.HangDetected.IsSet);
+			Assert.IsNotNull(this.derivedNode.HangDetails);
+			Assert.IsNotNull(this.derivedNode.HangDetails.EntryMethod);
+			Assert.AreSame(this.GetType(), this.derivedNode.HangDetails.EntryMethod.DeclaringType);
+			Assert.IsTrue(this.derivedNode.HangDetails.EntryMethod.Name.Contains(nameof(OnHangDetected_Run_OnMainThread)));
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void OnHangDetected_Run_OffMainThread() {
+			Task.Run(delegate {
+				// Now that we're off the main thread, just call the other test.
+				this.OnHangDetected_Run_OnMainThread();
+			}).GetAwaiter().GetResult();
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void OnHangDetected_RunAsync_OnMainThread_BlamedMethodIsEntrypointNotBlockingMethod() {
+			var factory = (DerivedFactory)this.derivedNode.Factory;
+			factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(1);
+			this.derivedNode.RegisterOnHangDetected();
+
+			var jt = factory.RunAsync(async delegate {
+				var timeout = Task.Delay(AsyncDelay);
+				var result = await Task.WhenAny(timeout, this.derivedNode.HangDetected.WaitAsync());
+				Assert.AreNotSame(timeout, result, "Timed out waiting for hang detection.");
+			});
+			OnHangDetected_BlockingMethodHelper(jt);
+			Assert.IsTrue(this.derivedNode.HangDetected.IsSet);
+			Assert.IsNotNull(this.derivedNode.HangDetails);
+			Assert.IsNotNull(this.derivedNode.HangDetails.EntryMethod);
+
+			// Verify that the original method that spawned the JoinableTask is the one identified as the entrypoint method.
+			Assert.AreSame(this.GetType(), this.derivedNode.HangDetails.EntryMethod.DeclaringType);
+			Assert.IsTrue(this.derivedNode.HangDetails.EntryMethod.Name.Contains(nameof(OnHangDetected_RunAsync_OnMainThread_BlamedMethodIsEntrypointNotBlockingMethod)));
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void OnHangDetected_RunAsync_OffMainThread_BlamedMethodIsEntrypointNotBlockingMethod() {
+			Task.Run(delegate {
+				// Now that we're off the main thread, just call the other test.
+				this.OnHangDetected_RunAsync_OnMainThread_BlamedMethodIsEntrypointNotBlockingMethod();
+			}).GetAwaiter().GetResult();
+		}
+
+		/// <summary>
+		/// A helper method that just blocks on the completion of a JoinableTask.
+		/// </summary>
+		/// <remarks>
+		/// This method is explicitly defined rather than using an anonymous method because 
+		/// we do NOT want the calling method's name embedded into this method's name by the compiler
+		/// so that we can verify based on method name.
+		/// </remarks>
+		private static void OnHangDetected_BlockingMethodHelper(JoinableTask jt) {
+			jt.Join();
+		}
+
 		private class DerivedNode : JoinableTaskContextNode {
 			internal DerivedNode(JoinableTaskContext context)
 				: base(context) {
@@ -102,6 +170,8 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 			}
 
 			internal AsyncManualResetEvent HangDetected { get; private set; }
+
+			internal JoinableTaskContext.HangDetails HangDetails { get; private set; }
 
 			public override JoinableTaskFactory CreateFactory(JoinableTaskCollection collection) {
 				return new DerivedFactory(collection);
@@ -115,9 +185,10 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 				return base.RegisterOnHangDetected();
 			}
 
-			protected override void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId) {
+			protected override void OnHangDetected(JoinableTaskContext.HangDetails details) {
+				this.HangDetails = details;
 				this.HangDetected.SetAsync().Forget();
-				base.OnHangDetected(hangDuration, notificationCount, hangId);
+				base.OnHangDetected(details);
 			}
 		}
 

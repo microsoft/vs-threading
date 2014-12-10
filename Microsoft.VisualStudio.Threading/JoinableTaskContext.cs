@@ -11,6 +11,7 @@ namespace Microsoft.VisualStudio.Threading {
 	using System.Collections.Specialized;
 	using System.Diagnostics;
 	using System.Linq;
+	using System.Reflection;
 	using System.Runtime.CompilerServices;
 	using System.Threading;
 	using System.Threading.Tasks;
@@ -285,9 +286,15 @@ namespace Microsoft.VisualStudio.Threading {
 				listeners = this.hangNotifications.ToList();
 			}
 
+			var blockingTask = JoinableTask.TaskCompletingOnThisThread;
+			var hangDetails = new HangDetails(
+				hangDuration,
+				notificationCount,
+				hangId,
+				blockingTask != null  ? blockingTask.EntryMethodInfo : null);
 			foreach (var listener in listeners) {
 				try {
-					listener.OnHangDetected(hangDuration, notificationCount, hangId);
+					listener.OnHangDetected(hangDetails);
 				} catch (Exception ex) {
 					// Report it in CHK, but don't throw. In a hang situation, we don't want the product
 					// to fail for another reason, thus hiding the hang issue.
@@ -421,6 +428,55 @@ namespace Microsoft.VisualStudio.Threading {
 
 				this.temporarySyncContext.Dispose();
 			}
+		}
+
+		/// <summary>
+		/// A class to encapsulate the details of a possible hang.
+		/// An instance of this <see cref="HangDetails"/> class will be passed to the 
+		/// <see cref="JoinableTaskContextNode"/> instances who registered the hang notifications.
+		/// </summary>
+		public class HangDetails {
+			/// <summary>Initializes a new instance of the <see cref="HangDetails"/> class.</summary>
+			/// <param name="hangDuration">The duration of the current hang.</param>
+			/// <param name="notificationCount">The number of times this hang has been reported, including this one.</param>
+			/// <param name="hangId">A random GUID that uniquely identifies this particular hang.</param>
+			/// <param name="entryMethod">The method that served as the entrypoint for the JoinableTask.</param>
+			public HangDetails(TimeSpan hangDuration, int notificationCount, Guid hangId, MethodInfo entryMethod) {
+				this.HangDuration = hangDuration;
+				this.NotificationCount = notificationCount;
+				this.HangId = hangId;
+				this.EntryMethod = entryMethod;
+			}
+
+			/// <summary>
+			/// Gets the length of time this hang has lasted so far.
+			/// </summary>
+			public TimeSpan HangDuration { get; private set; }
+
+			/// <summary>
+			/// Gets the number of times this particular hang has been reported, including this one.
+			/// </summary>
+			public int NotificationCount { get; private set; }
+
+			/// <summary>
+			/// Gets a unique GUID identifying this particular hang.
+			/// If the same hang is reported multiple times (with increasing duration values)
+			/// the value of this property will remain constant.
+			/// </summary>
+			public Guid HangId { get; private set; }
+
+			/// <summary>
+			/// Gets the method that served as the entrypoint for the JoinableTask that now blocks a thread.
+			/// </summary>
+			/// <remarks>
+			/// The method indicated here may not be the one that is actually blocking a thread,
+			/// but typically a deadlock is caused by a violation of a threading rule which is under
+			/// the entrypoint's control. So usually regardless of where someone chooses the block
+			/// a thread for the completion of a <see cref="JoinableTask"/>, a hang usually indicates
+			/// a bug in the code that created it.
+			/// This value may be used to assign the hangs to different buckets based on this method info.
+			/// </remarks>
+			public MethodInfo EntryMethod { get; private set; }
 		}
 	}
 }
