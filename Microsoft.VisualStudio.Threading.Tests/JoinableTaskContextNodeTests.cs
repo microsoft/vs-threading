@@ -185,10 +185,10 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 				return base.RegisterOnHangDetected();
 			}
 
-			protected override void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId, JoinableTaskContext.HangDetails hangDetails) {
-				this.HangDetails = hangDetails;
+			protected override void OnHangDetected(JoinableTaskContext.HangDetails details) {
+				this.HangDetails = details;
 				this.HangDetected.SetAsync().Forget();
-				base.OnHangDetected(hangDuration, notificationCount, hangId, hangDetails);
+				base.OnHangDetected(details);
 			}
 		}
 
