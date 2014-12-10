@@ -288,9 +288,9 @@ namespace Microsoft.VisualStudio.Threading {
 
 			var hangDetails = new HangDetails();
 			lock (this.pendingTasks) {
-				var firstTaskBlockingMainThread = this.pendingTasks.Where(pendingTask => pendingTask.State.HasFlag(JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)).FirstOrDefault();
-				if (firstTaskBlockingMainThread != null) {
-					hangDetails.JoinableTaskEntrypointMethod = firstTaskBlockingMainThread.EntryMethodInfo;
+				var blockingTask = JoinableTask.TaskCompletingOnThisThread;
+				if (blockingTask != null) {
+					hangDetails.JoinableTaskEntrypointMethod = blockingTask.EntryMethodInfo;
 				}
 			}
 
