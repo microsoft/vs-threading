@@ -120,5 +120,16 @@
 			collection.Remove(task); // technically the JoinableTask is probably gone from the collection by now anyway.
 			Assert.IsFalse(collection.Contains(task));
 		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void JoinDisposedTwice() {
+			this.joinableFactory.Run(delegate {
+				var releaser = this.joinableCollection.Join();
+				releaser.Dispose();
+				releaser.Dispose();
+
+				return TplExtensions.CompletedTask;
+			});
+		}
 	}
 }

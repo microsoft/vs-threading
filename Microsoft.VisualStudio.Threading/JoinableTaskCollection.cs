@@ -273,7 +273,7 @@ namespace Microsoft.VisualStudio.Threading {
 
 				if (this.joinedJobCollection != null) {
 					this.joinedJobCollection.Disjoin(this.joiner);
-					this.joinedJob = null;
+					this.joinedJobCollection = null;
 				}
 
 				this.joiner = null;
