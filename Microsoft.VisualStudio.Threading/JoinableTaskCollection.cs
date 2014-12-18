@@ -7,6 +7,7 @@
 namespace Microsoft.VisualStudio.Threading {
 	using System;
 	using System.Collections.Generic;
+	using System.Diagnostics;
 	using System.Linq;
 	using System.Text;
 	using System.Threading;
@@ -15,6 +16,7 @@ namespace Microsoft.VisualStudio.Threading {
 	/// <summary>
 	/// A collection of joinable tasks.
 	/// </summary>
+	[DebuggerDisplay("JoinableTaskCollection: {displayName}")]
 	public class JoinableTaskCollection : IEnumerable<JoinableTask> {
 		/// <summary>
 		/// The set of joinable tasks that belong to this collection -- that is, the set of joinable tasks that are implicitly Joined
@@ -37,6 +39,12 @@ namespace Microsoft.VisualStudio.Threading {
 		private readonly bool refCountAddedJobs;
 
 		/// <summary>
+		/// A human-readable name that may appear in hang reports.
+		/// </summary>
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
+		private readonly string displayName;
+
+		/// <summary>
 		/// An event that is set when the collection is empty. (lazily initialized)
 		/// </summary>
 		private AsyncManualResetEvent emptyEvent;
@@ -50,9 +58,24 @@ namespace Microsoft.VisualStudio.Threading {
 		/// either removed the same number of times or until they are completed;
 		/// <c>false</c> causes the first Remove call for a JoinableTask to remove it from this collection regardless
 		/// how many times it had been added.</param>
-		public JoinableTaskCollection(JoinableTaskContext context, bool refCountAddedJobs = false) {
+		public JoinableTaskCollection(JoinableTaskContext context, bool refCountAddedJobs = false)
+			: this(context, null, refCountAddedJobs) {
+		}
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="JoinableTaskCollection"/> class.
+		/// </summary>
+		/// <param name="context">The <see cref="JoinableTaskContext"/> instance to which this collection applies.</param>
+		/// <param name="displayName">A human-readable name that may appear in hang reports. May be <c>null</c>.</param>
+		/// <param name="refCountAddedJobs">
+		/// <c>true</c> if JoinableTask instances added to the collection multiple times should remain in the collection until they are
+		/// either removed the same number of times or until they are completed;
+		/// <c>false</c> causes the first Remove call for a JoinableTask to remove it from this collection regardless
+		/// how many times it had been added.</param>
+		public JoinableTaskCollection(JoinableTaskContext context, string displayName, bool refCountAddedJobs = false) {
 			Requires.NotNull(context, "context");
 			this.Context = context;
+			this.displayName = displayName;
 			this.refCountAddedJobs = refCountAddedJobs;
 		}
 
@@ -60,6 +83,13 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Gets the <see cref="JoinableTaskContext"/> to which this collection belongs.
 		/// </summary>
 		public JoinableTaskContext Context { get; private set; }
+
+		/// <summary>
+		/// Gets a human-readable name that may appear in hang reports.
+		/// </summary>
+		internal string DisplayName {
+			get { return this.displayName; }
+		}
 
 		/// <summary>
 		/// Adds the specified joinable task to this collection.

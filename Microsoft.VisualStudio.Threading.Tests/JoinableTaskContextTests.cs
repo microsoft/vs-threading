@@ -135,6 +135,25 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void GetHangReportProducesDgmlWithNamedJoinableCollections() {
+			const string jtcName = "My Collection";
+
+			var jtc = context.CreateCollection(jtcName);
+			var jtf = context.CreateFactory(jtc);
+			jtf.RunAsync(delegate {
+				IHangReportContributor contributor = context;
+				var report = contributor.GetHangReport();
+				Console.WriteLine(report.Content);
+				var dgml = XDocument.Parse(report.Content);
+				var collectionLabels = from node in dgml.Root.Element(XName.Get("Nodes", DgmlNamespace)).Elements()
+									   where node.Attribute(XName.Get("Category"))?.Value == "Collection"
+									   select node.Attribute(XName.Get("Label"))?.Value;
+				Assert.IsTrue(collectionLabels.Any(label => label == jtcName));
+				return TplExtensions.CompletedTask;
+			});
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void GetHangReportWithActualHang() {
 			var endTestTokenSource = new CancellationTokenSource();
 			this.context.OnReportHang = (hangDuration, iterations, id) => {

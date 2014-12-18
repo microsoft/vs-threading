@@ -92,7 +92,8 @@
 			int collectionId = 0;
 			foreach (var collection in collectionsSet) {
 				collectionId++;
-				var element = Dgml.Node("Collection#" + collectionId, "Collection #" + collectionId, group: "Expanded")
+				var label = string.IsNullOrEmpty(collection.DisplayName) ? "Collection #" + collectionId : collection.DisplayName;
+				var element = Dgml.Node("Collection#" + collectionId, label, group: "Expanded")
 					.WithCategories("Collection");
 				result.Add(collection, element);
 			}

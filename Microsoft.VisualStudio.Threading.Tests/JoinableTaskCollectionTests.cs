@@ -16,6 +16,12 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void ConstructorAcceptsNullOrEmptyDisplayName() {
+			new JoinableTaskCollection(this.context, displayName: null);
+			new JoinableTaskCollection(this.context, displayName: string.Empty);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void JoinTillEmptyAlreadyCompleted() {
 			var awaiter = this.joinableCollection.JoinTillEmptyAsync().GetAwaiter();
 			Assert.IsTrue(awaiter.IsCompleted);
