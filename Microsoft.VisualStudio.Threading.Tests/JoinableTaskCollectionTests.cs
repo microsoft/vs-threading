@@ -16,9 +16,15 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void ConstructorAcceptsNullOrEmptyDisplayName() {
-			new JoinableTaskCollection(this.context, displayName: null);
-			new JoinableTaskCollection(this.context, displayName: string.Empty);
+		public void DisplayName() {
+			var jtc = new JoinableTaskCollection(this.context);
+			Assert.IsNull(jtc.DisplayName);
+			jtc.DisplayName = string.Empty;
+			Assert.AreEqual(string.Empty, jtc.DisplayName);
+			jtc.DisplayName = null;
+			Assert.IsNull(jtc.DisplayName);
+			jtc.DisplayName = "My Name";
+			Assert.AreEqual("My Name", jtc.DisplayName);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]

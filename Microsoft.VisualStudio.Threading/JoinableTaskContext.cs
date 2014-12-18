@@ -256,15 +256,6 @@ namespace Microsoft.VisualStudio.Threading {
 			return new JoinableTaskCollection(this);
 		}
 
-		/// <summary>
-		/// Creates a collection for in-flight joinable tasks.
-		/// </summary>
-		/// <param name="displayName">A human-readable name that may appear in hang reports.</param>
-		/// <returns>A new joinable task collection.</returns>
-		public JoinableTaskCollection CreateCollection(string displayName) {
-			return new JoinableTaskCollection(this, displayName);
-		}
-
 		/// <inheritdoc/>
 		public void Dispose() {
 			this.Dispose(true);

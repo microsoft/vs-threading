@@ -138,9 +138,8 @@
 		public void GetHangReportProducesDgmlWithNamedJoinableCollections() {
 			const string jtcName = "My Collection";
 
-			var jtc = context.CreateCollection(jtcName);
-			var jtf = context.CreateFactory(jtc);
-			jtf.RunAsync(delegate {
+			this.joinableCollection.DisplayName = jtcName;
+			this.factory.RunAsync(delegate {
 				IHangReportContributor contributor = context;
 				var report = contributor.GetHangReport();
 				Console.WriteLine(report.Content);
