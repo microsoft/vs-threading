@@ -72,6 +72,11 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// Gets or sets a human-readable name that may appear in hang reports.
 		/// </summary>
+		/// <remarks>
+		/// This property should *not* be set to a value that may disclose
+		/// personally identifiable information or other confidential data
+		/// since this value may be included in hang reports sent to a third party.
+		/// </remarks>
 		public string DisplayName {
 			get { return this.displayName; }
 			set { this.displayName = value; }
