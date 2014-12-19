@@ -170,8 +170,9 @@
 				foreach (var frame in singleExecuteProtector.WalkReturnCallstack()) {
 					stringBuilder.AppendLine(frame);
 				}
-			} catch (Exception e) {
-				Report.Fail("RepresentCallstack caught exception: ", e);
+			} catch (Exception ex) {
+				// Just eat the exception so we don't crash during a hang report.
+				Report.Fail("GetAsyncReturnStackFrames threw exception: ", ex);
 			}
 
 			return stringBuilder.ToString().TrimEnd();

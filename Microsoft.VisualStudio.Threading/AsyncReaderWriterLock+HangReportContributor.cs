@@ -95,6 +95,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// Appends details of a given collection of awaiters to the hang report.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
 		private static XElement CreateAwaiterNode(Awaiter awaiter) {
 			Requires.NotNull(awaiter, "awaiter");
 
@@ -110,9 +111,13 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			if ((lockWaitingContinuation = awaiter.LockRequestingContinuation) != null) {
-				label.AppendLine("Async return stack:");
-				foreach (var frame in lockWaitingContinuation.GetAsyncReturnStackFrames()) {
-					label.AppendLine(frame);
+				try {
+					foreach (var frame in lockWaitingContinuation.GetAsyncReturnStackFrames()) {
+						label.AppendLine(frame);
+					}
+				} catch (Exception ex) {
+					// Just eat the exception so we don't crash during a hang report.
+					Report.Fail("GetAsyncReturnStackFrames threw exception: ", ex);
 				}
 			}
 
