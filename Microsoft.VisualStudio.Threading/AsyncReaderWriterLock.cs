@@ -1625,6 +1625,14 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			/// <summary>
+			/// Gets the delegate to be invoked when the lock is issued, if available.
+			/// FOR DIAGNOSTIC PURPOSES ONLY.
+			/// </summary>
+			internal Delegate LockWaitingContinuation {
+				get { return this.continuation; }
+			}
+
+			/// <summary>
 			/// Sets the delegate to execute when the lock is available.
 			/// </summary>
 			/// <param name="continuation">The delegate.</param>
