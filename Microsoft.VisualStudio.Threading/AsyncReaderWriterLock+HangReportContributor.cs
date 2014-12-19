@@ -108,6 +108,10 @@ namespace Microsoft.VisualStudio.Threading {
 				label.AppendLine(awaiter.RequestingStackTrace.ToString());
 			}
 
+			if (label.Length >= Environment.NewLine.Length) {
+				label.Length -= Environment.NewLine.Length;
+			}
+
 			XElement element = Dgml.Node(GetAwaiterId(awaiter), label.ToString());
 			return element;
 		}
