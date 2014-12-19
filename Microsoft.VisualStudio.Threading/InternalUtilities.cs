@@ -120,7 +120,17 @@ namespace Microsoft.VisualStudio.Threading {
 			Requires.NotNull(invokeDelegate, "invokeDelegate");
 
 			if (invokeDelegate.Target != null) {
-				return GetFieldValue(invokeDelegate.Target, "m_stateMachine") as IAsyncStateMachine;
+				// Some delegates are wrapped with a ContinuationWrapper object. We have to unwrap that in those cases.
+				// In testing, this m_continuation field jump is only required when the debugger is attached -- weird.
+				// I suspect however that it's a natural behavior of the async state machine (when there are >1 continuations perhaps).
+				// So we check for the case in all cases.
+				var continuation = GetFieldValue(invokeDelegate.Target, "m_continuation") as Action;
+				if (continuation != null) {
+					invokeDelegate = continuation;
+				}
+
+				var stateMachine = GetFieldValue(invokeDelegate.Target, "m_stateMachine") as IAsyncStateMachine;
+				return stateMachine;
 			}
 
 			return null;
