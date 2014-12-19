@@ -20,6 +20,15 @@ namespace Microsoft.VisualStudio.Threading {
 	/// </summary>
 	internal static class InternalUtilities {
 		/// <summary>
+		/// The substring that should be inserted before each async return stack frame.
+		/// </summary>
+		/// <remarks>
+		/// When printing synchronous callstacks, .NET begins each frame with " at ".
+		/// When printing async return stack, we use this to indicate continuations.
+		/// </remarks>
+		private const string AsyncReturnStackPrefix = " -> ";
+
+		/// <summary>
 		/// Removes an element from the middle of a queue without disrupting the other elements.
 		/// </summary>
 		/// <typeparam name="T">The element to remove.</typeparam>
@@ -71,9 +80,10 @@ namespace Microsoft.VisualStudio.Threading {
 				var state = GetStateMachineFieldValueOnSuffix(stateMachine, "__state");
 				yield return string.Format(
 					CultureInfo.CurrentCulture,
-					"{0} ({1})",
+					"{2}{0} ({1})",
 					stateMachine.GetType().FullName,
-					state);
+					state,
+					AsyncReturnStackPrefix);
 
 				var continuationDelegates = FindContinuationDelegates(stateMachine).ToArray();
 				if (continuationDelegates.Length == 0) {
@@ -100,17 +110,19 @@ namespace Microsoft.VisualStudio.Threading {
 			if (invokeDelegate.Target != null) {
 				return string.Format(
 					CultureInfo.CurrentCulture,
-					"{0}.{1} ({2})",
+					"{3}{0}.{1} ({2})",
 					invokeDelegate.Method.DeclaringType.FullName,
 					invokeDelegate.Method.Name,
-					invokeDelegate.Target.GetType().FullName);
+					invokeDelegate.Target.GetType().FullName,
+					AsyncReturnStackPrefix);
 			}
 
 			return string.Format(
 				CultureInfo.CurrentCulture,
-				"{0}.{1}",
+				"{2}{0}.{1}",
 				invokeDelegate.Method.DeclaringType.FullName,
-				invokeDelegate.Method.Name);
+				invokeDelegate.Method.Name,
+				AsyncReturnStackPrefix);
 		}
 
 		/// <summary>
