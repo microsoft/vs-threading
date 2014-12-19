@@ -1779,9 +1779,10 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <returns><c>true</c> if the continuation was (asynchronously) invoked; <c>false</c> if there was no continuation available to invoke.</returns>
 			internal bool TryScheduleContinuationExecution() {
 				var continuation = Interlocked.Exchange(ref this.continuation, null);
-				this.continuationAfterLockIssued = continuation;
 
 				if (continuation != null) {
+					this.continuationAfterLockIssued = continuation;
+
 					// Only read locks can be executed trivially. The locks that have some level of exclusivity (upgradeable read and write)
 					// must be executed via the NonConcurrentSynchronizationContext.
 					if (this.lck.LockStackContains(LockKind.UpgradeableRead, this) ||
