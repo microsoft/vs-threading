@@ -109,7 +109,7 @@ namespace Microsoft.VisualStudio.Threading {
 				label.AppendLine(awaiter.RequestingStackTrace.ToString());
 			}
 
-			if ((lockWaitingContinuation = awaiter.LockWaitingContinuation) != null) {
+			if ((lockWaitingContinuation = awaiter.LockRequestingContinuation) != null) {
 				label.AppendLine("Async return stack:");
 				foreach (var frame in lockWaitingContinuation.GetAsyncReturnStackFrames()) {
 					label.AppendLine(frame);

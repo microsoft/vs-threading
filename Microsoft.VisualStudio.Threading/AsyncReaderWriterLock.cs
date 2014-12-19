@@ -1562,6 +1562,14 @@ namespace Microsoft.VisualStudio.Threading {
 			private Action continuation;
 
 			/// <summary>
+			/// The continuation we invoked to an issued lock.
+			/// </summary>
+			/// <remarks>
+			/// We retain this value simply so that in hang reports we can identify the method we issued the lock to.
+			/// </remarks>
+			private Action continuationAfterLockIssued;
+
+			/// <summary>
 			/// The task from a prior call to <see cref="ReleaseAsync"/>, if any.
 			/// </summary>
 			private Task releaseAsyncTask;
@@ -1625,11 +1633,11 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			/// <summary>
-			/// Gets the delegate to be invoked when the lock is issued, if available.
+			/// Gets the delegate to invoke (or that was invoked) when the lock is/was issued, if available.
 			/// FOR DIAGNOSTIC PURPOSES ONLY.
 			/// </summary>
-			internal Delegate LockWaitingContinuation {
-				get { return this.continuation; }
+			internal Delegate LockRequestingContinuation {
+				get { return this.continuation ?? this.continuationAfterLockIssued; }
 			}
 
 			/// <summary>
@@ -1749,6 +1757,7 @@ namespace Microsoft.VisualStudio.Threading {
 					// This method does NOT use the async keyword in its signature to avoid CallContext changes that we make
 					// causing a fork/clone of the CallContext, which defeats our alloc-free uncontested lock story.
 					try {
+						this.continuationAfterLockIssued = null; // clear field to defend against leaks if Awaiters live a long time.
 						this.releaseAsyncTask = this.lck.ReleaseAsync(this, lockConsumerCanceled);
 					} catch (Exception ex) {
 						// An exception here is *really* bad, because a project lock will get orphaned and
@@ -1770,6 +1779,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <returns><c>true</c> if the continuation was (asynchronously) invoked; <c>false</c> if there was no continuation available to invoke.</returns>
 			internal bool TryScheduleContinuationExecution() {
 				var continuation = Interlocked.Exchange(ref this.continuation, null);
+				this.continuationAfterLockIssued = continuation;
 
 				if (continuation != null) {
 					// Only read locks can be executed trivially. The locks that have some level of exclusivity (upgradeable read and write)
