@@ -12,7 +12,6 @@ namespace Microsoft.VisualStudio.Threading {
 	using System.Linq;
 	using System.Reflection;
 	using System.Runtime.CompilerServices;
-	using System.Text;
 	using System.Threading.Tasks;
 
 	/// <summary>
@@ -80,10 +79,11 @@ namespace Microsoft.VisualStudio.Threading {
 				var state = GetStateMachineFieldValueOnSuffix(stateMachine, "__state");
 				yield return string.Format(
 					CultureInfo.CurrentCulture,
-					"{2}{0} ({1})",
+					"{2}{0} (state: {1}, address: 0x{3:X8})",
 					stateMachine.GetType().FullName,
 					state,
-					AsyncReturnStackPrefix);
+					AsyncReturnStackPrefix,
+					(int)GetAddress(stateMachine));	// the int cast allows hex formatting
 
 				var continuationDelegates = FindContinuationDelegates(stateMachine).ToArray();
 				if (continuationDelegates.Length == 0) {
@@ -108,13 +108,19 @@ namespace Microsoft.VisualStudio.Threading {
 			Requires.NotNull(invokeDelegate, "invokeDelegate");
 
 			if (invokeDelegate.Target != null) {
+				string instanceType = string.Empty;
+				if (!invokeDelegate.Method.DeclaringType.IsEquivalentTo(invokeDelegate.Target.GetType())) {
+					instanceType = " (" + invokeDelegate.Target.GetType().FullName + ")";
+				}
+
 				return string.Format(
 					CultureInfo.CurrentCulture,
-					"{3}{0}.{1} ({2})",
+					"{3}{0}.{1}{2} (target address: 0x{4:X8})",
 					invokeDelegate.Method.DeclaringType.FullName,
 					invokeDelegate.Method.Name,
-					invokeDelegate.Target.GetType().FullName,
-					AsyncReturnStackPrefix);
+					instanceType,
+					AsyncReturnStackPrefix,
+					(int)GetAddress(invokeDelegate.Target)); // the int cast allows hex formatting
 			}
 
 			return string.Format(
@@ -123,6 +129,24 @@ namespace Microsoft.VisualStudio.Threading {
 				invokeDelegate.Method.DeclaringType.FullName,
 				invokeDelegate.Method.Name,
 				AsyncReturnStackPrefix);
+		}
+
+		/// <summary>
+		/// Gets the memory address of a given object.
+		/// </summary>
+		/// <param name="value">The object to get the address for.</param>
+		/// <returns>The memory address.</returns>
+		/// <remarks>
+		/// This method works when GCHandle will refuse because the type of object is a non-blittable type.
+		/// However, this method provides no guarantees that the address will remain valid for the caller,
+		/// so it is only useful for diagnostics and when we don't expect addresses to be changing much any more.
+		/// </remarks>
+		private static IntPtr GetAddress(object value) {
+			unsafe
+			{
+				TypedReference tr = __makeref(value);
+				return **(IntPtr**)(&tr);
+			}
 		}
 
 		/// <summary>
