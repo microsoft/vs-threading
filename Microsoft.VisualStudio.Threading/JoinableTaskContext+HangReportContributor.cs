@@ -111,14 +111,14 @@
 				int queueIndex = 0;
 				foreach (var pendingTasksElement in pendingTask.MainThreadQueueContents) {
 					queueIndex++;
-					var callstackNode = Dgml.Node(node.Attribute("Id").Value + "MTQueue#" + queueIndex, RepresentCallstack(pendingTasksElement));
+					var callstackNode = Dgml.Node(node.Attribute("Id").Value + "MTQueue#" + queueIndex, GetAsyncReturnStack(pendingTasksElement));
 					var callstackLink = Dgml.Link(callstackNode, node);
 					result.Add(Tuple.Create(callstackNode, callstackLink));
 				}
 
 				foreach (var pendingTasksElement in pendingTask.ThreadPoolQueueContents) {
 					queueIndex++;
-					var callstackNode = Dgml.Node(node.Attribute("Id").Value + "TPQueue#" + queueIndex, RepresentCallstack(pendingTasksElement));
+					var callstackNode = Dgml.Node(node.Attribute("Id").Value + "TPQueue#" + queueIndex, GetAsyncReturnStack(pendingTasksElement));
 					var callstackLink = Dgml.Link(callstackNode, node);
 					result.Add(Tuple.Create(callstackNode, callstackLink));
 				}
@@ -162,12 +162,12 @@
 		}
 
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-		private static string RepresentCallstack(JoinableTaskFactory.SingleExecuteProtector singleExecuteProtector) {
+		private static string GetAsyncReturnStack(JoinableTaskFactory.SingleExecuteProtector singleExecuteProtector) {
 			Requires.NotNull(singleExecuteProtector, "singleExecuteProtector");
 
 			var stringBuilder = new StringBuilder();
 			try {
-				foreach (var frame in singleExecuteProtector.WalkReturnCallstack()) {
+				foreach (var frame in singleExecuteProtector.WalkAsyncReturnStackFrames()) {
 					stringBuilder.AppendLine(frame);
 				}
 			} catch (Exception ex) {

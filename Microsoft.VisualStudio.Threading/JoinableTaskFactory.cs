@@ -750,7 +750,7 @@ namespace Microsoft.VisualStudio.Threading {
 			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Justification = "Used in DebuggerDisplay attributes.")]
 			internal string DelegateLabel {
 				get {
-					return this.WalkReturnCallstack().First(); // Top frame of the return callstack.
+					return this.WalkAsyncReturnStackFrames().First(); // Top frame of the return callstack.
 				}
 			}
 
@@ -758,7 +758,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// Walk the continuation objects inside "async state machines" to generate the return callstack.
 			/// FOR DIAGNOSTIC PURPOSES ONLY.
 			/// </summary>
-			internal IEnumerable<string> WalkReturnCallstack() {
+			internal IEnumerable<string> WalkAsyncReturnStackFrames() {
 				// This instance might be a wrapper of another instance of "SingleExecuteProtector".
 				// If that is true, we need to follow the chain to find the inner instance of "SingleExecuteProtector".
 				var singleExecuteProtector = this;
