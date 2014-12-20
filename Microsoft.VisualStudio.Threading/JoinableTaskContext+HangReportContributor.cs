@@ -166,15 +166,13 @@
 			Requires.NotNull(singleExecuteProtector, "singleExecuteProtector");
 
 			var stringBuilder = new StringBuilder();
-			var frameIndex = 0;
-
 			try {
 				foreach (var frame in singleExecuteProtector.WalkReturnCallstack()) {
-					stringBuilder.AppendFormat("{0}. {1}\r\n", frameIndex, frame);
-					frameIndex++;
+					stringBuilder.AppendLine(frame);
 				}
-			} catch (Exception e) {
-				Report.Fail("RepresentCallstack caught exception: ", e);
+			} catch (Exception ex) {
+				// Just eat the exception so we don't crash during a hang report.
+				Report.Fail("GetAsyncReturnStackFrames threw exception: ", ex);
 			}
 
 			return stringBuilder.ToString().TrimEnd();

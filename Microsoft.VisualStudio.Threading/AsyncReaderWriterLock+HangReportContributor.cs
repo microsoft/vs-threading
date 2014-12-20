@@ -95,6 +95,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// Appends details of a given collection of awaiters to the hang report.
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
 		private static XElement CreateAwaiterNode(Awaiter awaiter) {
 			Requires.NotNull(awaiter, "awaiter");
 
@@ -104,8 +105,24 @@ namespace Microsoft.VisualStudio.Threading {
 				label.AppendLine("Options: " + awaiter.Options);
 			}
 
+			Delegate lockWaitingContinuation;
 			if (awaiter.RequestingStackTrace != null) {
 				label.AppendLine(awaiter.RequestingStackTrace.ToString());
+			}
+
+			if ((lockWaitingContinuation = awaiter.LockRequestingContinuation) != null) {
+				try {
+					foreach (var frame in lockWaitingContinuation.GetAsyncReturnStackFrames()) {
+						label.AppendLine(frame);
+					}
+				} catch (Exception ex) {
+					// Just eat the exception so we don't crash during a hang report.
+					Report.Fail("GetAsyncReturnStackFrames threw exception: ", ex);
+				}
+			}
+
+			if (label.Length >= Environment.NewLine.Length) {
+				label.Length -= Environment.NewLine.Length;
 			}
 
 			XElement element = Dgml.Node(GetAwaiterId(awaiter), label.ToString());
