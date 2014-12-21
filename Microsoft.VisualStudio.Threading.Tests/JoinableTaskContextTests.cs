@@ -153,6 +153,25 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void GetHangReportProducesDgmlWithMethodNameRequestingMainThread() {
+			var mainThreadRequested = new ManualResetEventSlim();
+			Task.Run(delegate {
+				var awaiter = this.factory.SwitchToMainThreadAsync().GetAwaiter();
+				awaiter.OnCompleted(delegate { /* this anonymous delegate is expected to include the name of its containing method */ });
+				mainThreadRequested.Set();
+			});
+			mainThreadRequested.Wait();
+			IHangReportContributor contributor = context;
+			var report = contributor.GetHangReport();
+			Console.WriteLine(report.Content);
+			var dgml = XDocument.Parse(report.Content);
+			var collectionLabels = from node in dgml.Root.Element(XName.Get("Nodes", DgmlNamespace)).Elements()
+								   where node.Attribute(XName.Get("Category"))?.Value == "Task"
+								   select node.Attribute(XName.Get("Label"))?.Value;
+			Assert.IsTrue(collectionLabels.Any(label => label.Contains(nameof(GetHangReportProducesDgmlWithMethodNameRequestingMainThread))));
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void GetHangReportWithActualHang() {
 			var endTestTokenSource = new CancellationTokenSource();
 			this.context.OnReportHang = (hangDuration, iterations, id) => {

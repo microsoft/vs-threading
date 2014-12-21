@@ -165,12 +165,15 @@ namespace Microsoft.VisualStudio.Threading {
 			var ambientJob = this.Context.AmbientTask;
 			SingleExecuteProtector wrapper = null;
 			if (ambientJob == null || (this.jobCollection != null && !this.jobCollection.Contains(ambientJob))) {
-				var transient = this.RunAsync(delegate {
-					ambientJob = this.Context.AmbientTask;
-					wrapper = SingleExecuteProtector.Create(ambientJob, callback);
-					ambientJob.Post(SingleExecuteProtector.ExecuteOnce, wrapper, true);
-					return TplExtensions.CompletedTask;
-				});
+				var transient = this.RunAsync(
+					delegate {
+						ambientJob = this.Context.AmbientTask;
+						wrapper = SingleExecuteProtector.Create(ambientJob, callback);
+						ambientJob.Post(SingleExecuteProtector.ExecuteOnce, wrapper, true);
+						return TplExtensions.CompletedTask;
+					},
+					synchronouslyBlocking: false,
+					entrypointOverride: callback);
 
 				if (transient.Task.IsFaulted) {
 					// rethrow the exception.
@@ -358,6 +361,14 @@ namespace Microsoft.VisualStudio.Threading {
 			joinable.CompleteOnCurrentThread();
 		}
 
+		/// <summary>
+		/// Wraps the invocation of an async method such that it may
+		/// execute asynchronously, but may potentially be
+		/// synchronously completed (waited on) in the future.
+		/// </summary>
+		/// <param name="asyncMethod">The asynchronous method to execute.</param>
+		/// <param name="synchronouslyBlocking">A value indicating whether the launching thread will synchronously block for this job's completion.</param>
+		/// <param name="entrypointOverride">The entry method's info for diagnostics.</param>
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
 		private JoinableTask RunAsync(Func<Task> asyncMethod, bool synchronouslyBlocking, Delegate entrypointOverride = null) {
 			Requires.NotNull(asyncMethod, "asyncMethod");
