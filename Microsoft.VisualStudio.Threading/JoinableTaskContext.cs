@@ -244,7 +244,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		/// <param name="collection">The collection that all tasks should be added to.</param>
 		public virtual JoinableTaskFactory CreateFactory(JoinableTaskCollection collection) {
-			Requires.NotNull(collection, "collection");
+			Requires.NotNull(collection, nameof(collection));
 			return new JoinableTaskFactory(collection);
 		}
 
@@ -318,7 +318,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		/// <param name="task">The task that has started.</param>
 		internal void OnJoinableTaskStarted(JoinableTask task) {
-			Requires.NotNull(task, "task");
+			Requires.NotNull(task, nameof(task));
 
 			lock (this.pendingTasks) {
 				Assumes.True(this.pendingTasks.Add(task));
@@ -330,7 +330,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		/// <param name="task">The completing task.</param>
 		internal void OnJoinableTaskCompleted(JoinableTask task) {
-			Requires.NotNull(task, "task");
+			Requires.NotNull(task, nameof(task));
 
 			lock (this.pendingTasks) {
 				this.pendingTasks.Remove(task);
@@ -343,7 +343,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="node"></param>
 		/// <returns></returns>
 		internal IDisposable RegisterHangNotifications(JoinableTaskContextNode node) {
-			Requires.NotNull(node, "node");
+			Requires.NotNull(node, nameof(node));
 			lock (this.hangNotifications) {
 				if (!this.hangNotifications.Add(node)) {
 					Verify.FailOperation(Strings.JoinableTaskContextNodeAlreadyRegistered);
@@ -366,7 +366,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// Initializes a new instance of the <see cref="HangNotificationRegistration"/> class.
 			/// </summary>
 			internal HangNotificationRegistration(JoinableTaskContextNode node) {
-				Requires.NotNull(node, "node");
+				Requires.NotNull(node, nameof(node));
 				this.node = node;
 			}
 
@@ -399,7 +399,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// </summary>
 			/// <param name="pump">The instance that created this value.</param>
 			internal RevertRelevance(JoinableTaskContext pump) {
-				Requires.NotNull(pump, "pump");
+				Requires.NotNull(pump, nameof(pump));
 				this.pump = pump;
 
 				this.oldJoinable = pump.AmbientTask;

@@ -54,7 +54,7 @@
 		}
 
 		private static ICollection<XElement> CreatesLinksBetweenNodes(Dictionary<JoinableTask, XElement> pendingTasksElements) {
-			Requires.NotNull(pendingTasksElements, "pendingTasksElements");
+			Requires.NotNull(pendingTasksElements, nameof(pendingTasksElements));
 
 			var links = new List<XElement>();
 			foreach (var joinableTaskAndElement in pendingTasksElements) {
@@ -70,8 +70,8 @@
 		}
 
 		private static ICollection<XElement> CreateCollectionContainingTaskLinks(Dictionary<JoinableTask, XElement> tasks, Dictionary<JoinableTaskCollection, XElement> collections) {
-			Requires.NotNull(tasks, "tasks");
-			Requires.NotNull(collections, "collections");
+			Requires.NotNull(tasks, nameof(tasks));
+			Requires.NotNull(collections, nameof(collections));
 
 			var result = new List<XElement>();
 			foreach (var task in tasks) {
@@ -85,7 +85,7 @@
 		}
 
 		private static Dictionary<JoinableTaskCollection, XElement> CreateNodesForJoinableTaskCollections(IEnumerable<JoinableTask> tasks) {
-			Requires.NotNull(tasks, "tasks");
+			Requires.NotNull(tasks, nameof(tasks));
 
 			var collectionsSet = new HashSet<JoinableTaskCollection>(tasks.SelectMany(t => t.ContainingCollections));
 			var result = new Dictionary<JoinableTaskCollection, XElement>(collectionsSet.Count);
@@ -102,7 +102,7 @@
 		}
 
 		private static List<Tuple<XElement, XElement>> CreateNodeLabels(Dictionary<JoinableTask, XElement> tasksAndElements) {
-			Requires.NotNull(tasksAndElements, "tasksAndElements");
+			Requires.NotNull(tasksAndElements, nameof(tasksAndElements));
 
 			var result = new List<Tuple<XElement, XElement>>();
 			foreach (var tasksAndElement in tasksAndElements) {
@@ -163,7 +163,7 @@
 
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
 		private static string GetAsyncReturnStack(JoinableTaskFactory.SingleExecuteProtector singleExecuteProtector) {
-			Requires.NotNull(singleExecuteProtector, "singleExecuteProtector");
+			Requires.NotNull(singleExecuteProtector, nameof(singleExecuteProtector));
 
 			var stringBuilder = new StringBuilder();
 			try {

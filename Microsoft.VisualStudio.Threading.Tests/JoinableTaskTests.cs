@@ -2848,7 +2848,7 @@
 			}
 
 			internal async Task StopAsync(Task operation) {
-				Requires.NotNull(operation, "operation");
+				Requires.NotNull(operation, nameof(operation));
 				if (this.dependentService != null) {
 					await this.dependentService.StopAsync(this.dependentTask);
 				}

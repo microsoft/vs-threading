@@ -429,7 +429,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// asynchronously with respect to the releasing thread.
 		/// </remarks>
 		public void OnBeforeWriteLockReleased(Func<Task> action) {
-			Requires.NotNull(action, "action");
+			Requires.NotNull(action, nameof(action));
 
 			lock (this.syncObject) {
 				if (!this.IsWriteLockHeld) {
@@ -757,7 +757,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="checkSyncContextCompatibility"><c>true</c> to throw an exception if the caller has an exclusive lock but not an associated SynchronizationContext.</param>
 		/// <returns><c>true</c> if the lock is currently issued and the caller is not on an STA thread.</returns>
 		private bool IsLockActive(Awaiter awaiter, bool considerStaActive, bool checkSyncContextCompatibility = false) {
-			Requires.NotNull(awaiter, "awaiter");
+			Requires.NotNull(awaiter, nameof(awaiter));
 
 			if (considerStaActive || this.IsLockSupportingContext(awaiter)) {
 				lock (this.syncObject) {
@@ -998,7 +998,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="ex">The exception that captures the details of the failure.</param>
 		/// <returns>An exception that may be returned by some implementations of tis method for he caller to rethrow.</returns>
 		protected virtual Exception OnCriticalFailure(Exception ex) {
-			Requires.NotNull(ex, "ex");
+			Requires.NotNull(ex, nameof(ex));
 
 			Report.Fail(ex.Message);
 			Environment.FailFast(ex.ToString(), ex);
@@ -1024,8 +1024,8 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Checks whether the specified lock has any active nested locks.
 		/// </summary>
 		private static bool HasAnyNestedLocks(Awaiter lck, HashSet<Awaiter> lockCollection) {
-			Requires.NotNull(lck, "lck");
-			Requires.NotNull(lockCollection, "lockCollection");
+			Requires.NotNull(lck, nameof(lck));
+			Requires.NotNull(lockCollection, nameof(lockCollection));
 
 			if (lockCollection.Count > 0) {
 				foreach (var nestedCandidate in lockCollection) {
@@ -1159,8 +1159,8 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Schedules work on a background thread that will prepare protected resource(s) for concurrent access.
 		/// </summary>
 		private async Task DowngradeLockAsync(Awaiter awaiter, bool upgradedStickyWrite, bool fireUpgradeableReadLockReleased, Task beginAfterPrerequisite) {
-			Requires.NotNull(awaiter, "awaiter");
-			Requires.NotNull(beginAfterPrerequisite, "beginAfterPrerequisite");
+			Requires.NotNull(awaiter, nameof(awaiter));
+			Requires.NotNull(beginAfterPrerequisite, nameof(beginAfterPrerequisite));
 
 			Exception prereqException = null;
 			try {
@@ -1219,7 +1219,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Checks whether the specified lock has any active nested locks.
 		/// </summary>
 		private bool HasAnyNestedLocks(Awaiter lck) {
-			Requires.NotNull(lck, "lck");
+			Requires.NotNull(lck, nameof(lck));
 			Assumes.True(Monitor.IsEntered(this.SyncObject));
 
 			return HasAnyNestedLocks(lck, this.issuedReadLocks)
@@ -1234,7 +1234,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="upgradedStickyWrite">A flag indicating whether the lock being released was an upgraded read lock with the sticky write flag set.</param>
 		/// <param name="searchAllWaiters"><c>true</c> to scan the entire queue for pending lock requests that might qualify; used when qualifying locks were delayed for some reason besides lock contention.</param>
 		private void OnReleaseReenterConcurrencyComplete(Awaiter awaiter, bool upgradedStickyWrite, bool searchAllWaiters) {
-			Requires.NotNull(awaiter, "awaiter");
+			Requires.NotNull(awaiter, nameof(awaiter));
 
 			lock (this.syncObject) {
 				Assumes.True(this.GetActiveLockSet(awaiter.Kind).Remove(awaiter));
@@ -1398,7 +1398,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="breakOnFirstIssue"><c>true</c> to break out immediately after issuing the first lock.</param>
 		/// <returns><c>true</c> if any lock was issued; <c>false</c> otherwise.</returns>
 		private bool TryInvokeAnyWaitersInQueue(Queue<Awaiter> waiters, bool breakOnFirstIssue) {
-			Requires.NotNull(waiters, "waiters");
+			Requires.NotNull(waiters, nameof(waiters));
 
 			bool invoked = false;
 			bool invokedThisLoop;
@@ -1450,7 +1450,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="stillInQueue">A value indicating whether the specified <paramref name="awaiter"/> is expected to still be in the queue (and should be removed).</param>
 		/// <returns>A value indicating whether a continuation delegate was actually invoked.</returns>
 		private bool ExecuteOrHandleCancellation(Awaiter awaiter, bool stillInQueue) {
-			Requires.NotNull(awaiter, "awaiter");
+			Requires.NotNull(awaiter, nameof(awaiter));
 
 			lock (this.SyncObject) {
 				if (stillInQueue) {
@@ -1598,7 +1598,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <param name="options">The flags to apply to the lock.</param>
 			/// <param name="cancellationToken">The cancellation token.</param>
 			internal Awaiter(AsyncReaderWriterLock lck, LockKind kind, LockFlags options, CancellationToken cancellationToken) {
-				Requires.NotNull(lck, "lck");
+				Requires.NotNull(lck, nameof(lck));
 
 				this.lck = lck;
 				this.kind = kind;
@@ -1839,7 +1839,7 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			public override void Post(SendOrPostCallback d, object state) {
-				Requires.NotNull(d, "d");
+				Requires.NotNull(d, nameof(d));
 
 				// Take special care to minimize allocations and overhead by avoiding implicit delegates and closures.
 				// The C# compiler caches this delegate in a static field because it never touches "this"
@@ -1923,7 +1923,7 @@ namespace Microsoft.VisualStudio.Threading {
 				private readonly NonConcurrentSynchronizationContext syncContext;
 
 				internal LoanBack(NonConcurrentSynchronizationContext syncContext) {
-					Requires.NotNull(syncContext, "syncContext");
+					Requires.NotNull(syncContext, nameof(syncContext));
 					this.syncContext = syncContext;
 					this.syncContext.threadHoldingSemaphore = null;
 					this.syncContext.semaphore.Release();

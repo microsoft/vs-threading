@@ -930,8 +930,8 @@
 			}
 
 			internal Task SetPreparationTask(Resource resource, Task task) {
-				Requires.NotNull(resource, "resource");
-				Requires.NotNull(task, "task");
+				Requires.NotNull(resource, nameof(resource));
+				Requires.NotNull(task, nameof(task));
 
 				var tcs = new TaskCompletionSource<object>();
 				lock (this.preparationTasks) {

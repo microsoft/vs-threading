@@ -286,7 +286,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// </summary>
 			/// <param name="service">The owning lock instance.</param>
 			internal Helper(AsyncReaderWriterResourceLock<TMoniker, TResource> service) {
-				Requires.NotNull(service, "service");
+				Requires.NotNull(service, nameof(service));
 
 				this.service = service;
 				this.prepareResourceConcurrentDelegate = state => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state, CancellationToken.None);
@@ -305,7 +305,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// Marks a resource as having been retrieved under a lock.
 			/// </summary>
 			internal void SetResourceAsAccessed(TResource resource) {
-				Requires.NotNull(resource, "resource");
+				Requires.NotNull(resource, nameof(resource));
 
 				// Capture the ambient lock and use it for the two lock checks rather than
 				// call AsyncReaderWriterLock.IsWriteLockHeld and IsUpgradeableReadLockHeld
@@ -330,7 +330,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <param name="state">The state object to pass as a second parameter to <paramref name="resourceCheck"/></param>
 			/// <returns><c>true</c> if the delegate returned <c>true</c> on any of the invocations.</returns>
 			internal bool SetResourceAsAccessed(Func<TResource, object, bool> resourceCheck, object state) {
-				Requires.NotNull(resourceCheck, "resourceCheck");
+				Requires.NotNull(resourceCheck, nameof(resourceCheck));
 
 				// Capture the ambient lock and use it for the two lock checks rather than
 				// call AsyncReaderWriterLock.IsWriteLockHeld and IsUpgradeableReadLockHeld
@@ -427,7 +427,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// Sets the specified resource to be considered in an unknown state. Any subsequent access (exclusive or concurrent) will prepare the resource.
 			/// </summary>
 			private void SetUnknownResourceState(TResource resource) {
-				Requires.NotNull(resource, "resource");
+				Requires.NotNull(resource, nameof(resource));
 
 				lock (this.service.SyncObject) {
 					ResourcePreparationTaskAndValidity previousState;
@@ -442,7 +442,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// Sets the specified resources to be considered in an unknown state. Any subsequent access (exclusive or concurrent) will prepare the resource.
 			/// </summary>
 			private void SetUnknownResourceState(IEnumerable<TResource> resources) {
-				Requires.NotNull(resources, "resources");
+				Requires.NotNull(resources, nameof(resources));
 				foreach (var resource in resources) {
 					this.SetUnknownResourceState(resource);
 				}
@@ -456,7 +456,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <param name="forcePrepareConcurrent">Force preparation of the resource for concurrent access, even if an exclusive lock is currently held.</param>
 			/// <returns>A task that is completed when preparation has completed.</returns>
 			private Task PrepareResourceAsync(TResource resource, CancellationToken cancellationToken, bool forcePrepareConcurrent = false) {
-				Requires.NotNull(resource, "resource");
+				Requires.NotNull(resource, nameof(resource));
 				Assumes.True(Monitor.IsEntered(this.service.SyncObject));
 				ResourcePreparationTaskAndValidity preparationTask;
 
@@ -530,7 +530,7 @@ namespace Microsoft.VisualStudio.Threading {
 				/// </summary>
 				internal ResourcePreparationTaskAndValidity(Task preparationTask, ResourceState finalState)
 					: this() {
-					Requires.NotNull(preparationTask, "preparationTask");
+					Requires.NotNull(preparationTask, nameof(preparationTask));
 					this.PreparationTask = preparationTask;
 					this.State = finalState;
 				}
@@ -623,8 +623,8 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <param name="awaiter">The underlying lock awaiter.</param>
 			/// <param name="helper">The helper class.</param>
 			internal ResourceAwaiter(AsyncReaderWriterLock.Awaiter awaiter, Helper helper) {
-				Requires.NotNull(awaiter, "awaiter");
-				Requires.NotNull(helper, "helper");
+				Requires.NotNull(awaiter, nameof(awaiter));
+				Requires.NotNull(helper, nameof(helper));
 
 				this.awaiter = awaiter;
 				this.helper = helper;

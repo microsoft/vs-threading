@@ -54,7 +54,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="valueFactory">The async function that produces the value.  To be invoked at most once.</param>
 		/// <param name="joinableTaskFactory">The factory to use when invoking the value factory in <see cref="GetValueAsync(CancellationToken)"/> to avoid deadlocks when the main thread is required by the value factory.</param>
 		public AsyncLazy(Func<Task<T>> valueFactory, JoinableTaskFactory joinableTaskFactory = null) {
-			Requires.NotNull(valueFactory, "valueFactory");
+			Requires.NotNull(valueFactory, nameof(valueFactory));
 			this.valueFactory = valueFactory;
 			this.jobFactory = joinableTaskFactory;
 		}

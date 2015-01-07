@@ -29,7 +29,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </returns>
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference", MessageId = "0#")]
 		public static bool ApplyChangeOptimistically<T>(ref T hotLocation, Func<T, T> applyChange) where T : class {
-			Requires.NotNull(applyChange, "applyChange");
+			Requires.NotNull(applyChange, nameof(applyChange));
 
 			bool successful;
 			do {
@@ -57,7 +57,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="cancellationToken">The token that can be canceled to break out of the await.</param>
 		/// <returns>The wrapping task.</returns>
 		public static Task<T> WithCancellation<T>(this Task<T> task, CancellationToken cancellationToken) {
-			Requires.NotNull(task, "task");
+			Requires.NotNull(task, nameof(task));
 
 			if (!cancellationToken.CanBeCanceled || task.IsCompleted) {
 				return task;
@@ -78,7 +78,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="cancellationToken">The token that can be canceled to break out of the await.</param>
 		/// <returns>The wrapping task.</returns>
 		public static Task WithCancellation(this Task task, CancellationToken cancellationToken) {
-			Requires.NotNull(task, "task");
+			Requires.NotNull(task, nameof(task));
 
 			if (!cancellationToken.CanBeCanceled || task.IsCompleted) {
 				return task;
@@ -107,7 +107,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <returns>The faulted task.</returns>
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
 		internal static Task CreateFaultedTask(Exception exception) {
-			Requires.NotNull(exception, "exception");
+			Requires.NotNull(exception, nameof(exception));
 
 			try {
 				// We must throw so the callstack is set on the exception.

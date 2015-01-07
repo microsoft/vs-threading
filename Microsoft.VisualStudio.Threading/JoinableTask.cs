@@ -156,7 +156,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="synchronouslyBlocking">A value indicating whether the launching thread will synchronously block for this job's completion.</param>
 		/// <param name="initialDelegate">The entry method's info for diagnostics.</param>
 		internal JoinableTask(JoinableTaskFactory owner, bool synchronouslyBlocking, Delegate initialDelegate) {
-			Requires.NotNull(owner, "owner");
+			Requires.NotNull(owner, nameof(owner));
 
 			this.owner = owner;
 			if (synchronouslyBlocking) {
@@ -541,7 +541,7 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		internal void SetWrappedTask(Task wrappedTask) {
-			Requires.NotNull(wrappedTask, "wrappedTask");
+			Requires.NotNull(wrappedTask, nameof(wrappedTask));
 
 			using (NoMessagePumpSyncContext.Default.Apply()) {
 				lock (this.owner.Context.SyncContextLock) {
@@ -599,7 +599,7 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		internal void RemoveDependency(JoinableTask joinChild) {
-			Requires.NotNull(joinChild, "joinChild");
+			Requires.NotNull(joinChild, nameof(joinChild));
 
 			using (NoMessagePumpSyncContext.Default.Apply()) {
 				lock (this.owner.Context.SyncContextLock) {
@@ -620,7 +620,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Recursively adds this joinable and all its dependencies to the specified set, that are not yet completed.
 		/// </summary>
 		internal void AddSelfAndDescendentOrJoinedJobs(HashSet<JoinableTask> joinables) {
-			Requires.NotNull(joinables, "joinables");
+			Requires.NotNull(joinables, nameof(joinables));
 
 			if (!this.IsCompleted) {
 				if (joinables.Add(this)) {
@@ -715,12 +715,12 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		internal void OnAddedToCollection(JoinableTaskCollection collection) {
-			Requires.NotNull(collection, "collection");
+			Requires.NotNull(collection, nameof(collection));
 			this.collectionMembership.Add(collection);
 		}
 
 		internal void OnRemovedFromCollection(JoinableTaskCollection collection) {
-			Requires.NotNull(collection, "collection");
+			Requires.NotNull(collection, nameof(collection));
 			this.collectionMembership.Remove(collection);
 		}
 
@@ -789,7 +789,7 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		private bool TryDequeueSelfOrDependencies(bool onMainThread, HashSet<JoinableTask> visited, out SingleExecuteProtector work) {
-			Requires.NotNull(visited, "visited");
+			Requires.NotNull(visited, nameof(visited));
 			Report.IfNot(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
 			// We only need find the first work item.
@@ -819,7 +819,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		/// <param name="joinChild">The <see cref="JoinableTask"/> to join as a child.</param>
 		internal JoinRelease AddDependency(JoinableTask joinChild) {
-			Requires.NotNull(joinChild, "joinChild");
+			Requires.NotNull(joinChild, nameof(joinChild));
 			if (this == joinChild) {
 				// Joining oneself would be pointless.
 				return new JoinRelease();

@@ -61,7 +61,7 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 		}
 
 		private static void ValidateDelegatingLog(IList<FactoryLogEntry> log) {
-			Requires.NotNull(log, "log");
+			Requires.NotNull(log, nameof(log));
 
 			for (int i = 0; i < log.Count; i += 2) {
 				FactoryLogEntry outerOperation = log[i];
@@ -79,13 +79,13 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 
 			internal CustomizedFactory(JoinableTaskContext context, IList<FactoryLogEntry> log)
 				: base(context) {
-				Requires.NotNull(log, "log");
+				Requires.NotNull(log, nameof(log));
 				this.log = log;
 			}
 
 			internal CustomizedFactory(JoinableTaskCollection collection, IList<FactoryLogEntry> log)
 				: base(collection) {
-				Requires.NotNull(log, "log");
+				Requires.NotNull(log, nameof(log));
 				this.log = log;
 			}
 
@@ -119,7 +119,7 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 
 			internal DelegatingFactory(JoinableTaskFactory innerFactory, IList<FactoryLogEntry> log)
 				: base(innerFactory) {
-				Requires.NotNull(log, "log");
+				Requires.NotNull(log, nameof(log));
 				this.log = log;
 			}
 

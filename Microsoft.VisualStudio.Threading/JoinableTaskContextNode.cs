@@ -28,7 +28,7 @@
 		/// </summary>
 		/// <param name="context">The inner JoinableTaskContext.</param>
 		public JoinableTaskContextNode(JoinableTaskContext context) {
-			Requires.NotNull(context, "context");
+			Requires.NotNull(context, nameof(context));
 			this.context = context;
 		}
 
@@ -141,7 +141,7 @@
 		/// in the <paramref name="details"/> parameter.
 		/// </remarks>
 		protected internal virtual void OnHangDetected(JoinableTaskContext.HangDetails details) {
-			Requires.NotNull(details, "details");
+			Requires.NotNull(details, nameof(details));
 
 			// Preserve backward compatibility by forwarding the call to the older overload.
 			this.OnHangDetected(details.HangDuration, details.NotificationCount, details.HangId);

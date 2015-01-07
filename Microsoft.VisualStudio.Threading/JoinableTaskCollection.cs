@@ -59,7 +59,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <c>false</c> causes the first Remove call for a JoinableTask to remove it from this collection regardless
 		/// how many times it had been added.</param>
 		public JoinableTaskCollection(JoinableTaskContext context, bool refCountAddedJobs = false) {
-			Requires.NotNull(context, "context");
+			Requires.NotNull(context, nameof(context));
 			this.Context = context;
 			this.refCountAddedJobs = refCountAddedJobs;
 		}
@@ -87,7 +87,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		/// <param name="joinableTask">The joinable task to add to the collection.</param>
 		public void Add(JoinableTask joinableTask) {
-			Requires.NotNull(joinableTask, "joinableTask");
+			Requires.NotNull(joinableTask, nameof(joinableTask));
 			if (joinableTask.Factory.Context != this.Context) {
 				Requires.Argument(false, "joinableTask", Strings.JoinableTaskContextAndCollectionMismatch);
 			}
@@ -123,7 +123,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		/// <param name="joinableTask">The joinable task to remove.</param>
 		public void Remove(JoinableTask joinableTask) {
-			Requires.NotNull(joinableTask, "joinableTask");
+			Requires.NotNull(joinableTask, nameof(joinableTask));
 
 			using (NoMessagePumpSyncContext.Default.Apply()) {
 				lock (this.Context.SyncContextLock) {
@@ -212,7 +212,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Checks whether the specified joinable task is a member of this collection.
 		/// </summary>
 		public bool Contains(JoinableTask joinableTask) {
-			Requires.NotNull(joinableTask, "joinableTask");
+			Requires.NotNull(joinableTask, nameof(joinableTask));
 
 			using (NoMessagePumpSyncContext.Default.Apply()) {
 				lock (this.Context.SyncContextLock) {
@@ -226,7 +226,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		/// <param name="joinableTask">The joinable task that had previously joined this collection, and that now intends to revert it.</param>
 		internal void Disjoin(JoinableTask joinableTask) {
-			Requires.NotNull(joinableTask, "joinableTask");
+			Requires.NotNull(joinableTask, nameof(joinableTask));
 
 			using (NoMessagePumpSyncContext.Default.Apply()) {
 				lock (this.Context.SyncContextLock) {
@@ -261,8 +261,8 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <param name="joined">The Main thread controlling SingleThreadSynchronizationContext to use to accelerate execution of Main thread bound work.</param>
 			/// <param name="joiner">The instance that created this value.</param>
 			internal JoinRelease(JoinableTask joined, JoinableTask joiner) {
-				Requires.NotNull(joined, "joined");
-				Requires.NotNull(joiner, "joiner");
+				Requires.NotNull(joined, nameof(joined));
+				Requires.NotNull(joiner, nameof(joiner));
 
 				this.joinedJobCollection = null;
 				this.joinedJob = joined;
@@ -275,8 +275,8 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <param name="jobCollection">The collection of joinable tasks that has been joined.</param>
 			/// <param name="joiner">The instance that created this value.</param>
 			internal JoinRelease(JoinableTaskCollection jobCollection, JoinableTask joiner) {
-				Requires.NotNull(jobCollection, "jobCollection");
-				Requires.NotNull(joiner, "joiner");
+				Requires.NotNull(jobCollection, nameof(jobCollection));
+				Requires.NotNull(joiner, nameof(joiner));
 
 				this.joinedJobCollection = jobCollection;
 				this.joinedJob = null;

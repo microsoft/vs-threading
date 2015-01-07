@@ -37,8 +37,8 @@ namespace Microsoft.VisualStudio.Threading {
 		/// If a value appears multiple times in the queue, only its first entry is removed.
 		/// </remarks>
 		internal static bool RemoveMidQueue<T>(this Queue<T> queue, T valueToRemove) where T : class {
-			Requires.NotNull(queue, "queue");
-			Requires.NotNull(valueToRemove, "valueToRemove");
+			Requires.NotNull(queue, nameof(queue));
+			Requires.NotNull(valueToRemove, nameof(valueToRemove));
 			if (queue.Count == 0) {
 				return false;
 			}
@@ -105,7 +105,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// A helper method to get the label of the given delegate.
 		/// </summary>
 		private static string GetDelegateLabel(Delegate invokeDelegate) {
-			Requires.NotNull(invokeDelegate, "invokeDelegate");
+			Requires.NotNull(invokeDelegate, nameof(invokeDelegate));
 
 			if (invokeDelegate.Target != null) {
 				string instanceType = string.Empty;
@@ -153,7 +153,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// A helper method to find the async state machine from the given delegate.
 		/// </summary>
 		private static IAsyncStateMachine FindAsyncStateMachine(Delegate invokeDelegate) {
-			Requires.NotNull(invokeDelegate, "invokeDelegate");
+			Requires.NotNull(invokeDelegate, nameof(invokeDelegate));
 
 			if (invokeDelegate.Target != null) {
 				// Some delegates are wrapped with a ContinuationWrapper object. We have to unwrap that in those cases.
@@ -182,7 +182,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// AsyncTaskMethodBuilder is a wrapper on top of AsyncTaskMethodBuilder&lt;VoidTaskResult&gt;.
 		/// </remarks>
 		private static IEnumerable<Delegate> FindContinuationDelegates(IAsyncStateMachine stateMachine) {
-			Requires.NotNull(stateMachine, "stateMachine");
+			Requires.NotNull(stateMachine, nameof(stateMachine));
 
 			var builder = GetStateMachineFieldValueOnSuffix(stateMachine, "__builder");
 			if (builder == null) {
@@ -234,8 +234,8 @@ namespace Microsoft.VisualStudio.Threading {
 		/// A helper method to get field's value given the object and the field name.
 		/// </summary>
 		private static object GetFieldValue(object obj, string fieldName) {
-			Requires.NotNull(obj, "obj");
-			Requires.NotNullOrEmpty(fieldName, "fieldName");
+			Requires.NotNull(obj, nameof(obj));
+			Requires.NotNullOrEmpty(fieldName, nameof(fieldName));
 
 			var field = obj.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
 			if (field != null) {
@@ -249,8 +249,8 @@ namespace Microsoft.VisualStudio.Threading {
 		/// The field names of "async state machine" are not fixed; the workaround is to find the field based on the suffix.
 		/// </summary>
 		private static object GetStateMachineFieldValueOnSuffix(IAsyncStateMachine stateMachine, string suffix) {
-			Requires.NotNull(stateMachine, "stateMachine");
-			Requires.NotNullOrEmpty(suffix, "suffix");
+			Requires.NotNull(stateMachine, nameof(stateMachine));
+			Requires.NotNullOrEmpty(suffix, nameof(suffix));
 
 			var fields = stateMachine.GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
 			var field = fields.FirstOrDefault((f) => f.Name.EndsWith(suffix, StringComparison.Ordinal));

@@ -43,7 +43,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// The array index of the object that satisfied the wait.
 		/// </returns>
 		public override int Wait(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout) {
-			Requires.NotNull(waitHandles, "waitHandles");
+			Requires.NotNull(waitHandles, nameof(waitHandles));
 			return NativeMethods.WaitForMultipleObjects((uint)waitHandles.Length, waitHandles, waitAll, (uint)millisecondsTimeout);
 		}
 	}

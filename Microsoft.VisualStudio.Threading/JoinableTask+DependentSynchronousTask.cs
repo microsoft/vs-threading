@@ -79,7 +79,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="child">The new child task.</param>
         /// <returns>Pairs of synchronous tasks we need notify and the event source triggering it, plus the number of pending events.</returns>
         private List<PendingNotification> AddDependingSynchronousTaskToChild(JoinableTask child) {
-            Requires.NotNull(child, "child");
+            Requires.NotNull(child, nameof(child));
             Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
             var tasksNeedNotify = new List<PendingNotification>(this.CountOfDependingSynchronousTasks());
@@ -102,7 +102,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="child">The original dependent task</param>
         private void RemoveDependingSynchronousTaskFromChild(JoinableTask child) {
-            Requires.NotNull(child, "child");
+            Requires.NotNull(child, nameof(child));
             Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
             DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
@@ -133,7 +133,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="totalEventsPending">The total events need be processed</param>
         /// <returns>The task causes us to trigger the event of the synchronous task, so it can process new events.  Null means we don't need trigger any event</returns>
         private JoinableTask AddDependingSynchronousTask(JoinableTask task, ref int totalEventsPending) {
-            Requires.NotNull(task, "task");
+            Requires.NotNull(task, nameof(task));
             Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
             if (this.IsCompleted) {
@@ -211,7 +211,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="task">The synchronous task</param>
         /// <param name="force">We always remove it from the tracking list if it is true.  Otherwise, we keep tracking the reference count.</param>
         private void RemoveDependingSynchronousTask(JoinableTask task, bool force = false) {
-            Requires.NotNull(task, "task");
+            Requires.NotNull(task, nameof(task));
             Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
             if (task.dependingSynchronousTaskTracking != null) {
@@ -226,8 +226,8 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="syncTask">The synchronous task we want to remove</param>
         /// <param name="force">We always remove it from the tracking list if it is true.  Otherwise, we keep tracking the reference count.</param>
         private static void RemoveDependingSynchronousTaskFrom(IReadOnlyList<JoinableTask> tasks, JoinableTask syncTask, bool force) {
-            Requires.NotNull(tasks, "tasks");
-            Requires.NotNull(syncTask, "syncTask");
+            Requires.NotNull(tasks, nameof(tasks));
+            Requires.NotNull(syncTask, nameof(syncTask));
 
             HashSet<JoinableTask> reachableTasks = null;
             HashSet<JoinableTask> remainTasks = null;
@@ -264,8 +264,8 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="reachableTasks">All reachable tasks. This is not a completed list, if there is no remain task.</param>
         /// <param name="remainTasks">The remain tasks we want to check. After the execution, it will retain non-reachable tasks.</param>
         private void ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(HashSet<JoinableTask> reachableTasks, HashSet<JoinableTask> remainTasks) {
-            Requires.NotNull(remainTasks, "remainTasks");
-            Requires.NotNull(reachableTasks, "reachableTasks");
+            Requires.NotNull(remainTasks, nameof(remainTasks));
+            Requires.NotNull(reachableTasks, nameof(reachableTasks));
             if (!this.IsCompleted) {
                 if (reachableTasks.Add(this)) {
                     if (remainTasks.Remove(this) && reachableTasks.Count == 0) {
@@ -291,7 +291,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </param>
         /// <param name="remainingDependentTasks">This will retain the tasks which still tracks the synchronous task.</param>
         private void RemoveDependingSynchronousTask(JoinableTask task, HashSet<JoinableTask> reachableTasks, ref HashSet<JoinableTask> remainingDependentTasks) {
-            Requires.NotNull(task, "task");
+            Requires.NotNull(task, nameof(task));
 
             DependentSynchronousTask previousTaskTracking = null;
             DependentSynchronousTask currentTaskTracking = this.dependingSynchronousTaskTracking;
@@ -380,8 +380,8 @@ namespace Microsoft.VisualStudio.Threading
 
             public PendingNotification(JoinableTask synchronousTask, JoinableTask taskHasPendingMessages, int newPendingMessagesCount)
             {
-                Requires.NotNull(synchronousTask, "synchronousTask");
-                Requires.NotNull(taskHasPendingMessages, "taskHasPendingMessages");
+                Requires.NotNull(synchronousTask, nameof(synchronousTask));
+                Requires.NotNull(taskHasPendingMessages, nameof(taskHasPendingMessages));
 
                 this.synchronousTask = synchronousTask;
                 this.taskHasPendingMessages = taskHasPendingMessages;

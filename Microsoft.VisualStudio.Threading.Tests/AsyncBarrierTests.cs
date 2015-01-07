@@ -59,9 +59,9 @@
 		}
 
 		private async Task ActorAsync(AsyncBarrier barrier, int steps, IProgress<int> progress) {
-			Requires.NotNull(barrier, "barrier");
+			Requires.NotNull(barrier, nameof(barrier));
 			Requires.Range(steps >= 0, "steps");
-			Requires.NotNull(progress, "progress");
+			Requires.NotNull(progress, nameof(progress));
 
 			for (int i = 1; i <= steps; i++) {
 				await Task.Yield();

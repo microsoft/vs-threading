@@ -67,7 +67,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="owner">The context for the tasks created by this factory.</param>
 		/// <param name="collection">The collection that all tasks created by this factory will belong to till they complete. May be null.</param>
 		internal JoinableTaskFactory(JoinableTaskContext owner, JoinableTaskCollection collection) {
-			Requires.NotNull(owner, "owner");
+			Requires.NotNull(owner, nameof(owner));
 			Assumes.True(collection == null || collection.Context == owner);
 
 			this.owner = owner;
@@ -154,7 +154,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		/// <param name="callback">The callback to invoke.</param>
 		internal SingleExecuteProtector RequestSwitchToMainThread(Action callback) {
-			Requires.NotNull(callback, "callback");
+			Requires.NotNull(callback, nameof(callback));
 
 			// Make sure that this thread switch request is in a job that is captured by the job collection
 			// to which this switch request belongs.
@@ -195,7 +195,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="callback">The callback to invoke.</param>
 		/// <param name="state">State to pass to the callback.</param>
 		protected internal virtual void PostToUnderlyingSynchronizationContext(SendOrPostCallback callback, object state) {
-			Requires.NotNull(callback, "callback");
+			Requires.NotNull(callback, nameof(callback));
 			Assumes.NotNull(this.UnderlyingSynchronizationContext);
 
 			this.UnderlyingSynchronizationContext.Post(callback, state);
@@ -209,7 +209,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// This event may be raised on any thread, including the main thread.
 		/// </remarks>
 		protected internal virtual void OnTransitioningToMainThread(JoinableTask joinableTask) {
-			Requires.NotNull(joinableTask, "joinableTask");
+			Requires.NotNull(joinableTask, nameof(joinableTask));
 		}
 
 		/// <summary>
@@ -221,7 +221,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// This event is usually raised on the main thread, but can be on another thread when <paramref name="canceled"/> is <c>true</c>.
 		/// </remarks>
 		protected internal virtual void OnTransitionedToMainThread(JoinableTask joinableTask, bool canceled) {
-			Requires.NotNull(joinableTask, "joinableTask");
+			Requires.NotNull(joinableTask, nameof(joinableTask));
 		}
 
 		/// <summary>
@@ -229,7 +229,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// or to the threadpool when no dispatcher exists on the main thread.
 		/// </summary>
 		internal void PostToUnderlyingSynchronizationContextOrThreadPool(SingleExecuteProtector callback) {
-			Requires.NotNull(callback, "callback");
+			Requires.NotNull(callback, nameof(callback));
 
 			if (this.UnderlyingSynchronizationContext != null) {
 				this.PostToUnderlyingSynchronizationContext(SingleExecuteProtector.ExecuteOnce, callback);
@@ -270,7 +270,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </remarks>
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.GC.Collect")]
 		protected virtual void WaitSynchronouslyCore(Task task) {
-			Requires.NotNull(task, "task");
+			Requires.NotNull(task, nameof(task));
 			int hangTimeoutsCount = 0; // useful for debugging dump files to see how many times we looped.
 			Guid hangId = Guid.Empty;
 			try {
@@ -371,7 +371,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="entrypointOverride">The entry method's info for diagnostics.</param>
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
 		private JoinableTask RunAsync(Func<Task> asyncMethod, bool synchronouslyBlocking, Delegate entrypointOverride = null) {
-			Requires.NotNull(asyncMethod, "asyncMethod");
+			Requires.NotNull(asyncMethod, nameof(asyncMethod));
 
 			var job = new JoinableTask(this, synchronouslyBlocking, entrypointOverride ?? asyncMethod);
 			using (var framework = new RunFramework(this, job)) {
@@ -408,7 +408,7 @@ namespace Microsoft.VisualStudio.Threading {
 
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
 		private JoinableTask<T> RunAsync<T>(Func<Task<T>> asyncMethod, bool synchronouslyBlocking) {
-			Requires.NotNull(asyncMethod, "asyncMethod");
+			Requires.NotNull(asyncMethod, nameof(asyncMethod));
 
 			var job = new JoinableTask<T>(this, synchronouslyBlocking, asyncMethod);
 			using (var framework = new RunFramework(this, job)) {
@@ -430,7 +430,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Adds the specified joinable task to the applicable collection.
 		/// </summary>
 		protected void Add(JoinableTask joinable) {
-			Requires.NotNull(joinable, "joinable");
+			Requires.NotNull(joinable, nameof(joinable));
 			if (this.jobCollection != null) {
 				this.jobCollection.Add(joinable);
 			}
@@ -476,7 +476,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// Initializes a new instance of the <see cref="MainThreadAwaitable"/> struct.
 			/// </summary>
 			internal MainThreadAwaitable(JoinableTaskFactory jobFactory, JoinableTask job, CancellationToken cancellationToken, bool alwaysYield = false) {
-				Requires.NotNull(jobFactory, "jobFactory");
+				Requires.NotNull(jobFactory, nameof(jobFactory));
 
 				this.jobFactory = jobFactory;
 				this.job = job;
@@ -624,8 +624,8 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <see cref="JoinableTaskFactory.Run(Func{Task})"/> family of methods.
 			/// </summary>
 			internal RunFramework(JoinableTaskFactory factory, JoinableTask joinable) {
-				Requires.NotNull(factory, "factory");
-				Requires.NotNull(joinable, "joinable");
+				Requires.NotNull(factory, nameof(factory));
+				Requires.NotNull(joinable, nameof(joinable));
 
 				this.factory = factory;
 				this.joinable = joinable;
@@ -662,13 +662,13 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			internal void SetResult(Task task) {
-				Requires.NotNull(task, "task");
+				Requires.NotNull(task, nameof(task));
 				this.joinable.SetWrappedTask(task);
 			}
 		}
 
 		internal void Post(SendOrPostCallback callback, object state, bool mainThreadAffinitized) {
-			Requires.NotNull(callback, "callback");
+			Requires.NotNull(callback, nameof(callback));
 
 			if (mainThreadAffinitized) {
 				var transient = this.RunAsync(delegate {
@@ -727,7 +727,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class.
 			/// </summary>
 			private SingleExecuteProtector(JoinableTask job) {
-				Requires.NotNull(job, "job");
+				Requires.NotNull(job, nameof(job));
 				this.job = job;
 			}
 
@@ -819,7 +819,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <param name="state">The state object to pass to the callback.</param>
 			/// <returns>An instance of <see cref="SingleExecuteProtector"/>.</returns>
 			internal static SingleExecuteProtector Create(JoinableTask job, SendOrPostCallback callback, object state) {
-				Requires.NotNull(job, "job");
+				Requires.NotNull(job, nameof(job));
 
 				// As an optimization, recognize if what we're being handed is already an instance of this type,
 				// because if it is, we don't need to wrap it with yet another instance.

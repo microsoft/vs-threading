@@ -97,7 +97,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
 		private static XElement CreateAwaiterNode(Awaiter awaiter) {
-			Requires.NotNull(awaiter, "awaiter");
+			Requires.NotNull(awaiter, nameof(awaiter));
 
 			var label = new StringBuilder();
 			label.AppendLine(awaiter.Kind.ToString());
@@ -130,12 +130,12 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		private static string GetAwaiterId(Awaiter awaiter) {
-			Requires.NotNull(awaiter, "awaiter");
+			Requires.NotNull(awaiter, nameof(awaiter));
 			return awaiter.GetHashCode().ToString(CultureInfo.InvariantCulture);
 		}
 
 		private static string GetAwaiterGroupId(Awaiter awaiter) {
-			Requires.NotNull(awaiter, "awaiter");
+			Requires.NotNull(awaiter, nameof(awaiter));
 			while (awaiter.NestingLock != null) {
 				awaiter = awaiter.NestingLock;
 			}
@@ -144,7 +144,7 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		private static IEnumerable<Awaiter> GetLockStack(Awaiter awaiter) {
-			Requires.NotNull(awaiter, "awaiter");
+			Requires.NotNull(awaiter, nameof(awaiter));
 			while (awaiter != null) {
 				yield return awaiter;
 				awaiter = awaiter.NestingLock;
@@ -164,14 +164,14 @@ namespace Microsoft.VisualStudio.Threading {
 
 		private class AwaiterMetadata {
 			internal AwaiterMetadata(Awaiter awaiter, AwaiterCollection membership) {
-				Requires.NotNull(awaiter, "awaiter");
+				Requires.NotNull(awaiter, nameof(awaiter));
 
 				this.Awaiter = awaiter;
 				this.Membership = membership;
 			}
 
 			internal static AwaiterMetadata Released(Awaiter awaiter) {
-				Requires.NotNull(awaiter, "awaiter");
+				Requires.NotNull(awaiter, nameof(awaiter));
 
 				var membership = AwaiterCollection.Released;
 				switch (awaiter.Kind) {

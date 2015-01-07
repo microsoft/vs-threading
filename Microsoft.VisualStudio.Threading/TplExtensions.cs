@@ -49,7 +49,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		/// <param name="task">The task to wait on.</param>
 		public static void WaitWithoutInlining(this Task task) {
-			Requires.NotNull(task, "task");
+			Requires.NotNull(task, nameof(task));
 			if (!task.IsCompleted) {
 				// Waiting on a continuation of a task won't ever inline the predecessor (in .NET 4.x anyway).
 				var continuation = task.ContinueWith(t => { }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
@@ -67,8 +67,8 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="tcs">The task that should receive the completion status.</param>
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "tcs")]
 		public static void ApplyResultTo<T>(this Task<T> task, TaskCompletionSource<T> tcs) {
-			Requires.NotNull(task, "task");
-			Requires.NotNull(tcs, "tcs");
+			Requires.NotNull(task, nameof(task));
+			Requires.NotNull(tcs, nameof(tcs));
 
 			if (task.IsCompleted) {
 				ApplyCompletedTaskResultTo(task, tcs);
@@ -91,8 +91,8 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="tcs">The task that should receive the completion status.</param>
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "tcs")]
 		public static void ApplyResultTo<T>(this Task task, TaskCompletionSource<T> tcs) {
-			Requires.NotNull(task, "task");
-			Requires.NotNull(tcs, "tcs");
+			Requires.NotNull(task, nameof(task));
+			Requires.NotNull(tcs, nameof(tcs));
 
 			if (task.IsCompleted) {
 				ApplyCompletedTaskResultTo<T>(task, tcs, default(T));
@@ -114,7 +114,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="task">The task to wrap with an AttachedToParent task.</param>
 		/// <returns>A task that is attached to parent.</returns>
 		public static Task<T> AttachToParent<T>(this Task<T> task) {
-			Requires.NotNull(task, "task");
+			Requires.NotNull(task, nameof(task));
 
 			var tcs = new TaskCompletionSource<T>(TaskCreationOptions.AttachedToParent);
 			task.ApplyResultTo(tcs);
@@ -127,7 +127,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="task">The task to wrap with an AttachedToParent task.</param>
 		/// <returns>A task that is attached to parent.</returns>
 		public static Task AttachToParent(this Task task) {
-			Requires.NotNull(task, "task");
+			Requires.NotNull(task, nameof(task));
 
 			var tcs = new TaskCompletionSource<EmptyStruct>(TaskCreationOptions.AttachedToParent);
 			task.ApplyResultTo(tcs);
@@ -145,8 +145,8 @@ namespace Microsoft.VisualStudio.Threading {
 		/// The task that will execute the action.
 		/// </returns>
 		public static Task AppendAction(this Task task, Action action, TaskContinuationOptions options = TaskContinuationOptions.None, CancellationToken cancellation = default(CancellationToken)) {
-			Requires.NotNull(task, "task");
-			Requires.NotNull(action, "action");
+			Requires.NotNull(task, nameof(task));
+			Requires.NotNull(action, nameof(action));
 
 			return task.ContinueWith((t, state) => ((Action)state)(), action, cancellation, options, TaskScheduler.Default);
 		}
@@ -161,7 +161,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="taskThatFollows">The TaskCompletionSource whose task is to follow.  Leave at <c>null</c> for a new task to be created.</param>
 		/// <returns>The following task.</returns>
 		public static Task<T> FollowCancelableTaskToCompletion<T>(Func<Task<T>> taskToFollow, CancellationToken ultimateCancellation, TaskCompletionSource<T> taskThatFollows = null) {
-			Requires.NotNull(taskToFollow, "taskToFollow");
+			Requires.NotNull(taskToFollow, nameof(taskToFollow));
 
 			var tcs = new TaskCompletionSource<FollowCancelableTaskState<T>, T>(
 					new FollowCancelableTaskState<T>(taskToFollow, ultimateCancellation));
@@ -275,7 +275,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <returns>A task (that implements <see cref="IAsyncResult"/> that should be returned from the Begin method.</returns>
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Apm")]
 		public static Task<TResult> ToApm<TResult>(this Task<TResult> task, AsyncCallback callback, object state) {
-			Requires.NotNull(task, "task");
+			Requires.NotNull(task, nameof(task));
 
 			if (task.AsyncState == state) {
 				if (callback != null) {
@@ -316,7 +316,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <returns>A task (that implements <see cref="IAsyncResult"/> that should be returned from the Begin method.</returns>
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Apm")]
 		public static Task ToApm(this Task task, AsyncCallback callback, object state) {
-			Requires.NotNull(task, "task");
+			Requires.NotNull(task, nameof(task));
 
 			if (task.AsyncState == state) {
 				if (callback != null) {
@@ -363,7 +363,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </remarks>
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Runtime.InteropServices.SafeHandle.DangerousGetHandle")]
 		public static Task<bool> ToTask(this WaitHandle handle, int timeout = Timeout.Infinite, CancellationToken cancellationToken = default(CancellationToken)) {
-			Requires.NotNull(handle, "handle");
+			Requires.NotNull(handle, nameof(handle));
 
 			// Check whether the handle is already signaled as an optimization.
 			// But even for WaitOne(0) the CLR can pump messages if called on the UI thread, which the caller may not
@@ -500,8 +500,8 @@ namespace Microsoft.VisualStudio.Threading {
 		/// The following task.
 		/// </returns>
 		private static Task<T> FollowCancelableTaskToCompletionHelper<T>(TaskCompletionSource<FollowCancelableTaskState<T>, T> tcs, Task<T> currentTask) {
-			Requires.NotNull(tcs, "tcs");
-			Requires.NotNull(currentTask, "currentTask");
+			Requires.NotNull(tcs, nameof(tcs));
+			Requires.NotNull(currentTask, nameof(currentTask));
 
 			currentTask.ContinueWith(
 				(t, state) => {
@@ -574,7 +574,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <param name="task">The task.</param>
 			/// <param name="captureContext">Whether the continuation should be scheduled on the current sync context.</param>
 			public NoThrowTaskAwaitable(Task task, bool captureContext) {
-				Requires.NotNull(task, "task");
+				Requires.NotNull(task, nameof(task));
 				this.task = task;
 				this.captureContext = captureContext;
 			}
@@ -610,7 +610,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <param name="task">The task.</param>
 			/// <param name="captureContext">if set to <c>true</c> [capture context].</param>
 			public NoThrowTaskAwaiter(Task task, bool captureContext) {
-				Requires.NotNull(task, "task");
+				Requires.NotNull(task, nameof(task));
 				this.task = task;
 				this.captureContext = captureContext;
 			}
@@ -656,7 +656,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <param name="cancellationToken">The cancellation token.</param>
 			internal FollowCancelableTaskState(Func<Task<T>> getTaskToFollow, CancellationToken cancellationToken)
 				: this() {
-				Requires.NotNull(getTaskToFollow, "getTaskToFollow");
+				Requires.NotNull(getTaskToFollow, nameof(getTaskToFollow));
 
 				this.getTaskToFollow = getTaskToFollow;
 				this.UltimateCancellation = cancellationToken;

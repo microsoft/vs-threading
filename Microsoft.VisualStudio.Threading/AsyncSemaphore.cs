@@ -89,7 +89,7 @@
 		/// <param name="waitTask">A task that represents a request for the semaphore.</param>
 		/// <returns>A task whose result is a releaser that should be disposed to release the lock.</returns>
 		private Task<Releaser> LockWaitingHelper(Task waitTask) {
-			Requires.NotNull(waitTask, "waitTask");
+			Requires.NotNull(waitTask, nameof(waitTask));
 
 			return waitTask.IsCompleted
 				? this.uncontestedReleaser // uncontested lock
@@ -113,7 +113,7 @@
 		/// <param name="waitTask">A task that represents a request for the semaphore.</param>
 		/// <returns>A task whose result is a releaser that should be disposed to release the lock.</returns>
 		private Task<Releaser> LockWaitingHelper(Task<bool> waitTask) {
-			Requires.NotNull(waitTask, "waitTask");
+			Requires.NotNull(waitTask, nameof(waitTask));
 
 			return waitTask.IsCompleted
 				? (waitTask.Result ? this.uncontestedReleaser : canceledReleaser) // uncontested lock

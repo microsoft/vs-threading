@@ -23,7 +23,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="contentType">The MIME type of the attached content.</param>
 		/// <param name="contentName">The suggested filename of the content when it is attached in a report.</param>
 		public HangReportContribution(string content, string contentType, string contentName) {
-			Requires.NotNull(content, "content");
+			Requires.NotNull(content, nameof(content));
 			this.Content = content;
 			this.ContentType = contentType;
 			this.ContentName = contentName;

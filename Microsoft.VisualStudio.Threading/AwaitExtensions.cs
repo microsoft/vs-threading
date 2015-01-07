@@ -23,7 +23,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="scheduler">The task scheduler used to execute continuations.</param>
 		/// <returns>An awaitable.</returns>
 		public static TaskSchedulerAwaiter GetAwaiter(this TaskScheduler scheduler) {
-			Requires.NotNull(scheduler, "scheduler");
+			Requires.NotNull(scheduler, nameof(scheduler));
 			return new TaskSchedulerAwaiter(scheduler);
 		}
 
@@ -35,7 +35,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// already executing on the desired task scheduler.</param>
 		/// <returns>An awaitable.</returns>
 		public static TaskSchedulerAwaitable SwitchTo(this TaskScheduler scheduler, bool alwaysYield = false) {
-			Requires.NotNull(scheduler, "scheduler");
+			Requires.NotNull(scheduler, nameof(scheduler));
 			return new TaskSchedulerAwaitable(scheduler, alwaysYield);
 		}
 
@@ -45,7 +45,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="handle">The handle to wait on.</param>
 		/// <returns>The awaiter.</returns>
 		public static TaskAwaiter GetAwaiter(this WaitHandle handle) {
-			Requires.NotNull(handle, "handle");
+			Requires.NotNull(handle, nameof(handle));
 			Task task = handle.ToTask();
 			return task.GetAwaiter();
 		}
@@ -72,7 +72,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <param name="alwaysYield">A value indicating whether the caller should yield even if
 			/// already executing on the desired task scheduler.</param>
 			public TaskSchedulerAwaitable(TaskScheduler taskScheduler, bool alwaysYield = false) {
-				Requires.NotNull(taskScheduler, "taskScheduler");
+				Requires.NotNull(taskScheduler, nameof(taskScheduler));
 
 				this.taskScheduler = taskScheduler;
 				this.alwaysYield = alwaysYield;

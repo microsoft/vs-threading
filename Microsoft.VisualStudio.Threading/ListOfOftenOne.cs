@@ -102,7 +102,7 @@
 		/// <param name="value">The value to add to the collection.</param>
 		/// <returns>The new value to store as the collection.</returns>
 		private static object Combine(object baseValue, T value) {
-			Requires.NotNull(value, "value");
+			Requires.NotNull(value, nameof(value));
 
 			if (baseValue == null) {
 				return value;

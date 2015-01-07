@@ -45,7 +45,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		/// <param name="handler">The handler.</param>
 		public ProgressWithCompletion(Action<T> handler) {
-			Requires.NotNull(handler, "handler");
+			Requires.NotNull(handler, nameof(handler));
 			this.handler = value => {
 				handler(value);
 				return TplExtensions.CompletedTask;
@@ -57,7 +57,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		/// <param name="handler">The async handler.</param>
 		public ProgressWithCompletion(Func<T, Task> handler) {
-			Requires.NotNull(handler, "handler");
+			Requires.NotNull(handler, nameof(handler));
 			this.handler = handler;
 		}
 

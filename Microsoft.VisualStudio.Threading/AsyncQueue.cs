@@ -332,7 +332,7 @@
 		/// <param name="value">Receives the element from the head of the queue; or <c>default(T)</c> if the queue is empty.</param>
 		/// <returns><c>true</c> if an element was dequeued; <c>false</c> if the queue was empty.</returns>
 		protected bool TryDequeue(Predicate<T> valueCheck, out T value) {
-			Requires.NotNull(valueCheck, "valueCheck");
+			Requires.NotNull(valueCheck, nameof(valueCheck));
 
 			bool result = this.TryDequeueInternal(valueCheck, out value);
 			this.CompleteIfNecessary();
@@ -500,7 +500,7 @@
 			/// </summary>
 			/// <param name="owningQueue">The queue that created this instance.</param>
 			internal CancellableDequeuers(AsyncQueue<T> owningQueue) {
-				Requires.NotNull(owningQueue, "owningQueue");
+				Requires.NotNull(owningQueue, nameof(owningQueue));
 
 				this.owningQueue = owningQueue;
 				this.completionSources = null;
@@ -566,7 +566,7 @@
 			/// </summary>
 			/// <param name="dequeuer"></param>
 			internal void AddCompletionSource(TaskCompletionSource<T> dequeuer) {
-				Requires.NotNull(dequeuer, "dequeuer");
+				Requires.NotNull(dequeuer, nameof(dequeuer));
 				if (this.completionSources == null) {
 					this.completionSources = dequeuer;
 				} else if (this.completionSources is List<TaskCompletionSource<T>>) {

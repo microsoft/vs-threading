@@ -185,7 +185,7 @@ namespace Microsoft.VisualStudio.Threading {
 			private KeyValuePair<TKey, TValue> current;
 
 			internal Enumerator(WeakKeyDictionary<TKey, TValue> dictionary) {
-				Requires.NotNull(dictionary, "dictionary");
+				Requires.NotNull(dictionary, nameof(dictionary));
 
 				this.enumerator = dictionary.dictionary.GetEnumerator();
 				this.current = new KeyValuePair<TKey, TValue>();
@@ -255,8 +255,8 @@ namespace Microsoft.VisualStudio.Threading {
 			/// Constructor
 			/// </summary>
 			internal WeakReference(T target, IEqualityComparer<T> equalityComparer, bool avoidWeakReferenceAllocation = false) {
-				Requires.NotNull(target, "target");
-				Requires.NotNull(equalityComparer, "equalityComparer");
+				Requires.NotNull(target, nameof(target));
+				Requires.NotNull(equalityComparer, nameof(equalityComparer));
 
 				this.notSoWeakTarget = avoidWeakReferenceAllocation ? target : null;
 				this.weakReference = avoidWeakReferenceAllocation ? null : new WeakReference(target);
@@ -318,7 +318,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// will be used.
 			/// </summary>
 			internal WeakReferenceEqualityComparer(IEqualityComparer<T> comparer) {
-				Requires.NotNull(comparer, "comparer");
+				Requires.NotNull(comparer, nameof(comparer));
 
 				this.underlyingComparer = comparer;
 			}

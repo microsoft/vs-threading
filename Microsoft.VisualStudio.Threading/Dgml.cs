@@ -37,8 +37,8 @@
 		}
 
 		private static XElement GetRootElement(this XDocument document, XName name) {
-			Requires.NotNull(document, "document");
-			Requires.NotNull(name, "name");
+			Requires.NotNull(document, nameof(document));
+			Requires.NotNull(name, nameof(name));
 
 			var container = document.Root.Element(name);
 			if (container == null) {
@@ -49,24 +49,24 @@
 		}
 
 		private static XElement GetRootElement(XDocument document, string elementName) {
-			Requires.NotNull(document, "document");
-			Requires.NotNullOrEmpty(elementName, "elementName");
+			Requires.NotNull(document, nameof(document));
+			Requires.NotNullOrEmpty(elementName, nameof(elementName));
 
 			return GetRootElement(document, XName.Get(elementName, Namespace));
 		}
 
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
 		internal static XDocument WithCategories(this XDocument document, params string[] categories) {
-			Requires.NotNull(document, "document");
-			Requires.NotNull(categories, "categories");
+			Requires.NotNull(document, nameof(document));
+			Requires.NotNull(categories, nameof(categories));
 
 			GetRootElement(document, "Categories").Add(categories.Select(c => Category(c)));
 			return document;
 		}
 
 		internal static XDocument WithCategories(this XDocument document, params XElement[] categories) {
-			Requires.NotNull(document, "document");
-			Requires.NotNull(categories, "categories");
+			Requires.NotNull(document, nameof(document));
+			Requires.NotNull(categories, nameof(categories));
 
 			GetRootElement(document, "Categories").Add(categories);
 			return document;
@@ -91,8 +91,8 @@
 		}
 
 		internal static XDocument WithNode(this XDocument document, XElement node) {
-			Requires.NotNull(document, "document");
-			Requires.NotNull(node, "node");
+			Requires.NotNull(document, nameof(document));
+			Requires.NotNull(node, nameof(node));
 
 			var nodes = document.GetRootElement(NodesName);
 			nodes.Add(node);
@@ -100,8 +100,8 @@
 		}
 
 		internal static XElement Link(string source, string target) {
-			Requires.NotNullOrEmpty(source, "source");
-			Requires.NotNullOrEmpty(target, "target");
+			Requires.NotNullOrEmpty(source, nameof(source));
+			Requires.NotNullOrEmpty(target, nameof(target));
 
 			return new XElement(
 				LinkName,
@@ -114,8 +114,8 @@
 		}
 
 		internal static XDocument WithLink(this XDocument document, XElement link) {
-			Requires.NotNull(document, "document");
-			Requires.NotNull(link, "link");
+			Requires.NotNull(document, nameof(document));
+			Requires.NotNull(link, nameof(link));
 
 			var links = document.GetRootElement(LinksName);
 			links.Add(link);
@@ -123,7 +123,7 @@
 		}
 
 		internal static XElement Category(string id, string label = null, string background = null, string foreground = null, string icon = null, bool isTag = false, bool isContainment = false) {
-			Requires.NotNullOrEmpty(id, "id");
+			Requires.NotNullOrEmpty(id, nameof(id));
 
 			var category = new XElement(XName.Get("Category", Namespace), new XAttribute("Id", id));
 			if (!string.IsNullOrEmpty(label)) {
@@ -171,16 +171,16 @@
 
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
 		internal static XElement ContainedBy(this XElement node, XElement container) {
-			Requires.NotNull(node, "node");
-			Requires.NotNull(container, "container");
+			Requires.NotNull(node, nameof(node));
+			Requires.NotNull(container, nameof(container));
 
 			Link(container, node).WithCategories("Contains");
 			return node;
 		}
 
 		internal static XElement ContainedBy(this XElement node, string containerId, XDocument document) {
-			Requires.NotNull(node, "node");
-			Requires.NotNullOrEmpty(containerId, "containerId");
+			Requires.NotNull(node, nameof(node));
+			Requires.NotNullOrEmpty(containerId, nameof(containerId));
 
 			document.WithLink(Link(containerId, node.Attribute("Id").Value).WithCategories("Contains"));
 			return node;
@@ -193,7 +193,7 @@
 		/// <param name="categories">The categories to add.</param>
 		/// <returns>The same node that was passed in. To enable "fluent" syntax.</returns>
 		internal static XElement WithCategories(this XElement element, params string[] categories) {
-			Requires.NotNull(element, "element");
+			Requires.NotNull(element, nameof(element));
 
 			foreach (var category in categories) {
 				if (element.Attribute("Category") == null) {
@@ -210,10 +210,10 @@
 
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
 		internal static XDocument WithStyle(this XDocument document, string categoryId, IEnumerable<KeyValuePair<string, string>> properties, string targetType = "Node") {
-			Requires.NotNull(document, "document");
-			Requires.NotNullOrEmpty(categoryId, "categoryId");
-			Requires.NotNull(properties, "properties");
-			Requires.NotNullOrEmpty(targetType, "targetType");
+			Requires.NotNull(document, nameof(document));
+			Requires.NotNullOrEmpty(categoryId, nameof(categoryId));
+			Requires.NotNull(properties, nameof(properties));
+			Requires.NotNullOrEmpty(targetType, nameof(targetType));
 
 			var container = document.Root.Element(StylesName);
 			if (container == null) {

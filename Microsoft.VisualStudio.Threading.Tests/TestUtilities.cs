@@ -47,7 +47,7 @@
 		/// <param name="concurrency">The level of concurrency.</param>
 		/// <returns></returns>
 		internal static T[] ConcurrencyTest<T>(Func<T> action, int concurrency = -1) {
-			Requires.NotNull(action, "action");
+			Requires.NotNull(action, nameof(action));
 			if (concurrency == -1) {
 				concurrency = Environment.ProcessorCount;
 			}
@@ -83,9 +83,9 @@
 		}
 
 		internal static void CompleteSynchronously(this JoinableTaskFactory factory, JoinableTaskCollection collection, Task task) {
-			Requires.NotNull(factory, "factory");
-			Requires.NotNull(collection, "collection");
-			Requires.NotNull(task, "task");
+			Requires.NotNull(factory, nameof(factory));
+			Requires.NotNull(collection, nameof(collection));
+			Requires.NotNull(task, nameof(task));
 
 			factory.Run(async delegate {
 				using (collection.Join()) {
@@ -102,7 +102,7 @@
 		/// <param name="resumingSignal">The signal to set when the continuation has been invoked.</param>
 		/// <returns>A new awaitable.</returns>
 		internal static YieldAndNotifyAwaitable YieldAndNotify(this INotifyCompletion baseAwaiter, AsyncManualResetEvent yieldingSignal = null, AsyncManualResetEvent resumingSignal = null) {
-			Requires.NotNull(baseAwaiter, "baseAwaiter");
+			Requires.NotNull(baseAwaiter, nameof(baseAwaiter));
 
 			return new YieldAndNotifyAwaitable(baseAwaiter, yieldingSignal, resumingSignal);
 		}
@@ -113,7 +113,7 @@
 			private readonly AsyncManualResetEvent resumingSignal;
 
 			internal YieldAndNotifyAwaitable(INotifyCompletion baseAwaiter, AsyncManualResetEvent yieldingSignal, AsyncManualResetEvent resumingSignal) {
-				Requires.NotNull(baseAwaiter, "baseAwaiter");
+				Requires.NotNull(baseAwaiter, nameof(baseAwaiter));
 
 				this.baseAwaiter = baseAwaiter;
 				this.yieldingSignal = yieldingSignal;
@@ -131,7 +131,7 @@
 			private readonly AsyncManualResetEvent resumingSignal;
 
 			internal YieldAndNotifyAwaiter(INotifyCompletion baseAwaiter, AsyncManualResetEvent yieldingSignal, AsyncManualResetEvent resumingSignal) {
-				Requires.NotNull(baseAwaiter, "baseAwaiter");
+				Requires.NotNull(baseAwaiter, nameof(baseAwaiter));
 
 				this.baseAwaiter = baseAwaiter;
 				this.yieldingSignal = yieldingSignal;
