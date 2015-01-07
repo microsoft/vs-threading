@@ -42,15 +42,15 @@
 			this.asyncLocal.Value = value;
 			await Task.WhenAll(
 				Task.Run(delegate {
-				Assert.AreSame(value, this.asyncLocal.Value);
-				this.asyncLocal.Value = null;
-				Assert.IsNull(this.asyncLocal.Value);
-			}),
+					Assert.AreSame(value, this.asyncLocal.Value);
+					this.asyncLocal.Value = null;
+					Assert.IsNull(this.asyncLocal.Value);
+				}),
 				Task.Run(delegate {
-				Assert.AreSame(value, this.asyncLocal.Value);
-				this.asyncLocal.Value = null;
-				Assert.IsNull(this.asyncLocal.Value);
-			}));
+					Assert.AreSame(value, this.asyncLocal.Value);
+					this.asyncLocal.Value = null;
+					Assert.IsNull(this.asyncLocal.Value);
+				}));
 
 			Assert.AreSame(value, this.asyncLocal.Value);
 			this.asyncLocal.Value = null;
