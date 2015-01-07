@@ -14,15 +14,14 @@
 	[DebuggerDisplay("Signaled: {IsSet}")]
 	public class AsyncManualResetEvent {
 		/// <summary>
-		/// Whether to complete the task synchronously in the <see cref="SetAsync(TaskCompletionSource{EmptyStruct})"/> method,
-		/// as opposed to asynchronously.
+		/// Whether the task completion source should allow executing continuations synchronously.
 		/// </summary>
 		private readonly bool allowInliningAwaiters;
 
 		/// <summary>
 		/// The task to return from <see cref="WaitAsync"/>
 		/// </summary>
-		private volatile TaskCompletionSource<EmptyStruct> taskCompletionSource = new TaskCompletionSource<EmptyStruct>();
+		private volatile TaskCompletionSource<EmptyStruct> taskCompletionSource;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AsyncManualResetEvent"/> class.
@@ -36,11 +35,12 @@
 		/// its completed state by the time <see cref="SetAsync()"/> returns to its caller.
 		/// </param>
 		public AsyncManualResetEvent(bool initialState = false, bool allowInliningAwaiters = false) {
+			this.allowInliningAwaiters = allowInliningAwaiters;
+
+			this.taskCompletionSource = this.CreateTaskSource();
 			if (initialState) {
 				this.taskCompletionSource.SetResult(EmptyStruct.Instance);
 			}
-
-			this.allowInliningAwaiters = allowInliningAwaiters;
 		}
 
 		/// <summary>
@@ -60,12 +60,12 @@
 		/// <summary>
 		/// Sets this event to unblock callers of <see cref="WaitAsync"/>.
 		/// </summary>
+		/// <returns>A task that is always completed.</returns>
 		/// <remarks>
-		/// This method may return before the signal set has propagated (so <see cref="IsSet"/> may return <c>false</c> for a bit more if called immediately).
-		/// The returned task completes when the signal has definitely been set.
+		/// This method is not asynchronous. The returned Task is always completed.
 		/// </remarks>
 		public Task SetAsync() {
-			return this.SetAsync(this.taskCompletionSource);
+			return SetAsync(this.taskCompletionSource);
 		}
 
 		/// <summary>
@@ -76,7 +76,7 @@
 				var tcs = this.taskCompletionSource;
 #pragma warning disable 0420
 				if (!tcs.Task.IsCompleted ||
-					Interlocked.CompareExchange(ref this.taskCompletionSource, new TaskCompletionSource<EmptyStruct>(), tcs) == tcs) {
+					Interlocked.CompareExchange(ref this.taskCompletionSource, this.CreateTaskSource(), tcs) == tcs) {
 					return;
 				}
 #pragma warning restore 0420
@@ -86,16 +86,20 @@
 		/// <summary>
 		/// Sets and immediately resets this event, allowing all current waiters to unblock.
 		/// </summary>
+		/// <returns>A task that is always completed.</returns>
+		/// <remarks>
+		/// This method is not asynchronous. The returned Task is always completed.
+		/// </remarks>
 		public Task PulseAllAsync() {
 			// Atomically replace the completion source with a new, uncompleted source
 			// while capturing the previous one so we can complete it.
 			// This ensures that we don't leave a gap in time where WaitAsync() will
 			// continue to return completed Tasks due to a Pulse method which should
 			// execute instantaneously.
-			var oldSource = Interlocked.Exchange(ref this.taskCompletionSource, new TaskCompletionSource<EmptyStruct>());
+			var oldSource = Interlocked.Exchange(ref this.taskCompletionSource, this.CreateTaskSource());
 
 			// Now set the old source, allowing any waiters from before the exchange to resume.
-			return this.SetAsync(oldSource);
+			return SetAsync(oldSource);
 		}
 
 		/// <summary>
@@ -112,21 +116,19 @@
 		/// </summary>
 		/// <param name="tcs">The completion source of the task to complete.</param>
 		/// <returns>The task that is (or will shortly be) completed.</returns>
-		private Task SetAsync(TaskCompletionSource<EmptyStruct> tcs) {
+		private static Task SetAsync(TaskCompletionSource<EmptyStruct> tcs) {
 			if (!tcs.Task.IsCompleted) {
-				if (this.allowInliningAwaiters) {
-					tcs.TrySetResult(EmptyStruct.Instance);
-				} else {
-					Task.Factory.StartNew(
-						s => ((TaskCompletionSource<EmptyStruct>)s).TrySetResult(EmptyStruct.Instance),
-						tcs,
-						CancellationToken.None,
-						TaskCreationOptions.PreferFairness,
-						TaskScheduler.Default);
-				}
+				tcs.TrySetResult(EmptyStruct.Instance);
 			}
 
-			return tcs.Task;
+			return TplExtensions.CompletedTask;
+		}
+
+		/// <summary>
+		/// Creates a new TaskCompletionSource to represent an unset event.
+		/// </summary>
+		private TaskCompletionSource<EmptyStruct> CreateTaskSource() {
+			return new TaskCompletionSource<EmptyStruct>(this.allowInliningAwaiters ? TaskCreationOptions.None : TaskCreationOptions.RunContinuationsAsynchronously);
 		}
 	}
 }
