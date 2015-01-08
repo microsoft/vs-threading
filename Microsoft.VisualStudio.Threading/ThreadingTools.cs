@@ -85,7 +85,7 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			if (cancellationToken.IsCancellationRequested) {
-				return TplExtensions.CanceledTask;
+				return Task.FromCanceled(cancellationToken);
 			}
 
 			return WithCancellationSlow(task, cancellationToken);

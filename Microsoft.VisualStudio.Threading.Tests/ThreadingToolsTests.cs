@@ -98,7 +98,15 @@
 			var tcs = new TaskCompletionSource<object>();
 			var cts = new CancellationTokenSource();
 			cts.Cancel();
-			Assert.IsTrue(((Task)tcs.Task).WithCancellation(cts.Token).IsCanceled);
+			var result = ((Task)tcs.Task).WithCancellation(cts.Token);
+			Assert.IsTrue(result.IsCanceled);
+
+			// Verify that the CancellationToken that led to cancellation is tucked away in the returned Task.
+			try {
+				result.GetAwaiter().GetResult();
+			} catch (TaskCanceledException ex) {
+				Assert.AreEqual(cts.Token, ex.CancellationToken);
+			}
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
