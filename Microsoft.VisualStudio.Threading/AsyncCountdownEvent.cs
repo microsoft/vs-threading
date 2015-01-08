@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.VisualStudio.Threading {
 	using System;
 	using System.Collections.Generic;
+	using System.ComponentModel;
 	using System.Linq;
 	using System.Text;
 	using System.Threading;
@@ -41,14 +42,33 @@
 		/// <summary>
 		/// Decrements the counter by one.
 		/// </summary>
+		/// <returns>A task that is always completed.</returns>
+		/// <remarks>
+		/// This method is not asynchronous. The returned Task is always completed, but may be in a faulted state.
+		/// </remarks>
+		[Obsolete("Use Signal() instead."), EditorBrowsable(EditorBrowsableState.Never)]
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
 		public Task SignalAsync() {
+			try {
+				this.Signal();
+			} catch (Exception ex) {
+				var tcs = new TaskCompletionSource<EmptyStruct>();
+				tcs.SetException(ex);
+				return tcs.Task;
+			}
+
+			return TplExtensions.CompletedTask;
+		}
+
+		/// <summary>
+		/// Decrements the counter by one.
+		/// </summary>
+		public void Signal() {
 			int newCount = Interlocked.Decrement(ref this.remainingCount);
 			if (newCount == 0) {
-				return this.manualEvent.SetAsync();
+				this.manualEvent.Set();
 			} else if (newCount < 0) {
-				return ThreadingTools.CreateFaultedTask(new InvalidOperationException());
-			} else {
-				return TplExtensions.CompletedTask;
+				throw new InvalidOperationException();
 			}
 		}
 
@@ -57,7 +77,8 @@
 		/// </summary>
 		/// <returns>An awaitable.</returns>
 		public Task SignalAndWaitAsync() {
-			return Task.WhenAll(this.SignalAsync(), this.WaitAsync());
+			this.Signal();
+			return this.WaitAsync();
 		}
 	}
 }

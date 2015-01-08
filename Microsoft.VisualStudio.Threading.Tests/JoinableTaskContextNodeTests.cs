@@ -187,7 +187,7 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 
 			protected override void OnHangDetected(JoinableTaskContext.HangDetails details) {
 				this.HangDetails = details;
-				this.HangDetected.SetAsync().Forget();
+				this.HangDetected.Set();
 				base.OnHangDetected(details);
 			}
 		}

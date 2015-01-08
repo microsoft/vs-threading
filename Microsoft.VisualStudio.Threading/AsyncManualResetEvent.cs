@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.VisualStudio.Threading {
 	using System;
 	using System.Collections.Generic;
+	using System.ComponentModel;
 	using System.Diagnostics;
 	using System.Linq;
 	using System.Runtime.CompilerServices;
@@ -64,8 +65,17 @@
 		/// <remarks>
 		/// This method is not asynchronous. The returned Task is always completed.
 		/// </remarks>
+		[Obsolete("Use Set() instead."), EditorBrowsable(EditorBrowsableState.Never)]
 		public Task SetAsync() {
-			return SetAsync(this.taskCompletionSource);
+			this.Set();
+			return TplExtensions.CompletedTask;
+		}
+
+		/// <summary>
+		/// Sets this event to unblock callers of <see cref="WaitAsync"/>.
+		/// </summary>
+		public void Set() {
+			Set(this.taskCompletionSource);
 		}
 
 		/// <summary>
@@ -90,7 +100,19 @@
 		/// <remarks>
 		/// This method is not asynchronous. The returned Task is always completed.
 		/// </remarks>
+		[Obsolete("Use PulseAll() instead."), EditorBrowsable(EditorBrowsableState.Never)]
 		public Task PulseAllAsync() {
+			this.PulseAll();
+
+			// This method always completes synchronously. But it used to complete asynchronously
+			// so we have to return a Task anyway.
+			return TplExtensions.CompletedTask;
+		}
+
+		/// <summary>
+		/// Sets and immediately resets this event, allowing all current waiters to unblock.
+		/// </summary>
+		public void PulseAll() {
 			// Atomically replace the completion source with a new, uncompleted source
 			// while capturing the previous one so we can complete it.
 			// This ensures that we don't leave a gap in time where WaitAsync() will
@@ -99,7 +121,7 @@
 			var oldSource = Interlocked.Exchange(ref this.taskCompletionSource, this.CreateTaskSource());
 
 			// Now set the old source, allowing any waiters from before the exchange to resume.
-			return SetAsync(oldSource);
+			Set(oldSource);
 		}
 
 		/// <summary>
@@ -116,12 +138,10 @@
 		/// </summary>
 		/// <param name="tcs">The completion source of the task to complete.</param>
 		/// <returns>The task that is (or will shortly be) completed.</returns>
-		private static Task SetAsync(TaskCompletionSource<EmptyStruct> tcs) {
+		private static void Set(TaskCompletionSource<EmptyStruct> tcs) {
 			if (!tcs.Task.IsCompleted) {
 				tcs.TrySetResult(EmptyStruct.Instance);
 			}
-
-			return TplExtensions.CompletedTask;
 		}
 
 		/// <summary>

@@ -146,13 +146,13 @@
 				var that = this;
 				this.baseAwaiter.OnCompleted(delegate {
 					if (that.resumingSignal != null) {
-						that.resumingSignal.SetAsync().Forget();
+						that.resumingSignal.Set();
 					}
 
 					continuation();
 				});
 				if (this.yieldingSignal != null) {
-					this.yieldingSignal.SetAsync().Forget();
+					this.yieldingSignal.Set();
 				}
 			}
 
