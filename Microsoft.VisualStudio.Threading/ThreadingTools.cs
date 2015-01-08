@@ -64,7 +64,7 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			if (cancellationToken.IsCancellationRequested) {
-				return SingletonTask<T>.CanceledTask;
+				return Task.FromCanceled<T>(cancellationToken);
 			}
 
 			return WithCancellationSlow(task, cancellationToken);
@@ -166,26 +166,6 @@ namespace Microsoft.VisualStudio.Threading {
 			// But if we skipped the above if branch, this will actually yield
 			// on an incompleted task.
 			await task.ConfigureAwait(false);
-		}
-
-		/// <summary>
-		/// Wraps a Task{T} that has already been canceled.
-		/// </summary>
-		/// <typeparam name="T">The type of value that might have been returned by the task except for its cancellation.</typeparam>
-		private static class SingletonTask<T> {
-			/// <summary>
-			/// A task that is already canceled.
-			/// </summary>
-			internal static readonly Task<T> CanceledTask = CreateCanceledTask();
-
-			/// <summary>
-			/// Creates a canceled task.
-			/// </summary>
-			private static Task<T> CreateCanceledTask() {
-				var tcs = new TaskCompletionSource<T>();
-				tcs.SetCanceled();
-				return tcs.Task;
-			}
 		}
 	}
 }
