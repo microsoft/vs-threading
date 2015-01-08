@@ -52,9 +52,7 @@
 			try {
 				this.Signal();
 			} catch (Exception ex) {
-				var tcs = new TaskCompletionSource<EmptyStruct>();
-				tcs.SetException(ex);
-				return tcs.Task;
+				return Task.FromException(ex);
 			}
 
 			return TplExtensions.CompletedTask;
@@ -77,8 +75,12 @@
 		/// </summary>
 		/// <returns>An awaitable.</returns>
 		public Task SignalAndWaitAsync() {
-			this.Signal();
-			return this.WaitAsync();
+			try {
+				this.Signal();
+				return this.WaitAsync();
+			} catch (Exception ex) {
+				return Task.FromException(ex);
+			}
 		}
 	}
 }
