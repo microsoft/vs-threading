@@ -11,7 +11,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Additional lock classes, TPL and dataflow extensions.</description>
     <releaseNotes></releaseNotes>
-    <copyright>Copyright 2012-2014</copyright>
+    <copyright>Copyright 2012-2015</copyright>
     <tags>Threading Async Lock Synchronization Threadsafe</tags>
     <dependencies>
       <dependency id="Microsoft.Validation" version="[1.0.4,2.0)" />
