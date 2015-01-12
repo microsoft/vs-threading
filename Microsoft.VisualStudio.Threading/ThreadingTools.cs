@@ -85,7 +85,7 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			if (cancellationToken.IsCancellationRequested) {
-				return TplExtensions.CanceledTask;
+				return Task.FromCanceled(cancellationToken);
 			}
 
 			return WithCancellationSlow(task, cancellationToken);
@@ -98,25 +98,6 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="checkForChangesOnRevert">A value indicating whether to check that the applied SyncContext is still the current one when the original is restored.</param>
 		public static SpecializedSyncContext Apply(this SynchronizationContext syncContext, bool checkForChangesOnRevert = true) {
 			return SpecializedSyncContext.Apply(syncContext, checkForChangesOnRevert);
-		}
-
-		/// <summary>
-		/// Creates a faulted task with the specified exception.
-		/// </summary>
-		/// <param name="exception">The exception to fault the task with.</param>
-		/// <returns>The faulted task.</returns>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-		internal static Task CreateFaultedTask(Exception exception) {
-			Requires.NotNull(exception, nameof(exception));
-
-			try {
-				// We must throw so the callstack is set on the exception.
-				throw exception;
-			} catch (Exception ex) {
-				var faultedTaskSource = new TaskCompletionSource<EmptyStruct>();
-				faultedTaskSource.SetException(ex);
-				return faultedTaskSource.Task;
-			}
 		}
 
 		/// <summary>

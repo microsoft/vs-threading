@@ -43,7 +43,7 @@
 			var waiter = this.joinableCollection.JoinTillEmptyAsync();
 			Assert.IsFalse(waiter.GetAwaiter().IsCompleted);
 			Task.Run(async delegate {
-				await evt.SetAsync();
+				evt.Set();
 				await waiter;
 				this.testFrame.Continue = false;
 			});
@@ -63,7 +63,7 @@
 			var waiter = this.joinableCollection.JoinTillEmptyAsync();
 			Assert.IsFalse(waiter.GetAwaiter().IsCompleted);
 			Task.Run(async delegate {
-				await evt.SetAsync();
+				evt.Set();
 				await waiter;
 				this.testFrame.Continue = false;
 			});
@@ -94,7 +94,7 @@
 			collection.Remove(task);
 			Assert.IsFalse(collection.Contains(task));
 
-			finishTaskEvent.SetAsync();
+			finishTaskEvent.Set();
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -112,7 +112,7 @@
 			collection.Remove(task);
 			Assert.IsFalse(collection.Contains(task));
 
-			finishTaskEvent.SetAsync();
+			finishTaskEvent.Set();
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -126,7 +126,7 @@
 			collection.Add(task);
 			Assert.IsTrue(collection.Contains(task));
 
-			finishTaskEvent.SetAsync();
+			finishTaskEvent.Set();
 			task.Join();
 
 			collection.Remove(task); // technically the JoinableTask is probably gone from the collection by now anyway.

@@ -24,7 +24,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// A singleton completed task.
 		/// </summary>
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-		public static readonly Task CompletedTask = Task.FromResult<object>(null);
+		public static readonly Task CompletedTask = Task.CompletedTask;
 
 		/// <summary>
 		/// A task that is already canceled.

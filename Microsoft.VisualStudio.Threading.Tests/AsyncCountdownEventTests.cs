@@ -62,20 +62,48 @@
 		}
 
 		/// <summary>
-		/// Verifies that the exception is returned in a task rather than thrown from the synchronous method.
+		/// Verifies that the exception is returned in a task rather than thrown from the asynchronous method.
 		/// </summary>
 		[TestMethod, Timeout(TestTimeout)]
 		public void SignalAsyncReturnsFaultedTaskOnError() {
 			var evt = new AsyncCountdownEvent(0);
+#pragma warning disable 0618
 			var result = evt.SignalAsync();
+#pragma warning restore 0618
 			Assert.IsTrue(result.IsFaulted);
 			Assert.IsInstanceOfType(result.Exception.InnerException, typeof(InvalidOperationException));
+		}
+
+		/// <summary>
+		/// Verifies that the exception is returned in a task rather than thrown from the asynchronous method.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public void SignalAndWaitAsyncReturnsFaultedTaskOnError() {
+			var evt = new AsyncCountdownEvent(0);
+#pragma warning disable 0618
+			var result = evt.SignalAndWaitAsync();
+#pragma warning restore 0618
+			Assert.IsTrue(result.IsFaulted);
+			Assert.IsInstanceOfType(result.Exception.InnerException, typeof(InvalidOperationException));
+		}
+
+		/// <summary>
+		/// Verifies that the exception is returned in a task rather than thrown from the synchronous method.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout)]
+		public void SignalThrowsOnError() {
+			var evt = new AsyncCountdownEvent(0);
+			try {
+				evt.Signal();
+				Assert.Fail("Expected exception not thrown.");
+			} catch (InvalidOperationException) {
+			}
 		}
 
 		private async Task PreSignalHelperAsync(int initialCount) {
 			var evt = new AsyncCountdownEvent(initialCount);
 			for (int i = 0; i < initialCount; i++) {
-				evt.SignalAsync().Forget();
+				evt.Signal();
 			}
 
 			await evt.WaitAsync();
@@ -86,7 +114,7 @@
 			var waiter = evt.WaitAsync();
 
 			for (int i = 0; i < initialCount; i++) {
-				await evt.SignalAsync();
+				evt.Signal();
 			}
 
 			await waiter;

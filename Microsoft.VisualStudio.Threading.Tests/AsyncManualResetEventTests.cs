@@ -28,8 +28,8 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task NonBlocking() {
-			await this.evt.SetAsync();
+		public void NonBlocking() {
+			this.evt.Set();
 			Assert.IsTrue(this.evt.WaitAsync().IsCompleted);
 		}
 
@@ -37,7 +37,7 @@
 		/// Verifies that inlining continuations do not have to complete execution before Set() returns.
 		/// </summary>
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task SetReturnsBeforeInlinedContinuations() {
+		public void SetReturnsBeforeInlinedContinuations() {
 			var setReturned = new ManualResetEventSlim();
 			var inlinedContinuation = this.evt.WaitAsync()
 				.ContinueWith(delegate {
@@ -46,7 +46,7 @@
 					Assert.IsTrue(setReturned.Wait(AsyncDelay));
 				},
 				TaskContinuationOptions.ExecuteSynchronously);
-			await this.evt.SetAsync();
+			this.evt.Set();
 			Assert.IsTrue(this.evt.IsSet);
 			setReturned.Set();
 			Assert.IsTrue(inlinedContinuation.Wait(AsyncDelay));
@@ -57,13 +57,13 @@
 			this.evt.Reset();
 			var result = this.evt.WaitAsync();
 			Assert.IsFalse(result.IsCompleted);
-			await this.evt.SetAsync();
+			this.evt.Set();
 			await result;
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task Reset() {
-			await this.evt.SetAsync();
+		public void Reset() {
+			this.evt.Set();
 			this.evt.Reset();
 			var result = this.evt.WaitAsync();
 			Assert.IsFalse(result.IsCompleted);
@@ -74,14 +74,24 @@
 			var task = Task.Run(async delegate {
 				await this.evt;
 			});
-			this.evt.SetAsync();
+			this.evt.Set();
 			task.Wait();
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task PulseAllAsync() {
+		public void PulseAllAsync() {
 			var task = this.evt.WaitAsync();
-			await this.evt.PulseAllAsync();
+#pragma warning disable 0618
+			Assert.AreEqual(TaskStatus.RanToCompletion, this.evt.PulseAllAsync().Status);
+#pragma warning restore 0618
+			Assert.IsTrue(task.IsCompleted);
+			Assert.IsFalse(this.evt.WaitAsync().IsCompleted);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void PulseAll() {
+			var task = this.evt.WaitAsync();
+			this.evt.PulseAll();
 			Assert.IsTrue(task.IsCompleted);
 			Assert.IsFalse(this.evt.WaitAsync().IsCompleted);
 		}
@@ -89,7 +99,19 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public void PulseAllAsyncDoesNotUnblockFutureWaiters() {
 			Task task1 = this.evt.WaitAsync();
+#pragma warning disable 0618
 			this.evt.PulseAllAsync();
+#pragma warning restore 0618
+			Task task2 = this.evt.WaitAsync();
+			Assert.AreNotSame(task1, task2);
+			task1.Wait();
+			Assert.IsFalse(task2.IsCompleted);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void PulseAllDoesNotUnblockFutureWaiters() {
+			Task task1 = this.evt.WaitAsync();
+			this.evt.PulseAll();
 			Task task2 = this.evt.WaitAsync();
 			Assert.AreNotSame(task1, task2);
 			task1.Wait();
