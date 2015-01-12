@@ -33,9 +33,7 @@
 			this.semaphore = new SemaphoreSlim(initialCount);
 			this.uncontestedReleaser = Task.FromResult(new Releaser(this));
 
-			var canceledSource = new TaskCompletionSource<Releaser>();
-			canceledSource.SetCanceled();
-			this.canceledReleaser = canceledSource.Task;
+			this.canceledReleaser = Task.FromCanceled<Releaser>(new CancellationToken(canceled: true));
 		}
 
 		/// <summary>

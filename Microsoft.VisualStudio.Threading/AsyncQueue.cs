@@ -269,7 +269,7 @@
 					// since we only just created the task in this method so
 					// it couldn't possibly have any continuations that would inline
 					// inside our lock.
-					tcs.SetCanceled();
+					tcs.TrySetCanceled(cancellationToken);
 				} else {
 					T value;
 					if (this.TryDequeueInternal(null, out value)) {
