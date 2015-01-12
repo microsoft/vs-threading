@@ -30,7 +30,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// A task that is already canceled.
 		/// </summary>
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-		public static readonly Task CanceledTask = Task.FromCanceled(CreateCanceledToken()); // Avoid using CanceledToken field so as to not introduce init order dependencies.
+		public static readonly Task CanceledTask = Task.FromCanceled(new CancellationToken(canceled: true));
 
 		/// <summary>
 		/// A completed task with a <c>true</c> result.
@@ -43,11 +43,6 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
 		public static readonly Task<bool> FalseTask = Task.FromResult(false);
-
-		/// <summary>
-		/// A token that is already canceled.
-		/// </summary>
-		internal static readonly CancellationToken CanceledToken = CreateCanceledToken();
 
 		/// <summary>
 		/// Wait on a task without possibly inlining it to the current thread.
@@ -452,15 +447,6 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			return tcs.Task;
-		}
-
-		/// <summary>
-		/// Creates a canceled token.
-		/// </summary>
-		private static CancellationToken CreateCanceledToken() {
-			var cts = new CancellationTokenSource();
-			cts.Cancel();
-			return cts.Token;
 		}
 
 		/// <summary>

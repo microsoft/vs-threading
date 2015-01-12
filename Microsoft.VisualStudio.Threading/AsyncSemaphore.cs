@@ -33,7 +33,7 @@
 			this.semaphore = new SemaphoreSlim(initialCount);
 			this.uncontestedReleaser = Task.FromResult(new Releaser(this));
 
-			this.canceledReleaser = Task.FromCanceled<Releaser>(TplExtensions.CanceledToken);
+			this.canceledReleaser = Task.FromCanceled<Releaser>(new CancellationToken(canceled: true));
 		}
 
 		/// <summary>
