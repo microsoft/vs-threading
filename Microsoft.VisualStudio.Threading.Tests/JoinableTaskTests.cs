@@ -2562,6 +2562,43 @@
 			Assert.AreEqual(1, waitCountingJTF.WaitCount);
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void SwitchToMainThreadShouldNotLeakJoinableTaskWhenGetResultRunsFirst() {
+			var cts = new CancellationTokenSource();
+			var factory = (DerivedJoinableTaskFactory)this.asyncPump;
+			var pauseAfterPostedContinuationToMainThread = new ManualResetEventSlim(false);
+			factory.PostToUnderlyingSynchronizationContextCallback = () => {
+				pauseAfterPostedContinuationToMainThread.Wait();
+			};
+
+			Object result = new Object();
+			WeakReference<Object> weakResult = new WeakReference<object>(result);
+
+			this.asyncPump.Run(async () => {
+				await TaskScheduler.Default;
+				this.asyncPump.Run(async () => {
+					await this.asyncPump.SwitchToMainThreadAsync(cts.Token);
+					pauseAfterPostedContinuationToMainThread.Set();
+					return result;
+				});
+			});
+
+			// Needs to give the dispatcher a chance to run the posted action in order to release
+			// the last reference to the JoinableTask.
+			var frame = new DispatcherFrame();
+			Dispatcher.CurrentDispatcher.BeginInvoke((Action)(() => {
+				frame.Continue = false;
+			}));
+			Dispatcher.PushFrame(frame);
+
+			result = null;
+			GC.Collect();
+
+			object target;
+			weakResult.TryGetTarget(out target);
+			Assert.IsNull(target, "The task's result should be collected unless the JoinableTask is leaked");
+		}
+
 		private static async void SomeFireAndForgetMethod() {
 			await Task.Yield();
 		}
@@ -2735,6 +2772,8 @@
 
 			internal Action<JoinableTask> TransitionedToMainThreadCallback { get; set; }
 
+			internal Action PostToUnderlyingSynchronizationContextCallback { get; set; }
+
 			protected override void OnTransitioningToMainThread(JoinableTask joinableTask) {
 				base.OnTransitioningToMainThread(joinableTask);
 				Assert.IsFalse(joinableTask.IsCompleted, "A task should not be completed until at least the transition has completed.");
@@ -2792,6 +2831,9 @@
 				Assert.IsNotNull(callback);
 				Assert.IsInstanceOfType(this.UnderlyingSynchronizationContext, typeof(DispatcherSynchronizationContext));
 				base.PostToUnderlyingSynchronizationContext(callback, state);
+				if (PostToUnderlyingSynchronizationContextCallback != null) {
+					PostToUnderlyingSynchronizationContextCallback();
+                }
 			}
 		}
 

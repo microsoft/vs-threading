@@ -507,6 +507,13 @@ namespace Microsoft.VisualStudio.Threading {
 					}
 				}
 
+				// Notify tasks which can process the event queue.
+				if (eventsNeedNotify != null) {
+					foreach (var queueEvent in eventsNeedNotify) {
+						queueEvent.PulseAllAsync().Forget();
+					}
+				}
+
 				// We deferred this till after we release our lock earlier in this method since we're calling outside code.
 				if (postToFactory) {
 					Assumes.Null(wrapper); // we avoid using a wrapper in this case because this job transferring ownership to the factory.
@@ -519,13 +526,6 @@ namespace Microsoft.VisualStudio.Threading {
 						if (nestingFactory != this.owner) {
 							nestingFactory.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
 						}
-					}
-				}
-
-				// Notify tasks which can process the event queue.
-				if (eventsNeedNotify != null) {
-					foreach (var queueEvent in eventsNeedNotify) {
-						queueEvent.PulseAllAsync().Forget();
 					}
 				}
 			}

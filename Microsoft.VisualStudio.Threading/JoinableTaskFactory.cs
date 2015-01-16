@@ -506,7 +506,7 @@ namespace Microsoft.VisualStudio.Threading {
 
 			private readonly JoinableTask job;
 
-			private StrongBox<CancellationTokenRegistration> cancellationRegistrationPtr;
+			private StrongBox<CancellationTokenRegistration?> cancellationRegistrationPtr;
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="MainThreadAwaiter"/> struct.
@@ -519,7 +519,7 @@ namespace Microsoft.VisualStudio.Threading {
 
 				// Don't allocate the pointer if the cancellation token can't be canceled:
 				this.cancellationRegistrationPtr = (cancellationToken.CanBeCanceled)
-					? new StrongBox<CancellationTokenRegistration>()
+					? new StrongBox<CancellationTokenRegistration?>()
 					: null;
 			}
 
@@ -558,10 +558,23 @@ namespace Microsoft.VisualStudio.Threading {
 						// Store the cancellation token registration in the struct pointer. This way,
 						// if the awaiter has been copied (since it's a struct), each copy of the awaiter
 						// points to the same registration. Without this we can have a memory leak.
-						this.cancellationRegistrationPtr.Value = this.cancellationToken.Register(
+						var registration = this.cancellationToken.Register(
 							state => ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, state),
 							wrapper,
 							useSynchronizationContext: false);
+
+						bool disposeThisRegistration = false;
+						lock (this.cancellationRegistrationPtr) {
+							if (!this.cancellationRegistrationPtr.Value.HasValue) {
+								this.cancellationRegistrationPtr.Value = registration;
+							} else {
+								disposeThisRegistration = true;
+							}
+						}
+
+						if (disposeThisRegistration) {
+							registration.Dispose();
+						}
 					}
 				} catch (Exception ex) {
 					// This is bad. It would cause a hang without a trace as to why, since we if can't
@@ -580,15 +593,19 @@ namespace Microsoft.VisualStudio.Threading {
 
 				// Release memory associated with the cancellation request.
 				if (this.cancellationRegistrationPtr != null) {
-					this.cancellationRegistrationPtr.Value.Dispose();
+					lock (this.cancellationRegistrationPtr) {
+						if (this.cancellationRegistrationPtr.Value.HasValue) {
+							this.cancellationRegistrationPtr.Value.Value.Dispose();
+						}
 
-					// The reason we set this is to effectively null the struct that
-					// the strong box points to. Dispose does not seem to do this. If we
-					// have two copies of MainThreadAwaiter pointing to the same strongbox,
-					// then if one copy executes but the other does not, we could end
-					// up holding onto the memory pointed to through this pointer. By
-					// resetting the value here we make sure it gets cleaned.
-					this.cancellationRegistrationPtr.Value = default(CancellationTokenRegistration);
+						// The reason we set this is to effectively null the struct that
+						// the strong box points to. Dispose does not seem to do this. If we
+						// have two copies of MainThreadAwaiter pointing to the same strongbox,
+						// then if one copy executes but the other does not, we could end
+						// up holding onto the memory pointed to through this pointer. By
+						// resetting the value here we make sure it gets cleaned.
+						this.cancellationRegistrationPtr.Value = default(CancellationTokenRegistration);
+					}
 				}
 
 				// Only throw a cancellation exception if we didn't end up completing what the caller asked us to do (arrive at the main thread).
