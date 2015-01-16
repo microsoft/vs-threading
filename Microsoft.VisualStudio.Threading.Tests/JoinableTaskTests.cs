@@ -2566,9 +2566,9 @@
 		public void SwitchToMainThreadShouldNotLeakJoinableTaskWhenGetResultRunsFirst() {
 			var cts = new CancellationTokenSource();
 			var factory = (DerivedJoinableTaskFactory)this.asyncPump;
-			var pauseAfterPostedContinuationToMainThread = new ManualResetEventSlim(false);
+			var transitionedToMainThread = new ManualResetEventSlim(false);
 			factory.PostToUnderlyingSynchronizationContextCallback = () => {
-				pauseAfterPostedContinuationToMainThread.Wait();
+				transitionedToMainThread.Wait();
 			};
 
 			Object result = new Object();
@@ -2578,7 +2578,7 @@
 				await TaskScheduler.Default;
 				this.asyncPump.Run(async () => {
 					await this.asyncPump.SwitchToMainThreadAsync(cts.Token);
-					pauseAfterPostedContinuationToMainThread.Set();
+					transitionedToMainThread.Set();
 					return result;
 				});
 			});
@@ -2603,9 +2603,9 @@
 		public void SwitchToMainThreadShouldNotLeakJoinableTaskWhenGetResultRunsLater() {
 			var cts = new CancellationTokenSource();
 			var factory = (DerivedJoinableTaskFactory)this.asyncPump;
-			var pauseBeforeRunContinuationOnMainThread = new ManualResetEventSlim(false);
+			var waitForOnCompletedIsFinished = new ManualResetEventSlim(false);
 			factory.TransitionedToMainThreadCallback = (jt) => {
-				pauseBeforeRunContinuationOnMainThread.Wait();
+				waitForOnCompletedIsFinished.Wait();
 			};
 
 			Object result = new Object();
@@ -2617,7 +2617,7 @@
 					await this.asyncPump.SwitchToMainThreadAsync(cts.Token);
 					return result;
 				});
-				pauseBeforeRunContinuationOnMainThread.Set();
+				waitForOnCompletedIsFinished.Set();
 				await joinable;
 			});
 
@@ -2635,6 +2635,22 @@
 			object target;
 			weakResult.TryGetTarget(out target);
 			Assert.IsNull(target, "The task's result should be collected unless the JoinableTask is leaked");
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void PostToUnderlyingSynchronizationContextShouldBeAfterSignalJoinableTasks() {
+			var factory = (DerivedJoinableTaskFactory)this.asyncPump;
+			var transitionedToMainThread = new ManualResetEventSlim(false);
+			factory.PostToUnderlyingSynchronizationContextCallback = () => {
+				// The JoinableTask should be wakened up and the code to set this event should be executed on main thread,
+				// otherwise, this wait will cause test timeout.
+				transitionedToMainThread.Wait();
+            };
+			this.asyncPump.Run(async delegate {
+				await TaskScheduler.Default;
+				await this.asyncPump.SwitchToMainThreadAsync();
+				transitionedToMainThread.Set();
+			});
 		}
 
 		private static async void SomeFireAndForgetMethod() {
