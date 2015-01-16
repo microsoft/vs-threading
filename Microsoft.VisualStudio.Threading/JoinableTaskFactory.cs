@@ -593,9 +593,10 @@ namespace Microsoft.VisualStudio.Threading {
 
 				// Release memory associated with the cancellation request.
 				if (this.cancellationRegistrationPtr != null) {
+					CancellationTokenRegistration registration = default(CancellationTokenRegistration);
 					lock (this.cancellationRegistrationPtr) {
 						if (this.cancellationRegistrationPtr.Value.HasValue) {
-							this.cancellationRegistrationPtr.Value.Value.Dispose();
+							registration = this.cancellationRegistrationPtr.Value.Value;
 						}
 
 						// The reason we set this is to effectively null the struct that
@@ -606,6 +607,8 @@ namespace Microsoft.VisualStudio.Threading {
 						// resetting the value here we make sure it gets cleaned.
 						this.cancellationRegistrationPtr.Value = default(CancellationTokenRegistration);
 					}
+
+					registration.Dispose();
 				}
 
 				// Only throw a cancellation exception if we didn't end up completing what the caller asked us to do (arrive at the main thread).

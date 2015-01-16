@@ -2599,6 +2599,44 @@
 			Assert.IsNull(target, "The task's result should be collected unless the JoinableTask is leaked");
 		}
 
+		[TestMethod, Timeout(TestTimeout)]
+		public void SwitchToMainThreadShouldNotLeakJoinableTaskWhenGetResultRunsLater() {
+			var cts = new CancellationTokenSource();
+			var factory = (DerivedJoinableTaskFactory)this.asyncPump;
+			var pauseBeforeRunContinuationOnMainThread = new ManualResetEventSlim(false);
+			factory.TransitionedToMainThreadCallback = (jt) => {
+				pauseBeforeRunContinuationOnMainThread.Wait();
+			};
+
+			Object result = new Object();
+			WeakReference<Object> weakResult = new WeakReference<object>(result);
+
+			this.asyncPump.Run(async () => {
+				await TaskScheduler.Default;
+				var joinable = this.asyncPump.RunAsync(async () => {
+					await this.asyncPump.SwitchToMainThreadAsync(cts.Token);
+					return result;
+				});
+				pauseBeforeRunContinuationOnMainThread.Set();
+				await joinable;
+			});
+
+			// Needs to give the dispatcher a chance to run the posted action in order to release
+			// the last reference to the JoinableTask.
+			var frame = new DispatcherFrame();
+			Dispatcher.CurrentDispatcher.BeginInvoke((Action)(() => {
+				frame.Continue = false;
+			}));
+			Dispatcher.PushFrame(frame);
+
+			result = null;
+			GC.Collect();
+
+			object target;
+			weakResult.TryGetTarget(out target);
+			Assert.IsNull(target, "The task's result should be collected unless the JoinableTask is leaked");
+		}
+
 		private static async void SomeFireAndForgetMethod() {
 			await Task.Yield();
 		}
