@@ -506,6 +506,21 @@ namespace Microsoft.VisualStudio.Threading {
 
 			private readonly JoinableTask job;
 
+			/// <summary>
+			/// Holds the reference to the <see cref="CancellationTokenRegistration"/> struct, so that all the copies of <see cref="MainThreadAwaiter"/> will hold
+			/// the same <see cref="CancellationTokenRegistration"/> object.
+			/// </summary>
+			/// <remarks>
+			/// This must be initialized to either null or an <see cref="Nullable{T}"/> object holding no value.
+			/// If this starts as an <see cref="Nullable{T}"/> object object holding no value, then it means we are interested in the cancellation,
+			/// and its state would be changed following one of these 2 patterns determined by the execution order.
+			/// 1. if <see cref="OnCompleted(Action)"/> finishes before <see cref="GetResult"/> is being executed on main thread,
+			/// then this will hold the real registered value after <see cref="OnCompleted(Action)"/>, and <see cref="GetResult"/>
+			/// will dispose that value and set a default value of <see cref="CancellationTokenRegistration"/>.
+			/// 2. if <see cref="GetResult"/> is executed on main thread before <see cref="OnCompleted(Action)"/> registers the cancellation,
+			/// then this will hold a default value of <see cref="CancellationTokenRegistration"/>, and <see cref="OnCompleted(Action)"/>
+			/// would not touch it.
+			/// </remarks>
 			private StrongBox<CancellationTokenRegistration?> cancellationRegistrationPtr;
 
 			/// <summary>
@@ -563,6 +578,12 @@ namespace Microsoft.VisualStudio.Threading {
 							wrapper,
 							useSynchronizationContext: false);
 
+						// Needs a lock to avoid a race condition between this method and GetResult().
+						// This method is called on a background thread. After "this.jobFactory.RequestSwitchToMainThread()" returns,
+						// the continuation is scheduled and GetResult() will be called whenver it is ready on main thread.
+						// We have observed sometimes GetResult() was called right after "this.jobFactory.RequestSwitchToMainThread()"
+						// and before "this.cancellationToken.Register()". If that happens, that means we lose the interest on the cancellation
+						// and should not register the cancellation here. Without protecting that, "this.cancellationRegistrationPtr" will be leaked.
 						bool disposeThisRegistration = false;
 						lock (this.cancellationRegistrationPtr) {
 							if (!this.cancellationRegistrationPtr.Value.HasValue) {
@@ -605,9 +626,15 @@ namespace Microsoft.VisualStudio.Threading {
 						// then if one copy executes but the other does not, we could end
 						// up holding onto the memory pointed to through this pointer. By
 						// resetting the value here we make sure it gets cleaned.
+						//
+						// In addition, assigning default(CancellationTokenRegistration) to a field that
+						// stores a Nullable<CancellationTokenRegistration> effectively gives it a HasValue status,
+						// which will let OnCompleted know it lost the interest on the cancellation. That is an
+						// important hint for OnCompleted() in order NOT to leak the cancellation registration.
 						this.cancellationRegistrationPtr.Value = default(CancellationTokenRegistration);
 					}
 
+					// Intentionally deferring disposal till we exit the lock to avoid executing outside code within the lock.
 					registration.Dispose();
 				}
 

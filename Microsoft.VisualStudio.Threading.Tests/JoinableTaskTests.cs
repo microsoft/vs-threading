@@ -2568,6 +2568,7 @@
 			var factory = (DerivedJoinableTaskFactory)this.asyncPump;
 			var transitionedToMainThread = new ManualResetEventSlim(false);
 			factory.PostToUnderlyingSynchronizationContextCallback = () => {
+				// Pause the background thread after posted the continuation to JoinableTask.
 				transitionedToMainThread.Wait();
 			};
 
@@ -2575,9 +2576,17 @@
 			WeakReference<Object> weakResult = new WeakReference<object>(result);
 
 			this.asyncPump.Run(async () => {
+				// Needs to switch to background thread at first in order to test the code that requests switch to main thread.
 				await TaskScheduler.Default;
+
+				// This nested run starts on background thread and then requests to switch to main thread.
+				// The remaining parts in the async delegate would be executed on main thread. This nested run
+				// will complete only when both the background thread works (aka. MainThreadAWaiter.OnCompleted())
+				// and the main thread works are done, and then we could start verification.
 				this.asyncPump.Run(async () => {
 					await this.asyncPump.SwitchToMainThreadAsync(cts.Token);
+					// Resume the background thread after transitioned to main thread.
+					// This is to ensure the timing that GetResult() must be called before OnCompleted() registers the cancellation.
 					transitionedToMainThread.Set();
 					return result;
 				});
@@ -2605,6 +2614,7 @@
 			var factory = (DerivedJoinableTaskFactory)this.asyncPump;
 			var waitForOnCompletedIsFinished = new ManualResetEventSlim(false);
 			factory.TransitionedToMainThreadCallback = (jt) => {
+				// Pause the main thread before execute the continuation.
 				waitForOnCompletedIsFinished.Wait();
 			};
 
@@ -2612,11 +2622,20 @@
 			WeakReference<Object> weakResult = new WeakReference<object>(result);
 
 			this.asyncPump.Run(async () => {
+				// Needs to switch to background thread at first in order to test the code that requests switch to main thread.
 				await TaskScheduler.Default;
+
+				// This nested async run starts on background thread and then requests to switch to main thread.
+				// It will complete only when the background thread works (aka. MainThreadAWaiter.OnCompleted()) are done,
+				// and then we will signal a test event to resume the main thread execution, to let the remaining parts
+				// in the async delegate go through.
 				var joinable = this.asyncPump.RunAsync(async () => {
 					await this.asyncPump.SwitchToMainThreadAsync(cts.Token);
 					return result;
 				});
+
+				// Resume the main thread after OnCompleted() finishes.
+				// This is to ensure the timing that GetResult() must be called after OnCompleted() is fully done.
 				waitForOnCompletedIsFinished.Set();
 				await joinable;
 			});
