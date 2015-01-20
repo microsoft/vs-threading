@@ -6,6 +6,7 @@
 	using System.Linq;
 	using System.Reflection;
 	using System.Text;
+	using System.Threading;
 	using System.Threading.Tasks;
 
 	[TestClass]
@@ -116,6 +117,23 @@
 
 			Assert.IsNotNull(this.asyncLocal.Value);
 			Assert.AreSame(value, this.asyncLocal.Value);
+		}
+
+		[TestMethod]
+		public void ValuePersistsAcrossExecutionContextChanges() {
+			var jtLocal = new AsyncLocal<object>();
+			jtLocal.Value = 1;
+			Func<Task> asyncMethod = async delegate {
+				SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
+				Assert.AreEqual(1, jtLocal.Value);
+				jtLocal.Value = 3;
+				Assert.AreEqual(3, jtLocal.Value);
+				await TaskScheduler.Default;
+				Assert.AreEqual(3, jtLocal.Value);
+			};
+			asyncMethod().GetAwaiter().GetResult();
+
+			Assert.AreEqual(1, jtLocal.Value);
 		}
 
 		[TestMethod, TestCategory("Performance")]
