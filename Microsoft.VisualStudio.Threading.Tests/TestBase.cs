@@ -17,6 +17,50 @@
 
 		public TestContext TestContext { get; set; }
 
+		/// <summary>
+		/// Verifies that continuations scheduled on a task will not be executed inline with the specified completing action.
+		/// </summary>
+		/// <param name="antecedent">The task to test.</param>
+		/// <param name="completingAction">The action that results in the synchronous completion of the task.</param>
+		protected static void VerifyDoesNotInlineContinuations(Task antecedent, Action completingAction) {
+			Requires.NotNull(antecedent, nameof(antecedent));
+			Requires.NotNull(completingAction, nameof(completingAction));
+
+			var completingActionFinished = new ManualResetEventSlim();
+			var continuation = antecedent.ContinueWith(
+				_ => Assert.IsTrue(completingActionFinished.Wait(AsyncDelay)),
+				CancellationToken.None,
+				TaskContinuationOptions.ExecuteSynchronously,
+				TaskScheduler.Default);
+			completingAction();
+			completingActionFinished.Set();
+
+			// Rethrow the exception if it turned out it deadlocked.
+			continuation.GetAwaiter().GetResult();
+		}
+
+		/// <summary>
+		/// Verifies that continuations scheduled on a task can be executed inline with the specified completing action.
+		/// </summary>
+		/// <param name="antecedent">The task to test.</param>
+		/// <param name="completingAction">The action that results in the synchronous completion of the task.</param>
+		protected static void VerifyCanInlineContinuations(Task antecedent, Action completingAction) {
+			Requires.NotNull(antecedent, nameof(antecedent));
+			Requires.NotNull(completingAction, nameof(completingAction));
+
+			Thread callingThread = Thread.CurrentThread;
+			var continuation = antecedent.ContinueWith(
+				_ => Assert.AreEqual(callingThread, Thread.CurrentThread),
+				CancellationToken.None,
+				TaskContinuationOptions.ExecuteSynchronously,
+				TaskScheduler.Default);
+			completingAction();
+			Assert.IsTrue(continuation.IsCompleted);
+
+			// Rethrow any exceptions.
+			continuation.GetAwaiter().GetResult();
+		}
+
 		protected void CheckGCPressure(Action scenario, int maxBytesAllocated, int iterations = 100, int allowedAttempts = GCAllocationAttempts) {
 			// prime the pump
 			for (int i = 0; i < iterations; i++) {
