@@ -108,6 +108,10 @@
 			}
 		}
 
+		/// <summary>
+		/// Responds to cancellation requests by removing the request from the waiter queue.
+		/// </summary>
+		/// <param name="state">The <see cref="WaiterCompletionSource"/> passed in to the <see cref="CancellationToken.Register(Action{object}, object)"/> method.</param>
 		private void OnCancellationRequest(object state) {
 			var tcs = (WaiterCompletionSource)state;
 			bool removed;
