@@ -15,7 +15,7 @@
 		/// <summary>
 		/// A queue of folks awaiting signals.
 		/// </summary>
-		private readonly Queue<Waiter> signalAwaiters = new Queue<Waiter>();
+		private readonly Queue<WaiterCompletionSource> signalAwaiters = new Queue<WaiterCompletionSource>();
 
 		/// <summary>
 		/// Whether to complete the task synchronously in the <see cref="Set"/> method,
@@ -78,9 +78,9 @@
 					this.signaled = false;
 					return TplExtensions.CompletedTask;
 				} else {
-					var waiter = new Waiter(this, cancellationToken);
+					var waiter = new WaiterCompletionSource(this, cancellationToken);
 					this.signalAwaiters.Enqueue(waiter);
-					return waiter.CompletionSource.Task;
+					return waiter.Task;
 				}
 			}
 		}
@@ -89,31 +89,30 @@
 		/// Sets the signal if it has not already been set, allowing one awaiter to handle the signal if one is already waiting.
 		/// </summary>
 		public void Set() {
-			Waiter waiter = default(Waiter);
+			WaiterCompletionSource toRelease = null;
 			lock (this.signalAwaiters) {
 				if (this.signalAwaiters.Count > 0) {
-					waiter = this.signalAwaiters.Dequeue();
+					toRelease = this.signalAwaiters.Dequeue();
 				} else if (!this.signaled) {
 					this.signaled = true;
 				}
 			}
 
-			waiter.Registration.Dispose();
-			var toRelease = waiter.CompletionSource;
 			if (toRelease != null) {
+				toRelease.Registration.Dispose();
 				if (this.allowInliningAwaiters) {
 					toRelease.SetResult(EmptyStruct.Instance);
 				} else {
-					ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<EmptyStruct>)state).SetResult(EmptyStruct.Instance), toRelease);
+					ThreadPool.QueueUserWorkItem(state => ((WaiterCompletionSource)state).SetResult(EmptyStruct.Instance), toRelease);
 				}
 			}
 		}
 
 		private void OnCancellationRequest(object state) {
-			var tcs = (TaskCompletionSource<EmptyStruct>)state;
+			var tcs = (WaiterCompletionSource)state;
 			bool removed;
 			lock (this.signalAwaiters) {
-				removed = this.signalAwaiters.RemoveMidQueue((waiter, arg) => waiter.CompletionSource == arg, tcs);
+				removed = this.signalAwaiters.RemoveMidQueue(tcs);
 			}
 
 			// We only cancel the task if we removed it from the queue.
@@ -122,7 +121,7 @@
 				if (this.allowInliningAwaiters) {
 					tcs.SetCanceled();
 				} else {
-					ThreadPool.QueueUserWorkItem(s => ((TaskCompletionSource<EmptyStruct>)s).SetCanceled(), state);
+					ThreadPool.QueueUserWorkItem(s => ((WaiterCompletionSource)s).SetCanceled(), state);
 				}
 			}
 		}
@@ -130,26 +129,20 @@
 		/// <summary>
 		/// Tracks someone waiting for a signal from the event.
 		/// </summary>
-		private struct Waiter {
+		private class WaiterCompletionSource : TaskCompletionSource<EmptyStruct> {
 			/// <summary>
-			/// Initializes a new instance of the <see cref="Waiter"/> struct.
+			/// Initializes a new instance of the <see cref="WaiterCompletionSource"/> struct.
 			/// </summary>
 			/// <param name="owner">The event that is initializing this value.</param>
 			/// <param name="cancellationToken">The cancellation token associated with the waiter.</param>
-			public Waiter(AsyncAutoResetEvent owner, CancellationToken cancellationToken) {
-				this.CompletionSource = new TaskCompletionSource<EmptyStruct>();
-				this.Registration = cancellationToken.Register(owner.onCancellationRequestHandler, this.CompletionSource);
+			public WaiterCompletionSource(AsyncAutoResetEvent owner, CancellationToken cancellationToken) {
+				this.Registration = cancellationToken.Register(owner.onCancellationRequestHandler, this);
 			}
 
 			/// <summary>
 			/// Gets the registration to dispose of when the waiter receives their event.
 			/// </summary>
 			public CancellationTokenRegistration Registration { get; private set; }
-
-			/// <summary>
-			/// The task source to use for delivering the event to the waiter.
-			/// </summary>
-			public TaskCompletionSource<EmptyStruct> CompletionSource { get; private set; }
 		}
 	}
 }
