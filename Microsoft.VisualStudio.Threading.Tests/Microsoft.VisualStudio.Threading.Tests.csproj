@@ -25,6 +25,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -33,6 +34,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -53,6 +55,9 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="..\Microsoft.VisualStudio.Threading\InternalUtilities.cs">
+      <Link>InternalUtilities.cs</Link>
+    </Compile>
     <Compile Include="..\Microsoft.VisualStudio.Threading\ListOfOftenOne.cs">
       <Link>ListOfOftenOne.cs</Link>
     </Compile>
@@ -68,6 +73,7 @@
     <Compile Include="AsyncLazyTests.cs" />
     <Compile Include="AsyncLocalTests.cs" />
     <Compile Include="DelegatingJoinableTaskFactoryTests.cs" />
+    <Compile Include="InternalUtilitiesTests.cs" />
     <Compile Include="JoinableTaskAndAsyncReaderWriterLockTests.cs" />
     <Compile Include="JoinableTaskCollectionTests.cs" />
     <Compile Include="JoinableTaskContextNodeTests.cs" />
