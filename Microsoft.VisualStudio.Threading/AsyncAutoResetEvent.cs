@@ -68,6 +68,11 @@
 		/// <param name="cancellationToken">A token whose cancellation removes the caller from the queue of those waiting for the event.</param>
 		/// <returns>An awaitable.</returns>
 		public Task WaitAsync(CancellationToken cancellationToken) {
+			if (cancellationToken.IsCancellationRequested) {
+				// TODO: when we target .NET 4.6 we should return a task that refers to the cancellationToken.
+				return TplExtensions.CanceledTask;
+			}
+
 			lock (this.signalAwaiters) {
 				if (this.signaled) {
 					this.signaled = false;

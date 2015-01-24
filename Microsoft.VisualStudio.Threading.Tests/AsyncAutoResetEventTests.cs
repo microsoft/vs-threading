@@ -112,6 +112,24 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
+		public void WaitAsync_WithCancellationToken_PrecanceledDoesNotClaimExistingSignal() {
+			// Verify that a pre-set signal is not reset by a canceled wait request.
+			var token = new CancellationToken(true);
+			this.evt.Set();
+			try {
+				this.evt.WaitAsync(token).GetAwaiter().GetResult();
+				Assert.Fail("Task was expected to transition to a canceled state.");
+			} catch (OperationCanceledException /*ex*/) {
+				// TODO: enable this verification when we target .NET 4.6 and can make this work.
+				////Assert.AreEqual(cts.Token, ex.CancellationToken);
+			}
+
+			// Verify that the signal was not acquired.
+			Task waitTask = this.evt.WaitAsync();
+			Assert.AreEqual(TaskStatus.RanToCompletion, waitTask.Status);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
 		public void WaitAsync_Canceled_DoesNotInlineContinuations() {
 			var cts = new CancellationTokenSource();
 			var task = this.evt.WaitAsync(cts.Token);
