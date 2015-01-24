@@ -58,10 +58,10 @@
 			var setReturned = new ManualResetEventSlim();
 			var inlinedContinuation = this.evt.WaitAsync()
 				.ContinueWith(delegate {
-				// Arrange to synchronously block the continuation until Set() has returned,
-				// which would deadlock if Set does not return until inlined continuations complete.
-				Assert.IsTrue(setReturned.Wait(AsyncDelay));
-			},
+					// Arrange to synchronously block the continuation until Set() has returned,
+					// which would deadlock if Set does not return until inlined continuations complete.
+					Assert.IsTrue(setReturned.Wait(AsyncDelay));
+				},
 				TaskContinuationOptions.ExecuteSynchronously);
 			this.evt.Set();
 			setReturned.Set();
@@ -87,6 +87,72 @@
 			this.evt.Set();
 			setReturned = true;
 			Assert.IsTrue(inlinedContinuation.IsCompleted);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void WaitAsync_WithCancellationToken_DoesNotClaimSignal() {
+			var cts = new CancellationTokenSource();
+			Task waitTask = this.evt.WaitAsync(cts.Token);
+			Assert.IsFalse(waitTask.IsCompleted);
+
+			// Cancel the request and ensure that it propagates to the task.
+			cts.Cancel();
+			try {
+				waitTask.GetAwaiter().GetResult();
+				Assert.Fail("Task was expected to transition to a canceled state.");
+			} catch (OperationCanceledException /*ex*/) {
+				// TODO: enable this verification when we target .NET 4.6 and can make this work.
+				////Assert.AreEqual(cts.Token, ex.CancellationToken);
+			}
+
+			// Now set the event and verify that a future waiter gets the signal immediately.
+			this.evt.Set();
+			waitTask = this.evt.WaitAsync();
+			Assert.AreEqual(TaskStatus.RanToCompletion, waitTask.Status);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void WaitAsync_Canceled_DoesNotInlineContinuations() {
+			var cts = new CancellationTokenSource();
+			var task = this.evt.WaitAsync(cts.Token);
+			VerifyDoesNotInlineContinuations(task, () => cts.Cancel());
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void WaitAsync_Canceled_DoesInlineContinuations() {
+			this.evt = new AsyncAutoResetEvent(allowInliningAwaiters: true);
+			var cts = new CancellationTokenSource();
+			var task = this.evt.WaitAsync(cts.Token);
+			VerifyCanInlineContinuations(task, () => cts.Cancel());
+		}
+
+		/// <summary>
+		/// Verifies that long-lived, uncanceled CancellationTokens do not result in leaking memory.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout * 2)]
+		public void WaitAsync_WithCancellationToken_DoesNotLeakWhenNotCanceled() {
+			var cts = new CancellationTokenSource();
+
+			this.CheckGCPressure(
+				() => {
+					this.evt.WaitAsync(cts.Token);
+					this.evt.Set();
+				},
+				500);
+		}
+
+		/// <summary>
+		/// Verifies that long-lived, uncanceled CancellationTokens do not result in leaking memory.
+		/// </summary>
+		[TestMethod, Timeout(TestTimeout * 2)]
+		public void WaitAsync_WithCancellationToken_DoesNotLeakWhenCanceled() {
+			this.CheckGCPressure(
+				() => {
+					var cts = new CancellationTokenSource();
+					this.evt.WaitAsync(cts.Token);
+					cts.Cancel();
+				},
+				1000);
 		}
 	}
 }

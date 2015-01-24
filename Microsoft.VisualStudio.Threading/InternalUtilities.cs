@@ -39,23 +39,35 @@ namespace Microsoft.VisualStudio.Threading {
 		internal static bool RemoveMidQueue<T>(this Queue<T> queue, T valueToRemove) where T : class {
 			Requires.NotNull(queue, nameof(queue));
 			Requires.NotNull(valueToRemove, nameof(valueToRemove));
-			if (queue.Count == 0) {
-				return false;
-			}
 
-			T originalHead = queue.Dequeue();
-			if (Object.ReferenceEquals(originalHead, valueToRemove)) {
-				return true;
-			}
+			return RemoveMidQueue(queue, (item, arg) => object.ReferenceEquals(item, arg), valueToRemove);
+		}
 
+		/// <summary>
+		/// Removes an element from the middle of a queue without disrupting the other elements.
+		/// </summary>
+		/// <typeparam name="T">The element to remove.</typeparam>
+		/// <typeparam name="TArg">The type of argument to pass to the quality test function.</typeparam>
+		/// <param name="queue">The queue to modify.</param>
+		/// <param name="equalTest">The function that determines whether this is the element to be removed.</param>
+		/// <param name="argument">The argument to pass to <paramref name="equalTest"/>.</param>
+		/// <remarks>
+		/// If a value appears multiple times in the queue, only its first entry is removed.
+		/// </remarks>
+		internal static bool RemoveMidQueue<T, TArg>(this Queue<T> queue, Func<T, TArg, bool> equalTest, TArg argument) {
+			Requires.NotNull(queue, nameof(queue));
+			Requires.NotNull(equalTest, nameof(equalTest));
+
+			int originalCount = queue.Count;
+			int dequeueCounter = 0;
 			bool found = false;
-			queue.Enqueue(originalHead);
-			while (!Object.ReferenceEquals(originalHead, queue.Peek())) {
-				var tempHead = queue.Dequeue();
-				if (!found && Object.ReferenceEquals(tempHead, valueToRemove)) {
+			while (dequeueCounter < originalCount) {
+				dequeueCounter++;
+				T dequeued = queue.Dequeue();
+				if (!found && equalTest(dequeued, argument)) { // only find 1 match
 					found = true;
 				} else {
-					queue.Enqueue(tempHead);
+					queue.Enqueue(dequeued);
 				}
 			}
 
