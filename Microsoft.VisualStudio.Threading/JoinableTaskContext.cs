@@ -213,12 +213,22 @@ namespace Microsoft.VisualStudio.Threading {
 		public bool IsMainThreadBlocked() {
 			var ambientTask = this.AmbientTask;
 			if (ambientTask != null) {
+				if (ambientTask.HasMainThreadSynchronousTaskWaiting) {
+					return true;
+				}
+
+				// The JoinableTask dependent chain gives a fast way to check IsMainThreadBlocked.
+				//  However, it only works when the main thread tasks is in the CompleteOnCurrentThread loop.
+				//  The dependent chain won't be added when a sychornous task is in the initializion phase. 
+				// In that case, we still need follow the descendent chain.  This should be rare.
 				using (NoMessagePumpSyncContext.Default.Apply()) {
 					lock (this.SyncContextLock) {
 						var allJoinedJobs = new HashSet<JoinableTask>();
 						lock (this.pendingTasks) {	 // our read lock doesn't cover this collection
 							foreach (var pendingTask in this.pendingTasks) {
-								if ((pendingTask.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) {
+								if ((pendingTask.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread &&
+									!pendingTask.HasMainThreadSynchronousTaskWaiting) {
+
 									// This task blocks the main thread. If it has joined the ambient task
 									// directly or indirectly, then our ambient task is considered blocking
 									// the main thread.

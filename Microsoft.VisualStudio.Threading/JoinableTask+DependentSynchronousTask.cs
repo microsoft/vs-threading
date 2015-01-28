@@ -20,6 +20,28 @@ namespace Microsoft.VisualStudio.Threading
         private DependentSynchronousTask dependingSynchronousTaskTracking;
 
         /// <summary>
+        /// Gets whether the main thread is waiting for the task's completion
+        /// </summary>
+        internal bool HasMainThreadSynchronousTaskWaiting {
+            get {
+                using (NoMessagePumpSyncContext.Default.Apply()) {
+                    lock (this.owner.Context.SyncContextLock) {
+                        DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
+                        while (existingTaskTracking != null) {
+                            if ((existingTaskTracking.SynchronousTask.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) {
+                                return true;
+                            }
+
+                            existingTaskTracking = existingTaskTracking.Next;
+                        }
+
+                        return false;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// Get how many number of synchronous tasks in our tracking list.
         /// </summary>
         private int CountOfDependingSynchronousTasks() {
