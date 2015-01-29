@@ -278,7 +278,7 @@ namespace Microsoft.VisualStudio.Threading {
 					// This could be a hang. If a memory dump with heap is taken, it will
 					// significantly simplify investigation if the heap only has live awaitables
 					// remaining (completed ones GC'd). So run the GC now if this is the first time.
-					if (hangTimeoutsCount == 0) {
+					if (hangTimeoutsCount == 0 && this.Context.MainThread == Thread.CurrentThread) {
 						GC.Collect();
 					}
 
