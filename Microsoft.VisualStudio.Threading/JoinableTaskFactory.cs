@@ -273,8 +273,13 @@ namespace Microsoft.VisualStudio.Threading {
 			Requires.NotNull(task, nameof(task));
 			int hangTimeoutsCount = 0; // useful for debugging dump files to see how many times we looped.
 			Guid hangId = Guid.Empty;
+			Stopwatch stopWatch = null;
 			try {
 				while (!task.Wait(this.HangDetectionTimeout)) {
+					if (hangTimeoutsCount == 0) {
+						stopWatch = Stopwatch.StartNew();
+					}
+
 					hangTimeoutsCount++;
 					TimeSpan hangDuration = TimeSpan.FromMilliseconds(this.HangDetectionTimeout.TotalMilliseconds * hangTimeoutsCount);
 					if (hangId == Guid.Empty) {
@@ -282,6 +287,13 @@ namespace Microsoft.VisualStudio.Threading {
 					}
 
 					this.Context.OnHangDetected(hangDuration, hangTimeoutsCount, hangId);
+				}
+
+				if (hangTimeoutsCount > 0) {
+					// We detect a false alarm. The stop watch was started after the first timeout, so we add one more iternation.
+					this.Context.OnFalseHangDetected(
+						TimeSpan.FromMilliseconds(stopWatch.ElapsedMilliseconds + this.HangDetectionTimeout.TotalMilliseconds),
+						hangId);
 				}
 			} catch (AggregateException) {
 				// Swallow exceptions thrown by Task.Wait().
