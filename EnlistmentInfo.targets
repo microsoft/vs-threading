@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="dogfood" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+  </PropertyGroup>
+
+  <Import Project="$(DepotRoot)\Tools\Derazzle\Common.targets"/>
+
+  <ItemDefinitionGroup>
+    <FilesToSign Condition=" '$(DevDivProjectType)' == 'product' ">
+      <Authenticode>MicrosoftSHA2</Authenticode>
+      <StrongName>StrongName</StrongName>
+    </FilesToSign>
+    <FilesToSign Condition=" '$(DevDivProjectType)' == 'vsix' ">
+      <Authenticode>vsix</Authenticode>
+    </FilesToSign>
+  </ItemDefinitionGroup>
+
+  <ItemGroup Condition=" '$(Nonshipping)' != 'true' ">
+    <FilesToSign Include="$(TargetPath)" Condition=" '$(DevDivProjectType)' == 'product' " />
+    <FilesToSign Include="$(TargetDir)$(TargetName).vsix" Condition=" '$(DevDivProjectType)' == 'vsix' " />
+  </ItemGroup>
+</Project>
