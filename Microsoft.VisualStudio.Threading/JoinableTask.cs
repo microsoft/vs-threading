@@ -659,6 +659,10 @@ namespace Microsoft.VisualStudio.Threading {
 					}
 				}
 
+				if (onMainThread) {
+					this.owner.Context.OnJoinableTaskSynchronouslyBlockingMainThread(this);
+				}
+
 				try {
 					// Don't use IsCompleted as the condition because that
 					// includes queues of posted work that don't have to complete for the

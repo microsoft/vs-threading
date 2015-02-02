@@ -94,13 +94,22 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </remarks>
 		private readonly HashSet<JoinableTask> pendingTasks = new HashSet<JoinableTask>();
 
-		/// <summary>
-		/// A set of receivers of hang notifications.
-		/// </summary>
-		/// <remarks>
-		/// All access to this collection should be guarded by locking this collection.
-		/// </remarks>
-		private readonly HashSet<JoinableTaskContextNode> hangNotifications = new HashSet<JoinableTaskContextNode>();
+        /// <summary>
+        /// The stack of tasks which synchronously blocks the main thread in the initial stage (before it yields and CompleteOnCurrentThread starts.
+        /// </summary>
+        /// <remarks>
+        /// Normally we expect this stack contains 0 or 1 task. When a synchronous task starts another synchronous task in the initialization stage,
+        /// we might get more than 1 tasks, but it should be very rare to exceed 2 tasks.
+        /// </remarks>
+        private readonly Stack<JoinableTask> initializingSynchronouslyMainThreadTasks = new Stack<JoinableTask>(2);
+
+        /// <summary>
+        /// A set of receivers of hang notifications.
+        /// </summary>
+        /// <remarks>
+        /// All access to this collection should be guarded by locking this collection.
+        /// </remarks>
+        private readonly HashSet<JoinableTaskContextNode> hangNotifications = new HashSet<JoinableTaskContextNode>();
 
 		/// <summary>
 		/// A single joinable task factory that itself cannot be joined.
@@ -220,19 +229,19 @@ namespace Microsoft.VisualStudio.Threading {
 				// The JoinableTask dependent chain gives a fast way to check IsMainThreadBlocked.
 				//  However, it only works when the main thread tasks is in the CompleteOnCurrentThread loop.
 				//  The dependent chain won't be added when a sychornous task is in the initializion phase. 
-				// In that case, we still need follow the descendent chain.  This should be rare.
+				// In that case, we still need follow the descendent of the task in the initialization stage.
+				// We hope the dependency tree is relatively small in that stage.
 				using (NoMessagePumpSyncContext.Default.Apply()) {
 					lock (this.SyncContextLock) {
 						var allJoinedJobs = new HashSet<JoinableTask>();
-						lock (this.pendingTasks) {	 // our read lock doesn't cover this collection
-							foreach (var pendingTask in this.pendingTasks) {
-								if ((pendingTask.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread &&
-									!pendingTask.HasMainThreadSynchronousTaskWaiting) {
+						lock (this.initializingSynchronouslyMainThreadTasks) {	 // our read lock doesn't cover this collection
+							foreach (var initializingTask in this.initializingSynchronouslyMainThreadTasks) {
+								if (!initializingTask.HasMainThreadSynchronousTaskWaiting) {
 
 									// This task blocks the main thread. If it has joined the ambient task
 									// directly or indirectly, then our ambient task is considered blocking
 									// the main thread.
-									pendingTask.AddSelfAndDescendentOrJoinedJobs(allJoinedJobs);
+									initializingTask.AddSelfAndDescendentOrJoinedJobs(allJoinedJobs);
 									if (allJoinedJobs.Contains(ambientTask)) {
 										return true;
 									}
@@ -333,6 +342,12 @@ namespace Microsoft.VisualStudio.Threading {
 			lock (this.pendingTasks) {
 				Assumes.True(this.pendingTasks.Add(task));
 			}
+
+			if ((task.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) {
+				lock (this.initializingSynchronouslyMainThreadTasks) {
+					this.initializingSynchronouslyMainThreadTasks.Push(task);
+				}
+			}
 		}
 
 		/// <summary>
@@ -344,6 +359,17 @@ namespace Microsoft.VisualStudio.Threading {
 
 			lock (this.pendingTasks) {
 				this.pendingTasks.Remove(task);
+			}
+		}
+
+		/// <summary>
+		/// Raised when it starts to wait a joinable task to complete in the main thread.
+		/// </summary>
+		/// <param name="task">The task requires to be completed</param>
+		internal void OnJoinableTaskSynchronouslyBlockingMainThread(JoinableTask task) {
+			lock (this.initializingSynchronouslyMainThreadTasks) {
+				Assumes.True(this.initializingSynchronouslyMainThreadTasks.Peek() == task);
+				this.initializingSynchronouslyMainThreadTasks.Pop();
 			}
 		}
 
