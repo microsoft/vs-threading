@@ -79,6 +79,7 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 				await Task.Delay(2);
 			});
 			Assert.IsFalse(this.derivedNode.HangDetected.IsSet); // we didn't register, so we shouldn't get notifications.
+			Assert.IsFalse(this.derivedNode.FalseHangReportDetected.IsSet);
 
 			using (this.derivedNode.RegisterOnHangDetected()) {
 				factory.Run(async delegate {
@@ -87,13 +88,52 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 					Assert.AreNotSame(timeout, result, "Timed out waiting for hang detection.");
 				});
 				Assert.IsTrue(this.derivedNode.HangDetected.IsSet);
-				this.derivedNode.HangDetected.Reset(); // reset for the next test
+				Assert.IsTrue(this.derivedNode.FalseHangReportDetected.IsSet);
+				Assert.AreEqual(this.derivedNode.HangReportCount, this.derivedNode.HangDetails.NotificationCount);
+				Assert.AreEqual(1, this.derivedNode.FalseHangReportCount);
+
+				// reset for the next verification
+				this.derivedNode.HangDetected.Reset(); 
+				this.derivedNode.FalseHangReportDetected.Reset();
 			}
 
 			factory.Run(async delegate {
 				await Task.Delay(2);
 			});
 			Assert.IsFalse(this.derivedNode.HangDetected.IsSet); // registration should have been canceled.
+			Assert.IsFalse(this.derivedNode.FalseHangReportDetected.IsSet);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void OnFalseHangReportDetected_OnlyOnce() {
+			var factory = (DerivedFactory)this.derivedNode.Factory;
+			factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(1);
+			this.derivedNode.RegisterOnHangDetected();
+
+			var dectionTask = factory.RunAsync(async delegate {
+				await TaskScheduler.Default;
+				for (int i = 0; i < 2; i++) {
+					await this.derivedNode.HangDetected.WaitAsync();
+					this.derivedNode.HangDetected.Reset();
+				}
+
+				await this.derivedNode.HangDetected.WaitAsync();
+			});
+
+			factory.Run(async delegate {
+				var timeout = Task.Delay(AsyncDelay);
+				var result = await Task.WhenAny(timeout, dectionTask.Task);
+				Assert.AreNotSame(timeout, result, "Timed out waiting for hang detection.");
+				await dectionTask;
+			});
+
+			Assert.IsTrue(this.derivedNode.HangDetected.IsSet);
+			Assert.IsTrue(this.derivedNode.FalseHangReportDetected.IsSet);
+			Assert.AreEqual(this.derivedNode.HangDetails.HangId, this.derivedNode.FalseHangReportId);
+			Assert.IsTrue(this.derivedNode.FalseHangReportTimeSpan >= this.derivedNode.HangDetails.HangDuration);
+			Assert.IsTrue(this.derivedNode.HangReportCount >= 3);
+			Assert.AreEqual(this.derivedNode.HangReportCount, this.derivedNode.HangDetails.NotificationCount);
+			Assert.AreEqual(1, this.derivedNode.FalseHangReportCount);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -112,6 +152,11 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 			Assert.IsNotNull(this.derivedNode.HangDetails.EntryMethod);
 			Assert.AreSame(this.GetType(), this.derivedNode.HangDetails.EntryMethod.DeclaringType);
 			Assert.IsTrue(this.derivedNode.HangDetails.EntryMethod.Name.Contains(nameof(OnHangDetected_Run_OnMainThread)));
+
+			Assert.IsTrue(this.derivedNode.FalseHangReportDetected.IsSet);
+			Assert.AreNotEqual(Guid.Empty, this.derivedNode.FalseHangReportId);
+			Assert.AreEqual(this.derivedNode.HangDetails.HangId, this.derivedNode.FalseHangReportId);
+			Assert.IsTrue(this.derivedNode.FalseHangReportTimeSpan >= this.derivedNode.HangDetails.HangDuration);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -167,11 +212,22 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 			internal DerivedNode(JoinableTaskContext context)
 				: base(context) {
 				this.HangDetected = new AsyncManualResetEvent();
+				this.FalseHangReportDetected = new AsyncManualResetEvent();
 			}
 
 			internal AsyncManualResetEvent HangDetected { get; private set; }
 
+			internal AsyncManualResetEvent FalseHangReportDetected { get; private set; }
+
 			internal JoinableTaskContext.HangDetails HangDetails { get; private set; }
+
+			internal Guid FalseHangReportId { get; private set; }
+
+			internal TimeSpan FalseHangReportTimeSpan { get; private set; }
+
+			internal int HangReportCount { get; private set; }
+
+			internal int FalseHangReportCount { get; private set; }
 
 			public override JoinableTaskFactory CreateFactory(JoinableTaskCollection collection) {
 				return new DerivedFactory(collection);
@@ -188,7 +244,16 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 			protected override void OnHangDetected(JoinableTaskContext.HangDetails details) {
 				this.HangDetails = details;
 				this.HangDetected.SetAsync().Forget();
+				this.HangReportCount++;
 				base.OnHangDetected(details);
+			}
+
+			protected override void OnFalseHangDetected(TimeSpan hangDuration, Guid hangId) {
+				this.FalseHangReportDetected.SetAsync().Forget();
+				this.FalseHangReportId = hangId;
+				this.FalseHangReportTimeSpan = hangDuration;
+				this.FalseHangReportCount++;
+				base.OnFalseHangDetected(hangDuration, hangId);
 			}
 		}
 
