@@ -290,9 +290,9 @@ namespace Microsoft.VisualStudio.Threading {
 				}
 
 				if (hangTimeoutsCount > 0) {
-					// We detect a false alarm. The stop watch was started after the first timeout, so we add one more iternation.
+					// We detect a false alarm. The stop watch was started after the first timeout, so we add intial timeout to the total delay.
 					this.Context.OnFalseHangDetected(
-						TimeSpan.FromMilliseconds(stopWatch.ElapsedMilliseconds + this.HangDetectionTimeout.TotalMilliseconds),
+						stopWatch.Elapsed + this.HangDetectionTimeout,
 						hangId);
 				}
 			} catch (AggregateException) {

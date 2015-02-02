@@ -92,7 +92,7 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 				Assert.AreEqual(this.derivedNode.HangReportCount, this.derivedNode.HangDetails.NotificationCount);
 				Assert.AreEqual(1, this.derivedNode.FalseHangReportCount);
 
-				// reset for the next test
+				// reset for the next verification
 				this.derivedNode.HangDetected.Reset(); 
 				this.derivedNode.FalseHangReportDetected.Reset();
 			}
