@@ -20,4 +20,11 @@
     <FilesToSign Include="$(TargetPath)" Condition=" '$(DevDivProjectType)' == 'product' " />
     <FilesToSign Include="$(TargetDir)$(TargetName).vsix" Condition=" '$(DevDivProjectType)' == 'vsix' " />
   </ItemGroup>
+
+  <!-- Add the satellite resource assemblies to be signed. Time this such that localization has already done its work. -->
+  <Target Name="CollectFilesToSign" BeforeTargets="SignFiles" Condition=" '$(Nonshipping)' != 'true' ">
+    <ItemGroup>
+      <FilesToSign Include="$(OutDir)Localize\*\$(TargetName).resources$(TargetExt)" />
+    </ItemGroup>
+  </Target>
 </Project>
