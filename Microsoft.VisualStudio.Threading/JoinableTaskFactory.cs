@@ -302,15 +302,18 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 		}
 
-		/// <summary>Runs the specified asynchronous method.</summary>
+		/// <summary>
+		/// Runs the specified asynchronous method to completion while synchronously blocking the calling thread.
+		/// </summary>
 		/// <param name="asyncMethod">The asynchronous method to execute.</param>
 		/// <remarks>
+		/// Any exception thrown by the delegate is rethrown in its original type to the caller of this method.
 		/// <example>
 		/// <code>
 		/// // On threadpool or Main thread, this method will block
 		/// // the calling thread until all async operations in the
 		/// // delegate complete.
-		/// this.JobContext.RunSynchronously(async delegate {
+		/// joinableTaskFactory.Run(async delegate {
 		///     // still on the threadpool or Main thread as before.
 		///     await OperationAsync();
 		///     // still on the threadpool or Main thread as before.
@@ -329,12 +332,13 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
-		/// Runs the specified asynchronous method.
+		/// Runs the specified asynchronous method to completion while synchronously blocking the calling thread.
 		/// </summary>
 		/// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
 		/// <param name="asyncMethod">The asynchronous method to execute.</param>
-		/// <returns></returns>
+		/// <returns>The result of the Task returned by <paramref name="asyncMethod"/>.</returns>
 		/// <remarks>
+		/// Any exception thrown by the delegate is rethrown in its original type to the caller of this method.
 		/// See the <see cref="Run(Func{Task})" /> overload documentation
 		/// for an example.
 		/// </remarks>
@@ -346,9 +350,9 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
-		/// Wraps the invocation of an async method such that it may
-		/// execute asynchronously, but may potentially be
-		/// synchronously completed (waited on) in the future.
+		/// Invokes an async delegate on the caller's thread, and yields back to the caller when the async method yields.
+		/// The async delegate is invoked in such a way as to mitigate deadlocks in the event that the async method
+		/// requires the main thread while the main thread eventually blocks waiting for its completion.
 		/// </summary>
 		/// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
 		/// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
@@ -395,9 +399,9 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
-		/// Wraps the invocation of an async method such that it may
-		/// execute asynchronously, but may potentially be
-		/// synchronously completed (waited on) in the future.
+		/// Invokes an async delegate on the caller's thread, and yields back to the caller when the async method yields.
+		/// The async delegate is invoked in such a way as to mitigate deadlocks in the event that the async method
+		/// requires the main thread while the main thread eventually blocks waiting for its completion.
 		/// </summary>
 		/// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
 		/// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
