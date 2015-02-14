@@ -45,6 +45,7 @@
     <Reference Include="System.XML" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="WindowsBase" />
+    <Reference Include="$(ExternalAPIsPath)\VSPlatform\Microsoft.VisualStudio.Validation.dll" />
   </ItemGroup>
   <Choose>
     <When Condition="('$(VisualStudioVersion)' == '10.0' or '$(VisualStudioVersion)' == '') and '$(TargetFrameworkVersion)' == 'v3.5'">
@@ -101,10 +102,6 @@
     <Compile Include="WeakKeyDictionaryTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Microsoft.VisualStudio.Validation\Microsoft.VisualStudio.Validation.csproj">
-      <Project>{e016a630-a79b-4b5d-8997-e66581d62b81}</Project>
-      <Name>Microsoft.VisualStudio.Validation</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj">
       <Project>{2c0dffbd-49c8-4f12-a964-e3096ad4c7f4}</Project>
       <Name>Microsoft.VisualStudio.Threading</Name>

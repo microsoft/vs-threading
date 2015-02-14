@@ -33,6 +33,7 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="$(ExternalAPIsPath)\VSPlatform\Microsoft.VisualStudio.Validation.dll" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AsyncAutoResetEvent.cs" />
@@ -91,12 +92,6 @@
     <None Include="SampleHang.dgml">
       <SubType>Designer</SubType>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Microsoft.VisualStudio.Validation\Microsoft.VisualStudio.Validation.csproj">
-      <Project>{e016a630-a79b-4b5d-8997-e66581d62b81}</Project>
-      <Name>Microsoft.VisualStudio.Validation</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <CodeAnalysisDictionary Include="CustomDictionary.xml" />
