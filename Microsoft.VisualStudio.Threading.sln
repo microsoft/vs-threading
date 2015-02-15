@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Thre
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Threading.Tests", "Microsoft.VisualStudio.Threading.Tests\Microsoft.VisualStudio.Threading.Tests.csproj", "{7B8BF2E6-7D7B-4F4E-B1A4-B08312F6294F}"
 EndProject
+Project("{13B669BE-BB05-4DDF-9536-439F39A36129}") = "Microsoft.VisualStudio.Threading.NuGet", "Microsoft.VisualStudio.Threading.NuGet\Microsoft.VisualStudio.Threading.NuGet.nuproj", "{C51ACF4A-3E2C-44B2-99FC-1A838518C690}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{7B8BF2E6-7D7B-4F4E-B1A4-B08312F6294F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7B8BF2E6-7D7B-4F4E-B1A4-B08312F6294F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7B8BF2E6-7D7B-4F4E-B1A4-B08312F6294F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C51ACF4A-3E2C-44B2-99FC-1A838518C690}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C51ACF4A-3E2C-44B2-99FC-1A838518C690}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C51ACF4A-3E2C-44B2-99FC-1A838518C690}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C51ACF4A-3E2C-44B2-99FC-1A838518C690}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
