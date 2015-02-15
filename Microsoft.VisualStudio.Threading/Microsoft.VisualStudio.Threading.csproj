@@ -36,6 +36,7 @@
     <Reference Include="$(ExternalAPIsPath)\VSPlatform\Microsoft.VisualStudio.Validation.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="AsyncAutoResetEvent.cs" />
     <Compile Include="AsyncBarrier.cs" />
     <Compile Include="AsyncCountdownEvent.cs" />
