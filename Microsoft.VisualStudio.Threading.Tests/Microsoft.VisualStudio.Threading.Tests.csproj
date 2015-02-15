@@ -99,6 +99,7 @@
     <Compile Include="TestUtilitiesTests.cs" />
     <Compile Include="TestUtilities.cs" />
     <Compile Include="ThreadingToolsTests.cs" />
+    <Compile Include="ValidityTests.cs" />
     <Compile Include="WeakKeyDictionaryTests.cs" />
   </ItemGroup>
   <ItemGroup>
