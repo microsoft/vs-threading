@@ -26,8 +26,7 @@
     <Description>Additional lock classes, TPL and dataflow extensions.</Description>
     <ReleaseNotes>
     </ReleaseNotes>
-    <ProjectUrl>
-    </ProjectUrl>
+    <ProjectUrl>https://mseng.visualstudio.com/DefaultCollection/VSIDEProj/_git/VSIDEProj.Threading/</ProjectUrl>
     <LicenseUrl>
     </LicenseUrl>
     <Tags>Threading Async Lock Synchronization Threadsafe</Tags>
