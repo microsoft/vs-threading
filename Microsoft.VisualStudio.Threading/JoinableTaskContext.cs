@@ -323,6 +323,27 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
+		/// Invoked when an earlier hang report is false alarm.
+		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+		protected internal virtual void OnFalseHangDetected(TimeSpan hangDuration, Guid hangId) {
+			List<JoinableTaskContextNode> listeners;
+			lock (this.hangNotifications) {
+				listeners = this.hangNotifications.ToList();
+			}
+
+			foreach (var listener in listeners) {
+				try {
+					listener.OnFalseHangDetected(hangDuration, hangId);
+				} catch (Exception ex) {
+					// Report it in CHK, but don't throw. In a hang situation, we don't want the product
+					// to fail for another reason, thus hiding the hang issue.
+					Report.Fail("Exception thrown from OnHangDetected listener. {0}", ex);
+				}
+			}
+		}
+
+		/// <summary>
 		/// Creates a factory without a <see cref="JoinableTaskCollection"/>.
 		/// </summary>
 		/// <remarks>

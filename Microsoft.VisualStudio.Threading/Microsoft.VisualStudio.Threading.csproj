@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), EnlistmentInfo.props))\EnlistmentInfo.props" Condition=" '$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), EnlistmentInfo.props))' != '' " />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -10,32 +10,25 @@
     <RootNamespace>Microsoft.VisualStudio.Threading</RootNamespace>
     <AssemblyName>Microsoft.VisualStudio.Threading</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Debug\Microsoft.VisualStudio.Threading.xml</DocumentationFile>
     <CodeAnalysisRuleSet>FxCopRules.ruleset</CodeAnalysisRuleSet>
     <RunCodeAnalysis>true</RunCodeAnalysis>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Release\Microsoft.VisualStudio.Threading.xml</DocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.VisualStudio.Validation, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.VisualStudio.Validation.14.0.0-pre-95a85e9492\lib\net45\Microsoft.VisualStudio.Validation.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -45,6 +38,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="AsyncAutoResetEvent.cs" />
     <Compile Include="AsyncBarrier.cs" />
     <Compile Include="AsyncCountdownEvent.cs" />
@@ -81,7 +75,6 @@
     <Compile Include="NativeMethods.cs" />
     <Compile Include="NoMessagePumpSyncContext.cs" />
     <Compile Include="ProgressWithCompletion.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SpecializedSyncContext.cs" />
     <Compile Include="Strings.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -99,25 +92,16 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <None Include="packages.config" />
     <None Include="SampleHang.dgml">
       <SubType>Designer</SubType>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Microsoft.VisualStudio.Validation\Microsoft.VisualStudio.Validation.csproj">
-      <Project>{e016a630-a79b-4b5d-8997-e66581d62b81}</Project>
-      <Name>Microsoft.VisualStudio.Validation</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <CodeAnalysisDictionary Include="CustomDictionary.xml" />
   </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), EnlistmentInfo.targets))\EnlistmentInfo.targets" Condition=" '$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), EnlistmentInfo.targets))' != '' " />
 </Project>

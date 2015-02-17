@@ -273,13 +273,11 @@ namespace Microsoft.VisualStudio.Threading {
 			Requires.NotNull(task, nameof(task));
 			int hangTimeoutsCount = 0; // useful for debugging dump files to see how many times we looped.
 			Guid hangId = Guid.Empty;
+			Stopwatch stopWatch = null;
 			try {
 				while (!task.Wait(this.HangDetectionTimeout)) {
-					// This could be a hang. If a memory dump with heap is taken, it will
-					// significantly simplify investigation if the heap only has live awaitables
-					// remaining (completed ones GC'd). So run the GC now if this is the first time.
 					if (hangTimeoutsCount == 0) {
-						GC.Collect();
+						stopWatch = Stopwatch.StartNew();
 					}
 
 					hangTimeoutsCount++;
@@ -290,6 +288,13 @@ namespace Microsoft.VisualStudio.Threading {
 
 					this.Context.OnHangDetected(hangDuration, hangTimeoutsCount, hangId);
 				}
+
+				if (hangTimeoutsCount > 0) {
+					// We detect a false alarm. The stop watch was started after the first timeout, so we add intial timeout to the total delay.
+					this.Context.OnFalseHangDetected(
+						stopWatch.Elapsed + this.HangDetectionTimeout,
+						hangId);
+				}
 			} catch (AggregateException) {
 				// Swallow exceptions thrown by Task.Wait().
 				// Our caller just wants to know when the Task completes,
@@ -297,15 +302,21 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 		}
 
-		/// <summary>Runs the specified asynchronous method.</summary>
+		/// <summary>
+		/// Runs the specified asynchronous method to completion while synchronously blocking the calling thread.
+		/// </summary>
 		/// <param name="asyncMethod">The asynchronous method to execute.</param>
 		/// <remarks>
+		/// <para>Any exception thrown by the delegate is rethrown in its original type to the caller of this method.</para>
+		/// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
+		/// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
+		/// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
 		/// <example>
 		/// <code>
 		/// // On threadpool or Main thread, this method will block
 		/// // the calling thread until all async operations in the
 		/// // delegate complete.
-		/// this.JobContext.RunSynchronously(async delegate {
+		/// joinableTaskFactory.Run(async delegate {
 		///     // still on the threadpool or Main thread as before.
 		///     await OperationAsync();
 		///     // still on the threadpool or Main thread as before.
@@ -324,14 +335,17 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
-		/// Runs the specified asynchronous method.
+		/// Runs the specified asynchronous method to completion while synchronously blocking the calling thread.
 		/// </summary>
 		/// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
 		/// <param name="asyncMethod">The asynchronous method to execute.</param>
-		/// <returns></returns>
+		/// <returns>The result of the Task returned by <paramref name="asyncMethod"/>.</returns>
 		/// <remarks>
-		/// See the <see cref="Run(Func{Task})" /> overload documentation
-		/// for an example.
+		/// <para>Any exception thrown by the delegate is rethrown in its original type to the caller of this method.</para>
+		/// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
+		/// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
+		/// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
+		/// <para>See the <see cref="Run(Func{Task})" /> overload documentation for an example.</para>
 		/// </remarks>
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
 		public T Run<T>(Func<Task<T>> asyncMethod) {
@@ -341,13 +355,18 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
-		/// Wraps the invocation of an async method such that it may
-		/// execute asynchronously, but may potentially be
-		/// synchronously completed (waited on) in the future.
+		/// Invokes an async delegate on the caller's thread, and yields back to the caller when the async method yields.
+		/// The async delegate is invoked in such a way as to mitigate deadlocks in the event that the async method
+		/// requires the main thread while the main thread is blocked waiting for the async method's completion.
 		/// </summary>
 		/// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
 		/// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
-		/// <remarks>Exceptions thrown by the delegate are captured by the returned <see cref="JoinableTask"/>.</remarks>
+		/// <remarks>
+		/// <para>Exceptions thrown by the delegate are captured by the returned <see cref="JoinableTask" />.</para>
+		/// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
+		/// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
+		/// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
+		/// </remarks>
 		public JoinableTask RunAsync(Func<Task> asyncMethod) {
 			return this.RunAsync(asyncMethod, synchronouslyBlocking: false);
 		}
@@ -390,9 +409,9 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
-		/// Wraps the invocation of an async method such that it may
-		/// execute asynchronously, but may potentially be
-		/// synchronously completed (waited on) in the future.
+		/// Invokes an async delegate on the caller's thread, and yields back to the caller when the async method yields.
+		/// The async delegate is invoked in such a way as to mitigate deadlocks in the event that the async method
+		/// requires the main thread while the main thread is blocked waiting for the async method's completion.
 		/// </summary>
 		/// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
 		/// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
@@ -400,7 +419,10 @@ namespace Microsoft.VisualStudio.Threading {
 		/// An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.
 		/// </returns>
 		/// <remarks>
-		/// Exceptions thrown by the delegate are captured by the returned <see cref="JoinableTask" />.
+		/// <para>Exceptions thrown by the delegate are captured by the returned <see cref="JoinableTask" />.</para>
+		/// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
+		/// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
+		/// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
 		/// </remarks>
 		public JoinableTask<T> RunAsync<T>(Func<Task<T>> asyncMethod) {
 			return this.RunAsync(asyncMethod, synchronouslyBlocking: false);

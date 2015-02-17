@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="dogfood" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <ProjectDepotRoot>$(MSBuildThisFileDirectory)</ProjectDepotRoot>
+    <SubmoduleRoot>$(MSBuildThisFileDirectory)\src</SubmoduleRoot>
+    <NuGetPackageRestorePath>$(ProjectDepotRoot)\src\Packages\</NuGetPackageRestorePath>
+    <ModuleDefinitionsDirectory>$(MSBuildThisFileDirectory)Tools\ModuleTargets\Modules\</ModuleDefinitionsDirectory>
+    <DeployExtension Condition=" '$(IsLabBuild)' == 'true' ">false</DeployExtension>
+    <ModuleName>Microsoft.VisualStudio.Threading</ModuleName>
+  </PropertyGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), EnlistmentInfo.xml))\EnlistmentInfo.xml" />
+  <Import Project="$(DepotRoot)\Tools\Derazzle\Common.props"/>
+</Project>
