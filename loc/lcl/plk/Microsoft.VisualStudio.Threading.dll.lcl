@@ -272,7 +272,7 @@
     </Item>
     <Item ItemId=";FileVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[14.0.22410.0]]></Val>
+        <Val><![CDATA[14.0.22521.0]]></Val>
       </Str>
       <Disp Icon="Str" />
       <Modified By="daneoh" DateTime="2013-05-08T05:34:11Z" />
@@ -302,24 +302,24 @@
       <Modified By="daneoh" DateTime="2013-05-08T05:34:11Z" />
     </Item>
     <Item ItemId=";ProductName" ItemType="0" PsrId="211" Leaf="true">
-      <Str Cat="Text" >
-        <Val><![CDATA[Microsoft® Visual Studio® 2015 CTP]]></Val>
-        <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New" AutoAppr="N/A">
-<Val><![CDATA[Microsoft® Visual Studio® 2015 CTP]]></Val>
+      <Str Cat="Text">
+        <Val><![CDATA[Microsoft® Visual Studio® 2015 RC]]></Val>
+        <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New">
+          <Val><![CDATA[Microsoft® Visual Studio® 2015 RC]]></Val>
         </Tgt>
         <Prev Cat="Text">
-          <Val><![CDATA[Microsoft® Visual Studio® 2015 Preview]]></Val>
+          <Val><![CDATA[Microsoft® Visual Studio® 2015 CTP]]></Val>
         </Prev>
       </Str>
       <Disp Icon="Str" />
-      <Modified By="joseignacio.dedios" DateTime="2013-06-03T10:37:34Z" />
+      <Modified By="islezarova" DateTime="2015-01-26T16:35:41Z" />
       <Props>
-        
+        <Str Name="Custom6" Val="S78.0121_1" />
       </Props>
     </Item>
     <Item ItemId=";ProductVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[14.0.22410.0]]></Val>
+        <Val><![CDATA[14.0.22521.0]]></Val>
       </Str>
       <Disp Icon="Str" />
       <Modified By="daneoh" DateTime="2013-05-08T05:34:11Z" />
