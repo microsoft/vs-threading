@@ -222,9 +222,9 @@
     </Item>
     <Item ItemId=";FileVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[14.0.22410.0]]></Val>
+        <Val><![CDATA[14.0.22521.0]]></Val>
         <Tgt Cat="Text" CP="Unknown" Stat="Loc" Orig="New">
-          <Val><![CDATA[14.0.22410.0]]></Val>
+          <Val><![CDATA[14.0.22521.0]]></Val>
         </Tgt>
       </Str>
       <Disp Icon="Str" />
@@ -262,12 +262,12 @@
     </Item>
     <Item ItemId=";ProductName" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text">
-        <Val><![CDATA[Microsoft® Visual Studio® 2015 CTP]]></Val>
+        <Val><![CDATA[Microsoft® Visual Studio® 2015 RC]]></Val>
         <Tgt Cat="Text" Stat="Loc" Orig="New">
-          <Val><![CDATA[Microsoft® Visual Studio® 2015 CTP]]></Val>
+          <Val><![CDATA[Microsoft® Visual Studio® 2015 RC]]></Val>
         </Tgt>
         <Prev Cat="Text">
-          <Val><![CDATA[Microsoft® Visual Studio® 2015 Preview]]></Val>
+          <Val><![CDATA[Microsoft® Visual Studio® 2015 CTP]]></Val>
         </Prev>
       </Str>
       <Disp Icon="Str" />
@@ -275,9 +275,9 @@
     </Item>
     <Item ItemId=";ProductVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[14.0.22410.0]]></Val>
+        <Val><![CDATA[14.0.22521.0]]></Val>
         <Tgt Cat="Text" CP="Unknown" Stat="Loc" Orig="New">
-          <Val><![CDATA[14.0.22410.0]]></Val>
+          <Val><![CDATA[14.0.22521.0]]></Val>
         </Tgt>
       </Str>
       <Disp Icon="Str" />

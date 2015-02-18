@@ -338,7 +338,7 @@
     </Item>
     <Item ItemId=";FileVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[14.0.22410.0]]></Val>
+        <Val><![CDATA[14.0.22521.0]]></Val>
       </Str>
       <Disp Icon="Str" />
       <Modified By="henry.hsu" DateTime="2013-05-15T10:14:36Z" />
@@ -368,34 +368,33 @@
       <Modified By="henry.hsu" DateTime="2013-05-15T10:14:36Z" />
     </Item>
     <Item ItemId=";ProductName" ItemType="0" PsrId="211" Leaf="true">
-      <Str Cat="Text" >
-        <Val><![CDATA[Microsoft® Visual Studio® 2015 CTP]]></Val>
-        <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New" AutoAppr="N/A">
-<Val><![CDATA[Microsoft® Visual Studio® 2015 CTP]]></Val>
+      <Str Cat="Text">
+        <Val><![CDATA[Microsoft® Visual Studio® 2015 RC]]></Val>
+        <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New">
+          <Val><![CDATA[Microsoft® Visual Studio® 2015 RC]]></Val>
           <Props>
             <Str Name="TranslationModifiedBy" Val="IT_Translator3_Moravia@hotmail.com" />
             <Date Name="TranslationModifiedDate" Val="2014-12-15T16:21:39.5385315Z" />
           </Props>
         </Tgt>
         <Prev Cat="Text">
-          <Val><![CDATA[Microsoft® Visual Studio® 2015 Preview]]></Val>
+          <Val><![CDATA[Microsoft® Visual Studio® 2015 CTP]]></Val>
         </Prev>
       </Str>
       <Disp Icon="Str" />
-      <Modified By="IT_Translator3_Moravia@hotmail.com" DateTime="2014-12-15T16:21:39.0005315Z" />
+      <Modified By="JHosek" DateTime="2015-01-26T18:33:35Z" />
       <Notes>
         <Note Name="Loc" Order="0"><![CDATA[trans3]]></Note>
       </Notes>
       <Props>
-        
+        <Str Name="Custom6" Val="S78.0121_1" />
         <Str Name="TranslationStatus" Val="In Sync" />
         <Str Name="TranslationStatusPosition" Val="1 - ReadyForTranslation" />
-        <Str Name="VendorComment" Val="  " />
       </Props>
     </Item>
     <Item ItemId=";ProductVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[14.0.22410.0]]></Val>
+        <Val><![CDATA[14.0.22521.0]]></Val>
       </Str>
       <Disp Icon="Str" />
       <Modified By="henry.hsu" DateTime="2013-05-15T10:14:36Z" />
