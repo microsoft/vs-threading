@@ -16,8 +16,12 @@ set PrivateAssemblies=%CommonIDE%\PrivateAssemblies
 set PublicAssemblies=%CommonIDE%\PublicAssemblies
 if /I "%ROBOCOPY%"=="" SET ROBOCOPY=robocopy /NJH /NJS /NDL /XX /W:1
 
-@ECHO Copying files into Program Files locations
-%ROBOCOPY% "%~dp0.." "%PublicAssemblies%" Microsoft.VisualStudio.Threading.???
+@ECHO Installing %AssemblyToInstall% into the GAC
+SET AssemblyToInstall=Microsoft.VisualStudio.Threading
+SET GACVSVersion=14.0
+REM gacutil isn't available on Win8Express drops, and seems to randomly fail anyway.
+REM So instead, we use robocopy to get both the .dll and its accompanying .pdb in place.
+%robocopy% "%~dp0.." "%WINDIR%\Microsoft.NET\assembly\GAC_MSIL\%AssemblyToInstall%\v4.0_%GACVSVersion%.0.0__b03f5f7f11d50a3a" %AssemblyToInstall%.pdb %AssemblyToInstall%.dll
 
 @ECHO Invalidating MEF cache...
 for %%i in (devenv VSWinExpress) do (
