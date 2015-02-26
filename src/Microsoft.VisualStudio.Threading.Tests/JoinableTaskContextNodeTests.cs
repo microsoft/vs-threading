@@ -71,7 +71,7 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 			}
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout), TestCategory("FailsInCloudTest")]
 		public void OnHangDetected_Registration() {
 			var factory = (DerivedFactory)this.derivedNode.Factory;
 			factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(1);
