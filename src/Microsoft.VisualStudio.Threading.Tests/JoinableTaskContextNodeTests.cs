@@ -159,7 +159,7 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 			Assert.IsTrue(this.derivedNode.FalseHangReportTimeSpan >= this.derivedNode.HangDetails.HangDuration);
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout), TestCategory("FailsInCloudTest")]
 		public void OnHangDetected_Run_OffMainThread() {
 			Task.Run(delegate {
 				// Now that we're off the main thread, just call the other test.
