@@ -104,7 +104,7 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 			Assert.IsFalse(this.derivedNode.FalseHangReportDetected.IsSet);
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout), TestCategory("FailsInCloudTest")]
 		public void OnFalseHangReportDetected_OnlyOnce() {
 			var factory = (DerivedFactory)this.derivedNode.Factory;
 			factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(1);
