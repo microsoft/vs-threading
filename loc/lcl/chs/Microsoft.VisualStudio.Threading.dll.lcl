@@ -1,0 +1,317 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<LCX SchemaVersion="6.0" Name="F:\LocTmp\ddSetup\binaries.x86ret\bin\i386\vsproject\cps\package\core\Microsoft.Threading.dll" PsrId="211" FileType="1" SrcCul="en-US" TgtCul="zh-CN" xmlns="http://schemas.microsoft.com/locstudio/2006/6/lcx">
+  <Props>
+    <Str Name="CustomName1" Val="Custom 1" />
+    <Str Name="CustomName2" Val="Custom 2" />
+    <Str Name="CustomName3" Val="Custom 3" />
+    <Str Name="CustomName4" Val="Custom 4" />
+    <Str Name="CustomName5" Val="Custom 5" />
+    <Str Name="CustomName6" Val="Custom 6" />
+    <Str Name="HobbitID" Val="8cdea6e6-0aed-4a0e-99cb-21a7ed38e763" />
+  </Props>
+  <OwnedComments>
+    <Cmt Name="Dev" />
+    <Cmt Name="DUIData" />
+    <Cmt Name="GoldMine" />
+    <Cmt Name="Goldmine8" />
+    <Cmt Name="LcxAdmin" />
+    <Cmt Name="Loc" />
+    <Cmt Name="ManifestData" />
+    <Cmt Name="Mnemonic" />
+    <Cmt Name="Note" />
+    <Cmt Name="RCCX" />
+    <Cmt Name="UIType" />
+    <Cmt Name="UTSData" />
+    <Cmt Name="UTSUI" />
+    <Cmt Name="zLocLevel" />
+  </OwnedComments>
+  <Settings Name="@vsLocTools@\current\default.lss" Type="LSS" />
+  <Item ItemId=";Managed Resources" ItemType="0" PsrId="211" Leaf="true">
+    <Disp Icon="Expand" Expand="true" Disp="true" LocTbl="false" />
+    <Modified By="henry.hsu" DateTime="2013-03-24T00:43:11Z" />
+  </Item>
+  <Item ItemId=";Microsoft.VisualStudio.Threading.Strings.resources" ItemType="0" PsrId="211" Leaf="false">
+    <Disp Icon="Expand" Expand="true" Disp="true" LocTbl="false" Path=" \ ;Managed Resources \ 0 \ 0" />
+    <Modified By="Administrator" DateTime="2013-05-09T03:36:38Z" />
+    <Item ItemId=";Strings" ItemType="0" PsrId="211" Leaf="false">
+      <Disp Icon="Str" Disp="true" LocTbl="false" />
+      <Modified By="Administrator" DateTime="2013-05-09T03:36:38Z" />
+      <Item ItemId=";AppliedSynchronizationContextNotAllowed" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Acquiring locks on threads with a SynchronizationContext applied is not allowed.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New" AutoAppr="N/A">
+            <Val><![CDATA[不允许获取已应用 SynchronizationContext 的线程上的锁。]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="Administrator" DateTime="2014-06-11T12:17:24Z" />
+      </Item>
+      <Item ItemId=";CannotUpgradeNonUpgradeableLock" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[A non-upgradeable read lock is held by the caller and cannot be upgraded.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A" Confidence="100">
+            <Val><![CDATA[不可升级的读取锁由调用方持有，无法升级。]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="henry.hsu" DateTime="2013-05-14T04:24:33Z" />
+        <Props>
+          <Str Name="Custom1" Val="Dev12_HO6.1" />
+        </Props>
+      </Item>
+      <Item ItemId=";DangerousReadLockRequestFromWriteLockFork" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Dangerous request for read lock from fork of write lock.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New" AutoAppr="N/A">
+            <Val><![CDATA[来自写锁分叉的危险的读锁请求。]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="Administrator" DateTime="2014-06-11T12:17:24Z" />
+      </Item>
+      <Item ItemId=";InvalidAfterCompleted" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Already transitioned to the Completed state.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New" AutoAppr="N/A">
+            <Val><![CDATA[已经过渡到完成状态。]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="Administrator" DateTime="2014-06-11T12:17:24Z" />
+      </Item>
+      <Item ItemId=";InvalidLock" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[This operation can only be executed against a valid lock.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A" Confidence="100">
+            <Val><![CDATA[只能对有效锁执行此操作。]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="henry.hsu" DateTime="2013-05-14T04:24:33Z" />
+        <Props>
+          <Str Name="Custom1" Val="Dev12_HO6.1" />
+        </Props>
+      </Item>
+      <Item ItemId=";InvalidWithoutLock" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[A lock is required.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New" AutoAppr="N/A">
+            <Val><![CDATA[锁是必需项。]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="Administrator" DateTime="2014-06-11T12:17:24Z" />
+      </Item>
+      <Item ItemId=";JoinableTaskContextAndCollectionMismatch" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[JoinableTask does not belong to the context this collection was instantiated with.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New" AutoAppr="N/A">
+            <Val><![CDATA[JoinableTask 不属于之前用于实例化此集合的上下文。]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="Administrator" DateTime="2014-06-11T12:17:24Z" />
+      </Item>
+      <Item ItemId=";JoinableTaskContextNodeAlreadyRegistered" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[This node already registered.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New" AutoAppr="N/A">
+            <Val><![CDATA[此节点已注册。]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="Administrator" DateTime="2014-06-11T12:17:24Z" />
+      </Item>
+      <Item ItemId=";LazyValueFaulted" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Lazily created value faulted during construction.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A" Confidence="100">
+            <Val><![CDATA[延迟创建的值在构造期间出错。]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="henry.hsu" DateTime="2013-05-14T04:24:33Z" />
+        <Props>
+          <Str Name="Custom1" Val="Dev12_HO6.1" />
+        </Props>
+      </Item>
+      <Item ItemId=";LazyValueNotCreated" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Lazily created value not yet constructed.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A" Confidence="100">
+            <Val><![CDATA[尚未构造延迟创建的值。]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="henry.hsu" DateTime="2013-05-14T04:24:33Z" />
+        <Props>
+          <Str Name="Custom1" Val="Dev12_HO6.1" />
+        </Props>
+      </Item>
+      <Item ItemId=";LockCompletionAlreadyRequested" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[This lock has already been marked for completion.  No new top-level locks can be serviced.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New" AutoAppr="N/A">
+            <Val><![CDATA[此锁已标记为完成。   没有可用的新的顶级锁。]]></Val>
+            <Props>
+              <Str Name="TranslationModifiedBy" Val="guanghua.wu" />
+              <Date Name="TranslationModifiedDate" Val="2014-12-15T09:33:47.8116138Z" />
+            </Props>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="guanghua.wu" DateTime="2014-12-15T09:52:28.0001964Z" />
+        <Props>
+          <Str Name="Custom1" Val="Dev12_HO6.1" />
+          <Str Name="TranslationStatus" Val="In Sync" />
+          <Str Name="TranslationStatusPosition" Val="3 - ReadyForReview" />
+        </Props>
+      </Item>
+      <Item ItemId=";NotAllowedUnderURorWLock" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[This operation is not allowed while holding an active upgradeable read or write lock from an AsyncReaderWriterLock.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A">
+            <Val><![CDATA[持有来自 AsyncReaderWriterLock 的活动的可升级的读或写锁定时不允许执行此操作。]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="henry.hsu" DateTime="2013-05-14T04:23:33Z" />
+        <Props>
+          <Str Name="Custom1" Val="Dev12_HO6.1" />
+        </Props>
+      </Item>
+      <Item ItemId=";QueueEmpty" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[The queue is empty.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New" AutoAppr="N/A">
+            <Val><![CDATA[队列为空。]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="Administrator" DateTime="2014-06-11T12:17:24Z" />
+      </Item>
+      <Item ItemId=";STAThreadCallerNotAllowed" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[This operation cannot be completed on an STA thread.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New" AutoAppr="N/A">
+            <Val><![CDATA[无法在 STA 线程上完成此操作。]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="Administrator" DateTime="2014-06-11T12:17:24Z" />
+      </Item>
+      <Item ItemId=";ValueFactoryReentrancy" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[The value factory has called for the value on the same instance.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A" Confidence="100">
+            <Val><![CDATA[值工厂已对相同实例调用了值。]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="henry.hsu" DateTime="2013-05-14T04:24:33Z" />
+        <Props>
+          <Str Name="Custom1" Val="Dev12_HO6.1" />
+        </Props>
+      </Item>
+    </Item>
+  </Item>
+  <Item ItemId=";Version" ItemType="0" PsrId="211" Leaf="false">
+    <Disp Icon="Ver" Disp="true" LocTbl="false" Path=" \ ;Version \ 8 \ 0" />
+    <Modified By="henry.hsu" DateTime="2013-03-24T00:43:11Z" />
+    <Item ItemId=";AssemblyVersion" ItemType="0" PsrId="211" Leaf="true">
+      <Str Cat="Text" DevLk="true">
+        <Val><![CDATA[14.0.0.0]]></Val>
+      </Str>
+      <Disp Icon="Str" />
+      <Modified By="chao.sai" DateTime="2014-10-17T03:44:55.0004248Z" />
+    </Item>
+    <Item ItemId=";Comments" ItemType="0" PsrId="211" Leaf="true">
+      <Str Cat="Text" UsrLk="true">
+        <Val><![CDATA[Microsoft.VisualStudio.Threading.dll]]></Val>
+      </Str>
+      <Disp Icon="Str" />
+      <Modified By="free.zhai" DateTime="2013-04-01T12:12:09Z" />
+      <Props>
+        <Str Name="Custom1" Val="Dev12_HO3" />
+      </Props>
+    </Item>
+    <Item ItemId=";CompanyName" ItemType="0" PsrId="211" Leaf="true">
+      <Str Cat="Text" UsrLk="true">
+        <Val><![CDATA[Microsoft Corporation]]></Val>
+      </Str>
+      <Disp Icon="Str" />
+      <Modified By="free.zhai" DateTime="2013-04-01T12:12:09Z" />
+      <Props>
+        <Str Name="Custom1" Val="Dev12_HO3" />
+      </Props>
+    </Item>
+    <Item ItemId=";FileDescription" ItemType="0" PsrId="211" Leaf="true">
+      <Str Cat="Text" UsrLk="true">
+        <Val><![CDATA[Microsoft.VisualStudio.Threading.dll]]></Val>
+      </Str>
+      <Disp Icon="Str" />
+      <Modified By="free.zhai" DateTime="2013-04-01T12:12:09Z" />
+      <Props>
+        <Str Name="Custom1" Val="Dev12_HO3" />
+      </Props>
+    </Item>
+    <Item ItemId=";FileVersion" ItemType="0" PsrId="211" Leaf="true">
+      <Str Cat="Text" DevLk="true">
+        <Val><![CDATA[14.0.22521.0]]></Val>
+      </Str>
+      <Disp Icon="Str" />
+      <Modified By="chao.sai" DateTime="2014-10-17T03:44:55.0004248Z" />
+    </Item>
+    <Item ItemId=";InternalName" ItemType="0" PsrId="211" Leaf="true">
+      <Str Cat="Text" DevLk="true">
+        <Val><![CDATA[Microsoft.VisualStudio.Threading.dll]]></Val>
+      </Str>
+      <Disp Icon="Str" />
+      <Modified By="chao.sai" DateTime="2014-10-17T03:44:55.0004248Z" />
+    </Item>
+    <Item ItemId=";LegalCopyright" ItemType="0" PsrId="211" Leaf="true">
+      <Str Cat="Text">
+        <Val><![CDATA[© Microsoft Corporation. All rights reserved.]]></Val>
+        <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A">
+          <Val><![CDATA[(C) Microsoft Corporation。保留所有权利。]]></Val>
+        </Tgt>
+      </Str>
+      <Disp Icon="Str" />
+      <Modified By="henry.hsu" DateTime="2013-03-24T00:43:11Z" />
+    </Item>
+    <Item ItemId=";OriginalFilename" ItemType="0" PsrId="211" Leaf="true">
+      <Str Cat="Text" DevLk="true">
+        <Val><![CDATA[Microsoft.VisualStudio.Threading.dll]]></Val>
+      </Str>
+      <Disp Icon="Str" />
+      <Modified By="chao.sai" DateTime="2014-10-17T03:44:55.0004248Z" />
+    </Item>
+    <Item ItemId=";ProductName" ItemType="0" PsrId="211" Leaf="true">
+      <Str Cat="Text">
+        <Val><![CDATA[Microsoft® Visual Studio® 2015 RC]]></Val>
+        <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New">
+          <Val><![CDATA[Microsoft® Visual Studio® 2015 RC]]></Val>
+        </Tgt>
+        <Prev Cat="Text">
+          <Val><![CDATA[Microsoft® Visual Studio® 2015 CTP]]></Val>
+        </Prev>
+      </Str>
+      <Disp Icon="Str" />
+      <Modified By="islezarova" DateTime="2015-01-26T14:35:27Z" />
+      <Props>
+        <Str Name="Custom1" Val="S78.0121" />
+      </Props>
+    </Item>
+    <Item ItemId=";ProductVersion" ItemType="0" PsrId="211" Leaf="true">
+      <Str Cat="Text" DevLk="true">
+        <Val><![CDATA[14.0.22521.0]]></Val>
+      </Str>
+      <Disp Icon="Str" />
+      <Modified By="chao.sai" DateTime="2014-10-17T03:44:55.0004248Z" />
+    </Item>
+  </Item>
+  <Item ItemId=";Version" ItemType="8" PsrId="211" Leaf="true">
+    <Disp Icon="Expand" Expand="true" Disp="true" LocTbl="false" />
+    <Modified By="henry.hsu" DateTime="2013-03-24T00:43:11Z" />
+  </Item>
+</LCX>

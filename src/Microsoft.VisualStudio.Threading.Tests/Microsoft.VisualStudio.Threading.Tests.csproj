@@ -1,0 +1,138 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <DevDivProjectType>UnitTest</DevDivProjectType>
+  </PropertyGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), EnlistmentInfo.props))\EnlistmentInfo.props" Condition=" '$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), EnlistmentInfo.props))' != '' " />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{7B8BF2E6-7D7B-4F4E-B1A4-B08312F6294F}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Microsoft.VisualStudio.Threading.Tests</RootNamespace>
+    <AssemblyName>Microsoft.VisualStudio.Threading.Tests</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+    <ReferencePath>$(ProgramFiles)\Common Files\microsoft shared\VSTT\$(VisualStudioVersion)\UITestExtensionPackages</ReferencePath>
+    <IsCodedUITest>False</IsCodedUITest>
+    <TestProjectType>UnitTest</TestProjectType>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.VisualStudio.Validation, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.VisualStudio.Validation.14.0.0-pre-95a85e9492\lib\net45\Microsoft.VisualStudio.Validation.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.XML" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <Choose>
+    <When Condition="('$(VisualStudioVersion)' == '10.0' or '$(VisualStudioVersion)' == '') and '$(TargetFrameworkVersion)' == 'v3.5'">
+      <ItemGroup>
+        <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <ItemGroup>
+        <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework" />
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
+  <ItemGroup>
+    <Compile Include="..\Microsoft.VisualStudio.Threading\InternalUtilities.cs">
+      <Link>InternalUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.VisualStudio.Threading\ListOfOftenOne.cs">
+      <Link>ListOfOftenOne.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.VisualStudio.Threading\RollingLog.cs">
+      <Link>RollingLog.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.VisualStudio.Threading\WeakKeyDictionary.cs">
+      <Link>WeakKeyDictionary.cs</Link>
+    </Compile>
+    <Compile Include="AsyncAutoResetEventTests.cs" />
+    <Compile Include="AsyncBarrierTests.cs" />
+    <Compile Include="AsyncCountdownEventTests.cs" />
+    <Compile Include="AsyncLazyTests.cs" />
+    <Compile Include="AsyncLocalTests.cs" />
+    <Compile Include="DelegatingJoinableTaskFactoryTests.cs" />
+    <Compile Include="InternalUtilitiesTests.cs" />
+    <Compile Include="JoinableTaskAndAsyncReaderWriterLockTests.cs" />
+    <Compile Include="JoinableTaskCollectionTests.cs" />
+    <Compile Include="JoinableTaskContextNodeTests.cs" />
+    <Compile Include="JoinableTaskContextTests.cs" />
+    <Compile Include="JoinableTaskTestBase.cs" />
+    <Compile Include="JoinableTaskTests.cs" />
+    <Compile Include="AsyncQueueTests.cs" />
+    <Compile Include="AsyncSemaphoreTests.cs" />
+    <Compile Include="AsyncManualResetEventTests.cs" />
+    <Compile Include="AsyncReaderWriterLockTests.cs" />
+    <Compile Include="AsyncReaderWriterResourceLockTests.cs" />
+    <Compile Include="AwaitExtensionsTests.cs" />
+    <Compile Include="ListOfOftenOneTests.cs" />
+    <Compile Include="ProgressWithCompletionTests.cs" />
+    <Compile Include="RollingLogTests.cs" />
+    <Compile Include="TestBase.cs" />
+    <Compile Include="TplExtensionsTests.cs" />
+    <Compile Include="TestUtilitiesTests.cs" />
+    <Compile Include="TestUtilities.cs" />
+    <Compile Include="ThreadingToolsTests.cs" />
+    <Compile Include="ValidityTests.cs" />
+    <Compile Include="WeakKeyDictionaryTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj">
+      <Project>{2c0dffbd-49c8-4f12-a964-e3096ad4c7f4}</Project>
+      <Name>Microsoft.VisualStudio.Threading</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Choose>
+    <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
+      <ItemGroup>
+        <Reference Include="Microsoft.VisualStudio.QualityTools.CodedUITestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+          <Private>False</Private>
+        </Reference>
+        <Reference Include="Microsoft.VisualStudio.TestTools.UITest.Common, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+          <Private>False</Private>
+        </Reference>
+        <Reference Include="Microsoft.VisualStudio.TestTools.UITest.Extension, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+          <Private>False</Private>
+        </Reference>
+        <Reference Include="Microsoft.VisualStudio.TestTools.UITesting, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+          <Private>False</Private>
+        </Reference>
+      </ItemGroup>
+    </When>
+  </Choose>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), EnlistmentInfo.targets))\EnlistmentInfo.targets" Condition=" '$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), EnlistmentInfo.targets))' != '' " />
+</Project>

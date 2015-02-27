@@ -1,0 +1,121 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), EnlistmentInfo.props))\EnlistmentInfo.props" Condition=" '$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), EnlistmentInfo.props))' != '' " />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{2C0DFFBD-49C8-4F12-A964-E3096AD4C7F4}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Microsoft.VisualStudio.Threading</RootNamespace>
+    <AssemblyName>Microsoft.VisualStudio.Threading</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <CodeAnalysisRuleSet>FxCopRules.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.VisualStudio.Validation, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.VisualStudio.Validation.14.0.0-pre-95a85e9492\lib\net45\Microsoft.VisualStudio.Validation.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="AsyncAutoResetEvent.cs" />
+    <Compile Include="AsyncBarrier.cs" />
+    <Compile Include="AsyncCountdownEvent.cs" />
+    <Compile Include="AsyncEventHandler.cs" />
+    <Compile Include="AsyncLazy.cs" />
+    <Compile Include="AsyncLocal.cs" />
+    <Compile Include="AsyncQueue.cs" />
+    <Compile Include="AsyncReaderWriterLock+HangReportContributor.cs" />
+    <Compile Include="AsyncSemaphore.cs" />
+    <Compile Include="AsyncManualResetEvent.cs" />
+    <Compile Include="AsyncReaderWriterLock.cs" />
+    <Compile Include="AsyncReaderWriterResourceLock.cs" />
+    <Compile Include="AwaitExtensions.cs" />
+    <Compile Include="DelegatingJoinableTaskFactory.cs" />
+    <Compile Include="Dgml.cs" />
+    <Compile Include="EmptyStruct.cs" />
+    <Compile Include="EnumerateOneOrMany.cs" />
+    <Compile Include="AsyncReaderWriterLock+Events.cs" />
+    <Compile Include="GlobalSuppressions.cs" />
+    <Compile Include="HangReportContribution.cs" />
+    <Compile Include="IAsyncDisposable.cs" />
+    <Compile Include="IHangReportContributor.cs" />
+    <Compile Include="InternalUtilities.cs" />
+    <Compile Include="JoinableTask+DependentSynchronousTask.cs" />
+    <Compile Include="JoinableTask+JoinableTaskSynchronizationContext.cs" />
+    <Compile Include="JoinableTaskContext+HangReportContributor.cs" />
+    <Compile Include="JoinableTaskContext.cs" />
+    <Compile Include="JoinableTask.cs" />
+    <Compile Include="JoinableTaskCollection.cs" />
+    <Compile Include="JoinableTask+ExecutionQueue.cs" />
+    <Compile Include="JoinableTaskContextNode.cs" />
+    <Compile Include="JoinableTaskFactory.cs" />
+    <Compile Include="JoinableTask`1.cs" />
+    <Compile Include="ListOfOftenOne.cs" />
+    <Compile Include="NativeMethods.cs" />
+    <Compile Include="NoMessagePumpSyncContext.cs" />
+    <Compile Include="ProgressWithCompletion.cs" />
+    <Compile Include="SpecializedSyncContext.cs" />
+    <Compile Include="Strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+    <Compile Include="TplExtensions.cs" />
+    <Compile Include="ThreadingTools.cs" />
+    <Compile Include="WeakKeyDictionary.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\Razzle\src\Tools\RunMeElevated.cmd">
+      <Link>UpdateVS\RunMeElevated.cmd</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="packages.config" />
+    <None Include="SampleHang.dgml">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="UpdateVS\UpdateVS.cmd">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <CodeAnalysisDictionary Include="CustomDictionary.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\..\Razzle\src\Tools\Elevate.exe">
+      <Link>UpdateVS\Elevate.exe</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), EnlistmentInfo.targets))\EnlistmentInfo.targets" Condition=" '$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), EnlistmentInfo.targets))' != '' " />
+</Project>
