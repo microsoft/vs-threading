@@ -135,10 +135,15 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		private bool completeInvoked;
 
-		/// <summary>
-		/// Initializes a new instance of the <see cref="AsyncReaderWriterLock"/> class.
-		/// </summary>
-		public AsyncReaderWriterLock()
+        /// <summary>
+        /// A helper class to produce ETW trace events.
+        /// </summary>
+        private EventsHelper Etw;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AsyncReaderWriterLock"/> class.
+        /// </summary>
+        public AsyncReaderWriterLock()
 			: this(captureDiagnostics: false) {
 		}
 
@@ -2152,5 +2157,33 @@ namespace Microsoft.VisualStudio.Threading {
 				get { return this.awaiter; }
 			}
 		}
-	}
+
+        internal class EventsHelper {
+            private readonly AsyncReaderWriterLock lck;
+
+            internal EventsHelper(AsyncReaderWriterLock lck) {
+                Requires.NotNull(lck, "lck");
+                this.lck = lck;
+            }
+
+            public void Issued(Awaiter lckAwaiter) {
+                if (ThreadingEventSource.Instance.IsEnabled()) {
+                    ThreadingEventSource.Instance.ReaderWriterLockIssued(lckAwaiter.GetHashCode(), lckAwaiter.Kind, this.lck.issuedUpgradeableReadLocks.Count, this.lck.issuedReadLocks.Count);
+                }
+            }
+
+            public void WaitStart(Awaiter lckAwaiter) {
+                if (ThreadingEventSource.Instance.IsEnabled()) {
+                    ThreadingEventSource.Instance.WaitReaderWriterLockStart(lckAwaiter.GetHashCode(), lckAwaiter.Kind, this.lck.issuedWriteLocks.Count, this.lck.issuedUpgradeableReadLocks.Count, this.lck.issuedReadLocks.Count);
+                }
+            }
+
+            public void WaitStop(Awaiter lckAwaiter) {
+                if (ThreadingEventSource.Instance.IsEnabled()) {
+                    ThreadingEventSource.Instance.WaitReaderWriterLockStop(lckAwaiter.GetHashCode(), lckAwaiter.Kind);
+                }
+            }
+        }
+
+    }
 }

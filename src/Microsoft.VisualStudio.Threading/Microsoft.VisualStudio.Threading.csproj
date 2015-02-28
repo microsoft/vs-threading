@@ -56,7 +56,6 @@
     <Compile Include="Dgml.cs" />
     <Compile Include="EmptyStruct.cs" />
     <Compile Include="EnumerateOneOrMany.cs" />
-    <Compile Include="AsyncReaderWriterLock+Events.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="HangReportContribution.cs" />
     <Compile Include="IAsyncDisposable.cs" />
@@ -82,6 +81,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
+    <Compile Include="ThreadingEventSource.cs" />
     <Compile Include="TplExtensions.cs" />
     <Compile Include="ThreadingTools.cs" />
     <Compile Include="WeakKeyDictionary.cs" />
