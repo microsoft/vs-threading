@@ -150,7 +150,7 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 			Assert.Fail("The reference was never released");
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout), TestCategory("FailsInCloudTest")]
 		public async Task AsyncPumpReleasedAfterExecution() {
 			WeakReference collectible = null;
 			AsyncLazy<object> lazy = null;

@@ -407,7 +407,7 @@
 			await this.StressHelper(MaxLockAcquisitions, MaxLockHeldDelay, overallTimeout, iterationTimeout, maxWorkers, testCancellation);
 		}
 
-		[TestMethod, TestCategory("Stress"), Timeout(5000)]
+		[TestMethod, TestCategory("Stress"), Timeout(5000), TestCategory("FailsInCloudTest")]
 		public async Task CancellationStress() {
 			const int MaxLockAcquisitions = -1;
 			const int MaxLockHeldDelay = 0;// 80;
