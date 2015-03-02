@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<LocProject SchemaVersion="6.0" Name="Temp.lsproj" Desc="" xmlns="http://schemas.microsoft.com/locstudio/2006/6/LocProject">
+  <Props>
+    <Str Name="owner" Val="TEMP" />
+    <Str Name="Owner" Val="TEMP" />
+  </Props>
+  <SrcBinDir Value="..\..\Src" />
+  <SrcLcgDir Value="..\..\SrcLCX" />
+  <TgtBinDir Value="tgt" />
+  <Files>
+    <File Name="Microsoft.VisualStudio.Threading.dll.lcl" Type="Lcx" />
+  </Files>
+</LocProject>
