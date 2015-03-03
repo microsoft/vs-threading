@@ -17,32 +17,64 @@ namespace Microsoft.VisualStudio.Threading {
 	/// </remarks>
 	[EventSource(Name = "Microsoft-VisualStudio-Threading")]
 	internal sealed class ThreadingEventSource : EventSource {
-        /// <summary>
-        /// The event ID for the <see cref="ReaderWriterLockIssued(int, AsyncReaderWriterLock.LockKind, int, int)"/> event.
-        /// </summary>
-        private const int ReaderWriterLockIssuedLockCountsEvent = 1;
+		/// <summary>
+		/// The event ID for the <see cref="ReaderWriterLockIssued(int, AsyncReaderWriterLock.LockKind, int, int)"/> event.
+		/// </summary>
+		private const int ReaderWriterLockIssuedLockCountsEvent = 1;
+
+		/// <summary>
+		/// The event ID for the <see cref="WaitReaderWriterLockStart(int, AsyncReaderWriterLock.LockKind, int, int, int)"/> event.
+		/// </summary>
+		private const int WaitReaderWriterLockStartEvent = 2;
+
+		/// <summary>
+		/// The event ID for the <see cref="WaitReaderWriterLockStop(int, AsyncReaderWriterLock.LockKind)"/> event.
+		/// </summary>
+		private const int WaitReaderWriterLockStopEvent = 3;
 
         /// <summary>
-        /// The event ID for the <see cref="WaitReaderWriterLockStart(int, AsyncReaderWriterLock.LockKind, int, int, int)"/> event.
+        /// The event ID for the <see cref="CompleteOnCurrentThreadStart(int, bool)"/>
         /// </summary>
-        private const int WaitReaderWriterLockStartEvent = 2;
+		private const int CompleteOnCurrentThreadStartEvent = 11;
 
         /// <summary>
-        /// The event ID for the <see cref="WaitReaderWriterLockStop(int, AsyncReaderWriterLock.LockKind)"/> event.
+        /// The event ID for the <see cref="CompleteOnCurrentThreadStop(int)"/>
         /// </summary>
-        private const int WaitReaderWriterLockStopEvent = 3;
+		private const int CompleteOnCurrentThreadStopEvent = 12;
+
+        /// <summary>
+        /// The event ID for the <see cref="WaitSynchronouslyStart()"/>
+        /// </summary>
+		private const int WaitSynchronouslyStartEvent = 13;
+
+        /// <summary>
+        /// The event ID for the <see cref="WaitSynchronouslyStop()"/>
+        /// </summary>
+		private const int WaitSynchronouslyStopEvent = 14;
+
+        /// <summary>
+        /// The event ID for the <see cref="PostExecutionStart(int, bool)"/>
+        /// </summary>
+		private const int PostExecutionStartEvent = 15;
+
+        /// <summary>
+        /// The event ID for the <see cref="PostExecutionStop(int)"/>
+        /// </summary>
+		private const int PostExecutionStopEvent = 16;
 
 		/// <summary>
 		/// The singleton instance used for logging.
 		/// </summary>
 		internal static readonly ThreadingEventSource Instance = new ThreadingEventSource();
 
+		#region ReaderWriterLock Events
+
 		/// <summary>
 		/// Logs an issued lock.
 		/// </summary>
 		[Event(ReaderWriterLockIssuedLockCountsEvent, Task = Tasks.LockRequest, Opcode = Opcodes.ReaderWriterLockIssued)]
 		public void ReaderWriterLockIssued(int lockId, AsyncReaderWriterLock.LockKind kind, int issuedUpgradeableReadCount, int issuedReadCount) {
-            this.WriteEvent(ReaderWriterLockIssuedLockCountsEvent, lockId, (int)kind, issuedUpgradeableReadCount, issuedReadCount);
+			this.WriteEvent(ReaderWriterLockIssuedLockCountsEvent, lockId, (int)kind, issuedUpgradeableReadCount, issuedReadCount);
 		}
 
 		/// <summary>
@@ -50,7 +82,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		[Event(WaitReaderWriterLockStartEvent, Task = Tasks.LockRequestContention, Opcode = EventOpcode.Start)]
 		public void WaitReaderWriterLockStart(int lockId, AsyncReaderWriterLock.LockKind kind, int issuedWriteCount, int issuedUpgradeableReadCount, int issuedReadCount) {
-            this.WriteEvent(WaitReaderWriterLockStartEvent, lockId, kind, issuedWriteCount, issuedUpgradeableReadCount, issuedReadCount);
+			this.WriteEvent(WaitReaderWriterLockStartEvent, lockId, kind, issuedWriteCount, issuedUpgradeableReadCount, issuedReadCount);
 		}
 
 		/// <summary>
@@ -58,7 +90,63 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		[Event(WaitReaderWriterLockStopEvent, Task = Tasks.LockRequestContention, Opcode = EventOpcode.Stop)]
 		public void WaitReaderWriterLockStop(int lockId, AsyncReaderWriterLock.LockKind kind) {
-            this.WriteEvent(WaitReaderWriterLockStopEvent, lockId, (int)kind);
+			this.WriteEvent(WaitReaderWriterLockStopEvent, lockId, (int)kind);
+		}
+
+		#endregion
+
+		/// <summary>
+		/// Enters a synchronously task.
+		/// </summary>
+		/// <param name="taskId">Hash code of the task</param>
+		/// <param name="isOnMainThread">Whether the task is on the main thread.</param>
+		[Event(CompleteOnCurrentThreadStartEvent)]
+		public void CompleteOnCurrentThreadStart(int taskId, bool isOnMainThread) {
+			this.WriteEvent(CompleteOnCurrentThreadStartEvent, taskId, isOnMainThread);
+		}
+
+		/// <summary>
+		/// Exits a synchronously task
+		/// </summary>
+		/// <param name="taskId">Hash code of the task</param>
+		[Event(CompleteOnCurrentThreadStopEvent)]
+		public void CompleteOnCurrentThreadStop(int taskId) {
+			this.WriteEvent(CompleteOnCurrentThreadStopEvent, taskId);
+		}
+
+		/// <summary>
+		/// The current thread starts to wait on execution requests
+		/// </summary>
+		[Event(WaitSynchronouslyStartEvent, Level=EventLevel.Verbose)]
+		public void WaitSynchronouslyStart() {
+			this.WriteEvent(WaitSynchronouslyStartEvent);
+		}
+
+		/// <summary>
+		/// The current thread gets an execution request
+		/// </summary>
+		[Event(WaitSynchronouslyStopEvent, Level = EventLevel.Verbose)]
+		public void WaitSynchronouslyStop() {
+			this.WriteEvent(WaitSynchronouslyStopEvent);
+		}
+
+		/// <summary>
+		/// Post a execution request to the queue.
+		/// </summary>
+		/// <param name="requestId">The request id.</param>
+		/// <param name="mainThreadAffinitized">The execution need happen on the main thread.</param>
+		[Event(PostExecutionStartEvent, Level = EventLevel.Verbose)]
+		public void PostExecutionStart(int requestId, bool mainThreadAffinitized) {
+			this.WriteEvent(PostExecutionStartEvent, requestId, mainThreadAffinitized);
+		}
+
+		/// <summary>
+		/// An execution request is processed.
+		/// </summary>
+		/// <param name="requestId">The request id.</</param>
+		[Event(PostExecutionStopEvent, Level = EventLevel.Verbose)]
+		public void PostExecutionStop(int requestId) {
+			this.WriteEvent(PostExecutionStopEvent, requestId);
 		}
 
 		/// <summary>

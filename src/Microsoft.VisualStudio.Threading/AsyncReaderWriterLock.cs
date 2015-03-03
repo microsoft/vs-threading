@@ -135,15 +135,15 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		private bool completeInvoked;
 
-        /// <summary>
-        /// A helper class to produce ETW trace events.
-        /// </summary>
-        private EventsHelper Etw;
+		/// <summary>
+		/// A helper class to produce ETW trace events.
+		/// </summary>
+		private EventsHelper Etw;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="AsyncReaderWriterLock"/> class.
-        /// </summary>
-        public AsyncReaderWriterLock()
+		/// <summary>
+		/// Initializes a new instance of the <see cref="AsyncReaderWriterLock"/> class.
+		/// </summary>
+		public AsyncReaderWriterLock()
 			: this(captureDiagnostics: false) {
 		}
 
@@ -1853,6 +1853,10 @@ namespace Microsoft.VisualStudio.Threading {
 			public override void Post(SendOrPostCallback d, object state) {
 				Requires.NotNull(d, nameof(d));
 
+				if (ThreadingEventSource.Instance.IsEnabled()) {
+					ThreadingEventSource.Instance.PostExecutionStart(d.GetHashCode(), false);
+				}
+
 				// Take special care to minimize allocations and overhead by avoiding implicit delegates and closures.
 				// The C# compiler caches this delegate in a static field because it never touches "this"
 				// nor any other local variables, which means the only allocations from this call
@@ -1901,6 +1905,10 @@ namespace Microsoft.VisualStudio.Threading {
 					this.threadHoldingSemaphore = Thread.CurrentThread;
 					try {
 						SynchronizationContext.SetSynchronizationContext(this);
+						if (ThreadingEventSource.Instance.IsEnabled()) {
+							ThreadingEventSource.Instance.PostExecutionStop(d.GetHashCode());
+						}
+
 						delegateInvoked = true; // set now, before the delegate might throw.
 						d(state);
 					} catch (Exception ex) {
@@ -2158,32 +2166,31 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 		}
 
-        internal class EventsHelper {
-            private readonly AsyncReaderWriterLock lck;
+		internal class EventsHelper {
+			private readonly AsyncReaderWriterLock lck;
 
-            internal EventsHelper(AsyncReaderWriterLock lck) {
-                Requires.NotNull(lck, "lck");
-                this.lck = lck;
-            }
+			internal EventsHelper(AsyncReaderWriterLock lck) {
+				Requires.NotNull(lck, "lck");
+				this.lck = lck;
+			}
 
-            public void Issued(Awaiter lckAwaiter) {
-                if (ThreadingEventSource.Instance.IsEnabled()) {
-                    ThreadingEventSource.Instance.ReaderWriterLockIssued(lckAwaiter.GetHashCode(), lckAwaiter.Kind, this.lck.issuedUpgradeableReadLocks.Count, this.lck.issuedReadLocks.Count);
-                }
-            }
+			public void Issued(Awaiter lckAwaiter) {
+				if (ThreadingEventSource.Instance.IsEnabled()) {
+					ThreadingEventSource.Instance.ReaderWriterLockIssued(lckAwaiter.GetHashCode(), lckAwaiter.Kind, this.lck.issuedUpgradeableReadLocks.Count, this.lck.issuedReadLocks.Count);
+				}
+			}
 
-            public void WaitStart(Awaiter lckAwaiter) {
-                if (ThreadingEventSource.Instance.IsEnabled()) {
-                    ThreadingEventSource.Instance.WaitReaderWriterLockStart(lckAwaiter.GetHashCode(), lckAwaiter.Kind, this.lck.issuedWriteLocks.Count, this.lck.issuedUpgradeableReadLocks.Count, this.lck.issuedReadLocks.Count);
-                }
-            }
+			public void WaitStart(Awaiter lckAwaiter) {
+				if (ThreadingEventSource.Instance.IsEnabled()) {
+					ThreadingEventSource.Instance.WaitReaderWriterLockStart(lckAwaiter.GetHashCode(), lckAwaiter.Kind, this.lck.issuedWriteLocks.Count, this.lck.issuedUpgradeableReadLocks.Count, this.lck.issuedReadLocks.Count);
+				}
+			}
 
-            public void WaitStop(Awaiter lckAwaiter) {
-                if (ThreadingEventSource.Instance.IsEnabled()) {
-                    ThreadingEventSource.Instance.WaitReaderWriterLockStop(lckAwaiter.GetHashCode(), lckAwaiter.Kind);
-                }
-            }
-        }
-
-    }
+			public void WaitStop(Awaiter lckAwaiter) {
+				if (ThreadingEventSource.Instance.IsEnabled()) {
+					ThreadingEventSource.Instance.WaitReaderWriterLockStop(lckAwaiter.GetHashCode(), lckAwaiter.Kind);
+				}
+			}
+		}
+	}
 }
