@@ -32,34 +32,34 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		private const int WaitReaderWriterLockStopEvent = 3;
 
-        /// <summary>
-        /// The event ID for the <see cref="CompleteOnCurrentThreadStart(int, bool)"/>
-        /// </summary>
+		/// <summary>
+		/// The event ID for the <see cref="CompleteOnCurrentThreadStart(int, bool)"/>
+		/// </summary>
 		private const int CompleteOnCurrentThreadStartEvent = 11;
 
-        /// <summary>
-        /// The event ID for the <see cref="CompleteOnCurrentThreadStop(int)"/>
-        /// </summary>
+		/// <summary>
+		/// The event ID for the <see cref="CompleteOnCurrentThreadStop(int)"/>
+		/// </summary>
 		private const int CompleteOnCurrentThreadStopEvent = 12;
 
-        /// <summary>
-        /// The event ID for the <see cref="WaitSynchronouslyStart()"/>
-        /// </summary>
+		/// <summary>
+		/// The event ID for the <see cref="WaitSynchronouslyStart()"/>
+		/// </summary>
 		private const int WaitSynchronouslyStartEvent = 13;
 
-        /// <summary>
-        /// The event ID for the <see cref="WaitSynchronouslyStop()"/>
-        /// </summary>
+		/// <summary>
+		/// The event ID for the <see cref="WaitSynchronouslyStop()"/>
+		/// </summary>
 		private const int WaitSynchronouslyStopEvent = 14;
 
-        /// <summary>
-        /// The event ID for the <see cref="PostExecutionStart(int, bool)"/>
-        /// </summary>
+		/// <summary>
+		/// The event ID for the <see cref="PostExecutionStart(int, bool)"/>
+		/// </summary>
 		private const int PostExecutionStartEvent = 15;
 
-        /// <summary>
-        /// The event ID for the <see cref="PostExecutionStop(int)"/>
-        /// </summary>
+		/// <summary>
+		/// The event ID for the <see cref="PostExecutionStop(int)"/>
+		/// </summary>
 		private const int PostExecutionStopEvent = 16;
 
 		/// <summary>
