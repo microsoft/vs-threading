@@ -2433,7 +2433,7 @@
 			}, maxBytesAllocated: 245);
 		}
 
-		[TestMethod, Timeout(TestTimeout * 2), TestCategory("GC")]
+		[TestMethod, Timeout(TestTimeout * 2), TestCategory("GC"), TestCategory("FailsInCloudTest")]
 		public void RunSynchronouslyTaskOfTNoYieldGCPressure() {
 			Task<object> completedTask = Task.FromResult<object>(null);
 
