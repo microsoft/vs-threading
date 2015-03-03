@@ -6,15 +6,14 @@
     <Str Name="CustomName3" Val="Custom 3" />
     <Str Name="CustomName4" Val="Custom 4" />
     <Str Name="CustomName5" Val="Custom 5" />
-    <Str Name="CustomName6" Val="Custom 6" />
+    <Str Name="CustomName6" Val="IQA" />
     <Str Name="HobbitID" Val="8cdea6e6-0aed-4a0e-99cb-21a7ed38e763" />
   </Props>
   <OwnedComments>
     <Cmt Name="Dev" />
     <Cmt Name="LcxAdmin" />
-    <Cmt Name="Loc" />
     <Cmt Name="Note" />
-    <Cmt Name="RCCX" />
+    <Cmt Name="Rccx" />
   </OwnedComments>
   <Settings Name="@vsLocTools@\current\default.lss" Type="LSS" />
   <Item ItemId=";Managed Resources" ItemType="0" PsrId="211" Leaf="true">
@@ -39,7 +38,7 @@
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Modified By="IT_Translator3_Moravia@hotmail.com" DateTime="2014-06-12T11:40:39.0003016Z" />
+        <Modified By="IT_Translator3_Moravia@hotmail.com" DateTime="2014-06-12T11:40:39Z" />
         <Notes>
           <Note Name="Loc" Order="0"><![CDATA[trans3]]></Note>
         </Notes>
@@ -74,7 +73,7 @@
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Modified By="IT_Translator3_Moravia@hotmail.com" DateTime="2014-06-12T11:40:39.0003016Z" />
+        <Modified By="IT_Translator3_Moravia@hotmail.com" DateTime="2014-06-12T11:40:39Z" />
         <Notes>
           <Note Name="Loc" Order="0"><![CDATA[trans3]]></Note>
         </Notes>
@@ -96,7 +95,7 @@
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Modified By="IT_Translator3_Moravia@hotmail.com" DateTime="2014-06-12T11:40:39.0003016Z" />
+        <Modified By="IT_Translator3_Moravia@hotmail.com" DateTime="2014-06-12T11:40:39Z" />
         <Notes>
           <Note Name="Loc" Order="0"><![CDATA[trans3]]></Note>
         </Notes>
@@ -131,7 +130,7 @@
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Modified By="IT_Translator3_Moravia@hotmail.com" DateTime="2014-06-12T11:40:39.0003016Z" />
+        <Modified By="IT_Translator3_Moravia@hotmail.com" DateTime="2014-06-12T11:40:39Z" />
         <Notes>
           <Note Name="Loc" Order="0"><![CDATA[trans3]]></Note>
         </Notes>
@@ -153,7 +152,7 @@
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Modified By="IT_Translator3_Moravia@hotmail.com" DateTime="2014-06-12T11:40:39.0003016Z" />
+        <Modified By="IT_Translator3_Moravia@hotmail.com" DateTime="2014-06-12T11:40:39Z" />
         <Notes>
           <Note Name="Loc" Order="0"><![CDATA[trans3]]></Note>
         </Notes>
@@ -175,7 +174,7 @@
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Modified By="IT_Translator3_Moravia@hotmail.com" DateTime="2014-06-12T11:40:39.0003016Z" />
+        <Modified By="IT_Translator3_Moravia@hotmail.com" DateTime="2014-06-12T11:40:39Z" />
         <Notes>
           <Note Name="Loc" Order="0"><![CDATA[trans3]]></Note>
         </Notes>
@@ -249,7 +248,7 @@
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Modified By="IT_Translator3_Moravia@hotmail.com" DateTime="2014-06-12T11:40:39.0003016Z" />
+        <Modified By="IT_Translator3_Moravia@hotmail.com" DateTime="2014-06-12T11:40:39Z" />
         <Notes>
           <Note Name="Loc" Order="0"><![CDATA[trans3]]></Note>
         </Notes>
@@ -271,7 +270,7 @@
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Modified By="IT_Translator3_Moravia@hotmail.com" DateTime="2014-06-12T11:40:39.0003016Z" />
+        <Modified By="IT_Translator3_Moravia@hotmail.com" DateTime="2014-06-12T11:40:39Z" />
         <Notes>
           <Note Name="Loc" Order="0"><![CDATA[trans3]]></Note>
         </Notes>
@@ -306,39 +305,22 @@
       <Disp Icon="Str" />
       <Modified By="henry.hsu" DateTime="2013-05-15T10:14:36Z" />
     </Item>
-    <Item ItemId=";Comments" ItemType="0" PsrId="211" Leaf="true">
-      <Str Cat="Text" UsrLk="true">
-        <Val><![CDATA[Microsoft.VisualStudio.Threading.dll]]></Val>
-      </Str>
-      <Disp Icon="Str" />
-      <Modified By="henry.hsu" DateTime="2013-05-15T10:14:36Z" />
-      <Props>
-        <Str Name="Custom1" Val="Dev12_HO3" />
-      </Props>
-    </Item>
-    <Item ItemId=";CompanyName" ItemType="0" PsrId="211" Leaf="true">
-      <Str Cat="Text" UsrLk="true">
-        <Val><![CDATA[Microsoft Corporation]]></Val>
-      </Str>
-      <Disp Icon="Str" />
-      <Modified By="henry.hsu" DateTime="2013-05-15T10:14:36Z" />
-      <Props>
-        <Str Name="Custom1" Val="Dev12_HO3" />
-      </Props>
-    </Item>
     <Item ItemId=";FileDescription" ItemType="0" PsrId="211" Leaf="true">
-      <Str Cat="Text" UsrLk="true">
-        <Val><![CDATA[Microsoft.VisualStudio.Threading.dll]]></Val>
+      <Str Cat="Text">
+        <Val><![CDATA[Microsoft.VisualStudio.Threading]]></Val>
+        <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New">
+          <Val><![CDATA[Microsoft.VisualStudio.Threading]]></Val>
+        </Tgt>
       </Str>
       <Disp Icon="Str" />
-      <Modified By="henry.hsu" DateTime="2013-05-15T10:14:36Z" />
+      <Modified By="islezarova" DateTime="2015-02-25T20:58:44Z" />
       <Props>
         <Str Name="Custom1" Val="Dev12_HO3" />
       </Props>
     </Item>
     <Item ItemId=";FileVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[14.0.22521.0]]></Val>
+        <Val><![CDATA[14.0.50225.1]]></Val>
       </Str>
       <Disp Icon="Str" />
       <Modified By="henry.hsu" DateTime="2013-05-15T10:14:36Z" />
@@ -369,20 +351,20 @@
     </Item>
     <Item ItemId=";ProductName" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text">
-        <Val><![CDATA[Microsoft® Visual Studio® 2015 RC]]></Val>
-        <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New">
-          <Val><![CDATA[Microsoft® Visual Studio® 2015 RC]]></Val>
+        <Val><![CDATA[Microsoft® Visual Studio®]]></Val>
+        <Tgt Cat="Text" Stat="Loc" Orig="New" Appr="PreApproved">
+          <Val><![CDATA[Microsoft® Visual Studio®]]></Val>
           <Props>
             <Str Name="TranslationModifiedBy" Val="IT_Translator3_Moravia@hotmail.com" />
             <Date Name="TranslationModifiedDate" Val="2014-12-15T16:21:39.5385315Z" />
           </Props>
         </Tgt>
         <Prev Cat="Text">
-          <Val><![CDATA[Microsoft® Visual Studio® 2015 CTP]]></Val>
+          <Val><![CDATA[Microsoft® Visual Studio® 2015 RC]]></Val>
         </Prev>
       </Str>
       <Disp Icon="Str" />
-      <Modified By="JHosek" DateTime="2015-01-26T18:33:35Z" />
+      <Modified By="islezarova" DateTime="2015-02-25T20:58:22Z" />
       <Notes>
         <Note Name="Loc" Order="0"><![CDATA[trans3]]></Note>
       </Notes>
@@ -394,7 +376,7 @@
     </Item>
     <Item ItemId=";ProductVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[14.0.22521.0]]></Val>
+        <Val><![CDATA[14.0.50225.1-pre+commit.3ec6463d3f]]></Val>
       </Str>
       <Disp Icon="Str" />
       <Modified By="henry.hsu" DateTime="2013-05-15T10:14:36Z" />

@@ -25,7 +25,7 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 			InnerPostToUnderlyingSynchronizationContext,
 		}
 
-		[TestMethod, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout), TestCategory("FailsInCloudTest")]
 		public void DelegationBehaviors() {
 			var log = new List<FactoryLogEntry>();
 			var innerFactory = new CustomizedFactory(this.context, log);

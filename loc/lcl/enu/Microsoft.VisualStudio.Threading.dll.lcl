@@ -184,37 +184,14 @@
       <Disp Icon="Str" />
       <Modified By="daneoh" DateTime="2013-05-08T23:58:20Z" />
     </Item>
-    <Item ItemId=";Comments" ItemType="0" PsrId="211" Leaf="true">
-      <Str Cat="Text">
-        <Val><![CDATA[Microsoft.VisualStudio.Threading.dll]]></Val>
-        <Tgt Cat="Text" CP="Unknown" Stat="Loc" Orig="New">
-          <Val><![CDATA[Microsoft.VisualStudio.Threading.dll]]></Val>
-        </Tgt>
-        <Prev Cat="Text">
-          <Val><![CDATA[Microsoft.Threading.dll]]></Val>
-        </Prev>
-      </Str>
-      <Disp Icon="Str" />
-      <Modified By="hobbit" DateTime="2013-05-30T14:10:29Z" />
-    </Item>
-    <Item ItemId=";CompanyName" ItemType="0" PsrId="211" Leaf="true">
-      <Str Cat="Text">
-        <Val><![CDATA[Microsoft Corporation]]></Val>
-        <Tgt Cat="Text" CP="Unknown" Stat="Loc" Orig="New">
-          <Val><![CDATA[Microsoft Corporation]]></Val>
-        </Tgt>
-      </Str>
-      <Disp Icon="Str" />
-      <Modified By="hobbit" DateTime="2013-05-30T14:10:29Z" />
-    </Item>
     <Item ItemId=";FileDescription" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text">
-        <Val><![CDATA[Microsoft.VisualStudio.Threading.dll]]></Val>
+        <Val><![CDATA[Microsoft.VisualStudio.Threading]]></Val>
         <Tgt Cat="Text" CP="Unknown" Stat="Loc" Orig="New">
-          <Val><![CDATA[Microsoft.VisualStudio.Threading.dll]]></Val>
+          <Val><![CDATA[Microsoft.VisualStudio.Threading]]></Val>
         </Tgt>
         <Prev Cat="Text">
-          <Val><![CDATA[Microsoft.Threading.dll]]></Val>
+          <Val><![CDATA[Microsoft.VisualStudio.Threading.dll]]></Val>
         </Prev>
       </Str>
       <Disp Icon="Str" />
@@ -222,9 +199,9 @@
     </Item>
     <Item ItemId=";FileVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[14.0.22521.0]]></Val>
+        <Val><![CDATA[14.0.50225.1]]></Val>
         <Tgt Cat="Text" CP="Unknown" Stat="Loc" Orig="New">
-          <Val><![CDATA[14.0.22521.0]]></Val>
+          <Val><![CDATA[14.0.50225.1]]></Val>
         </Tgt>
       </Str>
       <Disp Icon="Str" />
@@ -262,12 +239,12 @@
     </Item>
     <Item ItemId=";ProductName" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text">
-        <Val><![CDATA[Microsoft® Visual Studio® 2015 RC]]></Val>
+        <Val><![CDATA[Microsoft® Visual Studio®]]></Val>
         <Tgt Cat="Text" Stat="Loc" Orig="New">
-          <Val><![CDATA[Microsoft® Visual Studio® 2015 RC]]></Val>
+          <Val><![CDATA[Microsoft® Visual Studio®]]></Val>
         </Tgt>
         <Prev Cat="Text">
-          <Val><![CDATA[Microsoft® Visual Studio® 2015 CTP]]></Val>
+          <Val><![CDATA[Microsoft® Visual Studio® 2015 RC]]></Val>
         </Prev>
       </Str>
       <Disp Icon="Str" />
@@ -275,9 +252,9 @@
     </Item>
     <Item ItemId=";ProductVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[14.0.22521.0]]></Val>
+        <Val><![CDATA[14.0.50225.1-pre+commit.3ec6463d3f]]></Val>
         <Tgt Cat="Text" CP="Unknown" Stat="Loc" Orig="New">
-          <Val><![CDATA[14.0.22521.0]]></Val>
+          <Val><![CDATA[14.0.50225.1-pre+commit.3ec6463d3f]]></Val>
         </Tgt>
       </Str>
       <Disp Icon="Str" />
