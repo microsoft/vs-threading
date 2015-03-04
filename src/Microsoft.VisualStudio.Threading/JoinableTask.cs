@@ -459,6 +459,12 @@ namespace Microsoft.VisualStudio.Threading {
 						bool mainThreadQueueUpdated = false;
 						bool backgroundThreadQueueUpdated = false;
 						wrapper = SingleExecuteProtector.Create(this, d, state);
+
+						if (ThreadingEventSource.Instance.IsEnabled())
+						{
+							ThreadingEventSource.Instance.PostExecutionStart(wrapper.GetHashCode(), mainThreadAffinitized);
+						}
+
 						if (mainThreadAffinitized && !this.SynchronouslyBlockingMainThread) {
 							wrapper.RaiseTransitioningEvents();
 						}
@@ -648,6 +654,11 @@ namespace Microsoft.VisualStudio.Threading {
 					onMainThread = true;
 				}
 
+				if (ThreadingEventSource.Instance.IsEnabled())
+				{
+					ThreadingEventSource.Instance.CompleteOnCurrentThreadStart(this.GetHashCode(), onMainThread);
+				}
+
 				this.AddStateFlags(additionalFlags);
 
 				using (NoMessagePumpSyncContext.Default.Apply()) {
@@ -674,7 +685,9 @@ namespace Microsoft.VisualStudio.Threading {
 						if (this.TryDequeueSelfOrDependencies(onMainThread, ref visited, out work, out tryAgainAfter)) {
 							work.TryExecute();
 						} else if (tryAgainAfter != null) {
+							ThreadingEventSource.Instance.WaitSynchronouslyStart();
 							this.owner.WaitSynchronously(tryAgainAfter);
+							ThreadingEventSource.Instance.WaitSynchronouslyStop();
 							Assumes.True(tryAgainAfter.IsCompleted);
 						}
 					}
@@ -685,6 +698,11 @@ namespace Microsoft.VisualStudio.Threading {
 							this.RemoveDependingSynchronousTask(this, true);
 						}
 					}
+				}
+
+				if (ThreadingEventSource.Instance.IsEnabled())
+				{
+					ThreadingEventSource.Instance.CompleteOnCurrentThreadStop(this.GetHashCode());
 				}
 
 				Assumes.True(this.Task.IsCompleted);
