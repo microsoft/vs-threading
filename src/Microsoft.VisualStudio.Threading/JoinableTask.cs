@@ -459,7 +459,11 @@ namespace Microsoft.VisualStudio.Threading {
 						bool mainThreadQueueUpdated = false;
 						bool backgroundThreadQueueUpdated = false;
 						wrapper = SingleExecuteProtector.Create(this, d, state);
-						ThreadingEventSource.Instance.PostExecutionStart(wrapper.GetHashCode(), mainThreadAffinitized);
+
+						if (ThreadingEventSource.Instance.IsEnabled())
+						{
+							ThreadingEventSource.Instance.PostExecutionStart(wrapper.GetHashCode(), mainThreadAffinitized);
+						}
 
 						if (mainThreadAffinitized && !this.SynchronouslyBlockingMainThread) {
 							wrapper.RaiseTransitioningEvents();
@@ -650,7 +654,10 @@ namespace Microsoft.VisualStudio.Threading {
 					onMainThread = true;
 				}
 
-				ThreadingEventSource.Instance.CompleteOnCurrentThreadStart(this.GetHashCode(), onMainThread);
+				if (ThreadingEventSource.Instance.IsEnabled())
+				{
+					ThreadingEventSource.Instance.CompleteOnCurrentThreadStart(this.GetHashCode(), onMainThread);
+				}
 
 				this.AddStateFlags(additionalFlags);
 
@@ -693,7 +700,11 @@ namespace Microsoft.VisualStudio.Threading {
 					}
 				}
 
-				ThreadingEventSource.Instance.CompleteOnCurrentThreadStop(this.GetHashCode());
+				if (ThreadingEventSource.Instance.IsEnabled())
+				{
+					ThreadingEventSource.Instance.CompleteOnCurrentThreadStop(this.GetHashCode());
+				}
+
 				Assumes.True(this.Task.IsCompleted);
 				this.Task.GetAwaiter().GetResult();	// rethrow any exceptions
 			} finally {

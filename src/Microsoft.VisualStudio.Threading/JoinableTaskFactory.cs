@@ -935,7 +935,10 @@ namespace Microsoft.VisualStudio.Threading {
 			/// Invokes <see cref="JoinableTask.ExecutionQueue.OnExecuting"/> handler.
 			/// </summary>
 			private void OnExecuting() {
-				ThreadingEventSource.Instance.PostExecutionStop(this.GetHashCode());
+				if (ThreadingEventSource.Instance.IsEnabled())
+				{
+					ThreadingEventSource.Instance.PostExecutionStop(this.GetHashCode());
+				}
 
 				// While raising the event, automatically remove the handlers since we'll only
 				// raise them once, and we'd like to avoid holding references that may extend
