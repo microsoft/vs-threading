@@ -785,18 +785,24 @@
 			using (var access = await this.resourceLock.UpgradeableReadLockAsync()) {
 				await access.GetResourceAsync(1);
 
-				using (var writeAccess = await this.resourceLock.WriteLockAsync()) {
-					resourceTask = new TaskCompletionSource<object>();
-					resourceTask.SetException(new ApplicationException());
-					this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task).Forget();
+				try {
+					using (var writeAccess = await this.resourceLock.WriteLockAsync()) {
+						resourceTask = new TaskCompletionSource<object>();
+						resourceTask.SetException(new ApplicationException());
+						this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task).Forget();
 
-					try {
-						await writeAccess.ReleaseAsync();
-						Assert.Fail("Expected exception not thrown.");
-					} catch (ApplicationException) {
+						try {
+							await writeAccess.ReleaseAsync();
+							Assert.Fail("Expected exception not thrown.");
+						} catch (ApplicationException) {
+						}
+
+						Assert.IsFalse(this.resourceLock.IsPassiveWriteLockHeld);
 					}
 
-					Assert.IsFalse(this.resourceLock.IsPassiveWriteLockHeld);
+					// Exiting the using block should also throw.
+					Assert.Fail("Expected exception not thrown.");
+				} catch (ApplicationException) {
 				}
 
 				await access.ReleaseAsync();
@@ -804,15 +810,19 @@
 			}
 
 			// Any subsequent read lock should experience the same exception when acquiring the broken resource.
-			resourceTask = new TaskCompletionSource<object>();
-			resourceTask.SetException(new ApplicationException());
-			this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task).Forget();
-			using (var readAccess = await this.resourceLock.ReadLockAsync()) {
-				try {
-					await readAccess.GetResourceAsync(1);
-					Assert.Fail("Expected exception not thrown.");
-				} catch (ApplicationException) {
-					// expected
+			// Test it twice in a row to ensure it realizes that the resource is never really prep'd for 
+			// concurrent access.
+			for (int i = 0; i < 2; i++) {
+				resourceTask = new TaskCompletionSource<object>();
+				resourceTask.SetException(new ApplicationException());
+				this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task).Forget();
+				using (var readAccess = await this.resourceLock.ReadLockAsync()) {
+					try {
+						await readAccess.GetResourceAsync(1);
+						Assert.Fail("Expected exception not thrown.");
+					} catch (ApplicationException) {
+						// expected
+					}
 				}
 			}
 
