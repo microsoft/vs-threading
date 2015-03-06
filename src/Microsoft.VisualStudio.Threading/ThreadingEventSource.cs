@@ -143,7 +143,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// An execution request is processed.
 		/// </summary>
-		/// <param name="requestId">The request id.</</param>
+		/// <param name="requestId">The request id.</param>
 		[Event(PostExecutionStopEvent, Level = EventLevel.Verbose)]
 		public void PostExecutionStop(int requestId) {
 			this.WriteEvent(PostExecutionStopEvent, requestId);

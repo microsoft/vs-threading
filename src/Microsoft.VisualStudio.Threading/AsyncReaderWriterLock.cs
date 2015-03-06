@@ -979,7 +979,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		/// <param name="awaiter">The awaiter to issue a lock to and execute.</param>
 		private void IssueAndExecute(Awaiter awaiter) {
-			Etw.WaitStop(awaiter);
+			EventsHelper.WaitStop(awaiter);
 			Assumes.True(this.TryIssueLock(awaiter, previouslyQueued: true));
 			Assumes.True(this.ExecuteOrHandleCancellation(awaiter, stillInQueue: false));
 		}
@@ -1424,7 +1424,7 @@ namespace Microsoft.VisualStudio.Threading {
 							return true;
 						}
 
-						Etw.WaitStop(lockWaiter);
+						EventsHelper.WaitStop(lockWaiter);
 
 						// At this point, the waiter was removed from the queue, so we can't keep
 						// enumerating the queue or we'll get an InvalidOperationException.
@@ -2186,7 +2186,7 @@ namespace Microsoft.VisualStudio.Threading {
 				}
 			}
 
-			public void WaitStop(Awaiter lckAwaiter) {
+			public static void WaitStop(Awaiter lckAwaiter) {
 				if (ThreadingEventSource.Instance.IsEnabled()) {
 					ThreadingEventSource.Instance.WaitReaderWriterLockStop(lckAwaiter.GetHashCode(), lckAwaiter.Kind);
 				}
