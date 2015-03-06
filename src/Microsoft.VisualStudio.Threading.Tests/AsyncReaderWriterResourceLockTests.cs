@@ -781,11 +781,12 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task PrepareResourceForConcurrentAccessAsync_ThrowsReleasingWriteShouldNotLeakLock() {
+			TaskCompletionSource<object> resourceTask;
 			using (var access = await this.resourceLock.UpgradeableReadLockAsync()) {
 				await access.GetResourceAsync(1);
 
 				using (var writeAccess = await this.resourceLock.WriteLockAsync()) {
-					var resourceTask = new TaskCompletionSource<object>();
+					resourceTask = new TaskCompletionSource<object>();
 					resourceTask.SetException(new ApplicationException());
 					this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task).Forget();
 
@@ -802,8 +803,28 @@
 				Assert.IsFalse(this.resourceLock.IsAnyPassiveLockHeld);
 			}
 
-			// Ensure another write lock can be issued.
+			// Any subsequent read lock should experience the same exception when acquiring the broken resource.
+			resourceTask = new TaskCompletionSource<object>();
+			resourceTask.SetException(new ApplicationException());
+			this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task).Forget();
+			using (var readAccess = await this.resourceLock.ReadLockAsync()) {
+				try {
+					await readAccess.GetResourceAsync(1);
+					Assert.Fail("Expected exception not thrown.");
+				} catch (ApplicationException) {
+					// expected
+				}
+			}
+
+			// Ensure another write lock can be issued, and can acquire the resource to "fix" it.
 			using (var writeAccess = await this.resourceLock.WriteLockAsync()) {
+				var resource = await writeAccess.GetResourceAsync(1);
+				Assert.IsNotNull(resource);
+			}
+
+			// Finally, verify that the fix was effective.
+			using (var readAccess = await this.resourceLock.ReadLockAsync()) {
+				await readAccess.GetResourceAsync(1);
 			}
 		}
 
