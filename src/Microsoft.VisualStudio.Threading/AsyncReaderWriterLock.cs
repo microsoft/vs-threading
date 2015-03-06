@@ -1202,7 +1202,12 @@ namespace Microsoft.VisualStudio.Threading {
 				onExclusiveLockReleasedTask = this.OnExclusiveLockReleasedAsync();
 			}
 
-			await onExclusiveLockReleasedTask.ConfigureAwait(false);
+			Exception onExclusiveLockReleasedTaskException=null;
+			try {
+				await onExclusiveLockReleasedTask.ConfigureAwait(false);
+			} catch (Exception ex) {
+				onExclusiveLockReleasedTaskException = ex;
+			}
 
 			if (fireUpgradeableReadLockReleased) {
 				// This will only fire when the outermost upgradeable read is not itself nested by a write lock,
@@ -1222,6 +1227,11 @@ namespace Microsoft.VisualStudio.Threading {
 			if (prereqException != null) {
 				// rethrow the exception we experienced before, such that it doesn't wipe out its callstack.
 				System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(prereqException).Throw();
+			}
+
+			if (onExclusiveLockReleasedTaskException != null) {
+				// rethrow the exception we experienced before, such that it doesn't wipe out its callstack.
+				System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(onExclusiveLockReleasedTaskException).Throw();
 			}
 		}
 
