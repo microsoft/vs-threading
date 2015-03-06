@@ -1202,7 +1202,7 @@ namespace Microsoft.VisualStudio.Threading {
 				onExclusiveLockReleasedTask = this.OnExclusiveLockReleasedAsync();
 			}
 
-			Exception onExclusiveLockReleasedTaskException=null;
+			Exception onExclusiveLockReleasedTaskException = null;
 			try {
 				await onExclusiveLockReleasedTask.ConfigureAwait(false);
 			} catch (Exception ex) {
