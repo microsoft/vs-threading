@@ -760,7 +760,27 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task PrepareResourceForConcurrentAccessThrowsShouldNotLeakLock() {
+		public async Task PrepareResourceForConcurrentAccessAsync_ThrowsDuringReadShouldNotLeakLock() {
+			var resourceTask = new TaskCompletionSource<object>();
+			resourceTask.SetException(new ApplicationException());
+			this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task).Forget();
+
+			using (var access = await this.resourceLock.ReadLockAsync()) {
+				try {
+					var resource = await access.GetResourceAsync(1);
+					Assert.Fail("Expected exception not thrown.");
+				} catch (ApplicationException) {
+					// expected
+				}
+			}
+
+			// Ensure a write lock can be obtained.
+			using (await this.resourceLock.WriteLockAsync()) {
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task PrepareResourceForConcurrentAccessAsync_ThrowsReleasingWriteShouldNotLeakLock() {
 			using (var access = await this.resourceLock.UpgradeableReadLockAsync()) {
 				await access.GetResourceAsync(1);
 
