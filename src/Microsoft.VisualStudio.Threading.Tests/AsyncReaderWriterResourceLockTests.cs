@@ -537,15 +537,15 @@
 
 			await Task.WhenAll(
 				Task.Run(async delegate {
-				using (var access = await this.resourceLock.ReadLockAsync()) {
-					var resource1 = await access.GetResourceAsync(1);
-				}
-			}),
+					using (var access = await this.resourceLock.ReadLockAsync()) {
+						var resource1 = await access.GetResourceAsync(1);
+					}
+				}),
 				Task.Run(async delegate {
-				using (var access = await this.resourceLock.ReadLockAsync()) {
-					var resource2 = await access.GetResourceAsync(2);
-				}
-			}),
+					using (var access = await this.resourceLock.ReadLockAsync()) {
+						var resource2 = await access.GetResourceAsync(2);
+					}
+				}),
 			Task.Run(async delegate {
 				// This is the part of the test that ensures that preparation is executed concurrently
 				// across resources.  If concurrency were not allowed, this would deadlock as we won't
@@ -568,43 +568,43 @@
 
 			await Task.WhenAll(
 				Task.Run(async delegate {
-				using (var access = await this.resourceLock.ReadLockAsync()) {
-					var resource = access.GetResourceAsync(1);
-					requestSubmitted1.SetResult(null);
-					await resource;
-				}
-			}),
+					using (var access = await this.resourceLock.ReadLockAsync()) {
+						var resource = access.GetResourceAsync(1);
+						requestSubmitted1.SetResult(null);
+						await resource;
+					}
+				}),
 				Task.Run(async delegate {
-				using (var access = await this.resourceLock.ReadLockAsync()) {
-					var resource = access.GetResourceAsync(1);
-					requestSubmitted2.SetResult(null);
-					await resource;
-				}
-			}),
+					using (var access = await this.resourceLock.ReadLockAsync()) {
+						var resource = access.GetResourceAsync(1);
+						requestSubmitted2.SetResult(null);
+						await resource;
+					}
+				}),
 				Task.Run(async delegate {
-				// This is the part of the test that ensures that preparation is not executed concurrently
-				// for a given resource.  
-				await Task.WhenAll(requestSubmitted1.Task, requestSubmitted2.Task);
+					// This is the part of the test that ensures that preparation is not executed concurrently
+					// for a given resource.  
+					await Task.WhenAll(requestSubmitted1.Task, requestSubmitted2.Task);
 
-				// The way this test's resource and lock wrapper class is written,
-				// the counters are incremented synchronously, so although we haven't
-				// yet claimed to be done preparing the resource, the counter can be
-				// checked to see how many entries into the preparation method have occurred.
-				// It should only be 1, even with two requests, since until the first one completes
-				// the second request shouldn't start to execute prepare.  
-				// In fact, the second request should never even need to prepare since the first one
-				// did the job already, but asserting that is not the purpose of this particular test.
-				try {
-					await this.resourceLock.PreparationTaskBegun.WaitAsync();
-					Assert.AreEqual(1, this.resources[1].ConcurrentAccessPreparationCount, "ConcurrentAccessPreparationCount unexpected.");
-					Assert.AreEqual(0, this.resources[1].ExclusiveAccessPreparationCount, "ExclusiveAccessPreparationCount unexpected.");
-				} catch (Exception ex) {
-					Console.WriteLine("Failed with: {0}", ex);
-					throw;
-				} finally {
-					resourceTask.SetResult(null); // avoid the test hanging in failure cases.
-				}
-			}));
+					// The way this test's resource and lock wrapper class is written,
+					// the counters are incremented synchronously, so although we haven't
+					// yet claimed to be done preparing the resource, the counter can be
+					// checked to see how many entries into the preparation method have occurred.
+					// It should only be 1, even with two requests, since until the first one completes
+					// the second request shouldn't start to execute prepare.  
+					// In fact, the second request should never even need to prepare since the first one
+					// did the job already, but asserting that is not the purpose of this particular test.
+					try {
+						await this.resourceLock.PreparationTaskBegun.WaitAsync();
+						Assert.AreEqual(1, this.resources[1].ConcurrentAccessPreparationCount, "ConcurrentAccessPreparationCount unexpected.");
+						Assert.AreEqual(0, this.resources[1].ExclusiveAccessPreparationCount, "ExclusiveAccessPreparationCount unexpected.");
+					} catch (Exception ex) {
+						Console.WriteLine("Failed with: {0}", ex);
+						throw;
+					} finally {
+						resourceTask.SetResult(null); // avoid the test hanging in failure cases.
+					}
+				}));
 		}
 
 		/// <summary>
@@ -756,6 +756,85 @@
 				this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task).Forget();
 				Resource resource = await access.GetResourceAsync(1);
 				Assert.AreSame(resources[1], resource);
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task PrepareResourceForConcurrentAccessAsync_ThrowsDuringReadShouldNotLeakLock() {
+			var resourceTask = new TaskCompletionSource<object>();
+			resourceTask.SetException(new ApplicationException());
+			this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task).Forget();
+
+			using (var access = await this.resourceLock.ReadLockAsync()) {
+				try {
+					var resource = await access.GetResourceAsync(1);
+					Assert.Fail("Expected exception not thrown.");
+				} catch (ApplicationException) {
+					// expected
+				}
+			}
+
+			// Ensure a write lock can be obtained.
+			using (await this.resourceLock.WriteLockAsync()) {
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task PrepareResourceForConcurrentAccessAsync_ThrowsReleasingWriteShouldNotLeakLock() {
+			TaskCompletionSource<object> resourceTask;
+			using (var access = await this.resourceLock.UpgradeableReadLockAsync()) {
+				await access.GetResourceAsync(1);
+
+				try {
+					using (var writeAccess = await this.resourceLock.WriteLockAsync()) {
+						resourceTask = new TaskCompletionSource<object>();
+						resourceTask.SetException(new ApplicationException());
+						this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task).Forget();
+
+						try {
+							await writeAccess.ReleaseAsync();
+							Assert.Fail("Expected exception not thrown.");
+						} catch (ApplicationException) {
+						}
+
+						Assert.IsFalse(this.resourceLock.IsPassiveWriteLockHeld);
+					}
+
+					// Exiting the using block should also throw.
+					Assert.Fail("Expected exception not thrown.");
+				} catch (ApplicationException) {
+				}
+
+				await access.ReleaseAsync();
+				Assert.IsFalse(this.resourceLock.IsAnyPassiveLockHeld);
+			}
+
+			// Any subsequent read lock should experience the same exception when acquiring the broken resource.
+			// Test it twice in a row to ensure it realizes that the resource is never really prep'd for 
+			// concurrent access.
+			for (int i = 0; i < 2; i++) {
+				resourceTask = new TaskCompletionSource<object>();
+				resourceTask.SetException(new ApplicationException());
+				this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task).Forget();
+				using (var readAccess = await this.resourceLock.ReadLockAsync()) {
+					try {
+						await readAccess.GetResourceAsync(1);
+						Assert.Fail("Expected exception not thrown.");
+					} catch (ApplicationException) {
+						// expected
+					}
+				}
+			}
+
+			// Ensure another write lock can be issued, and can acquire the resource to "fix" it.
+			using (var writeAccess = await this.resourceLock.WriteLockAsync()) {
+				var resource = await writeAccess.GetResourceAsync(1);
+				Assert.IsNotNull(resource);
+			}
+
+			// Finally, verify that the fix was effective.
+			using (var readAccess = await this.resourceLock.ReadLockAsync()) {
+				await readAccess.GetResourceAsync(1);
 			}
 		}
 
