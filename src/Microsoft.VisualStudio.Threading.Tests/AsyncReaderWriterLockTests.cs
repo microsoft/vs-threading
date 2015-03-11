@@ -1894,7 +1894,7 @@
 			}));
 		}
 
-		[TestMethod, Timeout(AsyncDelay * 7 * 2 + AsyncDelay)]
+		[TestMethod, Timeout(AsyncDelay * 9 * 2 + AsyncDelay)]
 		public async Task MitigationAgainstAccidentalExclusiveLockConcurrency() {
 			using (await this.asyncLock.UpgradeableReadLockAsync()) {
 				using (await this.asyncLock.WriteLockAsync()) {
