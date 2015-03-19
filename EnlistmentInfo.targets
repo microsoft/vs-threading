@@ -4,7 +4,7 @@
     <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
   </PropertyGroup>
 
-  <Import Project="$(DepotRoot)\Tools\Derazzle\Common.targets"/>
+  <Import Project="$(VSToolsDeRazzlePath)Common.targets"/>
 
   <ItemDefinitionGroup>
     <FilesToSign Condition=" '$(DevDivProjectType)' == 'product' ">

@@ -93,7 +93,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\Razzle\src\Tools\RunMeElevated.cmd">
+    <None Include="$(NuGetPackageRestorePath)VS.ToolsFiles.*\RunMeElevated.cmd">
       <Link>UpdateVS\RunMeElevated.cmd</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -112,7 +112,7 @@
     <Folder Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="..\..\Razzle\src\Tools\Elevate.exe">
+    <Content Include="$(NuGetPackageRestorePath)VS.ToolsFiles.*\Elevate.exe">
       <Link>UpdateVS\Elevate.exe</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

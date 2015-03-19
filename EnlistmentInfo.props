@@ -5,11 +5,13 @@
     <ProjectDepotRoot>$(MSBuildThisFileDirectory)</ProjectDepotRoot>
     <SubmoduleRoot>$(MSBuildThisFileDirectory)\src</SubmoduleRoot>
     <NuGetPackageRestorePath>$(ProjectDepotRoot)\src\Packages\</NuGetPackageRestorePath>
-    <ModuleDefinitionsDirectory>$(MSBuildThisFileDirectory)Tools\ModuleTargets\Modules\</ModuleDefinitionsDirectory>
     <DeployExtension Condition=" '$(IsLabBuild)' == 'true' ">false</DeployExtension>
-    <ModuleName>Microsoft.VisualStudio.Threading</ModuleName>
+
+    <VSToolsDeRazzlePath>$(NuGetPackageRestorePath)VS.Tools.Derazzle.1.0.150317.2\</VSToolsDeRazzlePath>
+    <VSToolsModuleTargetsPath>$(NuGetPackageRestorePath)VS.Tools.ModuleTargets.1.0.150313.1\</VSToolsModuleTargetsPath>
+    <VSToolsDevDivFilesPath>$(NuGetPackageRestorePath)VS.Tools.DevDivFiles.1.0.150305.3\</VSToolsDevDivFilesPath>
   </PropertyGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), EnlistmentInfo.xml))\EnlistmentInfo.xml" />
-  <Import Project="$(DepotRoot)\Tools\Derazzle\Common.props"/>
+  <Import Project="$(VSToolsDeRazzlePath)Common.props"/>
 </Project>

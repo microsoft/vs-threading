@@ -1,13 +1,18 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.22602.0
+VisualStudioVersion = 14.0.22712.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Threading", "Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj", "{2C0DFFBD-49C8-4F12-A964-E3096AD4C7F4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Threading.Tests", "Microsoft.VisualStudio.Threading.Tests\Microsoft.VisualStudio.Threading.Tests.csproj", "{7B8BF2E6-7D7B-4F4E-B1A4-B08312F6294F}"
 EndProject
 Project("{13B669BE-BB05-4DDF-9536-439F39A36129}") = "Microsoft.VisualStudio.Threading.NuGet", "Microsoft.VisualStudio.Threading.NuGet\Microsoft.VisualStudio.Threading.NuGet.nuproj", "{C51ACF4A-3E2C-44B2-99FC-1A838518C690}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{616BF0FC-6D6E-406A-B029-28C871D02F61}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\packages.config = .nuget\packages.config
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
