@@ -516,7 +516,7 @@ namespace Microsoft.VisualStudio.Threading {
 				// Notify tasks which can process the event queue.
 				if (eventsNeedNotify != null) {
 					foreach (var queueEvent in eventsNeedNotify) {
-						queueEvent.PulseAllAsync().Forget();
+						queueEvent.PulseAll();
 					}
 				}
 
