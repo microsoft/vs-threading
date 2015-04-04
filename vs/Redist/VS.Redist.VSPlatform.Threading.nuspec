@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
   <metadata>
-    <id>VS.Redist.VSPlatform.Threading</id>
+    <id>VS.Redist.VSPlatform.Threading$LocSuffix$</id>
     <version>$version$</version>
     <authors>VSEng</authors>
     <owners>VSEng</owners>
