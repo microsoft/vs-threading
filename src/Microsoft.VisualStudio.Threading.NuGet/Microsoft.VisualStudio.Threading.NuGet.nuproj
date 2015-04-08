@@ -20,16 +20,20 @@
   <PropertyGroup Label="Configuration">
     <Id>Microsoft.VisualStudio.Threading</Id>
     <Title>Microsoft.VisualStudio.Threading</Title>
-    <Authors>andarno</Authors>
-    <Summary>
-    </Summary>
+    <Summary>Additional lock classes, TPL and dataflow extensions.</Summary>
     <Description>Additional lock classes, TPL and dataflow extensions.</Description>
-    <ReleaseNotes>
-    </ReleaseNotes>
-    <ProjectUrl>https://mseng.visualstudio.com/DefaultCollection/VSIDEProj/_git/VSIDEProj.Threading/</ProjectUrl>
-    <LicenseUrl>
-    </LicenseUrl>
+    <Authors>andarno</Authors>
     <Tags>Threading Async Lock Synchronization Threadsafe</Tags>
+
+    <Authors>Microsoft</Authors>
+    <Owners>Microsoft, VisualStudioExtensibility</Owners>
+    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+    <ProjectUrl>http://aka.ms/vsextensibility</ProjectUrl>
+    <IconUrl>http://aka.ms/VsExtensibilityIcon</IconUrl>
+<!--
+    <LicenseUrl>http://go.microsoft.com/fwlink/?LinkID=517238</LicenseUrl>
+    <RequireLicenseAcceptance>true</RequireLicenseAcceptance>
+-->
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj" />
