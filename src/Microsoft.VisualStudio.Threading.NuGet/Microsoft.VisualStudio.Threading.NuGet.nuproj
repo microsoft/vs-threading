@@ -30,10 +30,8 @@
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <ProjectUrl>http://aka.ms/vsextensibility</ProjectUrl>
     <IconUrl>http://aka.ms/VsExtensibilityIcon</IconUrl>
-<!--
     <LicenseUrl>http://go.microsoft.com/fwlink/?LinkID=517238</LicenseUrl>
     <RequireLicenseAcceptance>true</RequireLicenseAcceptance>
--->
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj" />
