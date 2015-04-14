@@ -1858,7 +1858,7 @@ namespace Microsoft.VisualStudio.Threading {
 						try {
 							while (!releaseTask.Wait(1000)) { // this loop allows us to break into the debugger and step into managed code to analyze a hang.
 							}
-						} catch (AggregateException ex) {
+						} catch (AggregateException) {
 							// We want to throw the inner exception itself -- not the AggregateException.
 							releaseTask.GetAwaiter().GetResult();
 						}
