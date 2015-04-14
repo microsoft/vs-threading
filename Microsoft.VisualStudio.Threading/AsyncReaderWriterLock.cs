@@ -413,7 +413,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		/// <param name="flags">The flag(s) that must be specified for a <c>true</c> result.</param>
 		/// <param name="handle">The head of the lock stack to consider.</param>
-		/// <returns><c>true</c> if all flags are found somewhere in the lock stack; <c>false</c> otherwise.</returns>
+		/// <returns><c>true</c> if all the specified flags are found somewhere in the lock stack; <c>false</c> otherwise.</returns>
 		protected bool LockStackContains(LockFlags flags, LockHandle handle) {
 			LockFlags aggregateFlags = LockFlags.None;
 			var awaiter = handle.Awaiter;
@@ -464,7 +464,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// Fired when any lock is being released.
 		/// </summary>
-		/// <param name="exclusiveLockRelease">A flag indicating whether the last write lock that the caller holds is being released.</param>
+		/// <param name="exclusiveLockRelease"><c>true</c> if the last write lock that the caller holds is being released; <c>false</c> otherwise.</param>
 		/// <param name="releasingLock">The lock being released.</param>
 		/// <returns>A task whose completion signals the conclusion of the asynchronous operation.</returns>
 		protected virtual Task OnBeforeLockReleasedAsync(bool exclusiveLockRelease, LockHandle releasingLock) {
