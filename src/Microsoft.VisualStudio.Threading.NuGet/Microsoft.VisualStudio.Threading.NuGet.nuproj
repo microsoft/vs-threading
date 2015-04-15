@@ -22,7 +22,6 @@
     <Title>Microsoft.VisualStudio.Threading</Title>
     <Summary>Additional lock classes, TPL and dataflow extensions.</Summary>
     <Description>Additional lock classes, TPL and dataflow extensions.</Description>
-    <Authors>andarno</Authors>
     <Tags>Threading Async Lock Synchronization Threadsafe</Tags>
 
     <Authors>Microsoft</Authors>
