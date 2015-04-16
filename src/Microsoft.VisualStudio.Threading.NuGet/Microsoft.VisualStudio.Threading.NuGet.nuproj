@@ -20,8 +20,8 @@
   <PropertyGroup Label="Configuration">
     <Id>Microsoft.VisualStudio.Threading</Id>
     <Title>Microsoft.VisualStudio.Threading</Title>
-    <Summary>Additional lock classes, TPL and dataflow extensions.</Summary>
-    <Description>Additional lock classes, TPL and dataflow extensions.</Description>
+    <Summary>Async synchronization primitives, async collections, TPL and dataflow extensions.</Summary>
+    <Description>Enables compliance with the Visual Studio threading rules (e.g. JoinableTaskFactory).</Description>
     <Tags>Threading Async Lock Synchronization Threadsafe</Tags>
 
     <Authors>Microsoft</Authors>
