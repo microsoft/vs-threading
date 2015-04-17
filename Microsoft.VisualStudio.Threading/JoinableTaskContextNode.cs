@@ -79,23 +79,23 @@
 		}
 
 		/// <summary>
-		/// Conceals any JoinableTask the caller is associate with until the returned value is disposed.
+		/// Conceals any JoinableTask the caller is associated with until the returned value is disposed.
 		/// </summary>
 		/// <returns>A value to dispose of to restore visibility into the caller's associated JoinableTask, if any.</returns>
 		/// <remarks>
-		/// <para>It may be that while inside a delegate supplied to <see cref="JoinableTaskFactory.Run(Func{Task})"/>
-		/// that async work be spun off such that it does not have privileges to re-enter the Main thread
-		/// till the <see cref="JoinableTaskFactory.Run(Func{Task})"/> call has returned and the UI thread is
-		/// idle.  To prevent the async work from automatically being allowed to re-enter the Main thread,
-		/// wrap the code that calls the async task in a <c>using</c> block with a call to this method 
+		/// <para>In some cases asynchronous work may be spun off inside a delegate supplied to Run,
+		/// so that the work does not have privileges to re-enter the Main thread until the
+		/// <see cref="JoinableTaskFactory.Run(Func{Task})"/> call has returned and the UI thread is idle.
+		/// To prevent the asynchronous work from automatically being allowed to re-enter the Main thread,
+		/// wrap the code that calls the asynchronous task in a <c>using</c> block with a call to this method 
 		/// as the expression.</para>
 		/// <example>
 		/// <code>
-		/// this.JobContext.RunSynchronously(async delegate {
-		///     using(this.JobContext.SuppressRelevance()) {
+		/// this.JoinableTaskContext.RunSynchronously(async delegate {
+		///     using(this.JoinableTaskContext.SuppressRelevance()) {
 		///         var asyncOperation = Task.Run(async delegate {
 		///             // Some background work.
-		///             await this.JobContext.SwitchToMainThreadAsync();
+		///             await this.JoinableTaskContext.SwitchToMainThreadAsync();
 		///             // Some Main thread work, that cannot begin until the outer RunSynchronously call has returned.
 		///         });
 		///     }

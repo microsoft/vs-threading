@@ -8,11 +8,6 @@
 
 	partial class JoinableTaskContext : IHangReportContributor {
 		/// <summary>
-		/// The namespace that all DGML nodes appear in.
-		/// </summary>
-		private const string DgmlNamespace = "http://schemas.microsoft.com/vs/2009/dgml";
-
-		/// <summary>
 		/// Contributes data for a hang report.
 		/// </summary>
 		/// <returns>The hang report contribution.</returns>
@@ -45,54 +40,10 @@
 		}
 
 		private static XDocument CreateTemplateDgml(out XElement nodes, out XElement links) {
-			var dgml = new XDocument();
-			dgml.Add(
-				new XElement(XName.Get("DirectedGraph", DgmlNamespace),
-					new XAttribute("Layout", "Sugiyama")));
-			nodes = new XElement(XName.Get("Nodes", DgmlNamespace));
-			links = new XElement(XName.Get("Links", DgmlNamespace));
-			var categories = new XElement(
-				XName.Get("Categories", DgmlNamespace),
-				new XElement(
-					XName.Get("Category", DgmlNamespace),
-					new XAttribute("Id", "MainThreadBlocking"),
-					new XAttribute("Label", "Blocking main thread"),
-					new XAttribute("Background", "#FFFF7F7F"),
-					new XAttribute("IsTag", "True")),
-				new XElement(
-					XName.Get("Category", DgmlNamespace),
-					new XAttribute("Id", "NonEmptyQueue"),
-					new XAttribute("Label", "Non-empty queue"),
-					new XAttribute("IsTag", "True")));
-			var styles = new XElement(
-				XName.Get("Styles", DgmlNamespace),
-				new XElement(
-					XName.Get("Style", DgmlNamespace),
-					new XAttribute("TargetType", "Node"),
-					new XAttribute("GroupLabel", "NonEmptyQueue"),
-					new XElement(
-						XName.Get("Condition", DgmlNamespace),
-						new XAttribute("Expression", "HasCategory('NonEmptyQueue')")),
-					new XElement(
-						XName.Get("Setter", DgmlNamespace),
-						new XAttribute("Property", "Background"),
-						new XAttribute("Value", "#FFFF0000"))),
-				new XElement(
-					XName.Get("Style", DgmlNamespace),
-					new XAttribute("TargetType", "Node"),
-					new XAttribute("GroupLabel", "Blocking main thread"),
-					new XElement(
-						XName.Get("Condition", DgmlNamespace),
-						new XAttribute("Expression", "HasCategory('MainThreadBlocking')")),
-					new XElement(
-						XName.Get("Setter", DgmlNamespace),
-						new XAttribute("Property", "Background"),
-						new XAttribute("Value", "#FFF9FF7F"))));
-			dgml.Root.Add(nodes);
-			dgml.Root.Add(links);
-			dgml.Root.Add(categories);
-			dgml.Root.Add(styles);
-			return dgml;
+			return Dgml.Create(out nodes, out links)
+				.WithCategories(
+					Dgml.Category("MainThreadBlocking", "Blocking main thread", background: "#FFF9FF7F", isTag: true),
+					Dgml.Category("NonEmptyQueue", "Non-empty queue", background: "#FFFF0000", isTag: true));
 		}
 
 		private static ICollection<XElement> CreatesLinksBetweenNodes(Dictionary<JoinableTask, XElement> pendingTasksElements) {
@@ -103,11 +54,7 @@
 				foreach (var joinedTask in joinableTaskAndElement.Key.ChildOrJoinedJobs) {
 					XElement joinedTaskElement;
 					if (pendingTasksElements.TryGetValue(joinedTask, out joinedTaskElement)) {
-						links.Add(
-							new XElement(
-								XName.Get("Link", DgmlNamespace),
-								new XAttribute("Source", joinableTaskAndElement.Value.Attribute("Id").Value),
-								new XAttribute("Target", joinedTaskElement.Attribute("Id").Value)));
+						links.Add(Dgml.Link(joinableTaskAndElement.Value, joinedTaskElement));
 					}
 				}
 			}
@@ -123,11 +70,7 @@
 			foreach (var task in tasks) {
 				foreach (var collection in task.Key.ContainingCollections) {
 					var collectionElement = collections[collection];
-					var link = new XElement(XName.Get("Link", DgmlNamespace));
-					link.SetAttributeValue("Source", collectionElement.Attribute("Id").Value);
-					link.SetAttributeValue("Target", task.Value.Attribute("Id").Value);
-					AddCategory(link, "Contains");
-					result.Add(link);
+					result.Add(Dgml.Link(collectionElement, task.Value).WithCategories("Contains"));
 				}
 			}
 
@@ -142,26 +85,12 @@
 			int collectionId = 0;
 			foreach (var collection in collectionsSet) {
 				collectionId++;
-				var element = new XElement(XName.Get("Node", DgmlNamespace));
-				element.SetAttributeValue("Id", "Collection#" + collectionId);
-				element.SetAttributeValue("Label", "Collection #" + collectionId);
-				element.SetAttributeValue("Group", "Expanded");
-				AddCategory(element, "Collection");
+				var element = Dgml.Node("Collection#" + collectionId, "Collection #" + collectionId, group: "Expanded")
+					.WithCategories("Collection");
 				result.Add(collection, element);
 			}
 
 			return result;
-		}
-
-		private static void AddCategory(XElement node, string category) {
-			Requires.NotNull(node, "node");
-			if (node.Attribute("Category") == null) {
-				node.SetAttributeValue("Category", category);
-			} else {
-				node.Add(new XElement(
-					XName.Get("Category", DgmlNamespace),
-					new XAttribute("Ref", category)));
-			}
 		}
 
 		private Dictionary<JoinableTask, XElement> CreateNodesForPendingTasks() {
@@ -180,17 +109,14 @@
 							entryMethodInfo.Name);
 					}
 
-					var node = new XElement(
-						XName.Get("Node", DgmlNamespace),
-						new XAttribute("Id", "Task#" + taskId),
-						new XAttribute("Label", "Task #" + taskId + methodName));
-					AddCategory(node, "Task");
+					var node = Dgml.Node("Task#" + taskId, "Task #" + taskId + methodName)
+						.WithCategories("Task");
 					if (pendingTask.HasNonEmptyQueue) {
-						AddCategory(node, "NonEmptyQueue");
+						node.WithCategories("NonEmptyQueue");
 					}
 
 					if (pendingTask.State.HasFlag(JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)) {
-						AddCategory(node, "MainThreadBlocking");
+						node.WithCategories("MainThreadBlocking");
 					}
 
 					pendingTasksElements.Add(pendingTask, node);
@@ -210,27 +136,15 @@
 				int queueIndex = 0;
 				foreach (var pendingTasksElement in pendingTask.MainThreadQueueContents) {
 					queueIndex++;
-					var callstackNode = new XElement(
-						XName.Get("Node", DgmlNamespace),
-						new XAttribute("Id", node.Attribute("Id").Value + "MTQueue#" + queueIndex),
-						new XAttribute("Label", RepresentCallstack(pendingTasksElement)));
-					var callstackLink = new XElement(
-						XName.Get("Link", DgmlNamespace),
-						new XAttribute("Source", callstackNode.Attribute("Id").Value),
-						new XAttribute("Target", node.Attribute("Id").Value));
+					var callstackNode = Dgml.Node(node.Attribute("Id").Value + "MTQueue#" + queueIndex, RepresentCallstack(pendingTasksElement));
+					var callstackLink = Dgml.Link(callstackNode, node);
 					result.Add(Tuple.Create(callstackNode, callstackLink));
 				}
 
 				foreach (var pendingTasksElement in pendingTask.ThreadPoolQueueContents) {
 					queueIndex++;
-					var callstackNode = new XElement(
-						XName.Get("Node", DgmlNamespace),
-						new XAttribute("Id", node.Attribute("Id").Value + "TPQueue#" + queueIndex),
-						new XAttribute("Label", RepresentCallstack(pendingTasksElement)));
-					var callstackLink = new XElement(
-						XName.Get("Link", DgmlNamespace),
-						new XAttribute("Source", callstackNode.Attribute("Id").Value),
-						new XAttribute("Target", node.Attribute("Id").Value));
+					var callstackNode = Dgml.Node(node.Attribute("Id").Value + "TPQueue#" + queueIndex, RepresentCallstack(pendingTasksElement));
+					var callstackLink = Dgml.Link(callstackNode, node);
 					result.Add(Tuple.Create(callstackNode, callstackLink));
 				}
 			}

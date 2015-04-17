@@ -45,16 +45,18 @@ namespace Microsoft.VisualStudio.Threading {
 		private TimeSpan hangDetectionTimeout = TimeSpan.FromSeconds(3);
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="JoinableTaskFactory"/> class.
+		/// Initializes a new instance of the <see cref="JoinableTaskFactory" /> class.
 		/// </summary>
+		/// <param name="owner">The context for the tasks created by this factory.</param>
 		public JoinableTaskFactory(JoinableTaskContext owner)
 			: this(owner, null) {
 		}
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="JoinableTaskFactory"/> class
+		/// Initializes a new instance of the <see cref="JoinableTaskFactory" /> class
 		/// that adds all generated jobs to the specified collection.
 		/// </summary>
+		/// <param name="collection">The collection that all tasks created by this factory will belong to till they complete.</param>
 		public JoinableTaskFactory(JoinableTaskCollection collection)
 			: this(Requires.NotNull(collection, "collection").Context, collection) {
 		}
@@ -62,6 +64,8 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// Initializes a new instance of the <see cref="JoinableTaskFactory"/> class.
 		/// </summary>
+		/// <param name="owner">The context for the tasks created by this factory.</param>
+		/// <param name="collection">The collection that all tasks created by this factory will belong to till they complete. May be null.</param>
 		internal JoinableTaskFactory(JoinableTaskContext owner, JoinableTaskCollection collection) {
 			Requires.NotNull(owner, "owner");
 			Assumes.True(collection == null || collection.Context == owner);
@@ -138,14 +142,17 @@ namespace Microsoft.VisualStudio.Threading {
 		///     STAService.DoSomething();
 		/// }
 		/// </code>
-		/// </example></remarks>
+		/// </example>
+		/// </remarks>
 		public MainThreadAwaitable SwitchToMainThreadAsync(CancellationToken cancellationToken = default(CancellationToken)) {
 			return new MainThreadAwaitable(this, this.Context.AmbientTask, cancellationToken);
 		}
 
 		/// <summary>
-		/// Posts a continuation to the UI thread, always causing the caller to yield if specified.
+		/// Posts a continuation to the main thread, always causing the caller to yield if specified.
 		/// </summary>
+		/// <param name="alwaysYield">if set to <c>true</c>, the awaitable will always cause the caller to yield, even if already on the main thread.</param>
+		/// <returns>An awaitable.</returns>
 		internal MainThreadAwaitable SwitchToMainThreadAsync(bool alwaysYield) {
 			return new MainThreadAwaitable(this, this.Context.AmbientTask, CancellationToken.None, alwaysYield);
 		}
@@ -307,10 +314,14 @@ namespace Microsoft.VisualStudio.Threading {
 			joinable.CompleteOnCurrentThread();
 		}
 
-		/// <summary>Runs the specified asynchronous method.</summary>
+		/// <summary>
+		/// Runs the specified asynchronous method.
+		/// </summary>
+		/// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
 		/// <param name="asyncMethod">The asynchronous method to execute.</param>
+		/// <returns></returns>
 		/// <remarks>
-		/// See the <see cref="Run(Func{Task})"/> overload documentation
+		/// See the <see cref="Run(Func{Task})" /> overload documentation
 		/// for an example.
 		/// </remarks>
 		public T Run<T>(Func<Task<T>> asyncMethod) {
@@ -357,8 +368,12 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </summary>
 		/// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
 		/// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
-		/// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
-		/// <remarks>Exceptions thrown by the delegate are captured by the returned <see cref="JoinableTask"/>.</remarks>
+		/// <returns>
+		/// An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.
+		/// </returns>
+		/// <remarks>
+		/// Exceptions thrown by the delegate are captured by the returned <see cref="JoinableTask" />.
+		/// </remarks>
 		public JoinableTask<T> RunAsync<T>(Func<Task<T>> asyncMethod) {
 			return this.RunAsync(asyncMethod, synchronouslyBlocking: false);
 		}
@@ -494,6 +509,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <summary>
 			/// Schedules a continuation for execution on the Main thread.
 			/// </summary>
+			/// <param name="continuation">The action to invoke when the operation completes.</param>
 			public void OnCompleted(Action continuation) {
 				Assumes.True(this.jobFactory != null);
 
@@ -816,6 +832,7 @@ namespace Microsoft.VisualStudio.Threading {
 
 						// Release the rest of the memory we're referencing.
 						this.state = null;
+                        this.job = null;
 					}
 
 					return true;

@@ -214,11 +214,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// to the lock compatibility of the caller's context.
 		/// </summary>
 		public bool IsAnyPassiveLockHeld {
-			get {
-				return this.IsLockHeld(LockKind.Read, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true)
-					|| this.IsLockHeld(LockKind.UpgradeableRead, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true)
-					|| this.IsLockHeld(LockKind.Write, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true);
-			}
+			get { return this.IsPassiveReadLockHeld || this.IsPassiveUpgradeableReadLockHeld || this.IsPassiveWriteLockHeld; }
 		}
 
 		/// <summary>
@@ -233,6 +229,18 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
+		/// Gets a value indicating whether a read lock is held by the caller without regard
+		/// to the lock compatibility of the caller's context.
+		/// </summary>
+		/// <remarks>
+		/// This property returns <c>false</c> if any other lock type is held, unless
+		/// within that alternate lock type this lock is also nested.
+		/// </remarks>
+		public bool IsPassiveReadLockHeld {
+			get { return this.IsLockHeld(LockKind.Read, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true); }
+		}
+
+		/// <summary>
 		/// Gets a value indicating whether the caller holds an upgradeable read lock.
 		/// </summary>
 		/// <remarks>
@@ -244,6 +252,18 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
+		/// Gets a value indicating whether an upgradeable read lock is held by the caller without regard
+		/// to the lock compatibility of the caller's context.
+		/// </summary>
+		/// <remarks>
+		/// This property returns <c>false</c> if any other lock type is held, unless
+		/// within that alternate lock type this lock is also nested.
+		/// </remarks>
+		public bool IsPassiveUpgradeableReadLockHeld {
+			get { return this.IsLockHeld(LockKind.UpgradeableRead, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true); }
+		}
+
+		/// <summary>
 		/// Gets a value indicating whether the caller holds a write lock.
 		/// </summary>
 		/// <remarks>
@@ -252,6 +272,18 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </remarks>
 		public bool IsWriteLockHeld {
 			get { return this.IsLockHeld(LockKind.Write); }
+		}
+
+		/// <summary>
+		/// Gets a value indicating whether a write lock is held by the caller without regard
+		/// to the lock compatibility of the caller's context.
+		/// </summary>
+		/// <remarks>
+		/// This property returns <c>false</c> if any other lock type is held, unless
+		/// within that alternate lock type this lock is also nested.
+		/// </remarks>
+		public bool IsPassiveWriteLockHeld {
+			get { return this.IsLockHeld(LockKind.Write, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true); }
 		}
 
 		/// <summary>
@@ -1553,6 +1585,16 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			/// <summary>
+			/// Gets the stack trace of the requestor of this lock.
+			/// </summary>
+			/// <remarks>
+			/// Used for diagnostic purposes only.
+			/// </remarks>
+			internal StackTrace RequestingStackTrace {
+				get { return this.requestingStackTrace; }
+			}
+
+			/// <summary>
 			/// Sets the delegate to execute when the lock is available.
 			/// </summary>
 			/// <param name="continuation">The delegate.</param>
@@ -1715,28 +1757,6 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			/// <summary>
-			/// Appends awaiter hang report details to the specified builder.
-			/// </summary>
-			internal void AppendHangReportDetails(StringBuilder reportBuilder) {
-				Requires.NotNull(reportBuilder, "reportBuilder");
-
-				reportBuilder.AppendFormat("Awaiter ID: {0}{1}", this.GetHashCode(), Environment.NewLine);
-				if (this.NestingLock != null) {
-					reportBuilder.AppendFormat("NestingLock ID: {0}{1}", this.NestingLock.GetHashCode(), Environment.NewLine);
-				}
-
-				reportBuilder.AppendFormat("Kind: {0}{1}", this.Kind, Environment.NewLine);
-				reportBuilder.AppendFormat("Options: {0}{1}", this.Options, Environment.NewLine);
-
-				if (this.requestingStackTrace != null) {
-					reportBuilder.AppendLine("Lock owner callstack");
-					reportBuilder.AppendLine(this.requestingStackTrace.ToString());
-				} else {
-					reportBuilder.AppendLine("No lock owner callstack available.");
-				}
-			}
-
-			/// <summary>
 			/// Responds to lock request cancellation.
 			/// </summary>
 			/// <param name="state">The <see cref="Awaiter"/> instance being canceled.</param>
@@ -1777,20 +1797,18 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			public override void Post(SendOrPostCallback d, object state) {
-				Task.Run(async delegate {
-					await this.semaphore.WaitAsync().ConfigureAwait(false);
-					this.threadHoldingSemaphore = Thread.CurrentThread;
-					try {
-						SynchronizationContext.SetSynchronizationContext(this);
-						d(state);
-					} finally {
-						// The semaphore *may* have been released already, so take care to not release it again.
-						if (this.threadHoldingSemaphore == Thread.CurrentThread) {
-							this.threadHoldingSemaphore = null;
-							this.semaphore.Release();
-						}
-					}
-				});
+				Requires.NotNull(d, "d");
+
+				// Take special care to minimize allocations and overhead by avoiding implicit delegates and closures.
+				// The C# compiler caches this delegate in a static field because it never touches "this"
+				// nor any other local variables, which means the only allocations from this call
+				// are our Tuple and the ThreadPool's bare-minimum necessary to track the work.
+				ThreadPool.QueueUserWorkItem(
+					s => {
+						var tuple = (Tuple<NonConcurrentSynchronizationContext, SendOrPostCallback, object>)s;
+						tuple.Item1.PostHelper(tuple.Item2, tuple.Item3);
+					},
+					Tuple.Create(this, d, state));
 			}
 
 			internal LoanBack LoanBackAnyHeldResource() {
@@ -1807,6 +1825,31 @@ namespace Microsoft.VisualStudio.Threading {
 
 				if (SynchronizationContext.Current == this) {
 					SynchronizationContext.SetSynchronizationContext(null);
+				}
+			}
+
+			/// <summary>
+			/// Executes the specified delegate.
+			/// </summary>
+			/// <remarks>
+			/// We use async void instead of async Task because the caller will never
+			/// use the result, and this way the compiler doesn't have to create the Task object.
+			/// </remarks>
+			private async void PostHelper(SendOrPostCallback d, object state) {
+				await this.semaphore.WaitAsync().ConfigureAwait(false);
+				this.threadHoldingSemaphore = Thread.CurrentThread;
+				try {
+					SynchronizationContext.SetSynchronizationContext(this);
+					d(state);
+				} catch (Exception ex) {
+					// We just eat these up to avoid crashing the process by throwing on a threadpool thread.
+					Report.Fail("An unhandled exception was thrown from within a posted message. {0}", ex);
+				} finally {
+					// The semaphore *may* have been released already, so take care to not release it again.
+					if (this.threadHoldingSemaphore == Thread.CurrentThread) {
+						this.threadHoldingSemaphore = null;
+						this.semaphore.Release();
+					}
 				}
 			}
 

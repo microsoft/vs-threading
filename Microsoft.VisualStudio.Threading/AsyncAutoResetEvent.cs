@@ -18,7 +18,7 @@
 		private readonly Queue<TaskCompletionSource<bool>> signalAwaiters = new Queue<TaskCompletionSource<bool>>();
 
 		/// <summary>
-		/// Whether to complete our task synchronously in our <see cref="Set"/> method,
+		/// Whether to complete the task synchronously in the <see cref="Set"/> method,
 		/// as opposed to asynchronously.
 		/// </summary>
 		private readonly bool allowInliningAwaiters;
@@ -39,7 +39,7 @@
 		/// Initializes a new instance of the <see cref="AsyncAutoResetEvent"/> class.
 		/// </summary>
 		/// <param name="allowInliningAwaiters">
-		/// A value indicating whether to complete our task synchronously in our <see cref="Set"/> method,
+		/// A value indicating whether to complete the task synchronously in the <see cref="Set"/> method,
 		/// as opposed to asynchronously. <c>false</c> better simulates the behavior of the
 		/// <see cref="AutoResetEvent"/> class, but <c>true</c> can result in slightly better performance.
 		/// </param>

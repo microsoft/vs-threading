@@ -14,7 +14,7 @@
 	[DebuggerDisplay("Signaled: {IsSet}")]
 	public class AsyncManualResetEvent {
 		/// <summary>
-		/// Whether to complete our task synchronously in our <see cref="SetAsync"/> method,
+		/// Whether to complete the task synchronously in the <see cref="SetAsync"/> method,
 		/// as opposed to asynchronously.
 		/// </summary>
 		private readonly bool allowInliningAwaiters;

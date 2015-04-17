@@ -246,7 +246,7 @@ namespace Microsoft.VisualStudio.Threading {
 			private WeakReference weakReference;
 
 			/// <summary>
-			/// Some of our instances are around just to do existence checks, and don't want
+			/// Some of the instances are around just to do existence checks, and don't want
 			/// to allocate WeakReference objects as they are short-lived.
 			/// </summary>
 			private T notSoWeakTarget;

@@ -28,6 +28,7 @@
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AsyncSemaphore"/> class.
 		/// </summary>
+		/// <param name="initialCount">The initial number of requests for the semaphore that can be granted concurrently.</param>
 		public AsyncSemaphore(int initialCount) {
 			this.semaphore = new SemaphoreSlim(initialCount);
 			this.uncontestedReleaser = Task.FromResult(new Releaser(this));
@@ -59,7 +60,7 @@
 		/// <summary>
 		/// Requests access to the lock.
 		/// </summary>
-		/// <param name="timeout">A timeout for waiting for the lock.</param>
+		/// <param name="timeout">A timeout for waiting for the lock (in milliseconds).</param>
 		/// <param name="cancellationToken">A token whose cancellation signals lost interest in the lock.</param>
 		/// <returns>A task whose result is a releaser that should be disposed to release the lock.</returns>
 		public Task<Releaser> EnterAsync(int timeout, CancellationToken cancellationToken = default(CancellationToken)) {
