@@ -78,7 +78,7 @@
 					this.signaled = false;
 					return TplExtensions.CompletedTask;
 				} else {
-					var waiter = new WaiterCompletionSource(this, cancellationToken);
+					var waiter = new WaiterCompletionSource(this, cancellationToken, this.allowInliningAwaiters);
 					this.signalAwaiters.Enqueue(waiter);
 					return waiter.Task;
 				}
@@ -100,11 +100,7 @@
 
 			if (toRelease != null) {
 				toRelease.Registration.Dispose();
-				if (this.allowInliningAwaiters) {
-					toRelease.SetResult(EmptyStruct.Instance);
-				} else {
-					ThreadPool.QueueUserWorkItem(state => ((WaiterCompletionSource)state).SetResult(EmptyStruct.Instance), toRelease);
-				}
+				toRelease.SetResultToDefault();
 			}
 		}
 
@@ -133,13 +129,15 @@
 		/// <summary>
 		/// Tracks someone waiting for a signal from the event.
 		/// </summary>
-		private class WaiterCompletionSource : TaskCompletionSource<EmptyStruct> {
+		private class WaiterCompletionSource : TaskCompletionSourceWithoutInlining<EmptyStruct> {
 			/// <summary>
 			/// Initializes a new instance of the <see cref="WaiterCompletionSource"/> struct.
 			/// </summary>
 			/// <param name="owner">The event that is initializing this value.</param>
 			/// <param name="cancellationToken">The cancellation token associated with the waiter.</param>
-			public WaiterCompletionSource(AsyncAutoResetEvent owner, CancellationToken cancellationToken) {
+			/// <param name="allowInliningContinuations"><c>true</c> to allow continuations to be inlined upon the completer's callstack.</param>
+			public WaiterCompletionSource(AsyncAutoResetEvent owner, CancellationToken cancellationToken, bool allowInliningContinuations)
+				: base(allowInliningContinuations) {
 				this.Registration = cancellationToken.Register(owner.onCancellationRequestHandler, this);
 			}
 

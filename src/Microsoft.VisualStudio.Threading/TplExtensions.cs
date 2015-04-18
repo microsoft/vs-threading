@@ -24,13 +24,13 @@ namespace Microsoft.VisualStudio.Threading {
 		/// A singleton completed task.
 		/// </summary>
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-		public static readonly Task CompletedTask = Task.CompletedTask;
+		public static readonly Task CompletedTask = Task.FromResult(new EmptyStruct());
 
 		/// <summary>
 		/// A task that is already canceled.
 		/// </summary>
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-		public static readonly Task CanceledTask = Task.FromCanceled(new CancellationToken(canceled: true));
+		public static readonly Task CanceledTask = ThreadingTools.TaskFromCanceled(new CancellationToken(canceled: true));
 
 		/// <summary>
 		/// A completed task with a <c>true</c> result.

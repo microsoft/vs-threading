@@ -52,7 +52,7 @@
 			try {
 				this.Signal();
 			} catch (Exception ex) {
-				return Task.FromException(ex);
+				return ThreadingTools.TaskFromException(ex);
 			}
 
 			return TplExtensions.CompletedTask;
@@ -80,7 +80,7 @@
 				this.Signal();
 				return this.WaitAsync();
 			} catch (Exception ex) {
-				return Task.FromException(ex);
+				return ThreadingTools.TaskFromException(ex);
 			}
 		}
 	}

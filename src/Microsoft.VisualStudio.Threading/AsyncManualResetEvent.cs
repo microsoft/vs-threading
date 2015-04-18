@@ -22,7 +22,7 @@
 		/// <summary>
 		/// The task to return from <see cref="WaitAsync"/>
 		/// </summary>
-		private volatile TaskCompletionSource<EmptyStruct> taskCompletionSource;
+		private volatile TaskCompletionSourceWithoutInlining<EmptyStruct> taskCompletionSource;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AsyncManualResetEvent"/> class.
@@ -147,8 +147,8 @@
 		/// <summary>
 		/// Creates a new TaskCompletionSource to represent an unset event.
 		/// </summary>
-		private TaskCompletionSource<EmptyStruct> CreateTaskSource() {
-			return new TaskCompletionSource<EmptyStruct>(this.allowInliningAwaiters ? TaskCreationOptions.None : TaskCreationOptions.RunContinuationsAsynchronously);
+		private TaskCompletionSourceWithoutInlining<EmptyStruct> CreateTaskSource() {
+			return new TaskCompletionSourceWithoutInlining<EmptyStruct>(this.allowInliningAwaiters);
 		}
 	}
 }
