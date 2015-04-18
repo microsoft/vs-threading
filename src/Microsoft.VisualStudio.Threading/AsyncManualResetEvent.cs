@@ -128,7 +128,7 @@
 		/// Gets an awaiter that completes when this event is signaled.
 		/// </summary>
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
-		[System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+		[EditorBrowsable(EditorBrowsableState.Never)]
 		public TaskAwaiter GetAwaiter() {
 			return this.WaitAsync().GetAwaiter();
 		}
