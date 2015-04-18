@@ -16,7 +16,12 @@ namespace Microsoft.VisualStudio.Threading {
 	/// </summary>
 	/// <typeparam name="T">The type of the task's resulting value.</typeparam>
 	internal class TaskCompletionSourceWithoutInlining<T> : TaskCompletionSource<T> {
-		private bool allowInliningContinuations;
+		/// <summary>
+		/// A value indicating whether the owner wants to allow continuations
+		/// of the Task produced by this instance to execute inline with
+		/// its completion.
+		/// </summary>
+		private readonly bool allowInliningContinuations;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="TaskCompletionSourceWithoutInlining{T}"/> class.
