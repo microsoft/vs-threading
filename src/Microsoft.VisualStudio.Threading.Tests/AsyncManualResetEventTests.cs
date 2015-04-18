@@ -28,8 +28,8 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void NonBlocking() {
-			this.evt.Set();
+		public async Task NonBlocking() {
+			await this.evt.SetAsync();
 			Assert.IsTrue(this.evt.WaitAsync().IsCompleted);
 		}
 
@@ -37,7 +37,7 @@
 		/// Verifies that inlining continuations do not have to complete execution before Set() returns.
 		/// </summary>
 		[TestMethod, Timeout(TestTimeout)]
-		public void SetReturnsBeforeInlinedContinuations() {
+		public async Task SetReturnsBeforeInlinedContinuations() {
 			var setReturned = new ManualResetEventSlim();
 			var inlinedContinuation = this.evt.WaitAsync()
 				.ContinueWith(delegate {
@@ -46,7 +46,7 @@
 					Assert.IsTrue(setReturned.Wait(AsyncDelay));
 				},
 				TaskContinuationOptions.ExecuteSynchronously);
-			this.evt.Set();
+			await this.evt.SetAsync();
 			Assert.IsTrue(this.evt.IsSet);
 			setReturned.Set();
 			Assert.IsTrue(inlinedContinuation.Wait(AsyncDelay));
@@ -62,8 +62,8 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void Reset() {
-			this.evt.Set();
+		public async Task Reset() {
+			await this.evt.SetAsync();
 			this.evt.Reset();
 			var result = this.evt.WaitAsync();
 			Assert.IsFalse(result.IsCompleted);
@@ -79,20 +79,31 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void PulseAllAsync() {
-			var task = this.evt.WaitAsync();
+		public async Task PulseAllAsync() {
+			var waitTask = this.evt.WaitAsync();
+			var pulseTask = this.evt.PulseAllAsync();
+			if (TestUtilities.IsNet45Mode) {
+				await pulseTask;
+			} else {
 #pragma warning disable 0618
-			Assert.AreEqual(TaskStatus.RanToCompletion, this.evt.PulseAllAsync().Status);
+				Assert.AreEqual(TaskStatus.RanToCompletion, pulseTask.Status);
 #pragma warning restore 0618
-			Assert.IsTrue(task.IsCompleted);
+			}
+
+			Assert.IsTrue(waitTask.IsCompleted);
 			Assert.IsFalse(this.evt.WaitAsync().IsCompleted);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void PulseAll() {
+		public async Task PulseAll() {
 			var task = this.evt.WaitAsync();
 			this.evt.PulseAll();
-			Assert.IsTrue(task.IsCompleted);
+			if (TestUtilities.IsNet45Mode) {
+				await task;
+			} else {
+				Assert.IsTrue(task.IsCompleted);
+			}
+
 			Assert.IsFalse(this.evt.WaitAsync().IsCompleted);
 		}
 

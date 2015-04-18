@@ -1,12 +1,13 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Tests {
-	using Microsoft.VisualStudio.TestTools.UnitTesting;
 	using System;
 	using System.Collections.Generic;
+	using System.Configuration;
 	using System.Linq;
 	using System.Text;
 	using System.Threading;
 	using System.Threading.Tasks;
 	using System.Windows.Threading;
+	using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 	[TestClass]
 	public class ThreadingToolsTests : TestBase {
@@ -95,6 +96,10 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void WithCancellationAndPrecancelledToken() {
+			if (TestUtilities.IsNet45Mode) {
+				Assert.Inconclusive("This test verifies behavior that is only available on .NET 4.6.");
+			}
+
 			var tcs = new TaskCompletionSource<object>();
 			var cts = new CancellationTokenSource();
 			cts.Cancel();

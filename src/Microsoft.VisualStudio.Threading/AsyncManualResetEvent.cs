@@ -40,7 +40,8 @@
 
 			this.taskCompletionSource = this.CreateTaskSource();
 			if (initialState) {
-				this.taskCompletionSource.SetResult(EmptyStruct.Instance);
+				// Complete the task immediately (don't worry about not inlining since it's brand new).
+				((TaskCompletionSource<EmptyStruct>)this.taskCompletionSource).SetResult(EmptyStruct.Instance);
 			}
 		}
 
