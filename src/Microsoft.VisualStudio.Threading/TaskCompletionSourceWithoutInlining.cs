@@ -41,7 +41,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <c>false</c> if our owner does not allow inlining *and* we're on a downlevel version of the .NET Framework.
 		/// </value>
 		private bool CanCompleteInline {
-			get { return this.allowInliningContinuations || TaskCompletionSourceWithoutInlining.IsRunContinuationsAsynchronouslySupported; }
+			get { return this.allowInliningContinuations || LightUps.IsRunContinuationsAsynchronouslySupported; }
 		}
 
 		new internal void SetResult(T value) {
@@ -122,8 +122,8 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="allowInliningContinuations"><c>true</c> to allow inlining continuations.</param>
 		/// <returns>The possibly modified flags.</returns>
 		private static TaskCreationOptions AdjustFlags(TaskCreationOptions options, bool allowInliningContinuations) {
-			return (!allowInliningContinuations && TaskCompletionSourceWithoutInlining.IsRunContinuationsAsynchronouslySupported)
-				? (options | TaskCompletionSourceWithoutInlining.RunContinuationsAsynchronously)
+			return (!allowInliningContinuations && LightUps.IsRunContinuationsAsynchronouslySupported)
+				? (options | LightUps.RunContinuationsAsynchronously)
 				: options;
 		}
 	}
@@ -132,26 +132,5 @@ namespace Microsoft.VisualStudio.Threading {
 	/// Static elements that are not dependant on a generic type parameter.
 	/// </summary>
 	internal static class TaskCompletionSourceWithoutInlining {
-		/// <summary>
-		/// A value indicating whether TaskCreationOptions.RunContinuationsAsynchronously
-		/// is supported by this version of the .NET Framework.
-		/// </summary>
-		internal static readonly bool IsRunContinuationsAsynchronouslySupported;
-
-		/// <summary>
-		/// The TaskCreationOptions.RunContinuationsAsynchronously flag as found in .NET 4.6
-		/// or <see cref="TaskCreationOptions.None"/> if on earlier versions of .NET.
-		/// </summary>
-		internal static readonly TaskCreationOptions RunContinuationsAsynchronously;
-
-		/// <summary>
-		/// Initializes the static members of the <see cref="TaskCompletionSourceWithoutInlining"/> type.
-		/// </summary>
-		[SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline", Justification = "We have to initialize two fields with a relationship.")]
-		static TaskCompletionSourceWithoutInlining() {
-			IsRunContinuationsAsynchronouslySupported = Enum.TryParse(
-				"RunContinuationsAsynchronously",
-				out RunContinuationsAsynchronously);
-		}
 	}
 }
