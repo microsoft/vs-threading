@@ -106,6 +106,14 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 		}
 
+		internal void TrySetResultToDefault() {
+			if (this.CanCompleteInline) {
+				base.TrySetResult(default(T));
+			} else {
+				ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSourceWithoutInlining<T>)state).SetResult(default(T)), this);
+			}
+		}
+
 		/// <summary>
 		/// Modifies the specified flags to include RunContinuationsAsynchronously
 		/// if wanted by the caller and supported by the platform.

@@ -138,9 +138,9 @@
 		/// </summary>
 		/// <param name="tcs">The completion source of the task to complete.</param>
 		/// <returns>The task that is (or will shortly be) completed.</returns>
-		private static void Set(TaskCompletionSource<EmptyStruct> tcs) {
+		private static void Set(TaskCompletionSourceWithoutInlining<EmptyStruct> tcs) {
 			if (!tcs.Task.IsCompleted) {
-				tcs.TrySetResult(EmptyStruct.Instance);
+				tcs.TrySetResultToDefault();
 			}
 		}
 
