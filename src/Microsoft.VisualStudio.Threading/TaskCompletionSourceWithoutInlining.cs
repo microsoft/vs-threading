@@ -96,6 +96,21 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 		}
 
+		internal void TrySetCanceled(CancellationToken cancellationToken) {
+			if (this.CanCompleteInline) {
+				ThreadingTools.TrySetCanceled(this, cancellationToken);
+			} else {
+				Tuple<TaskCompletionSourceWithoutInlining<T>, CancellationToken> tuple =
+					Tuple.Create(this, cancellationToken);
+				ThreadPool.QueueUserWorkItem(
+					state => {
+						var s = (Tuple<TaskCompletionSourceWithoutInlining<T>, CancellationToken>)state;
+						ThreadingTools.TrySetCanceled(s.Item1, s.Item2);
+					},
+					tuple);
+			}
+		}
+
 		new internal void TrySetException(Exception exception) {
 			if (this.CanCompleteInline) {
 				base.TrySetException(exception);
