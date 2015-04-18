@@ -49,89 +49,69 @@ namespace Microsoft.VisualStudio.Threading {
 			get { return this.allowInliningContinuations || LightUps.IsRunContinuationsAsynchronouslySupported; }
 		}
 
-		new internal void SetResult(T value) {
-			if (this.CanCompleteInline) {
-				base.SetResult(value);
-			} else {
-				Tuple<TaskCompletionSourceWithoutInlining<T>, T> state = Tuple.Create(this, value);
-				ThreadPool.QueueUserWorkItem(
-					s => {
-						var tuple = (Tuple<TaskCompletionSourceWithoutInlining<T>, T>)s;
-						TaskCompletionSource<T> tcs = tuple.Item1; // cast to base class to avoid infinite recursion
-						tcs.SetResult(tuple.Item2);
-					},
-					state);
-			}
-		}
+		// NOTE: We do NOT define the non-Try completion methods:
+		// SetResult, SetCanceled, and SetException
+		// Because their semantic requires that exceptions are thrown
+		// synchronously, but we cannot guarantee synchronous completion.
+		// What's more, if an exception were thrown on the threadpool
+		// it would crash the process.
 
-		new internal void SetCanceled() {
-			if (this.CanCompleteInline) {
-				base.SetCanceled();
-			} else {
-				ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<T>)state).SetCanceled(), this);
-			}
-		}
-
-		new internal void SetException(Exception exception) {
-			if (this.CanCompleteInline) {
-				base.SetException(exception);
-			} else {
-				ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<T>)state).SetException(exception), this);
-			}
-		}
-
+#if UNUSED
 		new internal void TrySetResult(T value) {
-			if (this.CanCompleteInline) {
-				base.TrySetResult(value);
-			} else {
-				ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<T>)state).SetResult(value), this);
+			if (!this.Task.IsCompleted) {
+				if (this.CanCompleteInline) {
+					base.TrySetResult(value);
+				} else {
+					ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<T>)state).SetResult(value), this);
+				}
 			}
 		}
 
 		new internal void TrySetCanceled() {
-			if (this.CanCompleteInline) {
-				base.TrySetCanceled();
-			} else {
-				ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<T>)state).SetCanceled(), this);
-			}
-		}
-
-		internal void TrySetCanceled(CancellationToken cancellationToken) {
-			if (this.CanCompleteInline) {
-				ThreadingTools.TrySetCanceled(this, cancellationToken);
-			} else {
-				Tuple<TaskCompletionSourceWithoutInlining<T>, CancellationToken> tuple =
-					Tuple.Create(this, cancellationToken);
-				ThreadPool.QueueUserWorkItem(
-					state => {
-						var s = (Tuple<TaskCompletionSourceWithoutInlining<T>, CancellationToken>)state;
-						ThreadingTools.TrySetCanceled(s.Item1, s.Item2);
-					},
-					tuple);
+			if (!this.Task.IsCompleted) {
+				if (this.CanCompleteInline) {
+					base.TrySetCanceled();
+				} else {
+					ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<T>)state).SetCanceled(), this);
+				}
 			}
 		}
 
 		new internal void TrySetException(Exception exception) {
-			if (this.CanCompleteInline) {
-				base.TrySetException(exception);
-			} else {
-				ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<T>)state).SetException(exception), this);
+			if (!this.Task.IsCompleted) {
+				if (this.CanCompleteInline) {
+					base.TrySetException(exception);
+				} else {
+					ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<T>)state).SetException(exception), this);
+				}
 			}
 		}
+#endif
 
-		internal void SetResultToDefault() {
-			if (this.CanCompleteInline) {
-				base.SetResult(default(T));
-			} else {
-				ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<T>)state).SetResult(default(T)), this);
+		internal void TrySetCanceled(CancellationToken cancellationToken) {
+			if (!this.Task.IsCompleted) {
+				if (this.CanCompleteInline) {
+					ThreadingTools.TrySetCanceled(this, cancellationToken);
+				} else {
+					Tuple<TaskCompletionSourceWithoutInlining<T>, CancellationToken> tuple =
+						Tuple.Create(this, cancellationToken);
+					ThreadPool.QueueUserWorkItem(
+						state => {
+							var s = (Tuple<TaskCompletionSourceWithoutInlining<T>, CancellationToken>)state;
+							ThreadingTools.TrySetCanceled(s.Item1, s.Item2);
+						},
+						tuple);
+				}
 			}
 		}
 
 		internal void TrySetResultToDefault() {
-			if (this.CanCompleteInline) {
-				base.TrySetResult(default(T));
-			} else {
-				ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<T>)state).SetResult(default(T)), this);
+			if (!this.Task.IsCompleted) {
+				if (this.CanCompleteInline) {
+					base.TrySetResult(default(T));
+				} else {
+					ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<T>)state).SetResult(default(T)), this);
+				}
 			}
 		}
 

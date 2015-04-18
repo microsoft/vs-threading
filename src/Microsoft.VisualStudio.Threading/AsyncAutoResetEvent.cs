@@ -103,7 +103,7 @@
 
 			if (toRelease != null) {
 				toRelease.Registration.Dispose();
-				toRelease.SetResultToDefault();
+				toRelease.TrySetResultToDefault();
 			}
 		}
 
