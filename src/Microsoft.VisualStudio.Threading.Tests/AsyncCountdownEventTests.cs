@@ -67,9 +67,7 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public void SignalAsyncReturnsFaultedTaskOnError() {
 			var evt = new AsyncCountdownEvent(0);
-#pragma warning disable 0618
 			var result = evt.SignalAsync();
-#pragma warning restore 0618
 			Assert.IsTrue(result.IsFaulted);
 			Assert.IsInstanceOfType(result.Exception.InnerException, typeof(InvalidOperationException));
 		}
@@ -80,9 +78,7 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public void SignalAndWaitAsyncReturnsFaultedTaskOnError() {
 			var evt = new AsyncCountdownEvent(0);
-#pragma warning disable 0618
 			var result = evt.SignalAndWaitAsync();
-#pragma warning restore 0618
 			Assert.IsTrue(result.IsFaulted);
 			Assert.IsInstanceOfType(result.Exception.InnerException, typeof(InvalidOperationException));
 		}

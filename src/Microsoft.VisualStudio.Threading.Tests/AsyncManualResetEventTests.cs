@@ -85,9 +85,7 @@
 			if (TestUtilities.IsNet45Mode) {
 				await pulseTask;
 			} else {
-#pragma warning disable 0618
 				Assert.AreEqual(TaskStatus.RanToCompletion, pulseTask.Status);
-#pragma warning restore 0618
 			}
 
 			Assert.IsTrue(waitTask.IsCompleted);
@@ -110,9 +108,7 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public void PulseAllAsyncDoesNotUnblockFutureWaiters() {
 			Task task1 = this.evt.WaitAsync();
-#pragma warning disable 0618
 			this.evt.PulseAllAsync();
-#pragma warning restore 0618
 			Task task2 = this.evt.WaitAsync();
 			Assert.AreNotSame(task1, task2);
 			task1.Wait();
