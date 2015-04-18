@@ -31,6 +31,10 @@
 		/// <summary>
 		/// A value indicating whether this event is already in a signaled state.
 		/// </summary>
+		/// <devremarks>
+		/// This should not need the volatile modifier because it is
+		/// always accessed within a lock.
+		/// </devremarks>
 		private bool signaled;
 
 		/// <summary>
