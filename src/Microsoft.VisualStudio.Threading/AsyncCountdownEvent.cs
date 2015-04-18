@@ -42,20 +42,28 @@
 		/// <summary>
 		/// Decrements the counter by one.
 		/// </summary>
-		/// <returns>A task that is always completed.</returns>
+		/// <returns>
+		/// A task that completes when the signal has been set if this call causes the count to reach zero.
+		/// If the count is not zero, a completed task is returned.
+		/// </returns>
 		/// <remarks>
-		/// This method is not asynchronous. The returned Task is always completed, but may be in a faulted state.
+		/// <para>
+		/// On .NET versions prior to 4.6: 
+		/// This method may return before the signal set has propagated.
+		/// The returned task completes when the signal has definitely been set.
+		/// </para>
+		/// <para>
+		/// On .NET 4.6 and later:
+		/// This method is not asynchronous. The returned Task is always completed.
+		/// </para>
 		/// </remarks>
-		[Obsolete("Use Signal() instead."), EditorBrowsable(EditorBrowsableState.Never)]
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-		public Task SignalAsync() {
-			try {
-				this.Signal();
-			} catch (Exception ex) {
-				return ThreadingTools.TaskFromException(ex);
+		public async Task SignalAsync() {
+			int newCount = Interlocked.Decrement(ref this.remainingCount);
+			if (newCount == 0) {
+				await this.manualEvent.SetAsync().ConfigureAwait(false);
+			} else if (newCount < 0) {
+				throw new InvalidOperationException();
 			}
-
-			return TplExtensions.CompletedTask;
 		}
 
 		/// <summary>
@@ -64,7 +72,7 @@
 		public void Signal() {
 			int newCount = Interlocked.Decrement(ref this.remainingCount);
 			if (newCount == 0) {
-				this.manualEvent.Set();
+				this.manualEvent.SetAsync();
 			} else if (newCount < 0) {
 				throw new InvalidOperationException();
 			}

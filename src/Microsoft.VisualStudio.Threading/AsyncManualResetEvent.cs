@@ -61,21 +61,27 @@
 		/// <summary>
 		/// Sets this event to unblock callers of <see cref="WaitAsync"/>.
 		/// </summary>
-		/// <returns>A task that is always completed.</returns>
+		/// <returns>A task that completes when the signal has been set.</returns>
 		/// <remarks>
+		/// <para>
+		/// On .NET versions prior to 4.6: 
+		/// This method may return before the signal set has propagated (so <see cref="IsSet"/> may return <c>false</c> for a bit more if called immediately).
+		/// The returned task completes when the signal has definitely been set.
+		/// </para>
+		/// <para>
+		/// On .NET 4.6 and later:
 		/// This method is not asynchronous. The returned Task is always completed.
+		/// </para>
 		/// </remarks>
-		[Obsolete("Use Set() instead."), EditorBrowsable(EditorBrowsableState.Never)]
 		public Task SetAsync() {
-			this.Set();
-			return TplExtensions.CompletedTask;
+			return SetAsync(this.taskCompletionSource);
 		}
 
 		/// <summary>
 		/// Sets this event to unblock callers of <see cref="WaitAsync"/>.
 		/// </summary>
 		public void Set() {
-			Set(this.taskCompletionSource);
+			SetAsync(this.taskCompletionSource);
 		}
 
 		/// <summary>
@@ -96,23 +102,19 @@
 		/// <summary>
 		/// Sets and immediately resets this event, allowing all current waiters to unblock.
 		/// </summary>
-		/// <returns>A task that is always completed.</returns>
+		/// <returns>A task that completes when the signal has been set.</returns>
 		/// <remarks>
+		/// <para>
+		/// On .NET versions prior to 4.6: 
+		/// This method may return before the signal set has propagated (so <see cref="IsSet"/> may return <c>false</c> for a bit more if called immediately).
+		/// The returned task completes when the signal has definitely been set.
+		/// </para>
+		/// <para>
+		/// On .NET 4.6 and later:
 		/// This method is not asynchronous. The returned Task is always completed.
+		/// </para>
 		/// </remarks>
-		[Obsolete("Use PulseAll() instead."), EditorBrowsable(EditorBrowsableState.Never)]
 		public Task PulseAllAsync() {
-			this.PulseAll();
-
-			// This method always completes synchronously. But it used to complete asynchronously
-			// so we have to return a Task anyway.
-			return TplExtensions.CompletedTask;
-		}
-
-		/// <summary>
-		/// Sets and immediately resets this event, allowing all current waiters to unblock.
-		/// </summary>
-		public void PulseAll() {
 			// Atomically replace the completion source with a new, uncompleted source
 			// while capturing the previous one so we can complete it.
 			// This ensures that we don't leave a gap in time where WaitAsync() will
@@ -121,7 +123,14 @@
 			var oldSource = Interlocked.Exchange(ref this.taskCompletionSource, this.CreateTaskSource());
 
 			// Now set the old source, allowing any waiters from before the exchange to resume.
-			Set(oldSource);
+			return SetAsync(oldSource);
+		}
+
+		/// <summary>
+		/// Sets and immediately resets this event, allowing all current waiters to unblock.
+		/// </summary>
+		public void PulseAll() {
+			this.PulseAllAsync();
 		}
 
 		/// <summary>
@@ -138,10 +147,12 @@
 		/// </summary>
 		/// <param name="tcs">The completion source of the task to complete.</param>
 		/// <returns>The task that is (or will shortly be) completed.</returns>
-		private static void Set(TaskCompletionSourceWithoutInlining<EmptyStruct> tcs) {
+		private static Task SetAsync(TaskCompletionSourceWithoutInlining<EmptyStruct> tcs) {
 			if (!tcs.Task.IsCompleted) {
 				tcs.TrySetResultToDefault();
 			}
+
+			return tcs.Task;
 		}
 
 		/// <summary>
