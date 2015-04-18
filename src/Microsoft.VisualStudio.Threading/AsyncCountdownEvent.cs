@@ -48,7 +48,7 @@
 		/// </returns>
 		/// <remarks>
 		/// <para>
-		/// On .NET versions prior to 4.6: 
+		/// On .NET versions prior to 4.6:
 		/// This method may return before the signal set has propagated.
 		/// The returned task completes when the signal has definitely been set.
 		/// </para>

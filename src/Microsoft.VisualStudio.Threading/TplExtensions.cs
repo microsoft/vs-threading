@@ -462,7 +462,7 @@ namespace Microsoft.VisualStudio.Threading {
 
 			if (completedTask.IsCanceled) {
 				// NOTE: this is "lossy" in that we don't propagate any CancellationToken that the Task would throw an OperationCanceledException with.
-				// Propagating that data would require that we actually cause the completedTask to throw so we can inspect the 
+				// Propagating that data would require that we actually cause the completedTask to throw so we can inspect the
 				// OperationCanceledException.CancellationToken property, which we consider more costly than it's worth.
 				taskCompletionSource.TrySetCanceled();
 			} else if (completedTask.IsFaulted) {
@@ -486,7 +486,7 @@ namespace Microsoft.VisualStudio.Threading {
 
 			if (completedTask.IsCanceled) {
 				// NOTE: this is "lossy" in that we don't propagate any CancellationToken that the Task would throw an OperationCanceledException with.
-				// Propagating that data would require that we actually cause the completedTask to throw so we can inspect the 
+				// Propagating that data would require that we actually cause the completedTask to throw so we can inspect the
 				// OperationCanceledException.CancellationToken property, which we consider more costly than it's worth.
 				taskCompletionSource.TrySetCanceled();
 			} else if (completedTask.IsFaulted) {

@@ -65,7 +65,7 @@
 		/// <returns>A task that completes when the signal has been set.</returns>
 		/// <remarks>
 		/// <para>
-		/// On .NET versions prior to 4.6: 
+		/// On .NET versions prior to 4.6:
 		/// This method may return before the signal set has propagated (so <see cref="IsSet"/> may return <c>false</c> for a bit more if called immediately).
 		/// The returned task completes when the signal has definitely been set.
 		/// </para>
@@ -106,7 +106,7 @@
 		/// <returns>A task that completes when the signal has been set.</returns>
 		/// <remarks>
 		/// <para>
-		/// On .NET versions prior to 4.6: 
+		/// On .NET versions prior to 4.6:
 		/// This method may return before the signal set has propagated (so <see cref="IsSet"/> may return <c>false</c> for a bit more if called immediately).
 		/// The returned task completes when the signal has definitely been set.
 		/// </para>
