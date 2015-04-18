@@ -24,7 +24,7 @@
 		/// Initializes a new instance of the <see cref="AsyncLocal{T}"/> class.
 		/// </summary>
 		public AsyncLocal() {
-			this.asyncLocal = AsyncLocal.BclAsyncLocalType != null
+			this.asyncLocal = LightUps<T>.IsAsyncLocalSupported
 				? (AsyncLocalBase)new AsyncLocal46()
 				: new AsyncLocalCallContext();
 		}
@@ -130,30 +130,6 @@
 		/// </summary>
 		private class AsyncLocal46 : AsyncLocalBase {
 			/// <summary>
-			/// The System.Threading.AsyncLocal{T} closed generic type, if present.
-			/// </summary>
-			/// <remarks>
-			/// When running on .NET 4.6, it will be present. 
-			/// This field will be <c>null</c> on earlier versions of .NET.
-			/// </remarks>
-			private static readonly Type BclAsyncLocalType = AsyncLocal.BclAsyncLocalType?.MakeGenericType(typeof(T));
-
-			/// <summary>
-			/// The default constructor for the System.Threading.AsyncLocal{T} type, if present.
-			/// </summary>
-			private static readonly ConstructorInfo BclAsyncLocalCtor = BclAsyncLocalType?.GetConstructor(new Type[0]);
-
-			/// <summary>
-			/// The System.Threading.AsyncLocal{T}.Value property, if present.
-			/// </summary>
-			private static readonly PropertyInfo BclAsyncLocalValueProperty = BclAsyncLocalType?.GetProperty("Value");
-
-			/// <summary>
-			/// The instance of System.Threading.AsyncLocal{T} backing this class.
-			/// </summary>
-			private readonly object asyncLocal;
-
-			/// <summary>
 			/// The delegate that sets the value on the System.Threading.AsyncLocal{T}.Value property.
 			/// </summary>
 			private readonly Action<T> setValue;
@@ -167,9 +143,7 @@
 			/// Initializes a new instance of the <see cref="AsyncLocal46"/> class.
 			/// </summary>
 			public AsyncLocal46() {
-				this.asyncLocal = BclAsyncLocalCtor.Invoke(null);
-				this.setValue = (Action<T>)Delegate.CreateDelegate(typeof(Action<T>), this.asyncLocal, BclAsyncLocalValueProperty.SetMethod);
-				this.getValue = (Func<T>)Delegate.CreateDelegate(typeof(Func<T>), this.asyncLocal, BclAsyncLocalValueProperty.GetMethod);
+				LightUps<T>.CreateAsyncLocal(out this.getValue, out this.setValue);
 			}
 
 			/// <summary>
@@ -180,19 +154,5 @@
 				set { this.setValue(value); }
 			}
 		}
-	}
-
-	/// <summary>
-	/// A non-generic class used to store statics that do not vary by generic type argument.
-	/// </summary>
-	internal static class AsyncLocal {
-		/// <summary>
-		/// The System.Threading.AsyncLocal open generic type, if present.
-		/// </summary>
-		/// <remarks>
-		/// When running on .NET 4.6, it will be present. 
-		/// This field will be <c>null</c> on earlier versions of .NET.
-		/// </remarks>
-		internal static readonly Type BclAsyncLocalType = Type.GetType("System.Threading.AsyncLocal`1");
 	}
 }

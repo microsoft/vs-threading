@@ -73,6 +73,7 @@
     <Compile Include="JoinableTaskContextNode.cs" />
     <Compile Include="JoinableTaskFactory.cs" />
     <Compile Include="JoinableTask`1.cs" />
+    <Compile Include="LightUps.cs" />
     <Compile Include="ListOfOftenOne.cs" />
     <Compile Include="NativeMethods.cs" />
     <Compile Include="NoMessagePumpSyncContext.cs" />

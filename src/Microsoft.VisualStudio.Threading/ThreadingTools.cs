@@ -98,9 +98,8 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		internal static bool TrySetCanceled<T>(this TaskCompletionSource<T> tcs, CancellationToken cancellationToken) {
-			var methodInfo = typeof(TaskCompletionSource<T>).GetMethod(nameof(TaskCompletionSource<int>.TrySetCanceled), new Type[] { typeof(CancellationToken) });
-			return methodInfo != null
-				? (bool)methodInfo.Invoke(tcs, new object[] { cancellationToken })
+			return LightUps<T>.TrySetCanceled != null
+				? LightUps<T>.TrySetCanceled(tcs, cancellationToken)
 				: tcs.TrySetCanceled();
 		}
 
