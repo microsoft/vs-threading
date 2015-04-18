@@ -92,7 +92,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="setter">The delegate used to set the Value property.</param>
 		/// <returns>The constructed instance of AsyncLocal{T}.</returns>
 		internal static object CreateAsyncLocal(out Func<T> getter, out Action<T> setter) {
-			Verify.Operation(IsAsyncLocalSupported, "AsyncLocal<T> is not supported on this version of the .NET Framework.");
+			Assumes.True(IsAsyncLocalSupported);
 			var instance = BclAsyncLocalCtor.Invoke(null);
 			getter = (Func<T>)Delegate.CreateDelegate(typeof(Func<T>), instance, BclAsyncLocalValueProperty.GetMethod);
 			setter = (Action<T>)Delegate.CreateDelegate(typeof(Action<T>), instance, BclAsyncLocalValueProperty.SetMethod);
