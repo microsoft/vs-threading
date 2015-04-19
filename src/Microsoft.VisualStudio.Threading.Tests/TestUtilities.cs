@@ -107,6 +107,31 @@
 			return new YieldAndNotifyAwaitable(baseAwaiter, yieldingSignal, resumingSignal);
 		}
 
+		/// <summary>
+		/// Flood the threadpool with requests that will just block the threads
+		/// until the returned value is disposed of.
+		/// </summary>
+		/// <returns>A value to dispose of to unblock the threadpool.</returns>
+		/// <remarks>
+		/// This can provide a unique technique for influencing execution order
+		/// of synchronous code vs. async code.
+		/// </remarks>
+		internal static IDisposable StarveThreadpool() {
+			var evt = new ManualResetEventSlim();
+
+			// Flood the threadpool with work items that will just block
+			// any threads assigned to them.
+			int workerThreads, completionPortThreads;
+			ThreadPool.GetMinThreads(out workerThreads, out completionPortThreads);
+			for (int i = 0; i < workerThreads * 10; i++) {
+				ThreadPool.QueueUserWorkItem(
+					s => ((ManualResetEventSlim)s).Wait(),
+					evt);
+			}
+
+			return new ThreadpoolStarvation(evt);
+		}
+
 		internal struct YieldAndNotifyAwaitable {
 			private readonly INotifyCompletion baseAwaiter;
 			private readonly AsyncManualResetEvent yieldingSignal;
@@ -166,6 +191,19 @@
 				if (listener != null) {
 					listener.AssertUiEnabled = true;
 				}
+			}
+		}
+
+		private class ThreadpoolStarvation : IDisposable {
+			private readonly ManualResetEventSlim releaser;
+
+			internal ThreadpoolStarvation(ManualResetEventSlim releaser) {
+				Requires.NotNull(releaser, nameof(releaser));
+				this.releaser = releaser;
+			}
+
+			public void Dispose() {
+				this.releaser.Set();
 			}
 		}
 	}

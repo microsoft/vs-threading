@@ -95,5 +95,28 @@
 			task1.Wait();
 			Assert.IsFalse(task2.IsCompleted);
 		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task SetAsyncThenResetLeavesEventInResetState() {
+			// We starve the threadpool so that if SetAsync()
+			// does work asynchronously, we'll force it to happen
+			// after the Reset() method is executed.
+			using (var starvation = TestUtilities.StarveThreadpool()) {
+				// Set and immediately reset the event.
+				var setTask = this.evt.SetAsync();
+				this.evt.Reset();
+
+				// At this point, the event should be unset,
+				// but allow the SetAsync call to finish its work.
+				starvation.Dispose();
+				await setTask;
+
+				// Verify that the event is still unset.
+				// If this fails, then the async nature of SetAsync
+				// allowed it to "jump" over the Reset and leave the event
+				// in a set state (which would of course be very bad).
+				Assert.IsFalse(this.evt.IsSet);
+			}
+		}
 	}
 }
