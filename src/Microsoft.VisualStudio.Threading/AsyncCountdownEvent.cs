@@ -57,6 +57,7 @@
 		/// This method is not asynchronous. The returned Task is always completed.
 		/// </para>
 		/// </remarks>
+		[Obsolete("Use Signal() instead."), EditorBrowsable(EditorBrowsableState.Never)]
 		public async Task SignalAsync() {
 			int newCount = Interlocked.Decrement(ref this.remainingCount);
 			if (newCount == 0) {
@@ -72,7 +73,7 @@
 		public void Signal() {
 			int newCount = Interlocked.Decrement(ref this.remainingCount);
 			if (newCount == 0) {
-				this.manualEvent.SetAsync();
+				this.manualEvent.Set();
 			} else if (newCount < 0) {
 				throw new InvalidOperationException();
 			}

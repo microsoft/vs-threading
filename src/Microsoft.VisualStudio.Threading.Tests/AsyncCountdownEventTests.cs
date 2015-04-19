@@ -67,7 +67,9 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public void SignalAsyncReturnsFaultedTaskOnError() {
 			var evt = new AsyncCountdownEvent(0);
+#pragma warning disable CS0618 // Type or member is obsolete
 			var result = evt.SignalAsync();
+#pragma warning restore CS0618 // Type or member is obsolete
 			Assert.IsTrue(result.IsFaulted);
 			Assert.IsInstanceOfType(result.Exception.InnerException, typeof(InvalidOperationException));
 		}

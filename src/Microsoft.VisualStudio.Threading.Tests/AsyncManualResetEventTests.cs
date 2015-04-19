@@ -29,7 +29,9 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task NonBlocking() {
+#pragma warning disable CS0618 // Type or member is obsolete
 			await this.evt.SetAsync();
+#pragma warning restore CS0618 // Type or member is obsolete
 			Assert.IsTrue(this.evt.WaitAsync().IsCompleted);
 		}
 
@@ -37,7 +39,7 @@
 		/// Verifies that inlining continuations do not have to complete execution before Set() returns.
 		/// </summary>
 		[TestMethod, Timeout(TestTimeout)]
-		public async Task SetReturnsBeforeInlinedContinuations() {
+		public void SetReturnsBeforeInlinedContinuations() {
 			var setReturned = new ManualResetEventSlim();
 			var inlinedContinuation = this.evt.WaitAsync()
 				.ContinueWith(delegate {
@@ -46,7 +48,7 @@
 					Assert.IsTrue(setReturned.Wait(AsyncDelay));
 				},
 				TaskContinuationOptions.ExecuteSynchronously);
-			await this.evt.SetAsync();
+			this.evt.Set();
 			Assert.IsTrue(this.evt.IsSet);
 			setReturned.Set();
 			Assert.IsTrue(inlinedContinuation.Wait(AsyncDelay));
@@ -63,7 +65,9 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task Reset() {
+#pragma warning disable CS0618 // Type or member is obsolete
 			await this.evt.SetAsync();
+#pragma warning restore CS0618 // Type or member is obsolete
 			this.evt.Reset();
 			var result = this.evt.WaitAsync();
 			Assert.IsFalse(result.IsCompleted);
@@ -81,7 +85,9 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task PulseAllAsync() {
 			var waitTask = this.evt.WaitAsync();
+#pragma warning disable CS0618 // Type or member is obsolete
 			var pulseTask = this.evt.PulseAllAsync();
+#pragma warning restore CS0618 // Type or member is obsolete
 			if (TestUtilities.IsNet45Mode) {
 				await pulseTask;
 			} else {
@@ -108,7 +114,9 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public void PulseAllAsyncDoesNotUnblockFutureWaiters() {
 			Task task1 = this.evt.WaitAsync();
+#pragma warning disable CS0618 // Type or member is obsolete
 			this.evt.PulseAllAsync();
+#pragma warning restore CS0618 // Type or member is obsolete
 			Task task2 = this.evt.WaitAsync();
 			Assert.AreNotSame(task1, task2);
 			task1.Wait();
@@ -131,8 +139,10 @@
 			// does work asynchronously, we'll force it to happen
 			// after the Reset() method is executed.
 			using (var starvation = TestUtilities.StarveThreadpool()) {
+#pragma warning disable CS0618 // Type or member is obsolete
 				// Set and immediately reset the event.
 				var setTask = this.evt.SetAsync();
+#pragma warning restore CS0618 // Type or member is obsolete
 				Assert.IsTrue(this.evt.IsSet);
 				this.evt.Reset();
 				Assert.IsFalse(this.evt.IsSet);
@@ -161,8 +171,10 @@
 		public void SetAsyncCalledTwiceReturnsSameTask() {
 			using (TestUtilities.StarveThreadpool()) {
 				Task waitTask = this.evt.WaitAsync();
+#pragma warning disable CS0618 // Type or member is obsolete
 				Task setTask1 = this.evt.SetAsync();
 				Task setTask2 = this.evt.SetAsync();
+#pragma warning restore CS0618 // Type or member is obsolete
 
 				// Since we starved the threadpool, no work should have happened
 				// and we expect the result to be the same, since SetAsync

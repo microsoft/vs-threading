@@ -108,6 +108,7 @@
 		/// This method is not asynchronous. The returned Task is always completed.
 		/// </para>
 		/// </remarks>
+		[Obsolete("Use Set() instead."), EditorBrowsable(EditorBrowsableState.Never)]
 		public Task SetAsync() {
 			TaskCompletionSourceWithoutInlining<EmptyStruct> tcs = null;
 			bool transitionRequired = false;
@@ -128,7 +129,9 @@
 		/// Sets this event to unblock callers of <see cref="WaitAsync"/>.
 		/// </summary>
 		public void Set() {
+#pragma warning disable CS0618 // Type or member is obsolete
 			this.SetAsync();
+#pragma warning restore CS0618 // Type or member is obsolete
 		}
 
 		/// <summary>
@@ -158,6 +161,7 @@
 		/// This method is not asynchronous. The returned Task is always completed.
 		/// </para>
 		/// </remarks>
+		[Obsolete("Use PulseAll() instead."), EditorBrowsable(EditorBrowsableState.Never)]
 		public Task PulseAllAsync() {
 			TaskCompletionSourceWithoutInlining<EmptyStruct> tcs = null;
 			lock (this.syncObject) {
@@ -179,7 +183,9 @@
 		/// Sets and immediately resets this event, allowing all current waiters to unblock.
 		/// </summary>
 		public void PulseAll() {
+#pragma warning disable CS0618 // Type or member is obsolete
 			this.PulseAllAsync();
+#pragma warning restore CS0618 // Type or member is obsolete
 		}
 
 		/// <summary>
