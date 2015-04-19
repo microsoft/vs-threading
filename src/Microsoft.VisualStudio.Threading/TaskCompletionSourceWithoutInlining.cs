@@ -62,7 +62,7 @@ namespace Microsoft.VisualStudio.Threading {
 				if (this.CanCompleteInline) {
 					base.TrySetResult(value);
 				} else {
-					ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<T>)state).SetResult(value), this);
+					ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<T>)state).TrySetResult(value), this);
 				}
 			}
 		}
@@ -72,7 +72,7 @@ namespace Microsoft.VisualStudio.Threading {
 				if (this.CanCompleteInline) {
 					base.TrySetCanceled();
 				} else {
-					ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<T>)state).SetCanceled(), this);
+					ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<T>)state).TrySetCanceled(), this);
 				}
 			}
 		}
@@ -82,7 +82,7 @@ namespace Microsoft.VisualStudio.Threading {
 				if (this.CanCompleteInline) {
 					base.TrySetException(exception);
 				} else {
-					ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<T>)state).SetException(exception), this);
+					ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<T>)state).TrySetException(exception), this);
 				}
 			}
 		}
@@ -110,7 +110,7 @@ namespace Microsoft.VisualStudio.Threading {
 				if (this.CanCompleteInline) {
 					base.TrySetResult(default(T));
 				} else {
-					ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<T>)state).SetResult(default(T)), this);
+					ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<T>)state).TrySetResult(default(T)), this);
 				}
 			}
 		}

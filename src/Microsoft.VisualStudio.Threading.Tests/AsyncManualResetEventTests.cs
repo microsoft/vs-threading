@@ -133,7 +133,9 @@
 			using (var starvation = TestUtilities.StarveThreadpool()) {
 				// Set and immediately reset the event.
 				var setTask = this.evt.SetAsync();
+				Assert.IsTrue(this.evt.IsSet);
 				this.evt.Reset();
+				Assert.IsFalse(this.evt.IsSet);
 
 				// At this point, the event should be unset,
 				// but allow the SetAsync call to finish its work.
@@ -145,6 +147,30 @@
 				// allowed it to "jump" over the Reset and leave the event
 				// in a set state (which would of course be very bad).
 				Assert.IsFalse(this.evt.IsSet);
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void SetThenPulseAllResetsEvent() {
+			this.evt.Set();
+			this.evt.PulseAll();
+			Assert.IsFalse(this.evt.IsSet);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void SetAsyncCalledTwiceReturnsSameTask() {
+			using (TestUtilities.StarveThreadpool()) {
+				Task waitTask = this.evt.WaitAsync();
+				Task setTask1 = this.evt.SetAsync();
+				Task setTask2 = this.evt.SetAsync();
+
+				// Since we starved the threadpool, no work should have happened
+				// and we expect the result to be the same, since SetAsync
+				// is supposed to return a Task that signifies that the signal has
+				// actually propagated to the Task returned by WaitAsync earlier.
+				// In fact we'll go so far as to assert the Task itself should be the same.
+				Assert.AreSame(waitTask, setTask1);
+				Assert.AreSame(waitTask, setTask2);
 			}
 		}
 	}

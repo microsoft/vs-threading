@@ -20,9 +20,32 @@
 		private readonly bool allowInliningAwaiters;
 
 		/// <summary>
+		/// The object to lock when accessing fields.
+		/// </summary>
+		private readonly object syncObject = new object();
+
+		/// <summary>
 		/// The task to return from <see cref="WaitAsync"/>
 		/// </summary>
-		private volatile TaskCompletionSourceWithoutInlining<EmptyStruct> taskCompletionSource;
+		/// <devremarks>
+		/// This should not need the volatile modifier because it is
+		/// always accessed within a lock.
+		/// </devremarks>
+		private TaskCompletionSourceWithoutInlining<EmptyStruct> taskCompletionSource;
+
+		/// <summary>
+		/// A flag indicating whether the event is signaled.
+		/// When this is set to true, it's possible that
+		/// <see cref="taskCompletionSource"/>.Task.IsCompleted is still false
+		/// if the completion has been scheduled asynchronously.
+		/// Thus, this field should be the definitive answer as to whether
+		/// the event is signaled because it is synchronously updated.
+		/// </summary>
+		/// <devremarks>
+		/// This should not need the volatile modifier because it is
+		/// always accessed within a lock.
+		/// </devremarks>
+		private bool isSet;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AsyncManualResetEvent"/> class.
@@ -39,6 +62,7 @@
 			this.allowInliningAwaiters = allowInliningAwaiters;
 
 			this.taskCompletionSource = this.CreateTaskSource();
+			this.isSet = initialState;
 			if (initialState) {
 				// Complete the task immediately. We upcast first so that
 				// the task always completes immediately rather than sometimes
@@ -53,14 +77,20 @@
 		/// Gets a value indicating whether the event is currently in a signaled state.
 		/// </summary>
 		public bool IsSet {
-			get { return this.taskCompletionSource.Task.IsCompleted; }
+			get {
+				lock (this.syncObject) {
+					return this.isSet;
+				}
+			}
 		}
 
 		/// <summary>
 		/// Returns a task that will be completed when this event is set.
 		/// </summary>
 		public Task WaitAsync() {
-			return this.taskCompletionSource.Task;
+			lock (this) {
+				return this.taskCompletionSource.Task;
+			}
 		}
 
 		/// <summary>
@@ -79,28 +109,37 @@
 		/// </para>
 		/// </remarks>
 		public Task SetAsync() {
-			return SetAsync(this.taskCompletionSource);
+			TaskCompletionSourceWithoutInlining<EmptyStruct> tcs = null;
+			bool transitionRequired = false;
+			lock (this.syncObject) {
+				transitionRequired = !this.isSet;
+				tcs = this.taskCompletionSource;
+				this.isSet = true;
+			}
+
+			if (transitionRequired) {
+				tcs?.TrySetResultToDefault();
+			}
+
+			return tcs?.Task ?? TplExtensions.CompletedTask;
 		}
 
 		/// <summary>
 		/// Sets this event to unblock callers of <see cref="WaitAsync"/>.
 		/// </summary>
 		public void Set() {
-			SetAsync(this.taskCompletionSource);
+			this.SetAsync();
 		}
 
 		/// <summary>
 		/// Resets this event to a state that will block callers of <see cref="WaitAsync"/>.
 		/// </summary>
 		public void Reset() {
-			while (true) {
-				var tcs = this.taskCompletionSource;
-#pragma warning disable 0420
-				if (!tcs.Task.IsCompleted ||
-					Interlocked.CompareExchange(ref this.taskCompletionSource, this.CreateTaskSource(), tcs) == tcs) {
-					return;
+			lock (this) {
+				if (this.isSet) {
+					this.taskCompletionSource = this.CreateTaskSource();
+					this.isSet = false;
 				}
-#pragma warning restore 0420
 			}
 		}
 
@@ -120,15 +159,20 @@
 		/// </para>
 		/// </remarks>
 		public Task PulseAllAsync() {
-			// Atomically replace the completion source with a new, uncompleted source
-			// while capturing the previous one so we can complete it.
-			// This ensures that we don't leave a gap in time where WaitAsync() will
-			// continue to return completed Tasks due to a Pulse method which should
-			// execute instantaneously.
-			var oldSource = Interlocked.Exchange(ref this.taskCompletionSource, this.CreateTaskSource());
+			TaskCompletionSourceWithoutInlining<EmptyStruct> tcs = null;
+			lock (this.syncObject) {
+				// Atomically replace the completion source with a new, uncompleted source
+				// while capturing the previous one so we can complete it.
+				// This ensures that we don't leave a gap in time where WaitAsync() will
+				// continue to return completed Tasks due to a Pulse method which should
+				// execute instantaneously.
+				tcs = this.taskCompletionSource;
+				this.taskCompletionSource = this.CreateTaskSource();
+				this.isSet = false;
+			}
 
-			// Now set the old source, allowing any waiters from before the exchange to resume.
-			return SetAsync(oldSource);
+			tcs.TrySetResultToDefault();
+			return tcs.Task;
 		}
 
 		/// <summary>
@@ -145,19 +189,6 @@
 		[EditorBrowsable(EditorBrowsableState.Never)]
 		public TaskAwaiter GetAwaiter() {
 			return this.WaitAsync().GetAwaiter();
-		}
-
-		/// <summary>
-		/// Completes a task, safely guarding against inlining continuations when appropriate.
-		/// </summary>
-		/// <param name="tcs">The completion source of the task to complete.</param>
-		/// <returns>The task that is (or will shortly be) completed.</returns>
-		private static Task SetAsync(TaskCompletionSourceWithoutInlining<EmptyStruct> tcs) {
-			if (!tcs.Task.IsCompleted) {
-				tcs.TrySetResultToDefault();
-			}
-
-			return tcs.Task;
 		}
 
 		/// <summary>
