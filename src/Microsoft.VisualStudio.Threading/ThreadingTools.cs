@@ -6,9 +6,6 @@
 
 namespace Microsoft.VisualStudio.Threading {
 	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.Text;
 	using System.Threading;
 	using System.Threading.Tasks;
 
@@ -64,7 +61,7 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			if (cancellationToken.IsCancellationRequested) {
-				return Task.FromCanceled<T>(cancellationToken);
+				return TaskFromCanceled<T>(cancellationToken);
 			}
 
 			return WithCancellationSlow(task, cancellationToken);
@@ -85,7 +82,7 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			if (cancellationToken.IsCancellationRequested) {
-				return Task.FromCanceled(cancellationToken);
+				return TaskFromCanceled(cancellationToken);
 			}
 
 			return WithCancellationSlow(task, cancellationToken);
@@ -98,6 +95,32 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="checkForChangesOnRevert">A value indicating whether to check that the applied SyncContext is still the current one when the original is restored.</param>
 		public static SpecializedSyncContext Apply(this SynchronizationContext syncContext, bool checkForChangesOnRevert = true) {
 			return SpecializedSyncContext.Apply(syncContext, checkForChangesOnRevert);
+		}
+
+		internal static bool TrySetCanceled<T>(this TaskCompletionSource<T> tcs, CancellationToken cancellationToken) {
+			return LightUps<T>.TrySetCanceled != null
+				? LightUps<T>.TrySetCanceled(tcs, cancellationToken)
+				: tcs.TrySetCanceled();
+		}
+
+		internal static Task TaskFromCanceled(CancellationToken cancellationToken) {
+			return TaskFromCanceled<EmptyStruct>(cancellationToken);
+		}
+
+		internal static Task<T> TaskFromCanceled<T>(CancellationToken cancellationToken) {
+			var tcs = new TaskCompletionSource<T>();
+			tcs.TrySetCanceled(cancellationToken);
+			return tcs.Task;
+		}
+
+		internal static Task TaskFromException(Exception exception) {
+			return TaskFromException<EmptyStruct>(exception);
+		}
+
+		internal static Task<T> TaskFromException<T>(Exception exception) {
+			var tcs = new TaskCompletionSource<T>();
+			tcs.TrySetException(exception);
+			return tcs.Task;
 		}
 
 		/// <summary>

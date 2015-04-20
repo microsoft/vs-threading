@@ -24,13 +24,13 @@ namespace Microsoft.VisualStudio.Threading {
 		/// A singleton completed task.
 		/// </summary>
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-		public static readonly Task CompletedTask = Task.CompletedTask;
+		public static readonly Task CompletedTask = Task.FromResult(new EmptyStruct());
 
 		/// <summary>
 		/// A task that is already canceled.
 		/// </summary>
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-		public static readonly Task CanceledTask = Task.FromCanceled(new CancellationToken(canceled: true));
+		public static readonly Task CanceledTask = ThreadingTools.TaskFromCanceled(new CancellationToken(canceled: true));
 
 		/// <summary>
 		/// A completed task with a <c>true</c> result.
@@ -462,7 +462,7 @@ namespace Microsoft.VisualStudio.Threading {
 
 			if (completedTask.IsCanceled) {
 				// NOTE: this is "lossy" in that we don't propagate any CancellationToken that the Task would throw an OperationCanceledException with.
-				// Propagating that data would require that we actually cause the completedTask to throw so we can inspect the 
+				// Propagating that data would require that we actually cause the completedTask to throw so we can inspect the
 				// OperationCanceledException.CancellationToken property, which we consider more costly than it's worth.
 				taskCompletionSource.TrySetCanceled();
 			} else if (completedTask.IsFaulted) {
@@ -486,7 +486,7 @@ namespace Microsoft.VisualStudio.Threading {
 
 			if (completedTask.IsCanceled) {
 				// NOTE: this is "lossy" in that we don't propagate any CancellationToken that the Task would throw an OperationCanceledException with.
-				// Propagating that data would require that we actually cause the completedTask to throw so we can inspect the 
+				// Propagating that data would require that we actually cause the completedTask to throw so we can inspect the
 				// OperationCanceledException.CancellationToken property, which we consider more costly than it's worth.
 				taskCompletionSource.TrySetCanceled();
 			} else if (completedTask.IsFaulted) {

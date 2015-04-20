@@ -2430,7 +2430,7 @@
 				this.asyncPump.Run(delegate {
 					return TplExtensions.CompletedTask;
 				});
-			}, maxBytesAllocated: 245);
+			}, maxBytesAllocated: 500);
 		}
 
 		[TestMethod, Timeout(TestTimeout * 2), TestCategory("GC"), TestCategory("FailsInCloudTest")]
@@ -2441,7 +2441,7 @@
 				this.asyncPump.Run(delegate {
 					return completedTask;
 				});
-			}, maxBytesAllocated: 245);
+			}, maxBytesAllocated: 500);
 		}
 
 		[TestMethod, Timeout(TestTimeout * 2), TestCategory("GC"), TestCategory("FailsInCloudTest"), TestCategory("FailsInLocalBatch")]

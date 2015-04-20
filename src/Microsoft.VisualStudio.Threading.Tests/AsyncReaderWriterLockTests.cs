@@ -21,7 +21,7 @@
 		private const char WriteChar = 'W';
 
 		private const int GCAllocationAttempts = 3;
-		private const int MaxGarbagePerLock = 165;
+		private const int MaxGarbagePerLock = 300;
 		private const int MaxGarbagePerYield = 1000;
 
 		private AsyncReaderWriterLock asyncLock;
@@ -3225,7 +3225,7 @@
 
 					long memory2 = GC.GetTotalMemory(false);
 					long allocated = (memory2 - memory1) / iterations;
-					long allowed = MaxGarbagePerLock + (yieldingLock ? MaxGarbagePerYield : 0);
+					long allowed = 100 + MaxGarbagePerLock + (yieldingLock ? MaxGarbagePerYield : 0);
 					this.TestContext.WriteLine("Allocated bytes: {0} ({1} allowed)", allocated, allowed);
 					passingAttemptObserved = allocated <= allowed;
 				}

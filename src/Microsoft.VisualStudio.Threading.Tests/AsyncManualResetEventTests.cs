@@ -28,8 +28,10 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void NonBlocking() {
-			this.evt.Set();
+		public async Task NonBlocking() {
+#pragma warning disable CS0618 // Type or member is obsolete
+			await this.evt.SetAsync();
+#pragma warning restore CS0618 // Type or member is obsolete
 			Assert.IsTrue(this.evt.WaitAsync().IsCompleted);
 		}
 
@@ -62,8 +64,10 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void Reset() {
-			this.evt.Set();
+		public async Task Reset() {
+#pragma warning disable CS0618 // Type or member is obsolete
+			await this.evt.SetAsync();
+#pragma warning restore CS0618 // Type or member is obsolete
 			this.evt.Reset();
 			var result = this.evt.WaitAsync();
 			Assert.IsFalse(result.IsCompleted);
@@ -79,29 +83,40 @@
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void PulseAllAsync() {
-			var task = this.evt.WaitAsync();
-#pragma warning disable 0618
-			Assert.AreEqual(TaskStatus.RanToCompletion, this.evt.PulseAllAsync().Status);
-#pragma warning restore 0618
-			Assert.IsTrue(task.IsCompleted);
+		public async Task PulseAllAsync() {
+			var waitTask = this.evt.WaitAsync();
+#pragma warning disable CS0618 // Type or member is obsolete
+			var pulseTask = this.evt.PulseAllAsync();
+#pragma warning restore CS0618 // Type or member is obsolete
+			if (TestUtilities.IsNet45Mode) {
+				await pulseTask;
+			} else {
+				Assert.AreEqual(TaskStatus.RanToCompletion, pulseTask.Status);
+			}
+
+			Assert.IsTrue(waitTask.IsCompleted);
 			Assert.IsFalse(this.evt.WaitAsync().IsCompleted);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
-		public void PulseAll() {
+		public async Task PulseAll() {
 			var task = this.evt.WaitAsync();
 			this.evt.PulseAll();
-			Assert.IsTrue(task.IsCompleted);
+			if (TestUtilities.IsNet45Mode) {
+				await task;
+			} else {
+				Assert.IsTrue(task.IsCompleted);
+			}
+
 			Assert.IsFalse(this.evt.WaitAsync().IsCompleted);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void PulseAllAsyncDoesNotUnblockFutureWaiters() {
 			Task task1 = this.evt.WaitAsync();
-#pragma warning disable 0618
+#pragma warning disable CS0618 // Type or member is obsolete
 			this.evt.PulseAllAsync();
-#pragma warning restore 0618
+#pragma warning restore CS0618 // Type or member is obsolete
 			Task task2 = this.evt.WaitAsync();
 			Assert.AreNotSame(task1, task2);
 			task1.Wait();
@@ -124,9 +139,13 @@
 			// does work asynchronously, we'll force it to happen
 			// after the Reset() method is executed.
 			using (var starvation = TestUtilities.StarveThreadpool()) {
+#pragma warning disable CS0618 // Type or member is obsolete
 				// Set and immediately reset the event.
 				var setTask = this.evt.SetAsync();
+#pragma warning restore CS0618 // Type or member is obsolete
+				Assert.IsTrue(this.evt.IsSet);
 				this.evt.Reset();
+				Assert.IsFalse(this.evt.IsSet);
 
 				// At this point, the event should be unset,
 				// but allow the SetAsync call to finish its work.
@@ -138,6 +157,32 @@
 				// allowed it to "jump" over the Reset and leave the event
 				// in a set state (which would of course be very bad).
 				Assert.IsFalse(this.evt.IsSet);
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void SetThenPulseAllResetsEvent() {
+			this.evt.Set();
+			this.evt.PulseAll();
+			Assert.IsFalse(this.evt.IsSet);
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void SetAsyncCalledTwiceReturnsSameTask() {
+			using (TestUtilities.StarveThreadpool()) {
+				Task waitTask = this.evt.WaitAsync();
+#pragma warning disable CS0618 // Type or member is obsolete
+				Task setTask1 = this.evt.SetAsync();
+				Task setTask2 = this.evt.SetAsync();
+#pragma warning restore CS0618 // Type or member is obsolete
+
+				// Since we starved the threadpool, no work should have happened
+				// and we expect the result to be the same, since SetAsync
+				// is supposed to return a Task that signifies that the signal has
+				// actually propagated to the Task returned by WaitAsync earlier.
+				// In fact we'll go so far as to assert the Task itself should be the same.
+				Assert.AreSame(waitTask, setTask1);
+				Assert.AreSame(waitTask, setTask2);
 			}
 		}
 	}
