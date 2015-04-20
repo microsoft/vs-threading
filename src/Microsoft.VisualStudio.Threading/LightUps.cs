@@ -37,6 +37,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// A shareable empty array of Type.
 		/// </summary>
 		internal static readonly Type[] EmptyTypeArray = new Type[0];
+
 		/// <summary>
 		/// A value indicating whether TaskCreationOptions.RunContinuationsAsynchronously
 		/// is supported by this version of the .NET Framework.

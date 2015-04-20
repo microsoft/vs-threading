@@ -119,10 +119,10 @@
 			}
 
 			if (transitionRequired) {
-				tcs?.TrySetResultToDefault();
+				tcs.TrySetResultToDefault();
 			}
 
-			return tcs?.Task ?? TplExtensions.CompletedTask;
+			return tcs.Task;
 		}
 
 		/// <summary>
