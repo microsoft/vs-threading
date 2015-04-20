@@ -133,7 +133,7 @@
 			Assert.IsFalse(task2.IsCompleted);
 		}
 
-		[TestMethod, Timeout(TestTimeout), Ignore] // this test fails. which is a problem.
+		[TestMethod, Timeout(TestTimeout)]
 		public async Task SetAsyncThenResetLeavesEventInResetState() {
 			// We starve the threadpool so that if SetAsync()
 			// does work asynchronously, we'll force it to happen
