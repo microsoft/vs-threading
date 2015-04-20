@@ -2424,7 +2424,7 @@
 			outerJoinable.Join();
 		}
 
-		[TestMethod, Timeout(TestTimeout * 2), TestCategory("GC")]
+		[TestMethod, Timeout(TestTimeout * 2), TestCategory("GC"), TestCategory("FailsInCloudTest")]
 		public void RunSynchronouslyTaskNoYieldGCPressure() {
 			this.CheckGCPressure(delegate {
 				this.asyncPump.Run(delegate {
