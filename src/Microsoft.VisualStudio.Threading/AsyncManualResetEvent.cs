@@ -25,7 +25,7 @@
 		private readonly object syncObject = new object();
 
 		/// <summary>
-		/// The task to return from <see cref="WaitAsync"/>
+		/// The source of the task to return from <see cref="WaitAsync"/>.
 		/// </summary>
 		/// <devremarks>
 		/// This should not need the volatile modifier because it is
