@@ -42,6 +42,10 @@
 		/// <param name="cancellationToken">A token whose cancellation signals lost interest in the lock.</param>
 		/// <returns>A task whose result is a releaser that should be disposed to release the lock.</returns>
 		public Task<Releaser> EnterAsync(CancellationToken cancellationToken = default(CancellationToken)) {
+			if (cancellationToken.IsCancellationRequested) {
+				return ThreadingTools.TaskFromCanceled<Releaser>(cancellationToken);
+			}
+
 			return this.LockWaitingHelper(this.semaphore.WaitAsync(cancellationToken));
 		}
 
@@ -93,9 +97,8 @@
 				? this.uncontestedReleaser // uncontested lock
 				: waitTask.ContinueWith(
 					(waiter, state) => {
-						if (waiter.IsCanceled) {
-							throw new OperationCanceledException();
-						}
+						// Re-throw any cancellation or fault exceptions.
+						waiter.GetAwaiter().GetResult();
 
 						return new Releaser((AsyncSemaphore)state);
 					},
@@ -117,7 +120,12 @@
 				? (waitTask.Result ? this.uncontestedReleaser : canceledReleaser) // uncontested lock
 				: waitTask.ContinueWith(
 					(waiter, state) => {
-						if (waiter.IsCanceled || !waiter.Result) {
+						// Rethrow the original cancellation exception to retain the root CancellationToken,
+						// or any other faulted exceptions.
+						waiter.GetAwaiter().GetResult();
+
+						// Also check for the timeout result.
+						if (!waiter.Result) {
 							throw new OperationCanceledException();
 						}
 
