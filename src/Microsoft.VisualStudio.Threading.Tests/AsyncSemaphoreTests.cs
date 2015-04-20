@@ -76,7 +76,9 @@
 				enterAsyncTask.GetAwaiter().GetResult();
 				Assert.Fail("Expected exception not thrown.");
 			} catch (OperationCanceledException ex) {
-				Assert.AreEqual(cts.Token, ex.CancellationToken);
+				if (!TestUtilities.IsNet45Mode) {
+					Assert.AreEqual(cts.Token, ex.CancellationToken);
+				}
 			}
 		}
 
