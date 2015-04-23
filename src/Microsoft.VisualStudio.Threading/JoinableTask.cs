@@ -26,49 +26,10 @@ namespace Microsoft.VisualStudio.Threading {
 	/// </remarks>
 	[DebuggerDisplay("IsCompleted: {IsCompleted}, Method = {EntryMethodInfo != null ? EntryMethodInfo.Name : null}")]
 	public partial class JoinableTask {
-		[Flags]
-		internal enum JoinableTaskFlags {
-			/// <summary>
-			/// No other flags defined.
-			/// </summary>
-			None = 0x0,
-
-			/// <summary>
-			/// This task was originally started as a synchronously executing one.
-			/// </summary>
-			StartedSynchronously = 0x1,
-
-			/// <summary>
-			/// This task was originally started on the main thread.
-			/// </summary>
-			StartedOnMainThread = 0x2,
-
-			/// <summary>
-			/// This task has had its Complete method called, but has lingering continuations to execute.
-			/// </summary>
-			CompleteRequested = 0x4,
-
-			/// <summary>
-			/// This task has completed.
-			/// </summary>
-			CompleteFinalized = 0x8,
-
-			/// <summary>
-			/// This exact task has been passed to the <see cref="JoinableTask.CompleteOnCurrentThread"/> method.
-			/// </summary>
-			CompletingSynchronously = 0x10,
-
-			/// <summary>
-			/// This exact task has been passed to the <see cref="JoinableTask.CompleteOnCurrentThread"/> method
-			/// on the main thread.
-			/// </summary>
-			SynchronouslyBlockingMainThread = 0x20,
-		}
-
 		/// <summary>
 		/// Stores the top-most JoinableTask that is completing on the current thread, if any.
 		/// </summary>
-		private static readonly ThreadLocal<JoinableTask> completingTask = new ThreadLocal<JoinableTask>();
+		private static readonly ThreadLocal<JoinableTask> CompletingTask = new ThreadLocal<JoinableTask>();
 
 		/// <summary>
 		/// The <see cref="JoinableTaskContext"/> that began the async operation.
@@ -174,6 +135,45 @@ namespace Microsoft.VisualStudio.Threading {
 			this.initialDelegate = initialDelegate;
 		}
 
+		[Flags]
+		internal enum JoinableTaskFlags {
+			/// <summary>
+			/// No other flags defined.
+			/// </summary>
+			None = 0x0,
+
+			/// <summary>
+			/// This task was originally started as a synchronously executing one.
+			/// </summary>
+			StartedSynchronously = 0x1,
+
+			/// <summary>
+			/// This task was originally started on the main thread.
+			/// </summary>
+			StartedOnMainThread = 0x2,
+
+			/// <summary>
+			/// This task has had its Complete method called, but has lingering continuations to execute.
+			/// </summary>
+			CompleteRequested = 0x4,
+
+			/// <summary>
+			/// This task has completed.
+			/// </summary>
+			CompleteFinalized = 0x8,
+
+			/// <summary>
+			/// This exact task has been passed to the <see cref="JoinableTask.CompleteOnCurrentThread"/> method.
+			/// </summary>
+			CompletingSynchronously = 0x10,
+
+			/// <summary>
+			/// This exact task has been passed to the <see cref="JoinableTask.CompleteOnCurrentThread"/> method
+			/// on the main thread.
+			/// </summary>
+			SynchronouslyBlockingMainThread = 0x20,
+		}
+
 		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 		private Task QueueNeedProcessEvent {
 			get {
@@ -249,7 +249,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// This property is intentionally non-public to avoid its abuse by outside callers.
 		/// </remarks>
 		internal static JoinableTask TaskCompletingOnThisThread {
-			get { return completingTask.Value; }
+			get { return CompletingTask.Value; }
 		}
 
 		internal JoinableTaskFactory Factory {
@@ -644,8 +644,8 @@ namespace Microsoft.VisualStudio.Threading {
 			Assumes.NotNull(this.wrappedTask);
 
 			// "Push" this task onto the TLS field's virtual stack so that on hang reports we know which task to 'blame'.
-			JoinableTask priorCompletingTask = completingTask.Value;
-			completingTask.Value = this;
+			JoinableTask priorCompletingTask = CompletingTask.Value;
+			CompletingTask.Value = this;
 			try {
 				bool onMainThread = false;
 				var additionalFlags = JoinableTaskFlags.CompletingSynchronously;
@@ -708,7 +708,7 @@ namespace Microsoft.VisualStudio.Threading {
 				Assumes.True(this.Task.IsCompleted);
 				this.Task.GetAwaiter().GetResult();	// rethrow any exceptions
 			} finally {
-				completingTask.Value = priorCompletingTask;
+				CompletingTask.Value = priorCompletingTask;
 			}
 		}
 

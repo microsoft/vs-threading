@@ -222,6 +222,30 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
+		/// Enumerates the tasks in this collection.
+		/// </summary>
+		public IEnumerator<JoinableTask> GetEnumerator() {
+
+			using (NoMessagePumpSyncContext.Default.Apply()) {
+				var joinables = new List<JoinableTask>();
+				lock (this.Context.SyncContextLock) {
+					foreach (var item in this.joinables) {
+						joinables.Add(item.Key);
+					}
+				}
+
+				return joinables.GetEnumerator();
+			}
+		}
+
+		/// <summary>
+		/// Enumerates the tasks in this collection.
+		/// </summary>
+		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
+			return this.GetEnumerator();
+		}
+
+		/// <summary>
 		/// Breaks a join formed between the specified joinable task and this collection.
 		/// </summary>
 		/// <param name="joinableTask">The joinable task that had previously joined this collection, and that now intends to revert it.</param>
@@ -256,7 +280,7 @@ namespace Microsoft.VisualStudio.Threading {
 			private JoinableTaskCollection joinedJobCollection;
 
 			/// <summary>
-			/// Initializes a new instance of the <see cref="JoinRelease"/> class.
+			/// Initializes a new instance of the <see cref="JoinRelease"/> struct.
 			/// </summary>
 			/// <param name="joined">The Main thread controlling SingleThreadSynchronizationContext to use to accelerate execution of Main thread bound work.</param>
 			/// <param name="joiner">The instance that created this value.</param>
@@ -270,7 +294,7 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			/// <summary>
-			/// Initializes a new instance of the <see cref="JoinRelease"/> class.
+			/// Initializes a new instance of the <see cref="JoinRelease"/> struct.
 			/// </summary>
 			/// <param name="jobCollection">The collection of joinable tasks that has been joined.</param>
 			/// <param name="joiner">The instance that created this value.</param>
@@ -299,30 +323,6 @@ namespace Microsoft.VisualStudio.Threading {
 
 				this.joiner = null;
 			}
-		}
-
-		/// <summary>
-		/// Enumerates the tasks in this collection.
-		/// </summary>
-		public IEnumerator<JoinableTask> GetEnumerator() {
-
-			using (NoMessagePumpSyncContext.Default.Apply()) {
-				var joinables = new List<JoinableTask>();
-				lock (this.Context.SyncContextLock) {
-					foreach (var item in this.joinables) {
-						joinables.Add(item.Key);
-					}
-				}
-
-				return joinables.GetEnumerator();
-			}
-		}
-
-		/// <summary>
-		/// Enumerates the tasks in this collection.
-		/// </summary>
-		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
-			return this.GetEnumerator();
 		}
 	}
 }

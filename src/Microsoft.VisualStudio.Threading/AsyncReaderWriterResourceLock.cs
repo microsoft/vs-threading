@@ -105,7 +105,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </param>
 		/// <returns>An awaitable object whose result is the lock releaser.</returns>
 		public ResourceAwaitable UpgradeableReadLockAsync(LockFlags options, CancellationToken cancellationToken = default(CancellationToken)) {
-			return new ResourceAwaitable(base.UpgradeableReadLockAsync((AsyncReaderWriterLock.LockFlags)options, cancellationToken), this.helper);
+			return new ResourceAwaitable(this.UpgradeableReadLockAsync((AsyncReaderWriterLock.LockFlags)options, cancellationToken), this.helper);
 		}
 
 		/// <summary>
@@ -145,7 +145,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </param>
 		/// <returns>An awaitable object whose result is the lock releaser.</returns>
 		public ResourceAwaitable WriteLockAsync(LockFlags options, CancellationToken cancellationToken = default(CancellationToken)) {
-			return new ResourceAwaitable(base.WriteLockAsync((AsyncReaderWriterLock.LockFlags)options, cancellationToken), this.helper);
+			return new ResourceAwaitable(this.WriteLockAsync((AsyncReaderWriterLock.LockFlags)options, cancellationToken), this.helper);
 		}
 
 		/// <summary>
@@ -238,6 +238,166 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
+		/// An awaitable that is returned from asynchronous lock requests.
+		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
+		public struct ResourceAwaitable {
+			/// <summary>
+			/// The underlying lock awaitable.
+			/// </summary>
+			private readonly AsyncReaderWriterLock.Awaitable awaitable;
+
+			/// <summary>
+			/// The helper class.
+			/// </summary>
+			private readonly Helper helper;
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="ResourceAwaitable"/> struct.
+			/// </summary>
+			/// <param name="awaitable">The underlying lock awaitable.</param>
+			/// <param name="helper">The helper class.</param>
+			internal ResourceAwaitable(AsyncReaderWriterLock.Awaitable awaitable, Helper helper) {
+				this.awaitable = awaitable;
+				this.helper = helper;
+			}
+
+			/// <summary>
+			/// Gets the awaiter value.
+			/// </summary>
+			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
+			public ResourceAwaiter GetAwaiter() {
+				return new ResourceAwaiter(this.awaitable.GetAwaiter(), this.helper);
+			}
+		}
+
+		/// <summary>
+		/// Manages asynchronous access to a lock.
+		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
+		[DebuggerDisplay("{awaiter.kind}")]
+		public struct ResourceAwaiter : INotifyCompletion {
+			/// <summary>
+			/// The underlying lock awaiter.
+			/// </summary>
+			private readonly AsyncReaderWriterLock.Awaiter awaiter;
+
+			/// <summary>
+			/// The helper class.
+			/// </summary>
+			private readonly Helper helper;
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="ResourceAwaiter"/> struct.
+			/// </summary>
+			/// <param name="awaiter">The underlying lock awaiter.</param>
+			/// <param name="helper">The helper class.</param>
+			internal ResourceAwaiter(AsyncReaderWriterLock.Awaiter awaiter, Helper helper) {
+				Requires.NotNull(awaiter, nameof(awaiter));
+				Requires.NotNull(helper, nameof(helper));
+
+				this.awaiter = awaiter;
+				this.helper = helper;
+			}
+
+			/// <summary>
+			/// Gets a value indicating whether the lock has been issued.
+			/// </summary>
+			public bool IsCompleted {
+				get {
+					if (this.awaiter == null) {
+						throw new InvalidOperationException();
+					}
+
+					return this.awaiter.IsCompleted;
+				}
+			}
+
+			/// <summary>
+			/// Sets the delegate to execute when the lock is available.
+			/// </summary>
+			/// <param name="continuation">The delegate.</param>
+			public void OnCompleted(Action continuation) {
+				if (this.awaiter == null) {
+					throw new InvalidOperationException();
+				}
+
+				this.awaiter.OnCompleted(continuation);
+			}
+
+			/// <summary>
+			/// Applies the issued lock to the caller and returns the value used to release the lock.
+			/// </summary>
+			/// <returns>The value to dispose of to release the lock.</returns>
+			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
+			public ResourceReleaser GetResult() {
+				if (this.awaiter == null) {
+					throw new InvalidOperationException();
+				}
+
+				return new ResourceReleaser(this.awaiter.GetResult(), this.helper);
+			}
+		}
+
+		/// <summary>
+		/// A value whose disposal releases a held lock.
+		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
+		[DebuggerDisplay("{releaser.awaiter.kind}")]
+		public struct ResourceReleaser : IDisposable {
+			/// <summary>
+			/// The underlying lock releaser.
+			/// </summary>
+			private readonly AsyncReaderWriterLock.Releaser releaser;
+
+			/// <summary>
+			/// The helper class.
+			/// </summary>
+			private readonly Helper helper;
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="ResourceReleaser"/> struct.
+			/// </summary>
+			/// <param name="releaser">The underlying lock releaser.</param>
+			/// <param name="helper">The helper class.</param>
+			internal ResourceReleaser(AsyncReaderWriterLock.Releaser releaser, Helper helper) {
+				this.releaser = releaser;
+				this.helper = helper;
+			}
+
+			/// <summary>
+			/// Gets the underlying lock releaser.
+			/// </summary>
+			internal AsyncReaderWriterLock.Releaser LockReleaser {
+				get { return this.releaser; }
+			}
+
+			/// <summary>
+			/// Gets the lock protected resource.
+			/// </summary>
+			/// <param name="resourceMoniker">The identifier for the protected resource.</param>
+			/// <param name="cancellationToken">A token whose cancellation signals lost interest in the protected resource.</param>
+			/// <returns>A task whose result is the resource.</returns>
+			public Task<TResource> GetResourceAsync(TMoniker resourceMoniker, CancellationToken cancellationToken = default(CancellationToken)) {
+				return this.helper.GetResourceAsync(resourceMoniker, cancellationToken);
+			}
+
+			/// <summary>
+			/// Releases the lock.
+			/// </summary>
+			public void Dispose() {
+				this.LockReleaser.Dispose();
+			}
+
+			/// <summary>
+			/// Asynchronously releases the lock.  Dispose should still be called after this.
+			/// </summary>
+			public Task ReleaseAsync() {
+				return this.LockReleaser.ReleaseAsync();
+			}
+		}
+
+		/// <summary>
 		/// A helper class to isolate some specific functionality in this outer class.
 		/// </summary>
 		internal class Helper {
@@ -299,6 +459,26 @@ namespace Microsoft.VisualStudio.Threading {
 					var tuple = (Tuple<TResource, LockFlags>)state;
 					return this.service.PrepareResourceForExclusiveAccessAsync(tuple.Item1, tuple.Item2, CancellationToken.None);
 				};
+			}
+
+			/// <summary>
+			/// Describes the states a resource can be in.
+			/// </summary>
+			private enum ResourceState {
+				/// <summary>
+				/// The resource is neither prepared for concurrent nor exclusive access.
+				/// </summary>
+				Unknown,
+
+				/// <summary>
+				/// The resource is prepared for concurrent access.
+				/// </summary>
+				Concurrent,
+
+				/// <summary>
+				/// The resource is prepared for exclusive access.
+				/// </summary>
+				Exclusive,
 			}
 
 			/// <summary>
@@ -544,186 +724,6 @@ namespace Microsoft.VisualStudio.Threading {
 				/// Gets the state the resource will be in when <see cref="PreparationTask"/> has completed.
 				/// </summary>
 				internal ResourceState State { get; private set; }
-			}
-
-			/// <summary>
-			/// Describes the states a resource can be in.
-			/// </summary>
-			private enum ResourceState {
-				/// <summary>
-				/// The resource is neither prepared for concurrent nor exclusive access.
-				/// </summary>
-				Unknown,
-
-				/// <summary>
-				/// The resource is prepared for concurrent access.
-				/// </summary>
-				Concurrent,
-
-				/// <summary>
-				/// The resource is prepared for exclusive access.
-				/// </summary>
-				Exclusive,
-			}
-		}
-
-		/// <summary>
-		/// An awaitable that is returned from asynchronous lock requests.
-		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-		public struct ResourceAwaitable {
-			/// <summary>
-			/// The underlying lock awaitable.
-			/// </summary>
-			private readonly AsyncReaderWriterLock.Awaitable awaitable;
-
-			/// <summary>
-			/// The helper class.
-			/// </summary>
-			private readonly Helper helper;
-
-			/// <summary>
-			/// Initializes a new instance of the <see cref="ResourceAwaitable"/> struct.
-			/// </summary>
-			/// <param name="awaitable">The underlying lock awaitable.</param>
-			/// <param name="helper">The helper class.</param>
-			internal ResourceAwaitable(AsyncReaderWriterLock.Awaitable awaitable, Helper helper) {
-				this.awaitable = awaitable;
-				this.helper = helper;
-			}
-
-			/// <summary>
-			/// Gets the awaiter value.
-			/// </summary>
-			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
-			public ResourceAwaiter GetAwaiter() {
-				return new ResourceAwaiter(this.awaitable.GetAwaiter(), this.helper);
-			}
-		}
-
-		/// <summary>
-		/// Manages asynchronous access to a lock.
-		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-		[DebuggerDisplay("{awaiter.kind}")]
-		public struct ResourceAwaiter : INotifyCompletion {
-			/// <summary>
-			/// The underlying lock awaiter.
-			/// </summary>
-			private readonly AsyncReaderWriterLock.Awaiter awaiter;
-
-			/// <summary>
-			/// The helper class.
-			/// </summary>
-			private readonly Helper helper;
-
-			/// <summary>
-			/// Initializes a new instance of the <see cref="ResourceAwaiter"/> struct.
-			/// </summary>
-			/// <param name="awaiter">The underlying lock awaiter.</param>
-			/// <param name="helper">The helper class.</param>
-			internal ResourceAwaiter(AsyncReaderWriterLock.Awaiter awaiter, Helper helper) {
-				Requires.NotNull(awaiter, nameof(awaiter));
-				Requires.NotNull(helper, nameof(helper));
-
-				this.awaiter = awaiter;
-				this.helper = helper;
-			}
-
-			/// <summary>
-			/// Gets a value indicating whether the lock has been issued.
-			/// </summary>
-			public bool IsCompleted {
-				get {
-					if (this.awaiter == null) {
-						throw new InvalidOperationException();
-					}
-
-					return this.awaiter.IsCompleted;
-				}
-			}
-
-			/// <summary>
-			/// Sets the delegate to execute when the lock is available.
-			/// </summary>
-			/// <param name="continuation">The delegate.</param>
-			public void OnCompleted(Action continuation) {
-				if (this.awaiter == null) {
-					throw new InvalidOperationException();
-				}
-
-				this.awaiter.OnCompleted(continuation);
-			}
-
-			/// <summary>
-			/// Applies the issued lock to the caller and returns the value used to release the lock.
-			/// </summary>
-			/// <returns>The value to dispose of to release the lock.</returns>
-			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
-			public ResourceReleaser GetResult() {
-				if (this.awaiter == null) {
-					throw new InvalidOperationException();
-				}
-
-				return new ResourceReleaser(this.awaiter.GetResult(), helper);
-			}
-		}
-
-		/// <summary>
-		/// A value whose disposal releases a held lock.
-		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-		[DebuggerDisplay("{releaser.awaiter.kind}")]
-		public struct ResourceReleaser : IDisposable {
-			/// <summary>
-			/// The underlying lock releaser.
-			/// </summary>
-			private readonly AsyncReaderWriterLock.Releaser releaser;
-
-			/// <summary>
-			/// The helper class.
-			/// </summary>
-			private readonly Helper helper;
-
-			/// <summary>
-			/// Initializes a new instance of the <see cref="ResourceReleaser"/> struct.
-			/// </summary>
-			/// <param name="releaser">The underlying lock releaser.</param>
-			/// <param name="helper">The helper class.</param>
-			internal ResourceReleaser(AsyncReaderWriterLock.Releaser releaser, Helper helper) {
-				this.releaser = releaser;
-				this.helper = helper;
-			}
-
-			/// <summary>
-			/// Gets the underlying lock releaser.
-			/// </summary>
-			internal AsyncReaderWriterLock.Releaser LockReleaser {
-				get { return this.releaser; }
-			}
-
-			/// <summary>
-			/// Gets the lock protected resource.
-			/// </summary>
-			/// <param name="resourceMoniker">The identifier for the protected resource.</param>
-			/// <param name="cancellationToken">A token whose cancellation signals lost interest in the protected resource.</param>
-			/// <returns>A task whose result is the resource.</returns>
-			public Task<TResource> GetResourceAsync(TMoniker resourceMoniker, CancellationToken cancellationToken = default(CancellationToken)) {
-				return this.helper.GetResourceAsync(resourceMoniker, cancellationToken);
-			}
-
-			/// <summary>
-			/// Releases the lock.
-			/// </summary>
-			public void Dispose() {
-				this.LockReleaser.Dispose();
-			}
-
-			/// <summary>
-			/// Asynchronously releases the lock.  Dispose should still be called after this.
-			/// </summary>
-			public Task ReleaseAsync() {
-				return this.LockReleaser.ReleaseAsync();
 			}
 		}
 	}

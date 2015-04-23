@@ -138,7 +138,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// A helper class to produce ETW trace events.
 		/// </summary>
-		private EventsHelper Etw;
+		private EventsHelper etw;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AsyncReaderWriterLock"/> class.
@@ -154,7 +154,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <c>true</c> to spend additional resources capturing diagnostic details that can be used
 		/// to analyze deadlocks or other issues.</param>
 		public AsyncReaderWriterLock(bool captureDiagnostics) {
-			this.Etw = new EventsHelper(this);
+			this.etw = new EventsHelper(this);
 			this.captureDiagnostics = captureDiagnostics;
 		}
 
@@ -323,6 +323,18 @@ namespace Microsoft.VisualStudio.Threading {
 		protected bool CaptureDiagnostics {
 			get { return this.captureDiagnostics; }
 			set { this.captureDiagnostics = value; }
+		}
+
+		/// <summary>
+		/// Gets a value indicating whether the current SynchronizationContext is one that is not supported
+		/// by this lock.
+		/// </summary>
+		private static bool IsUnsupportedSynchronizationContext {
+			get {
+				var ctxt = SynchronizationContext.Current;
+				bool supported = ctxt == null || ctxt is NonConcurrentSynchronizationContext;
+				return !supported;
+			}
 		}
 
 		/// <summary>
@@ -590,18 +602,6 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
-		/// Gets a value indicating whether the current SynchronizationContext is one that is not supported
-		/// by this lock.
-		/// </summary>
-		private static bool IsUnsupportedSynchronizationContext {
-			get {
-				var ctxt = SynchronizationContext.Current;
-				bool supported = ctxt == null || ctxt is NonConcurrentSynchronizationContext;
-				return !supported;
-			}
-		}
-
-		/// <summary>
 		/// Transitions the <see cref="Completion"/> task to a completed state
 		/// if appropriate.
 		/// </summary>
@@ -678,6 +678,7 @@ namespace Microsoft.VisualStudio.Threading {
 
 						awaiter = awaiter.NestingLock;
 					}
+
 					return locksMatched == this.issuedReadLocks.Count + this.issuedUpgradeableReadLocks.Count + this.issuedWriteLocks.Count;
 				} else {
 					return this.issuedReadLocks.Count == 0 && this.issuedUpgradeableReadLocks.Count == 0 && this.issuedWriteLocks.Count == 0;
@@ -878,11 +879,11 @@ namespace Microsoft.VisualStudio.Threading {
 
 				if (issued) {
 					this.GetActiveLockSet(awaiter.Kind).Add(awaiter);
-					Etw.Issued(awaiter);
+					this.etw.Issued(awaiter);
 				}
 
 				if (!issued) {
-					Etw.WaitStart(awaiter);
+					this.etw.WaitStart(awaiter);
 
 					// If the lock is immediately available, we don't need to coordinate with other threads.
 					// But if it is NOT available, we'd have to wait potentially for other threads to do more work.
@@ -897,7 +898,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Finds the upgradeable reader with <see cref="LockFlags.StickyWrite"/> flag that is nearest
 		/// to the top-level lock request held by the given lock holder.
 		/// </summary>
-		/// <param name="headAwaiter"></param>
+		/// <param name="headAwaiter">The awaiter to start the search down the stack from.</param>
 		/// <returns>The least nested upgradeable reader lock with sticky write flag; or <c>null</c> if none was found.</returns>
 		private Awaiter FindRootUpgradeableReadWithStickyWrite(Awaiter headAwaiter) {
 			if (headAwaiter == null) {
@@ -1083,7 +1084,7 @@ namespace Microsoft.VisualStudio.Threading {
 			Awaiter illegalConcurrentLock = this.reenterConcurrencyPrepRunning; // capture to local to preserve evidence in a concurrently reset field.
 			if (illegalConcurrentLock != null) {
 				try {
-					Assumes.Fail(String.Format(CultureInfo.CurrentCulture, "Illegal concurrent use of exclusive lock. Exclusive lock: {0}, Nested lock that outlived parent: {1}", illegalConcurrentLock, awaiter));
+					Assumes.Fail(string.Format(CultureInfo.CurrentCulture, "Illegal concurrent use of exclusive lock. Exclusive lock: {0}, Nested lock that outlived parent: {1}", illegalConcurrentLock, awaiter));
 				} catch (Exception ex) {
 					throw this.OnCriticalFailure(ex);
 				}
@@ -1337,7 +1338,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// Stores the specified lock in the CallContext dictionary.
 		/// </summary>
-		/// <param name="topAwaiter"></param>
+		/// <param name="topAwaiter">The awaiter that tracks the lock to grant to the caller.</param>
 		private void ApplyLockToCallContext(Awaiter topAwaiter) {
 			var awaiter = this.GetFirstActiveSelfOrAncestor(topAwaiter);
 			this.topAwaiter.Value = awaiter;
@@ -1532,6 +1533,214 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
+		/// A value whose disposal releases a held lock.
+		/// </summary>
+		[DebuggerDisplay("{awaiter.kind}")]
+		public struct Releaser : IDisposable {
+			/// <summary>
+			/// The awaiter who manages the lifetime of a lock.
+			/// </summary>
+			private readonly Awaiter awaiter;
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="Releaser"/> struct.
+			/// </summary>
+			/// <param name="awaiter">The awaiter.</param>
+			internal Releaser(Awaiter awaiter) {
+				this.awaiter = awaiter;
+			}
+
+			/// <summary>
+			/// Releases the lock.
+			/// </summary>
+			public void Dispose() {
+				if (this.awaiter != null) {
+					var nonConcurrentSyncContext = SynchronizationContext.Current as NonConcurrentSynchronizationContext;
+					using (nonConcurrentSyncContext != null ? nonConcurrentSyncContext.LoanBackAnyHeldResource() : default(NonConcurrentSynchronizationContext.LoanBack)) {
+						var releaseTask = this.ReleaseAsync();
+						try {
+							while (!releaseTask.Wait(1000)) { // this loop allows us to break into the debugger and step into managed code to analyze a hang.
+							}
+						} catch (AggregateException) {
+							// We want to throw the inner exception itself -- not the AggregateException.
+							releaseTask.GetAwaiter().GetResult();
+						}
+					}
+
+					if (nonConcurrentSyncContext != null && !this.awaiter.OwningLock.AmbientLock.IsValid) {
+						// The lock holder is taking the synchronous path to release the last UR/W lock held.
+						// Since they may go synchronously on their merry way for a while, forcibly release
+						// the sync context's semaphore that they otherwise would hold until their synchronous
+						// method returns.
+						nonConcurrentSyncContext.EarlyExitSynchronizationContext();
+					}
+				}
+			}
+
+			/// <summary>
+			/// Asynchronously releases the lock.  Dispose should still be called after this.
+			/// </summary>
+			/// <returns>
+			/// A task that should complete before the releasing thread accesses any resource protected by
+			/// a lock wrapping the lock being released.
+			/// </returns>
+			public Task ReleaseAsync() {
+				Task result;
+				if (this.awaiter != null) {
+					result = this.awaiter.ReleaseAsync();
+				} else {
+					result = TplExtensions.CompletedTask;
+				}
+
+				return result;
+			}
+		}
+
+		/// <summary>
+		/// A value whose disposal restores visibility of any locks held by the caller.
+		/// </summary>
+		public struct Suppression : IDisposable {
+			/// <summary>
+			/// The locking class.
+			/// </summary>
+			private readonly AsyncReaderWriterLock lck;
+
+			/// <summary>
+			/// The awaiter most recently acquired by the caller before hiding locks.
+			/// </summary>
+			private readonly Awaiter awaiter;
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="Suppression"/> struct.
+			/// </summary>
+			/// <param name="lck">The lock class.</param>
+			internal Suppression(AsyncReaderWriterLock lck) {
+				this.lck = lck;
+				this.awaiter = this.lck.topAwaiter.Value;
+				if (this.awaiter != null) {
+					this.lck.topAwaiter.Value = null;
+				}
+			}
+
+			/// <summary>
+			/// Restores visibility of hidden locks.
+			/// </summary>
+			public void Dispose() {
+				if (this.lck != null) {
+					this.lck.ApplyLockToCallContext(this.awaiter);
+				}
+			}
+		}
+
+		/// <summary>
+		/// A "public" representation of a specific lock.
+		/// </summary>
+		protected struct LockHandle {
+			/// <summary>
+			/// The awaiter this lock handle wraps.
+			/// </summary>
+			private readonly Awaiter awaiter;
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="LockHandle"/> struct.
+			/// </summary>
+			internal LockHandle(Awaiter awaiter) {
+				this.awaiter = awaiter;
+			}
+
+			/// <summary>
+			/// Gets a value indicating whether this handle is to a lock which was actually acquired.
+			/// </summary>
+			public bool IsValid {
+				get { return this.awaiter != null; }
+			}
+
+			/// <summary>
+			/// Gets a value indicating whether this lock is still active.
+			/// </summary>
+			public bool IsActive {
+				get { return this.awaiter.OwningLock.IsLockActive(this.awaiter, considerStaActive: true); }
+			}
+
+			/// <summary>
+			/// Gets a value indicating whether this lock represents a read lock.
+			/// </summary>
+			public bool IsReadLock {
+				get { return this.IsValid ? this.awaiter.Kind == LockKind.Read : false; }
+			}
+
+			/// <summary>
+			/// Gets a value indicating whether this lock represents an upgradeable read lock.
+			/// </summary>
+			public bool IsUpgradeableReadLock {
+				get { return this.IsValid ? this.awaiter.Kind == LockKind.UpgradeableRead : false; }
+			}
+
+			/// <summary>
+			/// Gets a value indicating whether this lock represents a write lock.
+			/// </summary>
+			public bool IsWriteLock {
+				get { return this.IsValid ? this.awaiter.Kind == LockKind.Write : false; }
+			}
+
+			/// <summary>
+			/// Gets a value indicating whether this lock is an active read lock or is nested by one.
+			/// </summary>
+			public bool HasReadLock {
+				get { return this.IsValid ? this.awaiter.OwningLock.IsLockHeld(LockKind.Read, this.awaiter, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true) : false; }
+			}
+
+			/// <summary>
+			/// Gets a value indicating whether this lock is an active upgradeable read lock or is nested by one.
+			/// </summary>
+			public bool HasUpgradeableReadLock {
+				get { return this.IsValid ? this.awaiter.OwningLock.IsLockHeld(LockKind.UpgradeableRead, this.awaiter, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true) : false; }
+			}
+
+			/// <summary>
+			/// Gets a value indicating whether this lock is an active write lock or is nested by one.
+			/// </summary>
+			public bool HasWriteLock {
+				get { return this.IsValid ? this.awaiter.OwningLock.IsLockHeld(LockKind.Write, this.awaiter, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true) : false; }
+			}
+
+			/// <summary>
+			/// Gets the flags that were passed into this lock.
+			/// </summary>
+			public LockFlags Flags {
+				get { return this.IsValid ? this.awaiter.Options : LockFlags.None; }
+			}
+
+			/// <summary>
+			/// Gets or sets some object associated to this specific lock.
+			/// </summary>
+			public object Data {
+				get {
+					return this.IsValid ? this.awaiter.Data : null;
+				}
+
+				set {
+					Verify.Operation(this.IsValid, Strings.InvalidLock);
+					this.awaiter.Data = value;
+				}
+			}
+
+			/// <summary>
+			/// Gets the lock within which this lock was acquired.
+			/// </summary>
+			public LockHandle NestingLock {
+				get { return this.IsValid ? new LockHandle(this.awaiter.NestingLock) : default(LockHandle); }
+			}
+
+			/// <summary>
+			/// Gets the wrapped awaiter.
+			/// </summary>
+			internal Awaiter Awaiter {
+				get { return this.awaiter; }
+			}
+		}
+
+		/// <summary>
 		/// Manages asynchronous access to a lock.
 		/// </summary>
 		[DebuggerDisplay("{kind}")]
@@ -1541,7 +1750,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <summary>
 			/// A singleton delegate for use in cancellation token registration to avoid memory allocations for delegates each time.
 			/// </summary>
-			private static readonly Action<object> cancellationResponseAction = CancellationResponder;
+			private static readonly Action<object> CancellationResponseAction = CancellationResponder;
 
 			/// <summary>
 			/// The instance of the lock class to which this awaiter is affiliated.
@@ -1663,23 +1872,6 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			/// <summary>
-			/// Sets the delegate to execute when the lock is available.
-			/// </summary>
-			/// <param name="continuation">The delegate.</param>
-			public void OnCompleted(Action continuation) {
-				if (this.LockIssued) {
-					throw new InvalidOperationException();
-				}
-
-				if (Interlocked.CompareExchange(ref this.continuation, continuation, null) != null) {
-					throw new NotSupportedException("Multiple continuations are not supported.");
-				}
-
-				this.cancellationRegistration = cancellationToken.Register(cancellationResponseAction, this, useSynchronizationContext: false);
-				this.lck.PendAwaiter(this);
-			}
-
-			/// <summary>
 			/// Gets the lock that the caller held before requesting this lock.
 			/// </summary>
 			internal Awaiter NestingLock {
@@ -1724,6 +1916,23 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			/// <summary>
+			/// Sets the delegate to execute when the lock is available.
+			/// </summary>
+			/// <param name="continuation">The delegate.</param>
+			public void OnCompleted(Action continuation) {
+				if (this.LockIssued) {
+					throw new InvalidOperationException();
+				}
+
+				if (Interlocked.CompareExchange(ref this.continuation, continuation, null) != null) {
+					throw new NotSupportedException("Multiple continuations are not supported.");
+				}
+
+				this.cancellationRegistration = this.cancellationToken.Register(CancellationResponseAction, this, useSynchronizationContext: false);
+				this.lck.PendAwaiter(this);
+			}
+
+			/// <summary>
 			/// Applies the issued lock to the caller and returns the value used to release the lock.
 			/// </summary>
 			/// <returns>The value to dispose of to release the lock.</returns>
@@ -1739,7 +1948,7 @@ namespace Microsoft.VisualStudio.Threading {
 					}
 
 					if (this.fault != null) {
-						throw fault;
+						throw this.fault;
 					}
 
 					if (this.LockIssued) {
@@ -1965,214 +2174,6 @@ namespace Microsoft.VisualStudio.Threading {
 						this.syncContext.threadHoldingSemaphore = Thread.CurrentThread;
 					}
 				}
-			}
-		}
-
-		/// <summary>
-		/// A value whose disposal releases a held lock.
-		/// </summary>
-		[DebuggerDisplay("{awaiter.kind}")]
-		public struct Releaser : IDisposable {
-			/// <summary>
-			/// The awaiter who manages the lifetime of a lock.
-			/// </summary>
-			private readonly Awaiter awaiter;
-
-			/// <summary>
-			/// Initializes a new instance of the <see cref="Releaser"/> struct.
-			/// </summary>
-			/// <param name="awaiter">The awaiter.</param>
-			internal Releaser(Awaiter awaiter) {
-				this.awaiter = awaiter;
-			}
-
-			/// <summary>
-			/// Releases the lock.
-			/// </summary>
-			public void Dispose() {
-				if (this.awaiter != null) {
-					var nonConcurrentSyncContext = SynchronizationContext.Current as NonConcurrentSynchronizationContext;
-					using (nonConcurrentSyncContext != null ? nonConcurrentSyncContext.LoanBackAnyHeldResource() : default(NonConcurrentSynchronizationContext.LoanBack)) {
-						var releaseTask = this.ReleaseAsync();
-						try {
-							while (!releaseTask.Wait(1000)) { // this loop allows us to break into the debugger and step into managed code to analyze a hang.
-							}
-						} catch (AggregateException) {
-							// We want to throw the inner exception itself -- not the AggregateException.
-							releaseTask.GetAwaiter().GetResult();
-						}
-					}
-
-					if (nonConcurrentSyncContext != null && !this.awaiter.OwningLock.AmbientLock.IsValid) {
-						// The lock holder is taking the synchronous path to release the last UR/W lock held.
-						// Since they may go synchronously on their merry way for a while, forcibly release
-						// the sync context's semaphore that they otherwise would hold until their synchronous
-						// method returns.
-						nonConcurrentSyncContext.EarlyExitSynchronizationContext();
-					}
-				}
-			}
-
-			/// <summary>
-			/// Asynchronously releases the lock.  Dispose should still be called after this.
-			/// </summary>
-			/// <returns>
-			/// A task that should complete before the releasing thread accesses any resource protected by
-			/// a lock wrapping the lock being released.
-			/// </returns>
-			public Task ReleaseAsync() {
-				Task result;
-				if (this.awaiter != null) {
-					result = this.awaiter.ReleaseAsync();
-				} else {
-					result = TplExtensions.CompletedTask;
-				}
-
-				return result;
-			}
-		}
-
-		/// <summary>
-		/// A value whose disposal restores visibility of any locks held by the caller.
-		/// </summary>
-		public struct Suppression : IDisposable {
-			/// <summary>
-			/// The locking class.
-			/// </summary>
-			private readonly AsyncReaderWriterLock lck;
-
-			/// <summary>
-			/// The awaiter most recently acquired by the caller before hiding locks.
-			/// </summary>
-			private readonly Awaiter awaiter;
-
-			/// <summary>
-			/// Initializes a new instance of the <see cref="Suppression"/> struct.
-			/// </summary>
-			/// <param name="lck">The lock class.</param>
-			internal Suppression(AsyncReaderWriterLock lck) {
-				this.lck = lck;
-				this.awaiter = this.lck.topAwaiter.Value;
-				if (this.awaiter != null) {
-					this.lck.topAwaiter.Value = null;
-				}
-			}
-
-			/// <summary>
-			/// Restores visibility of hidden locks.
-			/// </summary>
-			public void Dispose() {
-				if (this.lck != null) {
-					this.lck.ApplyLockToCallContext(this.awaiter);
-				}
-			}
-		}
-
-		/// <summary>
-		/// A "public" representation of a specific lock.
-		/// </summary>
-		protected struct LockHandle {
-			/// <summary>
-			/// The awaiter this lock handle wraps.
-			/// </summary>
-			private readonly Awaiter awaiter;
-
-			/// <summary>
-			/// Initializes a new instance of the <see cref="LockHandle"/> struct.
-			/// </summary>
-			internal LockHandle(Awaiter awaiter) {
-				this.awaiter = awaiter;
-			}
-
-			/// <summary>
-			/// Gets a value indicating whether this handle is to a lock which was actually acquired.
-			/// </summary>
-			public bool IsValid {
-				get { return this.awaiter != null; }
-			}
-
-			/// <summary>
-			/// Gets a value indicating whether this lock is still active.
-			/// </summary>
-			public bool IsActive {
-				get { return this.awaiter.OwningLock.IsLockActive(this.awaiter, considerStaActive: true); }
-			}
-
-			/// <summary>
-			/// Gets a value indicating whether this lock represents a read lock.
-			/// </summary>
-			public bool IsReadLock {
-				get { return this.IsValid ? this.awaiter.Kind == LockKind.Read : false; }
-			}
-
-			/// <summary>
-			/// Gets a value indicating whether this lock represents an upgradeable read lock.
-			/// </summary>
-			public bool IsUpgradeableReadLock {
-				get { return this.IsValid ? this.awaiter.Kind == LockKind.UpgradeableRead : false; }
-			}
-
-			/// <summary>
-			/// Gets a value indicating whether this lock represents a write lock.
-			/// </summary>
-			public bool IsWriteLock {
-				get { return this.IsValid ? this.awaiter.Kind == LockKind.Write : false; }
-			}
-
-			/// <summary>
-			/// Gets a value indicating whether this lock is an active read lock or is nested by one.
-			/// </summary>
-			public bool HasReadLock {
-				get { return this.IsValid ? this.awaiter.OwningLock.IsLockHeld(LockKind.Read, this.awaiter, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true) : false; }
-			}
-
-			/// <summary>
-			/// Gets a value indicating whether this lock is an active upgradeable read lock or is nested by one.
-			/// </summary>
-			public bool HasUpgradeableReadLock {
-				get { return this.IsValid ? this.awaiter.OwningLock.IsLockHeld(LockKind.UpgradeableRead, this.awaiter, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true) : false; }
-			}
-
-			/// <summary>
-			/// Gets a value indicating whether this lock is an active write lock or is nested by one.
-			/// </summary>
-			public bool HasWriteLock {
-				get { return this.IsValid ? this.awaiter.OwningLock.IsLockHeld(LockKind.Write, this.awaiter, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true) : false; }
-			}
-
-			/// <summary>
-			/// Gets the flags that were passed into this lock.
-			/// </summary>
-			public LockFlags Flags {
-				get { return this.IsValid ? this.awaiter.Options : LockFlags.None; }
-			}
-
-			/// <summary>
-			/// Gets or sets some object associated to this specific lock.
-			/// </summary>
-			public object Data {
-				get {
-					return this.IsValid ? this.awaiter.Data : null;
-				}
-
-				set {
-					Verify.Operation(this.IsValid, Strings.InvalidLock);
-					this.awaiter.Data = value;
-				}
-			}
-
-			/// <summary>
-			/// Gets the lock within which this lock was acquired.
-			/// </summary>
-			public LockHandle NestingLock {
-				get { return this.IsValid ? new LockHandle(this.awaiter.NestingLock) : default(LockHandle); }
-			}
-
-			/// <summary>
-			/// Gets the wrapped awaiter.
-			/// </summary>
-			internal Awaiter Awaiter {
-				get { return this.awaiter; }
 			}
 		}
 

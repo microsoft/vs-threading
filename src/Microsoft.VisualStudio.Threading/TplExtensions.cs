@@ -531,29 +531,6 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
-		/// A task completion source that contains additional state.
-		/// </summary>
-		/// <typeparam name="TState">The type of the state.</typeparam>
-		/// <typeparam name="TResult">The type of the result.</typeparam>
-		private class TaskCompletionSource<TState, TResult> : TaskCompletionSource<TResult> {
-			/// <summary>
-			/// Initializes a new instance of the <see cref="TaskCompletionSource{TState, TResult}" /> class.
-			/// </summary>
-			/// <param name="sourceState">The state to store in the <see cref="SourceState" /> property.</param>
-			/// <param name="taskState">State of the task.</param>
-			/// <param name="options">The options.</param>
-			internal TaskCompletionSource(TState sourceState, object taskState = null, TaskCreationOptions options = TaskCreationOptions.None)
-				: base(taskState, options) {
-				this.SourceState = sourceState;
-			}
-
-			/// <summary>
-			/// Gets or sets the state passed into the constructor.
-			/// </summary>
-			internal TState SourceState { get; set; }
-		}
-
-		/// <summary>
 		/// An awaitable that wraps a task and never throws an exception when waited on.
 		/// </summary>
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
@@ -682,6 +659,29 @@ namespace Microsoft.VisualStudio.Threading {
 					return task;
 				}
 			}
+		}
+
+		/// <summary>
+		/// A task completion source that contains additional state.
+		/// </summary>
+		/// <typeparam name="TState">The type of the state.</typeparam>
+		/// <typeparam name="TResult">The type of the result.</typeparam>
+		private class TaskCompletionSource<TState, TResult> : TaskCompletionSource<TResult> {
+			/// <summary>
+			/// Initializes a new instance of the <see cref="TaskCompletionSource{TState, TResult}" /> class.
+			/// </summary>
+			/// <param name="sourceState">The state to store in the <see cref="SourceState" /> property.</param>
+			/// <param name="taskState">State of the task.</param>
+			/// <param name="options">The options.</param>
+			internal TaskCompletionSource(TState sourceState, object taskState = null, TaskCreationOptions options = TaskCreationOptions.None)
+				: base(taskState, options) {
+				this.SourceState = sourceState;
+			}
+
+			/// <summary>
+			/// Gets or sets the state passed into the constructor.
+			/// </summary>
+			internal TState SourceState { get; set; }
 		}
 	}
 }

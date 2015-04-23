@@ -81,8 +81,8 @@ namespace Microsoft.VisualStudio.Threading {
 				// We do not have access to the dictionary's true capacity or growth
 				// method, so we improvise with our own.
 				// So attempt to make room for the upcoming add before we do it.
-				if (this.dictionary.Count == this.capacity && !ContainsKey(key)) {
-					Scavenge();
+				if (this.dictionary.Count == this.capacity && !this.ContainsKey(key)) {
+					this.Scavenge();
 
 					// If that didn't do anything, raise the capacity at which 
 					// we next scavenge. Note that we never shrink, but neither
@@ -104,7 +104,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </remarks>
 		public bool ContainsKey(TKey key) {
 			TValue value;
-			bool contained = TryGetValue(key, out value);
+			bool contained = this.TryGetValue(key, out value);
 			return contained;
 		}
 

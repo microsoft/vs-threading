@@ -122,7 +122,7 @@ namespace Microsoft.VisualStudio.Threading {
 			Requires.NotNull(waitTask, nameof(waitTask));
 
 			return waitTask.IsCompleted
-				? (waitTask.Result ? this.uncontestedReleaser : canceledReleaser) // uncontested lock
+				? (waitTask.Result ? this.uncontestedReleaser : this.canceledReleaser) // uncontested lock
 				: waitTask.ContinueWith(
 					(waiter, state) => {
 						if (waiter.IsCanceled || !waiter.Result) {
@@ -159,8 +159,9 @@ namespace Microsoft.VisualStudio.Threading {
 			/// Releases the lock.
 			/// </summary>
 			public void Dispose() {
-				if (this.toRelease != null)
+				if (this.toRelease != null) {
 					this.toRelease.semaphore.Release();
+				}
 			}
 		}
 	}

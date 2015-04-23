@@ -570,7 +570,6 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <summary>
 			/// Adds a dequeuer to this instance.
 			/// </summary>
-			/// <param name="dequeuer"></param>
 			internal void AddCompletionSource(TaskCompletionSource<T> dequeuer) {
 				Requires.NotNull(dequeuer, nameof(dequeuer));
 				if (this.completionSources == null) {

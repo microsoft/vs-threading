@@ -9,6 +9,7 @@ namespace Microsoft.VisualStudio.Threading {
 	using System.Collections;
 	using System.Collections.Generic;
 	using System.Diagnostics;
+	using System.Diagnostics.CodeAnalysis;
 	using System.Globalization;
 	using System.Linq;
 	using System.Reflection;
@@ -268,7 +269,6 @@ namespace Microsoft.VisualStudio.Threading {
 		/// Implementations should take care that exceptions from faulted or canceled tasks
 		/// not be thrown back to the caller.
 		/// </remarks>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.GC.Collect")]
 		protected virtual void WaitSynchronouslyCore(Task task) {
 			Requires.NotNull(task, nameof(task));
 			int hangTimeoutsCount = 0; // useful for debugging dump files to see how many times we looped.
@@ -347,7 +347,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
 		/// <para>See the <see cref="Run(Func{Task})" /> overload documentation for an example.</para>
 		/// </remarks>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
+		[SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
 		public T Run<T>(Func<Task<T>> asyncMethod) {
 			VerifyNoNonConcurrentSyncContext();
 			var joinable = this.RunAsync(asyncMethod, synchronouslyBlocking: true);
@@ -388,7 +388,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="asyncMethod">The asynchronous method to execute.</param>
 		/// <param name="synchronouslyBlocking">A value indicating whether the launching thread will synchronously block for this job's completion.</param>
 		/// <param name="entrypointOverride">The entry method's info for diagnostics.</param>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+		[SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
 		private JoinableTask RunAsync(Func<Task> asyncMethod, bool synchronouslyBlocking, Delegate entrypointOverride = null) {
 			Requires.NotNull(asyncMethod, nameof(asyncMethod));
 
@@ -428,23 +428,21 @@ namespace Microsoft.VisualStudio.Threading {
 			return this.RunAsync(asyncMethod, synchronouslyBlocking: false);
 		}
 
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-		private JoinableTask<T> RunAsync<T>(Func<Task<T>> asyncMethod, bool synchronouslyBlocking) {
-			Requires.NotNull(asyncMethod, nameof(asyncMethod));
+		internal void Post(SendOrPostCallback callback, object state, bool mainThreadAffinitized) {
+			Requires.NotNull(callback, nameof(callback));
 
-			var job = new JoinableTask<T>(this, synchronouslyBlocking, asyncMethod);
-			using (var framework = new RunFramework(this, job)) {
-				Task<T> asyncMethodResult;
-				try {
-					asyncMethodResult = asyncMethod();
-				} catch (Exception ex) {
-					var tcs = new TaskCompletionSource<T>();
-					tcs.SetException(ex);
-					asyncMethodResult = tcs.Task;
+			if (mainThreadAffinitized) {
+				var transient = this.RunAsync(delegate {
+					this.Context.AmbientTask.Post(callback, state, true);
+					return TplExtensions.CompletedTask;
+				});
+
+				if (transient.Task.IsFaulted) {
+					// rethrow the exception.
+					transient.Task.GetAwaiter().GetResult();
 				}
-
-				framework.SetResult(asyncMethodResult);
-				return job;
+			} else {
+				ThreadPool.QueueUserWorkItem(new WaitCallback(callback), state);
 			}
 		}
 
@@ -481,10 +479,30 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 		}
 
+		[SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+		private JoinableTask<T> RunAsync<T>(Func<Task<T>> asyncMethod, bool synchronouslyBlocking) {
+			Requires.NotNull(asyncMethod, nameof(asyncMethod));
+
+			var job = new JoinableTask<T>(this, synchronouslyBlocking, asyncMethod);
+			using (var framework = new RunFramework(this, job)) {
+				Task<T> asyncMethodResult;
+				try {
+					asyncMethodResult = asyncMethod();
+				} catch (Exception ex) {
+					var tcs = new TaskCompletionSource<T>();
+					tcs.SetException(ex);
+					asyncMethodResult = tcs.Task;
+				}
+
+				framework.SetResult(asyncMethodResult);
+				return job;
+			}
+		}
+
 		/// <summary>
 		/// An awaitable struct that facilitates an asynchronous transition to the Main thread.
 		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
+		[SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible"), SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
 		public struct MainThreadAwaitable {
 			private readonly JoinableTaskFactory jobFactory;
 
@@ -509,7 +527,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <summary>
 			/// Gets the awaiter.
 			/// </summary>
-			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
+			[SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
 			public MainThreadAwaiter GetAwaiter() {
 				return new MainThreadAwaiter(this.jobFactory, this.job, this.cancellationToken, this.alwaysYield);
 			}
@@ -518,7 +536,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// An awaiter struct that facilitates an asynchronous transition to the Main thread.
 		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
+		[SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
 		public struct MainThreadAwaiter : INotifyCompletion {
 			private readonly JoinableTaskFactory jobFactory;
 
@@ -555,7 +573,7 @@ namespace Microsoft.VisualStudio.Threading {
 				this.alwaysYield = alwaysYield;
 
 				// Don't allocate the pointer if the cancellation token can't be canceled:
-				this.cancellationRegistrationPtr = (cancellationToken.CanBeCanceled)
+				this.cancellationRegistrationPtr = cancellationToken.CanBeCanceled
 					? new StrongBox<CancellationTokenRegistration?>()
 					: null;
 			}
@@ -579,7 +597,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// Schedules a continuation for execution on the Main thread.
 			/// </summary>
 			/// <param name="continuation">The action to invoke when the operation completes.</param>
-			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters", MessageId = "System.Environment.FailFast(System.String,System.Exception)"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+			[SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters", MessageId = "System.Environment.FailFast(System.String,System.Exception)"), SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Justification = "Failing here is worth crashing the process for.")]
 			public void OnCompleted(Action continuation) {
 				Assumes.True(this.jobFactory != null);
 
@@ -736,24 +754,6 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 		}
 
-		internal void Post(SendOrPostCallback callback, object state, bool mainThreadAffinitized) {
-			Requires.NotNull(callback, nameof(callback));
-
-			if (mainThreadAffinitized) {
-				var transient = this.RunAsync(delegate {
-					this.Context.AmbientTask.Post(callback, state, true);
-					return TplExtensions.CompletedTask;
-				});
-
-				if (transient.Task.IsFaulted) {
-					// rethrow the exception.
-					transient.Task.GetAwaiter().GetResult();
-				}
-			} else {
-				ThreadPool.QueueUserWorkItem(new WaitCallback(callback), state);
-			}
-		}
-
 		/// <summary>
 		/// A delegate wrapper that ensures the delegate is only invoked at most once.
 		/// </summary>
@@ -762,12 +762,12 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <summary>
 			/// Executes the delegate if it has not already executed.
 			/// </summary>
-			internal static SendOrPostCallback ExecuteOnce = state => ((SingleExecuteProtector)state).TryExecute();
+			internal static readonly SendOrPostCallback ExecuteOnce = state => ((SingleExecuteProtector)state).TryExecute();
 
 			/// <summary>
 			/// Executes the delegate if it has not already executed.
 			/// </summary>
-			internal static WaitCallback ExecuteOnceWaitCallback = state => ((SingleExecuteProtector)state).TryExecute();
+			internal static readonly WaitCallback ExecuteOnceWaitCallback = state => ((SingleExecuteProtector)state).TryExecute();
 
 			/// <summary>
 			/// The job that created this wrapper.
@@ -801,6 +801,24 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			/// <summary>
+			/// Gets a value indicating whether this instance has already executed.
+			/// </summary>
+			internal bool HasBeenExecuted {
+				get { return this.invokeDelegate == null; }
+			}
+
+			/// <summary>
+			/// Gets a string that describes the delegate that this instance invokes.
+			/// FOR DIAGNOSTIC PURPOSES ONLY.
+			/// </summary>
+			[SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Justification = "Used in DebuggerDisplay attributes.")]
+			internal string DelegateLabel {
+				get {
+					return this.WalkAsyncReturnStackFrames().First(); // Top frame of the return callstack.
+				}
+			}
+
+			/// <summary>
 			/// Registers for a callback when this instance is executed.
 			/// </summary>
 			internal void AddExecutingCallback(JoinableTask.ExecutionQueue callbackReceiver) {
@@ -814,24 +832,6 @@ namespace Microsoft.VisualStudio.Threading {
 			/// </summary>
 			internal void RemoveExecutingCallback(JoinableTask.ExecutionQueue callbackReceiver) {
 				this.executingCallbacks.Remove(callbackReceiver);
-			}
-
-			/// <summary>
-			/// Gets a value indicating whether this instance has already executed.
-			/// </summary>
-			internal bool HasBeenExecuted {
-				get { return this.invokeDelegate == null; }
-			}
-
-			/// <summary>
-			/// Gets a string that describes the delegate that this instance invokes.
-			/// FOR DIAGNOSTIC PURPOSES ONLY.
-			/// </summary>
-			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Justification = "Used in DebuggerDisplay attributes.")]
-			internal string DelegateLabel {
-				get {
-					return this.WalkAsyncReturnStackFrames().First(); // Top frame of the return callstack.
-				}
 			}
 
 			/// <summary>

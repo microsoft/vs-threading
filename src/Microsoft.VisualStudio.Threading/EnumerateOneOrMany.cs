@@ -76,17 +76,17 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
-		/// Disposes this enumerator.
-		/// </summary>
-		public void Dispose() {
-			this.enumerator.Dispose();
-		}
-
-		/// <summary>
 		/// Gets the current value.
 		/// </summary>
 		object System.Collections.IEnumerator.Current {
 			get { return this.Current; }
+		}
+
+		/// <summary>
+		/// Disposes this enumerator.
+		/// </summary>
+		public void Dispose() {
+			this.enumerator.Dispose();
 		}
 
 		/// <summary>

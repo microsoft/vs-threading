@@ -35,13 +35,13 @@ namespace Microsoft.VisualStudio.Threading {
 			do {
 				T oldValue = Volatile.Read(ref hotLocation);
 				T newValue = applyChange(oldValue);
-				if (Object.ReferenceEquals(oldValue, newValue)) {
+				if (object.ReferenceEquals(oldValue, newValue)) {
 					// No change was actually required.
 					return false;
 				}
 
 				T actualOldValue = Interlocked.CompareExchange<T>(ref hotLocation, newValue, oldValue);
-				successful = Object.ReferenceEquals(oldValue, actualOldValue);
+				successful = object.ReferenceEquals(oldValue, actualOldValue);
 			}
 			while (!successful);
 

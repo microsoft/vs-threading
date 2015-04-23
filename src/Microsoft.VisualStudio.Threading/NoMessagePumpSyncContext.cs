@@ -16,7 +16,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// A shared singleton.
 		/// </summary>
-		private static SynchronizationContext DefaultInstance = new NoMessagePumpSyncContext();
+		private static readonly SynchronizationContext DefaultInstance = new NoMessagePumpSyncContext();
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="NoMessagePumpSyncContext"/> class.
