@@ -647,62 +647,62 @@ namespace Microsoft.VisualStudio.Threading {
 			JoinableTask priorCompletingTask = completingTask.Value;
 			completingTask.Value = this;
 			try {
-				bool onMainThread = false;
-				var additionalFlags = JoinableTaskFlags.CompletingSynchronously;
-				if (this.owner.Context.MainThread == Thread.CurrentThread) {
-					additionalFlags |= JoinableTaskFlags.SynchronouslyBlockingMainThread;
-					onMainThread = true;
-				}
-
-				if (ThreadingEventSource.Instance.IsEnabled())
-				{
-					ThreadingEventSource.Instance.CompleteOnCurrentThreadStart(this.GetHashCode(), onMainThread);
-				}
-
-				this.AddStateFlags(additionalFlags);
-
-				using (NoMessagePumpSyncContext.Default.Apply()) {
-					lock (this.owner.Context.SyncContextLock) {
-						this.pendingEventCount = 0;
-
-						// Add the task to the depending tracking list of itself, so it will monitor the event queue.
-						this.pendingEventSource = new WeakReference<JoinableTask>(this.AddDependingSynchronousTask(this, ref this.pendingEventCount));
+				if (!this.IsCompleteRequested) {
+					bool onMainThread = false;
+					var additionalFlags = JoinableTaskFlags.CompletingSynchronously;
+					if (this.owner.Context.MainThread == Thread.CurrentThread) {
+						additionalFlags |= JoinableTaskFlags.SynchronouslyBlockingMainThread;
+						onMainThread = true;
 					}
-				}
 
-				if (onMainThread) {
-					this.owner.Context.OnJoinableTaskSynchronouslyBlockingMainThread(this);
-				}
-
-				try {
-					// Don't use IsCompleted as the condition because that
-					// includes queues of posted work that don't have to complete for the
-					// JoinableTask to be ready to return from the JTF.Run method.
-					HashSet<JoinableTask> visited = null;
-					while (!this.IsCompleteRequested) {
-						SingleExecuteProtector work;
-						Task tryAgainAfter;
-						if (this.TryDequeueSelfOrDependencies(onMainThread, ref visited, out work, out tryAgainAfter)) {
-							work.TryExecute();
-						} else if (tryAgainAfter != null) {
-							ThreadingEventSource.Instance.WaitSynchronouslyStart();
-							this.owner.WaitSynchronously(tryAgainAfter);
-							ThreadingEventSource.Instance.WaitSynchronouslyStop();
-							Assumes.True(tryAgainAfter.IsCompleted);
-						}
+					if (ThreadingEventSource.Instance.IsEnabled()) {
+						ThreadingEventSource.Instance.CompleteOnCurrentThreadStart(this.GetHashCode(), onMainThread);
 					}
-				} finally {
+
+					this.AddStateFlags(additionalFlags);
+
 					using (NoMessagePumpSyncContext.Default.Apply()) {
 						lock (this.owner.Context.SyncContextLock) {
-							// Remove itself from the tracking list, after the task is completed.
-							this.RemoveDependingSynchronousTask(this, true);
+							this.pendingEventCount = 0;
+
+							// Add the task to the depending tracking list of itself, so it will monitor the event queue.
+							this.pendingEventSource = new WeakReference<JoinableTask>(this.AddDependingSynchronousTask(this, ref this.pendingEventCount));
 						}
 					}
-				}
 
-				if (ThreadingEventSource.Instance.IsEnabled())
-				{
-					ThreadingEventSource.Instance.CompleteOnCurrentThreadStop(this.GetHashCode());
+					if (onMainThread) {
+						this.owner.Context.OnJoinableTaskSynchronouslyBlockingMainThread(this);
+					}
+
+					try {
+						// Don't use IsCompleted as the condition because that
+						// includes queues of posted work that don't have to complete for the
+						// JoinableTask to be ready to return from the JTF.Run method.
+						HashSet<JoinableTask> visited = null;
+						while (!this.IsCompleteRequested) {
+							SingleExecuteProtector work;
+							Task tryAgainAfter;
+							if (this.TryDequeueSelfOrDependencies(onMainThread, ref visited, out work, out tryAgainAfter)) {
+								work.TryExecute();
+							} else if (tryAgainAfter != null) {
+								ThreadingEventSource.Instance.WaitSynchronouslyStart();
+								this.owner.WaitSynchronously(tryAgainAfter);
+								ThreadingEventSource.Instance.WaitSynchronouslyStop();
+								Assumes.True(tryAgainAfter.IsCompleted);
+							}
+						}
+					} finally {
+						using (NoMessagePumpSyncContext.Default.Apply()) {
+							lock (this.owner.Context.SyncContextLock) {
+								// Remove itself from the tracking list, after the task is completed.
+								this.RemoveDependingSynchronousTask(this, true);
+							}
+						}
+					}
+
+					if (ThreadingEventSource.Instance.IsEnabled()) {
+						ThreadingEventSource.Instance.CompleteOnCurrentThreadStop(this.GetHashCode());
+					}
 				}
 
 				Assumes.True(this.Task.IsCompleted);
