@@ -1,8 +1,8 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="InternalUtilities.cs" company="Microsoft">
-//     Copyright (c) Microsoft. All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿/********************************************************
+*                                                        *
+*   © Copyright (C) Microsoft. All rights reserved.      *
+*                                                        *
+*********************************************************/
 
 namespace Microsoft.VisualStudio.Threading {
 	using System;

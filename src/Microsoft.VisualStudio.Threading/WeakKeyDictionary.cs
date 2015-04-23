@@ -1,9 +1,8 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="WeakKeyDictionary.cs" company="Microsoft">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-// <summary>Dictionary that does not prevent keys from being garbage collected.</summary>
-//-----------------------------------------------------------------------
+﻿/********************************************************
+*                                                        *
+*   © Copyright (C) Microsoft. All rights reserved.      *
+*                                                        *
+*********************************************************/
 
 namespace Microsoft.VisualStudio.Threading {
 	using System;

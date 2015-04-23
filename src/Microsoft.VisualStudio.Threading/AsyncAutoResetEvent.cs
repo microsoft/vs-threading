@@ -1,4 +1,10 @@
-﻿namespace Microsoft.VisualStudio.Threading {
+﻿/********************************************************
+*                                                        *
+*   © Copyright (C) Microsoft. All rights reserved.      *
+*                                                        *
+*********************************************************/
+
+namespace Microsoft.VisualStudio.Threading {
 	using System;
 	using System.Collections.Generic;
 	using System.Diagnostics;
@@ -135,7 +141,7 @@
 		/// </summary>
 		private class WaiterCompletionSource : TaskCompletionSource<EmptyStruct> {
 			/// <summary>
-			/// Initializes a new instance of the <see cref="WaiterCompletionSource"/> struct.
+			/// Initializes a new instance of the <see cref="WaiterCompletionSource"/> class.
 			/// </summary>
 			/// <param name="owner">The event that is initializing this value.</param>
 			/// <param name="cancellationToken">The cancellation token associated with the waiter.</param>
