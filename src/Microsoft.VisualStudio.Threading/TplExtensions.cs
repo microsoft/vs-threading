@@ -559,7 +559,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// <summary>
 			/// Gets the awaiter.
 			/// </summary>
-			/// <returns></returns>
+			/// <returns>The awaiter.</returns>
 			[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
 			public NoThrowTaskAwaiter GetAwaiter() {
 				return new NoThrowTaskAwaiter(this.task, this.captureContext);
