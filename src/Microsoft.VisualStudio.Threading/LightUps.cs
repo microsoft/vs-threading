@@ -109,8 +109,8 @@ namespace Microsoft.VisualStudio.Threading {
 				var methodInfo = typeof(TaskCompletionSource<T>).GetMethod(nameof(TaskCompletionSource<int>.TrySetCanceled), new Type[] { typeof(CancellationToken) });
 				TrySetCanceled = (Func<TaskCompletionSource<T>, CancellationToken, bool>)Delegate.CreateDelegate(typeof(Func<TaskCompletionSource<T>, CancellationToken, bool>), methodInfo);
 
-				BclAsyncLocalType = LightUps.BclAsyncLocalType?.MakeGenericType(typeof(T));
-				if (BclAsyncLocalType != null) {
+				if (LightUps.BclAsyncLocalType != null) {
+					BclAsyncLocalType = LightUps.BclAsyncLocalType.MakeGenericType(typeof(T));
 					BclAsyncLocalCtor = BclAsyncLocalType.GetConstructor(LightUps.EmptyTypeArray);
 					BclAsyncLocalValueProperty = BclAsyncLocalType.GetProperty("Value");
 					IsAsyncLocalSupported = true;

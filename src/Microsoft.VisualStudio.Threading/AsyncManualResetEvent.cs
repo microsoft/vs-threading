@@ -88,7 +88,7 @@
 		/// Returns a task that will be completed when this event is set.
 		/// </summary>
 		public Task WaitAsync() {
-			lock (this) {
+			lock (this.syncObject) {
 				return this.taskCompletionSource.Task;
 			}
 		}
@@ -138,7 +138,7 @@
 		/// Resets this event to a state that will block callers of <see cref="WaitAsync"/>.
 		/// </summary>
 		public void Reset() {
-			lock (this) {
+			lock (this.syncObject) {
 				if (this.isSet) {
 					this.taskCompletionSource = this.CreateTaskSource();
 					this.isSet = false;
