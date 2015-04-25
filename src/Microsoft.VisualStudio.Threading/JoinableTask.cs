@@ -516,7 +516,7 @@ namespace Microsoft.VisualStudio.Threading {
 				// Notify tasks which can process the event queue.
 				if (eventsNeedNotify != null) {
 					foreach (var queueEvent in eventsNeedNotify) {
-						queueEvent.PulseAllAsync().Forget();
+						queueEvent.PulseAll();
 					}
 				}
 
@@ -532,7 +532,7 @@ namespace Microsoft.VisualStudio.Threading {
 						if (nestingFactory != this.owner) {
 							nestingFactory.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
 						}
-					}
+				}
 				}
 			}
 		}
@@ -599,7 +599,7 @@ namespace Microsoft.VisualStudio.Threading {
 
 				if (queueNeedProcessEvent != null) {
 					// We explicitly do this outside our lock.
-					queueNeedProcessEvent.PulseAllAsync().Forget();
+					queueNeedProcessEvent.PulseAll();
 				}
 			}
 		}
@@ -881,7 +881,7 @@ namespace Microsoft.VisualStudio.Threading {
 				// We explicitly do this outside our lock.
 				if (eventsNeedNotify != null) {
 					foreach (var queueEvent in eventsNeedNotify) {
-						queueEvent.PulseAllAsync().Forget();
+						queueEvent.PulseAll();
 					}
 				}
 

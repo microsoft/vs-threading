@@ -21,7 +21,7 @@
 		private const char WriteChar = 'W';
 
 		private const int GCAllocationAttempts = 3;
-		private const int MaxGarbagePerLock = 165;
+		private const int MaxGarbagePerLock = 300;
 		private const int MaxGarbagePerYield = 1000;
 
 		private AsyncReaderWriterLock asyncLock;
@@ -1068,11 +1068,11 @@
 				using (var innerReleaser = await asyncLock.WriteLockAsync()) {
 					await Task.WhenAny(onExclusiveLockReleasedBegun.WaitAsync(), Task.Delay(AsyncDelay));
 					await innerReleaser.ReleaseAsync();
-					await innerLockReleased.SetAsync();
+					innerLockReleased.Set();
 				}
 			};
 			asyncLock.OnExclusiveLockReleasedAsyncDelegate = async delegate {
-				await onExclusiveLockReleasedBegun.SetAsync();
+				onExclusiveLockReleasedBegun.Set();
 				await innerLockReleased;
 			};
 			using (var releaser = await asyncLock.WriteLockAsync()) {
@@ -1213,7 +1213,7 @@
 				}
 
 				// Synchronously block until the test is complete.
-				await firstLockReleased.SetAsync();
+				firstLockReleased.Set();
 				Assert.IsTrue(testComplete.Wait(AsyncDelay));
 			});
 
@@ -1483,7 +1483,7 @@
 				}
 
 				// Synchronously block until the test is complete.
-				await firstLockReleased.SetAsync();
+				firstLockReleased.Set();
 				Assert.IsTrue(testComplete.Wait(AsyncDelay));
 			});
 
@@ -2954,7 +2954,7 @@
 				Task readerTask;
 				using (var access = await this.asyncLock.WriteLockAsync()) {
 					asyncLock.OnExclusiveLockReleasedAsyncDelegate = async delegate {
-						await writeLockCallbackBegun.SetAsync();
+						writeLockCallbackBegun.Set();
 
 						// Stay in the critical region until the read lock has been released.
 						await readLockReleased;
@@ -2967,7 +2967,7 @@
 					readerTask = Task.Run(async delegate {
 						try {
 							using (await this.asyncLock.ReadLockAsync()) {
-								await readLockAcquired.SetAsync();
+								readLockAcquired.Set();
 
 								// Hold the read lock until the lock class has entered the
 								// critical region called reenterConcurrencyPrep.
@@ -2978,8 +2978,8 @@
 							// (if a bug causes the read lock release call to throw and the lock gets
 							// orphaned), but we want to avoid a deadlock in the test itself.
 							// If an exception was thrown, the test will still fail because we rethrow it.
-							readLockAcquired.SetAsync().Forget();
-							readLockReleased.SetAsync().Forget();
+							readLockAcquired.Set();
+							readLockReleased.Set();
 						}
 					});
 
@@ -3004,7 +3004,7 @@
 				Task writeLockReleaseTask;
 				var writerLock = await this.asyncLock.WriteLockAsync();
 				asyncLock.OnExclusiveLockReleasedAsyncDelegate = async delegate {
-					await writeLockCallbackBegun.SetAsync();
+					writeLockCallbackBegun.Set();
 
 					// Stay in the critical region until the read lock has been released.
 					await readLockReleased;
@@ -3033,7 +3033,7 @@
 				// The rest of this never executes, but serves to illustrate the anti-pattern that lock users
 				// may try to use, that this test verifies the lock detects and throws exceptions about.
 				await readerLock.ReleaseAsync();
-				await readLockReleased.SetAsync();
+				readLockReleased.Set();
 				await writerLock.ReleaseAsync();
 
 				// Wait for, and rethrow any exceptions from our child task.
@@ -3090,7 +3090,7 @@
 				helperTask = this.DisposeWhileExclusiveLockContextCaptured_HelperAsync(signal);
 			}
 
-			await signal.SetAsync();
+			signal.Set();
 			this.asyncLock.Dispose();
 			await helperTask;
 		}
@@ -3147,12 +3147,12 @@
 						writeWaiter.GetResult().Dispose();
 					});
 					this.PrintHangReport();
-					await hangReportComplete.SetAsync();
+					hangReportComplete.Set();
 				}
 			});
 			using (var lock1 = await this.asyncLock.ReadLockAsync()) {
 				using (var lock2 = await this.asyncLock.ReadLockAsync()) {
-					await readLockObtained.SetAsync();
+					readLockObtained.Set();
 					await hangReportComplete;
 				}
 			}
@@ -3225,7 +3225,7 @@
 
 					long memory2 = GC.GetTotalMemory(false);
 					long allocated = (memory2 - memory1) / iterations;
-					long allowed = MaxGarbagePerLock + (yieldingLock ? MaxGarbagePerYield : 0);
+					long allowed = 100 + MaxGarbagePerLock + (yieldingLock ? MaxGarbagePerYield : 0);
 					this.TestContext.WriteLine("Allocated bytes: {0} ({1} allowed)", allocated, allowed);
 					passingAttemptObserved = allocated <= allowed;
 				}

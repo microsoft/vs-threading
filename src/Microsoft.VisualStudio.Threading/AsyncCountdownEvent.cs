@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.VisualStudio.Threading {
 	using System;
 	using System.Collections.Generic;
+	using System.ComponentModel;
 	using System.Linq;
 	using System.Text;
 	using System.Threading;
@@ -41,14 +42,40 @@
 		/// <summary>
 		/// Decrements the counter by one.
 		/// </summary>
-		public Task SignalAsync() {
+		/// <returns>
+		/// A task that completes when the signal has been set if this call causes the count to reach zero.
+		/// If the count is not zero, a completed task is returned.
+		/// </returns>
+		/// <remarks>
+		/// <para>
+		/// On .NET versions prior to 4.6:
+		/// This method may return before the signal set has propagated.
+		/// The returned task completes when the signal has definitely been set.
+		/// </para>
+		/// <para>
+		/// On .NET 4.6 and later:
+		/// This method is not asynchronous. The returned Task is always completed.
+		/// </para>
+		/// </remarks>
+		[Obsolete("Use Signal() instead."), EditorBrowsable(EditorBrowsableState.Never)]
+		public async Task SignalAsync() {
 			int newCount = Interlocked.Decrement(ref this.remainingCount);
 			if (newCount == 0) {
-				return this.manualEvent.SetAsync();
+				await this.manualEvent.SetAsync().ConfigureAwait(false);
 			} else if (newCount < 0) {
-				return ThreadingTools.CreateFaultedTask(new InvalidOperationException());
-			} else {
-				return TplExtensions.CompletedTask;
+				throw new InvalidOperationException();
+			}
+		}
+
+		/// <summary>
+		/// Decrements the counter by one.
+		/// </summary>
+		public void Signal() {
+			int newCount = Interlocked.Decrement(ref this.remainingCount);
+			if (newCount == 0) {
+				this.manualEvent.Set();
+			} else if (newCount < 0) {
+				throw new InvalidOperationException();
 			}
 		}
 
@@ -56,8 +83,14 @@
 		/// Decrements the counter by one and returns an awaitable that executes the continuation when the countdown reaches zero.
 		/// </summary>
 		/// <returns>An awaitable.</returns>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
 		public Task SignalAndWaitAsync() {
-			return Task.WhenAll(this.SignalAsync(), this.WaitAsync());
+			try {
+				this.Signal();
+				return this.WaitAsync();
+			} catch (Exception ex) {
+				return ThreadingTools.TaskFromException(ex);
+			}
 		}
 	}
 }

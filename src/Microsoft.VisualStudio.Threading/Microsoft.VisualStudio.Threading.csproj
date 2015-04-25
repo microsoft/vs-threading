@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), EnlistmentInfo.props))\EnlistmentInfo.props" Condition=" '$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), EnlistmentInfo.props))' != '' " />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -10,6 +10,7 @@
     <RootNamespace>Microsoft.VisualStudio.Threading</RootNamespace>
     <AssemblyName>Microsoft.VisualStudio.Threading</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DefineConstants>DEBUG;TRACE</DefineConstants>
@@ -31,6 +32,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -72,6 +74,7 @@
     <Compile Include="JoinableTaskContextNode.cs" />
     <Compile Include="JoinableTaskFactory.cs" />
     <Compile Include="JoinableTask`1.cs" />
+    <Compile Include="LightUps.cs" />
     <Compile Include="ListOfOftenOne.cs" />
     <Compile Include="NativeMethods.cs" />
     <Compile Include="NoMessagePumpSyncContext.cs" />
@@ -82,6 +85,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
+    <Compile Include="TaskCompletionSourceWithoutInlining.cs" />
     <Compile Include="ThreadingEventSource.cs" />
     <Compile Include="TplExtensions.cs" />
     <Compile Include="ThreadingTools.cs" />

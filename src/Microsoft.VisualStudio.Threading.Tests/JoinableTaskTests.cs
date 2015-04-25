@@ -127,7 +127,7 @@
 
 				return TplExtensions.CompletedTask;
 			});
-			outerTaskCompleted.SetAsync();
+			outerTaskCompleted.Set();
 
 			innerTask.ContinueWith(_ => frame.Continue = false);
 
@@ -705,7 +705,7 @@
 					await this.asyncPump.SwitchToMainThreadAsync()
 						.GetAwaiter().YieldAndNotify(dependentWork1Queued);
 
-					await dependentWork1Finished.SetAsync();
+					dependentWork1Finished.Set();
 				});
 
 				task2 = this.asyncPump.RunAsync(async delegate {
@@ -716,11 +716,11 @@
 					await this.asyncPump.SwitchToMainThreadAsync()
 						.GetAwaiter().YieldAndNotify(dependentWork2Queued);
 
-					await dependentWork2Finished.SetAsync();
+					dependentWork2Finished.Set();
 					await testEnded;
 				});
 
-				await taskStarted.SetAsync();
+				taskStarted.Set();
 				await testEnded;
 			});
 
@@ -736,7 +736,7 @@
 				await dependentWork1Finished;
 				await dependentWork2Finished;
 
-				await testEnded.SetAsync();
+				testEnded.Set();
 			});
 
 			this.asyncPump.Run(async delegate {
@@ -766,7 +766,7 @@
 					await factory.SwitchToMainThreadAsync()
 						.GetAwaiter().YieldAndNotify(dependentWorkQueued);
 
-					await dependentWorkFinished.SetAsync();
+					dependentWorkFinished.Set();
 				});
 
 				task2 = this.asyncPump.RunAsync(async delegate {
@@ -781,24 +781,24 @@
 					await testEnded;
 				});
 
-				await taskStarted.SetAsync();
+				taskStarted.Set();
 				await testEnded;
 			});
 
 			this.asyncPump.Run(async delegate {
 				await taskStarted;
-				await dependentWorkAllowed.SetAsync();
+				dependentWorkAllowed.Set();
 				await dependentWorkQueued;
 
 				var collection = new JoinableTaskCollection(this.joinableCollection.Context);
 				collection.Add(task2);
 
 				collection.Join();
-				await indirectDependencyAllowed.SetAsync();
+				indirectDependencyAllowed.Set();
 
 				await dependentWorkFinished;
 
-				await testEnded.SetAsync();
+				testEnded.Set();
 			});
 
 			this.asyncPump.Run(async delegate {
@@ -824,14 +824,14 @@
 					await this.asyncPump.SwitchToMainThreadAsync();
 					await TaskScheduler.Default;
 
-					await dependentFirstWorkCompleted.SetAsync();
+					dependentFirstWorkCompleted.Set();
 					await dependentSecondWorkAllowed;
 
 					await this.asyncPump.SwitchToMainThreadAsync()
 						.GetAwaiter().YieldAndNotify(mainThreadDependentSecondWorkQueued);
 				});
 
-				await taskStarted.SetAsync();
+				taskStarted.Set();
 				await testEnded;
 			});
 
@@ -850,7 +850,7 @@
 					await dependentFirstWorkCompleted;
 				}
 
-				await dependentSecondWorkAllowed.SetAsync();
+				dependentSecondWorkAllowed.Set();
 				await mainThreadDependentSecondWorkQueued;
 
 				await Task.Delay(AsyncDelay);
@@ -858,7 +858,7 @@
 
 				Assert.IsFalse(task1.IsCompleted);
 
-				await testEnded.SetAsync();
+				testEnded.Set();
 			});
 
 			this.asyncPump.Run(async delegate {
@@ -883,7 +883,7 @@
 					await this.asyncPump.SwitchToMainThreadAsync();
 					await TaskScheduler.Default;
 
-					await dependentFirstWorkCompleted.SetAsync();
+					dependentFirstWorkCompleted.Set();
 					await dependentSecondWorkAllowed;
 
 					await this.asyncPump.SwitchToMainThreadAsync()
@@ -906,7 +906,7 @@
 					}
 				});
 
-				await taskStarted.SetAsync();
+				taskStarted.Set();
 				await testEnded;
 			});
 
@@ -923,7 +923,7 @@
 				}
 
 				int waitCountBeforeSecondWork = waitCountingJTF.WaitCount;
-				await dependentSecondWorkAllowed.SetAsync();
+				dependentSecondWorkAllowed.Set();
 				await Task.Delay(AsyncDelay / 2);
 				await mainThreadDependentSecondWorkQueued;
 
@@ -934,7 +934,7 @@
 				Assert.IsTrue(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
 				Assert.IsFalse(task1.IsCompleted);
 
-				await testEnded.SetAsync();
+				testEnded.Set();
 			});
 
 			this.asyncPump.Run(async delegate {
@@ -972,19 +972,19 @@
 					var collection = new JoinableTaskCollection(this.joinableCollection.Context);
 					collection.Add(task2);
 					using (collection.Join()) {
-						await task1Prepared.SetAsync();
+						task1Prepared.Set();
 
 						await this.asyncPump.SwitchToMainThreadAsync()
 							.GetAwaiter().YieldAndNotify(mainThreadDependentFirstWorkQueued);
 						await TaskScheduler.Default;
 
-						await dependentFirstWorkCompleted.SetAsync();
+						dependentFirstWorkCompleted.Set();
 
 						await dependentSecondWorkAllowed;
 						await this.asyncPump.SwitchToMainThreadAsync();
 						await TaskScheduler.Default;
 
-						await dependentSecondWorkCompleted.SetAsync();
+						dependentSecondWorkCompleted.Set();
 
 						await dependentThirdWorkAllowed;
 						await this.asyncPump.SwitchToMainThreadAsync()
@@ -998,19 +998,19 @@
 					var collection = new JoinableTaskCollection(this.joinableCollection.Context);
 					collection.Add(task1);
 					using (collection.Join()) {
-						await task2Prepared.SetAsync();
+						task2Prepared.Set();
 						await testEnded;
 					}
 				});
 
-				await taskStarted.SetAsync();
+				taskStarted.Set();
 				await testEnded;
 			});
 
 			var waitCountingJTF = new WaitCountingJoinableTaskFactory(this.asyncPump.Context);
 			waitCountingJTF.Run(async delegate {
 				await taskStarted;
-				await testStarted.SetAsync();
+				testStarted.Set();
 				await task1Prepared;
 				await task2Prepared;
 
@@ -1025,12 +1025,12 @@
 						await dependentFirstWorkCompleted;
 					}
 
-					await dependentSecondWorkAllowed.SetAsync();
+					dependentSecondWorkAllowed.Set();
 					await dependentSecondWorkCompleted;
 				}
 
 				int waitCountBeforeSecondWork = waitCountingJTF.WaitCount;
-				await dependentThirdWorkAllowed.SetAsync();
+				dependentThirdWorkAllowed.Set();
 
 				await Task.Delay(AsyncDelay / 2);
 				await mainThreadDependentThirdWorkQueued;
@@ -1042,7 +1042,7 @@
 				Assert.IsTrue(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
 				Assert.IsFalse(task1.IsCompleted);
 
-				await testEnded.SetAsync();
+				testEnded.Set();
 			});
 			
 			this.asyncPump.Run(async delegate {
@@ -1076,7 +1076,7 @@
 						await this.asyncPump.SwitchToMainThreadAsync();
 						await TaskScheduler.Default;
 
-						await dependentFirstWorkCompleted.SetAsync();
+						dependentFirstWorkCompleted.Set();
 						await dependentSecondWorkAllowed;
 
 						await this.asyncPump.SwitchToMainThreadAsync()
@@ -1088,7 +1088,7 @@
 					var collection = new JoinableTaskCollection(this.joinableCollection.Context);
 					collection.Add(task1);
 					using (collection.Join()) {
-						await task2Prepared.SetAsync();
+						task2Prepared.Set();
 						await testEnded;
 					}
 				});
@@ -1100,7 +1100,7 @@
 					collection.Add(task2);
 					collection.Add(task4);
 					using (collection.Join()) {
-						await task3Prepared.SetAsync();
+						task3Prepared.Set();
 						await testEnded;
 					}
 				});
@@ -1110,7 +1110,7 @@
 					collection.Add(task2);
 					collection.Add(task3);
 					using (collection.Join()) {
-						await task4Prepared.SetAsync();
+						task4Prepared.Set();
 						await testEnded;
 					}
 				});
@@ -1123,7 +1123,7 @@
 					}
 				});
 
-				await taskStarted.SetAsync();
+				taskStarted.Set();
 				await testEnded;
 			});
 
@@ -1142,7 +1142,7 @@
 				}
 
 				int waitCountBeforeSecondWork = waitCountingJTF.WaitCount;
-				await dependentSecondWorkAllowed.SetAsync();
+				dependentSecondWorkAllowed.Set();
 
 				await Task.Delay(AsyncDelay / 2);
 				await mainThreadDependentSecondWorkQueued;
@@ -1154,7 +1154,7 @@
 				Assert.IsTrue(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
 				Assert.IsFalse(task1.IsCompleted);
 
-				await testEnded.SetAsync();
+				testEnded.Set();
 			});
 
 			this.asyncPump.Run(async delegate {
@@ -1185,7 +1185,7 @@
 
 				// STEP 4
 				Assert.AreSame(this.originalThread, Thread.CurrentThread);
-				dependentWorkCompleted.SetAsync().Wait();
+				dependentWorkCompleted.Set();
 				await joinReverted.WaitAsync().ConfigureAwait(false);
 
 				// STEP 6
@@ -1209,7 +1209,7 @@
 				}
 
 				// STEP 5
-				await joinReverted.SetAsync();
+				joinReverted.Set();
 				var releasingTask = await Task.WhenAny(unrelatedTask, postJoinRevertedWorkQueued.WaitAsync());
 				if (releasingTask == unrelatedTask & unrelatedTask.IsFaulted) {
 					unrelatedTask.GetAwaiter().GetResult(); // rethrow an error that has already occurred.
@@ -1332,7 +1332,7 @@
 			});
 
 			this.asyncPump.Run(async delegate {
-				await mainThreadNowBlocking.SetAsync();
+				mainThreadNowBlocking.Set();
 				Assert.AreNotSame(task, await Task.WhenAny(task, Task.Delay(AsyncDelay / 2)));
 				using (this.joinableCollection.Join()) {
 					await task;
@@ -1397,7 +1397,7 @@
 			}).Task;
 
 			Assert.IsFalse(afterYieldReached);
-			backgroundThreadWorkDoneEvent.SetAsync().Forget();
+			backgroundThreadWorkDoneEvent.Set();
 			this.asyncPump.CompleteSynchronously(this.joinableCollection, task);
 			Assert.IsTrue(afterYieldReached);
 		}
@@ -1461,7 +1461,7 @@
 					var continuationFinished = new AsyncManualResetEvent();
 					awaiter.OnCompleted(delegate {
 						taskFinished = true;
-						continuationFinished.SetAsync().Forget();
+						continuationFinished.Set();
 					});
 					switchPended.Set();
 					await continuationFinished;
@@ -1495,7 +1495,7 @@
 			Assert.IsFalse(joinable.Task.IsCompleted);
 			this.asyncPump.Run(async delegate {
 				var awaitable = joinable.JoinAsync();
-				await joinedEvent.SetAsync();
+				joinedEvent.Set();
 				await awaitable;
 			});
 			Assert.IsTrue(taskFinished);
@@ -1577,7 +1577,7 @@
 							executed2 = true;
 						} finally {
 							// Allow the message pump to exit.
-							countdownEvent.SignalAsync();
+							countdownEvent.Signal();
 						}
 					}, state);
 					Assert.IsTrue(executed2);
@@ -1604,7 +1604,7 @@
 					Assert.IsTrue(executed4);
 				} finally {
 					// Allow the message pump to exit.
-					countdownEvent.SignalAsync();
+					countdownEvent.Signal();
 				}
 			});
 
@@ -1712,7 +1712,7 @@
 				return TplExtensions.CompletedTask;
 			});
 
-			mainThreadUnblocked.SetAsync();
+			mainThreadUnblocked.Set();
 
 			// The rest of this isn't strictly necessary for the hang, but it gets the test
 			// to wait till the background task has either succeeded, or failed.
@@ -1760,7 +1760,7 @@
 					frame.Continue = false;
 				});
 
-			runSynchronouslyExited.SetAsync();
+			runSynchronouslyExited.Set();
 			unblockMainThread.Wait();
 			Dispatcher.PushFrame(frame);
 			backgroundTask.GetAwaiter().GetResult(); // rethrow any exceptions
@@ -1857,7 +1857,7 @@
 
 			var joinable = this.asyncPump.RunAsync(async delegate {
 				await Task.Yield();
-				await firstYield.SetAsync();
+				firstYield.Set();
 				await startingJoin;
 				frame.Continue = false;
 			});
@@ -1865,7 +1865,7 @@
 			var forcingFactor = Task.Run(async delegate {
 				await this.asyncPump.SwitchToMainThreadAsync();
 				await firstYield;
-				await startingJoin.SetAsync();
+				startingJoin.Set();
 				joinable.Join();
 			});
 
@@ -1922,7 +1922,7 @@
 				});
 				syncContext.Post(
 					delegate {
-						delegateExecuted.SetAsync();
+						delegateExecuted.Set();
 					},
 					null);
 				await delegateExecuted;
@@ -1991,7 +1991,7 @@
 				});
 				return TplExtensions.CompletedTask;
 			});
-			outerFinished.SetAsync();
+			outerFinished.Set();
 			loPriSwitchPosted.WaitAsync().Wait();
 
 			// Verify that the loPriFactory received the message and hiPriFactory did not.
@@ -2031,7 +2031,7 @@
 				});
 				return TplExtensions.CompletedTask;
 			});
-			outerFinished.SetAsync();
+			outerFinished.Set();
 
 			// Verify that the loPriFactory received the message and hiPriFactory did not.
 			Assert.AreEqual(1, loPriFactory.JoinableTasksPendingMainthread.Count());
@@ -2430,7 +2430,7 @@
 				this.asyncPump.Run(delegate {
 					return TplExtensions.CompletedTask;
 				});
-			}, maxBytesAllocated: 245);
+			}, maxBytesAllocated: 500);
 		}
 
 		[TestMethod, Timeout(TestTimeout * 2), TestCategory("GC"), TestCategory("FailsInCloudTest")]
@@ -2441,7 +2441,7 @@
 				this.asyncPump.Run(delegate {
 					return completedTask;
 				});
-			}, maxBytesAllocated: 245);
+			}, maxBytesAllocated: 500);
 		}
 
 		[TestMethod, Timeout(TestTimeout * 2), TestCategory("GC"), TestCategory("FailsInCloudTest"), TestCategory("FailsInLocalBatch")]
@@ -2480,7 +2480,7 @@
 					await Task.Yield();
 				});
 
-				nestedWorkBegun.SetAsync();
+				nestedWorkBegun.Set();
 			});
 
 			asyncPump.Run(async delegate {
@@ -2968,7 +2968,7 @@
 					await this.dependentService.StopAsync(this.dependentTask);
 				}
 
-				await this.stopRequested.SetAsync();
+				this.stopRequested.Set();
 				using (this.joinableCollection.Join()) {
 					await operation;
 				}

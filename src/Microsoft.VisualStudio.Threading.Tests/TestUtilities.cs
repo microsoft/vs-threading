@@ -1,7 +1,7 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Tests {
-	using Microsoft.VisualStudio.TestTools.UnitTesting;
 	using System;
 	using System.Collections.Generic;
+	using System.Configuration;
 	using System.Diagnostics;
 	using System.Linq;
 	using System.Runtime.CompilerServices;
@@ -9,8 +9,14 @@
 	using System.Threading;
 	using System.Threading.Tasks;
 	using System.Windows.Threading;
+	using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 	internal static class TestUtilities {
+		/// <summary>
+		/// A value indicating whether the library is operating in .NET 4.5 mode.
+		/// </summary>
+		internal static readonly bool IsNet45Mode = ConfigurationManager.AppSettings["Microsoft.VisualStudio.Threading.NET45Mode"] == "true";
+
 		internal static Task SetAsync(this TaskCompletionSource<object> tcs) {
 			return Task.Run(() => tcs.TrySetResult(null));
 		}
@@ -171,13 +177,13 @@
 				var that = this;
 				this.baseAwaiter.OnCompleted(delegate {
 					if (that.resumingSignal != null) {
-						that.resumingSignal.SetAsync().Forget();
+						that.resumingSignal.Set();
 					}
 
 					continuation();
 				});
 				if (this.yieldingSignal != null) {
-					this.yieldingSignal.SetAsync().Forget();
+					this.yieldingSignal.Set();
 				}
 			}
 

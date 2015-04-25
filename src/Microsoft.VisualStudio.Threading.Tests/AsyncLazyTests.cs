@@ -41,7 +41,7 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 			Assert.IsFalse(lazy.IsValueCreated);
 			var resultTask = lazy.GetValueAsync();
 			Assert.IsTrue(lazy.IsValueCreated);
-			await evt.SetAsync();
+			evt.Set();
 			Assert.AreEqual(5, (await resultTask).Data);
 			Assert.IsTrue(lazy.IsValueCreated);
 		}
@@ -57,7 +57,7 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 			Assert.IsFalse(lazy.IsValueFactoryCompleted);
 			var resultTask = lazy.GetValueAsync();
 			Assert.IsFalse(lazy.IsValueFactoryCompleted);
-			await evt.SetAsync();
+			evt.Set();
 			Assert.AreEqual(5, (await resultTask).Data);
 			Assert.IsTrue(lazy.IsValueFactoryCompleted);
 		}
@@ -268,7 +268,7 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 			} catch (OperationCanceledException) { }
 
 			// Now verify that the value factory does actually complete anyway for other callers.
-			await evt.SetAsync();
+			evt.Set();
 			var task2Result = await task2;
 			Assert.AreEqual(5, task2Result.Data);
 		}
@@ -356,7 +356,7 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 			var collection = context.CreateCollection();
 			var someRandomPump = context.CreateFactory(collection);
 			someRandomPump.Run(async delegate {
-				await evt.SetAsync(); // setting this event allows the value factory to resume, once it can get the Main thread.
+				evt.Set(); // setting this event allows the value factory to resume, once it can get the Main thread.
 
 				// The interesting bit we're testing here is that
 				// the value factory has already been invoked.  It cannot
@@ -394,14 +394,14 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 					using (writeAwaiter.GetResult()) {
 					}
 				});
-				await writeLockWaitingByOther.SetAsync();
+				writeLockWaitingByOther.Set();
 			});
 
 			// Kick off the value factory without any lock context.
 			var resultTask = lazy.GetValueAsync();
 
 			using (await lck.ReadLockAsync()) {
-				readLockAcquiredByOther.SetAsync().Forget();
+				readLockAcquiredByOther.Set();
 
 				// Now request the lazy task again.
 				// This would traditionally deadlock because the value factory won't

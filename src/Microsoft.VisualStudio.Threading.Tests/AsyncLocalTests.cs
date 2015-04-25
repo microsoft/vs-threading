@@ -11,11 +11,14 @@
 
 	[TestClass]
 	public class AsyncLocalTests : TestBase {
-		private AsyncLocal<GenericParameterHelper> asyncLocal;
+		// Be VERY explicit about the type we're binding against since
+		// there is now one in System.Threading and we want to be sure
+		// we're testing OUR stuff not THEIRS.
+		private Microsoft.VisualStudio.Threading.AsyncLocal<GenericParameterHelper> asyncLocal;
 
 		[TestInitialize]
 		public void Initialize() {
-			this.asyncLocal = new AsyncLocal<GenericParameterHelper>();
+			this.asyncLocal = new Microsoft.VisualStudio.Threading.AsyncLocal<GenericParameterHelper>();
 		}
 
 		[TestMethod]
