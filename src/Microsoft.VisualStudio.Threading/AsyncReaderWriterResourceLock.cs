@@ -27,14 +27,14 @@ namespace Microsoft.VisualStudio.Threading {
 		private readonly Helper helper;
 
 		/// <summary>
-		/// Initializes a new instance of the AsyncReaderWriterResourceLock class.
+		/// Initializes a new instance of the <see cref="AsyncReaderWriterResourceLock{TMoniker, TResource}"/> class.
 		/// </summary>
 		protected AsyncReaderWriterResourceLock() {
 			this.helper = new Helper(this);
 		}
 
 		/// <summary>
-		/// Initializes a new instance of the AsyncReaderWriterResourceLock class.
+		/// Initializes a new instance of the <see cref="AsyncReaderWriterResourceLock{TMoniker, TResource}"/> class.
 		/// </summary>
 		/// <param name="captureDiagnostics">
 		/// <c>true</c> to spend additional resources capturing diagnostic details that can be used
@@ -706,7 +706,7 @@ namespace Microsoft.VisualStudio.Threading {
 			/// </summary>
 			private struct ResourcePreparationTaskAndValidity {
 				/// <summary>
-				/// Initializes a new instance of the <see cref="ResourcePreparationTaskAndValidity"/> class.
+				/// Initializes a new instance of the <see cref="ResourcePreparationTaskAndValidity"/> struct.
 				/// </summary>
 				internal ResourcePreparationTaskAndValidity(Task preparationTask, ResourceState finalState)
 					: this() {

@@ -251,7 +251,7 @@ namespace Microsoft.VisualStudio.Threading {
 			private T notSoWeakTarget;
 
 			/// <summary>
-			/// Constructor
+			/// Initializes a new instance of the <see cref="WeakReference{T}"/> struct.
 			/// </summary>
 			internal WeakReference(T target, IEqualityComparer<T> equalityComparer, bool avoidWeakReferenceAllocation = false) {
 				Requires.NotNull(target, nameof(target));
@@ -312,10 +312,12 @@ namespace Microsoft.VisualStudio.Threading {
 			private readonly IEqualityComparer<T> underlyingComparer;
 
 			/// <summary>
-			/// Constructor to use an explicitly specified comparer.
-			/// Comparer may be null, in which case the default comparer for the type
-			/// will be used.
+			/// Initializes a new instance of the <see cref="WeakReferenceEqualityComparer{T}"/> class
+			/// with an explicitly specified comparer.
 			/// </summary>
+			/// <param name="comparer">
+			/// May be null, in which case the default comparer for the type will be used.
+			/// </param>
 			internal WeakReferenceEqualityComparer(IEqualityComparer<T> comparer) {
 				Requires.NotNull(comparer, nameof(comparer));
 

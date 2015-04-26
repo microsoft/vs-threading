@@ -502,7 +502,7 @@ namespace Microsoft.VisualStudio.Threading {
 			private object completionSources;
 
 			/// <summary>
-			/// Initializes a new instance of the <see cref="CancellableDequeuers"/> struct.
+			/// Initializes a new instance of the <see cref="CancellableDequeuers"/> class.
 			/// </summary>
 			/// <param name="owningQueue">The queue that created this instance.</param>
 			internal CancellableDequeuers(AsyncQueue<T> owningQueue) {

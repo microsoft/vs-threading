@@ -27,7 +27,7 @@ namespace Microsoft.VisualStudio.Threading {
 		private readonly JoinableTaskFactory innerFactory;
 
 		/// <summary>
-		/// Initializes an instance of the <see cref="DelegatingJoinableTaskFactory"/> class.
+		/// Initializes a new instance of the <see cref="DelegatingJoinableTaskFactory"/> class.
 		/// </summary>
 		/// <param name="innerFactory">The inner factory that will create the tasks.</param>
 		protected DelegatingJoinableTaskFactory(JoinableTaskFactory innerFactory)
