@@ -1,8 +1,8 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="JoinableTaskContextNodeTests.cs" company="Microsoft">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿/********************************************************
+*                                                        *
+*   © Copyright (C) Microsoft. All rights reserved.      *
+*                                                        *
+*********************************************************/
 
 namespace Microsoft.VisualStudio.Threading.Tests {
 	using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -151,7 +151,7 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 			Assert.IsNotNull(this.derivedNode.HangDetails);
 			Assert.IsNotNull(this.derivedNode.HangDetails.EntryMethod);
 			Assert.AreSame(this.GetType(), this.derivedNode.HangDetails.EntryMethod.DeclaringType);
-			Assert.IsTrue(this.derivedNode.HangDetails.EntryMethod.Name.Contains(nameof(OnHangDetected_Run_OnMainThread)));
+			Assert.IsTrue(this.derivedNode.HangDetails.EntryMethod.Name.Contains(nameof(this.OnHangDetected_Run_OnMainThread)));
 
 			Assert.IsTrue(this.derivedNode.FalseHangReportDetected.IsSet);
 			Assert.AreNotEqual(Guid.Empty, this.derivedNode.FalseHangReportId);
@@ -185,7 +185,7 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 
 			// Verify that the original method that spawned the JoinableTask is the one identified as the entrypoint method.
 			Assert.AreSame(this.GetType(), this.derivedNode.HangDetails.EntryMethod.DeclaringType);
-			Assert.IsTrue(this.derivedNode.HangDetails.EntryMethod.Name.Contains(nameof(OnHangDetected_RunAsync_OnMainThread_BlamedMethodIsEntrypointNotBlockingMethod)));
+			Assert.IsTrue(this.derivedNode.HangDetails.EntryMethod.Name.Contains(nameof(this.OnHangDetected_RunAsync_OnMainThread_BlamedMethodIsEntrypointNotBlockingMethod)));
 		}
 
 		[TestMethod, Timeout(TestTimeout)]

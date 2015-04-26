@@ -31,19 +31,19 @@
 		/// and as a result corrupts the lock or otherwise orphans outstanding locks,
 		/// which would cause the test to hang if it waited for the lock to "complete".
 		/// </summary>
-		private static bool DoNotWaitForLockCompletionAtTestCleanup;
+		private static bool doNotWaitForLockCompletionAtTestCleanup;
 
 		[TestInitialize]
 		public void Initialize() {
 			this.asyncLock = new AsyncReaderWriterLock();
-			DoNotWaitForLockCompletionAtTestCleanup = false;
+			doNotWaitForLockCompletionAtTestCleanup = false;
 		}
 
 		[TestCleanup]
 		public void Cleanup() {
 			string testName = this.TestContext.TestName;
 			this.asyncLock.Complete();
-			if (!DoNotWaitForLockCompletionAtTestCleanup || this.TestContext.CurrentTestOutcome == UnitTestOutcome.Failed) {
+			if (!doNotWaitForLockCompletionAtTestCleanup || this.TestContext.CurrentTestOutcome == UnitTestOutcome.Failed) {
 				Assert.IsTrue(this.asyncLock.Completion.Wait(2000));
 			}
 		}
@@ -399,7 +399,7 @@
 		[TestMethod, TestCategory("Stress"), Timeout(5000)]
 		public async Task LockStress() {
 			const int MaxLockAcquisitions = -1;
-			const int MaxLockHeldDelay = 0;// 80;
+			const int MaxLockHeldDelay = 0; // 80;
 			const int overallTimeout = 4000;
 			const int iterationTimeout = overallTimeout;
 			int maxWorkers = Environment.ProcessorCount * 4; // we do a lot of awaiting, but still want to flood all cores.
@@ -410,7 +410,7 @@
 		[TestMethod, TestCategory("Stress"), Timeout(5000), TestCategory("FailsInCloudTest")]
 		public async Task CancellationStress() {
 			const int MaxLockAcquisitions = -1;
-			const int MaxLockHeldDelay = 0;// 80;
+			const int MaxLockHeldDelay = 0; // 80;
 			const int overallTimeout = 4000;
 			const int iterationTimeout = 100;
 			int maxWorkers = Environment.ProcessorCount * 4; // we do a lot of awaiting, but still want to flood all cores.
@@ -1609,7 +1609,7 @@
 					await writeRequestPending.Task;
 					using (await this.asyncLock.WriteLockAsync()) {
 						Assert.IsFalse(writeLockObtained.Task.IsCompleted, "The upgradeable read should have received its write lock first.");
-						PrintHangReport();
+						this.PrintHangReport();
 						await upgradeableReadUpgraded.SetAsync();
 					}
 				}
@@ -1894,7 +1894,7 @@
 			}));
 		}
 
-		[TestMethod, Timeout(AsyncDelay * 9 * 2 + AsyncDelay)]
+		[TestMethod, Timeout((AsyncDelay * 9 * 2) + AsyncDelay)]
 		public async Task MitigationAgainstAccidentalExclusiveLockConcurrency() {
 			using (await this.asyncLock.UpgradeableReadLockAsync()) {
 				using (await this.asyncLock.WriteLockAsync()) {
@@ -2881,12 +2881,12 @@
 				{ "RU", false }, // false means this lock sequence should throw at the last step.
 				{ "RS", false },
 				{ "RW", false },
-
+				// Legal simple nested locks
 				{ "RRR", true },
 				{ "UUU", true },
 				{ "SSS", true },
 				{ "WWW", true },
-
+				// Legal interleaved nested locks
 				{ "WRW", true },
 				{ "UW", true },
 				{ "UWW", true },
@@ -3262,7 +3262,7 @@
 					long memory2 = GC.GetTotalMemory(false);
 					long allocated = (memory2 - memory1) / iterations;
 					const int NestingLevel = 3;
-					long allowed = MaxGarbagePerLock * NestingLevel + (yieldingLock ? MaxGarbagePerYield : 0);
+					long allowed = (MaxGarbagePerLock * NestingLevel) + (yieldingLock ? MaxGarbagePerYield : 0);
 					this.TestContext.WriteLine("Allocated bytes: {0} ({1} allowed)", allocated, allowed);
 					passingAttemptObserved = allocated <= allowed;
 				}
@@ -3676,8 +3676,11 @@
 			internal bool CriticalErrorDetected { get; set; }
 
 			internal Func<Task> OnBeforeExclusiveLockReleasedAsyncDelegate { get; set; }
+
 			internal Func<Task> OnExclusiveLockReleasedAsyncDelegate { get; set; }
+
 			internal Func<Task> OnBeforeLockReleasedAsyncDelegate { get; set; }
+
 			internal Action OnUpgradeableReadLockReleasedDelegate { get; set; }
 
 			internal new bool IsAnyLockHeld {
@@ -3739,7 +3742,7 @@
 			/// </summary>
 			protected override Exception OnCriticalFailure(Exception ex) {
 				this.CriticalErrorDetected = true;
-				DoNotWaitForLockCompletionAtTestCleanup = true; // we expect this to corrupt the lock.
+				doNotWaitForLockCompletionAtTestCleanup = true; // we expect this to corrupt the lock.
 				throw new AssertFailedException(ex.Message, ex);
 			}
 

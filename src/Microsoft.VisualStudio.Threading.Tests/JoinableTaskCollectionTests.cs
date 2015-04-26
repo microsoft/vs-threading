@@ -11,7 +11,7 @@
 
 	[TestClass]
 	public class JoinableTaskCollectionTests : JoinableTaskTestBase {
-		protected JoinableTaskFactory joinableFactory {
+		protected JoinableTaskFactory JoinableFactory {
 			get { return this.asyncPump; }
 		}
 
@@ -36,7 +36,7 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public void JoinTillEmptyWithOne() {
 			var evt = new AsyncManualResetEvent();
-			var joinable = this.joinableFactory.RunAsync(async delegate {
+			var joinable = this.JoinableFactory.RunAsync(async delegate {
 				await evt;
 			});
 
@@ -56,7 +56,7 @@
 			Assert.IsTrue(awaiter.IsCompleted);
 
 			var evt = new AsyncManualResetEvent();
-			var joinable = this.joinableFactory.RunAsync(async delegate {
+			var joinable = this.JoinableFactory.RunAsync(async delegate {
 				await evt;
 			});
 
@@ -72,7 +72,7 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void JoinTillEmptyAsyncJoinsCollection() {
-			var joinable = this.joinableFactory.RunAsync(async delegate {
+			var joinable = this.JoinableFactory.RunAsync(async delegate {
 				await Task.Yield();
 			});
 
@@ -84,7 +84,7 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public void AddTwiceRemoveOnceRemovesWhenNotRefCounting() {
 			var finishTaskEvent = new AsyncManualResetEvent();
-			var task = this.joinableFactory.RunAsync(async delegate { await finishTaskEvent; });
+			var task = this.JoinableFactory.RunAsync(async delegate { await finishTaskEvent; });
 
 			var collection = new JoinableTaskCollection(this.context, refCountAddedJobs: false);
 			collection.Add(task);
@@ -100,7 +100,7 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public void AddTwiceRemoveTwiceRemovesWhenRefCounting() {
 			var finishTaskEvent = new AsyncManualResetEvent();
-			var task = this.joinableFactory.RunAsync(async delegate { await finishTaskEvent; });
+			var task = this.JoinableFactory.RunAsync(async delegate { await finishTaskEvent; });
 
 			var collection = new JoinableTaskCollection(this.context, refCountAddedJobs: true);
 			collection.Add(task);
@@ -118,7 +118,7 @@
 		[TestMethod, Timeout(TestTimeout)]
 		public void AddTwiceRemoveOnceRemovesCompletedTaskWhenRefCounting() {
 			var finishTaskEvent = new AsyncManualResetEvent();
-			var task = this.joinableFactory.RunAsync(async delegate { await finishTaskEvent; });
+			var task = this.JoinableFactory.RunAsync(async delegate { await finishTaskEvent; });
 
 			var collection = new JoinableTaskCollection(this.context, refCountAddedJobs: true);
 			collection.Add(task);
@@ -135,7 +135,7 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void JoinDisposedTwice() {
-			this.joinableFactory.Run(delegate {
+			this.JoinableFactory.Run(delegate {
 				var releaser = this.joinableCollection.Join();
 				releaser.Dispose();
 				releaser.Dispose();

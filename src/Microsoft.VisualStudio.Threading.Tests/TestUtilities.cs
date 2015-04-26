@@ -19,7 +19,9 @@
 		/// Runs an asynchronous task synchronously, using just the current thread to execute continuations.
 		/// </summary>
 		internal static void Run(Func<Task> func) {
-			if (func == null) throw new ArgumentNullException("func");
+			if (func == null) {
+				throw new ArgumentNullException("func");
+			}
 
 			var prevCtx = SynchronizationContext.Current;
 			try {
@@ -27,7 +29,9 @@
 				SynchronizationContext.SetSynchronizationContext(syncCtx);
 
 				var t = func();
-				if (t == null) throw new InvalidOperationException();
+				if (t == null) {
+					throw new InvalidOperationException();
+				}
 
 				var frame = new DispatcherFrame();
 				t.ContinueWith(_ => { frame.Continue = false; }, TaskScheduler.Default);
@@ -45,7 +49,6 @@
 		/// <typeparam name="T">The type of the value returned by the specified function.</typeparam>
 		/// <param name="action">The function to invoke concurrently.</param>
 		/// <param name="concurrency">The level of concurrency.</param>
-		/// <returns></returns>
 		internal static T[] ConcurrencyTest<T>(Func<T> action, int concurrency = -1) {
 			Requires.NotNull(action, nameof(action));
 			if (concurrency == -1) {

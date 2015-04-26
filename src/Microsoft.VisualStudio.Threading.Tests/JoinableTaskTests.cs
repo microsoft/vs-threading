@@ -25,17 +25,17 @@
 
 		[TestMethod]
 		public void RunFuncOfTaskMTA() {
-			Task.Run(() => RunFuncOfTaskHelper()).Wait();
+			Task.Run(() => this.RunFuncOfTaskHelper()).Wait();
 		}
 
 		[TestMethod]
 		public void RunFuncOfTaskOfTSTA() {
-			RunFuncOfTaskOfTHelper();
+			this.RunFuncOfTaskOfTHelper();
 		}
 
 		[TestMethod]
 		public void RunFuncOfTaskOfTMTA() {
-			Task.Run(() => RunFuncOfTaskOfTHelper()).GetAwaiter().GetResult();
+			Task.Run(() => this.RunFuncOfTaskOfTHelper()).GetAwaiter().GetResult();
 		}
 
 		[TestMethod, Timeout(TestTimeout)]
@@ -490,7 +490,7 @@
 			Assert.IsTrue(outerCompleted, "Outer Run did not complete.");
 		}
 
-		[TestMethod, Timeout(TestTimeout + AsyncDelay * 4)]
+		[TestMethod, Timeout(TestTimeout + (AsyncDelay * 4))]
 		public void RunSynchronouslyNestedWithJoins() {
 			bool outerCompleted = false, innerCompleted = false;
 
@@ -554,7 +554,7 @@
 				// Joined in order to execute here.
 				Assert.AreNotSame(task, await Task.WhenAny(task, Task.Delay(AsyncDelay / 2)), "The unrelated main thread work completed before the Main thread was joined.");
 				using (this.joinableCollection.Join()) {
-					PrintActiveTasksReport();
+					this.PrintActiveTasksReport();
 					await task;
 				}
 			});
@@ -948,7 +948,7 @@
 		}
 
 		/// <summary>
-		/// Main -> Task1, Main -> Task2, Task1 <-> Task2 (loop dependency between Task1 and Task2.
+		/// Main -> Task1, Main -> Task2, Task1 &lt;-&gt; Task2 (loop dependency between Task1 and Task2.
 		/// </summary>
 		[TestMethod, Timeout(TestTimeout)]
 		public void JoinWithLoopDependentTasks() {
@@ -2572,8 +2572,8 @@
 				transitionedToMainThread.Wait();
 			};
 
-			Object result = new Object();
-			WeakReference<Object> weakResult = new WeakReference<object>(result);
+			object result = new object();
+			WeakReference<object> weakResult = new WeakReference<object>(result);
 
 			this.asyncPump.Run(async () => {
 				// Needs to switch to background thread at first in order to test the code that requests switch to main thread.
@@ -2618,8 +2618,8 @@
 				waitForOnCompletedIsFinished.Wait();
 			};
 
-			Object result = new Object();
-			WeakReference<Object> weakResult = new WeakReference<object>(result);
+			object result = new object();
+			WeakReference<object> weakResult = new WeakReference<object>(result);
 
 			this.asyncPump.Run(async () => {
 				// Needs to switch to background thread at first in order to test the code that requests switch to main thread.
@@ -2904,8 +2904,8 @@
 				Assert.IsNotNull(callback);
 				Assert.IsInstanceOfType(this.UnderlyingSynchronizationContext, typeof(DispatcherSynchronizationContext));
 				base.PostToUnderlyingSynchronizationContext(callback, state);
-				if (PostToUnderlyingSynchronizationContextCallback != null) {
-					PostToUnderlyingSynchronizationContextCallback();
+				if (this.PostToUnderlyingSynchronizationContextCallback != null) {
+					this.PostToUnderlyingSynchronizationContextCallback();
                 }
 			}
 		}
