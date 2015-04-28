@@ -1,8 +1,8 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="NoMessagePumpSyncContext.cs" company="Microsoft">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿/********************************************************
+*                                                        *
+*   © Copyright (C) Microsoft. All rights reserved.      *
+*                                                        *
+*********************************************************/
 
 namespace Microsoft.VisualStudio.Threading {
 	using System;
@@ -16,7 +16,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// A shared singleton.
 		/// </summary>
-		private static SynchronizationContext DefaultInstance = new NoMessagePumpSyncContext();
+		private static readonly SynchronizationContext DefaultInstance = new NoMessagePumpSyncContext();
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="NoMessagePumpSyncContext"/> class.

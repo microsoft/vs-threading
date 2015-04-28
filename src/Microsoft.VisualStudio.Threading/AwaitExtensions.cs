@@ -1,8 +1,8 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="AwaitExtensions.cs" company="Microsoft">
-//     Copyright (c) Microsoft. All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿/********************************************************
+*                                                        *
+*   © Copyright (C) Microsoft. All rights reserved.      *
+*                                                        *
+*********************************************************/
 
 namespace Microsoft.VisualStudio.Threading {
 	using System;
@@ -104,7 +104,7 @@ namespace Microsoft.VisualStudio.Threading {
 			private readonly bool alwaysYield;
 
 			/// <summary>
-			/// Initializes a new instance of the <see cref="TaskSchedulerAwaiter"/> class.
+			/// Initializes a new instance of the <see cref="TaskSchedulerAwaiter"/> struct.
 			/// </summary>
 			/// <param name="scheduler">The scheduler for continuations.</param>
 			/// <param name="alwaysYield">A value indicating whether the caller should yield even if

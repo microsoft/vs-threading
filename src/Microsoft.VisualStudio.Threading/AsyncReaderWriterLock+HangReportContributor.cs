@@ -1,8 +1,8 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="AsyncReaderAsyncReaderWriterLock+HangReportContributor.cs" company="Microsoft">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿/********************************************************
+*                                                        *
+*   © Copyright (C) Microsoft. All rights reserved.      *
+*                                                        *
+*********************************************************/
 
 namespace Microsoft.VisualStudio.Threading {
 	using System;
@@ -19,6 +19,17 @@ namespace Microsoft.VisualStudio.Threading {
 		/// The namespace that all DGML nodes appear in.
 		/// </summary>
 		private const string DgmlNamespace = "http://schemas.microsoft.com/vs/2009/dgml";
+
+		[Flags]
+		private enum AwaiterCollection {
+			None = 0x0,
+			Waiting = 0x1,
+			Issued = 0x2,
+			Released = 0x4,
+			ReadLock = 0x10,
+			UpgradeableReadLock = 0x20,
+			WriteLock = 0x40,
+		}
 
 		/// <summary>
 		/// Contributes data for a hang report.
@@ -151,44 +162,12 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 		}
 
-		[Flags]
-		private enum AwaiterCollection {
-			None = 0x0,
-			Waiting = 0x1,
-			Issued = 0x2,
-			Released = 0x4,
-			ReadLock = 0x10,
-			UpgradeableReadLock = 0x20,
-			WriteLock = 0x40,
-		}
-
 		private class AwaiterMetadata {
 			internal AwaiterMetadata(Awaiter awaiter, AwaiterCollection membership) {
 				Requires.NotNull(awaiter, nameof(awaiter));
 
 				this.Awaiter = awaiter;
 				this.Membership = membership;
-			}
-
-			internal static AwaiterMetadata Released(Awaiter awaiter) {
-				Requires.NotNull(awaiter, nameof(awaiter));
-
-				var membership = AwaiterCollection.Released;
-				switch (awaiter.Kind) {
-					case LockKind.Read:
-						membership |= AwaiterCollection.ReadLock;
-						break;
-					case LockKind.UpgradeableRead:
-						membership |= AwaiterCollection.UpgradeableReadLock;
-						break;
-					case LockKind.Write:
-						membership |= AwaiterCollection.WriteLock;
-						break;
-					default:
-						break;
-				}
-
-				return new AwaiterMetadata(awaiter, membership);
 			}
 
 			public Awaiter Awaiter { get; private set; }
@@ -215,6 +194,27 @@ namespace Microsoft.VisualStudio.Threading {
 
 			public override bool Equals(object obj) {
 				return this.Awaiter.Equals(obj);
+			}
+
+			internal static AwaiterMetadata Released(Awaiter awaiter) {
+				Requires.NotNull(awaiter, nameof(awaiter));
+
+				var membership = AwaiterCollection.Released;
+				switch (awaiter.Kind) {
+					case LockKind.Read:
+						membership |= AwaiterCollection.ReadLock;
+						break;
+					case LockKind.UpgradeableRead:
+						membership |= AwaiterCollection.UpgradeableReadLock;
+						break;
+					case LockKind.Write:
+						membership |= AwaiterCollection.WriteLock;
+						break;
+					default:
+						break;
+				}
+
+				return new AwaiterMetadata(awaiter, membership);
 			}
 		}
 	}

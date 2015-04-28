@@ -1,4 +1,10 @@
-﻿namespace Microsoft.VisualStudio.Threading {
+﻿/********************************************************
+*                                                        *
+*   © Copyright (C) Microsoft. All rights reserved.      *
+*                                                        *
+*********************************************************/
+
+namespace Microsoft.VisualStudio.Threading {
 	using System;
 	using System.Collections.Generic;
 	using System.ComponentModel;

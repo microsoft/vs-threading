@@ -1,8 +1,8 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="ThreadingTools.cs" company="Microsoft">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿/********************************************************
+*                                                        *
+*   © Copyright (C) Microsoft. All rights reserved.      *
+*                                                        *
+*********************************************************/
 
 namespace Microsoft.VisualStudio.Threading {
 	using System;
@@ -32,13 +32,13 @@ namespace Microsoft.VisualStudio.Threading {
 			do {
 				T oldValue = Volatile.Read(ref hotLocation);
 				T newValue = applyChange(oldValue);
-				if (Object.ReferenceEquals(oldValue, newValue)) {
+				if (object.ReferenceEquals(oldValue, newValue)) {
 					// No change was actually required.
 					return false;
 				}
 
 				T actualOldValue = Interlocked.CompareExchange<T>(ref hotLocation, newValue, oldValue);
-				successful = Object.ReferenceEquals(oldValue, actualOldValue);
+				successful = object.ReferenceEquals(oldValue, actualOldValue);
 			}
 			while (!successful);
 

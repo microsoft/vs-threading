@@ -1,8 +1,8 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="WeakKeyDictionaryTests.cs" company="Microsoft">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿/********************************************************
+*                                                        *
+*   © Copyright (C) Microsoft. All rights reserved.      *
+*                                                        *
+*********************************************************/
 
 namespace Microsoft.VisualStudio.Threading.Tests {
 	using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -17,6 +17,11 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 	[TestClass]
 	public class WeakKeyDictionaryTests {
 		/// <summary>
+		/// Magic number size of strings to allocate for GC tests.
+		/// </summary>
+		private const int BigMemoryFootprintTest = 1 * 1024 * 1024;
+
+		/// <summary>
 		/// Find with the same key inserted using the indexer
 		/// </summary>
 		[TestMethod]
@@ -30,7 +35,7 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 			// Now look for the same key we inserted
 			string v2 = dictionary[k1];
 
-			Assert.IsTrue(Object.ReferenceEquals(v1, v2));
+			Assert.IsTrue(object.ReferenceEquals(v1, v2));
 			Assert.IsTrue(dictionary.ContainsKey(k1));
 		}
 
@@ -60,7 +65,7 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 			bool result = dictionary.TryGetValue(k1, out v2);
 
 			Assert.IsTrue(result);
-			Assert.IsTrue(Object.ReferenceEquals(v1, v2));
+			Assert.IsTrue(object.ReferenceEquals(v1, v2));
 		}
 
 		/// <summary>
@@ -91,27 +96,22 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 
 			// Now look for a different but equatable key
 			// Don't create it with a literal or the compiler will intern it!
-			string k2 = String.Concat("k", "ey");
+			string k2 = string.Concat("k", "ey");
 
-			Assert.IsFalse(Object.ReferenceEquals(k1, k2));
+			Assert.IsFalse(object.ReferenceEquals(k1, k2));
 
 			string v2 = dictionary[k2];
 
-			Assert.IsTrue(Object.ReferenceEquals(v1, v2));
+			Assert.IsTrue(object.ReferenceEquals(v1, v2));
 		}
-
-		/// <summary>
-		/// Magic number size of strings to allocate for GC tests.
-		/// </summary>
-		private const int bigMemoryFootprintTest = 1 * 1024 * 1024;
 
 		/// <summary>
 		/// Verify dictionary doesn't hold onto keys
 		/// </summary>
 		[TestMethod]
 		public void KeysCollectable() {
-			string k1 = new string('k', bigMemoryFootprintTest);
-			string v1 = new string('v', bigMemoryFootprintTest);
+			string k1 = new string('k', BigMemoryFootprintTest);
+			string v1 = new string('v', BigMemoryFootprintTest);
 
 			// Each character is 2 bytes, so about 4MB of this should be the strings
 			long memory1 = GC.GetTotalMemory(true);
@@ -163,7 +163,7 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 			var dictionary = new WeakKeyDictionary<object, object>();
 
 			for (int i = 0; i < 100; i++) {
-				dictionary[new Object()] = new Object();
+				dictionary[new object()] = new object();
 
 				// Randomly collect some
 				if (i == 15) {
@@ -206,4 +206,3 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 		}
 	}
 }
-

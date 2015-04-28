@@ -1,8 +1,8 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="JoinableTask`1.cs" company="Microsoft">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿/********************************************************
+*                                                        *
+*   © Copyright (C) Microsoft. All rights reserved.      *
+*                                                        *
+*********************************************************/
 
 namespace Microsoft.VisualStudio.Threading {
 	using System;
@@ -26,7 +26,7 @@ namespace Microsoft.VisualStudio.Threading {
 	[DebuggerDisplay("IsCompleted: {IsCompleted}, Method = {EntryMethodInfo != null ? EntryMethodInfo.Name : null}")]
 	public class JoinableTask<T> : JoinableTask {
 		/// <summary>
-		/// Initializes a new instance of the <see cref="JoinableTask"/> class.
+		/// Initializes a new instance of the <see cref="JoinableTask{T}"/> class.
 		/// </summary>
 		/// <param name="owner">The instance that began the async operation.</param>
 		/// <param name="synchronouslyBlocking">A value indicating whether the launching thread will synchronously block for this job's completion.</param>

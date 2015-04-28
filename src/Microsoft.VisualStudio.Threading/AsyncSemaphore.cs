@@ -1,4 +1,10 @@
-﻿namespace Microsoft.VisualStudio.Threading {
+﻿/********************************************************
+*                                                        *
+*   © Copyright (C) Microsoft. All rights reserved.      *
+*                                                        *
+*********************************************************/
+
+namespace Microsoft.VisualStudio.Threading {
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
@@ -117,7 +123,7 @@
 			Requires.NotNull(waitTask, nameof(waitTask));
 
 			return waitTask.IsCompleted
-				? (waitTask.Result ? this.uncontestedReleaser : canceledReleaser) // uncontested lock
+				? (waitTask.Result ? this.uncontestedReleaser : this.canceledReleaser) // uncontested lock
 				: waitTask.ContinueWith(
 					(waiter, state) => {
 						// Rethrow the original cancellation exception to retain the root CancellationToken,
@@ -159,8 +165,9 @@
 			/// Releases the lock.
 			/// </summary>
 			public void Dispose() {
-				if (this.toRelease != null)
+				if (this.toRelease != null) {
 					this.toRelease.semaphore.Release();
+				}
 			}
 		}
 	}

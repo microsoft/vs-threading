@@ -1,4 +1,10 @@
-﻿namespace Microsoft.VisualStudio.Threading {
+﻿/********************************************************
+*                                                        *
+*   © Copyright (C) Microsoft. All rights reserved.      *
+*                                                        *
+*********************************************************/
+
+namespace Microsoft.VisualStudio.Threading {
 	using System;
 	using System.Collections.Generic;
 	using System.Diagnostics;
@@ -496,7 +502,7 @@
 			private object completionSources;
 
 			/// <summary>
-			/// Initializes a new instance of the <see cref="CancellableDequeuers"/> struct.
+			/// Initializes a new instance of the <see cref="CancellableDequeuers"/> class.
 			/// </summary>
 			/// <param name="owningQueue">The queue that created this instance.</param>
 			internal CancellableDequeuers(AsyncQueue<T> owningQueue) {
@@ -564,7 +570,6 @@
 			/// <summary>
 			/// Adds a dequeuer to this instance.
 			/// </summary>
-			/// <param name="dequeuer"></param>
 			internal void AddCompletionSource(TaskCompletionSource<T> dequeuer) {
 				Requires.NotNull(dequeuer, nameof(dequeuer));
 				if (this.completionSources == null) {

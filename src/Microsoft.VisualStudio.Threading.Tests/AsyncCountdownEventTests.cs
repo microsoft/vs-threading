@@ -34,7 +34,7 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task CountdownFromTwoPostSignaled() {
-			await PostSignalHelperAsync(2);
+			await this.PostSignalHelperAsync(2);
 		}
 
 		[TestMethod, Timeout(TestTimeout)]

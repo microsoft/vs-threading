@@ -1,4 +1,10 @@
-﻿namespace Microsoft.VisualStudio.Threading {
+﻿/********************************************************
+*                                                        *
+*   © Copyright (C) Microsoft. All rights reserved.      *
+*                                                        *
+*********************************************************/
+
+namespace Microsoft.VisualStudio.Threading {
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
@@ -70,17 +76,17 @@
 		}
 
 		/// <summary>
-		/// Disposes this enumerator.
-		/// </summary>
-		public void Dispose() {
-			this.enumerator.Dispose();
-		}
-
-		/// <summary>
 		/// Gets the current value.
 		/// </summary>
 		object System.Collections.IEnumerator.Current {
 			get { return this.Current; }
+		}
+
+		/// <summary>
+		/// Disposes this enumerator.
+		/// </summary>
+		public void Dispose() {
+			this.enumerator.Dispose();
 		}
 
 		/// <summary>

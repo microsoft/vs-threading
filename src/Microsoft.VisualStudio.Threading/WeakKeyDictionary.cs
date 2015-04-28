@@ -1,9 +1,8 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="WeakKeyDictionary.cs" company="Microsoft">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-// <summary>Dictionary that does not prevent keys from being garbage collected.</summary>
-//-----------------------------------------------------------------------
+﻿/********************************************************
+*                                                        *
+*   © Copyright (C) Microsoft. All rights reserved.      *
+*                                                        *
+*********************************************************/
 
 namespace Microsoft.VisualStudio.Threading {
 	using System;
@@ -82,8 +81,8 @@ namespace Microsoft.VisualStudio.Threading {
 				// We do not have access to the dictionary's true capacity or growth
 				// method, so we improvise with our own.
 				// So attempt to make room for the upcoming add before we do it.
-				if (this.dictionary.Count == this.capacity && !ContainsKey(key)) {
-					Scavenge();
+				if (this.dictionary.Count == this.capacity && !this.ContainsKey(key)) {
+					this.Scavenge();
 
 					// If that didn't do anything, raise the capacity at which 
 					// we next scavenge. Note that we never shrink, but neither
@@ -105,7 +104,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// </remarks>
 		public bool ContainsKey(TKey key) {
 			TValue value;
-			bool contained = TryGetValue(key, out value);
+			bool contained = this.TryGetValue(key, out value);
 			return contained;
 		}
 
@@ -252,7 +251,7 @@ namespace Microsoft.VisualStudio.Threading {
 			private T notSoWeakTarget;
 
 			/// <summary>
-			/// Constructor
+			/// Initializes a new instance of the <see cref="WeakReference{T}"/> struct.
 			/// </summary>
 			internal WeakReference(T target, IEqualityComparer<T> equalityComparer, bool avoidWeakReferenceAllocation = false) {
 				Requires.NotNull(target, nameof(target));
@@ -313,10 +312,12 @@ namespace Microsoft.VisualStudio.Threading {
 			private readonly IEqualityComparer<T> underlyingComparer;
 
 			/// <summary>
-			/// Constructor to use an explicitly specified comparer.
-			/// Comparer may be null, in which case the default comparer for the type
-			/// will be used.
+			/// Initializes a new instance of the <see cref="WeakReferenceEqualityComparer{T}"/> class
+			/// with an explicitly specified comparer.
 			/// </summary>
+			/// <param name="comparer">
+			/// May be null, in which case the default comparer for the type will be used.
+			/// </param>
 			internal WeakReferenceEqualityComparer(IEqualityComparer<T> comparer) {
 				Requires.NotNull(comparer, nameof(comparer));
 

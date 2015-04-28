@@ -1,8 +1,8 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="JoinableTaskContext.cs" company="Microsoft">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿/********************************************************
+*                                                        *
+*   © Copyright (C) Microsoft. All rights reserved.      *
+*                                                        *
+*********************************************************/
 
 namespace Microsoft.VisualStudio.Threading {
 	using System;
@@ -228,8 +228,8 @@ namespace Microsoft.VisualStudio.Threading {
 				}
 
 				// The JoinableTask dependent chain gives a fast way to check IsMainThreadBlocked.
-				//  However, it only works when the main thread tasks is in the CompleteOnCurrentThread loop.
-				//  The dependent chain won't be added when a synchronous task is in the initialization phase. 
+				// However, it only works when the main thread tasks is in the CompleteOnCurrentThread loop.
+				// The dependent chain won't be added when a synchronous task is in the initialization phase. 
 				// In that case, we still need to follow the descendent of the task in the initialization stage.
 				// We hope the dependency tree is relatively small in that stage.
 				using (NoMessagePumpSyncContext.Default.Apply()) {
@@ -400,8 +400,8 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// Registers a node for notification when a hang is detected.
 		/// </summary>
-		/// <param name="node"></param>
-		/// <returns></returns>
+		/// <param name="node">The instance to notify.</param>
+		/// <returns>A value to dispose of to cancel registration.</returns>
 		internal IDisposable RegisterHangNotifications(JoinableTaskContextNode node) {
 			Requires.NotNull(node, nameof(node));
 			lock (this.hangNotifications) {
@@ -411,38 +411,6 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			return new HangNotificationRegistration(node);
-		}
-
-		/// <summary>
-		/// A value whose disposal cancels hang registration.
-		/// </summary>
-		private class HangNotificationRegistration : IDisposable {
-			/// <summary>
-			/// The node to receive notifications. May be <c>null</c> if <see cref="Dispose"/> has already been called.
-			/// </summary>
-			private JoinableTaskContextNode node;
-
-			/// <summary>
-			/// Initializes a new instance of the <see cref="HangNotificationRegistration"/> class.
-			/// </summary>
-			internal HangNotificationRegistration(JoinableTaskContextNode node) {
-				Requires.NotNull(node, nameof(node));
-				this.node = node;
-			}
-
-			/// <summary>
-			/// Removes the node from hang notifications.
-			/// </summary>
-			public void Dispose() {
-				var node = this.node;
-				if (node != null) {
-					lock (node.Context.hangNotifications) {
-						Assumes.True(node.Context.hangNotifications.Remove(node));
-					}
-
-					this.node = null;
-				}
-			}
 		}
 
 		/// <summary>
@@ -487,6 +455,38 @@ namespace Microsoft.VisualStudio.Threading {
 				}
 
 				this.temporarySyncContext.Dispose();
+			}
+		}
+
+		/// <summary>
+		/// A value whose disposal cancels hang registration.
+		/// </summary>
+		private class HangNotificationRegistration : IDisposable {
+			/// <summary>
+			/// The node to receive notifications. May be <c>null</c> if <see cref="Dispose"/> has already been called.
+			/// </summary>
+			private JoinableTaskContextNode node;
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="HangNotificationRegistration"/> class.
+			/// </summary>
+			internal HangNotificationRegistration(JoinableTaskContextNode node) {
+				Requires.NotNull(node, nameof(node));
+				this.node = node;
+			}
+
+			/// <summary>
+			/// Removes the node from hang notifications.
+			/// </summary>
+			public void Dispose() {
+				var node = this.node;
+				if (node != null) {
+					lock (node.Context.hangNotifications) {
+						Assumes.True(node.Context.hangNotifications.Remove(node));
+					}
+
+					this.node = null;
+				}
 			}
 		}
 

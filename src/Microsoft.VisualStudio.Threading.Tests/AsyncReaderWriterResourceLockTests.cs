@@ -14,7 +14,7 @@
 		private const char UpgradeableReadChar = 'U';
 		private const char StickyUpgradeableReadChar = 'S';
 		private const char WriteChar = 'W';
-		private static bool VerboseLogEnabled = false;
+		private static bool verboseLogEnabled = false;
 
 		private ResourceLockWrapper resourceLock;
 
@@ -678,7 +678,6 @@
 		/// Demonstrates that a conscientious lock holder may asynchronously release a write lock
 		/// so that blocking the thread isn't necessary while preparing resource for concurrent access again.
 		/// </summary>
-		/// <returns></returns>
 		[TestMethod, Timeout(TestTimeout)]
 		public async Task AsyncReleaseOfWriteToUpgradeableReadLock() {
 			using (var upgradeableReadAccess = await this.resourceLock.UpgradeableReadLockAsync()) {
@@ -755,7 +754,7 @@
 				resourceTask.SetResult(new object());
 				this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task).Forget();
 				Resource resource = await access.GetResourceAsync(1);
-				Assert.AreSame(resources[1], resource);
+				Assert.AreSame(this.resources[1], resource);
 			}
 		}
 
@@ -841,7 +840,7 @@
 		[TestMethod, TestCategory("Stress"), Timeout(5000)]
 		public async Task ResourceLockStress() {
 			const int MaxLockAcquisitions = -1;
-			const int MaxLockHeldDelay = 0;// 80;
+			const int MaxLockHeldDelay = 0; // 80;
 			const int overallTimeout = 4000;
 			const int iterationTimeout = overallTimeout;
 			const int maxResources = 2;
@@ -974,7 +973,7 @@
 		}
 
 		private static void VerboseLog(string message, params object[] args) {
-			if (VerboseLogEnabled) {
+			if (verboseLogEnabled) {
 				Console.WriteLine(message, args);
 			}
 		}
@@ -1008,6 +1007,10 @@
 				this.resources = resources;
 			}
 
+			internal AsyncAutoResetEvent PreparationTaskBegun {
+				get { return this.preparationTaskBegun; }
+			}
+
 			internal Task SetPreparationTask(Resource resource, Task task) {
 				Requires.NotNull(resource, nameof(resource));
 				Requires.NotNull(task, nameof(task));
@@ -1018,10 +1021,6 @@
 				}
 
 				return tcs.Task;
-			}
-
-			internal AsyncAutoResetEvent PreparationTaskBegun {
-				get { return this.preparationTaskBegun; }
 			}
 
 			internal new void SetResourceAsAccessed(Resource resource) {

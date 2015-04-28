@@ -24,7 +24,7 @@
 		[TestInitialize]
 		public virtual void Initialize() {
 			this.dispatcherContext = new DispatcherSynchronizationContext();
-			SynchronizationContext.SetSynchronizationContext(dispatcherContext);
+			SynchronizationContext.SetSynchronizationContext(this.dispatcherContext);
 			this.context = this.CreateJoinableTaskContext();
 			this.joinableCollection = this.context.CreateCollection();
 			this.asyncPump = this.context.CreateFactory(this.joinableCollection);
