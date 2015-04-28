@@ -45,7 +45,40 @@
 			try {
 				await second;
 				Assert.Fail("Expected OperationCanceledException not thrown.");
-			} catch (OperationCanceledException) {
+			} catch (OperationCanceledException ex) {
+				Assert.AreEqual(cts.Token, ex.CancellationToken);
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public async Task ContestedAndCancelledWithTimeoutSpecified() {
+			var cts = new CancellationTokenSource();
+			var first = this.lck.EnterAsync();
+			var second = this.lck.EnterAsync(Timeout.Infinite, cts.Token);
+			Assert.IsFalse(second.IsCompleted);
+			cts.Cancel();
+			first.Result.Dispose();
+			try {
+				await second;
+				Assert.Fail("Expected OperationCanceledException not thrown.");
+			} catch (OperationCanceledException ex) {
+				Assert.AreEqual(cts.Token, ex.CancellationToken);
+			}
+		}
+
+		[TestMethod, Timeout(TestTimeout)]
+		public void PreCancelled() {
+			var cts = new CancellationTokenSource();
+			cts.Cancel();
+			Task enterAsyncTask = this.lck.EnterAsync(cts.Token);
+			Assert.IsTrue(enterAsyncTask.IsCanceled);
+			try {
+				enterAsyncTask.GetAwaiter().GetResult();
+				Assert.Fail("Expected exception not thrown.");
+			} catch (OperationCanceledException ex) {
+				if (!TestUtilities.IsNet45Mode) {
+					Assert.AreEqual(cts.Token, ex.CancellationToken);
+				}
 			}
 		}
 
@@ -95,7 +128,7 @@
 			Assert.AreEqual(TaskStatus.RanToCompletion, second.Status);
 			Assert.IsFalse(third.IsCompleted);
 		}
-
+		
 		[TestMethod, Timeout(TestTimeout)]
 		public void Disposable() {
 			IDisposable disposable = this.lck;

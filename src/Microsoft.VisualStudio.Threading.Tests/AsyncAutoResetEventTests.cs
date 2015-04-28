@@ -100,9 +100,10 @@
 			try {
 				waitTask.GetAwaiter().GetResult();
 				Assert.Fail("Task was expected to transition to a canceled state.");
-			} catch (OperationCanceledException /*ex*/) {
-				// TODO: enable this verification when we target .NET 4.6 and can make this work.
-				////Assert.AreEqual(cts.Token, ex.CancellationToken);
+			} catch (OperationCanceledException ex) {
+				if (!TestUtilities.IsNet45Mode) {
+					Assert.AreEqual(cts.Token, ex.CancellationToken);
+				}
 			}
 
 			// Now set the event and verify that a future waiter gets the signal immediately.
@@ -113,15 +114,21 @@
 
 		[TestMethod, Timeout(TestTimeout)]
 		public void WaitAsync_WithCancellationToken_PrecanceledDoesNotClaimExistingSignal() {
+			// We construct our own pre-canceled token so that we can do
+			// a meaningful identity check later.
+			var tokenSource = new CancellationTokenSource();
+			tokenSource.Cancel();
+			var token = tokenSource.Token;
+
 			// Verify that a pre-set signal is not reset by a canceled wait request.
-			var token = new CancellationToken(true);
 			this.evt.Set();
 			try {
 				this.evt.WaitAsync(token).GetAwaiter().GetResult();
 				Assert.Fail("Task was expected to transition to a canceled state.");
-			} catch (OperationCanceledException /*ex*/) {
-				// TODO: enable this verification when we target .NET 4.6 and can make this work.
-				////Assert.AreEqual(cts.Token, ex.CancellationToken);
+			} catch (OperationCanceledException ex) {
+				if (!TestUtilities.IsNet45Mode) {
+					Assert.AreEqual(token, ex.CancellationToken);
+				}
 			}
 
 			// Verify that the signal was not acquired.

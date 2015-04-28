@@ -37,6 +37,10 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <summary>
 		/// A value indicating whether this event is already in a signaled state.
 		/// </summary>
+		/// <devremarks>
+		/// This should not need the volatile modifier because it is
+		/// always accessed within a lock.
+		/// </devremarks>
 		private bool signaled;
 
 		/// <summary>
@@ -75,8 +79,7 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <returns>An awaitable.</returns>
 		public Task WaitAsync(CancellationToken cancellationToken) {
 			if (cancellationToken.IsCancellationRequested) {
-				// TODO: when we target .NET 4.6 we should return a task that refers to the cancellationToken.
-				return TplExtensions.CanceledTask;
+				return ThreadingTools.TaskFromCanceled(cancellationToken);
 			}
 
 			lock (this.signalAwaiters) {
@@ -84,7 +87,7 @@ namespace Microsoft.VisualStudio.Threading {
 					this.signaled = false;
 					return TplExtensions.CompletedTask;
 				} else {
-					var waiter = new WaiterCompletionSource(this, cancellationToken);
+					var waiter = new WaiterCompletionSource(this, cancellationToken, this.allowInliningAwaiters);
 					this.signalAwaiters.Enqueue(waiter);
 					return waiter.Task;
 				}
@@ -106,11 +109,7 @@ namespace Microsoft.VisualStudio.Threading {
 
 			if (toRelease != null) {
 				toRelease.Registration.Dispose();
-				if (this.allowInliningAwaiters) {
-					toRelease.SetResult(EmptyStruct.Instance);
-				} else {
-					ThreadPool.QueueUserWorkItem(state => ((WaiterCompletionSource)state).SetResult(EmptyStruct.Instance), toRelease);
-				}
+				toRelease.TrySetResultToDefault();
 			}
 		}
 
@@ -128,26 +127,30 @@ namespace Microsoft.VisualStudio.Threading {
 			// We only cancel the task if we removed it from the queue.
 			// If it wasn't in the queue, it has already been signaled.
 			if (removed) {
-				if (this.allowInliningAwaiters) {
-					tcs.SetCanceled();
-				} else {
-					ThreadPool.QueueUserWorkItem(s => ((WaiterCompletionSource)s).SetCanceled(), state);
-				}
+				tcs.TrySetCanceled(tcs.CancellationToken);
 			}
 		}
 
 		/// <summary>
 		/// Tracks someone waiting for a signal from the event.
 		/// </summary>
-		private class WaiterCompletionSource : TaskCompletionSource<EmptyStruct> {
+		private class WaiterCompletionSource : TaskCompletionSourceWithoutInlining<EmptyStruct> {
 			/// <summary>
 			/// Initializes a new instance of the <see cref="WaiterCompletionSource"/> class.
 			/// </summary>
 			/// <param name="owner">The event that is initializing this value.</param>
 			/// <param name="cancellationToken">The cancellation token associated with the waiter.</param>
-			public WaiterCompletionSource(AsyncAutoResetEvent owner, CancellationToken cancellationToken) {
+			/// <param name="allowInliningContinuations"><c>true</c> to allow continuations to be inlined upon the completer's callstack.</param>
+			public WaiterCompletionSource(AsyncAutoResetEvent owner, CancellationToken cancellationToken, bool allowInliningContinuations)
+				: base(allowInliningContinuations) {
+				this.CancellationToken = cancellationToken;
 				this.Registration = cancellationToken.Register(owner.onCancellationRequestHandler, this);
 			}
+
+			/// <summary>
+			/// Gets the <see cref="CancellationToken"/> provided by the waiter.
+			/// </summary>
+			public CancellationToken CancellationToken { get; private set; }
 
 			/// <summary>
 			/// Gets the registration to dispose of when the waiter receives their event.

@@ -178,7 +178,7 @@
 				var nowait = Task.Run(async delegate {
 					await this.Factory.SwitchToMainThreadAsync();
 					var nowait2 = this.YieldingMethodAsync();
-					await messagePosted.SetAsync();
+					messagePosted.Set();
 				});
 				await messagePosted.WaitAsync();
 				IHangReportContributor contributor = this.Context;
@@ -326,7 +326,7 @@
 			Task.Run(delegate {
 				joinableTask = this.Factory.RunAsync(async delegate {
 					Assert.IsFalse(this.Context.IsMainThreadBlocked());
-					await nonBlockingStateObserved.SetAsync();
+					nonBlockingStateObserved.Set();
 					await Task.Yield();
 					await nowBlocking;
 					Assert.IsTrue(this.Context.IsMainThreadBlocked());
@@ -336,7 +336,7 @@
 			this.Factory.Run(async delegate {
 				await nonBlockingStateObserved;
 				joinableTask.JoinAsync().Forget();
-				await nowBlocking.SetAsync();
+				nowBlocking.Set();
 			});
 		}
 

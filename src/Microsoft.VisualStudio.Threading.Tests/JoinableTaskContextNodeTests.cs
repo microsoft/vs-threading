@@ -243,13 +243,13 @@ namespace Microsoft.VisualStudio.Threading.Tests {
 
 			protected override void OnHangDetected(JoinableTaskContext.HangDetails details) {
 				this.HangDetails = details;
-				this.HangDetected.SetAsync().Forget();
+				this.HangDetected.Set();
 				this.HangReportCount++;
 				base.OnHangDetected(details);
 			}
 
 			protected override void OnFalseHangDetected(TimeSpan hangDuration, Guid hangId) {
-				this.FalseHangReportDetected.SetAsync().Forget();
+				this.FalseHangReportDetected.Set();
 				this.FalseHangReportId = hangId;
 				this.FalseHangReportTimeSpan = hangDuration;
 				this.FalseHangReportCount++;

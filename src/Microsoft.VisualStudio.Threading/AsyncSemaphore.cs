@@ -39,9 +39,7 @@ namespace Microsoft.VisualStudio.Threading {
 			this.semaphore = new SemaphoreSlim(initialCount);
 			this.uncontestedReleaser = Task.FromResult(new Releaser(this));
 
-			var canceledSource = new TaskCompletionSource<Releaser>();
-			canceledSource.SetCanceled();
-			this.canceledReleaser = canceledSource.Task;
+			this.canceledReleaser = ThreadingTools.TaskFromCanceled<Releaser>(new CancellationToken(canceled: true));
 		}
 
 		/// <summary>
@@ -50,6 +48,10 @@ namespace Microsoft.VisualStudio.Threading {
 		/// <param name="cancellationToken">A token whose cancellation signals lost interest in the lock.</param>
 		/// <returns>A task whose result is a releaser that should be disposed to release the lock.</returns>
 		public Task<Releaser> EnterAsync(CancellationToken cancellationToken = default(CancellationToken)) {
+			if (cancellationToken.IsCancellationRequested) {
+				return ThreadingTools.TaskFromCanceled<Releaser>(cancellationToken);
+			}
+
 			return this.LockWaitingHelper(this.semaphore.WaitAsync(cancellationToken));
 		}
 
@@ -101,9 +103,8 @@ namespace Microsoft.VisualStudio.Threading {
 				? this.uncontestedReleaser // uncontested lock
 				: waitTask.ContinueWith(
 					(waiter, state) => {
-						if (waiter.IsCanceled) {
-							throw new OperationCanceledException();
-						}
+						// Re-throw any cancellation or fault exceptions.
+						waiter.GetAwaiter().GetResult();
 
 						return new Releaser((AsyncSemaphore)state);
 					},
@@ -125,7 +126,12 @@ namespace Microsoft.VisualStudio.Threading {
 				? (waitTask.Result ? this.uncontestedReleaser : this.canceledReleaser) // uncontested lock
 				: waitTask.ContinueWith(
 					(waiter, state) => {
-						if (waiter.IsCanceled || !waiter.Result) {
+						// Rethrow the original cancellation exception to retain the root CancellationToken,
+						// or any other faulted exceptions.
+						waiter.GetAwaiter().GetResult();
+
+						// Also check for the timeout result.
+						if (!waiter.Result) {
 							throw new OperationCanceledException();
 						}
 

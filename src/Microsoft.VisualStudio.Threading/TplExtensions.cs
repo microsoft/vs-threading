@@ -24,13 +24,13 @@ namespace Microsoft.VisualStudio.Threading {
 		/// A singleton completed task.
 		/// </summary>
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-		public static readonly Task CompletedTask = Task.FromResult<object>(null);
+		public static readonly Task CompletedTask = Task.FromResult(new EmptyStruct());
 
 		/// <summary>
 		/// A task that is already canceled.
 		/// </summary>
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-		public static readonly Task CanceledTask = CreateCanceledTask();
+		public static readonly Task CanceledTask = ThreadingTools.TaskFromCanceled(new CancellationToken(canceled: true));
 
 		/// <summary>
 		/// A completed task with a <c>true</c> result.
@@ -168,7 +168,12 @@ namespace Microsoft.VisualStudio.Threading {
 
 			if (ultimateCancellation.CanBeCanceled) {
 				var sourceState = tcs.SourceState;
-				sourceState.RegisteredCallback = ultimateCancellation.Register(state => ((TaskCompletionSource<FollowCancelableTaskState<T>, T>)state).TrySetCanceled(), tcs);
+				sourceState.RegisteredCallback = ultimateCancellation.Register(
+					state => {
+						var tuple = (Tuple<TaskCompletionSource<FollowCancelableTaskState<T>, T>, CancellationToken>)state;
+						tuple.Item1.TrySetCanceled(tuple.Item2);
+					},
+					Tuple.Create(tcs, ultimateCancellation));
 				tcs.SourceState = sourceState; // copy back in, since it's a struct
 			}
 
@@ -401,7 +406,12 @@ namespace Microsoft.VisualStudio.Threading {
 			// we return immediately. Because of the continuation we've scheduled on that task, this
 			// will automatically release the wait handle notification as well.
 			CancellationTokenRegistration cancellationRegistration =
-				cancellationToken.Register(state => ((TaskCompletionSource<bool>)state).TrySetCanceled(), tcs);
+				cancellationToken.Register(
+					state => {
+						var tuple = (Tuple<TaskCompletionSource<bool>, CancellationToken>)state;
+						tuple.Item1.TrySetCanceled(tuple.Item2);
+					},
+					Tuple.Create(tcs, cancellationToken));
 
 			RegisteredWaitHandle callbackHandle = ThreadPool.RegisterWaitForSingleObject(
 				handle,
@@ -440,15 +450,6 @@ namespace Microsoft.VisualStudio.Threading {
 		}
 
 		/// <summary>
-		/// Creates a canceled task.
-		/// </summary>
-		private static Task CreateCanceledTask() {
-			var tcs = new TaskCompletionSource<EmptyStruct>();
-			tcs.SetCanceled();
-			return tcs.Task;
-		}
-
-		/// <summary>
 		/// Applies a completed task's results to another.
 		/// </summary>
 		/// <typeparam name="T">The type of value returned by a task.</typeparam>
@@ -460,6 +461,9 @@ namespace Microsoft.VisualStudio.Threading {
 			Assumes.NotNull(taskCompletionSource);
 
 			if (completedTask.IsCanceled) {
+				// NOTE: this is "lossy" in that we don't propagate any CancellationToken that the Task would throw an OperationCanceledException with.
+				// Propagating that data would require that we actually cause the completedTask to throw so we can inspect the
+				// OperationCanceledException.CancellationToken property, which we consider more costly than it's worth.
 				taskCompletionSource.TrySetCanceled();
 			} else if (completedTask.IsFaulted) {
 				taskCompletionSource.TrySetException(completedTask.Exception.InnerExceptions);
@@ -481,6 +485,9 @@ namespace Microsoft.VisualStudio.Threading {
 			Assumes.NotNull(taskCompletionSource);
 
 			if (completedTask.IsCanceled) {
+				// NOTE: this is "lossy" in that we don't propagate any CancellationToken that the Task would throw an OperationCanceledException with.
+				// Propagating that data would require that we actually cause the completedTask to throw so we can inspect the
+				// OperationCanceledException.CancellationToken property, which we consider more costly than it's worth.
 				taskCompletionSource.TrySetCanceled();
 			} else if (completedTask.IsFaulted) {
 				taskCompletionSource.TrySetException(completedTask.Exception.InnerExceptions);

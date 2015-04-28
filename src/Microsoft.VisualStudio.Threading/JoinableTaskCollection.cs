@@ -143,7 +143,7 @@ namespace Microsoft.VisualStudio.Threading {
 							}
 
 							if (this.emptyEvent != null && this.joinables.Count == 0) {
-								this.emptyEvent.SetAsync();
+								this.emptyEvent.Set();
 							}
 						} else {
 							this.joinables[joinableTask] = refCount - 1;

@@ -6,9 +6,6 @@
 
 namespace Microsoft.VisualStudio.Threading {
 	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.Text;
 	using System.Threading;
 	using System.Threading.Tasks;
 
@@ -64,7 +61,7 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			if (cancellationToken.IsCancellationRequested) {
-				return SingletonTask<T>.CanceledTask;
+				return TaskFromCanceled<T>(cancellationToken);
 			}
 
 			return WithCancellationSlow(task, cancellationToken);
@@ -85,7 +82,7 @@ namespace Microsoft.VisualStudio.Threading {
 			}
 
 			if (cancellationToken.IsCancellationRequested) {
-				return TplExtensions.CanceledTask;
+				return TaskFromCanceled(cancellationToken);
 			}
 
 			return WithCancellationSlow(task, cancellationToken);
@@ -100,23 +97,30 @@ namespace Microsoft.VisualStudio.Threading {
 			return SpecializedSyncContext.Apply(syncContext, checkForChangesOnRevert);
 		}
 
-		/// <summary>
-		/// Creates a faulted task with the specified exception.
-		/// </summary>
-		/// <param name="exception">The exception to fault the task with.</param>
-		/// <returns>The faulted task.</returns>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-		internal static Task CreateFaultedTask(Exception exception) {
-			Requires.NotNull(exception, nameof(exception));
+		internal static bool TrySetCanceled<T>(this TaskCompletionSource<T> tcs, CancellationToken cancellationToken) {
+			return LightUps<T>.TrySetCanceled != null
+				? LightUps<T>.TrySetCanceled(tcs, cancellationToken)
+				: tcs.TrySetCanceled();
+		}
 
-			try {
-				// We must throw so the callstack is set on the exception.
-				throw exception;
-			} catch (Exception ex) {
-				var faultedTaskSource = new TaskCompletionSource<EmptyStruct>();
-				faultedTaskSource.SetException(ex);
-				return faultedTaskSource.Task;
-			}
+		internal static Task TaskFromCanceled(CancellationToken cancellationToken) {
+			return TaskFromCanceled<EmptyStruct>(cancellationToken);
+		}
+
+		internal static Task<T> TaskFromCanceled<T>(CancellationToken cancellationToken) {
+			var tcs = new TaskCompletionSource<T>();
+			tcs.TrySetCanceled(cancellationToken);
+			return tcs.Task;
+		}
+
+		internal static Task TaskFromException(Exception exception) {
+			return TaskFromException<EmptyStruct>(exception);
+		}
+
+		internal static Task<T> TaskFromException<T>(Exception exception) {
+			var tcs = new TaskCompletionSource<T>();
+			tcs.TrySetException(exception);
+			return tcs.Task;
 		}
 
 		/// <summary>
@@ -166,26 +170,6 @@ namespace Microsoft.VisualStudio.Threading {
 			// But if we skipped the above if branch, this will actually yield
 			// on an incompleted task.
 			await task.ConfigureAwait(false);
-		}
-
-		/// <summary>
-		/// Wraps a Task{T} that has already been canceled.
-		/// </summary>
-		/// <typeparam name="T">The type of value that might have been returned by the task except for its cancellation.</typeparam>
-		private static class SingletonTask<T> {
-			/// <summary>
-			/// A task that is already canceled.
-			/// </summary>
-			internal static readonly Task<T> CanceledTask = CreateCanceledTask();
-
-			/// <summary>
-			/// Creates a canceled task.
-			/// </summary>
-			private static Task<T> CreateCanceledTask() {
-				var tcs = new TaskCompletionSource<T>();
-				tcs.SetCanceled();
-				return tcs.Task;
-			}
 		}
 	}
 }
