@@ -1318,27 +1318,28 @@
 			Assert.IsTrue(operationTask.IsCompleted);
 		}
 
-        [TestMethod, Timeout(TestTimeout)]
-        public async Task SynchronousTaskStackMaintainedCorrectly() {
-            var mainThreadNowBlocking = new AsyncManualResetEvent();
-            var asyncTaskWaiting = new AsyncManualResetEvent();
+		[TestMethod, Timeout(TestTimeout)]
+		public void SynchronousTaskStackMaintainedCorrectly() {
+			var mainThreadNowBlocking = new AsyncManualResetEvent();
+			var asyncTaskWaiting = new AsyncManualResetEvent();
 
-            var task = Task.Run(async delegate
-            {
-                await asyncTaskWaiting.WaitAsync();
-                mainThreadNowBlocking.Set();
-            });
+			var task = Task.Run(async delegate {
+				await asyncTaskWaiting.WaitAsync();
+				mainThreadNowBlocking.Set();
+			});
 
-            this.asyncPump.Run(async delegate
-            {
-                this.asyncPump.Run(() => Task.FromResult<bool>(true));
-                await mainThreadNowBlocking.WaitAsync().GetAwaiter().YieldAndNotify(asyncTaskWaiting);
-            });
+			this.asyncPump.Run(async delegate {
+				this.asyncPump.Run(() => Task.FromResult<bool>(true));
+				await mainThreadNowBlocking.WaitAsync().GetAwaiter().YieldAndNotify(asyncTaskWaiting);
+			});
 
-            await task;
-        }
+			this.asyncPump.Run(async delegate
+			{
+				await task;
+			});
+		}
 
-        [TestMethod, Timeout(TestTimeout)]
+		[TestMethod, Timeout(TestTimeout)]
 		public void RunSynchronouslyKicksOffReturnsThenSyncBlocksStillRequiresJoin() {
 			var mainThreadNowBlocking = new AsyncManualResetEvent();
 			Task task = null;
