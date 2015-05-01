@@ -108,7 +108,7 @@ namespace Microsoft.VisualStudio.Threading {
 		internal void TrySetResultToDefault() {
 			if (!this.Task.IsCompleted) {
 				if (this.CanCompleteInline) {
-					base.TrySetResult(default(T));
+					this.TrySetResult(default(T));
 				} else {
 					ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<T>)state).TrySetResult(default(T)), this);
 				}
@@ -127,11 +127,5 @@ namespace Microsoft.VisualStudio.Threading {
 				? (options | LightUps.RunContinuationsAsynchronously)
 				: options;
 		}
-	}
-
-	/// <summary>
-	/// Static elements that are not dependant on a generic type parameter.
-	/// </summary>
-	internal static class TaskCompletionSourceWithoutInlining {
 	}
 }
