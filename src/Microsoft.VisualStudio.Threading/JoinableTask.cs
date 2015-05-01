@@ -671,7 +671,7 @@ namespace Microsoft.VisualStudio.Threading {
 					}
 
 					if (onMainThread) {
-						this.owner.Context.OnJoinableTaskSynchronouslyBlockingMainThread(this);
+						this.owner.Context.OnSynchronousJoinableTaskBlockingMainThread(this);
 					}
 
 					try {
