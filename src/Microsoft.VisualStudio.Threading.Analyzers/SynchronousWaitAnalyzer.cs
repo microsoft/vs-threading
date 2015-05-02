@@ -48,12 +48,12 @@
             if (invokeMethod != null)
             {
                 var taskType = context.SemanticModel.Compilation.GetTypeByMetadataName(typeof(Task).FullName);
-                if (String.Equals(invokeMethod.Name, nameof(Task.Wait), StringComparison.Ordinal)
+                if (string.Equals(invokeMethod.Name, nameof(Task.Wait), StringComparison.Ordinal)
                     && Utils.IsEqualToOrDerivedFrom(invokeMethod.ContainingType, taskType))
                 {
                     context.ReportDiagnostic(Diagnostic.Create(Rules.SynchronousWaitRule, context.Node.GetLocation()));
                 }
-                else if (String.Equals(invokeMethod.Name, "GetResult", StringComparison.Ordinal)
+                else if (string.Equals(invokeMethod.Name, "GetResult", StringComparison.Ordinal)
                     && invokeMethod.ContainingType.Name.EndsWith("Awaiter", StringComparison.Ordinal))
                 {
                     context.ReportDiagnostic(Diagnostic.Create(Rules.SynchronousWaitRule, context.Node.GetLocation()));
@@ -67,7 +67,7 @@
             if (property != null)
             {
                 var taskType = context.SemanticModel.Compilation.GetTypeByMetadataName(typeof(Task).FullName);
-                if (String.Equals(property.Name, nameof(Task<Object>.Result), StringComparison.Ordinal)
+                if (string.Equals(property.Name, nameof(Task<object>.Result), StringComparison.Ordinal)
                     && Utils.IsEqualToOrDerivedFrom(property.ContainingType, taskType))
                 {
                     context.ReportDiagnostic(Diagnostic.Create(Rules.SynchronousWaitRule, context.Node.GetLocation()));

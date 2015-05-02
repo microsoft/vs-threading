@@ -42,21 +42,27 @@
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class VsServiceUsageAnalyzer : DiagnosticAnalyzer
     {
-        private static readonly IImmutableSet<String> knownMethodsToVerifyMainThread = ImmutableHashSet.Create(StringComparer.Ordinal,
+        private static readonly IImmutableSet<string> KnownMethodsToVerifyMainThread = ImmutableHashSet.Create(StringComparer.Ordinal,
             "VerifyOnUIThread",
             "ThrowIfNotOnUIThread");
 
-        private static readonly IImmutableSet<String> knownMethodsToSwitchToMainThread = ImmutableHashSet.Create(StringComparer.Ordinal,
+        private static readonly IImmutableSet<string> KnownMethodsToSwitchToMainThread = ImmutableHashSet.Create(StringComparer.Ordinal,
             nameof(JoinableTaskFactory.SwitchToMainThreadAsync),
             "SwitchToUIThread");
 
-        private static readonly IImmutableSet<SyntaxKind> methodSyntaxKinds = ImmutableHashSet.Create(
+        private static readonly IImmutableSet<SyntaxKind> MethodSyntaxKinds = ImmutableHashSet.Create(
             SyntaxKind.MethodDeclaration,
             SyntaxKind.AnonymousMethodExpression,
             SyntaxKind.SimpleLambdaExpression,
             SyntaxKind.ParenthesizedLambdaExpression);
 
         private ImmutableDictionary<SyntaxNode, ThreadingContext> methodDeclarationNodes = ImmutableDictionary<SyntaxNode, ThreadingContext>.Empty;
+
+        private enum ThreadingContext
+        {
+            Unknown,
+            MainThread,
+        }
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         {
@@ -80,10 +86,10 @@
             var invokeMethod = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
             if (invokeMethod != null)
             {
-                var methodDeclaration = context.Node.FirstAncestorOrSelf<SyntaxNode>(n => methodSyntaxKinds.Contains(n.Kind()));
+                var methodDeclaration = context.Node.FirstAncestorOrSelf<SyntaxNode>(n => MethodSyntaxKinds.Contains(n.Kind()));
                 if (methodDeclaration != null)
                 {
-                    if (knownMethodsToVerifyMainThread.Contains(invokeMethod.Name) || knownMethodsToSwitchToMainThread.Contains(invokeMethod.Name))
+                    if (KnownMethodsToVerifyMainThread.Contains(invokeMethod.Name) || KnownMethodsToSwitchToMainThread.Contains(invokeMethod.Name))
                     {
                         this.methodDeclarationNodes = this.methodDeclarationNodes.SetItem(methodDeclaration, ThreadingContext.MainThread);
                         return;
@@ -126,7 +132,7 @@
             if (IsVisualStudioShellInteropAssembly(type.ContainingAssembly.Name))
             {
                 var threadingContext = ThreadingContext.Unknown;
-                var methodDeclaration = context.Node.FirstAncestorOrSelf<SyntaxNode>(n => methodSyntaxKinds.Contains(n.Kind()));
+                var methodDeclaration = context.Node.FirstAncestorOrSelf<SyntaxNode>(n => MethodSyntaxKinds.Contains(n.Kind()));
                 if (methodDeclaration != null)
                 {
                     threadingContext = this.methodDeclarationNodes.GetValueOrDefault(methodDeclaration);
@@ -143,12 +149,6 @@
         {
             return assemblyName.StartsWith("Microsoft.VisualStudio.Shell.Interop", StringComparison.OrdinalIgnoreCase)
                 || assemblyName.StartsWith("Microsoft.Internal.VisualStudio.Shell.Interop", StringComparison.OrdinalIgnoreCase);
-        }
-
-        private enum ThreadingContext
-        {
-            Unknown,
-            MainThread,
         }
     }
 }

@@ -5,6 +5,7 @@
     using System.Collections.Immutable;
     using System.Linq;
     using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -15,7 +16,7 @@
     /// </summary>
     /// <remarks>
     /// [Background] Async void methods/lambdas have different error-handling semantics.
-    /// When an exception is thrown out of an async Task or async Task<T> method/lambda,
+    /// When an exception is thrown out of an async Task or async <see cref="Task{T}"/> method/lambda,
     /// that exception is captured and placed on the Task object. With async void methods/lambdas,
     /// there is no Task object, so any exceptions thrown out of an async void method/lambda will
     /// be raised directly on the SynchronizationContext that was active when the async
@@ -23,6 +24,7 @@
     /// Refer to Stephen's article https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info.
     ///
     /// i.e.
+    /// <![CDATA[
     ///   void F(Action<T> action) {
     ///   }
     /// 
@@ -31,6 +33,7 @@
     ///           DoSomething();
     ///       });
     ///   }
+    /// ]]>
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class AsyncVoidLambdaAnalyzer : DiagnosticAnalyzer

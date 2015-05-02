@@ -35,7 +35,7 @@
         /// </remarks>
         internal static bool IsEventHandler(IMethodSymbol methodSymbol, Compilation compilation)
         {
-            var objectType = compilation.GetTypeByMetadataName(typeof(Object).FullName);
+            var objectType = compilation.GetTypeByMetadataName(typeof(object).FullName);
             var eventArgsType = compilation.GetTypeByMetadataName(typeof(EventArgs).FullName);
             return methodSymbol.Parameters.Length == 2
                 && methodSymbol.Parameters[0].Type.OriginalDefinition == objectType
