@@ -18,6 +18,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Thre
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Threading.Analyzers.Tests", "Microsoft.VisualStudio.Threading.Analyzers.Tests\Microsoft.VisualStudio.Threading.Analyzers.Tests.csproj", "{620ED702-B6DA-4454-BF3E-5494D3652724}"
 EndProject
+Project("{FF286327-C783-4F7A-AB73-9BCBAD0D4460}") = "Microsoft.VisualStudio.Threading.Analyzers.NuGet", "Microsoft.VisualStudio.Threading.Analyzers.NuGet\Microsoft.VisualStudio.Threading.Analyzers.NuGet.nuproj", "{D539B066-BAF1-4F8B-8088-8AE1AA75F34C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -44,6 +46,10 @@ Global
 		{620ED702-B6DA-4454-BF3E-5494D3652724}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{620ED702-B6DA-4454-BF3E-5494D3652724}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{620ED702-B6DA-4454-BF3E-5494D3652724}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D539B066-BAF1-4F8B-8088-8AE1AA75F34C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D539B066-BAF1-4F8B-8088-8AE1AA75F34C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D539B066-BAF1-4F8B-8088-8AE1AA75F34C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D539B066-BAF1-4F8B-8088-8AE1AA75F34C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
