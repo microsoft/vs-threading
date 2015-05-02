@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.22712.0
+VisualStudioVersion = 14.0.22820.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Threading", "Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj", "{2C0DFFBD-49C8-4F12-A964-E3096AD4C7F4}"
 EndProject
@@ -13,6 +13,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{616BF0
 	ProjectSection(SolutionItems) = preProject
 		.nuget\packages.config = .nuget\packages.config
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Threading.Analyzers", "Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.csproj", "{536F3F9A-B457-43B8-BC93-CE1C16959037}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Threading.Analyzers.Tests", "Microsoft.VisualStudio.Threading.Analyzers.Tests\Microsoft.VisualStudio.Threading.Analyzers.Tests.csproj", "{620ED702-B6DA-4454-BF3E-5494D3652724}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -32,6 +36,14 @@ Global
 		{C51ACF4A-3E2C-44B2-99FC-1A838518C690}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C51ACF4A-3E2C-44B2-99FC-1A838518C690}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C51ACF4A-3E2C-44B2-99FC-1A838518C690}.Release|Any CPU.Build.0 = Release|Any CPU
+		{536F3F9A-B457-43B8-BC93-CE1C16959037}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{536F3F9A-B457-43B8-BC93-CE1C16959037}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{536F3F9A-B457-43B8-BC93-CE1C16959037}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{536F3F9A-B457-43B8-BC93-CE1C16959037}.Release|Any CPU.Build.0 = Release|Any CPU
+		{620ED702-B6DA-4454-BF3E-5494D3652724}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{620ED702-B6DA-4454-BF3E-5494D3652724}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{620ED702-B6DA-4454-BF3E-5494D3652724}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{620ED702-B6DA-4454-BF3E-5494D3652724}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
