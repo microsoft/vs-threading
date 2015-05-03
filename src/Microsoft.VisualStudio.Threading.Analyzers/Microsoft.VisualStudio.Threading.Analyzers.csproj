@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Microsoft.VisualStudio.Threading.Analyzers</RootNamespace>
     <AssemblyName>Microsoft.VisualStudio.Threading.Analyzers</AssemblyName>
-    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <NoDocumentationFile>true</NoDocumentationFile>
     <TargetFrameworkProfile />

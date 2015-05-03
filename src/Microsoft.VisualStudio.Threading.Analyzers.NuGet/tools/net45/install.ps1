@@ -2,6 +2,6 @@
 
 $p = Get-Project
 
-$analyzerFilePath = join-path $toolsPath "net451\Microsoft.VisualStudio.Threading.Analyzers.dll"
+$analyzerFilePath = join-path $toolsPath "Microsoft.VisualStudio.Threading.Analyzers.dll"
 
 $p.Object.AnalyzerReferences.Add("$analyzerFilePath")
