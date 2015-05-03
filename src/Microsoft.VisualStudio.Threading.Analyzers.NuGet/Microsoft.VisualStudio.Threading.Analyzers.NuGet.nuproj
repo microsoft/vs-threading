@@ -21,7 +21,8 @@
     <Id>Microsoft.VisualStudio.Threading.Analyzers</Id>
     <Title>Microsoft.VisualStudio.Threading.Analyzers</Title>
     <Authors>tli</Authors>
-    <Summary></Summary>
+    <Summary>
+    </Summary>
     <Description>Static code analyzer to detect common mistakes or potential issues on the C# code that uses Visual Studio SDK APIs.</Description>
     <ReleaseNotes>
     </ReleaseNotes>
@@ -31,10 +32,19 @@
     <Copyright>Copyright © Microsoft</Copyright>
     <Tags>analyzers visualstudio vssdk sdk threading</Tags>
     <DevelopmentDependency>True</DevelopmentDependency>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.csproj" />
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.csproj">
+      <PackageDirectory>tools</PackageDirectory>
+      <TargetFramework>
+      </TargetFramework>
+    </ProjectReference>
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading.NuGet\Microsoft.VisualStudio.Threading.NuGet.nuproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="tools\install.ps1" />
+    <Content Include="tools\uninstall.ps1" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), EnlistmentInfo.targets))\EnlistmentInfo.targets" Condition=" '$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), EnlistmentInfo.targets))' != '' " />
 </Project>
