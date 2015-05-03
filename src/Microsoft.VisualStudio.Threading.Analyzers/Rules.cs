@@ -4,7 +4,7 @@
 
     internal class Rules
     {
-        internal static readonly DiagnosticDescriptor SynchronousWaitRule = new DiagnosticDescriptor(id: "CPS005",
+        internal static readonly DiagnosticDescriptor SynchronousWaitRule = new DiagnosticDescriptor(id: "VSSDK001",
             title: "Synchronous wait on tasks or awaiters is dangerous and may cause dead locks.",
             messageFormat: "Synchronous wait on tasks or awaiters is dangerous and may cause dead locks. " +
 "Please consider the following options: " +
@@ -15,7 +15,7 @@
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
-        internal static readonly DiagnosticDescriptor VsServiceBeingUsedOnUnknownThreadRule = new DiagnosticDescriptor(id: "CPS006",
+        internal static readonly DiagnosticDescriptor VsServiceBeingUsedOnUnknownThreadRule = new DiagnosticDescriptor(id: "VSSDK002",
             title: "Visual Studio service should be used on main thread explicitly.",
             messageFormat: "Visual Studio service \"{0}\" should be used on main thread explicitly. " +
 "Please either verify the current thread is main thread, or switch to main thread asynchronously. " +
@@ -26,7 +26,7 @@
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
-        internal static readonly DiagnosticDescriptor AvoidAsyncVoidMethod = new DiagnosticDescriptor(id: "CPS007",
+        internal static readonly DiagnosticDescriptor AvoidAsyncVoidMethod = new DiagnosticDescriptor(id: "VSSDK003",
             title: "Avoid Async Void method.",
             messageFormat: "Avoid Async Void method, because any exceptions thrown out of an async void method will be raised directly on the SynchronizationContext and will crash the process. " +
 "Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info.",
@@ -34,7 +34,7 @@
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
-        internal static readonly DiagnosticDescriptor AvoidAsyncVoidLambda = new DiagnosticDescriptor(id: "CPS008",
+        internal static readonly DiagnosticDescriptor AvoidAsyncVoidLambda = new DiagnosticDescriptor(id: "VSSDK004",
             title: "Async Lambda is being used as Void Returning Delegate Type.",
             messageFormat: "Avoid using Async Lambda as Void Returning Delegate Type, because any exceptions thrown out of an async lambda returning void will be raised directly on the SynchronizationContext and will crash the process. " +
 "Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info.",
