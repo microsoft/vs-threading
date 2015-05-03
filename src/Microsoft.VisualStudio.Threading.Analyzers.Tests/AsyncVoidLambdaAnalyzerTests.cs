@@ -1,4 +1,4 @@
-﻿namespace Microsoft.VisualStudio.ProjectSystem.SDK.Analyzer.Tests
+﻿namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CodeFixes;

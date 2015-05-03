@@ -3,7 +3,7 @@
 using System;
 using Microsoft.CodeAnalysis;
 
-namespace Microsoft.VisualStudio.ProjectSystem.SDK.Analyzer.Tests
+namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
     /// <summary>
     /// Location where the diagnostic appears, as determined by path, line number, and column number.

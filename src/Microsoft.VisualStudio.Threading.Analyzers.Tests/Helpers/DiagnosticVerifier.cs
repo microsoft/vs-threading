@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Microsoft.VisualStudio.ProjectSystem.SDK.Analyzer.Tests
+namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
     /// <summary>
     /// Superclass of all Unit Tests for DiagnosticAnalyzers

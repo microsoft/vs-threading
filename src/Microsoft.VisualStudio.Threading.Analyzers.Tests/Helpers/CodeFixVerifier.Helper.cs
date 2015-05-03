@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Simplification;
 
-namespace Microsoft.VisualStudio.ProjectSystem.SDK.Analyzer.Tests
+namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
     /// <summary>
     /// Diagnostic Producer class with extra methods dealing with applying codefixes

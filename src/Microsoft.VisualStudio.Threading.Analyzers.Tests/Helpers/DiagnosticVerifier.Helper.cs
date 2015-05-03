@@ -12,7 +12,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.Build.Utilities;
 
-namespace Microsoft.VisualStudio.ProjectSystem.SDK.Analyzer.Tests
+namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
     /// <summary>
     /// Class for turning strings into documents and getting the diagnostics on them

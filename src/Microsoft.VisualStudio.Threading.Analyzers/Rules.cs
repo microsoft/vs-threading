@@ -1,4 +1,4 @@
-﻿namespace Microsoft.VisualStudio.ProjectSystem.SDK.Analyzer
+﻿namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using Microsoft.CodeAnalysis;
 
