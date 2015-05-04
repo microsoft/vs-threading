@@ -315,5 +315,39 @@ class Test {
 ";
             VerifyCSharpDiagnostic(test);
         }
+
+        [TestMethod]
+        public void ShouldNotThrowNullReferenceExceptionWhenCastToStringArray()
+        {
+            var test = @"
+using System;
+
+class Test {
+    void F() {
+        object obj1 = null;
+        var a1 = (String[])obj1;
+        var a2 = obj1 as String[];
+    }
+}
+";
+            VerifyCSharpDiagnostic(test);
+        }
+
+        [TestMethod]
+        public void ShouldNotReportWarningOnCastToEnum()
+        {
+            var test = @"
+using System;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    void F() {
+        int i = 0;
+        var result = (tagVSQuerySaveResult)i;
+    }
+}
+";
+            VerifyCSharpDiagnostic(test);
+        }
     }
 }

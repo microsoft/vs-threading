@@ -129,7 +129,9 @@
 
         private void AnalyzeTypeWithinContext(ITypeSymbol type, SyntaxNodeAnalysisContext context)
         {
-            if (IsVisualStudioShellInteropAssembly(type.ContainingAssembly.Name))
+            if (type.TypeKind == TypeKind.Interface
+                && type.ContainingAssembly != null
+                && IsVisualStudioShellInteropAssembly(type.ContainingAssembly.Name))
             {
                 var threadingContext = ThreadingContext.Unknown;
                 var methodDeclaration = context.Node.FirstAncestorOrSelf<SyntaxNode>(n => MethodSyntaxKinds.Contains(n.Kind()));
