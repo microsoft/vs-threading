@@ -10,7 +10,7 @@
     {
         private DiagnosticResult expect = new DiagnosticResult
         {
-            Id = "CPS007",
+            Id = "VSSDK003",
             SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Warning,
         };
