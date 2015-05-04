@@ -20,19 +20,19 @@
   <PropertyGroup Label="Configuration">
     <Id>Microsoft.VisualStudio.Threading.Analyzers</Id>
     <Title>Microsoft.VisualStudio.Threading.Analyzers</Title>
-    <Authors>tli</Authors>
-    <Summary>
-    </Summary>
+    <Summary>Code analyzer for VS SDK developers.</Summary>
     <Description>Static code analyzer to detect common mistakes or potential issues on the C# code that uses Visual Studio SDK APIs.</Description>
-    <ReleaseNotes>
-    </ReleaseNotes>
-    <ProjectUrl>https://mseng.visualstudio.com/DefaultCollection/VSIDEProj/_git/VSIDEProj.Threading/</ProjectUrl>
-    <LicenseUrl>
-    </LicenseUrl>
-    <Copyright>Copyright © Microsoft</Copyright>
     <Tags>analyzers visualstudio vssdk sdk threading</Tags>
     <DevelopmentDependency>True</DevelopmentDependency>
     <NoPackageAnalysis>true</NoPackageAnalysis>
+
+    <Authors>Microsoft</Authors>
+    <Owners>Microsoft, VisualStudioExtensibility</Owners>
+    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+    <ProjectUrl>http://aka.ms/VSProjectSystemExtensibilityPreview</ProjectUrl>
+    <IconUrl>http://aka.ms/VsExtensibilityIcon</IconUrl>
+    <LicenseUrl>http://go.microsoft.com/fwlink/?LinkID=517238</LicenseUrl>
+    <RequireLicenseAcceptance>true</RequireLicenseAcceptance>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.csproj">
