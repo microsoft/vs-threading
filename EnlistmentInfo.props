@@ -7,10 +7,11 @@
     <NuGetPackageRestorePath>$(ProjectDepotRoot)\src\Packages\</NuGetPackageRestorePath>
     <DeployExtension Condition=" '$(IsLabBuild)' == 'true' ">false</DeployExtension>
 
-    <VSToolsDeRazzlePath>$(NuGetPackageRestorePath)VS.Tools.Derazzle.1.0.150407.1\</VSToolsDeRazzlePath>
+    <VSToolsDeRazzlePath>$(NuGetPackageRestorePath)VS.Tools.Derazzle.1.0.150504.1\</VSToolsDeRazzlePath>
     <VSToolsModuleTargetsPath>$(NuGetPackageRestorePath)VS.Tools.ModuleTargets.1.0.150313.1\</VSToolsModuleTargetsPath>
     <VSToolsDevDivFilesPath>$(NuGetPackageRestorePath)VS.Tools.DevDivFiles.1.0.150305.3\</VSToolsDevDivFilesPath>
     <VSToolsX86Managed45>$(NuGetPackageRestorePath)VS.Tools.X86.Managed.V4_5.1.0.150317.3\</VSToolsX86Managed45>
+    <VSExternalApisConfigPath>$(ProjectDepotRoot)Razzle\src\ExternalAPIs\config\</VSExternalApisConfigPath>
 
     <NuGetToolPath>$(NuGetPackageRestorePath)NuGet.CommandLine.2.8.3\tools\</NuGetToolPath>
     <UnzipToolPath>$(NuGetPackageRestorePath)VS.Tools.X86Files.1.0.150316.1\</UnzipToolPath>
@@ -31,4 +32,8 @@
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), EnlistmentInfo.xml))\EnlistmentInfo.xml" />
   <Import Project="$(VSToolsDeRazzlePath)Common.props"/>
+  <PropertyGroup>
+    <!--Override the value of BrandingIncPath that gets set by the Derazzle module as it points to a path that doesn't yet exist in the RC branch-->
+    <BrandingIncPath>$(VSExternalApisConfigPath)inc\Dev14_CTP1\BrandNames</BrandingIncPath>
+  </PropertyGroup>
 </Project>
