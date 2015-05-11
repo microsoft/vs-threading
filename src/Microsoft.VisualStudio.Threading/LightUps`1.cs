@@ -58,7 +58,10 @@ namespace Microsoft.VisualStudio.Threading
             if (!LightUps.ForceNet45Mode)
             {
                 var methodInfo = typeof(TaskCompletionSource<T>).GetMethod(nameof(TaskCompletionSource<int>.TrySetCanceled), new Type[] { typeof(CancellationToken) });
-                TrySetCanceled = (Func<TaskCompletionSource<T>, CancellationToken, bool>)Delegate.CreateDelegate(typeof(Func<TaskCompletionSource<T>, CancellationToken, bool>), methodInfo);
+                if (methodInfo != null)
+                {
+                    TrySetCanceled = (Func<TaskCompletionSource<T>, CancellationToken, bool>)Delegate.CreateDelegate(typeof(Func<TaskCompletionSource<T>, CancellationToken, bool>), methodInfo);
+                }
 
                 if (LightUps.BclAsyncLocalType != null)
                 {
