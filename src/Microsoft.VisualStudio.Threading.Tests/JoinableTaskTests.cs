@@ -1547,6 +1547,36 @@
         }
 
         [TestMethod, Timeout(TestTimeout)]
+        public void SynchronousTaskStackMaintainedCorrectlyWithForkedTask()
+        {
+            this.asyncPump.Run(async delegate
+            {
+                Task innerTask = null;
+                this.asyncPump.Run(delegate
+                {
+                    // We need simulate a scenario that the task is completed without any yielding, 
+                    // but the queue of the Joinable task is not empty at that point, 
+                    // so the synchronous JoinableTask doesn't need any blocking time, but it is completed later.
+                    innerTask = Task.Run(async delegate
+                    {
+                        await this.asyncPump.SwitchToMainThreadAsync();
+                    });
+
+                    Thread.Sleep(AsyncDelay);
+                    return Task.FromResult(true);
+                });
+
+                await Task.Yield();
+
+                // Now, get rid of the innerTask
+                using (this.joinableCollection.Join())
+                {
+                    await innerTask;
+                }
+            });
+        }
+
+        [TestMethod, Timeout(TestTimeout)]
         public void RunSynchronouslyKicksOffReturnsThenSyncBlocksStillRequiresJoin()
         {
             var mainThreadNowBlocking = new AsyncManualResetEvent();
