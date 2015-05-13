@@ -1525,24 +1525,10 @@
         [TestMethod, Timeout(TestTimeout)]
         public void SynchronousTaskStackMaintainedCorrectly()
         {
-            var mainThreadNowBlocking = new AsyncManualResetEvent();
-            var asyncTaskWaiting = new AsyncManualResetEvent();
-
-            var task = Task.Run(async delegate
-            {
-                await asyncTaskWaiting.WaitAsync();
-                mainThreadNowBlocking.Set();
-            });
-
             this.asyncPump.Run(async delegate
             {
                 this.asyncPump.Run(() => Task.FromResult<bool>(true));
-                await mainThreadNowBlocking.WaitAsync().GetAwaiter().YieldAndNotify(asyncTaskWaiting);
-            });
-
-            this.asyncPump.Run(async delegate
-            {
-                await task;
+                await Task.Yield();
             });
         }
 
