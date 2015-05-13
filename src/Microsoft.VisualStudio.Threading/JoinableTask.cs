@@ -775,14 +775,14 @@ namespace Microsoft.VisualStudio.Threading
                     onMainThread = true;
                 }
 
+                this.AddStateFlags(additionalFlags);
+
                 if (!this.IsCompleteRequested)
                 {
                     if (ThreadingEventSource.Instance.IsEnabled())
                     {
                         ThreadingEventSource.Instance.CompleteOnCurrentThreadStart(this.GetHashCode(), onMainThread);
                     }
-
-                    this.AddStateFlags(additionalFlags);
 
                     using (NoMessagePumpSyncContext.Default.Apply())
                     {
@@ -797,7 +797,7 @@ namespace Microsoft.VisualStudio.Threading
 
                     if (onMainThread)
                     {
-                        this.owner.Context.OnSynchronousJoinableTaskBlockingMainThread(this);
+                        this.owner.Context.OnSynchronousJoinableTaskToCompleteOnMainThread(this);
                     }
 
                     try
@@ -844,7 +844,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     if (onMainThread)
                     {
-                        this.owner.Context.OnSynchronousJoinableTaskBlockingMainThread(this);
+                        this.owner.Context.OnSynchronousJoinableTaskToCompleteOnMainThread(this);
                     }
                 }
 

@@ -431,7 +431,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Raised when it starts to wait a joinable task to complete in the main thread.
         /// </summary>
         /// <param name="task">The task requires to be completed</param>
-        internal void OnSynchronousJoinableTaskBlockingMainThread(JoinableTask task)
+        internal void OnSynchronousJoinableTaskToCompleteOnMainThread(JoinableTask task)
         {
             Requires.NotNull(task, nameof(task));
 
