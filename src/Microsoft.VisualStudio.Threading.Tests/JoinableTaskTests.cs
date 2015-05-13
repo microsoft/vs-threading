@@ -1555,10 +1555,33 @@
                 await Task.Yield();
 
                 // Now, get rid of the innerTask
-                using (this.joinableCollection.Join())
+                await innerTask;
+            });
+        }
+
+        [TestMethod, Timeout(TestTimeout), Ignore]
+        public void SynchronousTaskStackMaintainedCorrectlyWithForkedTask2()
+        {
+            // This test simulates that we have an inner task starts to switch to main thread after the joinable task is compeleted.
+            // Because completed task won't be tracked in the dependent chain, waiting it causes a deadlock.  Is this a potential problem?
+            this.asyncPump.Run(async delegate
+            {
+                Task innerTask = null;
+                this.asyncPump.Run(delegate
                 {
-                    await innerTask;
-                }
+                    innerTask = Task.Run(async delegate
+                    {
+                        Thread.Sleep(AsyncDelay);
+                        await this.asyncPump.SwitchToMainThreadAsync();
+                    });
+
+                    return Task.FromResult(true);
+                });
+
+                await Task.Yield();
+
+                // Now, get rid of the innerTask
+                await innerTask;
             });
         }
 
