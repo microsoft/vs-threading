@@ -1563,7 +1563,7 @@
         public void SynchronousTaskStackMaintainedCorrectlyWithForkedTask2()
         {
             // This test simulates that we have an inner task starts to switch to main thread after the joinable task is compeleted.
-            // Because completed task won't be tracked in the dependent chain, waiting it causes a deadlock.  Is this a potential problem?
+            // Because completed task won't be tracked in the dependent chain, waiting it causes a deadlock.  This could be a potential problem.
             this.asyncPump.Run(async delegate
             {
                 Task innerTask = null;
