@@ -15,25 +15,34 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>c51acf4a-3e2c-44b2-99fc-1a838518c690</ProjectGuid>
+    <ProjectGuid>d539b066-baf1-4f8b-8088-8ae1aa75f34c</ProjectGuid>
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
-    <Id>Microsoft.VisualStudio.Threading</Id>
-    <Title>Microsoft.VisualStudio.Threading</Title>
-    <Summary>Async synchronization primitives, async collections, TPL and dataflow extensions.</Summary>
-    <Description>Enables compliance with the Visual Studio threading rules (e.g. JoinableTaskFactory).</Description>
-    <Tags>Threading Async Lock Synchronization Threadsafe</Tags>
+    <Id>Microsoft.VisualStudio.Threading.Analyzers</Id>
+    <Title>Microsoft.VisualStudio.Threading.Analyzers</Title>
+    <Summary>Code analyzer for VS SDK developers.</Summary>
+    <Description>Static code analyzer to detect common mistakes or potential issues on the C# code that uses Visual Studio SDK APIs.</Description>
+    <Tags>analyzers visualstudio vssdk sdk threading</Tags>
+    <DevelopmentDependency>True</DevelopmentDependency>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
 
     <Authors>Microsoft</Authors>
     <Owners>Microsoft, VisualStudioExtensibility</Owners>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
-    <ProjectUrl>http://aka.ms/vsextensibility</ProjectUrl>
+    <ProjectUrl>http://aka.ms/VSProjectSystemExtensibilityPreview</ProjectUrl>
     <IconUrl>http://aka.ms/VsExtensibilityIcon</IconUrl>
     <LicenseUrl>http://go.microsoft.com/fwlink/?LinkID=517238</LicenseUrl>
     <RequireLicenseAcceptance>true</RequireLicenseAcceptance>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj" />
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.csproj">
+      <PackageDirectory>tools</PackageDirectory>
+    </ProjectReference>
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.NuGet\Microsoft.VisualStudio.Threading.NuGet.nuproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="tools\net45\install.ps1" />
+    <Content Include="tools\net45\uninstall.ps1" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), EnlistmentInfo.targets))\EnlistmentInfo.targets" Condition=" '$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), EnlistmentInfo.targets))' != '' " />
 </Project>
