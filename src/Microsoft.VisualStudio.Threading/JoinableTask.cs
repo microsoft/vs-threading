@@ -767,16 +767,16 @@ namespace Microsoft.VisualStudio.Threading
             CompletingTask.Value = this;
             try
             {
+                bool onMainThread = false;
+                var additionalFlags = JoinableTaskFlags.CompletingSynchronously;
+                if (this.owner.Context.MainThread == Thread.CurrentThread)
+                {
+                    additionalFlags |= JoinableTaskFlags.SynchronouslyBlockingMainThread;
+                    onMainThread = true;
+                }
+
                 if (!this.IsCompleteRequested)
                 {
-                    bool onMainThread = false;
-                    var additionalFlags = JoinableTaskFlags.CompletingSynchronously;
-                    if (this.owner.Context.MainThread == Thread.CurrentThread)
-                    {
-                        additionalFlags |= JoinableTaskFlags.SynchronouslyBlockingMainThread;
-                        onMainThread = true;
-                    }
-
                     if (ThreadingEventSource.Instance.IsEnabled())
                     {
                         ThreadingEventSource.Instance.CompleteOnCurrentThreadStart(this.GetHashCode(), onMainThread);
@@ -838,6 +838,13 @@ namespace Microsoft.VisualStudio.Threading
                     if (ThreadingEventSource.Instance.IsEnabled())
                     {
                         ThreadingEventSource.Instance.CompleteOnCurrentThreadStop(this.GetHashCode());
+                    }
+                }
+                else
+                {
+                    if (onMainThread)
+                    {
+                        this.owner.Context.OnSynchronousJoinableTaskBlockingMainThread(this);
                     }
                 }
 
