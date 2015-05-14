@@ -1561,7 +1561,7 @@
             });
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [TestMethod, Timeout(TestTimeout), Ignore]
         public void SynchronousTaskStackMaintainedCorrectlyWithForkedTask2()
         {
             var innerTaskWaiting = new AsyncManualResetEvent();
