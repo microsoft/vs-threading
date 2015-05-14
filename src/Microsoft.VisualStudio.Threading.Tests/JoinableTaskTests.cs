@@ -1535,6 +1535,8 @@
         [TestMethod, Timeout(TestTimeout)]
         public void SynchronousTaskStackMaintainedCorrectlyWithForkedTask()
         {
+            var innerTaskWaitingSwitching = new AsyncManualResetEvent();
+
             this.asyncPump.Run(async delegate
             {
                 Task innerTask = null;
@@ -1545,10 +1547,10 @@
                     // so the synchronous JoinableTask doesn't need any blocking time, but it is completed later.
                     innerTask = Task.Run(async delegate
                     {
-                        await this.asyncPump.SwitchToMainThreadAsync();
+                        await this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().YieldAndNotify(innerTaskWaitingSwitching);
                     });
 
-                    Thread.Sleep(AsyncDelay);
+                    innerTaskWaitingSwitching.WaitAsync().Wait();
                     return Task.FromResult(true);
                 });
 
@@ -1559,9 +1561,11 @@
             });
         }
 
-        [TestMethod, Timeout(TestTimeout), Ignore]
+        [TestMethod, Timeout(TestTimeout)]
         public void SynchronousTaskStackMaintainedCorrectlyWithForkedTask2()
         {
+            var innerTaskWaiting = new AsyncManualResetEvent();
+
             // This test simulates that we have an inner task starts to switch to main thread after the joinable task is compeleted.
             // Because completed task won't be tracked in the dependent chain, waiting it causes a deadlock.  This could be a potential problem.
             this.asyncPump.Run(async delegate
@@ -1571,13 +1575,14 @@
                 {
                     innerTask = Task.Run(async delegate
                     {
-                        Thread.Sleep(AsyncDelay);
+                        await innerTaskWaiting.WaitAsync();
                         await this.asyncPump.SwitchToMainThreadAsync();
                     });
 
                     return Task.FromResult(true);
                 });
 
+                innerTaskWaiting.Set();
                 await Task.Yield();
 
                 // Now, get rid of the innerTask
