@@ -60,7 +60,7 @@ namespace Microsoft.VisualStudio.Threading
                 var methodInfo = typeof(TaskCompletionSource<T>).GetMethod(nameof(TaskCompletionSource<int>.TrySetCanceled), new Type[] { typeof(CancellationToken) });
                 if (methodInfo != null)
                 {
-                    TrySetCanceled = (Func<TaskCompletionSource<T>, CancellationToken, bool>)Delegate.CreateDelegate(typeof(Func<TaskCompletionSource<T>, CancellationToken, bool>), methodInfo);
+                    TrySetCanceled = (Func<TaskCompletionSource<T>, CancellationToken, bool>)methodInfo.CreateDelegate(typeof(Func<TaskCompletionSource<T>, CancellationToken, bool>));
                 }
 
                 if (LightUps.BclAsyncLocalType != null)
@@ -83,8 +83,8 @@ namespace Microsoft.VisualStudio.Threading
         {
             Assumes.True(IsAsyncLocalSupported);
             var instance = BclAsyncLocalCtor.Invoke(null);
-            getter = (Func<T>)Delegate.CreateDelegate(typeof(Func<T>), instance, bclAsyncLocalValueProperty.GetMethod);
-            setter = (Action<T>)Delegate.CreateDelegate(typeof(Action<T>), instance, bclAsyncLocalValueProperty.SetMethod);
+            getter = (Func<T>)bclAsyncLocalValueProperty.GetMethod.CreateDelegate(typeof(Func<T>), instance);
+            setter = (Action<T>)bclAsyncLocalValueProperty.SetMethod.CreateDelegate(typeof(Action<T>), instance);
             return instance;
         }
     }
