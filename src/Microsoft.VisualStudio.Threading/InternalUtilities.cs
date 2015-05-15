@@ -223,7 +223,7 @@ namespace Microsoft.VisualStudio.Threading
 
             // "task" might be an instance of the type deriving from "Task", but "m_continuationObject" is a private field in "Task",
             // so we need to use "typeof(Task)" to access "m_continuationObject".
-            var continuationField = typeof(Task).GetField("m_continuationObject", BindingFlags.Instance | BindingFlags.NonPublic);
+            var continuationField = typeof(Task).GetTypeInfo().GetDeclaredField("m_continuationObject");
             if (continuationField == null)
             {
                 yield break;
@@ -265,7 +265,7 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(obj, nameof(obj));
             Requires.NotNullOrEmpty(fieldName, nameof(fieldName));
 
-            var field = obj.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+            var field = obj.GetType().GetTypeInfo().GetDeclaredField(fieldName);
             if (field != null)
             {
                 return field.GetValue(obj);
@@ -282,7 +282,7 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(stateMachine, nameof(stateMachine));
             Requires.NotNullOrEmpty(suffix, nameof(suffix));
 
-            var fields = stateMachine.GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+            var fields = stateMachine.GetType().GetTypeInfo().DeclaredFields;
             var field = fields.FirstOrDefault((f) => f.Name.EndsWith(suffix, StringComparison.Ordinal));
             if (field != null)
             {
