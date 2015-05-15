@@ -160,6 +160,11 @@ namespace Microsoft.VisualStudio.Threading
         public Thread MainThread { get; private set; }
 
         /// <summary>
+        /// Gets a value indicating whether the caller is executing on the main thread.
+        /// </summary>
+        public bool IsOnMainThread => Thread.CurrentThread == this.MainThread;
+
+        /// <summary>
         /// Gets a value indicating whether the caller is currently running within the context of a joinable task.
         /// </summary>
         /// <remarks>
