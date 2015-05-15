@@ -71,7 +71,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                Thread.MemoryBarrier();
+                Interlocked.MemoryBarrier();
                 return this.valueFactory == null;
             }
         }
@@ -83,7 +83,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                Thread.MemoryBarrier();
+                Interlocked.MemoryBarrier();
                 return this.value != null && this.value.IsCompleted;
             }
         }
