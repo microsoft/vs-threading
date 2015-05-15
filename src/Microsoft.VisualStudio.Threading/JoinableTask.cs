@@ -335,14 +335,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets the entry method's info so we could show its full name in hang report.
         /// </summary>
-        internal MethodInfo EntryMethodInfo
-        {
-            get
-            {
-                var del = this.initialDelegate;
-                return del != null ? del.Method : null;
-            }
-        }
+        internal MethodInfo EntryMethodInfo => this.initialDelegate?.GetMethodInfo();
 
         /// <summary>
         /// Gets a value indicating whether this task has a non-empty queue.

@@ -114,10 +114,11 @@ namespace Microsoft.VisualStudio.Threading
         {
             Requires.NotNull(invokeDelegate, nameof(invokeDelegate));
 
+            MethodInfo method = invokeDelegate.GetMethodInfo();
             if (invokeDelegate.Target != null)
             {
                 string instanceType = string.Empty;
-                if (!invokeDelegate.Method.DeclaringType.IsEquivalentTo(invokeDelegate.Target.GetType()))
+                if (!method.DeclaringType.IsEquivalentTo(invokeDelegate.Target.GetType()))
                 {
                     instanceType = " (" + invokeDelegate.Target.GetType().FullName + ")";
                 }
@@ -125,8 +126,8 @@ namespace Microsoft.VisualStudio.Threading
                 return string.Format(
                     CultureInfo.CurrentCulture,
                     "{3}{0}.{1}{2} (target address: 0x{4:X8})",
-                    invokeDelegate.Method.DeclaringType.FullName,
-                    invokeDelegate.Method.Name,
+                    method.DeclaringType.FullName,
+                    method.Name,
                     instanceType,
                     AsyncReturnStackPrefix,
                     (int)GetAddress(invokeDelegate.Target)); // the int cast allows hex formatting
@@ -135,8 +136,8 @@ namespace Microsoft.VisualStudio.Threading
             return string.Format(
                 CultureInfo.CurrentCulture,
                 "{2}{0}.{1}",
-                invokeDelegate.Method.DeclaringType.FullName,
-                invokeDelegate.Method.Name,
+                method.DeclaringType.FullName,
+                method.Name,
                 AsyncReturnStackPrefix);
         }
 
