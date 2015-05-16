@@ -197,6 +197,30 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
         }
 
+        [TestMethod, Timeout(TestTimeout)]
+        public async Task AwaitRegKeyChange_CallingThreadDestroyed()
+        {
+            using (var test = new RegKeyTest())
+            {
+                // Start watching and be certain the thread that started watching is destroyed.
+                // This simulates a more common case of someone on a threadpool thread watching
+                // a key asynchronously and then the .NET Threadpool deciding to reduce the number of threads in the pool.
+                Task watchingTask = null;
+                var thread = new Thread(() =>
+                {
+                    watchingTask = test.Key.WaitForChangeAsync(cancellationToken: test.FinishedToken);
+                });
+                thread.Start();
+                thread.Join();
+
+                // Verify that the watching task is still watching.
+                Task completedTask = await Task.WhenAny(watchingTask, Task.Delay(AsyncDelay));
+                Assert.AreNotSame(watchingTask, completedTask);
+                test.CreateSubKey().Dispose();
+                await watchingTask;
+            }
+        }
+
         private class RegKeyTest : IDisposable
         {
             private readonly string keyName;
