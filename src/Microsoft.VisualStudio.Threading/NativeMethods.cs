@@ -27,7 +27,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Indicates that the lifetime of the registration must not be tied to the lifetime of the thread issuing the RegNotifyChangeKeyValue call.
         /// Note: This flag value is only supported in Windows 8 and later.
         /// </summary>
-        internal const RegistryNotifyChange REG_NOTIFY_THREAD_AGNOSTIC = (RegistryNotifyChange)0x10000000L;
+        internal const RegistryChangeNotificationFilter REG_NOTIFY_THREAD_AGNOSTIC = (RegistryChangeNotificationFilter)0x10000000L;
 
         /// <summary>
         /// Really truly non pumping wait.
@@ -55,7 +55,7 @@ namespace Microsoft.VisualStudio.Threading
         internal static extern int RegNotifyChangeKeyValue(
             IntPtr hKey,
             bool watchSubtree,
-            RegistryNotifyChange notifyFilter,
+            RegistryChangeNotificationFilter notifyFilter,
             IntPtr hEvent,
             bool asynchronous);
     }

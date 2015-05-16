@@ -68,7 +68,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns>
         /// A task that completes when the registry key changes, the handle is closed, or upon cancellation.
         /// </returns>
-        public static Task WaitForChangeAsync(this RegistryKey registryKey, bool watchSubtree = true, RegistryNotifyChange change = RegistryNotifyChange.LastSet | RegistryNotifyChange.Name, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task WaitForChangeAsync(this RegistryKey registryKey, bool watchSubtree = true, RegistryChangeNotificationFilter change = RegistryChangeNotificationFilter.Value | RegistryChangeNotificationFilter.SubKey, CancellationToken cancellationToken = default(CancellationToken))
         {
             return WaitForRegistryChangeAsync(registryKey.Handle, watchSubtree, change, cancellationToken);
         }
@@ -83,7 +83,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns>
         /// A task that completes when the registry key changes, the handle is closed, or upon cancellation.
         /// </returns>
-        private static async Task WaitForRegistryChangeAsync(SafeHandle registryKeyHandle, bool watchSubtree, RegistryNotifyChange change, CancellationToken cancellationToken)
+        private static async Task WaitForRegistryChangeAsync(SafeHandle registryKeyHandle, bool watchSubtree, RegistryChangeNotificationFilter change, CancellationToken cancellationToken)
         {
             bool registryKeyHandleReferenceInc = false;
             IDisposable dedicatedThreadReleaser = null;

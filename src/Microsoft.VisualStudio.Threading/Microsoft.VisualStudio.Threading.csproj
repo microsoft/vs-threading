@@ -55,7 +55,7 @@
     <Compile Include="AsyncReaderWriterLock.cs" />
     <Compile Include="AsyncReaderWriterResourceLock.cs" />
     <Compile Include="AwaitExtensions.cs" />
-    <Compile Include="RegistryNotifyChange.cs" />
+    <Compile Include="RegistryChangeNotificationFilter.cs" />
     <Compile Include="DelegatingJoinableTaskFactory.cs" />
     <Compile Include="Dgml.cs" />
     <Compile Include="EmptyStruct.cs" />
