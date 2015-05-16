@@ -13,9 +13,11 @@ namespace Microsoft.VisualStudio.Threading.Tests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Win32;
+    using System.IO;
 
     [TestClass]
-    public class AwaitExtensionsTests
+    public class AwaitExtensionsTests : TestBase
     {
         [TestMethod]
         public void AwaitCustomTaskScheduler()
@@ -67,6 +69,161 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Assert.IsFalse(awaitHelperResult.IsCompleted);
             handle.Set();
             awaitHelperResult.Wait();
+        }
+
+        [TestMethod, Timeout(TestTimeout)]
+        public async Task AwaitRegKeyChange()
+        {
+            using (var test = new RegKeyTest())
+            {
+                Task changeWatcherTask = test.Key.WaitForChangeAsync();
+                Assert.IsFalse(changeWatcherTask.IsCompleted);
+                test.Key.SetValue("a", "b");
+                await changeWatcherTask;
+            }
+        }
+
+        [TestMethod, Timeout(TestTimeout)]
+        public async Task AwaitRegKeyChange_NoChange()
+        {
+            using (var test = new RegKeyTest())
+            {
+                Task changeWatcherTask = test.Key.WaitForChangeAsync(cancellationToken: test.FinishedToken);
+                Assert.IsFalse(changeWatcherTask.IsCompleted);
+
+                // Give a bit of time to confirm the task will not complete.
+                Task completedTask = await Task.WhenAny(changeWatcherTask, Task.Delay(AsyncDelay));
+                Assert.AreNotSame(changeWatcherTask, completedTask);
+            }
+        }
+
+        [TestMethod, Timeout(TestTimeout)]
+        public async Task AwaitRegKeyChange_WatchSubtree()
+        {
+            using (var test = new RegKeyTest())
+            {
+                using (var subKey = test.CreateSubKey())
+                {
+                    Task changeWatcherTask = test.Key.WaitForChangeAsync(watchSubtree: true, cancellationToken: test.FinishedToken);
+                    subKey.SetValue("subkeyValueName", "b");
+                    await changeWatcherTask;
+                }
+            }
+        }
+
+        [TestMethod, Timeout(TestTimeout)]
+        public async Task AwaitRegKeyChange_NoWatchSubtree()
+        {
+            using (var test = new RegKeyTest())
+            {
+                using (var subKey = test.CreateSubKey())
+                {
+                    Task changeWatcherTask = test.Key.WaitForChangeAsync(watchSubtree: false, cancellationToken: test.FinishedToken);
+                    subKey.SetValue("subkeyValueName", "b");
+
+                    // We do not expect changes to sub-keys to complete the task, so give a bit of time to confirm
+                    // the task doesn't complete.
+                    Task completedTask = await Task.WhenAny(changeWatcherTask, Task.Delay(AsyncDelay));
+                    Assert.AreNotSame(changeWatcherTask, completedTask);
+                }
+            }
+        }
+
+        [TestMethod, Timeout(TestTimeout)]
+        public async Task AwaitRegKeyChange_Canceled()
+        {
+            using (var test = new RegKeyTest())
+            {
+                var cts = new CancellationTokenSource();
+                Task changeWatcherTask = test.Key.WaitForChangeAsync(cancellationToken: cts.Token);
+                Assert.IsFalse(changeWatcherTask.IsCompleted);
+                cts.Cancel();
+                try
+                {
+                    await changeWatcherTask;
+                    Assert.Fail("Expected exception not thrown.");
+                }
+                catch (OperationCanceledException ex)
+                {
+                    if (!TestUtilities.IsNet45Mode)
+                    {
+                        Assert.AreEqual(cts.Token, ex.CancellationToken);
+                    }
+                }
+            }
+        }
+
+        [TestMethod, Timeout(TestTimeout)]
+        public async Task AwaitRegKeyChange_KeyDisposedWhileWatching()
+        {
+            Task watchingTask;
+            using (var test = new RegKeyTest())
+            {
+                watchingTask = test.Key.WaitForChangeAsync();
+            }
+
+            try
+            {
+                await watchingTask;
+                Assert.Fail("Expected exception not thrown.");
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+        }
+
+        [TestMethod, Timeout(TestTimeout)]
+        public async Task AwaitRegKeyChange_CanceledAndImmediatelyDisposed()
+        {
+            Task watchingTask;
+            CancellationToken expectedCancellationToken;
+            using (var test = new RegKeyTest())
+            {
+                expectedCancellationToken = test.FinishedToken;
+                watchingTask = test.Key.WaitForChangeAsync(cancellationToken: test.FinishedToken);
+            }
+
+            try
+            {
+                await watchingTask;
+                Assert.Fail("Expected exception not thrown.");
+            }
+            catch (OperationCanceledException ex)
+            {
+                if (!TestUtilities.IsNet45Mode)
+                {
+                    Assert.AreEqual(expectedCancellationToken, ex.CancellationToken);
+                }
+            }
+        }
+
+        private class RegKeyTest : IDisposable
+        {
+            private readonly string keyName;
+            private readonly RegistryKey key;
+            private readonly CancellationTokenSource testFinished = new CancellationTokenSource();
+
+            internal RegKeyTest()
+            {
+                this.keyName = "test_" + Path.GetRandomFileName();
+                this.key = Registry.CurrentUser.CreateSubKey(this.keyName, RegistryKeyPermissionCheck.ReadWriteSubTree, RegistryOptions.Volatile);
+            }
+
+            public RegistryKey Key => this.key;
+
+            public CancellationToken FinishedToken => this.testFinished.Token;
+
+            public RegistryKey CreateSubKey(string name = null)
+            {
+                return this.key.CreateSubKey(name ?? Path.GetRandomFileName(), RegistryKeyPermissionCheck.Default, RegistryOptions.Volatile);
+            }
+
+            public void Dispose()
+            {
+                this.testFinished.Cancel();
+                this.key.Dispose();
+                Registry.CurrentUser.DeleteSubKeyTree(this.keyName);
+            }
         }
 
         private class MockTaskScheduler : TaskScheduler

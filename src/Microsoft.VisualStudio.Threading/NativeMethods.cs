@@ -24,6 +24,12 @@ namespace Microsoft.VisualStudio.Threading
         internal const int WAIT_FAILED = unchecked((int)0xFFFFFFFF);
 
         /// <summary>
+        /// Indicates that the lifetime of the registration must not be tied to the lifetime of the thread issuing the RegNotifyChangeKeyValue call.
+        /// Note: This flag value is only supported in Windows 8 and later.
+        /// </summary>
+        internal const RegistryNotifyChange REG_NOTIFY_THREAD_AGNOSTIC = (RegistryNotifyChange)0x10000000L;
+
+        /// <summary>
         /// Really truly non pumping wait.
         /// Raw IntPtrs have to be used, because the marshaller does not support arrays of SafeHandle, only
         /// single SafeHandles.
@@ -44,5 +50,13 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="millisecondsTimeout">A timeout that will cause this method to return.</param>
         [DllImport("kernel32.dll", SetLastError = true, ExactSpelling = true)]
         internal static extern int WaitForSingleObject(IntPtr waitHandle, int millisecondsTimeout);
+
+        [DllImport("Advapi32.dll")]
+        internal static extern int RegNotifyChangeKeyValue(
+            IntPtr hKey,
+            bool watchSubtree,
+            RegistryNotifyChange notifyFilter,
+            IntPtr hEvent,
+            bool asynchronous);
     }
 }

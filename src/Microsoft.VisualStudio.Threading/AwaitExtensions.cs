@@ -8,11 +8,14 @@ namespace Microsoft.VisualStudio.Threading
 {
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
     using System.Linq;
     using System.Runtime.CompilerServices;
+    using System.Runtime.InteropServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Win32;
 
     /// <summary>
     /// Extension methods and awaitables for .NET 4.5.
@@ -53,6 +56,57 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(handle, nameof(handle));
             Task task = handle.ToTask();
             return task.GetAwaiter();
+        }
+
+        /// <summary>
+        /// Returns a Task that completes when the specified registry key changes.
+        /// </summary>
+        /// <param name="registryKey">The registry key to watch for changes.</param>
+        /// <param name="watchSubtree"><c>true</c> to watch the keys descendent keys as well; <c>false</c> to watch only this key without descendents.</param>
+        /// <param name="change">Indicates the kinds of changes to watch for.</param>
+        /// <param name="cancellationToken">A token that may be canceled to release the resources from watching for changes and complete the returned Task as canceled.</param>
+        /// <returns>
+        /// A task that completes when the registry key changes, or upon cancellation.
+        /// If the registry key is closed while being watched, this Task will fault with an <see cref="ObjectDisposedException"/>.
+        /// </returns>
+        public static async Task WaitForChangeAsync(this RegistryKey registryKey, bool watchSubtree = true, RegistryNotifyChange change = RegistryNotifyChange.LastSet | RegistryNotifyChange.Name, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            bool registryKeyHandleReferenceInc = false;
+            var registryKeyHandle = registryKey.Handle;
+            try
+            {
+                registryKeyHandle.DangerousAddRef(ref registryKeyHandleReferenceInc);
+                using (var evt = new ManualResetEventSlim())
+                {
+                    int win32Error = NativeMethods.RegNotifyChangeKeyValue(
+                        registryKeyHandle.DangerousGetHandle(),
+                        watchSubtree,
+                        change | NativeMethods.REG_NOTIFY_THREAD_AGNOSTIC,
+                        evt.WaitHandle.SafeWaitHandle.DangerousGetHandle(),
+                        true);
+                    if (win32Error != 0)
+                    {
+                        throw new Win32Exception(win32Error);
+                    }
+
+                    await evt.WaitHandle.ToTask(cancellationToken: cancellationToken).ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                if (registryKeyHandleReferenceInc)
+                {
+                    registryKeyHandle.DangerousRelease();
+                }
+
+                // Simply try to retrieve the handle so that if the caller disposed of the RegistryKey
+                // prior to cancelling their request to watch, the Task we returned will fault with an
+                // ObjectDisposedException. But only if they haven't already canceled.
+                if (!cancellationToken.IsCancellationRequested)
+                {
+                    var garbage = registryKey.Handle;
+                }
+            }
         }
 
         /// <summary>
