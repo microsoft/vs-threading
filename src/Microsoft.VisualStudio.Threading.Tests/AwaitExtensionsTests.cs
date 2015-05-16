@@ -175,14 +175,8 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 watchingTask = test.Key.WaitForChangeAsync();
             }
 
-            try
-            {
-                await watchingTask;
-                Assert.Fail("Expected exception not thrown.");
-            }
-            catch (ObjectDisposedException)
-            {
-            }
+            // We expect the task to quietly complete (without throwing any exception).
+            await watchingTask;
         }
 
         [TestMethod, Timeout(TestTimeout)]

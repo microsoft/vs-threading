@@ -66,25 +66,11 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="change">Indicates the kinds of changes to watch for.</param>
         /// <param name="cancellationToken">A token that may be canceled to release the resources from watching for changes and complete the returned Task as canceled.</param>
         /// <returns>
-        /// A task that completes when the registry key changes, or upon cancellation.
-        /// If the registry key is closed while being watched, this Task will fault with an <see cref="ObjectDisposedException"/>.
+        /// A task that completes when the registry key changes, the handle is closed, or upon cancellation.
         /// </returns>
-        public static async Task WaitForChangeAsync(this RegistryKey registryKey, bool watchSubtree = true, RegistryNotifyChange change = RegistryNotifyChange.LastSet | RegistryNotifyChange.Name, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task WaitForChangeAsync(this RegistryKey registryKey, bool watchSubtree = true, RegistryNotifyChange change = RegistryNotifyChange.LastSet | RegistryNotifyChange.Name, CancellationToken cancellationToken = default(CancellationToken))
         {
-            try
-            {
-                await WaitForRegistryChangeAsync(registryKey.Handle, watchSubtree, change, cancellationToken).ConfigureAwait(false);
-            }
-            finally
-            {
-                // Simply try to retrieve the handle so that if the caller disposed of the RegistryKey
-                // prior to cancelling their request to watch, the Task we returned will fault with an
-                // ObjectDisposedException. But only if they haven't already canceled.
-                if (!cancellationToken.IsCancellationRequested)
-                {
-                    var garbage = registryKey.Handle;
-                }
-            }
+            return WaitForRegistryChangeAsync(registryKey.Handle, watchSubtree, change, cancellationToken);
         }
 
         /// <summary>
@@ -97,7 +83,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns>
         /// A task that completes when the registry key changes, the handle is closed, or upon cancellation.
         /// </returns>
-        private static async Task WaitForRegistryChangeAsync(SafeHandle registryKeyHandle, bool watchSubtree = true, RegistryNotifyChange change = RegistryNotifyChange.LastSet | RegistryNotifyChange.Name, CancellationToken cancellationToken = default(CancellationToken))
+        private static async Task WaitForRegistryChangeAsync(SafeHandle registryKeyHandle, bool watchSubtree, RegistryNotifyChange change, CancellationToken cancellationToken)
         {
             bool registryKeyHandleReferenceInc = false;
             IDisposable dedicatedThreadReleaser = null;
