@@ -73,20 +73,40 @@ namespace Microsoft.VisualStudio.Threading
         {
             bool registryKeyHandleReferenceInc = false;
             var registryKeyHandle = registryKey.Handle;
+            IDisposable dedicatedThreadReleaser = null;
             try
             {
                 registryKeyHandle.DangerousAddRef(ref registryKeyHandleReferenceInc);
                 using (var evt = new ManualResetEventSlim())
                 {
-                    int win32Error = NativeMethods.RegNotifyChangeKeyValue(
-                        registryKeyHandle.DangerousGetHandle(),
-                        watchSubtree,
-                        change | NativeMethods.REG_NOTIFY_THREAD_AGNOSTIC,
-                        evt.WaitHandle.SafeWaitHandle.DangerousGetHandle(),
-                        true);
-                    if (win32Error != 0)
+                    Action registerAction = delegate
                     {
-                        throw new Win32Exception(win32Error);
+                        int win32Error = NativeMethods.RegNotifyChangeKeyValue(
+                            registryKeyHandle.DangerousGetHandle(),
+                            watchSubtree,
+                            change,
+                            evt.WaitHandle.SafeWaitHandle.DangerousGetHandle(),
+                            true);
+                        if (win32Error != 0)
+                        {
+                            throw new Win32Exception(win32Error);
+                        }
+                    };
+
+                    if (LightUps.IsWindows8OrLater)
+                    {
+                        change |= NativeMethods.REG_NOTIFY_THREAD_AGNOSTIC;
+                        registerAction();
+                    }
+                    else
+                    {
+                        // Engage our downlevel support by using a single, dedicated thread to guarantee
+                        // that we request notification on a thread that will not be destroyed later.
+                        // Although we *could* await this, we synchronously block because our caller expects
+                        // subscription to have begun before we return: for the async part to simply be notification.
+                        // This async method we're calling uses .ConfigureAwait(false) internally so this won't
+                        // deadlock if we're called on a thread with a single-thread SynchronizationContext.
+                        dedicatedThreadReleaser = DownlevelRegistryWatcherSupport.ExecuteOnDedicatedThreadAsync(registerAction).GetAwaiter().GetResult();
                     }
 
                     await evt.WaitHandle.ToTask(cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -94,6 +114,8 @@ namespace Microsoft.VisualStudio.Threading
             }
             finally
             {
+                dedicatedThreadReleaser?.Dispose();
+
                 if (registryKeyHandleReferenceInc)
                 {
                     registryKeyHandle.DangerousRelease();
@@ -216,6 +238,167 @@ namespace Microsoft.VisualStudio.Threading
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
             public void GetResult()
             {
+            }
+        }
+
+        /// <summary>
+        /// Provides a dedicated thread for requesting registry change notifications.
+        /// </summary>
+        /// <remarks>
+        /// For versions of Windows prior to Windows 8, requesting registry change notifications
+        /// required that the thread that made the request remain alive or else the watcher would
+        /// simply signal the event and stop watching for changes.
+        /// This class provides a single, dedicated thread for requesting such notifications
+        /// so that they don't get canceled when a thread happens to exit.
+        /// The dedicated thread is released when no one is watching the registry any more.
+        /// </remarks>
+        private static class DownlevelRegistryWatcherSupport
+        {
+            /// <summary>
+            /// The object to lock when accessing any fields.
+            /// This is also the object that is waited on by the dedicated thread,
+            /// and may be pulsed by others to wake the dedicated thread to do some work.
+            /// </summary>
+            private static readonly object SyncObject = new object();
+
+            /// <summary>
+            /// A queue of actions the dedicated thread should take.
+            /// </summary>
+            private static readonly Queue<Tuple<Action, TaskCompletionSource<EmptyStruct>>> PendingWork = new Queue<Tuple<Action, TaskCompletionSource<EmptyStruct>>>();
+
+            /// <summary>
+            /// The number of callers that still have an interest in the survival of the dedicated thread.
+            /// The dedicated thread will exit when this value reaches 0.
+            /// </summary>
+            private static int keepAliveCount;
+
+            /// <summary>
+            /// Executes some action on a long-lived thread.
+            /// </summary>
+            /// <param name="action">The delegate to execute.</param>
+            /// <returns>
+            /// A task that either faults with the exception thrown by <paramref name="action"/>
+            /// or completes after successfully executing the delegate 
+            /// with a result that should be disposed when it is safe to terminate the long-lived thread.
+            /// </returns>
+            /// <remarks>
+            /// This thread never posts to <see cref="SynchronizationContext.Current"/>, so it is safe
+            /// to call this method and synchronously block on its result.
+            /// </remarks>
+            internal static async Task<IDisposable> ExecuteOnDedicatedThreadAsync(Action action)
+            {
+                Requires.NotNull(action, nameof(action));
+
+                var tcs = new TaskCompletionSource<EmptyStruct>();
+                bool keepAliveCountIncremented = false;
+                try
+                {
+                    lock (SyncObject)
+                    {
+                        PendingWork.Enqueue(Tuple.Create(action, tcs));
+                        keepAliveCountIncremented = true;
+                        if (++keepAliveCount == 1)
+                        {
+                            var watcherThread = new Thread(Worker, 100 * 1024);
+                            watcherThread.Name = "Registry watcher";
+                            watcherThread.Start();
+                        }
+                        else
+                        {
+                            Monitor.Pulse(SyncObject);
+                        }
+                    }
+
+                    await tcs.Task.ConfigureAwait(false);
+                    return new ThreadHandleRelease();
+                }
+                catch
+                {
+                    if (tcs.Task.IsFaulted && keepAliveCountIncremented)
+                    {
+                        // Our caller will never have a chance to release their claim on the dedicated thread,
+                        // so do it for them.
+                        lock (SyncObject)
+                        {
+                            keepAliveCount--;
+                            Monitor.Pulse(SyncObject);
+                        }
+                    }
+
+                    throw;
+                }
+            }
+
+            /// <summary>
+            /// Executes thread-affinitized work from a queue until both the queue is empty
+            /// and any lingering interest in the survival of the dedicated thread has been released.
+            /// </summary>
+            /// <remarks>
+            /// This method serves as the <see cref="ThreadStart"/> for our dedicated thread.
+            /// </remarks>
+            private static void Worker()
+            {
+                while (true)
+                {
+                    Tuple<Action, TaskCompletionSource<EmptyStruct>> work = null;
+                    lock (SyncObject)
+                    {
+                        if (PendingWork.Count > 0)
+                        {
+                            work = PendingWork.Dequeue();
+                        }
+                        else if (keepAliveCount == 0)
+                        {
+                            // No work, and no reason to stay alive. Exit the thread.
+                            return;
+                        }
+                        else
+                        {
+                            // Sleep until another thread wants to wake us up with a Pulse.
+                            Monitor.Wait(SyncObject);
+                        }
+                    }
+
+                    if (work != null)
+                    {
+                        try
+                        {
+                            work.Item1();
+                            work.Item2.SetResult(EmptyStruct.Instance);
+                        }
+                        catch (Exception ex)
+                        {
+                            work.Item2.SetException(ex);
+                        }
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Decrements the dedicated thread use counter by at most one upon disposal.
+            /// </summary>
+            private class ThreadHandleRelease : IDisposable
+            {
+                /// <summary>
+                /// A value indicating whether this instance has already been disposed.
+                /// </summary>
+                private bool disposed;
+
+                /// <summary>
+                /// Release the keep alive count reserved by this instance.
+                /// </summary>
+                public void Dispose()
+                {
+                    lock (SyncObject)
+                    {
+                        if (!this.disposed)
+                        {
+                            this.disposed = true;
+                            keepAliveCount--;
+                            Monitor.Pulse(SyncObject);
+                        }
+                    }
+                }
             }
         }
     }

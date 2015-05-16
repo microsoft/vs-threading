@@ -17,9 +17,19 @@ namespace Microsoft.VisualStudio.Threading
     internal static class LightUps
     {
         /// <summary>
+        /// The <see cref="OperatingSystem.Version"/> for Windows 8.
+        /// </summary>
+        private static readonly Version Windows8Version = new Version(6, 2, 9200);
+
+        /// <summary>
         /// Gets a value indicating whether we execute .NET 4.5 code even on later versions of the Framework.
         /// </summary>
         internal static readonly bool ForceNet45Mode = ConfigurationManager.AppSettings["Microsoft.VisualStudio.Threading.NET45Mode"] == "true";
+
+        /// <summary>
+        /// Gets a value indicating whether we execute Windows 7 code even on later versions of Windows.
+        /// </summary>
+        internal static readonly bool ForceWindows7Mode = ConfigurationManager.AppSettings["Microsoft.VisualStudio.Threading.Windows7Mode"] == "true";
 
         /// <summary>
         /// The System.Threading.AsyncLocal open generic type, if present.
@@ -46,6 +56,19 @@ namespace Microsoft.VisualStudio.Threading
         /// or <see cref="TaskCreationOptions.None"/> if on earlier versions of .NET.
         /// </summary>
         internal static readonly TaskCreationOptions RunContinuationsAsynchronously;
+
+        /// <summary>
+        /// Gets a value indicating whether the current operating system is Windows 8 or later.
+        /// </summary>
+        internal static bool IsWindows8OrLater
+        {
+            get
+            {
+                return !ForceWindows7Mode
+                    && Environment.OSVersion.Platform == PlatformID.Win32NT
+                    && Environment.OSVersion.Version >= Windows8Version;
+            }
+        }
 
         /// <summary>
         /// Initializes static members of the <see cref="LightUps"/> class.
