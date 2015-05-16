@@ -161,7 +161,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// The names of constants in this class make up the middle term in 
+        /// The names of constants in this class make up the middle term in
         /// the AsyncReaderWriterLock/LockRequest/Issued event name.
         /// </summary>
         /// <remarks>The name of this class is important for EventSource.</remarks>
@@ -172,7 +172,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// The names of constants in this class make up the last term in 
+        /// The names of constants in this class make up the last term in
         /// the AsyncReaderWriterLock/LockRequest/Issued event name.
         /// </summary>
         /// <remarks>The name of this class is important for EventSource.</remarks>

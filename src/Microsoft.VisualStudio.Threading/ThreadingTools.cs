@@ -51,7 +51,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Wraps a task with one that will complete as cancelled based on a cancellation token, 
+        /// Wraps a task with one that will complete as cancelled based on a cancellation token,
         /// allowing someone to await a task but be able to break out early by cancelling the token.
         /// </summary>
         /// <typeparam name="T">The type of value returned by the task.</typeparam>
@@ -76,7 +76,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Wraps a task with one that will complete as cancelled based on a cancellation token, 
+        /// Wraps a task with one that will complete as cancelled based on a cancellation token,
         /// allowing someone to await a task but be able to break out early by cancelling the token.
         /// </summary>
         /// <param name="task">The task to wrap.</param>
@@ -141,7 +141,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Wraps a task with one that will complete as cancelled based on a cancellation token, 
+        /// Wraps a task with one that will complete as cancelled based on a cancellation token,
         /// allowing someone to await a task but be able to break out early by cancelling the token.
         /// </summary>
         /// <typeparam name="T">The type of value returned by the task.</typeparam>
@@ -169,7 +169,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Wraps a task with one that will complete as cancelled based on a cancellation token, 
+        /// Wraps a task with one that will complete as cancelled based on a cancellation token,
         /// allowing someone to await a task but be able to break out early by cancelling the token.
         /// </summary>
         /// <param name="task">The task to wrap.</param>

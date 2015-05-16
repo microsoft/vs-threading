@@ -668,7 +668,7 @@
                 Task.Run(async delegate
                 {
                     // This is the part of the test that ensures that preparation is not executed concurrently
-                    // for a given resource.  
+                    // for a given resource.
                     await Task.WhenAll(requestSubmitted1.Task, requestSubmitted2.Task);
 
                     // The way this test's resource and lock wrapper class is written,
@@ -676,7 +676,7 @@
                     // yet claimed to be done preparing the resource, the counter can be
                     // checked to see how many entries into the preparation method have occurred.
                     // It should only be 1, even with two requests, since until the first one completes
-                    // the second request shouldn't start to execute prepare.  
+                    // the second request shouldn't start to execute prepare.
                     // In fact, the second request should never even need to prepare since the first one
                     // did the job already, but asserting that is not the purpose of this particular test.
                     try
@@ -940,7 +940,7 @@
             }
 
             // Any subsequent read lock should experience the same exception when acquiring the broken resource.
-            // Test it twice in a row to ensure it realizes that the resource is never really prep'd for 
+            // Test it twice in a row to ensure it realizes that the resource is never really prep'd for
             // concurrent access.
             for (int i = 0; i < 2; i++)
             {

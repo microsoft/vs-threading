@@ -8,8 +8,8 @@
     using System.Threading;
     using System.Threading.Tasks;
     using System.Windows.Threading;
-    using Microsoft.VisualStudio.Threading;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Microsoft.VisualStudio.Threading;
 
     /// <summary>
     /// Tests functionality of the <see cref="AsyncReaderWriterLock"/> class.
@@ -1345,7 +1345,7 @@
         /// concurrent access gets called out as an error.
         /// </summary>
         /// <remarks>
-        /// Test ignored because the tested behavior is incompatible with the 
+        /// Test ignored because the tested behavior is incompatible with the
         /// <see cref="UpgradeableReadLockTraversesAcrossSta"/> and <see cref="WriteLockTraversesAcrossSta"/> tests,
         /// which are deemed more important.
         /// </remarks>
@@ -1694,7 +1694,7 @@
         /// concurrent access gets called out as an error.
         /// </summary>
         /// <remarks>
-        /// Test ignored because the tested behavior is incompatible with the 
+        /// Test ignored because the tested behavior is incompatible with the
         /// <see cref="UpgradeableReadLockTraversesAcrossSta"/> and <see cref="WriteLockTraversesAcrossSta"/> tests,
         /// which are deemed more important.
         /// </remarks>
@@ -1866,8 +1866,7 @@
                     {
                         await upgradeableReaderHasLock.SetAsync();
                     }
-                })
-                );
+                }));
         }
 
         [TestMethod, Timeout(TestTimeout)]
@@ -1892,8 +1891,7 @@
                         await upgradeableReaderHasLock.SetAsync();
                         await readerHasLock.Task;
                     }
-                })
-                );
+                }));
         }
 
         [TestMethod, Timeout(TestTimeout)]
@@ -1933,8 +1931,7 @@
                     });
                     await writeRequestPending.SetAsync();
                     await writeLockObtained.Task;
-                })
-                );
+                }));
         }
 
         [TestMethod, Timeout(TestTimeout)]
@@ -2102,8 +2099,7 @@
             writerWaitingForLock.Task,
             newReaderWaiting.Task,
             writerLockHeld.Task,
-            newReaderLockHeld.Task
-                );
+            newReaderLockHeld.Task);
         }
 
         [TestMethod, Timeout(TestTimeout)]
@@ -3135,8 +3131,7 @@
                     {
                         writeLockRequested.SetException(ex);
                     }
-                })
-            );
+                }));
         }
 
         [TestMethod, Timeout(TestTimeout)]

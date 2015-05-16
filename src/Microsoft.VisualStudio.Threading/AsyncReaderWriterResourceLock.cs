@@ -90,7 +90,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Obtains a read lock, asynchronously awaiting for the lock if it is not immediately available.
         /// </summary>
         /// <param name="cancellationToken">
-        /// A token whose cancellation indicates lost interest in obtaining the lock.  
+        /// A token whose cancellation indicates lost interest in obtaining the lock.
         /// A canceled token does not release a lock that has already been issued.  But if the lock isn't immediately available,
         /// a canceled token will cause the code that is waiting for the lock to resume with an <see cref="OperationCanceledException"/>.
         /// </param>
@@ -105,7 +105,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="options">Modifications to normal lock behavior.</param>
         /// <param name="cancellationToken">
-        /// A token whose cancellation indicates lost interest in obtaining the lock.  
+        /// A token whose cancellation indicates lost interest in obtaining the lock.
         /// A canceled token does not release a lock that has already been issued.  But if the lock isn't immediately available,
         /// a canceled token will cause the code that is waiting for the lock to resume with an <see cref="OperationCanceledException"/>.
         /// </param>
@@ -119,7 +119,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Obtains an upgradeable read lock, asynchronously awaiting for the lock if it is not immediately available.
         /// </summary>
         /// <param name="cancellationToken">
-        /// A token whose cancellation indicates lost interest in obtaining the lock.  
+        /// A token whose cancellation indicates lost interest in obtaining the lock.
         /// A canceled token does not release a lock that has already been issued.  But if the lock isn't immediately available,
         /// a canceled token will cause the code that is waiting for the lock to resume with an <see cref="OperationCanceledException"/>.
         /// </param>
@@ -133,7 +133,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Obtains a write lock, asynchronously awaiting for the lock if it is not immediately available.
         /// </summary>
         /// <param name="cancellationToken">
-        /// A token whose cancellation indicates lost interest in obtaining the lock.  
+        /// A token whose cancellation indicates lost interest in obtaining the lock.
         /// A canceled token does not release a lock that has already been issued.  But if the lock isn't immediately available,
         /// a canceled token will cause the code that is waiting for the lock to resume with an <see cref="OperationCanceledException"/>.
         /// </param>
@@ -645,8 +645,8 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         this.SetResourceAsAccessed(resource);
 
-                        // We can't currently use the caller's cancellation token for this task because 
-                        // this task may be shared with others or call this method later, and we wouldn't 
+                        // We can't currently use the caller's cancellation token for this task because
+                        // this task may be shared with others or call this method later, and we wouldn't
                         // want their requests to be cancelled as a result of this first caller cancelling.
                         preparationTask = this.PrepareResourceAsync(resource, cancellationToken);
                     }

@@ -154,7 +154,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Get the number of pending messages to be process for the synchronous task. 
+        /// Get the number of pending messages to be process for the synchronous task.
         /// </summary>
         /// <param name="task">The synchronous task</param>
         /// <returns>The number of events need be processed by the synchronous task in the current JoinableTask.</returns>

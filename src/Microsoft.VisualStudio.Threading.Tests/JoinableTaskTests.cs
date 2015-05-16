@@ -641,7 +641,7 @@
             this.asyncPump.Run(async delegate
             {
                 // Even though it's all the same instance of AsyncPump,
-                // unrelated work (work not spun off from this block) must still be 
+                // unrelated work (work not spun off from this block) must still be
                 // Joined in order to execute here.
                 Assert.AreNotSame(task, await Task.WhenAny(task, Task.Delay(AsyncDelay / 2)), "The unrelated main thread work completed before the Main thread was joined.");
                 using (this.joinableCollection.Join())
@@ -1951,7 +1951,7 @@
                 { // simulate some kind of sync context hand-off that doesn't flow execution context.
                     Task.Run(delegate
                     {
-                        // This post will only get a chance for processing 
+                        // This post will only get a chance for processing
                         syncContext.Post(
                             state =>
                             {
@@ -2359,7 +2359,7 @@
         /// parent JTF. If the parent JTF assists just because it happened to be active for a
         /// brief time when the child JoinableTask was created, it could forever defeat the
         /// intended lower priority of the child.
-        /// 
+        ///
         /// This test is Ignored because fixing it would require a JoinableTask to have
         /// a reference to its antecedant, or the antecedant to maintain a collection of
         /// child tasks. The first possibility is unpaletable (because it would create a
