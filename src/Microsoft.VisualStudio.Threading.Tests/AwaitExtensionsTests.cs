@@ -83,6 +83,20 @@ namespace Microsoft.VisualStudio.Threading.Tests
         }
 
         [TestMethod, Timeout(TestTimeout)]
+        public async Task AwaitRegKeyChange_TwoAtOnce_SameKeyHandle()
+        {
+            using (var test = new RegKeyTest())
+            {
+                Task changeWatcherTask1 = test.Key.WaitForChangeAsync();
+                Task changeWatcherTask2 = test.Key.WaitForChangeAsync();
+                Assert.IsFalse(changeWatcherTask1.IsCompleted);
+                Assert.IsFalse(changeWatcherTask2.IsCompleted);
+                test.Key.SetValue("a", "b");
+                await Task.WhenAll(changeWatcherTask1, changeWatcherTask2);
+            }
+        }
+
+        [TestMethod, Timeout(TestTimeout)]
         public async Task AwaitRegKeyChange_NoChange()
         {
             using (var test = new RegKeyTest())
