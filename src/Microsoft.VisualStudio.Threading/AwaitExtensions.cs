@@ -9,10 +9,9 @@ namespace Microsoft.VisualStudio.Threading
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
-    using System.Linq;
+    using System.Diagnostics.CodeAnalysis;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Win32;
@@ -68,8 +67,10 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns>
         /// A task that completes when the registry key changes, the handle is closed, or upon cancellation.
         /// </returns>
-        public static Task WaitForChangeAsync(this RegistryKey registryKey, bool watchSubtree = true, RegistryChangeNotificationFilter change = RegistryChangeNotificationFilter.Value | RegistryChangeNotificationFilter.SubKey, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task WaitForChangeAsync(this RegistryKey registryKey, bool watchSubtree = true, RegistryChangeNotificationFilters change = RegistryChangeNotificationFilters.Value | RegistryChangeNotificationFilters.Subkey, CancellationToken cancellationToken = default(CancellationToken))
         {
+            Requires.NotNull(registryKey, nameof(registryKey));
+
             return WaitForRegistryChangeAsync(registryKey.Handle, watchSubtree, change, cancellationToken);
         }
 
@@ -83,7 +84,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns>
         /// A task that completes when the registry key changes, the handle is closed, or upon cancellation.
         /// </returns>
-        private static async Task WaitForRegistryChangeAsync(SafeHandle registryKeyHandle, bool watchSubtree, RegistryChangeNotificationFilter change, CancellationToken cancellationToken)
+        private static async Task WaitForRegistryChangeAsync(SafeHandle registryKeyHandle, bool watchSubtree, RegistryChangeNotificationFilters change, CancellationToken cancellationToken)
         {
             bool registryKeyHandleReferenceInc = false;
             IDisposable dedicatedThreadReleaser = null;
@@ -341,6 +342,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <remarks>
             /// This method serves as the <see cref="ThreadStart"/> for our dedicated thread.
             /// </remarks>
+            [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Justification = "We store the exception in a Task.")]
             private static void Worker()
             {
                 while (true)

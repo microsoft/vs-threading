@@ -27,7 +27,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Indicates that the lifetime of the registration must not be tied to the lifetime of the thread issuing the RegNotifyChangeKeyValue call.
         /// Note: This flag value is only supported in Windows 8 and later.
         /// </summary>
-        internal const RegistryChangeNotificationFilter REG_NOTIFY_THREAD_AGNOSTIC = (RegistryChangeNotificationFilter)0x10000000L;
+        internal const RegistryChangeNotificationFilters REG_NOTIFY_THREAD_AGNOSTIC = (RegistryChangeNotificationFilters)0x10000000L;
 
         /// <summary>
         /// Really truly non pumping wait.
@@ -51,12 +51,21 @@ namespace Microsoft.VisualStudio.Threading
         [DllImport("kernel32.dll", SetLastError = true, ExactSpelling = true)]
         internal static extern int WaitForSingleObject(IntPtr waitHandle, int millisecondsTimeout);
 
+        /// <summary>
+        /// Registers to receive notification of changes to a registry key.
+        /// </summary>
+        /// <param name="hKey">The handle to the registry key to watch.</param>
+        /// <param name="watchSubtree"><c>true</c> to watch the keys descendent keys as well; <c>false</c> to watch only this key without descendents.</param>
+        /// <param name="notifyFilter">The types of changes to watch for.</param>
+        /// <param name="hEvent">A handle to the event to set when a change occurs.</param>
+        /// <param name="asynchronous">If this parameter is TRUE, the function returns immediately and reports changes by signaling the specified event. If this parameter is FALSE, the function does not return until a change has occurred.</param>
+        /// <returns>A win32 error code. ERROR_SUCCESS (0) if successful.</returns>
         [DllImport("Advapi32.dll")]
         internal static extern int RegNotifyChangeKeyValue(
             IntPtr hKey,
-            bool watchSubtree,
-            RegistryChangeNotificationFilter notifyFilter,
+            [MarshalAs(UnmanagedType.Bool)] bool watchSubtree,
+            RegistryChangeNotificationFilters notifyFilter,
             IntPtr hEvent,
-            bool asynchronous);
+            [MarshalAs(UnmanagedType.Bool)] bool asynchronous);
     }
 }

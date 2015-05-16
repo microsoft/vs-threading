@@ -58,19 +58,6 @@ namespace Microsoft.VisualStudio.Threading
         internal static readonly TaskCreationOptions RunContinuationsAsynchronously;
 
         /// <summary>
-        /// Gets a value indicating whether the current operating system is Windows 8 or later.
-        /// </summary>
-        internal static bool IsWindows8OrLater
-        {
-            get
-            {
-                return !ForceWindows7Mode
-                    && Environment.OSVersion.Platform == PlatformID.Win32NT
-                    && Environment.OSVersion.Version >= Windows8Version;
-            }
-        }
-
-        /// <summary>
         /// Initializes static members of the <see cref="LightUps"/> class.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline", Justification = "We have to initialize two fields with a relationship.")]
@@ -82,6 +69,19 @@ namespace Microsoft.VisualStudio.Threading
                     "RunContinuationsAsynchronously",
                     out RunContinuationsAsynchronously);
                 BclAsyncLocalType = Type.GetType("System.Threading.AsyncLocal`1");
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the current operating system is Windows 8 or later.
+        /// </summary>
+        internal static bool IsWindows8OrLater
+        {
+            get
+            {
+                return !ForceWindows7Mode
+                    && Environment.OSVersion.Platform == PlatformID.Win32NT
+                    && Environment.OSVersion.Version >= Windows8Version;
             }
         }
     }

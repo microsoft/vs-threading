@@ -16,13 +16,13 @@ namespace Microsoft.VisualStudio.Threading
     /// This enum matches the Win32 REG_NOTIFY_CHANGE_* constants.
     /// </remarks>
     [Flags]
-    public enum RegistryChangeNotificationFilter
+    public enum RegistryChangeNotificationFilters
     {
         /// <summary>
         /// Notify the caller if a subkey is added or deleted.
         /// Corresponds to Win32 value REG_NOTIFY_CHANGE_NAME.
         /// </summary>
-        SubKey = 0x1,
+        Subkey = 0x1,
 
         /// <summary>
         /// Notify the caller of changes to the attributes of the key,
