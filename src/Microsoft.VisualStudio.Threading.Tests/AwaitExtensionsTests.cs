@@ -204,7 +204,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [TestMethod, Timeout(TestTimeout * 2)]
         public async Task AwaitRegKeyChange_CallingThreadDestroyed()
         {
             using (var test = new RegKeyTest())
