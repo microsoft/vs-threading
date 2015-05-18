@@ -767,22 +767,22 @@ namespace Microsoft.VisualStudio.Threading
             CompletingTask.Value = this;
             try
             {
+                bool onMainThread = false;
+                var additionalFlags = JoinableTaskFlags.CompletingSynchronously;
+                if (this.owner.Context.MainThread == Thread.CurrentThread)
+                {
+                    additionalFlags |= JoinableTaskFlags.SynchronouslyBlockingMainThread;
+                    onMainThread = true;
+                }
+
+                this.AddStateFlags(additionalFlags);
+
                 if (!this.IsCompleteRequested)
                 {
-                    bool onMainThread = false;
-                    var additionalFlags = JoinableTaskFlags.CompletingSynchronously;
-                    if (this.owner.Context.MainThread == Thread.CurrentThread)
-                    {
-                        additionalFlags |= JoinableTaskFlags.SynchronouslyBlockingMainThread;
-                        onMainThread = true;
-                    }
-
                     if (ThreadingEventSource.Instance.IsEnabled())
                     {
                         ThreadingEventSource.Instance.CompleteOnCurrentThreadStart(this.GetHashCode(), onMainThread);
                     }
-
-                    this.AddStateFlags(additionalFlags);
 
                     using (NoMessagePumpSyncContext.Default.Apply())
                     {
@@ -797,7 +797,7 @@ namespace Microsoft.VisualStudio.Threading
 
                     if (onMainThread)
                     {
-                        this.owner.Context.OnSynchronousJoinableTaskBlockingMainThread(this);
+                        this.owner.Context.OnSynchronousJoinableTaskToCompleteOnMainThread(this);
                     }
 
                     try
@@ -838,6 +838,13 @@ namespace Microsoft.VisualStudio.Threading
                     if (ThreadingEventSource.Instance.IsEnabled())
                     {
                         ThreadingEventSource.Instance.CompleteOnCurrentThreadStop(this.GetHashCode());
+                    }
+                }
+                else
+                {
+                    if (onMainThread)
+                    {
+                        this.owner.Context.OnSynchronousJoinableTaskToCompleteOnMainThread(this);
                     }
                 }
 

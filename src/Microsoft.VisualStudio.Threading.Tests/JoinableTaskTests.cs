@@ -1525,24 +1525,68 @@
         [TestMethod, Timeout(TestTimeout)]
         public void SynchronousTaskStackMaintainedCorrectly()
         {
-            var mainThreadNowBlocking = new AsyncManualResetEvent();
-            var asyncTaskWaiting = new AsyncManualResetEvent();
-
-            var task = Task.Run(async delegate
-            {
-                await asyncTaskWaiting.WaitAsync();
-                mainThreadNowBlocking.Set();
-            });
-
             this.asyncPump.Run(async delegate
             {
                 this.asyncPump.Run(() => Task.FromResult<bool>(true));
-                await mainThreadNowBlocking.WaitAsync().GetAwaiter().YieldAndNotify(asyncTaskWaiting);
+                await Task.Yield();
             });
+        }
+
+        [TestMethod, Timeout(TestTimeout)]
+        public void SynchronousTaskStackMaintainedCorrectlyWithForkedTask()
+        {
+            var innerTaskWaitingSwitching = new AsyncManualResetEvent();
 
             this.asyncPump.Run(async delegate
             {
-                await task;
+                Task innerTask = null;
+                this.asyncPump.Run(delegate
+                {
+                    // We need simulate a scenario that the task is completed without any yielding, 
+                    // but the queue of the Joinable task is not empty at that point, 
+                    // so the synchronous JoinableTask doesn't need any blocking time, but it is completed later.
+                    innerTask = Task.Run(async delegate
+                    {
+                        await this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().YieldAndNotify(innerTaskWaitingSwitching);
+                    });
+
+                    innerTaskWaitingSwitching.WaitAsync().Wait();
+                    return Task.FromResult(true);
+                });
+
+                await Task.Yield();
+
+                // Now, get rid of the innerTask
+                await innerTask;
+            });
+        }
+
+        [TestMethod, Timeout(TestTimeout), Ignore]
+        public void SynchronousTaskStackMaintainedCorrectlyWithForkedTask2()
+        {
+            var innerTaskWaiting = new AsyncManualResetEvent();
+
+            // This test simulates that we have an inner task starts to switch to main thread after the joinable task is compeleted.
+            // Because completed task won't be tracked in the dependent chain, waiting it causes a deadlock.  This could be a potential problem.
+            this.asyncPump.Run(async delegate
+            {
+                Task innerTask = null;
+                this.asyncPump.Run(delegate
+                {
+                    innerTask = Task.Run(async delegate
+                    {
+                        await innerTaskWaiting.WaitAsync();
+                        await this.asyncPump.SwitchToMainThreadAsync();
+                    });
+
+                    return Task.FromResult(true);
+                });
+
+                innerTaskWaiting.Set();
+                await Task.Yield();
+
+                // Now, get rid of the innerTask
+                await innerTask;
             });
         }
 

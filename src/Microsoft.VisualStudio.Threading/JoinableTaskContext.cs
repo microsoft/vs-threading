@@ -426,26 +426,13 @@ namespace Microsoft.VisualStudio.Threading
             {
                 this.pendingTasks.Remove(task);
             }
-
-            if ((task.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)
-            {
-                // A synchronous task can finish immediately, so it doesn't block the main thread. In this scenario, OnSynchronousJoinableTaskBlockingMainThread
-                // is not called, we should remove it from the initializingSynchronouslyMainThreadTasks stack.
-                lock (this.initializingSynchronouslyMainThreadTasks)
-                {
-                    if (this.initializingSynchronouslyMainThreadTasks.Count > 0 && this.initializingSynchronouslyMainThreadTasks.Peek() == task)
-                    {
-                        this.initializingSynchronouslyMainThreadTasks.Pop();
-                    }
-                }
-            }
         }
 
         /// <summary>
         /// Raised when it starts to wait a joinable task to complete in the main thread.
         /// </summary>
         /// <param name="task">The task requires to be completed</param>
-        internal void OnSynchronousJoinableTaskBlockingMainThread(JoinableTask task)
+        internal void OnSynchronousJoinableTaskToCompleteOnMainThread(JoinableTask task)
         {
             Requires.NotNull(task, nameof(task));
 
