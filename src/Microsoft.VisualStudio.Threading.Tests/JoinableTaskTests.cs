@@ -1542,8 +1542,8 @@
                 Task innerTask = null;
                 this.asyncPump.Run(delegate
                 {
-                    // We need simulate a scenario that the task is completed without any yielding, 
-                    // but the queue of the Joinable task is not empty at that point, 
+                    // We need simulate a scenario that the task is completed without any yielding,
+                    // but the queue of the Joinable task is not empty at that point,
                     // so the synchronous JoinableTask doesn't need any blocking time, but it is completed later.
                     innerTask = Task.Run(async delegate
                     {

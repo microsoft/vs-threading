@@ -22,5 +22,7 @@
     <Rule Id="SA1401" Action="None" />
     <Rule Id="SA1008" Action="Hidden" />
     <Rule Id="SA1211" Action="Hidden" />
+    <Rule Id="SX1309" Action="None" />
+    <Rule Id="SX1309S" Action="None" />
   </Rules>
 </RuleSet>
