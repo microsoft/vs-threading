@@ -22,18 +22,18 @@
     /// thread will block and wait until the invocation is processed by the STA service on the main thread. It is not only about
     /// inefficiency. Such COM marshaling might lead to dead lock if the method occupying the main thread is also waiting for
     /// that calling background task and the main thread does not allow COM marshaling to reenter the main thread. To avoid potential
-    /// dead lock and the expensive COM marshaling, this analyzer would ask the caller of Visual Studio services to verify the 
-    /// current thread is main thread, or switch to main thread prior invocation explicitly. 
-    /// 
+    /// dead lock and the expensive COM marshaling, this analyzer would ask the caller of Visual Studio services to verify the
+    /// current thread is main thread, or switch to main thread prior invocation explicitly.
+    ///
     /// i.e.
     ///     IVsSolution sln = GetIVsSolution();
     ///     sln.SetProperty(); /* This analyzer will report warning on this invocation. */
-    /// 
+    ///
     /// i.e.
     ///     ThreadHelper.ThrowIfNotOnUIThread();
     ///     IVsSolution sln = GetIVsSolution();
     ///     sln.SetProperty(); /* Good */
-    /// 
+    ///
     /// i.e.
     ///     await joinableTaskFactory.SwitchToMainThreadAsync();
     ///     IVsSolution sln = GetIVsSolution();

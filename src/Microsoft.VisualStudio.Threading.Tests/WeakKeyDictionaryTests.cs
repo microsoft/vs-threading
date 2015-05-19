@@ -6,11 +6,11 @@
 
 namespace Microsoft.VisualStudio.Threading.Tests
 {
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
     /// Tests for the weak dictionary class
@@ -138,7 +138,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Assert.IsTrue(difference > 1500000); // 2MB minus big noise allowance
 
             // This line is VERY important, as it keeps the GC from being too smart and collecting
-            // the dictionary and its large strings because we never use them again.  
+            // the dictionary and its large strings because we never use them again.
             GC.KeepAlive(dictionary);
         }
 

@@ -92,7 +92,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     this.Scavenge();
 
-                    // If that didn't do anything, raise the capacity at which 
+                    // If that didn't do anything, raise the capacity at which
                     // we next scavenge. Note that we never shrink, but neither
                     // does the underlying dictionary.
                     if (this.dictionary.Count == this.capacity)
@@ -244,7 +244,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 // Calling reset on the dictionary enumerator would require boxing it in the cast to the explicit interface method.
                 // But boxing a valuetype means that any changes you make will not be brought back to the value type field
-                // so the Reset() will probably have no effect. 
+                // so the Reset() will probably have no effect.
                 // If we ever have to support this, we'll probably have to do box the enumerator and then retain the boxed
                 // version and use that in this enumerator for the rest of its lifetime.
                 throw new NotSupportedException();
@@ -257,7 +257,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Strongly typed wrapper around a weak reference that caches 
+        /// Strongly typed wrapper around a weak reference that caches
         /// the target's hash code so that it can be used in a hashtable.
         /// </summary>
         /// <typeparam name="T">Type of the target of the weak reference</typeparam>
@@ -265,7 +265,7 @@ namespace Microsoft.VisualStudio.Threading
             where T : class
         {
             /// <summary>
-            /// Cache the hashcode so that it is still available even if the target has been 
+            /// Cache the hashcode so that it is still available even if the target has been
             /// collected. This allows this object to be still found in a table so it can be removed.
             /// </summary>
             private int hashcode;
@@ -319,7 +319,7 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
-            /// Compares two structures.  
+            /// Compares two structures.
             /// </summary>
             public override bool Equals(object obj)
             {
@@ -337,7 +337,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Equality comparer for weak references that actually compares the 
+        /// Equality comparer for weak references that actually compares the
         /// targets of the weak references
         /// </summary>
         /// <typeparam name="T">Type of the targets of the weak references to be compared</typeparam>

@@ -76,7 +76,7 @@ class Test {
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [TestMethod, Ignore] // Fails due to Roslyn bug https://github.com/dotnet/roslyn/issues/2894
         public void InvokeVsSolutionAfterVerifyOnUIThread()
         {
             var test = @"
@@ -97,7 +97,7 @@ class Test {
             VerifyCSharpDiagnostic(test);
         }
 
-        [TestMethod]
+        [TestMethod, Ignore] // Fails due to Roslyn bug https://github.com/dotnet/roslyn/issues/2894
         public void InvokeVsSolutionAfterSwitchedToMainThreadAsync()
         {
             var test = @"

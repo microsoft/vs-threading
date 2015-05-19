@@ -480,7 +480,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             // We don't simply call this.CompleteOnCurrentThread because that doesn't take CancellationToken.
             // And it really can't be made to, since it sets state flags indicating the JoinableTask is
-            // blocking till completion. 
+            // blocking till completion.
             // So instead, we new up a new JoinableTask to do the blocking. But we preserve the initial delegate
             // so that if a hang occurs it blames the original JoinableTask.
             this.owner.Run(
@@ -489,7 +489,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Shares any access to the main thread the caller may have 
+        /// Shares any access to the main thread the caller may have
         /// Joins any main thread affinity of the caller with the asynchronous operation to avoid deadlocks
         /// in the event that the main thread ultimately synchronously blocks waiting for the operation to complete.
         /// </summary>
@@ -521,7 +521,7 @@ namespace Microsoft.VisualStudio.Threading
                     if (this.IsCompleteRequested)
                     {
                         // This job has already been marked for completion.
-                        // We need to forward the work to the fallback mechanisms. 
+                        // We need to forward the work to the fallback mechanisms.
                         postToFactory = true;
                     }
                     else

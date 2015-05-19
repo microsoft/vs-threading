@@ -25,7 +25,7 @@ namespace Microsoft.VisualStudio.Threading
         /// The System.Threading.AsyncLocal open generic type, if present.
         /// </summary>
         /// <remarks>
-        /// When running on .NET 4.6, it will be present. 
+        /// When running on .NET 4.6, it will be present.
         /// This field will be <c>null</c> on earlier versions of .NET.
         /// </remarks>
         internal static readonly Type BclAsyncLocalType;
