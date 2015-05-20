@@ -4,7 +4,7 @@
     <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
     <ProjectDepotRoot>$(MSBuildThisFileDirectory)</ProjectDepotRoot>
     <SubmoduleRoot>$(MSBuildThisFileDirectory)\src</SubmoduleRoot>
-    <NuGetPackageRestorePath>$(ProjectDepotRoot)\src\Packages\</NuGetPackageRestorePath>
+    <NuGetPackageRestorePath>$(ProjectDepotRoot)\Packages\</NuGetPackageRestorePath>
     <DeployExtension Condition=" '$(IsLabBuild)' == 'true' ">false</DeployExtension>
 
     <VSToolsDeRazzlePath>$(NuGetPackageRestorePath)VS.Tools.Derazzle.1.0.150504.1\</VSToolsDeRazzlePath>
