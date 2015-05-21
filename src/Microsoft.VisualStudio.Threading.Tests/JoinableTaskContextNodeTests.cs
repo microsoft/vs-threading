@@ -61,6 +61,8 @@ namespace Microsoft.VisualStudio.Threading.Tests
         {
             Assert.AreSame(this.context.MainThread, this.defaultNode.MainThread);
             Assert.AreSame(this.context.MainThread, this.derivedNode.MainThread);
+            Assert.IsTrue(this.context.IsOnMainThread);
+            Assert.IsTrue(this.derivedNode.IsOnMainThread);
         }
 
         [TestMethod]

@@ -68,6 +68,11 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Gets a value indicating whether the caller is executing on the main thread.
+        /// </summary>
+        public bool IsOnMainThread => this.context.IsOnMainThread;
+
+        /// <summary>
         /// Gets the inner wrapped context.
         /// </summary>
         public JoinableTaskContext Context

@@ -7,10 +7,6 @@
 namespace Microsoft.VisualStudio.Threading
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Runtime.Remoting.Messaging;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -21,6 +17,12 @@ namespace Microsoft.VisualStudio.Threading
     public class AsyncLazy<T>
     {
         /// <summary>
+        /// The value set to the <see cref="recursiveFactoryCheck"/> field
+        /// while the value factory is executing.
+        /// </summary>
+        private static readonly object RecursiveCheckSentinel = new object();
+
+        /// <summary>
         /// The object to lock to provide thread-safety.
         /// </summary>
         private readonly object syncObject = new object();
@@ -28,7 +30,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// The unique instance identifier.
         /// </summary>
-        private readonly string identity = Guid.NewGuid().ToString();
+        private readonly AsyncLocal<object> recursiveFactoryCheck = new AsyncLocal<object>();
 
         /// <summary>
         /// The function to invoke to produce the task.
@@ -69,7 +71,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                Thread.MemoryBarrier();
+                Interlocked.MemoryBarrier();
                 return this.valueFactory == null;
             }
         }
@@ -81,7 +83,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                Thread.MemoryBarrier();
+                Interlocked.MemoryBarrier();
                 return this.value != null && this.value.IsCompleted;
             }
         }
@@ -115,7 +117,7 @@ namespace Microsoft.VisualStudio.Threading
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         public Task<T> GetValueAsync(CancellationToken cancellationToken)
         {
-            if (!((this.value != null && this.value.IsCompleted) || CallContext.LogicalGetData(this.identity) == null))
+            if (!((this.value != null && this.value.IsCompleted) || this.recursiveFactoryCheck.Value == null))
             {
                 // PERF: we check the condition and *then* retrieve the string resource only on failure
                 // because the string retrieval has shown up as significant on ETL traces.
@@ -141,7 +143,7 @@ namespace Microsoft.VisualStudio.Threading
                     if (this.value == null)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        CallContext.LogicalSetData(this.identity, new object());
+                        this.recursiveFactoryCheck.Value = RecursiveCheckSentinel;
                         try
                         {
                             var valueFactory = this.valueFactory;
@@ -177,7 +179,7 @@ namespace Microsoft.VisualStudio.Threading
                         }
                         finally
                         {
-                            CallContext.FreeNamedDataSlot(this.identity);
+                            this.recursiveFactoryCheck.Value = null;
                         }
                     }
                 }

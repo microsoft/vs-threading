@@ -114,10 +114,11 @@ namespace Microsoft.VisualStudio.Threading
         {
             Requires.NotNull(invokeDelegate, nameof(invokeDelegate));
 
+            MethodInfo method = invokeDelegate.GetMethodInfo();
             if (invokeDelegate.Target != null)
             {
                 string instanceType = string.Empty;
-                if (!invokeDelegate.Method.DeclaringType.IsEquivalentTo(invokeDelegate.Target.GetType()))
+                if (!method.DeclaringType.IsEquivalentTo(invokeDelegate.Target.GetType()))
                 {
                     instanceType = " (" + invokeDelegate.Target.GetType().FullName + ")";
                 }
@@ -125,8 +126,8 @@ namespace Microsoft.VisualStudio.Threading
                 return string.Format(
                     CultureInfo.CurrentCulture,
                     "{3}{0}.{1}{2} (target address: 0x{4:X8})",
-                    invokeDelegate.Method.DeclaringType.FullName,
-                    invokeDelegate.Method.Name,
+                    method.DeclaringType.FullName,
+                    method.Name,
                     instanceType,
                     AsyncReturnStackPrefix,
                     (int)GetAddress(invokeDelegate.Target)); // the int cast allows hex formatting
@@ -135,8 +136,8 @@ namespace Microsoft.VisualStudio.Threading
             return string.Format(
                 CultureInfo.CurrentCulture,
                 "{2}{0}.{1}",
-                invokeDelegate.Method.DeclaringType.FullName,
-                invokeDelegate.Method.Name,
+                method.DeclaringType.FullName,
+                method.Name,
                 AsyncReturnStackPrefix);
         }
 
@@ -222,7 +223,7 @@ namespace Microsoft.VisualStudio.Threading
 
             // "task" might be an instance of the type deriving from "Task", but "m_continuationObject" is a private field in "Task",
             // so we need to use "typeof(Task)" to access "m_continuationObject".
-            var continuationField = typeof(Task).GetField("m_continuationObject", BindingFlags.Instance | BindingFlags.NonPublic);
+            var continuationField = typeof(Task).GetTypeInfo().GetDeclaredField("m_continuationObject");
             if (continuationField == null)
             {
                 yield break;
@@ -264,7 +265,7 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(obj, nameof(obj));
             Requires.NotNullOrEmpty(fieldName, nameof(fieldName));
 
-            var field = obj.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+            var field = obj.GetType().GetTypeInfo().GetDeclaredField(fieldName);
             if (field != null)
             {
                 return field.GetValue(obj);
@@ -281,7 +282,7 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(stateMachine, nameof(stateMachine));
             Requires.NotNullOrEmpty(suffix, nameof(suffix));
 
-            var fields = stateMachine.GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+            var fields = stateMachine.GetType().GetTypeInfo().DeclaredFields;
             var field = fields.FirstOrDefault((f) => f.Name.EndsWith(suffix, StringComparison.Ordinal));
             if (field != null)
             {

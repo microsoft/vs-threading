@@ -3415,10 +3415,12 @@
                 if (canceled)
                 {
                     Assert.AreNotSame(this.Context.MainThread, Thread.CurrentThread, "A canceled transition should not complete on the main thread.");
+                    Assert.IsFalse(this.Context.IsOnMainThread);
                 }
                 else
                 {
                     Assert.AreSame(this.Context.MainThread, Thread.CurrentThread, "We should be on the main thread if we've just transitioned.");
+                    Assert.IsTrue(this.Context.IsOnMainThread);
                 }
 
                 // These statements and assertions assume that the test does not have jobs that execute code concurrently.

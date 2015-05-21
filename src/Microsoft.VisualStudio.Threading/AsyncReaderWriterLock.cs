@@ -2384,13 +2384,32 @@ namespace Microsoft.VisualStudio.Threading
             private readonly SemaphoreSlim semaphore = new SemaphoreSlim(1);
 
             /// <summary>
-            /// The thread that has entered the semaphore.
+            /// The managed thread ID of the thread that has entered the semaphore.
             /// </summary>
             /// <remarks>
             /// No reason to lock around access to this field because it is only ever set to
             /// or compared against the current thread, so the activity of other threads is irrelevant.
             /// </remarks>
-            private Thread threadHoldingSemaphore;
+            private int? semaphoreHoldingManagedThreadId;
+
+            /// <summary>
+            /// Gets a value indicating whether the current thread holds the semaphore.
+            /// </summary>
+            private bool IsCurrentThreadHoldingSemaphore
+            {
+                get
+                {
+                    // It is crucial that we capture the field in a local variable to guard against
+                    // the scenario where this thread DOESN'T hold the semaphore but another has, and
+                    // is in the process of clearing it, which would otherwise introduce a race condition
+                    // where we check HasValue to be true, then try to call Value and it ends up throwing.
+                    // Since int? is a value type, copying it to a local value guards against this race
+                    // and we will simply return false in that case since our thread doesn't own it.
+                    int? semaphoreHoldingManagedThreadId = this.semaphoreHoldingManagedThreadId;
+                    return semaphoreHoldingManagedThreadId.HasValue
+                        && semaphoreHoldingManagedThreadId.Value == Environment.CurrentManagedThreadId;
+                }
+            }
 
             public override void Send(SendOrPostCallback d, object state)
             {
@@ -2427,16 +2446,16 @@ namespace Microsoft.VisualStudio.Threading
 
             internal LoanBack LoanBackAnyHeldResource()
             {
-                return (this.semaphore.CurrentCount == 0 && this.threadHoldingSemaphore == Thread.CurrentThread)
+                return (this.semaphore.CurrentCount == 0 && this.IsCurrentThreadHoldingSemaphore)
                      ? new LoanBack(this)
                      : default(LoanBack);
             }
 
             internal void EarlyExitSynchronizationContext()
             {
-                if (this.threadHoldingSemaphore == Thread.CurrentThread)
+                if (this.IsCurrentThreadHoldingSemaphore)
                 {
-                    this.threadHoldingSemaphore = null;
+                    this.semaphoreHoldingManagedThreadId = null;
                     this.semaphore.Release();
                 }
 
@@ -2459,7 +2478,7 @@ namespace Microsoft.VisualStudio.Threading
                 try
                 {
                     await this.semaphore.WaitAsync().ConfigureAwait(false);
-                    this.threadHoldingSemaphore = Thread.CurrentThread;
+                    this.semaphoreHoldingManagedThreadId = Environment.CurrentManagedThreadId;
                     try
                     {
                         SynchronizationContext.SetSynchronizationContext(this);
@@ -2479,9 +2498,9 @@ namespace Microsoft.VisualStudio.Threading
                     finally
                     {
                         // The semaphore *may* have been released already, so take care to not release it again.
-                        if (this.threadHoldingSemaphore == Thread.CurrentThread)
+                        if (this.IsCurrentThreadHoldingSemaphore)
                         {
-                            this.threadHoldingSemaphore = null;
+                            this.semaphoreHoldingManagedThreadId = null;
                             this.semaphore.Release();
                         }
                     }
@@ -2517,7 +2536,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     Requires.NotNull(syncContext, nameof(syncContext));
                     this.syncContext = syncContext;
-                    this.syncContext.threadHoldingSemaphore = null;
+                    this.syncContext.semaphoreHoldingManagedThreadId = null;
                     this.syncContext.semaphore.Release();
                 }
 
@@ -2526,7 +2545,7 @@ namespace Microsoft.VisualStudio.Threading
                     if (this.syncContext != null)
                     {
                         this.syncContext.semaphore.Wait();
-                        this.syncContext.threadHoldingSemaphore = Thread.CurrentThread;
+                        this.syncContext.semaphoreHoldingManagedThreadId = Environment.CurrentManagedThreadId;
                     }
                 }
             }

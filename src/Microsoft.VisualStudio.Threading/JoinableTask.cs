@@ -128,7 +128,7 @@ namespace Microsoft.VisualStudio.Threading
                 this.state |= JoinableTaskFlags.StartedSynchronously | JoinableTaskFlags.CompletingSynchronously;
             }
 
-            if (Thread.CurrentThread == owner.Context.MainThread)
+            if (owner.Context.IsOnMainThread)
             {
                 this.state |= JoinableTaskFlags.StartedOnMainThread;
                 if (synchronouslyBlocking)
@@ -291,7 +291,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     lock (this.owner.Context.SyncContextLock)
                     {
-                        if (this.Factory.Context.MainThread == Thread.CurrentThread)
+                        if (this.Factory.Context.IsOnMainThread)
                         {
                             if (this.mainThreadJobSyncContext == null)
                             {
@@ -335,14 +335,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets the entry method's info so we could show its full name in hang report.
         /// </summary>
-        internal MethodInfo EntryMethodInfo
-        {
-            get
-            {
-                var del = this.initialDelegate;
-                return del != null ? del.Method : null;
-            }
-        }
+        internal MethodInfo EntryMethodInfo => this.initialDelegate?.GetMethodInfo();
 
         /// <summary>
         /// Gets a value indicating whether this task has a non-empty queue.
@@ -769,7 +762,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 bool onMainThread = false;
                 var additionalFlags = JoinableTaskFlags.CompletingSynchronously;
-                if (this.owner.Context.MainThread == Thread.CurrentThread)
+                if (this.owner.Context.IsOnMainThread)
                 {
                     additionalFlags |= JoinableTaskFlags.SynchronouslyBlockingMainThread;
                     onMainThread = true;
