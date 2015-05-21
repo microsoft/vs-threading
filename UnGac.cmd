@@ -1,5 +1,5 @@
 @echo off
-CALL "%~dp0src\Packages\VS.ToolsFiles.1.0.150317.2\RunMeElevated.cmd" %0 %*
+CALL "%~dp0Packages\VS.ToolsFiles.1.0.150317.2\RunMeElevated.cmd" %0 %*
 IF %ERRORLEVEL%==200 EXIT /B
 
 setlocal
