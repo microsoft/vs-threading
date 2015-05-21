@@ -19,6 +19,9 @@ namespace Microsoft.VisualStudio.Threading
     using System.Threading;
     using System.Threading.Tasks;
     using JoinableTaskSynchronizationContext = Microsoft.VisualStudio.Threading.JoinableTask.JoinableTaskSynchronizationContext;
+#if !DESKTOP
+    using WaitCallback = System.Action<object>;
+#endif
 
     /// <summary>
     /// A factory for starting asynchronous tasks that can mitigate deadlocks
@@ -530,12 +533,14 @@ namespace Microsoft.VisualStudio.Threading
         /// </remarks>
         private static void VerifyNoNonConcurrentSyncContext()
         {
+#if DESKTOP
             // Don't use Verify.Operation here to avoid loading a string resource in success cases.
             if (SynchronizationContext.Current is AsyncReaderWriterLock.NonConcurrentSynchronizationContext)
             {
                 Report.Fail(Strings.NotAllowedUnderURorWLock); // pops a CHK assert dialog, but doesn't throw.
                 Verify.FailOperation(Strings.NotAllowedUnderURorWLock); // actually throws, even in RET.
             }
+#endif
         }
 
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]

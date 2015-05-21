@@ -59,6 +59,7 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
+#if DESKTOP
         /// <summary>
         /// Gets the main thread that can be shared by tasks created by this context.
         /// </summary>
@@ -66,6 +67,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             get { return this.context.MainThread; }
         }
+#endif
 
         /// <summary>
         /// Gets a value indicating whether the caller is executing on the main thread.

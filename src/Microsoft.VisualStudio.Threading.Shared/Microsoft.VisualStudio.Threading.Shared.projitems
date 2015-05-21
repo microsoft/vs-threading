@@ -9,5 +9,46 @@
     <Import_RootNamespace>Microsoft.VisualStudio.Threading.Shared</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)AsyncAutoResetEvent.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AsyncBarrier.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AsyncCountdownEvent.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AsyncEventHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AsyncLazy.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AsyncLocal.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AsyncManualResetEvent.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AsyncQueue.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AsyncSemaphore.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AwaitExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DelegatingJoinableTaskFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Dgml.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)EmptyStruct.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)EnumerateOneOrMany.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GlobalSuppressions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)HangReportContribution.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IAsyncDisposable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IHangReportContributor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)InternalUtilities.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JoinableTask+DependentSynchronousTask.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JoinableTask+ExecutionQueue.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JoinableTask+JoinableTaskSynchronizationContext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JoinableTask.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskCollection.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskContext+HangReportContributor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskContext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskContextNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JoinableTask`1.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)LightUps.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)LightUps`1.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ListOfOftenOne.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NativeMethods.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NoMessagePumpSyncContext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ProgressWithCompletion.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SpecializedSyncContext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TaskCompletionSourceWithoutInlining.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ThreadingEventSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ThreadingTools.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TplExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WeakKeyDictionary.cs" />
   </ItemGroup>
 </Project>

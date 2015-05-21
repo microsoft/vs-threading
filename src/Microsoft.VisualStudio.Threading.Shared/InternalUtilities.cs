@@ -118,7 +118,7 @@ namespace Microsoft.VisualStudio.Threading
             if (invokeDelegate.Target != null)
             {
                 string instanceType = string.Empty;
-                if (!method.DeclaringType.IsEquivalentTo(invokeDelegate.Target.GetType()))
+                if (!method.DeclaringType.Equals(invokeDelegate.Target.GetType()))
                 {
                     instanceType = " (" + invokeDelegate.Target.GetType().FullName + ")";
                 }
@@ -153,11 +153,15 @@ namespace Microsoft.VisualStudio.Threading
         /// </remarks>
         private static IntPtr GetAddress(object value)
         {
+#if DESKTOP
             unsafe
             {
                 TypedReference tr = __makeref(value);
                 return **(IntPtr**)(&tr);
             }
+#else
+            return IntPtr.Zero;
+#endif
         }
 
         /// <summary>

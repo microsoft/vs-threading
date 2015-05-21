@@ -115,21 +115,60 @@ namespace Microsoft.VisualStudio.Threading
         private readonly HashSet<JoinableTaskContextNode> hangNotifications = new HashSet<JoinableTaskContextNode>();
 
         /// <summary>
+        /// The ManagedThreadID for the main thread.
+        /// </summary>
+        private readonly int mainThreadManagedThreadId;
+
+        /// <summary>
         /// A single joinable task factory that itself cannot be joined.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private JoinableTaskFactory nonJoinableFactory;
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="JoinableTaskContext"/> class
+        /// assuming the current thread is the main thread and
+        /// <see cref="SynchronizationContext.Current"/> will provide the means to switch
+        /// to the main thread from another thread.
+        /// </summary>
+        public JoinableTaskContext()
+            : this(Environment.CurrentManagedThreadId, SynchronizationContext.Current)
+        {
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="JoinableTaskContext"/> class.
         /// </summary>
-        /// <param name="mainThread">The thread to switch to in <see cref="JoinableTaskFactory.SwitchToMainThreadAsync(CancellationToken)"/>.</param>
-        /// <param name="synchronizationContext">The synchronization context to use to switch to the main thread.</param>
+        /// <param name="mainThreadManagedThreadId">
+        /// The managed thread ID of the thread to switch to in <see cref="JoinableTaskFactory.SwitchToMainThreadAsync(CancellationToken)"/>.
+        /// </param>
+        /// <param name="synchronizationContext">
+        /// The synchronization context to use to switch to the main thread.
+        /// </param>
+        public JoinableTaskContext(int mainThreadManagedThreadId, SynchronizationContext synchronizationContext)
+        {
+            this.mainThreadManagedThreadId = mainThreadManagedThreadId;
+            this.UnderlyingSynchronizationContext = synchronizationContext;
+        }
+
+#if DESKTOP
+        /// <summary>
+        /// Initializes a new instance of the <see cref="JoinableTaskContext"/> class.
+        /// </summary>
+        /// <param name="mainThread">
+        /// The thread to switch to in <see cref="JoinableTaskFactory.SwitchToMainThreadAsync(CancellationToken)"/>.
+        /// If omitted, the current thread will be assumed to be the main thread.
+        /// </param>
+        /// <param name="synchronizationContext">
+        /// The synchronization context to use to switch to the main thread.
+        /// </param>
         public JoinableTaskContext(Thread mainThread = null, SynchronizationContext synchronizationContext = null)
         {
             this.MainThread = mainThread ?? Thread.CurrentThread;
+            this.mainThreadManagedThreadId = this.MainThread.ManagedThreadId;
             this.UnderlyingSynchronizationContext = synchronizationContext ?? SynchronizationContext.Current; // may still be null after this.
         }
+#endif
 
         /// <summary>
         /// Gets the factory which creates joinable tasks
@@ -154,15 +193,17 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
+#if DESKTOP
         /// <summary>
         /// Gets the main thread that can be shared by tasks created by this context.
         /// </summary>
         public Thread MainThread { get; private set; }
+#endif
 
         /// <summary>
         /// Gets a value indicating whether the caller is executing on the main thread.
         /// </summary>
-        public bool IsOnMainThread => Thread.CurrentThread == this.MainThread;
+        public bool IsOnMainThread => Environment.CurrentManagedThreadId == this.mainThreadManagedThreadId;
 
         /// <summary>
         /// Gets a value indicating whether the caller is currently running within the context of a joinable task.

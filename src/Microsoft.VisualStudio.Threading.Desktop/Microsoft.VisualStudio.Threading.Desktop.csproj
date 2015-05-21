@@ -44,55 +44,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
-    <Compile Include="AsyncAutoResetEvent.cs" />
-    <Compile Include="AsyncBarrier.cs" />
-    <Compile Include="AsyncCountdownEvent.cs" />
-    <Compile Include="AsyncEventHandler.cs" />
-    <Compile Include="AsyncLazy.cs" />
     <Compile Include="AsyncLocal.cs" />
-    <Compile Include="AsyncQueue.cs" />
     <Compile Include="AsyncReaderWriterLock+HangReportContributor.cs" />
-    <Compile Include="AsyncSemaphore.cs" />
-    <Compile Include="AsyncManualResetEvent.cs" />
     <Compile Include="AsyncReaderWriterLock.cs" />
     <Compile Include="AsyncReaderWriterResourceLock.cs" />
-    <Compile Include="AwaitExtensions.cs" />
-    <Compile Include="DelegatingJoinableTaskFactory.cs" />
-    <Compile Include="Dgml.cs" />
-    <Compile Include="EmptyStruct.cs" />
-    <Compile Include="EnumerateOneOrMany.cs" />
-    <Compile Include="GlobalSuppressions.cs" />
-    <Compile Include="HangReportContribution.cs" />
-    <Compile Include="IAsyncDisposable.cs" />
-    <Compile Include="IHangReportContributor.cs" />
-    <Compile Include="InternalUtilities.cs" />
-    <Compile Include="JoinableTask+DependentSynchronousTask.cs" />
-    <Compile Include="JoinableTask+JoinableTaskSynchronizationContext.cs" />
-    <Compile Include="JoinableTaskContext+HangReportContributor.cs" />
-    <Compile Include="JoinableTaskContext.cs" />
-    <Compile Include="JoinableTask.cs" />
-    <Compile Include="JoinableTaskCollection.cs" />
-    <Compile Include="JoinableTask+ExecutionQueue.cs" />
-    <Compile Include="JoinableTaskContextNode.cs" />
-    <Compile Include="JoinableTaskFactory.cs" />
-    <Compile Include="JoinableTask`1.cs" />
-    <Compile Include="LightUps.cs" />
-    <Compile Include="LightUps`1.cs" />
-    <Compile Include="ListOfOftenOne.cs" />
-    <Compile Include="NativeMethods.cs" />
-    <Compile Include="NoMessagePumpSyncContext.cs" />
-    <Compile Include="ProgressWithCompletion.cs" />
-    <Compile Include="SpecializedSyncContext.cs" />
     <Compile Include="Strings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
-    <Compile Include="TaskCompletionSourceWithoutInlining.cs" />
-    <Compile Include="ThreadingEventSource.cs" />
-    <Compile Include="TplExtensions.cs" />
-    <Compile Include="ThreadingTools.cs" />
-    <Compile Include="WeakKeyDictionary.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Strings.resx">

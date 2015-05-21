@@ -43,6 +43,7 @@ namespace Microsoft.VisualStudio.Threading
             return new TaskSchedulerAwaitable(scheduler, alwaysYield);
         }
 
+#if DESKTOP
         /// <summary>
         /// Provides await functionality for ordinary <see cref="WaitHandle"/>s.
         /// </summary>
@@ -54,6 +55,7 @@ namespace Microsoft.VisualStudio.Threading
             Task task = handle.ToTask();
             return task.GetAwaiter();
         }
+#endif
 
         /// <summary>
         /// An awaitable that executes continuations on the specified task scheduler.
@@ -142,7 +144,12 @@ namespace Microsoft.VisualStudio.Threading
                     // TaskScheduler.Current is never null.  Even if no scheduler is really active and the current
                     // thread is not a threadpool thread, TaskScheduler.Current == TaskScheduler.Default, so we have
                     // to protect against that case too.
-                    return (this.scheduler == TaskScheduler.Default && Thread.CurrentThread.IsThreadPoolThread)
+#if DESKTOP
+                    bool isThreadPoolThread = Thread.CurrentThread.IsThreadPoolThread;
+#else
+                    bool isThreadPoolThread = false; // no way to know on portable profile, so assume we're not.
+#endif
+                    return (this.scheduler == TaskScheduler.Default && isThreadPoolThread)
                         || (this.scheduler == TaskScheduler.Current && TaskScheduler.Current != TaskScheduler.Default);
                 }
             }

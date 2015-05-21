@@ -10,15 +10,16 @@ namespace Microsoft.VisualStudio.Threading
     using System.Diagnostics.Tracing;
 
     /// <summary>
-    /// The ETW source for logging events for the <see cref="AsyncReaderWriterLock"/>.
+    /// The ETW source for logging events for this library.
     /// </summary>
     /// <remarks>
     /// We use a fully-descriptive type name because the type name becomes the name
     /// of the ETW Provider.
     /// </remarks>
     [EventSource(Name = "Microsoft-VisualStudio-Threading")]
-    internal sealed class ThreadingEventSource : EventSource
+    internal sealed partial class ThreadingEventSource : EventSource
     {
+#if DESKTOP
         /// <summary>
         /// The event ID for the <see cref="ReaderWriterLockIssued(int, AsyncReaderWriterLock.LockKind, int, int)"/> event.
         /// </summary>
@@ -33,6 +34,7 @@ namespace Microsoft.VisualStudio.Threading
         /// The event ID for the <see cref="WaitReaderWriterLockStop(int, AsyncReaderWriterLock.LockKind)"/> event.
         /// </summary>
         private const int WaitReaderWriterLockStopEvent = 3;
+#endif
 
         /// <summary>
         /// The event ID for the <see cref="CompleteOnCurrentThreadStart(int, bool)"/>
@@ -69,7 +71,8 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         internal static readonly ThreadingEventSource Instance = new ThreadingEventSource();
 
-        #region ReaderWriterLock Events
+#if DESKTOP
+#region ReaderWriterLock Events
 
         /// <summary>
         /// Logs an issued lock.
@@ -98,7 +101,8 @@ namespace Microsoft.VisualStudio.Threading
             this.WriteEvent(WaitReaderWriterLockStopEvent, lockId, (int)kind);
         }
 
-        #endregion
+#endregion
+#endif
 
         /// <summary>
         /// Enters a synchronously task.

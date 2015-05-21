@@ -9,12 +9,21 @@ namespace Microsoft.VisualStudio.Threading
     using System;
     using System.Threading;
 
+#if DESKTOP
     /// <summary>
     /// A SynchronizationContext whose synchronously blocking Wait method does not allow
     /// any reentrancy via the message pump.
     /// </summary>
     public class NoMessagePumpSyncContext : SynchronizationContext
     {
+#else
+    /// <summary>
+    /// A stub SynchronizationContext that really isn't useful for anything except
+    /// making our code compile, since on portable profile it can't suppress the message pump.
+    /// </summary>
+    internal class NoMessagePumpSyncContext : SynchronizationContext
+    {
+#endif
         /// <summary>
         /// A shared singleton.
         /// </summary>
@@ -25,8 +34,10 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         public NoMessagePumpSyncContext()
         {
+#if DESKTOP
             // This is required so that our override of Wait is invoked.
             this.SetWaitNotificationRequired();
+#endif
         }
 
         /// <summary>
@@ -37,6 +48,7 @@ namespace Microsoft.VisualStudio.Threading
             get { return DefaultInstance; }
         }
 
+#if DESKTOP
         /// <summary>
         /// Synchronously blocks without a message pump.
         /// </summary>
@@ -51,5 +63,6 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(waitHandles, nameof(waitHandles));
             return NativeMethods.WaitForMultipleObjects((uint)waitHandles.Length, waitHandles, waitAll, (uint)millisecondsTimeout);
         }
+#endif
     }
 }

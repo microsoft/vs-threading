@@ -7,7 +7,6 @@
 namespace Microsoft.VisualStudio.Threading
 {
     using System;
-    using System.Configuration;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading.Tasks;
 
@@ -19,7 +18,11 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets a value indicating whether we execute .NET 4.5 code even on later versions of the Framework.
         /// </summary>
-        internal static readonly bool ForceNet45Mode = ConfigurationManager.AppSettings["Microsoft.VisualStudio.Threading.NET45Mode"] == "true";
+#if DESKTOP
+        internal static readonly bool ForceNet45Mode = System.Configuration.ConfigurationManager.AppSettings["Microsoft.VisualStudio.Threading.NET45Mode"] == "true";
+#else
+        internal static readonly bool ForceNet45Mode = false;
+#endif
 
         /// <summary>
         /// The System.Threading.AsyncLocal open generic type, if present.
@@ -29,11 +32,6 @@ namespace Microsoft.VisualStudio.Threading
         /// This field will be <c>null</c> on earlier versions of .NET.
         /// </remarks>
         internal static readonly Type BclAsyncLocalType;
-
-        /// <summary>
-        /// A shareable empty array of Type.
-        /// </summary>
-        internal static readonly Type[] EmptyTypeArray = new Type[0];
 
         /// <summary>
         /// A value indicating whether TaskCreationOptions.RunContinuationsAsynchronously

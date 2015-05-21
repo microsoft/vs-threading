@@ -108,7 +108,13 @@ namespace Microsoft.VisualStudio.Threading
                 }
                 else
                 {
-                    if (Thread.CurrentThread.IsThreadPoolThread)
+#if DESKTOP
+                    bool isThreadPoolThread = Thread.CurrentThread.IsThreadPoolThread;
+#else
+                    // On portable profile this is the best estimation we can do.
+                    bool isThreadPoolThread = !this.jobFactory.Context.IsOnMainThread;
+#endif
+                    if (isThreadPoolThread)
                     {
                         d(state);
                     }

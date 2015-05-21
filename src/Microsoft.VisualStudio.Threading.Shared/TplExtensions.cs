@@ -401,6 +401,7 @@ namespace Microsoft.VisualStudio.Threading
             return tcs.Task;
         }
 
+#if DESKTOP
         /// <summary>
         /// Creates a TPL Task that returns <c>true</c> when a <see cref="WaitHandle"/> is signaled or returns <c>false</c> if a timeout occurs first.
         /// </summary>
@@ -509,6 +510,7 @@ namespace Microsoft.VisualStudio.Threading
 
             return tcs.Task;
         }
+#endif
 
         /// <summary>
         /// Applies a completed task's results to another.

@@ -7,14 +7,10 @@
 namespace Microsoft.VisualStudio.Threading
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
-    using System.Linq;
     using System.Runtime.CompilerServices;
-    using System.Runtime.Remoting.Messaging;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -608,7 +604,7 @@ namespace Microsoft.VisualStudio.Threading
                 // While this method is called when the last write lock is about to be released,
                 // a derived type may override this method and have already taken an additional write lock,
                 // so only state our assumption in the non-derivation case.
-                Assumes.True(this.issuedWriteLocks.Count == 1 || !this.GetType().IsEquivalentTo(typeof(AsyncReaderWriterLock)));
+                Assumes.True(this.issuedWriteLocks.Count == 1 || !this.GetType().Equals(typeof(AsyncReaderWriterLock)));
 
                 if (this.beforeWriteReleasedCallbacks.Count > 0)
                 {
@@ -1007,9 +1003,11 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     this.etw.WaitStart(awaiter);
 
+#if DESKTOP
                     // If the lock is immediately available, we don't need to coordinate with other threads.
                     // But if it is NOT available, we'd have to wait potentially for other threads to do more work.
                     Debugger.NotifyOfCrossThreadDependency();
+#endif
                 }
 
                 return issued;

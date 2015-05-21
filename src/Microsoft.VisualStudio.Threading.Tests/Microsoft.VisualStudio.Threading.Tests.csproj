@@ -65,13 +65,13 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="..\Microsoft.VisualStudio.Threading.Desktop\InternalUtilities.cs">
+    <Compile Include="..\Microsoft.VisualStudio.Threading.Shared\InternalUtilities.cs">
       <Link>InternalUtilities.cs</Link>
     </Compile>
-    <Compile Include="..\Microsoft.VisualStudio.Threading.Desktop\ListOfOftenOne.cs">
+    <Compile Include="..\Microsoft.VisualStudio.Threading.Shared\ListOfOftenOne.cs">
       <Link>ListOfOftenOne.cs</Link>
     </Compile>
-    <Compile Include="..\Microsoft.VisualStudio.Threading.Desktop\WeakKeyDictionary.cs">
+    <Compile Include="..\Microsoft.VisualStudio.Threading.Shared\WeakKeyDictionary.cs">
       <Link>WeakKeyDictionary.cs</Link>
     </Compile>
     <Compile Include="AsyncAutoResetEventTests.cs" />
