@@ -110,9 +110,9 @@
     <Analyzer Include="..\..\packages\StyleCop.Analyzers.1.0.0-alpha-gafdc12e670\tools\analyzers\StyleCop.Analyzers.dll" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj">
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Desktop\Microsoft.VisualStudio.Threading.Desktop.csproj">
       <Project>{2c0dffbd-49c8-4f12-a964-e3096ad4c7f4}</Project>
-      <Name>Microsoft.VisualStudio.Threading</Name>
+      <Name>Microsoft.VisualStudio.Threading.Desktop</Name>
       <ExcludeFromNuPkg>true</ExcludeFromNuPkg>
     </ProjectReference>
   </ItemGroup>

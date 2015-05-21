@@ -65,16 +65,16 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="..\Microsoft.VisualStudio.Threading\InternalUtilities.cs">
+    <Compile Include="..\Microsoft.VisualStudio.Threading.Desktop\InternalUtilities.cs">
       <Link>InternalUtilities.cs</Link>
     </Compile>
-    <Compile Include="..\Microsoft.VisualStudio.Threading\ListOfOftenOne.cs">
+    <Compile Include="..\Microsoft.VisualStudio.Threading.Desktop\ListOfOftenOne.cs">
       <Link>ListOfOftenOne.cs</Link>
     </Compile>
-    <Compile Include="..\Microsoft.VisualStudio.Threading\RollingLog.cs">
+    <Compile Include="..\Microsoft.VisualStudio.Threading.Desktop\RollingLog.cs">
       <Link>RollingLog.cs</Link>
     </Compile>
-    <Compile Include="..\Microsoft.VisualStudio.Threading\WeakKeyDictionary.cs">
+    <Compile Include="..\Microsoft.VisualStudio.Threading.Desktop\WeakKeyDictionary.cs">
       <Link>WeakKeyDictionary.cs</Link>
     </Compile>
     <Compile Include="AsyncAutoResetEventTests.cs" />
@@ -108,9 +108,9 @@
     <Compile Include="WeakKeyDictionaryTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj">
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Desktop\Microsoft.VisualStudio.Threading.Desktop.csproj">
       <Project>{2c0dffbd-49c8-4f12-a964-e3096ad4c7f4}</Project>
-      <Name>Microsoft.VisualStudio.Threading</Name>
+      <Name>Microsoft.VisualStudio.Threading.Desktop</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
