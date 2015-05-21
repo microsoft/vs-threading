@@ -266,8 +266,7 @@ namespace Microsoft.VisualStudio.Threading
             var style = new XElement(StyleName,
                 new XAttribute("TargetType", targetType),
                 new XAttribute("GroupLabel", categoryId),
-                new XElement(XName.Get("Condition", Namespace),
-                    new XAttribute("Expression", "HasCategory('" + categoryId + "')")));
+                new XElement(XName.Get("Condition", Namespace), new XAttribute("Expression", "HasCategory('" + categoryId + "')")));
             style.Add(properties.Select(p => new XElement(XName.Get("Setter", Namespace), new XAttribute("Property", p.Key), new XAttribute("Value", p.Value))));
 
             container.Add(style);

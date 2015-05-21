@@ -31,8 +31,8 @@ namespace Microsoft.VisualStudio.Threading
     /// There are three rules that should be strictly followed when using or interacting
     /// with JoinableTasks:
     ///  1. If a method has certain thread apartment requirements (STA or MTA) it must either:
-    ///       a) Have an asynchronous signature, and asynchronously marshal to the appropriate 
-    ///          thread if it isn't originally invoked on a compatible thread. 
+    ///       a) Have an asynchronous signature, and asynchronously marshal to the appropriate
+    ///          thread if it isn't originally invoked on a compatible thread.
     ///          The recommended way to switch to the main thread is:
     ///          <code>
     ///          await JoinableTaskFactory.SwitchToMainThreadAsync();
@@ -209,7 +209,7 @@ namespace Microsoft.VisualStudio.Threading
         /// so that the work does not have privileges to re-enter the Main thread until the
         /// <see cref="JoinableTaskFactory.Run(Func{Task})"/> call has returned and the UI thread is idle.
         /// To prevent the asynchronous work from automatically being allowed to re-enter the Main thread,
-        /// wrap the code that calls the asynchronous task in a <c>using</c> block with a call to this method 
+        /// wrap the code that calls the asynchronous task in a <c>using</c> block with a call to this method
         /// as the expression.</para>
         /// <example>
         /// <code>
@@ -221,7 +221,7 @@ namespace Microsoft.VisualStudio.Threading
         ///             // Some Main thread work, that cannot begin until the outer RunSynchronously call has returned.
         ///         });
         ///     }
-        ///     
+        ///
         ///     // Because the asyncOperation is not related to this Main thread work (it was suppressed),
         ///     // the following await *would* deadlock if it were uncommented.
         ///     ////await asyncOperation;
@@ -249,7 +249,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 // The JoinableTask dependent chain gives a fast way to check IsMainThreadBlocked.
                 // However, it only works when the main thread tasks is in the CompleteOnCurrentThread loop.
-                // The dependent chain won't be added when a synchronous task is in the initialization phase. 
+                // The dependent chain won't be added when a synchronous task is in the initialization phase.
                 // In that case, we still need to follow the descendent of the task in the initialization stage.
                 // We hope the dependency tree is relatively small in that stage.
                 using (NoMessagePumpSyncContext.Default.Apply())
@@ -258,7 +258,8 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         var allJoinedJobs = new HashSet<JoinableTask>();
                         lock (this.initializingSynchronouslyMainThreadTasks)
-                        {    // our read lock doesn't cover this collection
+                        {
+                            // our read lock doesn't cover this collection
                             foreach (var initializingTask in this.initializingSynchronouslyMainThreadTasks)
                             {
                                 if (!initializingTask.HasMainThreadSynchronousTaskWaiting)
@@ -559,7 +560,7 @@ namespace Microsoft.VisualStudio.Threading
 
         /// <summary>
         /// A class to encapsulate the details of a possible hang.
-        /// An instance of this <see cref="HangDetails"/> class will be passed to the 
+        /// An instance of this <see cref="HangDetails"/> class will be passed to the
         /// <see cref="JoinableTaskContextNode"/> instances who registered the hang notifications.
         /// </summary>
         public class HangDetails

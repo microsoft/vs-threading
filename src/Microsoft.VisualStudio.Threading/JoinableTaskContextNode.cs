@@ -108,7 +108,7 @@ namespace Microsoft.VisualStudio.Threading
         /// so that the work does not have privileges to re-enter the Main thread until the
         /// <see cref="JoinableTaskFactory.Run(Func{Task})"/> call has returned and the UI thread is idle.
         /// To prevent the asynchronous work from automatically being allowed to re-enter the Main thread,
-        /// wrap the code that calls the asynchronous task in a <c>using</c> block with a call to this method 
+        /// wrap the code that calls the asynchronous task in a <c>using</c> block with a call to this method
         /// as the expression.</para>
         /// <example>
         /// <code>
@@ -120,7 +120,7 @@ namespace Microsoft.VisualStudio.Threading
         ///             // Some Main thread work, that cannot begin until the outer RunSynchronously call has returned.
         ///         });
         ///     }
-        ///     
+        ///
         ///     // Because the asyncOperation is not related to this Main thread work (it was suppressed),
         ///     // the following await *would* deadlock if it were uncommented.
         ///     ////await asyncOperation;

@@ -6,7 +6,6 @@
 
 namespace Microsoft.VisualStudio.Threading.Tests
 {
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -14,6 +13,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using System.Windows.Threading;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class AsyncLazyTests : TestBase
@@ -313,7 +313,9 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 await task1;
                 Assert.Fail("Expected exception not thrown.");
             }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException)
+            {
+            }
 
             // Now verify that the value factory does actually complete anyway for other callers.
             evt.Set();
@@ -332,7 +334,9 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 await lazy.GetValueAsync(cts.Token);
                 Assert.Fail("Expected exception not thrown.");
             }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException)
+            {
+            }
 
             Assert.IsFalse(lazy.IsValueCreated, "Value factory should not have been invoked for a pre-canceled token.");
         }

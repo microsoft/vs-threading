@@ -27,7 +27,7 @@
     /// <![CDATA[
     ///   void F(Action<T> action) {
     ///   }
-    /// 
+    ///
     ///   void Test() {
     ///       F(async (x) => {        /* This analyzer will report warning on this async lambda. */
     ///           DoSomething();

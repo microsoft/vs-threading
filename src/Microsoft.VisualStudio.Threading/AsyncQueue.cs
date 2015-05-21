@@ -302,7 +302,7 @@ namespace Microsoft.VisualStudio.Threading
         /// A token whose cancellation signals lost interest in the item.
         /// Cancelling this token does *not* guarantee that the task will be canceled
         /// before it is assigned a resulting element from the head of the queue.
-        /// It is the responsibility of the caller to ensure after cancellation that 
+        /// It is the responsibility of the caller to ensure after cancellation that
         /// either the task is canceled, or it has a result which the caller is responsible
         /// for then handling.
         /// </param>
@@ -656,7 +656,7 @@ namespace Microsoft.VisualStudio.Threading
             internal void SetCancellationRegistration(CancellationTokenRegistration cancellationRegistration)
             {
                 // It's possible that between the time this instance was created
-                // and this invocation, that another thread with a private lock 
+                // and this invocation, that another thread with a private lock
                 // already disposed of this object, in which case we'll immediately dispose
                 // of the registration to avoid memory leaks.
                 if (this.disposed)

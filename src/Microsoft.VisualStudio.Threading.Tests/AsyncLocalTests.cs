@@ -1,6 +1,5 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Tests
 {
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -9,6 +8,7 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class AsyncLocalTests : TestBase

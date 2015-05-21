@@ -19,7 +19,7 @@
     /// they are called on main thread, because now it is synchronously blocking the main thread for the
     /// completion of a task that may need the main thread to complete. Even if they are called on a threadpool
     /// thread, it is occupying a threadpool thread to do nothing but block, which is not good either.
-    /// 
+    ///
     /// i.e.
     ///   var task = Task.Run(DoSomethingOnBackground);
     ///   task.Wait();  /* This analyzer will report warning on this synchronous wait. */
