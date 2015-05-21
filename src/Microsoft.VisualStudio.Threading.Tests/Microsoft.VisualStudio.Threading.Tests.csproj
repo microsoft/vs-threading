@@ -71,9 +71,6 @@
     <Compile Include="..\Microsoft.VisualStudio.Threading\ListOfOftenOne.cs">
       <Link>ListOfOftenOne.cs</Link>
     </Compile>
-    <Compile Include="..\Microsoft.VisualStudio.Threading\RollingLog.cs">
-      <Link>RollingLog.cs</Link>
-    </Compile>
     <Compile Include="..\Microsoft.VisualStudio.Threading\WeakKeyDictionary.cs">
       <Link>WeakKeyDictionary.cs</Link>
     </Compile>
@@ -98,7 +95,6 @@
     <Compile Include="AwaitExtensionsTests.cs" />
     <Compile Include="ListOfOftenOneTests.cs" />
     <Compile Include="ProgressWithCompletionTests.cs" />
-    <Compile Include="RollingLogTests.cs" />
     <Compile Include="TestBase.cs" />
     <Compile Include="TplExtensionsTests.cs" />
     <Compile Include="TestUtilitiesTests.cs" />
