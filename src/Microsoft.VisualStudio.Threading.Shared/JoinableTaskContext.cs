@@ -134,10 +134,11 @@ namespace Microsoft.VisualStudio.Threading
         public JoinableTaskContext()
 #if DESKTOP
             : this(Thread.CurrentThread, SynchronizationContext.Current)
+        {
 #else
             : this(Environment.CurrentManagedThreadId, SynchronizationContext.Current)
-#endif
         {
+#endif
         }
 
 #if DESKTOP
@@ -170,7 +171,12 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="synchronizationContext">
         /// The synchronization context to use to switch to the main thread.
         /// </param>
-        public JoinableTaskContext(int mainThreadManagedThreadId, SynchronizationContext synchronizationContext)
+        /// <devremarks>
+        /// We MUST NOT expose this constructor in our public API because
+        /// Desktop must be a superset of portable, and this constructor cannot
+        /// appear in Desktop.
+        /// </devremarks>
+        private JoinableTaskContext(int mainThreadManagedThreadId, SynchronizationContext synchronizationContext)
         {
             this.mainThreadManagedThreadId = mainThreadManagedThreadId;
             this.UnderlyingSynchronizationContext = synchronizationContext;
