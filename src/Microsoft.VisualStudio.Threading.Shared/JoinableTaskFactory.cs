@@ -533,14 +533,12 @@ namespace Microsoft.VisualStudio.Threading
         /// </remarks>
         private static void VerifyNoNonConcurrentSyncContext()
         {
-#if DESKTOP
             // Don't use Verify.Operation here to avoid loading a string resource in success cases.
             if (SynchronizationContext.Current is AsyncReaderWriterLock.NonConcurrentSynchronizationContext)
             {
                 Report.Fail(Strings.NotAllowedUnderURorWLock); // pops a CHK assert dialog, but doesn't throw.
                 Verify.FailOperation(Strings.NotAllowedUnderURorWLock); // actually throws, even in RET.
             }
-#endif
         }
 
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]

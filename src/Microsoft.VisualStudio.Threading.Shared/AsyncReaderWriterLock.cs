@@ -340,6 +340,19 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Gets a value indicating whether the current thread is allowed to
+        /// hold an active lock.
+        /// </summary>
+        /// <remarks>
+        /// Desktop applications should override this and return <c>false</c>
+        /// when on an STA thread.
+        /// </remarks>
+        protected virtual bool CanCurrentThreadHoldActiveLock
+        {
+            get { return true; }
+        }
+
+        /// <summary>
         /// Gets a value indicating whether the current SynchronizationContext is one that is not supported
         /// by this lock.
         /// </summary>
@@ -620,14 +633,12 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Throws an exception if called on an STA thread.
         /// </summary>
-        private static void ThrowIfStaOrUnsupportedSyncContext()
+        private void ThrowIfUnsupportedThreadOrSyncContext()
         {
-#if DESKTOP
-            if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
+            if (!this.CanCurrentThreadHoldActiveLock)
             {
                 Verify.FailOperation(Strings.STAThreadCallerNotAllowed);
             }
-#endif
 
             if (IsUnsupportedSynchronizationContext)
             {
@@ -641,12 +652,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         private bool IsLockSupportingContext(Awaiter awaiter = null)
         {
-#if DESKTOP
-            bool isNotMTA = Thread.CurrentThread.GetApartmentState() != ApartmentState.MTA;
-#else
-            bool isNotMTA = false; // unknown in portable
-#endif
-            if (isNotMTA || IsUnsupportedSynchronizationContext)
+            if (!this.CanCurrentThreadHoldActiveLock || IsUnsupportedSynchronizationContext)
             {
                 return false;
             }
@@ -941,13 +947,11 @@ namespace Microsoft.VisualStudio.Threading
                                     // and a write lock holder is allowed to transition to an STA tread.
                                     // But if an MTA thread has the write lock but not the sync context, then they're likely
                                     // an accidental execution fork that is exposing concurrency inappropriately.
-#if DESKTOP
-                                    if (Thread.CurrentThread.GetApartmentState() == ApartmentState.MTA && !(SynchronizationContext.Current is NonConcurrentSynchronizationContext))
+                                    if (this.CanCurrentThreadHoldActiveLock && !(SynchronizationContext.Current is NonConcurrentSynchronizationContext))
                                     {
                                         Report.Fail("Dangerous request for read lock from fork of write lock.");
                                         Verify.FailOperation(Strings.DangerousReadLockRequestFromWriteLockFork);
                                     }
-#endif
 
                                     issued = true;
                                 }
@@ -2270,7 +2274,7 @@ namespace Microsoft.VisualStudio.Threading
 
                     if (this.LockIssued)
                     {
-                        ThrowIfStaOrUnsupportedSyncContext();
+                        this.lck.ThrowIfUnsupportedThreadOrSyncContext();
                         if ((this.Kind & (LockKind.UpgradeableRead | LockKind.Write)) != 0)
                         {
                             Assumes.True(SynchronizationContext.Current == this.lck.nonConcurrentSyncContext);
@@ -2289,7 +2293,7 @@ namespace Microsoft.VisualStudio.Threading
                         throw new OperationCanceledException();
                     }
 
-                    ThrowIfStaOrUnsupportedSyncContext();
+                    this.lck.ThrowIfUnsupportedThreadOrSyncContext();
                     throw Assumes.NotReachable();
                 }
                 catch (OperationCanceledException)

@@ -38,7 +38,7 @@
         [TestInitialize]
         public void Initialize()
         {
-            this.asyncLock = new AsyncReaderWriterLock();
+            this.asyncLock = new StaAverseLock();
             doNotWaitForLockCompletionAtTestCleanup = false;
         }
 
@@ -4429,6 +4429,18 @@
             internal void SomeMethod(int callingAppDomainId)
             {
                 Assert.AreNotEqual(callingAppDomainId, AppDomain.CurrentDomain.Id, "AppDomain boundaries not crossed.");
+            }
+        }
+
+        private class StaAverseLock : AsyncReaderWriterLock
+        {
+            protected override bool CanCurrentThreadHoldActiveLock
+            {
+                get
+                {
+                    return base.CanCurrentThreadHoldActiveLock
+                        && Thread.CurrentThread.GetApartmentState() == ApartmentState.MTA;
+                }
             }
         }
 
