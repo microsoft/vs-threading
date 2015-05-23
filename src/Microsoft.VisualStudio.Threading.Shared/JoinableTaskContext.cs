@@ -132,26 +132,16 @@ namespace Microsoft.VisualStudio.Threading
         /// to the main thread from another thread.
         /// </summary>
         public JoinableTaskContext()
+#if DESKTOP
+            : this(Thread.CurrentThread, SynchronizationContext.Current)
+#else
             : this(Environment.CurrentManagedThreadId, SynchronizationContext.Current)
+#endif
         {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="JoinableTaskContext"/> class.
-        /// </summary>
-        /// <param name="mainThreadManagedThreadId">
-        /// The managed thread ID of the thread to switch to in <see cref="JoinableTaskFactory.SwitchToMainThreadAsync(CancellationToken)"/>.
-        /// </param>
-        /// <param name="synchronizationContext">
-        /// The synchronization context to use to switch to the main thread.
-        /// </param>
-        public JoinableTaskContext(int mainThreadManagedThreadId, SynchronizationContext synchronizationContext)
-        {
-            this.mainThreadManagedThreadId = mainThreadManagedThreadId;
-            this.UnderlyingSynchronizationContext = synchronizationContext;
         }
 
 #if DESKTOP
+
         /// <summary>
         /// Initializes a new instance of the <see cref="JoinableTaskContext"/> class.
         /// </summary>
@@ -168,6 +158,24 @@ namespace Microsoft.VisualStudio.Threading
             this.mainThreadManagedThreadId = this.MainThread.ManagedThreadId;
             this.UnderlyingSynchronizationContext = synchronizationContext ?? SynchronizationContext.Current; // may still be null after this.
         }
+
+#else // Do not expose the threadID constructor on desktop because it gives us no opportunity to initialize the MainThread property.
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="JoinableTaskContext"/> class.
+        /// </summary>
+        /// <param name="mainThreadManagedThreadId">
+        /// The managed thread ID of the thread to switch to in <see cref="JoinableTaskFactory.SwitchToMainThreadAsync(CancellationToken)"/>.
+        /// </param>
+        /// <param name="synchronizationContext">
+        /// The synchronization context to use to switch to the main thread.
+        /// </param>
+        public JoinableTaskContext(int mainThreadManagedThreadId, SynchronizationContext synchronizationContext)
+        {
+            this.mainThreadManagedThreadId = mainThreadManagedThreadId;
+            this.UnderlyingSynchronizationContext = synchronizationContext;
+        }
+
 #endif
 
         /// <summary>
