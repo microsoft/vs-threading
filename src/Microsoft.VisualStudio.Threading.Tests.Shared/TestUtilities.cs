@@ -17,7 +17,11 @@
         /// <summary>
         /// A value indicating whether the library is operating in .NET 4.5 mode.
         /// </summary>
+#if DESKTOP
         internal static readonly bool IsNet45Mode = ConfigurationManager.AppSettings["Microsoft.VisualStudio.Threading.NET45Mode"] == "true";
+#else
+        internal static readonly bool IsNet45Mode;
+#endif
 
         internal static Task SetAsync(this TaskCompletionSource<object> tcs)
         {

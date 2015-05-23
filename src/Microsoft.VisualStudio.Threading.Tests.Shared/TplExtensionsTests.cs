@@ -483,6 +483,8 @@
             await callbackResult.Task;
         }
 
+#if DESKTOP
+
         [TestMethod]
         public void ToTaskReturnsCompletedTaskPreSignaled()
         {
@@ -547,6 +549,8 @@
             handle.Dispose();
             TplExtensions.ToTask(handle);
         }
+
+#endif
 
         private static void InvokeAsyncHelper(object sender, EventArgs args)
         {

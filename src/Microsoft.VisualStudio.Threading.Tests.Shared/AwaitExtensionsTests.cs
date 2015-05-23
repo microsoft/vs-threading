@@ -55,6 +55,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }).GetAwaiter().GetResult();
         }
 
+#if DESKTOP
         [TestMethod]
         public void AwaitWaitHandle()
         {
@@ -68,6 +69,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             handle.Set();
             awaitHelperResult.Wait();
         }
+#endif
 
         private class MockTaskScheduler : TaskScheduler
         {

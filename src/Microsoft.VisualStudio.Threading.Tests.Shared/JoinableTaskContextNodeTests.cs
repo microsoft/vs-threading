@@ -59,8 +59,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [TestMethod]
         public void MainThread()
         {
+#if DESKTOP
             Assert.AreSame(this.context.MainThread, this.defaultNode.MainThread);
             Assert.AreSame(this.context.MainThread, this.derivedNode.MainThread);
+#endif
             Assert.IsTrue(this.context.IsOnMainThread);
             Assert.IsTrue(this.derivedNode.IsOnMainThread);
         }

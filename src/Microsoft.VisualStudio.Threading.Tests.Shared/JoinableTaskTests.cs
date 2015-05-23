@@ -3414,12 +3414,16 @@
 
                 if (canceled)
                 {
+#if DESKTOP
                     Assert.AreNotSame(this.Context.MainThread, Thread.CurrentThread, "A canceled transition should not complete on the main thread.");
+#endif
                     Assert.IsFalse(this.Context.IsOnMainThread);
                 }
                 else
                 {
+#if DESKTOP
                     Assert.AreSame(this.Context.MainThread, Thread.CurrentThread, "We should be on the main thread if we've just transitioned.");
+#endif
                     Assert.IsTrue(this.Context.IsOnMainThread);
                 }
 
