@@ -17,11 +17,21 @@
     <FilesToSign Condition=" '$(DevDivProjectType)' == 'vsix' ">
       <Authenticode>vsix</Authenticode>
     </FilesToSign>
+
+    <FilesToLocalize>
+      <Languages>$(VS)</Languages>
+      <ProjectFile>$(MSBuildThisFileFullPath)</ProjectFile>
+      <HasLceComments>true</HasLceComments>
+      <LciCommentFile>$(MSBuildThisFileDirectory)\loc\lci\$(TargetName)$(DistinguishingFactor)$(TargetExt).lci</LciCommentFile>
+      <TranslationFile>$(MSBuildThisFileDirectory)\loc\lcl\{Lang}\$(TargetName)$(DistinguishingFactor)$(TargetExt).lcl</TranslationFile>
+    </FilesToLocalize>
   </ItemDefinitionGroup>
 
   <ItemGroup Condition=" '$(Nonshipping)' != 'true' ">
     <FilesToSign Include="$(TargetPath)" Condition=" '$(DevDivProjectType)' == 'product' " />
     <FilesToSign Include="$(TargetDir)$(TargetName).vsix" Condition=" '$(DevDivProjectType)' == 'vsix' " />
+
+    <FilesToLocalize Include="$(TargetPath)" Condition=" '$(LocalizeOutputAssembly)' == 'true' " />
   </ItemGroup>
 
   <!-- Add the satellite resource assemblies to be signed. Time this such that localization has already done its work. -->
