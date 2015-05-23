@@ -622,10 +622,12 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         private static void ThrowIfStaOrUnsupportedSyncContext()
         {
+#if DESKTOP
             if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
             {
                 Verify.FailOperation(Strings.STAThreadCallerNotAllowed);
             }
+#endif
 
             if (IsUnsupportedSynchronizationContext)
             {
@@ -639,7 +641,12 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         private bool IsLockSupportingContext(Awaiter awaiter = null)
         {
-            if (Thread.CurrentThread.GetApartmentState() != ApartmentState.MTA || IsUnsupportedSynchronizationContext)
+#if DESKTOP
+            bool isNotMTA = Thread.CurrentThread.GetApartmentState() != ApartmentState.MTA;
+#else
+            bool isNotMTA = false; // unknown in portable
+#endif
+            if (isNotMTA || IsUnsupportedSynchronizationContext)
             {
                 return false;
             }
@@ -934,11 +941,13 @@ namespace Microsoft.VisualStudio.Threading
                                     // and a write lock holder is allowed to transition to an STA tread.
                                     // But if an MTA thread has the write lock but not the sync context, then they're likely
                                     // an accidental execution fork that is exposing concurrency inappropriately.
+#if DESKTOP
                                     if (Thread.CurrentThread.GetApartmentState() == ApartmentState.MTA && !(SynchronizationContext.Current is NonConcurrentSynchronizationContext))
                                     {
                                         Report.Fail("Dangerous request for read lock from fork of write lock.");
                                         Verify.FailOperation(Strings.DangerousReadLockRequestFromWriteLockFork);
                                     }
+#endif
 
                                     issued = true;
                                 }
@@ -2028,7 +2037,7 @@ namespace Microsoft.VisualStudio.Threading
         [DebuggerDisplay("{kind}")]
         public class Awaiter : INotifyCompletion
         {
-            #region Fields
+#region Fields
 
             /// <summary>
             /// A singleton delegate for use in cancellation token registration to avoid memory allocations for delegates each time.
@@ -2088,6 +2097,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             private Task releaseAsyncTask;
 
+#if DESKTOP
             /// <summary>
             /// The stacktrace of the caller originally requesting the lock.
             /// </summary>
@@ -2096,13 +2106,14 @@ namespace Microsoft.VisualStudio.Threading
             /// the captureDiagnostics parameter set to <c>true</c>.
             /// </remarks>
             private StackTrace requestingStackTrace;
+#endif
 
             /// <summary>
             /// An arbitrary object that may be set by a derived type of the containing lock class.
             /// </summary>
             private object data;
 
-            #endregion
+#endregion
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Awaiter"/> class.
@@ -2120,7 +2131,9 @@ namespace Microsoft.VisualStudio.Threading
                 this.options = options;
                 this.cancellationToken = cancellationToken;
                 this.nestingLock = lck.GetFirstActiveSelfOrAncestor(lck.topAwaiter.Value);
+#if DESKTOP
                 this.requestingStackTrace = lck.captureDiagnostics ? new StackTrace(2, true) : null;
+#endif
             }
 
             /// <summary>
@@ -2139,6 +2152,7 @@ namespace Microsoft.VisualStudio.Threading
                 get { return this.lck; }
             }
 
+#if DESKTOP
             /// <summary>
             /// Gets the stack trace of the requestor of this lock.
             /// </summary>
@@ -2149,6 +2163,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 get { return this.requestingStackTrace; }
             }
+#endif
 
             /// <summary>
             /// Gets the delegate to invoke (or that was invoked) when the lock is/was issued, if available.

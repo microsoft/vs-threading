@@ -17,6 +17,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)AsyncLocal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AsyncManualResetEvent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AsyncQueue.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AsyncReaderWriterLock+HangReportContributor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AsyncReaderWriterLock.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AsyncReaderWriterResourceLock.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AsyncSemaphore.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AwaitExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DelegatingJoinableTaskFactory.cs" />

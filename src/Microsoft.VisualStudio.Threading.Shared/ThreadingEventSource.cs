@@ -19,7 +19,6 @@ namespace Microsoft.VisualStudio.Threading
     [EventSource(Name = "Microsoft-VisualStudio-Threading")]
     internal sealed partial class ThreadingEventSource : EventSource
     {
-#if DESKTOP
         /// <summary>
         /// The event ID for the <see cref="ReaderWriterLockIssued(int, AsyncReaderWriterLock.LockKind, int, int)"/> event.
         /// </summary>
@@ -34,7 +33,6 @@ namespace Microsoft.VisualStudio.Threading
         /// The event ID for the <see cref="WaitReaderWriterLockStop(int, AsyncReaderWriterLock.LockKind)"/> event.
         /// </summary>
         private const int WaitReaderWriterLockStopEvent = 3;
-#endif
 
         /// <summary>
         /// The event ID for the <see cref="CompleteOnCurrentThreadStart(int, bool)"/>
@@ -71,7 +69,6 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         internal static readonly ThreadingEventSource Instance = new ThreadingEventSource();
 
-#if DESKTOP
 #region ReaderWriterLock Events
 
         /// <summary>
@@ -102,7 +99,6 @@ namespace Microsoft.VisualStudio.Threading
         }
 
 #endregion
-#endif
 
         /// <summary>
         /// Enters a synchronously task.

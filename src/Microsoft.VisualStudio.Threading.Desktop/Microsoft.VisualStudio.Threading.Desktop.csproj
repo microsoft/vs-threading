@@ -45,9 +45,6 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="AsyncLocal.cs" />
-    <Compile Include="AsyncReaderWriterLock+HangReportContributor.cs" />
-    <Compile Include="AsyncReaderWriterLock.cs" />
-    <Compile Include="AsyncReaderWriterResourceLock.cs" />
     <Compile Include="Strings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

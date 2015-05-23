@@ -2541,7 +2541,6 @@
             Assert.IsFalse(weakOuterFactory.IsAlive);
         }
 
-#if DESKTOP
         // This is a known issue and we haven't a fix yet
         [TestMethod, Timeout(TestTimeout), Ignore]
         public void CallContextWasOverwrittenByReentrance()
@@ -2589,7 +2588,6 @@
                 }
             });
         }
-#endif
 
         /// <summary>
         /// Rapidly posts messages to several interlinked AsyncPumps

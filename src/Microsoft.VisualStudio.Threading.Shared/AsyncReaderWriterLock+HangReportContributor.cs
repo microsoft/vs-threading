@@ -131,10 +131,12 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             Delegate lockWaitingContinuation;
+#if DESKTOP
             if (awaiter.RequestingStackTrace != null)
             {
                 label.AppendLine(awaiter.RequestingStackTrace.ToString());
             }
+#endif
 
             if ((lockWaitingContinuation = awaiter.LockRequestingContinuation) != null)
             {

@@ -16,10 +16,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)AsyncLocalTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AsyncManualResetEventTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AsyncQueueTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AsyncReaderWriterLockTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AsyncReaderWriterResourceLockTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AsyncSemaphoreTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AwaitExtensionsTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DelegatingJoinableTaskFactoryTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)InternalUtilitiesTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskAndAsyncReaderWriterLockTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskCollectionTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskContextNodeTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskContextTests.cs" />

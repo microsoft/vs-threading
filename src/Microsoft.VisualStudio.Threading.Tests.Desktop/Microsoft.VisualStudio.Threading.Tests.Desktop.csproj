@@ -62,9 +62,6 @@
     <Compile Include="..\Microsoft.VisualStudio.Threading.Shared\WeakKeyDictionary.cs">
       <Link>WeakKeyDictionary.cs</Link>
     </Compile>
-    <Compile Include="AsyncReaderWriterLockTests.cs" />
-    <Compile Include="AsyncReaderWriterResourceLockTests.cs" />
-    <Compile Include="JoinableTaskAndAsyncReaderWriterLockTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Desktop\Microsoft.VisualStudio.Threading.Desktop.csproj">

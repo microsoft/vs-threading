@@ -20,7 +20,7 @@
 #if DESKTOP
         internal static readonly bool IsNet45Mode = ConfigurationManager.AppSettings["Microsoft.VisualStudio.Threading.NET45Mode"] == "true";
 #else
-        internal static readonly bool IsNet45Mode;
+        internal static readonly bool IsNet45Mode = false;
 #endif
 
         internal static Task SetAsync(this TaskCompletionSource<object> tcs)
