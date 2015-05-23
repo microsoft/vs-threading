@@ -436,6 +436,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Assert.IsTrue(resultTask.Wait(AsyncDelay));
         }
 
+#if DESKTOP
         [TestMethod, Timeout(TestTimeout), Ignore]
         public async Task ValueFactoryRequiresReadLockHeldByOther()
         {
@@ -480,5 +481,6 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 await lazy.GetValueAsync();
             }
         }
+#endif
     }
 }
