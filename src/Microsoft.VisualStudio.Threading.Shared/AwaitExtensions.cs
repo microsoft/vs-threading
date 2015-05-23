@@ -147,7 +147,10 @@ namespace Microsoft.VisualStudio.Threading
 #if DESKTOP
                     bool isThreadPoolThread = Thread.CurrentThread.IsThreadPoolThread;
 #else
-                    bool isThreadPoolThread = false; // no way to know on portable profile, so assume we're not.
+                    // An approximation of whether we're on a threadpool thread is whether
+                    // there is a SynchronizationContext applied. So use that, since it's
+                    // available to portable libraries.
+                    bool isThreadPoolThread = SynchronizationContext.Current == null;
 #endif
                     return (this.scheduler == TaskScheduler.Default && isThreadPoolThread)
                         || (this.scheduler == TaskScheduler.Current && TaskScheduler.Current != TaskScheduler.Default);
