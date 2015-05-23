@@ -17,6 +17,7 @@
     <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
     <DefaultLanguage>en-US</DefaultLanguage>
     <FileAlignment>512</FileAlignment>
+    <OutputPath>$(OutputPath)\Profile151\</OutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Tests.Portable.ruleset</CodeAnalysisRuleSet>
