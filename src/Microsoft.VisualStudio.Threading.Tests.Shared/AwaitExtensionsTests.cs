@@ -43,6 +43,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [TestMethod]
         public void AwaitThreadPoolSchedulerYieldsOnNonThreadPoolThreads()
         {
+#if !DESKTOP
+            // Set this, which makes it appear our thread is not a threadpool thread.
+            SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
+#endif
             Assert.IsFalse(TaskScheduler.Default.GetAwaiter().IsCompleted);
         }
 
