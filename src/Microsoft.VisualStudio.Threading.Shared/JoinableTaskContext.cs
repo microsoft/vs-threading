@@ -192,7 +192,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                using (NoMessagePumpSyncContext.Default.Apply())
+                using (this.NoMessagePumpSynchronizationContext.Apply())
                 {
                     lock (this.SyncContextLock)
                     {
@@ -256,6 +256,22 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Gets a <see cref="SynchronizationContext"/> which, when applied,
+        /// suppresses any message pump that may run during synchronous blocks
+        /// of the calling thread.
+        /// </summary>
+        /// <remarks>
+        /// The defauult implementation of this property is effective on
+        /// in builds of this assembly that target the .NET Framework.
+        /// But on builds that target the portable profile, it should be
+        /// overridden to provide an effective platform-specific solution.
+        /// </remarks>
+        protected internal virtual SynchronizationContext NoMessagePumpSynchronizationContext
+        {
+            get { return NoMessagePumpSyncContext.Default; }
+        }
+
+        /// <summary>
         /// Conceals any JoinableTask the caller is associated with until the returned value is disposed.
         /// </summary>
         /// <returns>A value to dispose of to restore visibility into the caller's associated JoinableTask, if any.</returns>
@@ -307,7 +323,7 @@ namespace Microsoft.VisualStudio.Threading
                 // The dependent chain won't be added when a synchronous task is in the initialization phase.
                 // In that case, we still need to follow the descendent of the task in the initialization stage.
                 // We hope the dependency tree is relatively small in that stage.
-                using (NoMessagePumpSyncContext.Default.Apply())
+                using (this.NoMessagePumpSynchronizationContext.Apply())
                 {
                     lock (this.SyncContextLock)
                     {

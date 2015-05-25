@@ -138,7 +138,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             Requires.NotNull(joinableTask, nameof(joinableTask));
 
-            using (NoMessagePumpSyncContext.Default.Apply())
+            using (this.Context.NoMessagePumpSynchronizationContext.Apply())
             {
                 lock (this.Context.SyncContextLock)
                 {
@@ -191,7 +191,7 @@ namespace Microsoft.VisualStudio.Threading
                 return new JoinRelease();
             }
 
-            using (NoMessagePumpSyncContext.Default.Apply())
+            using (this.Context.NoMessagePumpSynchronizationContext.Apply())
             {
                 lock (this.Context.SyncContextLock)
                 {
@@ -223,7 +223,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 // We need a read lock to protect against the emptiness of this collection changing
                 // while we're setting the initial set state of the new event.
-                using (NoMessagePumpSyncContext.Default.Apply())
+                using (this.Context.NoMessagePumpSynchronizationContext.Apply())
                 {
                     lock (this.Context.SyncContextLock)
                     {
@@ -247,7 +247,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             Requires.NotNull(joinableTask, nameof(joinableTask));
 
-            using (NoMessagePumpSyncContext.Default.Apply())
+            using (this.Context.NoMessagePumpSynchronizationContext.Apply())
             {
                 lock (this.Context.SyncContextLock)
                 {
@@ -262,7 +262,7 @@ namespace Microsoft.VisualStudio.Threading
         public IEnumerator<JoinableTask> GetEnumerator()
         {
 
-            using (NoMessagePumpSyncContext.Default.Apply())
+            using (this.Context.NoMessagePumpSynchronizationContext.Apply())
             {
                 var joinables = new List<JoinableTask>();
                 lock (this.Context.SyncContextLock)
@@ -293,7 +293,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             Requires.NotNull(joinableTask, nameof(joinableTask));
 
-            using (NoMessagePumpSyncContext.Default.Apply())
+            using (this.Context.NoMessagePumpSynchronizationContext.Apply())
             {
                 lock (this.Context.SyncContextLock)
                 {

@@ -186,7 +186,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                using (NoMessagePumpSyncContext.Default.Apply())
+                using (this.Factory.Context.NoMessagePumpSynchronizationContext.Apply())
                 {
                     lock (this.owner.Context.SyncContextLock)
                     {
@@ -221,7 +221,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                using (NoMessagePumpSyncContext.Default.Apply())
+                using (this.Factory.Context.NoMessagePumpSynchronizationContext.Apply())
                 {
                     lock (this.owner.Context.SyncContextLock)
                     {
@@ -253,7 +253,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                using (NoMessagePumpSyncContext.Default.Apply())
+                using (this.Factory.Context.NoMessagePumpSynchronizationContext.Apply())
                 {
                     lock (this.owner.Context.SyncContextLock)
                     {
@@ -287,7 +287,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                using (NoMessagePumpSyncContext.Default.Apply())
+                using (this.Factory.Context.NoMessagePumpSynchronizationContext.Apply())
                 {
                     lock (this.owner.Context.SyncContextLock)
                     {
@@ -503,7 +503,7 @@ namespace Microsoft.VisualStudio.Threading
 
         internal void Post(SendOrPostCallback d, object state, bool mainThreadAffinitized)
         {
-            using (NoMessagePumpSyncContext.Default.Apply())
+            using (this.Factory.Context.NoMessagePumpSynchronizationContext.Apply())
             {
                 SingleExecuteProtector wrapper = null;
                 List<AsyncManualResetEvent> eventsNeedNotify = null; // initialized if we should pulse it at the end of the method
@@ -636,7 +636,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             Requires.NotNull(wrappedTask, nameof(wrappedTask));
 
-            using (NoMessagePumpSyncContext.Default.Apply())
+            using (this.Factory.Context.NoMessagePumpSynchronizationContext.Apply())
             {
                 lock (this.owner.Context.SyncContextLock)
                 {
@@ -666,7 +666,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         internal void Complete()
         {
-            using (NoMessagePumpSyncContext.Default.Apply())
+            using (this.Factory.Context.NoMessagePumpSynchronizationContext.Apply())
             {
                 AsyncManualResetEvent queueNeedProcessEvent = null;
                 lock (this.owner.Context.SyncContextLock)
@@ -707,7 +707,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             Requires.NotNull(joinChild, nameof(joinChild));
 
-            using (NoMessagePumpSyncContext.Default.Apply())
+            using (this.Factory.Context.NoMessagePumpSynchronizationContext.Apply())
             {
                 lock (this.owner.Context.SyncContextLock)
                 {
@@ -777,7 +777,7 @@ namespace Microsoft.VisualStudio.Threading
                         ThreadingEventSource.Instance.CompleteOnCurrentThreadStart(this.GetHashCode(), onMainThread);
                     }
 
-                    using (NoMessagePumpSyncContext.Default.Apply())
+                    using (this.Factory.Context.NoMessagePumpSynchronizationContext.Apply())
                     {
                         lock (this.owner.Context.SyncContextLock)
                         {
@@ -818,7 +818,7 @@ namespace Microsoft.VisualStudio.Threading
                     }
                     finally
                     {
-                        using (NoMessagePumpSyncContext.Default.Apply())
+                        using (this.Factory.Context.NoMessagePumpSynchronizationContext.Apply())
                         {
                             lock (this.owner.Context.SyncContextLock)
                             {
@@ -899,7 +899,7 @@ namespace Microsoft.VisualStudio.Threading
             // Try to avoid taking a lock if the flags are already set appropriately.
             if ((this.state & flags) != flags)
             {
-                using (NoMessagePumpSyncContext.Default.Apply())
+                using (this.Factory.Context.NoMessagePumpSynchronizationContext.Apply())
                 {
                     lock (this.owner.Context.SyncContextLock)
                     {
@@ -911,7 +911,7 @@ namespace Microsoft.VisualStudio.Threading
 
         private bool TryDequeueSelfOrDependencies(bool onMainThread, ref HashSet<JoinableTask> visited, out SingleExecuteProtector work, out Task tryAgainAfter)
         {
-            using (NoMessagePumpSyncContext.Default.Apply())
+            using (this.Factory.Context.NoMessagePumpSynchronizationContext.Apply())
             {
                 lock (this.owner.Context.SyncContextLock)
                 {
@@ -1018,7 +1018,7 @@ namespace Microsoft.VisualStudio.Threading
                 return new JoinRelease();
             }
 
-            using (NoMessagePumpSyncContext.Default.Apply())
+            using (this.Factory.Context.NoMessagePumpSynchronizationContext.Apply())
             {
                 List<AsyncManualResetEvent> eventsNeedNotify = null;
                 lock (this.owner.Context.SyncContextLock)

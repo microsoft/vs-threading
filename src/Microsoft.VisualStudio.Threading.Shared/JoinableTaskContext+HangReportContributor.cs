@@ -32,7 +32,7 @@ namespace Microsoft.VisualStudio.Threading
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         protected virtual HangReportContribution GetHangReport()
         {
-            using (NoMessagePumpSyncContext.Default.Apply())
+            using (this.NoMessagePumpSynchronizationContext.Apply())
             {
                 lock (this.SyncContextLock)
                 {

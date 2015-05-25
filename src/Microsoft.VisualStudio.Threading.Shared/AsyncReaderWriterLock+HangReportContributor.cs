@@ -35,6 +35,22 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Gets a <see cref="SynchronizationContext"/> which, when applied,
+        /// suppresses any message pump that may run during synchronous blocks
+        /// of the calling thread.
+        /// </summary>
+        /// <remarks>
+        /// The defauult implementation of this property is effective on
+        /// in builds of this assembly that target the .NET Framework.
+        /// But on builds that target the portable profile, it should be
+        /// overridden to provide an effective platform-specific solution.
+        /// </remarks>
+        protected internal virtual SynchronizationContext NoMessagePumpSynchronizationContext
+        {
+            get { return NoMessagePumpSyncContext.Default; }
+        }
+
+        /// <summary>
         /// Contributes data for a hang report.
         /// </summary>
         /// <returns>The hang report contribution. Null values should be ignored.</returns>
@@ -50,7 +66,7 @@ namespace Microsoft.VisualStudio.Threading
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         protected virtual HangReportContribution GetHangReport()
         {
-            using (NoMessagePumpSyncContext.Default.Apply())
+            using (this.NoMessagePumpSynchronizationContext.Apply())
             {
                 // It's possible that the hang is due to a deadlock on our own private lock,
                 // so while we're reporting the hang, don't accidentally deadlock ourselves

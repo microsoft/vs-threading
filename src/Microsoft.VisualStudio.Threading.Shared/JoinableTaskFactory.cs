@@ -284,7 +284,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 // Suppress any reentrancy by causing this synchronously blocking wait
                 // to not pump any messages at all.
-                using (NoMessagePumpSyncContext.Default.Apply())
+                using (this.Context.NoMessagePumpSynchronizationContext.Apply())
                 {
                     this.WaitSynchronouslyCore(task);
                 }

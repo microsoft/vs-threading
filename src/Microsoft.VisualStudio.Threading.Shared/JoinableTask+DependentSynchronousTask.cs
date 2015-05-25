@@ -26,7 +26,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                using (NoMessagePumpSyncContext.Default.Apply())
+                using (this.Factory.Context.NoMessagePumpSynchronizationContext.Apply())
                 {
                     lock (this.owner.Context.SyncContextLock)
                     {
