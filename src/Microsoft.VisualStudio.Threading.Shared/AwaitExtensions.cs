@@ -7,17 +7,14 @@
 namespace Microsoft.VisualStudio.Threading
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using System.Runtime.CompilerServices;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
 
     /// <summary>
     /// Extension methods and awaitables for .NET 4.5.
     /// </summary>
-    public static class AwaitExtensions
+    public static partial class AwaitExtensions
     {
         /// <summary>
         /// Gets an awaiter that schedules continuations on the specified scheduler.
@@ -42,20 +39,6 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(scheduler, nameof(scheduler));
             return new TaskSchedulerAwaitable(scheduler, alwaysYield);
         }
-
-#if DESKTOP
-        /// <summary>
-        /// Provides await functionality for ordinary <see cref="WaitHandle"/>s.
-        /// </summary>
-        /// <param name="handle">The handle to wait on.</param>
-        /// <returns>The awaiter.</returns>
-        public static TaskAwaiter GetAwaiter(this WaitHandle handle)
-        {
-            Requires.NotNull(handle, nameof(handle));
-            Task task = handle.ToTask();
-            return task.GetAwaiter();
-        }
-#endif
 
         /// <summary>
         /// An awaitable that executes continuations on the specified task scheduler.
