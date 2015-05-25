@@ -40,7 +40,7 @@ namespace Microsoft.VisualStudio.Threading
         /// of the calling thread.
         /// </summary>
         /// <remarks>
-        /// The defauult implementation of this property is effective on
+        /// The default implementation of this property is effective
         /// in builds of this assembly that target the .NET Framework.
         /// But on builds that target the portable profile, it should be
         /// overridden to provide an effective platform-specific solution.

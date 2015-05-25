@@ -344,12 +344,20 @@ namespace Microsoft.VisualStudio.Threading
         /// hold an active lock.
         /// </summary>
         /// <remarks>
-        /// Desktop applications should override this and return <c>false</c>
-        /// when on an STA thread.
+        /// The default implementation of this property in builds of this
+        /// assembly that target the .NET Framework is to return <c>true</c>
+        /// when the calling thread is an MTA thread.
+        /// On builds that target the portable profile, this property always
+        /// returns <c>true</c> and should be overridden return <c>false</c>
+        /// on threads that may compromise the integrity of the lock.
         /// </remarks>
         protected virtual bool CanCurrentThreadHoldActiveLock
         {
+#if DESKTOP
+            get { return Thread.CurrentThread.GetApartmentState() != ApartmentState.STA; }
+#else
             get { return true; }
+#endif
         }
 
         /// <summary>
@@ -2041,7 +2049,7 @@ namespace Microsoft.VisualStudio.Threading
         [DebuggerDisplay("{kind}")]
         public class Awaiter : INotifyCompletion
         {
-#region Fields
+            #region Fields
 
             /// <summary>
             /// A singleton delegate for use in cancellation token registration to avoid memory allocations for delegates each time.
@@ -2117,7 +2125,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             private object data;
 
-#endregion
+            #endregion
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Awaiter"/> class.
