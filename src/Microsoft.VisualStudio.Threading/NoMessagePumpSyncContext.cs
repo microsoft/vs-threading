@@ -10,7 +10,7 @@ namespace Microsoft.VisualStudio.Threading
     using System.Threading;
 
     /// <summary>
-    /// A SynchronizationContext whose synchronously blocking Wait method does not allow 
+    /// A SynchronizationContext whose synchronously blocking Wait method does not allow
     /// any reentrancy via the message pump.
     /// </summary>
     public class NoMessagePumpSyncContext : SynchronizationContext

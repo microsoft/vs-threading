@@ -77,7 +77,7 @@
                 Assert.Inconclusive("The test machine does not have enough CPU cores to exercise a concurrency level of {0}", concurrency);
             }
 
-            // We use a barrier to guarantee that all threads are fully ready to 
+            // We use a barrier to guarantee that all threads are fully ready to
             // execute the provided function at precisely the same time.
             // The barrier will unblock all of them together.
             using (var barrier = new Barrier(concurrency))

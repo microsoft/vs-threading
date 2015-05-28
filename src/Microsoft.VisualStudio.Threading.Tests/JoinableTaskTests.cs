@@ -641,7 +641,7 @@
             this.asyncPump.Run(async delegate
             {
                 // Even though it's all the same instance of AsyncPump,
-                // unrelated work (work not spun off from this block) must still be 
+                // unrelated work (work not spun off from this block) must still be
                 // Joined in order to execute here.
                 Assert.AreNotSame(task, await Task.WhenAny(task, Task.Delay(AsyncDelay / 2)), "The unrelated main thread work completed before the Main thread was joined.");
                 using (this.joinableCollection.Join())
@@ -1525,24 +1525,68 @@
         [TestMethod, Timeout(TestTimeout)]
         public void SynchronousTaskStackMaintainedCorrectly()
         {
-            var mainThreadNowBlocking = new AsyncManualResetEvent();
-            var asyncTaskWaiting = new AsyncManualResetEvent();
-
-            var task = Task.Run(async delegate
-            {
-                await asyncTaskWaiting.WaitAsync();
-                mainThreadNowBlocking.Set();
-            });
-
             this.asyncPump.Run(async delegate
             {
                 this.asyncPump.Run(() => Task.FromResult<bool>(true));
-                await mainThreadNowBlocking.WaitAsync().GetAwaiter().YieldAndNotify(asyncTaskWaiting);
+                await Task.Yield();
             });
+        }
+
+        [TestMethod, Timeout(TestTimeout)]
+        public void SynchronousTaskStackMaintainedCorrectlyWithForkedTask()
+        {
+            var innerTaskWaitingSwitching = new AsyncManualResetEvent();
 
             this.asyncPump.Run(async delegate
             {
-                await task;
+                Task innerTask = null;
+                this.asyncPump.Run(delegate
+                {
+                    // We need simulate a scenario that the task is completed without any yielding,
+                    // but the queue of the Joinable task is not empty at that point,
+                    // so the synchronous JoinableTask doesn't need any blocking time, but it is completed later.
+                    innerTask = Task.Run(async delegate
+                    {
+                        await this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().YieldAndNotify(innerTaskWaitingSwitching);
+                    });
+
+                    innerTaskWaitingSwitching.WaitAsync().Wait();
+                    return Task.FromResult(true);
+                });
+
+                await Task.Yield();
+
+                // Now, get rid of the innerTask
+                await innerTask;
+            });
+        }
+
+        [TestMethod, Timeout(TestTimeout), Ignore]
+        public void SynchronousTaskStackMaintainedCorrectlyWithForkedTask2()
+        {
+            var innerTaskWaiting = new AsyncManualResetEvent();
+
+            // This test simulates that we have an inner task starts to switch to main thread after the joinable task is compeleted.
+            // Because completed task won't be tracked in the dependent chain, waiting it causes a deadlock.  This could be a potential problem.
+            this.asyncPump.Run(async delegate
+            {
+                Task innerTask = null;
+                this.asyncPump.Run(delegate
+                {
+                    innerTask = Task.Run(async delegate
+                    {
+                        await innerTaskWaiting.WaitAsync();
+                        await this.asyncPump.SwitchToMainThreadAsync();
+                    });
+
+                    return Task.FromResult(true);
+                });
+
+                innerTaskWaiting.Set();
+                await Task.Yield();
+
+                // Now, get rid of the innerTask
+                await innerTask;
             });
         }
 
@@ -1951,7 +1995,7 @@
                 { // simulate some kind of sync context hand-off that doesn't flow execution context.
                     Task.Run(delegate
                     {
-                        // This post will only get a chance for processing 
+                        // This post will only get a chance for processing
                         syncContext.Post(
                             state =>
                             {
@@ -2359,7 +2403,7 @@
         /// parent JTF. If the parent JTF assists just because it happened to be active for a
         /// brief time when the child JoinableTask was created, it could forever defeat the
         /// intended lower priority of the child.
-        /// 
+        ///
         /// This test is Ignored because fixing it would require a JoinableTask to have
         /// a reference to its antecedant, or the antecedant to maintain a collection of
         /// child tasks. The first possibility is unpaletable (because it would create a
@@ -3371,10 +3415,12 @@
                 if (canceled)
                 {
                     Assert.AreNotSame(this.Context.MainThread, Thread.CurrentThread, "A canceled transition should not complete on the main thread.");
+                    Assert.IsFalse(this.Context.IsOnMainThread);
                 }
                 else
                 {
                     Assert.AreSame(this.Context.MainThread, Thread.CurrentThread, "We should be on the main thread if we've just transitioned.");
+                    Assert.IsTrue(this.Context.IsOnMainThread);
                 }
 
                 // These statements and assertions assume that the test does not have jobs that execute code concurrently.

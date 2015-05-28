@@ -94,7 +94,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         internal SynchronizationContext ApplicableJobSyncContext
         {
-            get { return this.Context.MainThread == Thread.CurrentThread ? this.mainThreadJobSyncContext : null; }
+            get { return this.Context.IsOnMainThread ? this.mainThreadJobSyncContext : null; }
         }
 
         /// <summary>
@@ -146,10 +146,10 @@ namespace Microsoft.VisualStudio.Threading
         /// private async Task SomeOperationAsync() {
         ///     // on the caller's thread.
         ///     await DoAsync();
-        ///     
+        ///
         ///     // Now switch to a threadpool thread explicitly.
         ///     await TaskScheduler.Default;
-        ///     
+        ///
         ///     // Now switch to the Main thread to talk to some STA object.
         ///     await this.JobContext.SwitchToMainThreadAsync();
         ///     STAService.DoSomething();
@@ -277,7 +277,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </remarks>
         protected internal virtual void WaitSynchronously(Task task)
         {
-            if (this.Context.MainThread == Thread.CurrentThread)
+            if (this.Context.IsOnMainThread)
             {
                 // Suppress any reentrancy by causing this synchronously blocking wait
                 // to not pump any messages at all.
@@ -660,7 +660,7 @@ namespace Microsoft.VisualStudio.Threading
                     }
 
                     return this.jobFactory == null
-                        || this.jobFactory.Context.MainThread == Thread.CurrentThread
+                        || this.jobFactory.Context.IsOnMainThread
                         || this.jobFactory.Context.UnderlyingSynchronizationContext == null;
                 }
             }
@@ -733,7 +733,7 @@ namespace Microsoft.VisualStudio.Threading
             public void GetResult()
             {
                 Assumes.True(this.jobFactory != null);
-                Assumes.True(this.jobFactory.Context.MainThread == Thread.CurrentThread || this.jobFactory.Context.UnderlyingSynchronizationContext == null || this.cancellationToken.IsCancellationRequested);
+                Assumes.True(this.jobFactory.Context.IsOnMainThread || this.jobFactory.Context.UnderlyingSynchronizationContext == null || this.cancellationToken.IsCancellationRequested);
 
                 // Release memory associated with the cancellation request.
                 if (this.cancellationRegistrationPtr != null)
@@ -765,7 +765,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
 
                 // Only throw a cancellation exception if we didn't end up completing what the caller asked us to do (arrive at the main thread).
-                if (Thread.CurrentThread != this.jobFactory.Context.MainThread)
+                if (!this.jobFactory.Context.IsOnMainThread)
                 {
                     this.cancellationToken.ThrowIfCancellationRequested();
                 }
@@ -1074,7 +1074,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 if (this.raiseTransitionComplete)
                 {
-                    this.job.Factory.OnTransitionedToMainThread(this.job, Thread.CurrentThread != this.job.Factory.Context.MainThread);
+                    this.job.Factory.OnTransitionedToMainThread(this.job, !this.job.Factory.Context.IsOnMainThread);
                 }
             }
         }

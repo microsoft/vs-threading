@@ -1,6 +1,5 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Tests
 {
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -10,6 +9,7 @@
     using System.Threading.Tasks;
     using System.Windows.Threading;
     using System.Xml.Linq;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class JoinableTaskContextTests : JoinableTaskTestBase

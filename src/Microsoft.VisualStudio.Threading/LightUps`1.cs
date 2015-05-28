@@ -8,6 +8,7 @@ namespace Microsoft.VisualStudio.Threading
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
@@ -57,17 +58,19 @@ namespace Microsoft.VisualStudio.Threading
         {
             if (!LightUps.ForceNet45Mode)
             {
-                var methodInfo = typeof(TaskCompletionSource<T>).GetMethod(nameof(TaskCompletionSource<int>.TrySetCanceled), new Type[] { typeof(CancellationToken) });
+                var methodInfo = typeof(TaskCompletionSource<T>).GetTypeInfo()
+                    .GetDeclaredMethods(nameof(TaskCompletionSource<int>.TrySetCanceled))
+                    .FirstOrDefault(m => m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType == typeof(CancellationToken));
                 if (methodInfo != null)
                 {
-                    TrySetCanceled = (Func<TaskCompletionSource<T>, CancellationToken, bool>)Delegate.CreateDelegate(typeof(Func<TaskCompletionSource<T>, CancellationToken, bool>), methodInfo);
+                    TrySetCanceled = (Func<TaskCompletionSource<T>, CancellationToken, bool>)methodInfo.CreateDelegate(typeof(Func<TaskCompletionSource<T>, CancellationToken, bool>));
                 }
 
                 if (LightUps.BclAsyncLocalType != null)
                 {
                     BclAsyncLocalType = LightUps.BclAsyncLocalType.MakeGenericType(typeof(T));
-                    BclAsyncLocalCtor = BclAsyncLocalType.GetConstructor(LightUps.EmptyTypeArray);
-                    bclAsyncLocalValueProperty = BclAsyncLocalType.GetProperty("Value");
+                    BclAsyncLocalCtor = BclAsyncLocalType.GetTypeInfo().DeclaredConstructors.FirstOrDefault(ctor => ctor.GetParameters().Length == 0);
+                    bclAsyncLocalValueProperty = BclAsyncLocalType.GetTypeInfo().GetDeclaredProperty("Value");
                     IsAsyncLocalSupported = true;
                 }
             }
@@ -83,8 +86,8 @@ namespace Microsoft.VisualStudio.Threading
         {
             Assumes.True(IsAsyncLocalSupported);
             var instance = BclAsyncLocalCtor.Invoke(null);
-            getter = (Func<T>)Delegate.CreateDelegate(typeof(Func<T>), instance, bclAsyncLocalValueProperty.GetMethod);
-            setter = (Action<T>)Delegate.CreateDelegate(typeof(Action<T>), instance, bclAsyncLocalValueProperty.SetMethod);
+            getter = (Func<T>)bclAsyncLocalValueProperty.GetMethod.CreateDelegate(typeof(Func<T>), instance);
+            setter = (Action<T>)bclAsyncLocalValueProperty.SetMethod.CreateDelegate(typeof(Action<T>), instance);
             return instance;
         }
     }

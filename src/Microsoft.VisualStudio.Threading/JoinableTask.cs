@@ -128,7 +128,7 @@ namespace Microsoft.VisualStudio.Threading
                 this.state |= JoinableTaskFlags.StartedSynchronously | JoinableTaskFlags.CompletingSynchronously;
             }
 
-            if (Thread.CurrentThread == owner.Context.MainThread)
+            if (owner.Context.IsOnMainThread)
             {
                 this.state |= JoinableTaskFlags.StartedOnMainThread;
                 if (synchronouslyBlocking)
@@ -291,7 +291,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     lock (this.owner.Context.SyncContextLock)
                     {
-                        if (this.Factory.Context.MainThread == Thread.CurrentThread)
+                        if (this.Factory.Context.IsOnMainThread)
                         {
                             if (this.mainThreadJobSyncContext == null)
                             {
@@ -335,14 +335,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets the entry method's info so we could show its full name in hang report.
         /// </summary>
-        internal MethodInfo EntryMethodInfo
-        {
-            get
-            {
-                var del = this.initialDelegate;
-                return del != null ? del.Method : null;
-            }
-        }
+        internal MethodInfo EntryMethodInfo => this.initialDelegate?.GetMethodInfo();
 
         /// <summary>
         /// Gets a value indicating whether this task has a non-empty queue.
@@ -480,7 +473,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             // We don't simply call this.CompleteOnCurrentThread because that doesn't take CancellationToken.
             // And it really can't be made to, since it sets state flags indicating the JoinableTask is
-            // blocking till completion. 
+            // blocking till completion.
             // So instead, we new up a new JoinableTask to do the blocking. But we preserve the initial delegate
             // so that if a hang occurs it blames the original JoinableTask.
             this.owner.Run(
@@ -489,7 +482,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Shares any access to the main thread the caller may have 
+        /// Shares any access to the main thread the caller may have
         /// Joins any main thread affinity of the caller with the asynchronous operation to avoid deadlocks
         /// in the event that the main thread ultimately synchronously blocks waiting for the operation to complete.
         /// </summary>
@@ -521,7 +514,7 @@ namespace Microsoft.VisualStudio.Threading
                     if (this.IsCompleteRequested)
                     {
                         // This job has already been marked for completion.
-                        // We need to forward the work to the fallback mechanisms. 
+                        // We need to forward the work to the fallback mechanisms.
                         postToFactory = true;
                     }
                     else
@@ -767,22 +760,22 @@ namespace Microsoft.VisualStudio.Threading
             CompletingTask.Value = this;
             try
             {
+                bool onMainThread = false;
+                var additionalFlags = JoinableTaskFlags.CompletingSynchronously;
+                if (this.owner.Context.IsOnMainThread)
+                {
+                    additionalFlags |= JoinableTaskFlags.SynchronouslyBlockingMainThread;
+                    onMainThread = true;
+                }
+
+                this.AddStateFlags(additionalFlags);
+
                 if (!this.IsCompleteRequested)
                 {
-                    bool onMainThread = false;
-                    var additionalFlags = JoinableTaskFlags.CompletingSynchronously;
-                    if (this.owner.Context.MainThread == Thread.CurrentThread)
-                    {
-                        additionalFlags |= JoinableTaskFlags.SynchronouslyBlockingMainThread;
-                        onMainThread = true;
-                    }
-
                     if (ThreadingEventSource.Instance.IsEnabled())
                     {
                         ThreadingEventSource.Instance.CompleteOnCurrentThreadStart(this.GetHashCode(), onMainThread);
                     }
-
-                    this.AddStateFlags(additionalFlags);
 
                     using (NoMessagePumpSyncContext.Default.Apply())
                     {
@@ -797,7 +790,7 @@ namespace Microsoft.VisualStudio.Threading
 
                     if (onMainThread)
                     {
-                        this.owner.Context.OnSynchronousJoinableTaskBlockingMainThread(this);
+                        this.owner.Context.OnSynchronousJoinableTaskToCompleteOnMainThread(this);
                     }
 
                     try
@@ -838,6 +831,13 @@ namespace Microsoft.VisualStudio.Threading
                     if (ThreadingEventSource.Instance.IsEnabled())
                     {
                         ThreadingEventSource.Instance.CompleteOnCurrentThreadStop(this.GetHashCode());
+                    }
+                }
+                else
+                {
+                    if (onMainThread)
+                    {
+                        this.owner.Context.OnSynchronousJoinableTaskToCompleteOnMainThread(this);
                     }
                 }
 

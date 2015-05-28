@@ -6,13 +6,13 @@
 
 namespace Microsoft.VisualStudio.Threading.Tests
 {
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
     using System.Text;
     using System.Threading.Tasks;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class JoinableTaskContextNodeTests : JoinableTaskTestBase
@@ -61,6 +61,8 @@ namespace Microsoft.VisualStudio.Threading.Tests
         {
             Assert.AreSame(this.context.MainThread, this.defaultNode.MainThread);
             Assert.AreSame(this.context.MainThread, this.derivedNode.MainThread);
+            Assert.IsTrue(this.context.IsOnMainThread);
+            Assert.IsTrue(this.derivedNode.IsOnMainThread);
         }
 
         [TestMethod]
@@ -228,7 +230,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         /// A helper method that just blocks on the completion of a JoinableTask.
         /// </summary>
         /// <remarks>
-        /// This method is explicitly defined rather than using an anonymous method because 
+        /// This method is explicitly defined rather than using an anonymous method because
         /// we do NOT want the calling method's name embedded into this method's name by the compiler
         /// so that we can verify based on method name.
         /// </remarks>

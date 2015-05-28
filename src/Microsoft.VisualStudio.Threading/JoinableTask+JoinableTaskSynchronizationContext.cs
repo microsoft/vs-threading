@@ -97,7 +97,7 @@ namespace Microsoft.VisualStudio.Threading
                 // Ideally this method would throw because synchronously crossing threads is a bad idea.
                 if (this.mainThreadAffinitized)
                 {
-                    if (this.jobFactory.Context.MainThread == Thread.CurrentThread)
+                    if (this.jobFactory.Context.IsOnMainThread)
                     {
                         d(state);
                     }

@@ -22,20 +22,20 @@ namespace Microsoft.VisualStudio.Threading
     /// A non-blocking lock that allows concurrent access, exclusive access, or concurrent with upgradeability to exclusive access.
     /// </summary>
     /// <remarks>
-    /// We have to use a custom awaitable rather than simply returning Task{LockReleaser} because 
+    /// We have to use a custom awaitable rather than simply returning Task{LockReleaser} because
     /// we have to set CallContext data in the context of the person receiving the lock,
     /// which requires that we get to execute code at the start of the continuation (whether we yield or not).
     /// </remarks>
     /// <devnotes>
     /// Considering this class to be a state machine, the states are:
     /// <![CDATA[
-    ///    ------------- 
+    ///    -------------
     ///    |           | <-----> READERS
     ///    |    IDLE   | <-----> UPGRADEABLE READER + READERS -----> UPGRADED WRITER --\
     ///    |  NO LOCKS |                             ^                                 |
     ///    |           |                             |--- RE-ENTER CONCURRENCY PREP <--/
     ///    |           | <-----> WRITER
-    ///    ------------- 
+    ///    -------------
     /// ]]>
     /// </devnotes>
     public partial class AsyncReaderWriterLock : IDisposable
@@ -69,7 +69,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <remarks>
         /// Although only one upgradeable read lock can be held at a time, this set may have more
-        /// than one element because that one lock holder may enter the lock it already possesses 
+        /// than one element because that one lock holder may enter the lock it already possesses
         /// multiple times.
         /// </remarks>
         private readonly HashSet<Awaiter> issuedUpgradeableReadLocks = new HashSet<Awaiter>();
@@ -79,7 +79,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <remarks>
         /// Although only one write lock can be held at a time, this set may have more
-        /// than one element because that one lock holder may enter the lock it already possesses 
+        /// than one element because that one lock holder may enter the lock it already possesses
         /// multiple times.
         /// Although this lock is mutually exclusive, there *may* be elements in the
         /// <see cref="issuedUpgradeableReadLocks"/> set if the write lock was upgraded from a reader.
@@ -361,7 +361,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Obtains a read lock, asynchronously awaiting for the lock if it is not immediately available.
         /// </summary>
         /// <param name="cancellationToken">
-        /// A token whose cancellation indicates lost interest in obtaining the lock.  
+        /// A token whose cancellation indicates lost interest in obtaining the lock.
         /// A canceled token does not release a lock that has already been issued.  But if the lock isn't immediately available,
         /// a canceled token will cause the code that is waiting for the lock to resume with an <see cref="OperationCanceledException"/>.
         /// </param>
@@ -375,7 +375,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Obtains an upgradeable read lock, asynchronously awaiting for the lock if it is not immediately available.
         /// </summary>
         /// <param name="cancellationToken">
-        /// A token whose cancellation indicates lost interest in obtaining the lock.  
+        /// A token whose cancellation indicates lost interest in obtaining the lock.
         /// A canceled token does not release a lock that has already been issued.  But if the lock isn't immediately available,
         /// a canceled token will cause the code that is waiting for the lock to resume with an <see cref="OperationCanceledException"/>.
         /// </param>
@@ -390,7 +390,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="options">Modifications to normal lock behavior.</param>
         /// <param name="cancellationToken">
-        /// A token whose cancellation indicates lost interest in obtaining the lock.  
+        /// A token whose cancellation indicates lost interest in obtaining the lock.
         /// A canceled token does not release a lock that has already been issued.  But if the lock isn't immediately available,
         /// a canceled token will cause the code that is waiting for the lock to resume with an <see cref="OperationCanceledException"/>.
         /// </param>
@@ -404,7 +404,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Obtains a write lock, asynchronously awaiting for the lock if it is not immediately available.
         /// </summary>
         /// <param name="cancellationToken">
-        /// A token whose cancellation indicates lost interest in obtaining the lock.  
+        /// A token whose cancellation indicates lost interest in obtaining the lock.
         /// A canceled token does not release a lock that has already been issued.  But if the lock isn't immediately available,
         /// a canceled token will cause the code that is waiting for the lock to resume with an <see cref="OperationCanceledException"/>.
         /// </param>
@@ -458,7 +458,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Registers a callback to be invoked when the write lock held by the caller is 
+        /// Registers a callback to be invoked when the write lock held by the caller is
         /// about to be ultimately released (outermost write lock).
         /// </summary>
         /// <param name="action">
@@ -845,7 +845,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Checks whether a given lock is active. 
+        /// Checks whether a given lock is active.
         /// Always <c>false</c> when called on an STA thread.
         /// </summary>
         /// <param name="awaiter">The lock to check.</param>
@@ -1290,7 +1290,7 @@ namespace Microsoft.VisualStudio.Threading
                         if (fireWriteLockReleased || fireUpgradeableReadLockReleased)
                         {
                             // The Task.Run is invoked from another method so that C# doesn't allocate the anonymous delegate
-                            // it uses unless we actually are going to invoke it -- 
+                            // it uses unless we actually are going to invoke it --
                             if (fireWriteLockReleased)
                             {
                                 reenterConcurrentOutsideCode = this.DowngradeLockAsync(awaiter, upgradedStickyWrite, fireUpgradeableReadLockReleased, callbackExecution);
@@ -1613,7 +1613,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Issues a lock to the next queued writer, if no other locks are currently issued 
+        /// Issues a lock to the next queued writer, if no other locks are currently issued
         /// or the last contending read lock was removed allowing a waiting upgradeable reader to upgrade.
         /// </summary>
         /// <param name="searchAllWaiters"><c>true</c> to scan the entire queue for pending lock requests that might qualify; used when qualifying locks were delayed for some reason besides lock contention.</param>
@@ -2271,7 +2271,7 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         // At this point, someone called GetResult who wasn't registered as a synchronous waiter,
                         // and before the lock was issued.
-                        // If the cancellation token was signaled, we'll throw that because a canceled token is a 
+                        // If the cancellation token was signaled, we'll throw that because a canceled token is a
                         // legit reason to hit this path in the method.  Otherwise it's an internal error.
                         throw new OperationCanceledException();
                     }
@@ -2384,13 +2384,32 @@ namespace Microsoft.VisualStudio.Threading
             private readonly SemaphoreSlim semaphore = new SemaphoreSlim(1);
 
             /// <summary>
-            /// The thread that has entered the semaphore.
+            /// The managed thread ID of the thread that has entered the semaphore.
             /// </summary>
             /// <remarks>
             /// No reason to lock around access to this field because it is only ever set to
             /// or compared against the current thread, so the activity of other threads is irrelevant.
             /// </remarks>
-            private Thread threadHoldingSemaphore;
+            private int? semaphoreHoldingManagedThreadId;
+
+            /// <summary>
+            /// Gets a value indicating whether the current thread holds the semaphore.
+            /// </summary>
+            private bool IsCurrentThreadHoldingSemaphore
+            {
+                get
+                {
+                    // It is crucial that we capture the field in a local variable to guard against
+                    // the scenario where this thread DOESN'T hold the semaphore but another has, and
+                    // is in the process of clearing it, which would otherwise introduce a race condition
+                    // where we check HasValue to be true, then try to call Value and it ends up throwing.
+                    // Since int? is a value type, copying it to a local value guards against this race
+                    // and we will simply return false in that case since our thread doesn't own it.
+                    int? semaphoreHoldingManagedThreadId = this.semaphoreHoldingManagedThreadId;
+                    return semaphoreHoldingManagedThreadId.HasValue
+                        && semaphoreHoldingManagedThreadId.Value == Environment.CurrentManagedThreadId;
+                }
+            }
 
             public override void Send(SendOrPostCallback d, object state)
             {
@@ -2427,16 +2446,16 @@ namespace Microsoft.VisualStudio.Threading
 
             internal LoanBack LoanBackAnyHeldResource()
             {
-                return (this.semaphore.CurrentCount == 0 && this.threadHoldingSemaphore == Thread.CurrentThread)
+                return (this.semaphore.CurrentCount == 0 && this.IsCurrentThreadHoldingSemaphore)
                      ? new LoanBack(this)
                      : default(LoanBack);
             }
 
             internal void EarlyExitSynchronizationContext()
             {
-                if (this.threadHoldingSemaphore == Thread.CurrentThread)
+                if (this.IsCurrentThreadHoldingSemaphore)
                 {
-                    this.threadHoldingSemaphore = null;
+                    this.semaphoreHoldingManagedThreadId = null;
                     this.semaphore.Release();
                 }
 
@@ -2459,7 +2478,7 @@ namespace Microsoft.VisualStudio.Threading
                 try
                 {
                     await this.semaphore.WaitAsync().ConfigureAwait(false);
-                    this.threadHoldingSemaphore = Thread.CurrentThread;
+                    this.semaphoreHoldingManagedThreadId = Environment.CurrentManagedThreadId;
                     try
                     {
                         SynchronizationContext.SetSynchronizationContext(this);
@@ -2479,9 +2498,9 @@ namespace Microsoft.VisualStudio.Threading
                     finally
                     {
                         // The semaphore *may* have been released already, so take care to not release it again.
-                        if (this.threadHoldingSemaphore == Thread.CurrentThread)
+                        if (this.IsCurrentThreadHoldingSemaphore)
                         {
-                            this.threadHoldingSemaphore = null;
+                            this.semaphoreHoldingManagedThreadId = null;
                             this.semaphore.Release();
                         }
                     }
@@ -2517,7 +2536,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     Requires.NotNull(syncContext, nameof(syncContext));
                     this.syncContext = syncContext;
-                    this.syncContext.threadHoldingSemaphore = null;
+                    this.syncContext.semaphoreHoldingManagedThreadId = null;
                     this.syncContext.semaphore.Release();
                 }
 
@@ -2526,7 +2545,7 @@ namespace Microsoft.VisualStudio.Threading
                     if (this.syncContext != null)
                     {
                         this.syncContext.semaphore.Wait();
-                        this.syncContext.threadHoldingSemaphore = Thread.CurrentThread;
+                        this.syncContext.semaphoreHoldingManagedThreadId = Environment.CurrentManagedThreadId;
                     }
                 }
             }
