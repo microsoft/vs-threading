@@ -254,6 +254,14 @@ namespace Microsoft.VisualStudio.Threading
         private static class DownlevelRegistryWatcherSupport
         {
             /// <summary>
+            /// The size of the stack allocated for a thread that expects to stay within just a few methods in depth.
+            /// </summary>
+            /// <remarks>
+            /// The default stack size for a thread is 1MB.
+            /// </remarks>
+            private const int SmallThreadStackSize = 100 * 1024;
+
+            /// <summary>
             /// The object to lock when accessing any fields.
             /// This is also the object that is waited on by the dedicated thread,
             /// and may be pulsed by others to wake the dedicated thread to do some work.
@@ -298,7 +306,7 @@ namespace Microsoft.VisualStudio.Threading
                         keepAliveCountIncremented = true;
                         if (++keepAliveCount == 1)
                         {
-                            var watcherThread = new Thread(Worker, 100 * 1024);
+                            var watcherThread = new Thread(Worker, SmallThreadStackSize);
                             watcherThread.Name = "Registry watcher";
                             watcherThread.Start();
                         }
