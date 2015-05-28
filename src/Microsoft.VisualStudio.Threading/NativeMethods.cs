@@ -12,6 +12,7 @@ namespace Microsoft.VisualStudio.Threading
     using System.Runtime.InteropServices;
     using System.Text;
     using System.Threading.Tasks;
+    using Win32.SafeHandles;
 
     /// <summary>
     /// P/Invoke methods
@@ -60,12 +61,12 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="hEvent">A handle to the event to set when a change occurs.</param>
         /// <param name="asynchronous">If this parameter is TRUE, the function returns immediately and reports changes by signaling the specified event. If this parameter is FALSE, the function does not return until a change has occurred.</param>
         /// <returns>A win32 error code. ERROR_SUCCESS (0) if successful.</returns>
-        [DllImport("Advapi32.dll")]
+        [DllImport("Advapi32.dll", ExactSpelling = true, SetLastError = true)]
         internal static extern int RegNotifyChangeKeyValue(
-            IntPtr hKey,
+            SafeRegistryHandle hKey,
             [MarshalAs(UnmanagedType.Bool)] bool watchSubtree,
             RegistryChangeNotificationFilters notifyFilter,
-            IntPtr hEvent,
+            SafeWaitHandle hEvent,
             [MarshalAs(UnmanagedType.Bool)] bool asynchronous);
     }
 }

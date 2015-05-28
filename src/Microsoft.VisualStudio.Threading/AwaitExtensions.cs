@@ -11,10 +11,10 @@ namespace Microsoft.VisualStudio.Threading
     using System.ComponentModel;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.CompilerServices;
-    using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Win32;
+    using Win32.SafeHandles;
 
     /// <summary>
     /// Extension methods and awaitables for .NET 4.5.
@@ -84,22 +84,20 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns>
         /// A task that completes when the registry key changes, the handle is closed, or upon cancellation.
         /// </returns>
-        private static async Task WaitForRegistryChangeAsync(SafeHandle registryKeyHandle, bool watchSubtree, RegistryChangeNotificationFilters change, CancellationToken cancellationToken)
+        private static async Task WaitForRegistryChangeAsync(SafeRegistryHandle registryKeyHandle, bool watchSubtree, RegistryChangeNotificationFilters change, CancellationToken cancellationToken)
         {
-            bool registryKeyHandleReferenceInc = false;
             IDisposable dedicatedThreadReleaser = null;
             try
             {
-                registryKeyHandle.DangerousAddRef(ref registryKeyHandleReferenceInc);
                 using (var evt = new ManualResetEventSlim())
                 {
                     Action registerAction = delegate
                     {
                         int win32Error = NativeMethods.RegNotifyChangeKeyValue(
-                            registryKeyHandle.DangerousGetHandle(),
+                            registryKeyHandle,
                             watchSubtree,
                             change,
-                            evt.WaitHandle.SafeWaitHandle.DangerousGetHandle(),
+                            evt.WaitHandle.SafeWaitHandle,
                             true);
                         if (win32Error != 0)
                         {
@@ -129,11 +127,6 @@ namespace Microsoft.VisualStudio.Threading
             finally
             {
                 dedicatedThreadReleaser?.Dispose();
-
-                if (registryKeyHandleReferenceInc)
-                {
-                    registryKeyHandle.DangerousRelease();
-                }
             }
         }
 
