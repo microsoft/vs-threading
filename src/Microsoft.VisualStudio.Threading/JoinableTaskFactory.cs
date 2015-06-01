@@ -190,6 +190,7 @@ namespace Microsoft.VisualStudio.Threading
                         return TplExtensions.CompletedTask;
                     },
                     synchronouslyBlocking: false,
+                    creationOptions: JoinableTaskCreationOptions.None,
                     entrypointOverride: callback);
 
                 if (transient.Task.IsFaulted)
@@ -371,7 +372,17 @@ namespace Microsoft.VisualStudio.Threading
         /// </remarks>
         public void Run(Func<Task> asyncMethod)
         {
-            this.Run(asyncMethod, entrypointOverride: null);
+            this.Run(asyncMethod, creationOptions: JoinableTaskCreationOptions.None, entrypointOverride: null);
+        }
+
+        /// <summary>
+        /// Runs the specified asynchronous method to completion while synchronously blocking the calling thread.
+        /// </summary>
+        /// <param name="asyncMethod">The asynchronous method to execute.</param>
+        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions">JoinableTaskCreationOptions</see> used to customize the task's behavior</param>
+        public void Run(Func<Task> asyncMethod, JoinableTaskCreationOptions creationOptions)
+        {
+            this.Run(asyncMethod, creationOptions: creationOptions, entrypointOverride: null);
         }
 
         /// <summary>
@@ -390,8 +401,27 @@ namespace Microsoft.VisualStudio.Threading
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public T Run<T>(Func<Task<T>> asyncMethod)
         {
+            return this.Run(asyncMethod, JoinableTaskCreationOptions.None);
+        }
+
+        /// <summary>
+        /// Runs the specified asynchronous method to completion while synchronously blocking the calling thread.
+        /// </summary>
+        /// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
+        /// <param name="asyncMethod">The asynchronous method to execute.</param>
+        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions">JoinableTaskCreationOptions</see> used to customize the task's behavior</param>
+        /// <returns>The result of the Task returned by <paramref name="asyncMethod"/>.</returns>
+        /// <remarks>
+        /// <para>Any exception thrown by the delegate is rethrown in its original type to the caller of this method.</para>
+        /// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
+        /// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
+        /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
+        /// </remarks>
+        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
+        public T Run<T>(Func<Task<T>> asyncMethod, JoinableTaskCreationOptions creationOptions)
+        {
             VerifyNoNonConcurrentSyncContext();
-            var joinable = this.RunAsync(asyncMethod, synchronouslyBlocking: true);
+            var joinable = this.RunAsync(asyncMethod, synchronouslyBlocking: true, creationOptions: creationOptions);
             return joinable.CompleteOnCurrentThread();
         }
 
@@ -410,16 +440,36 @@ namespace Microsoft.VisualStudio.Threading
         /// </remarks>
         public JoinableTask RunAsync(Func<Task> asyncMethod)
         {
-            return this.RunAsync(asyncMethod, synchronouslyBlocking: false);
+            return this.RunAsync(asyncMethod, synchronouslyBlocking: false, creationOptions: JoinableTaskCreationOptions.None);
+        }
+
+        /// <summary>
+        /// Invokes an async delegate on the caller's thread, and yields back to the caller when the async method yields.
+        /// The async delegate is invoked in such a way as to mitigate deadlocks in the event that the async method
+        /// requires the main thread while the main thread is blocked waiting for the async method's completion.
+        /// </summary>
+        /// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
+        /// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
+        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions">JoinableTaskCreationOptions</see> used to customize the task's behavior</param>
+        /// <remarks>
+        /// <para>Exceptions thrown by the delegate are captured by the returned <see cref="JoinableTask" />.</para>
+        /// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
+        /// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
+        /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
+        /// </remarks>
+        public JoinableTask RunAsync(Func<Task> asyncMethod, JoinableTaskCreationOptions creationOptions)
+        {
+            return this.RunAsync(asyncMethod, synchronouslyBlocking: false, creationOptions: creationOptions);
         }
 
         /// <summary>Runs the specified asynchronous method.</summary>
         /// <param name="asyncMethod">The asynchronous method to execute.</param>
+        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions">JoinableTaskCreationOptions</see> used to customize the task's behavior</param>
         /// <param name="entrypointOverride">The delegate to record as the entrypoint for this JoinableTask.</param>
-        internal void Run(Func<Task> asyncMethod, Delegate entrypointOverride)
+        internal void Run(Func<Task> asyncMethod, JoinableTaskCreationOptions creationOptions, Delegate entrypointOverride)
         {
             VerifyNoNonConcurrentSyncContext();
-            var joinable = this.RunAsync(asyncMethod, synchronouslyBlocking: true, entrypointOverride: entrypointOverride);
+            var joinable = this.RunAsync(asyncMethod, synchronouslyBlocking: true, creationOptions: creationOptions, entrypointOverride: entrypointOverride);
             joinable.CompleteOnCurrentThread();
         }
 
@@ -430,13 +480,14 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="asyncMethod">The asynchronous method to execute.</param>
         /// <param name="synchronouslyBlocking">A value indicating whether the launching thread will synchronously block for this job's completion.</param>
+        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions">JoinableTaskCreationOptions</see> used to customize the task's behavior</param>
         /// <param name="entrypointOverride">The entry method's info for diagnostics.</param>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        private JoinableTask RunAsync(Func<Task> asyncMethod, bool synchronouslyBlocking, Delegate entrypointOverride = null)
+        private JoinableTask RunAsync(Func<Task> asyncMethod, bool synchronouslyBlocking, JoinableTaskCreationOptions creationOptions, Delegate entrypointOverride = null)
         {
             Requires.NotNull(asyncMethod, nameof(asyncMethod));
 
-            var job = new JoinableTask(this, synchronouslyBlocking, entrypointOverride ?? asyncMethod);
+            var job = new JoinableTask(this, synchronouslyBlocking, creationOptions, entrypointOverride ?? asyncMethod);
             using (var framework = new RunFramework(this, job))
             {
                 Task asyncMethodResult;
@@ -474,7 +525,29 @@ namespace Microsoft.VisualStudio.Threading
         /// </remarks>
         public JoinableTask<T> RunAsync<T>(Func<Task<T>> asyncMethod)
         {
-            return this.RunAsync(asyncMethod, synchronouslyBlocking: false);
+            return this.RunAsync(asyncMethod, synchronouslyBlocking: false, creationOptions: JoinableTaskCreationOptions.None);
+        }
+
+        /// <summary>
+        /// Invokes an async delegate on the caller's thread, and yields back to the caller when the async method yields.
+        /// The async delegate is invoked in such a way as to mitigate deadlocks in the event that the async method
+        /// requires the main thread while the main thread is blocked waiting for the async method's completion.
+        /// </summary>
+        /// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
+        /// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
+        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions">JoinableTaskCreationOptions</see> used to customize the task's behavior</param>
+        /// <returns>
+        /// An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.
+        /// </returns>
+        /// <remarks>
+        /// <para>Exceptions thrown by the delegate are captured by the returned <see cref="JoinableTask" />.</para>
+        /// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
+        /// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
+        /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
+        /// </remarks>
+        public JoinableTask<T> RunAsync<T>(Func<Task<T>> asyncMethod, JoinableTaskCreationOptions creationOptions)
+        {
+            return this.RunAsync(asyncMethod, synchronouslyBlocking: false, creationOptions: creationOptions);
         }
 
         internal void Post(SendOrPostCallback callback, object state, bool mainThreadAffinitized)
@@ -539,11 +612,11 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        private JoinableTask<T> RunAsync<T>(Func<Task<T>> asyncMethod, bool synchronouslyBlocking)
+        private JoinableTask<T> RunAsync<T>(Func<Task<T>> asyncMethod, bool synchronouslyBlocking, JoinableTaskCreationOptions creationOptions)
         {
             Requires.NotNull(asyncMethod, nameof(asyncMethod));
 
-            var job = new JoinableTask<T>(this, synchronouslyBlocking, asyncMethod);
+            var job = new JoinableTask<T>(this, synchronouslyBlocking, creationOptions, asyncMethod);
             using (var framework = new RunFramework(this, job))
             {
                 Task<T> asyncMethodResult;
