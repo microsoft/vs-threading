@@ -108,7 +108,7 @@
             Assert.IsFalse(hangReported);
         }
 
-        [TestMethod]
+        [TestMethod, Timeout(TestTimeout)]
         public void ReportHangOnRunAsyncThenJoin()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
