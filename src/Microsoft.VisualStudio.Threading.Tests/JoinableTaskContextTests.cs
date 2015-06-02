@@ -148,7 +148,7 @@
         }
 
         [TestMethod, Timeout(TestTimeout)]
-        public void HangReportSupressedOnLongRunTask()
+        public void HangReportSuppressedOnLongRunningTask()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
             bool hangReported = false;
@@ -165,7 +165,7 @@
         }
 
         [TestMethod, Timeout(TestTimeout)]
-        public void HangReportSupressedOnWaitingLongRunTask()
+        public void HangReportSuppressedOnWaitingLongRunningTask()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
             bool hangReported = false;
@@ -188,7 +188,7 @@
         }
 
         [TestMethod, Timeout(TestTimeout)]
-        public void HangReportSupressedOnWaitingLongRunTask2()
+        public void HangReportSuppressedOnWaitingLongRunningTask2()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
             bool hangReported = false;
@@ -211,7 +211,7 @@
         }
 
         [TestMethod, Timeout(TestTimeout)]
-        public void HangReportSupressedOnJoiningLongRunTask()
+        public void HangReportSuppressedOnJoiningLongRunningTask()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
             bool hangReported = false;
@@ -227,6 +227,155 @@
             task.Join();
 
             Assert.IsFalse(hangReported);
+        }
+
+        [TestMethod, Timeout(TestTimeout)]
+        public void HangReportNotSuppressedOnUnrelatedLongRunningTask()
+        {
+            this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
+            bool hangReported = false;
+            this.Context.OnReportHang = (hangDuration, iterations, id) => hangReported = true;
+
+            var task = this.Factory.RunAsync(
+                async () =>
+                {
+                    await Task.Delay(40);
+                },
+                JoinableTaskCreationOptions.LongRunning);
+
+            this.Factory.Run(
+                async () =>
+                {
+                    await Task.Delay(20);
+                });
+
+            Assert.IsTrue(hangReported);
+            task.Join();
+        }
+
+        [TestMethod, Timeout(TestTimeout)]
+        public void HangReportNotSuppressedOnLongRunningTaskNoLongerJoined()
+        {
+            this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
+            bool hangReported = false;
+            this.Context.OnReportHang = (hangDuration, iterations, id) => hangReported = true;
+
+            var task = this.Factory.RunAsync(
+                async () =>
+                {
+                    await Task.Delay(40);
+                },
+                JoinableTaskCreationOptions.LongRunning);
+
+            var taskCollection = new JoinableTaskCollection(this.Factory.Context);
+            taskCollection.Add(task);
+
+            this.Factory.Run(
+                async () =>
+                {
+                    using (var tempJoin = taskCollection.Join())
+                    {
+                        await Task.Yield();
+                    }
+
+                    await Task.Delay(20);
+                });
+
+            Assert.IsTrue(hangReported);
+            task.Join();
+        }
+
+        [TestMethod, Timeout(TestTimeout)]
+        public void HangReportNotSuppressedOnLongRunningTaskJoinCancelled()
+        {
+            this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
+            bool hangReported = false;
+            this.Context.OnReportHang = (hangDuration, iterations, id) => hangReported = true;
+
+            var task = this.Factory.RunAsync(
+                async () =>
+                {
+                    await Task.Delay(40);
+                },
+                JoinableTaskCreationOptions.LongRunning);
+
+            this.Factory.Run(
+                async () =>
+                {
+                    var cancellationSource = new CancellationTokenSource();
+                    var joinTask = task.JoinAsync(cancellationSource.Token);
+                    cancellationSource.Cancel();
+                    await joinTask.NoThrowAwaitable();
+
+                    await Task.Delay(20);
+                });
+
+            Assert.IsTrue(hangReported);
+            task.Join();
+        }
+
+        [TestMethod, Timeout(TestTimeout)]
+        public void HangReportNotSuppressedOnLongRunningTaskCompleted()
+        {
+            this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
+            bool hangReported = false;
+            this.Context.OnReportHang = (hangDuration, iterations, id) => hangReported = true;
+
+            var task = this.Factory.RunAsync(
+                async () =>
+                {
+                    await Task.Delay(30);
+                },
+                JoinableTaskCreationOptions.LongRunning);
+
+            task.Join();
+            Assert.IsFalse(hangReported);
+
+            var taskCollection = new JoinableTaskCollection(this.Factory.Context);
+            taskCollection.Add(task);
+
+            this.Factory.Run(
+                async () =>
+                {
+                    using (var tempJoin = taskCollection.Join())
+                    {
+                        await Task.Delay(20);
+                    }
+                });
+
+            Assert.IsTrue(hangReported);
+        }
+
+        [TestMethod]
+        public void HangReportNotSuppressedOnLongRunningTaskCancelled()
+        {
+            this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
+            bool hangReported = false;
+            this.Context.OnReportHang = (hangDuration, iterations, id) => hangReported = true;
+            var cancellationSource = new CancellationTokenSource();
+
+            var task = this.Factory.RunAsync(
+                async () =>
+                {
+                    await Task.Delay(40, cancellationSource.Token);
+                },
+                JoinableTaskCreationOptions.LongRunning);
+
+            var taskCollection = new JoinableTaskCollection(this.Factory.Context);
+            taskCollection.Add(task);
+
+            this.Factory.Run(
+                async () =>
+                {
+                    using (var tempJoin = taskCollection.Join())
+                    {
+                        cancellationSource.Cancel();
+                        await task.JoinAsync().NoThrowAwaitable();
+                        await Task.Delay(40);
+                    }
+                });
+
+            Assert.IsTrue(hangReported);
         }
 
         [TestMethod, Timeout(TestTimeout)]

@@ -22,7 +22,7 @@ namespace Microsoft.VisualStudio.Threading
 
         /// <summary>
         /// Specifies that a task will be a long-running operation. It provides a hint to the
-        /// <see cref="JoinableTaskContext">JoinableTaskContext</see> that hang report should not be fired, when the main thread task is blocked on it.
+        /// <see cref="JoinableTaskContext"/> that hang report should not be fired, when the main thread task is blocked on it.
         /// </summary>
         LongRunning = 0x01,
     }

@@ -324,7 +324,7 @@ namespace Microsoft.VisualStudio.Threading
                         hangId = Guid.NewGuid();
                     }
 
-                    if (!this.IsWaitingLongRunTask())
+                    if (!this.IsWaitingOnLongRunningTask())
                     {
                         hangNotificationCount++;
                         this.Context.OnHangDetected(hangDuration, hangNotificationCount, hangId);
@@ -350,7 +350,8 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Check whether the current joinableTask is waiting on a long running task.
         /// </summary>
-        protected bool IsWaitingLongRunTask()
+        /// <returns>Return true if the current synchronous task on the thread is waiting on a long running task.</returns>
+        protected bool IsWaitingOnLongRunningTask()
         {
             var currentBlockingTask = JoinableTask.TaskCompletingOnThisThread;
             if (currentBlockingTask != null)
@@ -404,17 +405,17 @@ namespace Microsoft.VisualStudio.Threading
         /// </remarks>
         public void Run(Func<Task> asyncMethod)
         {
-            this.Run(asyncMethod, creationOptions: JoinableTaskCreationOptions.None, entrypointOverride: null);
+            this.Run(asyncMethod, JoinableTaskCreationOptions.None, entrypointOverride: null);
         }
 
         /// <summary>
         /// Runs the specified asynchronous method to completion while synchronously blocking the calling thread.
         /// </summary>
         /// <param name="asyncMethod">The asynchronous method to execute.</param>
-        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions">JoinableTaskCreationOptions</see> used to customize the task's behavior</param>
+        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior</param>
         public void Run(Func<Task> asyncMethod, JoinableTaskCreationOptions creationOptions)
         {
-            this.Run(asyncMethod, creationOptions: creationOptions, entrypointOverride: null);
+            this.Run(asyncMethod, creationOptions, entrypointOverride: null);
         }
 
         /// <summary>
@@ -441,7 +442,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
         /// <param name="asyncMethod">The asynchronous method to execute.</param>
-        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions">JoinableTaskCreationOptions</see> used to customize the task's behavior</param>
+        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior</param>
         /// <returns>The result of the Task returned by <paramref name="asyncMethod"/>.</returns>
         /// <remarks>
         /// <para>Any exception thrown by the delegate is rethrown in its original type to the caller of this method.</para>
@@ -482,7 +483,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
         /// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
-        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions">JoinableTaskCreationOptions</see> used to customize the task's behavior</param>
+        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior</param>
         /// <remarks>
         /// <para>Exceptions thrown by the delegate are captured by the returned <see cref="JoinableTask" />.</para>
         /// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
@@ -496,7 +497,7 @@ namespace Microsoft.VisualStudio.Threading
 
         /// <summary>Runs the specified asynchronous method.</summary>
         /// <param name="asyncMethod">The asynchronous method to execute.</param>
-        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions">JoinableTaskCreationOptions</see> used to customize the task's behavior</param>
+        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior</param>
         /// <param name="entrypointOverride">The delegate to record as the entrypoint for this JoinableTask.</param>
         internal void Run(Func<Task> asyncMethod, JoinableTaskCreationOptions creationOptions, Delegate entrypointOverride)
         {
@@ -512,7 +513,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="asyncMethod">The asynchronous method to execute.</param>
         /// <param name="synchronouslyBlocking">A value indicating whether the launching thread will synchronously block for this job's completion.</param>
-        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions">JoinableTaskCreationOptions</see> used to customize the task's behavior</param>
+        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior</param>
         /// <param name="entrypointOverride">The entry method's info for diagnostics.</param>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private JoinableTask RunAsync(Func<Task> asyncMethod, bool synchronouslyBlocking, JoinableTaskCreationOptions creationOptions, Delegate entrypointOverride = null)
@@ -567,7 +568,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
         /// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
-        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions">JoinableTaskCreationOptions</see> used to customize the task's behavior</param>
+        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior</param>
         /// <returns>
         /// An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.
         /// </returns>
