@@ -305,7 +305,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             Requires.NotNull(task, nameof(task));
             int hangTimeoutsCount = 0; // useful for debugging dump files to see how many times we looped.
-            bool isHangReported = false;
+            int hangNotificationCount = 0;
             Guid hangId = Guid.Empty;
             Stopwatch stopWatch = null;
             try
@@ -326,12 +326,12 @@ namespace Microsoft.VisualStudio.Threading
 
                     if (!this.IsWaitingLongRunTask())
                     {
-                        isHangReported = true;
-                        this.Context.OnHangDetected(hangDuration, hangTimeoutsCount, hangId);
+                        hangNotificationCount++;
+                        this.Context.OnHangDetected(hangDuration, hangNotificationCount, hangId);
                     }
                 }
 
-                if (isHangReported)
+                if (hangNotificationCount > 0)
                 {
                     // We detect a false alarm. The stop watch was started after the first timeout, so we add intial timeout to the total delay.
                     this.Context.OnFalseHangDetected(
