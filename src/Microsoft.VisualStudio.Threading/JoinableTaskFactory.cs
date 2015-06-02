@@ -350,7 +350,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Check whether the current joinableTask is waiting on a long running task.
         /// </summary>
-        /// <returns></returns>
         protected bool IsWaitingLongRunTask()
         {
             var currentBlockingTask = JoinableTask.TaskCompletingOnThisThread;
