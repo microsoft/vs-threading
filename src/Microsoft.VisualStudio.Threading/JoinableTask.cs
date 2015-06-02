@@ -338,6 +338,14 @@ namespace Microsoft.VisualStudio.Threading
             get { return this.state; }
         }
 
+        /// <summary>
+        /// Gets the task's initial creationOptions.
+        /// </summary>
+        internal JoinableTaskCreationOptions CreationOptions
+        {
+            get { return this.creationOptions; }
+        }
+
         #region Diagnostics collection
 
         /// <summary>

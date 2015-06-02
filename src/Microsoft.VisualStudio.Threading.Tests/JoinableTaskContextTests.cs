@@ -108,7 +108,7 @@
             Assert.IsFalse(hangReported);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [TestMethod]
         public void ReportHangOnRunAsyncThenJoin()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
@@ -145,6 +145,69 @@
                 await releaseTaskSource.Task;
             });
             joinableTask.Join();
+        }
+
+        [TestMethod, Timeout(TestTimeout)]
+        public void HangReportSupressedOnLongRunTask()
+        {
+            this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
+            bool hangReported = false;
+            this.Context.OnReportHang = (hangDuration, iterations, id) => hangReported = true;
+
+            this.Factory.Run(
+                async () =>
+                {
+                    await Task.Delay(20);
+                },
+                JoinableTaskCreationOptions.LongRunning);
+
+            Assert.IsFalse(hangReported);
+        }
+
+        [TestMethod, Timeout(TestTimeout)]
+        public void HangReportSupressedOnWaitingLongRunTask()
+        {
+            this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
+            bool hangReported = false;
+            this.Context.OnReportHang = (hangDuration, iterations, id) => hangReported = true;
+
+            this.Factory.Run(
+                async () =>
+                {
+                    var task = this.Factory.RunAsync(
+                        async () =>
+                        {
+                            await Task.Delay(20);
+                        },
+                        JoinableTaskCreationOptions.LongRunning);
+
+                    await task;
+                });
+
+            Assert.IsFalse(hangReported);
+        }
+
+        [TestMethod, Timeout(TestTimeout)]
+        public void HangReportSupressedOnWaitingLongRunTask2()
+        {
+            this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
+            bool hangReported = false;
+            this.Context.OnReportHang = (hangDuration, iterations, id) => hangReported = true;
+
+            var task = this.Factory.RunAsync(
+                async () =>
+                {
+                    await Task.Delay(30);
+                },
+                JoinableTaskCreationOptions.LongRunning);
+
+            this.Factory.Run(
+                async () =>
+                {
+                    await task;
+                });
+
+            Assert.IsFalse(hangReported);
         }
 
         [TestMethod, Timeout(TestTimeout)]

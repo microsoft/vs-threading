@@ -305,6 +305,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             Requires.NotNull(task, nameof(task));
             int hangTimeoutsCount = 0; // useful for debugging dump files to see how many times we looped.
+            bool isHangReported = false;
             Guid hangId = Guid.Empty;
             Stopwatch stopWatch = null;
             try
@@ -323,10 +324,14 @@ namespace Microsoft.VisualStudio.Threading
                         hangId = Guid.NewGuid();
                     }
 
-                    this.Context.OnHangDetected(hangDuration, hangTimeoutsCount, hangId);
+                    if (!this.IsWaitingLongRunTask())
+                    {
+                        isHangReported = true;
+                        this.Context.OnHangDetected(hangDuration, hangTimeoutsCount, hangId);
+                    }
                 }
 
-                if (hangTimeoutsCount > 0)
+                if (isHangReported)
                 {
                     // We detect a false alarm. The stop watch was started after the first timeout, so we add intial timeout to the total delay.
                     this.Context.OnFalseHangDetected(
@@ -340,6 +345,34 @@ namespace Microsoft.VisualStudio.Threading
                 // Our caller just wants to know when the Task completes,
                 // whether successfully or not.
             }
+        }
+
+        /// <summary>
+        /// Check whether the current joinableTask is waiting on a long running task.
+        /// </summary>
+        /// <returns></returns>
+        protected bool IsWaitingLongRunTask()
+        {
+            var currentBlockingTask = JoinableTask.TaskCompletingOnThisThread;
+            if (currentBlockingTask != null)
+            {
+                if ((currentBlockingTask.CreationOptions & JoinableTaskCreationOptions.LongRunning) == JoinableTaskCreationOptions.LongRunning)
+                {
+                    return true;
+                }
+
+                using (NoMessagePumpSyncContext.Default.Apply())
+                {
+                    var allJoinedJobs = new HashSet<JoinableTask>();
+                    lock (this.Context.SyncContextLock)
+                    {
+                        currentBlockingTask.AddSelfAndDescendentOrJoinedJobs(allJoinedJobs);
+                        return allJoinedJobs.Any(t => (t.CreationOptions & JoinableTaskCreationOptions.LongRunning) == JoinableTaskCreationOptions.LongRunning);
+                    }
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
