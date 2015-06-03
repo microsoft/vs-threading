@@ -32,7 +32,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="owner">The instance that began the async operation.</param>
         /// <param name="synchronouslyBlocking">A value indicating whether the launching thread will synchronously block for this job's completion.</param>
-        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior</param>
+        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior.</param>
         /// <param name="initialDelegate">The entry method's info for diagnostics.</param>
         internal JoinableTask(JoinableTaskFactory owner, bool synchronouslyBlocking, JoinableTaskCreationOptions creationOptions, Delegate initialDelegate)
             : base(owner, synchronouslyBlocking, creationOptions, initialDelegate)
