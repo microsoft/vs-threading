@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
+    using System.Collections.Generic;
     using Microsoft.CodeAnalysis;
 
     internal static class Utils
@@ -24,6 +25,69 @@
             }
 
             return false;
+        }
+
+        internal static ITypeSymbol ResolveTypeFromSymbol(ISymbol symbol)
+        {
+            ITypeSymbol type = null;
+            switch (symbol.Kind)
+            {
+                case SymbolKind.Local:
+                    type = ((ILocalSymbol)symbol).Type;
+                    break;
+
+                case SymbolKind.Field:
+                    type = ((IFieldSymbol)symbol).Type;
+                    break;
+
+                case SymbolKind.Parameter:
+                    type = ((IParameterSymbol)symbol).Type;
+                    break;
+
+                case SymbolKind.Property:
+                    type = ((IPropertySymbol)symbol).Type;
+                    break;
+
+                case SymbolKind.Method:
+                    var method = (IMethodSymbol)symbol;
+                    type = method.MethodKind == MethodKind.Constructor ? method.ContainingType : method.ReturnType;
+                    break;
+
+                case SymbolKind.Event:
+                    type = ((IEventSymbol)symbol).Type;
+                    break;
+            }
+
+            return type;
+        }
+
+        internal static string GetFullName(ISymbol type)
+        {
+            if (type == null)
+            {
+                return string.Empty;
+            }
+
+            if (type.ContainingType != null)
+            {
+                return GetFullName(type.ContainingType) + "." + type.Name;
+            }
+
+            var ns = type.ContainingNamespace;
+            var parts = new List<string>();
+            while (ns != null)
+            {
+                if (!string.IsNullOrEmpty(ns.Name))
+                {
+                    parts.Add(ns.Name);
+                }
+
+                ns = ns.ContainingNamespace;
+            }
+
+            parts.Reverse();
+            parts.Add(type.Name);
+            return string.Join(".", parts);
         }
 
         /// <summary>
