@@ -43,8 +43,8 @@
             isEnabledByDefault: true);
 
         internal static readonly DiagnosticDescriptor AsyncEventHandlerShouldBeCalledByInvokeAsync = new DiagnosticDescriptor(id: "VSSDK005",
-            title: "AsyncEventHandler delegates should be invoked via the extension method \"TplExtensions.InvokeAsync()\" in Microsoft.VisualStudio.Threading assembly.",
-            messageFormat: "AsyncEventHandler delegates should be invoked via the extension method \"TplExtensions.InvokeAsync()\" in Microsoft.VisualStudio.Threading assembly.",
+            title: "AsyncEventHandler delegates should be invoked via the extension method \"TplExtensions.InvokeAsync()\" defined in Microsoft.VisualStudio.Threading assembly.",
+            messageFormat: "AsyncEventHandler delegates should be invoked via the extension method \"TplExtensions.InvokeAsync()\" defined in Microsoft.VisualStudio.Threading assembly.",
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
