@@ -74,6 +74,7 @@
     <Compile Include="JoinableTaskCollection.cs" />
     <Compile Include="JoinableTask+ExecutionQueue.cs" />
     <Compile Include="JoinableTaskContextNode.cs" />
+    <Compile Include="JoinableTaskCreationOptions.cs" />
     <Compile Include="JoinableTaskFactory.cs" />
     <Compile Include="JoinableTask`1.cs" />
     <Compile Include="LightUps.cs" />
