@@ -27,6 +27,12 @@
             return false;
         }
 
+        /// <summary>
+        /// Resolve the type from the given symbol if possible.
+        /// For instance, if the symbol represents a property in a class, this method will return the type of that property.
+        /// </summary>
+        /// <param name="symbol">The input symbol.</param>
+        /// <returns>The type represented by the input symbol; or <c>null</c> if could not figure out the type.</returns>
         internal static ITypeSymbol ResolveTypeFromSymbol(ISymbol symbol)
         {
             ITypeSymbol type = null;
@@ -61,6 +67,11 @@
             return type;
         }
 
+        /// <summary>
+        /// Returns the full name of the given type by concatenating the namespaces and the parent classes by ".".
+        /// </summary>
+        /// <param name="type">The input symbol</param>
+        /// <returns>The full name.</returns>
         internal static string GetFullName(ISymbol type)
         {
             if (type == null)

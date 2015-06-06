@@ -45,6 +45,8 @@
         {
             context.RegisterCodeBlockStartAction<SyntaxKind>(ctxt =>
             {
+                // This is a very specical case to check if this method is TplExtensions.InvokeAsync().
+                // If it is, then do not run the ananlyzer inside that method.
                 if (!(Utils.GetFullName(ctxt.OwningSymbol.ContainingType) == typeof(TplExtensions).FullName
                       && ctxt.OwningSymbol.Name == nameof(TplExtensions.InvokeAsync)))
                 {
@@ -53,6 +55,9 @@
             });
         }
 
+        /// <summary>
+        /// Analyze each invocation syntax node.
+        /// </summary>
         private void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
         {
             var invocation = (InvocationExpressionSyntax)context.Node;
@@ -64,8 +69,8 @@
                 {
                     // Handle the case when call into AsyncEventHandler via Invoke() method.
                     // i.e.
-                    //  AsyncEventHandler handler;
-                    //  handler.Invoke(null, null);
+                    // AsyncEventHandler handler;
+                    // handler.Invoke(null, null);
                     type = symbol.ContainingType;
                 }
                 else
