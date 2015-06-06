@@ -12,7 +12,8 @@
     <AssemblyName>Microsoft.VisualStudio.Threading.Analyzers</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <NoDocumentationFile>true</NoDocumentationFile>
+    <MicroBuild_GenerateDocumentationFile>false</MicroBuild_GenerateDocumentationFile>
+    <DocumentationFile />
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
