@@ -132,8 +132,6 @@
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\..\packages\xunit.core.2.0.0\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS\xunit.core.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\xunit.core.2.0.0\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS\xunit.core.props'))" />
-    <Error Condition="!Exists('..\..\packages\xunit.runner.visualstudio.2.0.0\build\net20\xunit.runner.visualstudio.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\xunit.runner.visualstudio.2.0.0\build\net20\xunit.runner.visualstudio.props'))" />
     <Error Condition="!Exists('..\..\packages\Nerdbank.GitVersioning.1.0.15136-beta\build\NerdBank.GitVersioning.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Nerdbank.GitVersioning.1.0.15136-beta\build\NerdBank.GitVersioning.targets'))" />
     <Error Condition="!Exists('..\..\packages\MicroBuild.NonShipping.1.0.0-alpha-g914708b2a3\build\MicroBuild.NonShipping.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.NonShipping.1.0.0-alpha-g914708b2a3\build\MicroBuild.NonShipping.props'))" />
     <Error Condition="!Exists('..\..\packages\MicroBuild.NonShipping.1.0.0-alpha-g914708b2a3\build\MicroBuild.NonShipping.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.NonShipping.1.0.0-alpha-g914708b2a3\build\MicroBuild.NonShipping.targets'))" />
