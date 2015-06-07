@@ -2,33 +2,12 @@
 <Project ToolsVersion="dogfood" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
-    <ProjectDepotRoot>$(MSBuildThisFileDirectory)</ProjectDepotRoot>
-    <SubmoduleRoot>$(MSBuildThisFileDirectory)\src</SubmoduleRoot>
-    <NuGetPackageRestorePath>$(ProjectDepotRoot)\Packages\</NuGetPackageRestorePath>
-    <DeployExtension Condition=" '$(IsLabBuild)' == 'true' ">false</DeployExtension>
+    <NuGetPackageRestorePath>$(MSBuildThisFileDirectory)\Packages\</NuGetPackageRestorePath>
 
-    <VSToolsDeRazzlePath>$(NuGetPackageRestorePath)VS.Tools.Derazzle.1.0.150504.1\</VSToolsDeRazzlePath>
-    <VSToolsModuleTargetsPath>$(NuGetPackageRestorePath)VS.Tools.ModuleTargets.1.0.150313.1\</VSToolsModuleTargetsPath>
-    <VSToolsDevDivFilesPath>$(NuGetPackageRestorePath)VS.Tools.DevDivFiles.1.0.150305.3\</VSToolsDevDivFilesPath>
-    <VSToolsX86Managed45>$(NuGetPackageRestorePath)VS.Tools.X86.Managed.V4_5.1.0.150317.3\</VSToolsX86Managed45>
-
-    <NuGetToolPath>$(NuGetPackageRestorePath)NuGet.CommandLine.2.8.3\tools\</NuGetToolPath>
-    <UnzipToolPath>$(NuGetPackageRestorePath)VS.Tools.X86Files.1.0.150316.1\</UnzipToolPath>
-    <IBCMergeToolPath>$(VSToolsX86Managed45)</IBCMergeToolPath>
-
-    <!--
-         For an RTM branch that has stabilized, the PrereleaseVersion property should be cleared.
-         To enforce this, without causing undue extra process in merging release branches
-         back into development branches, we simply set it to a non-empty value always.
-         The build definition that builds releases can set this property to true via
-         a global property (msbuild /p:PrereleaseVersion=), which overrides
-         our own definition here.
-         Related: /p:UseNonZeroBuildNumber=true is commonly also set for builds of the release branch.
-                  See Microsoft.Git.Versioning.targets for more information on that.
-    -->
-    <PrereleaseVersion>-pre</PrereleaseVersion>
+    <MicroBuild_OptimizationDataDir>$(MSBuildThisFileDirectory)Razzle\src\OptimizationData\x86\</MicroBuild_OptimizationDataDir>
+    <MicroBuild_ReadOnlySourceTree>true</MicroBuild_ReadOnlySourceTree>
+    <MicroBuild_GenerateDocumentationFile>true</MicroBuild_GenerateDocumentationFile>
+    <MicroBuild_DefineCommonProperties>true</MicroBuild_DefineCommonProperties>
+    <MicroBuild_DefineCommonAssemblyAttributes>true</MicroBuild_DefineCommonAssemblyAttributes>
   </PropertyGroup>
-
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), EnlistmentInfo.xml))\EnlistmentInfo.xml" />
-  <Import Project="$(VSToolsDeRazzlePath)Common.props"/>
 </Project>
