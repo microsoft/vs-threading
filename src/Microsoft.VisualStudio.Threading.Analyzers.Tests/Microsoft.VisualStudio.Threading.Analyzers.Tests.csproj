@@ -89,6 +89,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AsyncEventHandlerAnalyzerTests.cs" />
     <Compile Include="AsyncVoidLambdaAnalyzerTests.cs" />
     <Compile Include="AsyncVoidMethodAnalyzerTests.cs" />
     <Compile Include="AsyncVoidMethodCodeFixTests.cs" />
