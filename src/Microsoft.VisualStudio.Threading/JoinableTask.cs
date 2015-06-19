@@ -107,6 +107,12 @@ namespace Microsoft.VisualStudio.Threading
         private JoinableTaskSynchronizationContext threadPoolJobSyncContext;
 
         /// <summary>
+        /// Store the task's initial creationOptions.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private readonly JoinableTaskCreationOptions creationOptions;
+
+        /// <summary>
         /// Store the task's initial delegate so we could show its full name in hang report.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -117,8 +123,9 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="owner">The instance that began the async operation.</param>
         /// <param name="synchronouslyBlocking">A value indicating whether the launching thread will synchronously block for this job's completion.</param>
+        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior.</param>
         /// <param name="initialDelegate">The entry method's info for diagnostics.</param>
-        internal JoinableTask(JoinableTaskFactory owner, bool synchronouslyBlocking, Delegate initialDelegate)
+        internal JoinableTask(JoinableTaskFactory owner, bool synchronouslyBlocking, JoinableTaskCreationOptions creationOptions, Delegate initialDelegate)
         {
             Requires.NotNull(owner, nameof(owner));
 
@@ -137,6 +144,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
             }
 
+            this.creationOptions = creationOptions;
             this.owner.Context.OnJoinableTaskStarted(this);
             this.initialDelegate = initialDelegate;
         }
@@ -330,6 +338,14 @@ namespace Microsoft.VisualStudio.Threading
             get { return this.state; }
         }
 
+        /// <summary>
+        /// Gets the task's initial creationOptions.
+        /// </summary>
+        internal JoinableTaskCreationOptions CreationOptions
+        {
+            get { return this.creationOptions; }
+        }
+
         #region Diagnostics collection
 
         /// <summary>
@@ -478,6 +494,7 @@ namespace Microsoft.VisualStudio.Threading
             // so that if a hang occurs it blames the original JoinableTask.
             this.owner.Run(
                 () => this.JoinAsync(cancellationToken),
+                JoinableTaskCreationOptions.None,
                 this.initialDelegate);
         }
 

@@ -1,15 +1,3 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <ItemDefinitionGroup>
-    <FilesToLocalize>
-      <Languages>$(VS)</Languages>
-      <ProjectFile>$(MSBuildThisFileFullPath)</ProjectFile>
-      <HasLceComments>true</HasLceComments>
-      <LciCommentFile>$(MSBuildThisFileDirectory)\loc\lci\$(TargetName)$(TargetExt).lci</LciCommentFile>
-      <TranslationFile>$(MSBuildThisFileDirectory)\loc\lcl\{Lang}\$(TargetName)$(TargetExt).lcl</TranslationFile>
-    </FilesToLocalize>
-  </ItemDefinitionGroup>
-  <ItemGroup>
-    <FilesToLocalize Include="$(OutDir)\Microsoft.VisualStudio.Threading.dll" Condition="'$(MSBuildProjectFile)' == 'Microsoft.VisualStudio.Threading.csproj'" />
-  </ItemGroup>
 </Project>
