@@ -2211,7 +2211,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 get
                 {
-                    return this.releaseAsyncTask != null && this.releaseAsyncTask.IsCompleted && !this.releaseAsyncTask.IsFaulted;
+                    return this.releaseAsyncTask != null && this.releaseAsyncTask.Status == TaskStatus.RanToCompletion;
                 }
             }
 
@@ -2317,7 +2317,7 @@ namespace Microsoft.VisualStudio.Threading
                     try
                     {
                         this.continuationAfterLockIssued = null; // clear field to defend against leaks if Awaiters live a long time.
-                        this.releaseAsyncTask = this.lck.ReleaseAsync(this, lockConsumerCanceled) ?? TplExtensions.CompletedTask;
+                        this.releaseAsyncTask = this.lck.ReleaseAsync(this, lockConsumerCanceled);
                     }
                     catch (Exception ex)
                     {
