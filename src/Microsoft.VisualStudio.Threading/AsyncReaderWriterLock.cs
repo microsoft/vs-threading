@@ -1809,6 +1809,11 @@ namespace Microsoft.VisualStudio.Threading
                 if (this.awaiter != null)
                 {
                     var nonConcurrentSyncContext = SynchronizationContext.Current as NonConcurrentSynchronizationContext;
+
+                    // NOTE: when we have already called ReleaseAsync, and the lock has been released,
+                    // we don't want to load the concurrent context and try to take it back immediately. If we do, it is possible
+                    // that anther thread waiting for a write lock can take the concurrent context, so the current thread will be
+                    // blocked and wait until it is done, and that makes it possible to run into the thread pool exhaustion trap.
                     if (!this.awaiter.IsReleased)
                     {
                         using (nonConcurrentSyncContext != null ? nonConcurrentSyncContext.LoanBackAnyHeldResource(this.awaiter.OwningLock) : default(NonConcurrentSynchronizationContext.LoanBack))
