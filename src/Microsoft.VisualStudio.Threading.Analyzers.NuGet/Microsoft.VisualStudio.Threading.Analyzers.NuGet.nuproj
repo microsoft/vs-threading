@@ -44,8 +44,8 @@
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading.NuGet\Microsoft.VisualStudio.Threading.NuGet.nuproj" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="tools\net45\install.ps1" />
-    <Content Include="tools\net45\uninstall.ps1" />
+    <Content Include="tools\install.ps1" />
+    <Content Include="tools\uninstall.ps1" />
   </ItemGroup>
   <Import Project="$(NuProjPath)\NuProj.targets" />
   <Target Name="GetNuPkgVersion" DependsOnTargets="GetBuildVersion">
