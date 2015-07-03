@@ -15,6 +15,7 @@
     <MicroBuild_GenerateDocumentationFile>false</MicroBuild_GenerateDocumentationFile>
     <DocumentationFile />
     <TargetFrameworkProfile />
+    <PrereleaseVersion>-pre</PrereleaseVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Analyzers.ruleset</CodeAnalysisRuleSet>

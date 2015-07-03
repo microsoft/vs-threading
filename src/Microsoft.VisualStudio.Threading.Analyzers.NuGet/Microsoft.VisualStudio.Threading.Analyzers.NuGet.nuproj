@@ -18,6 +18,7 @@
   <PropertyGroup>
     <NuProjPath Condition=" '$(NuProjPath)' == '' ">..\..\packages\NuProj.0.10.0-beta-gd6d4e1ff23\tools\</NuProjPath>
     <VersionDependsOn>$(VersionDependsOn);GetNuPkgVersion</VersionDependsOn>
+    <PrereleaseVersion>-pre</PrereleaseVersion>
   </PropertyGroup>
   <Import Project="$(NuProjPath)\NuProj.props" Condition="Exists('$(NuProjPath)\NuProj.props')" />
   <PropertyGroup Label="Configuration">
