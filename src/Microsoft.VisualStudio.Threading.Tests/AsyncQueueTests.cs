@@ -7,172 +7,157 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
+    using GenericParameterHelper = TestTools.UnitTesting.GenericParameterHelper;
 
-    [TestClass]
     public class AsyncQueueTests : TestBase
     {
         private AsyncQueue<GenericParameterHelper> queue;
 
-        [TestInitialize]
-        public void Initialize()
+        public AsyncQueueTests(Xunit.Abstractions.ITestOutputHelper logger)
+            : base(logger)
         {
             this.queue = new AsyncQueue<GenericParameterHelper>();
         }
 
-        [TestMethod]
+        [Fact]
         public void JustInitialized()
         {
-            Assert.AreEqual(0, this.queue.Count);
-            Assert.IsTrue(this.queue.IsEmpty);
-            Assert.IsFalse(this.queue.Completion.IsCompleted);
+            Assert.Equal(0, this.queue.Count);
+            Assert.True(this.queue.IsEmpty);
+            Assert.False(this.queue.Completion.IsCompleted);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void Enqueue()
         {
             var value = new GenericParameterHelper(1);
             this.queue.Enqueue(value);
-            Assert.AreEqual(1, this.queue.Count);
-            Assert.IsFalse(this.queue.IsEmpty);
+            Assert.Equal(1, this.queue.Count);
+            Assert.False(this.queue.IsEmpty);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void TryEnqueue()
         {
             var value = new GenericParameterHelper(1);
-            Assert.IsTrue(this.queue.TryEnqueue(value));
-            Assert.AreEqual(1, this.queue.Count);
-            Assert.IsFalse(this.queue.IsEmpty);
+            Assert.True(this.queue.TryEnqueue(value));
+            Assert.Equal(1, this.queue.Count);
+            Assert.False(this.queue.IsEmpty);
         }
 
-        [TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
+        [Fact]
         public void PeekThrowsOnEmptyQueue()
         {
-            this.queue.Peek();
+            Assert.Throws<InvalidOperationException>(() => this.queue.Peek());
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void TryPeek()
         {
             GenericParameterHelper value;
-            Assert.IsFalse(this.queue.TryPeek(out value));
-            Assert.IsNull(value);
+            Assert.False(this.queue.TryPeek(out value));
+            Assert.Null(value);
 
             var enqueuedValue = new GenericParameterHelper(1);
             this.queue.Enqueue(enqueuedValue);
             GenericParameterHelper peekedValue;
-            Assert.IsTrue(this.queue.TryPeek(out peekedValue));
-            Assert.AreSame(enqueuedValue, peekedValue);
+            Assert.True(this.queue.TryPeek(out peekedValue));
+            Assert.Same(enqueuedValue, peekedValue);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void Peek()
         {
             var enqueuedValue = new GenericParameterHelper(1);
             this.queue.Enqueue(enqueuedValue);
             var peekedValue = this.queue.Peek();
-            Assert.AreSame(enqueuedValue, peekedValue);
+            Assert.Same(enqueuedValue, peekedValue);
 
             // Peeking again should yield the same result.
             peekedValue = this.queue.Peek();
-            Assert.AreSame(enqueuedValue, peekedValue);
+            Assert.Same(enqueuedValue, peekedValue);
 
             // Enqueuing another element shouldn't change the peeked value.
             var secondValue = new GenericParameterHelper(2);
             this.queue.Enqueue(secondValue);
             peekedValue = this.queue.Peek();
-            Assert.AreSame(enqueuedValue, peekedValue);
+            Assert.Same(enqueuedValue, peekedValue);
 
             GenericParameterHelper dequeuedValue;
-            Assert.IsTrue(this.queue.TryDequeue(out dequeuedValue));
-            Assert.AreSame(enqueuedValue, dequeuedValue);
+            Assert.True(this.queue.TryDequeue(out dequeuedValue));
+            Assert.Same(enqueuedValue, dequeuedValue);
 
             peekedValue = this.queue.Peek();
-            Assert.AreSame(secondValue, peekedValue);
+            Assert.Same(secondValue, peekedValue);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task DequeueAsyncCompletesSynchronouslyForNonEmptyQueue()
         {
             var enqueuedValue = new GenericParameterHelper(1);
             this.queue.Enqueue(enqueuedValue);
             var dequeueTask = this.queue.DequeueAsync(CancellationToken.None);
-            Assert.IsTrue(dequeueTask.GetAwaiter().IsCompleted);
+            Assert.True(dequeueTask.GetAwaiter().IsCompleted);
             var dequeuedValue = await dequeueTask;
-            Assert.AreSame(enqueuedValue, dequeuedValue);
-            Assert.AreEqual(0, this.queue.Count);
-            Assert.IsTrue(this.queue.IsEmpty);
+            Assert.Same(enqueuedValue, dequeuedValue);
+            Assert.Equal(0, this.queue.Count);
+            Assert.True(this.queue.IsEmpty);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task DequeueAsyncNonBlockingWait()
         {
             var dequeueTask = this.queue.DequeueAsync(CancellationToken.None);
-            Assert.IsFalse(dequeueTask.GetAwaiter().IsCompleted);
+            Assert.False(dequeueTask.GetAwaiter().IsCompleted);
 
             var enqueuedValue = new GenericParameterHelper(1);
             this.queue.Enqueue(enqueuedValue);
 
             var dequeuedValue = await dequeueTask;
-            Assert.AreSame(enqueuedValue, dequeuedValue);
+            Assert.Same(enqueuedValue, dequeuedValue);
 
-            Assert.AreEqual(0, this.queue.Count);
-            Assert.IsTrue(this.queue.IsEmpty);
+            Assert.Equal(0, this.queue.Count);
+            Assert.True(this.queue.IsEmpty);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task DequeueAsyncCancelledBeforeComplete()
         {
             var cts = new CancellationTokenSource();
             var dequeueTask = this.queue.DequeueAsync(cts.Token);
-            Assert.IsFalse(dequeueTask.GetAwaiter().IsCompleted);
+            Assert.False(dequeueTask.GetAwaiter().IsCompleted);
 
             cts.Cancel();
-
-            try
-            {
-                await dequeueTask;
-                Assert.Fail("Expected OperationCanceledException not thrown.");
-            }
-            catch (OperationCanceledException)
-            {
-            }
+            await Assert.ThrowsAsync<TaskCanceledException>(() => dequeueTask);
 
             var enqueuedValue = new GenericParameterHelper(1);
             this.queue.Enqueue(enqueuedValue);
 
-            Assert.AreEqual(1, this.queue.Count);
+            Assert.Equal(1, this.queue.Count);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task DequeueAsyncPrecancelled()
         {
             var cts = new CancellationTokenSource();
             cts.Cancel();
             var dequeueTask = this.queue.DequeueAsync(cts.Token);
-            Assert.IsTrue(dequeueTask.GetAwaiter().IsCompleted);
-            try
-            {
-                await dequeueTask;
-                Assert.Fail("Expected OperationCanceledException not thrown.");
-            }
-            catch (OperationCanceledException)
-            {
-            }
+            Assert.True(dequeueTask.GetAwaiter().IsCompleted);
+            await Assert.ThrowsAsync<TaskCanceledException>(() => dequeueTask);
 
             var enqueuedValue = new GenericParameterHelper(1);
             this.queue.Enqueue(enqueuedValue);
 
-            Assert.AreEqual(1, this.queue.Count);
+            Assert.Equal(1, this.queue.Count);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task DequeueAsyncCancelledAfterComplete()
         {
             var cts = new CancellationTokenSource();
             var dequeueTask = this.queue.DequeueAsync(cts.Token);
-            Assert.IsFalse(dequeueTask.GetAwaiter().IsCompleted);
+            Assert.False(dequeueTask.GetAwaiter().IsCompleted);
 
             var enqueuedValue = new GenericParameterHelper(1);
             this.queue.Enqueue(enqueuedValue);
@@ -180,11 +165,11 @@
             cts.Cancel();
 
             var dequeuedValue = await dequeueTask;
-            Assert.IsTrue(this.queue.IsEmpty);
-            Assert.AreSame(enqueuedValue, dequeuedValue);
+            Assert.True(this.queue.IsEmpty);
+            Assert.Same(enqueuedValue, dequeuedValue);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void MultipleDequeuers()
         {
             var dequeuers = new Task<GenericParameterHelper>[5];
@@ -196,17 +181,17 @@
             for (int i = 0; i < dequeuers.Length; i++)
             {
                 int completedCount = dequeuers.Count(d => d.IsCompleted);
-                Assert.AreEqual(i, completedCount);
+                Assert.Equal(i, completedCount);
                 this.queue.Enqueue(new GenericParameterHelper(i));
             }
 
             for (int i = 0; i < dequeuers.Length; i++)
             {
-                Assert.IsTrue(dequeuers.Any(d => d.Result.Data == i));
+                Assert.True(dequeuers.Any(d => d.Result.Data == i));
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void MultipleDequeuersCancelled()
         {
             var cts = new CancellationTokenSource[2];
@@ -225,7 +210,7 @@
 
             for (int i = 0; i < dequeuers.Length; i++)
             {
-                Assert.AreEqual(i % 2 == 0, dequeuers[i].IsCanceled);
+                Assert.Equal(i % 2 == 0, dequeuers[i].IsCanceled);
 
                 if (!dequeuers[i].IsCanceled)
                 {
@@ -233,95 +218,87 @@
                 }
             }
 
-            Assert.IsTrue(dequeuers.All(d => d.IsCompleted));
+            Assert.True(dequeuers.All(d => d.IsCompleted));
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void TryDequeue()
         {
             var enqueuedValue = new GenericParameterHelper(1);
             this.queue.Enqueue(enqueuedValue);
             GenericParameterHelper dequeuedValue;
             bool result = this.queue.TryDequeue(out dequeuedValue);
-            Assert.IsTrue(result);
-            Assert.AreSame(enqueuedValue, dequeuedValue);
-            Assert.AreEqual(0, this.queue.Count);
-            Assert.IsTrue(this.queue.IsEmpty);
+            Assert.True(result);
+            Assert.Same(enqueuedValue, dequeuedValue);
+            Assert.Equal(0, this.queue.Count);
+            Assert.True(this.queue.IsEmpty);
 
-            Assert.IsFalse(this.queue.TryDequeue(out dequeuedValue));
-            Assert.IsNull(dequeuedValue);
-            Assert.AreEqual(0, this.queue.Count);
-            Assert.IsTrue(this.queue.IsEmpty);
+            Assert.False(this.queue.TryDequeue(out dequeuedValue));
+            Assert.Null(dequeuedValue);
+            Assert.Equal(0, this.queue.Count);
+            Assert.True(this.queue.IsEmpty);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void Complete()
         {
             this.queue.Complete();
-            Assert.IsTrue(this.queue.Completion.IsCompleted);
+            Assert.True(this.queue.Completion.IsCompleted);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task CompleteThenDequeueAsync()
         {
             var enqueuedValue = new GenericParameterHelper(1);
             this.queue.Enqueue(enqueuedValue);
             this.queue.Complete();
-            Assert.IsFalse(this.queue.Completion.IsCompleted);
+            Assert.False(this.queue.Completion.IsCompleted);
 
             var dequeuedValue = await this.queue.DequeueAsync();
-            Assert.AreSame(enqueuedValue, dequeuedValue);
-            Assert.IsTrue(this.queue.Completion.IsCompleted);
+            Assert.Same(enqueuedValue, dequeuedValue);
+            Assert.True(this.queue.Completion.IsCompleted);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void CompleteThenTryDequeue()
         {
             var enqueuedValue = new GenericParameterHelper(1);
             this.queue.Enqueue(enqueuedValue);
             this.queue.Complete();
-            Assert.IsFalse(this.queue.Completion.IsCompleted);
+            Assert.False(this.queue.Completion.IsCompleted);
 
             GenericParameterHelper dequeuedValue;
-            Assert.IsTrue(this.queue.TryDequeue(out dequeuedValue));
-            Assert.AreSame(enqueuedValue, dequeuedValue);
-            Assert.IsTrue(this.queue.Completion.IsCompleted);
+            Assert.True(this.queue.TryDequeue(out dequeuedValue));
+            Assert.Same(enqueuedValue, dequeuedValue);
+            Assert.True(this.queue.Completion.IsCompleted);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void CompleteWhileDequeuersWaiting()
         {
             var dequeueTask = this.queue.DequeueAsync();
             this.queue.Complete();
-            Assert.IsTrue(this.queue.Completion.IsCompleted);
-            Assert.IsTrue(dequeueTask.IsCanceled);
+            Assert.True(this.queue.Completion.IsCompleted);
+            Assert.True(dequeueTask.IsCanceled);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void CompletedQueueRejectsEnqueue()
         {
             this.queue.Complete();
-            try
-            {
-                this.queue.Enqueue(new GenericParameterHelper(1));
-                Assert.Fail("Expected exception InvalidOperationException not thrown.");
-            }
-            catch (InvalidOperationException)
-            {
-            }
-
-            Assert.IsTrue(this.queue.IsEmpty);
+            Assert.Throws<InvalidOperationException>(() => this.queue.Enqueue(new GenericParameterHelper(1)));
+            Assert.True(this.queue.IsEmpty);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void CompletedQueueRejectsTryEnqueue()
         {
             this.queue.Complete();
-            Assert.IsFalse(this.queue.TryEnqueue(new GenericParameterHelper(1)));
-            Assert.IsTrue(this.queue.IsEmpty);
+            Assert.False(this.queue.TryEnqueue(new GenericParameterHelper(1)));
+            Assert.True(this.queue.IsEmpty);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void DequeueCancellationAndCompletionStress()
         {
             var queue = new AsyncQueue<GenericParameterHelper>();
@@ -356,7 +333,7 @@
             Console.WriteLine("Iterations: {0}", iterations);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void NoLockHeldForCancellationContinuation()
         {
             var cts = new CancellationTokenSource();
@@ -379,71 +356,71 @@
             cts.Cancel();
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void OnEnqueuedNotAlreadyDispatched()
         {
             var queue = new DerivedQueue<int>();
             bool callbackFired = false;
             queue.OnEnqueuedDelegate = (value, alreadyDispatched) =>
             {
-                Assert.AreEqual(5, value);
-                Assert.IsFalse(alreadyDispatched);
+                Assert.Equal(5, value);
+                Assert.False(alreadyDispatched);
                 callbackFired = true;
             };
             queue.Enqueue(5);
-            Assert.IsTrue(callbackFired);
+            Assert.True(callbackFired);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void OnEnqueuedAlreadyDispatched()
         {
             var queue = new DerivedQueue<int>();
             bool callbackFired = false;
             queue.OnEnqueuedDelegate = (value, alreadyDispatched) =>
             {
-                Assert.AreEqual(5, value);
-                Assert.IsTrue(alreadyDispatched);
+                Assert.Equal(5, value);
+                Assert.True(alreadyDispatched);
                 callbackFired = true;
             };
 
             var dequeuer = queue.DequeueAsync();
             queue.Enqueue(5);
-            Assert.IsTrue(callbackFired);
-            Assert.IsTrue(dequeuer.IsCompleted);
+            Assert.True(callbackFired);
+            Assert.True(dequeuer.IsCompleted);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void OnDequeued()
         {
             var queue = new DerivedQueue<int>();
             bool callbackFired = false;
             queue.OnDequeuedDelegate = value =>
             {
-                Assert.AreEqual(5, value);
+                Assert.Equal(5, value);
                 callbackFired = true;
             };
 
             queue.Enqueue(5);
             int dequeuedValue;
-            Assert.IsTrue(queue.TryDequeue(out dequeuedValue));
-            Assert.IsTrue(callbackFired);
+            Assert.True(queue.TryDequeue(out dequeuedValue));
+            Assert.True(callbackFired);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void OnCompletedInvoked()
         {
             var queue = new DerivedQueue<GenericParameterHelper>();
             int invoked = 0;
             queue.OnCompletedDelegate = () => invoked++;
             queue.Complete();
-            Assert.AreEqual(1, invoked);
+            Assert.Equal(1, invoked);
 
             // Call it again to make sure it's only invoked once.
             queue.Complete();
-            Assert.AreEqual(1, invoked);
+            Assert.Equal(1, invoked);
         }
 
-        [TestMethod, Timeout(TestTimeout), TestCategory("GC")]
+        [Fact, Trait("GC", "")]
         public void UnusedQueueGCPressure()
         {
             this.CheckGCPressure(
@@ -451,7 +428,7 @@
                 {
                     var queue = new AsyncQueue<GenericParameterHelper>();
                     queue.Complete();
-                    Assert.IsTrue(queue.IsCompleted);
+                    Assert.True(queue.IsCompleted);
                 },
                 maxBytesAllocated: 81);
         }
