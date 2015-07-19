@@ -8,6 +8,7 @@
     using System.Threading.Tasks;
     using System.Windows.Threading;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit.Abstractions;
 
     public abstract class TestBase
     {
@@ -17,7 +18,32 @@
 
         private const int GCAllocationAttempts = 5;
 
-        public TestContext TestContext { get; set; }
+        protected TestBase() { }
+
+        protected TestBase(ITestOutputHelper logger)
+        {
+            this.Logger = logger;
+        }
+
+        protected ITestOutputHelper Logger { get; }
+
+        protected TestContext TestContext { get; set; }
+
+        protected void Log(string message, params object[] args)
+        {
+            if (this.TestContext != null)
+            {
+                this.Log(message, args);
+            }
+            else if (this.Logger != null)
+            {
+                this.Logger.WriteLine(message, args);
+            }
+            else
+            {
+                Assert.Fail("Test class did not supply a logger.");
+            }
+        }
 
         /// <summary>
         /// Verifies that continuations scheduled on a task will not be executed inline with the specified completing action.
@@ -77,7 +103,7 @@
             bool passingAttemptObserved = false;
             for (int attempt = 1; attempt <= allowedAttempts; attempt++)
             {
-                this.TestContext.WriteLine("Iteration {0}", attempt);
+                this.Log("Iteration {0}", attempt);
                 long initialMemory = GC.GetTotalMemory(true);
                 for (int i = 0; i < iterations; i++)
                 {
@@ -97,8 +123,8 @@
 
                 long leaked = (GC.GetTotalMemory(true) - initialMemory) / iterations;
 
-                this.TestContext.WriteLine("{0} bytes leaked per iteration.", leaked);
-                this.TestContext.WriteLine("{0} bytes allocated per iteration ({1} allowed).", allocated, maxBytesAllocated);
+                this.Log("{0} bytes leaked per iteration.", leaked);
+                this.Log("{0} bytes allocated per iteration ({1} allowed).", allocated, maxBytesAllocated);
 
                 if (leaked == 0 && allocated <= maxBytesAllocated)
                 {
@@ -128,7 +154,7 @@
             bool passingAttemptObserved = false;
             for (int attempt = 1; attempt <= allowedAttempts; attempt++)
             {
-                this.TestContext.WriteLine("Iteration {0}", attempt);
+                this.Log("Iteration {0}", attempt);
                 long initialMemory = GC.GetTotalMemory(true);
                 for (int i = 0; i < iterations; i++)
                 {
@@ -142,8 +168,8 @@
 
                 long leaked = (GC.GetTotalMemory(true) - initialMemory) / iterations;
 
-                this.TestContext.WriteLine("{0} bytes leaked per iteration.", leaked);
-                this.TestContext.WriteLine("{0} bytes allocated per iteration ({1} allowed).", allocated, maxBytesAllocated);
+                this.Log("{0} bytes leaked per iteration.", leaked);
+                this.Log("{0} bytes allocated per iteration ({1} allowed).", allocated, maxBytesAllocated);
 
                 if (leaked < iterations && allocated <= maxBytesAllocated)
                 {
