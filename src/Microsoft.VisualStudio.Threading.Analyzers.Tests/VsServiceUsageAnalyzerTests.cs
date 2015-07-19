@@ -3,9 +3,8 @@
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CodeFixes;
     using Microsoft.CodeAnalysis.Diagnostics;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
 
-    [TestClass]
     public class VsServiceInvocationAnalyzerTests : DiagnosticVerifier
     {
         private DiagnosticResult expect = new DiagnosticResult
@@ -20,7 +19,7 @@
             return new VsServiceUsageAnalyzer();
         }
 
-        [TestMethod]
+        [Fact]
         public void InvokeVsReferenceOutsideMethod()
         {
             var test = @"
@@ -39,7 +38,7 @@ class Test {
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void InvokeVsSolutionComplexStyle()
         {
             var test = @"
@@ -58,7 +57,7 @@ class Test {
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void InvokeVsSolutionNoCheck()
         {
             var test = @"
@@ -76,7 +75,7 @@ class Test {
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void InvokeVsSolutionAfterVerifyOnUIThread()
         {
             var test = @"
@@ -97,7 +96,7 @@ class Test {
             VerifyCSharpDiagnostic(test);
         }
 
-        [TestMethod]
+        [Fact]
         public void InvokeVsSolutionAfterSwitchedToMainThreadAsync()
         {
             var test = @"
@@ -120,7 +119,7 @@ class Test {
             VerifyCSharpDiagnostic(test);
         }
 
-        [TestMethod]
+        [Fact]
         public void InvokeVsSolutionInLambda()
         {
             var test = @"
@@ -145,7 +144,7 @@ class Test {
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void InvokeVsSolutionInSimpleLambda()
         {
             var test = @"
@@ -171,7 +170,7 @@ class Test {
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void InvokeVsSolutionInLambdaWithThreadValidation()
         {
             var test = @"
@@ -195,7 +194,7 @@ class Test {
             VerifyCSharpDiagnostic(test);
         }
 
-        [TestMethod]
+        [Fact]
         public void InvokeVsSolutionInAnonymous()
         {
             var test = @"
@@ -220,7 +219,7 @@ class Test {
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void GetPropertyFromVsReference()
         {
             var test = @"
@@ -238,7 +237,7 @@ class Test {
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void CastToVsSolution()
         {
             var test = @"
@@ -256,7 +255,7 @@ class Test {
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void CastToVsSolutionAfterVerifyOnUIThread()
         {
             var test = @"
@@ -277,7 +276,7 @@ class Test {
             VerifyCSharpDiagnostic(test);
         }
 
-        [TestMethod]
+        [Fact]
         public void CastToVsSolutionViaAs()
         {
             var test = @"
@@ -295,7 +294,7 @@ class Test {
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void CastToVsSolutionViaAsAfterVerifyOnUIThread()
         {
             var test = @"
@@ -316,7 +315,7 @@ class Test {
             VerifyCSharpDiagnostic(test);
         }
 
-        [TestMethod]
+        [Fact]
         public void ShouldNotThrowNullReferenceExceptionWhenCastToStringArray()
         {
             var test = @"
@@ -333,7 +332,7 @@ class Test {
             VerifyCSharpDiagnostic(test);
         }
 
-        [TestMethod]
+        [Fact]
         public void ShouldNotReportWarningOnCastToEnum()
         {
             var test = @"

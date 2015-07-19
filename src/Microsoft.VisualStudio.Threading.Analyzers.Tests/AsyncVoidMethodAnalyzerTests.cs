@@ -3,9 +3,8 @@
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CodeFixes;
     using Microsoft.CodeAnalysis.Diagnostics;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
 
-    [TestClass]
     public class AsyncVoidMethodAnalyzerTests : DiagnosticVerifier
     {
         private DiagnosticResult expect = new DiagnosticResult
@@ -20,7 +19,7 @@
             return new AsyncVoidMethodAnalyzer();
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningOnAsyncVoidMethod()
         {
             var test = @"
@@ -35,7 +34,7 @@ class Test {
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningOnAsyncVoidMethodSimilarToAsyncEventHandler()
         {
             var test = @"
@@ -51,7 +50,7 @@ class Test {
         }
 
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningOnAsyncVoidEventHandlerSimilarToAsyncEventHandler2()
         {
             var test = @"
@@ -66,7 +65,7 @@ class Test {
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void DoNotReportWarningOnAsyncVoidEventHandler()
         {
             var test = @"
@@ -80,7 +79,7 @@ class Test {
             VerifyCSharpDiagnostic(test);
         }
 
-        [TestMethod]
+        [Fact]
         public void DoNotReportWarningOnAsyncVoidEventHandlerWithMyEventArgs()
         {
             var test = @"

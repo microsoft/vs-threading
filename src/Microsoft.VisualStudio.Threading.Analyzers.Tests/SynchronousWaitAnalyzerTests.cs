@@ -3,9 +3,8 @@
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CodeFixes;
     using Microsoft.CodeAnalysis.Diagnostics;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
 
-    [TestClass]
     public class SynchronousWaitAnalyzerTests : DiagnosticVerifier
     {
         private DiagnosticResult expect = new DiagnosticResult
@@ -20,7 +19,7 @@
             return new SynchronousWaitAnalyzer();
         }
 
-        [TestMethod]
+        [Fact]
         public void TaskWaitShouldReportWarning()
         {
             var test = @"
@@ -38,7 +37,7 @@ class Test {
             VerifyCSharpDiagnostic(test, this.expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void TaskResultShouldReportWarning()
         {
             var test = @"
@@ -56,7 +55,7 @@ class Test {
             VerifyCSharpDiagnostic(test, this.expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void AwaiterGetResultShouldReportWarning()
         {
             var test = @"
@@ -75,7 +74,7 @@ class Test {
         }
 
 
-        [TestMethod]
+        [Fact]
         public void DoNotReportWarningOnCodeGeneratedByXaml2CS()
         {
             var test = @"
