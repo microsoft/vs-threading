@@ -5,31 +5,30 @@
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
 
-    [TestClass]
     public class AsyncBarrierTests : TestBase
     {
-        [TestMethod, Timeout(TestTimeout), ExpectedException(typeof(ArgumentOutOfRangeException))]
+        [Fact]
         public void ZeroParticipantsThrow()
         {
-            new AsyncBarrier(0);
+            Assert.Throws<ArgumentOutOfRangeException>(() => new AsyncBarrier(0));
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task OneParticipant()
         {
             var barrier = new AsyncBarrier(1);
             await barrier.SignalAndWait();
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task TwoParticipants()
         {
             await this.MultipleParticipantsHelperAsync(2, 3);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task ManyParticipantsAndSteps()
         {
             await this.MultipleParticipantsHelperAsync(100, 50);
