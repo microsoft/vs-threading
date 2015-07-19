@@ -18,7 +18,9 @@
 
         private const int GCAllocationAttempts = 5;
 
-        protected TestBase() { }
+        protected TestBase()
+        {
+        }
 
         protected TestBase(ITestOutputHelper logger)
         {
