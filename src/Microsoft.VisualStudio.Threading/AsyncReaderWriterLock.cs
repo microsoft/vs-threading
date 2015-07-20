@@ -1809,19 +1809,27 @@ namespace Microsoft.VisualStudio.Threading
                 if (this.awaiter != null)
                 {
                     var nonConcurrentSyncContext = SynchronizationContext.Current as NonConcurrentSynchronizationContext;
-                    using (nonConcurrentSyncContext != null ? nonConcurrentSyncContext.LoanBackAnyHeldResource() : default(NonConcurrentSynchronizationContext.LoanBack))
+
+                    // NOTE: when we have already called ReleaseAsync, and the lock has been released,
+                    // we don't want to load the concurrent context and try to take it back immediately. If we do, it is possible
+                    // that anther thread waiting for a write lock can take the concurrent context, so the current thread will be
+                    // blocked and wait until it is done, and that makes it possible to run into the thread pool exhaustion trap.
+                    if (!this.awaiter.IsReleased)
                     {
-                        var releaseTask = this.ReleaseAsync();
-                        try
+                        using (nonConcurrentSyncContext != null ? nonConcurrentSyncContext.LoanBackAnyHeldResource(this.awaiter.OwningLock) : default(NonConcurrentSynchronizationContext.LoanBack))
                         {
-                            while (!releaseTask.Wait(1000))
-                            { // this loop allows us to break into the debugger and step into managed code to analyze a hang.
+                            var releaseTask = this.awaiter.ReleaseAsync();
+                            try
+                            {
+                                while (!releaseTask.Wait(1000))
+                                { // this loop allows us to break into the debugger and step into managed code to analyze a hang.
+                                }
                             }
-                        }
-                        catch (AggregateException)
-                        {
-                            // We want to throw the inner exception itself -- not the AggregateException.
-                            releaseTask.GetAwaiter().GetResult();
+                            catch (AggregateException)
+                            {
+                                // We want to throw the inner exception itself -- not the AggregateException.
+                                releaseTask.GetAwaiter().GetResult();
+                            }
                         }
                     }
 
@@ -1845,17 +1853,16 @@ namespace Microsoft.VisualStudio.Threading
             /// </returns>
             public Task ReleaseAsync()
             {
-                Task result;
                 if (this.awaiter != null)
                 {
-                    result = this.awaiter.ReleaseAsync();
-                }
-                else
-                {
-                    result = TplExtensions.CompletedTask;
+                    var nonConcurrentSyncContext = SynchronizationContext.Current as NonConcurrentSynchronizationContext;
+                    using (nonConcurrentSyncContext != null ? nonConcurrentSyncContext.LoanBackAnyHeldResource(this.awaiter.OwningLock) : default(NonConcurrentSynchronizationContext.LoanBack))
+                    {
+                        return this.awaiter.ReleaseAsync();
+                    }
                 }
 
-                return result;
+                return TplExtensions.CompletedTask;
             }
         }
 
@@ -2203,6 +2210,17 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
+            /// Gets whether the lock has already been released.
+            /// </summary>
+            internal bool IsReleased
+            {
+                get
+                {
+                    return this.releaseAsyncTask != null && this.releaseAsyncTask.Status == TaskStatus.RanToCompletion;
+                }
+            }
+
+            /// <summary>
             /// Gets a value indicating whether the lock is active.
             /// </summary>
             /// <value><c>true</c> iff the lock has bee issued, has not yet been released, and the caller is on an MTA thread.</value>
@@ -2318,7 +2336,7 @@ namespace Microsoft.VisualStudio.Threading
                     }
                 }
 
-                return this.releaseAsyncTask ?? TplExtensions.CompletedTask;
+                return this.releaseAsyncTask;
             }
 
             /// <summary>
@@ -2444,10 +2462,10 @@ namespace Microsoft.VisualStudio.Threading
                 this.semaphore.Dispose();
             }
 
-            internal LoanBack LoanBackAnyHeldResource()
+            internal LoanBack LoanBackAnyHeldResource(AsyncReaderWriterLock asyncLock)
             {
                 return (this.semaphore.CurrentCount == 0 && this.IsCurrentThreadHoldingSemaphore)
-                     ? new LoanBack(this)
+                     ? new LoanBack(this, asyncLock)
                      : default(LoanBack);
             }
 
@@ -2531,11 +2549,14 @@ namespace Microsoft.VisualStudio.Threading
             internal struct LoanBack : IDisposable
             {
                 private readonly NonConcurrentSynchronizationContext syncContext;
+                private readonly AsyncReaderWriterLock asyncLock;
 
-                internal LoanBack(NonConcurrentSynchronizationContext syncContext)
+                internal LoanBack(NonConcurrentSynchronizationContext syncContext, AsyncReaderWriterLock asyncLock)
                 {
                     Requires.NotNull(syncContext, nameof(syncContext));
+                    Requires.NotNull(asyncLock, nameof(asyncLock));
                     this.syncContext = syncContext;
+                    this.asyncLock = asyncLock;
                     this.syncContext.semaphoreHoldingManagedThreadId = null;
                     this.syncContext.semaphore.Release();
                 }
@@ -2544,6 +2565,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     if (this.syncContext != null)
                     {
+                        Assumes.False(Monitor.IsEntered(this.asyncLock.syncObject), "Should not wait on the Semaphore, when we hold the syncObject. This causes deadlocks");
                         this.syncContext.semaphore.Wait();
                         this.syncContext.semaphoreHoldingManagedThreadId = Environment.CurrentManagedThreadId;
                     }

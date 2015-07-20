@@ -2770,6 +2770,26 @@
             await asyncLock.OnBeforeExclusiveLockReleasedAsyncInvoked.WaitAsync();
         }
 
+        [TestMethod, Timeout(TestTimeout)]
+        public async Task OnBeforeExclusiveLockReleasedAsyncWriteLockReleaseAsync()
+        {
+            var asyncLock = new LockDerivedWriteLockAroundOnBeforeExclusiveLockReleased();
+            using (var access = await asyncLock.WriteLockAsync())
+            {
+                await access.ReleaseAsync();
+            }
+        }
+
+        [TestMethod, Timeout(TestTimeout)]
+        public async Task OnBeforeExclusiveLockReleasedAsyncReadLockReleaseAsync()
+        {
+            var asyncLock = new LockDerivedReadLockAroundOnBeforeExclusiveLockReleased();
+            using (var access = await asyncLock.WriteLockAsync())
+            {
+                await access.ReleaseAsync();
+            }
+        }
+
         [TestMethod, Timeout(TestTimeout), ExpectedException(typeof(ArgumentNullException))]
         public async Task OnBeforeWriteLockReleasedNullArgument()
         {
@@ -4549,6 +4569,16 @@
                 }
 
                 this.OnBeforeExclusiveLockReleasedAsyncInvoked.Set();
+            }
+        }
+
+        private class LockDerivedReadLockAroundOnBeforeExclusiveLockReleased : AsyncReaderWriterLock
+        {
+            protected override async Task OnBeforeExclusiveLockReleasedAsync()
+            {
+                using (await this.ReadLockAsync())
+                {
+                }
             }
         }
 
