@@ -35,7 +35,7 @@
         {
             if (this.TestContext != null)
             {
-                this.Log(message, args);
+                this.TestContext.WriteLine(message, args);
             }
             else if (this.Logger != null)
             {
