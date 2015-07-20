@@ -29,7 +29,7 @@
 
         protected ITestOutputHelper Logger { get; }
 
-        protected TestContext TestContext { get; set; }
+        public TestContext TestContext { get; set; }
 
         protected void Log(string message, params object[] args)
         {
