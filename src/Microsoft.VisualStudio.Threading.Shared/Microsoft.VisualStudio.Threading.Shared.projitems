@@ -9,6 +9,7 @@
     <Import_RootNamespace>Microsoft.VisualStudio.Threading.Shared</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)AssemblyInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AsyncAutoResetEvent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AsyncBarrier.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AsyncCountdownEvent.cs" />
@@ -39,6 +40,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskContext+HangReportContributor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskContextNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskCreationOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)JoinableTask`1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)LightUps.cs" />

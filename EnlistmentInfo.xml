@@ -1,9 +1,0 @@
-﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <DevelopmentRoot>$(MSBuildThisFileDirectory)Razzle</DevelopmentRoot>
-    <BinaryRoot>$(MSBuildThisFileDirectory)Razzle\binaries</BinaryRoot>
-    <DepotRoot>$(MSBuildThisFileDirectory)Razzle\src</DepotRoot>
-    <ShadowDir>$(MSBuildThisFileDirectory)Razzle\shadow</ShadowDir>
-    <IntermediateRootPath>$(MSBuildThisFileDirectory)Razzle\Intermediate</IntermediateRootPath>
-  </PropertyGroup>
-</Project>

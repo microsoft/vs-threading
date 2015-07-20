@@ -1,13 +1,21 @@
 <?xml version="1.0"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.props" />
+  <Import Project="..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.props" />
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" />
+
   <PropertyGroup>
-    <DevDivProjectType>Traversal</DevDivProjectType>
+    <!-- traversal projects should always build their project references, because nothing else would make sense. -->
+    <BuildProjectReferences>true</BuildProjectReferences>
   </PropertyGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), EnlistmentInfo.props))\EnlistmentInfo.props" Condition=" '$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), EnlistmentInfo.props))' != '' " />
 
   <ItemGroup>
     <ProjectReference Include="**\*.insertionproj" />
   </ItemGroup>
+  
+  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
+  <Import Project="..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.targets" />
+  <Import Project="..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.targets" />
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), EnlistmentInfo.targets))\EnlistmentInfo.targets" Condition=" '$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), EnlistmentInfo.targets))' != '' " />
+  <Target Name="Build" DependsOnTargets="ResolveProjectReferences" />
 </Project>
