@@ -74,7 +74,7 @@
             // Step 3: Is the symbol we are waiting on a System.Threading.Tasks.Task
             SymbolInfo symbolAwaitingOn = context.SemanticModel.GetSymbolInfo(identifierNameSyntaxAwaitingOn);
             ILocalSymbol localSymbol = symbolAwaitingOn.Symbol as ILocalSymbol;
-            if (localSymbol == null || localSymbol.Type.ToString() != "System.Threading.Tasks.Task")
+            if (localSymbol == null || !localSymbol.Type.ToString().StartsWith("System.Threading.Tasks.Task"))
             {
                 return;
             }
