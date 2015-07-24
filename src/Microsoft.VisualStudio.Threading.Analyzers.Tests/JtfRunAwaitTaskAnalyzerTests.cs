@@ -485,6 +485,40 @@ class Tests
             VerifyCSharpDiagnostic(test);
         }
 
+        [TestMethod]
+        public void ReportWarningWhenHavingNestedLambdaExpressions()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
 
+class Tests
+{
+    public void Test()
+    {
+        JoinableTaskFactory jtf = ThreadHelper.JoinableTaskFactory;
+        
+        jtf.Run(async () =>
+        {
+            System.Threading.Tasks.Task<int> task = SomeOperationAsync();
+            await jtf.RunAsync(async () =>
+            {
+                await task;
+            });
+        });
+    }
+
+    public async Task<int> SomeOperationAsync()
+    {
+        await System.Threading.Tasks.Task.Delay(1000);
+
+        return 100;
+    }
+}
+";
+            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 17, 23) };
+            VerifyCSharpDiagnostic(test, expect);
+        }
     }
 }

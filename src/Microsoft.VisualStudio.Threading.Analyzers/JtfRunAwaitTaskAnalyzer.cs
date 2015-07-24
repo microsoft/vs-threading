@@ -12,21 +12,22 @@
     using Microsoft.CodeAnalysis.Diagnostics;
 
     /// <summary>
-    /// Detects await task inside JoinableTaskFactory.Run.
+    /// Detects await Task inside JoinableTaskFactory.Run or RunAsync.
     /// </summary>
     /// <remarks>
-    /// [Background] Async void methods have different error-handling semantics.
-    /// When an exception is thrown out of an async Task or async <see cref="Task{T}"/> method/lambda,
-    /// that exception is captured and placed on the Task object. With async void methods,
-    /// there is no Task object, so any exceptions thrown out of an async void method will
-    /// be raised directly on the SynchronizationContext that was active when the async
-    /// void method started, and it would crash the process.
-    /// Refer to Stephen's article https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info.
+    /// [Background] Calling await on a Task inside a JoinableTaskFactory.Run, when the task is initialized outside the delegate can cause potential deadlocks.
+    /// This problem can be avoided by ensuring the task is initialized within the delegate or by using JoinableTask instead of Task.",
     ///
     /// i.e.
     /// <![CDATA[
     ///   async void MyMethod() /* This analyzer will report warning on this method declaration. */
     ///   {
+    ///       JoinableTaskFactory jtf = ThreadHelper.JoinableTaskFactory;
+    ///       System.Threading.Tasks.Task task = SomeOperationAsync();
+    ///       jtf.Run(async delegate
+    ///       {
+    ///           await task;
+    ///       });
     ///   }
     /// ]]>
     /// </remarks>
@@ -151,7 +152,7 @@
                 return lambdaExpression.Body as BlockSyntax;
             }
 
-            throw new ArgumentException("Must be of typ AnonymousMethodExpressionSyntax or ParenthesizedLambdaExpressionSyntax", nameof(delegateOrLambdaExpression));
+            throw new ArgumentException("Must be of type AnonymousMethodExpressionSyntax or ParenthesizedLambdaExpressionSyntax", nameof(delegateOrLambdaExpression));
         }
 
         /// <summary>
