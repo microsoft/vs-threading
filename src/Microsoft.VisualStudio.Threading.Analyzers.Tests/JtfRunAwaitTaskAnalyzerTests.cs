@@ -53,6 +53,38 @@ class Tests
         }
 
         [TestMethod]
+        public void ReportWarningWhenTaskIsDefinedOutsideDelegateUsingRunAsync()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
+
+class Tests
+{
+    public void Test()
+    {
+        JoinableTaskFactory jtf = ThreadHelper.JoinableTaskFactory;
+        System.Threading.Tasks.Task task = SomeOperationAsync();
+        jtf.RunAsync(async delegate
+        {
+            await task;
+        });
+    }
+
+    public async Task<int> SomeOperationAsync()
+    {
+        await System.Threading.Tasks.Task.Delay(1000);
+
+        return 100;
+    }
+}
+";
+            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 19) };
+            VerifyCSharpDiagnostic(test, expect);
+        }
+
+        [TestMethod]
         public void ReportWarningWhenTaskIsDefinedOutsideParanthesisedLambdaExpression()
         {
             var test = @"
@@ -284,7 +316,7 @@ class Tests
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 16, 19) };
+            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 16, 23) };
             VerifyCSharpDiagnostic(test, expect);
         }
 

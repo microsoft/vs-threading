@@ -56,125 +56,153 @@
             }
 
             SyntaxNode currentNode = identifierNameSyntaxAwaitingOn;
-            // AnonymousMethodExpressionSyntax anonymousDelegate = null;
-            BlockSyntax delegateBlock = null;
-            SyntaxNode delegateOrLambdaNode = null;
 
-            // Walk up the syntax node hierarchy, looking for JTF.Run
+            // Step 1: Find the async delegate or lambda expression that matches the await
+            SyntaxNode delegateOrLambdaNode = this.FindAsyncDelegateOrLambdaExpressiomMatchingAwait(awaitExpressionSyntax);
+            if (delegateOrLambdaNode == null)
+            {
+                return;
+            }
+
+            // Step 2: Check whether it is called by Jtf.Run
+            InvocationExpressionSyntax invocationExpressionSyntax = this.FindInvocationOfDelegateOrLambdaExpression(delegateOrLambdaNode);
+            if (invocationExpressionSyntax == null || !this.IsInvocationExpressionACallToJtfRun(context, invocationExpressionSyntax))
+            {
+                return;
+            }
+
+            // Step 3: Is the symbol we are waiting on a System.Threading.Tasks.Task
+            SymbolInfo symbolAwaitingOn = context.SemanticModel.GetSymbolInfo(identifierNameSyntaxAwaitingOn);
+            ILocalSymbol localSymbol = symbolAwaitingOn.Symbol as ILocalSymbol;
+            if (localSymbol == null || localSymbol.Type.ToString() != "System.Threading.Tasks.Task")
+            {
+                return;
+            }
+
+            // Step 4: Report warning if the task was not initialized within the current delegate or lambda expression
+            BlockSyntax delegateBlock = this.GetBlockOfDelegateOrLambdaExpression(delegateOrLambdaNode);
+
+            // Run data flow analysis to understand where the task was defined
+            DataFlowAnalysis dataFlowAnalysis;
+            // When possible (await is direct child of the block), execute data flow analysis by passing first and last statement to capture only what happens before the await
+            // Check if the await is direct child of the code block (first parent is ExpressionStantement, second parent is the block itself)
+            if (awaitExpressionSyntax.Parent.Parent.Equals(delegateBlock))
+            {
+                dataFlowAnalysis = context.SemanticModel.AnalyzeDataFlow(delegateBlock.ChildNodes().FirstOrDefault(), awaitExpressionSyntax.Parent);
+            }
+            else
+            {
+                // Otherwise analyze the data flow for the entire block. One caveat: it doesn't distinguish if the initalization happens after the await.
+                dataFlowAnalysis = context.SemanticModel.AnalyzeDataFlow(delegateBlock);
+            }
+
+            if (!dataFlowAnalysis.WrittenInside.Contains(symbolAwaitingOn.Symbol))
+            {
+                context.ReportDiagnostic(Diagnostic.Create(Rules.AvoidAwaitTaskInsideJoinableTaskFactoryRun, awaitExpressionSyntax.Expression.GetLocation()));
+            }
+        }
+
+        /// <summary>
+        /// Finds the async delegate or lambda expression that matches the await by walking up the syntax tree until we encounter an async delegate or lambda expression.
+        /// </summary>
+        /// <param name="awaitExpressionSyntax">The await expression syntax.</param>
+        /// <returns>Node representing the delegate or lambda expression if found. Null if not found.</returns>
+        private SyntaxNode FindAsyncDelegateOrLambdaExpressiomMatchingAwait(AwaitExpressionSyntax awaitExpressionSyntax)
+        {
+            SyntaxNode currentNode = awaitExpressionSyntax;
+
             while (currentNode != null && !(currentNode is MethodDeclarationSyntax))
             {
-                if (currentNode is AnonymousMethodExpressionSyntax)
+                AnonymousMethodExpressionSyntax anonymousMethod = currentNode as AnonymousMethodExpressionSyntax;
+                if (anonymousMethod != null && anonymousMethod.AsyncKeyword != null)
                 {
-                    // When we encounter a delegate, store it for later. This will retain the top-most delegate we encounter in the parent hierarchy, which is very likely the one we need.
-                    delegateBlock = (currentNode as AnonymousMethodExpressionSyntax).Block;
-                    delegateOrLambdaNode = currentNode;
+                    return currentNode;
                 }
 
-                if (currentNode is ParenthesizedLambdaExpressionSyntax)
+                ParenthesizedLambdaExpressionSyntax lambdaExpression = currentNode as ParenthesizedLambdaExpressionSyntax;
+                if (lambdaExpression != null && lambdaExpression.AsyncKeyword != null)
                 {
-                    // When we encounter a parenthesized expression syntax, store it for later. This will retain the top-most delegate we encounter in the parent hierarchy, which is very likely the one we need.
-                   delegateBlock = (currentNode as ParenthesizedLambdaExpressionSyntax).Body as BlockSyntax;
-                   delegateOrLambdaNode = currentNode;
-                }
-
-                InvocationExpressionSyntax invocationExpressionSyntax = currentNode as InvocationExpressionSyntax;
-                if (invocationExpressionSyntax != null)
-                {
-                    MemberAccessExpressionSyntax memberAccessExpressionSyntax = invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax;
-                    if (memberAccessExpressionSyntax != null)
-                    {
-                        // Check if we encountered a call to Run and had already encountered a delegate (so Run is a parent of the delegate)
-                        if (memberAccessExpressionSyntax.Name.Identifier.Text == "Run" && delegateBlock != null)
-                        {
-                            // Check whether the Run method belongs to JTF
-                            IMethodSymbol methodSymbol = context.SemanticModel.GetSymbolInfo(memberAccessExpressionSyntax).Symbol as IMethodSymbol;
-                            if (methodSymbol != null && methodSymbol.ToString().StartsWith("Microsoft.VisualStudio.Threading.JoinableTaskFactory"))
-                            {
-                                // Check out the type of the symbol we are awaiting on to see if it is System.Threading.Tasks.Task
-                                SymbolInfo symbolAwaitingOn = context.SemanticModel.GetSymbolInfo(identifierNameSyntaxAwaitingOn);
-
-                                ILocalSymbol localSymbol = symbolAwaitingOn.Symbol as ILocalSymbol;
-                                if (localSymbol != null && localSymbol.Type.ToString() == "System.Threading.Tasks.Task")
-                                {
-                                    // Run data flow analysis to understand where the task was defined
-                                    // DataFlowAnalysis dataFlowAnalysis = context.SemanticModel.AnalyzeDataFlow(delegateBlock);
-                                    DataFlowAnalysis dataFlowAnalysis = context.SemanticModel.AnalyzeDataFlow(delegateBlock.ChildNodes().FirstOrDefault(), awaitExpressionSyntax.Parent);
-                                    if (!dataFlowAnalysis.WrittenInside.Contains(symbolAwaitingOn.Symbol))
-                                    {
-                                        context.ReportDiagnostic(Diagnostic.Create(Rules.AvoidAwaitTaskInsideJoinableTaskFactoryRun, awaitExpressionSyntax.Expression.GetLocation()));
-                                    }
-
-                                    // So far, we know that we are awaiting on a System.Threading.Task within a JTF.Run delegate
-                                    // We should report warning if the Task was not initialized within the delegate
-                                    //if (!IsIdentifierAssignedWithinBlock(identifierNameSyntaxAwaitingOn, delegateBlock))
-                                    //{
-                                    //    context.ReportDiagnostic(Diagnostic.Create(Rules.AvoidAwaitTaskInsideJoinableTaskFactoryRun, awaitExpressionSyntax.Expression.GetLocation()));
-                                    //}
-                                }
-                            }
-                        }
-                    }
+                    return currentNode;
                 }
 
                 // Advance to the next parent
                 currentNode = currentNode.Parent;
             }
+
+            return null;
         }
 
         /// <summary>
-        /// Checks whether the specified identifier (which is typically the identifier we are awaiting on) was initialized withing the anonymous delegate block.
+        /// Helper method to get the code Block of a delegate or lambda expression.
         /// </summary>
-        /// <param name="identifierNameSyntaxAwaitingOn">The identifier</param>
-        /// <param name="anonymousDelegate">The anonymous delegate where we are searching.</param>
-        /// <returns>True if the identifier was initialized withing the delegate.</returns>
-        private static bool IsIdentifierAssignedWithinBlock(IdentifierNameSyntax identifierNameSyntaxAwaitingOn, BlockSyntax block)
+        /// <param name="delegateOrLambdaExpression">The delegate or lambda expression.</param>
+        /// <returns>The code block.</returns>
+        private BlockSyntax GetBlockOfDelegateOrLambdaExpression(SyntaxNode delegateOrLambdaExpression)
         {
-            if (block == null)
+            AnonymousMethodExpressionSyntax anonymousMethod = delegateOrLambdaExpression as AnonymousMethodExpressionSyntax;
+            if (anonymousMethod != null)
             {
-                return false;
+                return anonymousMethod.Block;
             }
 
-            // Now let's see if the task we are awaiting on was initialized within the delegate. Report warning if not.
-            bool initializationFound = false;
-            foreach (SyntaxNode child in block.ChildNodes())
+            ParenthesizedLambdaExpressionSyntax lambdaExpression = delegateOrLambdaExpression as ParenthesizedLambdaExpressionSyntax;
+            if (lambdaExpression != null)
             {
-                // See if we have a local declaration. E.g. "System.Threading.Tasks.Task g = SomeOperationAsync();"
-                LocalDeclarationStatementSyntax localDeclaration = child as LocalDeclarationStatementSyntax;
-                if (localDeclaration != null && localDeclaration.Declaration != null)
-                {
-                    foreach (VariableDeclaratorSyntax variableDeclarator in localDeclaration.Declaration.Variables)
-                    {
-                        if (variableDeclarator.Identifier.Text == identifierNameSyntaxAwaitingOn.Identifier.Text)
-                        {
-                            // We found an itialization
-                            initializationFound = true;
-                            break;
-                        }
-                    }
-                }
-
-                // Test for assignments. E.g. "g2 = SomeOperationAsync();"
-                ExpressionStatementSyntax expressionStatement = child as ExpressionStatementSyntax;
-                if (expressionStatement != null)
-                {
-                    AssignmentExpressionSyntax assignmentExpression = expressionStatement.Expression as AssignmentExpressionSyntax;
-                    if (assignmentExpression != null)
-                    {
-                        IdentifierNameSyntax identifierName = assignmentExpression.Left as IdentifierNameSyntax;
-                        if (identifierName.Identifier.Text == identifierNameSyntaxAwaitingOn.Identifier.Text)
-                        {
-                            // We found an assignment
-                            initializationFound = true;
-                            break;
-                        }
-                    }
-                }
-
-                // TODO: stop when we encounter the await expression to ensure that the initialization happened before the await expression
-                // TODO: may need to also handle sub-blocks of code
+                return lambdaExpression.Body as BlockSyntax;
             }
 
-            return initializationFound;
+            throw new ArgumentException("Must be of typ AnonymousMethodExpressionSyntax or ParenthesizedLambdaExpressionSyntax", nameof(delegateOrLambdaExpression));
+        }
+
+        /// <summary>
+        /// Walks up the syntax tree to find out where the specified delegate or lambda expression is being invoked.
+        /// </summary>
+        /// <param name="delegateOrLambdaExpression">Node representing a delegate or lambda expression.</param>
+        /// <returns>The invocation expression. Null if not found.</returns>
+        private InvocationExpressionSyntax FindInvocationOfDelegateOrLambdaExpression(SyntaxNode delegateOrLambdaExpression)
+        {
+            SyntaxNode currentNode = delegateOrLambdaExpression;
+
+            while (currentNode != null && !(currentNode is MethodDeclarationSyntax))
+            {
+                InvocationExpressionSyntax invocationExpressionSyntax = currentNode as InvocationExpressionSyntax;
+                if (invocationExpressionSyntax != null)
+                {
+                    return invocationExpressionSyntax;
+                }
+
+                // Advance to the next parent
+                currentNode = currentNode.Parent;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Checks whether the specified invocation is a call to JoinableTaskFactory.Run or RunAsync
+        /// </summary>
+        /// <param name="context">The analysis context.</param>
+        /// <param name="invocationExpressionSyntax">The invocation to check for.</param>
+        /// <returns>True if the specified invocation is a call to JoinableTaskFactory.Run or RunAsyn</returns>
+        private bool IsInvocationExpressionACallToJtfRun(SyntaxNodeAnalysisContext context, InvocationExpressionSyntax invocationExpressionSyntax)
+        {
+            MemberAccessExpressionSyntax memberAccessExpressionSyntax = invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax;
+            if (memberAccessExpressionSyntax != null)
+            {
+                // Check if we encountered a call to Run and had already encountered a delegate (so Run is a parent of the delegate)
+                string methodName = memberAccessExpressionSyntax.Name.Identifier.Text;
+                if (methodName == "Run" || methodName == "RunAsync")
+                {
+                    // Check whether the Run method belongs to JTF
+                    IMethodSymbol methodSymbol = context.SemanticModel.GetSymbolInfo(memberAccessExpressionSyntax).Symbol as IMethodSymbol;
+                    if (methodSymbol != null && methodSymbol.ToString().StartsWith("Microsoft.VisualStudio.Threading.JoinableTaskFactory"))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
     }
 }
