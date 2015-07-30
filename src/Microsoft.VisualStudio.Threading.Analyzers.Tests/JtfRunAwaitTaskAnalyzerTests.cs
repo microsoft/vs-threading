@@ -251,6 +251,75 @@ class Tests
         }
 
         [TestMethod]
+        public void DoNotReportWarningWhenTaskIsInitializedBothOutsideAndInsideDelegate()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
+
+class Tests
+{
+    public void Test()
+    {
+        JoinableTaskFactory jtf = ThreadHelper.JoinableTaskFactory;
+        System.Threading.Tasks.Task task = SomeOperationAsync();
+        jtf.Run(async delegate
+        {
+            task = SomeOperationAsync();
+            await task;
+        });
+    }
+
+    public async Task<int> SomeOperationAsync()
+    {
+        await System.Threading.Tasks.Task.Delay(1000);
+
+        return 100;
+    }
+}
+";
+            VerifyCSharpDiagnostic(test);
+        }
+
+
+        [TestMethod]
+        public void DoNotReportWarningWhenTaskIsInitializedInsideDelegateConditionalStatement()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
+
+class Tests
+{
+    public void Test()
+    {
+        JoinableTaskFactory jtf = ThreadHelper.JoinableTaskFactory;
+        System.Threading.Tasks.Task task;
+        jtf.Run(async delegate
+        {
+            if (false)
+            {
+                task = SomeOperationAsync();
+            }
+
+            await task;
+        });
+    }
+
+    public async Task<int> SomeOperationAsync()
+    {
+        await System.Threading.Tasks.Task.Delay(1000);
+
+        return 100;
+    }
+}
+";
+            VerifyCSharpDiagnostic(test);
+        }
+
+        [TestMethod]
         public void ReportWarningWhenTaskIsDefinedOutsideAndInitializedAfterAwait()
         {
             var test = @"
@@ -520,5 +589,97 @@ class Tests
             expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 17, 23) };
             VerifyCSharpDiagnostic(test, expect);
         }
+
+        [TestMethod]
+        public void ReportWarningForDerivedJoinableTaskFactory()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
+
+public class MyJoinableTaskFactory : JoinableTaskFactory
+{
+    public MyJoinableTaskFactory(JoinableTaskFactory innerFactory) : base(innerFactory.Context)
+    {
+
+    }
+}
+
+class Tests
+{
+    public void Test()
+    {
+        MyJoinableTaskFactory myjtf = new MyJoinableTaskFactory(ThreadHelper.JoinableTaskFactory);
+
+        System.Threading.Tasks.Task<int> task = SomeOperationAsync();
+
+        myjtf.Run(async () =>
+        {
+            await task;
+        });
+    }
+
+    public async Task<int> SomeOperationAsync()
+    {
+        await System.Threading.Tasks.Task.Delay(1000);
+
+        return 100;
+    }
+}
+";
+            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 24, 19) };
+            VerifyCSharpDiagnostic(test, expect);
+        }
+
+        [TestMethod]
+        public void DoNotReportWarningForDerivedJoinableTaskFactoryWhenRunIsOverride()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
+
+public class MyJoinableTaskFactory : JoinableTaskFactory
+{
+    public MyJoinableTaskFactory(JoinableTaskFactory innerFactory) : base(innerFactory.Context)
+    {
+
+    }
+
+    new public void Run(Func<System.Threading.Tasks.Task> asyncMethod)
+    {
+
+    }
+}
+
+class Tests
+{
+    public void Test()
+    {
+        MyJoinableTaskFactory myjtf = new MyJoinableTaskFactory(ThreadHelper.JoinableTaskFactory);
+
+        System.Threading.Tasks.Task<int> task = SomeOperationAsync();
+
+        myjtf.Run(async () =>
+        {
+            await task;
+        });
+    }
+
+    public async Task<int> SomeOperationAsync()
+    {
+        await System.Threading.Tasks.Task.Delay(1000);
+
+        return 100;
+    }
+}
+
+";
+            // We decided not to report warning in this case, because we don't know if our assumptions about the Run implementation are still valid for user's implementation
+            VerifyCSharpDiagnostic(test);
+        }
+        
     }
 }

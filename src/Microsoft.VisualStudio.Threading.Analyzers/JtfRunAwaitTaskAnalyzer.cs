@@ -75,7 +75,7 @@
             // Step 3: Is the symbol we are waiting on a System.Threading.Tasks.Task
             SymbolInfo symbolAwaitingOn = context.SemanticModel.GetSymbolInfo(identifierNameSyntaxAwaitingOn);
             ILocalSymbol localSymbol = symbolAwaitingOn.Symbol as ILocalSymbol;
-            if (localSymbol == null || !localSymbol.Type.ToString().StartsWith("System.Threading.Tasks.Task"))
+            if (localSymbol == null || !Utils.GetFullName(localSymbol.Type).StartsWith("System.Threading.Tasks.Task"))
             {
                 return;
             }
@@ -89,7 +89,7 @@
             // Check if the await is direct child of the code block (first parent is ExpressionStantement, second parent is the block itself)
             if (awaitExpressionSyntax.Parent.Parent.Equals(delegateBlock))
             {
-                dataFlowAnalysis = context.SemanticModel.AnalyzeDataFlow(delegateBlock.ChildNodes().FirstOrDefault(), awaitExpressionSyntax.Parent);
+                dataFlowAnalysis = context.SemanticModel.AnalyzeDataFlow(delegateBlock.ChildNodes().First(), awaitExpressionSyntax.Parent);
             }
             else
             {
@@ -196,7 +196,7 @@
                 {
                     // Check whether the Run method belongs to JTF
                     IMethodSymbol methodSymbol = context.SemanticModel.GetSymbolInfo(memberAccessExpressionSyntax).Symbol as IMethodSymbol;
-                    if (methodSymbol != null && methodSymbol.ToString().StartsWith("Microsoft.VisualStudio.Threading.JoinableTaskFactory"))
+                    if (methodSymbol != null && Utils.GetFullName(methodSymbol).StartsWith("Microsoft.VisualStudio.Threading.JoinableTaskFactory"))
                     {
                         return true;
                     }
