@@ -16,6 +16,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
     [TestClass]
     public class DelegatingJoinableTaskFactoryTests : JoinableTaskTestBase
     {
+
         private enum FactoryLogEntry
         {
             OuterWaitSynchronously = 1,
@@ -28,12 +29,13 @@ namespace Microsoft.VisualStudio.Threading.Tests
             InnerPostToUnderlyingSynchronizationContext,
         }
 
-        [TestMethod, Timeout(TestTimeout), TestCategory("FailsInCloudTest")]
+        [TestMethod, Timeout(TestTimeout)]
         public void DelegationBehaviors()
         {
+            var logLock = new object();
             var log = new List<FactoryLogEntry>();
-            var innerFactory = new CustomizedFactory(this.context, log);
-            var delegatingFactory = new DelegatingFactory(innerFactory, log);
+            var innerFactory = new CustomizedFactory(this.context, log, logLock);
+            var delegatingFactory = new DelegatingFactory(innerFactory, log, logLock);
 
             delegatingFactory.Run(async delegate
             {
@@ -47,7 +49,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             });
 
             jt.Join();
-            ValidateDelegatingLog(log);
+            ValidateDelegatingLog(log, logLock);
         }
 
         /// <summary>
@@ -57,7 +59,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         public void DelegationSharesCollection()
         {
             var log = new List<FactoryLogEntry>();
-            var delegatingFactory = new DelegatingFactory(this.asyncPump, log);
+            var delegatingFactory = new DelegatingFactory(this.asyncPump, log, new object());
             JoinableTask jt = null;
             jt = delegatingFactory.RunAsync(async delegate
             {
@@ -68,16 +70,23 @@ namespace Microsoft.VisualStudio.Threading.Tests
             jt.Join();
         }
 
-        private static void ValidateDelegatingLog(IList<FactoryLogEntry> log)
+        private static void ValidateDelegatingLog(IList<FactoryLogEntry> log, object logLock)
         {
             Requires.NotNull(log, nameof(log));
 
-            for (int i = 0; i < log.Count; i += 2)
+            // All outer entries must have a pairing inner entry that appears
+            // after it in the list. Remove all pairs until list is empty.
+            while (log.Count > 0)
             {
-                FactoryLogEntry outerOperation = log[i];
-                FactoryLogEntry innerOperation = log[i + 1];
-                Assert.IsTrue((int)outerOperation % 2 == 1);
-                Assert.AreEqual(outerOperation + 1, innerOperation);
+                // An outer entry always be before its inner entry
+                Assert.IsTrue((int)log.First() % 2 == 1);
+
+                lock (logLock)
+                {
+                    // An outer entry must have a pairing inner entry
+                    Assert.IsTrue(log.Remove(log.First() + 1));
+                    log.RemoveAt(0);
+                }
             }
         }
 
@@ -87,42 +96,57 @@ namespace Microsoft.VisualStudio.Threading.Tests
         private class CustomizedFactory : JoinableTaskFactory
         {
             private readonly IList<FactoryLogEntry> log;
+            private readonly object logLock;
 
-            internal CustomizedFactory(JoinableTaskContext context, IList<FactoryLogEntry> log)
+            internal CustomizedFactory(JoinableTaskContext context, IList<FactoryLogEntry> log, object logLock)
                 : base(context)
             {
                 Requires.NotNull(log, nameof(log));
                 this.log = log;
+                this.logLock = logLock;
             }
 
-            internal CustomizedFactory(JoinableTaskCollection collection, IList<FactoryLogEntry> log)
+            internal CustomizedFactory(JoinableTaskCollection collection, IList<FactoryLogEntry> log, object logLock)
                 : base(collection)
             {
                 Requires.NotNull(log, nameof(log));
                 this.log = log;
+                this.logLock = logLock;
             }
 
             protected override void WaitSynchronously(Task task)
             {
-                this.log.Add(FactoryLogEntry.InnerWaitSynchronously);
+                lock (this.logLock)
+                {
+                    this.log.Add(FactoryLogEntry.InnerWaitSynchronously);
+                }
                 base.WaitSynchronously(task);
             }
 
             protected override void PostToUnderlyingSynchronizationContext(System.Threading.SendOrPostCallback callback, object state)
             {
-                this.log.Add(FactoryLogEntry.InnerPostToUnderlyingSynchronizationContext);
+                lock (this.logLock)
+                {
+                    this.log.Add(FactoryLogEntry.InnerPostToUnderlyingSynchronizationContext);
+                }
                 base.PostToUnderlyingSynchronizationContext(callback, state);
             }
 
             protected override void OnTransitioningToMainThread(JoinableTask joinableTask)
             {
-                this.log.Add(FactoryLogEntry.InnerOnTransitioningToMainThread);
+                lock (this.logLock)
+                {
+                    this.log.Add(FactoryLogEntry.InnerOnTransitioningToMainThread);
+                }
                 base.OnTransitioningToMainThread(joinableTask);
             }
 
             protected override void OnTransitionedToMainThread(JoinableTask joinableTask, bool canceled)
             {
-                this.log.Add(FactoryLogEntry.InnerOnTransitionedToMainThread);
+                lock (this.logLock)
+                {
+                    this.log.Add(FactoryLogEntry.InnerOnTransitionedToMainThread);
+                }
                 base.OnTransitionedToMainThread(joinableTask, canceled);
             }
         }
@@ -134,35 +158,49 @@ namespace Microsoft.VisualStudio.Threading.Tests
         private class DelegatingFactory : DelegatingJoinableTaskFactory
         {
             private readonly IList<FactoryLogEntry> log;
+            private readonly object logLock;
 
-            internal DelegatingFactory(JoinableTaskFactory innerFactory, IList<FactoryLogEntry> log)
+            internal DelegatingFactory(JoinableTaskFactory innerFactory, IList<FactoryLogEntry> log, object logLock)
                 : base(innerFactory)
             {
                 Requires.NotNull(log, nameof(log));
                 this.log = log;
+                this.logLock = logLock;
             }
 
             protected override void WaitSynchronously(Task task)
             {
-                this.log.Add(FactoryLogEntry.OuterWaitSynchronously);
+                lock (this.logLock)
+                {
+                    this.log.Add(FactoryLogEntry.OuterWaitSynchronously);
+                }
                 base.WaitSynchronously(task);
             }
 
             protected override void PostToUnderlyingSynchronizationContext(System.Threading.SendOrPostCallback callback, object state)
             {
-                this.log.Add(FactoryLogEntry.OuterPostToUnderlyingSynchronizationContext);
+                lock (this.logLock)
+                {
+                    this.log.Add(FactoryLogEntry.OuterPostToUnderlyingSynchronizationContext);
+                }
                 base.PostToUnderlyingSynchronizationContext(callback, state);
             }
 
             protected override void OnTransitioningToMainThread(JoinableTask joinableTask)
             {
-                this.log.Add(FactoryLogEntry.OuterOnTransitioningToMainThread);
+                lock (this.logLock)
+                {
+                    this.log.Add(FactoryLogEntry.OuterOnTransitioningToMainThread);
+                }
                 base.OnTransitioningToMainThread(joinableTask);
             }
 
             protected override void OnTransitionedToMainThread(JoinableTask joinableTask, bool canceled)
             {
-                this.log.Add(FactoryLogEntry.OuterOnTransitionedToMainThread);
+                lock (this.logLock)
+                {
+                    this.log.Add(FactoryLogEntry.OuterOnTransitionedToMainThread);
+                }
                 base.OnTransitionedToMainThread(joinableTask, canceled);
             }
         }
