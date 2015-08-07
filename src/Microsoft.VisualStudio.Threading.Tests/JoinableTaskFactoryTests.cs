@@ -30,12 +30,12 @@
                     // but who had issued that private lock to another thread, that was blocked waiting for
                     // JTC.Factory to return.
                     Task otherThread = Task.Run(delegate
-                        {
+                    {
                         // It so happens as of the time of this writing that the Factory property
                         // always requires a SyncContextLock. If it ever stops needing that,
                         // we'll need to change this delegate to do something else that requires it.
                         var temp = this.context.Factory;
-                        });
+                    });
 
                     // Wait up to the timeout interval. Don't Assert here because
                     // throwing in this callback results in JTF calling Environment.FailFast
@@ -73,12 +73,12 @@
                     // but who had issued that private lock to another thread, that was blocked waiting for
                     // JTC.Factory to return.
                     Task otherThread = Task.Run(delegate
-                        {
-                            // It so happens as of the time of this writing that the Factory property
-                            // always requires a SyncContextLock. If it ever stops needing that,
-                            // we'll need to change this delegate to do something else that requires it.
-                            var temp = this.context.Factory;
-                        });
+                    {
+                        // It so happens as of the time of this writing that the Factory property
+                        // always requires a SyncContextLock. If it ever stops needing that,
+                        // we'll need to change this delegate to do something else that requires it.
+                        var temp = this.context.Factory;
+                    });
 
                     // Wait up to the timeout interval. Don't Assert here because
                     // throwing in this callback results in JTF calling Environment.FailFast
