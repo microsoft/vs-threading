@@ -12,43 +12,89 @@
     public class JoinableTaskFactoryTests : JoinableTaskTestBase
     {
         [TestMethod, Timeout(TestTimeout)]
-        public async Task OnTransitioningToMainThread_DoesNotHoldPrivateLock()
+        public void OnTransitioningToMainThread_DoesNotHoldPrivateLock()
         {
-            // Get off the UI thread first so that we can transition (back) to it.
-            await TaskScheduler.Default;
-
-            var jtf = new JTFWithTransitioningBlock(this.context);
-            bool noDeadlockDetected = true;
-            jtf.OnTransitioningToMainThreadCallback = j =>
+            this.SimulateUIThread(async delegate
             {
-                // While blocking this thread, let's get another thread going that ends up calling into JTF.
-                // This test code may lead folks to say "ya, but is this realistic? Who would do this?"
-                // But this is just the simplest repro of a real hang we had in VS2015, where the code
-                // in the JTF overridden method called into another service, which also had a private lock
-                // but who had issued that private lock to another thread, that was blocked waiting for
-                // JTC.Factory to return.
-                Task otherThread = Task.Run(delegate
+                // Get off the UI thread first so that we can transition (back) to it.
+                await TaskScheduler.Default;
+
+                var jtf = new JTFWithTransitioningBlock(this.context);
+                bool noDeadlockDetected = true;
+                jtf.OnTransitioningToMainThreadCallback = j =>
                 {
-                    // It so happens as of the time of this writing that the Factory property
-                    // always requires a SyncContextLock. If it ever stops needing that,
-                    // we'll need to change this delegate to do something else that requires it.
-                    var temp = this.context.Factory;
+                    // While blocking this thread, let's get another thread going that ends up calling into JTF.
+                    // This test code may lead folks to say "ya, but is this realistic? Who would do this?"
+                    // But this is just the simplest repro of a real hang we had in VS2015, where the code
+                    // in the JTF overridden method called into another service, which also had a private lock
+                    // but who had issued that private lock to another thread, that was blocked waiting for
+                    // JTC.Factory to return.
+                    Task otherThread = Task.Run(delegate
+                        {
+                        // It so happens as of the time of this writing that the Factory property
+                        // always requires a SyncContextLock. If it ever stops needing that,
+                        // we'll need to change this delegate to do something else that requires it.
+                        var temp = this.context.Factory;
+                        });
+
+                    // Wait up to the timeout interval. Don't Assert here because
+                    // throwing in this callback results in JTF calling Environment.FailFast
+                    // which crashes the test runner. We'll assert on this local boolean
+                    // after we exit this critical section.
+                    noDeadlockDetected = otherThread.Wait(AsyncDelay);
+                };
+                var jt = jtf.RunAsync(async delegate
+                {
+                    await jtf.SwitchToMainThreadAsync();
                 });
 
-                // Wait up to the timeout interval. Don't Assert here because
-                // throwing in this callback results in JTF calling Environment.FailFast
-                // which crashes the test runner. We'll assert on this local boolean
-                // after we exit this critical section.
-                noDeadlockDetected = otherThread.Wait(TestTimeout);
-            };
-            var jt = jtf.RunAsync(async delegate
-            {
-                await jtf.SwitchToMainThreadAsync();
+                // If a deadlock is detected, that means the JTF called out to our code
+                // while holding a private lock. Bad thing.
+                Assert.IsTrue(noDeadlockDetected);
             });
+        }
 
-            // If a deadlock is detected, that means the JTF called out to our code
-            // while holding a private lock. Bad thing.
-            Assert.IsTrue(noDeadlockDetected);
+        [TestMethod, Timeout(TestTimeout)]
+        public void OnTransitionedToMainThread_DoesNotHoldPrivateLock()
+        {
+            this.SimulateUIThread(async delegate
+            {
+                // Get off the UI thread first so that we can transition (back) to it.
+                await TaskScheduler.Default;
+
+                var jtf = new JTFWithTransitioningBlock(this.context);
+                bool noDeadlockDetected = true;
+                jtf.OnTransitionedToMainThreadCallback = (j, c) =>
+                {
+                    // While blocking this thread, let's get another thread going that ends up calling into JTF.
+                    // This test code may lead folks to say "ya, but is this realistic? Who would do this?"
+                    // But this is just the simplest repro of a real hang we had in VS2015, where the code
+                    // in the JTF overridden method called into another service, which also had a private lock
+                    // but who had issued that private lock to another thread, that was blocked waiting for
+                    // JTC.Factory to return.
+                    Task otherThread = Task.Run(delegate
+                        {
+                            // It so happens as of the time of this writing that the Factory property
+                            // always requires a SyncContextLock. If it ever stops needing that,
+                            // we'll need to change this delegate to do something else that requires it.
+                            var temp = this.context.Factory;
+                        });
+
+                    // Wait up to the timeout interval. Don't Assert here because
+                    // throwing in this callback results in JTF calling Environment.FailFast
+                    // which crashes the test runner. We'll assert on this local boolean
+                    // after we exit this critical section.
+                    noDeadlockDetected = otherThread.Wait(TestTimeout);
+                };
+                jtf.Run(async delegate
+                {
+                    await jtf.SwitchToMainThreadAsync();
+                });
+
+                // If a deadlock is detected, that means the JTF called out to our code
+                // while holding a private lock. Bad thing.
+                Assert.IsTrue(noDeadlockDetected);
+            });
         }
 
         /// <summary>
