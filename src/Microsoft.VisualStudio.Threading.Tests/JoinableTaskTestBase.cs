@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Runtime.ExceptionServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -49,6 +50,36 @@
             var contribution = hangContributor.GetHangReport();
             var dgml = XDocument.Parse(contribution.Content);
             return dgml.Descendants(XName.Get("Node", DgmlNamespace)).Count(n => n.Attributes("Category").Any(c => c.Value == "Task"));
+        }
+
+        protected void SimulateUIThread(Func<Task> testMethod)
+        {
+            Verify.Operation(this.originalThread == Thread.CurrentThread, "We can only simulate the UI thread if you're already on it (the starting thread for the test).");
+
+            var frame = new DispatcherFrame();
+            Exception failure = null;
+            this.dispatcherContext.Post(async delegate
+            {
+                try
+                {
+                    await testMethod();
+                }
+                catch (Exception ex)
+                {
+                    failure = ex;
+                }
+                finally
+                {
+                    frame.Continue = false;
+                }
+            }, null);
+
+            Dispatcher.PushFrame(frame);
+            if (failure != null)
+            {
+                // Rethrow original exception without rewriting the callstack.
+                ExceptionDispatchInfo.Capture(failure).Throw();
+            }
         }
     }
 }

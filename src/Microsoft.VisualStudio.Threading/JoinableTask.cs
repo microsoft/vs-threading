@@ -526,30 +526,38 @@ namespace Microsoft.VisualStudio.Threading
                 List<AsyncManualResetEvent> eventsNeedNotify = null; // initialized if we should pulse it at the end of the method
                 bool postToFactory = false;
 
+                bool isCompleteRequested;
+                bool synchronouslyBlockingMainThread;
                 lock (this.owner.Context.SyncContextLock)
                 {
-                    if (this.IsCompleteRequested)
+                    isCompleteRequested = this.IsCompleteRequested;
+                    synchronouslyBlockingMainThread = this.SynchronouslyBlockingMainThread;
+                }
+
+                if (isCompleteRequested)
+                {
+                    // This job has already been marked for completion.
+                    // We need to forward the work to the fallback mechanisms.
+                    postToFactory = true;
+                }
+                else
+                {
+                    bool mainThreadQueueUpdated = false;
+                    bool backgroundThreadQueueUpdated = false;
+                    wrapper = SingleExecuteProtector.Create(this, d, state);
+
+                    if (ThreadingEventSource.Instance.IsEnabled())
                     {
-                        // This job has already been marked for completion.
-                        // We need to forward the work to the fallback mechanisms.
-                        postToFactory = true;
+                        ThreadingEventSource.Instance.PostExecutionStart(wrapper.GetHashCode(), mainThreadAffinitized);
                     }
-                    else
+
+                    if (mainThreadAffinitized && !synchronouslyBlockingMainThread)
                     {
-                        bool mainThreadQueueUpdated = false;
-                        bool backgroundThreadQueueUpdated = false;
-                        wrapper = SingleExecuteProtector.Create(this, d, state);
+                        wrapper.RaiseTransitioningEvents();
+                    }
 
-                        if (ThreadingEventSource.Instance.IsEnabled())
-                        {
-                            ThreadingEventSource.Instance.PostExecutionStart(wrapper.GetHashCode(), mainThreadAffinitized);
-                        }
-
-                        if (mainThreadAffinitized && !this.SynchronouslyBlockingMainThread)
-                        {
-                            wrapper.RaiseTransitioningEvents();
-                        }
-
+                    lock (this.owner.Context.SyncContextLock)
+                    {
                         if (mainThreadAffinitized)
                         {
                             if (this.mainThreadQueue == null)
