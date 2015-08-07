@@ -80,12 +80,12 @@ namespace Microsoft.VisualStudio.Threading.Tests
             while (log.Count > 0)
             {
                 // An outer entry always be before its inner entry
-                Assert.IsTrue((int)log.First() % 2 == 1);
+                Assert.IsTrue((int)log[0] % 2 == 1);
 
                 lock (logLock)
                 {
                     // An outer entry must have a pairing inner entry
-                    Assert.IsTrue(log.Remove(log.First() + 1));
+                    Assert.IsTrue(log.Remove(log[0] + 1));
                     log.RemoveAt(0);
                 }
             }
@@ -123,6 +123,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 {
                     this.log.Add(FactoryLogEntry.InnerWaitSynchronously);
                 }
+
                 base.WaitSynchronously(task);
             }
 
@@ -132,6 +133,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 {
                     this.log.Add(FactoryLogEntry.InnerPostToUnderlyingSynchronizationContext);
                 }
+
                 base.PostToUnderlyingSynchronizationContext(callback, state);
             }
 
@@ -141,6 +143,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 {
                     this.log.Add(FactoryLogEntry.InnerOnTransitioningToMainThread);
                 }
+
                 base.OnTransitioningToMainThread(joinableTask);
             }
 
@@ -150,6 +153,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 {
                     this.log.Add(FactoryLogEntry.InnerOnTransitionedToMainThread);
                 }
+
                 base.OnTransitionedToMainThread(joinableTask, canceled);
             }
         }
@@ -178,6 +182,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 {
                     this.log.Add(FactoryLogEntry.OuterWaitSynchronously);
                 }
+
                 base.WaitSynchronously(task);
             }
 
@@ -187,6 +192,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 {
                     this.log.Add(FactoryLogEntry.OuterPostToUnderlyingSynchronizationContext);
                 }
+
                 base.PostToUnderlyingSynchronizationContext(callback, state);
             }
 
@@ -196,6 +202,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 {
                     this.log.Add(FactoryLogEntry.OuterOnTransitioningToMainThread);
                 }
+
                 base.OnTransitioningToMainThread(joinableTask);
             }
 
@@ -205,6 +212,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 {
                     this.log.Add(FactoryLogEntry.OuterOnTransitionedToMainThread);
                 }
+
                 base.OnTransitionedToMainThread(joinableTask, canceled);
             }
         }
