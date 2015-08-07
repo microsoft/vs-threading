@@ -16,7 +16,6 @@ namespace Microsoft.VisualStudio.Threading.Tests
     [TestClass]
     public class DelegatingJoinableTaskFactoryTests : JoinableTaskTestBase
     {
-
         private enum FactoryLogEntry
         {
             OuterWaitSynchronously = 1,
@@ -75,18 +74,26 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Requires.NotNull(log, nameof(log));
             Requires.NotNull(logLock, nameof(logLock));
 
+            int count = 0;
+
+            lock (logLock)
+            {
+                count = log.Count;
+            }
+
             // All outer entries must have a pairing inner entry that appears
             // after it in the list. Remove all pairs until list is empty.
-            while (log.Count > 0)
+            while (count > 0)
             {
-                // An outer entry always be before its inner entry
-                Assert.IsTrue((int)log[0] % 2 == 1);
-
                 lock (logLock)
                 {
+                    // An outer entry always be before its inner entry
+                    Assert.IsTrue((int)log[0] % 2 == 1);
+
                     // An outer entry must have a pairing inner entry
                     Assert.IsTrue(log.Remove(log[0] + 1));
                     log.RemoveAt(0);
+                    count = log.Count;
                 }
             }
         }
