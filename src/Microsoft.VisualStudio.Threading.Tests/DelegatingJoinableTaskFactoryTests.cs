@@ -73,6 +73,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         private static void ValidateDelegatingLog(IList<FactoryLogEntry> log, object logLock)
         {
             Requires.NotNull(log, nameof(log));
+            Requires.NotNull(logLock, nameof(logLock));
 
             // All outer entries must have a pairing inner entry that appears
             // after it in the list. Remove all pairs until list is empty.
@@ -102,6 +103,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 : base(context)
             {
                 Requires.NotNull(log, nameof(log));
+                Requires.NotNull(logLock, nameof(logLock));
                 this.log = log;
                 this.logLock = logLock;
             }
@@ -110,6 +112,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 : base(collection)
             {
                 Requires.NotNull(log, nameof(log));
+                Requires.NotNull(logLock, nameof(logLock));
                 this.log = log;
                 this.logLock = logLock;
             }
@@ -164,6 +167,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 : base(innerFactory)
             {
                 Requires.NotNull(log, nameof(log));
+                Requires.NotNull(logLock, nameof(logLock));
                 this.log = log;
                 this.logLock = logLock;
             }
