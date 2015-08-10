@@ -10,6 +10,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -28,7 +29,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             InnerPostToUnderlyingSynchronizationContext,
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [TestMethod]
         public void DelegationBehaviors()
         {
             var logLock = new object();
@@ -76,25 +77,31 @@ namespace Microsoft.VisualStudio.Threading.Tests
 
             int count = 0;
 
-            lock (logLock)
-            {
-                count = log.Count;
-            }
+            // Using manual locking because we need to yield inside a loop
+            Monitor.Enter(logLock);
+            count = log.Count;
 
             // All outer entries must have a pairing inner entry that appears
             // after it in the list. Remove all pairs until list is empty.
             while (count > 0)
             {
-                lock (logLock)
-                {
-                    // An outer entry always be before its inner entry
-                    Assert.IsTrue((int)log[0] % 2 == 1);
+                // An outer entry always be before its inner entry
+                Assert.IsTrue((int)log[0] % 2 == 1);
 
-                    // An outer entry must have a pairing inner entry
-                    Assert.IsTrue(log.Remove(log[0] + 1));
-                    log.RemoveAt(0);
-                    count = log.Count;
-                }
+                // An outer entry must have a pairing inner entry
+                Assert.IsTrue(log.Remove(log[0] + 1));
+                log.RemoveAt(0);
+
+                Monitor.Exit(logLock); // quickly yield the lock incase a thread is still running
+                Thread.Yield();
+                Monitor.Enter(logLock);
+
+                count = log.Count;
+            }
+
+            if (Monitor.IsEntered(logLock))
+            {
+                Monitor.Exit(logLock);
             }
         }
 
