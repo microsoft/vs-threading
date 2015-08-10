@@ -29,7 +29,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             InnerPostToUnderlyingSynchronizationContext,
         }
 
-        [TestMethod]
+        [TestMethod, Timeout(TestTimeout)]
         public void DelegationBehaviors()
         {
             var logLock = new object();
