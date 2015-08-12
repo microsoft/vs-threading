@@ -31,11 +31,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
 
         private object LogLock { get; set; }
 
-        private bool Validating { get; set; }
-
         private IList<FactoryLogEntry> Log { get; set; }
-
-        private Exception Ex { get; set; }
 
         [TestInitialize]
         public override void Initialize()
@@ -43,7 +39,6 @@ namespace Microsoft.VisualStudio.Threading.Tests
             base.Initialize();
 
             this.LogLock = new object();
-            this.Validating = false;
             this.Log = new List<FactoryLogEntry>();
         }
 
@@ -65,15 +60,15 @@ namespace Microsoft.VisualStudio.Threading.Tests
             });
 
             jt.Join();
-            IList<FactoryLogEntry> logCopy;
+
             lock (this.LogLock)
             {
-                this.Validating = true;
-                logCopy = this.Log.ToList();
+                while (!ValidateDelegatingLog(this.Log.ToList()))
+                {
+                    Console.WriteLine("Waiting with a count of {0}", this.Log.Count);
+                    Assert.IsTrue(Monitor.Wait(this.LogLock, AsyncDelay));
+                }
             }
-
-            ValidateDelegatingLog(logCopy);
-            Assert.IsNull(this.Ex);
         }
 
         /// <summary>
@@ -94,7 +89,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             jt.Join();
         }
 
-        private static void ValidateDelegatingLog(IList<FactoryLogEntry> log)
+        private static bool ValidateDelegatingLog(IList<FactoryLogEntry> log)
         {
             Requires.NotNull(log, nameof(log));
 
@@ -103,25 +98,30 @@ namespace Microsoft.VisualStudio.Threading.Tests
             while (log.Count > 0)
             {
                 // An outer entry always be before its inner entry
-                Assert.IsTrue((int)log[0] % 2 == 1);
+                if ((int)log[0] % 2 == 0)
+                {
+                    return false;
+                }
 
                 // An outer entry must have a pairing inner entry
-                Assert.IsTrue(log.Remove(log[0] + 1));
+                if (!log.Remove(log[0] + 1))
+                {
+                    return false;
+                }
+
                 log.RemoveAt(0);
             }
+
+            return true;
         }
 
         private void AddToLog(FactoryLogEntry entry)
         {
             lock (this.LogLock)
             {
-                if (this.Validating)
-                {
-                    this.Ex = new InvalidOperationException("Log was added to during validation. No threads should be running right now.");
-                    throw this.Ex;
-                }
-
+                Console.WriteLine($"Adding entry {entry} (#{this.Log.Count + 1}) from thread {Environment.CurrentManagedThreadId}");
                 this.Log.Add(entry);
+                Monitor.Pulse(this.LogLock);
             }
         }
 
