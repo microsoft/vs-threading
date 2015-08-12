@@ -17,6 +17,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
     [TestClass]
     public class DelegatingJoinableTaskFactoryTests : JoinableTaskTestBase
     {
+        private object logLock;
+
+        private IList<FactoryLogEntry> log;
+
         private enum FactoryLogEntry
         {
             OuterWaitSynchronously = 1,
@@ -29,17 +33,13 @@ namespace Microsoft.VisualStudio.Threading.Tests
             InnerPostToUnderlyingSynchronizationContext,
         }
 
-        private object LogLock { get; set; }
-
-        private IList<FactoryLogEntry> Log { get; set; }
-
         [TestInitialize]
         public override void Initialize()
         {
             base.Initialize();
 
-            this.LogLock = new object();
-            this.Log = new List<FactoryLogEntry>();
+            this.logLock = new object();
+            this.log = new List<FactoryLogEntry>();
         }
 
         [TestMethod, Timeout(TestTimeout)]
@@ -61,12 +61,12 @@ namespace Microsoft.VisualStudio.Threading.Tests
 
             jt.Join();
 
-            lock (this.LogLock)
+            lock (this.logLock)
             {
-                while (!ValidateDelegatingLog(this.Log.ToList()))
+                while (!ValidateDelegatingLog(this.log.ToList()))
                 {
-                    Console.WriteLine("Waiting with a count of {0}", this.Log.Count);
-                    Assert.IsTrue(Monitor.Wait(this.LogLock, AsyncDelay));
+                    Console.WriteLine("Waiting with a count of {0}", this.log.Count);
+                    Assert.IsTrue(Monitor.Wait(this.logLock, AsyncDelay));
                 }
             }
         }
@@ -117,11 +117,11 @@ namespace Microsoft.VisualStudio.Threading.Tests
 
         private void AddToLog(FactoryLogEntry entry)
         {
-            lock (this.LogLock)
+            lock (this.logLock)
             {
-                Console.WriteLine($"Adding entry {entry} (#{this.Log.Count + 1}) from thread {Environment.CurrentManagedThreadId}");
-                this.Log.Add(entry);
-                Monitor.Pulse(this.LogLock);
+                Console.WriteLine($"Adding entry {entry} (#{this.log.Count + 1}) from thread {Environment.CurrentManagedThreadId}");
+                this.log.Add(entry);
+                Monitor.Pulse(this.logLock);
             }
         }
 
@@ -130,7 +130,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         /// </summary>
         private class CustomizedFactory : JoinableTaskFactory
         {
-            private Action<FactoryLogEntry> addToLog;
+            private readonly Action<FactoryLogEntry> addToLog;
 
             internal CustomizedFactory(JoinableTaskContext context, Action<FactoryLogEntry> addToLog)
                 : base(context)
@@ -177,7 +177,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         /// </summary>
         private class DelegatingFactory : DelegatingJoinableTaskFactory
         {
-            private Action<FactoryLogEntry> addToLog;
+            private readonly Action<FactoryLogEntry> addToLog;
 
             internal DelegatingFactory(JoinableTaskFactory innerFactory, Action<FactoryLogEntry> addToLog)
                 : base(innerFactory)
