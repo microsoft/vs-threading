@@ -12,6 +12,10 @@
       <Platform>AnyCPU</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Desktop\Microsoft.VisualStudio.Threading.Desktop.csproj" />
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Portable\Microsoft.VisualStudio.Threading.Portable.csproj" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>c51acf4a-3e2c-44b2-99fc-1a838518c690</ProjectGuid>
   </PropertyGroup>
@@ -35,9 +39,6 @@
     <RequireLicenseAcceptance>true</RequireLicenseAcceptance>
     <ReleaseNotes>https://www.visualstudio.com/news/vs2015-vs</ReleaseNotes>
   </PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj" />
-  </ItemGroup>
   <Import Project="$(NuProjPath)\NuProj.targets" />
   <Target Name="GetNuPkgVersion" DependsOnTargets="GetBuildVersion">
     <PropertyGroup>
