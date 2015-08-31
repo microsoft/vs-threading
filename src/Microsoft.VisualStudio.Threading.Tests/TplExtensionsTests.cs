@@ -548,6 +548,71 @@
             await Assert.ThrowsAsync<ObjectDisposedException>(() => TplExtensions.ToTask(handle));
         }
 
+        [TestMethod, ExpectedException(typeof(ArgumentNullException))]
+        public void WithTimeout_NonGeneric_NullTask()
+        {
+            TplExtensions.WithTimeout(null, TimeSpan.FromSeconds(1)).Forget();
+        }
+
+        [TestMethod, ExpectedException(typeof(ArgumentException))]
+        public void WithTimeout_NonGeneric_MinusOneTimeout()
+        {
+            var tcs = new TaskCompletionSource<object>();
+            TplExtensions.WithTimeout(tcs.Task, TimeSpan.FromMilliseconds(-1)).Forget(); // -1 = Infinity for some use cases
+        }
+
+        [TestMethod]
+        public void WithTimeout_NonGeneric_TimesOut()
+        {
+            // Use a SynchronizationContext to ensure that we never deadlock even when synchronously blocking.
+            this.ExecuteOnDispatcher(delegate
+            {
+                var tcs = new TaskCompletionSource<object>();
+                Task originalTask = tcs.Task; // cast up to Task from Task<T> so we are testing the non-generic extension method.
+                Task timeoutTask = tcs.Task.WithTimeout(TimeSpan.FromMilliseconds(1));
+                try
+                {
+                    timeoutTask.GetAwaiter().GetResult(); // sync block to ensure no deadlock occurs
+                    Assert.Fail("Expected exception not thrown.");
+                }
+                catch (TimeoutException)
+                {
+                    // expected timeout.
+                }
+            });
+        }
+
+        [TestMethod]
+        public void WithTimeout_NonGeneric_CompletesFirst()
+        {
+            // Use a SynchronizationContext to ensure that we never deadlock even when synchronously blocking.
+            this.ExecuteOnDispatcher(delegate
+            {
+                var tcs = new TaskCompletionSource<object>();
+                Task originalTask = tcs.Task; // cast up to Task from Task<T> so we are testing the non-generic extension method.
+                Task timeoutTask = tcs.Task.WithTimeout(TimeSpan.FromDays(1));
+                Assert.IsFalse(timeoutTask.IsCompleted);
+                tcs.SetResult(null);
+                Assert.AreEqual(TaskStatus.RanToCompletion, timeoutTask.Status);
+            });
+        }
+
+        [TestMethod]
+        public void WithTimeout_NonGeneric_CompletesFirstAndThrows()
+        {
+            // Use a SynchronizationContext to ensure that we never deadlock even when synchronously blocking.
+            this.ExecuteOnDispatcher(delegate
+            {
+                var tcs = new TaskCompletionSource<object>();
+                Task originalTask = tcs.Task; // cast up to Task from Task<T> so we are testing the non-generic extension method.
+                Task timeoutTask = tcs.Task.WithTimeout(TimeSpan.FromDays(1));
+                Assert.IsFalse(timeoutTask.IsCompleted);
+                tcs.SetException(new ApplicationException());
+                Assert.AreEqual(TaskStatus.Faulted, timeoutTask.Status);
+                Assert.AreSame(tcs.Task.Exception.InnerException, timeoutTask.Exception.InnerException);
+            });
+        }
+
         private static void InvokeAsyncHelper(object sender, EventArgs args)
         {
             int invoked = 0;
