@@ -35,11 +35,14 @@
         /// </summary>
         private static bool doNotWaitForLockCompletionAtTestCleanup;
 
+        public TestContext TestContext { get; set; }
+
         [TestInitialize]
         public void Initialize()
         {
             this.asyncLock = new AsyncReaderWriterLock();
             doNotWaitForLockCompletionAtTestCleanup = false;
+            this.SetTestContext(this.TestContext);
         }
 
         [TestCleanup]
@@ -255,7 +258,7 @@
 
                     long memory2 = GC.GetTotalMemory(true);
                     long allocated = (memory2 - memory1) / iterations;
-                    this.TestContext.WriteLine("Allocated bytes: {0} ({1} allowed)", allocated, MaxGarbagePerLock);
+                    this.Logger.WriteLine("Allocated bytes: {0} ({1} allowed)", allocated, MaxGarbagePerLock);
                     passingAttemptObserved = allocated <= MaxGarbagePerLock;
                 }
 
@@ -1579,72 +1582,72 @@
             await Task.WhenAll(
                 Task.Run(async delegate
                 {
-                    this.TestContext.WriteLine("Task 1: Requesting an upgradeable read lock.");
+                    this.Logger.WriteLine("Task 1: Requesting an upgradeable read lock.");
                     using (await this.asyncLock.UpgradeableReadLockAsync())
                     {
-                        this.TestContext.WriteLine("Task 1: Acquired an upgradeable read lock.");
+                        this.Logger.WriteLine("Task 1: Acquired an upgradeable read lock.");
                         var nowait = upgradeableLockAcquired.SetAsync();
                         await Task.WhenAll(readLockAcquired.Task, contendingWriteLockRequested.Task);
 
-                        this.TestContext.WriteLine("Task 1: Requesting a write lock.");
+                        this.Logger.WriteLine("Task 1: Requesting a write lock.");
                         var upgradeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
-                        this.TestContext.WriteLine("Task 1: Write lock requested.");
+                        this.Logger.WriteLine("Task 1: Write lock requested.");
                         Assert.IsFalse(upgradeAwaiter.IsCompleted); // contested lock should not be immediately available.
                         upgradeAwaiter.OnCompleted(delegate
                         {
                             using (upgradeAwaiter.GetResult())
                             {
-                                this.TestContext.WriteLine("Task 1: Write lock acquired.");
+                                this.Logger.WriteLine("Task 1: Write lock acquired.");
                                 writeLockAcquired.SetAsync();
                             }
                         });
 
                         nowait = writeLockRequested.SetAsync();
-                        this.TestContext.WriteLine("Task 1: Waiting for write lock acquisition.");
+                        this.Logger.WriteLine("Task 1: Waiting for write lock acquisition.");
                         await writeLockAcquired.Task;
-                        this.TestContext.WriteLine("Task 1: Write lock acquisition complete.  Exiting task 1.");
+                        this.Logger.WriteLine("Task 1: Write lock acquisition complete.  Exiting task 1.");
                     }
                 }),
                 Task.Run(async delegate
                 {
-                    this.TestContext.WriteLine("Task 2: Waiting for upgradeable read lock acquisition in task 1.");
+                    this.Logger.WriteLine("Task 2: Waiting for upgradeable read lock acquisition in task 1.");
                     await upgradeableLockAcquired.Task;
-                    this.TestContext.WriteLine("Task 2: Requesting read lock.");
+                    this.Logger.WriteLine("Task 2: Requesting read lock.");
                     using (await this.asyncLock.ReadLockAsync())
                     {
-                        this.TestContext.WriteLine("Task 2: Acquired read lock.");
+                        this.Logger.WriteLine("Task 2: Acquired read lock.");
                         var nowait = readLockAcquired.SetAsync();
-                        this.TestContext.WriteLine("Task 2: Awaiting write lock request by task 1.");
+                        this.Logger.WriteLine("Task 2: Awaiting write lock request by task 1.");
                         await writeLockRequested.Task;
-                        this.TestContext.WriteLine("Task 2: Releasing read lock.");
+                        this.Logger.WriteLine("Task 2: Releasing read lock.");
                     }
 
-                    this.TestContext.WriteLine("Task 2: Released read lock.");
+                    this.Logger.WriteLine("Task 2: Released read lock.");
                 }),
                 Task.Run(async delegate
                 {
-                    this.TestContext.WriteLine("Task 3: Waiting for upgradeable read lock acquisition in task 1 and read lock acquisition in task 2.");
+                    this.Logger.WriteLine("Task 3: Waiting for upgradeable read lock acquisition in task 1 and read lock acquisition in task 2.");
                     await Task.WhenAll(upgradeableLockAcquired.Task, readLockAcquired.Task);
-                    this.TestContext.WriteLine("Task 3: Requesting write lock.");
+                    this.Logger.WriteLine("Task 3: Requesting write lock.");
                     var writeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
-                    this.TestContext.WriteLine("Task 3: Write lock requested.");
+                    this.Logger.WriteLine("Task 3: Write lock requested.");
                     Assert.IsFalse(writeAwaiter.IsCompleted);
                     var contestingWriteLockAcquired = new TaskCompletionSource<object>();
                     writeAwaiter.OnCompleted(delegate
                     {
                         using (writeAwaiter.GetResult())
                         {
-                            this.TestContext.WriteLine("Task 3: Write lock acquired.");
+                            this.Logger.WriteLine("Task 3: Write lock acquired.");
                             contestingWriteLockAcquired.SetAsync();
-                            this.TestContext.WriteLine("Task 3: Releasing write lock.");
+                            this.Logger.WriteLine("Task 3: Releasing write lock.");
                         }
 
-                        this.TestContext.WriteLine("Task 3: Write lock released.");
+                        this.Logger.WriteLine("Task 3: Write lock released.");
                     });
                     var nowait = contendingWriteLockRequested.SetAsync();
-                    this.TestContext.WriteLine("Task 3: Awaiting write lock acquisition.");
+                    this.Logger.WriteLine("Task 3: Awaiting write lock acquisition.");
                     await contestingWriteLockAcquired.Task;
-                    this.TestContext.WriteLine("Task 3: Write lock acquisition complete.");
+                    this.Logger.WriteLine("Task 3: Write lock acquisition complete.");
                 }));
         }
 
@@ -2038,30 +2041,30 @@
             await Task.WhenAll(
                 Task.Run(async delegate
                 {
-                    this.TestContext.WriteLine("About to wait for first read lock.");
+                    this.Logger.WriteLine("About to wait for first read lock.");
                     using (await this.asyncLock.ReadLockAsync())
                     {
-                        this.TestContext.WriteLine("First read lock now held, and waiting for second reader to get blocked.");
+                        this.Logger.WriteLine("First read lock now held, and waiting for second reader to get blocked.");
                         await readLockHeld.SetAsync();
                         await newReaderWaiting.Task;
-                        this.TestContext.WriteLine("Releasing first read lock.");
+                        this.Logger.WriteLine("Releasing first read lock.");
                     }
 
-                    this.TestContext.WriteLine("First read lock released.");
+                    this.Logger.WriteLine("First read lock released.");
                 }),
                 Task.Run(async delegate
                 {
                     await readLockHeld.Task;
                     var writeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
                     Assert.IsFalse(writeAwaiter.IsCompleted, "The writer should not be issued a lock while a read lock is held.");
-                    this.TestContext.WriteLine("Write lock in queue.");
+                    this.Logger.WriteLine("Write lock in queue.");
                     writeAwaiter.OnCompleted(delegate
                     {
                         using (writeAwaiter.GetResult())
                         {
                             try
                             {
-                                this.TestContext.WriteLine("Write lock issued.");
+                                this.Logger.WriteLine("Write lock issued.");
                                 Assert.IsFalse(newReaderLockHeld.Task.IsCompleted, "Read lock should not be issued till after the write lock is released.");
                                 writerLockHeld.SetResult(null); // must not be the asynchronous Set() extension method since we use it as a flag to check ordering later.
                             }
@@ -2078,12 +2081,12 @@
                 await writerWaitingForLock.Task;
                 var readAwaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
                 Assert.IsFalse(readAwaiter.IsCompleted, "The new reader should not be issued a lock while a write lock is pending.");
-                this.TestContext.WriteLine("Second reader in queue.");
+                this.Logger.WriteLine("Second reader in queue.");
                 readAwaiter.OnCompleted(delegate
                 {
                     try
                     {
-                        this.TestContext.WriteLine("Second read lock issued.");
+                        this.Logger.WriteLine("Second read lock issued.");
                         using (readAwaiter.GetResult())
                         {
                             Assert.IsTrue(writerLockHeld.Task.IsCompleted);
@@ -2560,7 +2563,7 @@
                 {
                     using (await this.asyncLock.WriteLockAsync())
                     {
-                        this.TestContext.WriteLine("First write lock acquired.");
+                        this.Logger.WriteLine("First write lock acquired.");
                         await firstLockAcquired.SetAsync();
                         await completeSignaled.Task;
                         Assert.IsFalse(this.asyncLock.Completion.IsCompleted);
@@ -2573,12 +2576,12 @@
                     await firstLockAcquired.Task;
                     var secondWriteAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
                     Assert.IsFalse(secondWriteAwaiter.IsCompleted);
-                    this.TestContext.WriteLine("Second write lock request pended.");
+                    this.Logger.WriteLine("Second write lock request pended.");
                     secondWriteAwaiter.OnCompleted(delegate
                     {
                         using (secondWriteAwaiter.GetResult())
                         {
-                            this.TestContext.WriteLine("Second write lock acquired.");
+                            this.Logger.WriteLine("Second write lock acquired.");
                             secondLockAcquired.SetAsync();
                             Assert.IsFalse(this.asyncLock.Completion.IsCompleted);
                         }
@@ -2593,7 +2596,7 @@
             Task.Run(async delegate
             {
                 await secondLockQueued.Task;
-                this.TestContext.WriteLine("Calling Complete() method.");
+                this.Logger.WriteLine("Calling Complete() method.");
                 this.asyncLock.Complete();
                 await completeSignaled.SetAsync();
             }),
@@ -3525,7 +3528,7 @@
 
             foreach (var scenario in scenarios)
             {
-                this.TestContext.WriteLine("Testing {1} scenario: {0}", scenario.Key, scenario.Value ? "valid" : "invalid");
+                this.Logger.WriteLine("Testing {1} scenario: {0}", scenario.Key, scenario.Value ? "valid" : "invalid");
                 await this.NestedLockHelper(scenario.Key, scenario.Value);
             }
         }
@@ -3911,7 +3914,7 @@
                     long memory2 = GC.GetTotalMemory(false);
                     long allocated = (memory2 - memory1) / iterations;
                     long allowed = 100 + MaxGarbagePerLock + (yieldingLock ? MaxGarbagePerYield : 0);
-                    this.TestContext.WriteLine("Allocated bytes: {0} ({1} allowed)", allocated, allowed);
+                    this.Logger.WriteLine("Allocated bytes: {0} ({1} allowed)", allocated, allowed);
                     passingAttemptObserved = allocated <= allowed;
                 }
 
@@ -3958,7 +3961,7 @@
                     long allocated = (memory2 - memory1) / iterations;
                     const int NestingLevel = 3;
                     long allowed = (MaxGarbagePerLock * NestingLevel) + (yieldingLock ? MaxGarbagePerYield : 0);
-                    this.TestContext.WriteLine("Allocated bytes: {0} ({1} allowed)", allocated, allowed);
+                    this.Logger.WriteLine("Allocated bytes: {0} ({1} allowed)", allocated, allowed);
                     passingAttemptObserved = allocated <= allowed;
                 }
 
@@ -3991,7 +3994,7 @@
 
                     long memory2 = GC.GetTotalMemory(false);
                     long allocated = (memory2 - memory1) / iterations;
-                    this.TestContext.WriteLine("Allocated bytes: {0}", allocated);
+                    this.Logger.WriteLine("Allocated bytes: {0}", allocated);
                     passingAttemptObserved = allocated <= MaxGarbagePerLock;
                 }
 
@@ -4036,7 +4039,7 @@
 
                     long memory2 = GC.GetTotalMemory(false);
                     long allocated = (memory2 - memory1) / iterations;
-                    this.TestContext.WriteLine("Allocated bytes: {0}", allocated);
+                    this.Logger.WriteLine("Allocated bytes: {0}", allocated);
                     const int NestingLevel = 3;
                     passingAttemptObserved = allocated <= MaxGarbagePerLock * NestingLevel;
                 }

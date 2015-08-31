@@ -18,10 +18,13 @@
         // we're testing OUR stuff not THEIRS.
         private Microsoft.VisualStudio.Threading.AsyncLocal<GenericParameterHelper> asyncLocal;
 
+        public TestContext TestContext { get; set; }
+
         [TestInitialize]
         public void Initialize()
         {
             this.asyncLocal = new Microsoft.VisualStudio.Threading.AsyncLocal<GenericParameterHelper>();
+            this.SetTestContext(this.TestContext);
         }
 
         [TestMethod]
@@ -131,7 +134,7 @@
             // serialize->deserialize clone, which can break the reference equality
             // of the objects stored in the AsyncLocal class's private fields
             // if it's not done properly.
-            this.TestContext.WriteLine("Foobar");
+            this.Logger.WriteLine("Foobar");
 
             Assert.IsNotNull(this.asyncLocal.Value);
             Assert.AreSame(value, this.asyncLocal.Value);

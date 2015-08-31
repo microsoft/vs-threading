@@ -1,5 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\..\packages\xunit.runner.visualstudio.2.0.1\build\net20\xunit.runner.visualstudio.props" Condition="Exists('..\..\packages\xunit.runner.visualstudio.2.0.1\build\net20\xunit.runner.visualstudio.props')" />
+  <Import Project="..\..\packages\xunit.core.2.0.0\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS\xunit.core.props" Condition="Exists('..\..\packages\xunit.core.2.0.0\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS\xunit.core.props')" />
   <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.props" Condition="Exists('..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.props')" />
   <Import Project="..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.props" Condition="Exists('..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.props')" />
   <Import Project="..\..\packages\MicroBuild.NonShipping.1.0.0-alpha-g914708b2a3\build\MicroBuild.NonShipping.props" Condition="Exists('..\..\packages\MicroBuild.NonShipping.1.0.0-alpha-g914708b2a3\build\MicroBuild.NonShipping.props')" />
@@ -54,6 +56,18 @@
     <Reference Include="System.XML" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="WindowsBase" />
+    <Reference Include="xunit.abstractions, Version=2.0.0.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\xunit.abstractions.2.0.0\lib\net35\xunit.abstractions.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="xunit.assert, Version=2.0.0.2929, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\xunit.assert.2.0.0\lib\portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS\xunit.assert.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="xunit.core, Version=2.0.0.2929, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\xunit.extensibility.core.2.0.0\lib\portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS\xunit.core.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
   </ItemGroup>
   <Choose>
     <When Condition="('$(VisualStudioVersion)' == '10.0' or '$(VisualStudioVersion)' == '') and '$(TargetFrameworkVersion)' == 'v3.5'">
@@ -156,6 +170,8 @@
     <Error Condition="!Exists('..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.targets'))" />
     <Error Condition="!Exists('..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.props'))" />
     <Error Condition="!Exists('..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.targets'))" />
+    <Error Condition="!Exists('..\..\packages\xunit.core.2.0.0\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS\xunit.core.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\xunit.core.2.0.0\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS\xunit.core.props'))" />
+    <Error Condition="!Exists('..\..\packages\xunit.runner.visualstudio.2.0.1\build\net20\xunit.runner.visualstudio.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\xunit.runner.visualstudio.2.0.1\build\net20\xunit.runner.visualstudio.props'))" />
   </Target>
   <Import Project="..\..\packages\Nerdbank.GitVersioning.1.0.15136-beta\build\NerdBank.GitVersioning.targets" Condition="Exists('..\..\packages\Nerdbank.GitVersioning.1.0.15136-beta\build\NerdBank.GitVersioning.targets')" />
   <Import Project="..\..\packages\MicroBuild.NonShipping.1.0.0-alpha-g914708b2a3\build\MicroBuild.NonShipping.targets" Condition="Exists('..\..\packages\MicroBuild.NonShipping.1.0.0-alpha-g914708b2a3\build\MicroBuild.NonShipping.targets')" />
