@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Runtime.ExceptionServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -188,6 +189,37 @@
             this.ExecuteOnDispatcher(() => this.CheckGCPressureAsync(scenario, maxBytesAllocated));
         }
 
+        protected void ExecuteOnSTA(Action action)
+        {
+            Requires.NotNull(action, nameof(action));
+
+            if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
+            {
+                action();
+                return;
+            }
+
+            Exception staFailure = null;
+            var staThread = new Thread(state =>
+            {
+                try
+                {
+                    action();
+                }
+                catch (Exception ex)
+                {
+                    staFailure = ex;
+                }
+            });
+            staThread.SetApartmentState(ApartmentState.STA);
+            staThread.Start();
+            staThread.Join();
+            if (staFailure != null)
+            {
+                ExceptionDispatchInfo.Capture(staFailure).Throw(); // rethrow preserving callstack.
+            }
+        }
+
         protected void ExecuteOnDispatcher(Action action)
         {
             this.ExecuteOnDispatcher(delegate
@@ -199,37 +231,39 @@
 
         protected void ExecuteOnDispatcher(Func<Task> action)
         {
-            Assumes.True(Thread.CurrentThread.GetApartmentState() == ApartmentState.STA);
-            if (!(SynchronizationContext.Current is DispatcherSynchronizationContext))
+            this.ExecuteOnSTA(() =>
             {
-                SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext());
-            }
-
-            var frame = new DispatcherFrame();
-            Exception failure = null;
-            SynchronizationContext.Current.Post(
-                async _ =>
+                if (!(SynchronizationContext.Current is DispatcherSynchronizationContext))
                 {
-                    try
-                    {
-                        await action();
-                    }
-                    catch (Exception ex)
-                    {
-                        failure = ex;
-                    }
-                    finally
-                    {
-                        frame.Continue = false;
-                    }
-                },
-                null);
+                    SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext());
+                }
 
-            Dispatcher.PushFrame(frame);
-            if (failure != null)
-            {
-                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
-            }
+                var frame = new DispatcherFrame();
+                Exception failure = null;
+                SynchronizationContext.Current.Post(
+                    async _ =>
+                    {
+                        try
+                        {
+                            await action();
+                        }
+                        catch (Exception ex)
+                        {
+                            failure = ex;
+                        }
+                        finally
+                        {
+                            frame.Continue = false;
+                        }
+                    },
+                    null);
+
+                Dispatcher.PushFrame(frame);
+                if (failure != null)
+                {
+                    System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
+                }
+            });
         }
 
         /// <summary>

@@ -75,6 +75,8 @@ namespace Microsoft.VisualStudio.Threading
         /// </returns>
         public static async Task WithTimeout(this Task task, TimeSpan timeout)
         {
+            Requires.NotNull(task, nameof(task));
+
             using (var timerCancellation = new CancellationTokenSource())
             {
                 Task timeoutTask = Task.Delay(timeout, timerCancellation.Token);

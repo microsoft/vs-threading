@@ -114,6 +114,7 @@
     <Compile Include="ListOfOftenOneTests.cs" />
     <Compile Include="ProgressWithCompletionTests.cs" />
     <Compile Include="TestBase.cs" />
+    <Compile Include="TestBaseTests.cs" />
     <Compile Include="TplExtensionsTests.cs" />
     <Compile Include="TestUtilitiesTests.cs" />
     <Compile Include="TestUtilities.cs" />
