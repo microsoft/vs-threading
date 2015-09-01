@@ -16,6 +16,15 @@
     [TestClass]
     public class JoinableTaskTests : JoinableTaskTestBase
     {
+        public TestContext TestContext { get; set; }
+
+        [TestInitialize]
+        public override void Initialize()
+        {
+            base.Initialize();
+            this.SetTestContext(this.TestContext);
+        }
+
         protected override JoinableTaskContext CreateJoinableTaskContext()
         {
             return new DerivedJoinableTaskContext();
@@ -3269,8 +3278,8 @@
             context = context ?? this.context;
             IHangReportContributor contributor = context;
             var report = contributor.GetHangReport();
-            this.TestContext.WriteLine("DGML task graph");
-            this.TestContext.WriteLine(report.Content);
+            this.Logger.WriteLine("DGML task graph");
+            this.Logger.WriteLine(report.Content);
         }
 
         /// <summary>

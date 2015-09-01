@@ -7,7 +7,7 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Xunit;
-    using GenericParameterHelper = TestTools.UnitTesting.GenericParameterHelper;
+    using GenericParameterHelper = Microsoft.VisualStudio.TestTools.UnitTesting.GenericParameterHelper;
 
     public class TplExtensionsTests : TestBase
     {
@@ -32,16 +32,14 @@
         [Fact]
         public void ApplyResultToNullTask()
         {
-            Assert.Throws<ArgumentNullException>(() =>
-                TplExtensions.ApplyResultTo(null, new TaskCompletionSource<object>()));
+            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo(null, new TaskCompletionSource<object>()));
         }
 
         [Fact]
         public void ApplyResultToNullTaskSource()
         {
             var tcs = new TaskCompletionSource<object>();
-            Assert.Throws<ArgumentNullException>(() =>
-                TplExtensions.ApplyResultTo(tcs.Task, null));
+            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo(tcs.Task, null));
         }
 
         [Fact]
@@ -91,16 +89,14 @@
         [Fact]
         public void ApplyResultToNullTaskNonGeneric()
         {
-            Assert.Throws<ArgumentNullException>(() =>
-                TplExtensions.ApplyResultTo((Task)null, new TaskCompletionSource<object>()));
+            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo((Task)null, new TaskCompletionSource<object>()));
         }
 
         [Fact]
         public void ApplyResultToNullTaskSourceNonGeneric()
         {
             var tcs = new TaskCompletionSource<object>();
-            Assert.Throws<ArgumentNullException>(() =>
-                TplExtensions.ApplyResultTo((Task)tcs.Task, (TaskCompletionSource<object>)null));
+            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo((Task)tcs.Task, (TaskCompletionSource<object>)null));
         }
 
         [Fact]
@@ -545,12 +541,11 @@
         }
 
         [Fact]
-        public void ToTaskOnDisposedHandle()
+        public async Task ToTaskOnDisposedHandle()
         {
             var handle = new ManualResetEvent(false);
             handle.Dispose();
-            Assert.Throws<ObjectDisposedException>(new Action(() =>
-                TplExtensions.ToTask(handle)));
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => TplExtensions.ToTask(handle));
         }
 
         private static void InvokeAsyncHelper(object sender, EventArgs args)

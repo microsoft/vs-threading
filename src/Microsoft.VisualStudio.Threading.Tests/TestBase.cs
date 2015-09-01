@@ -23,29 +23,15 @@
         }
 
         protected TestBase(ITestOutputHelper logger)
+            : this()
         {
             this.Logger = logger;
         }
 
-        protected ITestOutputHelper Logger { get; }
-
-        public TestContext TestContext { get; set; }
-
-        protected void Log(string message, params object[] args)
-        {
-            if (this.TestContext != null)
-            {
-                this.TestContext.WriteLine(message, args);
-            }
-            else if (this.Logger != null)
-            {
-                this.Logger.WriteLine(message, args);
-            }
-            else
-            {
-                Assert.Fail("Test class did not supply a logger.");
-            }
-        }
+        /// <summary>
+        /// Gets or sets the logger to use for writing text to be captured in the test results.
+        /// </summary>
+        protected ITestOutputHelper Logger { get; set; }
 
         /// <summary>
         /// Verifies that continuations scheduled on a task will not be executed inline with the specified completing action.
@@ -93,6 +79,14 @@
             continuation.GetAwaiter().GetResult();
         }
 
+        /// <summary>
+        /// Initializes the <see cref="Logger"/> property with an MSTest adapter.
+        /// </summary>
+        protected void SetTestContext(TestContext context)
+        {
+            this.Logger = new TestContextLogger(context);
+        }
+
         protected void CheckGCPressure(Action scenario, int maxBytesAllocated, int iterations = 100, int allowedAttempts = GCAllocationAttempts)
         {
             // prime the pump
@@ -105,7 +99,7 @@
             bool passingAttemptObserved = false;
             for (int attempt = 1; attempt <= allowedAttempts; attempt++)
             {
-                this.Log("Iteration {0}", attempt);
+                this.Logger?.WriteLine("Iteration {0}", attempt);
                 long initialMemory = GC.GetTotalMemory(true);
                 for (int i = 0; i < iterations; i++)
                 {
@@ -125,8 +119,8 @@
 
                 long leaked = (GC.GetTotalMemory(true) - initialMemory) / iterations;
 
-                this.Log("{0} bytes leaked per iteration.", leaked);
-                this.Log("{0} bytes allocated per iteration ({1} allowed).", allocated, maxBytesAllocated);
+                this.Logger?.WriteLine("{0} bytes leaked per iteration.", leaked);
+                this.Logger?.WriteLine("{0} bytes allocated per iteration ({1} allowed).", allocated, maxBytesAllocated);
 
                 if (leaked == 0 && allocated <= maxBytesAllocated)
                 {
@@ -156,7 +150,7 @@
             bool passingAttemptObserved = false;
             for (int attempt = 1; attempt <= allowedAttempts; attempt++)
             {
-                this.Log("Iteration {0}", attempt);
+                this.Logger?.WriteLine("Iteration {0}", attempt);
                 long initialMemory = GC.GetTotalMemory(true);
                 for (int i = 0; i < iterations; i++)
                 {
@@ -170,8 +164,8 @@
 
                 long leaked = (GC.GetTotalMemory(true) - initialMemory) / iterations;
 
-                this.Log("{0} bytes leaked per iteration.", leaked);
-                this.Log("{0} bytes allocated per iteration ({1} allowed).", allocated, maxBytesAllocated);
+                this.Logger?.WriteLine("{0} bytes leaked per iteration.", leaked);
+                this.Logger?.WriteLine("{0} bytes allocated per iteration ({1} allowed).", allocated, maxBytesAllocated);
 
                 if (leaked < iterations && allocated <= maxBytesAllocated)
                 {
@@ -235,6 +229,31 @@
             if (failure != null)
             {
                 System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
+            }
+        }
+
+        /// <summary>
+        /// An xunit-MSTest logger adapter.
+        /// </summary>
+        private class TestContextLogger : ITestOutputHelper
+        {
+            private readonly TestContext context;
+
+            internal TestContextLogger(TestContext context)
+            {
+                Requires.NotNull(context, nameof(context));
+
+                this.context = context;
+            }
+
+            public void WriteLine(string message)
+            {
+                this.context.WriteLine(message);
+            }
+
+            public void WriteLine(string format, params object[] args)
+            {
+                this.context.WriteLine(format, args);
             }
         }
     }
