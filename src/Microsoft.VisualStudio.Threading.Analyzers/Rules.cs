@@ -41,5 +41,21 @@
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
+
+        internal static readonly DiagnosticDescriptor AsyncEventHandlerShouldBeCalledByInvokeAsync = new DiagnosticDescriptor(id: "VSSDK005",
+            title: "AsyncEventHandler delegates should be invoked via the extension method \"TplExtensions.InvokeAsync()\" defined in Microsoft.VisualStudio.Threading assembly.",
+            messageFormat: "AsyncEventHandler delegates should be invoked via the extension method \"TplExtensions.InvokeAsync()\" defined in Microsoft.VisualStudio.Threading assembly.",
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+        internal static readonly DiagnosticDescriptor AvoidAwaitTaskInsideJoinableTaskFactoryRun = new DiagnosticDescriptor(id: "VSSDK006",
+            title: "Avoid calling await Task inside \"JoinableTaskFactory.Run\" delegate when Task is defined outside the delegate to avoid potential deadlocks.",
+            messageFormat: "Calling await on a Task inside a JoinableTaskFactory.Run, when the task is initialized outside the delegate can cause potential deadlocks.\n" +
+            "You can avoid this problem by ensuring the task is initialized within the delegate or by using JoinableTask instead of Task.",
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
     }
 }
