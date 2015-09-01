@@ -6,7 +6,7 @@
   <Import Project="..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\NuPkg.props" />
 
   <ItemGroup>
-    <ProjectReference Include="$(ProjectDepotRoot)src\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj" />
+    <ProjectReference Include="$(ProjectDepotRoot)src\Microsoft.VisualStudio.Threading.Desktop\Microsoft.VisualStudio.Threading.Desktop.csproj" />
   </ItemGroup>
 
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
