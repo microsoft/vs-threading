@@ -31,7 +31,7 @@
         {
             if (func == null)
             {
-                throw new ArgumentNullException("func");
+                throw new ArgumentNullException(nameof(func));
             }
 
             var prevCtx = SynchronizationContext.Current;

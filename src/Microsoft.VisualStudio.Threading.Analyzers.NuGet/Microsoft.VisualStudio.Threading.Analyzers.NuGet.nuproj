@@ -18,6 +18,7 @@
   <PropertyGroup>
     <NuProjPath Condition=" '$(NuProjPath)' == '' ">..\..\packages\NuProj.0.10.0-beta-gd6d4e1ff23\tools\</NuProjPath>
     <VersionDependsOn>$(VersionDependsOn);GetNuPkgVersion</VersionDependsOn>
+    <PrereleaseVersion>-pre</PrereleaseVersion>
   </PropertyGroup>
   <Import Project="$(NuProjPath)\NuProj.props" Condition="Exists('$(NuProjPath)\NuProj.props')" />
   <PropertyGroup Label="Configuration">
@@ -44,8 +45,8 @@
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading.NuGet\Microsoft.VisualStudio.Threading.NuGet.nuproj" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="tools\net45\install.ps1" />
-    <Content Include="tools\net45\uninstall.ps1" />
+    <Content Include="tools\install.ps1" />
+    <Content Include="tools\uninstall.ps1" />
   </ItemGroup>
   <Import Project="$(NuProjPath)\NuProj.targets" />
   <Target Name="GetNuPkgVersion" DependsOnTargets="GetBuildVersion">
@@ -61,9 +62,9 @@
     <Error Condition="!Exists('..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.targets'))" />
     <Error Condition="!Exists('..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.props'))" />
     <Error Condition="!Exists('..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.targets'))" />
-    <Error Condition="!Exists('..\..\packages\Nerdbank.GitVersioning.1.0.15136-beta\build\NerdBank.GitVersioning.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Nerdbank.GitVersioning.1.0.15136-beta\build\NerdBank.GitVersioning.targets'))" />
+    <Error Condition="!Exists('..\..\packages\Nerdbank.GitVersioning.1.1.2-rc\build\NerdBank.GitVersioning.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Nerdbank.GitVersioning.1.1.2-rc\build\NerdBank.GitVersioning.targets'))" />
   </Target>
   <Import Project="..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.targets" Condition="Exists('..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.targets')" />
   <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.targets" Condition="Exists('..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.targets')" />
-  <Import Project="..\..\packages\Nerdbank.GitVersioning.1.0.15136-beta\build\NerdBank.GitVersioning.targets" Condition="Exists('..\..\packages\Nerdbank.GitVersioning.1.0.15136-beta\build\NerdBank.GitVersioning.targets')" />
+  <Import Project="..\..\packages\Nerdbank.GitVersioning.1.1.2-rc\build\NerdBank.GitVersioning.targets" Condition="Exists('..\..\packages\Nerdbank.GitVersioning.1.1.2-rc\build\NerdBank.GitVersioning.targets')" />
 </Project>

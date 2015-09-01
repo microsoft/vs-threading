@@ -24,16 +24,16 @@
     <Id>Microsoft.VisualStudio.Threading</Id>
     <Title>Microsoft.VisualStudio.Threading</Title>
     <Summary>Async synchronization primitives, async collections, TPL and dataflow extensions.</Summary>
-    <Description>Enables compliance with the Visual Studio threading rules (e.g. JoinableTaskFactory).</Description>
+    <Description>Async synchronization primitives, async collections, TPL and dataflow extensions. The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This package is applicable to any .NET application (not just Visual Studio).</Description>
     <Tags>Threading Async Lock Synchronization Threadsafe</Tags>
-
     <Authors>Microsoft</Authors>
     <Owners>Microsoft, VisualStudioExtensibility</Owners>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <ProjectUrl>http://aka.ms/vsextensibility</ProjectUrl>
     <IconUrl>http://aka.ms/VsExtensibilityIcon</IconUrl>
-    <LicenseUrl>http://go.microsoft.com/fwlink/?LinkID=517238</LicenseUrl>
+    <LicenseUrl>http://go.microsoft.com/fwlink/?LinkID=614949</LicenseUrl>
     <RequireLicenseAcceptance>true</RequireLicenseAcceptance>
+    <ReleaseNotes>https://www.visualstudio.com/news/vs2015-vs</ReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj" />
@@ -52,9 +52,9 @@
     <Error Condition="!Exists('..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.targets'))" />
     <Error Condition="!Exists('..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.props'))" />
     <Error Condition="!Exists('..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.targets'))" />
-    <Error Condition="!Exists('..\..\packages\Nerdbank.GitVersioning.1.0.15136-beta\build\NerdBank.GitVersioning.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Nerdbank.GitVersioning.1.0.15136-beta\build\NerdBank.GitVersioning.targets'))" />
+    <Error Condition="!Exists('..\..\packages\Nerdbank.GitVersioning.1.1.2-rc\build\NerdBank.GitVersioning.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Nerdbank.GitVersioning.1.1.2-rc\build\NerdBank.GitVersioning.targets'))" />
   </Target>
   <Import Project="..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.targets" Condition="Exists('..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.targets')" />
   <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.targets" Condition="Exists('..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.targets')" />
-  <Import Project="..\..\packages\Nerdbank.GitVersioning.1.0.15136-beta\build\NerdBank.GitVersioning.targets" Condition="Exists('..\..\packages\Nerdbank.GitVersioning.1.0.15136-beta\build\NerdBank.GitVersioning.targets')" />
+  <Import Project="..\..\packages\Nerdbank.GitVersioning.1.1.2-rc\build\NerdBank.GitVersioning.targets" Condition="Exists('..\..\packages\Nerdbank.GitVersioning.1.1.2-rc\build\NerdBank.GitVersioning.targets')" />
 </Project>

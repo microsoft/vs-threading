@@ -4084,7 +4084,7 @@
                                 writers++;
                                 break;
                             default:
-                                throw new ArgumentOutOfRangeException("lockScript", "Unexpected lock type character '" + lockTypeChar + "'.");
+                                throw new ArgumentOutOfRangeException(nameof(lockScript), "Unexpected lock type character '" + lockTypeChar + "'.");
                         }
 
                         lockStack.Push(await asyncLock);
@@ -4138,7 +4138,7 @@
                             writersRemaining--;
                             break;
                         default:
-                            throw new ArgumentOutOfRangeException("lockScript", "Unexpected lock type character '" + lockTypeChar + "'.");
+                            throw new ArgumentOutOfRangeException(nameof(lockScript), "Unexpected lock type character '" + lockTypeChar + "'.");
                     }
 
                     Assert.AreEqual(readersRemaining > 0, this.asyncLock.IsReadLockHeld, "IsReadLockHeld not expected value at step -{0}.", i + 1);
