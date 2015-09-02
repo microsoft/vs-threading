@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>c215568d-96d0-483b-aff6-c03fd9d8d471</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>Microsoft.VisualStudio.Threading.Tests.Shared</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)AsyncAutoResetEventTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AsyncBarrierTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AsyncCountdownEventTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AsyncLazyTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AsyncLocalTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AsyncManualResetEventTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AsyncQueueTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AsyncReaderWriterLockTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AsyncReaderWriterResourceLockTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AsyncSemaphoreTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AwaitExtensionsTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DelegatingJoinableTaskFactoryTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)InternalUtilitiesTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskAndAsyncReaderWriterLockTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskCollectionTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskContextNodeTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskContextTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskFactoryTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskTestBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ListOfOftenOneTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ProgressWithCompletionTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TestBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TestBaseTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TestUtilities.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TestUtilitiesTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ThreadingToolsTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TplExtensionsTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ValidityTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WeakKeyDictionaryTests.cs" />
+  </ItemGroup>
+</Project>
