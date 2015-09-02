@@ -552,6 +552,104 @@
 
 #endif
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void WithTimeout_NullTask(bool generic)
+        {
+            // Verify that a faulted task is returned instead of throwing.
+            Task timeoutTask = generic
+                ? TplExtensions.WithTimeout<int>(null, TimeSpan.FromSeconds(1))
+                : TplExtensions.WithTimeout(null, TimeSpan.FromSeconds(1));
+            Assert.Throws<ArgumentNullException>(() => timeoutTask.GetAwaiter().GetResult());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void WithTimeout_MinusOneMeansInfiniteTimeout(bool generic)
+        {
+            this.ExecuteOnDispatcher(async delegate
+            {
+                var tcs = new TaskCompletionSource<object>();
+                var timeoutTask = generic
+                    ? TplExtensions.WithTimeout<object>(tcs.Task, TimeSpan.FromMilliseconds(-1))
+                    : TplExtensions.WithTimeout((Task)tcs.Task, TimeSpan.FromMilliseconds(-1));
+                Assert.False(timeoutTask.IsCompleted);
+                await Task.Delay(AsyncDelay / 2);
+                Assert.False(timeoutTask.IsCompleted);
+                tcs.SetResult(null);
+                timeoutTask.GetAwaiter().GetResult();
+            });
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void WithTimeout_TimesOut(bool generic)
+        {
+            // Use a SynchronizationContext to ensure that we never deadlock even when synchronously blocking.
+            this.ExecuteOnDispatcher(delegate
+            {
+                var tcs = new TaskCompletionSource<object>();
+                Task timeoutTask = generic
+                    ? tcs.Task.WithTimeout(TimeSpan.FromMilliseconds(1))
+                    : ((Task)tcs.Task).WithTimeout(TimeSpan.FromMilliseconds(1));
+                Assert.Throws<TimeoutException>(() => timeoutTask.GetAwaiter().GetResult()); // sync block to ensure no deadlock occurs
+            });
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void WithTimeout_CompletesFirst(bool generic)
+        {
+            // Use a SynchronizationContext to ensure that we never deadlock even when synchronously blocking.
+            this.ExecuteOnDispatcher(delegate
+            {
+                var tcs = new TaskCompletionSource<object>();
+                Task timeoutTask = generic
+                    ? tcs.Task.WithTimeout(TimeSpan.FromDays(1))
+                    : ((Task)tcs.Task).WithTimeout(TimeSpan.FromDays(1));
+                Assert.False(timeoutTask.IsCompleted);
+                tcs.SetResult(null);
+                timeoutTask.GetAwaiter().GetResult();
+            });
+        }
+
+        [Fact]
+        public void WithTimeout_CompletesFirstWithResult()
+        {
+            // Use a SynchronizationContext to ensure that we never deadlock even when synchronously blocking.
+            this.ExecuteOnDispatcher(delegate
+            {
+                var tcs = new TaskCompletionSource<object>();
+                var timeoutTask = tcs.Task.WithTimeout(TimeSpan.FromDays(1));
+                Assert.False(timeoutTask.IsCompleted);
+                tcs.SetResult("success");
+                Assert.Same(tcs.Task.Result, timeoutTask.Result);
+            });
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void WithTimeout_CompletesFirstAndThrows(bool generic)
+        {
+            // Use a SynchronizationContext to ensure that we never deadlock even when synchronously blocking.
+            this.ExecuteOnDispatcher(async delegate
+            {
+                var tcs = new TaskCompletionSource<object>();
+                Task timeoutTask = generic
+                    ? tcs.Task.WithTimeout(TimeSpan.FromDays(1))
+                    : ((Task)tcs.Task).WithTimeout(TimeSpan.FromDays(1));
+                Assert.False(timeoutTask.IsCompleted);
+                tcs.SetException(new ApplicationException());
+                await Assert.ThrowsAsync<ApplicationException>(() => timeoutTask);
+                Assert.Same(tcs.Task.Exception.InnerException, timeoutTask.Exception.InnerException);
+            });
+        }
+
         private static void InvokeAsyncHelper(object sender, EventArgs args)
         {
             int invoked = 0;

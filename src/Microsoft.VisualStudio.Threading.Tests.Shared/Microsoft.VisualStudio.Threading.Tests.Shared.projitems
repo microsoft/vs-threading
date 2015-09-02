@@ -32,6 +32,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)ListOfOftenOneTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ProgressWithCompletionTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TestBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TestBaseTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TestUtilities.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TestUtilitiesTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ThreadingToolsTests.cs" />
