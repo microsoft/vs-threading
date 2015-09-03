@@ -164,6 +164,13 @@
         {
             var values = Enumerable.Range(1, 50000).Select(n => new GenericParameterHelper(n)).ToArray();
 
+            var creates = Stopwatch.StartNew();
+            for (int i = 0; i < values.Length; i++)
+            {
+                this.asyncLocal = new Microsoft.VisualStudio.Threading.AsyncLocal<GenericParameterHelper>();
+            }
+            creates.Stop();
+
             var writes = Stopwatch.StartNew();
             for (int i = 0; i < values.Length; i++)
             {
@@ -181,6 +188,7 @@
             reads.Stop();
 
             // We don't actually validate the perf here. We just print out the results.
+            Console.WriteLine("Creating {0} instances took {1} ms", values.Length, creates.ElapsedMilliseconds);
             Console.WriteLine("Saving {0} values took {1} ms", values.Length, writes.ElapsedMilliseconds);
             Console.WriteLine("Reading {0} values took {1} ms", values.Length, reads.ElapsedMilliseconds);
         }
