@@ -41,14 +41,9 @@ namespace Microsoft.VisualStudio.Threading
         private static readonly Type BclAsyncLocalType;
 
         /// <summary>
-        /// The default constructor for the System.Threading.AsyncLocal{T} type, if present.
-        /// </summary>
-        private static readonly ConstructorInfo BclAsyncLocalCtor;
-
-        /// <summary>
         /// The AsyncLocal{T}.Value PropertyInfo.
         /// </summary>
-        private static PropertyInfo bclAsyncLocalValueProperty;
+        private static readonly PropertyInfo BclAsyncLocalValueProperty;
 
         /// <summary>
         /// Initializes static members of the <see cref="LightUps{T}"/> class.
@@ -69,8 +64,7 @@ namespace Microsoft.VisualStudio.Threading
                 if (LightUps.BclAsyncLocalType != null)
                 {
                     BclAsyncLocalType = LightUps.BclAsyncLocalType.MakeGenericType(typeof(T));
-                    BclAsyncLocalCtor = BclAsyncLocalType.GetTypeInfo().DeclaredConstructors.FirstOrDefault(ctor => ctor.GetParameters().Length == 0);
-                    bclAsyncLocalValueProperty = BclAsyncLocalType.GetTypeInfo().GetDeclaredProperty("Value");
+                    BclAsyncLocalValueProperty = BclAsyncLocalType.GetTypeInfo().GetDeclaredProperty("Value");
                     IsAsyncLocalSupported = true;
                 }
             }
@@ -79,16 +73,94 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Creates an instance of the BCL AsyncLocal{T} type.
         /// </summary>
-        /// <param name="getter">The delegate used to retrieve the Value property.</param>
-        /// <param name="setter">The delegate used to set the Value property.</param>
         /// <returns>The constructed instance of AsyncLocal{T}.</returns>
-        internal static object CreateAsyncLocal(out Func<T> getter, out Action<T> setter)
+        internal static object CreateAsyncLocal()
         {
             Assumes.True(IsAsyncLocalSupported);
-            var instance = BclAsyncLocalCtor.Invoke(null);
-            getter = (Func<T>)bclAsyncLocalValueProperty.GetMethod.CreateDelegate(typeof(Func<T>), instance);
-            setter = (Action<T>)bclAsyncLocalValueProperty.SetMethod.CreateDelegate(typeof(Action<T>), instance);
-            return instance;
+            return AsyncLocalHelper.Instance.CreateAsyncLocal();
+        }
+
+        /// <summary>
+        /// Sets the value on an AsyncLocal{T} object.
+        /// </summary>
+        /// <param name="instance">The AsyncLocal{T} instance to change.</param>
+        /// <param name="value">The new value to assign.</param>
+        internal static void SetAsyncLocalValue(object instance, T value) => AsyncLocalHelper.Instance.Setter(instance, value);
+
+        /// <summary>
+        /// Gets the value from an AsyncLocal{T} object.
+        /// </summary>
+        /// <param name="instance">The instance to read the value from.</param>
+        /// <returns>The value.</returns>
+        internal static T GetAsyncLocalValue(object instance) => AsyncLocalHelper.Instance.Getter(instance);
+
+        /// <summary>
+        /// A non-generic helper that allows creation of and access to AsyncLocal{T}.
+        /// </summary>
+        private abstract class AsyncLocalHelper
+        {
+            /// <summary>
+            /// The singleton for the type T of the outer class.
+            /// </summary>
+            internal static readonly AsyncLocalHelper Instance = CreateNew();
+
+            /// <summary>
+            /// Gets the AsyncLocal{T}.Value getter.
+            /// </summary>
+            internal abstract Func<object, T> Getter { get; }
+
+            /// <summary>
+            /// Gets the AsyncLocal{T}.Value setter.
+            /// </summary>
+            internal abstract Action<object, T> Setter { get; }
+
+            /// <summary>
+            /// Creates a new instance of AsyncLocal{T}.
+            /// </summary>
+            /// <returns>The newly created instance.</returns>
+            internal abstract object CreateAsyncLocal();
+
+            /// <summary>
+            /// Creates the singleton instance of this class.
+            /// </summary>
+            /// <returns>The instance of this abstract class.</returns>
+            private static AsyncLocalHelper CreateNew()
+            {
+                var genericHelperType = typeof(AsyncLocalHelper<>);
+                var instanceHelperType = genericHelperType.MakeGenericType(typeof(T), BclAsyncLocalType);
+                return (AsyncLocalHelper)Activator.CreateInstance(instanceHelperType);
+            }
+        }
+
+        /// <summary>
+        /// A generic derived type of <see cref="AsyncLocalHelper"/>
+        /// that binds directly to AsyncLocal{T} and fulfills the non-generic
+        /// interface defined by its abstract base class.
+        /// </summary>
+        /// <typeparam name="TAsyncLocal">The closed generic type for AsyncLocal{T} itself.</typeparam>
+        private class AsyncLocalHelper<TAsyncLocal> : AsyncLocalHelper
+            where TAsyncLocal : new()
+        {
+            /// <summary>
+            /// Initializes a new instance of the <see cref="AsyncLocalHelper{TAsyncLocal}"/> class.
+            /// </summary>
+            public AsyncLocalHelper()
+            {
+                var getter = (Func<TAsyncLocal, T>)BclAsyncLocalValueProperty.GetMethod.CreateDelegate(typeof(Func<TAsyncLocal, T>));
+                this.Getter = o => getter((TAsyncLocal)o);
+
+                var setter = (Action<TAsyncLocal, T>)BclAsyncLocalValueProperty.SetMethod.CreateDelegate(typeof(Action<TAsyncLocal, T>));
+                this.Setter = (o, v) => setter((TAsyncLocal)o, v);
+            }
+
+            /// <inheritdoc />
+            internal override Func<object, T> Getter { get; }
+
+            /// <inheritdoc />
+            internal override Action<object, T> Setter { get; }
+
+            /// <inheritdoc />
+            internal override object CreateAsyncLocal() => new TAsyncLocal();
         }
     }
 }
