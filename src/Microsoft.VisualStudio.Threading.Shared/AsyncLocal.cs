@@ -50,21 +50,16 @@ namespace Microsoft.VisualStudio.Threading
         private class AsyncLocal46 : AsyncLocalBase
         {
             /// <summary>
-            /// The delegate that sets the value on the System.Threading.AsyncLocal{T}.Value property.
+            /// The BCL AsyncLocal{T} instance created.
             /// </summary>
-            private readonly Action<T> setValue;
-
-            /// <summary>
-            /// The delegate that gets the value from the System.Threading.AsyncLocal{T}.Value property.
-            /// </summary>
-            private readonly Func<T> getValue;
+            private readonly object asyncLocal;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="AsyncLocal46"/> class.
             /// </summary>
             public AsyncLocal46()
             {
-                LightUps<T>.CreateAsyncLocal(out this.getValue, out this.setValue);
+                this.asyncLocal = LightUps<T>.CreateAsyncLocal();
             }
 
             /// <summary>
@@ -72,8 +67,8 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             public override T Value
             {
-                get { return this.getValue(); }
-                set { this.setValue(value); }
+                get { return LightUps<T>.GetAsyncLocalValue(this.asyncLocal); }
+                set { LightUps<T>.SetAsyncLocalValue(this.asyncLocal, value); }
             }
         }
     }
