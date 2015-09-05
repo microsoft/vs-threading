@@ -15,7 +15,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class AwaitExtensionsTests
+    public partial class AwaitExtensionsTests
     {
         [TestMethod]
         public void AwaitCustomTaskScheduler()
@@ -58,22 +58,6 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 Assert.IsTrue(TaskScheduler.Default.GetAwaiter().IsCompleted);
             }).GetAwaiter().GetResult();
         }
-
-#if DESKTOP
-        [TestMethod]
-        public void AwaitWaitHandle()
-        {
-            var handle = new ManualResetEvent(initialState: false);
-            Func<Task> awaitHelper = async delegate
-            {
-                await handle;
-            };
-            Task awaitHelperResult = awaitHelper();
-            Assert.IsFalse(awaitHelperResult.IsCompleted);
-            handle.Set();
-            awaitHelperResult.Wait();
-        }
-#endif
 
         private class MockTaskScheduler : TaskScheduler
         {
