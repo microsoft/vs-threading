@@ -37,7 +37,8 @@
             Process p = Process.Start(
                 new ProcessStartInfo("cmd.exe", "/c exit /b 55")
                 {
-                    CreateNoWindow = true
+                    CreateNoWindow = true,
+                    WindowStyle = ProcessWindowStyle.Hidden,
                 });
             int exitCode = await p.WaitForExitAsync();
             Assert.Equal(55, exitCode);
@@ -49,7 +50,8 @@
             Process p = Process.Start(
                 new ProcessStartInfo("cmd.exe", "/c exit /b 55")
                 {
-                    CreateNoWindow = true
+                    CreateNoWindow = true,
+                    WindowStyle = ProcessWindowStyle.Hidden,
                 });
             p.WaitForExit();
             Task<int> t = p.WaitForExitAsync();
@@ -69,12 +71,38 @@
         [Fact]
         public async Task WaitForExitAsync_DoesNotCompleteTillKilled()
         {
-            Process p = Process.Start(new ProcessStartInfo("cmd.exe") { CreateNoWindow = true });
-            Task<int> t = p.WaitForExitAsync();
-            Assert.False(t.IsCompleted);
-            p.Kill();
-            int exitCode = await t;
-            Assert.Equal(-1, exitCode);
+            Process p = Process.Start(new ProcessStartInfo("cmd.exe") { CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden });
+            try
+            {
+                Task<int> t = p.WaitForExitAsync();
+                Assert.False(t.IsCompleted);
+                p.Kill();
+                int exitCode = await t;
+                Assert.Equal(-1, exitCode);
+            }
+            catch
+            {
+                p.Kill();
+                throw;
+            }
+        }
+
+        [Fact]
+        public async Task WaitForExitAsync_Canceled()
+        {
+            Process p = Process.Start(new ProcessStartInfo("cmd.exe") { CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden });
+            try
+            {
+                var cts = new CancellationTokenSource();
+                Task<int> t = p.WaitForExitAsync(cts.Token);
+                Assert.False(t.IsCompleted);
+                cts.Cancel();
+                await Assert.ThrowsAsync<TaskCanceledException>(() => t);
+            }
+            finally
+            {
+                p.Kill();
+            }
         }
     }
 }
