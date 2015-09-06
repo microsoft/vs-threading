@@ -7,6 +7,7 @@
 namespace Microsoft.VisualStudio.Threading
 {
     using System;
+    using System.Diagnostics;
     using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
@@ -26,6 +27,38 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(handle, nameof(handle));
             Task task = handle.ToTask();
             return task.GetAwaiter();
+        }
+
+        /// <summary>
+        /// Returns a task that completes when the process exits and provides the exit code of that process.
+        /// </summary>
+        /// <param name="process">The process to wait for exit.</param>
+        /// <returns>A task whose result is the <see cref="Process.ExitCode"/> of the <paramref name="process"/>.</returns>
+        public static async Task<int> WaitForExitAsync(this Process process)
+        {
+            Requires.NotNull(process, nameof(process));
+
+            var tcs = new TaskCompletionSource<int>();
+            EventHandler exitHandler = (s, e) =>
+            {
+                tcs.TrySetResult(process.ExitCode);
+            };
+            try
+            {
+                process.EnableRaisingEvents = true;
+                process.Exited += exitHandler;
+                if (process.HasExited)
+                {
+                    // Allow for the race condition that the process has already exited.
+                    tcs.TrySetResult(process.ExitCode);
+                }
+
+                return await tcs.Task.ConfigureAwait(false);
+            }
+            finally
+            {
+                process.Exited -= exitHandler;
+            }
         }
     }
 }
