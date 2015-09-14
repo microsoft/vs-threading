@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.props" Condition="Exists('..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.props')" />
-  <Import Project="..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.props" Condition="Exists('..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.props')" />
-  <Import Project="..\..\packages\MicroBuild.NonShipping.1.0.0-alpha-g914708b2a3\build\MicroBuild.NonShipping.props" Condition="Exists('..\..\packages\MicroBuild.NonShipping.1.0.0-alpha-g914708b2a3\build\MicroBuild.NonShipping.props')" />
+  <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.70-rc-gaf0d7eb797\build\MicroBuild.VisualStudio.props" Condition="Exists('..\..\packages\MicroBuild.VisualStudio.1.0.70-rc-gaf0d7eb797\build\MicroBuild.VisualStudio.props')" />
+  <Import Project="..\..\packages\MicroBuild.1.0.70-rc-gaf0d7eb797\build\MicroBuild.props" Condition="Exists('..\..\packages\MicroBuild.1.0.70-rc-gaf0d7eb797\build\MicroBuild.props')" />
+  <Import Project="..\..\packages\MicroBuild.NonShipping.1.0.70-rc-gaf0d7eb797\build\MicroBuild.NonShipping.props" Condition="Exists('..\..\packages\MicroBuild.NonShipping.1.0.70-rc-gaf0d7eb797\build\MicroBuild.NonShipping.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -134,16 +134,16 @@
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
+    <Error Condition="!Exists('..\..\packages\MicroBuild.NonShipping.1.0.70-rc-gaf0d7eb797\build\MicroBuild.NonShipping.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.NonShipping.1.0.70-rc-gaf0d7eb797\build\MicroBuild.NonShipping.props'))" />
+    <Error Condition="!Exists('..\..\packages\MicroBuild.NonShipping.1.0.70-rc-gaf0d7eb797\build\MicroBuild.NonShipping.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.NonShipping.1.0.70-rc-gaf0d7eb797\build\MicroBuild.NonShipping.targets'))" />
+    <Error Condition="!Exists('..\..\packages\MicroBuild.1.0.70-rc-gaf0d7eb797\build\MicroBuild.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.1.0.70-rc-gaf0d7eb797\build\MicroBuild.props'))" />
+    <Error Condition="!Exists('..\..\packages\MicroBuild.1.0.70-rc-gaf0d7eb797\build\MicroBuild.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.1.0.70-rc-gaf0d7eb797\build\MicroBuild.targets'))" />
+    <Error Condition="!Exists('..\..\packages\MicroBuild.VisualStudio.1.0.70-rc-gaf0d7eb797\build\MicroBuild.VisualStudio.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.VisualStudio.1.0.70-rc-gaf0d7eb797\build\MicroBuild.VisualStudio.props'))" />
+    <Error Condition="!Exists('..\..\packages\MicroBuild.VisualStudio.1.0.70-rc-gaf0d7eb797\build\MicroBuild.VisualStudio.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.VisualStudio.1.0.70-rc-gaf0d7eb797\build\MicroBuild.VisualStudio.targets'))" />
     <Error Condition="!Exists('..\..\packages\Nerdbank.GitVersioning.1.0.15136-beta\build\NerdBank.GitVersioning.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Nerdbank.GitVersioning.1.0.15136-beta\build\NerdBank.GitVersioning.targets'))" />
-    <Error Condition="!Exists('..\..\packages\MicroBuild.NonShipping.1.0.0-alpha-g914708b2a3\build\MicroBuild.NonShipping.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.NonShipping.1.0.0-alpha-g914708b2a3\build\MicroBuild.NonShipping.props'))" />
-    <Error Condition="!Exists('..\..\packages\MicroBuild.NonShipping.1.0.0-alpha-g914708b2a3\build\MicroBuild.NonShipping.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.NonShipping.1.0.0-alpha-g914708b2a3\build\MicroBuild.NonShipping.targets'))" />
-    <Error Condition="!Exists('..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.props'))" />
-    <Error Condition="!Exists('..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.targets'))" />
-    <Error Condition="!Exists('..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.props'))" />
-    <Error Condition="!Exists('..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.targets'))" />
   </Target>
+  <Import Project="..\..\packages\MicroBuild.NonShipping.1.0.70-rc-gaf0d7eb797\build\MicroBuild.NonShipping.targets" Condition="Exists('..\..\packages\MicroBuild.NonShipping.1.0.70-rc-gaf0d7eb797\build\MicroBuild.NonShipping.targets')" />
+  <Import Project="..\..\packages\MicroBuild.1.0.70-rc-gaf0d7eb797\build\MicroBuild.targets" Condition="Exists('..\..\packages\MicroBuild.1.0.70-rc-gaf0d7eb797\build\MicroBuild.targets')" />
+  <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.70-rc-gaf0d7eb797\build\MicroBuild.VisualStudio.targets" Condition="Exists('..\..\packages\MicroBuild.VisualStudio.1.0.70-rc-gaf0d7eb797\build\MicroBuild.VisualStudio.targets')" />
   <Import Project="..\..\packages\Nerdbank.GitVersioning.1.0.15136-beta\build\NerdBank.GitVersioning.targets" Condition="Exists('..\..\packages\Nerdbank.GitVersioning.1.0.15136-beta\build\NerdBank.GitVersioning.targets')" />
-  <Import Project="..\..\packages\MicroBuild.NonShipping.1.0.0-alpha-g914708b2a3\build\MicroBuild.NonShipping.targets" Condition="Exists('..\..\packages\MicroBuild.NonShipping.1.0.0-alpha-g914708b2a3\build\MicroBuild.NonShipping.targets')" />
-  <Import Project="..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.targets" Condition="Exists('..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.targets')" />
-  <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.targets" Condition="Exists('..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.targets')" />
 </Project>
