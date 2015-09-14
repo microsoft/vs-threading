@@ -18,7 +18,8 @@
     <DocumentationFile />
     <DefaultLanguage>en-US</DefaultLanguage>
     <FileAlignment>512</FileAlignment>
-    <OutputPath>$(OutputPath)\Profile151\</OutputPath>
+    <OutputPathSuffix>Profile151\</OutputPathSuffix>
+    <OutputPath>$(OutputPath)$(OutputPathSuffix)</OutputPath>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
   </PropertyGroup>
