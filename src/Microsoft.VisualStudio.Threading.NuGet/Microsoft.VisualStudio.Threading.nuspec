@@ -29,6 +29,18 @@
         <dependency id="System.Threading.Tasks" version="4.0.0" />
         <dependency id="System.Xml.XDocument" version="4.0.0" />
       </group>
+      <group targetFramework="net">
+        <!-- this section intentionally left blank. -->
+      </group>
+      <group targetFramework="win">
+        <!-- this section intentionally left blank. -->
+      </group>
+      <group targetFramework="wpa">
+        <!-- this section intentionally left blank. -->
+      </group>
+      <group>
+        <!-- this section intentionally left blank. -->
+      </group>
     </dependencies>
   </metadata>
 </package>
