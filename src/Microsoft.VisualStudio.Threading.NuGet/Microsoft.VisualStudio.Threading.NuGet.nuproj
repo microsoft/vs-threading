@@ -51,7 +51,8 @@
   </Target>
   <Target Name="CopyAssemblyToLibDotNetFolder" DependsOnTargets="ConvertItems" AfterTargets="ConvertItems">
     <ItemGroup>
-      <File Include="@(File)" Condition=" '%(File.TargetFramework)' == 'portable-net451+win81+wpa81' ">
+      <File Include="@(File)"
+            Condition=" '%(File.TargetFrameworkMoniker)' == '.NETPortable,Version=v4.5,Profile=Profile111' ">
         <TargetPath>lib\dotnet\%(FileName)%(Extension)</TargetPath>
       </File>
     </ItemGroup>
