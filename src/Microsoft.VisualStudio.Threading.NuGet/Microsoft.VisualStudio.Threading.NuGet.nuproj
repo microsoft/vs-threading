@@ -50,6 +50,7 @@
     </PropertyGroup>
   </Target>
   <Target Name="CopyAssemblyToLibDotNetFolder" DependsOnTargets="ConvertItems" AfterTargets="ConvertItems">
+    <!-- NuProj doesn't yet support populating the lib\dotnet folder. So we do it ourselves. -->
     <ItemGroup>
       <File Include="@(File)"
             Condition=" '%(File.TargetFrameworkMoniker)' == '.NETPortable,Version=v4.5,Profile=Profile111' ">

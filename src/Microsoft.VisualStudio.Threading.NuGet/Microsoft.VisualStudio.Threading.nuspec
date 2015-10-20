@@ -29,6 +29,9 @@
         <dependency id="System.Threading.Tasks" version="4.0.0" />
         <dependency id="System.Xml.XDocument" version="4.0.0" />
       </group>
+      <!-- These remaining groups are empty to prevent NuGet from
+           adding package dependencies from the 'dotnet' section above to
+           platforms for which they are not necessary. -->
       <group targetFramework="MonoAndroid" />
       <group targetFramework="MonoTouch" />
       <group targetFramework="XamarinIOS" />
