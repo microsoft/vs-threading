@@ -188,7 +188,7 @@ namespace Microsoft.VisualStudio.Threading
             if (ambientJob == null)
             {
                 // The caller isn't running in the context of a joinable task, so there is nothing to join with this collection.
-                return new JoinRelease();
+                return default(JoinRelease);
             }
 
             using (this.Context.NoMessagePumpSynchronizationContext.Apply())
@@ -261,7 +261,6 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         public IEnumerator<JoinableTask> GetEnumerator()
         {
-
             using (this.Context.NoMessagePumpSynchronizationContext.Apply())
             {
                 var joinables = new List<JoinableTask>();

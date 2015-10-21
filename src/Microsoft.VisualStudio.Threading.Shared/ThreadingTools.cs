@@ -27,7 +27,8 @@ namespace Microsoft.VisualStudio.Threading
         /// <c>false</c> if the location's value remained the same because the last invocation of <paramref name="applyChange"/> returned the existing value.
         /// </returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference", MessageId = "0#")]
-        public static bool ApplyChangeOptimistically<T>(ref T hotLocation, Func<T, T> applyChange) where T : class
+        public static bool ApplyChangeOptimistically<T>(ref T hotLocation, Func<T, T> applyChange)
+            where T : class
         {
             Requires.NotNull(applyChange, nameof(applyChange));
 

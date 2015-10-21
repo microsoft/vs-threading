@@ -16,7 +16,8 @@ namespace Microsoft.VisualStudio.Threading
     /// in the same call context.
     /// </summary>
     /// <typeparam name="T">The type of value to store.</typeparam>
-    public partial class AsyncLocal<T> where T : class
+    public partial class AsyncLocal<T>
+        where T : class
     {
         /// <summary>
         /// The framework version specific instance of AsyncLocal to use.

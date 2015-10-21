@@ -1,4 +1,10 @@
-﻿namespace Microsoft.VisualStudio.Threading.Analyzers
+﻿/********************************************************
+*                                                        *
+*   © Copyright (C) Microsoft. All rights reserved.      *
+*                                                        *
+*********************************************************/
+
+namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using Microsoft.CodeAnalysis;
 
@@ -56,6 +62,5 @@
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
-
     }
 }
