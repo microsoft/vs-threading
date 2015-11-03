@@ -12,7 +12,7 @@
     <tags></tags>
     <dependencies>
       <group targetFramework="dotnet">
-        <dependency id="Microsoft.VisualStudio.Validation" version="14.0.51103" />
+        <dependency id="Microsoft.VisualStudio.Validation" version="14.1.111" />
         <dependency id="System.Collections" version="4.0.0" />
         <dependency id="System.Collections.Concurrent" version="4.0.0" />
         <dependency id="System.Diagnostics.Debug" version="4.0.0" />
