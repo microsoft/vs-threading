@@ -24,6 +24,7 @@ namespace Microsoft.VisualStudio.Threading
     internal class NoMessagePumpSyncContext : SynchronizationContext
     {
 #endif
+
         /// <summary>
         /// A shared singleton.
         /// </summary>

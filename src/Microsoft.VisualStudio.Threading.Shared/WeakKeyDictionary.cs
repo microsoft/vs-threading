@@ -210,7 +210,7 @@ namespace Microsoft.VisualStudio.Threading
                 Requires.NotNull(dictionary, nameof(dictionary));
 
                 this.enumerator = dictionary.dictionary.GetEnumerator();
-                this.current = new KeyValuePair<TKey, TValue>();
+                this.current = default(KeyValuePair<TKey, TValue>);
             }
 
             public KeyValuePair<TKey, TValue> Current

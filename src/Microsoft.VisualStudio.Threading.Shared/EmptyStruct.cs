@@ -19,7 +19,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         internal static EmptyStruct Instance
         {
-            get { return new EmptyStruct(); }
+            get { return default(EmptyStruct); }
         }
     }
 }

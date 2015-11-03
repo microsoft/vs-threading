@@ -24,11 +24,6 @@
             get { return (JoinableTaskContextDerived)this.context; }
         }
 
-        protected override JoinableTaskContext CreateJoinableTaskContext()
-        {
-            return new JoinableTaskContextDerived();
-        }
-
         [TestMethod, Timeout(TestTimeout)]
         public void IsWithinJoinableTask()
         {
@@ -635,7 +630,7 @@
         [TestMethod, Timeout(TestTimeout)]
         public void RevertRelevanceDefaultValue()
         {
-            var revert = new JoinableTaskContext.RevertRelevance();
+            var revert = default(JoinableTaskContext.RevertRelevance);
             revert.Dispose();
         }
 
@@ -644,6 +639,11 @@
         {
             IDisposable disposable = this.Context;
             disposable.Dispose();
+        }
+
+        protected override JoinableTaskContext CreateJoinableTaskContext()
+        {
+            return new JoinableTaskContextDerived();
         }
 
         /// <summary>

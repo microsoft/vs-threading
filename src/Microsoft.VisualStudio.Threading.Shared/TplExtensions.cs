@@ -22,7 +22,7 @@ namespace Microsoft.VisualStudio.Threading
         /// A singleton completed task.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-        public static readonly Task CompletedTask = Task.FromResult(new EmptyStruct());
+        public static readonly Task CompletedTask = Task.FromResult(default(EmptyStruct));
 
         /// <summary>
         /// A task that is already canceled.
@@ -391,7 +391,6 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         callback(tcs.Task);
                     }
-
                 },
                 CancellationToken.None,
                 TaskContinuationOptions.None,
@@ -522,21 +521,21 @@ namespace Microsoft.VisualStudio.Threading
             currentTask.ContinueWith(
                 (t, state) =>
                 {
-                    var _tcs = (TaskCompletionSource<FollowCancelableTaskState<T>, T>)state;
+                    var tcsNested = (TaskCompletionSource<FollowCancelableTaskState<T>, T>)state;
                     switch (t.Status)
                     {
                         case TaskStatus.RanToCompletion:
-                            _tcs.TrySetResult(t.Result);
-                            _tcs.SourceState.RegisteredCallback.Dispose();
+                            tcsNested.TrySetResult(t.Result);
+                            tcsNested.SourceState.RegisteredCallback.Dispose();
                             break;
                         case TaskStatus.Faulted:
-                            _tcs.TrySetException(t.Exception.InnerExceptions);
-                            _tcs.SourceState.RegisteredCallback.Dispose();
+                            tcsNested.TrySetException(t.Exception.InnerExceptions);
+                            tcsNested.SourceState.RegisteredCallback.Dispose();
                             break;
                         case TaskStatus.Canceled:
-                            var newTask = _tcs.SourceState.CurrentTask;
+                            var newTask = tcsNested.SourceState.CurrentTask;
                             Assumes.True(newTask != t, "A canceled task was not replaced with a new task.");
-                            FollowCancelableTaskToCompletionHelper(_tcs, newTask);
+                            FollowCancelableTaskToCompletionHelper(tcsNested, newTask);
                             break;
                     }
                 },
