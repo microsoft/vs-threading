@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.props" Condition="Exists('..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.props')" />
   <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.83-rc-g72bc07812b\build\MicroBuild.VisualStudio.props" />
   <Import Project="..\..\packages\MicroBuild.1.0.83-rc-g72bc07812b\build\MicroBuild.props" />
   <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.83-rc-g72bc07812b\build\VS.Insertion.props" />
@@ -20,4 +21,5 @@
   <Import Project="..\..\packages\MicroBuild.1.0.83-rc-g72bc07812b\build\MicroBuild.targets" />
   <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.83-rc-g72bc07812b\build\MicroBuild.VisualStudio.targets" />
   <Import Project="..\..\packages\Nerdbank.GitVersioning.1.1.52-rc\build\NerdBank.GitVersioning.targets" />
+  <Import Project="..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.targets" Condition="Exists('..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.targets')" />
 </Project>

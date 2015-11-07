@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.props" Condition="Exists('..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.props')" />
   <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.83-rc-g72bc07812b\build\dotnet\MicroBuild.VisualStudio.props" Condition="Exists('..\..\packages\MicroBuild.VisualStudio.1.0.83-rc-g72bc07812b\build\dotnet\MicroBuild.VisualStudio.props')" />
   <Import Project="..\..\packages\MicroBuild.1.0.83-rc-g72bc07812b\build\dotnet\MicroBuild.props" Condition="Exists('..\..\packages\MicroBuild.1.0.83-rc-g72bc07812b\build\dotnet\MicroBuild.props')" />
   <PropertyGroup>
@@ -106,9 +107,12 @@
     <Error Condition="!Exists('..\..\packages\MicroBuild.1.0.83-rc-g72bc07812b\build\dotnet\MicroBuild.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.1.0.83-rc-g72bc07812b\build\dotnet\MicroBuild.targets'))" />
     <Error Condition="!Exists('..\..\packages\MicroBuild.VisualStudio.1.0.83-rc-g72bc07812b\build\dotnet\MicroBuild.VisualStudio.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.VisualStudio.1.0.83-rc-g72bc07812b\build\dotnet\MicroBuild.VisualStudio.props'))" />
     <Error Condition="!Exists('..\..\packages\MicroBuild.VisualStudio.1.0.83-rc-g72bc07812b\build\dotnet\MicroBuild.VisualStudio.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.VisualStudio.1.0.83-rc-g72bc07812b\build\dotnet\MicroBuild.VisualStudio.targets'))" />
+    <Error Condition="!Exists('..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.props'))" />
+    <Error Condition="!Exists('..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.targets'))" />
   </Target>
   <Import Project="..\..\packages\Nerdbank.GitVersioning.1.1.52-rc\build\dotnet\Nerdbank.GitVersioning.targets" Condition="Exists('..\..\packages\Nerdbank.GitVersioning.1.1.52-rc\build\dotnet\Nerdbank.GitVersioning.targets')" />
   <Import Project="..\..\packages\StyleCop.Analyzers.1.0.0-beta014\build\StyleCop.Analyzers.targets" Condition="Exists('..\..\packages\StyleCop.Analyzers.1.0.0-beta014\build\StyleCop.Analyzers.targets')" />
   <Import Project="..\..\packages\MicroBuild.1.0.83-rc-g72bc07812b\build\dotnet\MicroBuild.targets" Condition="Exists('..\..\packages\MicroBuild.1.0.83-rc-g72bc07812b\build\dotnet\MicroBuild.targets')" />
   <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.83-rc-g72bc07812b\build\dotnet\MicroBuild.VisualStudio.targets" Condition="Exists('..\..\packages\MicroBuild.VisualStudio.1.0.83-rc-g72bc07812b\build\dotnet\MicroBuild.VisualStudio.targets')" />
+  <Import Project="..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.targets" Condition="Exists('..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.targets')" />
 </Project>
