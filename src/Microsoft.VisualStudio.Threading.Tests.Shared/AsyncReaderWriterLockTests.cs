@@ -26,14 +26,14 @@
         private const int MaxGarbagePerLock = 300;
         private const int MaxGarbagePerYield = 1000;
 
-        private AsyncReaderWriterLock asyncLock;
-
         /// <summary>
         /// A flag that should be set to true by tests that verify some anti-pattern
         /// and as a result corrupts the lock or otherwise orphans outstanding locks,
         /// which would cause the test to hang if it waited for the lock to "complete".
         /// </summary>
         private static bool doNotWaitForLockCompletionAtTestCleanup;
+
+        private AsyncReaderWriterLock asyncLock;
 
         public TestContext TestContext { get; set; }
 
@@ -145,19 +145,19 @@
         [TestMethod, Timeout(TestTimeout)]
         public void ReleaseDefaultCtorDispose()
         {
-            new AsyncReaderWriterLock.Releaser().Dispose();
+            default(AsyncReaderWriterLock.Releaser).Dispose();
         }
 
         [TestMethod, Timeout(TestTimeout)]
         public void SuppressionDefaultCtorDispose()
         {
-            new AsyncReaderWriterLock.Suppression().Dispose();
+            default(AsyncReaderWriterLock.Suppression).Dispose();
         }
 
         [TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
         public void AwaitableDefaultCtorDispose()
         {
-            new AsyncReaderWriterLock.Awaitable().GetAwaiter();
+            default(AsyncReaderWriterLock.Awaitable).GetAwaiter();
         }
 
         [TestMethod, Timeout(TestTimeout)]
@@ -3165,7 +3165,7 @@
             TestUtilities.Run(async delegate
             {
                 var callbackCompleted = new TaskCompletionSource<object>();
-                AsyncReaderWriterLock.Releaser releaser = new AsyncReaderWriterLock.Releaser();
+                AsyncReaderWriterLock.Releaser releaser = default(AsyncReaderWriterLock.Releaser);
                 var staScheduler = TaskScheduler.FromCurrentSynchronizationContext();
                 var nowait = Task.Run(async delegate
                 {
@@ -3211,7 +3211,7 @@
                 var callbackCompleted = new TaskCompletionSource<object>();
                 var secondWriteLockQueued = new TaskCompletionSource<object>();
                 var secondWriteLockHeld = new TaskCompletionSource<object>();
-                AsyncReaderWriterLock.Releaser releaser = new AsyncReaderWriterLock.Releaser();
+                AsyncReaderWriterLock.Releaser releaser = default(AsyncReaderWriterLock.Releaser);
                 var staScheduler = TaskScheduler.FromCurrentSynchronizationContext();
                 await Task.WhenAll(
                     Task.Run(async delegate
@@ -3504,11 +3504,13 @@
                 { "RU", false }, // false means this lock sequence should throw at the last step.
                 { "RS", false },
                 { "RW", false },
+
                 // Legal simple nested locks
                 { "RRR", true },
                 { "UUU", true },
                 { "SSS", true },
                 { "WWW", true },
+
                 // Legal interleaved nested locks
                 { "WRW", true },
                 { "UW", true },
@@ -3749,12 +3751,6 @@
             await helperTask;
         }
 
-        private async Task DisposeWhileExclusiveLockContextCaptured_HelperAsync(AsyncManualResetEvent signal)
-        {
-            await signal;
-            await Task.Yield();
-        }
-
         [TestMethod, Timeout(TestTimeout)]
         public void GetHangReportSimple()
         {
@@ -3834,6 +3830,12 @@
         {
             IDisposable disposable = this.asyncLock;
             disposable.Dispose();
+        }
+
+        private async Task DisposeWhileExclusiveLockContextCaptured_HelperAsync(AsyncManualResetEvent signal)
+        {
+            await signal;
+            await Task.Yield();
         }
 
         private void PrintHangReport()

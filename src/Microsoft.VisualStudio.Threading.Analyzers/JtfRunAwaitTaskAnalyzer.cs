@@ -1,4 +1,10 @@
-﻿namespace Microsoft.VisualStudio.Threading.Analyzers
+﻿/********************************************************
+*                                                        *
+*   © Copyright (C) Microsoft. All rights reserved.      *
+*                                                        *
+*********************************************************/
+
+namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
     using System.Collections.Generic;
@@ -85,6 +91,7 @@
 
             // Run data flow analysis to understand where the task was defined
             DataFlowAnalysis dataFlowAnalysis;
+
             // When possible (await is direct child of the block), execute data flow analysis by passing first and last statement to capture only what happens before the await
             // Check if the await is direct child of the code block (first parent is ExpressionStantement, second parent is the block itself)
             if (awaitExpressionSyntax.Parent.Parent.Equals(delegateBlock))

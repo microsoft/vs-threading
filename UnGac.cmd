@@ -1,5 +1,5 @@
 @echo off
-CALL "%~dp0Packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\tools\RunMeElevated.cmd" %0 %*
+CALL "%~dp0Packages\MicroBuild.VisualStudio.1.0.70-rc-gaf0d7eb797\tools\RunMeElevated.cmd" %0 %*
 IF %ERRORLEVEL%==200 EXIT /B
 
 setlocal

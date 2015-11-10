@@ -988,6 +988,14 @@
             await this.StressHelper(MaxLockAcquisitions, MaxLockHeldDelay, overallTimeout, iterationTimeout, maxWorkers, maxResources, testCancellation);
         }
 
+        private static void VerboseLog(string message, params object[] args)
+        {
+            if (verboseLogEnabled)
+            {
+                Console.WriteLine(message, args);
+            }
+        }
+
         private async Task StressHelper(int maxLockAcquisitions, int maxLockHeldDelay, int overallTimeout, int iterationTimeout, int maxWorkers, int maxResources, bool testCancellation)
         {
             var overallCancellation = new CancellationTokenSource(overallTimeout);
@@ -1133,14 +1141,6 @@
                         Console.WriteLine("Stress tested {0} lock acquisitions.", lockAcquisitions);
                     }
                 });
-            }
-        }
-
-        private static void VerboseLog(string message, params object[] args)
-        {
-            if (verboseLogEnabled)
-            {
-                Console.WriteLine(message, args);
             }
         }
 

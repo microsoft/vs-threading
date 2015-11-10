@@ -693,7 +693,6 @@ namespace Microsoft.VisualStudio.Threading
                 this.issuedReadLocks.Count == 0 && this.issuedUpgradeableReadLocks.Count == 0 && this.issuedWriteLocks.Count == 0 &&
                 this.waitingReaders.Count == 0 && this.waitingUpgradeableReaders.Count == 0 && this.waitingWriters.Count == 0)
             {
-
                 // We must use another task to asynchronously transition this so we don't inadvertently execute continuations inline
                 // while we're holding a lock.
                 Task.Run(delegate { this.completionSource.TrySetResult(null); });

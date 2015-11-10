@@ -103,7 +103,8 @@
         /// </summary>
         private class JTFWithTransitioningBlock : JoinableTaskFactory
         {
-            public JTFWithTransitioningBlock(JoinableTaskContext owner) : base(owner)
+            public JTFWithTransitioningBlock(JoinableTaskContext owner)
+                : base(owner)
             {
             }
 

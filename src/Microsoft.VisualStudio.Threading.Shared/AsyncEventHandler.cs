@@ -27,5 +27,6 @@ namespace Microsoft.VisualStudio.Threading
     /// <param name="sender">The sender of the event.</param>
     /// <param name="args">Event arguments.</param>
     /// <returns>A task whose completion signals handling is finished.</returns>
-    public delegate Task AsyncEventHandler<T>(object sender, T args) where T : EventArgs;
+    public delegate Task AsyncEventHandler<T>(object sender, T args)
+        where T : EventArgs;
 }
