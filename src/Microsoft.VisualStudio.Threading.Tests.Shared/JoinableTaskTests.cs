@@ -25,11 +25,6 @@
             this.SetTestContext(this.TestContext);
         }
 
-        protected override JoinableTaskContext CreateJoinableTaskContext()
-        {
-            return new DerivedJoinableTaskContext();
-        }
-
         [TestMethod]
         public void RunFuncOfTaskSTA()
         {
@@ -2562,6 +2557,7 @@
             var task = Task.Run(async delegate
             {
                 await this.asyncPump.SwitchToMainThreadAsync();
+
                 // 4.1 Now this anonymous method is on UI thread,
                 //     and it needs to acquire a read lock.
                 //
@@ -3087,6 +3083,7 @@
                 this.asyncPump.Run(async () =>
                 {
                     await this.asyncPump.SwitchToMainThreadAsync(cts.Token);
+
                     // Resume the background thread after transitioned to main thread.
                     // This is to ensure the timing that GetResult() must be called before OnCompleted() registers the cancellation.
                     transitionedToMainThread.Set();
@@ -3181,6 +3178,11 @@
                 await this.asyncPump.SwitchToMainThreadAsync();
                 transitionedToMainThread.Set();
             });
+        }
+
+        protected override JoinableTaskContext CreateJoinableTaskContext()
+        {
+            return new DerivedJoinableTaskContext();
         }
 
         private static async void SomeFireAndForgetMethod()

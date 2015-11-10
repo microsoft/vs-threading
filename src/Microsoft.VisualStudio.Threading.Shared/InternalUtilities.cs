@@ -38,7 +38,8 @@ namespace Microsoft.VisualStudio.Threading
         /// <remarks>
         /// If a value appears multiple times in the queue, only its first entry is removed.
         /// </remarks>
-        internal static bool RemoveMidQueue<T>(this Queue<T> queue, T valueToRemove) where T : class
+        internal static bool RemoveMidQueue<T>(this Queue<T> queue, T valueToRemove)
+            where T : class
         {
             Requires.NotNull(queue, nameof(queue));
             Requires.NotNull(valueToRemove, nameof(valueToRemove));

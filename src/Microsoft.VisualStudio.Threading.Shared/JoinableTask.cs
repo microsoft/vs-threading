@@ -40,6 +40,12 @@ namespace Microsoft.VisualStudio.Threading
         private readonly JoinableTaskFactory owner;
 
         /// <summary>
+        /// Store the task's initial creationOptions.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private readonly JoinableTaskCreationOptions creationOptions;
+
+        /// <summary>
         /// Other instances of <see cref="JoinableTaskFactory"/> that should be posted
         /// to with any main thread bound work.
         /// </summary>
@@ -105,12 +111,6 @@ namespace Microsoft.VisualStudio.Threading
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private JoinableTaskSynchronizationContext threadPoolJobSyncContext;
-
-        /// <summary>
-        /// Store the task's initial creationOptions.
-        /// </summary>
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private readonly JoinableTaskCreationOptions creationOptions;
 
         /// <summary>
         /// Store the task's initial delegate so we could show its full name in hang report.
@@ -1040,7 +1040,7 @@ namespace Microsoft.VisualStudio.Threading
             if (this == joinChild)
             {
                 // Joining oneself would be pointless.
-                return new JoinRelease();
+                return default(JoinRelease);
             }
 
             using (this.Factory.Context.NoMessagePumpSynchronizationContext.Apply())
@@ -1106,7 +1106,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
             }
 
-            return new JoinRelease();
+            return default(JoinRelease);
         }
     }
 }

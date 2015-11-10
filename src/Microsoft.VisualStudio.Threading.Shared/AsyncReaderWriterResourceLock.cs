@@ -20,6 +20,8 @@ namespace Microsoft.VisualStudio.Threading
     /// A non-blocking lock that allows concurrent access, exclusive access, or concurrent with upgradeability to exclusive access,
     /// making special allowances for resources that must be prepared for concurrent or exclusive access.
     /// </summary>
+    /// <typeparam name="TMoniker">The type of the moniker that identifies a resource.</typeparam>
+    /// <typeparam name="TResource">The type of resource issued for access by this lock.</typeparam>
     public abstract class AsyncReaderWriterResourceLock<TMoniker, TResource> : AsyncReaderWriterLock
         where TResource : class
     {

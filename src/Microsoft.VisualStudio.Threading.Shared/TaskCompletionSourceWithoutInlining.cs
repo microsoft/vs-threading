@@ -53,12 +53,12 @@ namespace Microsoft.VisualStudio.Threading
             get { return this.allowInliningContinuations || LightUps.IsRunContinuationsAsynchronouslySupported; }
         }
 
-        // NOTE: We do NOT define the non-Try completion methods:
-        // SetResult, SetCanceled, and SetException
-        // Because their semantic requires that exceptions are thrown
-        // synchronously, but we cannot guarantee synchronous completion.
-        // What's more, if an exception were thrown on the threadpool
-        // it would crash the process.
+        //// NOTE: We do NOT define the non-Try completion methods:
+        //// SetResult, SetCanceled, and SetException
+        //// Because their semantic requires that exceptions are thrown
+        //// synchronously, but we cannot guarantee synchronous completion.
+        //// What's more, if an exception were thrown on the threadpool
+        //// it would crash the process.
 
 #if UNUSED
 		new internal void TrySetResult(T value) {

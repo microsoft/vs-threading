@@ -15,7 +15,7 @@
         [TestInitialize]
         public void Initialize()
         {
-            this.list = new ListOfOftenOne<GenericParameterHelper>();
+            this.list = default(ListOfOftenOne<GenericParameterHelper>);
         }
 
         [TestMethod]

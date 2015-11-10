@@ -109,7 +109,7 @@
                 listener.AssertUiEnabled = false;
             }
 
-            return new DebugAssertionRevert();
+            return default(DebugAssertionRevert);
         }
 
         internal static void CompleteSynchronously(this JoinableTaskFactory factory, JoinableTaskCollection collection, Task task)

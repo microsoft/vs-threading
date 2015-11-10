@@ -21,7 +21,8 @@ namespace Microsoft.VisualStudio.Threading
     /// The collection is alloc-free for storage, retrieval and enumeration of collection sizes of 0 or 1.
     /// Beyond that causes one allocation for an immutable array that contains the entire collection.
     /// </remarks>
-    internal struct ListOfOftenOne<T> : IEnumerable<T> where T : class
+    internal struct ListOfOftenOne<T> : IEnumerable<T>
+        where T : class
     {
         /// <summary>
         /// The single value or array of values stored by this collection. Null if empty.

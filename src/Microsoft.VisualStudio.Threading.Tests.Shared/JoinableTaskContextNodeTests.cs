@@ -269,14 +269,14 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 return new DerivedFactory(collection);
             }
 
-            protected override JoinableTaskFactory CreateDefaultFactory()
-            {
-                return new DerivedFactory(this.Context);
-            }
-
             internal new IDisposable RegisterOnHangDetected()
             {
                 return base.RegisterOnHangDetected();
+            }
+
+            protected override JoinableTaskFactory CreateDefaultFactory()
+            {
+                return new DerivedFactory(this.Context);
             }
 
             protected override void OnHangDetected(JoinableTaskContext.HangDetails details)
