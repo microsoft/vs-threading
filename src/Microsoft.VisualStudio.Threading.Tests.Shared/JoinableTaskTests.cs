@@ -336,6 +336,29 @@
             }
         }
 
+        /// <summary>
+        /// Verify that if the <see cref="JoinableTaskContext"/> was initialized
+        /// without a <see cref="SynchronizationContext"/> whose
+        /// <see cref="SynchronizationContext.Post"/> method executes its delegate
+        /// on the <see cref="Thread"/> passed to the <see cref="JoinableTaskContext"/>
+        /// constructor, that an attempt to switch to the main thread using JTF
+        /// throws an informative exception.
+        /// </summary>
+        [TestMethod, Timeout(TestTimeout)]
+        public async Task SwitchToMainThreadThrowsUsefulExceptionIfJTCIsMisconfigured()
+        {
+            SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
+            var jtc = new JoinableTaskContext();
+            await TaskScheduler.Default;
+            try
+            {
+                await jtc.Factory.SwitchToMainThreadAsync();
+            }
+            catch (JoinableTaskContextException)
+            {
+            }
+        }
+
         [TestMethod, Timeout(TestTimeout)]
         public void SwitchToSTADoesNotCauseUnrelatedReentrancy()
         {
@@ -389,10 +412,10 @@
                 await TaskScheduler.Default;
                 Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
 
-                // We can't complete until this seemingly unrelated work completes.
-                // This shouldn't deadlock because this synchronous operation kicked off
-                // the operation to begin with.
-                await backgroundContender;
+            // We can't complete until this seemingly unrelated work completes.
+            // This shouldn't deadlock because this synchronous operation kicked off
+            // the operation to begin with.
+            await backgroundContender;
 
                 await this.asyncPump.SwitchToMainThreadAsync();
                 Assert.AreSame(this.originalThread, Thread.CurrentThread);
@@ -413,26 +436,26 @@
                 await this.asyncPump.SwitchToMainThreadAsync();
                 Assert.AreSame(this.originalThread, Thread.CurrentThread);
 
-                // Release, then reacquire the STA a couple of different ways
-                // to verify that even after the invitation has been extended
-                // to join the STA thread we can leave and revisit.
-                await this.asyncPump.SwitchToMainThreadAsync();
+            // Release, then reacquire the STA a couple of different ways
+            // to verify that even after the invitation has been extended
+            // to join the STA thread we can leave and revisit.
+            await this.asyncPump.SwitchToMainThreadAsync();
                 Assert.AreSame(this.originalThread, Thread.CurrentThread);
                 await Task.Yield();
                 Assert.AreSame(this.originalThread, Thread.CurrentThread);
 
-                // Now complete the task that the synchronous work is waiting before reverting their invitation.
-                backgroundContenderCompletedRelevantUIWork.SetResult(null);
+            // Now complete the task that the synchronous work is waiting before reverting their invitation.
+            backgroundContenderCompletedRelevantUIWork.SetResult(null);
 
-                // Temporarily get off UI thread until the UI thread has rescinded offer to lend its time.
-                // In so doing, once the task we're waiting on has completed, we'll be scheduled to return using
-                // the current synchronization context, which because we switched to the main thread earlier
-                // and have not yet switched off, will mean our continuation won't execute until the UI thread
-                // becomes available (without any reentrancy).
-                await backgroundInvitationReverted.Task;
+            // Temporarily get off UI thread until the UI thread has rescinded offer to lend its time.
+            // In so doing, once the task we're waiting on has completed, we'll be scheduled to return using
+            // the current synchronization context, which because we switched to the main thread earlier
+            // and have not yet switched off, will mean our continuation won't execute until the UI thread
+            // becomes available (without any reentrancy).
+            await backgroundInvitationReverted.Task;
 
-                // We should now be on the UI thread (and the Run delegate below should have altogether completd.)
-                Assert.AreSame(this.originalThread, Thread.CurrentThread);
+            // We should now be on the UI thread (and the Run delegate below should have altogether completd.)
+            Assert.AreSame(this.originalThread, Thread.CurrentThread);
                 Assert.IsTrue(syncUIOperationCompleted); // should be true because continuation needs same thread that this is set on.
             });
 
@@ -456,9 +479,9 @@
 
                 using (this.joinableCollection.Join())
                 {
-                    // Since this background task finishes on the UI thread, we need to ensure
-                    // it can get on it.
-                    await backgroundContender;
+                // Since this background task finishes on the UI thread, we need to ensure
+                // it can get on it.
+                await backgroundContender;
                 }
             });
         }
@@ -470,27 +493,27 @@
 
             factory.Run(async delegate
             {
-                // Switch to main thread when we're already there.
-                await factory.SwitchToMainThreadAsync();
+            // Switch to main thread when we're already there.
+            await factory.SwitchToMainThreadAsync();
                 Assert.AreEqual(0, factory.TransitioningToMainThreadHitCount, "No transition expected since we're already on the main thread.");
                 Assert.AreEqual(0, factory.TransitionedToMainThreadHitCount, "No transition expected since we're already on the main thread.");
 
-                // While on the main thread, await something that executes on a background thread.
-                await Task.Run(delegate
-                {
+            // While on the main thread, await something that executes on a background thread.
+            await Task.Run(delegate
+        {
                     Assert.AreEqual(0, factory.TransitioningToMainThreadHitCount, "No transition expected when moving off the main thread.");
                     Assert.AreEqual(0, factory.TransitionedToMainThreadHitCount, "No transition expected when moving off the main thread.");
                 });
                 Assert.AreEqual(0, factory.TransitioningToMainThreadHitCount, "No transition expected since the main thread was ultimately blocked for this job.");
                 Assert.AreEqual(0, factory.TransitionedToMainThreadHitCount, "No transition expected since the main thread was ultimately blocked for this job.");
 
-                // Now switch explicitly to a threadpool thread.
-                await TaskScheduler.Default;
+            // Now switch explicitly to a threadpool thread.
+            await TaskScheduler.Default;
                 Assert.AreEqual(0, factory.TransitioningToMainThreadHitCount, "No transition expected when moving off the main thread.");
                 Assert.AreEqual(0, factory.TransitionedToMainThreadHitCount, "No transition expected when moving off the main thread.");
 
-                // Now switch back to the main thread.
-                await factory.SwitchToMainThreadAsync();
+            // Now switch back to the main thread.
+            await factory.SwitchToMainThreadAsync();
                 Assert.AreEqual(0, factory.TransitioningToMainThreadHitCount, "No transition expected because the main thread was ultimately blocked for this job.");
                 Assert.AreEqual(0, factory.TransitionedToMainThreadHitCount, "No transition expected because the main thread was ultimately blocked for this job.");
             });
@@ -503,27 +526,27 @@
 
             var joinableTask = factory.RunAsync(async delegate
             {
-                // Switch to main thread when we're already there.
-                await factory.SwitchToMainThreadAsync();
+            // Switch to main thread when we're already there.
+            await factory.SwitchToMainThreadAsync();
                 Assert.AreEqual(0, factory.TransitioningToMainThreadHitCount, "No transition expected since we're already on the main thread.");
                 Assert.AreEqual(0, factory.TransitionedToMainThreadHitCount, "No transition expected since we're already on the main thread.");
 
-                // While on the main thread, await something that executes on a background thread.
-                await Task.Run(delegate
-                {
+            // While on the main thread, await something that executes on a background thread.
+            await Task.Run(delegate
+        {
                     Assert.AreEqual(0, factory.TransitioningToMainThreadHitCount, "No transition expected when moving off the main thread.");
                     Assert.AreEqual(0, factory.TransitionedToMainThreadHitCount, "No transition expected when moving off the main thread.");
                 });
                 Assert.AreEqual(1, factory.TransitioningToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
                 Assert.AreEqual(1, factory.TransitionedToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
 
-                // Now switch explicitly to a threadpool thread.
-                await TaskScheduler.Default;
+            // Now switch explicitly to a threadpool thread.
+            await TaskScheduler.Default;
                 Assert.AreEqual(1, factory.TransitioningToMainThreadHitCount, "No transition expected when moving off the main thread.");
                 Assert.AreEqual(1, factory.TransitionedToMainThreadHitCount, "No transition expected when moving off the main thread.");
 
-                // Now switch back to the main thread.
-                await factory.SwitchToMainThreadAsync();
+            // Now switch back to the main thread.
+            await factory.SwitchToMainThreadAsync();
                 Assert.AreEqual(2, factory.TransitioningToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
                 Assert.AreEqual(2, factory.TransitionedToMainThreadHitCount, "Reacquisition of main thread should have raised transition events.");
             });
@@ -644,10 +667,10 @@
 
             this.asyncPump.Run(async delegate
             {
-                // Even though it's all the same instance of AsyncPump,
-                // unrelated work (work not spun off from this block) must still be
-                // Joined in order to execute here.
-                Assert.AreNotSame(task, await Task.WhenAny(task, Task.Delay(AsyncDelay / 2)), "The unrelated main thread work completed before the Main thread was joined.");
+            // Even though it's all the same instance of AsyncPump,
+            // unrelated work (work not spun off from this block) must still be
+            // Joined in order to execute here.
+            Assert.AreNotSame(task, await Task.WhenAny(task, Task.Delay(AsyncDelay / 2)), "The unrelated main thread work completed before the Main thread was joined.");
                 using (this.joinableCollection.Join())
                 {
                     this.PrintActiveTasksReport();
@@ -758,18 +781,18 @@
                     {
                         await this.asyncPump.SwitchToMainThreadAsync();
 
-                        // Kick off work that should *not* impact the completion of
-                        // the JoinableTask that lives within this Run delegate.
-                        // And enforce the assertion by blocking the main thread until
-                        // the JoinableTask is done, which would deadlock if the
-                        // JoinableTask were inappropriately blocking on the completion
-                        // of the posted message.
-                        SynchronizationContext.Current.Post(s => { task.Wait(); }, null);
+                    // Kick off work that should *not* impact the completion of
+                    // the JoinableTask that lives within this Run delegate.
+                    // And enforce the assertion by blocking the main thread until
+                    // the JoinableTask is done, which would deadlock if the
+                    // JoinableTask were inappropriately blocking on the completion
+                    // of the posted message.
+                    SynchronizationContext.Current.Post(s => { task.Wait(); }, null);
 
-                        // Post one more time, since an implementation detail may unblock
-                        // the JoinableTask for the very last posted message for reasons that
-                        // don't apply for other messages.
-                        SynchronizationContext.Current.Post(s => { }, null);
+                    // Post one more time, since an implementation detail may unblock
+                    // the JoinableTask for the very last posted message for reasons that
+                    // don't apply for other messages.
+                    SynchronizationContext.Current.Post(s => { }, null);
                     });
                 }
                 finally
@@ -1084,8 +1107,8 @@
                 await Task.Delay(AsyncDelay / 2);
                 await Task.Yield();
 
-                // we expect 3 switching from two delay one yield call.  We don't want one triggered by Task1.
-                Assert.IsTrue(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
+            // we expect 3 switching from two delay one yield call.  We don't want one triggered by Task1.
+            Assert.IsTrue(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
                 Assert.IsFalse(task1.IsCompleted);
 
                 testEnded.Set();
@@ -1203,8 +1226,8 @@
                 await Task.Delay(AsyncDelay / 2);
                 await Task.Yield();
 
-                // we expect 3 switching from two delay one yield call.  We don't want one triggered by Task1.
-                Assert.IsTrue(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
+            // we expect 3 switching from two delay one yield call.  We don't want one triggered by Task1.
+            Assert.IsTrue(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
                 Assert.IsFalse(task1.IsCompleted);
 
                 testEnded.Set();
@@ -1331,8 +1354,8 @@
                 await Task.Delay(AsyncDelay / 2);
                 await Task.Yield();
 
-                // we expect 3 switching from two delay one yield call.  We don't want one triggered by Task1.
-                Assert.IsTrue(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
+            // we expect 3 switching from two delay one yield call.  We don't want one triggered by Task1.
+            Assert.IsTrue(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
                 Assert.IsFalse(task1.IsCompleted);
 
                 testEnded.Set();
@@ -1364,47 +1387,47 @@
             var postJoinRevertedWorkExecuting = new AsyncManualResetEvent();
             var unrelatedTask = Task.Run(async delegate
             {
-                // STEP 2
-                await this.asyncPump.SwitchToMainThreadAsync()
-                    .GetAwaiter().YieldAndNotify(mainThreadDependentWorkQueued);
+            // STEP 2
+            await this.asyncPump.SwitchToMainThreadAsync()
+            .GetAwaiter().YieldAndNotify(mainThreadDependentWorkQueued);
 
-                // STEP 4
-                Assert.AreSame(this.originalThread, Thread.CurrentThread);
+            // STEP 4
+            Assert.AreSame(this.originalThread, Thread.CurrentThread);
                 dependentWorkCompleted.Set();
                 await joinReverted.WaitAsync().ConfigureAwait(false);
 
-                // STEP 6
-                Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
+            // STEP 6
+            Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
                 await this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().YieldAndNotify(postJoinRevertedWorkQueued, postJoinRevertedWorkExecuting);
 
-                // STEP 8
-                Assert.AreSame(this.originalThread, Thread.CurrentThread);
+            // STEP 8
+            Assert.AreSame(this.originalThread, Thread.CurrentThread);
             });
 
             this.asyncPump.Run(async delegate
             {
-                // STEP 1
-                Assert.AreSame(this.originalThread, Thread.CurrentThread);
+            // STEP 1
+            Assert.AreSame(this.originalThread, Thread.CurrentThread);
                 await Task.Yield();
                 Assert.AreSame(this.originalThread, Thread.CurrentThread);
                 await mainThreadDependentWorkQueued.WaitAsync();
 
-                // STEP 3
-                using (this.joinableCollection.Join())
+            // STEP 3
+            using (this.joinableCollection.Join())
                 {
                     await dependentWorkCompleted.WaitAsync();
                 }
 
-                // STEP 5
-                joinReverted.Set();
+            // STEP 5
+            joinReverted.Set();
                 var releasingTask = await Task.WhenAny(unrelatedTask, postJoinRevertedWorkQueued.WaitAsync());
                 if (releasingTask == unrelatedTask & unrelatedTask.IsFaulted)
                 {
                     unrelatedTask.GetAwaiter().GetResult(); // rethrow an error that has already occurred.
                 }
 
-                // STEP 7
-                var executingWaitTask = postJoinRevertedWorkExecuting.WaitAsync();
+            // STEP 7
+            var executingWaitTask = postJoinRevertedWorkExecuting.WaitAsync();
                 Assert.AreNotSame(executingWaitTask, await Task.WhenAny(executingWaitTask, Task.Delay(AsyncDelay)), "Main thread work from unrelated task should not have executed.");
 
                 await Task.Yield();
@@ -1452,9 +1475,9 @@
                     Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
                     await this.asyncPump.SwitchToMainThreadAsync();
 
-                    // The scenario here is that some code calls out, then back in, via a synchronous interface
-                    this.asyncPump.Run(async delegate
-                    {
+                // The scenario here is that some code calls out, then back in, via a synchronous interface
+                this.asyncPump.Run(async delegate
+            {
                         await Task.Yield();
                         await this.TestReentrancyOfUnrelatedDependentWork();
                     });
@@ -1480,16 +1503,16 @@
                 {
                     Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
 
-                    // Switching to the main thread here will get us the SynchronizationContext we need,
-                    // and the awaiter's GetResult() should apply the AsyncLocal sync context as well
-                    // to avoid deadlocks later.
-                    await this.asyncPump.SwitchToMainThreadAsync();
+                // Switching to the main thread here will get us the SynchronizationContext we need,
+                // and the awaiter's GetResult() should apply the AsyncLocal sync context as well
+                // to avoid deadlocks later.
+                await this.asyncPump.SwitchToMainThreadAsync();
 
                     await this.TestReentrancyOfUnrelatedDependentWork();
 
-                    // The scenario here is that some code calls out, then back in, via a synchronous interface
-                    this.asyncPump.Run(async delegate
-                    {
+                // The scenario here is that some code calls out, then back in, via a synchronous interface
+                this.asyncPump.Run(async delegate
+            {
                         await Task.Yield();
                         await this.TestReentrancyOfUnrelatedDependentWork();
                     });
@@ -1546,11 +1569,11 @@
                 Task innerTask = null;
                 this.asyncPump.Run(delegate
                 {
-                    // We need simulate a scenario that the task is completed without any yielding,
-                    // but the queue of the Joinable task is not empty at that point,
-                    // so the synchronous JoinableTask doesn't need any blocking time, but it is completed later.
-                    innerTask = Task.Run(async delegate
-                    {
+                // We need simulate a scenario that the task is completed without any yielding,
+                // but the queue of the Joinable task is not empty at that point,
+                // so the synchronous JoinableTask doesn't need any blocking time, but it is completed later.
+                innerTask = Task.Run(async delegate
+            {
                         await this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().YieldAndNotify(innerTaskWaitingSwitching);
                     });
 
@@ -1560,8 +1583,8 @@
 
                 await Task.Yield();
 
-                // Now, get rid of the innerTask
-                await innerTask;
+            // Now, get rid of the innerTask
+            await innerTask;
             });
         }
 
@@ -1589,8 +1612,8 @@
                 innerTaskWaiting.Set();
                 await Task.Yield();
 
-                // Now, get rid of the innerTask
-                await innerTask;
+            // Now, get rid of the innerTask
+            await innerTask;
             });
         }
 
@@ -1703,13 +1726,13 @@
             {
                 return this.asyncPump.RunAsync(async delegate
                 {
-                    // Verify that we're on a background thread and stay there.
-                    Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
+                // Verify that we're on a background thread and stay there.
+                Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
                     await Task.Yield();
                     Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
 
-                    // Now explicitly get on the Main thread, and verify that we stay there.
-                    await this.asyncPump.SwitchToMainThreadAsync();
+                // Now explicitly get on the Main thread, and verify that we stay there.
+                await this.asyncPump.SwitchToMainThreadAsync();
                     Assert.AreSame(this.originalThread, Thread.CurrentThread);
                     await Task.Yield();
                     Assert.AreSame(this.originalThread, Thread.CurrentThread);
@@ -1728,13 +1751,13 @@
                 {
                     this.asyncPump.Run(async delegate
                     {
-                        // Verify that we're on a background thread and stay there.
-                        Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
+                    // Verify that we're on a background thread and stay there.
+                    Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
                         await Task.Yield();
                         Assert.AreNotSame(this.originalThread, Thread.CurrentThread);
 
-                        // Now explicitly get on the Main thread, and verify that we stay there.
-                        await this.asyncPump.SwitchToMainThreadAsync();
+                    // Now explicitly get on the Main thread, and verify that we stay there.
+                    await this.asyncPump.SwitchToMainThreadAsync();
                         Assert.AreSame(this.originalThread, Thread.CurrentThread);
                         await Task.Yield();
                         Assert.AreSame(this.originalThread, Thread.CurrentThread);
@@ -1882,12 +1905,12 @@
                 syncContext.Send(s => { Assert.AreSame(this.originalThread, Thread.CurrentThread); Assert.AreSame(state, s); executed1 = true; }, state);
                 Assert.IsTrue(executed1);
 
-                // And from another thread.  But the Main thread is "busy" in a synchronous block,
-                // so the Send isn't expected to get in right away.  So spin off a task to keep the Send
-                // in a wait state until it's finally able to get through.
-                // This tests that Send can work even if not immediately.
-                sendFromWithinRunSync = Task.Run(delegate
-                {
+            // And from another thread.  But the Main thread is "busy" in a synchronous block,
+            // so the Send isn't expected to get in right away.  So spin off a task to keep the Send
+            // in a wait state until it's finally able to get through.
+            // This tests that Send can work even if not immediately.
+            sendFromWithinRunSync = Task.Run(delegate
+        {
                     bool executed2 = false;
                     syncContext.Send(s =>
                     {
@@ -1899,8 +1922,8 @@
                         }
                         finally
                         {
-                            // Allow the message pump to exit.
-                            countdownEvent.Signal();
+                        // Allow the message pump to exit.
+                        countdownEvent.Signal();
                         }
                     }, state);
                     Assert.IsTrue(executed2);
@@ -1931,8 +1954,8 @@
                 }
                 finally
                 {
-                    // Allow the message pump to exit.
-                    countdownEvent.Signal();
+                // Allow the message pump to exit.
+                countdownEvent.Signal();
                 }
             });
 
@@ -1955,8 +1978,8 @@
             {
                 try
                 {
-                    // starting on a worker thread, we switch to the Main thread.
-                    await this.asyncPump.SwitchToMainThreadAsync();
+                // starting on a worker thread, we switch to the Main thread.
+                await this.asyncPump.SwitchToMainThreadAsync();
                     syncContext = SynchronizationContext.Current;
 
                     bool executed1 = false;
@@ -1971,8 +1994,8 @@
                 }
                 finally
                 {
-                    // Allow the pushed message pump frame to exit.
-                    frame.Continue = false;
+                // Allow the pushed message pump frame to exit.
+                frame.Continue = false;
                 }
             });
 
@@ -1998,11 +2021,11 @@
                 using (this.context.SuppressRelevance())
                 { // simulate some kind of sync context hand-off that doesn't flow execution context.
                     Task.Run(delegate
+            {
+                    // This post will only get a chance for processing
+                    syncContext.Post(
+                    state =>
                     {
-                        // This post will only get a chance for processing
-                        syncContext.Post(
-                            state =>
-                            {
                                 try
                                 {
                                     Assert.AreSame(this.originalThread, Thread.CurrentThread);
@@ -2016,13 +2039,13 @@
                                     frame.Continue = false;
                                 }
                             },
-                            null);
+                    null);
                     });
                 }
 
-                // Now simulate the display of modal UI by pushing an unfiltered message pump onto the stack.
-                // This will hang unless the message gets processed.
-                Dispatcher.PushFrame(frame);
+            // Now simulate the display of modal UI by pushing an unfiltered message pump onto the stack.
+            // This will hang unless the message gets processed.
+            Dispatcher.PushFrame(frame);
 
                 if (ex != null)
                 {
@@ -2558,35 +2581,35 @@
             {
                 await this.asyncPump.SwitchToMainThreadAsync();
 
-                // 4.1 Now this anonymous method is on UI thread,
-                //     and it needs to acquire a read lock.
-                //
-                //     The attempt to acquire a lock would lead to a deadlock!
-                //     Because the call context was overwritten by this reentrance,
-                //     this method didn't know the write lock was already acquired at
-                //     the bottom of the call stack. Therefore, it will issue a new request
-                //     to acquire the read lock. However, that request won't be completed as
-                //     the write lock holder is also waiting for this method to complete.
-                //
-                //     This test would be timeout here.
-                using (await asyncLock.ReadLockAsync())
+            // 4.1 Now this anonymous method is on UI thread,
+            //     and it needs to acquire a read lock.
+            //
+            //     The attempt to acquire a lock would lead to a deadlock!
+            //     Because the call context was overwritten by this reentrance,
+            //     this method didn't know the write lock was already acquired at
+            //     the bottom of the call stack. Therefore, it will issue a new request
+            //     to acquire the read lock. However, that request won't be completed as
+            //     the write lock holder is also waiting for this method to complete.
+            //
+            //     This test would be timeout here.
+            using (await asyncLock.ReadLockAsync())
                 {
                 }
             });
 
             this.asyncPump.Run(async delegate
             {
-                // 1. Acquire write lock on worker thread
-                using (await asyncLock.WriteLockAsync())
+            // 1. Acquire write lock on worker thread
+            using (await asyncLock.WriteLockAsync())
                 {
-                    // 2. Hold the write lock but switch to UI thread.
-                    //    That's to simulate the scenario to call into IVs* services
-                    await this.asyncPump.SwitchToMainThreadAsync();
+                // 2. Hold the write lock but switch to UI thread.
+                //    That's to simulate the scenario to call into IVs* services
+                await this.asyncPump.SwitchToMainThreadAsync();
 
-                    // 3. Join and wait for another BG task.
-                    //    That's to simulate the scenario when the IVs* service also calls into CPS,
-                    //    and CPS join and wait for another task.
-                    using (this.joinableCollection.Join())
+                // 3. Join and wait for another BG task.
+                //    That's to simulate the scenario when the IVs* service also calls into CPS,
+                //    and CPS join and wait for another task.
+                using (this.joinableCollection.Join())
                     {
                         await task;
                     }
@@ -2694,8 +2717,8 @@
                 Assert.AreSame(this.originalThread, Thread.CurrentThread);
                 await Task.Yield();
 
-                // verifies no yield
-                Assert.IsTrue(this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().IsCompleted);
+            // verifies no yield
+            Assert.IsTrue(this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().IsCompleted);
 
                 await this.asyncPump.SwitchToMainThreadAsync();
                 await Task.Yield();
@@ -2731,8 +2754,8 @@
                     await Task.Yield();
                     Assert.AreSame(otherThread, Thread.CurrentThread);
 
-                    // verifies no yield
-                    Assert.IsTrue(this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().IsCompleted);
+                // verifies no yield
+                Assert.IsTrue(this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().IsCompleted);
 
                     await this.asyncPump.SwitchToMainThreadAsync(); // we expect this to no-op
                     Assert.AreSame(otherThread, Thread.CurrentThread);
@@ -2756,8 +2779,8 @@
                     Assert.AreSame(otherThread, Thread.CurrentThread);
                     await Task.Yield();
 
-                    // verifies no yield
-                    Assert.IsTrue(this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().IsCompleted);
+                // verifies no yield
+                Assert.IsTrue(this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().IsCompleted);
 
                     await this.asyncPump.SwitchToMainThreadAsync(); // we expect this to no-op
                     await Task.Yield();
@@ -3019,12 +3042,12 @@
                 await TaskScheduler.Default;
                 for (int i = 0; i < 1000; i++)
                 {
-                    // TIP: spinning gives the blocking thread longer to wake up, which
-                    // if it wakes up at all tends to mean it will wake up in time for more
-                    // of the iterations, showing that doing real work exercerbates the problem.
-                    ////for (int j = 0; j < 5000; j++) { }
+                // TIP: spinning gives the blocking thread longer to wake up, which
+                // if it wakes up at all tends to mean it will wake up in time for more
+                // of the iterations, showing that doing real work exercerbates the problem.
+                ////for (int j = 0; j < 5000; j++) { }
 
-                    await this.asyncPump.RunAsync(delegate { return TplExtensions.CompletedTask; });
+                await this.asyncPump.RunAsync(delegate { return TplExtensions.CompletedTask; });
                 }
             });
 
@@ -3042,12 +3065,12 @@
                 await TaskScheduler.Default;
                 for (int i = 0; i < 1000; i++)
                 {
-                    // TIP: spinning gives the blocking thread longer to wake up, which
-                    // if it wakes up at all tends to mean it will wake up in time for more
-                    // of the iterations, showing that doing real work exercerbates the problem.
-                    ////for (int j = 0; j < 5000; j++) { }
+                // TIP: spinning gives the blocking thread longer to wake up, which
+                // if it wakes up at all tends to mean it will wake up in time for more
+                // of the iterations, showing that doing real work exercerbates the problem.
+                ////for (int j = 0; j < 5000; j++) { }
 
-                    await this.asyncPump.RunAsync(async delegate { await Task.Yield(); });
+                await this.asyncPump.RunAsync(async delegate { await Task.Yield(); });
                 }
             });
 
@@ -3064,8 +3087,8 @@
             var transitionedToMainThread = new ManualResetEventSlim(false);
             factory.PostToUnderlyingSynchronizationContextCallback = () =>
             {
-                // Pause the background thread after posted the continuation to JoinableTask.
-                transitionedToMainThread.Wait();
+            // Pause the background thread after posted the continuation to JoinableTask.
+            transitionedToMainThread.Wait();
             };
 
             object result = new object();
@@ -3073,20 +3096,20 @@
 
             this.asyncPump.Run(async () =>
             {
-                // Needs to switch to background thread at first in order to test the code that requests switch to main thread.
-                await TaskScheduler.Default;
+            // Needs to switch to background thread at first in order to test the code that requests switch to main thread.
+            await TaskScheduler.Default;
 
-                // This nested run starts on background thread and then requests to switch to main thread.
-                // The remaining parts in the async delegate would be executed on main thread. This nested run
-                // will complete only when both the background thread works (aka. MainThreadAWaiter.OnCompleted())
-                // and the main thread works are done, and then we could start verification.
-                this.asyncPump.Run(async () =>
-                {
+            // This nested run starts on background thread and then requests to switch to main thread.
+            // The remaining parts in the async delegate would be executed on main thread. This nested run
+            // will complete only when both the background thread works (aka. MainThreadAWaiter.OnCompleted())
+            // and the main thread works are done, and then we could start verification.
+            this.asyncPump.Run(async () =>
+        {
                     await this.asyncPump.SwitchToMainThreadAsync(cts.Token);
 
-                    // Resume the background thread after transitioned to main thread.
-                    // This is to ensure the timing that GetResult() must be called before OnCompleted() registers the cancellation.
-                    transitionedToMainThread.Set();
+                // Resume the background thread after transitioned to main thread.
+                // This is to ensure the timing that GetResult() must be called before OnCompleted() registers the cancellation.
+                transitionedToMainThread.Set();
                     return result;
                 });
             });
@@ -3116,8 +3139,8 @@
             var waitForOnCompletedIsFinished = new ManualResetEventSlim(false);
             factory.TransitionedToMainThreadCallback = (jt) =>
             {
-                // Pause the main thread before execute the continuation.
-                waitForOnCompletedIsFinished.Wait();
+            // Pause the main thread before execute the continuation.
+            waitForOnCompletedIsFinished.Wait();
             };
 
             object result = new object();
@@ -3125,22 +3148,22 @@
 
             this.asyncPump.Run(async () =>
             {
-                // Needs to switch to background thread at first in order to test the code that requests switch to main thread.
-                await TaskScheduler.Default;
+            // Needs to switch to background thread at first in order to test the code that requests switch to main thread.
+            await TaskScheduler.Default;
 
-                // This nested async run starts on background thread and then requests to switch to main thread.
-                // It will complete only when the background thread works (aka. MainThreadAWaiter.OnCompleted()) are done,
-                // and then we will signal a test event to resume the main thread execution, to let the remaining parts
-                // in the async delegate go through.
-                var joinable = this.asyncPump.RunAsync(async () =>
-                {
+            // This nested async run starts on background thread and then requests to switch to main thread.
+            // It will complete only when the background thread works (aka. MainThreadAWaiter.OnCompleted()) are done,
+            // and then we will signal a test event to resume the main thread execution, to let the remaining parts
+            // in the async delegate go through.
+            var joinable = this.asyncPump.RunAsync(async () =>
+        {
                     await this.asyncPump.SwitchToMainThreadAsync(cts.Token);
                     return result;
                 });
 
-                // Resume the main thread after OnCompleted() finishes.
-                // This is to ensure the timing that GetResult() must be called after OnCompleted() is fully done.
-                waitForOnCompletedIsFinished.Set();
+            // Resume the main thread after OnCompleted() finishes.
+            // This is to ensure the timing that GetResult() must be called after OnCompleted() is fully done.
+            waitForOnCompletedIsFinished.Set();
                 await joinable;
             });
 
@@ -3168,9 +3191,9 @@
             var transitionedToMainThread = new ManualResetEventSlim(false);
             factory.PostToUnderlyingSynchronizationContextCallback = () =>
             {
-                // The JoinableTask should be wakened up and the code to set this event should be executed on main thread,
-                // otherwise, this wait will cause test timeout.
-                transitionedToMainThread.Wait();
+            // The JoinableTask should be wakened up and the code to set this event should be executed on main thread,
+            // otherwise, this wait will cause test timeout.
+            transitionedToMainThread.Wait();
             };
             this.asyncPump.Run(async delegate
             {

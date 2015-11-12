@@ -188,6 +188,15 @@ namespace Microsoft.VisualStudio.Threading {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to An attempt to switch to the main thread failed to reach the expected thread. Was the JoinableTaskContext initialized on the wrong thread or with a SynchronizationContext whose Post method does not execute its delegate on the main thread?.
+        /// </summary>
+        internal static string SwitchToMainThreadFailedToReachExpectedThread {
+            get {
+                return ResourceManager.GetString("SwitchToMainThreadFailedToReachExpectedThread", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The value factory has called for the value on the same instance..
         /// </summary>
         internal static string ValueFactoryReentrancy {

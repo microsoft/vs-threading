@@ -842,7 +842,10 @@ namespace Microsoft.VisualStudio.Threading
             public void GetResult()
             {
                 Assumes.True(this.jobFactory != null);
-                Assumes.True(this.jobFactory.Context.IsOnMainThread || this.jobFactory.Context.UnderlyingSynchronizationContext == null || this.cancellationToken.IsCancellationRequested);
+                if (!(this.jobFactory.Context.IsOnMainThread || this.jobFactory.Context.UnderlyingSynchronizationContext == null || this.cancellationToken.IsCancellationRequested))
+                {
+                    throw new JoinableTaskContextException(Strings.SwitchToMainThreadFailedToReachExpectedThread);
+                }
 
                 // Release memory associated with the cancellation request.
                 if (this.cancellationRegistrationPtr != null)
