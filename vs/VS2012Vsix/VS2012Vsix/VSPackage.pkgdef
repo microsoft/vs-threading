@@ -4,6 +4,10 @@
 "Class"="Microsoft.VisualStudio.Threading.VSPackage.VSPackage"
 "CodeBase"="$PackageFolder$\Microsoft.VisualStudio.Threading.VSPackage.dll"
 
+[$RootKey$\Services\{8767A7D4-ECFC-4627-8FC0-A1685E3B0493}]
+@="{144d199a-7913-4117-87bd-714c402dbd1d}"
+"Name"="SVsJoinableTaskContext"
+
 [$RootKey$\RuntimeConfiguration\dependentAssembly\codeBase\{9A51F0A5-5567-4015-A081-F32D64A834B7}]
 "Name"="Microsoft.VisualStudio.Threading.VSPackage"
 "PublicKeyToken"="b03f5f7f11d50a3a"
