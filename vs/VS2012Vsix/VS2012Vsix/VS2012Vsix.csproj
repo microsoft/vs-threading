@@ -88,6 +88,14 @@
     <Folder Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="..\..\..\..\..\Users\andarno\.nuget\packages\Microsoft.VisualStudio.Threading\14.1.114\lib\net45\Microsoft.VisualStudio.Threading.dll">
+      <Link>Microsoft.VisualStudio.Threading.dll</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="..\..\..\..\..\Users\andarno\.nuget\packages\Microsoft.VisualStudio.Validation\14.1.111\lib\net45\Microsoft.VisualStudio.Validation.dll">
+      <Link>Microsoft.VisualStudio.Validation.dll</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <Content Include="VSPackage.pkgdef">
       <IncludeInVSIX>true</IncludeInVSIX>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
