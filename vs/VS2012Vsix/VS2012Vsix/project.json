@@ -1,0 +1,12 @@
+﻿{
+  "dependencies": {
+    "Microsoft.VSSDK.BuildTools": "14.1.24720"
+  },
+  "frameworks": {
+    "net45": {}
+  },
+  "runtimes": {
+    "win-anycpu": { },
+    "win":  { }
+  }
+}

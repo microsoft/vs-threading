@@ -1,0 +1,15 @@
+﻿{
+  "dependencies": {
+    "MicroBuild.VisualStudio": "1.0.93-rc-ge3c4ee6f88",
+    "Microsoft.VisualStudio.Threading": "14.1.114", // TODO: change this to v12.x
+    "Nerdbank.GitVersioning": "1.1.52-rc",
+    "VSSDK.Shell.10": "10.0.0"
+  },
+  "frameworks": {
+    "net45": {}
+  },
+  "runtimes": {
+    "win-anycpu": { },
+    "win":  { }
+  }
+}

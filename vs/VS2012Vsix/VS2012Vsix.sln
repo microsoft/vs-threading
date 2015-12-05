@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VS2012Vsix", "VS2012Vsix\VS2012Vsix.csproj", "{2B6B07E7-924C-4FC4-BC4E-5EE7B3E0CF7A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1C4D39D6-DC32-424C-B65C-40B19955F4A0}"
+	ProjectSection(SolutionItems) = preProject
+		..\..\.gitignore = ..\..\.gitignore
+		version.json = version.json
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Threading.VSPackage", "Microsoft.VisualStudio.Threading.VSPackage\Microsoft.VisualStudio.Threading.VSPackage.csproj", "{E5897396-86E5-4E2C-972E-8BC96E98952B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2B6B07E7-924C-4FC4-BC4E-5EE7B3E0CF7A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B6B07E7-924C-4FC4-BC4E-5EE7B3E0CF7A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B6B07E7-924C-4FC4-BC4E-5EE7B3E0CF7A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B6B07E7-924C-4FC4-BC4E-5EE7B3E0CF7A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E5897396-86E5-4E2C-972E-8BC96E98952B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E5897396-86E5-4E2C-972E-8BC96E98952B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E5897396-86E5-4E2C-972E-8BC96E98952B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E5897396-86E5-4E2C-972E-8BC96E98952B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
