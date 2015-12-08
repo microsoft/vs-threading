@@ -1,15 +1,21 @@
 ﻿{
   "dependencies": {
-    "MicroBuild.VisualStudio": "1.0.93-rc-ge3c4ee6f88",
-    "Microsoft.VisualStudio.Threading": "14.1.114", // TODO: change this to v12.x
-    "Nerdbank.GitVersioning": "1.1.52-rc",
+    "MicroBuild.VisualStudio": {
+      "version": "1.0.93-rc-ge3c4ee6f88",
+      "suppressParent": "none"
+    },
+    "Microsoft.VisualStudio.Threading": "12.2.0",
+    "Nerdbank.GitVersioning": {
+      "version": "1.1.61-rc",
+      "suppressParent": "none"
+    },
     "VSSDK.Shell.10": "10.0.0"
   },
   "frameworks": {
-    "net45": {}
+    "net45": { }
   },
   "runtimes": {
     "win-anycpu": { },
-    "win":  { }
+    "win": { }
   }
 }

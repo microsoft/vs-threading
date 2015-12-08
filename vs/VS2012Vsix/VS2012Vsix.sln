@@ -8,6 +8,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1C4D39D6-DC32-424C-B65C-40B19955F4A0}"
 	ProjectSection(SolutionItems) = preProject
 		..\..\.gitignore = ..\..\.gitignore
+		..\..\nuget.config = ..\..\nuget.config
 		version.json = version.json
 	EndProjectSection
 EndProject
