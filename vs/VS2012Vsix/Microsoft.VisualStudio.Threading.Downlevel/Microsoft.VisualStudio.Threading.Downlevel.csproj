@@ -23,8 +23,8 @@
     <ProjectGuid>{2B6B07E7-924C-4FC4-BC4E-5EE7B3E0CF7A}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>VS2012Vsix</RootNamespace>
-    <AssemblyName>VS2012Vsix</AssemblyName>
+    <RootNamespace>Microsoft.VisualStudio.Threading.Downlevel</RootNamespace>
+    <AssemblyName>Microsoft.VisualStudio.Threading.Downlevel</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <GeneratePkgDefFile>false</GeneratePkgDefFile>
     <IncludeAssemblyInVSIXContainer>false</IncludeAssemblyInVSIXContainer>

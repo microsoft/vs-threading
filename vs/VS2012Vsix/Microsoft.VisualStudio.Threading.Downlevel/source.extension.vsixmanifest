@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Id="Microsoft.VisualStudio.Threading" Version="|VS2012Vsix;GetBuildVersion|" Language="en-US" Publisher="Microsoft" />
+    <Identity Id="Microsoft.VisualStudio.Threading.Downlevel" Version="|Microsoft.VisualStudio.Threading.Downlevel;GetBuildVersion|" Language="en-US" Publisher="Microsoft" />
     <DisplayName>Microsoft.VisualStudio.Threading for Visual Studio 2010-2012</DisplayName>
     <Description xml:space="preserve">Adds the Microsoft.VisualStudio.Threading.dll assembly that comes in the box with Visual Studio 2013 to Visual Studio 2010 and Visual Studio 2012.</Description>
   </Metadata>
