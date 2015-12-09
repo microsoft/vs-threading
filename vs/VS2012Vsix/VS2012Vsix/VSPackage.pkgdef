@@ -19,12 +19,12 @@
 "Name"="Microsoft.VisualStudio.Threading"
 "PublicKeyToken"="b03f5f7f11d50a3a"
 "Culture"="neutral"
-"Version"="14.0.0.0"
+"Version"="12.0.0.0"
 "CodeBase"="$PackageFolder$\Microsoft.VisualStudio.Threading.dll"
 
 [$RootKey$\RuntimeConfiguration\dependentAssembly\codeBase\{AF8412F8-BD3E-49E5-B085-AAB3E29F07BE}]
 "Name"="Microsoft.VisualStudio.Validation"
 "PublicKeyToken"="b03f5f7f11d50a3a"
 "Culture"="neutral"
-"Version"="14.0.0.0"
+"Version"="12.0.0.0"
 "CodeBase"="$PackageFolder$\Microsoft.VisualStudio.Validation.dll"
