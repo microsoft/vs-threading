@@ -1,5 +1,9 @@
 ﻿{
   "dependencies": {
+    "MicroBuild.Core": {
+      "version": "0.1.1",
+      "suppressParent": "none"
+    },
     "MicroBuild.VisualStudio": {
       "version": "1.0.93-rc-ge3c4ee6f88",
       "suppressParent": "none"
