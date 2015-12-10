@@ -7,6 +7,8 @@
     <Description xml:space="preserve">Adds the Microsoft.VisualStudio.Threading.dll assembly that comes in the box with Visual Studio 2013 to Visual Studio 2010 and Visual Studio 2012.</Description>
     <Locale>1033</Locale>
     <InstalledByMsi>true</InstalledByMsi>
+    <AllUsers>true</AllUsers>
+    <License>LICENSE.txt</License>
     <SupportedProducts>
       <VisualStudio Version="10.0">
         <Edition>Pro</Edition>
