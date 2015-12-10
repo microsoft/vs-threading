@@ -1,19 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
-  <Metadata>
-    <Identity Id="Microsoft.VisualStudio.Threading.Downlevel" Version="|Microsoft.VisualStudio.Threading.Downlevel;GetBuildVersion|" Language="en-US" Publisher="Microsoft" />
-    <DisplayName>Microsoft.VisualStudio.Threading for Visual Studio 2010-2012</DisplayName>
+<Vsix xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Version="1.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2010">
+  <Identifier Id="Microsoft.VisualStudio.Threading.Downlevel">
+    <Name>Microsoft.VisualStudio.Threading.Downlevel</Name>
+    <Author>Microsoft Corporation</Author>
+    <Version>|Microsoft.VisualStudio.Threading.Downlevel;GetBuildVersion|</Version>
     <Description xml:space="preserve">Adds the Microsoft.VisualStudio.Threading.dll assembly that comes in the box with Visual Studio 2013 to Visual Studio 2010 and Visual Studio 2012.</Description>
-  </Metadata>
-  <Installation AllUsers="true">
-    <InstallationTarget Id="Microsoft.VisualStudio.Pro" Version="[10.0,12.0)" />
-  </Installation>
-  <Dependencies>
-    <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="[4.5,)" />
-    <Dependency Id="Microsoft.VisualStudio.MPF" DisplayName="Visual Studio MPF" d:Source="Installed" Version="[10.0,12.0)" />
-  </Dependencies>
-  <Assets>
-    <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
-    <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="File" Path="VSPackage.pkgdef" />
-  </Assets>
-</PackageManifest>
+    <Locale>1033</Locale>
+    <InstalledByMsi>false</InstalledByMsi>
+    <SupportedProducts>
+      <VisualStudio Version="10.0">
+        <Edition>Pro</Edition>
+      </VisualStudio>
+      <VisualStudio Version="11.0">
+        <Edition>Pro</Edition>
+      </VisualStudio>
+    </SupportedProducts>
+    <SupportedFrameworkRuntimeEdition MinVersion="4.5" MaxVersion="4.9" />
+  </Identifier>
+  <References>
+    <Reference Id="Microsoft.VisualStudio.MPF" MinVersion="10.0">
+      <Name>Visual Studio MPF</Name>
+    </Reference>
+  </References>
+  <Content>
+    <VsPackage>VSPackage.pkgdef</VsPackage>
+  </Content>
+</Vsix>
