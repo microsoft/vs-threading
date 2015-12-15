@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Vsix xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Version="1.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2010">
+  <Identifier Id="Microsoft.VisualStudio.Threading.Downlevel">
+    <Name>Visual Studio Threading Library</Name>
+    <Author>Microsoft</Author>
+    <Version>|Microsoft.VisualStudio.Threading.Downlevel;GetBuildVersion|</Version>
+    <Description xml:space="preserve">Adds the Microsoft.VisualStudio.Threading.dll assembly that comes in the box with Visual Studio 2013 to Visual Studio 2010 and Visual Studio 2012.</Description>
+    <Locale>1033</Locale>
+    <InstalledByMsi>true</InstalledByMsi>
+    <AllUsers>true</AllUsers>
+    <License>LICENSE.rtf</License>
+    <SupportedProducts>
+      <VisualStudio Version="10.0">
+        <Edition>Pro</Edition>
+      </VisualStudio>
+      <VisualStudio Version="11.0">
+        <Edition>Pro</Edition>
+      </VisualStudio>
+    </SupportedProducts>
+    <SupportedFrameworkRuntimeEdition MinVersion="4.5" MaxVersion="4.9" />
+  </Identifier>
+  <References>
+    <Reference Id="Microsoft.VisualStudio.MPF" MinVersion="10.0">
+      <Name>Visual Studio MPF</Name>
+    </Reference>
+  </References>
+  <Content>
+    <VsPackage>VSPackage.pkgdef</VsPackage>
+  </Content>
+</Vsix>

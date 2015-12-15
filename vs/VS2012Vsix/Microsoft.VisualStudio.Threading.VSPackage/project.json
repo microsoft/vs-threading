@@ -1,0 +1,25 @@
+﻿{
+  "dependencies": {
+    "MicroBuild.Core": {
+      "version": "0.1.1",
+      "suppressParent": "none"
+    },
+    "MicroBuild.VisualStudio": {
+      "version": "1.0.93-rc-ge3c4ee6f88",
+      "suppressParent": "none"
+    },
+    "Microsoft.VisualStudio.Threading": "12.2.0",
+    "Nerdbank.GitVersioning": {
+      "version": "1.1.61-rc",
+      "suppressParent": "none"
+    },
+    "VSSDK.Shell.10": "10.0.0"
+  },
+  "frameworks": {
+    "net45": { }
+  },
+  "runtimes": {
+    "win-anycpu": { },
+    "win": { }
+  }
+}
