@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Vsix xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Version="1.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2010">
   <Identifier Id="Microsoft.VisualStudio.Threading.Downlevel">
-    <Name>Visual Studio Threading library</Name>
+    <Name>Visual Studio Threading Library</Name>
     <Author>Microsoft</Author>
     <Version>|Microsoft.VisualStudio.Threading.Downlevel;GetBuildVersion|</Version>
     <Description xml:space="preserve">Adds the Microsoft.VisualStudio.Threading.dll assembly that comes in the box with Visual Studio 2013 to Visual Studio 2010 and Visual Studio 2012.</Description>
