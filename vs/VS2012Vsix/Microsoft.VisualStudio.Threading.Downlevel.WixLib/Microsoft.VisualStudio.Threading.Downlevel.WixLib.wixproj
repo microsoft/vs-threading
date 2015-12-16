@@ -1,0 +1,71 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\..\..\packages\MicroBuild.VisualStudio.1.0.95-rc-g580435822e\build\MicroBuild.VisualStudio.props" Condition="Exists('..\..\..\packages\MicroBuild.VisualStudio.1.0.95-rc-g580435822e\build\MicroBuild.VisualStudio.props')" />
+  <Import Project="..\..\..\packages\MicroBuild.1.0.95-rc-g580435822e\build\MicroBuild.props" Condition="Exists('..\..\..\packages\MicroBuild.1.0.95-rc-g580435822e\build\MicroBuild.props')" />
+  <Import Project="..\..\..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.props" Condition="Exists('..\..\..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.props')" />
+  <Import Project="..\..\..\packages\WiX.3.10.1\build\wix.props" Condition="Exists('..\..\..\packages\WiX.3.10.1\build\wix.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProductVersion>3.10</ProductVersion>
+    <ProjectGuid>c049e32e-b230-40a9-a2ee-75b1fa1c5254</ProjectGuid>
+    <SchemaVersion>2.0</SchemaVersion>
+    <OutputName>Microsoft.VisualStudio.Threading.Downlevel</OutputName>
+    <OutputType>Library</OutputType>
+    <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
+    <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+    <BindFiles>true</BindFiles>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
+    <DefineConstants>Debug</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Directories.wxs" />
+    <Compile Include="Library.wxs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Downlevel\Microsoft.VisualStudio.Threading.Downlevel.csproj">
+      <Name>VSIX</Name>
+      <Project>{2b6b07e7-924c-4fc4-bc4e-5ee7b3e0cf7a}</Project>
+      <Private>True</Private>
+      <DoNotHarvest>True</DoNotHarvest>
+      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
+      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <WixExtension Include="WixVSExtension">
+      <HintPath>$(WixExtDir)\WixVSExtension.dll</HintPath>
+      <Name>WixVSExtension</Name>
+    </WixExtension>
+  </ItemGroup>
+  <Import Project="$(WixTargetsPath)" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\..\..\packages\WiX.3.10.1\build\wix.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\WiX.3.10.1\build\wix.props'))" />
+    <Error Condition="!Exists('..\..\..\packages\Nerdbank.GitVersioning.1.1.61-rc\build\NerdBank.GitVersioning.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\Nerdbank.GitVersioning.1.1.61-rc\build\NerdBank.GitVersioning.targets'))" />
+    <Error Condition="!Exists('..\..\..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.props'))" />
+    <Error Condition="!Exists('..\..\..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.targets'))" />
+    <Error Condition="!Exists('..\..\..\packages\MicroBuild.1.0.95-rc-g580435822e\build\MicroBuild.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\MicroBuild.1.0.95-rc-g580435822e\build\MicroBuild.props'))" />
+    <Error Condition="!Exists('..\..\..\packages\MicroBuild.1.0.95-rc-g580435822e\build\MicroBuild.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\MicroBuild.1.0.95-rc-g580435822e\build\MicroBuild.targets'))" />
+    <Error Condition="!Exists('..\..\..\packages\MicroBuild.VisualStudio.1.0.95-rc-g580435822e\build\MicroBuild.VisualStudio.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\MicroBuild.VisualStudio.1.0.95-rc-g580435822e\build\MicroBuild.VisualStudio.props'))" />
+    <Error Condition="!Exists('..\..\..\packages\MicroBuild.VisualStudio.1.0.95-rc-g580435822e\build\MicroBuild.VisualStudio.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\MicroBuild.VisualStudio.1.0.95-rc-g580435822e\build\MicroBuild.VisualStudio.targets'))" />
+  </Target>
+  <Import Project="..\..\..\packages\Nerdbank.GitVersioning.1.1.61-rc\build\NerdBank.GitVersioning.targets" Condition="Exists('..\..\..\packages\Nerdbank.GitVersioning.1.1.61-rc\build\NerdBank.GitVersioning.targets')" />
+  <Import Project="..\..\..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.targets" Condition="Exists('..\..\..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.targets')" />
+  <Import Project="..\..\..\packages\MicroBuild.1.0.95-rc-g580435822e\build\MicroBuild.targets" Condition="Exists('..\..\..\packages\MicroBuild.1.0.95-rc-g580435822e\build\MicroBuild.targets')" />
+  <Import Project="..\..\..\packages\MicroBuild.VisualStudio.1.0.95-rc-g580435822e\build\MicroBuild.VisualStudio.targets" Condition="Exists('..\..\..\packages\MicroBuild.VisualStudio.1.0.95-rc-g580435822e\build\MicroBuild.VisualStudio.targets')" />
+</Project>

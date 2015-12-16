@@ -5,7 +5,7 @@
       "suppressParent": "none"
     },
     "MicroBuild.VisualStudio": {
-      "version": "1.0.93-rc-ge3c4ee6f88",
+      "version": "1.0.95-rc-g79c31efe86",
       "suppressParent": "none"
     },
     "Microsoft.VisualStudio.Threading": "12.2.0",
