@@ -99,7 +99,12 @@ functionality of this library.
 
 ## Installing this VSIX via your VS extension's MSI installer
 
-Use the [`VsixPackage` element][6] in your WiX authoring to install this VSIX as part of your overall MSI installer.  
+This VSIX should be installed by an MSI that links in the .wixlib available from this NuGet package:
+
+    Microsoft.VisualStudio.Threading.DownlevelInstaller
+
+Install this NuGet package into the WiX Toolset project that builds your MSI and follow the steps
+in the README file from that NuGet package.
 
 [1]: https://msdn.microsoft.com/en-us/library/microsoft.visualstudio.shell.threadhelper.joinabletaskcontext.aspx
 [2]: https://msdn.microsoft.com/en-us/library/microsoft.visualstudio.threading.joinabletaskcontext.aspx

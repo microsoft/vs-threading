@@ -18,6 +18,8 @@ Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "Microsoft.VisualStudio.Thre
 EndProject
 Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "Microsoft.VisualStudio.Threading.Downlevel.SampleMSI", "Microsoft.VisualStudio.Threading.Downlevel.SampleMSI\Microsoft.VisualStudio.Threading.Downlevel.SampleMSI.wixproj", "{27175C0F-8995-494F-BB06-3FEEDEF8EEA3}"
 EndProject
+Project("{FF286327-C783-4F7A-AB73-9BCBAD0D4460}") = "Microsoft.VisualStudio.Threading.DownlevelInstaller", "Microsoft.VisualStudio.Threading.DownlevelInstaller\Microsoft.VisualStudio.Threading.DownlevelInstaller.nuproj", "{EDAC1426-F65C-466C-A73A-06D05CACCD97}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -40,6 +42,10 @@ Global
 		{27175C0F-8995-494F-BB06-3FEEDEF8EEA3}.Debug|x86.Build.0 = Debug|x86
 		{27175C0F-8995-494F-BB06-3FEEDEF8EEA3}.Release|x86.ActiveCfg = Release|x86
 		{27175C0F-8995-494F-BB06-3FEEDEF8EEA3}.Release|x86.Build.0 = Release|x86
+		{EDAC1426-F65C-466C-A73A-06D05CACCD97}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{EDAC1426-F65C-466C-A73A-06D05CACCD97}.Debug|x86.Build.0 = Debug|Any CPU
+		{EDAC1426-F65C-466C-A73A-06D05CACCD97}.Release|x86.ActiveCfg = Release|Any CPU
+		{EDAC1426-F65C-466C-A73A-06D05CACCD97}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,6 +1,8 @@
 ﻿{
   "dependencies": {
-    "Microsoft.VSSDK.BuildTools": "14.1.24720"
+    "Microsoft.VSSDK.BuildTools": "14.1.24720",
+    "NuProj": "0.10.30-beta-gcbd7693f91",
+    "NuProj.Common": "0.10.30-beta-gcbd7693f91"
   },
   "frameworks": {
     "net45": { }
