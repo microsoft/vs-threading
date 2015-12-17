@@ -1,6 +1,5 @@
 ﻿{
   "dependencies": {
-    "MicroBuild.VisualStudio": "1.0.95-rc-g580435822",
     "Microsoft.VSSDK.BuildTools": "14.1.24720"
   },
   "frameworks": {
