@@ -35,6 +35,7 @@
     <LicenseUrl>http://go.microsoft.com/fwlink/?LinkID=614949</LicenseUrl>
     <RequireLicenseAcceptance>true</RequireLicenseAcceptance>
     <ReleaseNotes>https://www.visualstudio.com/news/vs2015-vs</ReleaseNotes>
+    <GenerateSymbolPackage>false</GenerateSymbolPackage>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="build\Microsoft.VisualStudio.Threading.DownlevelInstaller.targets" />
