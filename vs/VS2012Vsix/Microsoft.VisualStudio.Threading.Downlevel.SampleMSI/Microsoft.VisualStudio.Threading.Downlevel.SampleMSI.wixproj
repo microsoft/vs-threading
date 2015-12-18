@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\..\..\packages\MicroBuild.VisualStudio.1.0.97-rc-g6a5031ac7a\build\MicroBuild.VisualStudio.props" Condition="Exists('..\..\..\packages\MicroBuild.VisualStudio.1.0.97-rc-g6a5031ac7a\build\MicroBuild.VisualStudio.props')" />
-  <Import Project="..\..\..\packages\MicroBuild.1.0.97-rc-g6a5031ac7a\build\MicroBuild.props" Condition="Exists('..\..\..\packages\MicroBuild.1.0.97-rc-g6a5031ac7a\build\MicroBuild.props')" />
+  <Import Project="..\..\..\packages\MicroBuild.VisualStudio.1.0.98-rc-gda6daf0fc5\build\MicroBuild.VisualStudio.props" Condition="Exists('..\..\..\packages\MicroBuild.VisualStudio.1.0.98-rc-gda6daf0fc5\build\MicroBuild.VisualStudio.props')" />
+  <Import Project="..\..\..\packages\MicroBuild.1.0.98-rc-gda6daf0fc5\build\MicroBuild.props" Condition="Exists('..\..\..\packages\MicroBuild.1.0.98-rc-gda6daf0fc5\build\MicroBuild.props')" />
   <Import Project="..\..\..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.props" Condition="Exists('..\..\..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.props')" />
   <Import Project="..\..\..\packages\WiX.3.10.1\build\wix.props" Condition="Exists('..\..\..\packages\WiX.3.10.1\build\wix.props')" />
   <PropertyGroup>
@@ -63,15 +63,15 @@
     <Error Condition="!Exists('..\..\..\packages\WiX.3.10.1\build\wix.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\WiX.3.10.1\build\wix.props'))" />
     <Error Condition="!Exists('..\..\..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.props'))" />
     <Error Condition="!Exists('..\..\..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.targets'))" />
-    <Error Condition="!Exists('..\..\..\packages\MicroBuild.1.0.97-rc-g6a5031ac7a\build\MicroBuild.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\MicroBuild.1.0.97-rc-g6a5031ac7a\build\MicroBuild.props'))" />
-    <Error Condition="!Exists('..\..\..\packages\MicroBuild.1.0.97-rc-g6a5031ac7a\build\MicroBuild.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\MicroBuild.1.0.97-rc-g6a5031ac7a\build\MicroBuild.targets'))" />
-    <Error Condition="!Exists('..\..\..\packages\MicroBuild.VisualStudio.1.0.97-rc-g6a5031ac7a\build\MicroBuild.VisualStudio.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\MicroBuild.VisualStudio.1.0.97-rc-g6a5031ac7a\build\MicroBuild.VisualStudio.props'))" />
-    <Error Condition="!Exists('..\..\..\packages\MicroBuild.VisualStudio.1.0.97-rc-g6a5031ac7a\build\MicroBuild.VisualStudio.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\MicroBuild.VisualStudio.1.0.97-rc-g6a5031ac7a\build\MicroBuild.VisualStudio.targets'))" />
+    <Error Condition="!Exists('..\..\..\packages\MicroBuild.1.0.98-rc-gda6daf0fc5\build\MicroBuild.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\MicroBuild.1.0.98-rc-gda6daf0fc5\build\MicroBuild.props'))" />
+    <Error Condition="!Exists('..\..\..\packages\MicroBuild.1.0.98-rc-gda6daf0fc5\build\MicroBuild.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\MicroBuild.1.0.98-rc-gda6daf0fc5\build\MicroBuild.targets'))" />
+    <Error Condition="!Exists('..\..\..\packages\MicroBuild.VisualStudio.1.0.98-rc-gda6daf0fc5\build\MicroBuild.VisualStudio.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\MicroBuild.VisualStudio.1.0.98-rc-gda6daf0fc5\build\MicroBuild.VisualStudio.props'))" />
+    <Error Condition="!Exists('..\..\..\packages\MicroBuild.VisualStudio.1.0.98-rc-gda6daf0fc5\build\MicroBuild.VisualStudio.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\MicroBuild.VisualStudio.1.0.98-rc-gda6daf0fc5\build\MicroBuild.VisualStudio.targets'))" />
   </Target>
   <Import Project="..\..\..\packages\Nerdbank.GitVersioning.1.1.61-rc\build\NerdBank.GitVersioning.targets" Condition="Exists('..\..\..\packages\Nerdbank.GitVersioning.1.1.61-rc\build\NerdBank.GitVersioning.targets')" />
   <Import Project="..\..\..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.targets" Condition="Exists('..\..\..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.targets')" />
-  <Import Project="..\..\..\packages\MicroBuild.1.0.97-rc-g6a5031ac7a\build\MicroBuild.targets" Condition="Exists('..\..\..\packages\MicroBuild.1.0.97-rc-g6a5031ac7a\build\MicroBuild.targets')" />
-  <Import Project="..\..\..\packages\MicroBuild.VisualStudio.1.0.97-rc-g6a5031ac7a\build\MicroBuild.VisualStudio.targets" Condition="Exists('..\..\..\packages\MicroBuild.VisualStudio.1.0.97-rc-g6a5031ac7a\build\MicroBuild.VisualStudio.targets')" />
+  <Import Project="..\..\..\packages\MicroBuild.1.0.98-rc-gda6daf0fc5\build\MicroBuild.targets" Condition="Exists('..\..\..\packages\MicroBuild.1.0.98-rc-gda6daf0fc5\build\MicroBuild.targets')" />
+  <Import Project="..\..\..\packages\MicroBuild.VisualStudio.1.0.98-rc-gda6daf0fc5\build\MicroBuild.VisualStudio.targets" Condition="Exists('..\..\..\packages\MicroBuild.VisualStudio.1.0.98-rc-gda6daf0fc5\build\MicroBuild.VisualStudio.targets')" />
   <!--
 	To modify your build process, add your task inside one of the targets below and uncomment it.
 	Other similar extension points exist, see Wix.targets.
