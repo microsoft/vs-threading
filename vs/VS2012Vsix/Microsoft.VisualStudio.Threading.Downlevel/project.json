@@ -1,12 +1,15 @@
 ﻿{
   "dependencies": {
-    "Microsoft.VSSDK.BuildTools": "14.1.24720"
+    "MicroBuild.VisualStudio": "1.0.98-rc-gda6daf0fc5",
+    "Microsoft.VSSDK.BuildTools": "14.1.24720",
+    "NuProj": "0.10.30-beta-gcbd7693f91",
+    "NuProj.Common": "0.10.30-beta-gcbd7693f91"
   },
   "frameworks": {
-    "net45": {}
+    "net45": { }
   },
   "runtimes": {
     "win-anycpu": { },
-    "win":  { }
+    "win": { }
   }
 }

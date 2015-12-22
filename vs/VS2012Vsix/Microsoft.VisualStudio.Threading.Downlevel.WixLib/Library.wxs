@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:vs="http://schemas.microsoft.com/wix/VSExtension">
+  <Fragment>
+    <Component Id="Microsoft.VisualStudio.Threading.Downlevel" Directory="VsixInstallDir">
+      <File Id="Microsoft.VisualStudio.Threading.Downlevel.vsix"
+            Source="$(var.VSIX.TargetDir)$(var.VSIX.TargetName).vsix">
+        <vs:VsixPackage
+          PackageId="Microsoft.VisualStudio.Threading.Downlevel"
+          Permanent="no"
+          />
+      </File>
+    </Component>
+  </Fragment>
+</Wix>

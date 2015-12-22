@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*" Name="Microsoft.VisualStudio.Threading.Downlevel.SampleMSI" Language="1033" Version="$(var.Version)" Manufacturer="Microsoft" UpgradeCode="34f43b8e-79b5-47fd-ad64-21264a0e650a">
+    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+    <MediaTemplate EmbedCab="yes" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+
+    <Feature Id="ProductFeature" Title="Microsoft.VisualStudio.Threading.Downlevel.SampleMSI" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+    </Feature>
+  </Product>
+
+  <Fragment>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="CommonFilesFolder" />
+        <Directory Id="INSTALLFOLDER" Name="Microsoft.VisualStudio.Threading.Downlevel.SampleMSI" />
+      </Directory>
+    </Directory>
+  </Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <ComponentRef Id="Microsoft.VisualStudio.Threading.Downlevel" />
+    </ComponentGroup>
+  </Fragment>
+</Wix>

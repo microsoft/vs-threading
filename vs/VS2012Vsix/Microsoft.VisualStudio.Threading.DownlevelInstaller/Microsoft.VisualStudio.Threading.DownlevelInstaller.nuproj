@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\..\..\packages\MicroBuild.VisualStudio.1.0.98-rc-gda6daf0fc5\build\MicroBuild.VisualStudio.props" Condition="Exists('..\..\..\packages\MicroBuild.VisualStudio.1.0.98-rc-gda6daf0fc5\build\MicroBuild.VisualStudio.props')" />
+  <Import Project="..\..\..\packages\MicroBuild.1.0.98-rc-gda6daf0fc5\build\MicroBuild.props" Condition="Exists('..\..\..\packages\MicroBuild.1.0.98-rc-gda6daf0fc5\build\MicroBuild.props')" />
+  <Import Project="..\..\..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.props" Condition="Exists('..\..\..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.props')" />
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|AnyCPU">
+      <Configuration>Debug</Configuration>
+      <Platform>AnyCPU</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|AnyCPU">
+      <Configuration>Release</Configuration>
+      <Platform>AnyCPU</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>edac1426-f65c-466c-a73a-06d05caccd97</ProjectGuid>
+  </PropertyGroup>
+  <PropertyGroup>
+    <NuProjPath Condition=" '$(NuProjPath)' == '' ">$(UserProfile)\.nuget\packages\NuProj\0.10.30-beta-gcbd7693f91\tools</NuProjPath>
+    <VersionDependsOn>$(VersionDependsOn);GetNuPkgVersion</VersionDependsOn>
+  </PropertyGroup>
+  <Import Project="$(NuProjPath)\NuProj.props" Condition="Exists('$(NuProjPath)\NuProj.props')" />
+  <PropertyGroup Label="Configuration">
+    <Id>Microsoft.VisualStudio.Threading.DownlevelInstaller</Id>
+    <Title>Microsoft.VisualStudio.Threading WixLib for VS2010-VS2012</Title>
+    <Summary>Adds setup authoring to your MSI that installs the Microsoft.VisualStudio.Threading assembly to Visual Studio 2010-2012.</Summary>
+    <Description>Adds setup authoring to your MSI that installs the Microsoft.VisualStudio.Threading assembly to Visual Studio 2010-2012.</Description>
+    <Tags>Threading Async Lock Synchronization Threadsafe WixLib</Tags>
+    <Authors>Microsoft</Authors>
+    <Owners>Microsoft, VisualStudioExtensibility</Owners>
+    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+    <ProjectUrl>http://aka.ms/vsextensibility</ProjectUrl>
+    <IconUrl>http://aka.ms/VsExtensibilityIcon</IconUrl>
+    <LicenseUrl>http://go.microsoft.com/fwlink/?LinkId=717918</LicenseUrl>
+    <RequireLicenseAcceptance>true</RequireLicenseAcceptance>
+    <ReleaseNotes>https://www.visualstudio.com/news/vs2015-vs</ReleaseNotes>
+    <GenerateSymbolPackage>false</GenerateSymbolPackage>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="build\Microsoft.VisualStudio.Threading.DownlevelInstaller.targets" />
+    <Content Include="Readme.txt" />
+    <Content Include="..\Microsoft.VisualStudio.Threading.Downlevel\README.md">
+      <Link>README.md</Link>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Downlevel.WixLib\Microsoft.VisualStudio.Threading.Downlevel.WixLib.wixproj">
+      <Targets>GetTargetPath</Targets>
+      <PackageDirectory>Tools</PackageDirectory>
+    </ProjectReference>
+  </ItemGroup>
+  <Target Name="GetNuPkgVersion" DependsOnTargets="GetBuildVersion">
+    <PropertyGroup>
+      <Version>$(NuGetPackageVersion)</Version>
+    </PropertyGroup>
+  </Target>
+  <Import Project="$(NuProjPath)\NuProj.targets" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\..\..\packages\Nerdbank.GitVersioning.1.1.61-rc\build\NerdBank.GitVersioning.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\Nerdbank.GitVersioning.1.1.61-rc\build\NerdBank.GitVersioning.targets'))" />
+    <Error Condition="!Exists('..\..\..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.props'))" />
+    <Error Condition="!Exists('..\..\..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.targets'))" />
+    <Error Condition="!Exists('..\..\..\packages\MicroBuild.1.0.98-rc-gda6daf0fc5\build\MicroBuild.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\MicroBuild.1.0.98-rc-gda6daf0fc5\build\MicroBuild.props'))" />
+    <Error Condition="!Exists('..\..\..\packages\MicroBuild.1.0.98-rc-gda6daf0fc5\build\MicroBuild.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\MicroBuild.1.0.98-rc-gda6daf0fc5\build\MicroBuild.targets'))" />
+    <Error Condition="!Exists('..\..\..\packages\MicroBuild.VisualStudio.1.0.98-rc-gda6daf0fc5\build\MicroBuild.VisualStudio.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\MicroBuild.VisualStudio.1.0.98-rc-gda6daf0fc5\build\MicroBuild.VisualStudio.props'))" />
+    <Error Condition="!Exists('..\..\..\packages\MicroBuild.VisualStudio.1.0.98-rc-gda6daf0fc5\build\MicroBuild.VisualStudio.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\MicroBuild.VisualStudio.1.0.98-rc-gda6daf0fc5\build\MicroBuild.VisualStudio.targets'))" />
+  </Target>
+  <Import Project="..\..\..\packages\Nerdbank.GitVersioning.1.1.61-rc\build\NerdBank.GitVersioning.targets" Condition="Exists('..\..\..\packages\Nerdbank.GitVersioning.1.1.61-rc\build\NerdBank.GitVersioning.targets')" />
+  <Import Project="..\..\..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.targets" Condition="Exists('..\..\..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.targets')" />
+  <Import Project="..\..\..\packages\MicroBuild.1.0.98-rc-gda6daf0fc5\build\MicroBuild.targets" Condition="Exists('..\..\..\packages\MicroBuild.1.0.98-rc-gda6daf0fc5\build\MicroBuild.targets')" />
+  <Import Project="..\..\..\packages\MicroBuild.VisualStudio.1.0.98-rc-gda6daf0fc5\build\MicroBuild.VisualStudio.targets" Condition="Exists('..\..\..\packages\MicroBuild.VisualStudio.1.0.98-rc-gda6daf0fc5\build\MicroBuild.VisualStudio.targets')" />
+</Project>
