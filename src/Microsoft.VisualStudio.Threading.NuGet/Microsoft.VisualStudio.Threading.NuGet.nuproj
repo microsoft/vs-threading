@@ -40,7 +40,7 @@
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <ProjectUrl>http://aka.ms/vsextensibility</ProjectUrl>
     <IconUrl>http://aka.ms/VsExtensibilityIcon</IconUrl>
-    <LicenseUrl>http://go.microsoft.com/fwlink/?LinkID=614949</LicenseUrl>
+    <licenseUrl>http://go.microsoft.com/fwlink/?LinkId=717918</licenseUrl>
     <RequireLicenseAcceptance>true</RequireLicenseAcceptance>
     <ReleaseNotes>https://www.visualstudio.com/news/vs2015-vs</ReleaseNotes>
   </PropertyGroup>
