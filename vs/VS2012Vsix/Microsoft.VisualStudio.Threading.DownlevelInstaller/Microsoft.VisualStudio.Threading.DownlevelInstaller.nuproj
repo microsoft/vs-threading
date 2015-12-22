@@ -40,6 +40,9 @@
   <ItemGroup>
     <Content Include="build\Microsoft.VisualStudio.Threading.DownlevelInstaller.targets" />
     <Content Include="Readme.txt" />
+    <Content Include="..\Microsoft.VisualStudio.Threading.Downlevel\README.md">
+      <Link>README.md</Link>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Downlevel.WixLib\Microsoft.VisualStudio.Threading.Downlevel.WixLib.wixproj">
