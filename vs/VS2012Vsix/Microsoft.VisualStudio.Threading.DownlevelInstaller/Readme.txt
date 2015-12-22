@@ -19,4 +19,7 @@ You must also reference this component:
 
     <ComponentRef Id="Microsoft.VisualStudio.Threading.Downlevel" />
 
+You should ensure that this component is only installed when VS2010 or VS2012 is installed
+on the target machine to avoid a setup failure being shown to the user.
+
 You must reference the WixVSExtension from your MSI project.
