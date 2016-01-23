@@ -21,6 +21,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)AsyncSemaphoreTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AwaitExtensionsTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DelegatingJoinableTaskFactoryTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GenericParameterHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)InternalUtilitiesTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskAndAsyncReaderWriterLockTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskCollectionTests.cs" />

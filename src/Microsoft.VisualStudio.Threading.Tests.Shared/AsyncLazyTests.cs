@@ -13,12 +13,12 @@ namespace Microsoft.VisualStudio.Threading.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using System.Windows.Threading;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
+    using GenericParameterHelper = Microsoft.VisualStudio.Threading.Tests.Shared.GenericParameterHelper;
 
-    [TestClass]
     public class AsyncLazyTests : TestBase
     {
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task Basic()
         {
             var expected = new GenericParameterHelper(5);
@@ -29,10 +29,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
             });
 
             var actual = await lazy.GetValueAsync();
-            Assert.AreSame(expected, actual);
+            Assert.Same(expected, actual);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task IsValueCreated()
         {
             var evt = new AsyncManualResetEvent();
@@ -44,15 +44,15 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 return new GenericParameterHelper(5);
             });
 
-            Assert.IsFalse(lazy.IsValueCreated);
+            Assert.False(lazy.IsValueCreated);
             var resultTask = lazy.GetValueAsync();
-            Assert.IsTrue(lazy.IsValueCreated);
+            Assert.True(lazy.IsValueCreated);
             evt.Set();
-            Assert.AreEqual(5, (await resultTask).Data);
-            Assert.IsTrue(lazy.IsValueCreated);
+            Assert.Equal(5, (await resultTask).Data);
+            Assert.True(lazy.IsValueCreated);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task IsValueFactoryCompleted()
         {
             var evt = new AsyncManualResetEvent();
@@ -62,31 +62,31 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 return new GenericParameterHelper(5);
             });
 
-            Assert.IsFalse(lazy.IsValueFactoryCompleted);
+            Assert.False(lazy.IsValueFactoryCompleted);
             var resultTask = lazy.GetValueAsync();
-            Assert.IsFalse(lazy.IsValueFactoryCompleted);
+            Assert.False(lazy.IsValueFactoryCompleted);
             evt.Set();
-            Assert.AreEqual(5, (await resultTask).Data);
-            Assert.IsTrue(lazy.IsValueFactoryCompleted);
+            Assert.Equal(5, (await resultTask).Data);
+            Assert.True(lazy.IsValueFactoryCompleted);
         }
 
-        [TestMethod, Timeout(TestTimeout), ExpectedException(typeof(ArgumentNullException))]
+        [Fact]
         public void CtorNullArgs()
         {
-            new AsyncLazy<object>(null);
+            Assert.Throws<ArgumentNullException>(() => new AsyncLazy<object>(null));
         }
 
         /// <summary>
         /// Verifies that multiple sequential calls to <see cref="AsyncLazy{T}.GetValueAsync"/>
         /// do not result in multiple invocations of the value factory.
         /// </summary>
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task ValueFactoryExecutedOnlyOnceSequential()
         {
             bool valueFactoryExecuted = false;
             var lazy = new AsyncLazy<GenericParameterHelper>(async delegate
             {
-                Assert.IsFalse(valueFactoryExecuted);
+                Assert.False(valueFactoryExecuted);
                 valueFactoryExecuted = true;
                 await Task.Yield();
                 return new GenericParameterHelper(5);
@@ -96,15 +96,15 @@ namespace Microsoft.VisualStudio.Threading.Tests
             var task2 = lazy.GetValueAsync();
             var actual1 = await task1;
             var actual2 = await task2;
-            Assert.AreSame(actual1, actual2);
-            Assert.AreEqual(5, actual1.Data);
+            Assert.Same(actual1, actual2);
+            Assert.Equal(5, actual1.Data);
         }
 
         /// <summary>
         /// Verifies that multiple concurrent calls to <see cref="AsyncLazy{T}.GetValueAsync"/>
         /// do not result in multiple invocations of the value factory.
         /// </summary>
-        [TestMethod, Timeout(TestTimeout * 2)]
+        [Fact]
         public void ValueFactoryExecutedOnlyOnceConcurrent()
         {
             var cts = new CancellationTokenSource(AsyncDelay);
@@ -113,7 +113,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 bool valueFactoryExecuted = false;
                 var lazy = new AsyncLazy<GenericParameterHelper>(async delegate
                 {
-                    Assert.IsFalse(valueFactoryExecuted);
+                    Assert.False(valueFactoryExecuted);
                     valueFactoryExecuted = true;
                     await Task.Yield();
                     return new GenericParameterHelper(5);
@@ -124,15 +124,15 @@ namespace Microsoft.VisualStudio.Threading.Tests
                     return lazy.GetValueAsync().Result;
                 });
 
-                Assert.AreEqual(5, results[0].Data);
+                Assert.Equal(5, results[0].Data);
                 for (int i = 1; i < results.Length; i++)
                 {
-                    Assert.AreSame(results[0], results[i]);
+                    Assert.Same(results[0], results[i]);
                 }
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task ValueFactoryReleasedAfterExecution()
         {
             for (int i = 0; i < 10; i++)
@@ -151,7 +151,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                     });
                 }))();
 
-                Assert.IsTrue(collectible.IsAlive);
+                Assert.True(collectible.IsAlive);
                 var result = await lazy.GetValueAsync();
 
                 for (int j = 0; j < 3 && collectible.IsAlive; j++)
@@ -169,10 +169,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 }
             }
 
-            Assert.Fail("The reference was never released");
+            Assert.True(false, "The reference was never released");
         }
 
-        [TestMethod, Timeout(TestTimeout), TestCategory("FailsInCloudTest")]
+        [Fact, Trait("FailsInCloudTest", "")]
         public async Task AsyncPumpReleasedAfterExecution()
         {
             WeakReference collectible = null;
@@ -190,7 +190,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                     context.Factory);
             }))();
 
-            Assert.IsTrue(collectible.IsAlive);
+            Assert.True(collectible.IsAlive);
             var result = await lazy.GetValueAsync();
 
             var cts = new CancellationTokenSource(AsyncDelay);
@@ -200,99 +200,67 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 GC.Collect();
             }
 
-            Assert.IsFalse(collectible.IsAlive);
+            Assert.False(collectible.IsAlive);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void ValueFactoryThrowsSynchronously()
         {
             bool executed = false;
             var lazy = new AsyncLazy<object>(new Func<Task<object>>(delegate
             {
-                Assert.IsFalse(executed);
+                Assert.False(executed);
                 executed = true;
                 throw new ApplicationException();
             }));
 
             var task1 = lazy.GetValueAsync();
             var task2 = lazy.GetValueAsync();
-            Assert.AreSame(task1, task2);
-            Assert.IsTrue(task1.IsFaulted);
-            Assert.IsInstanceOfType(task1.Exception.InnerException, typeof(ApplicationException));
+            Assert.Same(task1, task2);
+            Assert.True(task1.IsFaulted);
+            Assert.IsType(typeof(ApplicationException), task1.Exception.InnerException);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task ValueFactoryReentersValueFactorySynchronously()
         {
             AsyncLazy<object> lazy = null;
             bool executed = false;
             lazy = new AsyncLazy<object>(delegate
             {
-                Assert.IsFalse(executed);
+                Assert.False(executed);
                 executed = true;
                 lazy.GetValueAsync();
                 return Task.FromResult<object>(new object());
             });
 
-            try
-            {
-                await lazy.GetValueAsync();
-                Assert.Fail("Expected exception not thrown.");
-            }
-            catch (InvalidOperationException)
-            {
-                // this is the expected exception.
-            }
+            await Assert.ThrowsAsync<InvalidOperationException>(() => lazy.GetValueAsync());
 
             // Do it again, to verify that AsyncLazy recorded the failure and will replay it.
-            try
-            {
-                await lazy.GetValueAsync();
-                Assert.Fail("Expected exception not thrown.");
-            }
-            catch (InvalidOperationException)
-            {
-                // this is the expected exception.
-            }
+            await Assert.ThrowsAsync<InvalidOperationException>(() => lazy.GetValueAsync());
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task ValueFactoryReentersValueFactoryAsynchronously()
         {
             AsyncLazy<object> lazy = null;
             bool executed = false;
             lazy = new AsyncLazy<object>(async delegate
             {
-                Assert.IsFalse(executed);
+                Assert.False(executed);
                 executed = true;
                 await Task.Yield();
                 await lazy.GetValueAsync();
                 return new object();
             });
 
-            try
-            {
-                await lazy.GetValueAsync();
-                Assert.Fail("Expected exception not thrown.");
-            }
-            catch (InvalidOperationException)
-            {
-                // this is the expected exception.
-            }
+            await Assert.ThrowsAsync<InvalidOperationException>(() => lazy.GetValueAsync());
 
             // Do it again, to verify that AsyncLazy recorded the failure and will replay it.
-            try
-            {
-                await lazy.GetValueAsync();
-                Assert.Fail("Expected exception not thrown.");
-            }
-            catch (InvalidOperationException)
-            {
-                // this is the expected exception.
-            }
+            await Assert.ThrowsAsync<InvalidOperationException>(() => lazy.GetValueAsync());
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task GetValueAsyncWithCancellationToken()
         {
             var evt = new AsyncManualResetEvent();
@@ -308,40 +276,26 @@ namespace Microsoft.VisualStudio.Threading.Tests
             cts.Cancel();
 
             // Verify that the task returned from the canceled request actually completes before the value factory does.
-            try
-            {
-                await task1;
-                Assert.Fail("Expected exception not thrown.");
-            }
-            catch (OperationCanceledException)
-            {
-            }
+            await Assert.ThrowsAsync<OperationCanceledException>(() => task1);
 
             // Now verify that the value factory does actually complete anyway for other callers.
             evt.Set();
             var task2Result = await task2;
-            Assert.AreEqual(5, task2Result.Data);
+            Assert.Equal(5, task2Result.Data);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task GetValueAsyncWithCancellationTokenPreCanceled()
         {
             var lazy = new AsyncLazy<GenericParameterHelper>(() => Task.FromResult(new GenericParameterHelper(5)));
             var cts = new CancellationTokenSource();
             cts.Cancel();
-            try
-            {
-                await lazy.GetValueAsync(cts.Token);
-                Assert.Fail("Expected exception not thrown.");
-            }
-            catch (OperationCanceledException)
-            {
-            }
+            await Assert.ThrowsAsync<OperationCanceledException>(() => lazy.GetValueAsync(cts.Token));
 
-            Assert.IsFalse(lazy.IsValueCreated, "Value factory should not have been invoked for a pre-canceled token.");
+            Assert.False(lazy.IsValueCreated, "Value factory should not have been invoked for a pre-canceled token.");
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task GetValueAsyncAlreadyCompletedWithCancellationTokenPreCanceled()
         {
             var lazy = new AsyncLazy<GenericParameterHelper>(() => Task.FromResult(new GenericParameterHelper(5)));
@@ -350,31 +304,31 @@ namespace Microsoft.VisualStudio.Threading.Tests
             var cts = new CancellationTokenSource();
             cts.Cancel();
             var result = await lazy.GetValueAsync(cts.Token); // this shouldn't throw canceled because it was already done.
-            Assert.AreEqual(5, result.Data);
-            Assert.IsTrue(lazy.IsValueCreated);
-            Assert.IsTrue(lazy.IsValueFactoryCompleted);
+            Assert.Equal(5, result.Data);
+            Assert.True(lazy.IsValueCreated);
+            Assert.True(lazy.IsValueFactoryCompleted);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void ToStringForUncreatedValue()
         {
             var lazy = new AsyncLazy<object>(() => Task.FromResult<object>(null));
             string result = lazy.ToString();
-            Assert.IsNotNull(result);
-            Assert.AreNotEqual(string.Empty, result);
-            Assert.IsFalse(lazy.IsValueCreated);
+            Assert.NotNull(result);
+            Assert.NotEqual(string.Empty, result);
+            Assert.False(lazy.IsValueCreated);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task ToStringForCreatedValue()
         {
             var lazy = new AsyncLazy<int>(() => Task.FromResult<int>(3));
             var value = await lazy.GetValueAsync();
             string result = lazy.ToString();
-            Assert.AreEqual(value.ToString(), result);
+            Assert.Equal(value.ToString(), result);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void ToStringForFaultedValue()
         {
             var lazy = new AsyncLazy<int>(delegate
@@ -382,10 +336,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 throw new ApplicationException();
             });
             lazy.GetValueAsync().Forget();
-            Assert.IsTrue(lazy.IsValueCreated);
+            Assert.True(lazy.IsValueCreated);
             string result = lazy.ToString();
-            Assert.IsNotNull(result);
-            Assert.AreNotEqual(string.Empty, result);
+            Assert.NotNull(result);
+            Assert.NotEqual(string.Empty, result);
         }
 
         /// <summary>
@@ -394,7 +348,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         /// someone synchronously blocking on the Main thread that is
         /// also interested in its value.
         /// </summary>
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void ValueFactoryRequiresMainThreadHeldByOther()
         {
             var ctxt = new DispatcherSynchronizationContext();
@@ -413,7 +367,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 asyncPump);
 
             var resultTask = lazy.GetValueAsync();
-            Assert.IsFalse(resultTask.IsCompleted);
+            Assert.False(resultTask.IsCompleted);
 
             var collection = context.CreateCollection();
             var someRandomPump = context.CreateFactory(collection);
@@ -428,15 +382,15 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 // This will deadlock unless the AsyncLazy joins
                 // the value factory's async pump with the currently blocking one.
                 var value = await lazy.GetValueAsync();
-                Assert.IsNotNull(value);
+                Assert.NotNull(value);
             });
 
             // Now that the value factory has completed, the earlier acquired
             // task should have no problem completing.
-            Assert.IsTrue(resultTask.Wait(AsyncDelay));
+            Assert.True(resultTask.Wait(AsyncDelay));
         }
 
-        [TestMethod, Timeout(TestTimeout), Ignore]
+        [Fact(Skip = "Hangs. This test documents a deadlock scenario that is not fixed (by design, IIRC).")]
         public async Task ValueFactoryRequiresReadLockHeldByOther()
         {
             var lck = new AsyncReaderWriterLock();
