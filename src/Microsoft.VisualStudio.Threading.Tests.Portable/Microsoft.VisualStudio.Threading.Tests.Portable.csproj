@@ -43,6 +43,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="App.config" />
     <None Include="Microsoft.VisualStudio.Threading.Tests.Portable.ruleset">
       <SubType>Designer</SubType>
     </None>
