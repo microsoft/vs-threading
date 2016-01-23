@@ -1,19 +1,21 @@
 <?xml version="1.0"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.props" />
-  <Import Project="..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.props" />
-  <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\VS.Insertion.props" />
-  <Import Project="..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\NuPkg.props" />
+  <Import Project="..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.props" Condition="Exists('..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.props')" />
+  <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\MicroBuild.VisualStudio.props" />
+  <Import Project="..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\MicroBuild.props" />
+  <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\VS.Insertion.props" />
+  <Import Project="..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\NuPkg.props" />
 
   <ItemGroup>
-    <ProjectReference Include="$(ProjectDepotRoot)src\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj" />
+    <ProjectReference Include="$(ProjectDepotRoot)src\Microsoft.VisualStudio.Threading.Desktop\Microsoft.VisualStudio.Threading.Desktop.csproj" />
   </ItemGroup>
 
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\VS.Insertion.targets" />
-  <Import Project="..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\NuPkg.targets" />
+  <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\VS.Insertion.targets" />
+  <Import Project="..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\NuPkg.targets" />
 
-  <Import Project="..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.targets" />
-  <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.targets" />
-  <Import Project="..\..\packages\Nerdbank.GitVersioning.1.0.15136-beta\build\NerdBank.GitVersioning.targets" />
+  <Import Project="..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\MicroBuild.targets" />
+  <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\MicroBuild.VisualStudio.targets" />
+  <Import Project="..\..\packages\Nerdbank.GitVersioning.1.1.52-rc\build\NerdBank.GitVersioning.targets" />
+  <Import Project="..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.targets" Condition="Exists('..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.targets')" />
 </Project>

@@ -1,4 +1,10 @@
-﻿namespace Microsoft.VisualStudio.Threading.Analyzers
+﻿/********************************************************
+*                                                        *
+*   © Copyright (C) Microsoft. All rights reserved.      *
+*                                                        *
+*********************************************************/
+
+namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using Microsoft.CodeAnalysis;
 
@@ -38,6 +44,21 @@
             title: "Async Lambda is being used as Void Returning Delegate Type.",
             messageFormat: "Avoid using Async Lambda as Void Returning Delegate Type, because any exceptions thrown out of an async lambda returning void will be raised directly on the SynchronizationContext and will crash the process. " +
 "Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info.",
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+        internal static readonly DiagnosticDescriptor AsyncEventHandlerShouldBeCalledByInvokeAsync = new DiagnosticDescriptor(id: "VSSDK005",
+            title: "AsyncEventHandler delegates should be invoked via the extension method \"TplExtensions.InvokeAsync()\" defined in Microsoft.VisualStudio.Threading assembly.",
+            messageFormat: "AsyncEventHandler delegates should be invoked via the extension method \"TplExtensions.InvokeAsync()\" defined in Microsoft.VisualStudio.Threading assembly.",
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+        internal static readonly DiagnosticDescriptor AvoidAwaitTaskInsideJoinableTaskFactoryRun = new DiagnosticDescriptor(id: "VSSDK006",
+            title: "Avoid calling await Task inside \"JoinableTaskFactory.Run\" delegate when Task is defined outside the delegate to avoid potential deadlocks.",
+            messageFormat: "Calling await on a Task inside a JoinableTaskFactory.Run, when the task is initialized outside the delegate can cause potential deadlocks.\n" +
+            "You can avoid this problem by ensuring the task is initialized within the delegate or by using JoinableTask instead of Task.",
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);

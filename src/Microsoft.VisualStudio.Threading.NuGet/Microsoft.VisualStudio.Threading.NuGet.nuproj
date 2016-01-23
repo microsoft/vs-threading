@@ -1,7 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.props" Condition="Exists('..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.props')" />
-  <Import Project="..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.props" Condition="Exists('..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.props')" />
+  <Import Project="..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.props" Condition="Exists('..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.props')" />
+  <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\MicroBuild.VisualStudio.props" Condition="Exists('..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\MicroBuild.VisualStudio.props')" />
+  <Import Project="..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\MicroBuild.props" Condition="Exists('..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\MicroBuild.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|AnyCPU">
       <Configuration>Debug</Configuration>
@@ -12,49 +13,66 @@
       <Platform>AnyCPU</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Desktop\Microsoft.VisualStudio.Threading.Desktop.csproj" />
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Portable\Microsoft.VisualStudio.Threading.Portable.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Microsoft.VisualStudio.Threading.nuspec" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>c51acf4a-3e2c-44b2-99fc-1a838518c690</ProjectGuid>
   </PropertyGroup>
   <PropertyGroup>
-    <NuProjPath Condition=" '$(NuProjPath)' == '' ">..\..\packages\NuProj.0.10.0-beta-gd6d4e1ff23\tools\</NuProjPath>
+    <NuProjPath Condition=" '$(NuProjPath)' == '' ">..\..\packages\NuProj.0.10.4-beta-gf7fc34e7d8\tools\</NuProjPath>
     <VersionDependsOn>$(VersionDependsOn);GetNuPkgVersion</VersionDependsOn>
+    <NuSpecTemplate>Microsoft.VisualStudio.Threading.nuspec</NuSpecTemplate>
   </PropertyGroup>
   <Import Project="$(NuProjPath)\NuProj.props" Condition="Exists('$(NuProjPath)\NuProj.props')" />
   <PropertyGroup Label="Configuration">
     <Id>Microsoft.VisualStudio.Threading</Id>
     <Title>Microsoft.VisualStudio.Threading</Title>
     <Summary>Async synchronization primitives, async collections, TPL and dataflow extensions.</Summary>
-    <Description>Enables compliance with the Visual Studio threading rules (e.g. JoinableTaskFactory).</Description>
+    <Description>Async synchronization primitives, async collections, TPL and dataflow extensions. The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This package is applicable to any .NET application (not just Visual Studio).</Description>
     <Tags>Threading Async Lock Synchronization Threadsafe</Tags>
-
     <Authors>Microsoft</Authors>
     <Owners>Microsoft, VisualStudioExtensibility</Owners>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <ProjectUrl>http://aka.ms/vsextensibility</ProjectUrl>
     <IconUrl>http://aka.ms/VsExtensibilityIcon</IconUrl>
-    <LicenseUrl>http://go.microsoft.com/fwlink/?LinkID=517238</LicenseUrl>
+    <licenseUrl>http://go.microsoft.com/fwlink/?LinkId=717918</licenseUrl>
     <RequireLicenseAcceptance>true</RequireLicenseAcceptance>
+    <ReleaseNotes>https://www.visualstudio.com/news/vs2015-vs</ReleaseNotes>
   </PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj" />
-  </ItemGroup>
   <Import Project="$(NuProjPath)\NuProj.targets" />
   <Target Name="GetNuPkgVersion" DependsOnTargets="GetBuildVersion">
     <PropertyGroup>
       <Version>$(NuGetPackageVersion)</Version>
     </PropertyGroup>
   </Target>
+  <Target Name="CopyAssemblyToLibDotNetFolder" DependsOnTargets="ConvertItems" AfterTargets="ConvertItems">
+    <!-- NuProj doesn't yet support populating the lib\dotnet folder. So we do it ourselves. -->
+    <ItemGroup>
+      <File Include="@(File)"
+            Condition=" '%(File.TargetFrameworkMoniker)' == '.NETPortable,Version=v4.5,Profile=Profile111' ">
+        <TargetPath>lib\dotnet\%(FileName)%(Extension)</TargetPath>
+      </File>
+    </ItemGroup>
+  </Target>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.props'))" />
-    <Error Condition="!Exists('..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.targets'))" />
-    <Error Condition="!Exists('..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.props'))" />
-    <Error Condition="!Exists('..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.targets'))" />
-    <Error Condition="!Exists('..\..\packages\Nerdbank.GitVersioning.1.0.15136-beta\build\NerdBank.GitVersioning.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Nerdbank.GitVersioning.1.0.15136-beta\build\NerdBank.GitVersioning.targets'))" />
+    <Error Condition="!Exists('..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\MicroBuild.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\MicroBuild.props'))" />
+    <Error Condition="!Exists('..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\MicroBuild.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\MicroBuild.targets'))" />
+    <Error Condition="!Exists('..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\MicroBuild.VisualStudio.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\MicroBuild.VisualStudio.props'))" />
+    <Error Condition="!Exists('..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\MicroBuild.VisualStudio.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\MicroBuild.VisualStudio.targets'))" />
+    <Error Condition="!Exists('..\..\packages\Nerdbank.GitVersioning.1.1.52-rc\build\NerdBank.GitVersioning.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Nerdbank.GitVersioning.1.1.52-rc\build\NerdBank.GitVersioning.targets'))" />
+    <Error Condition="!Exists('..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.props'))" />
+    <Error Condition="!Exists('..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.targets'))" />
   </Target>
-  <Import Project="..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.targets" Condition="Exists('..\..\packages\MicroBuild.1.0.0-alpha-g914708b2a3\build\MicroBuild.targets')" />
-  <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.targets" Condition="Exists('..\..\packages\MicroBuild.VisualStudio.1.0.0-alpha-g914708b2a3\build\MicroBuild.VisualStudio.targets')" />
-  <Import Project="..\..\packages\Nerdbank.GitVersioning.1.0.15136-beta\build\NerdBank.GitVersioning.targets" Condition="Exists('..\..\packages\Nerdbank.GitVersioning.1.0.15136-beta\build\NerdBank.GitVersioning.targets')" />
+  <Import Project="..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\MicroBuild.targets" Condition="Exists('..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\MicroBuild.targets')" />
+  <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\MicroBuild.VisualStudio.targets" Condition="Exists('..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\MicroBuild.VisualStudio.targets')" />
+  <Import Project="..\..\packages\Nerdbank.GitVersioning.1.1.52-rc\build\NerdBank.GitVersioning.targets" Condition="Exists('..\..\packages\Nerdbank.GitVersioning.1.1.52-rc\build\NerdBank.GitVersioning.targets')" />
+  <Import Project="..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.targets" Condition="Exists('..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.targets')" />
 </Project>
