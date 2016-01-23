@@ -6,7 +6,7 @@
     using System.Text;
     using System.Threading.Tasks;
     using Xunit;
-    using GenericParameterHelper = TestTools.UnitTesting.GenericParameterHelper;
+    using GenericParameterHelper = Shared.GenericParameterHelper;
 
     public class ListOfOftenOneTests : TestBase
     {

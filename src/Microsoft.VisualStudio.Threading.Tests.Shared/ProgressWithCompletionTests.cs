@@ -7,47 +7,47 @@
     using System.Threading;
     using System.Threading.Tasks;
     using System.Windows.Threading;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
+    using GenericParameterHelper = Shared.GenericParameterHelper;
 
-    [TestClass]
     public class ProgressWithCompletionTests : TestBase
     {
-        [TestMethod, ExpectedException(typeof(ArgumentNullException))]
+        [Fact]
         public void CtorNullAction()
         {
-            new ProgressWithCompletion<GenericParameterHelper>((Action<GenericParameterHelper>)null);
+            Assert.Throws<ArgumentNullException>(() => new ProgressWithCompletion<GenericParameterHelper>((Action<GenericParameterHelper>)null));
         }
 
-        [TestMethod, ExpectedException(typeof(ArgumentNullException))]
+        [Fact]
         public void CtorNullFuncOfTask()
         {
-            new ProgressWithCompletion<GenericParameterHelper>((Func<GenericParameterHelper, Task>)null);
+            Assert.Throws<ArgumentNullException>(() => new ProgressWithCompletion<GenericParameterHelper>((Func<GenericParameterHelper, Task>)null));
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void NoWorkAction()
         {
             var callback = new Action<GenericParameterHelper>(p => { });
             var progress = new ProgressWithCompletion<GenericParameterHelper>(callback);
-            Assert.IsTrue(progress.WaitAsync().IsCompleted);
+            Assert.True(progress.WaitAsync().IsCompleted);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void NoWorkFuncOfTask()
         {
             var callback = new Func<GenericParameterHelper, Task>(p => { return TplExtensions.CompletedTask; });
             var progress = new ProgressWithCompletion<GenericParameterHelper>(callback);
-            Assert.IsTrue(progress.WaitAsync().IsCompleted);
+            Assert.True(progress.WaitAsync().IsCompleted);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task WaitAsync()
         {
             var handlerMayComplete = new AsyncManualResetEvent();
             var callback = new Func<GenericParameterHelper, Task>(
                 async p =>
                 {
-                    Assert.AreEqual(1, p.Data);
+                    Assert.Equal(1, p.Data);
                     await handlerMayComplete;
                 });
             var progress = new ProgressWithCompletion<GenericParameterHelper>(callback);
@@ -55,14 +55,14 @@
             reporter.Report(new GenericParameterHelper(1));
 
             var progressAwaitable = progress.WaitAsync();
-            Assert.IsFalse(progressAwaitable.GetAwaiter().IsCompleted);
+            Assert.False(progressAwaitable.GetAwaiter().IsCompleted);
             await Task.Delay(AsyncDelay);
-            Assert.IsFalse(progressAwaitable.GetAwaiter().IsCompleted);
+            Assert.False(progressAwaitable.GetAwaiter().IsCompleted);
             handlerMayComplete.Set();
             await progressAwaitable;
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void SynchronizationContextCaptured()
         {
             var syncContext = new DispatcherSynchronizationContext();
@@ -73,7 +73,7 @@
                 {
                     try
                     {
-                        Assert.AreSame(syncContext, SynchronizationContext.Current);
+                        Assert.Same(syncContext, SynchronizationContext.Current);
                     }
                     catch (Exception e)
                     {
