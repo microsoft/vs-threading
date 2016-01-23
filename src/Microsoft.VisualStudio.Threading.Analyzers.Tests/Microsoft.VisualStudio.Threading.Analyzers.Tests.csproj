@@ -1,6 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+    <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{620ED702-B6DA-4454-BF3E-5494D3652724}</ProjectGuid>
@@ -13,8 +14,6 @@
     <TargetFrameworkProfile />
     <MicroBuild_GenerateDocumentationFile>false</MicroBuild_GenerateDocumentationFile>
     <DocumentationFile />
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
     <OutputPath Condition=" '$(OutputPath)' == '' ">bin\$(Configuration)</OutputPath>
   </PropertyGroup>
   <ItemGroup>
