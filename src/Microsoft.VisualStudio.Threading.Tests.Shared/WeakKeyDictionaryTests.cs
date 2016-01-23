@@ -10,12 +10,11 @@ namespace Microsoft.VisualStudio.Threading.Tests
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
 
     /// <summary>
     /// Tests for the weak dictionary class
     /// </summary>
-    [TestClass]
     public class WeakKeyDictionaryTests
     {
         /// <summary>
@@ -26,7 +25,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         /// <summary>
         /// Find with the same key inserted using the indexer
         /// </summary>
-        [TestMethod]
+        [Fact]
         public void Indexer_ReferenceFound()
         {
             string k1 = "key";
@@ -38,25 +37,24 @@ namespace Microsoft.VisualStudio.Threading.Tests
             // Now look for the same key we inserted
             string v2 = dictionary[k1];
 
-            Assert.IsTrue(object.ReferenceEquals(v1, v2));
-            Assert.IsTrue(dictionary.ContainsKey(k1));
+            Assert.True(object.ReferenceEquals(v1, v2));
+            Assert.True(dictionary.ContainsKey(k1));
         }
 
         /// <summary>
         /// Find something not present with the indexer
         /// </summary>
-        [TestMethod]
-        [ExpectedException(typeof(KeyNotFoundException))]
+        [Fact]
         public void Indexer_NotFound()
         {
             var dictionary = new WeakKeyDictionary<string, string>();
-            string value = dictionary["x"];
+            Assert.Throws<KeyNotFoundException>(() => dictionary["x"]);
         }
 
         /// <summary>
         /// Find with the same key inserted using TryGetValue
         /// </summary>
-        [TestMethod]
+        [Fact]
         public void TryGetValue_ReferenceFound()
         {
             string k1 = "key";
@@ -69,14 +67,14 @@ namespace Microsoft.VisualStudio.Threading.Tests
             string v2;
             bool result = dictionary.TryGetValue(k1, out v2);
 
-            Assert.IsTrue(result);
-            Assert.IsTrue(object.ReferenceEquals(v1, v2));
+            Assert.True(result);
+            Assert.True(object.ReferenceEquals(v1, v2));
         }
 
         /// <summary>
         /// Find something not present with TryGetValue
         /// </summary>
-        [TestMethod]
+        [Fact]
         public void TryGetValue_ReferenceNotFound()
         {
             var dictionary = new WeakKeyDictionary<string, string>();
@@ -84,15 +82,15 @@ namespace Microsoft.VisualStudio.Threading.Tests
             string v;
             bool result = dictionary.TryGetValue("x", out v);
 
-            Assert.IsFalse(result);
-            Assert.IsNull(v);
-            Assert.IsFalse(dictionary.ContainsKey("x"));
+            Assert.False(result);
+            Assert.Null(v);
+            Assert.False(dictionary.ContainsKey("x"));
         }
 
         /// <summary>
         /// Find a key that wasn't inserted but is equal
         /// </summary>
-        [TestMethod]
+        [Fact]
         public void EqualityComparer()
         {
             string k1 = "key";
@@ -105,17 +103,17 @@ namespace Microsoft.VisualStudio.Threading.Tests
             // Don't create it with a literal or the compiler will intern it!
             string k2 = string.Concat("k", "ey");
 
-            Assert.IsFalse(object.ReferenceEquals(k1, k2));
+            Assert.False(object.ReferenceEquals(k1, k2));
 
             string v2 = dictionary[k2];
 
-            Assert.IsTrue(object.ReferenceEquals(v1, v2));
+            Assert.True(object.ReferenceEquals(v1, v2));
         }
 
         /// <summary>
         /// Verify dictionary doesn't hold onto keys
         /// </summary>
-        [TestMethod]
+        [Fact]
         public void KeysCollectable()
         {
             string k1 = new string('k', BigMemoryFootprintTest);
@@ -135,7 +133,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             long difference = memory1 - memory2;
 
             Console.WriteLine("Start {0}, end {1}, diff {2}", memory1, memory2, difference);
-            Assert.IsTrue(difference > 1500000); // 2MB minus big noise allowance
+            Assert.True(difference > 1500000); // 2MB minus big noise allowance
 
             // This line is VERY important, as it keeps the GC from being too smart and collecting
             // the dictionary and its large strings because we never use them again.
@@ -145,7 +143,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         /// <summary>
         /// Call Scavenge explicitly
         /// </summary>
-        [TestMethod]
+        [Fact]
         public void ExplicitScavenge()
         {
             object k1 = new object();
@@ -154,20 +152,20 @@ namespace Microsoft.VisualStudio.Threading.Tests
             var dictionary = new WeakKeyDictionary<object, object>();
             dictionary[k1] = v1;
 
-            Assert.AreEqual(1, dictionary.Count);
+            Assert.Equal(1, dictionary.Count);
 
             k1 = null;
             GC.Collect();
 
             dictionary.Scavenge();
 
-            Assert.AreEqual(0, dictionary.Count);
+            Assert.Equal(0, dictionary.Count);
         }
 
         /// <summary>
         /// Growing should invoke Scavenge
         /// </summary>
-        [TestMethod]
+        [Fact]
         public void ScavengeOnGrow()
         {
             var dictionary = new WeakKeyDictionary<object, object>();
@@ -185,7 +183,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
 
             // We should have scavenged at least once
             Console.WriteLine("Count {0}", dictionary.Count);
-            Assert.IsTrue(dictionary.Count < 100);
+            Assert.True(dictionary.Count < 100);
 
             // Finish with explicit scavenge
             int count1 = dictionary.Count;
@@ -193,13 +191,13 @@ namespace Microsoft.VisualStudio.Threading.Tests
             int count2 = dictionary.Count;
 
             Console.WriteLine("Removed {0}", removed);
-            Assert.AreEqual(removed, count1 - count2);
+            Assert.Equal(removed, count1 - count2);
         }
 
         /// <summary>
         /// Tests that the enumerator correctly lists contents, skipping over collected elements.
         /// </summary>
-        [TestMethod]
+        [Fact]
         public void Enumerator()
         {
             object keepAlive1 = new object();
@@ -213,9 +211,9 @@ namespace Microsoft.VisualStudio.Threading.Tests
             GC.Collect();
 
             var enumeratedContents = dictionary.ToList();
-            Assert.AreEqual(2, enumeratedContents.Count);
-            Assert.IsTrue(enumeratedContents.Contains(new KeyValuePair<object, int>(keepAlive1, 0)));
-            Assert.IsTrue(enumeratedContents.Contains(new KeyValuePair<object, int>(keepAlive2, 2)));
+            Assert.Equal(2, enumeratedContents.Count);
+            Assert.True(enumeratedContents.Contains(new KeyValuePair<object, int>(keepAlive1, 0)));
+            Assert.True(enumeratedContents.Contains(new KeyValuePair<object, int>(keepAlive2, 2)));
         }
     }
 }
