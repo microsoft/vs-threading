@@ -12,50 +12,49 @@ namespace Microsoft.VisualStudio.Threading.Tests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
 
-    [TestClass]
     public partial class AwaitExtensionsTests
     {
-        [TestMethod]
+        [Fact]
         public void AwaitCustomTaskScheduler()
         {
             var mockScheduler = new MockTaskScheduler();
             Task.Run(async delegate
             {
                 await mockScheduler;
-                Assert.AreEqual(1, mockScheduler.QueueTaskInvocations);
-                Assert.AreSame(mockScheduler, TaskScheduler.Current);
+                Assert.Equal(1, mockScheduler.QueueTaskInvocations);
+                Assert.Same(mockScheduler, TaskScheduler.Current);
             }).GetAwaiter().GetResult();
         }
 
-        [TestMethod]
+        [Fact]
         public void AwaitCustomTaskSchedulerNoYieldWhenAlreadyOnScheduler()
         {
             var mockScheduler = new MockTaskScheduler();
             Task.Run(async delegate
             {
                 await mockScheduler;
-                Assert.IsTrue(mockScheduler.GetAwaiter().IsCompleted, "We're already executing on that scheduler, so no reason to yield.");
+                Assert.True(mockScheduler.GetAwaiter().IsCompleted, "We're already executing on that scheduler, so no reason to yield.");
             }).GetAwaiter().GetResult();
         }
 
-        [TestMethod]
+        [Fact]
         public void AwaitThreadPoolSchedulerYieldsOnNonThreadPoolThreads()
         {
 #if !DESKTOP
             // Set this, which makes it appear our thread is not a threadpool thread.
             SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
 #endif
-            Assert.IsFalse(TaskScheduler.Default.GetAwaiter().IsCompleted);
+            Assert.False(TaskScheduler.Default.GetAwaiter().IsCompleted);
         }
 
-        [TestMethod]
+        [Fact]
         public void AwaitThreadPoolSchedulerNoYieldOnThreadPool()
         {
             Task.Run(delegate
             {
-                Assert.IsTrue(TaskScheduler.Default.GetAwaiter().IsCompleted);
+                Assert.True(TaskScheduler.Default.GetAwaiter().IsCompleted);
             }).GetAwaiter().GetResult();
         }
 
