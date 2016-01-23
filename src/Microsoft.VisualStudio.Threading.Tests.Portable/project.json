@@ -6,7 +6,8 @@
     "Nerdbank.GitVersioning": "1.1.52-rc",
     "StyleCop.Analyzers": "1.0.0-beta014",
     "xunit": "2.1.0",
-    "Xunit.SkippableFact": "1.2.14"
+    "Xunit.SkippableFact": "1.2.14",
+    "xunit.runner.visualstudio": "2.1.0"
   },
   "frameworks": {
     "net451": { }
