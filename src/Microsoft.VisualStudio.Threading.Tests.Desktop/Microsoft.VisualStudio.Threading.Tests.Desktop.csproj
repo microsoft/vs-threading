@@ -1,11 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\..\packages\Xunit.SkippableFact.1.2.14\build\net45\Xunit.SkippableFact.props" Condition="Exists('..\..\packages\Xunit.SkippableFact.1.2.14\build\net45\Xunit.SkippableFact.props')" />
-  <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.VisualStudio.props" Condition="Exists('..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.VisualStudio.props')" />
-  <Import Project="..\..\packages\MicroBuild.NonShipping.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.NonShipping.props" Condition="Exists('..\..\packages\MicroBuild.NonShipping.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.NonShipping.props')" />
-  <Import Project="..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.props" Condition="Exists('..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.props')" />
-  <Import Project="..\..\packages\xunit.runner.visualstudio.2.0.1\build\net20\xunit.runner.visualstudio.props" Condition="Exists('..\..\packages\xunit.runner.visualstudio.2.0.1\build\net20\xunit.runner.visualstudio.props')" />
-  <Import Project="..\..\packages\xunit.core.2.1.0\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS\xunit.core.props" Condition="Exists('..\..\packages\xunit.core.2.1.0\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS\xunit.core.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -26,6 +20,7 @@
     <DocumentationFile />
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
+    <OutputPath Condition=" '$(OutputPath)' == '' ">bin\$(Configuration)</OutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -47,41 +42,12 @@
     <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Tests.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.VisualStudio.Validation, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.VisualStudio.Validation.14.1.111\lib\net45\Microsoft.VisualStudio.Validation.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.XML" />
     <Reference Include="System.Xml.Linq" />
-    <Reference Include="Validation, Version=2.2.0.0, Culture=neutral, PublicKeyToken=2fc06f0d701809a7, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Validation.2.2.8\lib\dotnet\Validation.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="WindowsBase" />
-    <Reference Include="xunit.abstractions, Version=2.0.0.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\xunit.abstractions.2.0.0\lib\net35\xunit.abstractions.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework" />
-    <Reference Include="xunit.assert">
-      <HintPath>..\..\packages\xunit.assert.2.1.0\lib\dotnet\xunit.assert.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="xunit.core, Version=2.1.0.3179, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\xunit.extensibility.core.2.1.0\lib\dotnet\xunit.core.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="xunit.execution.desktop, Version=2.1.0.3179, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\xunit.extensibility.execution.2.1.0\lib\net45\xunit.execution.desktop.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Xunit.SkippableFact, Version=1.2.0.0, Culture=neutral, PublicKeyToken=b2b52da82b58eb73, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Xunit.SkippableFact.1.2.14\lib\net45\Xunit.SkippableFact.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\Microsoft.VisualStudio.Threading.Shared\InternalUtilities.cs">
@@ -109,38 +75,11 @@
     <None Include="Microsoft.VisualStudio.Threading.Tests.ruleset">
       <SubType>Designer</SubType>
     </None>
-    <None Include="packages.config">
-      <SubType>Designer</SubType>
-    </None>
+    <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
-  <ItemGroup>
-    <Analyzer Include="..\..\packages\StyleCop.Analyzers.1.0.0-beta014\analyzers\dotnet\cs\Newtonsoft.Json.dll" />
-    <Analyzer Include="..\..\packages\StyleCop.Analyzers.1.0.0-beta014\analyzers\dotnet\cs\StyleCop.Analyzers.dll" />
-  </ItemGroup>
   <Import Project="..\Microsoft.VisualStudio.Threading.Tests.Shared\Microsoft.VisualStudio.Threading.Tests.Shared.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\..\packages\xunit.core.2.1.0\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS\xunit.core.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\xunit.core.2.1.0\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS\xunit.core.props'))" />
-    <Error Condition="!Exists('..\..\packages\xunit.runner.visualstudio.2.0.1\build\net20\xunit.runner.visualstudio.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\xunit.runner.visualstudio.2.0.1\build\net20\xunit.runner.visualstudio.props'))" />
-    <Error Condition="!Exists('..\..\packages\Nerdbank.GitVersioning.1.1.52-rc\build\dotnet\Nerdbank.GitVersioning.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Nerdbank.GitVersioning.1.1.52-rc\build\dotnet\Nerdbank.GitVersioning.targets'))" />
-    <Error Condition="!Exists('..\..\packages\StyleCop.Analyzers.1.0.0-beta014\build\StyleCop.Analyzers.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\StyleCop.Analyzers.1.0.0-beta014\build\StyleCop.Analyzers.targets'))" />
-    <Error Condition="!Exists('..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.props'))" />
-    <Error Condition="!Exists('..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.targets'))" />
-    <Error Condition="!Exists('..\..\packages\MicroBuild.NonShipping.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.NonShipping.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.NonShipping.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.NonShipping.props'))" />
-    <Error Condition="!Exists('..\..\packages\MicroBuild.NonShipping.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.NonShipping.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.NonShipping.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.NonShipping.targets'))" />
-    <Error Condition="!Exists('..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.VisualStudio.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.VisualStudio.props'))" />
-    <Error Condition="!Exists('..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.VisualStudio.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.VisualStudio.targets'))" />
-    <Error Condition="!Exists('..\..\packages\Xunit.SkippableFact.1.2.14\build\net45\Xunit.SkippableFact.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Xunit.SkippableFact.1.2.14\build\net45\Xunit.SkippableFact.props'))" />
-  </Target>
-  <Import Project="..\..\packages\Nerdbank.GitVersioning.1.1.52-rc\build\dotnet\Nerdbank.GitVersioning.targets" Condition="Exists('..\..\packages\Nerdbank.GitVersioning.1.1.52-rc\build\dotnet\Nerdbank.GitVersioning.targets')" />
-  <Import Project="..\..\packages\StyleCop.Analyzers.1.0.0-beta014\build\StyleCop.Analyzers.targets" Condition="Exists('..\..\packages\StyleCop.Analyzers.1.0.0-beta014\build\StyleCop.Analyzers.targets')" />
-  <Import Project="..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.targets" Condition="Exists('..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.targets')" />
-  <Import Project="..\..\packages\MicroBuild.NonShipping.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.NonShipping.targets" Condition="Exists('..\..\packages\MicroBuild.NonShipping.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.NonShipping.targets')" />
-  <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.VisualStudio.targets" Condition="Exists('..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.VisualStudio.targets')" />
 </Project>
