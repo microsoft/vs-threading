@@ -263,7 +263,7 @@
             });
         }
 
-        [StaFact, Trait("FailsInCloudTest", "true")]
+        [StaFact, Trait("TestCategory", "FailsInCloudTest")]
         public async Task CallAcrossAppDomainBoundariesWithLock()
         {
             var otherDomain = AppDomain.CreateDomain("test domain", AppDomain.CurrentDomain.Evidence, AppDomain.CurrentDomain.SetupInformation);
@@ -475,7 +475,7 @@
             await this.StressHelper(MaxLockAcquisitions, MaxLockHeldDelay, overallTimeout, iterationTimeout, maxWorkers, testCancellation);
         }
 
-        [StaFact, Trait("Stress", "true"), Trait("FailsInCloudTest", "true")]
+        [StaFact, Trait("Stress", "true"), Trait("TestCategory", "FailsInCloudTest")]
         public async Task CancellationStress()
         {
             const int MaxLockAcquisitions = -1;
@@ -1125,14 +1125,14 @@
             this.LockReleaseTestHelper(this.asyncLock.UpgradeableReadLockAsync());
         }
 
-        [StaFact, Trait("GC", "true"), Trait("FailsInCloudTest", "true")]
+        [StaFact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest")]
         public async Task UncontestedTopLevelUpgradeableReadLockAsyncGarbageCheck()
         {
             var cts = new CancellationTokenSource();
             await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync(cts.Token), true);
         }
 
-        [StaFact, Trait("GC", "true"), Trait("FailsInCloudTest", "true")]
+        [StaFact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest")]
         public async Task NestedUpgradeableReadLockAsyncGarbageCheck()
         {
             await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync(), true);
@@ -1645,14 +1645,14 @@
                 }));
         }
 
-        [StaFact, Trait("GC", "true"), Trait("FailsInCloudTest", "true")]
+        [StaFact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest")]
         public async Task UncontestedTopLevelWriteLockAsyncGarbageCheck()
         {
             var cts = new CancellationTokenSource();
             await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync(cts.Token), true);
         }
 
-        [StaFact, Trait("GC", "true"), Trait("FailsInCloudTest", "true")]
+        [StaFact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest")]
         public async Task NestedWriteLockAsyncGarbageCheck()
         {
             await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync(), true);

@@ -178,7 +178,7 @@
         /// <summary>
         /// Verifies that long-lived, uncanceled CancellationTokens do not result in leaking memory.
         /// </summary>
-        [Fact, Trait("FailsInCloudTest", "true")]
+        [Fact, Trait("TestCategory", "FailsInCloudTest")]
         public void WaitAsync_WithCancellationToken_DoesNotLeakWhenNotCanceled()
         {
             var cts = new CancellationTokenSource();
@@ -195,7 +195,7 @@
         /// <summary>
         /// Verifies that long-lived, uncanceled CancellationTokens do not result in leaking memory.
         /// </summary>
-        [Fact, Trait("FailsInCloudTest", "true")]
+        [Fact, Trait("TestCategory", "FailsInCloudTest")]
         public void WaitAsync_WithCancellationToken_DoesNotLeakWhenCanceled()
         {
             this.CheckGCPressure(

@@ -172,7 +172,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Assert.True(false, "The reference was never released");
         }
 
-        [Fact, Trait("FailsInCloudTest", "true")]
+        [Fact, Trait("TestCategory", "FailsInCloudTest")]
         public async Task AsyncPumpReleasedAfterExecution()
         {
             WeakReference collectible = null;
