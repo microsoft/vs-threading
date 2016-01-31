@@ -6,9 +6,10 @@
     <SharedGUID>c215568d-96d0-483b-aff6-c03fd9d8d471</SharedGUID>
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
-    <Import_RootNamespace>Microsoft.VisualStudio.Threading.Tests.Shared</Import_RootNamespace>
+    <Import_RootNamespace>Microsoft.VisualStudio.Threading.Tests</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)AssertEx.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AsyncAutoResetEventTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AsyncBarrierTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AsyncCountdownEventTests.cs" />
