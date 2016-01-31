@@ -14,10 +14,16 @@ namespace Microsoft.VisualStudio.Threading.Tests
     using System.Threading.Tasks;
     using System.Windows.Threading;
     using Xunit;
+    using Xunit.Abstractions;
     using GenericParameterHelper = Microsoft.VisualStudio.Threading.Tests.Shared.GenericParameterHelper;
 
     public class AsyncLazyTests : TestBase
     {
+        public AsyncLazyTests(ITestOutputHelper logger)
+            : base(logger)
+        {
+        }
+
         [Fact]
         public async Task Basic()
         {
