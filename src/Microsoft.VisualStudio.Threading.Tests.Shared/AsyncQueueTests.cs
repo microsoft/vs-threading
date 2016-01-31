@@ -420,7 +420,7 @@
             Assert.Equal(1, invoked);
         }
 
-        [Fact, Trait("GC", "")]
+        [Fact, Trait("GC", "true")]
         public void UnusedQueueGCPressure()
         {
             this.CheckGCPressure(

@@ -85,7 +85,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
         }
 
-        [StaFact, Trait("FailsInCloudTest", "")]
+        [StaFact, Trait("FailsInCloudTest", "true")]
         public void OnHangDetected_Registration()
         {
             var factory = (DerivedFactory)this.derivedNode.Factory;
@@ -123,7 +123,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Assert.False(this.derivedNode.FalseHangReportDetected.IsSet);
         }
 
-        [StaFact, Trait("FailsInCloudTest", "")]
+        [StaFact, Trait("FailsInCloudTest", "true")]
         public void OnFalseHangReportDetected_OnlyOnce()
         {
             var factory = (DerivedFactory)this.derivedNode.Factory;
@@ -159,7 +159,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Assert.Equal(1, this.derivedNode.FalseHangReportCount);
         }
 
-        [StaFact, Trait("FailsInCloudTest", "")]
+        [StaFact, Trait("FailsInCloudTest", "true")]
         public void OnHangDetected_Run_OnMainThread()
         {
             var factory = (DerivedFactory)this.derivedNode.Factory;
@@ -184,7 +184,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Assert.True(this.derivedNode.FalseHangReportTimeSpan >= this.derivedNode.HangDetails.HangDuration);
         }
 
-        [StaFact, Trait("FailsInCloudTest", "")]
+        [StaFact, Trait("FailsInCloudTest", "true")]
         public void OnHangDetected_Run_OffMainThread()
         {
             Task.Run(delegate

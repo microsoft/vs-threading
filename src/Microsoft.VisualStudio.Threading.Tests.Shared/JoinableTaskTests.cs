@@ -2804,7 +2804,7 @@
             assertDialogListener.AssertUiEnabled = true;
         }
 
-        [StaFact, Trait("Stress", ""), Trait("FailsInCloudTest", ""), Trait("FailsInLocalBatch", "")]
+        [StaFact, Trait("Stress", "true"), Trait("FailsInCloudTest", "true"), Trait("FailsInLocalBatch", "true")]
         public void SwitchToMainThreadMemoryLeak()
         {
             this.CheckGCPressure(
@@ -2816,7 +2816,7 @@
                 2500);
         }
 
-        [StaFact, Trait("Stress", ""), Trait("FailsInCloudTest", ""), Trait("FailsInLocalBatch", "")]
+        [StaFact, Trait("Stress", "true"), Trait("FailsInCloudTest", "true"), Trait("FailsInLocalBatch", "true")]
         public void SwitchToMainThreadMemoryLeakWithCancellationToken()
         {
             CancellationTokenSource tokenSource = new CancellationTokenSource();
@@ -2852,7 +2852,7 @@
             task.GetAwaiter().GetResult(); // rethrow any failures
         }
 
-        [StaFact, Trait("GC", "")]
+        [StaFact, Trait("GC", "true")]
         public void JoinableTaskReleasedBySyncContextAfterCompletion()
         {
             SynchronizationContext syncContext = null;
@@ -2900,7 +2900,7 @@
             outerJoinable.Join();
         }
 
-        [StaFact, Trait("GC", ""), Trait("FailsInCloudTest", "")]
+        [StaFact, Trait("GC", "true"), Trait("FailsInCloudTest", "true")]
         public void RunSynchronouslyTaskNoYieldGCPressure()
         {
             this.CheckGCPressure(delegate
@@ -2912,7 +2912,7 @@
             }, maxBytesAllocated: 500);
         }
 
-        [StaFact, Trait("GC", ""), Trait("FailsInCloudTest", "")]
+        [StaFact, Trait("GC", "true"), Trait("FailsInCloudTest", "true")]
         public void RunSynchronouslyTaskOfTNoYieldGCPressure()
         {
             Task<object> completedTask = Task.FromResult<object>(null);
@@ -2926,7 +2926,7 @@
             }, maxBytesAllocated: 500);
         }
 
-        [StaFact, Trait("GC", ""), Trait("FailsInCloudTest", ""), Trait("FailsInLocalBatch", "")]
+        [StaFact, Trait("GC", "true"), Trait("FailsInCloudTest", "true"), Trait("FailsInLocalBatch", "true")]
         public void RunSynchronouslyTaskWithYieldGCPressure()
         {
             this.CheckGCPressure(delegate
@@ -2938,7 +2938,7 @@
             }, maxBytesAllocated: 1800);
         }
 
-        [StaFact, Trait("GC", ""), Trait("FailsInCloudTest", ""), Trait("FailsInLocalBatch", "")]
+        [StaFact, Trait("GC", "true"), Trait("FailsInCloudTest", "true"), Trait("FailsInLocalBatch", "true")]
         public void RunSynchronouslyTaskOfTWithYieldGCPressure()
         {
             Task<object> completedTask = Task.FromResult<object>(null);

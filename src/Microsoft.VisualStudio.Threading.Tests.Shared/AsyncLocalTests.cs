@@ -105,7 +105,7 @@
             Assert.Null(this.asyncLocal.Value);
         }
 
-        [Fact, Trait("GC", "")]
+        [Fact, Trait("GC", "true")]
         public void SurvivesGC()
         {
             var value = new GenericParameterHelper(5);
@@ -157,7 +157,7 @@
             Assert.Equal(1, jtLocal.Value);
         }
 
-        [Fact, Trait("Performance", "")]
+        [Fact, Trait("Performance", "true")]
         public void AsyncLocalPerfTest()
         {
             var values = Enumerable.Range(1, 50000).Select(n => new GenericParameterHelper(n)).ToArray();

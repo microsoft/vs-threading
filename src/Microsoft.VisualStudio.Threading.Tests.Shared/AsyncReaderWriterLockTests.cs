@@ -263,7 +263,7 @@
             });
         }
 
-        [StaFact, Trait("FailsInCloudTest", "")]
+        [StaFact, Trait("FailsInCloudTest", "true")]
         public async Task CallAcrossAppDomainBoundariesWithLock()
         {
             var otherDomain = AppDomain.CreateDomain("test domain", AppDomain.CurrentDomain.Evidence, AppDomain.CurrentDomain.SetupInformation);
@@ -463,7 +463,7 @@
             });
         }
 
-        [StaFact, Trait("Stress", "")]
+        [StaFact, Trait("Stress", "true")]
         public async Task LockStress()
         {
             const int MaxLockAcquisitions = -1;
@@ -475,7 +475,7 @@
             await this.StressHelper(MaxLockAcquisitions, MaxLockHeldDelay, overallTimeout, iterationTimeout, maxWorkers, testCancellation);
         }
 
-        [StaFact, Trait("Stress", ""), Trait("FailsInCloudTest", "")]
+        [StaFact, Trait("Stress", "true"), Trait("FailsInCloudTest", "true")]
         public async Task CancellationStress()
         {
             const int MaxLockAcquisitions = -1;
@@ -842,14 +842,14 @@
             this.LockReleaseTestHelper(this.asyncLock.ReadLockAsync());
         }
 
-        [StaFact, Trait("GC", "")]
+        [StaFact, Trait("GC", "true")]
         public async Task UncontestedTopLevelReadLockAsyncGarbageCheck()
         {
             var cts = new CancellationTokenSource();
             await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync(cts.Token), false);
         }
 
-        [StaFact, Trait("GC", "")]
+        [StaFact, Trait("GC", "true")]
         public async Task NestedReadLockAsyncGarbageCheck()
         {
             await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync(), false);
@@ -1125,14 +1125,14 @@
             this.LockReleaseTestHelper(this.asyncLock.UpgradeableReadLockAsync());
         }
 
-        [StaFact, Trait("GC", ""), Trait("FailsInCloudTest", "")]
+        [StaFact, Trait("GC", "true"), Trait("FailsInCloudTest", "true")]
         public async Task UncontestedTopLevelUpgradeableReadLockAsyncGarbageCheck()
         {
             var cts = new CancellationTokenSource();
             await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync(cts.Token), true);
         }
 
-        [StaFact, Trait("GC", ""), Trait("FailsInCloudTest", "")]
+        [StaFact, Trait("GC", "true"), Trait("FailsInCloudTest", "true")]
         public async Task NestedUpgradeableReadLockAsyncGarbageCheck()
         {
             await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync(), true);
@@ -1645,14 +1645,14 @@
                 }));
         }
 
-        [StaFact, Trait("GC", ""), Trait("FailsInCloudTest", "")]
+        [StaFact, Trait("GC", "true"), Trait("FailsInCloudTest", "true")]
         public async Task UncontestedTopLevelWriteLockAsyncGarbageCheck()
         {
             var cts = new CancellationTokenSource();
             await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync(cts.Token), true);
         }
 
-        [StaFact, Trait("GC", ""), Trait("FailsInCloudTest", "")]
+        [StaFact, Trait("GC", "true"), Trait("FailsInCloudTest", "true")]
         public async Task NestedWriteLockAsyncGarbageCheck()
         {
             await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync(), true);

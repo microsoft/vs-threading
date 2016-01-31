@@ -973,7 +973,7 @@
             }
         }
 
-        [StaFact, Trait("Stress", "")]
+        [StaFact, Trait("Stress", "true")]
         public async Task ResourceLockStress()
         {
             const int MaxLockAcquisitions = -1;
