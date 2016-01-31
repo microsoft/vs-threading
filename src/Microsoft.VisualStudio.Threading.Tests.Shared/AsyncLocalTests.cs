@@ -186,9 +186,9 @@
             reads.Stop();
 
             // We don't actually validate the perf here. We just print out the results.
-            Console.WriteLine("Creating {0} instances took {1} ms", values.Length, creates.ElapsedMilliseconds);
-            Console.WriteLine("Saving {0} values took {1} ms", values.Length, writes.ElapsedMilliseconds);
-            Console.WriteLine("Reading {0} values took {1} ms", values.Length, reads.ElapsedMilliseconds);
+            this.Logger.WriteLine("Creating {0} instances took {1} ms", values.Length, creates.ElapsedMilliseconds);
+            this.Logger.WriteLine("Saving {0} values took {1} ms", values.Length, writes.ElapsedMilliseconds);
+            this.Logger.WriteLine("Reading {0} values took {1} ms", values.Length, reads.ElapsedMilliseconds);
         }
 
         [Fact]

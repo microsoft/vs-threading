@@ -137,7 +137,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         {
             for (int i = 0; i < 10; i++)
             {
-                Console.WriteLine("Iteration {0}", i);
+                this.Logger.WriteLine("Iteration {0}", i);
                 WeakReference collectible = null;
                 AsyncLazy<object> lazy = null;
                 ((Action)(() =>

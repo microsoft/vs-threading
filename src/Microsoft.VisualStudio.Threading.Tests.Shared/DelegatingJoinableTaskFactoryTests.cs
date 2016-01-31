@@ -63,7 +63,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             {
                 while (!ValidateDelegatingLog(this.log.ToList()))
                 {
-                    Console.WriteLine("Waiting with a count of {0}", this.log.Count);
+                    this.Logger.WriteLine("Waiting with a count of {0}", this.log.Count);
                     Assert.True(Monitor.Wait(this.logLock, AsyncDelay));
                 }
             }
@@ -117,7 +117,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         {
             lock (this.logLock)
             {
-                Console.WriteLine($"Adding entry {entry} (#{this.log.Count + 1}) from thread {Environment.CurrentManagedThreadId}");
+                this.Logger.WriteLine($"Adding entry {entry} (#{this.log.Count + 1}) from thread {Environment.CurrentManagedThreadId}");
                 this.log.Add(entry);
                 Monitor.Pulse(this.logLock);
             }

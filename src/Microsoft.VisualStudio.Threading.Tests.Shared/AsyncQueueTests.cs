@@ -330,7 +330,7 @@
                 iterations++;
             }
 
-            Console.WriteLine("Iterations: {0}", iterations);
+            this.Logger.WriteLine("Iterations: {0}", iterations);
         }
 
         [Fact]

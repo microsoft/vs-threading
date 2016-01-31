@@ -11,6 +11,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
     using System.Collections.Generic;
     using System.Linq;
     using Xunit;
+    using Xunit.Abstractions;
 
     /// <summary>
     /// Tests for the weak dictionary class
@@ -21,6 +22,16 @@ namespace Microsoft.VisualStudio.Threading.Tests
         /// Magic number size of strings to allocate for GC tests.
         /// </summary>
         private const int BigMemoryFootprintTest = 1 * 1024 * 1024;
+
+        /// <summary>
+        /// The xunit test logger.
+        /// </summary>
+        private readonly ITestOutputHelper logger;
+
+        public WeakKeyDictionaryTests(ITestOutputHelper logger)
+        {
+            this.logger = logger;
+        }
 
         /// <summary>
         /// Find with the same key inserted using the indexer
@@ -132,7 +143,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             // Key collected, should be about 2MB less
             long difference = memory1 - memory2;
 
-            Console.WriteLine("Start {0}, end {1}, diff {2}", memory1, memory2, difference);
+            this.logger.WriteLine("Start {0}, end {1}, diff {2}", memory1, memory2, difference);
             Assert.True(difference > 1500000); // 2MB minus big noise allowance
 
             // This line is VERY important, as it keeps the GC from being too smart and collecting
@@ -182,7 +193,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
 
             // We should have scavenged at least once
-            Console.WriteLine("Count {0}", dictionary.Count);
+            this.logger.WriteLine("Count {0}", dictionary.Count);
             Assert.True(dictionary.Count < 100);
 
             // Finish with explicit scavenge
@@ -190,7 +201,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             int removed = dictionary.Scavenge();
             int count2 = dictionary.Count;
 
-            Console.WriteLine("Removed {0}", removed);
+            this.logger.WriteLine("Removed {0}", removed);
             Assert.Equal(removed, count1 - count2);
         }
 

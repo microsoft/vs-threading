@@ -385,7 +385,7 @@
             var report = contributor.GetHangReport();
             Assert.Equal("application/xml", report.ContentType);
             Assert.NotNull(report.ContentName);
-            Console.WriteLine(report.Content);
+            this.Logger.WriteLine(report.Content);
             var dgml = XDocument.Parse(report.Content);
             Assert.Equal("DirectedGraph", dgml.Root.Name.LocalName);
             Assert.Equal("http://schemas.microsoft.com/vs/2009/dgml", dgml.Root.Name.Namespace);
@@ -401,7 +401,7 @@
             {
                 IHangReportContributor contributor = this.Context;
                 var report = contributor.GetHangReport();
-                Console.WriteLine(report.Content);
+                this.Logger.WriteLine(report.Content);
                 var dgml = XDocument.Parse(report.Content);
                 var collectionLabels = from node in dgml.Root.Element(XName.Get("Nodes", DgmlNamespace)).Elements()
                                        where node.Attribute(XName.Get("Category"))?.Value == "Collection"
@@ -424,7 +424,7 @@
             mainThreadRequested.Wait();
             IHangReportContributor contributor = this.Context;
             var report = contributor.GetHangReport();
-            Console.WriteLine(report.Content);
+            this.Logger.WriteLine(report.Content);
             var dgml = XDocument.Parse(report.Content);
             var collectionLabels = from node in dgml.Root.Element(XName.Get("Nodes", DgmlNamespace)).Elements()
                                    where node.Attribute(XName.Get("Category"))?.Value == "Task"
@@ -447,7 +447,7 @@
                 await messagePosted.WaitAsync();
                 IHangReportContributor contributor = this.Context;
                 var report = contributor.GetHangReport();
-                Console.WriteLine(report.Content);
+                this.Logger.WriteLine(report.Content);
                 var dgml = XDocument.Parse(report.Content);
                 var collectionLabels = from node in dgml.Root.Element(XName.Get("Nodes", DgmlNamespace)).Elements()
                                        where node.Attribute(XName.Get("Category"))?.Value == "Task"
@@ -464,7 +464,7 @@
             {
                 IHangReportContributor contributor = this.Context;
                 var report = contributor.GetHangReport();
-                Console.WriteLine(report.Content);
+                this.Logger.WriteLine(report.Content);
                 endTestTokenSource.Cancel();
                 this.Context.OnReportHang = null;
             };

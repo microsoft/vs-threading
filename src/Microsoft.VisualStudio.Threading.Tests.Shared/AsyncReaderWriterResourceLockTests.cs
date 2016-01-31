@@ -8,7 +8,7 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Xunit;
-
+    using Xunit.Abstractions;
     public class AsyncReaderWriterResourceLockTests : TestBase
     {
         private const char ReadChar = 'R';
@@ -21,10 +21,11 @@
 
         private List<Resource> resources;
 
-        public AsyncReaderWriterResourceLockTests()
+        public AsyncReaderWriterResourceLockTests(ITestOutputHelper logger)
+            : base(logger)
         {
             this.resources = new List<Resource>();
-            this.resourceLock = new ResourceLockWrapper(this.resources);
+            this.resourceLock = new ResourceLockWrapper(this.resources, logger);
             this.resources.Add(null); // something so that if default(T) were ever used in the product, it would likely throw.
             this.resources.Add(new Resource());
             this.resources.Add(new Resource());
@@ -685,7 +686,7 @@
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine("Failed with: {0}", ex);
+                        this.Logger.WriteLine("Failed with: {0}", ex);
                         throw;
                     }
                     finally
@@ -986,12 +987,19 @@
             await this.StressHelper(MaxLockAcquisitions, MaxLockHeldDelay, overallTimeout, iterationTimeout, maxWorkers, maxResources, testCancellation);
         }
 
-        private static void VerboseLog(string message, params object[] args)
+        private static void VerboseLog(ITestOutputHelper logger, string message, params object[] args)
         {
+            Requires.NotNull(logger, nameof(logger));
+
             if (verboseLogEnabled)
             {
-                Console.WriteLine(message, args);
+                logger.WriteLine(message, args);
             }
+        }
+
+        private void VerboseLog(string message, params object[] args)
+        {
+            VerboseLog(this.Logger, message, args);
         }
 
         private async Task StressHelper(int maxLockAcquisitions, int maxLockHeldDelay, int overallTimeout, int iterationTimeout, int maxWorkers, int maxResources, bool testCancellation)
@@ -1084,10 +1092,10 @@
 
                                 var expectedState = this.resourceLock.IsWriteLockHeld ? Resource.State.Exclusive : Resource.State.Concurrent;
                                 int resourceIndex = random.Next(maxResources) + 1;
-                                VerboseLog("Worker {0} is requesting resource {1}, expects {2}", workerId, resourceIndex, expectedState);
+                                this.VerboseLog("Worker {0} is requesting resource {1}, expects {2}", workerId, resourceIndex, expectedState);
                                 var resource = await lockStack.Peek().GetResourceAsync(resourceIndex);
                                 var currentState = resource.CurrentState;
-                                VerboseLog("Worker {0} has received resource {1}, as {2}", workerId, resourceIndex, currentState);
+                                this.VerboseLog("Worker {0} has received resource {1}, as {2}", workerId, resourceIndex, currentState);
                                 Assert.Equal(expectedState, currentState);
                                 await Task.Delay(random.Next(maxLockHeldDelay));
                             }
@@ -1107,11 +1115,11 @@
                                 }
                             }
 
-                            VerboseLog("Worker {0} completed {1}", workerId, log);
+                            this.VerboseLog("Worker {0} completed {1}", workerId, log);
                         }
                         catch (Exception ex)
                         {
-                            VerboseLog("Worker {0} threw {1} \"{2}\" with log: {3}", workerId, ex.GetType().Name, ex.Message, log);
+                            this.VerboseLog("Worker {0} threw {1} \"{2}\" with log: {3}", workerId, ex.GetType().Name, ex.Message, log);
                             throw;
                         }
                     }
@@ -1136,7 +1144,7 @@
                     }
                     finally
                     {
-                        Console.WriteLine("Stress tested {0} lock acquisitions.", lockAcquisitions);
+                        this.Logger.WriteLine("Stress tested {0} lock acquisitions.", lockAcquisitions);
                     }
                 });
             }
@@ -1170,9 +1178,12 @@
 
             private readonly AsyncAutoResetEvent preparationTaskBegun = new AsyncAutoResetEvent();
 
-            internal ResourceLockWrapper(List<Resource> resources)
+            private readonly ITestOutputHelper logger;
+
+            internal ResourceLockWrapper(List<Resource> resources, ITestOutputHelper logger)
             {
                 this.resources = resources;
+                this.logger = logger;
             }
 
             internal AsyncAutoResetEvent PreparationTaskBegun
@@ -1217,13 +1228,13 @@
             protected override async Task PrepareResourceForConcurrentAccessAsync(Resource resource, CancellationToken cancellationToken)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                VerboseLog("Preparing resource {0} for concurrent access started.", this.resources.IndexOf(resource));
+                VerboseLog(this.logger, "Preparing resource {0} for concurrent access started.", this.resources.IndexOf(resource));
                 resource.ConcurrentAccessPreparationCount++;
                 resource.CurrentState = Resource.State.PreparingConcurrent;
                 this.preparationTaskBegun.Set();
                 await this.GetPreparationTask(resource);
                 resource.CurrentState = Resource.State.Concurrent;
-                VerboseLog("Preparing resource {0} for concurrent access finished.", this.resources.IndexOf(resource));
+                VerboseLog(this.logger, "Preparing resource {0} for concurrent access finished.", this.resources.IndexOf(resource));
             }
 
             protected override async Task PrepareResourceForExclusiveAccessAsync(Resource resource, LockFlags lockFlags, CancellationToken cancellationToken)
@@ -1235,13 +1246,13 @@
                 }
                 else
                 {
-                    VerboseLog("Preparing resource {0} for exclusive access started.", this.resources.IndexOf(resource));
+                    VerboseLog(this.logger, "Preparing resource {0} for exclusive access started.", this.resources.IndexOf(resource));
                     resource.ExclusiveAccessPreparationCount++;
                     resource.CurrentState = Resource.State.PreparingExclusive;
                     this.preparationTaskBegun.Set();
                     await this.GetPreparationTask(resource);
                     resource.CurrentState = Resource.State.Exclusive;
-                    VerboseLog("Preparing resource {0} for exclusive access finished.", this.resources.IndexOf(resource));
+                    VerboseLog(this.logger, "Preparing resource {0} for exclusive access finished.", this.resources.IndexOf(resource));
                 }
             }
 

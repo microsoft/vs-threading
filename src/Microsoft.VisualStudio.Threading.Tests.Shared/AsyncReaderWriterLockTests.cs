@@ -3763,7 +3763,7 @@
             Assert.NotNull(report.Content);
             Assert.NotNull(report.ContentType);
             Assert.NotNull(report.ContentName);
-            Console.WriteLine(report.Content);
+            this.Logger.WriteLine(report.Content);
         }
 
         [StaFact]
@@ -3845,7 +3845,7 @@
         {
             IHangReportContributor reportContributor = this.asyncLock;
             var report = reportContributor.GetHangReport();
-            Console.WriteLine(report.Content);
+            this.Logger.WriteLine(report.Content);
         }
 
         private void LockReleaseTestHelper(AsyncReaderWriterLock.Awaitable initialLock)
@@ -4355,7 +4355,7 @@
                     }
                     finally
                     {
-                        Console.WriteLine("Stress tested {0} lock acquisitions.", lockAcquisitions);
+                        this.Logger.WriteLine("Stress tested {0} lock acquisitions.", lockAcquisitions);
                     }
                 });
             }
