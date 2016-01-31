@@ -6,12 +6,17 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using TestTools.UnitTesting;
+    using Xunit;
+    using Xunit.Abstractions;
 
-    [TestClass]
     public class JoinableTaskFactoryTests : JoinableTaskTestBase
     {
-        [TestMethod, Timeout(TestTimeout)]
+        public JoinableTaskFactoryTests(ITestOutputHelper logger)
+            : base(logger)
+        {
+        }
+
+        [StaFact]
         public void OnTransitioningToMainThread_DoesNotHoldPrivateLock()
         {
             this.SimulateUIThread(async delegate
@@ -50,11 +55,11 @@
 
                 // If a deadlock is detected, that means the JTF called out to our code
                 // while holding a private lock. Bad thing.
-                Assert.IsTrue(noDeadlockDetected);
+                Assert.True(noDeadlockDetected);
             });
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void OnTransitionedToMainThread_DoesNotHoldPrivateLock()
         {
             this.SimulateUIThread(async delegate
@@ -93,7 +98,7 @@
 
                 // If a deadlock is detected, that means the JTF called out to our code
                 // while holding a private lock. Bad thing.
-                Assert.IsTrue(noDeadlockDetected);
+                Assert.True(noDeadlockDetected);
             });
         }
 

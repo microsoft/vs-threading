@@ -10,7 +10,8 @@
     using System.Threading.Tasks;
     using System.Windows.Threading;
     using System.Xml.Linq;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
+    using Xunit.Abstractions;
 
     public abstract class JoinableTaskTestBase : TestBase
     {
@@ -24,8 +25,8 @@
         protected SynchronizationContext dispatcherContext;
         protected DispatcherFrame testFrame;
 
-        [TestInitialize]
-        public virtual void Initialize()
+        protected JoinableTaskTestBase(ITestOutputHelper logger)
+            : base(logger)
         {
             this.dispatcherContext = new DispatcherSynchronizationContext();
             SynchronizationContext.SetSynchronizationContext(this.dispatcherContext);

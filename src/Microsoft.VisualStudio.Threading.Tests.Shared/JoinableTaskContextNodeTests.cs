@@ -12,69 +12,68 @@ namespace Microsoft.VisualStudio.Threading.Tests
     using System.Reflection;
     using System.Text;
     using System.Threading.Tasks;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
+    using Xunit.Abstractions;
 
-    [TestClass]
     public class JoinableTaskContextNodeTests : JoinableTaskTestBase
     {
         private JoinableTaskContextNode defaultNode;
 
         private DerivedNode derivedNode;
 
-        [TestInitialize]
-        public override void Initialize()
+        public JoinableTaskContextNodeTests(ITestOutputHelper logger)
+            : base(logger)
         {
-            base.Initialize();
             this.defaultNode = new JoinableTaskContextNode(this.context);
             this.derivedNode = new DerivedNode(this.context);
         }
 
-        [TestMethod]
+        [StaFact]
         public void CreateCollection()
         {
             var collection = this.defaultNode.CreateCollection();
-            Assert.IsNotNull(collection);
+            Assert.NotNull(collection);
 
             collection = this.derivedNode.CreateCollection();
-            Assert.IsNotNull(collection);
+            Assert.NotNull(collection);
         }
 
-        [TestMethod]
+        [StaFact]
         public void CreateFactory()
         {
             var factory = this.defaultNode.CreateFactory(this.joinableCollection);
-            Assert.IsInstanceOfType(factory, typeof(JoinableTaskFactory));
+            Assert.IsType<JoinableTaskFactory>(factory);
 
             factory = this.derivedNode.CreateFactory(this.joinableCollection);
-            Assert.IsInstanceOfType(factory, typeof(DerivedFactory));
+            Assert.IsType<DerivedFactory>(factory);
         }
 
-        [TestMethod]
+        [StaFact]
         public void Factory()
         {
-            Assert.IsInstanceOfType(this.defaultNode.Factory, typeof(JoinableTaskFactory));
-            Assert.IsInstanceOfType(this.derivedNode.Factory, typeof(DerivedFactory));
+            Assert.IsType<JoinableTaskFactory>(this.defaultNode.Factory);
+            Assert.IsType<DerivedFactory>(this.derivedNode.Factory);
         }
 
-        [TestMethod]
+        [StaFact]
         public void MainThread()
         {
 #if DESKTOP
-            Assert.AreSame(this.context.MainThread, this.defaultNode.MainThread);
-            Assert.AreSame(this.context.MainThread, this.derivedNode.MainThread);
+            Assert.Same(this.context.MainThread, this.defaultNode.MainThread);
+            Assert.Same(this.context.MainThread, this.derivedNode.MainThread);
 #endif
-            Assert.IsTrue(this.context.IsOnMainThread);
-            Assert.IsTrue(this.derivedNode.IsOnMainThread);
+            Assert.True(this.context.IsOnMainThread);
+            Assert.True(this.derivedNode.IsOnMainThread);
         }
 
-        [TestMethod]
+        [StaFact]
         public void IsMainThreadBlocked()
         {
-            Assert.IsFalse(this.defaultNode.IsMainThreadBlocked());
-            Assert.IsFalse(this.derivedNode.IsMainThreadBlocked());
+            Assert.False(this.defaultNode.IsMainThreadBlocked());
+            Assert.False(this.derivedNode.IsMainThreadBlocked());
         }
 
-        [TestMethod]
+        [StaFact]
         public void SuppressRelevance()
         {
             using (this.defaultNode.SuppressRelevance())
@@ -86,7 +85,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
         }
 
-        [TestMethod, Timeout(TestTimeout), TestCategory("FailsInCloudTest")]
+        [StaFact, Trait("FailsInCloudTest", "")]
         public void OnHangDetected_Registration()
         {
             var factory = (DerivedFactory)this.derivedNode.Factory;
@@ -95,8 +94,8 @@ namespace Microsoft.VisualStudio.Threading.Tests
             {
                 await Task.Delay(2);
             });
-            Assert.IsFalse(this.derivedNode.HangDetected.IsSet); // we didn't register, so we shouldn't get notifications.
-            Assert.IsFalse(this.derivedNode.FalseHangReportDetected.IsSet);
+            Assert.False(this.derivedNode.HangDetected.IsSet); // we didn't register, so we shouldn't get notifications.
+            Assert.False(this.derivedNode.FalseHangReportDetected.IsSet);
 
             using (this.derivedNode.RegisterOnHangDetected())
             {
@@ -104,12 +103,12 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 {
                     var timeout = Task.Delay(AsyncDelay);
                     var result = await Task.WhenAny(timeout, this.derivedNode.HangDetected.WaitAsync());
-                    Assert.AreNotSame(timeout, result, "Timed out waiting for hang detection.");
+                    Assert.NotSame(timeout, result); //, "Timed out waiting for hang detection.");
                 });
-                Assert.IsTrue(this.derivedNode.HangDetected.IsSet);
-                Assert.IsTrue(this.derivedNode.FalseHangReportDetected.IsSet);
-                Assert.AreEqual(this.derivedNode.HangReportCount, this.derivedNode.HangDetails.NotificationCount);
-                Assert.AreEqual(1, this.derivedNode.FalseHangReportCount);
+                Assert.True(this.derivedNode.HangDetected.IsSet);
+                Assert.True(this.derivedNode.FalseHangReportDetected.IsSet);
+                Assert.Equal(this.derivedNode.HangReportCount, this.derivedNode.HangDetails.NotificationCount);
+                Assert.Equal(1, this.derivedNode.FalseHangReportCount);
 
                 // reset for the next verification
                 this.derivedNode.HangDetected.Reset();
@@ -120,11 +119,11 @@ namespace Microsoft.VisualStudio.Threading.Tests
             {
                 await Task.Delay(2);
             });
-            Assert.IsFalse(this.derivedNode.HangDetected.IsSet); // registration should have been canceled.
-            Assert.IsFalse(this.derivedNode.FalseHangReportDetected.IsSet);
+            Assert.False(this.derivedNode.HangDetected.IsSet); // registration should have been canceled.
+            Assert.False(this.derivedNode.FalseHangReportDetected.IsSet);
         }
 
-        [TestMethod, Timeout(TestTimeout), TestCategory("FailsInCloudTest")]
+        [StaFact, Trait("FailsInCloudTest", "")]
         public void OnFalseHangReportDetected_OnlyOnce()
         {
             var factory = (DerivedFactory)this.derivedNode.Factory;
@@ -147,20 +146,20 @@ namespace Microsoft.VisualStudio.Threading.Tests
             {
                 var timeout = Task.Delay(AsyncDelay);
                 var result = await Task.WhenAny(timeout, dectionTask.Task);
-                Assert.AreNotSame(timeout, result, "Timed out waiting for hang detection.");
+                Assert.NotSame(timeout, result); //, "Timed out waiting for hang detection.");
                 await dectionTask;
             });
 
-            Assert.IsTrue(this.derivedNode.HangDetected.IsSet);
-            Assert.IsTrue(this.derivedNode.FalseHangReportDetected.IsSet);
-            Assert.AreEqual(this.derivedNode.HangDetails.HangId, this.derivedNode.FalseHangReportId);
-            Assert.IsTrue(this.derivedNode.FalseHangReportTimeSpan >= this.derivedNode.HangDetails.HangDuration);
-            Assert.IsTrue(this.derivedNode.HangReportCount >= 3);
-            Assert.AreEqual(this.derivedNode.HangReportCount, this.derivedNode.HangDetails.NotificationCount);
-            Assert.AreEqual(1, this.derivedNode.FalseHangReportCount);
+            Assert.True(this.derivedNode.HangDetected.IsSet);
+            Assert.True(this.derivedNode.FalseHangReportDetected.IsSet);
+            Assert.Equal(this.derivedNode.HangDetails.HangId, this.derivedNode.FalseHangReportId);
+            Assert.True(this.derivedNode.FalseHangReportTimeSpan >= this.derivedNode.HangDetails.HangDuration);
+            Assert.True(this.derivedNode.HangReportCount >= 3);
+            Assert.Equal(this.derivedNode.HangReportCount, this.derivedNode.HangDetails.NotificationCount);
+            Assert.Equal(1, this.derivedNode.FalseHangReportCount);
         }
 
-        [TestMethod, Timeout(TestTimeout), TestCategory("FailsInCloudTest")]
+        [StaFact, Trait("FailsInCloudTest", "")]
         public void OnHangDetected_Run_OnMainThread()
         {
             var factory = (DerivedFactory)this.derivedNode.Factory;
@@ -171,21 +170,21 @@ namespace Microsoft.VisualStudio.Threading.Tests
             {
                 var timeout = Task.Delay(AsyncDelay);
                 var result = await Task.WhenAny(timeout, this.derivedNode.HangDetected.WaitAsync());
-                Assert.AreNotSame(timeout, result, "Timed out waiting for hang detection.");
+                Assert.NotSame(timeout, result); //, "Timed out waiting for hang detection.");
             });
-            Assert.IsTrue(this.derivedNode.HangDetected.IsSet);
-            Assert.IsNotNull(this.derivedNode.HangDetails);
-            Assert.IsNotNull(this.derivedNode.HangDetails.EntryMethod);
-            Assert.AreSame(this.GetType(), this.derivedNode.HangDetails.EntryMethod.DeclaringType);
-            Assert.IsTrue(this.derivedNode.HangDetails.EntryMethod.Name.Contains(nameof(this.OnHangDetected_Run_OnMainThread)));
+            Assert.True(this.derivedNode.HangDetected.IsSet);
+            Assert.NotNull(this.derivedNode.HangDetails);
+            Assert.NotNull(this.derivedNode.HangDetails.EntryMethod);
+            Assert.Same(this.GetType(), this.derivedNode.HangDetails.EntryMethod.DeclaringType);
+            Assert.True(this.derivedNode.HangDetails.EntryMethod.Name.Contains(nameof(this.OnHangDetected_Run_OnMainThread)));
 
-            Assert.IsTrue(this.derivedNode.FalseHangReportDetected.IsSet);
-            Assert.AreNotEqual(Guid.Empty, this.derivedNode.FalseHangReportId);
-            Assert.AreEqual(this.derivedNode.HangDetails.HangId, this.derivedNode.FalseHangReportId);
-            Assert.IsTrue(this.derivedNode.FalseHangReportTimeSpan >= this.derivedNode.HangDetails.HangDuration);
+            Assert.True(this.derivedNode.FalseHangReportDetected.IsSet);
+            Assert.NotEqual(Guid.Empty, this.derivedNode.FalseHangReportId);
+            Assert.Equal(this.derivedNode.HangDetails.HangId, this.derivedNode.FalseHangReportId);
+            Assert.True(this.derivedNode.FalseHangReportTimeSpan >= this.derivedNode.HangDetails.HangDuration);
         }
 
-        [TestMethod, Timeout(TestTimeout), TestCategory("FailsInCloudTest")]
+        [StaFact, Trait("FailsInCloudTest", "")]
         public void OnHangDetected_Run_OffMainThread()
         {
             Task.Run(delegate
@@ -195,7 +194,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }).GetAwaiter().GetResult();
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void OnHangDetected_RunAsync_OnMainThread_BlamedMethodIsEntrypointNotBlockingMethod()
         {
             var factory = (DerivedFactory)this.derivedNode.Factory;
@@ -206,19 +205,19 @@ namespace Microsoft.VisualStudio.Threading.Tests
             {
                 var timeout = Task.Delay(AsyncDelay);
                 var result = await Task.WhenAny(timeout, this.derivedNode.HangDetected.WaitAsync());
-                Assert.AreNotSame(timeout, result, "Timed out waiting for hang detection.");
+                Assert.NotSame(timeout, result); //, "Timed out waiting for hang detection.");
             });
             OnHangDetected_BlockingMethodHelper(jt);
-            Assert.IsTrue(this.derivedNode.HangDetected.IsSet);
-            Assert.IsNotNull(this.derivedNode.HangDetails);
-            Assert.IsNotNull(this.derivedNode.HangDetails.EntryMethod);
+            Assert.True(this.derivedNode.HangDetected.IsSet);
+            Assert.NotNull(this.derivedNode.HangDetails);
+            Assert.NotNull(this.derivedNode.HangDetails.EntryMethod);
 
             // Verify that the original method that spawned the JoinableTask is the one identified as the entrypoint method.
-            Assert.AreSame(this.GetType(), this.derivedNode.HangDetails.EntryMethod.DeclaringType);
-            Assert.IsTrue(this.derivedNode.HangDetails.EntryMethod.Name.Contains(nameof(this.OnHangDetected_RunAsync_OnMainThread_BlamedMethodIsEntrypointNotBlockingMethod)));
+            Assert.Same(this.GetType(), this.derivedNode.HangDetails.EntryMethod.DeclaringType);
+            Assert.True(this.derivedNode.HangDetails.EntryMethod.Name.Contains(nameof(this.OnHangDetected_RunAsync_OnMainThread_BlamedMethodIsEntrypointNotBlockingMethod)));
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void OnHangDetected_RunAsync_OffMainThread_BlamedMethodIsEntrypointNotBlockingMethod()
         {
             Task.Run(delegate
