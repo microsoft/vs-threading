@@ -842,14 +842,14 @@
             this.LockReleaseTestHelper(this.asyncLock.ReadLockAsync());
         }
 
-        [StaFact, Trait("GC", "true")]
+        [StaFact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest")]
         public async Task UncontestedTopLevelReadLockAsyncGarbageCheck()
         {
             var cts = new CancellationTokenSource();
             await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync(cts.Token), false);
         }
 
-        [StaFact, Trait("GC", "true")]
+        [StaFact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest")]
         public async Task NestedReadLockAsyncGarbageCheck()
         {
             await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync(), false);
