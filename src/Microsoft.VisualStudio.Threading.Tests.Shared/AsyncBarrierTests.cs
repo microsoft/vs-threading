@@ -6,9 +6,15 @@
     using System.Text;
     using System.Threading.Tasks;
     using Xunit;
+    using Xunit.Abstractions;
 
     public class AsyncBarrierTests : TestBase
     {
+        public AsyncBarrierTests(ITestOutputHelper logger)
+            : base(logger)
+        {
+        }
+
         [Fact]
         public void ZeroParticipantsThrow()
         {

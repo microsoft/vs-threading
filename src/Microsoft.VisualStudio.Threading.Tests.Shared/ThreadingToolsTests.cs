@@ -9,10 +9,16 @@
     using System.Threading.Tasks;
     using System.Windows.Threading;
     using Xunit;
+    using Xunit.Abstractions;
     using GenericParameterHelper = TestTools.UnitTesting.GenericParameterHelper;
 
     public class ThreadingToolsTests : TestBase
     {
+        public ThreadingToolsTests(ITestOutputHelper logger)
+            : base(logger)
+        {
+        }
+
         [Fact]
         public void ApplyChangeOptimistically()
         {

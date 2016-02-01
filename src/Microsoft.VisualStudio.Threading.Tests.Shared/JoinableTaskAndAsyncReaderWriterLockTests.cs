@@ -8,6 +8,7 @@
     using System.Threading.Tasks;
     using System.Windows.Threading;
     using Xunit;
+    using Xunit.Abstractions;
 
     public class JoinableTaskAndAsyncReaderWriterLockTests : TestBase
     {
@@ -19,7 +20,8 @@
 
         private AsyncManualResetEvent lockRequested;
 
-        public JoinableTaskAndAsyncReaderWriterLockTests()
+        public JoinableTaskAndAsyncReaderWriterLockTests(ITestOutputHelper logger)
+            : base(logger)
         {
             this.asyncLock = new AsyncReaderWriterLock();
             this.InitializeJoinableTaskFactory();

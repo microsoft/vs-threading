@@ -8,10 +8,16 @@
     using System.Threading.Tasks;
     using System.Windows.Threading;
     using Xunit;
+    using Xunit.Abstractions;
     using GenericParameterHelper = Shared.GenericParameterHelper;
 
     public class ProgressWithCompletionTests : TestBase
     {
+        public ProgressWithCompletionTests(ITestOutputHelper logger)
+            : base(logger)
+        {
+        }
+
         [Fact]
         public void CtorNullAction()
         {

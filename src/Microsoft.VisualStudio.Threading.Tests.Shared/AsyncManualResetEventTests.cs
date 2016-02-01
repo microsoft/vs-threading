@@ -7,12 +7,14 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Xunit;
+    using Xunit.Abstractions;
 
     public class AsyncManualResetEventTests : TestBase
     {
         private AsyncManualResetEvent evt;
 
-        public AsyncManualResetEventTests()
+        public AsyncManualResetEventTests(ITestOutputHelper logger)
+            : base(logger)
         {
             this.evt = new AsyncManualResetEvent();
         }

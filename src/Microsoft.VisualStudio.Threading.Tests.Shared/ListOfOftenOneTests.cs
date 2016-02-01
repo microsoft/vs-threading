@@ -6,13 +6,15 @@
     using System.Text;
     using System.Threading.Tasks;
     using Xunit;
+    using Xunit.Abstractions;
     using GenericParameterHelper = Shared.GenericParameterHelper;
 
     public class ListOfOftenOneTests : TestBase
     {
         private ListOfOftenOne<GenericParameterHelper> list;
 
-        public ListOfOftenOneTests()
+        public ListOfOftenOneTests(ITestOutputHelper logger)
+            : base(logger)
         {
             this.list = default(ListOfOftenOne<GenericParameterHelper>);
         }

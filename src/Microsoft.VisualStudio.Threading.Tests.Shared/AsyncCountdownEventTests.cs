@@ -7,11 +7,16 @@
     using System.Threading;
     using System.Threading.Tasks;
     using System.Windows.Threading;
-
     using Xunit;
+    using Xunit.Abstractions;
 
     public class AsyncCountdownEventTests : TestBase
     {
+        public AsyncCountdownEventTests(ITestOutputHelper logger)
+            : base(logger)
+        {
+        }
+
         [Fact]
         public async Task InitialCountZero()
         {

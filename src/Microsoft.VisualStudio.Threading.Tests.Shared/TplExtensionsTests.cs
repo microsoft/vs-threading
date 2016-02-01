@@ -7,10 +7,16 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Xunit;
+    using Xunit.Abstractions;
     using GenericParameterHelper = Microsoft.VisualStudio.TestTools.UnitTesting.GenericParameterHelper;
 
     public class TplExtensionsTests : TestBase
     {
+        public TplExtensionsTests(ITestOutputHelper logger)
+            : base(logger)
+        {
+        }
+
         [Fact]
         public void CompletedTask()
         {

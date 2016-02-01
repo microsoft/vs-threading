@@ -7,10 +7,16 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Xunit;
+    using Xunit.Abstractions;
 
     public class AsyncSemaphoreTests : TestBase
     {
         private AsyncSemaphore lck = new AsyncSemaphore(1);
+
+        public AsyncSemaphoreTests(ITestOutputHelper logger)
+            : base(logger)
+        {
+        }
 
         [Fact]
         public async Task Uncontested()
