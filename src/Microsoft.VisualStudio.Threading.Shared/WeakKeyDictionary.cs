@@ -57,7 +57,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Count of entries.
+        /// Gets the number of entries in this dictionary.
         /// Some entries may represent keys or values that have already been garbage collected.
         /// To clean these out call <see cref="Scavenge"/>.
         /// </summary>
@@ -295,7 +295,7 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
-            /// Target wrapped by this weak reference.  Null if the target has already been garbage collected.
+            /// Gets the target wrapped by this weak reference.  Null if the target has already been garbage collected.
             /// </summary>
             internal T Target
             {
@@ -303,7 +303,7 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
-            /// Whether the target has not been garbage collected yet.
+            /// Gets a value indicating whether the target has not been garbage collected yet.
             /// </summary>
             internal bool IsAlive
             {
