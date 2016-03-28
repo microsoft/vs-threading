@@ -2226,7 +2226,7 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
-            /// The flags applied to this lock.
+            /// Gets the flags applied to this lock.
             /// </summary>
             internal LockFlags Options
             {
@@ -2234,7 +2234,7 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
-            /// Gets whether the lock has already been released.
+            /// Gets a value indicating whether the lock has already been released.
             /// </summary>
             internal bool IsReleased
             {
