@@ -39,6 +39,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskCollection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskContext+HangReportContributor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskContext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskContextException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskContextNode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskCreationOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskFactory.cs" />
