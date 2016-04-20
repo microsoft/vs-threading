@@ -247,7 +247,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Gets the caller's ambient joinable task.
+        /// Gets or sets the caller's ambient joinable task.
         /// </summary>
         internal JoinableTask AmbientTask
         {
