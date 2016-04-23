@@ -136,7 +136,7 @@
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\..\packages\Nerdbank.GitVersioning.1.1.52-rc\build\dotnet\Nerdbank.GitVersioning.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Nerdbank.GitVersioning.1.1.52-rc\build\dotnet\Nerdbank.GitVersioning.targets'))" />
+    <Error Condition="!Exists('..\..\packages\Nerdbank.GitVersioning.1.4.19\build\dotnet\Nerdbank.GitVersioning.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Nerdbank.GitVersioning.1.4.19\build\dotnet\Nerdbank.GitVersioning.targets'))" />
     <Error Condition="!Exists('..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.props'))" />
     <Error Condition="!Exists('..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.targets'))" />
     <Error Condition="!Exists('..\..\packages\MicroBuild.NonShipping.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.NonShipping.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.NonShipping.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.NonShipping.props'))" />
@@ -144,7 +144,7 @@
     <Error Condition="!Exists('..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.VisualStudio.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.VisualStudio.props'))" />
     <Error Condition="!Exists('..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.VisualStudio.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.VisualStudio.targets'))" />
   </Target>
-  <Import Project="..\..\packages\Nerdbank.GitVersioning.1.1.52-rc\build\dotnet\Nerdbank.GitVersioning.targets" Condition="Exists('..\..\packages\Nerdbank.GitVersioning.1.1.52-rc\build\dotnet\Nerdbank.GitVersioning.targets')" />
+  <Import Project="..\..\packages\Nerdbank.GitVersioning.1.4.19\build\dotnet\Nerdbank.GitVersioning.targets" Condition="Exists('..\..\packages\Nerdbank.GitVersioning.1.4.19\build\dotnet\Nerdbank.GitVersioning.targets')" />
   <Import Project="..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.targets" Condition="Exists('..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.targets')" />
   <Import Project="..\..\packages\MicroBuild.NonShipping.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.NonShipping.targets" Condition="Exists('..\..\packages\MicroBuild.NonShipping.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.NonShipping.targets')" />
   <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.VisualStudio.targets" Condition="Exists('..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.VisualStudio.targets')" />
