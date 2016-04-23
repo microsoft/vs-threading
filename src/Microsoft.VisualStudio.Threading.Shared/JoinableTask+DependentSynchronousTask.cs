@@ -20,7 +20,7 @@ namespace Microsoft.VisualStudio.Threading
         private DependentSynchronousTask dependingSynchronousTaskTracking;
 
         /// <summary>
-        /// Gets whether the main thread is waiting for the task's completion
+        /// Gets a value indicating whether the main thread is waiting for the task's completion
         /// </summary>
         internal bool HasMainThreadSynchronousTaskWaiting
         {
@@ -451,7 +451,7 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
-            /// The synchronous task which need process new messages.
+            /// Gets the synchronous task which need process new messages.
             /// </summary>
             public JoinableTask SynchronousTask
             {
@@ -459,7 +459,7 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
-            /// One JoinableTask which may have pending messages. We may have multiple new JoinableTasks which contains pending messages.
+            /// Gets one JoinableTask which may have pending messages. We may have multiple new JoinableTasks which contains pending messages.
             /// This is just one of them.  It gives the synchronous task a way to start quickly without searching all messages.
             /// </summary>
             public JoinableTask TaskHasPendingMessages
@@ -468,7 +468,7 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
-            /// The total number of new pending messages.  The real number could be less than that, but should not be more than that.
+            /// Gets the total number of new pending messages.  The real number could be less than that, but should not be more than that.
             /// </summary>
             public int NewPendingMessagesCount
             {
@@ -489,17 +489,17 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
-            /// The chain of the single linked list
+            /// Gets or sets the chain of the single linked list
             /// </summary>
             internal DependentSynchronousTask Next { get; set; }
 
             /// <summary>
-            /// The synchronous task
+            /// Gets the synchronous task
             /// </summary>
             internal JoinableTask SynchronousTask { get; private set; }
 
             /// <summary>
-            /// The reference count.  We remove the item from the list, if it reaches 0.
+            /// Gets or sets the reference count.  We remove the item from the list, if it reaches 0.
             /// </summary>
             internal int ReferenceCount { get; set; }
         }

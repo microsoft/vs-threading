@@ -41,7 +41,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.csproj">
-      <PackageDirectory>tools</PackageDirectory>
+      <OverrideTargetPath>analyzers</OverrideTargetPath>
     </ProjectReference>
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading.NuGet\Microsoft.VisualStudio.Threading.NuGet.nuproj" />
   </ItemGroup>
@@ -55,6 +55,19 @@
       <Version>$(NuGetPackageVersion)</Version>
     </PropertyGroup>
   </Target>
+
+  <!-- Overrides the TargetPath calculated by NuProj targets to overcome its limitations(e.g. it doesn't support analyzers)-->
+  <Target Name="ProcessFilesWithOverrideTargetPath" DependsOnTargets="ConvertItems" AfterTargets="ConvertItems">
+    <ItemGroup>
+      <File Include="@(File)" Condition=" '%(File.OverrideTargetPath)' != '' ">
+        <TargetPath>%(File.OverrideTargetPath)\%(FileName)%(Extension)</TargetPath>
+        <!-- Clearing up the OverrideTargetPath property so that we can easily remove the old items-->
+        <OverrideTargetPath />
+      </File>
+      <File Remove="@(File)" Condition=" '%(File.OverrideTargetPath)' != '' " />
+    </ItemGroup>
+  </Target>
+
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>

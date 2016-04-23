@@ -223,7 +223,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Gets a flag indicating whether the async operation represented by this instance has completed.
+        /// Gets a value indicating whether the async operation represented by this instance has completed.
         /// </summary>
         public bool IsCompleted
         {

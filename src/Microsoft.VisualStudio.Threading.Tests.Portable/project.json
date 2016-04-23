@@ -4,7 +4,7 @@
     "MicroBuild.VisualStudio": "1.0.93-rc-ge3c4ee6f88",
     "Microsoft.VisualStudio.Validation": "14.1.111",
     "Nerdbank.GitVersioning": "1.1.52-rc",
-    "StyleCop.Analyzers": "1.0.0-beta014",
+    "StyleCop.Analyzers": "1.0.0",
     "xunit": "2.1.0",
     "Xunit.SkippableFact": "1.2.14",
     "Xunit.StaFact": "0.1.29-alpha",

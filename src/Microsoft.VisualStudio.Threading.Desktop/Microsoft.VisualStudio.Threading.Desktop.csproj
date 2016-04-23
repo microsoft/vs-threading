@@ -93,8 +93,9 @@
     <Folder Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <Analyzer Include="..\..\packages\StyleCop.Analyzers.1.0.0-beta014\analyzers\dotnet\cs\Newtonsoft.Json.dll" />
-    <Analyzer Include="..\..\packages\StyleCop.Analyzers.1.0.0-beta014\analyzers\dotnet\cs\StyleCop.Analyzers.dll" />
+    <Analyzer Include="..\..\packages\StyleCop.Analyzers.1.0.0\analyzers\dotnet\cs\Newtonsoft.Json.dll" />
+    <Analyzer Include="..\..\packages\StyleCop.Analyzers.1.0.0\analyzers\dotnet\cs\StyleCop.Analyzers.CodeFixes.dll" />
+    <Analyzer Include="..\..\packages\StyleCop.Analyzers.1.0.0\analyzers\dotnet\cs\StyleCop.Analyzers.dll" />
   </ItemGroup>
   <Import Project="..\Microsoft.VisualStudio.Threading.Shared\Microsoft.VisualStudio.Threading.Shared.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
@@ -103,7 +104,6 @@
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('..\..\packages\Nerdbank.GitVersioning.1.1.52-rc\build\dotnet\Nerdbank.GitVersioning.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Nerdbank.GitVersioning.1.1.52-rc\build\dotnet\Nerdbank.GitVersioning.targets'))" />
-    <Error Condition="!Exists('..\..\packages\StyleCop.Analyzers.1.0.0-beta014\build\StyleCop.Analyzers.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\StyleCop.Analyzers.1.0.0-beta014\build\StyleCop.Analyzers.targets'))" />
     <Error Condition="!Exists('..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.props'))" />
     <Error Condition="!Exists('..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.targets'))" />
     <Error Condition="!Exists('..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.props'))" />
@@ -112,7 +112,6 @@
     <Error Condition="!Exists('..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.VisualStudio.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.VisualStudio.targets'))" />
   </Target>
   <Import Project="..\..\packages\Nerdbank.GitVersioning.1.1.52-rc\build\dotnet\Nerdbank.GitVersioning.targets" Condition="Exists('..\..\packages\Nerdbank.GitVersioning.1.1.52-rc\build\dotnet\Nerdbank.GitVersioning.targets')" />
-  <Import Project="..\..\packages\StyleCop.Analyzers.1.0.0-beta014\build\StyleCop.Analyzers.targets" Condition="Exists('..\..\packages\StyleCop.Analyzers.1.0.0-beta014\build\StyleCop.Analyzers.targets')" />
   <Import Project="..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.targets" Condition="Exists('..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.targets')" />
   <Import Project="..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.targets" Condition="Exists('..\..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.targets')" />
   <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.VisualStudio.targets" Condition="Exists('..\..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\dotnet\MicroBuild.VisualStudio.targets')" />
