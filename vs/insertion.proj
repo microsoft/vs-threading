@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.props" Condition="Exists('..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.props')" />
-  <Import Project="..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\MicroBuild.VisualStudio.props" />
-  <Import Project="..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\MicroBuild.props" />
+  <Import Project="..\packages\MicroBuild.VisualStudio.1.0.110-rc\build\MicroBuild.VisualStudio.props" />
+  <Import Project="..\packages\MicroBuild.1.0.110-rc\build\MicroBuild.props" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" />
 
   <PropertyGroup>
@@ -15,8 +15,8 @@
   </ItemGroup>
   
   <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
-  <Import Project="..\packages\MicroBuild.1.0.93-rc-ge3c4ee6f88\build\MicroBuild.targets" />
-  <Import Project="..\packages\MicroBuild.VisualStudio.1.0.93-rc-ge3c4ee6f88\build\MicroBuild.VisualStudio.targets" />
+  <Import Project="..\packages\MicroBuild.1.0.110-rc\build\MicroBuild.targets" />
+  <Import Project="..\packages\MicroBuild.VisualStudio.1.0.110-rc\build\MicroBuild.VisualStudio.targets" />
   <Import Project="..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.targets" Condition="Exists('..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.targets')" />
 
   <Target Name="Build" DependsOnTargets="ResolveProjectReferences" />
