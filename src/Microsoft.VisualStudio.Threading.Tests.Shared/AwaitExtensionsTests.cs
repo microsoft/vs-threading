@@ -42,7 +42,22 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public void AwaitThreadPoolSchedulerYieldsOnNonThreadPoolThreads()
         {
-#if !DESKTOP
+#if DESKTOP
+            // In some test runs (including VSTS cloud test), this test runs on a threadpool thread.
+            if (Thread.CurrentThread.IsThreadPoolThread)
+            {
+                var testResult = Task.Factory.StartNew(delegate
+                    {
+                        Assert.False(Thread.CurrentThread.IsThreadPoolThread); // avoid infinite recursion if it doesn't get us off a threadpool thread.
+                        this.AwaitThreadPoolSchedulerYieldsOnNonThreadPoolThreads();
+                    },
+                    CancellationToken.None,
+                    TaskCreationOptions.LongRunning, // arrange for a dedicated thread
+                    TaskScheduler.Default);
+                testResult.GetAwaiter().GetResult(); // rethrow any test failure.
+                return; // skip the test that runs on this thread.
+            }
+#else
             // Set this, which makes it appear our thread is not a threadpool thread.
             SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
 #endif
