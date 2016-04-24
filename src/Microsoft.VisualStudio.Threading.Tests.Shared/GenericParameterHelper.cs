@@ -4,7 +4,7 @@
 *                                                        *
 *********************************************************/
 
-namespace Microsoft.VisualStudio.Threading.Tests.Shared
+namespace Microsoft.VisualStudio.Threading.Tests
 {
     using System;
 

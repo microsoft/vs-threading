@@ -15,7 +15,6 @@ namespace Microsoft.VisualStudio.Threading.Tests
     using System.Windows.Threading;
     using Xunit;
     using Xunit.Abstractions;
-    using GenericParameterHelper = Microsoft.VisualStudio.Threading.Tests.Shared.GenericParameterHelper;
 
     public class AsyncLazyTests : TestBase
     {
@@ -110,7 +109,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         /// Verifies that multiple concurrent calls to <see cref="AsyncLazy{T}.GetValueAsync"/>
         /// do not result in multiple invocations of the value factory.
         /// </summary>
-        [Fact]
+        [SkippableFact]
         public void ValueFactoryExecutedOnlyOnceConcurrent()
         {
             var cts = new CancellationTokenSource(AsyncDelay);

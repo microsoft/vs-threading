@@ -8,7 +8,6 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Xunit;
-    using GenericParameterHelper = TestTools.UnitTesting.GenericParameterHelper;
 
     public class AsyncQueueTests : TestBase
     {

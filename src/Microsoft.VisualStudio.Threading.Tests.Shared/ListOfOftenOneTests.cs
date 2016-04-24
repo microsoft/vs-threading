@@ -7,7 +7,6 @@
     using System.Threading.Tasks;
     using Xunit;
     using Xunit.Abstractions;
-    using GenericParameterHelper = Shared.GenericParameterHelper;
 
     public class ListOfOftenOneTests : TestBase
     {

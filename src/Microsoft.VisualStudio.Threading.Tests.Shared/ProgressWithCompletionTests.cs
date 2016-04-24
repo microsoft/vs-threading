@@ -9,7 +9,6 @@
     using System.Windows.Threading;
     using Xunit;
     using Xunit.Abstractions;
-    using GenericParameterHelper = Shared.GenericParameterHelper;
 
     public class ProgressWithCompletionTests : TestBase
     {

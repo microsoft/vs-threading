@@ -12,7 +12,6 @@
     using Xunit;
     using Xunit.Abstractions;
     using Xunit.Sdk;
-    using DescriptionAttribute = Microsoft.VisualStudio.TestTools.UnitTesting.DescriptionAttribute;
 
     /// <summary>
     /// Tests functionality of the <see cref="AsyncReaderWriterLock"/> class.
@@ -80,8 +79,8 @@
             });
         }
 
+        /// <summary>Verifies that folks who hold locks and do not wish to expose those locks when calling outside code may do so.</summary>
         [StaFact]
-        [Description("Verifies that folks who hold locks and do not wish to expose those locks when calling outside code may do so.")]
         public async Task HideLocks()
         {
             var writeLockHeld = new TaskCompletionSource<object>();
@@ -157,8 +156,8 @@
             Assert.Throws<InvalidOperationException>(() => default(AsyncReaderWriterLock.Awaitable).GetAwaiter());
         }
 
+        /// <summary>Verifies that continuations of the Completion property's task do not execute in the context of the private lock.</summary>
         [StaFact]
-        [Description("Verifies that continuations of the Completion property's task do not execute in the context of the private lock.")]
         public async Task CompletionContinuationsDoNotDeadlockWithLockClass()
         {
             var continuationFired = new TaskCompletionSource<object>();
@@ -189,8 +188,8 @@
             await Task.WhenAll(releaseContinuation.Task, continuation);
         }
 
+        /// <summary>Verifies that continuations of the Completion property's task do not execute synchronously with the last lock holder's Release.</summary>
         [StaFact]
-        [Description("Verifies that continuations of the Completion property's task do not execute synchronously with the last lock holder's Release.")]
         public async Task CompletionContinuationsExecuteAsynchronously()
         {
             var releaseContinuation = new TaskCompletionSource<object>();
@@ -487,8 +486,8 @@
             await this.StressHelper(MaxLockAcquisitions, MaxLockHeldDelay, overallTimeout, iterationTimeout, maxWorkers, testCancellation);
         }
 
+        /// <summary>Tests that deadlocks don't occur when acquiring and releasing locks synchronously while async callbacks are defined.</summary>
         [StaFact]
-        [Description("Tests that deadlocks don't occur when acquiring and releasing locks synchronously while async callbacks are defined.")]
         public async Task SynchronousLockReleaseWithCallbacks()
         {
             await Task.Run(async delegate
@@ -706,8 +705,8 @@
             await subTask;
         }
 
+        /// <summary>Verifies that when a thread that already has inherited an implicit lock explicitly requests a lock, that that lock can outlast the parents lock.</summary>
         [StaFact]
-        [Description("Verifies that when a thread that already has inherited an implicit lock explicitly requests a lock, that that lock can outlast the parents lock.")]
         public async Task ReadLockImplicitSharingNotCutOffByParentWhenExplicitlyRetained()
         {
             Task subTask;
@@ -1046,8 +1045,8 @@
             }
         }
 
+        /// <summary>Verifies that only one upgradeable read lock can be held at once.</summary>
         [StaFact]
-        [Description("Verifies that only one upgradeable read lock can be held at once.")]
         public async Task UpgradeReadLockAsyncMutuallyExclusive()
         {
             var firstUpgradeableReadHeld = new TaskCompletionSource<object>();
@@ -1843,8 +1842,8 @@
 
         #region Read/write lock interactions
 
+        /// <summary>Verifies that reads and upgradeable reads can run concurrently.</summary>
         [StaFact]
-        [Description("Verifies that reads and upgradeable reads can run concurrently.")]
         public async Task UpgradeableReadAvailableWithExistingReaders()
         {
             var readerHasLock = new TaskCompletionSource<object>();
@@ -1868,8 +1867,8 @@
                 }));
         }
 
+        /// <summary>Verifies that reads and upgradeable reads can run concurrently.</summary>
         [StaFact]
-        [Description("Verifies that reads and upgradeable reads can run concurrently.")]
         public async Task ReadAvailableWithExistingUpgradeableReader()
         {
             var readerHasLock = new TaskCompletionSource<object>();
@@ -1893,8 +1892,8 @@
                 }));
         }
 
+        /// <summary>Verifies that an upgradeable reader can obtain write access even while a writer is waiting for a lock.</summary>
         [StaFact]
-        [Description("Verifies that an upgradeable reader can obtain write access even while a writer is waiting for a lock.")]
         public async Task UpgradeableReaderCanUpgradeWhileWriteRequestWaiting()
         {
             var upgradeableReadHeld = new TaskCompletionSource<object>();
@@ -1933,8 +1932,8 @@
                 }));
         }
 
+        /// <summary>Verifies that an upgradeable reader blocks for upgrade while other readers release their locks.</summary>
         [StaFact]
-        [Description("Verifies that an upgradeable reader blocks for upgrade while other readers release their locks.")]
         public async Task UpgradeableReaderWaitsForExistingReadersToExit()
         {
             var readerHasLock = new TaskCompletionSource<object>();
@@ -1970,8 +1969,8 @@
             upgradeableReaderHasUpgraded.Task);
         }
 
+        /// <summary>Verifies that read lock requests are not serviced until any writers have released their locks.</summary>
         [StaFact]
-        [Description("Verifies that read lock requests are not serviced until any writers have released their locks.")]
         public async Task ReadersWaitForWriter()
         {
             var readerHasLock = new TaskCompletionSource<object>();
@@ -1996,8 +1995,8 @@
                 }));
         }
 
+        /// <summary>Verifies that write lock requests are not serviced until all existing readers have released their locks.</summary>
         [StaFact]
-        [Description("Verifies that write lock requests are not serviced until all existing readers have released their locks.")]
         public async Task WriterWaitsForReaders()
         {
             var readerHasLock = new TaskCompletionSource<object>();
@@ -2023,8 +2022,8 @@
                 }));
         }
 
+        /// <summary>Verifies that if a read lock is open, and a writer is waiting for a lock, that no new top-level read locks will be issued.</summary>
         [StaFact]
-        [Description("Verifies that if a read lock is open, and a writer is waiting for a lock, that no new top-level read locks will be issued.")]
         public async Task NewReadersWaitForWaitingWriters()
         {
             var readLockHeld = new TaskCompletionSource<object>();
@@ -2101,8 +2100,8 @@
             newReaderLockHeld.Task);
         }
 
+        /// <summary>Verifies proper behavior when multiple read locks are held, and both read and write locks are in the queue, and a read lock is released.</summary>
         [StaFact]
-        [Description("Verifies proper behavior when multiple read locks are held, and both read and write locks are in the queue, and a read lock is released.")]
         public async Task ManyReadersBlockWriteAndSubsequentReadRequest()
         {
             var firstReaderAcquired = new TaskCompletionSource<object>();
@@ -2172,8 +2171,8 @@
             }));
         }
 
+        /// <summary>Verifies that if a read lock is open, and a writer is waiting for a lock, that nested read locks will still be issued.</summary>
         [StaFact]
-        [Description("Verifies that if a read lock is open, and a writer is waiting for a lock, that nested read locks will still be issued.")]
         public async Task NestedReadersStillIssuedLocksWhileWaitingWriters()
         {
             var readerLockHeld = new TaskCompletionSource<object>();
@@ -2213,8 +2212,8 @@
             writerLockHeld.Task);
         }
 
+        /// <summary>Verifies that an upgradeable reader can 'downgrade' to a standard read lock without releasing the overall lock.</summary>
         [StaFact]
-        [Description("Verifies that an upgradeable reader can 'downgrade' to a standard read lock without releasing the overall lock.")]
         public async Task DowngradeUpgradeableReadToNormalRead()
         {
             var firstUpgradeableReadHeld = new TaskCompletionSource<object>();
@@ -3286,8 +3285,8 @@
 
         #region Thread apartment rules
 
+        /// <summary>Verifies that locks requested on STA threads will marshal to an MTA.</summary>
         [StaFact]
-        [Description("Verifies that locks requested on STA threads will marshal to an MTA.")]
         public async Task StaLockRequestsMarshalToMTA()
         {
             var testComplete = new TaskCompletionSource<object>();
@@ -3318,8 +3317,8 @@
             await testComplete.Task;
         }
 
+        /// <summary>Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA does not appear to hold a lock.</summary>
         [StaFact]
-        [Description("Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA does not appear to hold a lock.")]
         public async Task MtaLockSharedWithMta()
         {
             using (await this.asyncLock.ReadLockAsync())
@@ -3343,8 +3342,8 @@
             }
         }
 
+        /// <summary>Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA does not appear to hold a lock.</summary>
         [StaFact]
-        [Description("Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA does not appear to hold a lock.")]
         public async Task MtaLockNotSharedWithSta()
         {
             using (await this.asyncLock.ReadLockAsync())
@@ -3368,8 +3367,8 @@
             }
         }
 
+        /// <summary>Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by marshaling back to an MTA.</summary>
         [StaFact]
-        [Description("Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by marshaling back to an MTA.")]
         public async Task ReadLockTraversesAcrossSta()
         {
             using (await this.asyncLock.ReadLockAsync())
@@ -3407,8 +3406,8 @@
             }
         }
 
+        /// <summary>Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by requesting it and moving back to an MTA.</summary>
         [StaFact]
-        [Description("Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by requesting it and moving back to an MTA.")]
         public async Task UpgradeableReadLockTraversesAcrossSta()
         {
             using (await this.asyncLock.UpgradeableReadLockAsync())
@@ -3448,8 +3447,8 @@
             }
         }
 
+        /// <summary>Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by requesting it and moving back to an MTA.</summary>
         [StaFact]
-        [Description("Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by requesting it and moving back to an MTA.")]
         public async Task WriteLockTraversesAcrossSta()
         {
             using (await this.asyncLock.WriteLockAsync())

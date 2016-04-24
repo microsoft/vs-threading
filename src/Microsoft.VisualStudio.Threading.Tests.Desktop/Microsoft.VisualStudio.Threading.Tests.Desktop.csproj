@@ -46,7 +46,6 @@
     <Reference Include="System.XML" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="WindowsBase" />
-    <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\Microsoft.VisualStudio.Threading.Shared\InternalUtilities.cs">

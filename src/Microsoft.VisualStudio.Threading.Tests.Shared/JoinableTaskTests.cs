@@ -13,7 +13,6 @@
     using System.Xml.Linq;
     using Xunit;
     using Xunit.Abstractions;
-    using GenericParameterHelper = Shared.GenericParameterHelper;
 
     public class JoinableTaskTests : JoinableTaskTestBase
     {

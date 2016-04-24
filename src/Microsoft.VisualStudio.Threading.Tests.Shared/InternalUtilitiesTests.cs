@@ -6,7 +6,6 @@
     using System.Text;
     using System.Threading.Tasks;
     using Xunit;
-    using GenericParameterHelper = Microsoft.VisualStudio.Threading.Tests.Shared.GenericParameterHelper;
 
     public class InternalUtilitiesTests
     {

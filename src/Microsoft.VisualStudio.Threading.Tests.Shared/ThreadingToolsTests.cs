@@ -10,7 +10,6 @@
     using System.Windows.Threading;
     using Xunit;
     using Xunit.Abstractions;
-    using GenericParameterHelper = TestTools.UnitTesting.GenericParameterHelper;
 
     public class ThreadingToolsTests : TestBase
     {

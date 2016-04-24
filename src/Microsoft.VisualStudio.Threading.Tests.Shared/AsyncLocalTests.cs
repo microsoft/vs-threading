@@ -10,7 +10,6 @@
     using System.Threading.Tasks;
     using Xunit;
     using Xunit.Abstractions;
-    using GenericParameterHelper = Microsoft.VisualStudio.Threading.Tests.Shared.GenericParameterHelper;
 
     public class AsyncLocalTests : TestBase
     {
