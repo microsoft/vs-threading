@@ -2542,7 +2542,7 @@
             });
 
             outerFactory.DoModalLoopTillEmpty();
-            Skip.IfNot(!outer.IsCompleted, "this is a product defect, but this test assumes this works to test something else.");
+            Skip.IfNot(outer.IsCompleted, "this is a product defect, but this test assumes this works to test something else.");
 
             // Allow the dispatcher to drain all messages that may be holding references.
             var frame = new DispatcherFrame();
