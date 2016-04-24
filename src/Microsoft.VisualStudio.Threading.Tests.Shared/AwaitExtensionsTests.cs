@@ -69,6 +69,12 @@ namespace Microsoft.VisualStudio.Threading.Tests
         {
             Task.Run(delegate
             {
+#if DESKTOP
+                Assert.True(Thread.CurrentThread.IsThreadPoolThread, "Test depends on thread looking like threadpool thread.");
+#else
+                // Erase AsyncTestSyncContext, which somehow still is set in VSTS cloud tests.
+                SynchronizationContext.SetSynchronizationContext(null);
+#endif
                 Assert.True(TaskScheduler.Default.GetAwaiter().IsCompleted);
             }).GetAwaiter().GetResult();
         }
