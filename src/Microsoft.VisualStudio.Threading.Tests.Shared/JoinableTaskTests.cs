@@ -306,7 +306,7 @@
                 Assert.NotSame(this.originalThread, Thread.CurrentThread);
             });
 
-            Assert.True(task.Wait(TestTimeout), "Test timed out.");
+            Assert.True(task.Wait(TestTimeout * 3), "Test timed out.");
         }
 
         [StaFact]

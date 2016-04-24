@@ -19,7 +19,13 @@
             return new SynchronousWaitAnalyzer();
         }
 
-        [Fact]
+        /// <devremarks>
+        /// We set TestCategory=AnyCategory here so that *some* test in our assembly uses
+        /// "TestCategory" as the name of a trait. This prevents VSTest.Console from failing
+        /// when invoked with /TestCaseFilter:"TestCategory!=FailsInCloudTest" for assemblies
+        /// such as this one that don't define any TestCategory tests.
+        /// </devremarks>
+        [Fact, Trait("TestCategory", "AnyCategory-SeeComment")]
         public void TaskWaitShouldReportWarning()
         {
             var test = @"
