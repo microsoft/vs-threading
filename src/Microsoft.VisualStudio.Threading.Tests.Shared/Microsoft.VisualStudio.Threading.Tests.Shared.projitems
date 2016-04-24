@@ -9,6 +9,7 @@
     <Import_RootNamespace>Microsoft.VisualStudio.Threading.Tests</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)AssemblyInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AssertEx.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AsyncAutoResetEventTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AsyncBarrierTests.cs" />
