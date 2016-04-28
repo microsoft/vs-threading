@@ -5,22 +5,20 @@
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
 
-    [TestClass]
     public class ValidityTests
     {
         /// <summary>
         /// Verifies that the library we're testing is not in the GAC, since if it is,
         /// we're almost certainly not testing what was just built.
         /// </summary>
-        [TestMethod]
+        [Fact]
         public void ProductNotInGac()
         {
-            Assert.IsFalse(
+            Assert.False(
                 typeof(AsyncBarrier).Assembly.Location.Contains("GAC"),
-                "{0} was loaded from the GAC. Run UnGac.cmd.",
-                typeof(AsyncBarrier).Assembly.GetName().Name);
+                $"{typeof(AsyncBarrier).Assembly.GetName().Name} was loaded from the GAC. Run UnGac.cmd.");
         }
     }
 }

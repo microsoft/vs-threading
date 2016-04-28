@@ -3,9 +3,8 @@
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CodeFixes;
     using Microsoft.CodeAnalysis.Diagnostics;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
 
-    [TestClass]
     public class AsyncVoidLambdaAnalyzerTests : DiagnosticVerifier
     {
         private DiagnosticResult expect = new DiagnosticResult
@@ -20,7 +19,7 @@
             return new AsyncVoidLambdaAnalyzer();
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningOnAsyncVoidLambda()
         {
             var test = @"
@@ -40,7 +39,7 @@ class Test {
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningOnAsyncVoidLambdaWithOneParameter()
         {
             var test = @"
@@ -60,7 +59,7 @@ class Test {
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningOnAsyncVoidLambdaWithOneParameter2()
         {
             var test = @"
@@ -80,7 +79,7 @@ class Test {
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningOnAsyncVoidAnonymousDelegateWithOneParameter()
         {
             var test = @"
@@ -100,7 +99,7 @@ class Test {
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningOnAsyncVoidLambdaSetToVariable()
         {
             var test = @"
@@ -116,7 +115,7 @@ class Test {
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningOnAsyncVoidLambdaWithOneParameterSetToVariable()
         {
             var test = @"
@@ -132,7 +131,7 @@ class Test {
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void DoNotReportWarningOnAsyncVoidLambdaBeingUsedAsEventHandler()
         {
             var test = @"

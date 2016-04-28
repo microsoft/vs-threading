@@ -8,37 +8,42 @@
     using System.Threading;
     using System.Threading.Tasks;
     using System.Windows.Threading;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
+    using Xunit.Abstractions;
 
-    [TestClass]
     public class JoinableTaskCollectionTests : JoinableTaskTestBase
     {
+        public JoinableTaskCollectionTests(ITestOutputHelper logger)
+            : base(logger)
+        {
+        }
+
         protected JoinableTaskFactory JoinableFactory
         {
             get { return this.asyncPump; }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void DisplayName()
         {
             var jtc = new JoinableTaskCollection(this.context);
-            Assert.IsNull(jtc.DisplayName);
+            Assert.Null(jtc.DisplayName);
             jtc.DisplayName = string.Empty;
-            Assert.AreEqual(string.Empty, jtc.DisplayName);
+            Assert.Equal(string.Empty, jtc.DisplayName);
             jtc.DisplayName = null;
-            Assert.IsNull(jtc.DisplayName);
+            Assert.Null(jtc.DisplayName);
             jtc.DisplayName = "My Name";
-            Assert.AreEqual("My Name", jtc.DisplayName);
+            Assert.Equal("My Name", jtc.DisplayName);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void JoinTillEmptyAlreadyCompleted()
         {
             var awaiter = this.joinableCollection.JoinTillEmptyAsync().GetAwaiter();
-            Assert.IsTrue(awaiter.IsCompleted);
+            Assert.True(awaiter.IsCompleted);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void JoinTillEmptyWithOne()
         {
             var evt = new AsyncManualResetEvent();
@@ -48,7 +53,7 @@
             });
 
             var waiter = this.joinableCollection.JoinTillEmptyAsync();
-            Assert.IsFalse(waiter.GetAwaiter().IsCompleted);
+            Assert.False(waiter.GetAwaiter().IsCompleted);
             Task.Run(async delegate
             {
                 evt.Set();
@@ -58,11 +63,11 @@
             Dispatcher.PushFrame(this.testFrame);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void EmptyThenMore()
         {
             var awaiter = this.joinableCollection.JoinTillEmptyAsync().GetAwaiter();
-            Assert.IsTrue(awaiter.IsCompleted);
+            Assert.True(awaiter.IsCompleted);
 
             var evt = new AsyncManualResetEvent();
             var joinable = this.JoinableFactory.RunAsync(async delegate
@@ -71,7 +76,7 @@
             });
 
             var waiter = this.joinableCollection.JoinTillEmptyAsync();
-            Assert.IsFalse(waiter.GetAwaiter().IsCompleted);
+            Assert.False(waiter.GetAwaiter().IsCompleted);
             Task.Run(async delegate
             {
                 evt.Set();
@@ -81,7 +86,7 @@
             Dispatcher.PushFrame(this.testFrame);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void JoinTillEmptyAsyncJoinsCollection()
         {
             var joinable = this.JoinableFactory.RunAsync(async delegate
@@ -95,7 +100,7 @@
             });
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void AddTwiceRemoveOnceRemovesWhenNotRefCounting()
         {
             var finishTaskEvent = new AsyncManualResetEvent();
@@ -103,16 +108,16 @@
 
             var collection = new JoinableTaskCollection(this.context, refCountAddedJobs: false);
             collection.Add(task);
-            Assert.IsTrue(collection.Contains(task));
+            Assert.True(collection.Contains(task));
             collection.Add(task);
-            Assert.IsTrue(collection.Contains(task));
+            Assert.True(collection.Contains(task));
             collection.Remove(task);
-            Assert.IsFalse(collection.Contains(task));
+            Assert.False(collection.Contains(task));
 
             finishTaskEvent.Set();
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void AddTwiceRemoveTwiceRemovesWhenRefCounting()
         {
             var finishTaskEvent = new AsyncManualResetEvent();
@@ -120,18 +125,18 @@
 
             var collection = new JoinableTaskCollection(this.context, refCountAddedJobs: true);
             collection.Add(task);
-            Assert.IsTrue(collection.Contains(task));
+            Assert.True(collection.Contains(task));
             collection.Add(task);
-            Assert.IsTrue(collection.Contains(task));
+            Assert.True(collection.Contains(task));
             collection.Remove(task);
-            Assert.IsTrue(collection.Contains(task));
+            Assert.True(collection.Contains(task));
             collection.Remove(task);
-            Assert.IsFalse(collection.Contains(task));
+            Assert.False(collection.Contains(task));
 
             finishTaskEvent.Set();
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void AddTwiceRemoveOnceRemovesCompletedTaskWhenRefCounting()
         {
             var finishTaskEvent = new AsyncManualResetEvent();
@@ -139,18 +144,18 @@
 
             var collection = new JoinableTaskCollection(this.context, refCountAddedJobs: true);
             collection.Add(task);
-            Assert.IsTrue(collection.Contains(task));
+            Assert.True(collection.Contains(task));
             collection.Add(task);
-            Assert.IsTrue(collection.Contains(task));
+            Assert.True(collection.Contains(task));
 
             finishTaskEvent.Set();
             task.Join();
 
             collection.Remove(task); // technically the JoinableTask is probably gone from the collection by now anyway.
-            Assert.IsFalse(collection.Contains(task));
+            Assert.False(collection.Contains(task));
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void JoinDisposedTwice()
         {
             this.JoinableFactory.Run(delegate

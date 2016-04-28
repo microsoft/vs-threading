@@ -8,14 +8,15 @@
     using System.Threading;
     using System.Threading.Tasks;
     using System.Windows.Threading;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.VisualStudio.Threading;
+    using Xunit;
+    using Xunit.Abstractions;
+    using Xunit.Sdk;
 
     /// <summary>
     /// Tests functionality of the <see cref="AsyncReaderWriterLock"/> class.
     /// </summary>
-    [TestClass]
-    public class AsyncReaderWriterLockTests : TestBase
+    public class AsyncReaderWriterLockTests : TestBase, IDisposable
     {
         private const char ReadChar = 'R';
         private const char UpgradeableReadChar = 'U';
@@ -35,78 +36,73 @@
 
         private AsyncReaderWriterLock asyncLock;
 
-        public TestContext TestContext { get; set; }
-
-        [TestInitialize]
-        public void Initialize()
+        public AsyncReaderWriterLockTests(ITestOutputHelper logger)
+            : base(logger)
         {
             this.asyncLock = new StaAverseLock();
             doNotWaitForLockCompletionAtTestCleanup = false;
-            this.SetTestContext(this.TestContext);
         }
 
-        [TestCleanup]
-        public void Cleanup()
+        public void Dispose()
         {
-            string testName = this.TestContext.TestName;
             this.asyncLock.Complete();
-            if (!doNotWaitForLockCompletionAtTestCleanup || this.TestContext.CurrentTestOutcome == UnitTestOutcome.Failed)
+            if (!doNotWaitForLockCompletionAtTestCleanup)
             {
-                Assert.IsTrue(this.asyncLock.Completion.Wait(2000));
+                Assert.True(this.asyncLock.Completion.Wait(2000));
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void NoLocksHeld()
         {
-            Assert.IsFalse(this.asyncLock.IsReadLockHeld);
-            Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
-            Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
-            Assert.IsFalse(this.asyncLock.IsAnyLockHeld);
+            Assert.False(this.asyncLock.IsReadLockHeld);
+            Assert.False(this.asyncLock.IsUpgradeableReadLockHeld);
+            Assert.False(this.asyncLock.IsWriteLockHeld);
+            Assert.False(this.asyncLock.IsAnyLockHeld);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task OnCompletedHasNoSideEffects()
         {
             await Task.Run(delegate
             {
-                Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+                Assert.False(this.asyncLock.IsReadLockHeld);
                 var awaitable = this.asyncLock.ReadLockAsync();
-                Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+                Assert.False(this.asyncLock.IsReadLockHeld);
                 var awaiter = awaitable.GetAwaiter();
-                Assert.IsFalse(this.asyncLock.IsReadLockHeld);
-                Assert.IsTrue(awaiter.IsCompleted);
+                Assert.False(this.asyncLock.IsReadLockHeld);
+                Assert.True(awaiter.IsCompleted);
                 var releaser = awaiter.GetResult();
-                Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+                Assert.True(this.asyncLock.IsReadLockHeld);
                 releaser.Dispose();
-                Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+                Assert.False(this.asyncLock.IsReadLockHeld);
             });
         }
 
-        [TestMethod, Timeout(TestTimeout)]
-        [Description("Verifies that folks who hold locks and do not wish to expose those locks when calling outside code may do so.")]
+        /// <summary>Verifies that folks who hold locks and do not wish to expose those locks when calling outside code may do so.</summary>
+        [StaFact]
         public async Task HideLocks()
         {
             var writeLockHeld = new TaskCompletionSource<object>();
             using (await this.asyncLock.ReadLockAsync())
             {
-                Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+                Assert.True(this.asyncLock.IsReadLockHeld);
                 await Task.Run(async delegate
                 {
-                    Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+                    Assert.True(this.asyncLock.IsReadLockHeld);
                     using (this.asyncLock.HideLocks())
                     {
-                        Assert.IsFalse(this.asyncLock.IsReadLockHeld, "Lock should be hidden.");
+                        Assert.False(this.asyncLock.IsReadLockHeld, "Lock should be hidden.");
 
                         // Ensure the lock is also hidden across call context propagation.
                         await Task.Run(delegate
                         {
-                            Assert.IsFalse(this.asyncLock.IsReadLockHeld, "Lock should be hidden.");
+                            Assert.False(this.asyncLock.IsReadLockHeld, "Lock should be hidden.");
                         });
 
                         // Also verify that although the lock is hidden, a new lock may need to wait for this lock to finish.
                         var writeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
-                        Assert.IsFalse(writeAwaiter.IsCompleted, "The write lock should not be immediately available because a read lock is actually held.");
+                        Assert.False(writeAwaiter.IsCompleted, "The write lock should not be immediately available because a read lock is actually held.");
                         writeAwaiter.OnCompleted(delegate
                         {
                             using (writeAwaiter.GetResult())
@@ -116,52 +112,52 @@
                         });
                     }
 
-                    Assert.IsTrue(this.asyncLock.IsReadLockHeld, "Lock should be visible.");
+                    Assert.True(this.asyncLock.IsReadLockHeld, "Lock should be visible.");
                 });
 
-                Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+                Assert.True(this.asyncLock.IsReadLockHeld);
             }
 
-            Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+            Assert.False(this.asyncLock.IsReadLockHeld);
             await writeLockHeld.Task;
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task HideLocksRevertedOutOfOrder()
         {
             AsyncReaderWriterLock.Suppression suppression;
             using (await this.asyncLock.ReadLockAsync())
             {
-                Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+                Assert.True(this.asyncLock.IsReadLockHeld);
                 suppression = this.asyncLock.HideLocks();
-                Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+                Assert.False(this.asyncLock.IsReadLockHeld);
             }
 
-            Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+            Assert.False(this.asyncLock.IsReadLockHeld);
             suppression.Dispose();
-            Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+            Assert.False(this.asyncLock.IsReadLockHeld);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void ReleaseDefaultCtorDispose()
         {
             default(AsyncReaderWriterLock.Releaser).Dispose();
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void SuppressionDefaultCtorDispose()
         {
             default(AsyncReaderWriterLock.Suppression).Dispose();
         }
 
-        [TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
+        [StaFact]
         public void AwaitableDefaultCtorDispose()
         {
-            default(AsyncReaderWriterLock.Awaitable).GetAwaiter();
+            Assert.Throws<InvalidOperationException>(() => default(AsyncReaderWriterLock.Awaitable).GetAwaiter());
         }
 
-        [TestMethod, Timeout(TestTimeout)]
-        [Description("Verifies that continuations of the Completion property's task do not execute in the context of the private lock.")]
+        /// <summary>Verifies that continuations of the Completion property's task do not execute in the context of the private lock.</summary>
+        [StaFact]
         public async Task CompletionContinuationsDoNotDeadlockWithLockClass()
         {
             var continuationFired = new TaskCompletionSource<object>();
@@ -192,8 +188,8 @@
             await Task.WhenAll(releaseContinuation.Task, continuation);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
-        [Description("Verifies that continuations of the Completion property's task do not execute synchronously with the last lock holder's Release.")]
+        /// <summary>Verifies that continuations of the Completion property's task do not execute synchronously with the last lock holder's Release.</summary>
+        [StaFact]
         public async Task CompletionContinuationsExecuteAsynchronously()
         {
             var releaseContinuation = new TaskCompletionSource<object>();
@@ -213,7 +209,7 @@
             await continuation;
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task CompleteMethodExecutesContinuationsAsynchronously()
         {
             var releaseContinuation = new TaskCompletionSource<object>();
@@ -229,7 +225,7 @@
             await continuation;
         }
 
-        [TestMethod, Timeout(TestTimeout * 2)]
+        [StaFact]
         public async Task NoMemoryLeakForManyLocks()
         {
             // Get on an MTA thread so that locks do not necessarily yield.
@@ -262,14 +258,14 @@
                     passingAttemptObserved = allocated <= MaxGarbagePerLock;
                 }
 
-                Assert.IsTrue(passingAttemptObserved);
+                Assert.True(passingAttemptObserved);
             });
         }
 
-        [TestMethod, Timeout(TestTimeout), TestCategory("FailsInCloudTest")]
+        [StaFact, Trait("TestCategory", "FailsInCloudTest")]
         public async Task CallAcrossAppDomainBoundariesWithLock()
         {
-            var otherDomain = AppDomain.CreateDomain("test domain");
+            var otherDomain = AppDomain.CreateDomain("test domain", AppDomain.CurrentDomain.Evidence, AppDomain.CurrentDomain.SetupInformation);
             try
             {
                 var proxy = (OtherDomainProxy)otherDomain.CreateInstanceFromAndUnwrap(Assembly.GetExecutingAssembly().Location, typeof(OtherDomainProxy).FullName);
@@ -288,32 +284,32 @@
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task LockStackContainsFlags()
         {
             var asyncLock = new LockDerived();
             var customFlag = (AsyncReaderWriterLock.LockFlags)0x10000;
             var customFlag2 = (AsyncReaderWriterLock.LockFlags)0x20000;
-            Assert.IsFalse(asyncLock.LockStackContains(customFlag));
+            Assert.False(asyncLock.LockStackContains(customFlag));
             using (await asyncLock.UpgradeableReadLockAsync(customFlag))
             {
-                Assert.IsTrue(asyncLock.LockStackContains(customFlag));
-                Assert.IsFalse(asyncLock.LockStackContains(customFlag2));
+                Assert.True(asyncLock.LockStackContains(customFlag));
+                Assert.False(asyncLock.LockStackContains(customFlag2));
 
                 using (await asyncLock.WriteLockAsync(customFlag2))
                 {
-                    Assert.IsTrue(asyncLock.LockStackContains(customFlag));
-                    Assert.IsTrue(asyncLock.LockStackContains(customFlag2));
+                    Assert.True(asyncLock.LockStackContains(customFlag));
+                    Assert.True(asyncLock.LockStackContains(customFlag2));
                 }
 
-                Assert.IsTrue(asyncLock.LockStackContains(customFlag));
-                Assert.IsFalse(asyncLock.LockStackContains(customFlag2));
+                Assert.True(asyncLock.LockStackContains(customFlag));
+                Assert.False(asyncLock.LockStackContains(customFlag2));
             }
 
-            Assert.IsFalse(asyncLock.LockStackContains(customFlag));
+            Assert.False(asyncLock.LockStackContains(customFlag));
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task OnLockReleaseCallbacksWithOuterWriteLock()
         {
             var stub = new LockDerived();
@@ -340,22 +336,22 @@
                     {
                         using (await this.asyncLock.UpgradeableReadLockAsync())
                         {
-                            Assert.AreEqual(0, onUpgradeableReadLockReleasedInvocationCount);
+                            Assert.Equal(0, onUpgradeableReadLockReleasedInvocationCount);
                         }
 
-                        Assert.AreEqual(0, onUpgradeableReadLockReleasedInvocationCount);
+                        Assert.Equal(0, onUpgradeableReadLockReleasedInvocationCount);
                     }
 
-                    Assert.AreEqual(0, onExclusiveLockReleasedAsyncInvocationCount);
+                    Assert.Equal(0, onExclusiveLockReleasedAsyncInvocationCount);
                 }
 
-                Assert.AreEqual(0, onExclusiveLockReleasedAsyncInvocationCount);
+                Assert.Equal(0, onExclusiveLockReleasedAsyncInvocationCount);
             }
 
-            Assert.AreEqual(1, onExclusiveLockReleasedAsyncInvocationCount);
+            Assert.Equal(1, onExclusiveLockReleasedAsyncInvocationCount);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task OnLockReleaseCallbacksWithOuterUpgradeableReadLock()
         {
             var stub = new LockDerived();
@@ -380,23 +376,23 @@
                 {
                     using (await this.asyncLock.WriteLockAsync())
                     {
-                        Assert.AreEqual(0, onUpgradeableReadLockReleasedInvocationCount);
-                        Assert.AreEqual(0, onExclusiveLockReleasedAsyncInvocationCount);
+                        Assert.Equal(0, onUpgradeableReadLockReleasedInvocationCount);
+                        Assert.Equal(0, onExclusiveLockReleasedAsyncInvocationCount);
                     }
 
-                    Assert.AreEqual(0, onUpgradeableReadLockReleasedInvocationCount);
-                    Assert.AreEqual(1, onExclusiveLockReleasedAsyncInvocationCount);
+                    Assert.Equal(0, onUpgradeableReadLockReleasedInvocationCount);
+                    Assert.Equal(1, onExclusiveLockReleasedAsyncInvocationCount);
                 }
 
-                Assert.AreEqual(0, onUpgradeableReadLockReleasedInvocationCount);
-                Assert.AreEqual(1, onExclusiveLockReleasedAsyncInvocationCount);
+                Assert.Equal(0, onUpgradeableReadLockReleasedInvocationCount);
+                Assert.Equal(1, onExclusiveLockReleasedAsyncInvocationCount);
             }
 
-            Assert.AreEqual(1, onUpgradeableReadLockReleasedInvocationCount);
-            Assert.AreEqual(1, onExclusiveLockReleasedAsyncInvocationCount);
+            Assert.Equal(1, onUpgradeableReadLockReleasedInvocationCount);
+            Assert.Equal(1, onExclusiveLockReleasedAsyncInvocationCount);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task AwaiterInCallContextGetsRecycled()
         {
             await Task.Run(async delegate
@@ -408,10 +404,10 @@
                 {
                     remoteTask = Task.Run(async delegate
                     {
-                        Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+                        Assert.True(this.asyncLock.IsReadLockHeld);
                         var nowait = firstLockObserved.SetAsync();
                         await secondLockAcquired.Task;
-                        Assert.IsFalse(this.asyncLock.IsReadLockHeld, "Some remote call context saw a recycled lock issued to someone else.");
+                        Assert.False(this.asyncLock.IsReadLockHeld, "Some remote call context saw a recycled lock issued to someone else.");
                     });
                     await firstLockObserved.Task;
                 }
@@ -424,7 +420,7 @@
             });
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task AwaiterInCallContextGetsRecycledTwoDeep()
         {
             await Task.Run(async delegate
@@ -441,14 +437,14 @@
                     {
                         remoteTask = Task.Run(async delegate
                         {
-                            Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+                            Assert.True(this.asyncLock.IsReadLockHeld);
                             var nowait = lockObservedOnce.SetAsync();
                             await nestedLockReleased.Task;
-                            Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+                            Assert.True(this.asyncLock.IsReadLockHeld);
                             nowait = lockObservedTwice.SetAsync();
                             await secondLockAcquired.Task;
-                            Assert.IsFalse(this.asyncLock.IsReadLockHeld, "Some remote call context saw a recycled lock issued to someone else.");
-                            Assert.IsFalse(this.asyncLock.IsWriteLockHeld, "Some remote call context saw a recycled lock issued to someone else.");
+                            Assert.False(this.asyncLock.IsReadLockHeld, "Some remote call context saw a recycled lock issued to someone else.");
+                            Assert.False(this.asyncLock.IsWriteLockHeld, "Some remote call context saw a recycled lock issued to someone else.");
                             nowait = secondLockNotSeen.SetAsync();
                         });
                         await lockObservedOnce.Task;
@@ -466,7 +462,7 @@
             });
         }
 
-        [TestMethod, TestCategory("Stress"), Timeout(5000)]
+        [StaFact, Trait("Stress", "true")]
         public async Task LockStress()
         {
             const int MaxLockAcquisitions = -1;
@@ -478,7 +474,7 @@
             await this.StressHelper(MaxLockAcquisitions, MaxLockHeldDelay, overallTimeout, iterationTimeout, maxWorkers, testCancellation);
         }
 
-        [TestMethod, TestCategory("Stress"), Timeout(5000), TestCategory("FailsInCloudTest")]
+        [StaFact, Trait("Stress", "true"), Trait("TestCategory", "FailsInCloudTest")]
         public async Task CancellationStress()
         {
             const int MaxLockAcquisitions = -1;
@@ -490,8 +486,8 @@
             await this.StressHelper(MaxLockAcquisitions, MaxLockHeldDelay, overallTimeout, iterationTimeout, maxWorkers, testCancellation);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
-        [Description("Tests that deadlocks don't occur when acquiring and releasing locks synchronously while async callbacks are defined.")]
+        /// <summary>Tests that deadlocks don't occur when acquiring and releasing locks synchronously while async callbacks are defined.</summary>
+        [StaFact]
         public async Task SynchronousLockReleaseWithCallbacks()
         {
             await Task.Run(async delegate
@@ -532,216 +528,216 @@
             });
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task IsAnyLockHeldTest()
         {
             var asyncLock = new LockDerived();
 
-            Assert.IsFalse(asyncLock.IsAnyLockHeld);
+            Assert.False(asyncLock.IsAnyLockHeld);
             await Task.Run(async delegate
             {
-                Assert.IsFalse(asyncLock.IsAnyLockHeld);
+                Assert.False(asyncLock.IsAnyLockHeld);
                 using (await asyncLock.ReadLockAsync())
                 {
-                    Assert.IsTrue(asyncLock.IsAnyLockHeld);
+                    Assert.True(asyncLock.IsAnyLockHeld);
                 }
 
-                Assert.IsFalse(asyncLock.IsAnyLockHeld);
+                Assert.False(asyncLock.IsAnyLockHeld);
                 using (await asyncLock.UpgradeableReadLockAsync())
                 {
-                    Assert.IsTrue(asyncLock.IsAnyLockHeld);
+                    Assert.True(asyncLock.IsAnyLockHeld);
                 }
 
-                Assert.IsFalse(asyncLock.IsAnyLockHeld);
+                Assert.False(asyncLock.IsAnyLockHeld);
                 using (await asyncLock.WriteLockAsync())
                 {
-                    Assert.IsTrue(asyncLock.IsAnyLockHeld);
+                    Assert.True(asyncLock.IsAnyLockHeld);
                 }
 
-                Assert.IsFalse(asyncLock.IsAnyLockHeld);
+                Assert.False(asyncLock.IsAnyLockHeld);
             });
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task IsAnyLockHeldReturnsFalseForIncompatibleSyncContexts()
         {
             var dispatcher = new DispatcherSynchronizationContext();
             var asyncLock = new LockDerived();
             using (await asyncLock.ReadLockAsync())
             {
-                Assert.IsTrue(asyncLock.IsAnyLockHeld);
+                Assert.True(asyncLock.IsAnyLockHeld);
                 SynchronizationContext.SetSynchronizationContext(dispatcher);
-                Assert.IsFalse(asyncLock.IsAnyLockHeld);
+                Assert.False(asyncLock.IsAnyLockHeld);
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task IsAnyPassiveLockHeldReturnsTrueForIncompatibleSyncContexts()
         {
             var dispatcher = new DispatcherSynchronizationContext();
             var asyncLock = new LockDerived();
             using (await asyncLock.ReadLockAsync())
             {
-                Assert.IsTrue(asyncLock.IsAnyPassiveLockHeld);
+                Assert.True(asyncLock.IsAnyPassiveLockHeld);
                 SynchronizationContext.SetSynchronizationContext(dispatcher);
-                Assert.IsTrue(asyncLock.IsAnyPassiveLockHeld);
+                Assert.True(asyncLock.IsAnyPassiveLockHeld);
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task IsPassiveReadLockHeldReturnsTrueForIncompatibleSyncContexts()
         {
             var dispatcher = new DispatcherSynchronizationContext();
             using (await this.asyncLock.ReadLockAsync())
             {
-                Assert.IsTrue(this.asyncLock.IsPassiveReadLockHeld);
+                Assert.True(this.asyncLock.IsPassiveReadLockHeld);
                 SynchronizationContext.SetSynchronizationContext(dispatcher);
-                Assert.IsTrue(this.asyncLock.IsPassiveReadLockHeld);
+                Assert.True(this.asyncLock.IsPassiveReadLockHeld);
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task IsPassiveUpgradeableReadLockHeldReturnsTrueForIncompatibleSyncContexts()
         {
             var dispatcher = new DispatcherSynchronizationContext();
             using (await this.asyncLock.UpgradeableReadLockAsync())
             {
-                Assert.IsTrue(this.asyncLock.IsPassiveUpgradeableReadLockHeld);
+                Assert.True(this.asyncLock.IsPassiveUpgradeableReadLockHeld);
                 SynchronizationContext.SetSynchronizationContext(dispatcher);
-                Assert.IsTrue(this.asyncLock.IsPassiveUpgradeableReadLockHeld);
+                Assert.True(this.asyncLock.IsPassiveUpgradeableReadLockHeld);
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task IsPassiveWriteLockHeldReturnsTrueForIncompatibleSyncContexts()
         {
             var dispatcher = new DispatcherSynchronizationContext();
             using (var releaser = await this.asyncLock.WriteLockAsync())
             {
-                Assert.IsTrue(this.asyncLock.IsPassiveWriteLockHeld);
+                Assert.True(this.asyncLock.IsPassiveWriteLockHeld);
                 SynchronizationContext.SetSynchronizationContext(dispatcher);
-                Assert.IsTrue(this.asyncLock.IsPassiveWriteLockHeld);
+                Assert.True(this.asyncLock.IsPassiveWriteLockHeld);
                 await releaser.ReleaseAsync();
             }
         }
 
         #region ReadLockAsync tests
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task ReadLockAsyncSimple()
         {
-            Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+            Assert.False(this.asyncLock.IsReadLockHeld);
             using (await this.asyncLock.ReadLockAsync())
             {
-                Assert.IsTrue(this.asyncLock.IsAnyLockHeld);
-                Assert.IsTrue(this.asyncLock.IsReadLockHeld);
-                Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
-                Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+                Assert.True(this.asyncLock.IsAnyLockHeld);
+                Assert.True(this.asyncLock.IsReadLockHeld);
+                Assert.False(this.asyncLock.IsUpgradeableReadLockHeld);
+                Assert.False(this.asyncLock.IsWriteLockHeld);
                 await Task.Yield();
-                Assert.IsTrue(this.asyncLock.IsAnyLockHeld);
-                Assert.IsTrue(this.asyncLock.IsReadLockHeld);
-                Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
-                Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+                Assert.True(this.asyncLock.IsAnyLockHeld);
+                Assert.True(this.asyncLock.IsReadLockHeld);
+                Assert.False(this.asyncLock.IsUpgradeableReadLockHeld);
+                Assert.False(this.asyncLock.IsWriteLockHeld);
             }
 
-            Assert.IsFalse(this.asyncLock.IsReadLockHeld);
-            Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
-            Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+            Assert.False(this.asyncLock.IsReadLockHeld);
+            Assert.False(this.asyncLock.IsUpgradeableReadLockHeld);
+            Assert.False(this.asyncLock.IsWriteLockHeld);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task ReadLockNotIssuedToAllThreads()
         {
             var evt = new ManualResetEventSlim(false);
             var otherThread = Task.Run(delegate
             {
                 evt.Wait();
-                Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+                Assert.False(this.asyncLock.IsReadLockHeld);
             });
 
             using (await this.asyncLock.ReadLockAsync())
             {
-                Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+                Assert.True(this.asyncLock.IsReadLockHeld);
                 evt.Set();
                 await otherThread;
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task ReadLockImplicitSharing()
         {
             using (await this.asyncLock.ReadLockAsync())
             {
-                Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+                Assert.True(this.asyncLock.IsReadLockHeld);
 
                 await Task.Run(delegate
                 {
-                    Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+                    Assert.True(this.asyncLock.IsReadLockHeld);
                 });
 
-                Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+                Assert.True(this.asyncLock.IsReadLockHeld);
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task ReadLockImplicitSharingCutOffByParent()
         {
             Task subTask;
             var outerLockReleased = new TaskCompletionSource<object>();
             using (await this.asyncLock.ReadLockAsync())
             {
-                Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+                Assert.True(this.asyncLock.IsReadLockHeld);
 
                 var subTaskObservedLock = new TaskCompletionSource<object>();
                 subTask = Task.Run(async delegate
                 {
-                    Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+                    Assert.True(this.asyncLock.IsReadLockHeld);
                     await subTaskObservedLock.SetAsync();
                     await outerLockReleased.Task;
-                    Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+                    Assert.False(this.asyncLock.IsReadLockHeld);
                 });
 
                 await subTaskObservedLock.Task;
             }
 
-            Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+            Assert.False(this.asyncLock.IsReadLockHeld);
             await outerLockReleased.SetAsync();
             await subTask;
         }
 
-        [TestMethod, Timeout(TestTimeout)]
-        [Description("Verifies that when a thread that already has inherited an implicit lock explicitly requests a lock, that that lock can outlast the parents lock.")]
+        /// <summary>Verifies that when a thread that already has inherited an implicit lock explicitly requests a lock, that that lock can outlast the parents lock.</summary>
+        [StaFact]
         public async Task ReadLockImplicitSharingNotCutOffByParentWhenExplicitlyRetained()
         {
             Task subTask;
             var outerLockReleased = new TaskCompletionSource<object>();
             using (await this.asyncLock.ReadLockAsync())
             {
-                Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+                Assert.True(this.asyncLock.IsReadLockHeld);
 
                 var subTaskObservedLock = new TaskCompletionSource<object>();
                 subTask = Task.Run(async delegate
                 {
-                    Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+                    Assert.True(this.asyncLock.IsReadLockHeld);
                     using (await this.asyncLock.ReadLockAsync())
                     {
                         await subTaskObservedLock.SetAsync();
                         await outerLockReleased.Task;
-                        Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+                        Assert.True(this.asyncLock.IsReadLockHeld);
                     }
 
-                    Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+                    Assert.False(this.asyncLock.IsReadLockHeld);
                 });
 
                 await subTaskObservedLock.Task;
             }
 
-            Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+            Assert.False(this.asyncLock.IsReadLockHeld);
             await outerLockReleased.SetAsync();
             await subTask;
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task ConcurrentReaders()
         {
             var reader1HasLock = new ManualResetEventSlim();
@@ -765,42 +761,42 @@
                 }));
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task NestedReaders()
         {
             using (await this.asyncLock.ReadLockAsync())
             {
-                Assert.IsTrue(this.asyncLock.IsReadLockHeld);
-                Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
-                Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+                Assert.True(this.asyncLock.IsReadLockHeld);
+                Assert.False(this.asyncLock.IsUpgradeableReadLockHeld);
+                Assert.False(this.asyncLock.IsWriteLockHeld);
                 using (await this.asyncLock.ReadLockAsync())
                 {
-                    Assert.IsTrue(this.asyncLock.IsReadLockHeld);
-                    Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
-                    Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+                    Assert.True(this.asyncLock.IsReadLockHeld);
+                    Assert.False(this.asyncLock.IsUpgradeableReadLockHeld);
+                    Assert.False(this.asyncLock.IsWriteLockHeld);
                     using (await this.asyncLock.ReadLockAsync())
                     {
-                        Assert.IsTrue(this.asyncLock.IsReadLockHeld);
-                        Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
-                        Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+                        Assert.True(this.asyncLock.IsReadLockHeld);
+                        Assert.False(this.asyncLock.IsUpgradeableReadLockHeld);
+                        Assert.False(this.asyncLock.IsWriteLockHeld);
                     }
 
-                    Assert.IsTrue(this.asyncLock.IsReadLockHeld);
-                    Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
-                    Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+                    Assert.True(this.asyncLock.IsReadLockHeld);
+                    Assert.False(this.asyncLock.IsUpgradeableReadLockHeld);
+                    Assert.False(this.asyncLock.IsWriteLockHeld);
                 }
 
-                Assert.IsTrue(this.asyncLock.IsReadLockHeld);
-                Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
-                Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+                Assert.True(this.asyncLock.IsReadLockHeld);
+                Assert.False(this.asyncLock.IsUpgradeableReadLockHeld);
+                Assert.False(this.asyncLock.IsWriteLockHeld);
             }
 
-            Assert.IsFalse(this.asyncLock.IsReadLockHeld);
-            Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
-            Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+            Assert.False(this.asyncLock.IsReadLockHeld);
+            Assert.False(this.asyncLock.IsUpgradeableReadLockHeld);
+            Assert.False(this.asyncLock.IsWriteLockHeld);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task DoubleLockReleaseDoesNotReleaseOtherLocks()
         {
             var readLockHeld = new TaskCompletionSource<object>();
@@ -819,14 +815,14 @@
                         }
 
                         await Task.Delay(AsyncDelay);
-                        Assert.IsFalse(writeLockHeld.Task.IsCompleted);
+                        Assert.False(writeLockHeld.Task.IsCompleted);
                     }
                 }),
             Task.Run(async delegate
             {
                 await readLockHeld.Task;
                 var writeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
-                Assert.IsFalse(writeAwaiter.IsCompleted);
+                Assert.False(writeAwaiter.IsCompleted);
                 writeAwaiter.OnCompleted(delegate
                 {
                     using (writeAwaiter.GetResult())
@@ -839,42 +835,39 @@
             writeLockHeld.Task);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void ReadLockReleaseOnSta()
         {
             this.LockReleaseTestHelper(this.asyncLock.ReadLockAsync());
         }
 
-        [TestMethod, Timeout(TestTimeout), TestCategory("GC")]
+        [StaFact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest")]
         public async Task UncontestedTopLevelReadLockAsyncGarbageCheck()
         {
             var cts = new CancellationTokenSource();
             await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync(cts.Token), false);
         }
 
-        [TestMethod, Timeout(TestTimeout), TestCategory("GC")]
+        [StaFact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest")]
         public async Task NestedReadLockAsyncGarbageCheck()
         {
             await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync(), false);
         }
 
-        [TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
+        [StaFact]
         public void LockAsyncThrowsOnGetResultBySta()
         {
-            if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
-            {
-                Assert.Inconclusive("STA required.");
-            }
+            Assert.Equal(ApartmentState.STA, Thread.CurrentThread.GetApartmentState()); // STA required.
 
             var awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
-            awaiter.GetResult(); // throws on an STA thread
+            Assert.Throws<InvalidOperationException>(() => awaiter.GetResult()); // throws on an STA thread
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void LockAsyncNotIssuedTillGetResultOnSta()
         {
             var awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
-            Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+            Assert.False(this.asyncLock.IsReadLockHeld);
             try
             {
                 awaiter.GetResult();
@@ -887,7 +880,7 @@
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task LockAsyncNotIssuedTillGetResultOnMta()
         {
             await Task.Run(delegate
@@ -895,7 +888,7 @@
                 var awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
                 try
                 {
-                    Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+                    Assert.False(this.asyncLock.IsReadLockHeld);
                 }
                 finally
                 {
@@ -904,7 +897,7 @@
             });
         }
 
-        [TestMethod, Timeout(TestTimeout * 2)]
+        [StaFact]
         public async Task AllowImplicitReadLockConcurrency()
         {
             using (await this.asyncLock.ReadLockAsync())
@@ -913,7 +906,7 @@
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task ReadLockAsyncYieldsIfSyncContextSet()
         {
             await Task.Run(async delegate
@@ -923,7 +916,7 @@
                 var awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
                 try
                 {
-                    Assert.IsFalse(awaiter.IsCompleted);
+                    Assert.False(awaiter.IsCompleted);
                 }
                 catch
                 {
@@ -936,7 +929,7 @@
                 {
                     using (awaiter.GetResult())
                     {
-                        Assert.IsNull(SynchronizationContext.Current);
+                        Assert.Null(SynchronizationContext.Current);
                     }
 
                     lockAcquired.SetAsync();
@@ -945,7 +938,7 @@
             });
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task ReadLockAsyncConcurrent()
         {
             var firstReadLockObtained = new TaskCompletionSource<object>();
@@ -955,30 +948,30 @@
                 {
                     using (await this.asyncLock.ReadLockAsync())
                     {
-                        Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+                        Assert.True(this.asyncLock.IsReadLockHeld);
                         await firstReadLockObtained.SetAsync();
-                        Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+                        Assert.True(this.asyncLock.IsReadLockHeld);
                         await secondReadLockObtained.Task;
                     }
 
-                    Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+                    Assert.False(this.asyncLock.IsReadLockHeld);
                 }),
             Task.Run(async delegate
             {
                 await firstReadLockObtained.Task;
                 using (await this.asyncLock.ReadLockAsync())
                 {
-                    Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+                    Assert.True(this.asyncLock.IsReadLockHeld);
                     await secondReadLockObtained.SetAsync();
-                    Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+                    Assert.True(this.asyncLock.IsReadLockHeld);
                     await firstReadLockObtained.Task;
                 }
 
-                Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+                Assert.False(this.asyncLock.IsReadLockHeld);
             }));
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task ReadLockAsyncContention()
         {
             var firstLockObtained = new TaskCompletionSource<object>();
@@ -987,25 +980,25 @@
                 {
                     using (await this.asyncLock.WriteLockAsync())
                     {
-                        Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                        Assert.True(this.asyncLock.IsWriteLockHeld);
                         var nowait = firstLockObtained.SetAsync();
                         await Task.Delay(AsyncDelay); // hold it long enough to ensure our other thread blocks waiting for the read lock.
-                        Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                        Assert.True(this.asyncLock.IsWriteLockHeld);
                     }
 
-                    Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+                    Assert.False(this.asyncLock.IsWriteLockHeld);
                 }),
             Task.Run(async delegate
             {
                 await firstLockObtained.Task;
                 using (await this.asyncLock.ReadLockAsync())
                 {
-                    Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+                    Assert.True(this.asyncLock.IsReadLockHeld);
                     await Task.Yield();
-                    Assert.IsTrue(this.asyncLock.IsReadLockHeld);
+                    Assert.True(this.asyncLock.IsReadLockHeld);
                 }
 
-                Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+                Assert.False(this.asyncLock.IsReadLockHeld);
             }));
         }
 
@@ -1013,47 +1006,47 @@
 
         #region UpgradeableReadLockAsync tests
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task UpgradeableReadLockAsyncNoUpgrade()
         {
-            Assert.IsFalse(this.asyncLock.IsReadLockHeld);
-            Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+            Assert.False(this.asyncLock.IsReadLockHeld);
+            Assert.False(this.asyncLock.IsUpgradeableReadLockHeld);
             using (await this.asyncLock.UpgradeableReadLockAsync())
             {
-                Assert.IsFalse(this.asyncLock.IsReadLockHeld);
-                Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
-                Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+                Assert.False(this.asyncLock.IsReadLockHeld);
+                Assert.True(this.asyncLock.IsUpgradeableReadLockHeld);
+                Assert.False(this.asyncLock.IsWriteLockHeld);
                 await Task.Yield();
-                Assert.IsFalse(this.asyncLock.IsReadLockHeld);
-                Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
-                Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+                Assert.False(this.asyncLock.IsReadLockHeld);
+                Assert.True(this.asyncLock.IsUpgradeableReadLockHeld);
+                Assert.False(this.asyncLock.IsWriteLockHeld);
             }
 
-            Assert.IsFalse(this.asyncLock.IsReadLockHeld);
-            Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
-            Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+            Assert.False(this.asyncLock.IsReadLockHeld);
+            Assert.False(this.asyncLock.IsUpgradeableReadLockHeld);
+            Assert.False(this.asyncLock.IsWriteLockHeld);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task UpgradeReadLockAsync()
         {
             using (await this.asyncLock.UpgradeableReadLockAsync())
             {
-                Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+                Assert.False(this.asyncLock.IsWriteLockHeld);
                 using (await this.asyncLock.WriteLockAsync())
                 {
                     await Task.Yield();
-                    Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
-                    Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+                    Assert.True(this.asyncLock.IsWriteLockHeld);
+                    Assert.True(this.asyncLock.IsUpgradeableReadLockHeld);
                 }
 
-                Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
-                Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+                Assert.False(this.asyncLock.IsWriteLockHeld);
+                Assert.True(this.asyncLock.IsUpgradeableReadLockHeld);
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
-        [Description("Verifies that only one upgradeable read lock can be held at once.")]
+        /// <summary>Verifies that only one upgradeable read lock can be held at once.</summary>
+        [StaFact]
         public async Task UpgradeReadLockAsyncMutuallyExclusive()
         {
             var firstUpgradeableReadHeld = new TaskCompletionSource<object>();
@@ -1072,7 +1065,7 @@
                 {
                     await firstUpgradeableReadHeld.Task;
                     var awaiter = this.asyncLock.UpgradeableReadLockAsync().GetAwaiter();
-                    Assert.IsFalse(awaiter.IsCompleted, "Second upgradeable read lock issued while first is still held.");
+                    Assert.False(awaiter.IsCompleted, "Second upgradeable read lock issued while first is still held.");
                     awaiter.OnCompleted(delegate
                     {
                         using (awaiter.GetResult())
@@ -1085,66 +1078,66 @@
                 secondUpgradeableReadHeld.Task);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task UpgradeableReadLockAsyncWithStickyWrite()
         {
             using (await this.asyncLock.UpgradeableReadLockAsync(AsyncReaderWriterLock.LockFlags.StickyWrite))
             {
-                Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
-                Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+                Assert.True(this.asyncLock.IsUpgradeableReadLockHeld);
+                Assert.False(this.asyncLock.IsWriteLockHeld);
 
                 using (await this.asyncLock.WriteLockAsync())
                 {
-                    Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
-                    Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                    Assert.True(this.asyncLock.IsUpgradeableReadLockHeld);
+                    Assert.True(this.asyncLock.IsWriteLockHeld);
                 }
 
-                Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
-                Assert.IsTrue(this.asyncLock.IsWriteLockHeld, "StickyWrite flag did not retain the write lock.");
+                Assert.True(this.asyncLock.IsUpgradeableReadLockHeld);
+                Assert.True(this.asyncLock.IsWriteLockHeld, "StickyWrite flag did not retain the write lock.");
 
                 using (await this.asyncLock.WriteLockAsync())
                 {
-                    Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
-                    Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                    Assert.True(this.asyncLock.IsUpgradeableReadLockHeld);
+                    Assert.True(this.asyncLock.IsWriteLockHeld);
 
                     using (await this.asyncLock.WriteLockAsync())
                     {
-                        Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
-                        Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                        Assert.True(this.asyncLock.IsUpgradeableReadLockHeld);
+                        Assert.True(this.asyncLock.IsWriteLockHeld);
                     }
 
-                    Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
-                    Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                    Assert.True(this.asyncLock.IsUpgradeableReadLockHeld);
+                    Assert.True(this.asyncLock.IsWriteLockHeld);
                 }
 
-                Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
-                Assert.IsTrue(this.asyncLock.IsWriteLockHeld, "StickyWrite flag did not retain the write lock.");
+                Assert.True(this.asyncLock.IsUpgradeableReadLockHeld);
+                Assert.True(this.asyncLock.IsWriteLockHeld, "StickyWrite flag did not retain the write lock.");
             }
 
-            Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
-            Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+            Assert.False(this.asyncLock.IsUpgradeableReadLockHeld);
+            Assert.False(this.asyncLock.IsWriteLockHeld);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void UpgradeableReadLockAsyncReleaseOnSta()
         {
             this.LockReleaseTestHelper(this.asyncLock.UpgradeableReadLockAsync());
         }
 
-        [TestMethod, Timeout(TestTimeout), TestCategory("GC"), TestCategory("FailsInCloudTest")]
+        [StaFact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest")]
         public async Task UncontestedTopLevelUpgradeableReadLockAsyncGarbageCheck()
         {
             var cts = new CancellationTokenSource();
             await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync(cts.Token), true);
         }
 
-        [TestMethod, Timeout(TestTimeout), TestCategory("GC"), TestCategory("FailsInCloudTest")]
+        [StaFact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest")]
         public async Task NestedUpgradeableReadLockAsyncGarbageCheck()
         {
             await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync(), true);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task ExclusiveLockReleasedEventsFireOnlyWhenWriteLockReleased()
         {
             var asyncLock = new LockDerived();
@@ -1167,22 +1160,22 @@
                 {
                 }
 
-                Assert.AreEqual(0, onBeforeReleaseInvocations);
-                Assert.AreEqual(0, onReleaseInvocations);
+                Assert.Equal(0, onBeforeReleaseInvocations);
+                Assert.Equal(0, onReleaseInvocations);
 
                 using (await asyncLock.ReadLockAsync())
                 {
                 }
 
-                Assert.AreEqual(0, onBeforeReleaseInvocations);
-                Assert.AreEqual(0, onReleaseInvocations);
+                Assert.Equal(0, onBeforeReleaseInvocations);
+                Assert.Equal(0, onReleaseInvocations);
             }
 
-            Assert.AreEqual(1, onBeforeReleaseInvocations);
-            Assert.AreEqual(1, onReleaseInvocations);
+            Assert.Equal(1, onBeforeReleaseInvocations);
+            Assert.Equal(1, onReleaseInvocations);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task ExclusiveLockReleasedEventsFireOnlyWhenWriteLockReleasedWithinUpgradeableRead()
         {
             var asyncLock = new LockDerived();
@@ -1205,22 +1198,22 @@
                 {
                 }
 
-                Assert.AreEqual(0, onBeforeReleaseInvocations);
-                Assert.AreEqual(0, onReleaseInvocations);
+                Assert.Equal(0, onBeforeReleaseInvocations);
+                Assert.Equal(0, onReleaseInvocations);
 
                 using (await asyncLock.WriteLockAsync())
                 {
                 }
 
-                Assert.AreEqual(1, onBeforeReleaseInvocations);
-                Assert.AreEqual(1, onReleaseInvocations);
+                Assert.Equal(1, onBeforeReleaseInvocations);
+                Assert.Equal(1, onReleaseInvocations);
             }
 
-            Assert.AreEqual(1, onBeforeReleaseInvocations);
-            Assert.AreEqual(1, onReleaseInvocations);
+            Assert.Equal(1, onBeforeReleaseInvocations);
+            Assert.Equal(1, onReleaseInvocations);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task ExclusiveLockReleasedEventsFireOnlyWhenStickyUpgradedLockReleased()
         {
             var asyncLock = new LockDerived();
@@ -1243,22 +1236,22 @@
                 {
                 }
 
-                Assert.AreEqual(0, onBeforeReleaseInvocations);
-                Assert.AreEqual(0, onReleaseInvocations);
+                Assert.Equal(0, onBeforeReleaseInvocations);
+                Assert.Equal(0, onReleaseInvocations);
 
                 using (await asyncLock.WriteLockAsync())
                 {
                 }
 
-                Assert.AreEqual(0, onBeforeReleaseInvocations);
-                Assert.AreEqual(0, onReleaseInvocations);
+                Assert.Equal(0, onBeforeReleaseInvocations);
+                Assert.Equal(0, onReleaseInvocations);
             }
 
-            Assert.AreEqual(1, onBeforeReleaseInvocations);
-            Assert.AreEqual(1, onReleaseInvocations);
+            Assert.Equal(1, onBeforeReleaseInvocations);
+            Assert.Equal(1, onReleaseInvocations);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task OnExclusiveLockReleasedAsyncAcquiresProjectLock()
         {
             var innerLockReleased = new AsyncManualResetEvent();
@@ -1284,7 +1277,7 @@
             }
         }
 
-        [TestMethod, Timeout(TestTimeout * 2)]
+        [StaFact]
         public async Task MitigationAgainstAccidentalUpgradeableReadLockConcurrency()
         {
             using (await this.asyncLock.UpgradeableReadLockAsync())
@@ -1293,7 +1286,7 @@
             }
         }
 
-        [TestMethod, Timeout(TestTimeout * 2)]
+        [StaFact]
         public async Task MitigationAgainstAccidentalUpgradeableReadLockConcurrencyBeforeFirstYieldSTA()
         {
             using (await this.asyncLock.UpgradeableReadLockAsync())
@@ -1302,7 +1295,7 @@
             }
         }
 
-        [TestMethod, Timeout(TestTimeout * 2)]
+        [StaFact]
         public void MitigationAgainstAccidentalUpgradeableReadLockConcurrencyBeforeFirstYieldMTA()
         {
             Task.Run(async delegate
@@ -1314,7 +1307,7 @@
             }).GetAwaiter().GetResult();
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task UpgradeableReadLockAsyncYieldsIfSyncContextSet()
         {
             await Task.Run(async delegate
@@ -1324,7 +1317,7 @@
                 var awaiter = this.asyncLock.UpgradeableReadLockAsync().GetAwaiter();
                 try
                 {
-                    Assert.IsFalse(awaiter.IsCompleted);
+                    Assert.False(awaiter.IsCompleted);
                 }
                 catch
                 {
@@ -1354,14 +1347,14 @@
         /// <see cref="UpgradeableReadLockTraversesAcrossSta"/> and <see cref="WriteLockTraversesAcrossSta"/> tests,
         /// which are deemed more important.
         /// </remarks>
-        ////[TestMethod, Timeout(TestTimeout), Ignore]
+        ////[StaFact, Ignore]
         public async Task MitigationAgainstAccidentalUpgradeableReadLockForking()
         {
             await this.MitigationAgainstAccidentalLockForkingHelper(
                 () => this.asyncLock.UpgradeableReadLockAsync());
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task UpgradeableReadLockAsyncSimple()
         {
             // Get onto an MTA thread so that a lock may be synchronously granted.
@@ -1369,27 +1362,27 @@
             {
                 using (await this.asyncLock.UpgradeableReadLockAsync())
                 {
-                    Assert.IsTrue(this.asyncLock.IsAnyLockHeld);
-                    Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+                    Assert.True(this.asyncLock.IsAnyLockHeld);
+                    Assert.True(this.asyncLock.IsUpgradeableReadLockHeld);
                     await Task.Yield();
-                    Assert.IsTrue(this.asyncLock.IsAnyLockHeld);
-                    Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+                    Assert.True(this.asyncLock.IsAnyLockHeld);
+                    Assert.True(this.asyncLock.IsUpgradeableReadLockHeld);
                 }
 
-                Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+                Assert.False(this.asyncLock.IsUpgradeableReadLockHeld);
 
                 using (await this.asyncLock.UpgradeableReadLockAsync(AsyncReaderWriterLock.LockFlags.None))
                 {
-                    Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+                    Assert.True(this.asyncLock.IsUpgradeableReadLockHeld);
                     await Task.Yield();
-                    Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+                    Assert.True(this.asyncLock.IsUpgradeableReadLockHeld);
                 }
 
-                Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+                Assert.False(this.asyncLock.IsUpgradeableReadLockHeld);
             });
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task UpgradeableReadLockAsyncContention()
         {
             var firstLockObtained = new TaskCompletionSource<object>();
@@ -1398,44 +1391,44 @@
                 {
                     using (await this.asyncLock.WriteLockAsync())
                     {
-                        Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                        Assert.True(this.asyncLock.IsWriteLockHeld);
                         var nowait = firstLockObtained.SetAsync();
                         await Task.Delay(AsyncDelay); // hold it long enough to ensure our other thread blocks waiting for the read lock.
-                        Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                        Assert.True(this.asyncLock.IsWriteLockHeld);
                     }
 
-                    Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+                    Assert.False(this.asyncLock.IsWriteLockHeld);
                 }),
             Task.Run(async delegate
             {
                 await firstLockObtained.Task;
                 using (await this.asyncLock.UpgradeableReadLockAsync())
                 {
-                    Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+                    Assert.True(this.asyncLock.IsUpgradeableReadLockHeld);
                     await Task.Yield();
-                    Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+                    Assert.True(this.asyncLock.IsUpgradeableReadLockHeld);
                 }
 
-                Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+                Assert.False(this.asyncLock.IsUpgradeableReadLockHeld);
             }));
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void ReleasingUpgradeableReadLockAsyncSynchronouslyClearsSyncContext()
         {
             Task.Run(async delegate
             {
-                Assert.IsNull(SynchronizationContext.Current);
+                Assert.Null(SynchronizationContext.Current);
                 using (await this.asyncLock.UpgradeableReadLockAsync())
                 {
-                    Assert.IsNotNull(SynchronizationContext.Current);
+                    Assert.NotNull(SynchronizationContext.Current);
                 }
 
-                Assert.IsNull(SynchronizationContext.Current);
+                Assert.Null(SynchronizationContext.Current);
             }).GetAwaiter().GetResult();
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void UpgradeableReadLockAsyncSynchronousReleaseAllowsOtherUpgradeableReaders()
         {
             var testComplete = new ManualResetEventSlim(); // deliberately synchronous
@@ -1448,7 +1441,7 @@
 
                 // Synchronously block until the test is complete.
                 firstLockReleased.Set();
-                Assert.IsTrue(testComplete.Wait(AsyncDelay));
+                Assert.True(testComplete.Wait(AsyncDelay));
             });
 
             var secondLockTask = Task.Run(async delegate
@@ -1460,42 +1453,42 @@
                 }
             });
 
-            Assert.IsTrue(secondLockTask.Wait(TestTimeout));
+            Assert.True(secondLockTask.Wait(TestTimeout));
             testComplete.Set();
-            Assert.IsTrue(firstLockTask.Wait(TestTimeout)); // rethrow any exceptions
+            Assert.True(firstLockTask.Wait(TestTimeout)); // rethrow any exceptions
         }
 
         #endregion
 
         #region WriteLockAsync tests
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task WriteLockAsync()
         {
-            Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+            Assert.False(this.asyncLock.IsWriteLockHeld);
             using (await this.asyncLock.WriteLockAsync())
             {
-                Assert.IsFalse(this.asyncLock.IsReadLockHeld);
-                Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
-                Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                Assert.False(this.asyncLock.IsReadLockHeld);
+                Assert.False(this.asyncLock.IsUpgradeableReadLockHeld);
+                Assert.True(this.asyncLock.IsWriteLockHeld);
                 await Task.Yield();
-                Assert.IsFalse(this.asyncLock.IsReadLockHeld);
-                Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
-                Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                Assert.False(this.asyncLock.IsReadLockHeld);
+                Assert.False(this.asyncLock.IsUpgradeableReadLockHeld);
+                Assert.True(this.asyncLock.IsWriteLockHeld);
             }
 
-            Assert.IsFalse(this.asyncLock.IsReadLockHeld);
-            Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
-            Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+            Assert.False(this.asyncLock.IsReadLockHeld);
+            Assert.False(this.asyncLock.IsUpgradeableReadLockHeld);
+            Assert.False(this.asyncLock.IsWriteLockHeld);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void WriteLockAsyncReleaseOnSta()
         {
             this.LockReleaseTestHelper(this.asyncLock.WriteLockAsync());
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task WriteLockAsyncWhileHoldingUpgradeableReadLockContestedByActiveReader()
         {
             var upgradeableLockAcquired = new TaskCompletionSource<object>();
@@ -1511,7 +1504,7 @@
                         await readLockAcquired.Task;
 
                         var upgradeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
-                        Assert.IsFalse(upgradeAwaiter.IsCompleted); // contested lock should not be immediately available.
+                        Assert.False(upgradeAwaiter.IsCompleted); // contested lock should not be immediately available.
                         upgradeAwaiter.OnCompleted(delegate
                         {
                             using (upgradeAwaiter.GetResult())
@@ -1535,7 +1528,7 @@
                 }));
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task WriteLockAsyncWhileHoldingUpgradeableReadLockContestedByWaitingWriter()
         {
             var upgradeableLockAcquired = new TaskCompletionSource<object>();
@@ -1549,7 +1542,7 @@
                         await contendingWriteLockRequested.Task;
 
                         var upgradeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
-                        Assert.IsTrue(upgradeAwaiter.IsCompleted); // the waiting writer should not have priority of this one.
+                        Assert.True(upgradeAwaiter.IsCompleted); // the waiting writer should not have priority of this one.
                         upgradeAwaiter.GetResult().Dispose(); // accept and release the lock.
                     }
                 }),
@@ -1557,7 +1550,7 @@
                 {
                     await upgradeableLockAcquired.Task;
                     var writeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
-                    Assert.IsFalse(writeAwaiter.IsCompleted);
+                    Assert.False(writeAwaiter.IsCompleted);
                     var contestingWriteLockAcquired = new TaskCompletionSource<object>();
                     writeAwaiter.OnCompleted(delegate
                     {
@@ -1571,7 +1564,7 @@
                 }));
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task WriteLockAsyncWhileHoldingUpgradeableReadLockContestedByActiveReaderAndWaitingWriter()
         {
             var upgradeableLockAcquired = new TaskCompletionSource<object>();
@@ -1592,7 +1585,7 @@
                         this.Logger.WriteLine("Task 1: Requesting a write lock.");
                         var upgradeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
                         this.Logger.WriteLine("Task 1: Write lock requested.");
-                        Assert.IsFalse(upgradeAwaiter.IsCompleted); // contested lock should not be immediately available.
+                        Assert.False(upgradeAwaiter.IsCompleted); // contested lock should not be immediately available.
                         upgradeAwaiter.OnCompleted(delegate
                         {
                             using (upgradeAwaiter.GetResult())
@@ -1631,7 +1624,7 @@
                     this.Logger.WriteLine("Task 3: Requesting write lock.");
                     var writeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
                     this.Logger.WriteLine("Task 3: Write lock requested.");
-                    Assert.IsFalse(writeAwaiter.IsCompleted);
+                    Assert.False(writeAwaiter.IsCompleted);
                     var contestingWriteLockAcquired = new TaskCompletionSource<object>();
                     writeAwaiter.OnCompleted(delegate
                     {
@@ -1651,20 +1644,20 @@
                 }));
         }
 
-        [TestMethod, Timeout(TestTimeout), TestCategory("GC"), TestCategory("FailsInCloudTest")]
+        [StaFact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest")]
         public async Task UncontestedTopLevelWriteLockAsyncGarbageCheck()
         {
             var cts = new CancellationTokenSource();
             await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync(cts.Token), true);
         }
 
-        [TestMethod, Timeout(TestTimeout), TestCategory("GC"), TestCategory("FailsInCloudTest")]
+        [StaFact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest")]
         public async Task NestedWriteLockAsyncGarbageCheck()
         {
             await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync(), true);
         }
 
-        [TestMethod, Timeout(TestTimeout * 2)]
+        [StaFact]
         public async Task MitigationAgainstAccidentalWriteLockConcurrency()
         {
             using (await this.asyncLock.WriteLockAsync())
@@ -1673,7 +1666,7 @@
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task MitigationAgainstAccidentalWriteLockConcurrencyBeforeFirstYieldSTA()
         {
             using (await this.asyncLock.WriteLockAsync())
@@ -1682,7 +1675,7 @@
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void MitigationAgainstAccidentalWriteLockConcurrencyBeforeFirstYieldMTA()
         {
             Task.Run(async delegate
@@ -1703,14 +1696,14 @@
         /// <see cref="UpgradeableReadLockTraversesAcrossSta"/> and <see cref="WriteLockTraversesAcrossSta"/> tests,
         /// which are deemed more important.
         /// </remarks>
-        ////[TestMethod, Timeout(TestTimeout), Ignore]
+        ////[StaFact, Ignore]
         public async Task MitigationAgainstAccidentalWriteLockForking()
         {
             await this.MitigationAgainstAccidentalLockForkingHelper(
                 () => this.asyncLock.WriteLockAsync());
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task WriteLockAsyncYieldsIfSyncContextSet()
         {
             await Task.Run(async delegate
@@ -1720,7 +1713,7 @@
                 var awaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
                 try
                 {
-                    Assert.IsFalse(awaiter.IsCompleted);
+                    Assert.False(awaiter.IsCompleted);
                 }
                 catch
                 {
@@ -1741,22 +1734,22 @@
             });
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void ReleasingWriteLockAsyncSynchronouslyClearsSyncContext()
         {
             Task.Run(async delegate
             {
-                Assert.IsNull(SynchronizationContext.Current);
+                Assert.Null(SynchronizationContext.Current);
                 using (await this.asyncLock.WriteLockAsync())
                 {
-                    Assert.IsNotNull(SynchronizationContext.Current);
+                    Assert.NotNull(SynchronizationContext.Current);
                 }
 
-                Assert.IsNull(SynchronizationContext.Current);
+                Assert.Null(SynchronizationContext.Current);
             }).GetAwaiter().GetResult();
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void WriteLockAsyncSynchronousReleaseAllowsOtherWriters()
         {
             var testComplete = new ManualResetEventSlim(); // deliberately synchronous
@@ -1769,7 +1762,7 @@
 
                 // Synchronously block until the test is complete.
                 firstLockReleased.Set();
-                Assert.IsTrue(testComplete.Wait(AsyncDelay));
+                Assert.True(testComplete.Wait(AsyncDelay));
             });
 
             var secondLockTask = Task.Run(async delegate
@@ -1781,12 +1774,12 @@
                 }
             });
 
-            Assert.IsTrue(secondLockTask.Wait(TestTimeout));
+            Assert.True(secondLockTask.Wait(TestTimeout));
             testComplete.Set();
-            Assert.IsTrue(firstLockTask.Wait(TestTimeout)); // rethrow any exceptions
+            Assert.True(firstLockTask.Wait(TestTimeout)); // rethrow any exceptions
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task WriteLockAsyncSimple()
         {
             // Get onto an MTA thread so that a lock may be synchronously granted.
@@ -1794,27 +1787,27 @@
             {
                 using (await this.asyncLock.WriteLockAsync())
                 {
-                    Assert.IsTrue(this.asyncLock.IsAnyLockHeld);
-                    Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                    Assert.True(this.asyncLock.IsAnyLockHeld);
+                    Assert.True(this.asyncLock.IsWriteLockHeld);
                     await Task.Yield();
-                    Assert.IsTrue(this.asyncLock.IsAnyLockHeld);
-                    Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                    Assert.True(this.asyncLock.IsAnyLockHeld);
+                    Assert.True(this.asyncLock.IsWriteLockHeld);
                 }
 
-                Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+                Assert.False(this.asyncLock.IsWriteLockHeld);
 
                 using (await this.asyncLock.WriteLockAsync(AsyncReaderWriterLock.LockFlags.None))
                 {
-                    Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                    Assert.True(this.asyncLock.IsWriteLockHeld);
                     await Task.Yield();
-                    Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                    Assert.True(this.asyncLock.IsWriteLockHeld);
                 }
 
-                Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+                Assert.False(this.asyncLock.IsWriteLockHeld);
             });
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task WriteLockAsyncContention()
         {
             var firstLockObtained = new TaskCompletionSource<object>();
@@ -1823,25 +1816,25 @@
                 {
                     using (await this.asyncLock.WriteLockAsync())
                     {
-                        Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                        Assert.True(this.asyncLock.IsWriteLockHeld);
                         var nowait = firstLockObtained.SetAsync();
                         await Task.Delay(AsyncDelay); // hold it long enough to ensure our other thread blocks waiting for the read lock.
-                        Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                        Assert.True(this.asyncLock.IsWriteLockHeld);
                     }
 
-                    Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+                    Assert.False(this.asyncLock.IsWriteLockHeld);
                 }),
             Task.Run(async delegate
             {
                 await firstLockObtained.Task;
                 using (await this.asyncLock.WriteLockAsync())
                 {
-                    Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                    Assert.True(this.asyncLock.IsWriteLockHeld);
                     await Task.Yield();
-                    Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                    Assert.True(this.asyncLock.IsWriteLockHeld);
                 }
 
-                Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+                Assert.False(this.asyncLock.IsWriteLockHeld);
             }));
         }
 
@@ -1849,8 +1842,8 @@
 
         #region Read/write lock interactions
 
-        [TestMethod, Timeout(TestTimeout)]
-        [Description("Verifies that reads and upgradeable reads can run concurrently.")]
+        /// <summary>Verifies that reads and upgradeable reads can run concurrently.</summary>
+        [StaFact]
         public async Task UpgradeableReadAvailableWithExistingReaders()
         {
             var readerHasLock = new TaskCompletionSource<object>();
@@ -1874,8 +1867,8 @@
                 }));
         }
 
-        [TestMethod, Timeout(TestTimeout)]
-        [Description("Verifies that reads and upgradeable reads can run concurrently.")]
+        /// <summary>Verifies that reads and upgradeable reads can run concurrently.</summary>
+        [StaFact]
         public async Task ReadAvailableWithExistingUpgradeableReader()
         {
             var readerHasLock = new TaskCompletionSource<object>();
@@ -1899,8 +1892,8 @@
                 }));
         }
 
-        [TestMethod, Timeout(TestTimeout)]
-        [Description("Verifies that an upgradeable reader can obtain write access even while a writer is waiting for a lock.")]
+        /// <summary>Verifies that an upgradeable reader can obtain write access even while a writer is waiting for a lock.</summary>
+        [StaFact]
         public async Task UpgradeableReaderCanUpgradeWhileWriteRequestWaiting()
         {
             var upgradeableReadHeld = new TaskCompletionSource<object>();
@@ -1916,7 +1909,7 @@
                         await writeRequestPending.Task;
                         using (await this.asyncLock.WriteLockAsync())
                         {
-                            Assert.IsFalse(writeLockObtained.Task.IsCompleted, "The upgradeable read should have received its write lock first.");
+                            Assert.False(writeLockObtained.Task.IsCompleted, "The upgradeable read should have received its write lock first.");
                             this.PrintHangReport();
                             await upgradeableReadUpgraded.SetAsync();
                         }
@@ -1926,7 +1919,7 @@
                 {
                     await upgradeableReadHeld.Task;
                     var awaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
-                    Assert.IsFalse(awaiter.IsCompleted, "We shouldn't get a write lock when an upgradeable read is held.");
+                    Assert.False(awaiter.IsCompleted, "We shouldn't get a write lock when an upgradeable read is held.");
                     awaiter.OnCompleted(delegate
                     {
                         using (var releaser = awaiter.GetResult())
@@ -1939,8 +1932,8 @@
                 }));
         }
 
-        [TestMethod, Timeout(TestTimeout)]
-        [Description("Verifies that an upgradeable reader blocks for upgrade while other readers release their locks.")]
+        /// <summary>Verifies that an upgradeable reader blocks for upgrade while other readers release their locks.</summary>
+        [StaFact]
         public async Task UpgradeableReaderWaitsForExistingReadersToExit()
         {
             var readerHasLock = new TaskCompletionSource<object>();
@@ -1953,7 +1946,7 @@
                     {
                         await readerHasLock.Task;
                         var awaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
-                        Assert.IsFalse(awaiter.IsCompleted, "The upgradeable read lock should not be upgraded while readers still have locks.");
+                        Assert.False(awaiter.IsCompleted, "The upgradeable read lock should not be upgraded while readers still have locks.");
                         awaiter.OnCompleted(delegate
                         {
                             using (awaiter.GetResult())
@@ -1961,7 +1954,7 @@
                                 upgradeableReaderHasUpgraded.SetAsync();
                             }
                         });
-                        Assert.IsFalse(upgradeableReaderHasUpgraded.Task.IsCompleted);
+                        Assert.False(upgradeableReaderHasUpgraded.Task.IsCompleted);
                         await upgradeableReaderWaitingForUpgrade.SetAsync();
                     }
                 }),
@@ -1976,8 +1969,8 @@
             upgradeableReaderHasUpgraded.Task);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
-        [Description("Verifies that read lock requests are not serviced until any writers have released their locks.")]
+        /// <summary>Verifies that read lock requests are not serviced until any writers have released their locks.</summary>
+        [StaFact]
         public async Task ReadersWaitForWriter()
         {
             var readerHasLock = new TaskCompletionSource<object>();
@@ -1997,13 +1990,13 @@
                     {
                         await writerHasLock.SetAsync();
                         await Task.Delay(AsyncDelay);
-                        Assert.IsFalse(readerHasLock.Task.IsCompleted, "Reader was issued lock while writer still had lock.");
+                        Assert.False(readerHasLock.Task.IsCompleted, "Reader was issued lock while writer still had lock.");
                     }
                 }));
         }
 
-        [TestMethod, Timeout(TestTimeout)]
-        [Description("Verifies that write lock requests are not serviced until all existing readers have released their locks.")]
+        /// <summary>Verifies that write lock requests are not serviced until all existing readers have released their locks.</summary>
+        [StaFact]
         public async Task WriterWaitsForReaders()
         {
             var readerHasLock = new TaskCompletionSource<object>();
@@ -2015,7 +2008,7 @@
                     {
                         await readerHasLock.SetAsync();
                         await Task.Delay(AsyncDelay);
-                        Assert.IsFalse(writerHasLock.Task.IsCompleted, "Writer was issued lock while reader still had lock.");
+                        Assert.False(writerHasLock.Task.IsCompleted, "Writer was issued lock while reader still had lock.");
                     }
                 }),
                 Task.Run(async delegate
@@ -2024,13 +2017,13 @@
                     using (await this.asyncLock.WriteLockAsync())
                     {
                         await writerHasLock.SetAsync();
-                        Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                        Assert.True(this.asyncLock.IsWriteLockHeld);
                     }
                 }));
         }
 
-        [TestMethod, Timeout(TestTimeout)]
-        [Description("Verifies that if a read lock is open, and a writer is waiting for a lock, that no new top-level read locks will be issued.")]
+        /// <summary>Verifies that if a read lock is open, and a writer is waiting for a lock, that no new top-level read locks will be issued.</summary>
+        [StaFact]
         public async Task NewReadersWaitForWaitingWriters()
         {
             var readLockHeld = new TaskCompletionSource<object>();
@@ -2056,7 +2049,7 @@
                 {
                     await readLockHeld.Task;
                     var writeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
-                    Assert.IsFalse(writeAwaiter.IsCompleted, "The writer should not be issued a lock while a read lock is held.");
+                    Assert.False(writeAwaiter.IsCompleted, "The writer should not be issued a lock while a read lock is held.");
                     this.Logger.WriteLine("Write lock in queue.");
                     writeAwaiter.OnCompleted(delegate
                     {
@@ -2065,7 +2058,7 @@
                             try
                             {
                                 this.Logger.WriteLine("Write lock issued.");
-                                Assert.IsFalse(newReaderLockHeld.Task.IsCompleted, "Read lock should not be issued till after the write lock is released.");
+                                Assert.False(newReaderLockHeld.Task.IsCompleted, "Read lock should not be issued till after the write lock is released.");
                                 writerLockHeld.SetResult(null); // must not be the asynchronous Set() extension method since we use it as a flag to check ordering later.
                             }
                             catch (Exception ex)
@@ -2080,7 +2073,7 @@
             {
                 await writerWaitingForLock.Task;
                 var readAwaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
-                Assert.IsFalse(readAwaiter.IsCompleted, "The new reader should not be issued a lock while a write lock is pending.");
+                Assert.False(readAwaiter.IsCompleted, "The new reader should not be issued a lock while a write lock is pending.");
                 this.Logger.WriteLine("Second reader in queue.");
                 readAwaiter.OnCompleted(delegate
                 {
@@ -2089,7 +2082,7 @@
                         this.Logger.WriteLine("Second read lock issued.");
                         using (readAwaiter.GetResult())
                         {
-                            Assert.IsTrue(writerLockHeld.Task.IsCompleted);
+                            Assert.True(writerLockHeld.Task.IsCompleted);
                             newReaderLockHeld.SetAsync();
                         }
                     }
@@ -2107,8 +2100,8 @@
             newReaderLockHeld.Task);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
-        [Description("Verifies proper behavior when multiple read locks are held, and both read and write locks are in the queue, and a read lock is released.")]
+        /// <summary>Verifies proper behavior when multiple read locks are held, and both read and write locks are in the queue, and a read lock is released.</summary>
+        [StaFact]
         public async Task ManyReadersBlockWriteAndSubsequentReadRequest()
         {
             var firstReaderAcquired = new TaskCompletionSource<object>();
@@ -2142,13 +2135,13 @@
             { // WRITER
                 await Task.WhenAll(firstReaderAcquired.Task, secondReaderAcquired.Task);
                 var writeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
-                Assert.IsFalse(writeAwaiter.IsCompleted);
+                Assert.False(writeAwaiter.IsCompleted);
                 writeAwaiter.OnCompleted(delegate
                 {
                     using (writeAwaiter.GetResult())
                     {
                         writeAcquired.SetAsync();
-                        Assert.IsFalse(thirdReadAcquired.Task.IsCompleted);
+                        Assert.False(thirdReadAcquired.Task.IsCompleted);
                     }
                 });
                 var nowait = writerWaiting.SetAsync();
@@ -2158,13 +2151,13 @@
             { // THIRD READER
                 await writerWaiting.Task;
                 var readAwaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
-                Assert.IsFalse(readAwaiter.IsCompleted, "Third reader should not have been issued a new top-level lock while writer is in the queue.");
+                Assert.False(readAwaiter.IsCompleted, "Third reader should not have been issued a new top-level lock while writer is in the queue.");
                 readAwaiter.OnCompleted(delegate
                 {
                     using (readAwaiter.GetResult())
                     {
                         thirdReadAcquired.SetAsync();
-                        Assert.IsTrue(writeAcquired.Task.IsCompleted);
+                        Assert.True(writeAcquired.Task.IsCompleted);
                     }
                 });
                 var nowait = thirdReaderWaiting.SetAsync();
@@ -2178,8 +2171,8 @@
             }));
         }
 
-        [TestMethod, Timeout(TestTimeout)]
-        [Description("Verifies that if a read lock is open, and a writer is waiting for a lock, that nested read locks will still be issued.")]
+        /// <summary>Verifies that if a read lock is open, and a writer is waiting for a lock, that nested read locks will still be issued.</summary>
+        [StaFact]
         public async Task NestedReadersStillIssuedLocksWhileWaitingWriters()
         {
             var readerLockHeld = new TaskCompletionSource<object>();
@@ -2196,7 +2189,7 @@
 
                         using (await this.asyncLock.ReadLockAsync())
                         {
-                            Assert.IsFalse(writerLockHeld.Task.IsCompleted);
+                            Assert.False(writerLockHeld.Task.IsCompleted);
                             await readerNestedLockHeld.SetAsync();
                         }
                     }
@@ -2205,7 +2198,7 @@
                 {
                     await readerLockHeld.Task;
                     var writerAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
-                    Assert.IsFalse(writerAwaiter.IsCompleted);
+                    Assert.False(writerAwaiter.IsCompleted);
                     writerAwaiter.OnCompleted(delegate
                     {
                         using (writerAwaiter.GetResult())
@@ -2219,8 +2212,8 @@
             writerLockHeld.Task);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
-        [Description("Verifies that an upgradeable reader can 'downgrade' to a standard read lock without releasing the overall lock.")]
+        /// <summary>Verifies that an upgradeable reader can 'downgrade' to a standard read lock without releasing the overall lock.</summary>
+        [StaFact]
         public async Task DowngradeUpgradeableReadToNormalRead()
         {
             var firstUpgradeableReadHeld = new TaskCompletionSource<object>();
@@ -2230,20 +2223,20 @@
                 {
                     using (var upgradeableReader = await this.asyncLock.UpgradeableReadLockAsync())
                     {
-                        Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+                        Assert.True(this.asyncLock.IsUpgradeableReadLockHeld);
                         await firstUpgradeableReadHeld.SetAsync();
                         using (var standardReader = await this.asyncLock.ReadLockAsync())
                         {
-                            Assert.IsTrue(this.asyncLock.IsReadLockHeld);
-                            Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld);
+                            Assert.True(this.asyncLock.IsReadLockHeld);
+                            Assert.True(this.asyncLock.IsUpgradeableReadLockHeld);
 
                             // Give up the upgradeable reader lock right away.
                             // This allows another upgradeable reader to obtain that kind of lock.
                             // Since we're *also* holding a (non-upgradeable) read lock, we're not letting writers in.
                             upgradeableReader.Dispose();
 
-                            Assert.IsTrue(this.asyncLock.IsReadLockHeld);
-                            Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld);
+                            Assert.True(this.asyncLock.IsReadLockHeld);
+                            Assert.False(this.asyncLock.IsUpgradeableReadLockHeld);
 
                             // Ensure that the second upgradeable read lock is now obtainable.
                             await secondUpgradeableReadHeld.Task;
@@ -2260,7 +2253,7 @@
                 }));
         }
 
-        [TestMethod, Timeout((AsyncDelay * 9 * 2) + AsyncDelay)]
+        [StaFact]
         public async Task MitigationAgainstAccidentalExclusiveLockConcurrency()
         {
             using (await this.asyncLock.UpgradeableReadLockAsync())
@@ -2293,7 +2286,7 @@
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task UpgradedReadWithSyncContext()
         {
             var contestingReadLockAcquired = new TaskCompletionSource<object>();
@@ -2305,7 +2298,7 @@
                     {
                         await contestingReadLockAcquired.Task;
                         var writeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
-                        Assert.IsFalse(writeAwaiter.IsCompleted);
+                        Assert.False(writeAwaiter.IsCompleted);
                         var nestedLockAcquired = new TaskCompletionSource<object>();
                         writeAwaiter.OnCompleted(async delegate
                         {
@@ -2335,7 +2328,7 @@
 
         #region Cancellation tests
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task PrecancelledReadLockAsyncRequest()
         {
             await Task.Run(delegate
@@ -2343,11 +2336,11 @@
                 var cts = new CancellationTokenSource();
                 cts.Cancel();
                 var awaiter = this.asyncLock.ReadLockAsync(cts.Token).GetAwaiter();
-                Assert.IsTrue(awaiter.IsCompleted);
+                Assert.True(awaiter.IsCompleted);
                 try
                 {
                     awaiter.GetResult();
-                    Assert.Fail("Expected OperationCanceledException not thrown.");
+                    Assert.True(false, "Expected OperationCanceledException not thrown.");
                 }
                 catch (OperationCanceledException)
                 {
@@ -2355,24 +2348,24 @@
             });
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void PrecancelledWriteLockAsyncRequestOnSTA()
         {
             var cts = new CancellationTokenSource();
             cts.Cancel();
             var awaiter = this.asyncLock.WriteLockAsync(cts.Token).GetAwaiter();
-            Assert.IsTrue(awaiter.IsCompleted);
+            Assert.True(awaiter.IsCompleted);
             try
             {
                 awaiter.GetResult();
-                Assert.Fail("Expected OperationCanceledException not thrown.");
+                Assert.True(false, "Expected OperationCanceledException not thrown.");
             }
             catch (OperationCanceledException)
             {
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task CancelPendingLock()
         {
             var firstWriteHeld = new TaskCompletionSource<object>();
@@ -2391,13 +2384,13 @@
                     await firstWriteHeld.Task;
                     var cts = new CancellationTokenSource();
                     var awaiter = this.asyncLock.WriteLockAsync(cts.Token).GetAwaiter();
-                    Assert.IsFalse(awaiter.IsCompleted);
+                    Assert.False(awaiter.IsCompleted);
                     awaiter.OnCompleted(delegate
                     {
                         try
                         {
                             awaiter.GetResult();
-                            cancellationTestConcluded.SetException(new AssertFailedException("Expected OperationCanceledException not thrown."));
+                            cancellationTestConcluded.SetException(new ThrowsException(typeof(OperationCanceledException)));
                         }
                         catch (OperationCanceledException)
                         {
@@ -2408,7 +2401,7 @@
                 }));
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task CancelPendingLockFollowedByAnotherLock()
         {
             var firstWriteHeld = new TaskCompletionSource<object>();
@@ -2429,13 +2422,13 @@
                     await firstWriteHeld.Task;
                     var cts = new CancellationTokenSource();
                     var awaiter = this.asyncLock.WriteLockAsync(cts.Token).GetAwaiter();
-                    Assert.IsFalse(awaiter.IsCompleted);
+                    Assert.False(awaiter.IsCompleted);
                     awaiter.OnCompleted(delegate
                     {
                         try
                         {
                             awaiter.GetResult();
-                            cancellationTestConcluded.SetException(new AssertFailedException("Expected OperationCanceledException not thrown."));
+                            cancellationTestConcluded.SetException(new ThrowsException(typeof(OperationCanceledException)));
                         }
                         catch (OperationCanceledException)
                         {
@@ -2448,19 +2441,19 @@
                     // The point of this test is to ensure that the canceled (Write) awaiter doesn't get
                     // reused as a read awaiter while it is still in the writer queue.
                     await cancellationTestConcluded.Task;
-                    Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
-                    Assert.IsFalse(this.asyncLock.IsReadLockHeld);
+                    Assert.False(this.asyncLock.IsWriteLockHeld);
+                    Assert.False(this.asyncLock.IsReadLockHeld);
                     var readLockAwaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
                     readLockAwaiter.OnCompleted(delegate
                     {
                         using (readLockAwaiter.GetResult())
                         {
-                            Assert.IsTrue(this.asyncLock.IsReadLockHeld);
-                            Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+                            Assert.True(this.asyncLock.IsReadLockHeld);
+                            Assert.False(this.asyncLock.IsWriteLockHeld);
                         }
 
-                        Assert.IsFalse(this.asyncLock.IsReadLockHeld);
-                        Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+                        Assert.False(this.asyncLock.IsReadLockHeld);
+                        Assert.False(this.asyncLock.IsWriteLockHeld);
                         readerConcluded.SetAsync();
                     });
                     var nowait = releaseWriteLock.SetAsync();
@@ -2468,49 +2461,46 @@
                 }));
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task CancelNonImpactfulToIssuedLocks()
         {
             var cts = new CancellationTokenSource();
             using (await this.asyncLock.WriteLockAsync(cts.Token))
             {
-                Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                Assert.True(this.asyncLock.IsWriteLockHeld);
                 cts.Cancel();
-                Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                Assert.True(this.asyncLock.IsWriteLockHeld);
             }
 
-            Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+            Assert.False(this.asyncLock.IsWriteLockHeld);
         }
 
         #endregion
 
         #region Completion tests
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void CompleteBlocksNewTopLevelLocksSTA()
         {
-            if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
-            {
-                Assert.Inconclusive("Test thread expected to be STA.");
-            }
+            Assert.Equal(ApartmentState.STA, Thread.CurrentThread.GetApartmentState()); // test requires STA
 
             this.asyncLock.Complete();
 
             // Exceptions should always be thrown via the awaitable result rather than synchronously thrown
             // so that we meet expectations of C# async methods.
             var awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
-            Assert.IsTrue(awaiter.IsCompleted);
+            Assert.True(awaiter.IsCompleted);
             try
             {
                 awaiter.GetResult();
-                Assert.Fail("Expected exception not thrown.");
+                Assert.True(false, "Expected exception not thrown.");
             }
             catch (InvalidOperationException)
             {
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task CompleteBlocksNewTopLevelLocksMTA()
         {
             this.asyncLock.Complete();
@@ -2520,11 +2510,11 @@
                 // Exceptions should always be thrown via the awaitable result rather than synchronously thrown
                 // so that we meet expectations of C# async methods.
                 var awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
-                Assert.IsTrue(awaiter.IsCompleted);
+                Assert.True(awaiter.IsCompleted);
                 try
                 {
                     awaiter.GetResult();
-                    Assert.Fail("Expected exception not thrown.");
+                    Assert.True(false, "Expected exception not thrown.");
                 }
                 catch (InvalidOperationException)
                 {
@@ -2532,25 +2522,25 @@
             });
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task CompleteDoesNotBlockNestedLockRequests()
         {
             using (await this.asyncLock.ReadLockAsync())
             {
                 this.asyncLock.Complete();
-                Assert.IsFalse(this.asyncLock.Completion.IsCompleted, "Lock shouldn't be completed while there are open locks.");
+                Assert.False(this.asyncLock.Completion.IsCompleted, "Lock shouldn't be completed while there are open locks.");
 
                 using (await this.asyncLock.ReadLockAsync())
                 {
                 }
 
-                Assert.IsFalse(this.asyncLock.Completion.IsCompleted, "Lock shouldn't be completed while there are open locks.");
+                Assert.False(this.asyncLock.Completion.IsCompleted, "Lock shouldn't be completed while there are open locks.");
             }
 
             await this.asyncLock.Completion; // ensure that Completion transitions to completed as a result of releasing all locks.
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task CompleteAllowsPreviouslyQueuedLockRequests()
         {
             var firstLockAcquired = new TaskCompletionSource<object>();
@@ -2566,7 +2556,7 @@
                         this.Logger.WriteLine("First write lock acquired.");
                         await firstLockAcquired.SetAsync();
                         await completeSignaled.Task;
-                        Assert.IsFalse(this.asyncLock.Completion.IsCompleted);
+                        Assert.False(this.asyncLock.Completion.IsCompleted);
                     }
                 }),
             Task.Run(async delegate
@@ -2575,7 +2565,7 @@
                 {
                     await firstLockAcquired.Task;
                     var secondWriteAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
-                    Assert.IsFalse(secondWriteAwaiter.IsCompleted);
+                    Assert.False(secondWriteAwaiter.IsCompleted);
                     this.Logger.WriteLine("Second write lock request pended.");
                     secondWriteAwaiter.OnCompleted(delegate
                     {
@@ -2583,7 +2573,7 @@
                         {
                             this.Logger.WriteLine("Second write lock acquired.");
                             secondLockAcquired.SetAsync();
-                            Assert.IsFalse(this.asyncLock.Completion.IsCompleted);
+                            Assert.False(this.asyncLock.Completion.IsCompleted);
                         }
                     });
                     await secondLockQueued.SetAsync();
@@ -2609,7 +2599,7 @@
 
         #region Lock callback tests
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task OnBeforeExclusiveLockReleasedAsyncSimpleSyncHandler()
         {
             var asyncLock = new LockDerived();
@@ -2617,30 +2607,30 @@
             asyncLock.OnBeforeExclusiveLockReleasedAsyncDelegate = delegate
             {
                 callbackInvoked++;
-                Assert.IsTrue(asyncLock.IsWriteLockHeld);
+                Assert.True(asyncLock.IsWriteLockHeld);
                 return TplExtensions.CompletedTask;
             };
             using (await asyncLock.WriteLockAsync())
             {
             }
 
-            Assert.AreEqual(1, callbackInvoked);
+            Assert.Equal(1, callbackInvoked);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task OnBeforeExclusiveLockReleasedAsyncNestedLockSyncHandler()
         {
             var asyncLock = new LockDerived();
             int callbackInvoked = 0;
             asyncLock.OnBeforeExclusiveLockReleasedAsyncDelegate = async delegate
             {
-                Assert.IsTrue(asyncLock.IsWriteLockHeld);
+                Assert.True(asyncLock.IsWriteLockHeld);
                 using (await asyncLock.ReadLockAsync())
                 {
-                    Assert.IsTrue(asyncLock.IsWriteLockHeld);
+                    Assert.True(asyncLock.IsWriteLockHeld);
                     using (await asyncLock.WriteLockAsync())
                     { // this should succeed because our caller has a write lock.
-                        Assert.IsTrue(asyncLock.IsWriteLockHeld);
+                        Assert.True(asyncLock.IsWriteLockHeld);
                     }
                 }
 
@@ -2650,10 +2640,10 @@
             {
             }
 
-            Assert.AreEqual(1, callbackInvoked);
+            Assert.Equal(1, callbackInvoked);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task OnBeforeExclusiveLockReleasedAsyncSimpleAsyncHandler()
         {
             var asyncLock = new LockDerived();
@@ -2662,9 +2652,9 @@
             {
                 try
                 {
-                    Assert.IsTrue(asyncLock.IsWriteLockHeld);
+                    Assert.True(asyncLock.IsWriteLockHeld);
                     await Task.Yield();
-                    Assert.IsTrue(asyncLock.IsWriteLockHeld);
+                    Assert.True(asyncLock.IsWriteLockHeld);
                     callbackCompleted.SetResult(null);
                 }
                 catch (Exception ex)
@@ -2679,7 +2669,7 @@
             await callbackCompleted.Task;
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task OnBeforeExclusiveLockReleasedAsyncReadLockAcquiringAsyncHandler()
         {
             var asyncLock = new LockDerived();
@@ -2688,14 +2678,14 @@
             {
                 try
                 {
-                    Assert.IsTrue(asyncLock.IsWriteLockHeld);
+                    Assert.True(asyncLock.IsWriteLockHeld);
                     using (await asyncLock.ReadLockAsync())
                     {
-                        Assert.IsTrue(asyncLock.IsWriteLockHeld);
-                        Assert.IsTrue(asyncLock.IsReadLockHeld);
+                        Assert.True(asyncLock.IsWriteLockHeld);
+                        Assert.True(asyncLock.IsReadLockHeld);
                         await Task.Yield();
-                        Assert.IsTrue(asyncLock.IsWriteLockHeld);
-                        Assert.IsTrue(asyncLock.IsReadLockHeld);
+                        Assert.True(asyncLock.IsWriteLockHeld);
+                        Assert.True(asyncLock.IsReadLockHeld);
                     }
 
                     callbackCompleted.SetResult(null);
@@ -2712,7 +2702,7 @@
             await callbackCompleted.Task;
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task OnBeforeExclusiveLockReleasedAsyncNestedWriteLockAsyncHandler()
         {
             var asyncLock = new LockDerived();
@@ -2726,18 +2716,18 @@
                     if (!outermostExecuted)
                     {
                         outermostExecuted = true;
-                        Assert.IsTrue(asyncLock.IsWriteLockHeld);
+                        Assert.True(asyncLock.IsWriteLockHeld);
                         using (await asyncLock.WriteLockAsync())
                         {
                             await Task.Yield();
                             using (await asyncLock.ReadLockAsync())
                             {
-                                Assert.IsTrue(asyncLock.IsWriteLockHeld);
+                                Assert.True(asyncLock.IsWriteLockHeld);
                                 using (await asyncLock.WriteLockAsync())
                                 {
-                                    Assert.IsTrue(asyncLock.IsWriteLockHeld);
+                                    Assert.True(asyncLock.IsWriteLockHeld);
                                     await Task.Yield();
-                                    Assert.IsTrue(asyncLock.IsWriteLockHeld);
+                                    Assert.True(asyncLock.IsWriteLockHeld);
                                 }
                             }
                         }
@@ -2757,7 +2747,7 @@
             await callbackCompleted.Task;
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task OnBeforeExclusiveLockReleasedAsyncWriteLockWrapsBaseMethod()
         {
             var callbackCompleted = new AsyncManualResetEvent();
@@ -2773,7 +2763,7 @@
             await asyncLock.OnBeforeExclusiveLockReleasedAsyncInvoked.WaitAsync();
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task OnBeforeExclusiveLockReleasedAsyncWriteLockReleaseAsync()
         {
             var asyncLock = new LockDerivedWriteLockAroundOnBeforeExclusiveLockReleased();
@@ -2783,7 +2773,7 @@
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task OnBeforeExclusiveLockReleasedAsyncReadLockReleaseAsync()
         {
             var asyncLock = new LockDerivedReadLockAroundOnBeforeExclusiveLockReleased();
@@ -2793,16 +2783,16 @@
             }
         }
 
-        [TestMethod, Timeout(TestTimeout), ExpectedException(typeof(ArgumentNullException))]
+        [StaFact]
         public async Task OnBeforeWriteLockReleasedNullArgument()
         {
             using (await this.asyncLock.WriteLockAsync())
             {
-                this.asyncLock.OnBeforeWriteLockReleased(null);
+                Assert.Throws<ArgumentNullException>(() => this.asyncLock.OnBeforeWriteLockReleased(null));
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task OnBeforeWriteLockReleasedSingle()
         {
             var afterWriteLock = new TaskCompletionSource<object>();
@@ -2812,10 +2802,10 @@
                 {
                     try
                     {
-                        Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                        Assert.True(this.asyncLock.IsWriteLockHeld);
                         afterWriteLock.SetResult(null);
                         await Task.Yield();
-                        Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                        Assert.True(this.asyncLock.IsWriteLockHeld);
                     }
                     catch (Exception ex)
                     {
@@ -2823,7 +2813,7 @@
                     }
                 });
 
-                Assert.IsFalse(afterWriteLock.Task.IsCompleted);
+                Assert.False(afterWriteLock.Task.IsCompleted);
 
                 // Set Complete() this early to verify that callbacks can fire even after Complete() is called.
                 this.asyncLock.Complete();
@@ -2833,7 +2823,7 @@
             await this.asyncLock.Completion;
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task OnBeforeWriteLockReleasedMultiple()
         {
             var afterWriteLock1 = new TaskCompletionSource<object>();
@@ -2844,10 +2834,10 @@
                 {
                     try
                     {
-                        Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                        Assert.True(this.asyncLock.IsWriteLockHeld);
                         afterWriteLock1.SetResult(null);
                         await Task.Yield();
-                        Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                        Assert.True(this.asyncLock.IsWriteLockHeld);
                     }
                     catch (Exception ex)
                     {
@@ -2859,10 +2849,10 @@
                 {
                     try
                     {
-                        Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                        Assert.True(this.asyncLock.IsWriteLockHeld);
                         afterWriteLock2.SetResult(null);
                         await Task.Yield();
-                        Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                        Assert.True(this.asyncLock.IsWriteLockHeld);
                     }
                     catch (Exception ex)
                     {
@@ -2870,8 +2860,8 @@
                     }
                 });
 
-                Assert.IsFalse(afterWriteLock1.Task.IsCompleted);
-                Assert.IsFalse(afterWriteLock2.Task.IsCompleted);
+                Assert.False(afterWriteLock1.Task.IsCompleted);
+                Assert.False(afterWriteLock2.Task.IsCompleted);
             }
 
             this.asyncLock.Complete();
@@ -2880,7 +2870,7 @@
             await this.asyncLock.Completion;
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task OnBeforeWriteLockReleasedNestedCallbacks()
         {
             var callback1 = new TaskCompletionSource<object>();
@@ -2889,17 +2879,17 @@
             {
                 this.asyncLock.OnBeforeWriteLockReleased(async delegate
                 {
-                    Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                    Assert.True(this.asyncLock.IsWriteLockHeld);
                     await Task.Yield();
-                    Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                    Assert.True(this.asyncLock.IsWriteLockHeld);
                     await callback1.SetAsync();
 
                     // Now within a callback, let's pretend we made some change that caused another callback to register.
                     this.asyncLock.OnBeforeWriteLockReleased(async delegate
                     {
-                        Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                        Assert.True(this.asyncLock.IsWriteLockHeld);
                         await Task.Yield();
-                        Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                        Assert.True(this.asyncLock.IsWriteLockHeld);
                         await callback2.SetAsync();
                     });
                 });
@@ -2912,7 +2902,7 @@
             await this.asyncLock.Completion;
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task OnBeforeWriteLockReleasedDelegateThrows()
         {
             var afterWriteLock = new TaskCompletionSource<object>();
@@ -2927,23 +2917,23 @@
                         throw exceptionToThrow;
                     });
 
-                    Assert.IsFalse(afterWriteLock.Task.IsCompleted);
+                    Assert.False(afterWriteLock.Task.IsCompleted);
                     this.asyncLock.Complete();
                 }
 
-                Assert.Fail("Expected exception not thrown.");
+                Assert.True(false, "Expected exception not thrown.");
             }
             catch (AggregateException ex)
             {
-                Assert.AreSame(exceptionToThrow, ex.Flatten().InnerException);
+                Assert.Same(exceptionToThrow, ex.Flatten().InnerException);
             }
 
-            Assert.IsFalse(this.asyncLock.IsWriteLockHeld);
+            Assert.False(this.asyncLock.IsWriteLockHeld);
             await afterWriteLock.Task;
             await this.asyncLock.Completion;
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task OnBeforeWriteLockReleasedWithUpgradedWrite()
         {
             var callbackFired = new TaskCompletionSource<object>();
@@ -2953,18 +2943,18 @@
                 {
                     this.asyncLock.OnBeforeWriteLockReleased(async delegate
                     {
-                        Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                        Assert.True(this.asyncLock.IsWriteLockHeld);
                         await Task.Yield();
-                        Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                        Assert.True(this.asyncLock.IsWriteLockHeld);
                         await callbackFired.SetAsync();
                     });
                 }
 
-                Assert.IsTrue(callbackFired.Task.IsCompleted, "This should have completed synchronously with releasing the write lock.");
+                Assert.True(callbackFired.Task.IsCompleted, "This should have completed synchronously with releasing the write lock.");
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task OnBeforeWriteLockReleasedWithNestedStickyUpgradedWrite()
         {
             var callbackFired = new TaskCompletionSource<object>();
@@ -2976,21 +2966,21 @@
                     {
                         this.asyncLock.OnBeforeWriteLockReleased(async delegate
                         {
-                            Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                            Assert.True(this.asyncLock.IsWriteLockHeld);
                             await callbackFired.SetAsync();
                             await Task.Yield();
-                            Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                            Assert.True(this.asyncLock.IsWriteLockHeld);
                         });
                     }
 
-                    Assert.IsFalse(callbackFired.Task.IsCompleted, "This shouldn't have run yet because the upgradeable read lock bounding the write lock is a sticky one.");
+                    Assert.False(callbackFired.Task.IsCompleted, "This shouldn't have run yet because the upgradeable read lock bounding the write lock is a sticky one.");
                 }
 
-                Assert.IsTrue(callbackFired.Task.IsCompleted, "This should have completed synchronously with releasing the upgraded sticky upgradeable read lock.");
+                Assert.True(callbackFired.Task.IsCompleted, "This should have completed synchronously with releasing the upgraded sticky upgradeable read lock.");
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task OnBeforeWriteLockReleasedWithStickyUpgradedWrite()
         {
             var callbackBegin = new TaskCompletionSource<object>();
@@ -3003,9 +2993,9 @@
                     this.asyncLock.OnBeforeWriteLockReleased(async delegate
                     {
                         await callbackBegin.SetAsync();
-                        Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                        Assert.True(this.asyncLock.IsWriteLockHeld);
                         await Task.Delay(AsyncDelay);
-                        Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                        Assert.True(this.asyncLock.IsWriteLockHeld);
 
                         // Technically this callback should be able to complete asynchronously
                         // with respect to the thread that released the lock, but for now that
@@ -3017,13 +3007,13 @@
                     });
                 }
 
-                Assert.IsFalse(callbackBegin.Task.IsCompleted, "This shouldn't have run yet because the upgradeable read lock bounding the write lock is a sticky one.");
+                Assert.False(callbackBegin.Task.IsCompleted, "This shouldn't have run yet because the upgradeable read lock bounding the write lock is a sticky one.");
             }
 
             // This next assert is commented out because (again), the lock's current behavior is to
             // synchronously block when releasing locks, even if it's arguably not necessary.
-            ////Assert.IsFalse(callbackEnding.Task.IsCompleted, "This should have completed asynchronously because no read lock remained after the sticky upgraded read lock was released.");
-            Assert.IsTrue(callbackEnding.Task.IsCompleted, "Once this fails, uncomment the previous assert and the await earlier in the test if it's intended behavior.");
+            ////Assert.False(callbackEnding.Task.IsCompleted, "This should have completed asynchronously because no read lock remained after the sticky upgraded read lock was released.");
+            Assert.True(callbackEnding.Task.IsCompleted, "Once this fails, uncomment the previous assert and the await earlier in the test if it's intended behavior.");
             await releaseCallback.SetAsync();
 
             // Because the callbacks are fired asynchronously, we must wait for it to settle before allowing the test to finish
@@ -3031,10 +3021,10 @@
             this.asyncLock.Complete();
             await this.asyncLock.Completion;
 
-            Assert.IsTrue(callbackEnding.Task.IsCompleted, "The completion task should not have completed until the callbacks had completed.");
+            Assert.True(callbackEnding.Task.IsCompleted, "The completion task should not have completed until the callbacks had completed.");
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task OnBeforeWriteLockReleasedWithStickyUpgradedWriteWithNestedLocks()
         {
             var asyncLock = new LockDerived();
@@ -3052,7 +3042,7 @@
                         // For this test, we deliberately do not yield before
                         // requesting first lock because we're racing to request a lock
                         // while the reenterConcurrencyPrepRunning field is "true".
-                        Assert.IsTrue(asyncLock.IsWriteLockHeld);
+                        Assert.True(asyncLock.IsWriteLockHeld);
                         using (await asyncLock.ReadLockAsync())
                         {
                             using (await asyncLock.WriteLockAsync())
@@ -3069,14 +3059,14 @@
                         }
 
                         await Task.Yield();
-                        Assert.IsTrue(asyncLock.IsWriteLockHeld);
+                        Assert.True(asyncLock.IsWriteLockHeld);
 
                         // Technically this callback should be able to complete asynchronously
                         // with respect to the thread that released the lock, but for now that
                         // feature is disabled to keep things a bit sane (it also gives us a
                         // listener if one of the exclusive lock callbacks throw an exception).
                         ////await releaseCallback.Task;
-                        ////Assert.IsTrue(asyncLock.IsWriteLockHeld);
+                        ////Assert.True(asyncLock.IsWriteLockHeld);
                     });
                 }
             }
@@ -3089,28 +3079,34 @@
             await asyncLock.Completion;
         }
 
-        [TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
+        [StaFact]
         public void OnBeforeWriteLockReleasedWithoutAnyLock()
         {
-            this.asyncLock.OnBeforeWriteLockReleased(delegate
-            {
-                return Task.FromResult<object>(null);
-            });
-        }
-
-        [TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
-        public async Task OnBeforeWriteLockReleasedInReadlock()
-        {
-            using (await this.asyncLock.ReadLockAsync())
+            Assert.Throws<InvalidOperationException>(() =>
             {
                 this.asyncLock.OnBeforeWriteLockReleased(delegate
                 {
                     return Task.FromResult<object>(null);
                 });
+            });
+        }
+
+        [StaFact]
+        public async Task OnBeforeWriteLockReleasedInReadlock()
+        {
+            using (await this.asyncLock.ReadLockAsync())
+            {
+                Assert.Throws<InvalidOperationException>(() =>
+                {
+                    this.asyncLock.OnBeforeWriteLockReleased(delegate
+                    {
+                        return Task.FromResult<object>(null);
+                    });
+                });
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task OnBeforeWriteLockReleasedCallbackFiresSynchronouslyWithoutPrivateLockHeld()
         {
             var callbackFired = new TaskCompletionSource<object>();
@@ -3126,11 +3122,11 @@
                             // to identify the misuse of the lock).
                             this.asyncLock.OnBeforeWriteLockReleased(async delegate
                             {
-                                Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                                Assert.True(this.asyncLock.IsWriteLockHeld);
                                 await Task.Yield();
 
                                 // If a private lock were held, now that we're on a different thread this should deadlock.
-                                Assert.IsTrue(this.asyncLock.IsWriteLockHeld);
+                                Assert.True(this.asyncLock.IsWriteLockHeld);
 
                                 // And if that weren't enough, we can hold this while another thread tries to get a lock.
                                 // They should immediately get a "not available" flag, but if they block due to a private
@@ -3140,7 +3136,7 @@
                             });
                         }
 
-                        Assert.IsTrue(callbackFired.Task.IsCompleted, "This should have completed synchronously with releasing the write lock.");
+                        Assert.True(callbackFired.Task.IsCompleted, "This should have completed synchronously with releasing the write lock.");
                     }
                 }),
                 Task.Run(async delegate
@@ -3149,7 +3145,7 @@
                     try
                     {
                         var awaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
-                        Assert.IsFalse(awaiter.IsCompleted);
+                        Assert.False(awaiter.IsCompleted);
                         await writeLockRequested.SetAsync();
                     }
                     catch (Exception ex)
@@ -3159,7 +3155,7 @@
                 }));
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void OnBeforeWriteLockReleasedCallbackNeverInvokedOnSTA()
         {
             TestUtilities.Run(async delegate
@@ -3177,9 +3173,9 @@
                             {
                                 try
                                 {
-                                    Assert.AreEqual(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
+                                    Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
                                     await Task.Yield();
-                                    Assert.AreEqual(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
+                                    Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
                                     await callbackCompleted.SetAsync();
                                 }
                                 catch (Exception ex)
@@ -3202,7 +3198,7 @@
         /// Test for when the write queue is NOT empty when a write lock is released on an STA to a (non-sticky)
         /// upgradeable read lock and a synchronous callback is to be invoked.
         /// </summary>
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task OnBeforeWriteLockReleasedToUpgradeableReadOnStaWithCallbacksAndWaitingWriter()
         {
             TestUtilities.Run(async delegate
@@ -3237,14 +3233,14 @@
                     {
                         await firstWriteHeld.Task;
                         var writerAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
-                        Assert.IsFalse(writerAwaiter.IsCompleted);
+                        Assert.False(writerAwaiter.IsCompleted);
                         writerAwaiter.OnCompleted(delegate
                         {
                             using (writerAwaiter.GetResult())
                             {
                                 try
                                 {
-                                    Assert.IsTrue(callbackCompleted.Task.IsCompleted);
+                                    Assert.True(callbackCompleted.Task.IsCompleted);
                                     secondWriteLockHeld.SetAsync();
                                 }
                                 catch (Exception ex)
@@ -3264,7 +3260,7 @@
             await this.asyncLock.Completion;
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task OnBeforeWriteLockReleasedAndReenterConcurrency()
         {
             var stub = new LockDerived();
@@ -3289,8 +3285,8 @@
 
         #region Thread apartment rules
 
-        [TestMethod, Timeout(TestTimeout)]
-        [Description("Verifies that locks requested on STA threads will marshal to an MTA.")]
+        /// <summary>Verifies that locks requested on STA threads will marshal to an MTA.</summary>
+        [StaFact]
         public async Task StaLockRequestsMarshalToMTA()
         {
             var testComplete = new TaskCompletionSource<object>();
@@ -3300,11 +3296,11 @@
                 {
                     var awaitable = this.asyncLock.ReadLockAsync();
                     var awaiter = awaitable.GetAwaiter();
-                    Assert.IsFalse(awaiter.IsCompleted, "The lock should not be issued on an STA thread.");
+                    Assert.False(awaiter.IsCompleted, "The lock should not be issued on an STA thread.");
 
                     awaiter.OnCompleted(delegate
                     {
-                        Assert.AreEqual(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
+                        Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
                         awaiter.GetResult().Dispose();
                         testComplete.SetAsync();
                     });
@@ -3321,8 +3317,8 @@
             await testComplete.Task;
         }
 
-        [TestMethod, Timeout(TestTimeout)]
-        [Description("Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA does not appear to hold a lock.")]
+        /// <summary>Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA does not appear to hold a lock.</summary>
+        [StaFact]
         public async Task MtaLockSharedWithMta()
         {
             using (await this.asyncLock.ReadLockAsync())
@@ -3332,7 +3328,7 @@
                 {
                     try
                     {
-                        Assert.IsTrue(this.asyncLock.IsReadLockHeld, "MTA should be told it holds a read lock.");
+                        Assert.True(this.asyncLock.IsReadLockHeld, "MTA should be told it holds a read lock.");
                         testComplete.SetAsync();
                     }
                     catch (Exception ex)
@@ -3346,8 +3342,8 @@
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
-        [Description("Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA does not appear to hold a lock.")]
+        /// <summary>Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA does not appear to hold a lock.</summary>
+        [StaFact]
         public async Task MtaLockNotSharedWithSta()
         {
             using (await this.asyncLock.ReadLockAsync())
@@ -3357,7 +3353,7 @@
                 {
                     try
                     {
-                        Assert.IsFalse(this.asyncLock.IsReadLockHeld, "STA should not be told it holds a read lock.");
+                        Assert.False(this.asyncLock.IsReadLockHeld, "STA should not be told it holds a read lock.");
                         testComplete.SetAsync();
                     }
                     catch (Exception ex)
@@ -3371,8 +3367,8 @@
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
-        [Description("Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by marshaling back to an MTA.")]
+        /// <summary>Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by marshaling back to an MTA.</summary>
+        [StaFact]
         public async Task ReadLockTraversesAcrossSta()
         {
             using (await this.asyncLock.ReadLockAsync())
@@ -3382,13 +3378,13 @@
                 {
                     try
                     {
-                        Assert.IsFalse(this.asyncLock.IsReadLockHeld, "STA should not be told it holds a read lock.");
+                        Assert.False(this.asyncLock.IsReadLockHeld, "STA should not be told it holds a read lock.");
 
                         Thread mtaThread = new Thread((ThreadStart)delegate
                         {
                             try
                             {
-                                Assert.IsTrue(this.asyncLock.IsReadLockHeld, "MTA thread couldn't access lock across STA.");
+                                Assert.True(this.asyncLock.IsReadLockHeld, "MTA thread couldn't access lock across STA.");
                                 testComplete.SetAsync();
                             }
                             catch (Exception ex)
@@ -3410,8 +3406,8 @@
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
-        [Description("Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by requesting it and moving back to an MTA.")]
+        /// <summary>Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by requesting it and moving back to an MTA.</summary>
+        [StaFact]
         public async Task UpgradeableReadLockTraversesAcrossSta()
         {
             using (await this.asyncLock.UpgradeableReadLockAsync())
@@ -3421,7 +3417,7 @@
                 {
                     try
                     {
-                        Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld, "STA should not be told it holds an upgradeable read lock.");
+                        Assert.False(this.asyncLock.IsUpgradeableReadLockHeld, "STA should not be told it holds an upgradeable read lock.");
 
                         Task.Run(async delegate
                         {
@@ -3429,7 +3425,7 @@
                             {
                                 using (await this.asyncLock.UpgradeableReadLockAsync())
                                 {
-                                    Assert.IsTrue(this.asyncLock.IsUpgradeableReadLockHeld, "MTA thread couldn't access lock across STA.");
+                                    Assert.True(this.asyncLock.IsUpgradeableReadLockHeld, "MTA thread couldn't access lock across STA.");
                                 }
 
                                 testComplete.SetAsync().Forget();
@@ -3451,8 +3447,8 @@
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
-        [Description("Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by requesting it and moving back to an MTA.")]
+        /// <summary>Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by requesting it and moving back to an MTA.</summary>
+        [StaFact]
         public async Task WriteLockTraversesAcrossSta()
         {
             using (await this.asyncLock.WriteLockAsync())
@@ -3462,7 +3458,7 @@
                 {
                     try
                     {
-                        Assert.IsFalse(this.asyncLock.IsWriteLockHeld, "STA should not be told it holds an upgradeable read lock.");
+                        Assert.False(this.asyncLock.IsWriteLockHeld, "STA should not be told it holds an upgradeable read lock.");
 
                         Task.Run(async delegate
                         {
@@ -3470,7 +3466,7 @@
                             {
                                 using (await this.asyncLock.WriteLockAsync())
                                 {
-                                    Assert.IsTrue(this.asyncLock.IsWriteLockHeld, "MTA thread couldn't access lock across STA.");
+                                    Assert.True(this.asyncLock.IsWriteLockHeld, "MTA thread couldn't access lock across STA.");
                                 }
 
                                 testComplete.SetAsync().Forget();
@@ -3496,7 +3492,7 @@
 
         #region Lock nesting tests
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task NestedLocksScenarios()
         {
             // R = Reader, U = non-sticky Upgradeable reader, S = Sticky upgradeable reader, W = Writer
@@ -3535,23 +3531,23 @@
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task AmbientLockReflectsCurrentLock()
         {
             var asyncLock = new LockDerived();
             using (await asyncLock.UpgradeableReadLockAsync())
             {
-                Assert.IsTrue(asyncLock.AmbientLockInternal.IsUpgradeableReadLock);
+                Assert.True(asyncLock.AmbientLockInternal.IsUpgradeableReadLock);
                 using (await asyncLock.WriteLockAsync())
                 {
-                    Assert.IsTrue(asyncLock.AmbientLockInternal.IsWriteLock);
+                    Assert.True(asyncLock.AmbientLockInternal.IsWriteLock);
                 }
 
-                Assert.IsTrue(asyncLock.AmbientLockInternal.IsUpgradeableReadLock);
+                Assert.True(asyncLock.AmbientLockInternal.IsUpgradeableReadLock);
             }
         }
 
-        [TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
+        [StaFact]
         public async Task WriteLockForksAndAsksForReadLock()
         {
             using (TestUtilities.DisableAssertionDialog())
@@ -3567,75 +3563,81 @@
                         // Also, if the read lock out-lived the nesting write lock, we'd have real
                         // trouble on our hands as it's impossible to prepare resources for concurrent
                         // access (as the exclusive lock gets released) while an existing read lock is held.
-                        using (await this.asyncLock.ReadLockAsync())
-                        {
-                        }
-                    });
-                }
-            }
-        }
-
-        [TestMethod, Timeout(TestTimeout * 3), ExpectedException(typeof(InvalidOperationException))]
-        public async Task WriteNestsReadWithWriteReleasedFirst()
-        {
-            using (TestUtilities.DisableAssertionDialog())
-            {
-                var readLockAcquired = new AsyncManualResetEvent();
-                var readLockReleased = new AsyncManualResetEvent();
-                var writeLockCallbackBegun = new AsyncManualResetEvent();
-
-                var asyncLock = new LockDerived();
-                this.asyncLock = asyncLock;
-
-                Task readerTask;
-                using (var access = await this.asyncLock.WriteLockAsync())
-                {
-                    asyncLock.OnExclusiveLockReleasedAsyncDelegate = async delegate
-                    {
-                        writeLockCallbackBegun.Set();
-
-                        // Stay in the critical region until the read lock has been released.
-                        await readLockReleased;
-                    };
-
-                    // Kicking off a concurrent task while holding a write lock is not allowed
-                    // unless the original execution awaits that task. Otherwise, it introduces
-                    // concurrency in what is supposed to be an exclusive lock.
-                    // So what we're doing here is Bad, but it's how we get the repro.
-                    readerTask = Task.Run(async delegate
-                    {
-                        try
+                        await Assert.ThrowsAsync<InvalidOperationException>(async delegate
                         {
                             using (await this.asyncLock.ReadLockAsync())
                             {
-                                readLockAcquired.Set();
-
-                                // Hold the read lock until the lock class has entered the
-                                // critical region called reenterConcurrencyPrep.
-                                await writeLockCallbackBegun;
                             }
-                        }
-                        finally
-                        {
-                            // Signal the read lock is released. Actually, it may not have been
-                            // (if a bug causes the read lock release call to throw and the lock gets
-                            // orphaned), but we want to avoid a deadlock in the test itself.
-                            // If an exception was thrown, the test will still fail because we rethrow it.
-                            readLockAcquired.Set();
-                            readLockReleased.Set();
-                        }
+                        });
                     });
-
-                    // Don't release the write lock until the nested read lock has been acquired.
-                    await readLockAcquired;
                 }
-
-                // Wait for, and rethrow any exceptions from our child task.
-                await readerTask;
             }
         }
 
-        [TestMethod, Timeout(TestTimeout * 3)]
+        [StaFact]
+        public async Task WriteNestsReadWithWriteReleasedFirst()
+        {
+            await Assert.ThrowsAsync<InvalidOperationException>(async delegate
+            {
+                using (TestUtilities.DisableAssertionDialog())
+                {
+                    var readLockAcquired = new AsyncManualResetEvent();
+                    var readLockReleased = new AsyncManualResetEvent();
+                    var writeLockCallbackBegun = new AsyncManualResetEvent();
+
+                    var asyncLock = new LockDerived();
+                    this.asyncLock = asyncLock;
+
+                    Task readerTask;
+                    using (var access = await this.asyncLock.WriteLockAsync())
+                    {
+                        asyncLock.OnExclusiveLockReleasedAsyncDelegate = async delegate
+                        {
+                            writeLockCallbackBegun.Set();
+
+                            // Stay in the critical region until the read lock has been released.
+                            await readLockReleased;
+                        };
+
+                        // Kicking off a concurrent task while holding a write lock is not allowed
+                        // unless the original execution awaits that task. Otherwise, it introduces
+                        // concurrency in what is supposed to be an exclusive lock.
+                        // So what we're doing here is Bad, but it's how we get the repro.
+                        readerTask = Task.Run(async delegate
+                        {
+                            try
+                            {
+                                using (await this.asyncLock.ReadLockAsync())
+                                {
+                                    readLockAcquired.Set();
+
+                                    // Hold the read lock until the lock class has entered the
+                                    // critical region called reenterConcurrencyPrep.
+                                    await writeLockCallbackBegun;
+                                }
+                            }
+                            finally
+                            {
+                                // Signal the read lock is released. Actually, it may not have been
+                                // (if a bug causes the read lock release call to throw and the lock gets
+                                // orphaned), but we want to avoid a deadlock in the test itself.
+                                // If an exception was thrown, the test will still fail because we rethrow it.
+                                readLockAcquired.Set();
+                                readLockReleased.Set();
+                            }
+                        });
+
+                        // Don't release the write lock until the nested read lock has been acquired.
+                        await readLockAcquired;
+                    }
+
+                    // Wait for, and rethrow any exceptions from our child task.
+                    await readerTask;
+                }
+            });
+        }
+
+        [StaFact]
         public async Task WriteNestsReadWithWriteReleasedFirstWithoutTaskRun()
         {
             using (TestUtilities.DisableAssertionDialog())
@@ -3670,12 +3672,12 @@
                 try
                 {
                     await completingTask; // observe any exception.
-                    Assert.Fail("Expected exception not thrown.");
+                    Assert.True(false, "Expected exception not thrown.");
                 }
-                catch (AssertFailedException ex)
+                catch (CriticalErrorException ex)
                 {
-                    Assert.IsTrue(asyncLock.CriticalErrorDetected, "The lock should have raised a critical error.");
-                    Assert.IsInstanceOfType(ex.InnerException, typeof(InvalidOperationException));
+                    Assert.True(asyncLock.CriticalErrorDetected, "The lock should have raised a critical error.");
+                    Assert.IsType(typeof(InvalidOperationException), ex.InnerException);
                     return; // the test is over
                 }
 
@@ -3694,49 +3696,49 @@
 
         #region Lock data tests
 
-        [TestMethod, Timeout(TestTimeout), ExpectedException(typeof(InvalidOperationException))]
+        [StaFact]
         public void SetLockDataWithoutLock()
         {
             var lck = new LockDerived();
-            lck.SetLockData(null);
+            Assert.Throws<InvalidOperationException>(() => lck.SetLockData(null));
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void GetLockDataWithoutLock()
         {
             var lck = new LockDerived();
-            Assert.IsNull(lck.GetLockData());
+            Assert.Null(lck.GetLockData());
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task SetLockDataNoLock()
         {
             var lck = new LockDerived();
             using (await lck.WriteLockAsync())
             {
                 lck.SetLockData(null);
-                Assert.AreEqual(null, lck.GetLockData());
+                Assert.Equal(null, lck.GetLockData());
 
                 var value1 = new object();
                 lck.SetLockData(value1);
-                Assert.AreEqual(value1, lck.GetLockData());
+                Assert.Equal(value1, lck.GetLockData());
 
                 using (await lck.WriteLockAsync())
                 {
-                    Assert.AreEqual(null, lck.GetLockData());
+                    Assert.Equal(null, lck.GetLockData());
 
                     var value2 = new object();
                     lck.SetLockData(value2);
-                    Assert.AreEqual(value2, lck.GetLockData());
+                    Assert.Equal(value2, lck.GetLockData());
                 }
 
-                Assert.AreEqual(value1, lck.GetLockData());
+                Assert.Equal(value1, lck.GetLockData());
             }
         }
 
         #endregion
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task DisposeWhileExclusiveLockContextCaptured()
         {
             var signal = new AsyncManualResetEvent();
@@ -3751,19 +3753,19 @@
             await helperTask;
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void GetHangReportSimple()
         {
             IHangReportContributor reportContributor = this.asyncLock;
             var report = reportContributor.GetHangReport();
-            Assert.IsNotNull(report);
-            Assert.IsNotNull(report.Content);
-            Assert.IsNotNull(report.ContentType);
-            Assert.IsNotNull(report.ContentName);
-            Console.WriteLine(report.Content);
+            Assert.NotNull(report);
+            Assert.NotNull(report.Content);
+            Assert.NotNull(report.ContentType);
+            Assert.NotNull(report.ContentName);
+            this.Logger.WriteLine(report.Content);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task GetHangReportWithReleasedNestingOuterLock()
         {
             using (var lock1 = await this.asyncLock.ReadLockAsync())
@@ -3779,7 +3781,7 @@
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task GetHangReportWithReleasedNestingMiddleLock()
         {
             using (var lock1 = await this.asyncLock.ReadLockAsync())
@@ -3795,7 +3797,7 @@
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public async Task GetHangReportWithWriteLockUpgradeWaiting()
         {
             var readLockObtained = new AsyncManualResetEvent();
@@ -3825,7 +3827,7 @@
             await writerTask;
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void Disposable()
         {
             IDisposable disposable = this.asyncLock;
@@ -3842,7 +3844,7 @@
         {
             IHangReportContributor reportContributor = this.asyncLock;
             var report = reportContributor.GetHangReport();
-            Console.WriteLine(report.Content);
+            this.Logger.WriteLine(report.Content);
         }
 
         private void LockReleaseTestHelper(AsyncReaderWriterLock.Awaitable initialLock)
@@ -3868,14 +3870,14 @@
                 {
                     await initialLockHeld.Task;
                     var awaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
-                    Assert.IsFalse(awaiter.IsCompleted);
+                    Assert.False(awaiter.IsCompleted);
                     awaiter.OnCompleted(delegate
                     {
                         using (awaiter.GetResult())
                         {
                             try
                             {
-                                Assert.AreEqual(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
+                                Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
                                 secondLockObtained.SetAsync();
                             }
                             catch (Exception ex)
@@ -3920,7 +3922,7 @@
                     passingAttemptObserved = allocated <= allowed;
                 }
 
-                Assert.IsTrue(passingAttemptObserved);
+                Assert.True(passingAttemptObserved);
             });
         }
 
@@ -3967,7 +3969,7 @@
                     passingAttemptObserved = allocated <= allowed;
                 }
 
-                Assert.IsTrue(passingAttemptObserved);
+                Assert.True(passingAttemptObserved);
             });
         }
 
@@ -4000,7 +4002,7 @@
                     passingAttemptObserved = allocated <= MaxGarbagePerLock;
                 }
 
-                Assert.IsTrue(passingAttemptObserved);
+                Assert.True(passingAttemptObserved);
             });
         }
 
@@ -4046,15 +4048,15 @@
                     passingAttemptObserved = allocated <= MaxGarbagePerLock * NestingLevel;
                 }
 
-                Assert.IsTrue(passingAttemptObserved);
+                Assert.True(passingAttemptObserved);
             });
         }
 
         private async Task NestedLockHelper(string lockScript, bool validScenario)
         {
-            Assert.IsFalse(this.asyncLock.IsReadLockHeld, "IsReadLockHeld not expected value.");
-            Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld, "IsUpgradeableReadLockHeld not expected value.");
-            Assert.IsFalse(this.asyncLock.IsWriteLockHeld, "IsWriteLockHeld not expected value.");
+            Assert.False(this.asyncLock.IsReadLockHeld, "IsReadLockHeld not expected value.");
+            Assert.False(this.asyncLock.IsUpgradeableReadLockHeld, "IsUpgradeableReadLockHeld not expected value.");
+            Assert.False(this.asyncLock.IsWriteLockHeld, "IsWriteLockHeld not expected value.");
 
             var lockStack = new Stack<AsyncReaderWriterLock.Releaser>(lockScript.Length);
             int readers = 0, nonStickyUpgradeableReaders = 0, stickyUpgradeableReaders = 0, writers = 0;
@@ -4103,12 +4105,12 @@
                         success = false;
                     }
 
-                    Assert.AreEqual(readers > 0, this.asyncLock.IsReadLockHeld, "IsReadLockHeld not expected value at step {0}.", i + 1);
-                    Assert.AreEqual(nonStickyUpgradeableReaders + stickyUpgradeableReaders > 0, this.asyncLock.IsUpgradeableReadLockHeld, "IsUpgradeableReadLockHeld not expected value at step {0}.", i + 1);
-                    Assert.AreEqual(writers > 0, this.asyncLock.IsWriteLockHeld, "IsWriteLockHeld not expected value at step {0}.", i + 1);
+                    AssertEx.Equal(readers > 0, this.asyncLock.IsReadLockHeld, "IsReadLockHeld not expected value at step {0}.", i + 1);
+                    AssertEx.Equal(nonStickyUpgradeableReaders + stickyUpgradeableReaders > 0, this.asyncLock.IsUpgradeableReadLockHeld, "IsUpgradeableReadLockHeld not expected value at step {0}.", i + 1);
+                    AssertEx.Equal(writers > 0, this.asyncLock.IsWriteLockHeld, "IsWriteLockHeld not expected value at step {0}.", i + 1);
                 }
 
-                Assert.AreEqual(success, validScenario, "Scenario validity unexpected.");
+                AssertEx.Equal(success, validScenario, "Scenario validity unexpected.");
 
                 int readersRemaining = readers;
                 int nonStickyUpgradeableReadersRemaining = nonStickyUpgradeableReaders;
@@ -4143,9 +4145,9 @@
                             throw new ArgumentOutOfRangeException(nameof(lockScript), "Unexpected lock type character '" + lockTypeChar + "'.");
                     }
 
-                    Assert.AreEqual(readersRemaining > 0, this.asyncLock.IsReadLockHeld, "IsReadLockHeld not expected value at step -{0}.", i + 1);
-                    Assert.AreEqual(nonStickyUpgradeableReadersRemaining + stickyUpgradeableReadersRemaining > 0, this.asyncLock.IsUpgradeableReadLockHeld, "IsUpgradeableReadLockHeld not expected value at step -{0}.", i + 1);
-                    Assert.AreEqual(writersRemaining > 0 || (stickyUpgradeableReadersRemaining > 0 && writers > 0), this.asyncLock.IsWriteLockHeld, "IsWriteLockHeld not expected value at step -{0}.", i + 1);
+                    AssertEx.Equal(readersRemaining > 0, this.asyncLock.IsReadLockHeld, "IsReadLockHeld not expected value at step -{0}.", i + 1);
+                    AssertEx.Equal(nonStickyUpgradeableReadersRemaining + stickyUpgradeableReadersRemaining > 0, this.asyncLock.IsUpgradeableReadLockHeld, "IsUpgradeableReadLockHeld not expected value at step -{0}.", i + 1);
+                    AssertEx.Equal(writersRemaining > 0 || (stickyUpgradeableReadersRemaining > 0 && writers > 0), this.asyncLock.IsWriteLockHeld, "IsWriteLockHeld not expected value at step -{0}.", i + 1);
                 }
             }
             catch
@@ -4158,9 +4160,9 @@
                 throw;
             }
 
-            Assert.IsFalse(this.asyncLock.IsReadLockHeld, "IsReadLockHeld not expected value.");
-            Assert.IsFalse(this.asyncLock.IsUpgradeableReadLockHeld, "IsUpgradeableReadLockHeld not expected value.");
-            Assert.IsFalse(this.asyncLock.IsWriteLockHeld, "IsWriteLockHeld not expected value.");
+            Assert.False(this.asyncLock.IsReadLockHeld, "IsReadLockHeld not expected value.");
+            Assert.False(this.asyncLock.IsUpgradeableReadLockHeld, "IsUpgradeableReadLockHeld not expected value.");
+            Assert.False(this.asyncLock.IsWriteLockHeld, "IsWriteLockHeld not expected value.");
         }
 
         private async Task CheckContinuationsConcurrencyHelper()
@@ -4175,15 +4177,15 @@
             Func<Task> worker = async delegate
             {
                 await Task.Yield();
-                Assert.AreEqual(hasReadLock, this.asyncLock.IsReadLockHeld);
-                Assert.AreEqual(hasUpgradeableReadLock, this.asyncLock.IsUpgradeableReadLockHeld);
-                Assert.AreEqual(hasWriteLock, this.asyncLock.IsWriteLockHeld);
-                Assert.AreEqual(concurrencyExpected, barrier.SignalAndWait(AsyncDelay / 2), "Concurrency detected for an exclusive lock.");
+                Assert.Equal(hasReadLock, this.asyncLock.IsReadLockHeld);
+                Assert.Equal(hasUpgradeableReadLock, this.asyncLock.IsUpgradeableReadLockHeld);
+                Assert.Equal(hasWriteLock, this.asyncLock.IsWriteLockHeld);
+                AssertEx.Equal(concurrencyExpected, barrier.SignalAndWait(AsyncDelay / 2), "Concurrency detected for an exclusive lock.");
                 await Task.Yield(); // this second yield is useful to check that the magic works across multiple continuations.
-                Assert.AreEqual(hasReadLock, this.asyncLock.IsReadLockHeld);
-                Assert.AreEqual(hasUpgradeableReadLock, this.asyncLock.IsUpgradeableReadLockHeld);
-                Assert.AreEqual(hasWriteLock, this.asyncLock.IsWriteLockHeld);
-                Assert.AreEqual(concurrencyExpected, barrier.SignalAndWait(AsyncDelay / 2), "Concurrency detected for an exclusive lock.");
+                Assert.Equal(hasReadLock, this.asyncLock.IsReadLockHeld);
+                Assert.Equal(hasUpgradeableReadLock, this.asyncLock.IsUpgradeableReadLockHeld);
+                Assert.Equal(hasWriteLock, this.asyncLock.IsWriteLockHeld);
+                AssertEx.Equal(concurrencyExpected, barrier.SignalAndWait(AsyncDelay / 2), "Concurrency detected for an exclusive lock.");
             };
 
             var asyncFuncs = new Func<Task>[] { worker, worker };
@@ -4209,20 +4211,20 @@
 
                 // By the time this continuation executes,
                 // our caller should have already yielded after signaling the barrier.
-                Assert.IsTrue(primaryCompleted);
+                Assert.True(primaryCompleted);
 
-                Assert.AreEqual(hasReadLock, this.asyncLock.IsReadLockHeld);
-                Assert.AreEqual(hasUpgradeableReadLock, this.asyncLock.IsUpgradeableReadLockHeld);
-                Assert.AreEqual(hasWriteLock, this.asyncLock.IsWriteLockHeld);
+                Assert.Equal(hasReadLock, this.asyncLock.IsReadLockHeld);
+                Assert.Equal(hasUpgradeableReadLock, this.asyncLock.IsUpgradeableReadLockHeld);
+                Assert.Equal(hasWriteLock, this.asyncLock.IsWriteLockHeld);
             };
 
             var workerTask = worker();
 
             Thread.Sleep(AsyncDelay); // give the worker plenty of time to execute if it's going to. (we don't expect it)
-            Assert.IsFalse(workerTask.IsCompleted);
-            Assert.AreEqual(hasReadLock, this.asyncLock.IsReadLockHeld);
-            Assert.AreEqual(hasUpgradeableReadLock, this.asyncLock.IsUpgradeableReadLockHeld);
-            Assert.AreEqual(hasWriteLock, this.asyncLock.IsWriteLockHeld);
+            Assert.False(workerTask.IsCompleted);
+            Assert.Equal(hasReadLock, this.asyncLock.IsReadLockHeld);
+            Assert.Equal(hasUpgradeableReadLock, this.asyncLock.IsUpgradeableReadLockHeld);
+            Assert.Equal(hasWriteLock, this.asyncLock.IsWriteLockHeld);
 
             // *now* wait for the worker in a yielding fashion.
             primaryCompleted = true;
@@ -4249,7 +4251,7 @@
                     while (testCancellation || !cancellation.Token.IsCancellationRequested)
                     {
                         string log = string.Empty;
-                        Assert.IsFalse(this.asyncLock.IsReadLockHeld || this.asyncLock.IsUpgradeableReadLockHeld || this.asyncLock.IsWriteLockHeld);
+                        Assert.False(this.asyncLock.IsReadLockHeld || this.asyncLock.IsUpgradeableReadLockHeld || this.asyncLock.IsWriteLockHeld);
                         int depth = random.Next(MaxDepth) + 1;
                         int kind = random.Next(3);
                         try
@@ -4352,7 +4354,7 @@
                     }
                     finally
                     {
-                        Console.WriteLine("Stress tested {0} lock acquisitions.", lockAcquisitions);
+                        this.Logger.WriteLine("Stress tested {0} lock acquisitions.", lockAcquisitions);
                     }
                 });
             }
@@ -4367,12 +4369,12 @@
                     bool dummy = this.asyncLock.IsReadLockHeld;
                     if (!successExpected)
                     {
-                        Assert.Fail("Expected exception not thrown.");
+                        Assert.True(false, "Expected exception not thrown.");
                     }
                 }
                 catch (Exception ex)
                 {
-                    if (ex is AssertFailedException)
+                    if (ex is XunitException || ex is CriticalErrorException)
                     {
                         throw;
                     }
@@ -4383,12 +4385,12 @@
                     bool dummy = this.asyncLock.IsUpgradeableReadLockHeld;
                     if (!successExpected)
                     {
-                        Assert.Fail("Expected exception not thrown.");
+                        Assert.True(false, "Expected exception not thrown.");
                     }
                 }
                 catch (Exception ex)
                 {
-                    if (ex is AssertFailedException)
+                    if (ex is XunitException || ex is CriticalErrorException)
                     {
                         throw;
                     }
@@ -4399,12 +4401,12 @@
                     bool dummy = this.asyncLock.IsWriteLockHeld;
                     if (!successExpected)
                     {
-                        Assert.Fail("Expected exception not thrown.");
+                        Assert.True(false, "Expected exception not thrown.");
                     }
                 }
                 catch (Exception ex)
                 {
-                    if (ex is AssertFailedException)
+                    if (ex is XunitException || ex is CriticalErrorException)
                     {
                         throw;
                     }
@@ -4419,11 +4421,11 @@
                 try
                 {
                     releaser = await locker();
-                    Assert.Fail("Expected exception not thrown.");
+                    Assert.True(false, "Expected exception not thrown.");
                 }
                 catch (Exception ex)
                 {
-                    if (ex is AssertFailedException)
+                    if (ex is XunitException || ex is CriticalErrorException)
                     {
                         throw;
                     }
@@ -4453,7 +4455,7 @@
         {
             internal void SomeMethod(int callingAppDomainId)
             {
-                Assert.AreNotEqual(callingAppDomainId, AppDomain.CurrentDomain.Id, "AppDomain boundaries not crossed.");
+                AssertEx.NotEqual(callingAppDomainId, AppDomain.CurrentDomain.Id, "AppDomain boundaries not crossed.");
             }
         }
 
@@ -4550,13 +4552,13 @@
             }
 
             /// <summary>
-            /// We override this to cause test failures instead of crashing te test runner.
+            /// We override this to cause test failures instead of crashing the test runner.
             /// </summary>
             protected override Exception OnCriticalFailure(Exception ex)
             {
                 this.CriticalErrorDetected = true;
                 doNotWaitForLockCompletionAtTestCleanup = true; // we expect this to corrupt the lock.
-                throw new AssertFailedException(ex.Message, ex);
+                throw new CriticalErrorException(ex);
             }
 
             internal struct InternalLockHandle
@@ -4608,6 +4610,14 @@
                     SynchronizationContext.SetSynchronizationContext(this);
                     d(state);
                 });
+            }
+        }
+
+        private class CriticalErrorException : Exception
+        {
+            public CriticalErrorException(Exception innerException)
+                : base(innerException?.Message, innerException)
+            {
             }
         }
     }

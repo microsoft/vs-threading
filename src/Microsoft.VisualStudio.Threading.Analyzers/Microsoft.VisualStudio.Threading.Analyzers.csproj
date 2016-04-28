@@ -19,6 +19,7 @@
     <PrereleaseVersion>-pre</PrereleaseVersion>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
+    <OutputPath Condition=" '$(OutputPath)' == '' ">bin\</OutputPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Analyzers.ruleset</CodeAnalysisRuleSet>

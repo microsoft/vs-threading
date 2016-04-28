@@ -20,6 +20,7 @@
     <OutputPath Condition=" '$(OutputPath)' == '' ">bin</OutputPath>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
+    <OutputPath Condition=" '$(OutputPath)' == '' ">bin\</OutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Portable.ruleset</CodeAnalysisRuleSet>

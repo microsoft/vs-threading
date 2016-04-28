@@ -10,7 +10,7 @@
     using System.Threading;
     using System.Threading.Tasks;
     using System.Windows.Threading;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
 
     internal static class TestUtilities
     {
@@ -76,10 +76,7 @@
                 concurrency = Environment.ProcessorCount;
             }
 
-            if (Environment.ProcessorCount < concurrency)
-            {
-                Assert.Inconclusive("The test machine does not have enough CPU cores to exercise a concurrency level of {0}", concurrency);
-            }
+            Skip.If(Environment.ProcessorCount < concurrency, $"The test machine does not have enough CPU cores to exercise a concurrency level of {concurrency}");
 
             // We use a barrier to guarantee that all threads are fully ready to
             // execute the provided function at precisely the same time.

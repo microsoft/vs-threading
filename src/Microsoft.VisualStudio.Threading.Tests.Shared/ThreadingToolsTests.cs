@@ -8,116 +8,120 @@
     using System.Threading;
     using System.Threading.Tasks;
     using System.Windows.Threading;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
+    using Xunit.Abstractions;
 
-    [TestClass]
     public class ThreadingToolsTests : TestBase
     {
-        [TestMethod]
+        public ThreadingToolsTests(ITestOutputHelper logger)
+            : base(logger)
+        {
+        }
+
+        [Fact]
         public void ApplyChangeOptimistically()
         {
             var n = new GenericParameterHelper(1);
-            Assert.IsTrue(ThreadingTools.ApplyChangeOptimistically(ref n, i => new GenericParameterHelper(i.Data + 1)));
-            Assert.AreEqual(2, n.Data);
+            Assert.True(ThreadingTools.ApplyChangeOptimistically(ref n, i => new GenericParameterHelper(i.Data + 1)));
+            Assert.Equal(2, n.Data);
         }
 
-        [TestMethod, Timeout(TestTimeout), ExpectedException(typeof(ArgumentNullException))]
+        [Fact]
         public void WithCancellationNull()
         {
-            ThreadingTools.WithCancellation(null, CancellationToken.None);
+            Assert.Throws<ArgumentNullException>(new Action(() =>
+                ThreadingTools.WithCancellation(null, CancellationToken.None)));
         }
 
-        [TestMethod, Timeout(TestTimeout), ExpectedException(typeof(ArgumentNullException))]
+        [Fact]
         public void WithCancellationOfTNull()
         {
-            ThreadingTools.WithCancellation<object>(null, CancellationToken.None);
+            Assert.Throws<ArgumentNullException>(new Action(() =>
+                ThreadingTools.WithCancellation<object>(null, CancellationToken.None)));
         }
 
         /// <summary>
         /// Verifies that a fast path returns the original task if it has already completed.
         /// </summary>
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void WithCancellationOfPrecompletedTask()
         {
             var tcs = new TaskCompletionSource<object>();
             tcs.SetResult(null);
             var cts = new CancellationTokenSource();
-            Assert.AreSame(tcs.Task, ((Task)tcs.Task).WithCancellation(cts.Token));
+            Assert.Same(tcs.Task, ((Task)tcs.Task).WithCancellation(cts.Token));
         }
 
         /// <summary>
         /// Verifies that a fast path returns the original task if it has already completed.
         /// </summary>
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void WithCancellationOfPrecompletedTaskOfT()
         {
             var tcs = new TaskCompletionSource<object>();
             tcs.SetResult(null);
             var cts = new CancellationTokenSource();
-            Assert.AreSame(tcs.Task, tcs.Task.WithCancellation(cts.Token));
+            Assert.Same(tcs.Task, tcs.Task.WithCancellation(cts.Token));
         }
 
         /// <summary>
         /// Verifies that a fast path returns the original task if it has already completed.
         /// </summary>
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void WithCancellationOfPrefaultedTask()
         {
             var tcs = new TaskCompletionSource<object>();
             tcs.SetException(new InvalidOperationException());
             var cts = new CancellationTokenSource();
-            Assert.AreSame(tcs.Task, ((Task)tcs.Task).WithCancellation(cts.Token));
+            Assert.Same(tcs.Task, ((Task)tcs.Task).WithCancellation(cts.Token));
         }
 
         /// <summary>
         /// Verifies that a fast path returns the original task if it has already completed.
         /// </summary>
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void WithCancellationOfPrefaultedTaskOfT()
         {
             var tcs = new TaskCompletionSource<object>();
             tcs.SetException(new InvalidOperationException());
             var cts = new CancellationTokenSource();
-            Assert.AreSame(tcs.Task, tcs.Task.WithCancellation(cts.Token));
+            Assert.Same(tcs.Task, tcs.Task.WithCancellation(cts.Token));
         }
 
         /// <summary>
         /// Verifies that a fast path returns the original task if it has already completed.
         /// </summary>
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void WithCancellationOfPrecanceledTask()
         {
             var tcs = new TaskCompletionSource<object>();
             tcs.SetCanceled();
             var cts = new CancellationTokenSource();
-            Assert.AreSame(tcs.Task, ((Task)tcs.Task).WithCancellation(cts.Token));
+            Assert.Same(tcs.Task, ((Task)tcs.Task).WithCancellation(cts.Token));
         }
 
         /// <summary>
         /// Verifies that a fast path returns the original task if it has already completed.
         /// </summary>
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void WithCancellationOfPrecanceledTaskOfT()
         {
             var tcs = new TaskCompletionSource<object>();
             tcs.SetCanceled();
             var cts = new CancellationTokenSource();
-            Assert.AreSame(tcs.Task, tcs.Task.WithCancellation(cts.Token));
+            Assert.Same(tcs.Task, tcs.Task.WithCancellation(cts.Token));
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [SkippableFact]
         public void WithCancellationAndPrecancelledToken()
         {
-            if (TestUtilities.IsNet45Mode)
-            {
-                Assert.Inconclusive("This test verifies behavior that is only available on .NET 4.6.");
-            }
+            Skip.If(TestUtilities.IsNet45Mode, "This test verifies behavior that is only available on .NET 4.6.");
 
             var tcs = new TaskCompletionSource<object>();
             var cts = new CancellationTokenSource();
             cts.Cancel();
             var result = ((Task)tcs.Task).WithCancellation(cts.Token);
-            Assert.IsTrue(result.IsCanceled);
+            Assert.True(result.IsCanceled);
 
             // Verify that the CancellationToken that led to cancellation is tucked away in the returned Task.
             try
@@ -126,48 +130,42 @@
             }
             catch (TaskCanceledException ex)
             {
-                Assert.AreEqual(cts.Token, ex.CancellationToken);
+                Assert.Equal(cts.Token, ex.CancellationToken);
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void WithCancellationOfTAndPrecancelledToken()
         {
             var tcs = new TaskCompletionSource<object>();
             var cts = new CancellationTokenSource();
             cts.Cancel();
-            Assert.IsTrue(tcs.Task.WithCancellation(cts.Token).IsCanceled);
+            Assert.True(tcs.Task.WithCancellation(cts.Token).IsCanceled);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void WithCancellationOfTCanceled()
         {
             var tcs = new TaskCompletionSource<object>();
             var cts = new CancellationTokenSource();
             var t = tcs.Task.WithCancellation(cts.Token);
-            Assert.IsFalse(t.IsCompleted);
+            Assert.False(t.IsCompleted);
             cts.Cancel();
-            try
-            {
-                t.GetAwaiter().GetResult();
-                Assert.Fail("Expected OperationCanceledException not thrown.");
-            }
-            catch (OperationCanceledException)
-            {
-            }
+            Assert.Throws<OperationCanceledException>(() =>
+                t.GetAwaiter().GetResult());
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void WithCancellationOfTCompleted()
         {
             var tcs = new TaskCompletionSource<object>();
             var cts = new CancellationTokenSource();
             var t = tcs.Task.WithCancellation(cts.Token);
             tcs.SetResult(new GenericParameterHelper());
-            Assert.AreSame(tcs.Task.Result, t.GetAwaiter().GetResult());
+            Assert.Same(tcs.Task.Result, t.GetAwaiter().GetResult());
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void WithCancellationOfTNoDeadlockFromSyncContext()
         {
             var dispatcher = new DispatcherSynchronizationContext();
@@ -177,7 +175,7 @@
             try
             {
                 tcs.Task.WithCancellation(cts.Token).Wait(TestTimeout);
-                Assert.Fail("Expected OperationCanceledException not thrown.");
+                Assert.True(false, "Expected OperationCanceledException not thrown.");
             }
             catch (AggregateException ex)
             {
@@ -185,7 +183,7 @@
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void WithCancellationOfTNoncancelableNoDeadlockFromSyncContext()
         {
             var dispatcher = new DispatcherSynchronizationContext();
@@ -199,25 +197,19 @@
             tcs.Task.WithCancellation(CancellationToken.None).Wait(TestTimeout);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void WithCancellationCanceled()
         {
             var tcs = new TaskCompletionSource<object>();
             var cts = new CancellationTokenSource();
             var t = ((Task)tcs.Task).WithCancellation(cts.Token);
-            Assert.IsFalse(t.IsCompleted);
+            Assert.False(t.IsCompleted);
             cts.Cancel();
-            try
-            {
-                t.GetAwaiter().GetResult();
-                Assert.Fail("Expected OperationCanceledException not thrown.");
-            }
-            catch (OperationCanceledException)
-            {
-            }
+            Assert.Throws<OperationCanceledException>(() =>
+                t.GetAwaiter().GetResult());
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void WithCancellationCompleted()
         {
             var tcs = new TaskCompletionSource<object>();
@@ -227,7 +219,7 @@
             t.GetAwaiter().GetResult();
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void WithCancellationNoDeadlockFromSyncContext()
         {
             var dispatcher = new DispatcherSynchronizationContext();
@@ -237,7 +229,7 @@
             try
             {
                 ((Task)tcs.Task).WithCancellation(cts.Token).Wait(TestTimeout);
-                Assert.Fail("Expected OperationCanceledException not thrown.");
+                Assert.True(false, "Expected OperationCanceledException not thrown.");
             }
             catch (AggregateException ex)
             {
@@ -245,7 +237,7 @@
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void WithCancellationNoncancelableNoDeadlockFromSyncContext()
         {
             var dispatcher = new DispatcherSynchronizationContext();

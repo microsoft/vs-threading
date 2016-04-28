@@ -5,29 +5,28 @@
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
 
-    [TestClass]
     public class InternalUtilitiesTests
     {
-        [TestMethod]
+        [Fact]
         public void RemoveMidQueue_Empty()
         {
             var queue = new Queue<object>();
-            Assert.IsFalse(queue.RemoveMidQueue(1));
+            Assert.False(queue.RemoveMidQueue(1));
         }
 
-        [TestMethod]
+        [Fact]
         public void RemoveMidQueue_OnlyElement()
         {
             var queue = new Queue<GenericParameterHelper>();
             var one = new GenericParameterHelper(1);
             queue.Enqueue(one);
-            Assert.IsFalse(queue.RemoveMidQueue(new GenericParameterHelper(2)));
-            Assert.IsTrue(queue.RemoveMidQueue(one));
+            Assert.False(queue.RemoveMidQueue(new GenericParameterHelper(2)));
+            Assert.True(queue.RemoveMidQueue(one));
         }
 
-        [TestMethod]
+        [Fact]
         public void RemoveMidQueue()
         {
             var list = Enumerable.Range(1, 3).Select(i => new GenericParameterHelper(i)).ToArray();
@@ -42,17 +41,17 @@
                 queue.RemoveMidQueue(list[positionToRemove]);
 
                 // Verify that the item we intended to remove is gone.
-                Assert.IsFalse(queue.Contains(list[positionToRemove]));
+                Assert.False(queue.Contains(list[positionToRemove]));
 
                 // Verify that the remaining elements retained their order.
-                Assert.AreEqual(list.Length - 1, queue.Count);
+                Assert.Equal(list.Length - 1, queue.Count);
                 GenericParameterHelper lastDequeued = null;
                 do
                 {
                     var item = queue.Dequeue();
                     if (lastDequeued != null)
                     {
-                        Assert.IsTrue(lastDequeued.Data < item.Data);
+                        Assert.True(lastDequeued.Data < item.Data);
                     }
 
                     lastDequeued = item;
