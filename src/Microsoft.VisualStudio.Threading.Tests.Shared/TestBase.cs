@@ -176,11 +176,17 @@
             this.ExecuteOnDispatcher(() => this.CheckGCPressureAsync(scenario, maxBytesAllocated));
         }
 
+        /// <summary>
+        /// Executes the delegate on a thread with <see cref="ApartmentState.STA"/>
+        /// and without a current <see cref="SynchronizationContext"/>.
+        /// </summary>
+        /// <param name="action">The delegate to execute.</param>
         protected void ExecuteOnSTA(Action action)
         {
             Requires.NotNull(action, nameof(action));
 
-            if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
+            if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA
+                && SynchronizationContext.Current == null)
             {
                 action();
                 return;
