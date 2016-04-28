@@ -18,11 +18,7 @@ namespace Microsoft.VisualStudio.Threading
     /// </summary>
     internal static class NativeMethods
     {
-        internal const int WAIT_ABANDONED_0 = 0x00000080;
-        internal const int WAIT_OBJECT_0 = 0x00000000;
-        internal const int WAIT_TIMEOUT = 0x00000102;
-        internal const int WAIT_FAILED = unchecked((int)0xFFFFFFFF);
-
+#if DESKTOP
         /// <summary>
         /// Really truly non pumping wait.
         /// Raw IntPtrs have to be used, because the marshaller does not support arrays of SafeHandle, only
@@ -34,15 +30,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="millisecondsTimeout">A timeout that will cause this method to return.</param>
         [DllImport("kernel32.dll", SetLastError = true, ExactSpelling = true)]
         internal static extern int WaitForMultipleObjects(uint handleCount, IntPtr[] waitHandles, [MarshalAs(UnmanagedType.Bool)] bool waitAll, uint millisecondsTimeout);
-
-        /// <summary>
-        /// Really truly non pumping wait.
-        /// Raw IntPtrs have to be used, because the marshaller does not support arrays of SafeHandle, only
-        /// single SafeHandles.
-        /// </summary>
-        /// <param name="waitHandle">The handle to wait for.</param>
-        /// <param name="millisecondsTimeout">A timeout that will cause this method to return.</param>
-        [DllImport("kernel32.dll", SetLastError = true, ExactSpelling = true)]
-        internal static extern int WaitForSingleObject(IntPtr waitHandle, int millisecondsTimeout);
+#endif
     }
 }

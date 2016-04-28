@@ -47,7 +47,7 @@
             "ThrowIfNotOnUIThread");
 
         private static readonly IImmutableSet<string> KnownMethodsToSwitchToMainThread = ImmutableHashSet.Create(StringComparer.Ordinal,
-            nameof(JoinableTaskFactory.SwitchToMainThreadAsync),
+            TypeIdentifiers.JoinableTaskFactory.SwitchToMainThreadAsyncName,
             "SwitchToUIThread");
 
         private static readonly IImmutableSet<SyntaxKind> MethodSyntaxKinds = ImmutableHashSet.Create(
