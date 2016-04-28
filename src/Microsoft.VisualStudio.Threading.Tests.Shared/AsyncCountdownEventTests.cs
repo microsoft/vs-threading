@@ -7,111 +7,108 @@
     using System.Threading;
     using System.Threading.Tasks;
     using System.Windows.Threading;
+    using Xunit;
+    using Xunit.Abstractions;
 
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-    [TestClass]
     public class AsyncCountdownEventTests : TestBase
     {
-        [TestMethod, Timeout(TestTimeout)]
+        public AsyncCountdownEventTests(ITestOutputHelper logger)
+            : base(logger)
+        {
+        }
+
+        [Fact]
         public async Task InitialCountZero()
         {
             var evt = new AsyncCountdownEvent(0);
             await evt.WaitAsync();
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task CountdownFromOnePresignaled()
         {
             await this.PreSignalHelperAsync(1);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task CountdownFromOnePostSignaled()
         {
             await this.PostSignalHelperAsync(1);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task CountdownFromTwoPresignaled()
         {
             await this.PreSignalHelperAsync(2);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task CountdownFromTwoPostSignaled()
         {
             await this.PostSignalHelperAsync(2);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task SignalAndWaitFromOne()
         {
             var evt = new AsyncCountdownEvent(1);
             await evt.SignalAndWaitAsync();
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task SignalAndWaitFromTwo()
         {
             var evt = new AsyncCountdownEvent(2);
 
             var first = evt.SignalAndWaitAsync();
-            Assert.IsFalse(first.IsCompleted);
+            Assert.False(first.IsCompleted);
 
             var second = evt.SignalAndWaitAsync();
             await Task.WhenAll(first, second);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void SignalAndWaitSynchronousBlockDoesNotHang()
         {
             SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext());
             var evt = new AsyncCountdownEvent(1);
-            Assert.IsTrue(evt.SignalAndWaitAsync().Wait(AsyncDelay), "Hang");
+            Assert.True(evt.SignalAndWaitAsync().Wait(AsyncDelay), "Hang");
         }
 
         /// <summary>
         /// Verifies that the exception is returned in a task rather than thrown from the asynchronous method.
         /// </summary>
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void SignalAsyncReturnsFaultedTaskOnError()
         {
             var evt = new AsyncCountdownEvent(0);
 #pragma warning disable CS0618 // Type or member is obsolete
             var result = evt.SignalAsync();
 #pragma warning restore CS0618 // Type or member is obsolete
-            Assert.IsTrue(result.IsFaulted);
-            Assert.IsInstanceOfType(result.Exception.InnerException, typeof(InvalidOperationException));
+            Assert.True(result.IsFaulted);
+            Assert.IsType(typeof(InvalidOperationException), result.Exception.InnerException);
         }
 
         /// <summary>
         /// Verifies that the exception is returned in a task rather than thrown from the asynchronous method.
         /// </summary>
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void SignalAndWaitAsyncReturnsFaultedTaskOnError()
         {
             var evt = new AsyncCountdownEvent(0);
             var result = evt.SignalAndWaitAsync();
-            Assert.IsTrue(result.IsFaulted);
-            Assert.IsInstanceOfType(result.Exception.InnerException, typeof(InvalidOperationException));
+            Assert.True(result.IsFaulted);
+            Assert.IsType(typeof(InvalidOperationException), result.Exception.InnerException);
         }
 
         /// <summary>
         /// Verifies that the exception is returned in a task rather than thrown from the synchronous method.
         /// </summary>
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void SignalThrowsOnError()
         {
             var evt = new AsyncCountdownEvent(0);
-            try
-            {
-                evt.Signal();
-                Assert.Fail("Expected exception not thrown.");
-            }
-            catch (InvalidOperationException)
-            {
-            }
+            Assert.Throws<InvalidOperationException>(() => evt.Signal());
         }
 
         private async Task PreSignalHelperAsync(int initialCount)

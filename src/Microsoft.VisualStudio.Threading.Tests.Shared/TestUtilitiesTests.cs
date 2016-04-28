@@ -5,12 +5,11 @@
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
 
-    [TestClass]
     public class TestUtilitiesTests
     {
-        [TestMethod, Timeout(500)]
+        [Fact]
         public void RunTest()
         {
             TestUtilities.Run(async delegate
@@ -19,7 +18,7 @@
             });
         }
 
-        [TestMethod, Timeout(500)]
+        [Fact]
         public async Task YieldAndNotify()
         {
             var task1Awaiting = new AsyncManualResetEvent();

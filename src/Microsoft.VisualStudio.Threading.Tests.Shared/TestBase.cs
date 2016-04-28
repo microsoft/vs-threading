@@ -8,7 +8,7 @@
     using System.Threading;
     using System.Threading.Tasks;
     using System.Windows.Threading;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
     using Xunit.Abstractions;
 
     public abstract class TestBase
@@ -19,12 +19,7 @@
 
         private const int GCAllocationAttempts = 5;
 
-        protected TestBase()
-        {
-        }
-
         protected TestBase(ITestOutputHelper logger)
-            : this()
         {
             this.Logger = logger;
         }
@@ -46,7 +41,7 @@
 
             var completingActionFinished = new ManualResetEventSlim();
             var continuation = antecedent.ContinueWith(
-                _ => Assert.IsTrue(completingActionFinished.Wait(AsyncDelay)),
+                _ => Assert.True(completingActionFinished.Wait(AsyncDelay)),
                 CancellationToken.None,
                 TaskContinuationOptions.ExecuteSynchronously,
                 TaskScheduler.Default);
@@ -69,23 +64,15 @@
 
             Thread callingThread = Thread.CurrentThread;
             var continuation = antecedent.ContinueWith(
-                _ => Assert.AreEqual(callingThread, Thread.CurrentThread),
+                _ => Assert.Equal(callingThread, Thread.CurrentThread),
                 CancellationToken.None,
                 TaskContinuationOptions.ExecuteSynchronously,
                 TaskScheduler.Default);
             completingAction();
-            Assert.IsTrue(continuation.IsCompleted);
+            Assert.True(continuation.IsCompleted);
 
             // Rethrow any exceptions.
             continuation.GetAwaiter().GetResult();
-        }
-
-        /// <summary>
-        /// Initializes the <see cref="Logger"/> property with an MSTest adapter.
-        /// </summary>
-        protected void SetTestContext(TestContext context)
-        {
-            this.Logger = new TestContextLogger(context);
         }
 
         protected void CheckGCPressure(Action scenario, int maxBytesAllocated, int iterations = 100, int allowedAttempts = GCAllocationAttempts)
@@ -123,7 +110,7 @@
                 this.Logger?.WriteLine("{0} bytes leaked per iteration.", leaked);
                 this.Logger?.WriteLine("{0} bytes allocated per iteration ({1} allowed).", allocated, maxBytesAllocated);
 
-                if (leaked == 0 && allocated <= maxBytesAllocated)
+                if (leaked <= 0 && allocated <= maxBytesAllocated)
                 {
                     passingAttemptObserved = true;
                 }
@@ -136,7 +123,7 @@
                 }
             }
 
-            Assert.IsTrue(passingAttemptObserved);
+            Assert.True(passingAttemptObserved);
         }
 
         protected async Task CheckGCPressureAsync(Func<Task> scenario, int maxBytesAllocated, int iterations = 100, int allowedAttempts = GCAllocationAttempts)
@@ -181,7 +168,7 @@
                 }
             }
 
-            Assert.IsTrue(passingAttemptObserved);
+            Assert.True(passingAttemptObserved);
         }
 
         protected void CheckGCPressure(Func<Task> scenario, int maxBytesAllocated, int iterations = 100, int allowedAttempts = GCAllocationAttempts)
@@ -189,11 +176,17 @@
             this.ExecuteOnDispatcher(() => this.CheckGCPressureAsync(scenario, maxBytesAllocated));
         }
 
+        /// <summary>
+        /// Executes the delegate on a thread with <see cref="ApartmentState.STA"/>
+        /// and without a current <see cref="SynchronizationContext"/>.
+        /// </summary>
+        /// <param name="action">The delegate to execute.</param>
         protected void ExecuteOnSTA(Action action)
         {
             Requires.NotNull(action, nameof(action));
 
-            if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
+            if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA
+                && SynchronizationContext.Current == null)
             {
                 action();
                 return;
@@ -264,31 +257,6 @@
                     System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
                 }
             });
-        }
-
-        /// <summary>
-        /// An xunit-MSTest logger adapter.
-        /// </summary>
-        private class TestContextLogger : ITestOutputHelper
-        {
-            private readonly TestContext context;
-
-            internal TestContextLogger(TestContext context)
-            {
-                Requires.NotNull(context, nameof(context));
-
-                this.context = context;
-            }
-
-            public void WriteLine(string message)
-            {
-                this.context.WriteLine(message);
-            }
-
-            public void WriteLine(string format, params object[] args)
-            {
-                this.context.WriteLine(format, args);
-            }
         }
     }
 }

@@ -3,9 +3,8 @@
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CodeFixes;
     using Microsoft.CodeAnalysis.Diagnostics;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
 
-    [TestClass]
     public class JtfRunAwaitTaskAnalyzerTests : DiagnosticVerifier
     {
         private DiagnosticResult expect = new DiagnosticResult
@@ -20,7 +19,7 @@
             return new JtfRunAwaitTaskAnalyzer();
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningWhenTaskIsDefinedOutsideDelegate()
         {
             var test = @"
@@ -52,7 +51,7 @@ class Tests
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningWhenTaskTIsDefinedOutsideDelegate()
         {
             var test = @"
@@ -84,7 +83,7 @@ class Tests
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningWhenTaskIsDefinedOutsideDelegateUsingRunAsync()
         {
             var test = @"
@@ -116,7 +115,7 @@ class Tests
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningWhenTaskIsDefinedOutsideParanthesisedLambdaExpression()
         {
             var test = @"
@@ -148,7 +147,7 @@ class Tests
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void DoNotReportWarningWhenTaskIsDefinedWithinDelegate()
         {
             var test = @"
@@ -181,7 +180,7 @@ class Tests
             VerifyCSharpDiagnostic(test);
         }
 
-        [TestMethod]
+        [Fact]
         public void DoNotReportWarningWhenTaskIsDefinedWithinDelegateInSubblock()
         {
             var test = @"
@@ -218,7 +217,7 @@ class Tests
         }
 
 
-        [TestMethod]
+        [Fact]
         public void DoNotReportWarningWhenTaskIsDefinedOutsideButInitializedWithinDelegate()
         {
             var test = @"
@@ -250,7 +249,7 @@ class Tests
             VerifyCSharpDiagnostic(test);
         }
 
-        [TestMethod]
+        [Fact]
         public void DoNotReportWarningWhenTaskIsInitializedBothOutsideAndInsideDelegate()
         {
             var test = @"
@@ -283,7 +282,7 @@ class Tests
         }
 
 
-        [TestMethod]
+        [Fact]
         public void DoNotReportWarningWhenTaskIsInitializedInsideDelegateConditionalStatement()
         {
             var test = @"
@@ -319,7 +318,7 @@ class Tests
             VerifyCSharpDiagnostic(test);
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningWhenTaskIsDefinedOutsideAndInitializedAfterAwait()
         {
             var test = @"
@@ -352,7 +351,7 @@ class Tests
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningWhenTaskIsDefinedOutsideAndInitializationIsCommentedOut()
         {
             var test = @"
@@ -386,7 +385,7 @@ class Tests
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningWhenAwaitIsInsideForLoop()
         {
             var test = @"
@@ -421,7 +420,7 @@ class Tests
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningsForMultipleAwaits()
         {
             var test = @"
@@ -467,7 +466,7 @@ class Tests
         }
 
 
-        [TestMethod]
+        [Fact]
         public void DoNotReportWarningWhenAwaitingAsyncMethod()
         {
             var test = @"
@@ -497,7 +496,7 @@ class Tests
             VerifyCSharpDiagnostic(test);
         }
 
-        [TestMethod]
+        [Fact]
         public void DoNotReportWarningWhenAwaitingJoinableTaskDefinedInsideDelegate()
         {
             var test = @"
@@ -525,7 +524,7 @@ class Tests
             VerifyCSharpDiagnostic(test);
         }
 
-        [TestMethod]
+        [Fact]
         public void DoNotReportWarningWhenAwaitingJoinableTaskDefinedOutsideDelegate()
         {
             var test = @"
@@ -554,7 +553,7 @@ class Tests
             VerifyCSharpDiagnostic(test);
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningWhenHavingNestedLambdaExpressions()
         {
             var test = @"
@@ -590,7 +589,7 @@ class Tests
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningForDerivedJoinableTaskFactory()
         {
             var test = @"
@@ -632,7 +631,7 @@ class Tests
             VerifyCSharpDiagnostic(test, expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void DoNotReportWarningForDerivedJoinableTaskFactoryWhenRunIsOverride()
         {
             var test = @"

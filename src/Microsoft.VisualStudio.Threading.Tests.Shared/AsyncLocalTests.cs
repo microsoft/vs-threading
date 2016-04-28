@@ -8,9 +8,9 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
+    using Xunit.Abstractions;
 
-    [TestClass]
     public class AsyncLocalTests : TestBase
     {
         // Be VERY explicit about the type we're binding against since
@@ -18,37 +18,34 @@
         // we're testing OUR stuff not THEIRS.
         private Microsoft.VisualStudio.Threading.AsyncLocal<GenericParameterHelper> asyncLocal;
 
-        public TestContext TestContext { get; set; }
-
-        [TestInitialize]
-        public void Initialize()
+        public AsyncLocalTests(ITestOutputHelper logger)
+            : base(logger)
         {
             this.asyncLocal = new Microsoft.VisualStudio.Threading.AsyncLocal<GenericParameterHelper>();
-            this.SetTestContext(this.TestContext);
         }
 
-        [TestMethod]
+        [Fact]
         public void SetGetNoYield()
         {
             var value = new GenericParameterHelper();
             this.asyncLocal.Value = value;
-            Assert.AreSame(value, this.asyncLocal.Value);
+            Assert.Same(value, this.asyncLocal.Value);
             this.asyncLocal.Value = null;
-            Assert.IsNull(this.asyncLocal.Value);
+            Assert.Null(this.asyncLocal.Value);
         }
 
-        [TestMethod]
+        [Fact]
         public async Task SetGetWithYield()
         {
             var value = new GenericParameterHelper();
             this.asyncLocal.Value = value;
             await Task.Yield();
-            Assert.AreSame(value, this.asyncLocal.Value);
+            Assert.Same(value, this.asyncLocal.Value);
             this.asyncLocal.Value = null;
-            Assert.IsNull(this.asyncLocal.Value);
+            Assert.Null(this.asyncLocal.Value);
         }
 
-        [TestMethod]
+        [Fact]
         public async Task ForkedContext()
         {
             var value = new GenericParameterHelper();
@@ -56,73 +53,73 @@
             await Task.WhenAll(
                 Task.Run(delegate
                 {
-                    Assert.AreSame(value, this.asyncLocal.Value);
+                    Assert.Same(value, this.asyncLocal.Value);
                     this.asyncLocal.Value = null;
-                    Assert.IsNull(this.asyncLocal.Value);
+                    Assert.Null(this.asyncLocal.Value);
                 }),
                 Task.Run(delegate
                 {
-                    Assert.AreSame(value, this.asyncLocal.Value);
+                    Assert.Same(value, this.asyncLocal.Value);
                     this.asyncLocal.Value = null;
-                    Assert.IsNull(this.asyncLocal.Value);
+                    Assert.Null(this.asyncLocal.Value);
                 }));
 
-            Assert.AreSame(value, this.asyncLocal.Value);
+            Assert.Same(value, this.asyncLocal.Value);
             this.asyncLocal.Value = null;
-            Assert.IsNull(this.asyncLocal.Value);
+            Assert.Null(this.asyncLocal.Value);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task IndependentValuesBetweenContexts()
         {
             await IndependentValuesBetweenContextsHelper<GenericParameterHelper>();
             await IndependentValuesBetweenContextsHelper<object>();
         }
 
-        [TestMethod]
+        [Fact]
         public void SetNewValuesRepeatedly()
         {
             for (int i = 0; i < 10; i++)
             {
                 var value = new GenericParameterHelper();
                 this.asyncLocal.Value = value;
-                Assert.AreSame(value, this.asyncLocal.Value);
+                Assert.Same(value, this.asyncLocal.Value);
             }
 
             this.asyncLocal.Value = null;
-            Assert.IsNull(this.asyncLocal.Value);
+            Assert.Null(this.asyncLocal.Value);
         }
 
-        [TestMethod]
+        [Fact]
         public void SetSameValuesRepeatedly()
         {
             var value = new GenericParameterHelper();
             for (int i = 0; i < 10; i++)
             {
                 this.asyncLocal.Value = value;
-                Assert.AreSame(value, this.asyncLocal.Value);
+                Assert.Same(value, this.asyncLocal.Value);
             }
 
             this.asyncLocal.Value = null;
-            Assert.IsNull(this.asyncLocal.Value);
+            Assert.Null(this.asyncLocal.Value);
         }
 
-        [TestMethod, TestCategory("GC")]
+        [Fact, Trait("GC", "true")]
         public void SurvivesGC()
         {
             var value = new GenericParameterHelper(5);
             this.asyncLocal.Value = value;
-            Assert.AreSame(value, this.asyncLocal.Value);
+            Assert.Same(value, this.asyncLocal.Value);
 
             GC.Collect();
-            Assert.AreSame(value, this.asyncLocal.Value);
+            Assert.Same(value, this.asyncLocal.Value);
 
             value = null;
             GC.Collect();
-            Assert.AreEqual(5, this.asyncLocal.Value.Data);
+            Assert.Equal(5, this.asyncLocal.Value.Data);
         }
 
-        [TestMethod]
+        [Fact]
         public void NotDisruptedByTestContextWriteLine()
         {
             var value = new GenericParameterHelper();
@@ -136,11 +133,11 @@
             // if it's not done properly.
             this.Logger.WriteLine("Foobar");
 
-            Assert.IsNotNull(this.asyncLocal.Value);
-            Assert.AreSame(value, this.asyncLocal.Value);
+            Assert.NotNull(this.asyncLocal.Value);
+            Assert.Same(value, this.asyncLocal.Value);
         }
 
-        [TestMethod]
+        [Fact]
         public void ValuePersistsAcrossExecutionContextChanges()
         {
             var jtLocal = new AsyncLocal<object>();
@@ -148,18 +145,18 @@
             Func<Task> asyncMethod = async delegate
             {
                 SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
-                Assert.AreEqual(1, jtLocal.Value);
+                Assert.Equal(1, jtLocal.Value);
                 jtLocal.Value = 3;
-                Assert.AreEqual(3, jtLocal.Value);
+                Assert.Equal(3, jtLocal.Value);
                 await TaskScheduler.Default;
-                Assert.AreEqual(3, jtLocal.Value);
+                Assert.Equal(3, jtLocal.Value);
             };
             asyncMethod().GetAwaiter().GetResult();
 
-            Assert.AreEqual(1, jtLocal.Value);
+            Assert.Equal(1, jtLocal.Value);
         }
 
-        [TestMethod, TestCategory("Performance")]
+        [Fact, Trait("Performance", "true")]
         public void AsyncLocalPerfTest()
         {
             var values = Enumerable.Range(1, 50000).Select(n => new GenericParameterHelper(n)).ToArray();
@@ -188,15 +185,15 @@
             reads.Stop();
 
             // We don't actually validate the perf here. We just print out the results.
-            Console.WriteLine("Creating {0} instances took {1} ms", values.Length, creates.ElapsedMilliseconds);
-            Console.WriteLine("Saving {0} values took {1} ms", values.Length, writes.ElapsedMilliseconds);
-            Console.WriteLine("Reading {0} values took {1} ms", values.Length, reads.ElapsedMilliseconds);
+            this.Logger.WriteLine("Creating {0} instances took {1} ms", values.Length, creates.ElapsedMilliseconds);
+            this.Logger.WriteLine("Saving {0} values took {1} ms", values.Length, writes.ElapsedMilliseconds);
+            this.Logger.WriteLine("Reading {0} values took {1} ms", values.Length, reads.ElapsedMilliseconds);
         }
 
-        [TestMethod]
+        [Fact]
         public void CallAcrossAppDomainBoundariesWithNonSerializableData()
         {
-            var otherDomain = AppDomain.CreateDomain("test domain");
+            var otherDomain = AppDomain.CreateDomain("test domain", AppDomain.CurrentDomain.Evidence, AppDomain.CurrentDomain.SetupInformation);
             try
             {
                 var proxy = (OtherDomainProxy)otherDomain.CreateInstanceFromAndUnwrap(Assembly.GetExecutingAssembly().Location, typeof(OtherDomainProxy).FullName);
@@ -208,12 +205,12 @@
                 var value = new GenericParameterHelper();
                 this.asyncLocal.Value = value;
                 proxy.SomeMethod(AppDomain.CurrentDomain.Id);
-                Assert.AreSame(value, this.asyncLocal.Value);
+                Assert.Same(value, this.asyncLocal.Value);
 
                 // Nothing permanently damaged in the ability to set/get values.
                 this.asyncLocal.Value = null;
                 this.asyncLocal.Value = value;
-                Assert.AreSame(value, this.asyncLocal.Value);
+                Assert.Same(value, this.asyncLocal.Value);
 
                 // Verify we can call it after clearing the value.
                 this.asyncLocal.Value = null;
@@ -234,33 +231,33 @@
             await Task.WhenAll(
                 Task.Run(async delegate
                 {
-                    Assert.IsNull(asyncLocal.Value);
+                    Assert.Null(asyncLocal.Value);
                     var value = new T();
                     asyncLocal.Value = value;
-                    Assert.AreSame(value, asyncLocal.Value);
+                    Assert.Same(value, asyncLocal.Value);
                     player1.Set();
                     await player2.WaitAsync();
-                    Assert.AreSame(value, asyncLocal.Value);
+                    Assert.Same(value, asyncLocal.Value);
                 }),
                 Task.Run(async delegate
                 {
                     await player1.WaitAsync();
-                    Assert.IsNull(asyncLocal.Value);
+                    Assert.Null(asyncLocal.Value);
                     var value = new T();
                     asyncLocal.Value = value;
-                    Assert.AreSame(value, asyncLocal.Value);
+                    Assert.Same(value, asyncLocal.Value);
                     asyncLocal.Value = null;
                     player2.Set();
                 }));
 
-            Assert.IsNull(asyncLocal.Value);
+            Assert.Null(asyncLocal.Value);
         }
 
         private class OtherDomainProxy : MarshalByRefObject
         {
             internal void SomeMethod(int callingAppDomainId)
             {
-                Assert.AreNotEqual(callingAppDomainId, AppDomain.CurrentDomain.Id, "AppDomain boundaries not crossed.");
+                Assert.NotEqual(callingAppDomainId, AppDomain.CurrentDomain.Id); // AppDomain boundaries not crossed.
             }
         }
     }

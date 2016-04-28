@@ -4,9 +4,8 @@
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CodeFixes;
     using Microsoft.CodeAnalysis.Diagnostics;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
 
-    [TestClass]
     public class AsyncEventHandlerAnalyzerTests : DiagnosticVerifier
     {
         private DiagnosticResult[] CreateExpects(DiagnosticResultLocation[] locations)
@@ -31,7 +30,7 @@
             return new AsyncEventHandlerAnalyzer();
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningIfInvokeAsyncEventHandlerDirectly()
         {
             var test = @"
@@ -60,7 +59,7 @@ class Test<T> where T : EventArgs {
             VerifyCSharpDiagnostic(test, CreateExpects(locations));
         }
 
-        [TestMethod]
+        [Fact]
         public void DoNotReportWarningIfAsyncEventHandlerIsInvokedByInvokeAsync()
         {
             var test = @"
@@ -79,7 +78,7 @@ class TplExtensions {
             VerifyCSharpDiagnostic(test);
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningIfInvokeAsyncEventHandlerDirectlyViaInvoke()
         {
             var test = @"
@@ -108,7 +107,7 @@ class Test<T> where T : EventArgs {
             VerifyCSharpDiagnostic(test, CreateExpects(locations));
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningIfInvokeAsyncEventHandlerDirectlyAsDelegateViaInvoke()
         {
             var test = @"
@@ -137,7 +136,7 @@ class Test<T> where T : EventArgs {
             VerifyCSharpDiagnostic(test, CreateExpects(locations));
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningIfInvokeAsyncEventHandlerDirectlyAndTheyAreLocalVariables()
         {
             var test = @"
@@ -166,7 +165,7 @@ class Test<T> where T : EventArgs {
             VerifyCSharpDiagnostic(test, CreateExpects(locations));
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningIfInvokeAsyncEventHandlerDirectlyAndTheyAreProperties()
         {
             var test = @"
@@ -195,7 +194,7 @@ class Test<T> where T : EventArgs {
             VerifyCSharpDiagnostic(test, CreateExpects(locations));
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningIfInvokeAsyncEventHandlerViaInvocationList()
         {
             var test = @"
@@ -224,7 +223,7 @@ class Test<T> where T : EventArgs {
             VerifyCSharpDiagnostic(test, CreateExpects(locations));
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningIfInvokeAsyncEventHandlerAsDelegate()
         {
             var test = @"
@@ -253,7 +252,7 @@ class Test<T> where T : EventArgs {
             VerifyCSharpDiagnostic(test, CreateExpects(locations));
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningIfInvokeLazyAsyncEventHandlerAsDelegate()
         {
             var test = @"
@@ -282,7 +281,7 @@ class Test<T> where T : EventArgs {
             VerifyCSharpDiagnostic(test, CreateExpects(locations));
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningIfInvokeAsyncEventHandlerDirectlyAndTheyArePassedAsParameters()
         {
             var test = @"
@@ -307,7 +306,7 @@ class Test<T> where T : EventArgs {
             VerifyCSharpDiagnostic(test, CreateExpects(locations));
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningIfInvokeAsyncEventHandlerDirectlyAndTheyArePassedAsArray()
         {
             var test = @"
@@ -332,7 +331,7 @@ class Test<T> where T : EventArgs {
             VerifyCSharpDiagnostic(test, CreateExpects(locations));
         }
 
-        [TestMethod]
+        [Fact]
         public void DoNotReportWarningIfInvokeAsyncEventHandlerUsingInvokeAsync()
         {
             var test = @"
@@ -355,7 +354,7 @@ class Test<T> where T : EventArgs {
             VerifyCSharpDiagnostic(test);
         }
 
-        [TestMethod]
+        [Fact]
         public void DoNotReportWarningIfInvokeAsyncEventHandlerUsingInvokeAsyncAndTheyArePassedAsParameters()
         {
             var test = @"
@@ -374,7 +373,7 @@ class Test<T> where T : EventArgs {
             VerifyCSharpDiagnostic(test);
         }
 
-        [TestMethod]
+        [Fact]
         public void DoNotReportWarningIfInvokeAsyncEventHandlerUsingInvokeAsyncAndTheyArePassedAsArray()
         {
             var test = @"

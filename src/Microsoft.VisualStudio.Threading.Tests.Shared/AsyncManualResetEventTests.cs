@@ -6,45 +6,45 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
+    using Xunit.Abstractions;
 
-    [TestClass]
     public class AsyncManualResetEventTests : TestBase
     {
         private AsyncManualResetEvent evt;
 
-        [TestInitialize]
-        public void Initialize()
+        public AsyncManualResetEventTests(ITestOutputHelper logger)
+            : base(logger)
         {
             this.evt = new AsyncManualResetEvent();
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void CtorDefaultParameter()
         {
-            Assert.IsFalse(new System.Threading.ManualResetEventSlim().IsSet);
+            Assert.False(new System.Threading.ManualResetEventSlim().IsSet);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void DefaultSignaledState()
         {
-            Assert.IsTrue(new AsyncManualResetEvent(true).IsSet);
-            Assert.IsFalse(new AsyncManualResetEvent(false).IsSet);
+            Assert.True(new AsyncManualResetEvent(true).IsSet);
+            Assert.False(new AsyncManualResetEvent(false).IsSet);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task NonBlocking()
         {
 #pragma warning disable CS0618 // Type or member is obsolete
             await this.evt.SetAsync();
 #pragma warning restore CS0618 // Type or member is obsolete
-            Assert.IsTrue(this.evt.WaitAsync().IsCompleted);
+            Assert.True(this.evt.WaitAsync().IsCompleted);
         }
 
         /// <summary>
         /// Verifies that inlining continuations do not have to complete execution before Set() returns.
         /// </summary>
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void SetReturnsBeforeInlinedContinuations()
         {
             var setReturned = new ManualResetEventSlim();
@@ -53,26 +53,26 @@
                 {
                     // Arrange to synchronously block the continuation until Set() has returned,
                     // which would deadlock if Set does not return until inlined continuations complete.
-                    Assert.IsTrue(setReturned.Wait(AsyncDelay));
+                    Assert.True(setReturned.Wait(AsyncDelay));
                 },
                 TaskContinuationOptions.ExecuteSynchronously);
             this.evt.Set();
-            Assert.IsTrue(this.evt.IsSet);
+            Assert.True(this.evt.IsSet);
             setReturned.Set();
-            Assert.IsTrue(inlinedContinuation.Wait(AsyncDelay));
+            Assert.True(inlinedContinuation.Wait(AsyncDelay));
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task Blocking()
         {
             this.evt.Reset();
             var result = this.evt.WaitAsync();
-            Assert.IsFalse(result.IsCompleted);
+            Assert.False(result.IsCompleted);
             this.evt.Set();
             await result;
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task Reset()
         {
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -80,10 +80,10 @@
 #pragma warning restore CS0618 // Type or member is obsolete
             this.evt.Reset();
             var result = this.evt.WaitAsync();
-            Assert.IsFalse(result.IsCompleted);
+            Assert.False(result.IsCompleted);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void Awaitable()
         {
             var task = Task.Run(async delegate
@@ -94,7 +94,7 @@
             task.Wait();
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task PulseAllAsync()
         {
             var waitTask = this.evt.WaitAsync();
@@ -107,14 +107,14 @@
             }
             else
             {
-                Assert.AreEqual(TaskStatus.RanToCompletion, pulseTask.Status);
+                Assert.Equal(TaskStatus.RanToCompletion, pulseTask.Status);
             }
 
-            Assert.IsTrue(waitTask.IsCompleted);
-            Assert.IsFalse(this.evt.WaitAsync().IsCompleted);
+            Assert.True(waitTask.IsCompleted);
+            Assert.False(this.evt.WaitAsync().IsCompleted);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task PulseAll()
         {
             var task = this.evt.WaitAsync();
@@ -125,13 +125,13 @@
             }
             else
             {
-                Assert.IsTrue(task.IsCompleted);
+                Assert.True(task.IsCompleted);
             }
 
-            Assert.IsFalse(this.evt.WaitAsync().IsCompleted);
+            Assert.False(this.evt.WaitAsync().IsCompleted);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void PulseAllAsyncDoesNotUnblockFutureWaiters()
         {
             Task task1 = this.evt.WaitAsync();
@@ -139,23 +139,23 @@
             this.evt.PulseAllAsync();
 #pragma warning restore CS0618 // Type or member is obsolete
             Task task2 = this.evt.WaitAsync();
-            Assert.AreNotSame(task1, task2);
+            Assert.NotSame(task1, task2);
             task1.Wait();
-            Assert.IsFalse(task2.IsCompleted);
+            Assert.False(task2.IsCompleted);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void PulseAllDoesNotUnblockFutureWaiters()
         {
             Task task1 = this.evt.WaitAsync();
             this.evt.PulseAll();
             Task task2 = this.evt.WaitAsync();
-            Assert.AreNotSame(task1, task2);
+            Assert.NotSame(task1, task2);
             task1.Wait();
-            Assert.IsFalse(task2.IsCompleted);
+            Assert.False(task2.IsCompleted);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task SetAsyncThenResetLeavesEventInResetState()
         {
             // We starve the threadpool so that if SetAsync()
@@ -167,9 +167,9 @@
                 // Set and immediately reset the event.
                 var setTask = this.evt.SetAsync();
 #pragma warning restore CS0618 // Type or member is obsolete
-                Assert.IsTrue(this.evt.IsSet);
+                Assert.True(this.evt.IsSet);
                 this.evt.Reset();
-                Assert.IsFalse(this.evt.IsSet);
+                Assert.False(this.evt.IsSet);
 
                 // At this point, the event should be unset,
                 // but allow the SetAsync call to finish its work.
@@ -180,19 +180,19 @@
                 // If this fails, then the async nature of SetAsync
                 // allowed it to "jump" over the Reset and leave the event
                 // in a set state (which would of course be very bad).
-                Assert.IsFalse(this.evt.IsSet);
+                Assert.False(this.evt.IsSet);
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void SetThenPulseAllResetsEvent()
         {
             this.evt.Set();
             this.evt.PulseAll();
-            Assert.IsFalse(this.evt.IsSet);
+            Assert.False(this.evt.IsSet);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void SetAsyncCalledTwiceReturnsSameTask()
         {
             using (TestUtilities.StarveThreadpool())
@@ -208,8 +208,8 @@
                 // is supposed to return a Task that signifies that the signal has
                 // actually propagated to the Task returned by WaitAsync earlier.
                 // In fact we'll go so far as to assert the Task itself should be the same.
-                Assert.AreSame(waitTask, setTask1);
-                Assert.AreSame(waitTask, setTask2);
+                Assert.Same(waitTask, setTask1);
+                Assert.Same(waitTask, setTask2);
             }
         }
     }

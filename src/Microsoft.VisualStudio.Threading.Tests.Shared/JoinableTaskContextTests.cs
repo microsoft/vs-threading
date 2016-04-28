@@ -9,11 +9,16 @@
     using System.Threading.Tasks;
     using System.Windows.Threading;
     using System.Xml.Linq;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
+    using Xunit.Abstractions;
 
-    [TestClass]
     public class JoinableTaskContextTests : JoinableTaskTestBase
     {
+        public JoinableTaskContextTests(ITestOutputHelper logger)
+            : base(logger)
+        {
+        }
+
         private JoinableTaskFactoryDerived Factory
         {
             get { return (JoinableTaskFactoryDerived)this.asyncPump; }
@@ -24,24 +29,24 @@
             get { return (JoinableTaskContextDerived)this.context; }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void IsWithinJoinableTask()
         {
-            Assert.IsFalse(this.Context.IsWithinJoinableTask);
+            Assert.False(this.Context.IsWithinJoinableTask);
             this.Factory.Run(async delegate
             {
-                Assert.IsTrue(this.Context.IsWithinJoinableTask);
+                Assert.True(this.Context.IsWithinJoinableTask);
                 await Task.Yield();
-                Assert.IsTrue(this.Context.IsWithinJoinableTask);
+                Assert.True(this.Context.IsWithinJoinableTask);
                 await Task.Run(delegate
                 {
-                    Assert.IsTrue(this.Context.IsWithinJoinableTask);
+                    Assert.True(this.Context.IsWithinJoinableTask);
                     return TplExtensions.CompletedTask;
                 });
             });
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void ReportHangOnRun()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
@@ -66,10 +71,10 @@
                         var duration = tuple.Item1;
                         var iterations = tuple.Item2;
                         var id = tuple.Item3;
-                        Assert.IsTrue(lastDuration == TimeSpan.Zero || lastDuration < duration);
-                        Assert.AreEqual(lastIteration + 1, iterations);
-                        Assert.AreNotEqual(Guid.Empty, id);
-                        Assert.IsTrue(lastId == Guid.Empty || lastId == id);
+                        Assert.True(lastDuration == TimeSpan.Zero || lastDuration < duration);
+                        Assert.Equal(lastIteration + 1, iterations);
+                        Assert.NotEqual(Guid.Empty, id);
+                        Assert.True(lastId == Guid.Empty || lastId == id);
                         lastDuration = duration;
                         lastIteration = iterations;
                         lastId = id;
@@ -89,7 +94,7 @@
             });
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void NoReportHangOnRunAsync()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
@@ -100,10 +105,10 @@
                 () => Task.Delay((int)this.Factory.HangDetectionTimeout.TotalMilliseconds * 3));
 
             joinableTask.Task.Wait(); // don't Join, since we're trying to simulate RunAsync not becoming synchronous.
-            Assert.IsFalse(hangReported);
+            Assert.False(hangReported);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void ReportHangOnRunAsyncThenJoin()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
@@ -123,7 +128,7 @@
                     for (int i = 0; i < 3; i++)
                     {
                         var duration = await hangQueue.DequeueAsync(ct);
-                        Assert.IsTrue(lastDuration == TimeSpan.Zero || lastDuration < duration);
+                        Assert.True(lastDuration == TimeSpan.Zero || lastDuration < duration);
                         lastDuration = duration;
                     }
 
@@ -142,7 +147,7 @@
             joinableTask.Join();
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void HangReportSuppressedOnLongRunningTask()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
@@ -156,10 +161,10 @@
                 },
                 JoinableTaskCreationOptions.LongRunning);
 
-            Assert.IsFalse(hangReported);
+            Assert.False(hangReported);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void HangReportSuppressedOnWaitingLongRunningTask()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
@@ -179,10 +184,10 @@
                     await task;
                 });
 
-            Assert.IsFalse(hangReported);
+            Assert.False(hangReported);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void HangReportSuppressedOnWaitingLongRunningTask2()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
@@ -202,10 +207,10 @@
                     await task;
                 });
 
-            Assert.IsFalse(hangReported);
+            Assert.False(hangReported);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void HangReportSuppressedOnJoiningLongRunningTask()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
@@ -221,10 +226,10 @@
 
             task.Join();
 
-            Assert.IsFalse(hangReported);
+            Assert.False(hangReported);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void HangReportNotSuppressedOnUnrelatedLongRunningTask()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
@@ -244,11 +249,11 @@
                     await Task.Delay(20);
                 });
 
-            Assert.IsTrue(hangReported);
+            Assert.True(hangReported);
             task.Join();
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void HangReportNotSuppressedOnLongRunningTaskNoLongerJoined()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
@@ -276,11 +281,11 @@
                     await Task.Delay(20);
                 });
 
-            Assert.IsTrue(hangReported);
+            Assert.True(hangReported);
             task.Join();
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void HangReportNotSuppressedOnLongRunningTaskJoinCancelled()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
@@ -305,11 +310,11 @@
                     await Task.Delay(20);
                 });
 
-            Assert.IsTrue(hangReported);
+            Assert.True(hangReported);
             task.Join();
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void HangReportNotSuppressedOnLongRunningTaskCompleted()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
@@ -324,7 +329,7 @@
                 JoinableTaskCreationOptions.LongRunning);
 
             task.Join();
-            Assert.IsFalse(hangReported);
+            Assert.False(hangReported);
 
             var taskCollection = new JoinableTaskCollection(this.Factory.Context);
             taskCollection.Add(task);
@@ -338,10 +343,10 @@
                     }
                 });
 
-            Assert.IsTrue(hangReported);
+            Assert.True(hangReported);
         }
 
-        [TestMethod]
+        [StaFact]
         public void HangReportNotSuppressedOnLongRunningTaskCancelled()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
@@ -370,23 +375,23 @@
                     }
                 });
 
-            Assert.IsTrue(hangReported);
+            Assert.True(hangReported);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void GetHangReportSimple()
         {
             IHangReportContributor contributor = this.Context;
             var report = contributor.GetHangReport();
-            Assert.AreEqual("application/xml", report.ContentType);
-            Assert.IsNotNull(report.ContentName);
-            Console.WriteLine(report.Content);
+            Assert.Equal("application/xml", report.ContentType);
+            Assert.NotNull(report.ContentName);
+            this.Logger.WriteLine(report.Content);
             var dgml = XDocument.Parse(report.Content);
-            Assert.AreEqual("DirectedGraph", dgml.Root.Name.LocalName);
-            Assert.AreEqual("http://schemas.microsoft.com/vs/2009/dgml", dgml.Root.Name.Namespace);
+            Assert.Equal("DirectedGraph", dgml.Root.Name.LocalName);
+            Assert.Equal("http://schemas.microsoft.com/vs/2009/dgml", dgml.Root.Name.Namespace);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void GetHangReportProducesDgmlWithNamedJoinableCollections()
         {
             const string jtcName = "My Collection";
@@ -396,17 +401,17 @@
             {
                 IHangReportContributor contributor = this.Context;
                 var report = contributor.GetHangReport();
-                Console.WriteLine(report.Content);
+                this.Logger.WriteLine(report.Content);
                 var dgml = XDocument.Parse(report.Content);
                 var collectionLabels = from node in dgml.Root.Element(XName.Get("Nodes", DgmlNamespace)).Elements()
                                        where node.Attribute(XName.Get("Category"))?.Value == "Collection"
                                        select node.Attribute(XName.Get("Label"))?.Value;
-                Assert.IsTrue(collectionLabels.Any(label => label == jtcName));
+                Assert.True(collectionLabels.Any(label => label == jtcName));
                 return TplExtensions.CompletedTask;
             });
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void GetHangReportProducesDgmlWithMethodNameRequestingMainThread()
         {
             var mainThreadRequested = new ManualResetEventSlim();
@@ -419,15 +424,15 @@
             mainThreadRequested.Wait();
             IHangReportContributor contributor = this.Context;
             var report = contributor.GetHangReport();
-            Console.WriteLine(report.Content);
+            this.Logger.WriteLine(report.Content);
             var dgml = XDocument.Parse(report.Content);
             var collectionLabels = from node in dgml.Root.Element(XName.Get("Nodes", DgmlNamespace)).Elements()
                                    where node.Attribute(XName.Get("Category"))?.Value == "Task"
                                    select node.Attribute(XName.Get("Label"))?.Value;
-            Assert.IsTrue(collectionLabels.Any(label => label.Contains(nameof(this.GetHangReportProducesDgmlWithMethodNameRequestingMainThread))));
+            Assert.True(collectionLabels.Any(label => label.Contains(nameof(this.GetHangReportProducesDgmlWithMethodNameRequestingMainThread))));
         }
 
-        [TestMethod, Timeout(TestTimeout), Ignore] // Sadly, it seems JoinableTaskFactory.Post can't effectively override the labeled delegate because of another wrapper generated by the compiler.
+        [StaFact(Skip = "Sadly, it seems JoinableTaskFactory.Post can't effectively override the labeled delegate because of another wrapper generated by the compiler.")]
         public void GetHangReportProducesDgmlWithMethodNameYieldingOnMainThread()
         {
             this.ExecuteOnDispatcher(async delegate
@@ -442,16 +447,16 @@
                 await messagePosted.WaitAsync();
                 IHangReportContributor contributor = this.Context;
                 var report = contributor.GetHangReport();
-                Console.WriteLine(report.Content);
+                this.Logger.WriteLine(report.Content);
                 var dgml = XDocument.Parse(report.Content);
                 var collectionLabels = from node in dgml.Root.Element(XName.Get("Nodes", DgmlNamespace)).Elements()
                                        where node.Attribute(XName.Get("Category"))?.Value == "Task"
                                        select node.Attribute(XName.Get("Label"))?.Value;
-                Assert.IsTrue(collectionLabels.Any(label => label.Contains(nameof(this.YieldingMethodAsync))));
+                Assert.True(collectionLabels.Any(label => label.Contains(nameof(this.YieldingMethodAsync))));
             });
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void GetHangReportWithActualHang()
         {
             var endTestTokenSource = new CancellationTokenSource();
@@ -459,7 +464,7 @@
             {
                 IHangReportContributor contributor = this.Context;
                 var report = contributor.GetHangReport();
-                Console.WriteLine(report.Content);
+                this.Logger.WriteLine(report.Content);
                 endTestTokenSource.Cancel();
                 this.Context.OnReportHang = null;
             };
@@ -487,21 +492,21 @@
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void IsMainThreadBlockedFalseWithNoTask()
         {
-            Assert.IsFalse(this.Context.IsMainThreadBlocked());
+            Assert.False(this.Context.IsMainThreadBlocked());
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void IsMainThreadBlockedFalseWhenAsync()
         {
             var frame = new DispatcherFrame();
             var joinable = this.Factory.RunAsync(async delegate
             {
-                Assert.IsFalse(this.Context.IsMainThreadBlocked());
+                Assert.False(this.Context.IsMainThreadBlocked());
                 await Task.Yield();
-                Assert.IsFalse(this.Context.IsMainThreadBlocked());
+                Assert.False(this.Context.IsMainThreadBlocked());
                 frame.Continue = false;
             });
 
@@ -509,45 +514,45 @@
             joinable.Join(); // rethrow exceptions
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void IsMainThreadBlockedTrueWhenAsyncBecomesBlocking()
         {
             var joinable = this.Factory.RunAsync(async delegate
             {
-                Assert.IsFalse(this.Context.IsMainThreadBlocked());
+                Assert.False(this.Context.IsMainThreadBlocked());
                 await Task.Yield();
-                Assert.IsTrue(this.Context.IsMainThreadBlocked()); // we're now running on top of Join()
+                Assert.True(this.Context.IsMainThreadBlocked()); // we're now running on top of Join()
                 await TaskScheduler.Default.SwitchTo(alwaysYield: true);
-                Assert.IsTrue(this.Context.IsMainThreadBlocked()); // although we're on background thread, we're blocking main thread.
+                Assert.True(this.Context.IsMainThreadBlocked()); // although we're on background thread, we're blocking main thread.
 
                 await this.Factory.RunAsync(async delegate
                 {
-                    Assert.IsTrue(this.Context.IsMainThreadBlocked());
+                    Assert.True(this.Context.IsMainThreadBlocked());
                     await Task.Yield();
-                    Assert.IsTrue(this.Context.IsMainThreadBlocked());
+                    Assert.True(this.Context.IsMainThreadBlocked());
                     await this.Factory.SwitchToMainThreadAsync();
-                    Assert.IsTrue(this.Context.IsMainThreadBlocked());
+                    Assert.True(this.Context.IsMainThreadBlocked());
                 });
             });
 
             joinable.Join();
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void IsMainThreadBlockedTrueWhenAsyncBecomesBlockingWithNestedTask()
         {
             var frame = new DispatcherFrame();
             var joinable = this.Factory.RunAsync(async delegate
             {
-                Assert.IsFalse(this.Context.IsMainThreadBlocked());
+                Assert.False(this.Context.IsMainThreadBlocked());
                 await Task.Yield();
-                Assert.IsFalse(this.Context.IsMainThreadBlocked());
+                Assert.False(this.Context.IsMainThreadBlocked());
                 await TaskScheduler.Default.SwitchTo(alwaysYield: true);
-                Assert.IsFalse(this.Context.IsMainThreadBlocked());
+                Assert.False(this.Context.IsMainThreadBlocked());
 
                 await this.Factory.RunAsync(async delegate
                 {
-                    Assert.IsFalse(this.Context.IsMainThreadBlocked());
+                    Assert.False(this.Context.IsMainThreadBlocked());
 
                     // Now release the message pump so we hit the Join() call
                     await this.Factory.SwitchToMainThreadAsync();
@@ -555,9 +560,9 @@
                     await Task.Yield();
 
                     // From now on, we're blocking.
-                    Assert.IsTrue(this.Context.IsMainThreadBlocked());
+                    Assert.True(this.Context.IsMainThreadBlocked());
                     await TaskScheduler.Default.SwitchTo(alwaysYield: true);
-                    Assert.IsTrue(this.Context.IsMainThreadBlocked());
+                    Assert.True(this.Context.IsMainThreadBlocked());
                 });
             });
 
@@ -565,43 +570,43 @@
             joinable.Join();
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void IsMainThreadBlockedTrueWhenOriginallySync()
         {
             this.Factory.Run(async delegate
             {
-                Assert.IsTrue(this.Context.IsMainThreadBlocked());
+                Assert.True(this.Context.IsMainThreadBlocked());
                 await Task.Yield();
-                Assert.IsTrue(this.Context.IsMainThreadBlocked());
+                Assert.True(this.Context.IsMainThreadBlocked());
                 await TaskScheduler.Default.SwitchTo(alwaysYield: true);
-                Assert.IsTrue(this.Context.IsMainThreadBlocked());
+                Assert.True(this.Context.IsMainThreadBlocked());
 
                 await this.Factory.RunAsync(async delegate
                 {
-                    Assert.IsTrue(this.Context.IsMainThreadBlocked());
+                    Assert.True(this.Context.IsMainThreadBlocked());
                     await Task.Yield();
-                    Assert.IsTrue(this.Context.IsMainThreadBlocked());
+                    Assert.True(this.Context.IsMainThreadBlocked());
                     await this.Factory.SwitchToMainThreadAsync();
-                    Assert.IsTrue(this.Context.IsMainThreadBlocked());
+                    Assert.True(this.Context.IsMainThreadBlocked());
                 });
             });
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void IsMainThreadBlockedFalseWhenSyncBlockingOtherThread()
         {
             var task = Task.Run(delegate
             {
                 this.Factory.Run(async delegate
                 {
-                    Assert.IsFalse(this.Context.IsMainThreadBlocked());
+                    Assert.False(this.Context.IsMainThreadBlocked());
                     await Task.Yield();
-                    Assert.IsFalse(this.Context.IsMainThreadBlocked());
+                    Assert.False(this.Context.IsMainThreadBlocked());
                 });
             });
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void IsMainThreadBlockedTrueWhenAsyncOnOtherThreadBecomesSyncOnMainThread()
         {
             var nonBlockingStateObserved = new AsyncManualResetEvent();
@@ -611,11 +616,11 @@
             {
                 joinableTask = this.Factory.RunAsync(async delegate
                 {
-                    Assert.IsFalse(this.Context.IsMainThreadBlocked());
+                    Assert.False(this.Context.IsMainThreadBlocked());
                     nonBlockingStateObserved.Set();
                     await Task.Yield();
                     await nowBlocking;
-                    Assert.IsTrue(this.Context.IsMainThreadBlocked());
+                    Assert.True(this.Context.IsMainThreadBlocked());
                 });
             }).Wait();
 
@@ -627,14 +632,14 @@
             });
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void RevertRelevanceDefaultValue()
         {
             var revert = default(JoinableTaskContext.RevertRelevance);
             revert.Dispose();
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void Disposable()
         {
             IDisposable disposable = this.Context;

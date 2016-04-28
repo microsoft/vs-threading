@@ -7,9 +7,15 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Xunit;
+    using Xunit.Abstractions;
 
     public class TestBaseTests : TestBase
     {
+        public TestBaseTests(ITestOutputHelper logger)
+            : base(logger)
+        {
+        }
+
         [Fact]
         public void ExecuteOnSTA_ExecutesDelegateOnSTA()
         {

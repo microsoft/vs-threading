@@ -12,14 +12,21 @@ namespace Microsoft.VisualStudio.Threading.Tests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
+    using Xunit.Abstractions;
 
-    [TestClass]
     public class DelegatingJoinableTaskFactoryTests : JoinableTaskTestBase
     {
         private object logLock;
 
         private IList<FactoryLogEntry> log;
+
+        public DelegatingJoinableTaskFactoryTests(ITestOutputHelper logger)
+            : base(logger)
+        {
+            this.logLock = new object();
+            this.log = new List<FactoryLogEntry>();
+        }
 
         private enum FactoryLogEntry
         {
@@ -33,16 +40,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             InnerPostToUnderlyingSynchronizationContext,
         }
 
-        [TestInitialize]
-        public override void Initialize()
-        {
-            base.Initialize();
-
-            this.logLock = new object();
-            this.log = new List<FactoryLogEntry>();
-        }
-
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void DelegationBehaviors()
         {
             var innerFactory = new CustomizedFactory(this.context, this.AddToLog);
@@ -65,8 +63,8 @@ namespace Microsoft.VisualStudio.Threading.Tests
             {
                 while (!ValidateDelegatingLog(this.log.ToList()))
                 {
-                    Console.WriteLine("Waiting with a count of {0}", this.log.Count);
-                    Assert.IsTrue(Monitor.Wait(this.logLock, AsyncDelay));
+                    this.Logger.WriteLine("Waiting with a count of {0}", this.log.Count);
+                    Assert.True(Monitor.Wait(this.logLock, AsyncDelay));
                 }
             }
         }
@@ -74,7 +72,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         /// <summary>
         /// Verifies that delegating factories add their tasks to the inner factory's collection.
         /// </summary>
-        [TestMethod, Timeout(TestTimeout)]
+        [StaFact]
         public void DelegationSharesCollection()
         {
             var log = new List<FactoryLogEntry>();
@@ -83,7 +81,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             jt = delegatingFactory.RunAsync(async delegate
             {
                 await Task.Yield();
-                Assert.IsTrue(this.joinableCollection.Contains(jt));
+                Assert.True(this.joinableCollection.Contains(jt));
             });
 
             jt.Join();
@@ -119,7 +117,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         {
             lock (this.logLock)
             {
-                Console.WriteLine($"Adding entry {entry} (#{this.log.Count + 1}) from thread {Environment.CurrentManagedThreadId}");
+                this.Logger.WriteLine($"Adding entry {entry} (#{this.log.Count + 1}) from thread {Environment.CurrentManagedThreadId}");
                 this.log.Add(entry);
                 Monitor.Pulse(this.logLock);
             }

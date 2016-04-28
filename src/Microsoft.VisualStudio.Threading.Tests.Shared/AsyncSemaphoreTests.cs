@@ -6,14 +6,19 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
+    using Xunit.Abstractions;
 
-    [TestClass]
     public class AsyncSemaphoreTests : TestBase
     {
         private AsyncSemaphore lck = new AsyncSemaphore(1);
 
-        [TestMethod, Timeout(TestTimeout)]
+        public AsyncSemaphoreTests(ITestOutputHelper logger)
+            : base(logger)
+        {
+        }
+
+        [Fact]
         public async Task Uncontested()
         {
             using (await this.lck.EnterAsync())
@@ -29,93 +34,91 @@
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task Contested()
         {
             var first = this.lck.EnterAsync();
-            Assert.IsTrue(first.IsCompleted);
+            Assert.True(first.IsCompleted);
             var second = this.lck.EnterAsync();
-            Assert.IsFalse(second.IsCompleted);
+            Assert.False(second.IsCompleted);
             first.Result.Dispose();
             await second;
             second.Result.Dispose();
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task ContestedAndCancelled()
         {
             var cts = new CancellationTokenSource();
             var first = this.lck.EnterAsync();
             var second = this.lck.EnterAsync(cts.Token);
-            Assert.IsFalse(second.IsCompleted);
+            Assert.False(second.IsCompleted);
             cts.Cancel();
-            first.Result.Dispose();
             try
             {
                 await second;
-                Assert.Fail("Expected OperationCanceledException not thrown.");
+                Assert.True(false, "Expected OperationCanceledException not thrown.");
             }
             catch (OperationCanceledException ex)
             {
-                Assert.AreEqual(cts.Token, ex.CancellationToken);
+                Assert.Equal(cts.Token, ex.CancellationToken);
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task ContestedAndCancelledWithTimeoutSpecified()
         {
             var cts = new CancellationTokenSource();
             var first = this.lck.EnterAsync();
             var second = this.lck.EnterAsync(Timeout.Infinite, cts.Token);
-            Assert.IsFalse(second.IsCompleted);
+            Assert.False(second.IsCompleted);
             cts.Cancel();
-            first.Result.Dispose();
             try
             {
                 await second;
-                Assert.Fail("Expected OperationCanceledException not thrown.");
+                Assert.True(false, "Expected OperationCanceledException not thrown.");
             }
             catch (OperationCanceledException ex)
             {
-                Assert.AreEqual(cts.Token, ex.CancellationToken);
+                Assert.Equal(cts.Token, ex.CancellationToken);
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void PreCancelled()
         {
             var cts = new CancellationTokenSource();
             cts.Cancel();
             Task enterAsyncTask = this.lck.EnterAsync(cts.Token);
-            Assert.IsTrue(enterAsyncTask.IsCanceled);
+            Assert.True(enterAsyncTask.IsCanceled);
             try
             {
                 enterAsyncTask.GetAwaiter().GetResult();
-                Assert.Fail("Expected exception not thrown.");
+                Assert.True(false, "Expected exception not thrown.");
             }
             catch (OperationCanceledException ex)
             {
                 if (!TestUtilities.IsNet45Mode)
                 {
-                    Assert.AreEqual(cts.Token, ex.CancellationToken);
+                    Assert.Equal(cts.Token, ex.CancellationToken);
                 }
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void TimeoutIntImmediateFailure()
         {
             var first = this.lck.EnterAsync(0);
             var second = this.lck.EnterAsync(0);
-            Assert.AreEqual(TaskStatus.Canceled, second.Status);
+            Assert.Equal(TaskStatus.Canceled, second.Status);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task TimeoutIntEventualFailure()
         {
             var first = this.lck.EnterAsync(0);
             var second = this.lck.EnterAsync(100);
-            Assert.IsFalse(second.IsCompleted);
+            Assert.False(second.IsCompleted);
             try
             {
                 await second;
@@ -125,26 +128,26 @@
             }
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public async Task TimeoutIntSuccess()
         {
             var first = this.lck.EnterAsync(0);
             var second = this.lck.EnterAsync(AsyncDelay);
-            Assert.IsFalse(second.IsCompleted);
+            Assert.False(second.IsCompleted);
             first.Result.Dispose();
             await second;
             second.Dispose();
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void TimeoutTimeSpan()
         {
             var first = this.lck.EnterAsync(TimeSpan.Zero);
             var second = this.lck.EnterAsync(TimeSpan.Zero);
-            Assert.AreEqual(TaskStatus.Canceled, second.Status);
+            Assert.Equal(TaskStatus.Canceled, second.Status);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void TwoResourceSemaphore()
         {
             var sem = new AsyncSemaphore(2);
@@ -152,12 +155,12 @@
             var second = sem.EnterAsync();
             var third = sem.EnterAsync();
 
-            Assert.AreEqual(TaskStatus.RanToCompletion, first.Status);
-            Assert.AreEqual(TaskStatus.RanToCompletion, second.Status);
-            Assert.IsFalse(third.IsCompleted);
+            Assert.Equal(TaskStatus.RanToCompletion, first.Status);
+            Assert.Equal(TaskStatus.RanToCompletion, second.Status);
+            Assert.False(third.IsCompleted);
         }
 
-        [TestMethod, Timeout(TestTimeout)]
+        [Fact]
         public void Disposable()
         {
             IDisposable disposable = this.lck;
