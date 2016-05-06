@@ -16,6 +16,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
     public abstract partial class DiagnosticVerifier
     {
         #region To be implemented by Test classes
+
         /// <summary>
         /// Get the CSharp analyzer being tested - to be implemented in non-abstract class
         /// </summary>
@@ -43,7 +44,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <param name="expected"> DiagnosticResults that should appear after the analyzer is run on the source</param>
         protected void VerifyCSharpDiagnostic(string source, params DiagnosticResult[] expected)
         {
-            VerifyDiagnostics(new[] { source }, LanguageNames.CSharp, GetCSharpDiagnosticAnalyzer(), expected);
+            this.VerifyDiagnostics(new[] { source }, LanguageNames.CSharp, this.GetCSharpDiagnosticAnalyzer(), expected);
         }
 
         /// <summary>
@@ -54,7 +55,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <param name="expected">DiagnosticResults that should appear after the analyzer is run on the source</param>
         protected void VerifyBasicDiagnostic(string source, params DiagnosticResult[] expected)
         {
-            VerifyDiagnostics(new[] { source }, LanguageNames.VisualBasic, GetBasicDiagnosticAnalyzer(), expected);
+            this.VerifyDiagnostics(new[] { source }, LanguageNames.VisualBasic, this.GetBasicDiagnosticAnalyzer(), expected);
         }
 
         /// <summary>
@@ -65,7 +66,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <param name="expected">DiagnosticResults that should appear after the analyzer is run on the sources</param>
         protected void VerifyCSharpDiagnostic(string[] sources, params DiagnosticResult[] expected)
         {
-            VerifyDiagnostics(sources, LanguageNames.CSharp, GetCSharpDiagnosticAnalyzer(), expected);
+            this.VerifyDiagnostics(sources, LanguageNames.CSharp, this.GetCSharpDiagnosticAnalyzer(), expected);
         }
 
         /// <summary>
@@ -76,11 +77,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <param name="expected">DiagnosticResults that should appear after the analyzer is run on the sources</param>
         protected void VerifyBasicDiagnostic(string[] sources, params DiagnosticResult[] expected)
         {
-            VerifyDiagnostics(sources, LanguageNames.VisualBasic, GetBasicDiagnosticAnalyzer(), expected);
+            this.VerifyDiagnostics(sources, LanguageNames.VisualBasic, this.GetBasicDiagnosticAnalyzer(), expected);
         }
 
         /// <summary>
-        /// General method that gets a collection of actual diagnostics found in the source after the analyzer is run, 
+        /// General method that gets a collection of actual diagnostics found in the source after the analyzer is run,
         /// then verifies each of them.
         /// </summary>
         /// <param name="sources">An array of strings to create source documents from to run the analyzers on</param>
@@ -96,6 +97,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         #endregion
 
         #region Actual comparisons and verifications
+
         /// <summary>
         /// Checks each of the actual Diagnostics found and compares them with the corresponding DiagnosticResult in the array of expected results.
         /// Diagnostics are considered equal only if the DiagnosticResultLocation, Id, Severity, and Message of the DiagnosticResult match the actual diagnostic.
@@ -214,6 +216,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         #endregion
 
         #region Formatting Diagnostics
+
         /// <summary>
         /// Helper method to format a Diagnostic into an easily readable string
         /// </summary>

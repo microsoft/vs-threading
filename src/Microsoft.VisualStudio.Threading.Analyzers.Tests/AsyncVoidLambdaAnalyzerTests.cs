@@ -35,8 +35,8 @@ class Test {
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 11) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 11) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -55,8 +55,8 @@ class Test {
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 11) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 11) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -75,8 +75,8 @@ class Test {
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 11) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 11) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -95,8 +95,8 @@ class Test {
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 11) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 11) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -111,8 +111,8 @@ class Test {
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 6, 25) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 6, 25) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -127,8 +127,8 @@ class Test {
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 6, 33) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 6, 33) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -146,7 +146,7 @@ class Test {
     class MyEventArgs : EventArgs {}
 }
 ";
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
     }
 }

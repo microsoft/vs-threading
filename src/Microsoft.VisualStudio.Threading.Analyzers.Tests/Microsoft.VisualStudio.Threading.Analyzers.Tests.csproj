@@ -12,9 +12,15 @@
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <TargetFrameworkProfile />
-    <MicroBuild_GenerateDocumentationFile>false</MicroBuild_GenerateDocumentationFile>
-    <DocumentationFile />
     <OutputPath Condition=" '$(OutputPath)' == '' ">bin\$(Configuration)</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Analyzers.Tests.ruleset</CodeAnalysisRuleSet>
+    <NoWarn>CS1591</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Analyzers.Tests.ruleset</CodeAnalysisRuleSet>
+    <NoWarn>CS1591</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Build.Utilities.Core, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
@@ -30,12 +36,13 @@
     <Compile Include="Helpers\CodeFixVerifier.cs" />
     <Compile Include="Helpers\CodeFixVerifier.Helper.cs" />
     <Compile Include="Helpers\DiagnosticResult.cs" />
+    <Compile Include="Helpers\DiagnosticResultLocation.cs" />
     <Compile Include="Helpers\DiagnosticVerifier.cs" />
     <Compile Include="Helpers\DiagnosticVerifier.Helper.cs" />
     <Compile Include="JtfRunAwaitTaskAnalyzerTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SynchronousWaitAnalyzerTests.cs" />
-    <Compile Include="VsServiceUsageAnalyzerTests.cs" />
+    <Compile Include="VsServiceInvocationAnalyzerTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.csproj">
@@ -48,6 +55,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Microsoft.VisualStudio.Threading.Analyzers.Tests.ruleset" />
     <None Include="project.json" />
     <None Include="app.config">
       <SubType>Designer</SubType>

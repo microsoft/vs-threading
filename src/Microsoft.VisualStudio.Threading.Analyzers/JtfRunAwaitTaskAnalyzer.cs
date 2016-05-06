@@ -40,6 +40,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class JtfRunAwaitTaskAnalyzer : DiagnosticAnalyzer
     {
+        /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         {
             get
@@ -48,6 +49,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
         }
 
+        /// <inheritdoc />
         public override void Initialize(AnalysisContext context)
         {
             context.RegisterSyntaxNodeAction(this.AnalyzeNode, SyntaxKind.AwaitExpression);

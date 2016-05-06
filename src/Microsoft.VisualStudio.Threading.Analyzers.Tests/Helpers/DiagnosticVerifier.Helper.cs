@@ -1,30 +1,30 @@
 ﻿// Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
-using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.CodeAnalysis.Text;
-using Microsoft.Build.Utilities;
-
 namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Collections.Immutable;
+    using System.IO;
+    using System.Linq;
+    using System.Threading;
+    using Microsoft.Build.Utilities;
+    using Microsoft.CodeAnalysis;
+    using Microsoft.CodeAnalysis.CSharp;
+    using Microsoft.CodeAnalysis.Diagnostics;
+    using Microsoft.CodeAnalysis.Text;
+
     /// <summary>
     /// Class for turning strings into documents and getting the diagnostics on them
     /// All methods are static
     /// </summary>
     public abstract partial class DiagnosticVerifier
     {
-        private static readonly MetadataReference CorlibReference = MetadataReference.CreateFromAssembly(typeof(object).Assembly);
-        private static readonly MetadataReference SystemCoreReference = MetadataReference.CreateFromAssembly(typeof(Enumerable).Assembly);
-        private static readonly MetadataReference CSharpSymbolsReference = MetadataReference.CreateFromAssembly(typeof(CSharpCompilation).Assembly);
-        private static readonly MetadataReference CodeAnalysisReference = MetadataReference.CreateFromAssembly(typeof(Compilation).Assembly);
-        private static readonly MetadataReference ThreadingReference = MetadataReference.CreateFromAssembly(typeof(AsyncEventHandler).Assembly);
+        private static readonly MetadataReference CorlibReference = MetadataReference.CreateFromFile(typeof(object).Assembly.Location);
+        private static readonly MetadataReference SystemCoreReference = MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location);
+        private static readonly MetadataReference CSharpSymbolsReference = MetadataReference.CreateFromFile(typeof(CSharpCompilation).Assembly.Location);
+        private static readonly MetadataReference CodeAnalysisReference = MetadataReference.CreateFromFile(typeof(Compilation).Assembly.Location);
+        private static readonly MetadataReference ThreadingReference = MetadataReference.CreateFromFile(typeof(AsyncEventHandler).Assembly.Location);
 
         internal static string DefaultFilePathPrefix = "Test";
         internal static string CSharpDefaultFileExt = "cs";
@@ -107,6 +107,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         #endregion
 
         #region Set up compilation and documents
+
         /// <summary>
         /// Given an array of strings as sources and a language, turn them into a project and return the documents and spans of it.
         /// </summary>
@@ -169,8 +170,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 .AddMetadataReference(projectId, CodeAnalysisReference)
                 .AddMetadataReference(projectId, ThreadingReference);
 
-            var pathToLibs = ToolLocationHelper.GetPathToStandardLibraries(".NETFramework", "v4.5.1", String.Empty);
-            if (!String.IsNullOrEmpty(pathToLibs))
+            var pathToLibs = ToolLocationHelper.GetPathToStandardLibraries(".NETFramework", "v4.5.1", string.Empty);
+            if (!string.IsNullOrEmpty(pathToLibs))
             {
                 var facades = Path.Combine(pathToLibs, "Facades");
                 if (Directory.Exists(facades))
