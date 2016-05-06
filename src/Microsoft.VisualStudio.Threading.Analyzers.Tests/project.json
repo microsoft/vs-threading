@@ -1,10 +1,7 @@
 ﻿{
   "dependencies": {
     "MicroBuild.NonShipping": "1.0.110-rc",
-    "MicroBuild.VisualStudio": "1.0.110-rc",
-    "Microsoft.Composition": "1.0.27",
-    "Nerdbank.GitVersioning": "1.4.19",
-    "Microsoft.CodeAnalysis.CSharp.Workspaces": "1.0.0-rc3-20150514-02",
+    "Microsoft.VisualStudio.Validation": "14.1.111",
     "xunit": "2.1.0",
     "xunit.runner.visualstudio": "2.1.0"
   },

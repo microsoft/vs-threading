@@ -1,9 +1,6 @@
 ﻿{
   "dependencies": {
     "MicroBuild.NonShipping": "1.0.110-rc",
-    "MicroBuild.VisualStudio": "1.0.110-rc",
-    "Microsoft.VisualStudio.Validation": "14.1.111",
-    "Nerdbank.GitVersioning": "1.4.19",
     "StyleCop.Analyzers": "1.0.0",
     "xunit": "2.1.0",
     "Xunit.SkippableFact": "1.2.14",

@@ -1,0 +1,29 @@
+﻿{
+  "dependencies": {
+    "MicroBuild.Core": {
+      "version": "0.1.1",
+      "suppressParent": "none"
+    },
+    "MicroBuild.VisualStudio": {
+      "version": "1.0.111-rc",
+      "suppressParent": "none"
+    },
+    "Microsoft.VisualStudio.Validation": "14.1.111",
+    "Nerdbank.GitVersioning": {
+      "version": "1.4.19",
+      "suppressParent": "none"
+    },
+    "NuProj.Common": {
+      "version": "0.10.48-beta-gea4a31bbc5",
+      "suppressParent": "none"
+    },
+    "NuSpec.ReferenceGenerator": "1.4.2",
+    "StyleCop.Analyzers": "1.0.0"
+  },
+  "frameworks": {
+    "net45": { }
+  },
+  "runtimes": {
+    "win": { }
+  }
+}
