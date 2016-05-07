@@ -12,7 +12,6 @@
     <tags></tags>
     <dependencies>
       <group targetFramework="dotnet">
-        <dependency id="Microsoft.VisualStudio.Validation" version="15.0.11-pre" />
         <dependency id="System.Collections" version="4.0.0" />
         <dependency id="System.Collections.Concurrent" version="4.0.0" />
         <dependency id="System.Diagnostics.Debug" version="4.0.0" />
@@ -28,6 +27,7 @@
         <dependency id="System.Threading" version="4.0.0" />
         <dependency id="System.Threading.Tasks" version="4.0.0" />
         <dependency id="System.Xml.XDocument" version="4.0.0" />
+        <dependency id="Microsoft.VisualStudio.Validation" version="15.0.11-pre" />
       </group>
       <group targetFramework="MonoAndroid">
         <dependency id="Microsoft.VisualStudio.Validation" version="15.0.11-pre" />

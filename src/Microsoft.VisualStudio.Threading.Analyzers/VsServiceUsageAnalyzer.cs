@@ -62,6 +62,7 @@
             MainThread,
         }
 
+        /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         {
             get
@@ -70,6 +71,7 @@
             }
         }
 
+        /// <inheritdoc />
         public override void Initialize(AnalysisContext context)
         {
             context.RegisterCodeBlockStartAction<SyntaxKind>(ctxt =>

@@ -45,7 +45,7 @@ class Test {
     }
 }
 ";
-            VerifyCSharpFix(test, withFix);
+            this.VerifyCSharpFix(test, withFix);
         }
 
         [Fact]
@@ -71,7 +71,7 @@ class Test {
     }
 }
 ";
-            VerifyCSharpFix(test, withFix);
+            this.VerifyCSharpFix(test, withFix);
         }
     }
 }

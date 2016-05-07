@@ -47,8 +47,8 @@ class Tests
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 19) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 19) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -79,8 +79,8 @@ class Tests
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 19) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 19) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -111,8 +111,8 @@ class Tests
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 19) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 19) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -143,8 +143,8 @@ class Tests
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 19) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 19) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -177,7 +177,7 @@ class Tests
     }
 }
 ";
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
 
         [Fact]
@@ -213,9 +213,8 @@ class Tests
     }
 }
 ";
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
-
 
         [Fact]
         public void DoNotReportWarningWhenTaskIsDefinedOutsideButInitializedWithinDelegate()
@@ -246,7 +245,7 @@ class Tests
     }
 }
 ";
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
 
         [Fact]
@@ -278,9 +277,8 @@ class Tests
     }
 }
 ";
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
-
 
         [Fact]
         public void DoNotReportWarningWhenTaskIsInitializedInsideDelegateConditionalStatement()
@@ -315,7 +313,7 @@ class Tests
     }
 }
 ";
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
 
         [Fact]
@@ -347,8 +345,8 @@ class Tests
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 19) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 19) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -381,8 +379,8 @@ class Tests
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 16, 19) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 16, 19) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -416,8 +414,8 @@ class Tests
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 16, 23) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 16, 23) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -452,19 +450,18 @@ class Tests
 ";
             DiagnosticResult[] expected = new[]
             {
-                new DiagnosticResult() { Id = expect.Id, SkipVerifyMessage = expect.SkipVerifyMessage, Severity = DiagnosticSeverity.Warning,
-                Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 19)} },
+                new DiagnosticResult() { Id = this.expect.Id, SkipVerifyMessage = this.expect.SkipVerifyMessage, Severity = DiagnosticSeverity.Warning,
+                Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 19) } },
 
-                new DiagnosticResult() { Id = expect.Id, SkipVerifyMessage = expect.SkipVerifyMessage, Severity = DiagnosticSeverity.Warning,
-                Locations = new[] { new DiagnosticResultLocation("Test0.cs", 15, 19)} },
+                new DiagnosticResult() { Id = this.expect.Id, SkipVerifyMessage = this.expect.SkipVerifyMessage, Severity = DiagnosticSeverity.Warning,
+                Locations = new[] { new DiagnosticResultLocation("Test0.cs", 15, 19) } },
 
-                new DiagnosticResult() { Id = expect.Id, SkipVerifyMessage = expect.SkipVerifyMessage, Severity = DiagnosticSeverity.Warning,
-                Locations = new[] { new DiagnosticResultLocation("Test0.cs", 16, 19)} }
+                new DiagnosticResult() { Id = this.expect.Id, SkipVerifyMessage = this.expect.SkipVerifyMessage, Severity = DiagnosticSeverity.Warning,
+                Locations = new[] { new DiagnosticResultLocation("Test0.cs", 16, 19) } }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            this.VerifyCSharpDiagnostic(test, expected);
         }
-
 
         [Fact]
         public void DoNotReportWarningWhenAwaitingAsyncMethod()
@@ -493,7 +490,7 @@ class Tests
     }
 }
 ";
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
 
         [Fact]
@@ -521,7 +518,7 @@ class Tests
     }
 }
 ";
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
 
         [Fact]
@@ -550,7 +547,7 @@ class Tests
     }
 }
 ";
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
 
         [Fact]
@@ -585,8 +582,8 @@ class Tests
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 17, 23) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 17, 23) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -627,8 +624,8 @@ class Tests
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 24, 19) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 24, 19) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -676,9 +673,9 @@ class Tests
 }
 
 ";
+
             // We decided not to report warning in this case, because we don't know if our assumptions about the Run implementation are still valid for user's implementation
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
-        
     }
 }

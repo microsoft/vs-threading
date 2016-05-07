@@ -1,8 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.props" Condition="Exists('..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.props')" />
-  <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.110-rc\build\MicroBuild.VisualStudio.props" Condition="Exists('..\..\packages\MicroBuild.VisualStudio.1.0.110-rc\build\MicroBuild.VisualStudio.props')" />
-  <Import Project="..\..\packages\MicroBuild.1.0.110-rc\build\MicroBuild.props" Condition="Exists('..\..\packages\MicroBuild.1.0.110-rc\build\MicroBuild.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|AnyCPU">
       <Configuration>Debug</Configuration>
@@ -13,19 +10,11 @@
       <Platform>AnyCPU</Platform>
     </ProjectConfiguration>
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Desktop\Microsoft.VisualStudio.Threading.Desktop.csproj" />
-    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Portable\Microsoft.VisualStudio.Threading.Portable.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Microsoft.VisualStudio.Threading.nuspec" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>c51acf4a-3e2c-44b2-99fc-1a838518c690</ProjectGuid>
   </PropertyGroup>
   <PropertyGroup>
-    <NuProjPath Condition=" '$(NuProjPath)' == '' ">..\..\packages\NuProj.0.10.4-beta-gf7fc34e7d8\tools\</NuProjPath>
-    <VersionDependsOn>$(VersionDependsOn);GetNuPkgVersion</VersionDependsOn>
+    <NuProjPath>$(UserProfile)\.nuget\packages\NuProj\0.10.48-beta-gea4a31bbc5\tools\</NuProjPath>
     <NuSpecTemplate>Microsoft.VisualStudio.Threading.nuspec</NuSpecTemplate>
   </PropertyGroup>
   <Import Project="$(NuProjPath)\NuProj.props" Condition="Exists('$(NuProjPath)\NuProj.props')" />
@@ -44,35 +33,23 @@
     <RequireLicenseAcceptance>true</RequireLicenseAcceptance>
     <ReleaseNotes>http://go.microsoft.com/fwlink/?LinkID=746387</ReleaseNotes>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="Microsoft.VisualStudio.Threading.nuspec" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Desktop\Microsoft.VisualStudio.Threading.Desktop.csproj" />
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Portable\Microsoft.VisualStudio.Threading.Portable.csproj" />
+  </ItemGroup>
   <Import Project="$(NuProjPath)\NuProj.targets" />
-  <Target Name="GetNuPkgVersion" DependsOnTargets="GetBuildVersion">
-    <PropertyGroup>
-      <Version>$(NuGetPackageVersion)</Version>
-    </PropertyGroup>
-  </Target>
   <Target Name="CopyAssemblyToLibDotNetFolder" DependsOnTargets="ConvertItems" AfterTargets="ConvertItems">
     <!-- NuProj doesn't yet support populating the lib\dotnet folder. So we do it ourselves. -->
     <ItemGroup>
-      <File Include="@(File)"
-            Condition=" '%(File.TargetFrameworkMoniker)' == '.NETPortable,Version=v4.5,Profile=Profile111' ">
+      <File Include="@(File)" Condition=" '%(File.TargetFrameworkMoniker)' == '.NETPortable,Version=v4.5,Profile=Profile111' ">
         <TargetPath>lib\dotnet\%(FileName)%(Extension)</TargetPath>
       </File>
     </ItemGroup>
   </Target>
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\..\packages\MicroBuild.1.0.110-rc\build\MicroBuild.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.1.0.110-rc\build\MicroBuild.props'))" />
-    <Error Condition="!Exists('..\..\packages\MicroBuild.1.0.110-rc\build\MicroBuild.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.1.0.110-rc\build\MicroBuild.targets'))" />
-    <Error Condition="!Exists('..\..\packages\MicroBuild.VisualStudio.1.0.110-rc\build\MicroBuild.VisualStudio.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.VisualStudio.1.0.110-rc\build\MicroBuild.VisualStudio.props'))" />
-    <Error Condition="!Exists('..\..\packages\MicroBuild.VisualStudio.1.0.110-rc\build\MicroBuild.VisualStudio.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.VisualStudio.1.0.110-rc\build\MicroBuild.VisualStudio.targets'))" />
-    <Error Condition="!Exists('..\..\packages\Nerdbank.GitVersioning.1.4.19\build\NerdBank.GitVersioning.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Nerdbank.GitVersioning.1.4.19\build\NerdBank.GitVersioning.targets'))" />
-    <Error Condition="!Exists('..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.props'))" />
-    <Error Condition="!Exists('..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.targets'))" />
-  </Target>
-  <Import Project="..\..\packages\MicroBuild.1.0.110-rc\build\MicroBuild.targets" Condition="Exists('..\..\packages\MicroBuild.1.0.110-rc\build\MicroBuild.targets')" />
-  <Import Project="..\..\packages\MicroBuild.VisualStudio.1.0.110-rc\build\MicroBuild.VisualStudio.targets" Condition="Exists('..\..\packages\MicroBuild.VisualStudio.1.0.110-rc\build\MicroBuild.VisualStudio.targets')" />
-  <Import Project="..\..\packages\Nerdbank.GitVersioning.1.4.19\build\NerdBank.GitVersioning.targets" Condition="Exists('..\..\packages\Nerdbank.GitVersioning.1.4.19\build\NerdBank.GitVersioning.targets')" />
-  <Import Project="..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.targets" Condition="Exists('..\..\packages\MicroBuild.Core.0.1.1\build\MicroBuild.Core.targets')" />
 </Project>
