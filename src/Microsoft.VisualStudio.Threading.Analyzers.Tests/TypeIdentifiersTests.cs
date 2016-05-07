@@ -17,6 +17,5 @@
 
             Assert.Equal(nameof(JoinableTaskFactory.SwitchToMainThreadAsync), TypeIdentifiers.JoinableTaskFactory.SwitchToMainThreadAsyncName);
         }
-
     }
 }
