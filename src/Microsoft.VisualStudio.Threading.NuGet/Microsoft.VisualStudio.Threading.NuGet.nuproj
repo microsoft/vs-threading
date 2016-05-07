@@ -29,9 +29,9 @@
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <ProjectUrl>http://aka.ms/vsextensibility</ProjectUrl>
     <IconUrl>http://aka.ms/VsExtensibilityIcon</IconUrl>
-    <licenseUrl>http://go.microsoft.com/fwlink/?LinkId=717918</licenseUrl>
+    <LicenseUrl>http://go.microsoft.com/fwlink/?LinkID=746386</LicenseUrl>
     <RequireLicenseAcceptance>true</RequireLicenseAcceptance>
-    <ReleaseNotes>https://www.visualstudio.com/news/vs2015-vs</ReleaseNotes>
+    <ReleaseNotes>http://go.microsoft.com/fwlink/?LinkID=746387</ReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <None Include="Microsoft.VisualStudio.Threading.nuspec" />

@@ -8,7 +8,7 @@
       "version": "1.0.111-rc",
       "suppressParent": "none"
     },
-    "Microsoft.VisualStudio.Validation": "14.1.111",
+    "Microsoft.VisualStudio.Validation": "15.0.11-pre",
     "Nerdbank.GitVersioning": {
       "version": "1.4.19",
       "suppressParent": "none"

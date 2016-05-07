@@ -34,36 +34,16 @@ namespace Microsoft.VisualStudio.Threading
 
             // Check whether the handle is already signaled as an optimization.
             // But even for WaitOne(0) the CLR can pump messages if called on the UI thread, which the caller may not
-            // be expecting at this time, so be sure there is no message pump active by calling the native method.
-            bool addRefSuccess = false;
-            var waitHandle = handle.SafeWaitHandle;
-            try
+            // be expecting at this time, so be sure there is no message pump active by controlling the SynchronizationContext.
+            using (NoMessagePumpSyncContext.Default.Apply())
             {
-                waitHandle.DangerousAddRef(ref addRefSuccess);
-                int waitResult = NativeMethods.WaitForSingleObject(waitHandle.DangerousGetHandle(), 0);
-                switch (waitResult)
+                if (handle.WaitOne(0))
                 {
-                    case NativeMethods.WAIT_OBJECT_0:
-                        return TrueTask;
-                    case NativeMethods.WAIT_TIMEOUT:
-                        if (timeout == 0)
-                        {
-                            // The caller doesn't want to wait any longer, so return failure immediately.
-                            return FalseTask;
-                        }
-
-                        break;
-                    case NativeMethods.WAIT_FAILED:
-                        throw new Win32Exception();
-                    default:
-                        break;
+                    return TrueTask;
                 }
-            }
-            finally
-            {
-                if (addRefSuccess)
+                else if (timeout == 0)
                 {
-                    waitHandle.DangerousRelease();
+                    return FalseTask;
                 }
             }
 

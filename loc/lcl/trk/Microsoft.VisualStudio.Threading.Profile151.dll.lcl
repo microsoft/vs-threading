@@ -1,19 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LCX SchemaVersion="6.0" Name="F:\LocTmp\ddSetup\binaries.x86ret\bin\i386\vsproject\cps\package\core\Microsoft.Threading.dll" PsrId="211" FileType="1" SrcCul="en-US" TgtCul="it-IT" xmlns="http://schemas.microsoft.com/locstudio/2006/6/lcx">
+<LCX SchemaVersion="6.0" Name="F:\994\bin\Profile151\Microsoft.VisualStudio.Threading.dll" PsrId="211" FileType="1" SrcCul="en-US" TgtCul="tr-TR" xmlns="http://schemas.microsoft.com/locstudio/2006/6/lcx">
   <Props>
-    <Str Name="CustomName1" Val="Custom 1" />
-    <Str Name="CustomName2" Val="Custom 2" />
-    <Str Name="CustomName3" Val="Custom 3" />
-    <Str Name="CustomName4" Val="Custom 4" />
-    <Str Name="CustomName5" Val="Custom 5" />
-    <Str Name="CustomName6" Val="IQA" />
-    <Str Name="HobbitID" Val="8cdea6e6-0aed-4a0e-99cb-21a7ed38e763" />
+    <Str Name="HobbitID" Val="3ba5b791-74b5-44a3-af05-9030a5a2a1d0" />
   </Props>
   <OwnedComments>
     <Cmt Name="Dev" />
     <Cmt Name="LcxAdmin" />
     <Cmt Name="Loc" />
-    <Cmt Name="Note" />
     <Cmt Name="RCCX" />
   </OwnedComments>
   <Settings Name="@vsLocTools@\current\default.lss" Type="LSS" />
@@ -27,20 +20,17 @@
       <Item ItemId=";AppliedSynchronizationContextNotAllowed" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Acquiring locks on threads with a SynchronizationContext applied is not allowed.]]></Val>
-          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New">
-            <Val><![CDATA[Non è consentito acquisire blocchi su thread in cui è applicato un elemento SynchronizationContext.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[SynchronizationContext uygulanmış işlem parçacıkları için kilit alınamaz.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Notes>
-          <Note Name="Loc" Order="0"><![CDATA[trans3]]></Note>
-        </Notes>
       </Item>
       <Item ItemId=";CannotUpgradeNonUpgradeableLock" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[A non-upgradeable read lock is held by the caller and cannot be upgraded.]]></Val>
-          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A" Confidence="100">
-            <Val><![CDATA[Il chiamante mantiene un blocco lettura non aggiornabile, di conseguenza non è possibile aggiornarlo.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Yükseltilemeyen bir okuma kilidi, arayan tarafından tutuluyor ve yükseltilemiyor.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -48,32 +38,26 @@
       <Item ItemId=";DangerousReadLockRequestFromWriteLockFork" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Dangerous request for read lock from fork of write lock.]]></Val>
-          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New">
-            <Val><![CDATA[La biforcazione del blocco scrittura ha effettuato una richiesta pericolosa per il blocco lettura.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Okuma kilidi için yazma kilidi çatalından tehlikeli bir istek alındı.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Notes>
-          <Note Name="Loc" Order="0"><![CDATA[trans3]]></Note>
-        </Notes>
       </Item>
       <Item ItemId=";InvalidAfterCompleted" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Already transitioned to the Completed state.]]></Val>
-          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New">
-            <Val><![CDATA[Il passaggio allo stato Completato è già stato eseguito.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Tamamlandı durumuna zaten geçirildi.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Notes>
-          <Note Name="Loc" Order="0"><![CDATA[trans3]]></Note>
-        </Notes>
       </Item>
       <Item ItemId=";InvalidLock" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[This operation can only be executed against a valid lock.]]></Val>
-          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A" Confidence="100">
-            <Val><![CDATA[Questa operazione può essere eseguita solo su un blocco valido.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Bu işlem yalnızca geçerli bir kilitte yürütülebilir.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -81,44 +65,35 @@
       <Item ItemId=";InvalidWithoutLock" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[A lock is required.]]></Val>
-          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New">
-            <Val><![CDATA[È richiesto un blocco.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Kilit gerekiyor.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Notes>
-          <Note Name="Loc" Order="0"><![CDATA[trans3]]></Note>
-        </Notes>
       </Item>
       <Item ItemId=";JoinableTaskContextAndCollectionMismatch" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[JoinableTask does not belong to the context this collection was instantiated with.]]></Val>
-          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New">
-            <Val><![CDATA[JoinableTask non appartiene al contesto con cui è stata creata un'istanza di questa raccolta.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[JoinableTask, bu koleksiyonun örneğinin oluşturulduğu bağlama ait değil.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Notes>
-          <Note Name="Loc" Order="0"><![CDATA[trans3]]></Note>
-        </Notes>
       </Item>
       <Item ItemId=";JoinableTaskContextNodeAlreadyRegistered" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[This node already registered.]]></Val>
-          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New">
-            <Val><![CDATA[Questo nodo è già registrato.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Düğüm zaten kaydedilmiş.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Notes>
-          <Note Name="Loc" Order="0"><![CDATA[trans3]]></Note>
-        </Notes>
       </Item>
       <Item ItemId=";LazyValueFaulted" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Lazily created value faulted during construction.]]></Val>
-          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A" Confidence="100">
-            <Val><![CDATA[Si è verificato un errore durante la costruzione del valore creato in modo differito.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Geç oluşturulan değer, oluşturma sırasında hata verdi.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -126,8 +101,8 @@
       <Item ItemId=";LazyValueNotCreated" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Lazily created value not yet constructed.]]></Val>
-          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A" Confidence="100">
-            <Val><![CDATA[Il valore creato in modo differito non è stato ancora costruito.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Geç oluşturulan değer henüz oluşturulmadı.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -135,8 +110,8 @@
       <Item ItemId=";LockCompletionAlreadyRequested" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[This lock has already been marked for completion.  No new top-level locks can be serviced.]]></Val>
-          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A" Confidence="100">
-            <Val><![CDATA[Questo blocco è già stato contrassegnato per il completamento. Non è possibile eseguire nuovi blocchi di primo livello.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Bu kilit zaten tamamlanmak üzere işaretlenmiş.  Yeni üst düzey kilitlere hizmet verilemiyor.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -144,8 +119,8 @@
       <Item ItemId=";NotAllowedUnderURorWLock" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[This operation is not allowed while holding an active upgradeable read or write lock from an AsyncReaderWriterLock.]]></Val>
-          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A">
-            <Val><![CDATA[Questa operazione non è consentita quando si mantiene un blocco lettura o scrittura aggiornabile attivo da un elemento AsyncReaderWriterLock.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[AsyncReaderWriterLock'tan etkin bir yükseltilebilir okuma veya yazma kilidi tutulurken bu işleme izin verilmez.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -153,32 +128,26 @@
       <Item ItemId=";QueueEmpty" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[The queue is empty.]]></Val>
-          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New">
-            <Val><![CDATA[La coda è vuota.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Kuyruk boş.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Notes>
-          <Note Name="Loc" Order="0"><![CDATA[trans3]]></Note>
-        </Notes>
       </Item>
       <Item ItemId=";STAThreadCallerNotAllowed" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[This operation cannot be completed on an STA thread.]]></Val>
-          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New">
-            <Val><![CDATA[Non è possibile completare questa operazione su un thread STA.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Bu işlem STA iş parçacığında tamamlanamaz.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Notes>
-          <Note Name="Loc" Order="0"><![CDATA[trans3]]></Note>
-        </Notes>
       </Item>
       <Item ItemId=";ValueFactoryReentrancy" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[The value factory has called for the value on the same instance.]]></Val>
-          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A" Confidence="100">
-            <Val><![CDATA[La factory del valore ha richiesto il valore nella stessa istanza.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Değer fabrikası aynı örnekteki değeri çağırdı.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -196,7 +165,7 @@
     <Item ItemId=";FileDescription" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text">
         <Val><![CDATA[Microsoft.VisualStudio.Threading]]></Val>
-        <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New">
+        <Tgt Cat="Text" Stat="Loc" Orig="New">
           <Val><![CDATA[Microsoft.VisualStudio.Threading]]></Val>
         </Tgt>
       </Str>
@@ -217,8 +186,8 @@
     <Item ItemId=";LegalCopyright" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text">
         <Val><![CDATA[© Microsoft Corporation. All rights reserved.]]></Val>
-        <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A">
-          <Val><![CDATA[© Microsoft Corporation. Tutti i diritti sono riservati.]]></Val>
+        <Tgt Cat="Text" Stat="Loc" Orig="New">
+          <Val><![CDATA[© Microsoft Corporation. Tüm hakları saklıdır.]]></Val>
         </Tgt>
       </Str>
       <Disp Icon="Str" />
@@ -232,17 +201,11 @@
     <Item ItemId=";ProductName" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text">
         <Val><![CDATA[Microsoft® Visual Studio®]]></Val>
-        <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New">
+        <Tgt Cat="Text" Stat="Loc" Orig="New">
           <Val><![CDATA[Microsoft® Visual Studio®]]></Val>
         </Tgt>
-        <Prev Cat="Text">
-          <Val><![CDATA[Microsoft® Visual Studio® 2015 RC]]></Val>
-        </Prev>
       </Str>
       <Disp Icon="Str" />
-      <Notes>
-        <Note Name="Loc" Order="0"><![CDATA[trans3]]></Note>
-      </Notes>
     </Item>
     <Item ItemId=";ProductVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
