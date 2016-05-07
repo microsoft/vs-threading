@@ -30,8 +30,8 @@ class Test {
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 5, 16) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 5, 16) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -45,10 +45,9 @@ class Test {
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 5, 16) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 5, 16) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
-
 
         [Fact]
         public void ReportWarningOnAsyncVoidEventHandlerSimilarToAsyncEventHandler2()
@@ -61,8 +60,8 @@ class Test {
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 5, 16) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 5, 16) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -76,7 +75,7 @@ class Test {
     }
 }
 ";
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
 
         [Fact]
@@ -92,7 +91,7 @@ class Test {
 
 class MyEventArgs : EventArgs {}
 ";
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
     }
 }

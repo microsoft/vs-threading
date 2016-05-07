@@ -21,7 +21,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     /// Report warnings when detect the code that is waiting on tasks or awaiters synchronously.
     /// </summary>
     /// <remarks>
-    /// [Background] <see cref="Task.Wait"/> or <see cref="Task{TResult}.Result"/> will often deadlock if
+    /// [Background] <see cref="Task.Wait()"/> or <see cref="Task{TResult}.Result"/> will often deadlock if
     /// they are called on main thread, because now it is synchronously blocking the main thread for the
     /// completion of a task that may need the main thread to complete. Even if they are called on a threadpool
     /// thread, it is occupying a threadpool thread to do nothing but block, which is not good either.
@@ -33,6 +33,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class SynchronousWaitAnalyzer : DiagnosticAnalyzer
     {
+        /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         {
             get
@@ -41,6 +42,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
         }
 
+        /// <inheritdoc />
         public override void Initialize(AnalysisContext context)
         {
             context.RegisterSyntaxNodeAction(this.AnalyzeInvocation, SyntaxKind.InvocationExpression);

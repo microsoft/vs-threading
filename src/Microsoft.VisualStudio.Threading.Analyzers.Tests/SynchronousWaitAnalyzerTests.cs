@@ -39,8 +39,8 @@ class Test {
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 9) };
-            VerifyCSharpDiagnostic(test, this.expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 9) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -57,8 +57,8 @@ class Test {
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 22) };
-            VerifyCSharpDiagnostic(test, this.expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 22) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -75,10 +75,9 @@ class Test {
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 9) };
-            VerifyCSharpDiagnostic(test, this.expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 9) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
-
 
         [Fact]
         public void DoNotReportWarningOnCodeGeneratedByXaml2CS()
@@ -107,7 +106,7 @@ namespace Microsoft.VisualStudio.JavaScript.Project {
     }
 }
 ";
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
     }
 }

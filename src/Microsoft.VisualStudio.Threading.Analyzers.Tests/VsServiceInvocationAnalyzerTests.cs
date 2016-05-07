@@ -34,8 +34,8 @@ class Test {
     string name = G.Ref1.Name;
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 10, 19) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 10, 19) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -53,8 +53,8 @@ class Test {
     IVsSolution Method() { return null; }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 9) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 9) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -71,8 +71,8 @@ class Test {
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 9) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 9) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -93,7 +93,7 @@ class Test {
     }
 }
 ";
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
 
         [Fact]
@@ -116,7 +116,7 @@ class Test {
     }
 }
 ";
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
 
         [Fact]
@@ -140,8 +140,8 @@ class Test {
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 11, 13) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 11, 13) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -166,8 +166,8 @@ class Test {
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 12, 13) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 12, 13) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -191,7 +191,7 @@ class Test {
     }
 }
 ";
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
 
         [Fact]
@@ -215,8 +215,8 @@ class Test {
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 11, 13) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 11, 13) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -233,8 +233,8 @@ class Test {
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 20) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 20) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -251,8 +251,8 @@ class Test {
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 19) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 19) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -273,7 +273,7 @@ class Test {
     }
 }
 ";
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
 
         [Fact]
@@ -290,8 +290,8 @@ class Test {
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 19) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 19) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -312,7 +312,7 @@ class Test {
     }
 }
 ";
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
 
         [Fact]
@@ -329,7 +329,7 @@ class Test {
     }
 }
 ";
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
 
         [Fact]
@@ -346,7 +346,7 @@ class Test {
     }
 }
 ";
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
     }
 }

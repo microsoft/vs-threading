@@ -44,6 +44,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class AsyncVoidLambdaAnalyzer : DiagnosticAnalyzer
     {
+        /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         {
             get
@@ -52,6 +53,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
         }
 
+        /// <inheritdoc />
         public override void Initialize(AnalysisContext context)
         {
             context.RegisterSyntaxNodeAction(

@@ -56,7 +56,7 @@ class Test<T> where T : EventArgs {
                 new DiagnosticResultLocation("Test0.cs", 13, 9),
                 new DiagnosticResultLocation("Test0.cs", 14, 9),
             };
-            VerifyCSharpDiagnostic(test, CreateExpects(locations));
+            this.VerifyCSharpDiagnostic(test, this.CreateExpects(locations));
         }
 
         [Fact]
@@ -75,7 +75,7 @@ class TplExtensions {
     }
 }}
 ";
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
 
         [Fact]
@@ -104,7 +104,7 @@ class Test<T> where T : EventArgs {
                 new DiagnosticResultLocation("Test0.cs", 13, 9),
                 new DiagnosticResultLocation("Test0.cs", 14, 9),
             };
-            VerifyCSharpDiagnostic(test, CreateExpects(locations));
+            this.VerifyCSharpDiagnostic(test, this.CreateExpects(locations));
         }
 
         [Fact]
@@ -133,7 +133,7 @@ class Test<T> where T : EventArgs {
                 new DiagnosticResultLocation("Test0.cs", 13, 9),
                 new DiagnosticResultLocation("Test0.cs", 14, 9),
             };
-            VerifyCSharpDiagnostic(test, CreateExpects(locations));
+            this.VerifyCSharpDiagnostic(test, this.CreateExpects(locations));
         }
 
         [Fact]
@@ -162,7 +162,7 @@ class Test<T> where T : EventArgs {
                 new DiagnosticResultLocation("Test0.cs", 13, 9),
                 new DiagnosticResultLocation("Test0.cs", 14, 9),
             };
-            VerifyCSharpDiagnostic(test, CreateExpects(locations));
+            this.VerifyCSharpDiagnostic(test, this.CreateExpects(locations));
         }
 
         [Fact]
@@ -191,7 +191,7 @@ class Test<T> where T : EventArgs {
                 new DiagnosticResultLocation("Test0.cs", 13, 9),
                 new DiagnosticResultLocation("Test0.cs", 14, 9),
             };
-            VerifyCSharpDiagnostic(test, CreateExpects(locations));
+            this.VerifyCSharpDiagnostic(test, this.CreateExpects(locations));
         }
 
         [Fact]
@@ -220,7 +220,7 @@ class Test<T> where T : EventArgs {
                 new DiagnosticResultLocation("Test0.cs", 13, 87),
                 new DiagnosticResultLocation("Test0.cs", 14, 76),
             };
-            VerifyCSharpDiagnostic(test, CreateExpects(locations));
+            this.VerifyCSharpDiagnostic(test, this.CreateExpects(locations));
         }
 
         [Fact]
@@ -249,7 +249,7 @@ class Test<T> where T : EventArgs {
                 new DiagnosticResultLocation("Test0.cs", 13, 9),
                 new DiagnosticResultLocation("Test0.cs", 14, 9),
             };
-            VerifyCSharpDiagnostic(test, CreateExpects(locations));
+            this.VerifyCSharpDiagnostic(test, this.CreateExpects(locations));
         }
 
         [Fact]
@@ -278,7 +278,7 @@ class Test<T> where T : EventArgs {
                 new DiagnosticResultLocation("Test0.cs", 13, 9),
                 new DiagnosticResultLocation("Test0.cs", 14, 9),
             };
-            VerifyCSharpDiagnostic(test, CreateExpects(locations));
+            this.VerifyCSharpDiagnostic(test, this.CreateExpects(locations));
         }
 
         [Fact]
@@ -303,7 +303,7 @@ class Test<T> where T : EventArgs {
                 new DiagnosticResultLocation("Test0.cs", 9, 9),
                 new DiagnosticResultLocation("Test0.cs", 10, 9),
             };
-            VerifyCSharpDiagnostic(test, CreateExpects(locations));
+            this.VerifyCSharpDiagnostic(test, this.CreateExpects(locations));
         }
 
         [Fact]
@@ -328,7 +328,7 @@ class Test<T> where T : EventArgs {
                 new DiagnosticResultLocation("Test0.cs", 9, 31),
                 new DiagnosticResultLocation("Test0.cs", 10, 31),
             };
-            VerifyCSharpDiagnostic(test, CreateExpects(locations));
+            this.VerifyCSharpDiagnostic(test, this.CreateExpects(locations));
         }
 
         [Fact]
@@ -351,7 +351,7 @@ class Test<T> where T : EventArgs {
     }
 }
 ";
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
 
         [Fact]
@@ -370,7 +370,7 @@ class Test<T> where T : EventArgs {
     }
 }
 ";
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
 
         [Fact]
@@ -389,7 +389,7 @@ class Test<T> where T : EventArgs {
     }
 }
 ";
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
     }
 }

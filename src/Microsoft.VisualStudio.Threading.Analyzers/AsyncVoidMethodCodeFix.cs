@@ -43,6 +43,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     [ExportCodeFixProvider(LanguageNames.CSharp)]
     public class AsyncVoidMethodCodeFix : CodeFixProvider
     {
+        /// <inheritdoc />
         public override ImmutableArray<string> FixableDiagnosticIds
         {
             get
@@ -51,6 +52,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
         }
 
+        /// <inheritdoc />
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             var diagnostic = context.Diagnostics.First();
