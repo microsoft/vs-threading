@@ -1,4 +1,10 @@
-﻿namespace Microsoft.VisualStudio.Threading.Analyzers
+﻿/********************************************************
+*                                                        *
+*   © Copyright (C) Microsoft. All rights reserved.      *
+*                                                        *
+*********************************************************/
+
+namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
     using System.Collections.Generic;
@@ -38,6 +44,7 @@
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class AsyncVoidLambdaAnalyzer : DiagnosticAnalyzer
     {
+        /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         {
             get
@@ -46,6 +53,7 @@
             }
         }
 
+        /// <inheritdoc />
         public override void Initialize(AnalysisContext context)
         {
             context.RegisterSyntaxNodeAction(

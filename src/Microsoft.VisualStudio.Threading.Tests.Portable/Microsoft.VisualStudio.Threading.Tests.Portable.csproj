@@ -1,0 +1,67 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <MinimumVisualStudioVersion>12.0</MinimumVisualStudioVersion>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{B8A3489B-0888-4E49-8AFA-D41121381542}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Microsoft.VisualStudio.Threading.Tests</RootNamespace>
+    <AssemblyName>Microsoft.VisualStudio.Threading.Tests.Portable</AssemblyName>
+    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
+    <TargetFrameworkProfile />
+    <MicroBuild_GenerateDocumentationFile>false</MicroBuild_GenerateDocumentationFile>
+    <DocumentationFile />
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <FileAlignment>512</FileAlignment>
+    <OutputPathSuffix>Profile111\</OutputPathSuffix>
+    <OutputPath>$(OutputPath)$(OutputPathSuffix)</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Tests.Portable.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Tests.Portable.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- A reference to the entire .NET Framework is automatically included -->
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Portable\Microsoft.VisualStudio.Threading.Portable.csproj">
+      <Project>{e5ca28da-7538-4ce5-809f-c4b8ef2e8dbb}</Project>
+      <Name>Microsoft.VisualStudio.Threading.Portable</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.XML" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+    <None Include="Microsoft.VisualStudio.Threading.Tests.Portable.ruleset">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Microsoft.VisualStudio.Threading.Shared\InternalUtilities.cs">
+      <Link>InternalUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.VisualStudio.Threading.Shared\ListOfOftenOne.cs">
+      <Link>ListOfOftenOne.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.VisualStudio.Threading.Shared\WeakKeyDictionary.cs">
+      <Link>WeakKeyDictionary.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <Import Project="..\Microsoft.VisualStudio.Threading.Tests.Shared\Microsoft.VisualStudio.Threading.Tests.Shared.projitems" Label="Shared" />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

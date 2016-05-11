@@ -3,9 +3,8 @@
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CodeFixes;
     using Microsoft.CodeAnalysis.Diagnostics;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
 
-    [TestClass]
     public class SynchronousWaitAnalyzerTests : DiagnosticVerifier
     {
         private DiagnosticResult expect = new DiagnosticResult
@@ -20,7 +19,13 @@
             return new SynchronousWaitAnalyzer();
         }
 
-        [TestMethod]
+        /// <devremarks>
+        /// We set TestCategory=AnyCategory here so that *some* test in our assembly uses
+        /// "TestCategory" as the name of a trait. This prevents VSTest.Console from failing
+        /// when invoked with /TestCaseFilter:"TestCategory!=FailsInCloudTest" for assemblies
+        /// such as this one that don't define any TestCategory tests.
+        /// </devremarks>
+        [Fact, Trait("TestCategory", "AnyCategory-SeeComment")]
         public void TaskWaitShouldReportWarning()
         {
             var test = @"
@@ -34,11 +39,11 @@ class Test {
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 9) };
-            VerifyCSharpDiagnostic(test, this.expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 9) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void TaskResultShouldReportWarning()
         {
             var test = @"
@@ -52,11 +57,11 @@ class Test {
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 22) };
-            VerifyCSharpDiagnostic(test, this.expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 22) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void AwaiterGetResultShouldReportWarning()
         {
             var test = @"
@@ -70,12 +75,11 @@ class Test {
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 9) };
-            VerifyCSharpDiagnostic(test, this.expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 9) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
-
-        [TestMethod]
+        [Fact]
         public void DoNotReportWarningOnCodeGeneratedByXaml2CS()
         {
             var test = @"
@@ -102,7 +106,7 @@ namespace Microsoft.VisualStudio.JavaScript.Project {
     }
 }
 ";
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
     }
 }

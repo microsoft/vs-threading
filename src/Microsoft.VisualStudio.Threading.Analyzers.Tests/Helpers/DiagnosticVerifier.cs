@@ -1,21 +1,22 @@
 ﻿// Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
 namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Text;
+    using Microsoft.CodeAnalysis;
+    using Microsoft.CodeAnalysis.CSharp;
+    using Microsoft.CodeAnalysis.Diagnostics;
+    using Xunit;
+
     /// <summary>
     /// Superclass of all Unit Tests for DiagnosticAnalyzers
     /// </summary>
     public abstract partial class DiagnosticVerifier
     {
         #region To be implemented by Test classes
+
         /// <summary>
         /// Get the CSharp analyzer being tested - to be implemented in non-abstract class
         /// </summary>
@@ -43,7 +44,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <param name="expected"> DiagnosticResults that should appear after the analyzer is run on the source</param>
         protected void VerifyCSharpDiagnostic(string source, params DiagnosticResult[] expected)
         {
-            VerifyDiagnostics(new[] { source }, LanguageNames.CSharp, GetCSharpDiagnosticAnalyzer(), expected);
+            this.VerifyDiagnostics(new[] { source }, LanguageNames.CSharp, this.GetCSharpDiagnosticAnalyzer(), expected);
         }
 
         /// <summary>
@@ -54,7 +55,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <param name="expected">DiagnosticResults that should appear after the analyzer is run on the source</param>
         protected void VerifyBasicDiagnostic(string source, params DiagnosticResult[] expected)
         {
-            VerifyDiagnostics(new[] { source }, LanguageNames.VisualBasic, GetBasicDiagnosticAnalyzer(), expected);
+            this.VerifyDiagnostics(new[] { source }, LanguageNames.VisualBasic, this.GetBasicDiagnosticAnalyzer(), expected);
         }
 
         /// <summary>
@@ -65,7 +66,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <param name="expected">DiagnosticResults that should appear after the analyzer is run on the sources</param>
         protected void VerifyCSharpDiagnostic(string[] sources, params DiagnosticResult[] expected)
         {
-            VerifyDiagnostics(sources, LanguageNames.CSharp, GetCSharpDiagnosticAnalyzer(), expected);
+            this.VerifyDiagnostics(sources, LanguageNames.CSharp, this.GetCSharpDiagnosticAnalyzer(), expected);
         }
 
         /// <summary>
@@ -76,11 +77,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <param name="expected">DiagnosticResults that should appear after the analyzer is run on the sources</param>
         protected void VerifyBasicDiagnostic(string[] sources, params DiagnosticResult[] expected)
         {
-            VerifyDiagnostics(sources, LanguageNames.VisualBasic, GetBasicDiagnosticAnalyzer(), expected);
+            this.VerifyDiagnostics(sources, LanguageNames.VisualBasic, this.GetBasicDiagnosticAnalyzer(), expected);
         }
 
         /// <summary>
-        /// General method that gets a collection of actual diagnostics found in the source after the analyzer is run, 
+        /// General method that gets a collection of actual diagnostics found in the source after the analyzer is run,
         /// then verifies each of them.
         /// </summary>
         /// <param name="sources">An array of strings to create source documents from to run the analyzers on</param>
@@ -96,6 +97,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         #endregion
 
         #region Actual comparisons and verifications
+
         /// <summary>
         /// Checks each of the actual Diagnostics found and compares them with the corresponding DiagnosticResult in the array of expected results.
         /// Diagnostics are considered equal only if the DiagnosticResultLocation, Id, Severity, and Message of the DiagnosticResult match the actual diagnostic.
@@ -112,7 +114,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
             {
                 string diagnosticsOutput = actualResults.Any() ? FormatDiagnostics(analyzer, actualResults.ToArray()) : "    NONE.";
 
-                Assert.IsTrue(false,
+                Assert.True(false,
                     string.Format("Mismatch between number of diagnostics returned, expected \"{0}\" actual \"{1}\"\r\n\r\nDiagnostics:\r\n{2}\r\n", expectedCount, actualCount, diagnosticsOutput));
             }
 
@@ -125,7 +127,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 {
                     if (actual.Location != Location.None)
                     {
-                        Assert.IsTrue(false,
+                        Assert.True(false,
                             string.Format("Expected:\nA project diagnostic with No location\nActual:\n{0}",
                             FormatDiagnostics(analyzer, actual)));
                     }
@@ -137,7 +139,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 
                     if (additionalLocations.Length != expected.Locations.Length - 1)
                     {
-                        Assert.IsTrue(false,
+                        Assert.True(false,
                             string.Format("Expected {0} additional locations but got {1} for Diagnostic:\r\n    {2}\r\n",
                                 expected.Locations.Length - 1, additionalLocations.Length,
                                 FormatDiagnostics(analyzer, actual)));
@@ -151,21 +153,21 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 
                 if (actual.Id != expected.Id)
                 {
-                    Assert.IsTrue(false,
+                    Assert.True(false,
                         string.Format("Expected diagnostic id to be \"{0}\" was \"{1}\"\r\n\r\nDiagnostic:\r\n    {2}\r\n",
                             expected.Id, actual.Id, FormatDiagnostics(analyzer, actual)));
                 }
 
                 if (actual.Severity != expected.Severity)
                 {
-                    Assert.IsTrue(false,
+                    Assert.True(false,
                         string.Format("Expected diagnostic severity to be \"{0}\" was \"{1}\"\r\n\r\nDiagnostic:\r\n    {2}\r\n",
                             expected.Severity, actual.Severity, FormatDiagnostics(analyzer, actual)));
                 }
 
                 if (!expected.SkipVerifyMessage && actual.GetMessage() != expected.Message)
                 {
-                    Assert.IsTrue(false,
+                    Assert.True(false,
                         string.Format("Expected diagnostic message to be \"{0}\" was \"{1}\"\r\n\r\nDiagnostic:\r\n    {2}\r\n",
                             expected.Message, actual.GetMessage(), FormatDiagnostics(analyzer, actual)));
                 }
@@ -183,7 +185,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         {
             var actualSpan = actual.GetLineSpan();
 
-            Assert.IsTrue(actualSpan.Path == expected.Path || (actualSpan.Path != null && actualSpan.Path.Contains("Test0.") && expected.Path.Contains("Test.")),
+            Assert.True(actualSpan.Path == expected.Path || (actualSpan.Path != null && actualSpan.Path.Contains("Test0.") && expected.Path.Contains("Test.")),
                 string.Format("Expected diagnostic to be in file \"{0}\" was actually in file \"{1}\"\r\n\r\nDiagnostic:\r\n    {2}\r\n",
                     expected.Path, actualSpan.Path, FormatDiagnostics(analyzer, diagnostic)));
 
@@ -194,7 +196,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
             {
                 if (actualLinePosition.Line + 1 != expected.Line)
                 {
-                    Assert.IsTrue(false,
+                    Assert.True(false,
                         string.Format("Expected diagnostic to be on line \"{0}\" was actually on line \"{1}\"\r\n\r\nDiagnostic:\r\n    {2}\r\n",
                             expected.Line, actualLinePosition.Line + 1, FormatDiagnostics(analyzer, diagnostic)));
                 }
@@ -205,7 +207,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
             {
                 if (actualLinePosition.Character + 1 != expected.Column)
                 {
-                    Assert.IsTrue(false,
+                    Assert.True(false,
                         string.Format("Expected diagnostic to start at column \"{0}\" was actually at column \"{1}\"\r\n\r\nDiagnostic:\r\n    {2}\r\n",
                             expected.Column, actualLinePosition.Character + 1, FormatDiagnostics(analyzer, diagnostic)));
                 }
@@ -214,6 +216,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         #endregion
 
         #region Formatting Diagnostics
+
         /// <summary>
         /// Helper method to format a Diagnostic into an easily readable string
         /// </summary>
@@ -241,7 +244,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                         }
                         else
                         {
-                            Assert.IsTrue(location.IsInSource,
+                            Assert.True(location.IsInSource,
                                 string.Format("Test base does not currently handle diagnostics in metadata locations. Diagnostic in metadata:\r\n", diagnostics[i]));
 
                             string resultMethodName = diagnostics[i].Location.SourceTree.FilePath.EndsWith(".cs") ? "GetCSharpResultAt" : "GetBasicResultAt";

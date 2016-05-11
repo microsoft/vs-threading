@@ -33,6 +33,7 @@
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class AsyncVoidMethodAnalyzer : DiagnosticAnalyzer
     {
+        /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         {
             get
@@ -41,6 +42,7 @@
             }
         }
 
+        /// <inheritdoc />
         public override void Initialize(AnalysisContext context)
         {
             context.RegisterSymbolAction(this.AnalyzeNode, SymbolKind.Method);

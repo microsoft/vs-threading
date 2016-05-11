@@ -1,0 +1,14 @@
+﻿{
+  "dependencies": {
+    "MicroBuild.NonShipping": "1.0.110-rc",
+    "Microsoft.VisualStudio.Validation": "14.1.111",
+    "xunit": "2.1.0",
+    "xunit.runner.visualstudio": "2.1.0"
+  },
+  "frameworks": {
+    "net452": { }
+  },
+  "runtimes": {
+    "win": { }
+  }
+}

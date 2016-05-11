@@ -1,4 +1,10 @@
-﻿namespace Microsoft.VisualStudio.Threading.Analyzers
+﻿/********************************************************
+*                                                        *
+*   © Copyright (C) Microsoft. All rights reserved.      *
+*                                                        *
+*********************************************************/
+
+namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
     using System.Collections.Generic;
@@ -37,6 +43,7 @@
     [ExportCodeFixProvider(LanguageNames.CSharp)]
     public class AsyncVoidMethodCodeFix : CodeFixProvider
     {
+        /// <inheritdoc />
         public override ImmutableArray<string> FixableDiagnosticIds
         {
             get
@@ -45,6 +52,7 @@
             }
         }
 
+        /// <inheritdoc />
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             var diagnostic = context.Diagnostics.First();

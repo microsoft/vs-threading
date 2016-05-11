@@ -1,9 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <DevDivProjectType>NuPkg</DevDivProjectType>
-  </PropertyGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), EnlistmentInfo.props))\EnlistmentInfo.props" Condition=" '$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), EnlistmentInfo.props))' != '' " />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|AnyCPU">
       <Configuration>Debug</Configuration>
@@ -17,6 +13,11 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>d539b066-baf1-4f8b-8088-8ae1aa75f34c</ProjectGuid>
   </PropertyGroup>
+  <PropertyGroup>
+    <NuProjPath>$(UserProfile)\.nuget\packages\NuProj\0.10.48-beta-gea4a31bbc5\tools\</NuProjPath>
+    <PrereleaseVersion>-pre</PrereleaseVersion>
+  </PropertyGroup>
+  <Import Project="$(NuProjPath)\NuProj.props" Condition="Exists('$(NuProjPath)\NuProj.props')" />
   <PropertyGroup Label="Configuration">
     <Id>Microsoft.VisualStudio.Threading.Analyzers</Id>
     <Title>Microsoft.VisualStudio.Threading.Analyzers</Title>
@@ -25,7 +26,6 @@
     <Tags>analyzers visualstudio vssdk sdk threading</Tags>
     <DevelopmentDependency>True</DevelopmentDependency>
     <NoPackageAnalysis>true</NoPackageAnalysis>
-
     <Authors>Microsoft</Authors>
     <Owners>Microsoft, VisualStudioExtensibility</Owners>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
@@ -36,13 +36,27 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.csproj">
-      <PackageDirectory>tools</PackageDirectory>
+      <OverrideTargetPath>analyzers</OverrideTargetPath>
     </ProjectReference>
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading.NuGet\Microsoft.VisualStudio.Threading.NuGet.nuproj" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="tools\net45\install.ps1" />
-    <Content Include="tools\net45\uninstall.ps1" />
+    <Content Include="tools\install.ps1" />
+    <Content Include="tools\uninstall.ps1" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), EnlistmentInfo.targets))\EnlistmentInfo.targets" Condition=" '$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), EnlistmentInfo.targets))' != '' " />
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$(NuProjPath)\NuProj.targets" />
+  <!-- Overrides the TargetPath calculated by NuProj targets to overcome its limitations(e.g. it doesn't support analyzers)-->
+  <Target Name="ProcessFilesWithOverrideTargetPath" DependsOnTargets="ConvertItems" AfterTargets="ConvertItems">
+    <ItemGroup>
+      <File Include="@(File)" Condition=" '%(File.OverrideTargetPath)' != '' ">
+        <TargetPath>%(File.OverrideTargetPath)\%(FileName)%(Extension)</TargetPath>
+        <!-- Clearing up the OverrideTargetPath property so that we can easily remove the old items-->
+        <OverrideTargetPath />
+      </File>
+      <File Remove="@(File)" Condition=" '%(File.OverrideTargetPath)' != '' " />
+    </ItemGroup>
+  </Target>
 </Project>

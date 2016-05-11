@@ -1,0 +1,16 @@
+﻿{
+  "dependencies": {
+    "MicroBuild.NonShipping": "1.0.110-rc",
+    "StyleCop.Analyzers": "1.0.0",
+    "xunit": "2.1.0",
+    "Xunit.SkippableFact": "1.2.14",
+    "Xunit.StaFact": "0.1.29-alpha",
+    "xunit.runner.visualstudio": "2.1.0"
+  },
+  "frameworks": {
+    "net451": { }
+  },
+  "runtimes": {
+    "win": { }
+  }
+}

@@ -3,9 +3,8 @@
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CodeFixes;
     using Microsoft.CodeAnalysis.Diagnostics;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
 
-    [TestClass]
     public class AsyncVoidMethodCodeFixTests : CodeFixVerifier
     {
         private DiagnosticResult expect = new DiagnosticResult
@@ -25,7 +24,7 @@
             return new AsyncVoidMethodCodeFix();
         }
 
-        [TestMethod]
+        [Fact]
         public void ApplyFixesOnAsyncVoidMethod()
         {
             var test = @"
@@ -46,10 +45,10 @@ class Test {
     }
 }
 ";
-            VerifyCSharpFix(test, withFix);
+            this.VerifyCSharpFix(test, withFix);
         }
 
-        [TestMethod]
+        [Fact]
         public void ApplyFixesOnAsyncVoidMethod2()
         {
             var test = @"
@@ -72,7 +71,7 @@ class Test {
     }
 }
 ";
-            VerifyCSharpFix(test, withFix);
+            this.VerifyCSharpFix(test, withFix);
         }
     }
 }

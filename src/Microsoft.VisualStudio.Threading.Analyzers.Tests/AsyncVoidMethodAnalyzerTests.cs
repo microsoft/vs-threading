@@ -3,9 +3,8 @@
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CodeFixes;
     using Microsoft.CodeAnalysis.Diagnostics;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Xunit;
 
-    [TestClass]
     public class AsyncVoidMethodAnalyzerTests : DiagnosticVerifier
     {
         private DiagnosticResult expect = new DiagnosticResult
@@ -20,7 +19,7 @@
             return new AsyncVoidMethodAnalyzer();
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningOnAsyncVoidMethod()
         {
             var test = @"
@@ -31,11 +30,11 @@ class Test {
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 5, 16) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 5, 16) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void ReportWarningOnAsyncVoidMethodSimilarToAsyncEventHandler()
         {
             var test = @"
@@ -46,12 +45,11 @@ class Test {
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 5, 16) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 5, 16) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
-
-        [TestMethod]
+        [Fact]
         public void ReportWarningOnAsyncVoidEventHandlerSimilarToAsyncEventHandler2()
         {
             var test = @"
@@ -62,11 +60,11 @@ class Test {
     }
 }
 ";
-            expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 5, 16) };
-            VerifyCSharpDiagnostic(test, expect);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 5, 16) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
-        [TestMethod]
+        [Fact]
         public void DoNotReportWarningOnAsyncVoidEventHandler()
         {
             var test = @"
@@ -77,10 +75,10 @@ class Test {
     }
 }
 ";
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
 
-        [TestMethod]
+        [Fact]
         public void DoNotReportWarningOnAsyncVoidEventHandlerWithMyEventArgs()
         {
             var test = @"
@@ -93,7 +91,7 @@ class Test {
 
 class MyEventArgs : EventArgs {}
 ";
-            VerifyCSharpDiagnostic(test);
+            this.VerifyCSharpDiagnostic(test);
         }
     }
 }
