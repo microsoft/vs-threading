@@ -210,8 +210,21 @@ namespace Microsoft.VisualStudio.Threading
                     lock (SyncObject)
                     {
                         PendingWork.Enqueue(Tuple.Create(action, tcs));
-                        keepAliveCountIncremented = true;
-                        if (++keepAliveCount == 1)
+
+                        try
+                        {
+                            // This block intentionally left blank.
+                        }
+                        finally
+                        {
+                            // We make these two assignments within a finally block
+                            // to guard against an untimely ThreadAbortException causing
+                            // us to execute just one of them.
+                            keepAliveCountIncremented = true;
+                            ++keepAliveCount;
+                        }
+
+                        if (keepAliveCount == 1)
                         {
                             var watcherThread = new Thread(Worker, SmallThreadStackSize);
                             watcherThread.Name = "Registry watcher";
@@ -228,7 +241,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
                 catch
                 {
-                    if (tcs.Task.IsFaulted && keepAliveCountIncremented)
+                    if (keepAliveCountIncremented)
                     {
                         // Our caller will never have a chance to release their claim on the dedicated thread,
                         // so do it for them.
