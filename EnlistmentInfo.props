@@ -2,12 +2,15 @@
 <Project ToolsVersion="dogfood" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
-    <NuGetPackageRestorePath>$(MSBuildThisFileDirectory)\Packages\</NuGetPackageRestorePath>
+    <NuGetPackageRestorePath>$(UserProfile)\.nuget\Packages\</NuGetPackageRestorePath>
 
     <MicroBuild_OptimizationDataDir>$(MSBuildThisFileDirectory)Razzle\src\OptimizationData\x86\</MicroBuild_OptimizationDataDir>
-    <MicroBuild_ReadOnlySourceTree>true</MicroBuild_ReadOnlySourceTree>
     <MicroBuild_GenerateDocumentationFile>true</MicroBuild_GenerateDocumentationFile>
     <MicroBuild_DefineCommonProperties>true</MicroBuild_DefineCommonProperties>
     <MicroBuild_DefineCommonAssemblyAttributes>true</MicroBuild_DefineCommonAssemblyAttributes>
   </PropertyGroup>
+
+  <ItemGroup>
+    <BuildMetadata Condition=" '$(PublicRelease)' == 'true' " Include="PublicRelease" />
+  </ItemGroup>
 </Project>
