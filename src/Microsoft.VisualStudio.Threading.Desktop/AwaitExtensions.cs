@@ -187,6 +187,11 @@ namespace Microsoft.VisualStudio.Threading
             private static int keepAliveCount;
 
             /// <summary>
+            /// The thread that should stay alive and be dequeuing <see cref="PendingWork"/>.
+            /// </summary>
+            private static Thread liveThread;
+
+            /// <summary>
             /// Executes some action on a long-lived thread.
             /// </summary>
             /// <param name="action">The delegate to execute.</param>
@@ -226,13 +231,16 @@ namespace Microsoft.VisualStudio.Threading
 
                         if (keepAliveCount == 1)
                         {
-                            var watcherThread = new Thread(Worker, SmallThreadStackSize);
-                            watcherThread.Name = "Registry watcher";
-                            watcherThread.Start();
+                            Assumes.Null(liveThread);
+                            liveThread = new Thread(Worker, SmallThreadStackSize);
+                            liveThread.Name = "Registry watcher";
+                            liveThread.Start();
                         }
                         else
                         {
-                            Monitor.Pulse(SyncObject);
+                            // There *could* temporarily be multiple threads in some race conditions.
+                            // Pulse all of them so that the live one is sure to get the message.
+                            Monitor.PulseAll(SyncObject);
                         }
                     }
 
@@ -245,14 +253,28 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         // Our caller will never have a chance to release their claim on the dedicated thread,
                         // so do it for them.
-                        lock (SyncObject)
-                        {
-                            keepAliveCount--;
-                            Monitor.Pulse(SyncObject);
-                        }
+                        ReleaseRefOnDedicatedThread();
                     }
 
                     throw;
+                }
+            }
+
+            /// <summary>
+            /// Decrements the count of interested parties in the live thread,
+            /// and helps it to terminate if necessary.
+            /// </summary>
+            private static void ReleaseRefOnDedicatedThread()
+            {
+                lock (SyncObject)
+                {
+                    if (--keepAliveCount == 0)
+                    {
+                        liveThread = null;
+
+                        // Wake up any obsolete thread(s) so they can go to exit.
+                        Monitor.PulseAll(SyncObject);
+                    }
                 }
             }
 
@@ -271,6 +293,17 @@ namespace Microsoft.VisualStudio.Threading
                     Tuple<Action, TaskCompletionSource<EmptyStruct>> work = null;
                     lock (SyncObject)
                     {
+                        if (Thread.CurrentThread != liveThread)
+                        {
+                            // Regardless of our PendingWork and keepAliveCount,
+                            // it isn't meant for this thread any more.
+                            // This happens when keepAliveCount (at least temporarily)
+                            // hits 0, so this thread must be assumed to be on its exit path,
+                            // and another thread will be spawned to process new requests.
+                            Assumes.True(liveThread != null || (keepAliveCount == 0 && PendingWork.Count == 0));
+                            return;
+                        }
+
                         if (PendingWork.Count > 0)
                         {
                             work = PendingWork.Dequeue();
@@ -322,8 +355,7 @@ namespace Microsoft.VisualStudio.Threading
                         if (!this.disposed)
                         {
                             this.disposed = true;
-                            keepAliveCount--;
-                            Monitor.Pulse(SyncObject);
+                            ReleaseRefOnDedicatedThread();
                         }
                     }
                 }
