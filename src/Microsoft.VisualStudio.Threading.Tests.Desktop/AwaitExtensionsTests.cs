@@ -3,10 +3,12 @@
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Win32;
     using Xunit;
 
     public partial class AwaitExtensionsTests
@@ -102,6 +104,193 @@
             finally
             {
                 p.Kill();
+            }
+        }
+
+        [Fact]
+        public async Task AwaitRegKeyChange()
+        {
+            using (var test = new RegKeyTest())
+            {
+                Task changeWatcherTask = test.Key.WaitForChangeAsync();
+                Assert.False(changeWatcherTask.IsCompleted);
+                test.Key.SetValue("a", "b");
+                await changeWatcherTask;
+            }
+        }
+
+        [Fact]
+        public async Task AwaitRegKeyChange_TwoAtOnce_SameKeyHandle()
+        {
+            using (var test = new RegKeyTest())
+            {
+                Task changeWatcherTask1 = test.Key.WaitForChangeAsync();
+                Task changeWatcherTask2 = test.Key.WaitForChangeAsync();
+                Assert.False(changeWatcherTask1.IsCompleted);
+                Assert.False(changeWatcherTask2.IsCompleted);
+                test.Key.SetValue("a", "b");
+                await Task.WhenAll(changeWatcherTask1, changeWatcherTask2);
+            }
+        }
+
+        [Fact]
+        public async Task AwaitRegKeyChange_NoChange()
+        {
+            using (var test = new RegKeyTest())
+            {
+                Task changeWatcherTask = test.Key.WaitForChangeAsync(cancellationToken: test.FinishedToken);
+                Assert.False(changeWatcherTask.IsCompleted);
+
+                // Give a bit of time to confirm the task will not complete.
+                Task completedTask = await Task.WhenAny(changeWatcherTask, Task.Delay(AsyncDelay));
+                Assert.NotSame(changeWatcherTask, completedTask);
+            }
+        }
+
+        [Fact]
+        public async Task AwaitRegKeyChange_WatchSubtree()
+        {
+            using (var test = new RegKeyTest())
+            {
+                using (var subKey = test.CreateSubKey())
+                {
+                    Task changeWatcherTask = test.Key.WaitForChangeAsync(watchSubtree: true, cancellationToken: test.FinishedToken);
+                    subKey.SetValue("subkeyValueName", "b");
+                    await changeWatcherTask;
+                }
+            }
+        }
+
+        [Fact]
+        public async Task AwaitRegKeyChange_NoWatchSubtree()
+        {
+            using (var test = new RegKeyTest())
+            {
+                using (var subKey = test.CreateSubKey())
+                {
+                    Task changeWatcherTask = test.Key.WaitForChangeAsync(watchSubtree: false, cancellationToken: test.FinishedToken);
+                    subKey.SetValue("subkeyValueName", "b");
+
+                    // We do not expect changes to sub-keys to complete the task, so give a bit of time to confirm
+                    // the task doesn't complete.
+                    Task completedTask = await Task.WhenAny(changeWatcherTask, Task.Delay(AsyncDelay));
+                    Assert.NotSame(changeWatcherTask, completedTask);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task AwaitRegKeyChange_Canceled()
+        {
+            using (var test = new RegKeyTest())
+            {
+                var cts = new CancellationTokenSource();
+                Task changeWatcherTask = test.Key.WaitForChangeAsync(cancellationToken: cts.Token);
+                Assert.False(changeWatcherTask.IsCompleted);
+                cts.Cancel();
+                try
+                {
+                    await changeWatcherTask;
+                    Assert.True(false, "Expected exception not thrown.");
+                }
+                catch (OperationCanceledException ex)
+                {
+                    if (!TestUtilities.IsNet45Mode)
+                    {
+                        Assert.Equal(cts.Token, ex.CancellationToken);
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public async Task AwaitRegKeyChange_KeyDisposedWhileWatching()
+        {
+            Task watchingTask;
+            using (var test = new RegKeyTest())
+            {
+                watchingTask = test.Key.WaitForChangeAsync();
+            }
+
+            // We expect the task to quietly complete (without throwing any exception).
+            await watchingTask;
+        }
+
+        [Fact]
+        public async Task AwaitRegKeyChange_CanceledAndImmediatelyDisposed()
+        {
+            Task watchingTask;
+            CancellationToken expectedCancellationToken;
+            using (var test = new RegKeyTest())
+            {
+                expectedCancellationToken = test.FinishedToken;
+                watchingTask = test.Key.WaitForChangeAsync(cancellationToken: test.FinishedToken);
+            }
+
+            try
+            {
+                await watchingTask;
+                Assert.True(false, "Expected exception not thrown.");
+            }
+            catch (OperationCanceledException ex)
+            {
+                if (!TestUtilities.IsNet45Mode)
+                {
+                    Assert.Equal(expectedCancellationToken, ex.CancellationToken);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task AwaitRegKeyChange_CallingThreadDestroyed()
+        {
+            using (var test = new RegKeyTest())
+            {
+                // Start watching and be certain the thread that started watching is destroyed.
+                // This simulates a more common case of someone on a threadpool thread watching
+                // a key asynchronously and then the .NET Threadpool deciding to reduce the number of threads in the pool.
+                Task watchingTask = null;
+                var thread = new Thread(() =>
+                {
+                    watchingTask = test.Key.WaitForChangeAsync(cancellationToken: test.FinishedToken);
+                });
+                thread.Start();
+                thread.Join();
+
+                // Verify that the watching task is still watching.
+                Task completedTask = await Task.WhenAny(watchingTask, Task.Delay(AsyncDelay));
+                Assert.NotSame(watchingTask, completedTask);
+                test.CreateSubKey().Dispose();
+                await watchingTask;
+            }
+        }
+
+        private class RegKeyTest : IDisposable
+        {
+            private readonly string keyName;
+            private readonly RegistryKey key;
+            private readonly CancellationTokenSource testFinished = new CancellationTokenSource();
+
+            internal RegKeyTest()
+            {
+                this.keyName = "test_" + Path.GetRandomFileName();
+                this.key = Registry.CurrentUser.CreateSubKey(this.keyName, RegistryKeyPermissionCheck.ReadWriteSubTree, RegistryOptions.Volatile);
+            }
+
+            public RegistryKey Key => this.key;
+
+            public CancellationToken FinishedToken => this.testFinished.Token;
+
+            public RegistryKey CreateSubKey(string name = null)
+            {
+                return this.key.CreateSubKey(name ?? Path.GetRandomFileName(), RegistryKeyPermissionCheck.Default, RegistryOptions.Volatile);
+            }
+
+            public void Dispose()
+            {
+                this.testFinished.Cancel();
+                this.key.Dispose();
+                Registry.CurrentUser.DeleteSubKeyTree(this.keyName);
             }
         }
     }
