@@ -23,6 +23,9 @@
     <Item ItemId=";FileDescription" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text">
         <Val><![CDATA[Microsoft.VisualStudio.Threading.Analyzers]]></Val>
+        <Tgt Cat="Text" Stat="Loc" Orig="New">
+          <Val><![CDATA[Microsoft.VisualStudio.Threading.Analyzers]]></Val>
+        </Tgt>
       </Str>
       <Disp Icon="Str" />
     </Item>
