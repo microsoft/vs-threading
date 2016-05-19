@@ -5,9 +5,9 @@
   </PropertyGroup>
   
   <Import Project="$(UserProfile)\.nuget\packages\MicroBuild.Core\0.1.1\build\MicroBuild.Core.props" Condition="Exists('$(UserProfile)\.nuget\packages\MicroBuild.Core\0.1.1\build\MicroBuild.Core.props')" />
-  <Import Project="$(UserProfile)\.nuget\packages\MicroBuild.VisualStudio\1.0.119-rc\build\MicroBuild.VisualStudio.props" />
-  <Import Project="$(UserProfile)\.nuget\packages\MicroBuild\1.0.119-rc\build\MicroBuild.props" />
-  <Import Project="$(UserProfile)\.nuget\packages\MicroBuild.VisualStudio\1.0.119-rc\build\VS.Insertion.props" />
+  <Import Project="$(UserProfile)\.nuget\packages\MicroBuild.VisualStudio\1.0.122-rc\build\MicroBuild.VisualStudio.props" />
+  <Import Project="$(UserProfile)\.nuget\packages\MicroBuild\1.0.122-rc\build\MicroBuild.props" />
+  <Import Project="$(UserProfile)\.nuget\packages\MicroBuild.VisualStudio\1.0.122-rc\build\VS.Insertion.props" />
 
   <PropertyGroup>
     <PackageLocalizedArtifacts>true</PackageLocalizedArtifacts>
@@ -18,9 +18,9 @@
   </ItemGroup>
 
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="$(UserProfile)\.nuget\packages\MicroBuild.VisualStudio\1.0.119-rc\build\VS.Insertion.targets" />
-  <Import Project="$(UserProfile)\.nuget\packages\MicroBuild\1.0.119-rc\build\MicroBuild.targets" />
-  <Import Project="$(UserProfile)\.nuget\packages\MicroBuild.VisualStudio\1.0.119-rc\build\MicroBuild.VisualStudio.targets" />
+  <Import Project="$(UserProfile)\.nuget\packages\MicroBuild.VisualStudio\1.0.122-rc\build\VS.Insertion.targets" />
+  <Import Project="$(UserProfile)\.nuget\packages\MicroBuild\1.0.122-rc\build\MicroBuild.targets" />
+  <Import Project="$(UserProfile)\.nuget\packages\MicroBuild.VisualStudio\1.0.122-rc\build\MicroBuild.VisualStudio.targets" />
   <Import Project="$(UserProfile)\.nuget\packages\Nerdbank.GitVersioning\1.4.19\build\NerdBank.GitVersioning.targets" />
   <Import Project="$(UserProfile)\.nuget\packages\MicroBuild.Core\0.1.1\build\MicroBuild.Core.targets" Condition="Exists('$(UserProfile)\.nuget\packages\MicroBuild.Core\0.1.1\build\MicroBuild.Core.targets')" />
 </Project>
