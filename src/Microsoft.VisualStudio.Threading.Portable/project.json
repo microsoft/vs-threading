@@ -5,7 +5,7 @@
       "suppressParent": "none"
     },
     "MicroBuild.VisualStudio": {
-      "version": "1.0.119-rc",
+      "version": "1.0.122-rc",
       "suppressParent": "none"
     },
     "Microsoft.VisualStudio.Validation": "14.1.111",
