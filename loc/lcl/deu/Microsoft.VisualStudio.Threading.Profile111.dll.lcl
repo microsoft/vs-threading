@@ -1,0 +1,287 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<LCX SchemaVersion="6.0" Name="F:\LocTmp\ddSetup\binaries.x86ret\bin\i386\vsproject\cps\package\core\Microsoft.Threading.dll" PsrId="211" FileType="1" SrcCul="en-US" TgtCul="de-DE" xmlns="http://schemas.microsoft.com/locstudio/2006/6/lcx">
+  <Props>
+    <Str Name="CustomName1" Val="Custom 1" />
+    <Str Name="CustomName2" Val="Custom 2" />
+    <Str Name="CustomName3" Val="Custom 3" />
+    <Str Name="CustomName4" Val="Custom 4" />
+    <Str Name="CustomName5" Val="Custom 5" />
+    <Str Name="CustomName6" Val="IQA" />
+    <Str Name="HobbitID" Val="8cdea6e6-0aed-4a0e-99cb-21a7ed38e763" />
+  </Props>
+  <OwnedComments>
+    <Cmt Name="Dev" />
+    <Cmt Name="LcxAdmin" />
+    <Cmt Name="Note" />
+    <Cmt Name="Rccx" />
+  </OwnedComments>
+  <Settings Name="@vsLocTools@\current\default.lss" Type="LSS" />
+  <Item ItemId=";Managed Resources" ItemType="0" PsrId="211" Leaf="true">
+    <Disp Icon="Expand" Expand="true" Disp="true" LocTbl="false" />
+    <Modified By="henry.hsu" DateTime="2013-03-24T01:30:05Z" />
+  </Item>
+  <Item ItemId=";Microsoft.VisualStudio.Threading.Strings.resources" ItemType="0" PsrId="211" Leaf="false">
+    <Disp Icon="Expand" Expand="true" Disp="true" LocTbl="false" Path=" \ ;Managed Resources \ 0 \ 0" />
+    <Modified By="henry.hsu" DateTime="2013-05-09T03:36:18Z" />
+    <Item ItemId=";Strings" ItemType="0" PsrId="211" Leaf="false">
+      <Disp Icon="Str" Disp="true" LocTbl="false" />
+      <Modified By="henry.hsu" DateTime="2013-05-09T03:36:18Z" />
+      <Item ItemId=";AppliedSynchronizationContextNotAllowed" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Acquiring locks on threads with a SynchronizationContext applied is not allowed.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New" AutoAppr="N/A">
+            <Val><![CDATA[Das Abrufen von Sperren für Threads, auf die ein SynchronizationContext angewendet wurde, ist nicht zulässig.]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="l.seidel" DateTime="2014-06-11T06:05:46Z" />
+      </Item>
+      <Item ItemId=";CannotUpgradeNonUpgradeableLock" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[A non-upgradeable read lock is held by the caller and cannot be upgraded.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A" Confidence="100">
+            <Val><![CDATA[Eine nicht aktualisierbare Lesesperre wird vom Aufrufer gehalten und kann nicht aktualisiert werden.]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="joseignacio.dedios" DateTime="2013-05-14T03:07:13Z" />
+        <Props>
+          <Str Name="Custom1" Val="Dev12_HO6.1" />
+        </Props>
+      </Item>
+      <Item ItemId=";DangerousReadLockRequestFromWriteLockFork" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Dangerous request for read lock from fork of write lock.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New" AutoAppr="N/A">
+            <Val><![CDATA[Gefährliche Anforderung einer Lesesperre von Verzweigung einer Schreibsperre.]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="l.seidel" DateTime="2014-06-11T06:05:46Z" />
+      </Item>
+      <Item ItemId=";InvalidAfterCompleted" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Already transitioned to the Completed state.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New" AutoAppr="N/A">
+            <Val><![CDATA[Übergang in Status "Abgeschlossen" bereits erfolgt.]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="l.seidel" DateTime="2014-06-11T06:05:46Z" />
+      </Item>
+      <Item ItemId=";InvalidLock" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[This operation can only be executed against a valid lock.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A" Confidence="100">
+            <Val><![CDATA[Dieser Vorgang kann nur gegen eine gültige Sperre ausgeführt werden.]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="joseignacio.dedios" DateTime="2013-05-14T03:07:13Z" />
+        <Props>
+          <Str Name="Custom1" Val="Dev12_HO6.1" />
+        </Props>
+      </Item>
+      <Item ItemId=";InvalidWithoutLock" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[A lock is required.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New" AutoAppr="N/A">
+            <Val><![CDATA[Eine Sperre ist erforderlich.]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="l.seidel" DateTime="2014-06-11T06:05:46Z" />
+      </Item>
+      <Item ItemId=";JoinableTaskContextAndCollectionMismatch" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[JoinableTask does not belong to the context this collection was instantiated with.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New" AutoAppr="N/A">
+            <Val><![CDATA[JoinableTask gehört nicht zu dem Kontext, mit dem diese Sammlung instantiiert wurde.]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="l.seidel" DateTime="2014-06-11T06:05:46Z" />
+      </Item>
+      <Item ItemId=";JoinableTaskContextNodeAlreadyRegistered" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[This node already registered.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New" AutoAppr="N/A">
+            <Val><![CDATA[Dieser Knoten ist bereits registriert.]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="l.seidel" DateTime="2014-06-11T06:05:46Z" />
+      </Item>
+      <Item ItemId=";LazyValueFaulted" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Lazily created value faulted during construction.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A" Confidence="100">
+            <Val><![CDATA[Fehler bei verzögert erstelltem Wert während der Konstruktion.]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="joseignacio.dedios" DateTime="2013-05-14T03:07:13Z" />
+        <Props>
+          <Str Name="Custom1" Val="Dev12_HO6.1" />
+        </Props>
+      </Item>
+      <Item ItemId=";LazyValueNotCreated" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Lazily created value not yet constructed.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A" Confidence="100">
+            <Val><![CDATA[Noch kein verzögert erstellter Wert konstruiert.]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="joseignacio.dedios" DateTime="2013-05-14T03:07:13Z" />
+        <Props>
+          <Str Name="Custom1" Val="Dev12_HO6.1" />
+        </Props>
+      </Item>
+      <Item ItemId=";LockCompletionAlreadyRequested" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[This lock has already been marked for completion.  No new top-level locks can be serviced.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A" Confidence="100">
+            <Val><![CDATA[Diese Sperre wurde bereits für die Vervollständigung markiert. Es können keine neuen Sperren der obersten Ebene verwaltet werden.]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="joseignacio.dedios" DateTime="2013-05-14T03:07:13Z" />
+        <Props>
+          <Str Name="Custom1" Val="Dev12_HO6.1" />
+        </Props>
+      </Item>
+      <Item ItemId=";NotAllowedUnderURorWLock" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[This operation is not allowed while holding an active upgradeable read or write lock from an AsyncReaderWriterLock.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A">
+            <Val><![CDATA[Dieser Vorgang ist nicht zulässig, wenn eine aktive und aktualisierbare Lese- oder Schreibsperre durch ein AsyncReaderWriterLock aufrecht erhalten wird.]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="joseignacio.dedios" DateTime="2013-05-14T02:47:44Z" />
+        <Props>
+          <Str Name="Custom1" Val="Dev12_HO6.1" />
+        </Props>
+      </Item>
+      <Item ItemId=";QueueEmpty" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[The queue is empty.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New" AutoAppr="N/A">
+            <Val><![CDATA[Die Warteschlange ist leer.]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="l.seidel" DateTime="2014-06-11T06:05:46Z" />
+      </Item>
+      <Item ItemId=";STAThreadCallerNotAllowed" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[This operation cannot be completed on an STA thread.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New" AutoAppr="N/A">
+            <Val><![CDATA[Dieser Vorgang kann in einem STA-Thread nicht abgeschlossen werden.]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="l.seidel" DateTime="2014-06-11T06:05:46Z" />
+      </Item>
+      <Item ItemId=";ValueFactoryReentrancy" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[The value factory has called for the value on the same instance.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A" Confidence="100">
+            <Val><![CDATA[Die Wertzuordnungsinstanz hat den Wert in derselben Instanz aufgerufen.]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+        <Modified By="joseignacio.dedios" DateTime="2013-05-14T03:07:13Z" />
+        <Props>
+          <Str Name="Custom1" Val="Dev12_HO6.1" />
+        </Props>
+      </Item>
+    </Item>
+  </Item>
+  <Item ItemId=";Version" ItemType="0" PsrId="211" Leaf="false">
+    <Disp Icon="Ver" Disp="true" LocTbl="false" Path=" \ ;Version \ 8 \ 0" />
+    <Modified By="henry.hsu" DateTime="2013-03-24T01:30:05Z" />
+    <Item ItemId=";AssemblyVersion" ItemType="0" PsrId="211" Leaf="true">
+      <Str Cat="Text" DevLk="true">
+        <Val><![CDATA[14.0.0.0]]></Val>
+      </Str>
+      <Disp Icon="Str" />
+      <Modified By="henry.hsu" DateTime="2013-05-15T09:53:44Z" />
+    </Item>
+    <Item ItemId=";FileDescription" ItemType="0" PsrId="211" Leaf="true">
+      <Str Cat="Text">
+        <Val><![CDATA[Microsoft.VisualStudio.Threading]]></Val>
+        <Prev Cat="Text">
+          <Val><![CDATA[Microsoft.Threading.dll]]></Val>
+        </Prev>
+        <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New">
+          <Val><![CDATA[Microsoft.VisualStudio.Threading]]></Val>
+        </Tgt>
+      </Str>
+      <Disp Icon="Str" />
+      <Modified By="islezarova" DateTime="2015-02-25T20:58:44Z" />
+      <Props>
+        <Str Name="Custom1" Val="Dev12_HO6.1" />
+      </Props>
+    </Item>
+    <Item ItemId=";FileVersion" ItemType="0" PsrId="211" Leaf="true">
+      <Str Cat="Text" DevLk="true">
+        <Val><![CDATA[14.0.50225.1]]></Val>
+      </Str>
+      <Disp Icon="Str" />
+      <Modified By="henry.hsu" DateTime="2013-05-15T09:53:44Z" />
+    </Item>
+    <Item ItemId=";InternalName" ItemType="0" PsrId="211" Leaf="true">
+      <Str Cat="Text" DevLk="true">
+        <Val><![CDATA[Microsoft.VisualStudio.Threading.dll]]></Val>
+      </Str>
+      <Disp Icon="Str" />
+      <Modified By="henry.hsu" DateTime="2013-05-15T09:53:44Z" />
+    </Item>
+    <Item ItemId=";LegalCopyright" ItemType="0" PsrId="211" Leaf="true">
+      <Str Cat="Text">
+        <Val><![CDATA[© Microsoft Corporation. All rights reserved.]]></Val>
+        <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A">
+          <Val><![CDATA[© Microsoft Corporation. Alle Rechte vorbehalten.]]></Val>
+        </Tgt>
+      </Str>
+      <Disp Icon="Str" />
+      <Modified By="henry.hsu" DateTime="2013-03-24T01:30:05Z" />
+    </Item>
+    <Item ItemId=";OriginalFilename" ItemType="0" PsrId="211" Leaf="true">
+      <Str Cat="Text" DevLk="true">
+        <Val><![CDATA[Microsoft.VisualStudio.Threading.dll]]></Val>
+      </Str>
+      <Disp Icon="Str" />
+      <Modified By="henry.hsu" DateTime="2013-05-15T09:53:44Z" />
+    </Item>
+    <Item ItemId=";ProductName" ItemType="0" PsrId="211" Leaf="true">
+      <Str Cat="Text">
+        <Val><![CDATA[Microsoft® Visual Studio®]]></Val>
+        <Tgt Cat="Text" Stat="Loc" Orig="New" Appr="PreApproved">
+          <Val><![CDATA[Microsoft® Visual Studio®]]></Val>
+        </Tgt>
+        <Prev Cat="Text">
+          <Val><![CDATA[Microsoft® Visual Studio® 2015 RC]]></Val>
+        </Prev>
+      </Str>
+      <Disp Icon="Str" />
+      <Modified By="islezarova" DateTime="2015-02-25T20:58:22Z" />
+      <Props>
+        <Str Name="Custom1" Val="S78.0121" />
+      </Props>
+    </Item>
+    <Item ItemId=";ProductVersion" ItemType="0" PsrId="211" Leaf="true">
+      <Str Cat="Text" DevLk="true">
+        <Val><![CDATA[14.0.50225.1-pre+commit.3ec6463d3f]]></Val>
+      </Str>
+      <Disp Icon="Str" />
+      <Modified By="henry.hsu" DateTime="2013-05-15T09:53:44Z" />
+    </Item>
+  </Item>
+  <Item ItemId=";Version" ItemType="8" PsrId="211" Leaf="true">
+    <Disp Icon="Expand" Expand="true" Disp="true" LocTbl="false" />
+    <Modified By="henry.hsu" DateTime="2013-03-24T01:30:05Z" />
+  </Item>
+</LCX>
