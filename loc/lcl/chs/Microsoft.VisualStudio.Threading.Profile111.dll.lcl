@@ -12,20 +12,18 @@
   <OwnedComments>
     <Cmt Name="Dev" />
     <Cmt Name="LcxAdmin" />
+    <Cmt Name="Loc" />
     <Cmt Name="Note" />
-    <Cmt Name="Rccx" />
+    <Cmt Name="RCCX" />
   </OwnedComments>
   <Settings Name="@vsLocTools@\current\default.lss" Type="LSS" />
   <Item ItemId=";Managed Resources" ItemType="0" PsrId="211" Leaf="true">
     <Disp Icon="Expand" Expand="true" Disp="true" LocTbl="false" />
-    <Modified By="henry.hsu" DateTime="2013-03-24T00:43:11Z" />
   </Item>
   <Item ItemId=";Microsoft.VisualStudio.Threading.Strings.resources" ItemType="0" PsrId="211" Leaf="false">
     <Disp Icon="Expand" Expand="true" Disp="true" LocTbl="false" Path=" \ ;Managed Resources \ 0 \ 0" />
-    <Modified By="Administrator" DateTime="2013-05-09T03:36:38Z" />
     <Item ItemId=";Strings" ItemType="0" PsrId="211" Leaf="false">
       <Disp Icon="Str" Disp="true" LocTbl="false" />
-      <Modified By="Administrator" DateTime="2013-05-09T03:36:38Z" />
       <Item ItemId=";AppliedSynchronizationContextNotAllowed" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Acquiring locks on threads with a SynchronizationContext applied is not allowed.]]></Val>
@@ -34,7 +32,6 @@
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Modified By="Administrator" DateTime="2014-06-11T12:17:24Z" />
       </Item>
       <Item ItemId=";CannotUpgradeNonUpgradeableLock" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
@@ -44,10 +41,6 @@
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Modified By="henry.hsu" DateTime="2013-05-14T04:24:33Z" />
-        <Props>
-          <Str Name="Custom1" Val="Dev12_HO6.1" />
-        </Props>
       </Item>
       <Item ItemId=";DangerousReadLockRequestFromWriteLockFork" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
@@ -57,7 +50,6 @@
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Modified By="Administrator" DateTime="2014-06-11T12:17:24Z" />
       </Item>
       <Item ItemId=";InvalidAfterCompleted" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
@@ -67,7 +59,6 @@
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Modified By="Administrator" DateTime="2014-06-11T12:17:24Z" />
       </Item>
       <Item ItemId=";InvalidLock" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
@@ -77,10 +68,6 @@
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Modified By="henry.hsu" DateTime="2013-05-14T04:24:33Z" />
-        <Props>
-          <Str Name="Custom1" Val="Dev12_HO6.1" />
-        </Props>
       </Item>
       <Item ItemId=";InvalidWithoutLock" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
@@ -90,7 +77,6 @@
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Modified By="Administrator" DateTime="2014-06-11T12:17:24Z" />
       </Item>
       <Item ItemId=";JoinableTaskContextAndCollectionMismatch" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
@@ -100,7 +86,6 @@
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Modified By="Administrator" DateTime="2014-06-11T12:17:24Z" />
       </Item>
       <Item ItemId=";JoinableTaskContextNodeAlreadyRegistered" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
@@ -110,7 +95,6 @@
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Modified By="Administrator" DateTime="2014-06-11T12:17:24Z" />
       </Item>
       <Item ItemId=";LazyValueFaulted" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
@@ -120,10 +104,6 @@
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Modified By="henry.hsu" DateTime="2013-05-14T04:24:33Z" />
-        <Props>
-          <Str Name="Custom1" Val="Dev12_HO6.1" />
-        </Props>
       </Item>
       <Item ItemId=";LazyValueNotCreated" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
@@ -133,29 +113,15 @@
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Modified By="henry.hsu" DateTime="2013-05-14T04:24:33Z" />
-        <Props>
-          <Str Name="Custom1" Val="Dev12_HO6.1" />
-        </Props>
       </Item>
       <Item ItemId=";LockCompletionAlreadyRequested" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[This lock has already been marked for completion.  No new top-level locks can be serviced.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New" AutoAppr="N/A">
             <Val><![CDATA[此锁已标记为完成。   没有可用的新的顶级锁。]]></Val>
-            <Props>
-              <Str Name="TranslationModifiedBy" Val="guanghua.wu" />
-              <Date Name="TranslationModifiedDate" Val="2014-12-15T09:33:47.8116138Z" />
-            </Props>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Modified By="guanghua.wu" DateTime="2014-12-15T09:52:28Z" />
-        <Props>
-          <Str Name="Custom1" Val="Dev12_HO6.1" />
-          <Str Name="TranslationStatus" Val="In Sync" />
-          <Str Name="TranslationStatusPosition" Val="3 - ReadyForReview" />
-        </Props>
       </Item>
       <Item ItemId=";NotAllowedUnderURorWLock" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
@@ -165,10 +131,6 @@
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Modified By="henry.hsu" DateTime="2013-05-14T04:23:33Z" />
-        <Props>
-          <Str Name="Custom1" Val="Dev12_HO6.1" />
-        </Props>
       </Item>
       <Item ItemId=";QueueEmpty" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
@@ -178,7 +140,6 @@
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Modified By="Administrator" DateTime="2014-06-11T12:17:24Z" />
       </Item>
       <Item ItemId=";STAThreadCallerNotAllowed" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
@@ -188,7 +149,12 @@
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Modified By="Administrator" DateTime="2014-06-11T12:17:24Z" />
+      </Item>
+      <Item ItemId=";SwitchToMainThreadFailedToReachExpectedThread" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[An attempt to switch to the main thread failed to reach the expected thread. Was the JoinableTaskContext initialized on the wrong thread or with a SynchronizationContext whose Post method does not execute its delegate on the main thread?]]></Val>
+        </Str>
+        <Disp Icon="Str" />
       </Item>
       <Item ItemId=";ValueFactoryReentrancy" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
@@ -198,22 +164,16 @@
           </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Modified By="henry.hsu" DateTime="2013-05-14T04:24:33Z" />
-        <Props>
-          <Str Name="Custom1" Val="Dev12_HO6.1" />
-        </Props>
       </Item>
     </Item>
   </Item>
   <Item ItemId=";Version" ItemType="0" PsrId="211" Leaf="false">
     <Disp Icon="Ver" Disp="true" LocTbl="false" Path=" \ ;Version \ 8 \ 0" />
-    <Modified By="henry.hsu" DateTime="2013-03-24T00:43:11Z" />
     <Item ItemId=";AssemblyVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
         <Val><![CDATA[14.0.0.0]]></Val>
       </Str>
       <Disp Icon="Str" />
-      <Modified By="chao.sai" DateTime="2014-10-17T03:44:55Z" />
     </Item>
     <Item ItemId=";FileDescription" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text">
@@ -223,24 +183,18 @@
         </Tgt>
       </Str>
       <Disp Icon="Str" />
-      <Modified By="islezarova" DateTime="2015-02-25T20:58:44Z" />
-      <Props>
-        <Str Name="Custom1" Val="Dev12_HO3" />
-      </Props>
     </Item>
     <Item ItemId=";FileVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[14.0.50225.1]]></Val>
+        <Val><![CDATA[14.1.171.33218]]></Val>
       </Str>
       <Disp Icon="Str" />
-      <Modified By="chao.sai" DateTime="2014-10-17T03:44:55Z" />
     </Item>
     <Item ItemId=";InternalName" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
         <Val><![CDATA[Microsoft.VisualStudio.Threading.dll]]></Val>
       </Str>
       <Disp Icon="Str" />
-      <Modified By="chao.sai" DateTime="2014-10-17T03:44:55Z" />
     </Item>
     <Item ItemId=";LegalCopyright" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text">
@@ -250,19 +204,17 @@
         </Tgt>
       </Str>
       <Disp Icon="Str" />
-      <Modified By="henry.hsu" DateTime="2013-03-24T00:43:11Z" />
     </Item>
     <Item ItemId=";OriginalFilename" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
         <Val><![CDATA[Microsoft.VisualStudio.Threading.dll]]></Val>
       </Str>
       <Disp Icon="Str" />
-      <Modified By="chao.sai" DateTime="2014-10-17T03:44:55Z" />
     </Item>
     <Item ItemId=";ProductName" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text">
         <Val><![CDATA[Microsoft® Visual Studio®]]></Val>
-        <Tgt Cat="Text" Stat="Loc" Orig="New" Appr="PreApproved">
+        <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New">
           <Val><![CDATA[Microsoft® Visual Studio®]]></Val>
         </Tgt>
         <Prev Cat="Text">
@@ -270,21 +222,15 @@
         </Prev>
       </Str>
       <Disp Icon="Str" />
-      <Modified By="islezarova" DateTime="2015-02-25T20:58:22Z" />
-      <Props>
-        <Str Name="Custom1" Val="S78.0121" />
-      </Props>
     </Item>
     <Item ItemId=";ProductVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[14.0.50225.1-pre+commit.3ec6463d3f]]></Val>
+        <Val><![CDATA[14.1.171+gc2810756b1.RT]]></Val>
       </Str>
       <Disp Icon="Str" />
-      <Modified By="chao.sai" DateTime="2014-10-17T03:44:55Z" />
     </Item>
   </Item>
   <Item ItemId=";Version" ItemType="8" PsrId="211" Leaf="true">
     <Disp Icon="Expand" Expand="true" Disp="true" LocTbl="false" />
-    <Modified By="henry.hsu" DateTime="2013-03-24T00:43:11Z" />
   </Item>
 </LCX>
