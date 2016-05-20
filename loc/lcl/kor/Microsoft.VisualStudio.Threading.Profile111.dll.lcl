@@ -30,7 +30,7 @@
         <Str Cat="Text">
           <Val><![CDATA[A non-upgradeable read lock is held by the caller and cannot be upgraded.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[호출자에게 업그레이드할 수 없는 읽기 잠금이 있으며 이 잠금을 업그레이드할 수 없습니다.]]></Val>
+            <Val><![CDATA[호출자에 업그레이드할 수 없는 읽기 잠금이 있으며 이 잠금을 업그레이드할 수 없습니다.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -39,7 +39,7 @@
         <Str Cat="Text">
           <Val><![CDATA[Dangerous request for read lock from fork of write lock.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[쓰기 잠금 분기의 읽기 잠금에 대한 위험한 요청입니다.]]></Val>
+            <Val><![CDATA[쓰기 잠금 분기로부터의 읽기 잠금 요청은 위험합니다.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -111,7 +111,7 @@
         <Str Cat="Text">
           <Val><![CDATA[This lock has already been marked for completion.  No new top-level locks can be serviced.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[이 잠금은 이미 완료로 표시되었습니다. 이제 새로운 최상위 잠금이 제공될 수 없습니다.]]></Val>
+            <Val><![CDATA[이 잠금은 이미 완료로 표시되었습니다.  이제 새로운 최상위 잠금을 처리할 수 없습니다.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -120,7 +120,7 @@
         <Str Cat="Text">
           <Val><![CDATA[This operation is not allowed while holding an active upgradeable read or write lock from an AsyncReaderWriterLock.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[AsyncReaderWriterLock에서 제공하는 업그레이드 가능한 활성 읽기 또는 쓰기 잠금이 있으면 이 작업을 수행할 수 없습니다.]]></Val>
+            <Val><![CDATA[AsyncReaderWriterLock으로 인해 업그레이드 가능한 활성 읽기 또는 쓰기 잠금이 있으면 이 작업을 수행할 수 없습니다.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -143,11 +143,17 @@
         </Str>
         <Disp Icon="Str" />
       </Item>
+      <Item ItemId=";SwitchToMainThreadFailedToReachExpectedThread" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[An attempt to switch to the main thread failed to reach the expected thread. Was the JoinableTaskContext initialized on the wrong thread or with a SynchronizationContext whose Post method does not execute its delegate on the main thread?]]></Val>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
       <Item ItemId=";ValueFactoryReentrancy" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[The value factory has called for the value on the same instance.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[값 팩터리가 같은 인스턴스의 값을 호출했습니다.]]></Val>
+            <Val><![CDATA[값 팩토리가 같은 인스턴스의 값을 호출했습니다.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -173,7 +179,7 @@
     </Item>
     <Item ItemId=";FileVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[15.0.7.50708]]></Val>
+        <Val><![CDATA[15.0.51.41307]]></Val>
       </Str>
       <Disp Icon="Str" />
     </Item>
@@ -209,7 +215,7 @@
     </Item>
     <Item ItemId=";ProductVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[15.0.51109.1-pre+g14c6037658]]></Val>
+        <Val><![CDATA[15.0.51-pre+g5ba1f97ad8.RT]]></Val>
       </Str>
       <Disp Icon="Str" />
     </Item>
