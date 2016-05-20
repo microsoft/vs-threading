@@ -111,7 +111,7 @@
         <Str Cat="Text">
           <Val><![CDATA[This lock has already been marked for completion.  No new top-level locks can be serviced.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Este bloqueio já foi marcado para conclusão. Não é possível atender novos bloqueios de nível superior.]]></Val>
+            <Val><![CDATA[Este bloqueio já foi marcado para conclusão.  Não é possível atender novos bloqueios de nível superior.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -140,6 +140,12 @@
           <Tgt Cat="Text" Stat="Loc" Orig="New">
             <Val><![CDATA[Esta operação não pode ser concluída em um thread STA.]]></Val>
           </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";SwitchToMainThreadFailedToReachExpectedThread" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[An attempt to switch to the main thread failed to reach the expected thread. Was the JoinableTaskContext initialized on the wrong thread or with a SynchronizationContext whose Post method does not execute its delegate on the main thread?]]></Val>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -173,7 +179,7 @@
     </Item>
     <Item ItemId=";FileVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[15.0.7.50708]]></Val>
+        <Val><![CDATA[15.0.51.41307]]></Val>
       </Str>
       <Disp Icon="Str" />
     </Item>
@@ -209,7 +215,7 @@
     </Item>
     <Item ItemId=";ProductVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[15.0.51109.1-pre+g14c6037658]]></Val>
+        <Val><![CDATA[15.0.51-pre+g5ba1f97ad8.RT]]></Val>
       </Str>
       <Disp Icon="Str" />
     </Item>

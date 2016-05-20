@@ -75,7 +75,7 @@
         <Str Cat="Text">
           <Val><![CDATA[JoinableTask does not belong to the context this collection was instantiated with.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[JoinableTask 不屬於此集合具現化所在的內容。]]></Val>
+            <Val><![CDATA[JoinableTask 不屬於此集合個體化所在的內容。]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -93,7 +93,7 @@
         <Str Cat="Text">
           <Val><![CDATA[Lazily created value faulted during construction.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[延遲建立的值在建構期間發生錯誤。]]></Val>
+            <Val><![CDATA[建構期間，延遲建立的值發生錯誤。]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -120,7 +120,7 @@
         <Str Cat="Text">
           <Val><![CDATA[This operation is not allowed while holding an active upgradeable read or write lock from an AsyncReaderWriterLock.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[從 AsyncReaderWriterLock 持有可升級的現用讀取或寫入鎖定期間，無法執行此項作業。]]></Val>
+            <Val><![CDATA[從 AsyncReaderWriterLock 持有可升級的現用讀取或寫入鎖定期間，不允許執行這項作業。]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -129,7 +129,7 @@
         <Str Cat="Text">
           <Val><![CDATA[The queue is empty.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[此佇列為空白。]]></Val>
+            <Val><![CDATA[此佇列是空的。]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -140,6 +140,12 @@
           <Tgt Cat="Text" Stat="Loc" Orig="New">
             <Val><![CDATA[無法在 STA 執行緒上完成此作業。]]></Val>
           </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";SwitchToMainThreadFailedToReachExpectedThread" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[An attempt to switch to the main thread failed to reach the expected thread. Was the JoinableTaskContext initialized on the wrong thread or with a SynchronizationContext whose Post method does not execute its delegate on the main thread?]]></Val>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -173,7 +179,7 @@
     </Item>
     <Item ItemId=";FileVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[15.0.7.50708]]></Val>
+        <Val><![CDATA[15.0.51.41307]]></Val>
       </Str>
       <Disp Icon="Str" />
     </Item>
@@ -209,7 +215,7 @@
     </Item>
     <Item ItemId=";ProductVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[15.0.51109.1-pre+g14c6037658]]></Val>
+        <Val><![CDATA[15.0.51-pre+g5ba1f97ad8.RT]]></Val>
       </Str>
       <Disp Icon="Str" />
     </Item>

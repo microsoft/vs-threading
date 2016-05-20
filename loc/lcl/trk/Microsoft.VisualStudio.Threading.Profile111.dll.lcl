@@ -21,7 +21,7 @@
         <Str Cat="Text">
           <Val><![CDATA[Acquiring locks on threads with a SynchronizationContext applied is not allowed.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[SynchronizationContext uygulanmış işlem parçacıkları için kilit alınamaz.]]></Val>
+            <Val><![CDATA[Bir SynchronizationContext uygulanmış işlem parçacıkları için kilit alınamaz.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -30,7 +30,7 @@
         <Str Cat="Text">
           <Val><![CDATA[A non-upgradeable read lock is held by the caller and cannot be upgraded.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Yükseltilemeyen bir okuma kilidi, arayan tarafından tutuluyor ve yükseltilemiyor.]]></Val>
+            <Val><![CDATA[Yükseltilemeyen bir okuma kilidi arayan tarafından tutuluyor ve yükseltilemiyor.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -48,7 +48,7 @@
         <Str Cat="Text">
           <Val><![CDATA[Already transitioned to the Completed state.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Tamamlandı durumuna zaten geçirildi.]]></Val>
+            <Val><![CDATA[Zaten Tamamlandı durumuna geçirildi.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -57,7 +57,7 @@
         <Str Cat="Text">
           <Val><![CDATA[This operation can only be executed against a valid lock.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Bu işlem yalnızca geçerli bir kilitte yürütülebilir.]]></Val>
+            <Val><![CDATA[Bu işlem yalnızca geçerli bir kilide karşı yürütülebilir.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -75,7 +75,7 @@
         <Str Cat="Text">
           <Val><![CDATA[JoinableTask does not belong to the context this collection was instantiated with.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[JoinableTask, bu koleksiyonun örneğinin oluşturulduğu bağlama ait değil.]]></Val>
+            <Val><![CDATA[JoinableTask, bu koleksiyonun oluşturulduğu bağlama ait değil.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -93,7 +93,7 @@
         <Str Cat="Text">
           <Val><![CDATA[Lazily created value faulted during construction.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Geç oluşturulan değer, oluşturma sırasında hata verdi.]]></Val>
+            <Val><![CDATA[Yapım sırasında geç oluşturulan değer hata verdi.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -102,7 +102,7 @@
         <Str Cat="Text">
           <Val><![CDATA[Lazily created value not yet constructed.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Geç oluşturulan değer henüz oluşturulmadı.]]></Val>
+            <Val><![CDATA[Geç oluşturulan değer henüz yapılmadı.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -111,7 +111,7 @@
         <Str Cat="Text">
           <Val><![CDATA[This lock has already been marked for completion.  No new top-level locks can be serviced.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Bu kilit zaten tamamlanmak üzere işaretlenmiş.  Yeni üst düzey kilitlere hizmet verilemiyor.]]></Val>
+            <Val><![CDATA[Bu kilit zaten tamamlanmak üzere işaretlenmiş. Hiçbir yeni üst düzey kilide hizmet verilemiyor.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -120,7 +120,7 @@
         <Str Cat="Text">
           <Val><![CDATA[This operation is not allowed while holding an active upgradeable read or write lock from an AsyncReaderWriterLock.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[AsyncReaderWriterLock'tan etkin bir yükseltilebilir okuma veya yazma kilidi tutulurken bu işleme izin verilmez.]]></Val>
+            <Val><![CDATA[Bu işleme, AsyncReaderWriterLock'tan etkin bir yükseltilebilir okuma veya yazma kilidi tutulurken izin verilmez.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -140,6 +140,12 @@
           <Tgt Cat="Text" Stat="Loc" Orig="New">
             <Val><![CDATA[Bu işlem STA iş parçacığında tamamlanamaz.]]></Val>
           </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";SwitchToMainThreadFailedToReachExpectedThread" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[An attempt to switch to the main thread failed to reach the expected thread. Was the JoinableTaskContext initialized on the wrong thread or with a SynchronizationContext whose Post method does not execute its delegate on the main thread?]]></Val>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -173,7 +179,7 @@
     </Item>
     <Item ItemId=";FileVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[15.0.7.50708]]></Val>
+        <Val><![CDATA[15.0.51.41307]]></Val>
       </Str>
       <Disp Icon="Str" />
     </Item>
@@ -209,7 +215,7 @@
     </Item>
     <Item ItemId=";ProductVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[15.0.51109.1-pre+g14c6037658]]></Val>
+        <Val><![CDATA[15.0.51-pre+g5ba1f97ad8.RT]]></Val>
       </Str>
       <Disp Icon="Str" />
     </Item>

@@ -21,7 +21,7 @@
         <Str Cat="Text">
           <Val><![CDATA[Acquiring locks on threads with a SynchronizationContext applied is not allowed.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Получение блокировок для потоков, к которым применен SynchronizationContext, не разрешено.]]></Val>
+            <Val><![CDATA[Получение блокировок для потоков, к которым применен контекст SynchronizationContext, не разрешено.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -93,7 +93,7 @@
         <Str Cat="Text">
           <Val><![CDATA[Lazily created value faulted during construction.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Значение с отложенным созданием вызвало ошибку во время конструирования.]]></Val>
+            <Val><![CDATA[Созданное "лениво" значение вызвало сбой во время работы конструктора.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -102,7 +102,7 @@
         <Str Cat="Text">
           <Val><![CDATA[Lazily created value not yet constructed.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Значение с отложенным созданием еще не сконструировано.]]></Val>
+            <Val><![CDATA[Созданное "лениво" еще не сконструировано.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -111,7 +111,7 @@
         <Str Cat="Text">
           <Val><![CDATA[This lock has already been marked for completion.  No new top-level locks can be serviced.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Эта блокировка уже помечена для завершения. Новые блокировки верхнего уровня не могут быть обслужены.]]></Val>
+            <Val><![CDATA[Эта блокировка уже помечена для завершения.  Никакие новые блокировки более высокого уровня обслуживаться не могут.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -138,8 +138,14 @@
         <Str Cat="Text">
           <Val><![CDATA[This operation cannot be completed on an STA thread.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Эту операцию невозможно выполнить применительно к потоку STA.]]></Val>
+            <Val><![CDATA[Эту операцию нельзя выполнить применительно к потоку STA.]]></Val>
           </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";SwitchToMainThreadFailedToReachExpectedThread" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[An attempt to switch to the main thread failed to reach the expected thread. Was the JoinableTaskContext initialized on the wrong thread or with a SynchronizationContext whose Post method does not execute its delegate on the main thread?]]></Val>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -173,7 +179,7 @@
     </Item>
     <Item ItemId=";FileVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[15.0.7.50708]]></Val>
+        <Val><![CDATA[15.0.51.41307]]></Val>
       </Str>
       <Disp Icon="Str" />
     </Item>
@@ -209,7 +215,7 @@
     </Item>
     <Item ItemId=";ProductVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[15.0.51109.1-pre+g14c6037658]]></Val>
+        <Val><![CDATA[15.0.51-pre+g5ba1f97ad8.RT]]></Val>
       </Str>
       <Disp Icon="Str" />
     </Item>
