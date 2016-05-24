@@ -146,6 +146,9 @@
       <Item ItemId=";SwitchToMainThreadFailedToReachExpectedThread" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[An attempt to switch to the main thread failed to reach the expected thread. Was the JoinableTaskContext initialized on the wrong thread or with a SynchronizationContext whose Post method does not execute its delegate on the main thread?]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Falha em alcançar o thread esperado durante uma tentativa de alternar para o thread principal. O JoinableTaskContext foi inicializado no thread errado ou com um SynchronizationContext cujo método Post não executa seu delegado no thread principal?]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -179,7 +182,7 @@
     </Item>
     <Item ItemId=";FileVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[15.0.51.41307]]></Val>
+        <Val><![CDATA[15.0.55.24013]]></Val>
       </Str>
       <Disp Icon="Str" />
     </Item>
@@ -215,7 +218,7 @@
     </Item>
     <Item ItemId=";ProductVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[15.0.51-pre+g5ba1f97ad8.RT]]></Val>
+        <Val><![CDATA[15.0.55-pre+gcd5d205fb0.RT]]></Val>
       </Str>
       <Disp Icon="Str" />
     </Item>
