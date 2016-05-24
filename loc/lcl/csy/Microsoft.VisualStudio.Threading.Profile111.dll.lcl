@@ -64,7 +64,7 @@
         <Str Cat="Text">
           <Val><![CDATA[This operation can only be executed against a valid lock.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A">
-            <Val><![CDATA[Tuto operaci lze provést pouze v případě platného zámku.]]></Val>
+            <Val><![CDATA[Tuto operaci jde udělat jenom v případě platného zámku.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -109,7 +109,7 @@
         <Str Cat="Text">
           <Val><![CDATA[Lazily created value not yet constructed.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A">
-            <Val><![CDATA[Laxně vytvářená hodnota ještě nebyla vytvořena.]]></Val>
+            <Val><![CDATA[Laxně vytvářená hodnota se ještě nevytvořila.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -118,7 +118,7 @@
         <Str Cat="Text">
           <Val><![CDATA[This lock has already been marked for completion.  No new top-level locks can be serviced.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A">
-            <Val><![CDATA[Tento zámek již byl označen k dokončení.  Žádné nové zámky na nejvyšší úrovni nelze obsluhovat.]]></Val>
+            <Val><![CDATA[Tento zámek už je označený k dokončení. Žádné nové zámky na nejvyšší úrovni nejde obsluhovat.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -127,7 +127,7 @@
         <Str Cat="Text">
           <Val><![CDATA[This operation is not allowed while holding an active upgradeable read or write lock from an AsyncReaderWriterLock.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A">
-            <Val><![CDATA[Tato operace není povolena, pokud je aktivní upgradovatelný zámek čtení nebo zápisu z AsyncReaderWriterLock.]]></Val>
+            <Val><![CDATA[Tato operace není povolená, pokud je aktivní upgradovatelný zámek čtení nebo zápisu z AsyncReaderWriterLock.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -153,6 +153,9 @@
       <Item ItemId=";SwitchToMainThreadFailedToReachExpectedThread" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[An attempt to switch to the main thread failed to reach the expected thread. Was the JoinableTaskContext initialized on the wrong thread or with a SynchronizationContext whose Post method does not execute its delegate on the main thread?]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Při pokusu o přepnutí na hlavní vlákno se nepovedlo dosáhnout očekávané vlákno. Možná se třída JoinableTaskContext inicializovala na chybném vláknu nebo s třídou SynchronizationContext, jejíž metoda Post nespustila svého delegáta v hlavním vláknu.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -189,7 +192,7 @@
     </Item>
     <Item ItemId=";FileVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[14.1.171.33218]]></Val>
+        <Val><![CDATA[14.1.175.3220]]></Val>
       </Str>
       <Disp Icon="Str" />
     </Item>
@@ -228,7 +231,7 @@
     </Item>
     <Item ItemId=";ProductVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[14.1.171+gc2810756b1.RT]]></Val>
+        <Val><![CDATA[14.1.175+g940c123894.RT]]></Val>
       </Str>
       <Disp Icon="Str" />
     </Item>

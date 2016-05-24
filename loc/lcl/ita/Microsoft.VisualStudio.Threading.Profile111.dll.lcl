@@ -28,7 +28,7 @@
         <Str Cat="Text">
           <Val><![CDATA[Acquiring locks on threads with a SynchronizationContext applied is not allowed.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New">
-            <Val><![CDATA[Non è consentito acquisire blocchi su thread con SynchronizationContext applicato.]]></Val>
+            <Val><![CDATA[Non è consentito acquisire blocchi su thread in cui è applicato un elemento SynchronizationContext.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -49,7 +49,7 @@
         <Str Cat="Text">
           <Val><![CDATA[Dangerous request for read lock from fork of write lock.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New">
-            <Val><![CDATA[Richiesta pericolosa di blocco in lettura da fork di blocco in scrittura.]]></Val>
+            <Val><![CDATA[La biforcazione del blocco scrittura ha effettuato una richiesta pericolosa per il blocco lettura.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -61,7 +61,7 @@
         <Str Cat="Text">
           <Val><![CDATA[Already transitioned to the Completed state.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New">
-            <Val><![CDATA[Lo stato è già passato a Completato.]]></Val>
+            <Val><![CDATA[Il passaggio allo stato Completato è già stato eseguito.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -94,7 +94,7 @@
         <Str Cat="Text">
           <Val><![CDATA[JoinableTask does not belong to the context this collection was instantiated with.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New">
-            <Val><![CDATA[JoinableTask non appartiene al contesto con cui è stata creata un'istanza della raccolta.]]></Val>
+            <Val><![CDATA[JoinableTask non appartiene al contesto con cui è stata creata un'istanza di questa raccolta.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -136,7 +136,7 @@
         <Str Cat="Text">
           <Val><![CDATA[This lock has already been marked for completion.  No new top-level locks can be serviced.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A" Confidence="100">
-            <Val><![CDATA[Blocco già contrassegnato per il completamento. Impossibile servire nuovi blocchi di livello principale.]]></Val>
+            <Val><![CDATA[Questo blocco è già stato contrassegnato per il completamento. Non è possibile eseguire nuovi blocchi di primo livello.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -145,7 +145,7 @@
         <Str Cat="Text">
           <Val><![CDATA[This operation is not allowed while holding an active upgradeable read or write lock from an AsyncReaderWriterLock.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A">
-            <Val><![CDATA[Operazione non consentita durante il mantenimento di un blocco di lettura o scrittura aggiornabile attivo da AsyncReaderWriterLock.]]></Val>
+            <Val><![CDATA[Questa operazione non è consentita quando si mantiene un blocco lettura o scrittura aggiornabile attivo da un elemento AsyncReaderWriterLock.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -166,7 +166,7 @@
         <Str Cat="Text">
           <Val><![CDATA[This operation cannot be completed on an STA thread.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="New">
-            <Val><![CDATA[Non è possibile completare l'operazione su un thread STA.]]></Val>
+            <Val><![CDATA[Non è possibile completare questa operazione su un thread STA.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -177,6 +177,9 @@
       <Item ItemId=";SwitchToMainThreadFailedToReachExpectedThread" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[An attempt to switch to the main thread failed to reach the expected thread. Was the JoinableTaskContext initialized on the wrong thread or with a SynchronizationContext whose Post method does not execute its delegate on the main thread?]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Un tentativo di passare al thread principale per raggiungere il thread previsto non è riuscito. JoinableTaskContext era inizializzato nel thread errato oppure con un elemento SynchronizationContext il cui metodo Post non esegue il relativo delegato nel thread principale?]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -184,7 +187,7 @@
         <Str Cat="Text">
           <Val><![CDATA[The value factory has called for the value on the same instance.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A" Confidence="100">
-            <Val><![CDATA[La factory del valore ha chiamato il valore sulla stessa istanza.]]></Val>
+            <Val><![CDATA[La factory del valore ha richiesto il valore nella stessa istanza.]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -210,7 +213,7 @@
     </Item>
     <Item ItemId=";FileVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[14.1.171.33218]]></Val>
+        <Val><![CDATA[14.1.175.3220]]></Val>
       </Str>
       <Disp Icon="Str" />
     </Item>
@@ -252,7 +255,7 @@
     </Item>
     <Item ItemId=";ProductVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[14.1.171+gc2810756b1.RT]]></Val>
+        <Val><![CDATA[14.1.175+g940c123894.RT]]></Val>
       </Str>
       <Disp Icon="Str" />
     </Item>

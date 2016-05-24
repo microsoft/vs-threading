@@ -118,7 +118,7 @@
         <Str Cat="Text">
           <Val><![CDATA[This lock has already been marked for completion.  No new top-level locks can be serviced.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Appr="PreApproved" Orig="PrevVer" AutoAppr="N/A" Confidence="100">
-            <Val><![CDATA[這個鎖定已經標示為待完成。 無法再服務新的最上層鎖定。]]></Val>
+            <Val><![CDATA[此鎖定已被標示為待完成。已無法再服務任何新的最上層鎖定。]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -153,6 +153,9 @@
       <Item ItemId=";SwitchToMainThreadFailedToReachExpectedThread" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[An attempt to switch to the main thread failed to reach the expected thread. Was the JoinableTaskContext initialized on the wrong thread or with a SynchronizationContext whose Post method does not execute its delegate on the main thread?]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[嘗試切換到主要執行緒失敗，所以聯繫不到所需要的執行緒。是否對錯誤的執行緒執行了 JoinableTaskContext 初始化，或是使用了 SynchronizationContext，但其 Post 方法不會對主要執行緒執行其委派?]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -186,7 +189,7 @@
     </Item>
     <Item ItemId=";FileVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[14.1.171.33218]]></Val>
+        <Val><![CDATA[14.1.175.3220]]></Val>
       </Str>
       <Disp Icon="Str" />
     </Item>
@@ -225,7 +228,7 @@
     </Item>
     <Item ItemId=";ProductVersion" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text" DevLk="true">
-        <Val><![CDATA[14.1.171+gc2810756b1.RT]]></Val>
+        <Val><![CDATA[14.1.175+g940c123894.RT]]></Val>
       </Str>
       <Disp Icon="Str" />
     </Item>
