@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+VisualStudioVersion = 14.0.25401.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Threading.Desktop", "Microsoft.VisualStudio.Threading.Desktop\Microsoft.VisualStudio.Threading.Desktop.csproj", "{2C0DFFBD-49C8-4F12-A964-E3096AD4C7F4}"
 EndProject
@@ -31,14 +31,16 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		..\version.json = ..\version.json
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher", "Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher\Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.csproj", "{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Microsoft.VisualStudio.Threading.Shared\Microsoft.VisualStudio.Threading.Shared.projitems*{2c0dffbd-49c8-4f12-a964-e3096ad4c7f4}*SharedItemsImports = 4
-		Microsoft.VisualStudio.Threading.Tests.Shared\Microsoft.VisualStudio.Threading.Tests.Shared.projitems*{c215568d-96d0-483b-aff6-c03fd9d8d471}*SharedItemsImports = 13
-		Microsoft.VisualStudio.Threading.Tests.Shared\Microsoft.VisualStudio.Threading.Tests.Shared.projitems*{7b8bf2e6-7d7b-4f4e-b1a4-b08312f6294f}*SharedItemsImports = 4
 		Microsoft.VisualStudio.Threading.Shared\Microsoft.VisualStudio.Threading.Shared.projitems*{56941b77-5bdf-4b99-8df1-e130c046e2d7}*SharedItemsImports = 13
-		Microsoft.VisualStudio.Threading.Shared\Microsoft.VisualStudio.Threading.Shared.projitems*{e5ca28da-7538-4ce5-809f-c4b8ef2e8dbb}*SharedItemsImports = 4
+		Microsoft.VisualStudio.Threading.Tests.Shared\Microsoft.VisualStudio.Threading.Tests.Shared.projitems*{7b8bf2e6-7d7b-4f4e-b1a4-b08312f6294f}*SharedItemsImports = 4
 		Microsoft.VisualStudio.Threading.Tests.Shared\Microsoft.VisualStudio.Threading.Tests.Shared.projitems*{b8a3489b-0888-4e49-8afa-d41121381542}*SharedItemsImports = 4
+		Microsoft.VisualStudio.Threading.Tests.Shared\Microsoft.VisualStudio.Threading.Tests.Shared.projitems*{c215568d-96d0-483b-aff6-c03fd9d8d471}*SharedItemsImports = 13
+		Microsoft.VisualStudio.Threading.Shared\Microsoft.VisualStudio.Threading.Shared.projitems*{e5ca28da-7538-4ce5-809f-c4b8ef2e8dbb}*SharedItemsImports = 4
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -77,6 +79,10 @@ Global
 		{B8A3489B-0888-4E49-8AFA-D41121381542}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B8A3489B-0888-4E49-8AFA-D41121381542}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B8A3489B-0888-4E49-8AFA-D41121381542}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

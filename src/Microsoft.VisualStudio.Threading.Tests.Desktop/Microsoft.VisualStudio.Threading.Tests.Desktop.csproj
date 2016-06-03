@@ -64,12 +64,19 @@
       <Project>{2c0dffbd-49c8-4f12-a964-e3096ad4c7f4}</Project>
       <Name>Microsoft.VisualStudio.Threading.Desktop</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher\Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.csproj">
+      <Project>{4961aa84-088c-46c0-bac0-f9e87a9f03a7}</Project>
+      <Name>Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
+    <None Include="App.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="Microsoft.VisualStudio.Threading.Tests.ruleset">
       <SubType>Designer</SubType>
     </None>
