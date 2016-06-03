@@ -162,6 +162,20 @@
         }
 
         [Fact]
+        public async Task AwaitRegKeyChange_KeyDeleted()
+        {
+            using (var test = new RegKeyTest())
+            {
+                using (var subKey = test.CreateSubKey())
+                {
+                    Task changeWatcherTask = subKey.WaitForChangeAsync(watchSubtree: true, cancellationToken: test.FinishedToken);
+                    test.Key.DeleteSubKey(Path.GetFileName(subKey.Name));
+                    await changeWatcherTask;
+                }
+            }
+        }
+
+        [Fact]
         public async Task AwaitRegKeyChange_NoWatchSubtree()
         {
             using (var test = new RegKeyTest())
