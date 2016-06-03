@@ -25,6 +25,18 @@
         }
 
         /// <summary>
+        /// Gets or sets the source of <see cref="TimeoutToken"/> that influences
+        /// when tests consider themselves to be timed out.
+        /// </summary>
+        protected CancellationTokenSource TimeoutTokenSource { get; set; } = new CancellationTokenSource(TestTimeout);
+
+        /// <summary>
+        /// Gets a token that is canceled when the test times out,
+        /// per the policy set by <see cref="TimeoutTokenSource"/>.
+        /// </summary>
+        protected CancellationToken TimeoutToken => this.TimeoutTokenSource.Token;
+
+        /// <summary>
         /// Gets or sets the logger to use for writing text to be captured in the test results.
         /// </summary>
         protected ITestOutputHelper Logger { get; set; }
