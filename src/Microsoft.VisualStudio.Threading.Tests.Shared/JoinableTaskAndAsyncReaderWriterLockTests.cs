@@ -6,7 +6,6 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Windows.Threading;
     using Xunit;
     using Xunit.Abstractions;
 

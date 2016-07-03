@@ -6,7 +6,7 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Windows.Threading;
+    using System.Windows.Forms;
     using Xunit;
     using Xunit.Abstractions;
 
@@ -70,7 +70,7 @@
         [Fact]
         public void SignalAndWaitSynchronousBlockDoesNotHang()
         {
-            SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext());
+            SynchronizationContext.SetSynchronizationContext(new WindowsFormsSynchronizationContext());
             var evt = new AsyncCountdownEvent(1);
             Assert.True(evt.SignalAndWaitAsync().Wait(AsyncDelay), "Hang");
         }

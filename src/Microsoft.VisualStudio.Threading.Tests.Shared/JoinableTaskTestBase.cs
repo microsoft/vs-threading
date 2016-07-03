@@ -8,7 +8,7 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Windows.Threading;
+    using System.Windows.Forms;
     using System.Xml.Linq;
     using Xunit;
     using Xunit.Abstractions;
@@ -23,18 +23,18 @@
 
         protected Thread originalThread;
         protected SynchronizationContext dispatcherContext;
-        protected DispatcherFrame testFrame;
+        protected SingleThreadedSynchronizationContext.IFrame testFrame;
 
         protected JoinableTaskTestBase(ITestOutputHelper logger)
             : base(logger)
         {
-            this.dispatcherContext = new DispatcherSynchronizationContext();
+            this.dispatcherContext = SingleThreadedSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(this.dispatcherContext);
             this.context = this.CreateJoinableTaskContext();
             this.joinableCollection = this.context.CreateCollection();
             this.asyncPump = this.context.CreateFactory(this.joinableCollection);
             this.originalThread = Thread.CurrentThread;
-            this.testFrame = new DispatcherFrame();
+            this.testFrame = SingleThreadedSynchronizationContext.NewFrame();
 
             // Suppress the assert dialog that appears and causes test runs to hang.
             Trace.Listeners.OfType<DefaultTraceListener>().Single().AssertUiEnabled = false;
@@ -57,7 +57,6 @@
         {
             Verify.Operation(this.originalThread == Thread.CurrentThread, "We can only simulate the UI thread if you're already on it (the starting thread for the test).");
 
-            var frame = new DispatcherFrame();
             Exception failure = null;
             this.dispatcherContext.Post(async delegate
             {
@@ -71,16 +70,27 @@
                 }
                 finally
                 {
-                    frame.Continue = false;
+                    this.testFrame.Continue = false;
                 }
             }, null);
 
-            Dispatcher.PushFrame(frame);
+            SingleThreadedSynchronizationContext.PushFrame(this.dispatcherContext, this.testFrame);
             if (failure != null)
             {
                 // Rethrow original exception without rewriting the callstack.
                 ExceptionDispatchInfo.Capture(failure).Throw();
             }
+        }
+
+        protected void PushFrame()
+        {
+            SingleThreadedSynchronizationContext.PushFrame(this.dispatcherContext, this.testFrame);
+        }
+
+        protected void PushFrameTillQueueIsEmpty()
+        {
+            this.dispatcherContext.Post(s => this.testFrame.Continue = false, null);
+            this.PushFrame();
         }
     }
 }

@@ -6,7 +6,6 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Windows.Threading;
     using Xunit;
     using Xunit.Abstractions;
 
@@ -70,7 +69,7 @@
         [Fact]
         public void SynchronizationContextCaptured()
         {
-            var syncContext = new DispatcherSynchronizationContext();
+            var syncContext = SingleThreadedSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(syncContext);
             Exception callbackError = null;
             var callback = new Action<GenericParameterHelper>(

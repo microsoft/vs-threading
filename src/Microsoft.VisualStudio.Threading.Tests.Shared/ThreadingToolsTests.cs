@@ -7,7 +7,6 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Windows.Threading;
     using Xunit;
     using Xunit.Abstractions;
 
@@ -168,7 +167,7 @@
         [Fact]
         public void WithCancellationOfTNoDeadlockFromSyncContext()
         {
-            var dispatcher = new DispatcherSynchronizationContext();
+            var dispatcher = SingleThreadedSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(dispatcher);
             var tcs = new TaskCompletionSource<object>();
             var cts = new CancellationTokenSource(AsyncDelay / 4);
@@ -186,7 +185,7 @@
         [Fact]
         public void WithCancellationOfTNoncancelableNoDeadlockFromSyncContext()
         {
-            var dispatcher = new DispatcherSynchronizationContext();
+            var dispatcher = SingleThreadedSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(dispatcher);
             var tcs = new TaskCompletionSource<object>();
             Task.Run(async delegate
@@ -222,7 +221,7 @@
         [Fact]
         public void WithCancellationNoDeadlockFromSyncContext()
         {
-            var dispatcher = new DispatcherSynchronizationContext();
+            var dispatcher = SingleThreadedSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(dispatcher);
             var tcs = new TaskCompletionSource<object>();
             var cts = new CancellationTokenSource(AsyncDelay / 4);
@@ -240,7 +239,7 @@
         [Fact]
         public void WithCancellationNoncancelableNoDeadlockFromSyncContext()
         {
-            var dispatcher = new DispatcherSynchronizationContext();
+            var dispatcher = SingleThreadedSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(dispatcher);
             var tcs = new TaskCompletionSource<object>();
             Task.Run(async delegate

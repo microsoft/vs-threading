@@ -9,7 +9,6 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Windows.Threading;
     using System.Xml.Linq;
     using Xunit;
     using Xunit.Abstractions;
@@ -81,7 +80,6 @@
         public void SwitchToMainThreadAsyncContributesToHangReportsAndCollections()
         {
             var mainThreadRequestPended = new ManualResetEventSlim();
-            var frame = new DispatcherFrame();
             Exception delegateFailure = null;
 
             Task.Run(delegate
@@ -99,7 +97,7 @@
                     }
                     finally
                     {
-                        frame.Continue = false;
+                        this.testFrame.Continue = false;
                     }
                 });
                 mainThreadRequestPended.Set();
@@ -112,7 +110,7 @@
             Assert.Equal(1, this.joinableCollection.Count());
 
             // Now let the request proceed through.
-            Dispatcher.PushFrame(frame);
+            this.PushFrame();
 
             Assert.Equal(0, this.GetPendingTasksCount());
             Assert.Equal(0, this.joinableCollection.Count());
@@ -131,7 +129,6 @@
             this.joinableCollection = null;
             this.asyncPump = new DerivedJoinableTaskFactory(this.context);
 
-            var frame = new DispatcherFrame();
             var outerTaskCompleted = new AsyncManualResetEvent();
             Task innerTask = null;
             this.asyncPump.RunAsync(delegate
@@ -152,10 +149,10 @@
             });
             outerTaskCompleted.Set();
 
-            innerTask.ContinueWith(_ => frame.Continue = false);
+            innerTask.ContinueWith(_ => this.testFrame.Continue = false);
 
             // Now let the request proceed through.
-            Dispatcher.PushFrame(frame);
+            this.PushFrame();
 
             innerTask.Wait(); // rethrow exceptions
         }
@@ -165,7 +162,6 @@
         {
             ((DerivedJoinableTaskFactory)this.asyncPump).AssumeConcurrentUse = true;
             var mainThreadRequestPended = new ManualResetEventSlim();
-            var frame = new DispatcherFrame();
             Exception delegateFailure = null;
 
             Task.Run(delegate
@@ -187,7 +183,7 @@
                                 }
                                 finally
                                 {
-                                    frame.Continue = false;
+                                    this.testFrame.Continue = false;
                                 }
                             });
                         awaiter.OnCompleted(
@@ -203,7 +199,7 @@
                                 }
                                 finally
                                 {
-                                    frame.Continue = false;
+                                    this.testFrame.Continue = false;
                                 }
                             });
                         return TplExtensions.CompletedTask;
@@ -217,14 +213,14 @@
             Assert.Equal(1, ((DerivedJoinableTaskFactory)this.asyncPump).TransitioningTasksCount);
 
             // Now let the request proceed through.
-            Dispatcher.PushFrame(frame);
-            frame.Continue = true; // reset for next time
+            this.PushFrame();
+            this.testFrame.Continue = true; // reset for next time
 
             // Verify here that pendingTasks includes one task.
             Assert.Equal(1, ((DerivedJoinableTaskFactory)this.asyncPump).TransitioningTasksCount);
 
             // Now let the request proceed through.
-            Dispatcher.PushFrame(frame);
+            this.PushFrame();
 
             Assert.Equal(0, ((DerivedJoinableTaskFactory)this.asyncPump).TransitioningTasksCount);
 
@@ -238,7 +234,6 @@
         public void SwitchToMainThreadAsyncTransitionsCanSeeAsyncLocals()
         {
             var mainThreadRequestPended = new ManualResetEventSlim();
-            var frame = new DispatcherFrame();
             Exception delegateFailure = null;
 
             var asyncLocal = new AsyncLocal<object>();
@@ -271,16 +266,16 @@
                     }
                     finally
                     {
-                        frame.Continue = false;
+                        this.testFrame.Continue = false;
                     }
                 });
                 mainThreadRequestPended.Set();
             });
 
-            Assert.True(mainThreadRequestPended.Wait(TestTimeout));
+            Assert.True(mainThreadRequestPended.Wait(Timeout.Infinite));
 
             // Now let the request proceed through.
-            Dispatcher.PushFrame(frame);
+            this.PushFrame();
 
             if (delegateFailure != null)
             {
@@ -358,8 +353,6 @@
         [StaFact]
         public void SwitchToSTADoesNotCauseUnrelatedReentrancy()
         {
-            var frame = new DispatcherFrame();
-
             var uiThreadNowBusy = new TaskCompletionSource<object>();
             bool contenderHasReachedUIThread = false;
 
@@ -369,7 +362,7 @@
                 await this.asyncPump.SwitchToMainThreadAsync();
                 Assert.Same(this.originalThread, Thread.CurrentThread);
                 contenderHasReachedUIThread = true;
-                frame.Continue = false;
+                this.testFrame.Continue = false;
             });
 
             this.asyncPump.Run(async delegate
@@ -387,7 +380,7 @@
             });
 
             // Pump messages until everything's done.
-            Dispatcher.PushFrame(frame);
+            this.PushFrame();
 
             Assert.True(backgroundContender.Wait(AsyncDelay), "Background contender never reached the UI thread.");
         }
@@ -548,9 +541,8 @@
             });
 
             // Simulate the UI thread just pumping ordinary messages
-            var frame = new DispatcherFrame();
-            joinableTask.Task.ContinueWith(_ => frame.Continue = false, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
-            Dispatcher.PushFrame(frame);
+            joinableTask.Task.ContinueWith(_ => this.testFrame.Continue = false, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+            this.PushFrame();
             joinableTask.Join(); // Throw exceptions thrown by the async task.
         }
 
@@ -708,7 +700,6 @@
         [StaFact]
         public void RunSwitchesToMainThreadAndPosts()
         {
-            var frame = new DispatcherFrame();
             var task = Task.Run(delegate
             {
                 try
@@ -721,12 +712,12 @@
                 }
                 finally
                 {
-                    frame.Continue = false;
+                    this.testFrame.Continue = false;
                 }
             });
 
             // Now let the request proceed through.
-            Dispatcher.PushFrame(frame);
+            this.PushFrame();
             task.Wait(); // rethrow exceptions.
         }
 
@@ -737,7 +728,6 @@
         public void RunSwitchesToMainThreadAndPostsTwice()
         {
             ((DerivedJoinableTaskFactory)this.asyncPump).AssumeConcurrentUse = true;
-            var frame = new DispatcherFrame();
             var task = Task.Run(delegate
             {
                 try
@@ -751,12 +741,12 @@
                 }
                 finally
                 {
-                    frame.Continue = false;
+                    this.testFrame.Continue = false;
                 }
             });
 
             // Now let the request proceed through.
-            Dispatcher.PushFrame(frame);
+            this.PushFrame();
             task.Wait(); // rethrow exceptions.
         }
 
@@ -767,7 +757,6 @@
         public void RunSwitchesToMainThreadAndPostsTwiceDoesNotImpactJoinableTaskCompletion()
         {
             ((DerivedJoinableTaskFactory)this.asyncPump).AssumeConcurrentUse = true;
-            var frame = new DispatcherFrame();
             Task task = null;
             task = Task.Run(delegate
             {
@@ -793,12 +782,12 @@
                 }
                 finally
                 {
-                    frame.Continue = false;
+                    this.testFrame.Continue = false;
                 }
             });
 
             // Now let the request proceed through.
-            Dispatcher.PushFrame(frame);
+            this.PushFrame();
             task.Wait(); // rethrow exceptions.
         }
 
@@ -1931,7 +1920,6 @@
             Assert.True(executed3);
 
             // And from another thread.
-            var frame = new DispatcherFrame();
             var task = Task.Run(delegate
             {
                 try
@@ -1952,9 +1940,9 @@
                 }
             });
 
-            countdownEvent.WaitAsync().ContinueWith(_ => frame.Continue = false, TaskScheduler.Default);
+            countdownEvent.WaitAsync().ContinueWith(_ => this.testFrame.Continue = false, TaskScheduler.Default);
 
-            Dispatcher.PushFrame(frame);
+            this.PushFrame();
 
             // throw exceptions for any failures.
             task.Wait();
@@ -1964,7 +1952,6 @@
         [StaFact]
         public void SendToSyncContextCapturedAfterSwitchingToMainThread()
         {
-            var frame = new DispatcherFrame();
             var state = new GenericParameterHelper(3);
             SynchronizationContext syncContext = null;
             var task = Task.Run(async delegate
@@ -1988,12 +1975,12 @@
                 finally
                 {
                     // Allow the pushed message pump frame to exit.
-                    frame.Continue = false;
+                    this.testFrame.Continue = false;
                 }
             });
 
             // Open message pump so the background thread can switch to the Main thread.
-            Dispatcher.PushFrame(frame);
+            this.PushFrame();
 
             task.Wait(); // observe any exceptions thrown.
         }
@@ -2009,7 +1996,6 @@
             this.asyncPump.Run(delegate
             {
                 var syncContext = SynchronizationContext.Current; // simulate someone who has captured our own sync context.
-                var frame = new DispatcherFrame();
                 Exception ex = null;
                 using (this.context.SuppressRelevance())
                 { // simulate some kind of sync context hand-off that doesn't flow execution context.
@@ -2029,7 +2015,7 @@
                     }
                     finally
                     {
-                        frame.Continue = false;
+                        this.testFrame.Continue = false;
                     }
                 },
                 null);
@@ -2038,7 +2024,7 @@
 
                 // Now simulate the display of modal UI by pushing an unfiltered message pump onto the stack.
                 // This will hang unless the message gets processed.
-                Dispatcher.PushFrame(frame);
+                this.PushFrame();
 
                 if (ex != null)
                 {
@@ -2056,7 +2042,6 @@
             var mainThreadUnblocked = new AsyncManualResetEvent();
             var otherCollection = this.context.CreateCollection();
             var otherPump = this.context.CreateFactory(otherCollection);
-            var frame = new DispatcherFrame();
             otherPump.Run(delegate
             {
                 this.asyncPump.Run(delegate
@@ -2067,7 +2052,7 @@
                         {
                             await mainThreadUnblocked;
                             await this.asyncPump.SwitchToMainThreadAsync();
-                            frame.Continue = false;
+                            this.testFrame.Continue = false;
                         }
                     });
 
@@ -2081,22 +2066,21 @@
 
             // The rest of this isn't strictly necessary for the hang, but it gets the test
             // to wait till the background task has either succeeded, or failed.
-            Dispatcher.PushFrame(frame);
+            this.PushFrame();
         }
 
         [StaFact]
         public void MainThreadTaskSchedulerDoesNotInlineWhileQueuingTasks()
         {
-            var frame = new DispatcherFrame();
             var uiBoundWork = Task.Run(
                 async delegate
                 {
                     await this.asyncPump.SwitchToMainThreadAsync();
-                    frame.Continue = false;
+                    this.testFrame.Continue = false;
                 });
 
-            Assert.True(frame.Continue, "The UI bound work should not have executed yet.");
-            Dispatcher.PushFrame(frame);
+            Assert.True(this.testFrame.Continue, "The UI bound work should not have executed yet.");
+            this.PushFrame();
         }
 
         [StaFact]
@@ -2105,7 +2089,6 @@
             var runSynchronouslyExited = new AsyncManualResetEvent();
             var unblockMainThread = new ManualResetEventSlim();
             Task backgroundTask = null, uiBoundWork;
-            var frame = new DispatcherFrame();
             this.asyncPump.Run(delegate
             {
                 backgroundTask = Task.Run(async delegate
@@ -2132,12 +2115,12 @@
                 async delegate
                 {
                     await this.asyncPump.SwitchToMainThreadAsync();
-                    frame.Continue = false;
+                    this.testFrame.Continue = false;
                 });
 
             runSynchronouslyExited.Set();
             unblockMainThread.Wait();
-            Dispatcher.PushFrame(frame);
+            this.PushFrame();
             backgroundTask.GetAwaiter().GetResult(); // rethrow any exceptions
         }
 
@@ -2160,17 +2143,15 @@
                 }
             }).Task;
 
-            var frame = new DispatcherFrame();
-
             Task.Run(delegate
             {
                 synchronousCompletionStarting = true;
                 this.asyncPump.CompleteSynchronously(this.joinableCollection, asyncTask);
                 Assert.True(asyncTask.IsCompleted);
-                frame.Continue = false;
+                this.testFrame.Continue = false;
             });
 
-            Dispatcher.PushFrame(frame);
+            this.PushFrame();
             asyncTask.Wait(); // realize any exceptions
         }
 
@@ -2239,7 +2220,6 @@
         [StaFact]
         public void BeginAsyncThenJoinOnMainThreadLater()
         {
-            var frame = new DispatcherFrame();
             var firstYield = new AsyncManualResetEvent();
             var startingJoin = new AsyncManualResetEvent();
             ((DerivedJoinableTaskFactory)this.asyncPump).AssumeConcurrentUse = true;
@@ -2249,7 +2229,7 @@
                 await Task.Yield();
                 firstYield.Set();
                 await startingJoin;
-                frame.Continue = false;
+                this.testFrame.Continue = false;
             });
 
             var forcingFactor = Task.Run(async delegate
@@ -2260,7 +2240,7 @@
                 joinable.Join();
             });
 
-            Dispatcher.PushFrame(frame);
+            this.PushFrame();
         }
 
         [StaFact]
@@ -2545,9 +2525,8 @@
             Skip.IfNot(outer.IsCompleted, "this is a product defect, but this test assumes this works to test something else.");
 
             // Allow the dispatcher to drain all messages that may be holding references.
-            var frame = new DispatcherFrame();
-            SynchronizationContext.Current.Post(s => frame.Continue = false, null);
-            Dispatcher.PushFrame(frame);
+            SynchronizationContext.Current.Post(s => this.testFrame.Continue = false, null);
+            this.PushFrame();
 
             // Now we verify that while 'inner' is non-null that it doesn't hold outerFactory in memory
             // once 'inner' has completed.
@@ -2619,7 +2598,6 @@
             var collection2 = this.asyncPump.Context.CreateCollection();
             var pump2 = this.asyncPump.Context.CreateFactory(collection2);
             Task t1 = null, t2 = null;
-            var frame = new DispatcherFrame();
 
             ((DerivedJoinableTaskFactory)this.asyncPump).AssumeConcurrentUse = true;
             ((DerivedJoinableTaskFactory)pump2).AssumeConcurrentUse = true;
@@ -2639,7 +2617,7 @@
                                 awaiter.GetResult();
                                 if (Interlocked.Decrement(ref outstandingMessages) == 0)
                                 {
-                                    frame.Continue = false;
+                                    this.testFrame.Continue = false;
                                 }
                             });
                         }
@@ -2663,7 +2641,7 @@
                                 awaiter.GetResult();
                                 if (Interlocked.Decrement(ref outstandingMessages) == 0)
                                 {
-                                    frame.Continue = false;
+                                    this.testFrame.Continue = false;
                                 }
                             });
                         }
@@ -2672,7 +2650,7 @@
                 return TplExtensions.CompletedTask;
             });
 
-            Dispatcher.PushFrame(frame);
+            this.PushFrame();
         }
 
         /// <summary>
@@ -2831,7 +2809,6 @@
         [StaFact]
         public void SwitchToMainThreadSucceedsWhenConstructedUnderMTAOperation()
         {
-            var frame = new DispatcherFrame();
             var task = Task.Run(async delegate
             {
                 try
@@ -2843,11 +2820,11 @@
                 }
                 finally
                 {
-                    frame.Continue = false;
+                    this.testFrame.Continue = false;
                 }
             });
 
-            Dispatcher.PushFrame(frame);
+            this.PushFrame();
             task.GetAwaiter().GetResult(); // rethrow any failures
         }
 
@@ -2908,7 +2885,7 @@
                 {
                     return TplExtensions.CompletedTask;
                 });
-            }, maxBytesAllocated: 500);
+            }, maxBytesAllocated: 573);
         }
 
         [StaFact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest")]
@@ -2922,7 +2899,7 @@
                 {
                     return completedTask;
                 });
-            }, maxBytesAllocated: 500);
+            }, maxBytesAllocated: 572);
         }
 
         [StaFact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest"), Trait("FailsInLocalBatch", "true")]
@@ -3106,12 +3083,7 @@
 
             // Needs to give the dispatcher a chance to run the posted action in order to release
             // the last reference to the JoinableTask.
-            var frame = new DispatcherFrame();
-            Dispatcher.CurrentDispatcher.BeginInvoke((Action)(() =>
-            {
-                frame.Continue = false;
-            }));
-            Dispatcher.PushFrame(frame);
+            this.PushFrameTillQueueIsEmpty();
 
             result = null;
             GC.Collect();
@@ -3159,12 +3131,7 @@
 
             // Needs to give the dispatcher a chance to run the posted action in order to release
             // the last reference to the JoinableTask.
-            var frame = new DispatcherFrame();
-            Dispatcher.CurrentDispatcher.BeginInvoke((Action)(() =>
-            {
-                frame.Continue = false;
-            }));
-            Dispatcher.PushFrame(frame);
+            this.PushFrameTillQueueIsEmpty();
 
             result = null;
             GC.Collect();
@@ -3477,7 +3444,7 @@
             {
                 Assert.NotNull(this.UnderlyingSynchronizationContext);
                 Assert.NotNull(callback);
-                Assert.IsType(typeof(DispatcherSynchronizationContext), this.UnderlyingSynchronizationContext);
+                Assert.True(SingleThreadedSynchronizationContext.IsSingleThreadedSyncContext(this.UnderlyingSynchronizationContext));
                 base.PostToUnderlyingSynchronizationContext(callback, state);
                 if (this.PostToUnderlyingSynchronizationContextCallback != null)
                 {

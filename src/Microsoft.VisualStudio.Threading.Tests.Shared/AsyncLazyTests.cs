@@ -12,7 +12,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Windows.Threading;
+    using System.Windows.Forms;
     using Xunit;
     using Xunit.Abstractions;
 
@@ -356,7 +356,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public void ValueFactoryRequiresMainThreadHeldByOther()
         {
-            var ctxt = new DispatcherSynchronizationContext();
+            var ctxt = new WindowsFormsSynchronizationContext();
             SynchronizationContext.SetSynchronizationContext(ctxt);
             var context = new JoinableTaskContext();
             var asyncPump = context.Factory;
