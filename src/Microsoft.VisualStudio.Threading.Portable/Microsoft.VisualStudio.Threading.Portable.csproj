@@ -30,6 +30,19 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- A reference to the entire .NET Framework is automatically included -->
+    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Portable.cs.xlf" />
+    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Portable.de.xlf" />
+    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Portable.es.xlf" />
+    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Portable.fr.xlf" />
+    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Portable.it.xlf" />
+    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Portable.ja.xlf" />
+    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Portable.ko.xlf" />
+    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Portable.pl.xlf" />
+    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Portable.pt-BR.xlf" />
+    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Portable.ru.xlf" />
+    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Portable.tr.xlf" />
+    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Portable.zh-Hans.xlf" />
+    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Portable.zh-Hant.xlf" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Microsoft.VisualStudio.Threading.Portable.ruleset">
@@ -38,10 +51,23 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Strings.cs.resx" />
+    <EmbeddedResource Include="Strings.de.resx" />
+    <EmbeddedResource Include="Strings.es.resx" />
+    <EmbeddedResource Include="Strings.fr.resx" />
+    <EmbeddedResource Include="Strings.it.resx" />
+    <EmbeddedResource Include="Strings.ja.resx" />
+    <EmbeddedResource Include="Strings.ko.resx" />
+    <EmbeddedResource Include="Strings.pl.resx" />
+    <EmbeddedResource Include="Strings.pt-BR.resx" />
     <EmbeddedResource Include="Strings.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Strings.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <EmbeddedResource Include="Strings.ru.resx" />
+    <EmbeddedResource Include="Strings.tr.resx" />
+    <EmbeddedResource Include="Strings.zh-Hans.resx" />
+    <EmbeddedResource Include="Strings.zh-Hant.resx" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AsyncLocal.cs" />
