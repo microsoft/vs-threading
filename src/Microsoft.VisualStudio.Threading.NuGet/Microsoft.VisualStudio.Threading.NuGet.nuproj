@@ -51,6 +51,7 @@
             Condition=" '%(File.TargetFrameworkMoniker)' == '.NETPortable,Version=v4.5,Profile=Profile111' ">
         <TargetPath Condition=" '%(File.WithCulture)' != 'true' ">lib\dotnet\%(FileName)%(Extension)</TargetPath>
         <TargetPath Condition=" '%(File.WithCulture)' == 'true' ">lib\dotnet\%(File.Culture)\%(FileName)%(Extension)</TargetPath>
+        <TargetPath Condition=" '%(File.MSBuildSourceTargetName)' == 'SatelliteDllsProjectOutputGroup' ">lib\dotnet\$([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName(%(Identity)))))\%(FileName)%(Extension)</TargetPath>
       </File>
     </ItemGroup>
   </Target>
