@@ -31,6 +31,7 @@
   <ItemGroup>
     <Compile Include="AsyncEventHandlerAnalyzer.cs" />
     <Compile Include="JtfRunAwaitTaskAnalyzer.cs" />
+    <Compile Include="TypeIdentifiers.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="AsyncVoidLambdaAnalyzer.cs" />
     <Compile Include="AsyncVoidMethodAnalyzer.cs" />
@@ -46,13 +47,6 @@
     </None>
     <None Include="Microsoft.VisualStudio.Threading.Analyzers.ruleset" />
     <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Desktop\Microsoft.VisualStudio.Threading.Desktop.csproj">
-      <Project>{2c0dffbd-49c8-4f12-a964-e3096ad4c7f4}</Project>
-      <Name>Microsoft.VisualStudio.Threading.Desktop</Name>
-      <ExcludeFromNuPkg>true</ExcludeFromNuPkg>
-    </ProjectReference>
   </ItemGroup>
   <ItemDefinitionGroup>
     <Reference>

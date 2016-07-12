@@ -8,14 +8,20 @@ namespace Microsoft.VisualStudio.Threading.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Xunit;
+    using Xunit.Abstractions;
 
-    public partial class AwaitExtensionsTests
+    public partial class AwaitExtensionsTests : TestBase
     {
+        public AwaitExtensionsTests(ITestOutputHelper logger)
+            : base(logger)
+        {
+        }
+
         [Fact]
         public void AwaitCustomTaskScheduler()
         {

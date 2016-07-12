@@ -57,7 +57,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         {
             var diagnostic = context.Diagnostics.First();
             context.RegisterCodeFix(new VoidToTaskCodeAction(context.Document, diagnostic), diagnostic);
-            return TplExtensions.CompletedTask;
+            return Task.FromResult<object>(null);
         }
 
         private class VoidToTaskCodeAction : CodeAction

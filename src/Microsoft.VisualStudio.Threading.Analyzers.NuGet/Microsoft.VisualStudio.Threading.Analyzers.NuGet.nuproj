@@ -31,8 +31,9 @@
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <ProjectUrl>http://aka.ms/VSProjectSystemExtensibilityPreview</ProjectUrl>
     <IconUrl>http://aka.ms/VsExtensibilityIcon</IconUrl>
-    <LicenseUrl>http://go.microsoft.com/fwlink/?LinkID=517238</LicenseUrl>
+    <LicenseUrl>http://go.microsoft.com/fwlink/?LinkID=746386</LicenseUrl>
     <RequireLicenseAcceptance>true</RequireLicenseAcceptance>
+    <ReleaseNotes>http://go.microsoft.com/fwlink/?LinkID=746387</ReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.csproj">
