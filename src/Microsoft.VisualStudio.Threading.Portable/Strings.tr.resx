@@ -12,4 +12,53 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AppliedSynchronizationContextNotAllowed" xml:space="preserve">
+    <value>SynchronizationContext uygulanmış işlem parçacıkları için kilit alınamaz.</value>
+  </data>
+  <data name="CannotUpgradeNonUpgradeableLock" xml:space="preserve">
+    <value>Yükseltilemeyen bir okuma kilidi arayan tarafından tutuluyor ve yükseltilemiyor.</value>
+  </data>
+  <data name="DangerousReadLockRequestFromWriteLockFork" xml:space="preserve">
+    <value>Okuma kilidi için yazma kilidi çatalından tehlikeli bir istek alındı.</value>
+  </data>
+  <data name="InvalidAfterCompleted" xml:space="preserve">
+    <value>Zaten Tamamlandı durumuna geçirildi.</value>
+  </data>
+  <data name="InvalidLock" xml:space="preserve">
+    <value>Bu işlem yalnızca geçerli bir kilide karşı yürütülebilir.</value>
+  </data>
+  <data name="InvalidWithoutLock" xml:space="preserve">
+    <value>Kilit gerekiyor.</value>
+  </data>
+  <data name="JoinableTaskContextAndCollectionMismatch" xml:space="preserve">
+    <value>JoinableTask, bu koleksiyonun oluşturulduğu bağlama ait değil.</value>
+  </data>
+  <data name="JoinableTaskContextNodeAlreadyRegistered" xml:space="preserve">
+    <value>Düğüm zaten kaydedilmiş.</value>
+  </data>
+  <data name="LazyValueFaulted" xml:space="preserve">
+    <value>Yapım sırasında geç oluşturulan değer hata verdi.</value>
+  </data>
+  <data name="LazyValueNotCreated" xml:space="preserve">
+    <value>Geç oluşturulan değer henüz yapılmadı.</value>
+  </data>
+  <data name="LockCompletionAlreadyRequested" xml:space="preserve">
+    <value>Bu kilit tamamlanmak üzere zaten işaretlenmiş.  Yeni üst düzey kilitlere hizmet verilemez.</value>
+  </data>
+  <data name="NotAllowedUnderURorWLock" xml:space="preserve">
+    <value>Bu işleme, AsyncReaderWriterLock'tan etkin bir yükseltilebilir okuma veya yazma kilidi tutulurken izin verilmez.</value>
+  </data>
+  <data name="QueueEmpty" xml:space="preserve">
+    <value>Kuyruk boş.</value>
+  </data>
+  <data name="STAThreadCallerNotAllowed" xml:space="preserve">
+    <value>Bu işlem STA iş parçacığında tamamlanamaz.</value>
+  </data>
+  <data name="SwitchToMainThreadFailedToReachExpectedThread" xml:space="preserve">
+    <value>Ana iş parçacığına geçiş yapılmaya çalışıldı ancak beklenen iş parçacığına ulaşılamadı. JoinableTaskContext yanlış iş parçacığı üzerinde mi başlatıldı yoksa Post metodunun, temsilcisini ana iş parçacığı üzerinde çalıştırmadığı bir SynchronizationContext ile mi başlatıldı?</value>
+    <comment>An error displayed when there is a serious programming fault with an application. It will usually be thrown early in development in the application and is not expected to be seen by an end user.</comment>
+  </data>
+  <data name="ValueFactoryReentrancy" xml:space="preserve">
+    <value>Değer fabrikası aynı örnekteki değeri çağırdı.</value>
+  </data>
 </root>

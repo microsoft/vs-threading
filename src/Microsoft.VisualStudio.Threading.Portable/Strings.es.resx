@@ -12,4 +12,53 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AppliedSynchronizationContextNotAllowed" xml:space="preserve">
+    <value>No se permite adquirir bloqueos en subprocesos con un SynchronizationContext aplicado.</value>
+  </data>
+  <data name="CannotUpgradeNonUpgradeableLock" xml:space="preserve">
+    <value>El llamador mantiene un bloqueo de lectura no actualizable y no se puede actualizar.</value>
+  </data>
+  <data name="DangerousReadLockRequestFromWriteLockFork" xml:space="preserve">
+    <value>Solicitud peligrosa para bloqueo de lectura desde bifurcación de bloqueo de escritura.</value>
+  </data>
+  <data name="InvalidAfterCompleted" xml:space="preserve">
+    <value>Ya se ha realizado la transición al estado Completado.</value>
+  </data>
+  <data name="InvalidLock" xml:space="preserve">
+    <value>Esta operación solamente se puede ejecutar con un bloqueo válido.</value>
+  </data>
+  <data name="InvalidWithoutLock" xml:space="preserve">
+    <value>Se necesita un bloqueo.</value>
+  </data>
+  <data name="JoinableTaskContextAndCollectionMismatch" xml:space="preserve">
+    <value>JoinableTask no pertenece al contexto con el que se creó la instancia de esta colección.</value>
+  </data>
+  <data name="JoinableTaskContextNodeAlreadyRegistered" xml:space="preserve">
+    <value>Este nodo ya está registrado.</value>
+  </data>
+  <data name="LazyValueFaulted" xml:space="preserve">
+    <value>Error del valor creado de forma diferida durante la construcción.</value>
+  </data>
+  <data name="LazyValueNotCreated" xml:space="preserve">
+    <value>El valor creado de forma diferida no se ha construido aún.</value>
+  </data>
+  <data name="LockCompletionAlreadyRequested" xml:space="preserve">
+    <value>Este bloqueo ya se ha marcado para su finalización.  No se pueden mantener nuevos bloqueos de nivel superior.</value>
+  </data>
+  <data name="NotAllowedUnderURorWLock" xml:space="preserve">
+    <value>Esta operación no está permitida mientras se mantenga un bloqueo activo de lectura o escritura actualizable a través de un AsyncReaderWriterLock.</value>
+  </data>
+  <data name="QueueEmpty" xml:space="preserve">
+    <value>La cola está vacía.</value>
+  </data>
+  <data name="STAThreadCallerNotAllowed" xml:space="preserve">
+    <value>Esta operación no se puede completar en un subproceso STA.</value>
+  </data>
+  <data name="SwitchToMainThreadFailedToReachExpectedThread" xml:space="preserve">
+    <value>No se pudo alcanzar el subproceso esperado a través del intento de cambio al subproceso principal. ¿Se inició JoinableTaskContext en el subproceso incorrecto o con un SynchronizationContext cuyo método de registro no ejecuta su delegado en el subproceso principal?</value>
+    <comment>An error displayed when there is a serious programming fault with an application. It will usually be thrown early in development in the application and is not expected to be seen by an end user.</comment>
+  </data>
+  <data name="ValueFactoryReentrancy" xml:space="preserve">
+    <value>Este generador de valores ha llamado al valor en la misma instancia.</value>
+  </data>
 </root>
