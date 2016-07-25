@@ -12,4 +12,53 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AppliedSynchronizationContextNotAllowed" xml:space="preserve">
+    <value>적용된 SynchronizationContext로 스레드 잠금을 가져오는 것은 허용되지 않습니다.</value>
+  </data>
+  <data name="CannotUpgradeNonUpgradeableLock" xml:space="preserve">
+    <value>호출자에 업그레이드할 수 없는 읽기 잠금이 있으며 이 잠금을 업그레이드할 수 없습니다.</value>
+  </data>
+  <data name="DangerousReadLockRequestFromWriteLockFork" xml:space="preserve">
+    <value>쓰기 잠금 분기로부터의 읽기 잠금 요청은 위험합니다.</value>
+  </data>
+  <data name="InvalidAfterCompleted" xml:space="preserve">
+    <value>완료 상태로 이미 전환되었습니다.</value>
+  </data>
+  <data name="InvalidLock" xml:space="preserve">
+    <value>유효한 잠금에 대해서만 이 작업을 실행할 수 있습니다.</value>
+  </data>
+  <data name="InvalidWithoutLock" xml:space="preserve">
+    <value>잠금이 필요합니다.</value>
+  </data>
+  <data name="JoinableTaskContextAndCollectionMismatch" xml:space="preserve">
+    <value>JoinableTask는 이 컬렉션이 인스턴스화된 컨텍스트에 속하지 않습니다.</value>
+  </data>
+  <data name="JoinableTaskContextNodeAlreadyRegistered" xml:space="preserve">
+    <value>이 노드는 이미 등록되었습니다.</value>
+  </data>
+  <data name="LazyValueFaulted" xml:space="preserve">
+    <value>생성하는 동안 값을 만드는 시간이 지연되어 오류가 발생했습니다.</value>
+  </data>
+  <data name="LazyValueNotCreated" xml:space="preserve">
+    <value>값을 만드는 시간이 지연되어 값이 아직 생성되지 않았습니다.</value>
+  </data>
+  <data name="LockCompletionAlreadyRequested" xml:space="preserve">
+    <value>이 잠금은 이미 완료로 표시되었습니다.  이제 새로운 최상위 잠금을 처리할 수 없습니다.</value>
+  </data>
+  <data name="NotAllowedUnderURorWLock" xml:space="preserve">
+    <value>AsyncReaderWriterLock으로 인해 업그레이드 가능한 활성 읽기 또는 쓰기 잠금이 있으면 이 작업을 수행할 수 없습니다.</value>
+  </data>
+  <data name="QueueEmpty" xml:space="preserve">
+    <value>큐가 비어 있습니다.</value>
+  </data>
+  <data name="STAThreadCallerNotAllowed" xml:space="preserve">
+    <value>이 작업은 STA 스레드에서 완료할 수 없습니다.</value>
+  </data>
+  <data name="SwitchToMainThreadFailedToReachExpectedThread" xml:space="preserve">
+    <value>주 스레드로 전환하려 했지만 필요한 스레드에 도달하지 못했습니다. JoinableTaskContext가 잘못된 스레드에서 초기화되었거나 Post 메서드가 주 스레드에서 해당 대리자를 실행하지 않는 SynchronizationContext를 사용하여 초기화되었나요?</value>
+    <comment>An error displayed when there is a serious programming fault with an application. It will usually be thrown early in development in the application and is not expected to be seen by an end user.</comment>
+  </data>
+  <data name="ValueFactoryReentrancy" xml:space="preserve">
+    <value>값 팩토리가 같은 인스턴스의 값을 호출했습니다.</value>
+  </data>
 </root>

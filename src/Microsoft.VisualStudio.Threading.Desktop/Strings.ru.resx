@@ -12,4 +12,53 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AppliedSynchronizationContextNotAllowed" xml:space="preserve">
+    <value>Получение блокировок для потоков, к которым применен контекст SynchronizationContext, запрещено.</value>
+  </data>
+  <data name="CannotUpgradeNonUpgradeableLock" xml:space="preserve">
+    <value>Вызывающая сторона удерживает блокировку чтения, которую невозможно обновить.</value>
+  </data>
+  <data name="DangerousReadLockRequestFromWriteLockFork" xml:space="preserve">
+    <value>Опасный запрос на блокировку чтения из-за ветвления блокировки записи.</value>
+  </data>
+  <data name="InvalidAfterCompleted" xml:space="preserve">
+    <value>Уже выполнен переход в состояние "Выполнено".</value>
+  </data>
+  <data name="InvalidLock" xml:space="preserve">
+    <value>Эта операция может быть выполнена только применительно к допустимой блокировке.</value>
+  </data>
+  <data name="InvalidWithoutLock" xml:space="preserve">
+    <value>Необходима блокировка.</value>
+  </data>
+  <data name="JoinableTaskContextAndCollectionMismatch" xml:space="preserve">
+    <value>JoinableTask не относится к контексту, в котором был создан экземпляр этой коллекции.</value>
+  </data>
+  <data name="JoinableTaskContextNodeAlreadyRegistered" xml:space="preserve">
+    <value>Этот узел уже зарегистрирован.</value>
+  </data>
+  <data name="LazyValueFaulted" xml:space="preserve">
+    <value>Созданное "лениво" значение вызвало сбой во время работы конструктора.</value>
+  </data>
+  <data name="LazyValueNotCreated" xml:space="preserve">
+    <value>Созданное "лениво" еще не сконструировано.</value>
+  </data>
+  <data name="LockCompletionAlreadyRequested" xml:space="preserve">
+    <value>Эта блокировка уже помечена для завершения.  Не удается обслужить новые блокировки верхнего уровня.</value>
+  </data>
+  <data name="NotAllowedUnderURorWLock" xml:space="preserve">
+    <value>Эта операция не допускается во время удержания активной обновляемой блокировки чтения или записи от AsyncReaderWriterLock.</value>
+  </data>
+  <data name="QueueEmpty" xml:space="preserve">
+    <value>Очередь пуста.</value>
+  </data>
+  <data name="STAThreadCallerNotAllowed" xml:space="preserve">
+    <value>Эту операцию нельзя выполнить применительно к потоку STA.</value>
+  </data>
+  <data name="SwitchToMainThreadFailedToReachExpectedThread" xml:space="preserve">
+    <value>При попытке переключиться на основной поток не удалось достичь ожидаемого потока. Был ли JoinableTaskContext инициализирован в неправильном потоке или с помощью SynchronizationContext, чей метод POST не выполняет свой делегат в основном потоке?</value>
+    <comment>An error displayed when there is a serious programming fault with an application. It will usually be thrown early in development in the application and is not expected to be seen by an end user.</comment>
+  </data>
+  <data name="ValueFactoryReentrancy" xml:space="preserve">
+    <value>Фабрика значений вызвала значение в том же экземпляре.</value>
+  </data>
 </root>

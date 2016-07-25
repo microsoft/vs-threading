@@ -12,4 +12,53 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AppliedSynchronizationContextNotAllowed" xml:space="preserve">
+    <value>Das Abrufen von Sperren für Threads, auf die ein SynchronizationContext angewendet wurde, ist unzulässig.</value>
+  </data>
+  <data name="CannotUpgradeNonUpgradeableLock" xml:space="preserve">
+    <value>Eine nicht aktualisierbare Lesesperre wird vom Aufrufer gehalten und kann nicht aktualisiert werden.</value>
+  </data>
+  <data name="DangerousReadLockRequestFromWriteLockFork" xml:space="preserve">
+    <value>Gefährliche Anforderung einer Lesesperre von der Verzweigung einer Schreibsperre.</value>
+  </data>
+  <data name="InvalidAfterCompleted" xml:space="preserve">
+    <value>Der Übergang in den Status "Abgeschlossen" ist bereits erfolgt.</value>
+  </data>
+  <data name="InvalidLock" xml:space="preserve">
+    <value>Dieser Vorgang kann nur für eine gültige Sperre ausgeführt werden.</value>
+  </data>
+  <data name="InvalidWithoutLock" xml:space="preserve">
+    <value>Eine Sperre ist erforderlich.</value>
+  </data>
+  <data name="JoinableTaskContextAndCollectionMismatch" xml:space="preserve">
+    <value>JoinableTask gehört nicht zu dem Kontext, mit dem diese Sammlung instanziiert wurde.</value>
+  </data>
+  <data name="JoinableTaskContextNodeAlreadyRegistered" xml:space="preserve">
+    <value>Dieser Knoten ist bereits registriert.</value>
+  </data>
+  <data name="LazyValueFaulted" xml:space="preserve">
+    <value>Fehler bei verzögert erstelltem Wert während der Konstruktion.</value>
+  </data>
+  <data name="LazyValueNotCreated" xml:space="preserve">
+    <value>Es wurde noch kein verzögert erstellter Wert konstruiert.</value>
+  </data>
+  <data name="LockCompletionAlreadyRequested" xml:space="preserve">
+    <value>Diese Sperre wurde bereits für den Abschluss markiert.  Es können keine neuen Sperren auf oberster Ebene verarbeitet werden.</value>
+  </data>
+  <data name="NotAllowedUnderURorWLock" xml:space="preserve">
+    <value>Dieser Vorgang ist unzulässig, wenn eine aktive und aktualisierbare Lese- oder Schreibsperre durch ein AsyncReaderWriterLock-Objekt aufrecht erhalten wird.</value>
+  </data>
+  <data name="QueueEmpty" xml:space="preserve">
+    <value>Die Warteschlange ist leer.</value>
+  </data>
+  <data name="STAThreadCallerNotAllowed" xml:space="preserve">
+    <value>Dieser Vorgang kann in einem STA-Thread nicht abgeschlossen werden.</value>
+  </data>
+  <data name="SwitchToMainThreadFailedToReachExpectedThread" xml:space="preserve">
+    <value>Fehler beim Versuch, zum Hauptthread zu wechseln, um den erwarteten Thread zu erreichen. Wurde der JoinableTaskContext für den falschen Thread oder mit einem SynchronizationContext initialisiert, dessen Post-Methode ihren Delegaten nicht für den Hauptthread ausführt?</value>
+    <comment>An error displayed when there is a serious programming fault with an application. It will usually be thrown early in development in the application and is not expected to be seen by an end user.</comment>
+  </data>
+  <data name="ValueFactoryReentrancy" xml:space="preserve">
+    <value>Die Wertfactory hat den Wert für die gleiche Instanz aufgerufen.</value>
+  </data>
 </root>

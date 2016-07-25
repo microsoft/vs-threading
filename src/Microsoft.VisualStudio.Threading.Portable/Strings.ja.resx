@@ -12,4 +12,53 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AppliedSynchronizationContextNotAllowed" xml:space="preserve">
+    <value>SynchronizationContext を適用したスレッド上でのロックの取得は許可されていません。</value>
+  </data>
+  <data name="CannotUpgradeNonUpgradeableLock" xml:space="preserve">
+    <value>アップグレードできない読み取りロックが呼び出し元によって設定されているため、アップグレードできません。</value>
+  </data>
+  <data name="DangerousReadLockRequestFromWriteLockFork" xml:space="preserve">
+    <value>書き込みロックのフォークからの、危険性のある読み取りロック要求です。</value>
+  </data>
+  <data name="InvalidAfterCompleted" xml:space="preserve">
+    <value>完了済みの状態へ既に移行されています。</value>
+  </data>
+  <data name="InvalidLock" xml:space="preserve">
+    <value>この操作は有効なロックに対してのみ実行できます。</value>
+  </data>
+  <data name="InvalidWithoutLock" xml:space="preserve">
+    <value>ロックが必要です。</value>
+  </data>
+  <data name="JoinableTaskContextAndCollectionMismatch" xml:space="preserve">
+    <value>JoinableTask はこのコレクションがインスタンス化されたコンテキストに属していません。</value>
+  </data>
+  <data name="JoinableTaskContextNodeAlreadyRegistered" xml:space="preserve">
+    <value>このノードは登録済みです。</value>
+  </data>
+  <data name="LazyValueFaulted" xml:space="preserve">
+    <value>遅延作成値の作成中にエラーが発生しました。</value>
+  </data>
+  <data name="LazyValueNotCreated" xml:space="preserve">
+    <value>遅延作成値はまだ作成されていません。</value>
+  </data>
+  <data name="LockCompletionAlreadyRequested" xml:space="preserve">
+    <value>このロックは既に完了対象に設定されています。新しいトップレベルのロックは提供できません。</value>
+  </data>
+  <data name="NotAllowedUnderURorWLock" xml:space="preserve">
+    <value>AsyncReaderWriterLock から、アクティブでアップグレード可能な読み取りロックまたは書き込みロックを保持している間は、この操作を行うことができません。</value>
+  </data>
+  <data name="QueueEmpty" xml:space="preserve">
+    <value>キューが空です。</value>
+  </data>
+  <data name="STAThreadCallerNotAllowed" xml:space="preserve">
+    <value>この操作は STA スレッドでは完了できません。</value>
+  </data>
+  <data name="SwitchToMainThreadFailedToReachExpectedThread" xml:space="preserve">
+    <value>メイン スレッドへ切り替えを試みましたが、必要なスレッドに到達できませんでした。JoinableTaskContext が正しくないスレッドで初期化されましたか? あるいは、メイン スレッドでデリゲートを実行しない POST メソッドを持つ SynchronizationContext が関連付けられていますか?</value>
+    <comment>An error displayed when there is a serious programming fault with an application. It will usually be thrown early in development in the application and is not expected to be seen by an end user.</comment>
+  </data>
+  <data name="ValueFactoryReentrancy" xml:space="preserve">
+    <value>値ファクトリが同じインスタンスの値を呼び出しました。</value>
+  </data>
 </root>
