@@ -7,7 +7,6 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Windows.Threading;
     using Xunit;
     using Xunit.Abstractions;
 
@@ -110,11 +109,11 @@
 
                 // If there is a dispatcher sync context, let it run for a bit.
                 // This allows any posted messages that are now obsolete to be released.
-                if (SynchronizationContext.Current is DispatcherSynchronizationContext)
+                if (SingleThreadedSynchronizationContext.IsSingleThreadedSyncContext(SynchronizationContext.Current))
                 {
-                    var frame = new DispatcherFrame();
+                    var frame = SingleThreadedSynchronizationContext.NewFrame();
                     SynchronizationContext.Current.Post(state => frame.Continue = false, null);
-                    Dispatcher.PushFrame(frame);
+                    SingleThreadedSynchronizationContext.PushFrame(SynchronizationContext.Current, frame);
                 }
 
                 long leaked = (GC.GetTotalMemory(true) - initialMemory) / iterations;
@@ -236,14 +235,9 @@
 
         protected void ExecuteOnDispatcher(Func<Task> action)
         {
-            this.ExecuteOnSTA(() =>
+            Action worker = delegate
             {
-                if (!(SynchronizationContext.Current is DispatcherSynchronizationContext))
-                {
-                    SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext());
-                }
-
-                var frame = new DispatcherFrame();
+                var frame = SingleThreadedSynchronizationContext.NewFrame();
                 Exception failure = null;
                 SynchronizationContext.Current.Post(
                     async _ =>
@@ -263,12 +257,30 @@
                     },
                     null);
 
-                Dispatcher.PushFrame(frame);
+                SingleThreadedSynchronizationContext.PushFrame(SynchronizationContext.Current, frame);
                 if (failure != null)
                 {
-                    System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
+                    ExceptionDispatchInfo.Capture(failure).Throw();
                 }
-            });
+            };
+
+            if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA &&
+                SingleThreadedSynchronizationContext.IsSingleThreadedSyncContext(SynchronizationContext.Current))
+            {
+                worker();
+            }
+            else
+            {
+                this.ExecuteOnSTA(() =>
+                {
+                    if (!SingleThreadedSynchronizationContext.IsSingleThreadedSyncContext(SynchronizationContext.Current))
+                    {
+                        SynchronizationContext.SetSynchronizationContext(SingleThreadedSynchronizationContext.New());
+                    }
+
+                    worker();
+                });
+            }
         }
     }
 }

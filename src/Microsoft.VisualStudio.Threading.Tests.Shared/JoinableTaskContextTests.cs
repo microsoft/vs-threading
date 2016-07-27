@@ -7,7 +7,6 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Windows.Threading;
     using System.Xml.Linq;
     using Xunit;
     using Xunit.Abstractions;
@@ -501,16 +500,15 @@
         [StaFact]
         public void IsMainThreadBlockedFalseWhenAsync()
         {
-            var frame = new DispatcherFrame();
             var joinable = this.Factory.RunAsync(async delegate
             {
                 Assert.False(this.Context.IsMainThreadBlocked());
                 await Task.Yield();
                 Assert.False(this.Context.IsMainThreadBlocked());
-                frame.Continue = false;
+                this.testFrame.Continue = false;
             });
 
-            Dispatcher.PushFrame(frame);
+            this.PushFrame();
             joinable.Join(); // rethrow exceptions
         }
 
@@ -541,7 +539,6 @@
         [StaFact]
         public void IsMainThreadBlockedTrueWhenAsyncBecomesBlockingWithNestedTask()
         {
-            var frame = new DispatcherFrame();
             var joinable = this.Factory.RunAsync(async delegate
             {
                 Assert.False(this.Context.IsMainThreadBlocked());
@@ -556,7 +553,7 @@
 
                     // Now release the message pump so we hit the Join() call
                     await this.Factory.SwitchToMainThreadAsync();
-                    frame.Continue = false;
+                    this.testFrame.Continue = false;
                     await Task.Yield();
 
                     // From now on, we're blocking.
@@ -566,7 +563,7 @@
                 });
             });
 
-            Dispatcher.PushFrame(frame); // for duration of this, it appears to be non-blocking.
+            this.PushFrame(); // for duration of this, it appears to be non-blocking.
             joinable.Join();
         }
 

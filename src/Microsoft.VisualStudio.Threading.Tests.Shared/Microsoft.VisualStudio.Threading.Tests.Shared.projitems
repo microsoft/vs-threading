@@ -33,6 +33,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskTestBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)JoinableTaskTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ListOfOftenOneTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SingleThreadedSynchronizationContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ProgressWithCompletionTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TestBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TestBaseTests.cs" />

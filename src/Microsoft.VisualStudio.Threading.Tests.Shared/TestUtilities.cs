@@ -9,7 +9,6 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Windows.Threading;
     using Xunit;
 
     internal static class TestUtilities
@@ -41,7 +40,7 @@
             var prevCtx = SynchronizationContext.Current;
             try
             {
-                var syncCtx = new DispatcherSynchronizationContext();
+                var syncCtx = SingleThreadedSynchronizationContext.New();
                 SynchronizationContext.SetSynchronizationContext(syncCtx);
 
                 var t = func();
@@ -50,9 +49,9 @@
                     throw new InvalidOperationException();
                 }
 
-                var frame = new DispatcherFrame();
+                var frame = SingleThreadedSynchronizationContext.NewFrame();
                 t.ContinueWith(_ => { frame.Continue = false; }, TaskScheduler.Default);
-                Dispatcher.PushFrame(frame);
+                SingleThreadedSynchronizationContext.PushFrame(syncCtx, frame);
 
                 t.GetAwaiter().GetResult();
             }
