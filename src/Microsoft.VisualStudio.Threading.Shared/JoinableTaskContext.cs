@@ -268,7 +268,17 @@ namespace Microsoft.VisualStudio.Threading
         /// </remarks>
         protected internal virtual SynchronizationContext NoMessagePumpSynchronizationContext
         {
-            get { return NoMessagePumpSyncContext.Default; }
+            get
+            {
+#if DESKTOP
+                // Callers of this method are about to take a private lock, which tends
+                // to cause a deadlock while debugging because of lock contention with the
+                // debugger's expression evaluator. So prevent that.
+                Debugger.NotifyOfCrossThreadDependency();
+#endif
+
+                return NoMessagePumpSyncContext.Default;
+            }
         }
 
         /// <summary>
