@@ -3174,6 +3174,37 @@
             Assert.Null(target); // The task's result should be collected unless the JoinableTask is leaked
         }
 
+        /// <summary>
+        /// Executes background work where the JoinableTask's SynchronizationContext
+        /// adds work to the threadpoolQueue but doesn't give it a chance to run while
+        /// the parent JoinableTask lasts.
+        /// </summary>
+        /// <remarks>
+        /// Repro for bug 245563: https://devdiv.visualstudio.com/web/wi.aspx?pcguid=011b8bdf-6d56-4f87-be0d-0092136884d9&id=245563
+        /// </remarks>
+        [StaFact]
+        public void UnawaitedBackgroundWorkShouldComplete()
+        {
+            Func<Task> otherAsyncMethod = async delegate
+            {
+                await Task.Yield();
+            };
+            var bkgrndThread = Task.Run(delegate
+            {
+                this.asyncPump.Run(delegate
+                {
+                    otherAsyncMethod().Forget();
+                    return TplExtensions.CompletedTask;
+                });
+            });
+            this.context.Factory.Run(async delegate
+            {
+                var joinTask = this.joinableCollection.JoinTillEmptyAsync();
+                await joinTask.WithTimeout(TimeSpan.FromMilliseconds(TestTimeout));
+                Assert.True(joinTask.IsCompleted);
+            });
+        }
+
         [StaFact]
         public void PostToUnderlyingSynchronizationContextShouldBeAfterSignalJoinableTasks()
         {
