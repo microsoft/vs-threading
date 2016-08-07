@@ -3200,7 +3200,7 @@
             this.context.Factory.Run(async delegate
             {
                 var joinTask = this.joinableCollection.JoinTillEmptyAsync();
-                await joinTask.WithTimeout(TimeSpan.FromMilliseconds(TestTimeout));
+                await joinTask.WithTimeout(UnexpectedTimeout);
                 Assert.True(joinTask.IsCompleted);
             });
         }

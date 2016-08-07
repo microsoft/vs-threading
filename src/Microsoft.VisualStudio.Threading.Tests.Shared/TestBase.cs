@@ -1,10 +1,8 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Tests
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
+    using System.Diagnostics;
     using System.Runtime.ExceptionServices;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using System.Windows.Threading;
@@ -16,6 +14,18 @@
         protected const int AsyncDelay = 500;
 
         protected const int TestTimeout = 1000;
+
+        /// <summary>
+        /// The maximum length of time to wait for something that we expect will happen
+        /// within the timeout.
+        /// </summary>
+        protected static readonly TimeSpan UnexpectedTimeout = Debugger.IsAttached ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(5);
+
+        /// <summary>
+        /// The maximum length of time to wait for something that we do not expect will happen
+        /// within the timeout.
+        /// </summary>
+        protected static readonly TimeSpan ExpectedTimeout = TimeSpan.FromSeconds(2);
 
         private const int GCAllocationAttempts = 5;
 
