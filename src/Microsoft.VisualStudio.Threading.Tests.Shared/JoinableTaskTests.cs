@@ -3206,6 +3206,30 @@
         }
 
         [StaFact]
+        public void UnawaitedBackgroundWorkShouldCompleteAndNotCrashWhenThrown()
+        {
+            Func<Task> otherAsyncMethod = async delegate
+            {
+                await Task.Yield();
+                throw new ApplicationException("This shouldn't crash, since it was fire and forget.");
+            };
+            var bkgrndThread = Task.Run(delegate
+            {
+                this.asyncPump.Run(delegate
+                {
+                    otherAsyncMethod().Forget();
+                    return TplExtensions.CompletedTask;
+                });
+            });
+            this.context.Factory.Run(async delegate
+            {
+                var joinTask = this.joinableCollection.JoinTillEmptyAsync();
+                await joinTask.WithTimeout(UnexpectedTimeout);
+                Assert.True(joinTask.IsCompleted);
+            });
+        }
+
+        [StaFact]
         public void PostToUnderlyingSynchronizationContextShouldBeAfterSignalJoinableTasks()
         {
             var factory = (DerivedJoinableTaskFactory)this.asyncPump;
