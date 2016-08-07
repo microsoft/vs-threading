@@ -866,6 +866,18 @@ namespace Microsoft.VisualStudio.Threading
                     }
                 }
 
+                // Now that we're about to stop blocking a thread, transfer any work
+                // that was queued but evidently not required to complete this task
+                // back to the threadpool so it still gets done.
+                if (this.threadPoolQueue?.Count > 0)
+                {
+                    SingleExecuteProtector executor;
+                    while (this.threadPoolQueue.TryDequeue(out executor))
+                    {
+                        ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, executor);
+                    }
+                }
+
                 Assumes.True(this.Task.IsCompleted);
                 this.Task.GetAwaiter().GetResult(); // rethrow any exceptions
             }
