@@ -3188,7 +3188,8 @@
             bool unawaitedWorkCompleted = false;
             Func<Task> otherAsyncMethod = async delegate
             {
-                await Task.Yield();
+                await Task.Yield(); // this posts to the JoinableTask.threadPoolQueue
+                await Task.Yield(); // this should schedule directly to the .NET ThreadPool.
                 unawaitedWorkCompleted = true;
             };
             var bkgrndThread = Task.Run(delegate
@@ -3214,7 +3215,8 @@
             ManualResetEventSlim unawaitedWorkCompleted = new ManualResetEventSlim();
             Func<Task> otherAsyncMethod = async delegate
             {
-                await Task.Yield();
+                await Task.Yield(); // this posts to the JoinableTask.threadPoolQueue
+                await Task.Yield(); // this should schedule directly to the .NET ThreadPool.
                 unawaitedWorkCompleted.Set();
             };
             var bkgrndThread = Task.Run(delegate
