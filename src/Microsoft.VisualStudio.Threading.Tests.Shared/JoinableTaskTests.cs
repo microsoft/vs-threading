@@ -3185,9 +3185,11 @@
         [StaFact]
         public void UnawaitedBackgroundWorkShouldComplete()
         {
+            bool unawaitedWorkCompleted = false;
             Func<Task> otherAsyncMethod = async delegate
             {
                 await Task.Yield();
+                unawaitedWorkCompleted = true;
             };
             var bkgrndThread = Task.Run(delegate
             {
@@ -3203,6 +3205,28 @@
                 await joinTask.WithTimeout(UnexpectedTimeout);
                 Assert.True(joinTask.IsCompleted);
             });
+            Assert.True(unawaitedWorkCompleted);
+        }
+
+        [StaFact]
+        public void UnawaitedBackgroundWorkShouldCompleteWithoutSyncBlock()
+        {
+            ManualResetEventSlim unawaitedWorkCompleted = new ManualResetEventSlim();
+            Func<Task> otherAsyncMethod = async delegate
+            {
+                await Task.Yield();
+                unawaitedWorkCompleted.Set();
+            };
+            var bkgrndThread = Task.Run(delegate
+            {
+                this.asyncPump.Run(delegate
+                {
+                    otherAsyncMethod().Forget();
+                    return TplExtensions.CompletedTask;
+                });
+            });
+            bkgrndThread.GetAwaiter().GetResult();
+            Assert.True(unawaitedWorkCompleted.Wait(ExpectedTimeout));
         }
 
         [StaFact]
