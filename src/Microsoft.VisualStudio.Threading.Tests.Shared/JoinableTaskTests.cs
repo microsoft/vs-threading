@@ -3141,6 +3141,87 @@
             Assert.Null(target); // The task's result should be collected unless the JoinableTask is leaked
         }
 
+        /// <summary>
+        /// Executes background work where the JoinableTask's SynchronizationContext
+        /// adds work to the threadpoolQueue but doesn't give it a chance to run while
+        /// the parent JoinableTask lasts.
+        /// </summary>
+        /// <remarks>
+        /// Repro for bug 245563: https://devdiv.visualstudio.com/web/wi.aspx?pcguid=011b8bdf-6d56-4f87-be0d-0092136884d9&id=245563
+        /// </remarks>
+        [StaFact]
+        public void UnawaitedBackgroundWorkShouldComplete()
+        {
+            bool unawaitedWorkCompleted = false;
+            Func<Task> otherAsyncMethod = async delegate
+            {
+                await Task.Yield(); // this posts to the JoinableTask.threadPoolQueue
+                await Task.Yield(); // this should schedule directly to the .NET ThreadPool.
+                unawaitedWorkCompleted = true;
+            };
+            var bkgrndThread = Task.Run(delegate
+            {
+                this.asyncPump.Run(delegate
+                {
+                    otherAsyncMethod().Forget();
+                    return TplExtensions.CompletedTask;
+                });
+            });
+            this.context.Factory.Run(async delegate
+            {
+                var joinTask = this.joinableCollection.JoinTillEmptyAsync();
+                await joinTask.WithTimeout(UnexpectedTimeout);
+                Assert.True(joinTask.IsCompleted);
+            });
+            Assert.True(unawaitedWorkCompleted);
+        }
+
+        [StaFact]
+        public void UnawaitedBackgroundWorkShouldCompleteWithoutSyncBlock()
+        {
+            ManualResetEventSlim unawaitedWorkCompleted = new ManualResetEventSlim();
+            Func<Task> otherAsyncMethod = async delegate
+            {
+                await Task.Yield(); // this posts to the JoinableTask.threadPoolQueue
+                await Task.Yield(); // this should schedule directly to the .NET ThreadPool.
+                unawaitedWorkCompleted.Set();
+            };
+            var bkgrndThread = Task.Run(delegate
+            {
+                this.asyncPump.Run(delegate
+                {
+                    otherAsyncMethod().Forget();
+                    return TplExtensions.CompletedTask;
+                });
+            });
+            bkgrndThread.GetAwaiter().GetResult();
+            Assert.True(unawaitedWorkCompleted.Wait(ExpectedTimeout));
+        }
+
+        [StaFact]
+        public void UnawaitedBackgroundWorkShouldCompleteAndNotCrashWhenThrown()
+        {
+            Func<Task> otherAsyncMethod = async delegate
+            {
+                await Task.Yield();
+                throw new ApplicationException("This shouldn't crash, since it was fire and forget.");
+            };
+            var bkgrndThread = Task.Run(delegate
+            {
+                this.asyncPump.Run(delegate
+                {
+                    otherAsyncMethod().Forget();
+                    return TplExtensions.CompletedTask;
+                });
+            });
+            this.context.Factory.Run(async delegate
+            {
+                var joinTask = this.joinableCollection.JoinTillEmptyAsync();
+                await joinTask.WithTimeout(UnexpectedTimeout);
+                Assert.True(joinTask.IsCompleted);
+            });
+        }
+
         [StaFact]
         public void PostToUnderlyingSynchronizationContextShouldBeAfterSignalJoinableTasks()
         {
