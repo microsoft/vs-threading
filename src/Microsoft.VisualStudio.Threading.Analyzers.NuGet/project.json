@@ -1,6 +1,6 @@
 ﻿{
   "dependencies": {
-    "MicroBuild.Core": "0.1.1",
+    "MicroBuild.Core": "0.2.0",
     "MicroBuild.VisualStudio": "1.0.125-rc",
     "Nerdbank.GitVersioning": "1.4.19",
     "NuProj": "0.10.48-beta-gea4a31bbc5",
