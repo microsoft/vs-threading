@@ -5,7 +5,7 @@
       "suppressParent": "none"
     },
     "MicroBuild.VisualStudio": {
-      "version": "1.0.125-rc",
+      "version": "1.0.126-rc",
       "suppressParent": "none"
     },
     "Microsoft.CodeAnalysis.CSharp.Workspaces": "1.0.0",
