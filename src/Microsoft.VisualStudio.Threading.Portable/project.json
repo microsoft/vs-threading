@@ -1,16 +1,16 @@
 ﻿{
   "dependencies": {
     "MicroBuild.Core": {
-      "version": "0.1.1",
+      "version": "0.2.0",
       "suppressParent": "none"
     },
     "MicroBuild.VisualStudio": {
-      "version": "1.0.125-rc",
+      "version": "1.0.126-rc",
       "suppressParent": "none"
     },
     "Microsoft.VisualStudio.Validation": "15.0.11-pre",
     "Nerdbank.GitVersioning": {
-      "version": "1.4.19",
+      "version": "1.5.46",
       "suppressParent": "none"
     },
     "NuProj.Common": {
