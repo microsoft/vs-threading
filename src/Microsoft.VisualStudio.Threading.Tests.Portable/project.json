@@ -1,6 +1,6 @@
 ﻿{
   "dependencies": {
-    "MicroBuild.NonShipping": "1.0.124-rc",
+    "MicroBuild.NonShipping": "1.0.125-rc",
     "StyleCop.Analyzers": "1.0.0",
     "xunit": "2.1.0",
     "Xunit.SkippableFact": "1.2.14",
