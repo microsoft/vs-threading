@@ -10,7 +10,7 @@
     },
     "Microsoft.VisualStudio.Validation": "15.0.11-pre",
     "Nerdbank.GitVersioning": {
-      "version": "1.4.19",
+      "version": "1.5.46",
       "suppressParent": "none"
     },
     "NuProj.Common": {
