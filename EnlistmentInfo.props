@@ -4,7 +4,6 @@
     <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
     <NuGetPackageRestorePath>$(UserProfile)\.nuget\Packages\</NuGetPackageRestorePath>
 
-    <MicroBuild_OptimizationDataDir>$(MSBuildThisFileDirectory)Razzle\src\OptimizationData\x86\</MicroBuild_OptimizationDataDir>
     <MicroBuild_GenerateDocumentationFile>true</MicroBuild_GenerateDocumentationFile>
     <MicroBuild_DefineCommonProperties>true</MicroBuild_DefineCommonProperties>
     <MicroBuild_DefineCommonAssemblyAttributes>true</MicroBuild_DefineCommonAssemblyAttributes>
