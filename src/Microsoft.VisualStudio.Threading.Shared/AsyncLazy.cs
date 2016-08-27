@@ -185,9 +185,9 @@ namespace Microsoft.VisualStudio.Threading
                 }
             }
 
-            if (!this.value.IsCompleted && this.joinableTask != null)
+            if (!this.value.IsCompleted)
             {
-                this.joinableTask.JoinAsync(cancellationToken).Forget();
+                this.joinableTask?.JoinAsync(cancellationToken).Forget();
             }
 
             return this.value.WithCancellation(cancellationToken);
