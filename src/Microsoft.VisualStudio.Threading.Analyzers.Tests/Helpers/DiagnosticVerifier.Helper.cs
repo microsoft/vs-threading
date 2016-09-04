@@ -13,6 +13,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.Diagnostics;
     using Microsoft.CodeAnalysis.Text;
+    using Xunit;
 
     /// <summary>
     /// Class for turning strings into documents and getting the diagnostics on them
@@ -65,8 +66,15 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
             var diagnostics = new List<Diagnostic>();
             foreach (var project in projects)
             {
-                var compilationWithAnalyzers = project.GetCompilationAsync().GetAwaiter().GetResult().WithAnalyzers(ImmutableArray.Create(analyzer));
+                var compilation = project.GetCompilationAsync().GetAwaiter().GetResult();
+                var ordinaryDiags = compilation.GetDiagnostics();
+                var errorDiags = ordinaryDiags.Where(d => d.Severity == DiagnosticSeverity.Error);
+                if (errorDiags.Any())
+                {
+                    Assert.False(true, "Compilation errors exist in the test source code, such as:" + Environment.NewLine + errorDiags.First());
+                }
 
+                var compilationWithAnalyzers = compilation.WithAnalyzers(ImmutableArray.Create(analyzer));
                 var diags = compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync().GetAwaiter().GetResult();
                 foreach (var diag in diags)
                 {
@@ -168,7 +176,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 .AddMetadataReference(projectId, SystemCoreReference)
                 .AddMetadataReference(projectId, CSharpSymbolsReference)
                 .AddMetadataReference(projectId, CodeAnalysisReference)
-                .AddMetadataReference(projectId, ThreadingReference);
+                .AddMetadataReference(projectId, ThreadingReference)
+                .WithProjectCompilationOptions(projectId, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
             var pathToLibs = ToolLocationHelper.GetPathToStandardLibraries(".NETFramework", "v4.5.1", string.Empty);
             if (!string.IsNullOrEmpty(pathToLibs))
