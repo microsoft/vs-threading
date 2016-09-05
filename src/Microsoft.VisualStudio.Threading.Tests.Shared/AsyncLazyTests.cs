@@ -84,17 +84,20 @@ namespace Microsoft.VisualStudio.Threading.Tests
         /// Verifies that multiple sequential calls to <see cref="AsyncLazy{T}.GetValueAsync"/>
         /// do not result in multiple invocations of the value factory.
         /// </summary>
-        [Fact]
-        public async Task ValueFactoryExecutedOnlyOnceSequential()
+        [Theory, CombinatorialData]
+        public async Task ValueFactoryExecutedOnlyOnceSequential(bool specifyJtf)
         {
+            var context = new JoinableTaskContext();
             bool valueFactoryExecuted = false;
-            var lazy = new AsyncLazy<GenericParameterHelper>(async delegate
-            {
-                Assert.False(valueFactoryExecuted);
-                valueFactoryExecuted = true;
-                await Task.Yield();
-                return new GenericParameterHelper(5);
-            });
+            var lazy = new AsyncLazy<GenericParameterHelper>(
+                async delegate
+                {
+                    Assert.False(valueFactoryExecuted);
+                    valueFactoryExecuted = true;
+                    await Task.Yield();
+                    return new GenericParameterHelper(5);
+                },
+                specifyJtf ? context.Factory : null);
 
             var task1 = lazy.GetValueAsync();
             var task2 = lazy.GetValueAsync();
@@ -108,20 +111,23 @@ namespace Microsoft.VisualStudio.Threading.Tests
         /// Verifies that multiple concurrent calls to <see cref="AsyncLazy{T}.GetValueAsync"/>
         /// do not result in multiple invocations of the value factory.
         /// </summary>
-        [SkippableFact]
-        public void ValueFactoryExecutedOnlyOnceConcurrent()
+        [Theory, CombinatorialData]
+        public void ValueFactoryExecutedOnlyOnceConcurrent(bool specifyJtf)
         {
+            var context = new JoinableTaskContext();
             var cts = new CancellationTokenSource(AsyncDelay);
             while (!cts.Token.IsCancellationRequested)
             {
                 bool valueFactoryExecuted = false;
-                var lazy = new AsyncLazy<GenericParameterHelper>(async delegate
-                {
-                    Assert.False(valueFactoryExecuted);
-                    valueFactoryExecuted = true;
-                    await Task.Yield();
-                    return new GenericParameterHelper(5);
-                });
+                var lazy = new AsyncLazy<GenericParameterHelper>(
+                    async delegate
+                    {
+                        Assert.False(valueFactoryExecuted);
+                        valueFactoryExecuted = true;
+                        await Task.Yield();
+                        return new GenericParameterHelper(5);
+                    },
+                    specifyJtf ? context.Factory : null);
 
                 var results = TestUtilities.ConcurrencyTest(delegate
                 {

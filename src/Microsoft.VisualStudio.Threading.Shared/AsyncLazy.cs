@@ -137,7 +137,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     // Note that if multiple threads hit GetValueAsync() before
                     // the valueFactory has completed its synchronous execution,
-                    // the only one thread will execute the valueFactory while the
+                    // then only one thread will execute the valueFactory while the
                     // other threads synchronously block till the synchronous portion
                     // has completed.
                     if (this.value == null)
@@ -151,7 +151,7 @@ namespace Microsoft.VisualStudio.Threading
 
                             if (this.jobFactory != null)
                             {
-                                // Wrapping with BeginAsynchronously allows a future caller
+                                // Wrapping with RunAsync allows a future caller
                                 // to synchronously block the Main thread waiting for the result
                                 // without leading to deadlocks.
                                 this.joinableTask = this.jobFactory.RunAsync(valueFactory);
@@ -185,9 +185,9 @@ namespace Microsoft.VisualStudio.Threading
                 }
             }
 
-            if (!this.value.IsCompleted && this.joinableTask != null)
+            if (!this.value.IsCompleted)
             {
-                this.joinableTask.JoinAsync(cancellationToken).Forget();
+                this.joinableTask?.JoinAsync(cancellationToken).Forget();
             }
 
             return this.value.WithCancellation(cancellationToken);
