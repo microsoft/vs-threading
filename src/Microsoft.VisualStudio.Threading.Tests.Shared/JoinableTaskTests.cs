@@ -3159,11 +3159,12 @@
                 await Task.Yield(); // this should schedule directly to the .NET ThreadPool.
                 unawaitedWorkCompleted = true;
             };
+            Task unawaitedWork = null;
             var bkgrndThread = Task.Run(delegate
             {
                 this.asyncPump.Run(delegate
                 {
-                    otherAsyncMethod().Forget();
+                    unawaitedWork = otherAsyncMethod();
                     return TplExtensions.CompletedTask;
                 });
             });
@@ -3172,6 +3173,7 @@
                 var joinTask = this.joinableCollection.JoinTillEmptyAsync();
                 await joinTask.WithTimeout(UnexpectedTimeout);
                 Assert.True(joinTask.IsCompleted);
+                await unawaitedWork;
             });
             Assert.True(unawaitedWorkCompleted);
         }
