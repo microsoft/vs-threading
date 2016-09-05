@@ -27,6 +27,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         private static readonly MetadataReference CodeAnalysisReference = MetadataReference.CreateFromFile(typeof(Compilation).Assembly.Location);
         private static readonly MetadataReference ThreadingReference = MetadataReference.CreateFromFile(typeof(AsyncEventHandler).Assembly.Location);
 
+        private static readonly ImmutableArray<string> VSSDKPackageReferences = ImmutableArray.Create(new string[] {
+            Path.Combine("Microsoft.VisualStudio.Shell.Interop", "7.10.6071", "lib", "Microsoft.VisualStudio.Shell.Interop.dll"),
+            Path.Combine("Microsoft.VisualStudio.Shell.Interop.11.0", "11.0.61030", "lib", "Microsoft.VisualStudio.Shell.Interop.11.0.dll"),
+            Path.Combine("Microsoft.VisualStudio.Shell.14.0", "14.3.25407", "lib", "Microsoft.VisualStudio.Shell.14.0.dll"),
+        });
+
         internal static string DefaultFilePathPrefix = "Test";
         internal static string CSharpDefaultFileExt = "cs";
         internal static string VisualBasicDefaultExt = "vb";
@@ -195,20 +201,13 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 }
             }
 
-            var interopAssembliesFolders = new[] {
-                @"..\..\Razzle\src\InternalApis\vscommon\ref\v4.5\ret", // Razzle folder on dev box
-                @"..\src\Razzle\src\InternalApis\vscommon\ref\v4.5\ret" // Razzle folder on CI machine
-            };
-            foreach (var folder in interopAssembliesFolders.Where(Directory.Exists))
-            {
-                var interopAssemblies = new List<MetadataReference>();
-                foreach (var file in Directory.EnumerateFiles(folder, "*shell.interop*.dll"))
-                {
-                    interopAssemblies.Add(MetadataReference.CreateFromFile(file));
-                }
-
-                solution = solution.AddMetadataReferences(projectId, interopAssemblies);
-            }
+            string nugetPackageRoot = Path.Combine(
+                Environment.GetEnvironmentVariable("USERPROFILE"),
+                ".nuget",
+                "packages");
+            var vssdkReferences = VSSDKPackageReferences.Select(e =>
+                MetadataReference.CreateFromFile(Path.Combine(nugetPackageRoot, e)));
+            solution = solution.AddMetadataReferences(projectId, vssdkReferences);
 
             int count = 0;
             foreach (var source in sources)

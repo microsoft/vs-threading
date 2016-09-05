@@ -146,9 +146,9 @@ using Microsoft.VisualStudio.Threading;
 
 class Test<T> where T : EventArgs {
     void F() {
-        AsyncEventHandler<T> handler1;
-        AsyncEventHandler<EventArgs> handler2;
-        AsyncEventHandler handler3;
+        AsyncEventHandler<T> handler1 = null;
+        AsyncEventHandler<EventArgs> handler2 = null;
+        AsyncEventHandler handler3 = null;
 
         handler1(this, null);
         handler2(this, null);

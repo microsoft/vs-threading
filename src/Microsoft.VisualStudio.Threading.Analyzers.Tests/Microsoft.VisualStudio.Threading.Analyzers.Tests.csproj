@@ -56,6 +56,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\Microsoft.VisualStudio.Threading.Analyzers.TestAssets\project.json">
+      <Link>Assets\project.json</Link>
+    </None>
     <None Include="Microsoft.VisualStudio.Threading.Analyzers.Tests.ruleset" />
     <None Include="project.json" />
     <None Include="app.config">

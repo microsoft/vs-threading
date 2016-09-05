@@ -90,7 +90,7 @@ class Test {
     }
 
     void T() {
-        F(async delegate (object x) => {
+        F(async (object x) => {
         });
     }
 }
@@ -139,8 +139,8 @@ using System;
 
 class Test {
     void F() {
-        EventHandler action = async (sender, e) => {};
-        EventHandler<MyEventArgs> action = async (sender, e) => {};
+        EventHandler action1 = async (sender, e) => {};
+        EventHandler<MyEventArgs> action2 = async (sender, e) => {};
     }
 
     class MyEventArgs : EventArgs {}

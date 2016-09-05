@@ -293,7 +293,7 @@ class Tests
     public void Test()
     {
         JoinableTaskFactory jtf = ThreadHelper.JoinableTaskFactory;
-        System.Threading.Tasks.Task task;
+        System.Threading.Tasks.Task task = null;
         jtf.Run(async delegate
         {
             if (false)
@@ -329,7 +329,7 @@ class Tests
     public void Test()
     {
         JoinableTaskFactory jtf = ThreadHelper.JoinableTaskFactory;
-        System.Threading.Tasks.Task task;
+        System.Threading.Tasks.Task task = null;
         jtf.Run(async delegate
         {
             await task;
@@ -362,7 +362,7 @@ class Tests
     public void Test()
     {
         JoinableTaskFactory jtf = ThreadHelper.JoinableTaskFactory;
-        System.Threading.Tasks.Task task;
+        System.Threading.Tasks.Task task = null;
         jtf.Run(async delegate
         {
             // task = SomeOperationAsync();
@@ -431,7 +431,7 @@ class Tests
     public void Test()
     {
         JoinableTaskFactory jtf = ThreadHelper.JoinableTaskFactory;
-        System.Threading.Tasks.Task task;
+        System.Threading.Tasks.Task task = null;
         jtf.Run(async delegate
         {
             await task;
