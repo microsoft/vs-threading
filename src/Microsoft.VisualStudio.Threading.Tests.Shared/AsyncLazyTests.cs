@@ -111,7 +111,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         /// Verifies that multiple concurrent calls to <see cref="AsyncLazy{T}.GetValueAsync"/>
         /// do not result in multiple invocations of the value factory.
         /// </summary>
-        [SkippableTheory, CombinatorialData]
+        [Theory, CombinatorialData]
         public void ValueFactoryExecutedOnlyOnceConcurrent(bool specifyJtf)
         {
             var context = new JoinableTaskContext();
