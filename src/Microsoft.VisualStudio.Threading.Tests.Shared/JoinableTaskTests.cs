@@ -2790,7 +2790,7 @@
                     await TaskScheduler.Default;
                     await this.asyncPump.SwitchToMainThreadAsync(CancellationToken.None);
                 },
-                2500);
+                2615);
         }
 
         [StaFact, Trait("Stress", "true"), Trait("TestCategory", "FailsInCloudTest"), Trait("FailsInLocalBatch", "true")]
@@ -2803,7 +2803,7 @@
                     await TaskScheduler.Default;
                     await this.asyncPump.SwitchToMainThreadAsync(tokenSource.Token);
                 },
-                2500);
+                2800);
         }
 
         [StaFact]

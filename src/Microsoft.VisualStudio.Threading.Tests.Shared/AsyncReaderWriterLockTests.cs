@@ -3916,7 +3916,7 @@
 
                     long memory2 = GC.GetTotalMemory(false);
                     long allocated = (memory2 - memory1) / iterations;
-                    long allowed = 101 + MaxGarbagePerLock + (yieldingLock ? MaxGarbagePerYield : 0);
+                    long allowed = 300 + MaxGarbagePerLock + (yieldingLock ? MaxGarbagePerYield : 0);
                     this.Logger.WriteLine("Allocated bytes: {0} ({1} allowed)", allocated, allowed);
                     passingAttemptObserved = allocated <= allowed;
                 }

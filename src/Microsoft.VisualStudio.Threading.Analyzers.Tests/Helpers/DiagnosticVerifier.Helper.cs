@@ -13,6 +13,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.Diagnostics;
     using Microsoft.CodeAnalysis.Text;
+    using Xunit;
 
     /// <summary>
     /// Class for turning strings into documents and getting the diagnostics on them
@@ -25,6 +26,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         private static readonly MetadataReference CSharpSymbolsReference = MetadataReference.CreateFromFile(typeof(CSharpCompilation).Assembly.Location);
         private static readonly MetadataReference CodeAnalysisReference = MetadataReference.CreateFromFile(typeof(Compilation).Assembly.Location);
         private static readonly MetadataReference ThreadingReference = MetadataReference.CreateFromFile(typeof(AsyncEventHandler).Assembly.Location);
+
+        private static readonly ImmutableArray<string> VSSDKPackageReferences = ImmutableArray.Create(new string[] {
+            Path.Combine("Microsoft.VisualStudio.Shell.Interop", "7.10.6071", "lib", "Microsoft.VisualStudio.Shell.Interop.dll"),
+            Path.Combine("Microsoft.VisualStudio.Shell.Interop.11.0", "11.0.61030", "lib", "Microsoft.VisualStudio.Shell.Interop.11.0.dll"),
+            Path.Combine("Microsoft.VisualStudio.Shell.14.0", "14.3.25407", "lib", "Microsoft.VisualStudio.Shell.14.0.dll"),
+        });
 
         internal static string DefaultFilePathPrefix = "Test";
         internal static string CSharpDefaultFileExt = "cs";
@@ -65,8 +72,15 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
             var diagnostics = new List<Diagnostic>();
             foreach (var project in projects)
             {
-                var compilationWithAnalyzers = project.GetCompilationAsync().GetAwaiter().GetResult().WithAnalyzers(ImmutableArray.Create(analyzer));
+                var compilation = project.GetCompilationAsync().GetAwaiter().GetResult();
+                var ordinaryDiags = compilation.GetDiagnostics();
+                var errorDiags = ordinaryDiags.Where(d => d.Severity == DiagnosticSeverity.Error);
+                if (errorDiags.Any())
+                {
+                    Assert.False(true, "Compilation errors exist in the test source code, such as:" + Environment.NewLine + errorDiags.First());
+                }
 
+                var compilationWithAnalyzers = compilation.WithAnalyzers(ImmutableArray.Create(analyzer));
                 var diags = compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync().GetAwaiter().GetResult();
                 foreach (var diag in diags)
                 {
@@ -168,7 +182,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 .AddMetadataReference(projectId, SystemCoreReference)
                 .AddMetadataReference(projectId, CSharpSymbolsReference)
                 .AddMetadataReference(projectId, CodeAnalysisReference)
-                .AddMetadataReference(projectId, ThreadingReference);
+                .AddMetadataReference(projectId, ThreadingReference)
+                .WithProjectCompilationOptions(projectId, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
             var pathToLibs = ToolLocationHelper.GetPathToStandardLibraries(".NETFramework", "v4.5.1", string.Empty);
             if (!string.IsNullOrEmpty(pathToLibs))
@@ -186,20 +201,13 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 }
             }
 
-            var interopAssembliesFolders = new[] {
-                @"..\..\Razzle\src\InternalApis\vscommon\ref\v4.5\ret", // Razzle folder on dev box
-                @"..\src\Razzle\src\InternalApis\vscommon\ref\v4.5\ret" // Razzle folder on CI machine
-            };
-            foreach (var folder in interopAssembliesFolders.Where(Directory.Exists))
-            {
-                var interopAssemblies = new List<MetadataReference>();
-                foreach (var file in Directory.EnumerateFiles(folder, "*shell.interop*.dll"))
-                {
-                    interopAssemblies.Add(MetadataReference.CreateFromFile(file));
-                }
-
-                solution = solution.AddMetadataReferences(projectId, interopAssemblies);
-            }
+            string nugetPackageRoot = Path.Combine(
+                Environment.GetEnvironmentVariable("USERPROFILE"),
+                ".nuget",
+                "packages");
+            var vssdkReferences = VSSDKPackageReferences.Select(e =>
+                MetadataReference.CreateFromFile(Path.Combine(nugetPackageRoot, e)));
+            solution = solution.AddMetadataReferences(projectId, vssdkReferences);
 
             int count = 0;
             foreach (var source in sources)

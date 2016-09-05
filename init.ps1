@@ -14,6 +14,9 @@ try {
         & "$toolsPath\Restore-NuGetPackages.ps1" -Path $_
     }
 
+    # Restore test assets
+    & "$toolsPath\Restore-NuGetPackages.ps1" -Path "$PSScriptRoot\src\Microsoft.VisualStudio.Threading.Analyzers.TestAssets\project.json"
+
     # Restore VS solution dependencies
     gci "$PSScriptRoot\src" -rec |? { $_.FullName.EndsWith('.sln') } |% {
         & "$toolsPath\Restore-NuGetPackages.ps1" -Path $_.FullName

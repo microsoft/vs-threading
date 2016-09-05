@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.25401.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Threading.Desktop", "Microsoft.VisualStudio.Threading.Desktop\Microsoft.VisualStudio.Threading.Desktop.csproj", "{2C0DFFBD-49C8-4F12-A964-E3096AD4C7F4}"
 EndProject
@@ -27,6 +27,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		..\EnlistmentInfo.props = ..\EnlistmentInfo.props
 		..\EnlistmentInfo.targets = ..\EnlistmentInfo.targets
+		..\init.ps1 = ..\init.ps1
 		..\nuget.config = ..\nuget.config
 		..\version.json = ..\version.json
 	EndProjectSection
