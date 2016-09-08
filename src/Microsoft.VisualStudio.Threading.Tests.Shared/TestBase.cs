@@ -26,7 +26,7 @@
         /// </summary>
         protected static readonly TimeSpan ExpectedTimeout = TimeSpan.FromSeconds(2);
 
-        private const int GCAllocationAttempts = 5;
+        private const int GCAllocationAttempts = 10;
 
         protected TestBase(ITestOutputHelper logger)
         {
@@ -96,6 +96,13 @@
             continuation.GetAwaiter().GetResult();
         }
 
+        /// <summary>
+        /// Runs a given scenario many times to observe memory characteristics and assert that they can satisfy given conditions.
+        /// </summary>
+        /// <param name="scenario">The delegate to invoke.</param>
+        /// <param name="maxBytesAllocated">The maximum number of bytes allowed to be allocated by one run of the scenario. Use -1 to indicate no limit.</param>
+        /// <param name="iterations">The number of times to invoke <paramref name="scenario"/> in a row before measuring average memory impact.</param>
+        /// <param name="allowedAttempts">The number of times the (scenario * iterations) loop repeats with a failing result before ultimately giving up.</param>
         protected void CheckGCPressure(Action scenario, int maxBytesAllocated, int iterations = 100, int allowedAttempts = GCAllocationAttempts)
         {
             // prime the pump
@@ -131,7 +138,7 @@
                 this.Logger?.WriteLine("{0} bytes leaked per iteration.", leaked);
                 this.Logger?.WriteLine("{0} bytes allocated per iteration ({1} allowed).", allocated, maxBytesAllocated);
 
-                if (leaked <= 0 && allocated <= maxBytesAllocated)
+                if (leaked <= 0 && (maxBytesAllocated == -1 || allocated <= maxBytesAllocated))
                 {
                     passingAttemptObserved = true;
                 }
@@ -147,6 +154,14 @@
             Assert.True(passingAttemptObserved);
         }
 
+        /// <summary>
+        /// Runs a given scenario many times to observe memory characteristics and assert that they can satisfy given conditions.
+        /// </summary>
+        /// <param name="scenario">The delegate to invoke.</param>
+        /// <param name="maxBytesAllocated">The maximum number of bytes allowed to be allocated by one run of the scenario. Use -1 to indicate no limit.</param>
+        /// <param name="iterations">The number of times to invoke <paramref name="scenario"/> in a row before measuring average memory impact.</param>
+        /// <param name="allowedAttempts">The number of times the (scenario * iterations) loop repeats with a failing result before ultimately giving up.</param>
+        /// <returns>A task that captures the result of the operation.</returns>
         protected async Task CheckGCPressureAsync(Func<Task> scenario, int maxBytesAllocated, int iterations = 100, int allowedAttempts = GCAllocationAttempts)
         {
             // prime the pump
@@ -176,7 +191,7 @@
                 this.Logger?.WriteLine("{0} bytes leaked per iteration.", leaked);
                 this.Logger?.WriteLine("{0} bytes allocated per iteration ({1} allowed).", allocated, maxBytesAllocated);
 
-                if (leaked < iterations && allocated <= maxBytesAllocated)
+                if (leaked <= 0 && (maxBytesAllocated == -1 || allocated <= maxBytesAllocated))
                 {
                     passingAttemptObserved = true;
                 }
