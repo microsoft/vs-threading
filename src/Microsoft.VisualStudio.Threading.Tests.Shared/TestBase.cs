@@ -131,7 +131,7 @@
                 this.Logger?.WriteLine("{0} bytes leaked per iteration.", leaked);
                 this.Logger?.WriteLine("{0} bytes allocated per iteration ({1} allowed).", allocated, maxBytesAllocated);
 
-                if (leaked <= 0 && allocated <= maxBytesAllocated)
+                if (leaked <= 0 && (maxBytesAllocated == -1 || allocated <= maxBytesAllocated))
                 {
                     passingAttemptObserved = true;
                 }
@@ -176,7 +176,7 @@
                 this.Logger?.WriteLine("{0} bytes leaked per iteration.", leaked);
                 this.Logger?.WriteLine("{0} bytes allocated per iteration ({1} allowed).", allocated, maxBytesAllocated);
 
-                if (leaked < iterations && allocated <= maxBytesAllocated)
+                if (leaked <= 0 && (maxBytesAllocated == -1 || allocated <= maxBytesAllocated))
                 {
                     passingAttemptObserved = true;
                 }
