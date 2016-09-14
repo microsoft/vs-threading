@@ -236,7 +236,7 @@ namespace Microsoft.VisualStudio.Threading
 
             using (this.Join())
             {
-                await this.emptyEvent.WaitAsync();
+                await this.emptyEvent.WaitAsync().ConfigureAwait(false);
             }
         }
 

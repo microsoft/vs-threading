@@ -63,6 +63,21 @@
         }
 
         [StaFact]
+        public void JoinTillEmptyUsesConfigureAwaitFalse()
+        {
+            var evt = new AsyncManualResetEvent();
+            var joinable = this.JoinableFactory.RunAsync(async delegate
+            {
+                await evt.WaitAsync().ConfigureAwait(false);
+            });
+
+            var waiter = this.joinableCollection.JoinTillEmptyAsync();
+            Assert.False(waiter.GetAwaiter().IsCompleted);
+            evt.Set();
+            Assert.True(waiter.Wait(UnexpectedTimeout));
+        }
+
+        [StaFact]
         public void EmptyThenMore()
         {
             var awaiter = this.joinableCollection.JoinTillEmptyAsync().GetAwaiter();
