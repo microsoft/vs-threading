@@ -34,4 +34,3 @@ Microsoft.VisualStudio.Threading
 * .NET Portable (Profile111, or .NET Standard 1.1)
 
 [1]: http://nuget.org/packages/Microsoft.VisualStudio.Threading "Microsoft.VisualStudio.Threading NuGet package"
-[2]: src\Microsoft.VisualStudio.Threading.NuGet\tools "Code Snippets"
