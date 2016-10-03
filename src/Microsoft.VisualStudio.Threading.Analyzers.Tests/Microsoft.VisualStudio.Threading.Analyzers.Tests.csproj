@@ -15,10 +15,16 @@
     <OutputPath Condition=" '$(OutputPath)' == '' ">bin\$(Configuration)</OutputPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
     <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Analyzers.Tests.ruleset</CodeAnalysisRuleSet>
     <NoWarn>CS1591</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
     <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Analyzers.Tests.ruleset</CodeAnalysisRuleSet>
     <NoWarn>CS1591</NoWarn>
   </PropertyGroup>

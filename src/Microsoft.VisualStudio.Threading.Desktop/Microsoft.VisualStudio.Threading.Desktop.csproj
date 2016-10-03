@@ -11,23 +11,29 @@
     <AssemblyName>Microsoft.VisualStudio.Threading</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkProfile />
-    <MicroBuild_DefineCommonAssemblyAttributes>false</MicroBuild_DefineCommonAssemblyAttributes>
     <OutputPath Condition=" '$(OutputPath)' == '' ">bin\</OutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DefineConstants>TRACE;DEBUG;DESKTOP</DefineConstants>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <CodeAnalysisRuleSet>FxCopRules.ruleset</CodeAnalysisRuleSet>
     <RunCodeAnalysis>true</RunCodeAnalysis>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DocumentationFile>..\..\bin\Debug\Microsoft.VisualStudio.Threading.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DefineConstants>TRACE;DESKTOP</DefineConstants>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CodeAnalysisRuleSet>FxCopRules.ruleset</CodeAnalysisRuleSet>
+    <DocumentationFile>..\..\bin\Release\Microsoft.VisualStudio.Threading.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Label="MultilingualAppToolkit">
     <MultilingualAppToolkitVersion>4.0</MultilingualAppToolkitVersion>
@@ -76,10 +82,6 @@
     <EmbeddedResource Include="Strings.zh-Hant.resx" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="$(NuGetPackageRestorePath)MicroBuild.VisualStudio.*\tools\RunMeElevated.cmd">
-      <Link>UpdateVS\RunMeElevated.cmd</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Include="FxCopRules.ruleset">
       <SubType>Designer</SubType>
     </None>
@@ -87,18 +89,9 @@
     <None Include="SampleHang.dgml">
       <SubType>Designer</SubType>
     </None>
-    <None Include="UpdateVS\UpdateVS.cmd">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <CodeAnalysisDictionary Include="CustomDictionary.xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="$(NuGetPackageRestorePath)MicroBuild.VisualStudio.*\tools\Elevate.exe">
-      <Link>UpdateVS\Elevate.exe</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
   <ItemGroup>
     <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Desktop.cs.xlf" />

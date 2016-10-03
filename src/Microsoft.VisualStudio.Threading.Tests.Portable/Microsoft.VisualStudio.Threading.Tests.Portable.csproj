@@ -20,9 +20,15 @@
     <OutputPath>$(OutputPath)$(OutputPathSuffix)</OutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
     <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Tests.Portable.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
     <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Tests.Portable.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
