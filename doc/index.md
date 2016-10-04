@@ -1,4 +1,4 @@
-Visual Studio Threading
+Overview documentation
 =======================
 
 * [3 Threading Rules](threading_rules.md)
