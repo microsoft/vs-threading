@@ -118,6 +118,8 @@ void StartOperation()
   this.JoinableTaskFactory.RunAsync(async delegate
   {
     await Task.Yield(); // get off the caller's callstack.
+    DoWork();
+    this.DisposalToken.ThrowIfCancellationRequested();
     DoMoreWork();
   });
 }
