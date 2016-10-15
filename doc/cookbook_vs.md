@@ -258,5 +258,14 @@ public IVsTask DoAsync()
 }
 ```
 
+## How can I initialize my VS package asynchronously?
+As of Visual Studio 2015 (Dev14) you can define async VS packages, allowing binaries to be loaded on background threads and for your package to complete async work without blocking the UI thread as part of package load.
+[Async Package 101][AsyncPackage101]
+
+## How do I make sure my async work has finished before my VS Package closes?
+This is a very important topic because we know VS can crash on shutdown because async tasks or background threads still actively running after all VS packages have supposedly shutdown.
+The recommended pattern to solve this problem is to derive from `AsyncPackage` instead of `Package`.
+
 [NuPkg]: https://www.nuget.org/packages/Microsoft.VisualStudio.Threading
 [MSDNIVsTaskGetAwaiter]: https://msdn.microsoft.com/en-us/library/vstudio/hh598836.aspx
+[AsyncPackage101]: https://microsoft.sharepoint.com/teams/DD_VSIDE/_layouts/15/WopiFrame.aspx?sourcedoc=%7b84C6ABED-E111-4B5D-B2D6-8B6FAF37F0D4%7d&file=Async%20Package%20101.docx&action=default
