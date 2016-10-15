@@ -6,60 +6,34 @@ replace all references to `ThreadHelper.JoinableTaskFactory` with
 `this.ThreadHandling.AsyncPump`, where `this.ThreadHandling` is an `[Import]
 IThreadHandling`.
 
-Initial setup
----
+## Initial setup
 
-- Reference Microsoft.VisualStudio.Threading.dll
-- Add `using Microsoft.VisualStudio.Threading;` to the start of any relevant 
-  C# source files.
+- Add a reference to [Microsoft.VisualStudio.Threading][NuPkg].
+- Add these `using` directives to your C# source file:
 
-Block a thread while doing async work
----------------------
+  ```csharp
+  using System.Threading.Tasks;
+  using Microsoft.VisualStudio.Threading;
+  ```
+
+- When using `Microsoft.VisualStudio.Shell` types in the same source file, import that namespace
+  along with explicitly assigning `Task` to the .NET namespace so you can more conveniently use .NET Tasks:
+
+  ```csharp
+  using Microsoft.VisualStudio.Shell;
+  using Task = System.Threading.Tasks.Task;
+  ```
+
+## Call async code from a synchronous method (and block on the result)
 
 ```csharp
 ThreadHelper.JoinableTaskFactory.Run(async delegate
 {
-    // caller's thread
     await SomeOperationAsync(...);
-
-    // switch to main thread
-    await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-    SomeUIThreadBoundWork();
-
-    // switch to threadpool
-    await TaskScheduler.Default; // using Microsoft.VisualStudio.Threading;
-    SomeWorkThatCanBeOnThreadpool();
 });
 ```
 
-If any of your async work should be on a background thread, you can switch
-explicitly:
-
-```csharp
-// assuming we're on the UI thread already…
-await Task.Run(async delegate
-{
-    // we're on a background thread now
-});
-
-// ...now we're back on the UI thread.
-```
-
-Alternatively:
-
-```csharp
-// On some thread, but definitely want to be on the threadpool:
-
-// using Microsoft.VisualStudio.Threading;
-
-await TaskScheduler.Default;
-
-// On some thread, but definitely want to be on the main thread:
-await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-```
-
-How to switch to the UI thread
------------------
+## How to switch to the UI thread
 
 In an async method
 
@@ -67,7 +41,7 @@ In an async method
 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 ```
 
-In a sync method
+In a regular synchronous method
 
 First, consider carefully whether you can make your method async first
 and then follow the above pattern. If you must remain synchronous, you
@@ -81,91 +55,125 @@ ThreadHelper.JoinableTaskFactory.Run(async delegate
 });
 ```
 
-How to switch to the UI thread using a specific priority
---------------------------------
+## How to switch to or use the UI thread using a specific (VS-defined) priority
 
-Simply call the `JoinableTaskFactory.RunAsync` extension method (defined in
-the `Microsoft.VisualStudio.Shell` namespace) passing in a priority as the
-first parameter, like this:
+Simply call the `JoinableTaskFactory.RunAsync` extension method 
+passing in a priority as the first parameter, like this:
 
 ```csharp
 await ThreadHelper.JoinableTaskFactory.RunAsync(
     VsTaskRunContext.UIThreadBackgroundPriority,
     async delegate
     {
-        // On caller's thread. Switch to main thread (if we're not already there).
+        // We're still on the caller's thread. Switch to main thread (if we're not already there).
         await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-        // Now on UI thread via background priority.
+        // Now yield, in case we were already on the UI thread and thereby skipped the background priority scheduling.
         await Task.Yield();
 
-        // Resumed on UI thread, also via background priority.
+        // Resumed on UI thread via background priority.
+        for (int i = 0; i < 10; i++)
+        {
+            DoSomeWorkOn(i);
+            
+            // Ensure we quickly yield the UI thread to the user if necessary.
+            // Each time we resume, we're using the background priority scheduler.
+            await Task.Yield();
+        }
     });
 ```
 
-How can I complete asynchronously with respect to my caller while still
-using the UI thread?
+## How to write a "fire and forget" method responsibly?
 
-If you need to complete work on the UI thread, and your caller is
-(usually) on the UI thread, but you want to return a `Task<TResult>` to
-your caller and complete the work asynchronously, you should use the
-`JoinableTaskFactory.RunAsync` method, as described in the answer to: How
-do I switch to the UI thread using a specific priority?
+"Fire and forget" methods are async methods that are called without awaiting the
+`Task` that they (may) return. 
 
-How can I await `IVsTask`?
---------------
+Do *not* implement your fire and forget async method by returning `async void`.
+These methods will crash the process if they throw an unhandled exception.
 
-Make sure you have these using directives at the top of your code file:
+There are two styles of "fire and forget":
+
+### `void`-returning fire and forget methods
+
+### `Task`-returning fire and forget methods
+
+These are your typical async methods, but called without awaiting the resulting `Task`.
+
+Not awaiting on the `Task` means that if that async method were to throw an exception
+(thus faulting the returned Task) that no one would notice. The error would go unreported
+and undetected -- until the side effects of the async method are discovered to be incomplete
+some other way. In a *few* cases this may be desirable. 
+Since calling a `Task`-returning method without awaiting its result will often make C# emit
+a compiler warning, a `void`-returning `Forget()` extension method exists so you can tack it
+onto the end of an async method call to suppress the compiler warning, and make it clear to
+others reading the code that you are intentionally ignoring the result:
 
 ```csharp
-using System.Threading.Tasks;
-using Microsoft.VisualStudio.Shell;
-using Task = System.Threading.Tasks.Task;
+DoSomeWork();
+DoSomeWorkAsync().Forget(); // no await here
+DoABitMore();
 ```
 
-That adds a [`GetAwaiter` extension
-method](https://msdn.microsoft.com/en-us/library/vstudio/hh598836(v=vs.110).aspx)
-to `IVsTask` that makes it awaitable. In fact just the `Microsoft.VisualStudio.Shell`
-namespace is required for that, but the first one is very useful. And since
-they both define Task classes they conflict making TPL Task difficult to
-use unless you add the third line.
+It is usually more preferable to track the Task so that if it fails, you can report it to the user
+and/or file failure telemetry.
 
-How can I return `IVsTask` from a C# async method?
------------------------------
+```csharp
+DoSomeWork();
+DoSomeWorkAsync().ContinueWith(
+  t => TelemetryService.DefaultSession.PostFault(
+    eventName: EventNames.TippingFailed,
+    description: $"Failed to tip for scenario {tippingScenario}.",
+    exceptionObject: t.Exception.InnerException),
+  TaskContinuationOptions.OnlyOnFaulted);
+DoABitMore();
+```
+
+## How can I await `IVsTask`?
+
+Make sure you have the `using` directives defined at the top of this document.
+That adds a [`GetAwaiter` extension method][MSDNIVsTaskGetAwaiter]
+to `IVsTask` that makes it awaitable.
+
+You can safely await an `IVsTask` in an ordinary C# async method or inside a
+`JoinableTaskFactory.Run` or `RunAsync` delegate.
+
+## How can I return `IVsTask` from a C# async method?
 
 The preferred way is to use the `JoinableTaskFactory.RunAsyncAsVsTask(Func<CancellationToken,
 Task>)` extension method. This gives you a `CancellationToken` that is tied
 to `IVsTask.Cancel()`.
 
 ```csharp
-public IVsTask DoAsync()
+IVsTask IVsYourNativeCompatibleInterface.DoAsync(string arg1)
 {
     return ThreadHelper.JoinableTaskFactory.RunAsyncAsVsTask(
-        VsTaskRunContext.UIThreadNormalPriority, // (or lower UI thread priorities)
-        async cancellationToken =>
-        {
-            await SomethingAsync(cancellationToken);
-            await SomethingElseAsync();
-        });
+        VsTaskRunContext.UIThreadNormalPriority,
+        cancellationToken => this.DoAsync(arg1, cancellationToken));
 }
 
-private async Task SomethingAsync(CancellationToken cancellationToken)
+public async Task DoAsync(string arg1, CancellationToken cancellationToken)
 {
     await Task.Yield();
 }
 ```
 
-Alternately, if you only have a `JoinableTask`, you can readily convert it
-to an `IVsTask` by calling the `JoinableTask.AsVsTask()` extension method.
+In a pinch, where all you have is a `JoinableTask`, you can readily convert it
+to an `IVsTask` by calling the `JoinableTask.AsVsTask()` extension method as shown
+below. But this means the `IVsTask.Cancel()` method will not be able to communicate
+the cancellation request to the async delegate.
 
 ```csharp
 public IVsTask DoAsync()
 {
-    return ThreadHelper.JoinableTaskFactory.RunAsync(
+    JoinableTask jt = ThreadHelper.JoinableTaskFactory.RunAsync(
         async delegate
         {
             await SomethingAsync();
             await SomethingElseAsync();
-        }).AsVsTask();
+        });
+    return jt.AsVsTask();
 }
 ```
+
+[NuPkg]: https://www.nuget.org/packages/Microsoft.VisualStudio.Threading
+[MSDNIVsTaskGetAwaiter]: https://msdn.microsoft.com/en-us/library/vstudio/hh598836.aspx
