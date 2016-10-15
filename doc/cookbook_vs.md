@@ -24,13 +24,10 @@ IThreadHandling`.
   using Task = System.Threading.Tasks.Task;
   ```
 
-## Call async code from a synchronous method (and block on the result)
+## How to switch to a background thread
 
 ```csharp
-ThreadHelper.JoinableTaskFactory.Run(async delegate
-{
-    await SomeOperationAsync(...);
-});
+await TaskScheduler.Default;
 ```
 
 ## How to switch to the UI thread
@@ -83,6 +80,15 @@ await ThreadHelper.JoinableTaskFactory.RunAsync(
     });
 ```
 
+## Call async code from a synchronous method (and block on the result)
+
+```csharp
+ThreadHelper.JoinableTaskFactory.Run(async delegate
+{
+    await SomeOperationAsync(...);
+});
+```
+
 ## How to write a "fire and forget" method responsibly?
 
 "Fire and forget" methods are async methods that are called without awaiting the
@@ -94,6 +100,81 @@ These methods will crash the process if they throw an unhandled exception.
 There are two styles of "fire and forget":
 
 ### `void`-returning fire and forget methods
+
+These methods are designed to always be called in a fire and forget fashion, as the
+caller only gets a `void` return value and cannot await the async method even if it wanted to.
+
+These methods should be named to indicate that they start an operation. For example,
+instead of calling the method `Task DoSomethingAsync()` you might call it `void StartSomething()`.
+
+Notwithstanding the `void` return type, you'll want to be async internally in order to actually
+do the work later instead of on your caller's callstack. But you also should be sure your async
+work finishes before your object claims to be disposed. You can accomplish both of these objectives
+using the `JoinableTaskFactory.RunAsync` method:
+
+```csharp
+void StartOperation()
+{
+  this.JoinableTaskFactory.RunAsync(async delegate
+  {
+    await Task.Yield(); // get off the caller's callstack.
+    DoMoreWork();
+  });
+}
+```
+
+Where `this.JoinableTaskFactory` is defined by your `AsyncPackage` or, if you don't have one,
+by re-implementing this pattern in your own class:
+
+```csharp
+class MyResponsibleType : IDisposable
+{
+  private readonly CancellationTokenSource disposeCancellationTokenSource = new CancellationTokenSource();
+ 
+  internal MyResponsibleType()
+  {
+    this.JoinableTaskCollection = ThreadHelper.JoinableTaskContext.CreateCollection();
+    this.JoinableTaskFactory = ThreadHelper.JoinableTaskContext.CreateFactory(this.JoinableTaskCollection);
+  }
+
+  JoinableTaskFactory JoinableTaskFactory { get; }
+  JoinableTaskCollection JoinableTaskCollection { get; }
+  
+  /// <summary>
+  /// Gets a <see cref="CancellationToken"/> that can be used to check if the package has been disposed.
+  /// </summary>
+  CancellationToken DisposalToken => this.disposeCancellationTokenSource.Token;
+
+  public void Dispose()
+  {
+    this.Dispose(true);
+    GC.SuppressFinalize(this);
+  }
+  
+  protected virtual void Dispose(bool disposing)
+  {
+    if (disposing)
+    {
+      this.disposeCancellationTokenSource.Cancel();
+
+      try
+      {
+        // Block Dispose until all async work has completed.
+        ThreadHelper.JoinableTaskFactory.Run(this.JoinableTaskCollection.JoinTillEmptyAsync);
+      }
+      catch (OperationCanceledException)
+      {
+        // this exception is expected because we signaled the cancellation token
+      }
+      catch (AggregateException ex)
+      {
+        // ignore AggregateException containing only OperationCanceledException
+        ex.Handle(inner => (inner is OperationCanceledException));
+      }
+    }
+  }
+}
+```
 
 ### `Task`-returning fire and forget methods
 
