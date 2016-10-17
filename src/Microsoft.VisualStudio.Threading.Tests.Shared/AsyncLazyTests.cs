@@ -412,6 +412,97 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Assert.True(resultTask.Wait(AsyncDelay));
         }
 
+        /// <summary>
+        /// Verifies that no deadlock occurs if the value factory synchronously blocks while switching to the UI thread.
+        /// </summary>
+        [Theory]
+        [CombinatorialData]
+        public void ValueFactoryRequiresMainThreadHeldByOtherSync(bool passJtfToLazyCtor)
+        {
+            var ctxt = SingleThreadedSynchronizationContext.New();
+            SynchronizationContext.SetSynchronizationContext(ctxt);
+            var context = new JoinableTaskContext();
+            var asyncPump = context.Factory;
+            var originalThread = Thread.CurrentThread;
+
+            var evt = new AsyncManualResetEvent();
+            var lazy = new AsyncLazy<object>(
+                async delegate
+                {
+                    // It is important that no await appear before this JTF.Run call, since
+                    // we're testing that the value factory is not invoked while the AsyncLazy
+                    // holds a private lock that would deadlock when called from another thread.
+                    asyncPump.Run(async delegate
+                    {
+                        await asyncPump.SwitchToMainThreadAsync(this.TimeoutToken);
+                    });
+                    await Task.Yield();
+                    return new object();
+                },
+                passJtfToLazyCtor ? asyncPump : null); // mix it up to exercise all the code paths in the ctor.
+
+            var backgroundRequest = Task.Run(async delegate
+            {
+                return await lazy.GetValueAsync();
+            });
+
+            Thread.Sleep(AsyncDelay); // Give the background thread time to call GetValueAsync(), but it doesn't yield (when the test was written).
+            var foregroundRequest = lazy.GetValueAsync();
+
+            var frame = SingleThreadedSynchronizationContext.NewFrame();
+            var combinedTask = Task.WhenAll(foregroundRequest, backgroundRequest);
+            combinedTask.WithTimeout(UnexpectedTimeout).ContinueWith(_ => frame.Continue = false, TaskScheduler.Default);
+            SingleThreadedSynchronizationContext.PushFrame(ctxt, frame);
+
+            // Ensure that the test didn't simply timeout, and that the individual tasks did not throw.
+            Assert.True(foregroundRequest.IsCompleted);
+            Assert.True(backgroundRequest.IsCompleted);
+            Assert.Same(foregroundRequest.GetAwaiter().GetResult(), backgroundRequest.GetAwaiter().GetResult());
+        }
+
+        /// <summary>
+        /// Verifies that no deadlock occurs if the value factory synchronously blocks while switching to the UI thread
+        /// and the UI thread then starts a JTF.Run that wants it too.
+        /// </summary>
+        [Fact]
+        public void ValueFactoryRequiresMainThreadHeldByOtherInJTFRun()
+        {
+            var ctxt = SingleThreadedSynchronizationContext.New();
+            SynchronizationContext.SetSynchronizationContext(ctxt);
+            var context = new JoinableTaskContext();
+            var asyncPump = context.Factory;
+            var originalThread = Thread.CurrentThread;
+
+            var evt = new AsyncManualResetEvent();
+            var lazy = new AsyncLazy<object>(
+                async delegate
+                {
+                    // It is important that no await appear before this JTF.Run call, since
+                    // we're testing that the value factory is not invoked while the AsyncLazy
+                    // holds a private lock that would deadlock when called from another thread.
+                    asyncPump.Run(async delegate
+                    {
+                        await asyncPump.SwitchToMainThreadAsync(this.TimeoutToken);
+                    });
+                    await Task.Yield();
+                    return new object();
+                },
+                asyncPump);
+
+            var backgroundRequest = Task.Run(async delegate
+            {
+                return await lazy.GetValueAsync();
+            });
+
+            Thread.Sleep(AsyncDelay); // Give the background thread time to call GetValueAsync(), but it doesn't yield (when the test was written).
+            asyncPump.Run(async delegate
+            {
+                var foregroundValue = await lazy.GetValueAsync(this.TimeoutToken);
+                var backgroundValue = await backgroundRequest;
+                Assert.Same(foregroundValue, backgroundValue);
+            });
+        }
+
         [Fact(Skip = "Hangs. This test documents a deadlock scenario that is not fixed (by design, IIRC).")]
         public async Task ValueFactoryRequiresReadLockHeldByOther()
         {

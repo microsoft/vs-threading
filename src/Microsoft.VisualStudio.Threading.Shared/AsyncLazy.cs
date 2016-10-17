@@ -133,6 +133,7 @@ namespace Microsoft.VisualStudio.Threading
                     Verify.FailOperation(Strings.ValueFactoryReentrancy);
                 }
 
+                InlineResumable resumableAwaiter = null;
                 lock (this.syncObject)
                 {
                     // Note that if multiple threads hit GetValueAsync() before
@@ -143,12 +144,18 @@ namespace Microsoft.VisualStudio.Threading
                     if (this.value == null)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
+                        resumableAwaiter = new InlineResumable();
+                        Func<Task<T>> originalValueFactory = this.valueFactory;
+                        this.valueFactory = null;
+                        Func<Task<T>> valueFactory = async delegate
+                        {
+                            await resumableAwaiter;
+                            return await originalValueFactory().ConfigureAwait(continueOnCapturedContext: false);
+                        };
+
                         this.recursiveFactoryCheck.Value = RecursiveCheckSentinel;
                         try
                         {
-                            var valueFactory = this.valueFactory;
-                            this.valueFactory = null;
-
                             if (this.jobFactory != null)
                             {
                                 // Wrapping with RunAsync allows a future caller
@@ -171,18 +178,15 @@ namespace Microsoft.VisualStudio.Threading
                                 this.value = valueFactory();
                             }
                         }
-                        catch (Exception ex)
-                        {
-                            var tcs = new TaskCompletionSource<T>();
-                            tcs.SetException(ex);
-                            this.value = tcs.Task;
-                        }
                         finally
                         {
                             this.recursiveFactoryCheck.Value = null;
                         }
                     }
                 }
+
+                // Allow the original value factory to actually run.
+                resumableAwaiter?.Resume();
             }
 
             if (!this.value.IsCompleted)

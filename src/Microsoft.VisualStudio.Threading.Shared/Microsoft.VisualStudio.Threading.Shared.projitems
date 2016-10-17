@@ -31,6 +31,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)HangReportContribution.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IAsyncDisposable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IHangReportContributor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)InlineResumable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)InternalUtilities.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)JoinableTask+DependentSynchronousTask.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)JoinableTask+ExecutionQueue.cs" />
