@@ -26,6 +26,10 @@ Microsoft.VisualStudio.Threading
   that does not deadlock with the UI thread even when the UI thread needs to
   synchronously block on the result.
 
+## Documentation
+
+[Overview documentation](doc/index.md) 
+
 ## Supported platforms
 
 * .NET 4.5
