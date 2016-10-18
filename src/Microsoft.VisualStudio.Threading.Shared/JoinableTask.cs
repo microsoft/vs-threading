@@ -113,7 +113,9 @@ namespace Microsoft.VisualStudio.Threading
         private JoinableTaskSynchronizationContext threadPoolJobSyncContext;
 
         /// <summary>
-        /// Store the task's initial delegate so we could show its full name in hang report.
+        /// Stores the task's initial delegate so we could show its full name in hang report.
+        /// This may not *actually* be the real delegate that was invoked for this instance, but
+        /// it's the meaningful one that should be shown in hang reports.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private Delegate initialDelegate;
