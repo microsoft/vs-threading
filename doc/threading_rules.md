@@ -21,10 +21,12 @@ await joinableTaskFactoryInstance.SwitchToMainThreadAsync();
 OR
     
    - Have a synchronous signature, and throw an exception when called on the wrong thread.
+     This can be done in Visual Studio with `ThreadHelper.ThrowIfNotOnUIThread()` or
+     `ThreadHelper.ThrowIfOnUIThread()`.
    
    In particular, no method is allowed to synchronously marshal work to
-   another thread (blocking while that work is done). Synchronous blocks
-   in general are to be avoided whenever possible.
+   another thread (blocking while that work is done) except by using the second rule (below).
+   Synchronous blocks in general are to be avoided whenever possible.
     
 ### 2. When an implementation of an already-shipped public API must call 
    asynchronous code and block for its completion, it must do so by 

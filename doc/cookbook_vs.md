@@ -117,10 +117,26 @@ void StartOperation()
 {
   this.JoinableTaskFactory.RunAsync(async delegate
   {
-    await Task.Yield(); // get off the caller's callstack.
-    DoWork();
-    this.DisposalToken.ThrowIfCancellationRequested();
-    DoMoreWork();
+    try
+    {
+      await Task.Yield(); // get off the caller's callstack.
+      DoWork();
+      this.DisposalToken.ThrowIfCancellationRequested();
+      DoMoreWork();
+    }
+    catch (Exception ex)
+    {
+      // Since fire and forget tasks will fail silently,
+      // fire off telemetry to let us know that we have a problem to fix.
+      TelemetryService.DefaultSession.PostFault(
+        eventName: EventNames.StartSomeService,
+        description: $"Failed to start some operation",
+        exceptionObject: ex);
+#if DEBUG
+      await this.JoinableTaskFactory.SwitchToMainThreadAsync();
+      Debug.Fail(ex);
+#endif
+    }
   });
 }
 ```
