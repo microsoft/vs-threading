@@ -89,7 +89,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             isEnabledByDefault: true);
 
         internal static readonly DiagnosticDescriptor UseAwaitInAsyncMethods_NoAlternativeMethod = new DiagnosticDescriptor(
-            id: "VSSDK008",
+            id: "VSSDK008", // yes, this is a repeat of the one above. It's a different messageFormat, but otherwise identical.
             title: "Call awaitable alternatives when in an async method.",
             messageFormat: "The {0} member synchronously blocks. Use await instead.",
             category: "Usage",
