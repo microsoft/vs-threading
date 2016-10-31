@@ -6,48 +6,71 @@
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
+    using System.Collections.Generic;
+
     /// <summary>
     /// Identifiers used to identify various types so that we can avoid adding dependency only if absolutely needed.
     /// <devremarks>For each predefine value here, please update the unit test to detect if values go out of sync with the real types they represent.</devremarks>
     /// </summary>
-    public static class TypeIdentifiers
+    internal static class Types
     {
         /// <summary>
         /// Contains the names of types and members within TplExtensions.
         /// </summary>
-        public static class TplExtensions
+        internal static class TplExtensions
         {
             /// <summary>
             /// The full name of the TplExtensions type.
             /// </summary>
-            public const string FullName = "Microsoft.VisualStudio.Threading.TplExtensions";
+            internal const string TypeName = "TplExtensions";
 
             /// <summary>
             /// The name of the InvokeAsync method.
             /// </summary>
-            public const string InvokeAsyncName = "InvokeAsync";
+            internal const string InvokeAsync = "InvokeAsync";
+
+            internal static readonly IReadOnlyList<string> Namespace = Namespaces.MicrosoftVisualStudioThreading;
         }
 
         /// <summary>
         /// Contains descriptors for the AsyncEventHandler type.
         /// </summary>
-        public static class AsyncEventHandler
+        internal static class AsyncEventHandler
         {
             /// <summary>
             /// The full name of the AsyncEventHandler type.
             /// </summary>
-            public const string FullName = "Microsoft.VisualStudio.Threading.AsyncEventHandler";
+            internal const string TypeName = "AsyncEventHandler";
+
+            internal static readonly IReadOnlyList<string> Namespace = Namespaces.MicrosoftVisualStudioThreading;
         }
 
         /// <summary>
         /// Contains descriptors for the JoinableTaskFactory type.
         /// </summary>
-        public static class JoinableTaskFactory
+        internal static class JoinableTaskFactory
         {
+            internal const string TypeName = "JoinableTaskFactory";
+
             /// <summary>
             /// The name of the SwitchToMainThreadAsync method.
             /// </summary>
-            public const string SwitchToMainThreadAsyncName = "SwitchToMainThreadAsync";
+            internal const string SwitchToMainThreadAsync = "SwitchToMainThreadAsync";
+
+            internal const string Run = "Run";
+
+            internal const string RunAsync = "RunAsync";
+
+            internal static readonly IReadOnlyList<string> Namespace = Namespaces.MicrosoftVisualStudioThreading;
+        }
+
+        internal static class JoinableTask
+        {
+            internal const string TypeName = "JoinableTask";
+
+            internal const string Join = "Join";
+
+            internal const string JoinAsync = "JoinAsync";
         }
     }
 }

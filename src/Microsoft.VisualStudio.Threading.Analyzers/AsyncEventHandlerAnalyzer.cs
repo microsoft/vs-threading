@@ -54,9 +54,10 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             context.RegisterCodeBlockStartAction<SyntaxKind>(ctxt =>
             {
                 // This is a very specical case to check if this method is TplExtensions.InvokeAsync().
-                // If it is, then do not run the ananlyzer inside that method.
-                if (!(Utils.GetFullName(ctxt.OwningSymbol.ContainingType) == TypeIdentifiers.TplExtensions.FullName
-                      && ctxt.OwningSymbol.Name == TypeIdentifiers.TplExtensions.InvokeAsyncName))
+                // If it is, then do not run the analyzer inside that method.
+                if (!(ctxt.OwningSymbol.Name == Types.TplExtensions.InvokeAsync &&
+                      ctxt.OwningSymbol.ContainingType.Name == Types.TplExtensions.TypeName &&
+                      ctxt.OwningSymbol.ContainingType.BelongsToNamespace(Types.TplExtensions.Namespace)))
                 {
                     ctxt.RegisterSyntaxNodeAction(this.AnalyzeInvocation, SyntaxKind.InvocationExpression);
                 }
@@ -88,8 +89,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
                 if (type != null)
                 {
-                    var fullName = Utils.GetFullName(type);
-                    if (fullName == TypeIdentifiers.AsyncEventHandler.FullName)
+                    if (type.Name == Types.AsyncEventHandler.TypeName &&
+                        type.BelongsToNamespace(Types.AsyncEventHandler.Namespace))
                     {
                         context.ReportDiagnostic(Diagnostic.Create(Rules.AsyncEventHandlerShouldBeCalledByInvokeAsync, context.Node.GetLocation()));
                     }

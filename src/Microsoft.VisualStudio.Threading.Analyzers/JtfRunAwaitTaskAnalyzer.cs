@@ -83,7 +83,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             // Step 3: Is the symbol we are waiting on a System.Threading.Tasks.Task
             SymbolInfo symbolAwaitingOn = context.SemanticModel.GetSymbolInfo(identifierNameSyntaxAwaitingOn);
             ILocalSymbol localSymbol = symbolAwaitingOn.Symbol as ILocalSymbol;
-            if (localSymbol == null || !Utils.GetFullName(localSymbol.Type).StartsWith("System.Threading.Tasks.Task"))
+            if (localSymbol?.Type == null || localSymbol.Type.Name != nameof(Task) || !localSymbol.Type.BelongsToNamespace(Namespaces.SystemThreadingTasks))
             {
                 return;
             }
@@ -201,11 +201,13 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             {
                 // Check if we encountered a call to Run and had already encountered a delegate (so Run is a parent of the delegate)
                 string methodName = memberAccessExpressionSyntax.Name.Identifier.Text;
-                if (methodName == "Run" || methodName == "RunAsync")
+                if (methodName == Types.JoinableTaskFactory.Run || methodName == Types.JoinableTaskFactory.RunAsync)
                 {
                     // Check whether the Run method belongs to JTF
                     IMethodSymbol methodSymbol = context.SemanticModel.GetSymbolInfo(memberAccessExpressionSyntax).Symbol as IMethodSymbol;
-                    if (methodSymbol != null && Utils.GetFullName(methodSymbol).StartsWith("Microsoft.VisualStudio.Threading.JoinableTaskFactory"))
+                    if (methodSymbol?.ContainingType != null &&
+                        methodSymbol.ContainingType.Name == Types.JoinableTaskFactory.TypeName &&
+                        methodSymbol.ContainingType.BelongsToNamespace(Types.JoinableTaskFactory.Namespace))
                     {
                         return true;
                     }
