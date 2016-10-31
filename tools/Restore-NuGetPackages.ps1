@@ -17,5 +17,5 @@ Param(
 $nugetPath = & "$PSScriptRoot\Get-NuGetTool.ps1"
 
 Write-Verbose "Restoring NuGet packages for $Path"
-& $nugetPath restore $Path -msbuildversion 14.0 -Verbosity $Verbosity
+& $nugetPath restore $Path -Verbosity $Verbosity
 if ($lastexitcode -ne 0) { throw }
