@@ -37,8 +37,9 @@
   <ItemGroup>
     <Compile Include="AsyncEventHandlerAnalyzer.cs" />
     <Compile Include="JtfRunAwaitTaskAnalyzer.cs" />
+    <Compile Include="Namespaces.cs" />
     <Compile Include="LazyOfTaskAnalyzer.cs" />
-    <Compile Include="TypeIdentifiers.cs" />
+    <Compile Include="Types.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="AsyncVoidLambdaAnalyzer.cs" />
     <Compile Include="AsyncVoidMethodAnalyzer.cs" />

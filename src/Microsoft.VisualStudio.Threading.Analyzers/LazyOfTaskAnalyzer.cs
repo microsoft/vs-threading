@@ -40,10 +40,7 @@
             {
                 var typeArg = constructedType.TypeArguments.FirstOrDefault();
                 bool typeArgIsTask = typeArg?.Name == nameof(Task)
-                    && typeArg?.ContainingNamespace?.Name == nameof(System.Threading.Tasks)
-                    && typeArg?.ContainingNamespace?.ContainingNamespace?.Name == nameof(System.Threading)
-                    && typeArg?.ContainingNamespace?.ContainingNamespace?.ContainingNamespace?.Name == nameof(System)
-                    && (typeArg?.ContainingNamespace?.ContainingNamespace?.ContainingNamespace?.ContainingNamespace?.IsGlobalNamespace ?? false);
+                    && typeArg.BelongsToNamespace(Namespaces.SystemThreadingTasks);
                 if (typeArgIsTask)
                 {
                     context.ReportDiagnostic(Diagnostic.Create(Rules.AvoidLazyOfTask, context.Node.GetLocation()));

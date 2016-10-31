@@ -8,6 +8,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
     using System.Collections.Generic;
+    using Microsoft;
     using Microsoft.CodeAnalysis;
 
     internal static class Utils
@@ -74,37 +75,35 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         }
 
         /// <summary>
-        /// Returns the full name of the given type by concatenating the namespaces and the parent classes by ".".
+        /// Tests whether a symbol belongs to a given namespace.
         /// </summary>
-        /// <param name="type">The input symbol</param>
-        /// <returns>The full name.</returns>
-        internal static string GetFullName(ISymbol type)
+        /// <param name="symbol">The symbol whose namespace membership is being tested.</param>
+        /// <param name="namespaces">A sequence of namespaces from global to most precise. For example: [System, Threading, Tasks]</param>
+        /// <returns><c>true</c> if the symbol belongs to the given namespace; otherwise <c>false</c>.</returns>
+        internal static bool BelongsToNamespace(this ISymbol symbol, IReadOnlyList<string> namespaces)
         {
-            if (type == null)
+            if (namespaces == null)
             {
-                return string.Empty;
+                throw new ArgumentNullException(nameof(namespaces));
             }
 
-            if (type.ContainingType != null)
+            if (symbol == null)
             {
-                return GetFullName(type.ContainingType) + "." + type.Name;
+                return false;
             }
 
-            var ns = type.ContainingNamespace;
-            var parts = new List<string>();
-            while (ns != null)
+            INamespaceSymbol currentNamespace = symbol.ContainingNamespace;
+            for (int i = namespaces.Count - 1; i >= 0; i--)
             {
-                if (!string.IsNullOrEmpty(ns.Name))
+                if (currentNamespace?.Name != namespaces[i])
                 {
-                    parts.Add(ns.Name);
+                    return false;
                 }
 
-                ns = ns.ContainingNamespace;
+                currentNamespace = currentNamespace.ContainingNamespace;
             }
 
-            parts.Reverse();
-            parts.Add(type.Name);
-            return string.Join(".", parts);
+            return currentNamespace?.IsGlobalNamespace ?? false;
         }
 
         /// <summary>
