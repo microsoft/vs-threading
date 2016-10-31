@@ -8,6 +8,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using Microsoft.CodeAnalysis;
 
+#pragma warning disable SA1310 // Field names must not contain underscore
+
     internal class Rules
     {
         internal static readonly DiagnosticDescriptor SynchronousWaitRule = new DiagnosticDescriptor(
@@ -76,6 +78,22 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             "You should use AsyncLazy<T> instead.",
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        internal static readonly DiagnosticDescriptor UseAwaitInAsyncMethods = new DiagnosticDescriptor(
+            id: "VSSDK008",
+            title: "Call awaitable alternatives when in an async method.",
+            messageFormat: "The {0} member synchronously blocks. Call {1} instead and await its result.",
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+        internal static readonly DiagnosticDescriptor UseAwaitInAsyncMethods_NoAlternativeMethod = new DiagnosticDescriptor(
+            id: "VSSDK008",
+            title: "Call awaitable alternatives when in an async method.",
+            messageFormat: "The {0} member synchronously blocks. Use await instead.",
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
     }
 }

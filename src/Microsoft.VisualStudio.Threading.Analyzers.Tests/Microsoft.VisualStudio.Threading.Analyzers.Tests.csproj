@@ -50,6 +50,7 @@
     <Compile Include="LazyOfTaskAnalyzerTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SynchronousWaitAnalyzerTests.cs" />
+    <Compile Include="UseAwaitInAsyncMethodsAnalyzerTests.cs" />
     <Compile Include="VsServiceInvocationAnalyzerTests.cs" />
   </ItemGroup>
   <ItemGroup>
