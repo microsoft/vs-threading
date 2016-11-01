@@ -38,6 +38,7 @@
     <Compile Include="AsyncEventHandlerAnalyzer.cs" />
     <Compile Include="JtfRunAwaitTaskAnalyzer.cs" />
     <Compile Include="Namespaces.cs" />
+    <Compile Include="UseAwaitInAsyncMethodsAnalyzer.cs" />
     <Compile Include="LazyOfTaskAnalyzer.cs" />
     <Compile Include="Types.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
