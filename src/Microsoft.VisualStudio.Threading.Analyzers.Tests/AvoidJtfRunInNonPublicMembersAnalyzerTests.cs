@@ -99,14 +99,14 @@ class Test {
 using Microsoft.VisualStudio.Threading;
 
 class Program {
-    JoinableTaskFactory jtf;
+    static JoinableTaskFactory jtf;
 
-    void Main() {
+    static void Main() {
         jtf.Run(() => TplExtensions.CompletedTask);
     }
 }
 ";
-            this.VerifyCSharpDiagnostic(test, NoDiagnostic);
+            this.VerifyCSharpDiagnostic(new[] { test }, hasEntrypoint: true, expected: NoDiagnostic);
         }
 
         [Fact]

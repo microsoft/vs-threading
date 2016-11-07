@@ -48,10 +48,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <param name="sources">Classes in the form of strings</param>
         /// <param name="language">The language the source classes are in</param>
         /// <param name="analyzer">The analyzer to be run on the sources</param>
+        /// <param name="hasEntrypoint"><c>true</c> to set the compiler in a mode as if it were compiling an exe (as opposed to a dll).</param>
         /// <returns>An IEnumerable of Diagnostics that surfaced in the source code, sorted by Location</returns>
-        private static Diagnostic[] GetSortedDiagnostics(string[] sources, string language, DiagnosticAnalyzer analyzer)
+        private static Diagnostic[] GetSortedDiagnostics(string[] sources, string language, DiagnosticAnalyzer analyzer, bool hasEntrypoint)
         {
-            return GetSortedDiagnosticsFromDocuments(analyzer, GetDocuments(sources, language));
+            return GetSortedDiagnosticsFromDocuments(analyzer, GetDocuments(sources, language), hasEntrypoint);
         }
 
         /// <summary>
@@ -60,8 +61,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// </summary>
         /// <param name="analyzer">The analyzer to run on the documents</param>
         /// <param name="documents">The Documents that the analyzer will be run on</param>
+        /// <param name="hasEntrypoint"><c>true</c> to set the compiler in a mode as if it were compiling an exe (as opposed to a dll).</param>
         /// <returns>An IEnumerable of Diagnostics that surfaced in the source code, sorted by Location</returns>
-        protected static Diagnostic[] GetSortedDiagnosticsFromDocuments(DiagnosticAnalyzer analyzer, Document[] documents)
+        protected static Diagnostic[] GetSortedDiagnosticsFromDocuments(DiagnosticAnalyzer analyzer, Document[] documents, bool hasEntrypoint)
         {
             var projects = new HashSet<Project>();
             foreach (var document in documents)
@@ -73,6 +75,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
             foreach (var project in projects)
             {
                 var compilation = project.GetCompilationAsync().GetAwaiter().GetResult();
+                if (hasEntrypoint)
+                {
+                    compilation = compilation.WithOptions(compilation.Options.WithOutputKind(OutputKind.ConsoleApplication));
+                }
+
                 var ordinaryDiags = compilation.GetDiagnostics();
                 var errorDiags = ordinaryDiags.Where(d => d.Severity == DiagnosticSeverity.Error);
                 if (errorDiags.Any())

@@ -9,6 +9,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
     using Microsoft;
     using Microsoft.CodeAnalysis;
 
@@ -171,16 +172,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
         }
 
-        internal static bool IsEntrypointMethod(ISymbol symbol)
+        internal static bool IsEntrypointMethod(ISymbol symbol, SemanticModel semanticModel, CancellationToken cancellationToken)
         {
-            var methodSymbol = symbol as IMethodSymbol;
-            if (methodSymbol == null)
-            {
-                return false;
-            }
-
-            return methodSymbol.ContainingType.Name == "Program"
-                && methodSymbol.Name == "Main";
+            return semanticModel.Compilation?.GetEntryPoint(cancellationToken)?.Equals(symbol) ?? false;
         }
     }
 }
