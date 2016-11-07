@@ -4,7 +4,7 @@
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Linq;
-    using System.Threading;
+    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
@@ -12,38 +12,27 @@
     using Microsoft.CodeAnalysis.Diagnostics;
 
     /// <summary>
-    /// This analyzer recognizes invocations of JoinableTaskFactory.Run(Func{Task}), JoinableTask.Join(), and variants
-    /// that occur within an async method, thus defeating a perfect opportunity to be asynchronous.
+    /// Discourages use of JTF.Run except in public members where the author presumably
+    /// has limited opportunity to make the method async due to API impact and breaking changes.
     /// </summary>
-    /// <remarks>
-    /// <![CDATA[
-    ///   async Task MyMethod()
-    ///   {
-    ///     JoinableTaskFactory jtf;
-    ///     jtf.Run(async delegate {  /* This analyzer will report warning on this JoinableTaskFactory.Run invocation. */
-    ///       await Stuff();
-    ///     });
-    ///   }
-    /// ]]>
-    /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class UseAwaitInAsyncMethodsAnalyzer : DiagnosticAnalyzer
+    public class AvoidJtfRunInNonPublicMembersAnalyzer : DiagnosticAnalyzer
     {
         /// <inheritdoc />
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(
-            Rules.UseAwaitInAsyncMethods,
-            Rules.UseAwaitInAsyncMethods_NoAlternativeMethod);
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
+        {
+            get { return ImmutableArray.Create(Rules.AvoidJtfRunInNonPublicMembers); }
+        }
 
         /// <inheritdoc />
         public override void Initialize(AnalysisContext context)
         {
             context.RegisterCodeBlockStartAction<SyntaxKind>(ctxt =>
             {
-                // We want to scan invocations that occur inside Task and Task<T>-returning methods.
-                // That is: methods that either are or could be made async.
+                // We want to scan invocations that occur inside internal, synchronous methods
+                // for calls to JTF.Run or JT.Join.
                 var methodSymbol = ctxt.OwningSymbol as IMethodSymbol;
-                var returnType = methodSymbol?.ReturnType;
-                if (returnType != null && returnType.Name == nameof(Task) && returnType.BelongsToNamespace(Namespaces.SystemThreadingTasks))
+                if (!Utils.IsPublic(methodSymbol) && !Utils.IsEntrypointMethod(methodSymbol))
                 {
                     var methodAnalyzer = new MethodAnalyzer();
                     ctxt.RegisterSyntaxNodeAction(methodAnalyzer.AnalyzeInvocation, SyntaxKind.InvocationExpression);
@@ -64,8 +53,6 @@
             {
                 var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
                 InspectMemberAccess(context, invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax, CommonInterest.SyncBlockingMethods);
-
-                // Also consider all method calls to check for Async-suffixed alternatives.
             }
 
             private static void InspectMemberAccess(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax, IReadOnlyList<CommonInterest.SyncBlockingMethod> problematicMethods)
@@ -85,10 +72,7 @@
                             typeReceiver.BelongsToNamespace(item.ContainingTypeNamespace))
                         {
                             var location = memberAccessSyntax.Name.GetLocation();
-                            Diagnostic diagnostic = item.AsyncAlternativeMethodName != null
-                                ? Diagnostic.Create(Rules.UseAwaitInAsyncMethods, location, item.MethodName, item.AsyncAlternativeMethodName)
-                                : Diagnostic.Create(Rules.UseAwaitInAsyncMethods_NoAlternativeMethod, location, item.MethodName);
-                            context.ReportDiagnostic(diagnostic);
+                            context.ReportDiagnostic(Diagnostic.Create(Rules.AvoidJtfRunInNonPublicMembers, location));
                         }
                     }
                 }

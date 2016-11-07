@@ -40,6 +40,7 @@
     <Compile Include="AsyncVoidLambdaAnalyzerTests.cs" />
     <Compile Include="AsyncVoidMethodAnalyzerTests.cs" />
     <Compile Include="AsyncVoidMethodCodeFixTests.cs" />
+    <Compile Include="AvoidJtfRunInNonPublicMembersAnalyzerTests.cs" />
     <Compile Include="Helpers\CodeFixVerifier.cs" />
     <Compile Include="Helpers\CodeFixVerifier.Helper.cs" />
     <Compile Include="Helpers\DiagnosticResult.cs" />

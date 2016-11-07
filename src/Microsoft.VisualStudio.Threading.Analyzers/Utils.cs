@@ -8,6 +8,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using Microsoft;
     using Microsoft.CodeAnalysis;
 
@@ -121,6 +122,65 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 && methodSymbol.Parameters[0].Type.OriginalDefinition == objectType
                 && methodSymbol.Parameters[0].Name == "sender"
                 && Utils.IsEqualToOrDerivedFrom(methodSymbol.Parameters[1].Type, eventArgsType);
+        }
+
+        /// <summary>
+        /// Determines whether a given symbol's declaration is visible outside the assembly
+        /// (and thus refactoring it may introduce breaking changes.)
+        /// </summary>
+        /// <param name="symbol">The symbol to be tested.</param>
+        /// <returns>
+        /// <c>true</c> if the symbol is a public type or member,
+        /// or a protected member inside a public type,
+        /// or an explicit interface implementation of a public interface;
+        /// otherwise <c>false</c>.
+        /// </returns>
+        internal static bool IsPublic(ISymbol symbol)
+        {
+            if (symbol == null)
+            {
+                return false;
+            }
+
+            if (symbol is INamespaceSymbol)
+            {
+                return true;
+            }
+
+            // The only member that is public without saying so are explicit interface implementations;
+            // and only when the interfaces implemented are themselves public.
+            var methodSymbol = symbol as IMethodSymbol;
+            if (methodSymbol?.ExplicitInterfaceImplementations.Any(IsPublic) ?? false)
+            {
+                return true;
+            }
+
+            switch (symbol.DeclaredAccessibility)
+            {
+                case Accessibility.Internal:
+                case Accessibility.Private:
+                case Accessibility.ProtectedAndInternal:
+                    return false;
+                case Accessibility.Protected:
+                case Accessibility.ProtectedOrInternal:
+                case Accessibility.Public:
+                    return symbol.ContainingType == null || IsPublic(symbol.ContainingType);
+                case Accessibility.NotApplicable:
+                default:
+                    return false;
+            }
+        }
+
+        internal static bool IsEntrypointMethod(ISymbol symbol)
+        {
+            var methodSymbol = symbol as IMethodSymbol;
+            if (methodSymbol == null)
+            {
+                return false;
+            }
+
+            return methodSymbol.ContainingType.Name == "Program"
+                && methodSymbol.Name == "Main";
         }
     }
 }
