@@ -95,5 +95,13 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
+
+        internal static readonly DiagnosticDescriptor AvoidJtfRunInNonPublicMembers = new DiagnosticDescriptor(
+            id: "VSSDK009",
+            title: "Avoid synchronous blocks in non-public methods.",
+            messageFormat: "Limit use of JoinableTaskFactory.Run to public entrypoint members where you must be synchronous. Using it for internal members can needlessly add synchronous frames between asynchronous frames, leading to threadpool exhaustion.",
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Info,
+            isEnabledByDefault: true);
     }
 }

@@ -76,7 +76,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         private void VerifyFix(string language, DiagnosticAnalyzer analyzer, CodeFixProvider codeFixProvider, string oldSource, string newSource, int? codeFixIndex, bool allowNewCompilerDiagnostics)
         {
             var document = CreateDocument(oldSource, language);
-            var analyzerDiagnostics = GetSortedDiagnosticsFromDocuments(analyzer, new[] { document });
+            var analyzerDiagnostics = GetSortedDiagnosticsFromDocuments(analyzer, new[] { document }, hasEntrypoint: false);
             var compilerDiagnostics = GetCompilerDiagnostics(document);
             var attempts = analyzerDiagnostics.Length;
 
@@ -97,7 +97,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 }
 
                 document = ApplyFix(document, actions.ElementAt(0));
-                analyzerDiagnostics = GetSortedDiagnosticsFromDocuments(analyzer, new[] { document });
+                analyzerDiagnostics = GetSortedDiagnosticsFromDocuments(analyzer, new[] { document }, hasEntrypoint: false);
 
                 var newCompilerDiagnostics = GetNewDiagnostics(compilerDiagnostics, GetCompilerDiagnostics(document));
 

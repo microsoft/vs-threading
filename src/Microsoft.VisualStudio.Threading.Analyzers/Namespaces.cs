@@ -15,6 +15,13 @@
             nameof(System.Threading.Tasks),
         };
 
+        internal static readonly IReadOnlyList<string> SystemRuntimeCompilerServices = new[]
+        {
+            nameof(System),
+            nameof(System.Runtime),
+            nameof(System.Runtime.CompilerServices),
+        };
+
         internal static readonly IReadOnlyList<string> MicrosoftVisualStudioThreading = new[]
         {
             "Microsoft",

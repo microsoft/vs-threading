@@ -123,5 +123,24 @@ class Test {
             this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 24) };
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
+
+        [Fact]
+        public void TaskGetAwaiterGetResultInTaskReturningMethodGeneratesWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    Task T() {
+        Task t = null;
+        t.GetAwaiter().GetResult();
+        return TplExtensions.CompletedTask;
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 24) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
     }
 }

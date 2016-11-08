@@ -36,7 +36,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AsyncEventHandlerAnalyzer.cs" />
+    <Compile Include="CommonInterest.cs" />
     <Compile Include="JtfRunAwaitTaskAnalyzer.cs" />
+    <Compile Include="AvoidJtfRunInNonPublicMembersAnalyzer.cs" />
     <Compile Include="Namespaces.cs" />
     <Compile Include="UseAwaitInAsyncMethodsAnalyzer.cs" />
     <Compile Include="LazyOfTaskAnalyzer.cs" />
