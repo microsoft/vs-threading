@@ -57,6 +57,41 @@ public class Test {
         }
 
         [Fact]
+        public void JtfRunInProtectedMethodsOfInternalType_ProducesDiagnostic()
+        {
+            var test = @"
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    JoinableTaskFactory jtf;
+
+    protected void F() {
+        jtf.Run(() => TplExtensions.CompletedTask);
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 13) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
+        [Fact]
+        public void JtfRunInProtectedMethodsOfPublicType_DoesNotProduceDiagnostic()
+        {
+            var test = @"
+using Microsoft.VisualStudio.Threading;
+
+public class Test {
+    JoinableTaskFactory jtf;
+
+    protected void F() {
+        jtf.Run(() => TplExtensions.CompletedTask);
+    }
+}
+";
+            this.VerifyCSharpDiagnostic(test, NoDiagnostic);
+        }
+
+        [Fact]
         public void JtfRunInExplicitlyInternalMethods_ProducesDiagnostic()
         {
             var test = @"
