@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System.Collections.Generic;
+    using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
 
     internal static class CommonInterest
@@ -10,6 +11,7 @@
             new SyncBlockingMethod(Namespaces.MicrosoftVisualStudioThreading, Types.JoinableTaskFactory.TypeName, Types.JoinableTaskFactory.Run, Types.JoinableTaskFactory.RunAsync),
             new SyncBlockingMethod(Namespaces.MicrosoftVisualStudioThreading, Types.JoinableTask.TypeName, Types.JoinableTask.Join, Types.JoinableTask.JoinAsync),
             new SyncBlockingMethod(Namespaces.SystemThreadingTasks, nameof(Task), nameof(Task.Wait), null),
+            new SyncBlockingMethod(Namespaces.SystemRuntimeCompilerServices, nameof(TaskAwaiter), nameof(TaskAwaiter.GetResult), null),
         };
 
         internal static readonly IReadOnlyList<SyncBlockingMethod> SyncBlockingProperties = new[]
