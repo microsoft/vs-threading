@@ -342,4 +342,4 @@ type by passing in either a `JoinableTaskContext` or a `JoinableTaskCollection`.
 
 For more information on this topic, see Andrew Arnott's blog post 
 [Asynchronous and multithreaded programming within VS using the 
-`JoinableTaskFactory`](http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx)
+`JoinableTaskFactory`](https://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx)

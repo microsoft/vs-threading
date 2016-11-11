@@ -29,11 +29,11 @@
     <Authors>Microsoft</Authors>
     <Owners>Microsoft, VisualStudioExtensibility</Owners>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
-    <ProjectUrl>http://aka.ms/VSProjectSystemExtensibilityPreview</ProjectUrl>
-    <IconUrl>http://aka.ms/VsExtensibilityIcon</IconUrl>
-    <LicenseUrl>http://go.microsoft.com/fwlink/?LinkID=746386</LicenseUrl>
+    <ProjectUrl>https://aka.ms/VSProjectSystemExtensibilityPreview</ProjectUrl>
+    <IconUrl>https://aka.ms/VsExtensibilityIcon</IconUrl>
+    <LicenseUrl>https://go.microsoft.com/fwlink/?LinkID=746386</LicenseUrl>
     <RequireLicenseAcceptance>true</RequireLicenseAcceptance>
-    <ReleaseNotes>http://go.microsoft.com/fwlink/?LinkID=746387</ReleaseNotes>
+    <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=746387</ReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.csproj">
