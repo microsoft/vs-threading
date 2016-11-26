@@ -4,6 +4,7 @@
     using Microsoft.CodeAnalysis.CodeFixes;
     using Microsoft.CodeAnalysis.Diagnostics;
     using Xunit;
+    using Xunit.Abstractions;
 
     public class AsyncVoidMethodCodeFixTests : CodeFixVerifier
     {
@@ -13,6 +14,11 @@
             SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Warning,
         };
+
+        public AsyncVoidMethodCodeFixTests(ITestOutputHelper logger)
+            : base(logger)
+        {
+        }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {

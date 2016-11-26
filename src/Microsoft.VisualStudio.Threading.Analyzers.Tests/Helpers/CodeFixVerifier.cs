@@ -11,6 +11,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
     using Microsoft.CodeAnalysis.Diagnostics;
     using Microsoft.CodeAnalysis.Formatting;
     using Xunit;
+    using Xunit.Abstractions;
 
     /// <summary>
     /// Superclass of all Unit tests made for diagnostics with codefixes.
@@ -18,6 +19,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
     /// </summary>
     public abstract partial class CodeFixVerifier : DiagnosticVerifier
     {
+        protected CodeFixVerifier(ITestOutputHelper logger)
+            : base(logger)
+        {
+        }
+
         /// <summary>
         /// Returns the codefix being tested (C#) - to be implemented in non-abstract class
         /// </summary>
@@ -97,6 +103,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 }
 
                 document = ApplyFix(document, actions.ElementAt(0));
+                this.logger.WriteLine("Code after fix:\n{0}", document.GetSyntaxRootAsync().Result.ToFullString());
                 analyzerDiagnostics = GetSortedDiagnosticsFromDocuments(analyzer, new[] { document }, hasEntrypoint: false);
 
                 var newCompilerDiagnostics = GetNewDiagnostics(compilerDiagnostics, GetCompilerDiagnostics(document));

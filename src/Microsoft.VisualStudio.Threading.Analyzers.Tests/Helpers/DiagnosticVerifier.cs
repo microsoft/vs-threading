@@ -9,12 +9,20 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.Diagnostics;
     using Xunit;
+    using Xunit.Abstractions;
 
     /// <summary>
     /// Superclass of all Unit Tests for DiagnosticAnalyzers
     /// </summary>
     public abstract partial class DiagnosticVerifier
     {
+        protected readonly ITestOutputHelper logger;
+
+        protected DiagnosticVerifier(ITestOutputHelper logger)
+        {
+            this.logger = logger;
+        }
+
         #region To be implemented by Test classes
 
         /// <summary>

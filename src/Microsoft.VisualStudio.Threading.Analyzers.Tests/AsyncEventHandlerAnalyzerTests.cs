@@ -5,9 +5,15 @@
     using Microsoft.CodeAnalysis.CodeFixes;
     using Microsoft.CodeAnalysis.Diagnostics;
     using Xunit;
+    using Xunit.Abstractions;
 
     public class AsyncEventHandlerAnalyzerTests : DiagnosticVerifier
     {
+        public AsyncEventHandlerAnalyzerTests(ITestOutputHelper logger)
+            : base(logger)
+        {
+        }
+
         private DiagnosticResult[] CreateExpects(DiagnosticResultLocation[] locations)
         {
             var results = new DiagnosticResult[locations.Length];
