@@ -1,10 +1,4 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
-
-namespace Microsoft.VisualStudio.Threading.Analyzers
+﻿namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
     using System.Collections.Generic;
@@ -41,10 +35,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     /// ]]>
     /// </remarks>
     [ExportCodeFixProvider(LanguageNames.CSharp)]
-    public class AsyncVoidMethodCodeFix : CodeFixProvider
+    public class UseAwaitInAsyncMethodsCodeFix : CodeFixProvider
     {
+        internal const string AsyncMethodKeyName = "AsyncMethodName";
+
         private static readonly ImmutableArray<string> ReusableFixableDiagnosticIds = ImmutableArray.Create(
-            Rules.AvoidAsyncVoidMethod.Id);
+            Rules.UseAwaitInAsyncMethods.Id);
 
         /// <inheritdoc />
         public override ImmutableArray<string> FixableDiagnosticIds => ReusableFixableDiagnosticIds;
@@ -52,39 +48,46 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// <inheritdoc />
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
-            var diagnostic = context.Diagnostics.First();
-            context.RegisterCodeFix(new VoidToTaskCodeAction(context.Document, diagnostic), diagnostic);
+            var diagnostic = context.Diagnostics.FirstOrDefault(d => d.Properties.ContainsKey(AsyncMethodKeyName));
+            if (diagnostic != null)
+            {
+                context.RegisterCodeFix(new ReplaceSyncMethodCallWithAwaitAsync(context.Document, diagnostic), diagnostic);
+            }
+
             return Task.FromResult<object>(null);
         }
 
-        private class VoidToTaskCodeAction : CodeAction
+        private class ReplaceSyncMethodCallWithAwaitAsync : CodeAction
         {
             private Document document;
             private Diagnostic diagnostic;
 
-            internal VoidToTaskCodeAction(Document document, Diagnostic diagnostic)
+            internal ReplaceSyncMethodCallWithAwaitAsync(Document document, Diagnostic diagnostic)
             {
                 this.document = document;
                 this.diagnostic = diagnostic;
             }
 
-            public override string Title
-            {
-                get
-                {
-                    return "Async methods should not return void.";
-                }
-            }
+            public override string Title => $"Await {this.diagnostic.Properties[AsyncMethodKeyName]} instead";
 
             protected override async Task<Document> GetChangedDocumentAsync(CancellationToken cancellationToken)
             {
                 var root = await this.document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-                var methodDeclaration = root.FindNode(this.diagnostic.Location.SourceSpan).FirstAncestorOrSelf<MethodDeclarationSyntax>();
-                var taskType = SyntaxFactory.ParseTypeName(typeof(Task).FullName)
-                    .WithAdditionalAnnotations(Simplifier.Annotation)
-                    .WithTrailingTrivia(methodDeclaration.ReturnType.GetTrailingTrivia());
-                var newMethodDeclaration = methodDeclaration.WithReturnType(taskType);
-                var newRoot = root.ReplaceNode(methodDeclaration, newMethodDeclaration);
+
+                // Replace the method being called and await the invocation expression.
+                var syncMemberAccess = root.FindNode(this.diagnostic.Location.SourceSpan).FirstAncestorOrSelf<MemberAccessExpressionSyntax>();
+                var asyncMemberAccess = syncMemberAccess
+                    .WithName(SyntaxFactory.IdentifierName(this.diagnostic.Properties[AsyncMethodKeyName]));
+                var syncExpression = syncMemberAccess.FirstAncestorOrSelf<InvocationExpressionSyntax>();
+                var asyncExpression = SyntaxFactory.AwaitExpression(syncExpression.ReplaceNode(syncMemberAccess, asyncMemberAccess)); // TODO: do we need to add parentheses?
+
+                // Ensure that the method is using the async keyword.
+                var originalMethodDeclaration = syncExpression.FirstAncestorOrSelf<MethodDeclarationSyntax>();
+                var methodDeclaration = originalMethodDeclaration
+                    .ReplaceNode(syncExpression, asyncExpression);
+                var asyncMethodDeclaration = Utils.MakeMethodAsync(methodDeclaration);
+
+                var newRoot = root.ReplaceNode(originalMethodDeclaration, asyncMethodDeclaration);
                 var newDocument = this.document.WithSyntaxRoot(newRoot);
                 return newDocument;
             }

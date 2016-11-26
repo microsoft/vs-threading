@@ -6,7 +6,7 @@
     using Xunit;
     using Xunit.Abstractions;
 
-    public class UseAwaitInAsyncMethodsAnalyzerTests : DiagnosticVerifier
+    public class UseAwaitInAsyncMethodsAnalyzerTests : CodeFixVerifier
     {
         private DiagnosticResult expect = new DiagnosticResult
         {
@@ -20,10 +20,9 @@
         {
         }
 
-        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
-        {
-            return new UseAwaitInAsyncMethodsAnalyzer();
-        }
+        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer() => new UseAwaitInAsyncMethodsAnalyzer();
+
+        protected override CodeFixProvider GetCSharpCodeFixProvider() => new UseAwaitInAsyncMethodsCodeFix();
 
         [Fact]
         public void JTFRunInTaskReturningMethodGeneratesWarning()
@@ -43,8 +42,24 @@ class Test {
     void Run() { }
 }
 ";
+
+            var withFix = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task T() {
+        JoinableTaskFactory jtf = null;
+        await jtf.RunAsync(() => TplExtensions.CompletedTask);
+        this.Run();
+    }
+
+    void Run() { }
+}
+";
             this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 13) };
             this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
         }
 
         [Fact]
@@ -65,8 +80,25 @@ class Test {
     void Run() { }
 }
 ";
+
+            var withFix = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task T() {
+        JoinableTaskFactory jtf = null;
+        int result = await jtf.RunAsync(() => Task.FromResult(1));
+        this.Run();
+    }
+
+    void Run() { }
+}
+";
+
             this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 26) };
             this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
         }
 
         [Fact]
@@ -88,8 +120,26 @@ class Test {
     void Join() { }
 }
 ";
+
+            var withFix = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task T() {
+        JoinableTaskFactory jtf = null;
+        JoinableTask<int> jt = jtf.RunAsync(() => Task.FromResult(1));
+        await jt.JoinAsync();
+        this.Join();
+    }
+
+    void Join() { }
+}
+";
+
             this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 12) };
             this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
         }
 
         [Fact]
