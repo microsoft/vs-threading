@@ -72,19 +72,39 @@
 
             protected override async Task<Document> GetChangedDocumentAsync(CancellationToken cancellationToken)
             {
+                string asyncEquivalent = this.diagnostic.Properties[AsyncMethodKeyName];
+
                 var root = await this.document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
 
-                // Replace the method being called and await the invocation expression.
                 var syncMemberAccess = root.FindNode(this.diagnostic.Location.SourceSpan).FirstAncestorOrSelf<MemberAccessExpressionSyntax>();
-                var asyncMemberAccess = syncMemberAccess
-                    .WithName(SyntaxFactory.IdentifierName(this.diagnostic.Properties[AsyncMethodKeyName]));
-                var syncExpression = syncMemberAccess.FirstAncestorOrSelf<InvocationExpressionSyntax>();
-                var asyncExpression = SyntaxFactory.AwaitExpression(syncExpression.ReplaceNode(syncMemberAccess, asyncMemberAccess)); // TODO: do we need to add parentheses?
+                ExpressionSyntax syncExpression = (ExpressionSyntax)syncMemberAccess.FirstAncestorOrSelf<InvocationExpressionSyntax>() ?? syncMemberAccess;
+                AwaitExpressionSyntax awaitExpression;
+                if (asyncEquivalent != string.Empty)
+                {
+                    // Replace the member being called and await the invocation expression.
+                    var asyncMemberAccess = syncMemberAccess
+                        .WithName(SyntaxFactory.IdentifierName(this.diagnostic.Properties[AsyncMethodKeyName]));
+                    awaitExpression = SyntaxFactory.AwaitExpression(syncExpression.ReplaceNode(syncMemberAccess, asyncMemberAccess)); // TODO: do we need to add parentheses?
+                }
+                else
+                {
+                    // Remove the member being accessed that causes a synchronous block and simply await the object.
+                    var syncMemberStrippedExpression = syncMemberAccess.Expression;
+
+                    // Special case a common pattern of calling task.GetAwaiter().GetResult() and remove both method calls.
+                    var expressionMethodCall = (syncMemberStrippedExpression as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax;
+                    if (expressionMethodCall?.Name.Identifier.Text == nameof(Task.GetAwaiter))
+                    {
+                        syncMemberStrippedExpression = expressionMethodCall.Expression;
+                    }
+
+                    awaitExpression = SyntaxFactory.AwaitExpression(syncMemberStrippedExpression);
+                }
 
                 // Ensure that the method is using the async keyword.
                 var originalMethodDeclaration = syncExpression.FirstAncestorOrSelf<MethodDeclarationSyntax>();
                 var methodDeclaration = originalMethodDeclaration
-                    .ReplaceNode(syncExpression, asyncExpression);
+                    .ReplaceNode(syncExpression, awaitExpression);
                 var asyncMethodDeclaration = Utils.MakeMethodAsync(methodDeclaration);
 
                 var newRoot = root.ReplaceNode(originalMethodDeclaration, asyncMethodDeclaration);

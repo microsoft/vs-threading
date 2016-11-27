@@ -97,6 +97,7 @@
                             }
                             else
                             {
+                                properties = properties.Add(UseAwaitInAsyncMethodsCodeFix.AsyncMethodKeyName, string.Empty);
                                 descriptor = Rules.UseAwaitInAsyncMethods_NoAlternativeMethod;
                             }
 

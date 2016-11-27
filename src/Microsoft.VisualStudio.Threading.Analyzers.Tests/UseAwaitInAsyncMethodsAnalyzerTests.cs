@@ -147,18 +147,29 @@ class Test {
         {
             var test = @"
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.Threading;
 
 class Test {
     Task T() {
         Task t = null;
         t.Wait();
-        return TplExtensions.CompletedTask;
+        return Task.FromResult(1);
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 11) };
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T() {
+        Task t = null;
+        await t;
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 11) };
             this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
         }
 
         [Fact]
@@ -166,18 +177,30 @@ class Test {
         {
             var test = @"
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.Threading;
 
 class Test {
     Task T() {
         Task<int> t = null;
         int result = t.Result;
-        return TplExtensions.CompletedTask;
+        return Task.FromResult(1);
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 24) };
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T() {
+        Task<int> t = null;
+        int result = await t;
+    }
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 24) };
             this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
         }
 
         [Fact]
@@ -185,18 +208,30 @@ class Test {
         {
             var test = @"
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.Threading;
 
 class Test {
     Task T() {
         Task t = null;
         t.GetAwaiter().GetResult();
-        return TplExtensions.CompletedTask;
+        return Task.FromResult(1);
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 24) };
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T() {
+        Task t = null;
+        await t;
+    }
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 24) };
             this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
         }
     }
 }
