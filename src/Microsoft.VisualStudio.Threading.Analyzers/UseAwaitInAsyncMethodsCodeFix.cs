@@ -68,12 +68,20 @@
                 this.diagnostic = diagnostic;
             }
 
-            public override string Title => $"Await {this.diagnostic.Properties[AsyncMethodKeyName]} instead";
+            public override string Title
+            {
+                get
+                {
+                    return this.AlternativeAsyncMethod != string.Empty
+                        ? $"Await {this.AlternativeAsyncMethod} instead"
+                        : "Use await instead";
+                }
+            }
+
+            private string AlternativeAsyncMethod => this.diagnostic.Properties[AsyncMethodKeyName];
 
             protected override async Task<Document> GetChangedDocumentAsync(CancellationToken cancellationToken)
             {
-                string asyncEquivalent = this.diagnostic.Properties[AsyncMethodKeyName];
-
                 var document = this.document;
                 var root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
 
@@ -107,7 +115,7 @@
                 ExpressionSyntax syncExpression = (ExpressionSyntax)syncMemberAccess.FirstAncestorOrSelf<InvocationExpressionSyntax>() ?? syncMemberAccess;
 
                 AwaitExpressionSyntax awaitExpression;
-                if (asyncEquivalent != string.Empty)
+                if (this.AlternativeAsyncMethod != string.Empty)
                 {
                     // Replace the member being called and await the invocation expression.
                     var asyncMemberAccess = syncMemberAccess
