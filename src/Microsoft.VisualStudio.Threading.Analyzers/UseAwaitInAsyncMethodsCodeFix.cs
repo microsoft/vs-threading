@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using System.Globalization;
     using System.Linq;
     using System.Text;
     using System.Threading;
@@ -73,8 +74,8 @@
                 get
                 {
                     return this.AlternativeAsyncMethod != string.Empty
-                        ? $"Await {this.AlternativeAsyncMethod} instead"
-                        : "Use await instead";
+                        ? string.Format(CultureInfo.CurrentCulture, Strings.AwaitXInstead, this.AlternativeAsyncMethod)
+                        : Strings.UseAwaitInstead;
                 }
             }
 

@@ -40,6 +40,11 @@
     <Compile Include="JtfRunAwaitTaskAnalyzer.cs" />
     <Compile Include="AvoidJtfRunInNonPublicMembersAnalyzer.cs" />
     <Compile Include="Namespaces.cs" />
+    <Compile Include="Strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
     <Compile Include="UseAwaitInAsyncMethodsAnalyzer.cs" />
     <Compile Include="LazyOfTaskAnalyzer.cs" />
     <Compile Include="Types.cs" />
@@ -59,6 +64,12 @@
     </None>
     <None Include="Microsoft.VisualStudio.Threading.Analyzers.ruleset" />
     <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemDefinitionGroup>
     <Reference>
