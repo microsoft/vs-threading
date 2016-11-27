@@ -74,10 +74,38 @@
             {
                 string asyncEquivalent = this.diagnostic.Properties[AsyncMethodKeyName];
 
-                var root = await this.document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+                var document = this.document;
+                var root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
 
+                // Find the synchronously blocking call member,
+                // and bookmark it so we can find it again after some mutations have taken place.
+                var syncMemberAccessBookmark = new SyntaxAnnotation();
                 var syncMemberAccess = root.FindNode(this.diagnostic.Location.SourceSpan).FirstAncestorOrSelf<MemberAccessExpressionSyntax>();
+                root = root.ReplaceNode(syncMemberAccess, syncMemberAccess.WithAdditionalAnnotations(syncMemberAccessBookmark));
+                syncMemberAccess = (MemberAccessExpressionSyntax)root.GetAnnotatedNodes(syncMemberAccessBookmark).Single();
+                document = document.WithSyntaxRoot(root);
+
+                // We'll need the semantic model later. But because we've annotated a node, that changes the SyntaxRoot
+                // and that renders the default semantic model broken (even though we've already updated the document's SyntaxRoot?!).
+                // So after acquiring the semantic model, update it with the new method body.
+                var semanticModel = await document.GetSemanticModelAsync(cancellationToken);
+                var originalMethodDeclaration = syncMemberAccess.FirstAncestorOrSelf<MethodDeclarationSyntax>();
+                if (!semanticModel.TryGetSpeculativeSemanticModelForMethodBody(this.diagnostic.Location.SourceSpan.Start, originalMethodDeclaration, out semanticModel))
+                {
+                    throw new InvalidOperationException("Unable to get updated semantic model.");
+                }
+
+                // Ensure that the method is using the async keyword.
+                var updatedMethod = originalMethodDeclaration.MakeMethodAsync(semanticModel);
+
+                if (updatedMethod != originalMethodDeclaration)
+                {
+                    // Re-discover our synchronously blocking member.
+                    syncMemberAccess = (MemberAccessExpressionSyntax)updatedMethod.GetAnnotatedNodes(syncMemberAccessBookmark).Single();
+                }
+
                 ExpressionSyntax syncExpression = (ExpressionSyntax)syncMemberAccess.FirstAncestorOrSelf<InvocationExpressionSyntax>() ?? syncMemberAccess;
+
                 AwaitExpressionSyntax awaitExpression;
                 if (asyncEquivalent != string.Empty)
                 {
@@ -101,14 +129,11 @@
                     awaitExpression = SyntaxFactory.AwaitExpression(syncMemberStrippedExpression);
                 }
 
-                // Ensure that the method is using the async keyword.
-                var originalMethodDeclaration = syncExpression.FirstAncestorOrSelf<MethodDeclarationSyntax>();
-                var methodDeclaration = originalMethodDeclaration
+                updatedMethod = updatedMethod
                     .ReplaceNode(syncExpression, awaitExpression);
-                var asyncMethodDeclaration = Utils.MakeMethodAsync(methodDeclaration);
 
-                var newRoot = root.ReplaceNode(originalMethodDeclaration, asyncMethodDeclaration);
-                var newDocument = this.document.WithSyntaxRoot(newRoot);
+                var newRoot = root.ReplaceNode(originalMethodDeclaration, updatedMethod);
+                var newDocument = document.WithSyntaxRoot(newRoot);
                 return newDocument;
             }
         }

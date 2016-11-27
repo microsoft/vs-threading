@@ -10,6 +10,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
+    using System.Threading.Tasks;
     using CodeAnalysis.CSharp;
     using CodeAnalysis.CSharp.Syntax;
     using Microsoft;
@@ -183,8 +184,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// Converts a synchronous method to be asynchronous, if it is not already async.
         /// </summary>
         /// <param name="method">The method to convert.</param>
+        /// <param name="semanticModel">The semantic model for the document.</param>
         /// <returns>The converted method, or the original if it was already async.</returns>
-        internal static MethodDeclarationSyntax MakeMethodAsync(MethodDeclarationSyntax method)
+        internal static MethodDeclarationSyntax MakeMethodAsync(this MethodDeclarationSyntax method, SemanticModel semanticModel)
         {
             if (method == null)
             {
@@ -197,20 +199,18 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 return method;
             }
 
-            var asyncMethod = method.AddModifiers(SyntaxFactory.Token(SyntaxKind.AsyncKeyword));
-
             // Fix up any return statements to await on the Task it would have returned.
             bool hasResultValue = method.ReturnType is GenericNameSyntax;
-            var fixedUpAsyncMethod = asyncMethod.ReplaceNodes(
-                asyncMethod.Body.Statements.OfType<ReturnStatementSyntax>(),
+            var fixedUpAsyncMethod = method.ReplaceNodes(
+                method.Body.Statements.OfType<ReturnStatementSyntax>(),
                 (f, n) =>
                 {
                     if (hasResultValue)
                     {
-                        return n.WithExpression(SyntaxFactory.AwaitExpression(n.Expression));
+                        return n.WithExpression(SyntaxFactory.AwaitExpression(n.Expression).TrySimplify(f.Expression, semanticModel));
                     }
 
-                    if (asyncMethod.Body.Statements.Last() == f)
+                    if (method.Body.Statements.Last() == f)
                     {
                         // If it is the last statement in the method, we can remove it since a return is implied.
                         return null;
@@ -219,9 +219,37 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     return n
                         .WithExpression(null) // don't return any value
                         .WithReturnKeyword(n.ReturnKeyword.WithTrailingTrivia(SyntaxFactory.TriviaList())); // remove the trailing space after the keyword
-                });
+                })
+                .AddModifiers(SyntaxFactory.Token(SyntaxKind.AsyncKeyword));
 
             return fixedUpAsyncMethod;
+        }
+
+        private static ExpressionSyntax TrySimplify(this AwaitExpressionSyntax awaitExpression, ExpressionSyntax originalSyntax, SemanticModel semanticModel)
+        {
+            if (awaitExpression == null)
+            {
+                throw new ArgumentNullException(nameof(awaitExpression));
+            }
+
+            // await Task.FromResult(x) => x.
+            if (semanticModel != null)
+            {
+                var awaitedInvocation = awaitExpression.Expression as InvocationExpressionSyntax;
+                var awaitedInvocationMemberAccess = awaitedInvocation?.Expression as MemberAccessExpressionSyntax;
+                if (awaitedInvocationMemberAccess?.Name.Identifier.Text == nameof(Task.FromResult))
+                {
+                    // Is the FromResult method on the Task or Task<T> class?
+                    var memberOwnerSymbol = semanticModel.GetSymbolInfo(originalSyntax).Symbol;
+                    if (memberOwnerSymbol?.ContainingType?.Name == nameof(Task) && memberOwnerSymbol.ContainingType.BelongsToNamespace(Namespaces.SystemThreadingTasks))
+                    {
+                        var simplified = awaitedInvocation.ArgumentList.Arguments.Single().Expression;
+                        return simplified;
+                    }
+                }
+            }
+
+            return awaitExpression;
         }
     }
 }

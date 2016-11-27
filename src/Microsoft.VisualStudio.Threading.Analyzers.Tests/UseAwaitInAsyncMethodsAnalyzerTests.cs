@@ -179,10 +179,10 @@ class Test {
 using System.Threading.Tasks;
 
 class Test {
-    Task T() {
+    Task<int> T() {
         Task<int> t = null;
         int result = t.Result;
-        return Task.FromResult(1);
+        return Task.FromResult(result);
     }
 }
 ";
@@ -191,9 +191,10 @@ class Test {
 using System.Threading.Tasks;
 
 class Test {
-    async Task T() {
+    async Task<int> T() {
         Task<int> t = null;
         int result = await t;
+        return result;
     }
 }
 ";
