@@ -258,7 +258,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Rename to {0}..
+        ///   Looks up a localized string similar to Rename to {0}.
         /// </summary>
         internal static string VSSDK010_CodeFix_Title {
             get {
@@ -267,7 +267,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Use &quot;Async&quot; suffix in Task-returning method names..
+        ///   Looks up a localized string similar to Use &quot;Async&quot; suffix in names of Task-returning methods..
         /// </summary>
         internal static string VSSDK010_MessageFormat {
             get {
@@ -276,7 +276,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Use &quot;Async&quot; suffix in Task-returning method names..
+        ///   Looks up a localized string similar to Use &quot;Async&quot; suffix for async methods..
         /// </summary>
         internal static string VSSDK010_Title {
             get {

@@ -115,17 +115,20 @@ AsyncLazy&lt;T&gt; sollten Sie stattdessen verwenden.</target>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">Synchrone Blöcke in nicht-öffentlichen Methoden zu vermeiden.</target>
         </trans-unit>
         <trans-unit id="VSSDK010_CodeFix_Title" translate="yes" xml:space="preserve">
-          <source>Rename to {0}.</source>
+          <source>Rename to {0}</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">Benennen Sie in {0}.</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a method name.</note>
         </trans-unit>
         <trans-unit id="VSSDK010_MessageFormat" translate="yes" xml:space="preserve">
-          <source>Use "Async" suffix in Task-returning method names.</source>
+          <source>Use "Async" suffix in names of Task-returning methods.</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">Verwenden Sie "Async" Suffix im Methodennamen Aufgabe zurückkehren.</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK010_Title" translate="yes" xml:space="preserve">
-          <source>Use "Async" suffix in Task-returning method names.</source>
+          <source>Use "Async" suffix for async methods.</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">Verwenden Sie "Async" Suffix im Methodennamen Aufgabe zurückkehren.</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
       </group>
     </body>

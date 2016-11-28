@@ -115,17 +115,17 @@ You should use AsyncLazy&lt;T&gt; instead.</target>
           <target state="new">Avoid synchronous blocks in non-public methods.</target>
         </trans-unit>
         <trans-unit id="VSSDK010_CodeFix_Title" translate="yes" xml:space="preserve">
-          <source>Rename to {0}.</source>
-          <target state="new">Rename to {0}.</target>
+          <source>Rename to {0}</source>
+          <target state="new">Rename to {0}</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a method name.</note>
         </trans-unit>
         <trans-unit id="VSSDK010_MessageFormat" translate="yes" xml:space="preserve">
-          <source>Use "Async" suffix in Task-returning method names.</source>
-          <target state="new">Use "Async" suffix in Task-returning method names.</target>
+          <source>Use "Async" suffix in names of Task-returning methods.</source>
+          <target state="new">Use "Async" suffix in names of Task-returning methods.</target>
         </trans-unit>
         <trans-unit id="VSSDK010_Title" translate="yes" xml:space="preserve">
-          <source>Use "Async" suffix in Task-returning method names.</source>
-          <target state="new">Use "Async" suffix in Task-returning method names.</target>
+          <source>Use "Async" suffix for async methods.</source>
+          <target state="new">Use "Async" suffix for async methods.</target>
         </trans-unit>
       </group>
     </body>

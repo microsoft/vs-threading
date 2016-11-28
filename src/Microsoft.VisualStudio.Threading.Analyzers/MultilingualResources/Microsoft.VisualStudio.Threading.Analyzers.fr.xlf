@@ -115,17 +115,20 @@ Vous devez plutôt utiliser AsyncLazy&lt;T&gt; .</target>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">Éviter les blocs synchrones dans les méthodes non publiques.</target>
         </trans-unit>
         <trans-unit id="VSSDK010_CodeFix_Title" translate="yes" xml:space="preserve">
-          <source>Rename to {0}.</source>
+          <source>Rename to {0}</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">Remplacez {0}.</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a method name.</note>
         </trans-unit>
         <trans-unit id="VSSDK010_MessageFormat" translate="yes" xml:space="preserve">
-          <source>Use "Async" suffix in Task-returning method names.</source>
+          <source>Use "Async" suffix in names of Task-returning methods.</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">Utilisez « Async » suffixe de tâche retourne les noms de méthodes.</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK010_Title" translate="yes" xml:space="preserve">
-          <source>Use "Async" suffix in Task-returning method names.</source>
+          <source>Use "Async" suffix for async methods.</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">Utilisez « Async » suffixe de tâche retourne les noms de méthodes.</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
       </group>
     </body>

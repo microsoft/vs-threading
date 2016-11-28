@@ -115,17 +115,20 @@ AsyncLazy&lt;T&gt;を代わりに使用する必要があります。</target>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">非パブリック メソッドの同期ブロックを避けてください。</target>
         </trans-unit>
         <trans-unit id="VSSDK010_CodeFix_Title" translate="yes" xml:space="preserve">
-          <source>Rename to {0}.</source>
+          <source>Rename to {0}</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">{0} の名前を変更します。</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a method name.</note>
         </trans-unit>
         <trans-unit id="VSSDK010_MessageFormat" translate="yes" xml:space="preserve">
-          <source>Use "Async" suffix in Task-returning method names.</source>
+          <source>Use "Async" suffix in names of Task-returning methods.</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">タスクを返すメソッド名のサフィックス"Async"を使用します。</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK010_Title" translate="yes" xml:space="preserve">
-          <source>Use "Async" suffix in Task-returning method names.</source>
+          <source>Use "Async" suffix for async methods.</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">タスクを返すメソッド名のサフィックス"Async"を使用します。</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
       </group>
     </body>
