@@ -19,6 +19,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using CodeAnalysis.CodeFixes;
     using CodeAnalysis.CSharp;
     using CodeAnalysis.CSharp.Syntax;
+    using CodeAnalysis.Rename;
 
     [ExportCodeFixProvider(LanguageNames.CSharp)]
     public class AsyncSuffixCodeFix : CodeFixProvider
@@ -57,18 +58,23 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             private string NewName => this.diagnostic.Properties[NewNameKey];
 
-            protected override async Task<Document> GetChangedDocumentAsync(CancellationToken cancellationToken)
+            protected override async Task<Solution> GetChangedSolutionAsync(CancellationToken cancellationToken)
             {
-                var document = this.document;
-
                 var root = await this.document.GetSyntaxRootAsync(cancellationToken);
                 var methodDeclaration = (MethodDeclarationSyntax)root.FindNode(this.diagnostic.Location.SourceSpan);
-                var renamedMethodDeclaration = methodDeclaration.WithIdentifier(
-                    SyntaxFactory.Identifier(this.NewName));
-                var updatedRoot = root.ReplaceNode(methodDeclaration, renamedMethodDeclaration);
-                document = document.WithSyntaxRoot(updatedRoot);
 
-                return document;
+                var semanticModel = await this.document.GetSemanticModelAsync(cancellationToken);
+                var methodSymbol = semanticModel.GetDeclaredSymbol(methodDeclaration, cancellationToken);
+
+                var solution = this.document.Project.Solution;
+                var updatedSolution = await Renamer.RenameSymbolAsync(
+                    solution,
+                    methodSymbol,
+                    this.NewName,
+                    solution.Workspace.Options,
+                    cancellationToken);
+
+                return updatedSolution;
             }
         }
     }

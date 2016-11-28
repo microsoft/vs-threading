@@ -55,6 +55,38 @@ class Test {
         }
 
         [Fact]
+        public void TaskReturningMethodWithoutSuffix_CodeFixUpdatesCallers()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task Foo() => null;
+    async Task BarAsync()
+    {
+        await Foo();
+    }
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task FooAsync() => null;
+    async Task BarAsync()
+    {
+        await FooAsync();
+    }
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 5, 10, 5, 13) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
         public void TaskReturningMethodWithSuffix_GeneratesNoWarning()
         {
             var test = @"
