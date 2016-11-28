@@ -4,6 +4,7 @@
     using Microsoft.CodeAnalysis.CodeFixes;
     using Microsoft.CodeAnalysis.Diagnostics;
     using Xunit;
+    using Xunit.Abstractions;
 
     public class AvoidJtfRunInNonPublicMembersAnalyzerTests : DiagnosticVerifier
     {
@@ -15,6 +16,11 @@
             SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Info,
         };
+
+        public AvoidJtfRunInNonPublicMembersAnalyzerTests(ITestOutputHelper logger)
+            : base(logger)
+        {
+        }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
