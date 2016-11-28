@@ -43,14 +43,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     [ExportCodeFixProvider(LanguageNames.CSharp)]
     public class AsyncVoidMethodCodeFix : CodeFixProvider
     {
+        private static readonly ImmutableArray<string> ReusableFixableDiagnosticIds = ImmutableArray.Create(
+            Rules.AvoidAsyncVoidMethod.Id);
+
         /// <inheritdoc />
-        public override ImmutableArray<string> FixableDiagnosticIds
-        {
-            get
-            {
-                return ImmutableArray.Create(Rules.AvoidAsyncVoidMethod.Id);
-            }
-        }
+        public override ImmutableArray<string> FixableDiagnosticIds => ReusableFixableDiagnosticIds;
 
         /// <inheritdoc />
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
@@ -82,7 +79,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             protected override async Task<Document> GetChangedDocumentAsync(CancellationToken cancellationToken)
             {
                 var root = await this.document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-                var n1 = root.FindNode(this.diagnostic.Location.SourceSpan);
                 var methodDeclaration = root.FindNode(this.diagnostic.Location.SourceSpan).FirstAncestorOrSelf<MethodDeclarationSyntax>();
                 var taskType = SyntaxFactory.ParseTypeName(typeof(Task).FullName)
                     .WithAdditionalAnnotations(Simplifier.Annotation)

@@ -85,9 +85,23 @@
                             typeReceiver.BelongsToNamespace(item.ContainingTypeNamespace))
                         {
                             var location = memberAccessSyntax.Name.GetLocation();
-                            Diagnostic diagnostic = item.AsyncAlternativeMethodName != null
-                                ? Diagnostic.Create(Rules.UseAwaitInAsyncMethods, location, item.MethodName, item.AsyncAlternativeMethodName)
-                                : Diagnostic.Create(Rules.UseAwaitInAsyncMethods_NoAlternativeMethod, location, item.MethodName);
+                            var properties = ImmutableDictionary<string, string>.Empty;
+                            DiagnosticDescriptor descriptor;
+                            var messageArgs = new List<object>(2);
+                            messageArgs.Add(item.MethodName);
+                            if (item.AsyncAlternativeMethodName != null)
+                            {
+                                properties = properties.Add(UseAwaitInAsyncMethodsCodeFix.AsyncMethodKeyName, item.AsyncAlternativeMethodName);
+                                descriptor = Rules.UseAwaitInAsyncMethods;
+                                messageArgs.Add(item.AsyncAlternativeMethodName);
+                            }
+                            else
+                            {
+                                properties = properties.Add(UseAwaitInAsyncMethodsCodeFix.AsyncMethodKeyName, string.Empty);
+                                descriptor = Rules.UseAwaitInAsyncMethods_NoAlternativeMethod;
+                            }
+
+                            Diagnostic diagnostic = Diagnostic.Create(descriptor, location, properties, messageArgs.ToArray());
                             context.ReportDiagnostic(diagnostic);
                         }
                     }

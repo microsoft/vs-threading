@@ -49,6 +49,7 @@
     <Compile Include="AsyncVoidMethodCodeFix.cs" />
     <Compile Include="Rules.cs" />
     <Compile Include="SynchronousWaitAnalyzer.cs" />
+    <Compile Include="UseAwaitInAsyncMethodsCodeFix.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="VsServiceUsageAnalyzer.cs" />
   </ItemGroup>
