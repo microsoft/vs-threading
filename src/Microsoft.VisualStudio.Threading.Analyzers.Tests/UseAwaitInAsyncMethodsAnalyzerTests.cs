@@ -63,6 +63,43 @@ class Test {
         }
 
         [Fact]
+        public void JTFRunInAsyncMethodGeneratesWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task T() {
+        JoinableTaskFactory jtf = null;
+        jtf.Run(() => TplExtensions.CompletedTask);
+        this.Run();
+    }
+
+    void Run() { }
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task T() {
+        JoinableTaskFactory jtf = null;
+        await jtf.RunAsync(() => TplExtensions.CompletedTask);
+        this.Run();
+    }
+
+    void Run() { }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 13) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
         public void JTFRunOfTInTaskReturningMethodGeneratesWarning()
         {
             var test = @"
