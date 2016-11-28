@@ -12,8 +12,10 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         public string Path;
         public int Line;
         public int Column;
+        public int EndLine;
+        public int EndColumn;
 
-        public DiagnosticResultLocation(string path, int line, int column)
+        public DiagnosticResultLocation(string path, int line, int column, int endLine = -1, int endColumn = -1)
         {
             if (line < 0 && column < 0)
             {
@@ -28,6 +30,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
             this.Path = path;
             this.Line = line;
             this.Column = column;
+            this.EndLine = endLine;
+            this.EndColumn = endColumn;
         }
     }
 }

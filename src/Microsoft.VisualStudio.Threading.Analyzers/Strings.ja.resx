@@ -91,4 +91,14 @@ AsyncLazy&lt;T&gt;を代わりに使用する必要があります。</value>
   <data name="VSSDK009_Title" xml:space="preserve">
     <value>非パブリック メソッドの同期ブロックを避けてください。</value>
   </data>
+  <data name="VSSDK010_CodeFix_Title" xml:space="preserve">
+    <value>{0} の名前を変更します。</value>
+    <comment>{0} is a method name.</comment>
+  </data>
+  <data name="VSSDK010_MessageFormat" xml:space="preserve">
+    <value>タスクを返すメソッド名のサフィックス"Async"を使用します。</value>
+  </data>
+  <data name="VSSDK010_Title" xml:space="preserve">
+    <value>タスクを返すメソッド名のサフィックス"Async"を使用します。</value>
+  </data>
 </root>

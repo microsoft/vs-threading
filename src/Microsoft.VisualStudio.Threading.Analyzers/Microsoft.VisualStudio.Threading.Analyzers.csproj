@@ -42,6 +42,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AsyncEventHandlerAnalyzer.cs" />
+    <Compile Include="AsyncSuffixAnalyzer.cs" />
+    <Compile Include="AsyncSuffixCodeFix.cs" />
     <Compile Include="CommonInterest.cs" />
     <Compile Include="JtfRunAwaitTaskAnalyzer.cs" />
     <Compile Include="AvoidJtfRunInNonPublicMembersAnalyzer.cs" />

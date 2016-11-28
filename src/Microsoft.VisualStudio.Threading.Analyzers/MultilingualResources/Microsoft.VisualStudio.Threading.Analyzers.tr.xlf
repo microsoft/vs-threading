@@ -114,6 +114,19 @@ AsyncLazy&lt;T&gt; yerine kullanmanız gerekir.</target>
           <source>Avoid synchronous blocks in non-public methods.</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">Halka açık olmayan yöntemleri zaman uyumlu blok kaçının.</target>
         </trans-unit>
+        <trans-unit id="VSSDK010_CodeFix_Title" translate="yes" xml:space="preserve">
+          <source>Rename to {0}.</source>
+          <target state="needs-review-translation" state-qualifier="mt-suggestion">{0} için yeniden adlandırın.</target>
+          <note from="MultilingualBuild" annotates="source" priority="2">{0} is a method name.</note>
+        </trans-unit>
+        <trans-unit id="VSSDK010_MessageFormat" translate="yes" xml:space="preserve">
+          <source>Use "Async" suffix in Task-returning method names.</source>
+          <target state="needs-review-translation" state-qualifier="mt-suggestion">"Zaman uyumsuz" son eki görev döndüren yöntemi adlarında kullanın.</target>
+        </trans-unit>
+        <trans-unit id="VSSDK010_Title" translate="yes" xml:space="preserve">
+          <source>Use "Async" suffix in Task-returning method names.</source>
+          <target state="needs-review-translation" state-qualifier="mt-suggestion">"Zaman uyumsuz" son eki görev döndüren yöntemi adlarında kullanın.</target>
+        </trans-unit>
       </group>
     </body>
   </file>

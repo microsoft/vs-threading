@@ -91,5 +91,13 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Info,
             isEnabledByDefault: true);
+
+        internal static readonly DiagnosticDescriptor UseAsyncSuffixInMethodNames = new DiagnosticDescriptor(
+            id: "VSSDK010",
+            title: Strings.VSSDK010_Title,
+            messageFormat: Strings.VSSDK010_MessageFormat,
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
     }
 }

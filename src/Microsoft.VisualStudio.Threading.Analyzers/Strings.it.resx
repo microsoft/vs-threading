@@ -91,4 +91,14 @@ Fare riferimento a https://msdn.microsoft.com/en-us/magazine/jj991977.aspx per m
   <data name="VSSDK009_Title" xml:space="preserve">
     <value>Evitare blocchi sincrone a metodi non pubblici.</value>
   </data>
+  <data name="VSSDK010_CodeFix_Title" xml:space="preserve">
+    <value>Rinominare {0}.</value>
+    <comment>{0} is a method name.</comment>
+  </data>
+  <data name="VSSDK010_MessageFormat" xml:space="preserve">
+    <value>Usare il suffisso "Async" nei nomi di metodo attività-restituendo.</value>
+  </data>
+  <data name="VSSDK010_Title" xml:space="preserve">
+    <value>Usare il suffisso "Async" nei nomi di metodo attività-restituendo.</value>
+  </data>
 </root>

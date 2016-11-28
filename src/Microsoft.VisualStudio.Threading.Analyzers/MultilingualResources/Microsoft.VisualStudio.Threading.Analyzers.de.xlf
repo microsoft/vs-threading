@@ -114,6 +114,19 @@ AsyncLazy&lt;T&gt; sollten Sie stattdessen verwenden.</target>
           <source>Avoid synchronous blocks in non-public methods.</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">Synchrone Blöcke in nicht-öffentlichen Methoden zu vermeiden.</target>
         </trans-unit>
+        <trans-unit id="VSSDK010_CodeFix_Title" translate="yes" xml:space="preserve">
+          <source>Rename to {0}.</source>
+          <target state="needs-review-translation" state-qualifier="mt-suggestion">Benennen Sie in {0}.</target>
+          <note from="MultilingualBuild" annotates="source" priority="2">{0} is a method name.</note>
+        </trans-unit>
+        <trans-unit id="VSSDK010_MessageFormat" translate="yes" xml:space="preserve">
+          <source>Use "Async" suffix in Task-returning method names.</source>
+          <target state="needs-review-translation" state-qualifier="mt-suggestion">Verwenden Sie "Async" Suffix im Methodennamen Aufgabe zurückkehren.</target>
+        </trans-unit>
+        <trans-unit id="VSSDK010_Title" translate="yes" xml:space="preserve">
+          <source>Use "Async" suffix in Task-returning method names.</source>
+          <target state="needs-review-translation" state-qualifier="mt-suggestion">Verwenden Sie "Async" Suffix im Methodennamen Aufgabe zurückkehren.</target>
+        </trans-unit>
       </group>
     </body>
   </file>

@@ -91,4 +91,14 @@ Byste měli použít AsyncLazy&lt;T&gt; místo.</value>
   <data name="VSSDK009_Title" xml:space="preserve">
     <value>Vyhněte se synchronní bloků v neveřejné metody.</value>
   </data>
+  <data name="VSSDK010_CodeFix_Title" xml:space="preserve">
+    <value>Přejmenujte na soubor {0}.</value>
+    <comment>{0} is a method name.</comment>
+  </data>
+  <data name="VSSDK010_MessageFormat" xml:space="preserve">
+    <value>V názvech metoda vrácením úkolu používejte přípony "Async".</value>
+  </data>
+  <data name="VSSDK010_Title" xml:space="preserve">
+    <value>V názvech metoda vrácením úkolu používejte přípony "Async".</value>
+  </data>
 </root>

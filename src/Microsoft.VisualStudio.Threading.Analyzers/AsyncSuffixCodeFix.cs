@@ -1,0 +1,75 @@
+﻿/********************************************************
+*                                                        *
+*   © Copyright (C) Microsoft. All rights reserved.      *
+*                                                        *
+*********************************************************/
+
+namespace Microsoft.VisualStudio.Threading.Analyzers
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Collections.Immutable;
+    using System.Globalization;
+    using System.Linq;
+    using System.Text;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using CodeAnalysis;
+    using CodeAnalysis.CodeActions;
+    using CodeAnalysis.CodeFixes;
+    using CodeAnalysis.CSharp;
+    using CodeAnalysis.CSharp.Syntax;
+
+    [ExportCodeFixProvider(LanguageNames.CSharp)]
+    public class AsyncSuffixCodeFix : CodeFixProvider
+    {
+        internal const string NewNameKey = "NewName";
+
+        private static readonly ImmutableArray<string> ReusableFixableDiagnosticIds = ImmutableArray.Create(
+            Rules.UseAsyncSuffixInMethodNames.Id);
+
+        /// <inheritdoc />
+        public override ImmutableArray<string> FixableDiagnosticIds => ReusableFixableDiagnosticIds;
+
+        /// <inheritdoc />
+        public override Task RegisterCodeFixesAsync(CodeFixContext context)
+        {
+            var diagnostic = context.Diagnostics.First();
+            context.RegisterCodeFix(new AddAsyncSuffixCodeAction(context.Document, diagnostic), diagnostic);
+            return Task.FromResult<object>(null);
+        }
+
+        private class AddAsyncSuffixCodeAction : CodeAction
+        {
+            private readonly Diagnostic diagnostic;
+            private readonly Document document;
+
+            public AddAsyncSuffixCodeAction(Document document, Diagnostic diagnostic)
+            {
+                this.document = document;
+                this.diagnostic = diagnostic;
+            }
+
+            public override string Title => string.Format(
+                CultureInfo.CurrentCulture,
+                Strings.VSSDK010_CodeFix_Title,
+                this.NewName);
+
+            private string NewName => this.diagnostic.Properties[NewNameKey];
+
+            protected override async Task<Document> GetChangedDocumentAsync(CancellationToken cancellationToken)
+            {
+                var document = this.document;
+
+                var root = await this.document.GetSyntaxRootAsync(cancellationToken);
+                var methodDeclaration = (MethodDeclarationSyntax)root.FindNode(this.diagnostic.Location.SourceSpan);
+                var renamedMethodDeclaration = methodDeclaration.WithIdentifier(
+                    SyntaxFactory.Identifier(this.NewName));
+                var updatedRoot = root.ReplaceNode(methodDeclaration, renamedMethodDeclaration);
+                document = document.WithSyntaxRoot(updatedRoot);
+
+                return document;
+            }
+        }
+    }
+}
