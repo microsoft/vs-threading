@@ -16,21 +16,14 @@
     using Microsoft.VisualStudio.Threading;
 
     /// <summary>
-    /// Provides a code action to fix the Async Void Method by changing the return type to Task.
+    /// Provides a code action to fix calls to synchronous methods from async methods when async options exist.
     /// </summary>
     /// <remarks>
-    /// [Background] Async void methods have different error-handling semantics.
-    /// When an exception is thrown out of an async Task or async <see cref="Task{T}"/> method/lambda,
-    /// that exception is captured and placed on the Task object. With async void methods,
-    /// there is no Task object, so any exceptions thrown out of an async void method will
-    /// be raised directly on the SynchronizationContext that was active when the async
-    /// void method started, and it would crash the process.
-    /// Refer to Stephen's article https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info.
-    ///
-    /// i.e.
     /// <![CDATA[
-    ///   async void MyMethod() /* This code action will change 'void' to 'Task'. */
+    ///   async Task MyMethod()
     ///   {
+    ///     Task t;
+    ///     t.Wait(); // Code action will change this to "await t;"
     ///   }
     /// ]]>
     /// </remarks>
@@ -59,8 +52,8 @@
 
         private class ReplaceSyncMethodCallWithAwaitAsync : CodeAction
         {
-            private Document document;
-            private Diagnostic diagnostic;
+            private readonly Document document;
+            private readonly Diagnostic diagnostic;
 
             internal ReplaceSyncMethodCallWithAwaitAsync(Document document, Diagnostic diagnostic)
             {
