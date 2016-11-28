@@ -77,5 +77,184 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
                 return ResourceManager.GetString("UseAwaitInstead", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Synchronous wait on tasks or awaiters is dangerous and may cause dead locks. Please consider the following options: 1) Switch to asynchronous wait if the caller is already a &quot;async&quot; method. 2) Change the chain of callers to be &quot;async&quot; methods, and then change this code to be asynchronous await. 3) Use JoinableTaskFactory.Run() to wait on the tasks or awaiters. Refer to http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string VSSDK001_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSSDK001_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Synchronous wait on tasks or awaiters is dangerous and may cause dead locks..
+        /// </summary>
+        internal static string VSSDK001_Title {
+            get {
+                return ResourceManager.GetString("VSSDK001_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Visual Studio service &quot;{0}&quot; should be used on main thread explicitly. 
+        ///Please either verify the current thread is main thread, or switch to main thread asynchronously. 
+        ///1) APIs to verify the current thread is main thread: ThreadHelper.ThrowIfNotOnUIThread(), or IThreadHandling.VerifyOnUIThread(). 
+        ///2) APIs to switch to main thread asynchronously: JoinableTaskFactory.SwitchToMainThreadAsync(), or IThreadHandling.SwitchToUIThread(). 
+        ///Refer to http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynch [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string VSSDK002_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSSDK002_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Visual Studio service should be used on main thread explicitly..
+        /// </summary>
+        internal static string VSSDK002_Title {
+            get {
+                return ResourceManager.GetString("VSSDK002_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Avoid Async Void method, because any exceptions thrown out of an async void method will be raised directly on the SynchronizationContext and will crash the process. 
+        ///Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info..
+        /// </summary>
+        internal static string VSSDK003_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSSDK003_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Avoid Async Void method..
+        /// </summary>
+        internal static string VSSDK003_Title {
+            get {
+                return ResourceManager.GetString("VSSDK003_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Avoid using async lambda as void returning delegate type, because any exceptions thrown out of an async lambda returning void will be raised directly on the SynchronizationContext and will crash the process. 
+        ///Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info..
+        /// </summary>
+        internal static string VSSDK004_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSSDK004_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Async lambda is being used as void returning delegate type..
+        /// </summary>
+        internal static string VSSDK004_Title {
+            get {
+                return ResourceManager.GetString("VSSDK004_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to AsyncEventHandler delegates should be invoked via the extension method &quot;TplExtensions.InvokeAsync()&quot; defined in Microsoft.VisualStudio.Threading assembly..
+        /// </summary>
+        internal static string VSSDK005_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSSDK005_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to AsyncEventHandler delegates should be invoked via the extension method &quot;TplExtensions.InvokeAsync()&quot; defined in Microsoft.VisualStudio.Threading assembly..
+        /// </summary>
+        internal static string VSSDK005_Title {
+            get {
+                return ResourceManager.GetString("VSSDK005_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Calling await on a Task inside a JoinableTaskFactory.Run, when the task is initialized outside the delegate can cause potential deadlocks.
+        ///You can avoid this problem by ensuring the task is initialized within the delegate or by using JoinableTask instead of Task..
+        /// </summary>
+        internal static string VSSDK006_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSSDK006_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Avoid calling await Task inside &quot;JoinableTaskFactory.Run&quot; delegate when Task is defined outside the delegate to avoid potential deadlocks..
+        /// </summary>
+        internal static string VSSDK006_Title {
+            get {
+                return ResourceManager.GetString("VSSDK006_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Calling Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock when the value factory was previously started.
+        ///You should use AsyncLazy&lt;T&gt; instead..
+        /// </summary>
+        internal static string VSSDK007_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSSDK007_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Avoid using Lazy&lt;T&gt; where T is a Task..
+        /// </summary>
+        internal static string VSSDK007_Title {
+            get {
+                return ResourceManager.GetString("VSSDK007_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The {0} member synchronously blocks. Call {1} instead and await its result..
+        /// </summary>
+        internal static string VSSDK008_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSSDK008_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The {0} member synchronously blocks. Use await instead..
+        /// </summary>
+        internal static string VSSDK008_MessageFormat_UseAwaitInstead {
+            get {
+                return ResourceManager.GetString("VSSDK008_MessageFormat_UseAwaitInstead", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Call awaitable alternatives when in an async method..
+        /// </summary>
+        internal static string VSSDK008_Title {
+            get {
+                return ResourceManager.GetString("VSSDK008_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Limit use of synchronously blocking method calls such as JoinableTaskFactory.Run or Task.Result to public entrypoint members where you must be synchronous. Using it for internal members can needlessly add synchronous frames between asynchronous frames, leading to threadpool exhaustion..
+        /// </summary>
+        internal static string VSSDK009_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSSDK009_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Avoid synchronous blocks in non-public methods..
+        /// </summary>
+        internal static string VSSDK009_Title {
+            get {
+                return ResourceManager.GetString("VSSDK009_Title", resourceCulture);
+            }
+        }
     }
 }

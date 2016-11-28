@@ -1,0 +1,94 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AwaitXInstead" xml:space="preserve">
+    <value>Attendre de {0} plutôt</value>
+    <comment>"await" is a C# keyword and should not be translated.
+{0} is a method name.</comment>
+  </data>
+  <data name="UseAwaitInstead" xml:space="preserve">
+    <value>Utilisation vous attendent à la place</value>
+    <comment>"await" is a C# keyword and should not be translated.</comment>
+  </data>
+  <data name="VSSDK001_MessageFormat" xml:space="preserve">
+    <value>Attente synchrone sur les tâches ou les entités awaiter est dangereux et peut causer des serrures. S’il vous plaît envisager les options suivantes : 1) passer à attente asynchrone si l’appelant est déjà une méthode « async ». 2) changement de la chaîne des appelants d’être « async » méthodes et modifiez ce code pour être asynchrone vous attendent. 3) utilisez JoinableTaskFactory.Run() pour attendre les tâches ou les entités awaiter. Consultez http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx pour plus d’informations.</value>
+    <comment>"await" is a C# keyword and should not be translated.</comment>
+  </data>
+  <data name="VSSDK001_Title" xml:space="preserve">
+    <value>Attente synchrone sur les tâches ou les entités awaiter est dangereux et peut causer des serrures.</value>
+  </data>
+  <data name="VSSDK002_MessageFormat" xml:space="preserve">
+    <value>Service de Visual Studio « {0} » doit être utilisé explicitement sur le thread principal. 
+S’il vous plaît soit vérifier le thread actuel est le thread principal ou basculer vers le thread principal de façon asynchrone. 
+1) API pour vérifier le thread en cours sont le thread principal : ThreadHelper.ThrowIfNotOnUIThread(), ou IThreadHandling.VerifyOnUIThread(). 
+2) API pour passer au principal thread asynchrone : JoinableTaskFactory.SwitchToMainThreadAsync() ou IThreadHandling.SwitchToUIThread(). 
+Se reporter à http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx pour plus d’informations.</value>
+  </data>
+  <data name="VSSDK002_Title" xml:space="preserve">
+    <value>Service de Visual Studio devrait être utilisé explicitement sur le thread principal.</value>
+  </data>
+  <data name="VSSDK003_MessageFormat" xml:space="preserve">
+    <value>Éviter la méthode Async vide, parce que toutes les exceptions levées par une méthode de vide async se poseront directement sur le SynchronizationContext et vont planter le processus. 
+Se reporter à https://msdn.microsoft.com/en-us/magazine/jj991977.aspx pour plus d’informations.</value>
+    <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
+  </data>
+  <data name="VSSDK003_Title" xml:space="preserve">
+    <value>Éviter la méthode Async vide.</value>
+    <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
+  </data>
+  <data name="VSSDK004_MessageFormat" xml:space="preserve">
+    <value>Évitez d’utiliser async lambda comme type de délégué de retour void, car toutes les exceptions levées par une lambda async retourner void se poseront directement sur le SynchronizationContext et vont planter le processus. 
+Se reporter à https://msdn.microsoft.com/en-us/magazine/jj991977.aspx pour plus d’informations.</value>
+    <comment>"void" is a C# keyword and should not be translated.</comment>
+  </data>
+  <data name="VSSDK004_Title" xml:space="preserve">
+    <value>Async lambda est utilisé comme type de délégué de retour void.</value>
+    <comment>"void" is a C# keyword and should not be translated.</comment>
+  </data>
+  <data name="VSSDK005_MessageFormat" xml:space="preserve">
+    <value>Les délégués de AsyncEventHandler doivent être appelés par l’intermédiaire de la méthode d’extension « TplExtensions.InvokeAsync() » défini dans Microsoft.VisualStudio.Threading assembly.</value>
+  </data>
+  <data name="VSSDK005_Title" xml:space="preserve">
+    <value>Les délégués de AsyncEventHandler doivent être appelés par l’intermédiaire de la méthode d’extension « TplExtensions.InvokeAsync() » défini dans Microsoft.VisualStudio.Threading assembly.</value>
+  </data>
+  <data name="VSSDK006_MessageFormat" xml:space="preserve">
+    <value>Appel vous attendent sur une tâche à l’intérieur d’un JoinableTaskFactory.Run, lorsque la tâche est initialisée à l’extérieur le délégué peut provoquer des blocages éventuels. 
+Vous pouvez éviter ce problème en s’assurant que la tâche est initialisée au sein du délégué ou à l’aide de JoinableTask au lieu de travail.</value>
+  </data>
+  <data name="VSSDK006_Title" xml:space="preserve">
+    <value>Éviter d’appeler attendent la tâche à l’intérieur de la « JoinableTaskFactory.Run » délégué lorsque la tâche est définie en dehors du délégué pour éviter les blocages éventuels.</value>
+  </data>
+  <data name="VSSDK007_MessageFormat" xml:space="preserve">
+    <value>L’appel de paresseux&lt;Task&lt;T&gt;&gt;. Valeur peut se bloquer lorsque l’usine de valeur a été précédemment démarrée. 
+Vous devez plutôt utiliser AsyncLazy&lt;T&gt; .</value>
+  </data>
+  <data name="VSSDK007_Title" xml:space="preserve">
+    <value>Évitez d’utiliser Lazy &lt;T&gt;  où T est une tâche.</value>
+  </data>
+  <data name="VSSDK008_MessageFormat" xml:space="preserve">
+    <value>Le membre {0} bloque de façon synchrone. Appelez plutôt les {1} et attendre son résultat.</value>
+  </data>
+  <data name="VSSDK008_MessageFormat_UseAwaitInstead" xml:space="preserve">
+    <value>Le membre {0} bloque de façon synchrone. Utilisation vous attendent à la place.</value>
+  </data>
+  <data name="VSSDK008_Title" xml:space="preserve">
+    <value>Appelez await alternatives lorsque dans une méthode async.</value>
+  </data>
+  <data name="VSSDK009_MessageFormat" xml:space="preserve">
+    <value>Limite l’utilisation de blocage synchrone des appels de méthodes telles que JoinableTaskFactory.Run ou Task.Result aux membres entrypoint public où vous devez être synchrone. L’utiliser pour des membres internes peut ajouter inutilement synchrones images entre les images asynchrones, conduisant à l’épuisement du pool de threads.</value>
+  </data>
+  <data name="VSSDK009_Title" xml:space="preserve">
+    <value>Éviter les blocs synchrones dans les méthodes non publiques.</value>
+  </data>
+</root>
