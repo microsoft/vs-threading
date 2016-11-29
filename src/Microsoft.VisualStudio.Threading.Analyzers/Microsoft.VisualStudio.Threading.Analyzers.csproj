@@ -116,4 +116,28 @@
   <Target Name="MATPrerequisite" BeforeTargets="PrepareForBuild" Condition="!Exists('$(MSBuildExtensionsPath)\Microsoft\Multilingual App Toolkit\Microsoft.Multilingual.ResxResources.targets')" Label="MultilingualAppToolkit">
     <Warning Text="$(MSBuildProjectFile) is Multilingual build enabled, but the Multilingual App Toolkit is unavailable during the build. If building with Visual Studio, please check to ensure that toolkit is properly installed." />
   </Target>
+
+  <!-- Redefine this output group so we can preserve the Culture metadata on the returned items, so that NuProj can package it up properly later. -->
+  <Target
+      Name="SatelliteDllsProjectOutputGroup"
+      Returns="@(SatelliteDllsProjectOutputGroupOutput)"
+      DependsOnTargets="$(SatelliteDllsProjectOutputGroupDependsOn)">
+
+    <ItemGroup>
+      <SatelliteDllsProjectOutputGroupOutputIntermediate Include="$(IntermediateOutputPath)%(EmbeddedResource.Culture)\$(TargetName).resources.dll"
+                                                         Condition="'%(WithCulture)' == 'true'">
+        <TargetPath>%(EmbeddedResource.Culture)\$(TargetName).resources.dll</TargetPath>
+        <Culture>%(EmbeddedResource.Culture)</Culture>
+      </SatelliteDllsProjectOutputGroupOutputIntermediate>
+    </ItemGroup>
+
+    <!-- Convert intermediate items into final items; this way we can get the full path for each item. -->
+    <ItemGroup>
+      <SatelliteDllsProjectOutputGroupOutput Include="@(SatelliteDllsProjectOutputGroupOutputIntermediate->'%(FullPath)')">
+        <!-- For compatibility with 2.0 -->
+        <OriginalItemSpec>%(SatelliteDllsProjectOutputGroupOutputIntermediate.Identity)</OriginalItemSpec>
+      </SatelliteDllsProjectOutputGroupOutput>
+    </ItemGroup>
+
+  </Target>
 </Project>
