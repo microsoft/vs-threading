@@ -222,6 +222,13 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                         string.Format("Expected diagnostic to be on line \"{0}\" was actually on line \"{1}\"\r\n\r\nDiagnostic:\r\n    {2}\r\n",
                             expected.Line, actualLinePosition.Line + 1, FormatDiagnostics(analyzer, diagnostic)));
                 }
+
+                if (expected.EndLine > -1 && actualSpan.EndLinePosition.Line + 1 != expected.EndLine)
+                {
+                    Assert.True(false,
+                        string.Format("Expected diagnostic to end on line \"{0}\" was actually on line \"{1}\"\r\n\r\nDiagnostic:\r\n    {2}\r\n",
+                            expected.EndLine, actualSpan.EndLinePosition.Line + 1, FormatDiagnostics(analyzer, diagnostic)));
+                }
             }
 
             // Only check column position if there is an actual column position in the real diagnostic
@@ -232,6 +239,13 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                     Assert.True(false,
                         string.Format("Expected diagnostic to start at column \"{0}\" was actually at column \"{1}\"\r\n\r\nDiagnostic:\r\n    {2}\r\n",
                             expected.Column, actualLinePosition.Character + 1, FormatDiagnostics(analyzer, diagnostic)));
+                }
+
+                if (expected.EndColumn > -1 && actualSpan.EndLinePosition.Character + 1 != expected.EndColumn)
+                {
+                    Assert.True(false,
+                        string.Format("Expected diagnostic to end at column \"{0}\" was actually at column \"{1}\"\r\n\r\nDiagnostic:\r\n    {2}\r\n",
+                            expected.EndColumn, actualSpan.EndLinePosition.Character + 1, FormatDiagnostics(analyzer, diagnostic)));
                 }
             }
         }

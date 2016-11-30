@@ -256,5 +256,32 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
                 return ResourceManager.GetString("VSSDK009_Title", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Rename to {0}.
+        /// </summary>
+        internal static string VSSDK010_CodeFix_Title {
+            get {
+                return ResourceManager.GetString("VSSDK010_CodeFix_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Use &quot;Async&quot; suffix in names of Task-returning methods..
+        /// </summary>
+        internal static string VSSDK010_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSSDK010_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Use &quot;Async&quot; suffix for async methods..
+        /// </summary>
+        internal static string VSSDK010_Title {
+            get {
+                return ResourceManager.GetString("VSSDK010_Title", resourceCulture);
+            }
+        }
     }
 }

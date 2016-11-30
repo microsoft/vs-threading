@@ -91,4 +91,14 @@ AsyncLazy&lt;T&gt; sollten Sie stattdessen verwenden.</value>
   <data name="VSSDK009_Title" xml:space="preserve">
     <value>Synchrone Blöcke in nicht-öffentlichen Methoden zu vermeiden.</value>
   </data>
+  <data name="VSSDK010_CodeFix_Title" xml:space="preserve">
+    <value>Benennen Sie in {0}.</value>
+    <comment>{0} is a method name.</comment>
+  </data>
+  <data name="VSSDK010_MessageFormat" xml:space="preserve">
+    <value>Verwenden Sie "Async" Suffix im Methodennamen Aufgabe zurückkehren.</value>
+  </data>
+  <data name="VSSDK010_Title" xml:space="preserve">
+    <value>Verwenden Sie "Async" Suffix im Methodennamen Aufgabe zurückkehren.</value>
+  </data>
 </root>

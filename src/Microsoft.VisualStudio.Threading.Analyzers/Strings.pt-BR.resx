@@ -91,4 +91,14 @@ Consulte a https://msdn.microsoft.com/en-us/magazine/jj991977.aspx para mais inf
   <data name="VSSDK009_Title" xml:space="preserve">
     <value>Evite blocos síncronos em métodos não-públicos.</value>
   </data>
+  <data name="VSSDK010_CodeFix_Title" xml:space="preserve">
+    <value>Renomear para {0}.</value>
+    <comment>{0} is a method name.</comment>
+  </data>
+  <data name="VSSDK010_MessageFormat" xml:space="preserve">
+    <value>Use o sufixo "Async" em nomes de método de retorno de tarefa.</value>
+  </data>
+  <data name="VSSDK010_Title" xml:space="preserve">
+    <value>Use o sufixo "Async" em nomes de método de retorno de tarefa.</value>
+  </data>
 </root>

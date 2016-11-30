@@ -91,4 +91,14 @@
   <data name="VSSDK009_Title" xml:space="preserve">
     <value>避免使用同步塊中的非公共方法。</value>
   </data>
+  <data name="VSSDK010_CodeFix_Title" xml:space="preserve">
+    <value>重命名為 {0}。</value>
+    <comment>{0} is a method name.</comment>
+  </data>
+  <data name="VSSDK010_MessageFormat" xml:space="preserve">
+    <value>在任務返回方法名稱中使用"Async"尾碼。</value>
+  </data>
+  <data name="VSSDK010_Title" xml:space="preserve">
+    <value>在任務返回方法名稱中使用"Async"尾碼。</value>
+  </data>
 </root>
