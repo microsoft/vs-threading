@@ -1,0 +1,94 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AwaitXInstead" xml:space="preserve">
+    <value>Místo toho čekají na {0}</value>
+    <comment>"await" is a C# keyword and should not be translated.
+{0} is a method name.</comment>
+  </data>
+  <data name="UseAwaitInstead" xml:space="preserve">
+    <value>Použijte místo toho čekají</value>
+    <comment>"await" is a C# keyword and should not be translated.</comment>
+  </data>
+  <data name="VSSDK001_MessageFormat" xml:space="preserve">
+    <value>Synchronní čekání na úkolech nebo awaiters je nebezpečné a může způsobit zablokování. Prosím, zvažte následující možnosti: 1) přejít na asynchronní čekání, pokud volající je již metodu "async". (2) Změna řetězce volající metody "async", a pak změnit tento kód asynchronní čekají. (3) pomocí JoinableTaskFactory.Run() pro čekání na úlohy nebo awaiters. Viz http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx Další informace.</value>
+    <comment>"await" is a C# keyword and should not be translated.</comment>
+  </data>
+  <data name="VSSDK001_Title" xml:space="preserve">
+    <value>Synchronní čekání na úkolech nebo awaiters je nebezpečné a může způsobit zablokování.</value>
+  </data>
+  <data name="VSSDK002_MessageFormat" xml:space="preserve">
+    <value>Ve službě Visual Studio "{0}" lze používat na hlavní vlákno explicitně. 
+Buď ověřte aktuální podproces hlavní podproces nebo přepnutí hlavního podprocesu asynchronně. 
+1) API ověřit aktuální podproces je hlavní vlákno: ThreadHelper.ThrowIfNotOnUIThread() nebo IThreadHandling.VerifyOnUIThread(). 
+2) rozhraní API přepnout do hlavní podproces asynchronně: JoinableTaskFactory.SwitchToMainThreadAsync() nebo IThreadHandling.SwitchToUIThread(). 
+Pozvat na http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx pro další informace.</value>
+  </data>
+  <data name="VSSDK002_Title" xml:space="preserve">
+    <value>Ve službě Visual Studio by měl použít na hlavní vlákno explicitně.</value>
+  </data>
+  <data name="VSSDK003_MessageFormat" xml:space="preserve">
+    <value>Vyhněte asynchronní Void metody, protože všechny výjimky vyvolána z asynchronní metoda void se zvýší přímo na SynchronizationContext a bude selhání procesu. 
+Viz https://msdn.microsoft.com/en-us/magazine/jj991977.aspx pro více informací.</value>
+    <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
+  </data>
+  <data name="VSSDK003_Title" xml:space="preserve">
+    <value>Vyhněte se Void asynchronní metody.</value>
+    <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
+  </data>
+  <data name="VSSDK004_MessageFormat" xml:space="preserve">
+    <value>Nepoužívejte asynchronní lambda jako void vracející typ delegáta, protože všechny výjimky vyvolána z asynchronní lambda vracející void se zvýší přímo na SynchronizationContext a bude selhání procesu. 
+Viz https://msdn.microsoft.com/en-us/magazine/jj991977.aspx pro více informací.</value>
+    <comment>"void" is a C# keyword and should not be translated.</comment>
+  </data>
+  <data name="VSSDK004_Title" xml:space="preserve">
+    <value>Asynchronní lambda slouží jako void vracející typ delegáta.</value>
+    <comment>"void" is a C# keyword and should not be translated.</comment>
+  </data>
+  <data name="VSSDK005_MessageFormat" xml:space="preserve">
+    <value>AsyncEventHandler Delegáti by měl vyvolat prostřednictvím metody rozšíření, které "TplExtensions.InvokeAsync()" definované v sestavení Microsoft.VisualStudio.Threading.</value>
+  </data>
+  <data name="VSSDK005_Title" xml:space="preserve">
+    <value>AsyncEventHandler Delegáti by měl vyvolat prostřednictvím metody rozšíření, které "TplExtensions.InvokeAsync()" definované v sestavení Microsoft.VisualStudio.Threading.</value>
+  </data>
+  <data name="VSSDK006_MessageFormat" xml:space="preserve">
+    <value>Volání čekají na úkolu uvnitř JoinableTaskFactory.Run, když úkol je inicializován mimo delegát může způsobit potenciální zablokování. 
+Tomuto problému se můžete vyhnout zajištěním, že úkol je inicializován v rámci delegáta nebo pomocí JoinableTask místo úkolu.</value>
+  </data>
+  <data name="VSSDK006_Title" xml:space="preserve">
+    <value>Vyhněte se volání čekají na úkolu uvnitř "JoinableTaskFactory.Run" delegát, když úkol je definována mimo delegáta, aby se zabránilo možnému zablokování.</value>
+  </data>
+  <data name="VSSDK007_MessageFormat" xml:space="preserve">
+    <value>Volání Lazy&lt;Task&lt;T&gt;&gt;. Hodnota může zablokování při hodnotu factory byl dříve spuštěn. 
+Byste měli použít AsyncLazy&lt;T&gt; místo.</value>
+  </data>
+  <data name="VSSDK007_Title" xml:space="preserve">
+    <value>Vyhněte se použití Lazy &lt;T&gt;  , kde T je úkol.</value>
+  </data>
+  <data name="VSSDK008_MessageFormat" xml:space="preserve">
+    <value>Člen {0}, blokuje synchronně. Namísto volání {1} a čekají na jeho výsledku.</value>
+  </data>
+  <data name="VSSDK008_MessageFormat_UseAwaitInstead" xml:space="preserve">
+    <value>Člen {0}, blokuje synchronně. Použijte místo toho čekají.</value>
+  </data>
+  <data name="VSSDK008_Title" xml:space="preserve">
+    <value>Volejte awaitable alternativy v asynchronní metody.</value>
+  </data>
+  <data name="VSSDK009_MessageFormat" xml:space="preserve">
+    <value>Omezení využívání synchronně blokování volání metody JoinableTaskFactory.Run nebo Task.Result členům veřejné vstupní bod, kde musí být synchronní. Použitím vnitřní členy mohou zbytečně přidat synchronní snímky mezi asynchronní, což vedlo k vyčerpání fondu podprocesů.</value>
+  </data>
+  <data name="VSSDK009_Title" xml:space="preserve">
+    <value>Vyhněte se synchronní bloků v neveřejné metody.</value>
+  </data>
+</root>

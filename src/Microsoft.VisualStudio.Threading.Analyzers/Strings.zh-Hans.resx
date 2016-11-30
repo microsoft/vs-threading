@@ -1,0 +1,94 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AwaitXInstead" xml:space="preserve">
+    <value>而等待 {0}</value>
+    <comment>"await" is a C# keyword and should not be translated.
+{0} is a method name.</comment>
+  </data>
+  <data name="UseAwaitInstead" xml:space="preserve">
+    <value>使用等待相反</value>
+    <comment>"await" is a C# keyword and should not be translated.</comment>
+  </data>
+  <data name="VSSDK001_MessageFormat" xml:space="preserve">
+    <value>在任务或等待程序同步等待是危险的可能会导致死锁。请考虑以下选项︰ 1) 切换到异步等待呼叫者是否已经"async"方法。2） 链的调用方，并将"async"方法，然后更改此代码是异步等待的变化。3） 使用 JoinableTaskFactory.Run() 来伺候的任务或等待程序。请参阅 http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx 更多的信息。</value>
+    <comment>"await" is a C# keyword and should not be translated.</comment>
+  </data>
+  <data name="VSSDK001_Title" xml:space="preserve">
+    <value>在任务或等待程序同步等待是危险的可能会导致死锁。</value>
+  </data>
+  <data name="VSSDK002_MessageFormat" xml:space="preserve">
+    <value>视觉工作室服务"{0}"应明确在主线程上使用。
+请或者验证当前线程是主线程，或者切换到主线程以异步方式。
+1) Api 来验证当前线程是主线程︰ ThreadHelper.ThrowIfNotOnUIThread() 或 IThreadHandling.VerifyOnUIThread()。
+2) Api 来切换到主线程以异步方式︰ JoinableTaskFactory.SwitchToMainThreadAsync() 或 IThreadHandling.SwitchToUIThread()。对 http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx 的更多信息请参阅
+。</value>
+  </data>
+  <data name="VSSDK002_Title" xml:space="preserve">
+    <value>视觉工作室服务应明确在主线程上使用。</value>
+  </data>
+  <data name="VSSDK003_MessageFormat" xml:space="preserve">
+    <value>避免异步 Void 方法，因为从异步 void 方法引发的任何异常将直接在 SynchronizationContext 上提出，将会使进程崩溃。对 https://msdn.microsoft.com/en-us/magazine/jj991977.aspx 的更多信息请参阅
+。</value>
+    <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
+  </data>
+  <data name="VSSDK003_Title" xml:space="preserve">
+    <value>避免异步 Void 方法。</value>
+    <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
+  </data>
+  <data name="VSSDK004_MessageFormat" xml:space="preserve">
+    <value>避免使用异步 lambda 作为 void 返回委托类型，因为从返回 void 异步 lambda 引发的任何异常将直接在 SynchronizationContext 上提出，将会使进程崩溃。对 https://msdn.microsoft.com/en-us/magazine/jj991977.aspx 的更多信息请参阅
+。</value>
+    <comment>"void" is a C# keyword and should not be translated.</comment>
+  </data>
+  <data name="VSSDK004_Title" xml:space="preserve">
+    <value>异步 lambda 是被用作 void 返回委托类型。</value>
+    <comment>"void" is a C# keyword and should not be translated.</comment>
+  </data>
+  <data name="VSSDK005_MessageFormat" xml:space="preserve">
+    <value>AsyncEventHandler 代表应该通过"TplExtensions.InvokeAsync()"Microsoft.VisualStudio.Threading 程序集中定义的扩展方法调用。</value>
+  </data>
+  <data name="VSSDK005_Title" xml:space="preserve">
+    <value>AsyncEventHandler 代表应该通过"TplExtensions.InvokeAsync()"Microsoft.VisualStudio.Threading 程序集中定义的扩展方法调用。</value>
+  </data>
+  <data name="VSSDK006_MessageFormat" xml:space="preserve">
+    <value>呼叫等待任务里面的 JoinableTaskFactory.Run，这项任务委托外面的初始化时可能导致潜在的死锁。
+通过确保任务初始化委托内或通过使用 JoinableTask 而不任务，你可以避免此问题。</value>
+  </data>
+  <data name="VSSDK006_Title" xml:space="preserve">
+    <value>避免调用内"JoinableTaskFactory.Run"委托等待任务，当任务定义之外的委托，以避免潜在的死锁。</value>
+  </data>
+  <data name="VSSDK007_MessageFormat" xml:space="preserve">
+    <value>调用懒&lt;Task&lt;T&gt;&gt;。值工厂以前启动时，值会出现死锁。您应改用 AsyncLazy&lt;T&gt; 
+。</value>
+  </data>
+  <data name="VSSDK007_Title" xml:space="preserve">
+    <value>避免使用懒&lt;T&gt;其中 T 一项任务。</value>
+  </data>
+  <data name="VSSDK008_MessageFormat" xml:space="preserve">
+    <value>{0} 成员同步块。改用 {1} 并等待其结果。</value>
+  </data>
+  <data name="VSSDK008_MessageFormat_UseAwaitInstead" xml:space="preserve">
+    <value>{0} 成员同步块。使用等待相反。</value>
+  </data>
+  <data name="VSSDK008_Title" xml:space="preserve">
+    <value>可等待的替代品时异步方法调用</value>
+  </data>
+  <data name="VSSDK009_MessageFormat" xml:space="preserve">
+    <value>限制使用的同步阻塞如 JoinableTaskFactory.Run 或 Task.Result 各位公共入口点，在那里你必须同步的方法调用。它为内部成员可以使用不必要添加同步帧之间异步帧，导致线程池用尽。</value>
+  </data>
+  <data name="VSSDK009_Title" xml:space="preserve">
+    <value>避免使用同步块中的非公共方法。</value>
+  </data>
+</root>
