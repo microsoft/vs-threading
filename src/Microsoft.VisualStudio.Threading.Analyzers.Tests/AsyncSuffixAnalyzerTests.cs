@@ -8,17 +8,17 @@
 
     public class AsyncSuffixAnalyzerTests : CodeFixVerifier
     {
-        private DiagnosticResult expect = new DiagnosticResult
+        public AsyncSuffixAnalyzerTests(ITestOutputHelper logger)
+            : base(logger)
+        {
+        }
+
+        private DiagnosticResult NewExpectedTemplate() => new DiagnosticResult
         {
             Id = "VSSDK010",
             SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Warning,
         };
-
-        public AsyncSuffixAnalyzerTests(ITestOutputHelper logger)
-            : base(logger)
-        {
-        }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
@@ -49,8 +49,9 @@ class Test {
 }
 ";
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 5, 10, 5, 13) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = this.NewExpectedTemplate();
+            expected.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 5, 10, 5, 13) };
+            this.VerifyCSharpDiagnostic(test, expected);
             this.VerifyCSharpFix(test, withFix);
         }
 
@@ -81,8 +82,48 @@ class Test {
 }
 ";
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 5, 10, 5, 13) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = this.NewExpectedTemplate();
+            expected.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 5, 10, 5, 13) };
+            this.VerifyCSharpDiagnostic(test, expected);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
+        public void TaskReturningMethodWithoutSuffixWithMultipleOverloads_CodeFixUpdatesCallers()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task Foo() => null;
+    Task Foo(string v) => null;
+    async Task BarAsync()
+    {
+        await Foo();
+        await Foo(string.Empty);
+    }
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task FooAsync() => null;
+    Task FooAsync(string v) => null;
+    async Task BarAsync()
+    {
+        await FooAsync();
+        await FooAsync(string.Empty);
+    }
+}
+";
+
+            var expected1 = this.NewExpectedTemplate();
+            expected1.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 5, 10, 5, 13) };
+            var expected2 = this.NewExpectedTemplate();
+            expected2.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 6, 10, 6, 13) };
+            this.VerifyCSharpDiagnostic(test, expected1, expected2);
             this.VerifyCSharpFix(test, withFix);
         }
 
