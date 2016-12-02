@@ -81,17 +81,23 @@
 
                 // Find the synchronously blocking call member,
                 // and bookmark it so we can find it again after some mutations have taken place.
-                var syncMemberAccessBookmark = new SyntaxAnnotation();
-                var syncMemberAccess = root.FindNode(this.diagnostic.Location.SourceSpan).FirstAncestorOrSelf<MemberAccessExpressionSyntax>();
-                root = root.ReplaceNode(syncMemberAccess, syncMemberAccess.WithAdditionalAnnotations(syncMemberAccessBookmark));
-                syncMemberAccess = (MemberAccessExpressionSyntax)root.GetAnnotatedNodes(syncMemberAccessBookmark).Single();
+                var syncAccessBookmark = new SyntaxAnnotation();
+                SimpleNameSyntax syncMethodName = (SimpleNameSyntax)root.FindNode(this.diagnostic.Location.SourceSpan);
+                if (syncMethodName == null)
+                {
+                    var syncMemberAccess = root.FindNode(this.diagnostic.Location.SourceSpan).FirstAncestorOrSelf<MemberAccessExpressionSyntax>();
+                    syncMethodName = syncMemberAccess.Name;
+                }
+
+                root = root.ReplaceNode(syncMethodName, syncMethodName.WithAdditionalAnnotations(syncAccessBookmark));
+                syncMethodName = (SimpleNameSyntax)root.GetAnnotatedNodes(syncAccessBookmark).Single();
                 document = document.WithSyntaxRoot(root);
 
                 // We'll need the semantic model later. But because we've annotated a node, that changes the SyntaxRoot
                 // and that renders the default semantic model broken (even though we've already updated the document's SyntaxRoot?!).
                 // So after acquiring the semantic model, update it with the new method body.
                 var semanticModel = await document.GetSemanticModelAsync(cancellationToken);
-                var originalMethodDeclaration = syncMemberAccess.FirstAncestorOrSelf<MethodDeclarationSyntax>();
+                var originalMethodDeclaration = syncMethodName.FirstAncestorOrSelf<MethodDeclarationSyntax>();
                 if (!semanticModel.TryGetSpeculativeSemanticModelForMethodBody(this.diagnostic.Location.SourceSpan.Start, originalMethodDeclaration, out semanticModel))
                 {
                     throw new InvalidOperationException("Unable to get updated semantic model.");
@@ -103,22 +109,22 @@
                 if (updatedMethod != originalMethodDeclaration)
                 {
                     // Re-discover our synchronously blocking member.
-                    syncMemberAccess = (MemberAccessExpressionSyntax)updatedMethod.GetAnnotatedNodes(syncMemberAccessBookmark).Single();
+                    syncMethodName = (SimpleNameSyntax)updatedMethod.GetAnnotatedNodes(syncAccessBookmark).Single();
                 }
 
-                ExpressionSyntax syncExpression = (ExpressionSyntax)syncMemberAccess.FirstAncestorOrSelf<InvocationExpressionSyntax>() ?? syncMemberAccess;
+                var syncExpression = (ExpressionSyntax)syncMethodName.FirstAncestorOrSelf<InvocationExpressionSyntax>() ?? syncMethodName.FirstAncestorOrSelf<MemberAccessExpressionSyntax>();
 
                 AwaitExpressionSyntax awaitExpression;
                 if (this.AlternativeAsyncMethod != string.Empty)
                 {
                     // Replace the member being called and await the invocation expression.
-                    var asyncMemberAccess = syncMemberAccess
-                        .WithName(SyntaxFactory.IdentifierName(this.diagnostic.Properties[AsyncMethodKeyName]));
-                    awaitExpression = SyntaxFactory.AwaitExpression(syncExpression.ReplaceNode(syncMemberAccess, asyncMemberAccess)); // TODO: do we need to add parentheses?
+                    var asyncMethodName = SyntaxFactory.IdentifierName(this.diagnostic.Properties[AsyncMethodKeyName]);
+                    awaitExpression = SyntaxFactory.AwaitExpression(syncExpression.ReplaceNode(syncMethodName, asyncMethodName)); // TODO: do we need to add parentheses around the await expression?
                 }
                 else
                 {
                     // Remove the member being accessed that causes a synchronous block and simply await the object.
+                    var syncMemberAccess = syncMethodName.FirstAncestorOrSelf<MemberAccessExpressionSyntax>();
                     var syncMemberStrippedExpression = syncMemberAccess.Expression;
 
                     // Special case a common pattern of calling task.GetAwaiter().GetResult() and remove both method calls.

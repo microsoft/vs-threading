@@ -271,5 +271,79 @@ class Test {
             this.VerifyCSharpDiagnostic(test, this.expect);
             this.VerifyCSharpFix(test, withFix);
         }
+
+        [Fact]
+        public void SyncInvocationWhereAsyncOptionExistsInSameTypeGeneratesWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task T() {
+        Foo();
+        return Task.FromResult(1);
+    }
+
+    internal static void Foo() { }
+    internal static Task FooAsync() => null;
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T() {
+        await FooAsync();
+    }
+
+    internal static void Foo() { }
+    internal static Task FooAsync() => null;
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 6, 9, 6, 12) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
+        public void SyncInvocationWhereAsyncOptionExistsInOtherTypeGeneratesWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task T() {
+        Util.Foo();
+        return Task.FromResult(1);
+    }
+}
+
+class Util {
+    internal static void Foo() { }
+    internal static Task FooAsync() => null;
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T() {
+        await Util.FooAsync();
+    }
+}
+
+class Util {
+    internal static void Foo() { }
+    internal static Task FooAsync() => null;
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 6, 14, 6, 17) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
     }
 }
