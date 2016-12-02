@@ -308,6 +308,41 @@ class Test {
         }
 
         [Fact]
+        public void SyncInvocationWhereAsyncOptionExistsInSubExpressionGeneratesWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task T() {
+        int r = Foo().CompareTo(1);
+        return Task.FromResult(1);
+    }
+
+    internal static int Foo() => 5;
+    internal static Task<int> FooAsync() => null;
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T() {
+        int r = (await FooAsync()).CompareTo(1);
+    }
+
+    internal static int Foo() => 5;
+    internal static Task<int> FooAsync() => null;
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 6, 17, 6, 20) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
         public void SyncInvocationWhereAsyncOptionExistsInOtherTypeGeneratesWarning()
         {
             var test = @"

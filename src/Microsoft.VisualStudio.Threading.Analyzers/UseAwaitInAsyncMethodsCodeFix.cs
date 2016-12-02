@@ -114,12 +114,17 @@
 
                 var syncExpression = (ExpressionSyntax)syncMethodName.FirstAncestorOrSelf<InvocationExpressionSyntax>() ?? syncMethodName.FirstAncestorOrSelf<MemberAccessExpressionSyntax>();
 
-                AwaitExpressionSyntax awaitExpression;
+                ExpressionSyntax awaitExpression;
                 if (this.AlternativeAsyncMethod != string.Empty)
                 {
                     // Replace the member being called and await the invocation expression.
                     var asyncMethodName = SyntaxFactory.IdentifierName(this.diagnostic.Properties[AsyncMethodKeyName]);
-                    awaitExpression = SyntaxFactory.AwaitExpression(syncExpression.ReplaceNode(syncMethodName, asyncMethodName)); // TODO: do we need to add parentheses around the await expression?
+                    awaitExpression = SyntaxFactory.AwaitExpression(syncExpression.ReplaceNode(syncMethodName, asyncMethodName));
+                    if (!(syncExpression.Parent is ExpressionStatementSyntax))
+                    {
+                        awaitExpression = SyntaxFactory.ParenthesizedExpression(awaitExpression)
+                            .WithAdditionalAnnotations(Simplifier.Annotation);
+                    }
                 }
                 else
                 {
