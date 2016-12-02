@@ -206,4 +206,10 @@ You should use AsyncLazy&lt;T&gt; instead.</value>
   <data name="VSSDK010_Title" xml:space="preserve">
     <value>Use "Async" suffix for async methods.</value>
   </data>
+  <data name="VSSDK011_MessageFormat" xml:space="preserve">
+    <value>Avoid method overloads that assume TaskScheduler.Current. Use an overload that accepts a TaskScheduler and specify TaskScheduler.Default (or any other) explicitly.</value>
+  </data>
+  <data name="VSSDK011_Title" xml:space="preserve">
+    <value>Avoid method overloads that assume TaskScheduler.Current</value>
+  </data>
 </root>

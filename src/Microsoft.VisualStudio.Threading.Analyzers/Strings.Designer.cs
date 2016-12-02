@@ -283,5 +283,23 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
                 return ResourceManager.GetString("VSSDK010_Title", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Avoid method overloads that assume TaskScheduler.Current. Use an overload that accepts a TaskScheduler and specify TaskScheduler.Default (or any other) explicitly..
+        /// </summary>
+        internal static string VSSDK011_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSSDK011_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Avoid method overloads that assume TaskScheduler.Current.
+        /// </summary>
+        internal static string VSSDK011_Title {
+            get {
+                return ResourceManager.GetString("VSSDK011_Title", resourceCulture);
+            }
+        }
     }
 }
