@@ -71,13 +71,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 this.diagnostic = diagnostic;
             }
 
-            public override string Title
-            {
-                get
-                {
-                    return "Async methods should not return void.";
-                }
-            }
+            /// <inheritdoc />
+            public override string Title => Strings.VSSDK003_CodeFix_Title;
 
             /// <inheritdoc />
             public override string EquivalenceKey => Rules.AvoidAsyncVoidMethod.Id;

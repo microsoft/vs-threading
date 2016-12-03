@@ -143,6 +143,10 @@ Refer to http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-
   <data name="VSSDK002_Title" xml:space="preserve">
     <value>Visual Studio service should be used on main thread explicitly.</value>
   </data>
+  <data name="VSSDK003_CodeFix_Title" xml:space="preserve">
+    <value>Change return type to Task</value>
+    <comment>Task is a type name and should not be translated.</comment>
+  </data>
   <data name="VSSDK003_MessageFormat" xml:space="preserve">
     <value>Avoid Async Void method, because any exceptions thrown out of an async void method will be raised directly on the SynchronizationContext and will crash the process. 
 Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info.</value>
