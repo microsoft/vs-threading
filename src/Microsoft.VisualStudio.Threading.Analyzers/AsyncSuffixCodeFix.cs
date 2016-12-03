@@ -59,6 +59,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 Strings.VSSDK010_CodeFix_Title,
                 this.NewName);
 
+            /// <inheritdoc />
+            public override string EquivalenceKey => Rules.UseAsyncSuffixInMethodNames.Id;
+
             private string NewName => this.diagnostic.Properties[NewNameKey];
 
             protected override async Task<Solution> GetChangedSolutionAsync(CancellationToken cancellationToken)

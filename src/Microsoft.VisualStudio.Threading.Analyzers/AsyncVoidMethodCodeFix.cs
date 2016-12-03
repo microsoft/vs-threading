@@ -79,6 +79,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 }
             }
 
+            /// <inheritdoc />
+            public override string EquivalenceKey => Rules.AvoidAsyncVoidMethod.Id;
+
             protected override async Task<Document> GetChangedDocumentAsync(CancellationToken cancellationToken)
             {
                 var root = await this.document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);

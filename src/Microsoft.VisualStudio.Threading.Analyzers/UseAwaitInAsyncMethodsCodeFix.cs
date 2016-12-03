@@ -75,6 +75,9 @@
                 }
             }
 
+            /// <inheritdoc />
+            public override string EquivalenceKey => Rules.UseAwaitInAsyncMethods.Id;
+
             private string AlternativeAsyncMethod => this.diagnostic.Properties[AsyncMethodKeyName];
 
             protected override async Task<Document> GetChangedDocumentAsync(CancellationToken cancellationToken)
