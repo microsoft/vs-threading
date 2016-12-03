@@ -23,8 +23,9 @@
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK001_Title" translate="yes" xml:space="preserve">
-          <source>Synchronous wait on tasks or awaiters is dangerous and may cause dead locks.</source>
+          <source>Avoid problematic synchronous waits</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">Синхронное ожидание задач или ждущие является опасным и может привести к врезные замки.</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK002_MessageFormat" translate="yes" xml:space="preserve">
           <source>Visual Studio service "{0}" should be used on main thread explicitly. 
@@ -39,8 +40,9 @@ Refer to http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-
 Обратитесь к http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx для получения дополнительной информации.</target>
         </trans-unit>
         <trans-unit id="VSSDK002_Title" translate="yes" xml:space="preserve">
-          <source>Visual Studio service should be used on main thread explicitly.</source>
+          <source>Visual Studio service should be used on main thread explicitly</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">Visual Studio Служба должна использоваться на основном потоке явным образом.</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK003_MessageFormat" translate="yes" xml:space="preserve">
           <source>Avoid Async Void method, because any exceptions thrown out of an async void method will be raised directly on the SynchronizationContext and will crash the process. 
@@ -50,8 +52,9 @@ Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info.<
           <note from="MultilingualBuild" annotates="source" priority="2">"async void" is a pair of C# keywords. Do not translate them.</note>
         </trans-unit>
         <trans-unit id="VSSDK003_Title" translate="yes" xml:space="preserve">
-          <source>Avoid Async Void method.</source>
+          <source>Avoid async void methods</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">Избегайте метод Async Void.</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
           <note from="MultilingualBuild" annotates="source" priority="2">"async void" is a pair of C# keywords. Do not translate them.</note>
         </trans-unit>
         <trans-unit id="VSSDK004_MessageFormat" translate="yes" xml:space="preserve">
@@ -62,17 +65,18 @@ Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info.<
           <note from="MultilingualBuild" annotates="source" priority="2">"void" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK004_Title" translate="yes" xml:space="preserve">
-          <source>Async lambda is being used as void returning delegate type.</source>
+          <source>Avoid unsupported async delegates</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">Async лямбда используется как void возвращаемый тип делегата.</target>
-          <note from="MultilingualBuild" annotates="source" priority="2">"void" is a C# keyword and should not be translated.</note>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK005_MessageFormat" translate="yes" xml:space="preserve">
           <source>AsyncEventHandler delegates should be invoked via the extension method "TplExtensions.InvokeAsync()" defined in Microsoft.VisualStudio.Threading assembly.</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">AsyncEventHandler делегатов следует ссылаться через метод расширения, который «TplExtensions.InvokeAsync()» определен в сборке Microsoft.VisualStudio.Threading.</target>
         </trans-unit>
         <trans-unit id="VSSDK005_Title" translate="yes" xml:space="preserve">
-          <source>AsyncEventHandler delegates should be invoked via the extension method "TplExtensions.InvokeAsync()" defined in Microsoft.VisualStudio.Threading assembly.</source>
+          <source>Use InvokeAsync to raise async events</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">AsyncEventHandler делегатов следует ссылаться через метод расширения, который «TplExtensions.InvokeAsync()» определен в сборке Microsoft.VisualStudio.Threading.</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK006_MessageFormat" translate="yes" xml:space="preserve">
           <source>Calling await on a Task inside a JoinableTaskFactory.Run, when the task is initialized outside the delegate can cause potential deadlocks.
@@ -81,8 +85,9 @@ You can avoid this problem by ensuring the task is initialized within the delega
 , Вы можете избежать этой проблемы путем обеспечения задачи инициализации делегата или с помощью JoinableTask вместо задачи.</target>
         </trans-unit>
         <trans-unit id="VSSDK006_Title" translate="yes" xml:space="preserve">
-          <source>Avoid calling await Task inside "JoinableTaskFactory.Run" delegate when Task is defined outside the delegate to avoid potential deadlocks.</source>
+          <source>Avoid awaiting non-joinable tasks in join contexts</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">Избегайте вызова ожидают задачи внутри делегата «JoinableTaskFactory.Run», когда задача определяется за пределами делегата, избежать потенциальных взаимоблокировок.</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK007_MessageFormat" translate="yes" xml:space="preserve">
           <source>Calling Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock when the value factory was previously started.

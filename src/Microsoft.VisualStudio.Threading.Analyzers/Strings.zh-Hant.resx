@@ -54,7 +54,6 @@
   </data>
   <data name="VSSDK004_Title" xml:space="preserve">
     <value>非同步 lambda 是被用作 void 返回委託類型。</value>
-    <comment>"void" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSSDK005_MessageFormat" xml:space="preserve">
     <value>AsyncEventHandler 代表應該通過"TplExtensions.InvokeAsync()"Microsoft.VisualStudio.Threading 程式集中定義的擴充方法調用。</value>

@@ -23,8 +23,8 @@
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK001_Title" translate="yes" xml:space="preserve">
-          <source>Synchronous wait on tasks or awaiters is dangerous and may cause dead locks.</source>
-          <target state="new">Synchronous wait on tasks or awaiters is dangerous and may cause dead locks.</target>
+          <source>Avoid problematic synchronous waits</source>
+          <target state="new">Avoid problematic synchronous waits</target>
         </trans-unit>
         <trans-unit id="VSSDK002_MessageFormat" translate="yes" xml:space="preserve">
           <source>Visual Studio service "{0}" should be used on main thread explicitly. 
@@ -39,8 +39,8 @@ Please either verify the current thread is main thread, or switch to main thread
 Refer to http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx for more info.</target>
         </trans-unit>
         <trans-unit id="VSSDK002_Title" translate="yes" xml:space="preserve">
-          <source>Visual Studio service should be used on main thread explicitly.</source>
-          <target state="new">Visual Studio service should be used on main thread explicitly.</target>
+          <source>Visual Studio service should be used on main thread explicitly</source>
+          <target state="new">Visual Studio service should be used on main thread explicitly</target>
         </trans-unit>
         <trans-unit id="VSSDK003_MessageFormat" translate="yes" xml:space="preserve">
           <source>Avoid Async Void method, because any exceptions thrown out of an async void method will be raised directly on the SynchronizationContext and will crash the process. 
@@ -50,8 +50,8 @@ Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info.<
           <note from="MultilingualBuild" annotates="source" priority="2">"async void" is a pair of C# keywords. Do not translate them.</note>
         </trans-unit>
         <trans-unit id="VSSDK003_Title" translate="yes" xml:space="preserve">
-          <source>Avoid Async Void method.</source>
-          <target state="new">Avoid Async Void method.</target>
+          <source>Avoid async void methods</source>
+          <target state="new">Avoid async void methods</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"async void" is a pair of C# keywords. Do not translate them.</note>
         </trans-unit>
         <trans-unit id="VSSDK004_MessageFormat" translate="yes" xml:space="preserve">
@@ -62,17 +62,16 @@ Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info.<
           <note from="MultilingualBuild" annotates="source" priority="2">"void" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK004_Title" translate="yes" xml:space="preserve">
-          <source>Async lambda is being used as void returning delegate type.</source>
-          <target state="new">Async lambda is being used as void returning delegate type.</target>
-          <note from="MultilingualBuild" annotates="source" priority="2">"void" is a C# keyword and should not be translated.</note>
+          <source>Avoid unsupported async delegates</source>
+          <target state="new">Avoid unsupported async delegates</target>
         </trans-unit>
         <trans-unit id="VSSDK005_MessageFormat" translate="yes" xml:space="preserve">
           <source>AsyncEventHandler delegates should be invoked via the extension method "TplExtensions.InvokeAsync()" defined in Microsoft.VisualStudio.Threading assembly.</source>
           <target state="new">AsyncEventHandler delegates should be invoked via the extension method "TplExtensions.InvokeAsync()" defined in Microsoft.VisualStudio.Threading assembly.</target>
         </trans-unit>
         <trans-unit id="VSSDK005_Title" translate="yes" xml:space="preserve">
-          <source>AsyncEventHandler delegates should be invoked via the extension method "TplExtensions.InvokeAsync()" defined in Microsoft.VisualStudio.Threading assembly.</source>
-          <target state="new">AsyncEventHandler delegates should be invoked via the extension method "TplExtensions.InvokeAsync()" defined in Microsoft.VisualStudio.Threading assembly.</target>
+          <source>Use InvokeAsync to raise async events</source>
+          <target state="new">Use InvokeAsync to raise async events</target>
         </trans-unit>
         <trans-unit id="VSSDK006_MessageFormat" translate="yes" xml:space="preserve">
           <source>Calling await on a Task inside a JoinableTaskFactory.Run, when the task is initialized outside the delegate can cause potential deadlocks.
@@ -81,8 +80,8 @@ You can avoid this problem by ensuring the task is initialized within the delega
 You can avoid this problem by ensuring the task is initialized within the delegate or by using JoinableTask instead of Task.</target>
         </trans-unit>
         <trans-unit id="VSSDK006_Title" translate="yes" xml:space="preserve">
-          <source>Avoid calling await Task inside "JoinableTaskFactory.Run" delegate when Task is defined outside the delegate to avoid potential deadlocks.</source>
-          <target state="new">Avoid calling await Task inside "JoinableTaskFactory.Run" delegate when Task is defined outside the delegate to avoid potential deadlocks.</target>
+          <source>Avoid awaiting non-joinable tasks in join contexts</source>
+          <target state="new">Avoid awaiting non-joinable tasks in join contexts</target>
         </trans-unit>
         <trans-unit id="VSSDK007_MessageFormat" translate="yes" xml:space="preserve">
           <source>Calling Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock when the value factory was previously started.

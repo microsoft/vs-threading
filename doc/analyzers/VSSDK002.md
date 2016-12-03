@@ -1,0 +1,33 @@
+# VSSDK002 Use VS services from UI thread
+
+Acquiring, casting, or invoking Visual Studio services should be done after ensuring
+that your code is running on the UI thread.
+
+## Examples of patterns that are flagged by this analyzer
+
+```csharp
+private void CallVS() {
+    IVsSolution sln = GetIVsSolution();
+    sln.SetProperty(); // This analyzer will report warning on this invocation.
+}
+```
+
+## Solution
+
+First ensure you are running on the UI thread before interacting with a Visual Studio service.
+Either throw when you are not on the appropriate thread, or explicitly switch to the 
+UI thread.
+
+```csharp
+private void CallVS() {
+    ThreadHelper.ThrowIfNotOnUIThread();
+    IVsSolution sln = GetIVsSolution();
+    sln.SetProperty(); // This analyzer will report warning on this invocation.
+}
+
+private async Task CallVSAsync() {
+    await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+    IVsSolution sln = GetIVsSolution();
+    sln.SetProperty(); // This analyzer will report warning on this invocation.
+}
+```

@@ -131,7 +131,7 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSSDK001_Title" xml:space="preserve">
-    <value>Synchronous wait on tasks or awaiters is dangerous and may cause dead locks.</value>
+    <value>Avoid problematic synchronous waits</value>
   </data>
   <data name="VSSDK002_MessageFormat" xml:space="preserve">
     <value>Visual Studio service "{0}" should be used on main thread explicitly. 
@@ -141,7 +141,7 @@ Please either verify the current thread is main thread, or switch to main thread
 Refer to http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx for more info.</value>
   </data>
   <data name="VSSDK002_Title" xml:space="preserve">
-    <value>Visual Studio service should be used on main thread explicitly.</value>
+    <value>Visual Studio service should be used on main thread explicitly</value>
   </data>
   <data name="VSSDK003_MessageFormat" xml:space="preserve">
     <value>Avoid Async Void method, because any exceptions thrown out of an async void method will be raised directly on the SynchronizationContext and will crash the process. 
@@ -149,7 +149,7 @@ Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info.<
     <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
   </data>
   <data name="VSSDK003_Title" xml:space="preserve">
-    <value>Avoid Async Void method.</value>
+    <value>Avoid async void methods</value>
     <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
   </data>
   <data name="VSSDK004_MessageFormat" xml:space="preserve">
@@ -158,21 +158,20 @@ Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info.<
     <comment>"void" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSSDK004_Title" xml:space="preserve">
-    <value>Async lambda is being used as void returning delegate type.</value>
-    <comment>"void" is a C# keyword and should not be translated.</comment>
+    <value>Avoid unsupported async delegates</value>
   </data>
   <data name="VSSDK005_MessageFormat" xml:space="preserve">
     <value>AsyncEventHandler delegates should be invoked via the extension method "TplExtensions.InvokeAsync()" defined in Microsoft.VisualStudio.Threading assembly.</value>
   </data>
   <data name="VSSDK005_Title" xml:space="preserve">
-    <value>AsyncEventHandler delegates should be invoked via the extension method "TplExtensions.InvokeAsync()" defined in Microsoft.VisualStudio.Threading assembly.</value>
+    <value>Use InvokeAsync to raise async events</value>
   </data>
   <data name="VSSDK006_MessageFormat" xml:space="preserve">
     <value>Calling await on a Task inside a JoinableTaskFactory.Run, when the task is initialized outside the delegate can cause potential deadlocks.
 You can avoid this problem by ensuring the task is initialized within the delegate or by using JoinableTask instead of Task.</value>
   </data>
   <data name="VSSDK006_Title" xml:space="preserve">
-    <value>Avoid calling await Task inside "JoinableTaskFactory.Run" delegate when Task is defined outside the delegate to avoid potential deadlocks.</value>
+    <value>Avoid awaiting non-joinable tasks in join contexts</value>
   </data>
   <data name="VSSDK007_MessageFormat" xml:space="preserve">
     <value>Calling Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock when the value factory was previously started.
