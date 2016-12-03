@@ -6,7 +6,8 @@ that your code is running on the UI thread.
 ## Examples of patterns that are flagged by this analyzer
 
 ```csharp
-private void CallVS() {
+private void CallVS()
+{
     IVsSolution sln = GetIVsSolution();
     sln.SetProperty(); // This analyzer will report warning on this invocation.
 }
@@ -19,13 +20,15 @@ Either throw when you are not on the appropriate thread, or explicitly switch to
 UI thread.
 
 ```csharp
-private void CallVS() {
+private void CallVS()
+{
     ThreadHelper.ThrowIfNotOnUIThread();
     IVsSolution sln = GetIVsSolution();
     sln.SetProperty(); // This analyzer will report warning on this invocation.
 }
 
-private async Task CallVSAsync() {
+private async Task CallVSAsync()
+{
     await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
     IVsSolution sln = GetIVsSolution();
     sln.SetProperty(); // This analyzer will report warning on this invocation.

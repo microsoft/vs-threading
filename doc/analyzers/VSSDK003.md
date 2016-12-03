@@ -1,11 +1,27 @@
 # VSSDK003 Avoid `async void` methods
 
-{Explanation}
+Methods with `async void` signatures make it impossible for their caller to track
+the entire asynchronous operation and handle exceptions that may be thrown by that method.
+If the method throws an exception, it crashes the process.
 
 ## Examples of patterns that are flagged by this analyzer
 
-{Examples}
+```csharp
+async void DoSomethingAsync()
+{
+    await SomethingElseAsync();
+}
+```
 
 ## Solution
 
-{Solution}
+Change the method to return `Task` instead of `void`.
+
+```csharp
+async Task DoSomethingAsync()
+{
+    await SomethingElseAsync();
+}
+```
+
+A code fix is offered that automatically changes the return type of the method. 
