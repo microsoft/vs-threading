@@ -40,6 +40,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return Task.FromResult<object>(null);
         }
 
+        /// <inheritdoc />
+        public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
+
         private class AddAsyncSuffixCodeAction : CodeAction
         {
             private readonly Diagnostic diagnostic;
