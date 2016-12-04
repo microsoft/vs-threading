@@ -178,7 +178,7 @@ You can avoid this problem by ensuring the task is initialized within the delega
 You should use AsyncLazy&lt;T&gt; instead.</value>
   </data>
   <data name="VSSDK007_Title" xml:space="preserve">
-    <value>Avoid using Lazy&lt;T&gt; where T is a Task</value>
+    <value>Avoid using Lazy&lt;T&gt; where T is a Task&lt;T2&gt;</value>
   </data>
   <data name="VSSDK008_MessageFormat" xml:space="preserve">
     <value>The {0} member synchronously blocks. Call {1} instead and await its result.</value>

@@ -204,7 +204,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Avoid using Lazy&lt;T&gt; where T is a Task.
+        ///   Looks up a localized string similar to Avoid using Lazy&lt;T&gt; where T is a Task&lt;T2&gt;.
         /// </summary>
         internal static string VSSDK007_Title {
             get {

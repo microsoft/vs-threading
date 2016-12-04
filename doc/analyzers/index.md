@@ -11,7 +11,7 @@ ID | Title
 [VSSDK004](VSSDK004.md) | Avoid unsupported async delegates
 [VSSDK005](VSSDK005.md) | Use `InvokeAsync` to raise async events
 [VSSDK006](VSSDK006.md) | Avoid awaiting non-joinable tasks in join contexts
-[VSSDK007](VSSDK007.md) | Avoid using `Lazy<T>` where `T` is a `Task`
+[VSSDK007](VSSDK007.md) | Avoid using `Lazy<T>` where `T` is `Task<T2>`
 [VSSDK008](VSSDK008.md) | Call async methods when in an async method
 [VSSDK009](VSSDK009.md) | Implement internal logic asynchronously
 [VSSDK010](VSSDK010.md) | Use `Async` suffix for async methods
