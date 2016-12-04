@@ -27,6 +27,9 @@
         /// <inheritdoc />
         public override void Initialize(AnalysisContext context)
         {
+            context.EnableConcurrentExecution();
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
+
             context.RegisterCodeBlockStartAction<SyntaxKind>(ctxt =>
             {
                 // We want to scan invocations that occur inside internal, synchronous methods

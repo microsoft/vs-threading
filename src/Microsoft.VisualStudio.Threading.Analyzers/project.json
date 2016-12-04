@@ -8,7 +8,7 @@
       "version": "2.0.22-beta",
       "suppressParent": "none"
     },
-    "Microsoft.CodeAnalysis.CSharp.Workspaces": "1.0.0",
+    "Microsoft.CodeAnalysis.CSharp.Workspaces": "1.2.0",
     "Nerdbank.GitVersioning": {
       "version": "1.5.58",
       "suppressParent": "none"
