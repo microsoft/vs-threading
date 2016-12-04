@@ -12,6 +12,11 @@ Task DoAsync()
 }
 ```
 
+All methods where an Async-suffixed equivalent exists will produce this warning
+when called from a `Task`-returning method.
+In addition, calling `Task.Wait()`, `Task<T>.Result` or `Task.GetAwaiter().GetResult()`
+will produce this warning.
+
 ## Solution
 
 Await the async version of the method:
