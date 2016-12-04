@@ -28,7 +28,8 @@ Microsoft.VisualStudio.Threading
 
 ## Documentation
 
-[Overview documentation](doc/index.md) 
+* [Overview documentation](doc/index.md) 
+* [Diagnostic analyzer rules](doc/analyzers/index.md)
 
 ## Supported platforms
 
