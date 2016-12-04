@@ -380,5 +380,99 @@ class Util {
             this.VerifyCSharpDiagnostic(test, this.expect);
             this.VerifyCSharpFix(test, withFix);
         }
+
+        [Fact]
+        public void SyncInvocationWhereAsyncOptionExistsInOtherBaseTypeGeneratesWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task T() {
+        Apple a = null;
+        a.Foo();
+        return Task.FromResult(1);
+    }
+}
+
+class Fruit {
+    internal Task FooAsync() => null;
+}
+
+class Apple : Fruit {
+    internal void Foo() { }
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T() {
+        Apple a = null;
+        await Apple.FooAsync();
+    }
+}
+
+class Fruit {
+    internal Task FooAsync() => null;
+}
+
+class Apple : Fruit {
+    internal void Foo() { }
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 11, 7, 14) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
+        public void SyncInvocationWhereAsyncOptionExistsInExtensionMethodGeneratesWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task T() {
+        Fruit f = null;
+        f.Foo();
+        return Task.FromResult(1);
+    }
+}
+
+class Fruit {
+    internal void Foo() { }
+}
+
+static class FruitUtils {
+    internal static void FooAsync(this Fruit f) { }
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T() {
+        Apple a = null;
+        await Apple.FooAsync();
+    }
+}
+
+class Fruit {
+    internal void Foo() { }
+}
+
+static class FruitUtils {
+    internal static void FooAsync(this Fruit f) { }
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 11, 7, 14) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
     }
 }
