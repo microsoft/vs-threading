@@ -18,8 +18,9 @@
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK001_MessageFormat" translate="yes" xml:space="preserve">
-          <source>Synchronous wait on tasks or awaiters is dangerous and may cause dead locks. Please consider the following options: 1) Switch to asynchronous wait if the caller is already a "async" method. 2) Change the chain of callers to be "async" methods, and then change this code to be asynchronous await. 3) Use JoinableTaskFactory.Run() to wait on the tasks or awaiters. Refer to http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx for more info.</source>
+          <source>Synchronously waiting on tasks or awaiters is dangerous and may cause dead locks. Please consider the following options: 1) Switch to asynchronous wait if the caller is already a "async" method. 2) Change the chain of callers to be "async" methods, and then change this code to be asynchronous await. 3) Use JoinableTaskFactory.Run() to wait on the tasks or awaiters. Refer to http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx for more info.</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">タスクや待機側での同期の待機は危険であり、デッドロックを引き起こす可能性があります。次のオプションを検討してください: 1) 呼び出し元が既に"async"メソッド場合、非同期待機に切り替えます。2) 変更を非同期にするこのコードを変更して"async"メソッドの呼び出し元のチェインを待っています。3) タスクまたは待機側で待機する JoinableTaskFactory.Run() を使用します。詳しくは http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx を参照してください。</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK001_Title" translate="yes" xml:space="preserve">
@@ -40,7 +41,7 @@ Refer to http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-
 参照してください。</target>
         </trans-unit>
         <trans-unit id="VSSDK002_Title" translate="yes" xml:space="preserve">
-          <source>Visual Studio service should be used on main thread explicitly</source>
+          <source>Use VS services from UI thread</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">Visual Studio のサービスは、メイン スレッドに明示的に使用する必要があります。</target>
           <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
@@ -96,8 +97,9 @@ You should use AsyncLazy&lt;T&gt; instead.</source>
 AsyncLazy&lt;T&gt;を代わりに使用する必要があります。</target>
         </trans-unit>
         <trans-unit id="VSSDK007_Title" translate="yes" xml:space="preserve">
-          <source>Avoid using Lazy<it id="1" pos="open">&lt;T&gt;</it> where T is a Task.</source>
+          <source>Avoid using Lazy<it id="1" pos="open">&lt;T&gt;</it> where T is a Task<it id="2" pos="open">&lt;T2&gt;</it></source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">ここで T はタスク Lazy<it id="1" pos="open">&lt;T&gt;</it>を使用しないでください。</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK008_MessageFormat" translate="yes" xml:space="preserve">
           <source>The {0} member synchronously blocks. Call {1} instead and await its result.</source>
@@ -108,16 +110,18 @@ AsyncLazy&lt;T&gt;を代わりに使用する必要があります。</target>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">{0} メンバーは同期的にブロックします。使用には、代わりにお待ちしております。</target>
         </trans-unit>
         <trans-unit id="VSSDK008_Title" translate="yes" xml:space="preserve">
-          <source>Call awaitable alternatives when in an async method.</source>
+          <source>Call async methods when in an async method</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">非同期のメソッドの待機の選択肢を呼び出します。</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK009_MessageFormat" translate="yes" xml:space="preserve">
           <source>Limit use of synchronously blocking method calls such as JoinableTaskFactory.Run or Task.Result to public entrypoint members where you must be synchronous. Using it for internal members can needlessly add synchronous frames between asynchronous frames, leading to threadpool exhaustion.</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">同期する必要があるパブリック エントリ ポイント メンバーに JoinableTaskFactory.Run や Task.Result などのメソッドの呼び出しを同期的にブロックの制限を使用します。内部のメンバーのためにそれを使用して不必要なスレッド プールの枯渇につながる、非同期なフレーム間の同期フレームを追加できます。</target>
         </trans-unit>
         <trans-unit id="VSSDK009_Title" translate="yes" xml:space="preserve">
-          <source>Avoid synchronous blocks in non-public methods.</source>
+          <source>Implement internal logic asynchronously</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">非パブリック メソッドの同期ブロックを避けてください。</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK010_CodeFix_Title" translate="yes" xml:space="preserve">
           <source>Rename to {0}</source>
@@ -131,7 +135,7 @@ AsyncLazy&lt;T&gt;を代わりに使用する必要があります。</target>
           <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK010_Title" translate="yes" xml:space="preserve">
-          <source>Use "Async" suffix for async methods.</source>
+          <source>Use "Async" suffix for async methods</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">タスクを返すメソッド名のサフィックス"Async"を使用します。</target>
           <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
