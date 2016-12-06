@@ -54,7 +54,6 @@ Consulte a https://msdn.microsoft.com/en-us/magazine/jj991977.aspx para mais inf
   </data>
   <data name="VSSDK004_Title" xml:space="preserve">
     <value>Async lambda está sendo usado como a tipo de retorno void delegado.</value>
-    <comment>"void" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSSDK005_MessageFormat" xml:space="preserve">
     <value>Delegados de AsyncEventHandler devem ser chamados através do método de extensão "TplExtensions.InvokeAsync()" definida no assembly Microsoft.VisualStudio.Threading.</value>
