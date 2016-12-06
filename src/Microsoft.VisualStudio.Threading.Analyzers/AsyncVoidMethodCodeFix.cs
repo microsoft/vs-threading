@@ -57,6 +57,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return Task.FromResult<object>(null);
         }
 
+        /// <inheritdoc />
+        public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
+
         private class VoidToTaskCodeAction : CodeAction
         {
             private Document document;
@@ -68,13 +71,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 this.diagnostic = diagnostic;
             }
 
-            public override string Title
-            {
-                get
-                {
-                    return "Async methods should not return void.";
-                }
-            }
+            /// <inheritdoc />
+            public override string Title => Strings.VSSDK003_CodeFix_Title;
+
+            /// <inheritdoc />
+            public override string EquivalenceKey => Rules.AvoidAsyncVoidMethod.Id;
 
             protected override async Task<Document> GetChangedDocumentAsync(CancellationToken cancellationToken)
             {

@@ -40,6 +40,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return Task.FromResult<object>(null);
         }
 
+        /// <inheritdoc />
+        public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
+
         private class AddAsyncSuffixCodeAction : CodeAction
         {
             private readonly Diagnostic diagnostic;
@@ -55,6 +58,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 CultureInfo.CurrentCulture,
                 Strings.VSSDK010_CodeFix_Title,
                 this.NewName);
+
+            /// <inheritdoc />
+            public override string EquivalenceKey => Rules.UseAsyncSuffixInMethodNames.Id;
 
             private string NewName => this.diagnostic.Properties[NewNameKey];
 

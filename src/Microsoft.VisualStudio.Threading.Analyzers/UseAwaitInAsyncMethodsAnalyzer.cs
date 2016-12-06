@@ -37,6 +37,9 @@
         /// <inheritdoc />
         public override void Initialize(AnalysisContext context)
         {
+            context.EnableConcurrentExecution();
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
+
             context.RegisterCodeBlockStartAction<SyntaxKind>(ctxt =>
             {
                 // We want to scan invocations that occur inside Task and Task<T>-returning methods.

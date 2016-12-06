@@ -51,6 +51,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// <inheritdoc />
         public override void Initialize(AnalysisContext context)
         {
+            context.EnableConcurrentExecution();
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
+
             context.RegisterCodeBlockStartAction<SyntaxKind>(ctxt =>
             {
                 // This is a very specical case to check if this method is TplExtensions.InvokeAsync().

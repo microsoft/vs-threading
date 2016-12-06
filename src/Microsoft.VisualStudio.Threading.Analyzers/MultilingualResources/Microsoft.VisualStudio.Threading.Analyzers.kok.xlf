@@ -126,6 +126,11 @@ You should use AsyncLazy&lt;T&gt; instead.</target>
           <source>Use "Async" suffix for async methods</source>
           <target state="new">Use "Async" suffix for async methods</target>
         </trans-unit>
+        <trans-unit id="VSSDK003_CodeFix_Title" translate="yes" xml:space="preserve">
+          <source>Change return type to Task</source>
+          <target state="new">Change return type to Task</target>
+          <note from="MultilingualBuild" annotates="source" priority="2">Task is a type name and should not be translated.</note>
+        </trans-unit>
       </group>
     </body>
   </file>

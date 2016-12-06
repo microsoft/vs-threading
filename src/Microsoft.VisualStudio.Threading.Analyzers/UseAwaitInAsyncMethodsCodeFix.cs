@@ -51,6 +51,9 @@
             return Task.FromResult<object>(null);
         }
 
+        /// <inheritdoc />
+        public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
+
         private class ReplaceSyncMethodCallWithAwaitAsync : CodeAction
         {
             private readonly Document document;
@@ -71,6 +74,9 @@
                         : Strings.UseAwaitInstead;
                 }
             }
+
+            /// <inheritdoc />
+            public override string EquivalenceKey => Rules.UseAwaitInAsyncMethods.Id;
 
             private string AlternativeAsyncMethod => this.diagnostic.Properties[AsyncMethodKeyName];
 

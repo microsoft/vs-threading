@@ -119,6 +119,15 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Change return type to Task.
+        /// </summary>
+        internal static string VSSDK003_CodeFix_Title {
+            get {
+                return ResourceManager.GetString("VSSDK003_CodeFix_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Avoid Async Void method, because any exceptions thrown out of an async void method will be raised directly on the SynchronizationContext and will crash the process. 
         ///Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info..
         /// </summary>
