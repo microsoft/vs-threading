@@ -74,6 +74,9 @@
         /// <inheritdoc />
         public override void Initialize(AnalysisContext context)
         {
+            context.EnableConcurrentExecution();
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
+
             context.RegisterCodeBlockStartAction<SyntaxKind>(ctxt =>
             {
                 var methodAnalyzer = new MethodAnalyzer();

@@ -54,7 +54,6 @@
   </data>
   <data name="VSSDK004_Title" xml:space="preserve">
     <value>异步 lambda 是被用作 void 返回委托类型。</value>
-    <comment>"void" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSSDK005_MessageFormat" xml:space="preserve">
     <value>AsyncEventHandler 代表应该通过"TplExtensions.InvokeAsync()"Microsoft.VisualStudio.Threading 程序集中定义的扩展方法调用。</value>

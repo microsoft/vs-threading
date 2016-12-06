@@ -26,13 +26,13 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     ///
     /// i.e.
     /// <![CDATA[
-    ///   async void MyMethod() /* This analyzer will report warning on this method declaration. */
+    ///   void MyMethod()
     ///   {
     ///       JoinableTaskFactory jtf = ThreadHelper.JoinableTaskFactory;
     ///       System.Threading.Tasks.Task task = SomeOperationAsync();
     ///       jtf.Run(async delegate
     ///       {
-    ///           await task;
+    ///           await task;  /* This analyzer will report warning on this line. */
     ///       });
     ///   }
     /// ]]>
@@ -52,6 +52,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// <inheritdoc />
         public override void Initialize(AnalysisContext context)
         {
+            context.EnableConcurrentExecution();
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
+
             context.RegisterSyntaxNodeAction(this.AnalyzeNode, SyntaxKind.AwaitExpression);
         }
 

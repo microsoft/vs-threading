@@ -54,7 +54,6 @@
   </data>
   <data name="VSSDK004_Title" xml:space="preserve">
     <value>非同期のラムダは、返すデリゲート型が void として使用されています。</value>
-    <comment>"void" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSSDK005_MessageFormat" xml:space="preserve">
     <value>"TplExtensions.InvokeAsync()"は、Microsoft.VisualStudio.Threading アセンブリで定義されている拡張メソッドでは、AsyncEventHandler デリゲートを呼び出す必要があります。</value>

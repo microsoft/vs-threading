@@ -56,6 +56,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// <inheritdoc />
         public override void Initialize(AnalysisContext context)
         {
+            context.EnableConcurrentExecution();
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
+
             context.RegisterSyntaxNodeAction(
                 this.AnalyzeNode,
                 SyntaxKind.AnonymousMethodExpression,

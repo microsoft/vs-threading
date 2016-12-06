@@ -79,7 +79,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Synchronous wait on tasks or awaiters is dangerous and may cause dead locks. Please consider the following options: 1) Switch to asynchronous wait if the caller is already a &quot;async&quot; method. 2) Change the chain of callers to be &quot;async&quot; methods, and then change this code to be asynchronous await. 3) Use JoinableTaskFactory.Run() to wait on the tasks or awaiters. Refer to http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory [rest of string was truncated]&quot;;.
+        ///   Looks up a localized string similar to Synchronously waiting on tasks or awaiters is dangerous and may cause dead locks. Please consider the following options: 1) Switch to asynchronous wait if the caller is already a &quot;async&quot; method. 2) Change the chain of callers to be &quot;async&quot; methods, and then change this code to be asynchronous await. 3) Use JoinableTaskFactory.Run() to wait on the tasks or awaiters. Refer to http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfa [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string VSSDK001_MessageFormat {
             get {
@@ -88,7 +88,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Synchronous wait on tasks or awaiters is dangerous and may cause dead locks..
+        ///   Looks up a localized string similar to Avoid problematic synchronous waits.
         /// </summary>
         internal static string VSSDK001_Title {
             get {
@@ -110,11 +110,20 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Visual Studio service should be used on main thread explicitly..
+        ///   Looks up a localized string similar to Use VS services from UI thread.
         /// </summary>
         internal static string VSSDK002_Title {
             get {
                 return ResourceManager.GetString("VSSDK002_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Change return type to Task.
+        /// </summary>
+        internal static string VSSDK003_CodeFix_Title {
+            get {
+                return ResourceManager.GetString("VSSDK003_CodeFix_Title", resourceCulture);
             }
         }
         
@@ -129,7 +138,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Avoid Async Void method..
+        ///   Looks up a localized string similar to Avoid async void methods.
         /// </summary>
         internal static string VSSDK003_Title {
             get {
@@ -148,7 +157,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Async lambda is being used as void returning delegate type..
+        ///   Looks up a localized string similar to Avoid unsupported async delegates.
         /// </summary>
         internal static string VSSDK004_Title {
             get {
@@ -166,7 +175,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to AsyncEventHandler delegates should be invoked via the extension method &quot;TplExtensions.InvokeAsync()&quot; defined in Microsoft.VisualStudio.Threading assembly..
+        ///   Looks up a localized string similar to Use InvokeAsync to raise async events.
         /// </summary>
         internal static string VSSDK005_Title {
             get {
@@ -185,7 +194,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Avoid calling await Task inside &quot;JoinableTaskFactory.Run&quot; delegate when Task is defined outside the delegate to avoid potential deadlocks..
+        ///   Looks up a localized string similar to Avoid awaiting non-joinable tasks in join contexts.
         /// </summary>
         internal static string VSSDK006_Title {
             get {
@@ -204,7 +213,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Avoid using Lazy&lt;T&gt; where T is a Task..
+        ///   Looks up a localized string similar to Avoid using Lazy&lt;T&gt; where T is a Task&lt;T2&gt;.
         /// </summary>
         internal static string VSSDK007_Title {
             get {
@@ -231,7 +240,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Call awaitable alternatives when in an async method..
+        ///   Looks up a localized string similar to Call async methods when in an async method.
         /// </summary>
         internal static string VSSDK008_Title {
             get {
@@ -249,7 +258,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Avoid synchronous blocks in non-public methods..
+        ///   Looks up a localized string similar to Implement internal logic asynchronously.
         /// </summary>
         internal static string VSSDK009_Title {
             get {
@@ -276,7 +285,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Use &quot;Async&quot; suffix for async methods..
+        ///   Looks up a localized string similar to Use &quot;Async&quot; suffix for async methods.
         /// </summary>
         internal static string VSSDK010_Title {
             get {

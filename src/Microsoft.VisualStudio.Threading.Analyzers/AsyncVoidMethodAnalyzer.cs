@@ -45,6 +45,9 @@
         /// <inheritdoc />
         public override void Initialize(AnalysisContext context)
         {
+            context.EnableConcurrentExecution();
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
+
             context.RegisterSymbolAction(this.AnalyzeNode, SymbolKind.Method);
         }
 
