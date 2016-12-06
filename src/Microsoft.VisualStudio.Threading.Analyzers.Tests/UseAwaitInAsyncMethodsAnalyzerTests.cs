@@ -280,12 +280,12 @@ using System.Threading.Tasks;
 
 class Test {
     Task T() {
-        Foo();
+        Foo(10, 15);
         return Task.FromResult(1);
     }
 
-    internal static void Foo() { }
-    internal static Task FooAsync() => null;
+    internal static void Foo(int x, int y) { }
+    internal static Task FooAsync(int x, int y) => null;
 }
 ";
 
@@ -294,11 +294,11 @@ using System.Threading.Tasks;
 
 class Test {
     async Task T() {
-        await FooAsync();
+        await FooAsync(10, 15);
     }
 
-    internal static void Foo() { }
-    internal static Task FooAsync() => null;
+    internal static void Foo(int x, int y) { }
+    internal static Task FooAsync(int x, int y) => null;
 }
 ";
 
@@ -379,6 +379,28 @@ class Util {
             this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 6, 14, 6, 17) };
             this.VerifyCSharpDiagnostic(test, this.expect);
             this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
+        public void SyncInvocationWhereAsyncOptionExistsAsPrivateInOtherTypeGeneratesNoWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task T() {
+        Util.Foo();
+        return Task.FromResult(1);
+    }
+}
+
+class Util {
+    internal static void Foo() { }
+    private static Task FooAsync() => null;
+}
+";
+
+            this.VerifyCSharpDiagnostic(test);
         }
 
         [Fact]
