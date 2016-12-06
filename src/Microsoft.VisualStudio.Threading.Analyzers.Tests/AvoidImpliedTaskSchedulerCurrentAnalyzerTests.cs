@@ -67,6 +67,7 @@ class Test {
     void F() {
         Task t = null;
         t.ContinueWith(_ => { }, TaskScheduler.Default);
+        t.ContinueWith(_ => { }, TaskScheduler.Current);
     }
 }
 ";
@@ -84,6 +85,7 @@ using System.Threading.Tasks;
 class Test {
     void F() {
         Task.Factory.StartNew(() => { }, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
+        Task.Factory.StartNew(() => { }, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Current);
     }
 }
 ";
