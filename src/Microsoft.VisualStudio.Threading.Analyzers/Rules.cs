@@ -99,5 +99,13 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
+
+        internal static readonly DiagnosticDescriptor AvoidImpliedTaskSchedulerCurrent = new DiagnosticDescriptor(
+            id: "VSSDK011",
+            title: Strings.VSSDK011_Title,
+            messageFormat: Strings.VSSDK011_MessageFormat,
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
     }
 }
