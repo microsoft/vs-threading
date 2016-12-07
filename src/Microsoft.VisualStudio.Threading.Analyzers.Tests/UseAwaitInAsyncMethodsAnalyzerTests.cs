@@ -271,5 +271,301 @@ class Test {
             this.VerifyCSharpDiagnostic(test, this.expect);
             this.VerifyCSharpFix(test, withFix);
         }
+
+        [Fact]
+        public void SyncInvocationWhereAsyncOptionExistsInSameTypeGeneratesWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task T() {
+        Foo(10, 15);
+        return Task.FromResult(1);
+    }
+
+    internal static void Foo(int x, int y) { }
+    internal static Task FooAsync(int x, int y) => null;
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T() {
+        await FooAsync(10, 15);
+    }
+
+    internal static void Foo(int x, int y) { }
+    internal static Task FooAsync(int x, int y) => null;
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 6, 9, 6, 12) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
+        public void SyncInvocationWhereAsyncOptionExistsInSubExpressionGeneratesWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task T() {
+        int r = Foo().CompareTo(1);
+        return Task.FromResult(1);
+    }
+
+    internal static int Foo() => 5;
+    internal static Task<int> FooAsync() => null;
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T() {
+        int r = (await FooAsync()).CompareTo(1);
+    }
+
+    internal static int Foo() => 5;
+    internal static Task<int> FooAsync() => null;
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 6, 17, 6, 20) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
+        public void SyncInvocationWhereAsyncOptionExistsInOtherTypeGeneratesWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task T() {
+        Util.Foo();
+        return Task.FromResult(1);
+    }
+}
+
+class Util {
+    internal static void Foo() { }
+    internal static Task FooAsync() => null;
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T() {
+        await Util.FooAsync();
+    }
+}
+
+class Util {
+    internal static void Foo() { }
+    internal static Task FooAsync() => null;
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 6, 14, 6, 17) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
+        public void SyncInvocationWhereAsyncOptionExistsAsPrivateInOtherTypeGeneratesNoWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task T() {
+        Util.Foo();
+        return Task.FromResult(1);
+    }
+}
+
+class Util {
+    internal static void Foo() { }
+    private static Task FooAsync() => null;
+}
+";
+
+            this.VerifyCSharpDiagnostic(test);
+        }
+
+        [Fact]
+        public void SyncInvocationWhereAsyncOptionExistsInOtherBaseTypeGeneratesWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task T() {
+        Apple a = null;
+        a.Foo();
+        return Task.FromResult(1);
+    }
+}
+
+class Fruit {
+    internal Task FooAsync() => null;
+}
+
+class Apple : Fruit {
+    internal void Foo() { }
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T() {
+        Apple a = null;
+        await a.FooAsync();
+    }
+}
+
+class Fruit {
+    internal Task FooAsync() => null;
+}
+
+class Apple : Fruit {
+    internal void Foo() { }
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 11, 7, 14) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
+        public void SyncInvocationWhereAsyncOptionExistsInExtensionMethodGeneratesWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task T() {
+        Fruit f = null;
+        f.Foo();
+        return Task.FromResult(1);
+    }
+}
+
+class Fruit {
+    internal void Foo() { }
+}
+
+static class FruitUtils {
+    internal static Task FooAsync(this Fruit f) => null;
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T() {
+        Fruit f = null;
+        await f.FooAsync();
+    }
+}
+
+class Fruit {
+    internal void Foo() { }
+}
+
+static class FruitUtils {
+    internal static Task FooAsync(this Fruit f) => null;
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 11, 7, 14) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
+        public void SyncInvocationUsingStaticGeneratesWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using static FruitUtils;
+
+class Test {
+    Task T() {
+        Foo();
+        return Task.FromResult(1);
+    }
+}
+
+static class FruitUtils {
+    internal static void Foo() { }
+    internal static Task FooAsync() => null;
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+using static FruitUtils;
+
+class Test {
+    async Task T() {
+        await FooAsync();
+    }
+}
+
+static class FruitUtils {
+    internal static void Foo() { }
+    internal static Task FooAsync() => null;
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 9, 7, 12) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
+        public void SyncInvocationUsingStaticGeneratesNoWarningAcrossTypes()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using static FruitUtils;
+using static PlateUtils;
+
+class Test {
+    Task T() {
+        // Foo and FooAsync are totally different methods (on different types).
+        // The use of Foo should therefore not produce a recommendation to use FooAsync,
+        // despite their name similarities.
+        Foo();
+        return Task.FromResult(1);
+    }
+}
+
+static class FruitUtils {
+    internal static void Foo() { }
+}
+
+static class PlateUtils {
+    internal static Task FooAsync() => null;
+}
+";
+
+            this.VerifyCSharpDiagnostic(test);
+        }
     }
 }

@@ -66,16 +66,46 @@
             internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
             {
                 var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
-                InspectMemberAccess(context, invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax, CommonInterest.SyncBlockingMethods);
+                var memberAccessSyntax = invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax;
+                if (InspectMemberAccess(context, memberAccessSyntax, CommonInterest.SyncBlockingMethods))
+                {
+                    // Don't return double-diagnostics.
+                    return;
+                }
 
                 // Also consider all method calls to check for Async-suffixed alternatives.
+                SimpleNameSyntax invokedMethodName = memberAccessSyntax?.Name ?? invocationExpressionSyntax.Expression as IdentifierNameSyntax;
+                var symbolInfo = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax, context.CancellationToken);
+                if (symbolInfo.Symbol != null && !symbolInfo.Symbol.Name.EndsWith(AsyncSuffixAnalyzer.MandatoryAsyncSuffix))
+                {
+                    string asyncMethodName = symbolInfo.Symbol.Name + AsyncSuffixAnalyzer.MandatoryAsyncSuffix;
+                    var asyncMethodMatches = context.SemanticModel.LookupSymbols(
+                        invocationExpressionSyntax.Expression.GetLocation().SourceSpan.Start,
+                        symbolInfo.Symbol.ContainingType,
+                        asyncMethodName,
+                        includeReducedExtensionMethods: true).OfType<IMethodSymbol>();
+                    if (asyncMethodMatches.Any())
+                    {
+                        // An async alternative exists.
+                        var properties = ImmutableDictionary<string, string>.Empty
+                            .Add(UseAwaitInAsyncMethodsCodeFix.AsyncMethodKeyName, asyncMethodName);
+
+                        Diagnostic diagnostic = Diagnostic.Create(
+                            Rules.UseAwaitInAsyncMethods,
+                            invokedMethodName.GetLocation(),
+                            properties,
+                            invokedMethodName.Identifier.Text,
+                            asyncMethodName);
+                        context.ReportDiagnostic(diagnostic);
+                    }
+                }
             }
 
-            private static void InspectMemberAccess(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax, IReadOnlyList<CommonInterest.SyncBlockingMethod> problematicMethods)
+            private static bool InspectMemberAccess(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax, IReadOnlyList<CommonInterest.SyncBlockingMethod> problematicMethods)
             {
                 if (memberAccessSyntax == null)
                 {
-                    return;
+                    return false;
                 }
 
                 var typeReceiver = context.SemanticModel.GetTypeInfo(memberAccessSyntax.Expression).Type;
@@ -106,9 +136,12 @@
 
                             Diagnostic diagnostic = Diagnostic.Create(descriptor, location, properties, messageArgs.ToArray());
                             context.ReportDiagnostic(diagnostic);
+                            return true;
                         }
                     }
                 }
+
+                return false;
             }
         }
     }
