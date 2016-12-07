@@ -496,5 +496,76 @@ static class FruitUtils {
             this.VerifyCSharpDiagnostic(test, this.expect);
             this.VerifyCSharpFix(test, withFix);
         }
+
+        [Fact]
+        public void SyncInvocationUsingStaticGeneratesWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using static FruitUtils;
+
+class Test {
+    Task T() {
+        Foo();
+        return Task.FromResult(1);
+    }
+}
+
+static class FruitUtils {
+    internal static void Foo() { }
+    internal static Task FooAsync() => null;
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+using static FruitUtils;
+
+class Test {
+    async Task T() {
+        await FooAsync();
+    }
+}
+
+static class FruitUtils {
+    internal static void Foo() { }
+    internal static Task FooAsync() => null;
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 9, 7, 12) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
+        public void SyncInvocationUsingStaticGeneratesNoWarningAcrossTypes()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using static FruitUtils;
+using static PlateUtils;
+
+class Test {
+    Task T() {
+        // Foo and FooAsync are totally different methods (on different types).
+        // The use of Foo should therefore not produce a recommendation to use FooAsync,
+        // despite their name similarities.
+        Foo();
+        return Task.FromResult(1);
+    }
+}
+
+static class FruitUtils {
+    internal static void Foo() { }
+}
+
+static class PlateUtils {
+    internal static Task FooAsync() => null;
+}
+";
+
+            this.VerifyCSharpDiagnostic(test);
+        }
     }
 }
