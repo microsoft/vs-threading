@@ -432,7 +432,7 @@ using System.Threading.Tasks;
 class Test {
     async Task T() {
         Apple a = null;
-        await Apple.FooAsync();
+        await a.FooAsync();
     }
 }
 
@@ -469,7 +469,7 @@ class Fruit {
 }
 
 static class FruitUtils {
-    internal static void FooAsync(this Fruit f) { }
+    internal static Task FooAsync(this Fruit f) => null;
 }
 ";
 
@@ -478,8 +478,8 @@ using System.Threading.Tasks;
 
 class Test {
     async Task T() {
-        Apple a = null;
-        await Apple.FooAsync();
+        Fruit f = null;
+        await f.FooAsync();
     }
 }
 
@@ -488,7 +488,7 @@ class Fruit {
 }
 
 static class FruitUtils {
-    internal static void FooAsync(this Fruit f) { }
+    internal static Task FooAsync(this Fruit f) => null;
 }
 ";
 

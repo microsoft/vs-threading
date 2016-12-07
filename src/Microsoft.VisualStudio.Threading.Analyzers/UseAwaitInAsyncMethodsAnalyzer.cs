@@ -75,19 +75,24 @@
                 var symbolInfo = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax, context.CancellationToken);
                 if (symbolInfo.Symbol != null && !symbolInfo.Symbol.Name.EndsWith(AsyncSuffixAnalyzer.MandatoryAsyncSuffix))
                 {
-                    string asyncVersionName = symbolInfo.Symbol.Name + AsyncSuffixAnalyzer.MandatoryAsyncSuffix;
-                    if (!symbolInfo.Symbol.ContainingType.GetMembers(asyncVersionName).IsEmpty)
+                    string asyncMethodName = symbolInfo.Symbol.Name + AsyncSuffixAnalyzer.MandatoryAsyncSuffix;
+                    var asyncMethodMatches = context.SemanticModel.LookupSymbols(
+                        invocationExpressionSyntax.Expression.GetLocation().SourceSpan.Start,
+                        symbolInfo.Symbol.ContainingType,
+                        asyncMethodName,
+                        includeReducedExtensionMethods: true).OfType<IMethodSymbol>();
+                    if (asyncMethodMatches.Any())
                     {
                         // An async alternative exists.
                         var properties = ImmutableDictionary<string, string>.Empty
-                            .Add(UseAwaitInAsyncMethodsCodeFix.AsyncMethodKeyName, asyncVersionName);
+                            .Add(UseAwaitInAsyncMethodsCodeFix.AsyncMethodKeyName, asyncMethodName);
 
                         Diagnostic diagnostic = Diagnostic.Create(
                             Rules.UseAwaitInAsyncMethods,
                             invokedMethodName.GetLocation(),
                             properties,
                             invokedMethodName.Identifier.Text,
-                            asyncVersionName);
+                            asyncMethodName);
                         context.ReportDiagnostic(diagnostic);
                     }
                 }
