@@ -4,6 +4,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using System.IO;
     using System.Linq;
     using System.Text;
     using Microsoft.CodeAnalysis;
@@ -129,8 +130,27 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <param name="expected">DiagnosticResults that should appear after the analyzer is run on the sources</param>
         private void VerifyDiagnostics(string[] sources, string language, ImmutableArray<DiagnosticAnalyzer> analyzers, bool hasEntrypoint, params DiagnosticResult[] expected)
         {
+            for (int i = 0; i < sources.Length; i++)
+            {
+                this.logger.WriteLine("File {0} content:", i + 1);
+                this.LogFileContent(sources[i]);
+            }
+
             var diagnostics = GetSortedDiagnostics(sources, language, analyzers, hasEntrypoint);
-            VerifyDiagnosticResults(diagnostics, analyzers, expected);
+            this.VerifyDiagnosticResults(diagnostics, analyzers, expected);
+        }
+
+        private void LogFileContent(string source)
+        {
+            using (var sr = new StringReader(source))
+            {
+                string line;
+                int lineNumber = 1;
+                while ((line = sr.ReadLine()) != null)
+                {
+                    this.logger.WriteLine("{0,2}: {1}", lineNumber++, line);
+                }
+            }
         }
 
         #endregion
@@ -144,18 +164,15 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <param name="actualResults">The Diagnostics found by the compiler after running the analyzer on the source code</param>
         /// <param name="analyzers">The analyzers that were being run on the sources</param>
         /// <param name="expectedResults">Diagnostic Results that should have appeared in the code</param>
-        private static void VerifyDiagnosticResults(IEnumerable<Diagnostic> actualResults, ImmutableArray<DiagnosticAnalyzer> analyzers, params DiagnosticResult[] expectedResults)
+        private void VerifyDiagnosticResults(IEnumerable<Diagnostic> actualResults, ImmutableArray<DiagnosticAnalyzer> analyzers, params DiagnosticResult[] expectedResults)
         {
             int expectedCount = expectedResults.Count();
             int actualCount = actualResults.Count();
 
-            if (expectedCount != actualCount)
-            {
-                string diagnosticsOutput = actualResults.Any() ? FormatDiagnostics(analyzers, actualResults.ToArray()) : "    NONE.";
+            string diagnosticsOutput = actualResults.Any() ? FormatDiagnostics(analyzers, actualResults.ToArray()) : "    NONE.";
+            this.logger.WriteLine("Actual diagnostics:\n" + diagnosticsOutput);
 
-                Assert.True(false,
-                    string.Format("Mismatch between number of diagnostics returned, expected \"{0}\" actual \"{1}\"\r\n\r\nDiagnostics:\r\n{2}\r\n", expectedCount, actualCount, diagnosticsOutput));
-            }
+            Assert.Equal(expectedCount, actualCount);
 
             for (int i = 0; i < expectedResults.Length; i++)
             {
