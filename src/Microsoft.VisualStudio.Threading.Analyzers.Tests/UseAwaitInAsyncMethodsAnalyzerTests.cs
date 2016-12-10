@@ -308,6 +308,68 @@ class Test {
         }
 
         [Fact]
+        public void SyncInvocationWhereAsyncOptionIsObsolete_GeneratesNoWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task T() {
+        Foo(10, 15);
+        return Task.FromResult(1);
+    }
+
+    internal static void Foo(int x, int y) { }
+    [System.Obsolete]
+    internal static Task FooAsync(int x, int y) => null;
+}
+";
+
+            this.VerifyCSharpDiagnostic(test);
+        }
+
+        [Fact]
+        public void SyncInvocationWhereAsyncOptionIsPartlyObsolete_GeneratesWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task T() {
+        Foo(10, 15.0);
+        return Task.FromResult(1);
+    }
+
+    internal static void Foo(int x, int y) { }
+    internal static void Foo(int x, double y) { }
+    [System.Obsolete]
+    internal static Task FooAsync(int x, int y) => null;
+    internal static Task FooAsync(int x, double y) => null;
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T() {
+        await FooAsync(10, 15.0);
+    }
+
+    internal static void Foo(int x, int y) { }
+    internal static void Foo(int x, double y) { }
+    [System.Obsolete]
+    internal static Task FooAsync(int x, int y) => null;
+    internal static Task FooAsync(int x, double y) => null;
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 6, 9, 6, 12) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
         public void SyncInvocationWhereAsyncOptionExistsInSubExpressionGeneratesWarning()
         {
             var test = @"
