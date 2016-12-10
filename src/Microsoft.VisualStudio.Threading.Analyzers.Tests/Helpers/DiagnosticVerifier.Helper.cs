@@ -50,7 +50,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <param name="analyzers">The analyzers to be run on the sources</param>
         /// <param name="hasEntrypoint"><c>true</c> to set the compiler in a mode as if it were compiling an exe (as opposed to a dll).</param>
         /// <returns>An IEnumerable of Diagnostics that surfaced in the source code, sorted by Location</returns>
-        private static Diagnostic[] GetSortedDiagnostics(string[] sources, string language, ImmutableArray<DiagnosticAnalyzer> analyzers, bool hasEntrypoint)
+        protected static Diagnostic[] GetSortedDiagnostics(string[] sources, string language, ImmutableArray<DiagnosticAnalyzer> analyzers, bool hasEntrypoint)
         {
             return GetSortedDiagnosticsFromDocuments(analyzers, GetDocuments(sources, language), hasEntrypoint);
         }

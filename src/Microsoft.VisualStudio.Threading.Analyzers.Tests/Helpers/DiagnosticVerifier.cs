@@ -140,7 +140,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
             this.VerifyDiagnosticResults(diagnostics, analyzers, expected);
         }
 
-        private void LogFileContent(string source)
+        protected void LogFileContent(string source)
         {
             using (var sr = new StringReader(source))
             {
@@ -293,7 +293,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <param name="analyzers">The analyzers that this Verifier tests</param>
         /// <param name="diagnostics">The Diagnostics to be formatted</param>
         /// <returns>The Diagnostics formatted as a string</returns>
-        private static string FormatDiagnostics(ImmutableArray<DiagnosticAnalyzer> analyzers, params Diagnostic[] diagnostics)
+        protected static string FormatDiagnostics(ImmutableArray<DiagnosticAnalyzer> analyzers, params Diagnostic[] diagnostics)
         {
             var builder = new StringBuilder();
             for (int i = 0; i < diagnostics.Length; ++i)
