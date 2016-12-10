@@ -41,7 +41,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     /// ]]>
     /// </remarks>
     [ExportCodeFixProvider(LanguageNames.CSharp)]
-    public class AsyncVoidMethodCodeFix : CodeFixProvider
+    public class VSSDK003AsyncVoidMethodCodeFix : CodeFixProvider
     {
         private static readonly ImmutableArray<string> ReusableFixableDiagnosticIds = ImmutableArray.Create(
             Rules.AvoidAsyncVoidMethod.Id);

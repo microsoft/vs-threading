@@ -22,7 +22,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using CodeAnalysis.Rename;
 
     [ExportCodeFixProvider(LanguageNames.CSharp)]
-    public class AsyncSuffixCodeFix : CodeFixProvider
+    public class VSSDK010AsyncSuffixCodeFix : CodeFixProvider
     {
         internal const string NewNameKey = "NewName";
 

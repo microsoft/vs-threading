@@ -41,31 +41,31 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AsyncEventHandlerAnalyzer.cs" />
-    <Compile Include="AsyncSuffixAnalyzer.cs" />
-    <Compile Include="AsyncSuffixCodeFix.cs" />
+    <Compile Include="VSSDK005AsyncEventHandlerAnalyzer.cs" />
+    <Compile Include="VSSDK010AsyncSuffixAnalyzer.cs" />
+    <Compile Include="VSSDK010AsyncSuffixCodeFix.cs" />
     <Compile Include="CommonInterest.cs" />
-    <Compile Include="JtfRunAwaitTaskAnalyzer.cs" />
-    <Compile Include="AvoidJtfRunInNonPublicMembersAnalyzer.cs" />
+    <Compile Include="VSSDK006JtfRunAwaitTaskAnalyzer.cs" />
+    <Compile Include="VSSDK009AvoidJtfRunInNonPublicMembersAnalyzer.cs" />
     <Compile Include="Namespaces.cs" />
-    <Compile Include="AvoidImpliedTaskSchedulerCurrentAnalyzer.cs" />
+    <Compile Include="VSSDK011AvoidImpliedTaskSchedulerCurrentAnalyzer.cs" />
     <Compile Include="Strings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
-    <Compile Include="UseAwaitInAsyncMethodsAnalyzer.cs" />
-    <Compile Include="LazyOfTaskAnalyzer.cs" />
+    <Compile Include="VSSDK008UseAwaitInAsyncMethodsAnalyzer.cs" />
+    <Compile Include="VSSDK007LazyOfTaskAnalyzer.cs" />
     <Compile Include="Types.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="AsyncVoidLambdaAnalyzer.cs" />
-    <Compile Include="AsyncVoidMethodAnalyzer.cs" />
-    <Compile Include="AsyncVoidMethodCodeFix.cs" />
+    <Compile Include="VSSDK004AsyncVoidLambdaAnalyzer.cs" />
+    <Compile Include="VSSDK003AsyncVoidMethodAnalyzer.cs" />
+    <Compile Include="VSSDK003AsyncVoidMethodCodeFix.cs" />
     <Compile Include="Rules.cs" />
-    <Compile Include="SynchronousWaitAnalyzer.cs" />
-    <Compile Include="UseAwaitInAsyncMethodsCodeFix.cs" />
+    <Compile Include="VSSDK001SynchronousWaitAnalyzer.cs" />
+    <Compile Include="VSSDK008UseAwaitInAsyncMethodsCodeFix.cs" />
     <Compile Include="Utils.cs" />
-    <Compile Include="VsServiceUsageAnalyzer.cs" />
+    <Compile Include="VSSDK002VsServiceUsageAnalyzer.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config">
@@ -119,21 +119,14 @@
   <Target Name="MATPrerequisite" BeforeTargets="PrepareForBuild" Condition="!Exists('$(MSBuildExtensionsPath)\Microsoft\Multilingual App Toolkit\Microsoft.Multilingual.ResxResources.targets')" Label="MultilingualAppToolkit">
     <Warning Text="$(MSBuildProjectFile) is Multilingual build enabled, but the Multilingual App Toolkit is unavailable during the build. If building with Visual Studio, please check to ensure that toolkit is properly installed." />
   </Target>
-
   <!-- Redefine this output group so we can preserve the Culture metadata on the returned items, so that NuProj can package it up properly later. -->
-  <Target
-      Name="SatelliteDllsProjectOutputGroup"
-      Returns="@(SatelliteDllsProjectOutputGroupOutput)"
-      DependsOnTargets="$(SatelliteDllsProjectOutputGroupDependsOn)">
-
+  <Target Name="SatelliteDllsProjectOutputGroup" Returns="@(SatelliteDllsProjectOutputGroupOutput)" DependsOnTargets="$(SatelliteDllsProjectOutputGroupDependsOn)">
     <ItemGroup>
-      <SatelliteDllsProjectOutputGroupOutputIntermediate Include="$(IntermediateOutputPath)%(EmbeddedResource.Culture)\$(TargetName).resources.dll"
-                                                         Condition="'%(WithCulture)' == 'true'">
+      <SatelliteDllsProjectOutputGroupOutputIntermediate Include="$(IntermediateOutputPath)%(EmbeddedResource.Culture)\$(TargetName).resources.dll" Condition="'%(WithCulture)' == 'true'">
         <TargetPath>%(EmbeddedResource.Culture)\$(TargetName).resources.dll</TargetPath>
         <Culture>%(EmbeddedResource.Culture)</Culture>
       </SatelliteDllsProjectOutputGroupOutputIntermediate>
     </ItemGroup>
-
     <!-- Convert intermediate items into final items; this way we can get the full path for each item. -->
     <ItemGroup>
       <SatelliteDllsProjectOutputGroupOutput Include="@(SatelliteDllsProjectOutputGroupOutputIntermediate->'%(FullPath)')">
@@ -141,6 +134,5 @@
         <OriginalItemSpec>%(SatelliteDllsProjectOutputGroupOutputIntermediate.Identity)</OriginalItemSpec>
       </SatelliteDllsProjectOutputGroupOutput>
     </ItemGroup>
-
   </Target>
 </Project>

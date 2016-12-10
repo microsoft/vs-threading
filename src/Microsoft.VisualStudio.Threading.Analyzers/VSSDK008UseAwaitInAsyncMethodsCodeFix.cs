@@ -29,7 +29,7 @@
     /// ]]>
     /// </remarks>
     [ExportCodeFixProvider(LanguageNames.CSharp)]
-    public class UseAwaitInAsyncMethodsCodeFix : CodeFixProvider
+    public class VSSDK008UseAwaitInAsyncMethodsCodeFix : CodeFixProvider
     {
         internal const string AsyncMethodKeyName = "AsyncMethodName";
 

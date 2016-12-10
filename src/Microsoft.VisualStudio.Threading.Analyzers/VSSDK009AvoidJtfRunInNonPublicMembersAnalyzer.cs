@@ -16,7 +16,7 @@
     /// has limited opportunity to make the method async due to API impact and breaking changes.
     /// </summary>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class AvoidJtfRunInNonPublicMembersAnalyzer : DiagnosticAnalyzer
+    public class VSSDK009AvoidJtfRunInNonPublicMembersAnalyzer : DiagnosticAnalyzer
     {
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics

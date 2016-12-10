@@ -6,7 +6,7 @@
     using Xunit;
     using Xunit.Abstractions;
 
-    public class AsyncVoidMethodAnalyzerTests : DiagnosticVerifier
+    public class VSSDK003AsyncVoidMethodAnalyzerTests : DiagnosticVerifier
     {
         private DiagnosticResult expect = new DiagnosticResult
         {
@@ -15,14 +15,14 @@
             Severity = DiagnosticSeverity.Warning,
         };
 
-        public AsyncVoidMethodAnalyzerTests(ITestOutputHelper logger)
+        public VSSDK003AsyncVoidMethodAnalyzerTests(ITestOutputHelper logger)
             : base(logger)
         {
         }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new AsyncVoidMethodAnalyzer();
+            return new VSSDK003AsyncVoidMethodAnalyzer();
         }
 
         [Fact]

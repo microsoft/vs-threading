@@ -40,7 +40,7 @@
     ///     sln.SetProperty(); /* Good */
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class VsServiceUsageAnalyzer : DiagnosticAnalyzer
+    public class VSSDK002VsServiceUsageAnalyzer : DiagnosticAnalyzer
     {
         private static readonly IImmutableSet<string> KnownMethodsToVerifyMainThread = ImmutableHashSet.Create(StringComparer.Ordinal,
             "VerifyOnUIThread",

@@ -12,7 +12,7 @@
     using Microsoft.CodeAnalysis.Diagnostics;
 
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class LazyOfTaskAnalyzer : DiagnosticAnalyzer
+    public class VSSDK007LazyOfTaskAnalyzer : DiagnosticAnalyzer
     {
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics

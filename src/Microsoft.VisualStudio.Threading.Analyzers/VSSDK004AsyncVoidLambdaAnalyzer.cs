@@ -42,7 +42,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     /// ]]>
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class AsyncVoidLambdaAnalyzer : DiagnosticAnalyzer
+    public class VSSDK004AsyncVoidLambdaAnalyzer : DiagnosticAnalyzer
     {
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics

@@ -31,7 +31,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     /// <see cref="TaskScheduler.Current"/> itself).
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class AvoidImpliedTaskSchedulerCurrentAnalyzer : DiagnosticAnalyzer
+    public class VSSDK011AvoidImpliedTaskSchedulerCurrentAnalyzer : DiagnosticAnalyzer
     {
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Rules.AvoidImpliedTaskSchedulerCurrent);
 

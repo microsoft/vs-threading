@@ -6,7 +6,7 @@
     using Xunit;
     using Xunit.Abstractions;
 
-    public class AvoidImpliedTaskSchedulerCurrentAnalyzerTests : CodeFixVerifier
+    public class VSSDK011AvoidImpliedTaskSchedulerCurrentAnalyzerTests : CodeFixVerifier
     {
         private DiagnosticResult expect = new DiagnosticResult
         {
@@ -15,12 +15,12 @@
             Severity = DiagnosticSeverity.Warning,
         };
 
-        public AvoidImpliedTaskSchedulerCurrentAnalyzerTests(ITestOutputHelper logger)
+        public VSSDK011AvoidImpliedTaskSchedulerCurrentAnalyzerTests(ITestOutputHelper logger)
             : base(logger)
         {
         }
 
-        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer() => new AvoidImpliedTaskSchedulerCurrentAnalyzer();
+        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer() => new VSSDK011AvoidImpliedTaskSchedulerCurrentAnalyzer();
 
         [Fact]
         public void ContinueWith_NoTaskScheduler_GeneratesWarning()

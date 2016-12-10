@@ -6,7 +6,7 @@
     using Xunit;
     using Xunit.Abstractions;
 
-    public class AsyncVoidMethodCodeFixTests : CodeFixVerifier
+    public class VSSDK003AsyncVoidMethodCodeFixTests : CodeFixVerifier
     {
         private DiagnosticResult expect = new DiagnosticResult
         {
@@ -15,19 +15,19 @@
             Severity = DiagnosticSeverity.Warning,
         };
 
-        public AsyncVoidMethodCodeFixTests(ITestOutputHelper logger)
+        public VSSDK003AsyncVoidMethodCodeFixTests(ITestOutputHelper logger)
             : base(logger)
         {
         }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new AsyncVoidMethodAnalyzer();
+            return new VSSDK003AsyncVoidMethodAnalyzer();
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()
         {
-            return new AsyncVoidMethodCodeFix();
+            return new VSSDK003AsyncVoidMethodCodeFix();
         }
 
         [Fact]

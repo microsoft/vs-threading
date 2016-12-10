@@ -37,7 +37,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     /// ]]>
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class AsyncEventHandlerAnalyzer : DiagnosticAnalyzer
+    public class VSSDK005AsyncEventHandlerAnalyzer : DiagnosticAnalyzer
     {
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics

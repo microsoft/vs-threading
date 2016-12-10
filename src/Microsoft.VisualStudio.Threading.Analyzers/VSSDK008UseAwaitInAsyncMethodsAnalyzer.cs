@@ -27,7 +27,7 @@
     /// ]]>
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class UseAwaitInAsyncMethodsAnalyzer : DiagnosticAnalyzer
+    public class VSSDK008UseAwaitInAsyncMethodsAnalyzer : DiagnosticAnalyzer
     {
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(
@@ -76,9 +76,9 @@
                 // Also consider all method calls to check for Async-suffixed alternatives.
                 SimpleNameSyntax invokedMethodName = memberAccessSyntax?.Name ?? invocationExpressionSyntax.Expression as IdentifierNameSyntax;
                 var symbolInfo = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax, context.CancellationToken);
-                if (symbolInfo.Symbol != null && !symbolInfo.Symbol.Name.EndsWith(AsyncSuffixAnalyzer.MandatoryAsyncSuffix))
+                if (symbolInfo.Symbol != null && !symbolInfo.Symbol.Name.EndsWith(VSSDK010AsyncSuffixAnalyzer.MandatoryAsyncSuffix))
                 {
-                    string asyncMethodName = symbolInfo.Symbol.Name + AsyncSuffixAnalyzer.MandatoryAsyncSuffix;
+                    string asyncMethodName = symbolInfo.Symbol.Name + VSSDK010AsyncSuffixAnalyzer.MandatoryAsyncSuffix;
                     var asyncMethodMatches = context.SemanticModel.LookupSymbols(
                         invocationExpressionSyntax.Expression.GetLocation().SourceSpan.Start,
                         symbolInfo.Symbol.ContainingType,
@@ -88,7 +88,7 @@
                     {
                         // An async alternative exists.
                         var properties = ImmutableDictionary<string, string>.Empty
-                            .Add(UseAwaitInAsyncMethodsCodeFix.AsyncMethodKeyName, asyncMethodName);
+                            .Add(VSSDK008UseAwaitInAsyncMethodsCodeFix.AsyncMethodKeyName, asyncMethodName);
 
                         Diagnostic diagnostic = Diagnostic.Create(
                             Rules.UseAwaitInAsyncMethods,
@@ -124,13 +124,13 @@
                             messageArgs.Add(item.MethodName);
                             if (item.AsyncAlternativeMethodName != null)
                             {
-                                properties = properties.Add(UseAwaitInAsyncMethodsCodeFix.AsyncMethodKeyName, item.AsyncAlternativeMethodName);
+                                properties = properties.Add(VSSDK008UseAwaitInAsyncMethodsCodeFix.AsyncMethodKeyName, item.AsyncAlternativeMethodName);
                                 descriptor = Rules.UseAwaitInAsyncMethods;
                                 messageArgs.Add(item.AsyncAlternativeMethodName);
                             }
                             else
                             {
-                                properties = properties.Add(UseAwaitInAsyncMethodsCodeFix.AsyncMethodKeyName, string.Empty);
+                                properties = properties.Add(VSSDK008UseAwaitInAsyncMethodsCodeFix.AsyncMethodKeyName, string.Empty);
                                 descriptor = Rules.UseAwaitInAsyncMethods_NoAlternativeMethod;
                             }
 

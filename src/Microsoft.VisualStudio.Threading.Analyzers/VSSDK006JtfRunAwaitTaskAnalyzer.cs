@@ -38,7 +38,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     /// ]]>
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class JtfRunAwaitTaskAnalyzer : DiagnosticAnalyzer
+    public class VSSDK006JtfRunAwaitTaskAnalyzer : DiagnosticAnalyzer
     {
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics

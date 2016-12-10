@@ -31,7 +31,7 @@
     /// ]]>
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class AsyncVoidMethodAnalyzer : DiagnosticAnalyzer
+    public class VSSDK003AsyncVoidMethodAnalyzer : DiagnosticAnalyzer
     {
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
