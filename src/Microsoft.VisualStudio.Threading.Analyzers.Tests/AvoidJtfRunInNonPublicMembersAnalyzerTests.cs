@@ -63,6 +63,25 @@ public class Test {
         }
 
         [Fact]
+        public void JtfRunInTaskReturningMethod_DoesNotProduceDiagnostic()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    JoinableTaskFactory jtf;
+
+    public Task F() {
+        jtf.Run(() => TplExtensions.CompletedTask);
+        return Task.CompletedTask;
+    }
+}
+";
+            this.VerifyCSharpDiagnostic(test, NoDiagnostic);
+        }
+
+        [Fact]
         public void JtfRunInProtectedMethodsOfInternalType_ProducesDiagnostic()
         {
             var test = @"

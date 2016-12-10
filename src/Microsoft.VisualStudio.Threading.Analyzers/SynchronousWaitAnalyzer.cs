@@ -48,8 +48,17 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
 
-            context.RegisterSyntaxNodeAction(this.AnalyzeInvocation, SyntaxKind.InvocationExpression);
-            context.RegisterSyntaxNodeAction(this.AnalyzeMemberAccess, SyntaxKind.SimpleMemberAccessExpression);
+            context.RegisterCodeBlockStartAction<SyntaxKind>(ctxt =>
+            {
+                // We want to scan properties and methods that do not return Task or Task<T>.
+                var methodSymbol = ctxt.OwningSymbol as IMethodSymbol;
+                var propertySymbol = ctxt.OwningSymbol as IPropertySymbol;
+                if (propertySymbol != null || (methodSymbol != null && !methodSymbol.HasAsyncCompatibleReturnType()))
+                {
+                    ctxt.RegisterSyntaxNodeAction(this.AnalyzeInvocation, SyntaxKind.InvocationExpression);
+                    ctxt.RegisterSyntaxNodeAction(this.AnalyzeMemberAccess, SyntaxKind.SimpleMemberAccessExpression);
+                }
+            });
         }
 
         /// <summary>

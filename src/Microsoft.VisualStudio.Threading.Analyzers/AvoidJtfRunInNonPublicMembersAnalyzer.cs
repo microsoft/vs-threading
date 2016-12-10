@@ -35,7 +35,7 @@
                 // We want to scan invocations that occur inside internal, synchronous methods
                 // for calls to JTF.Run or JT.Join.
                 var methodSymbol = ctxt.OwningSymbol as IMethodSymbol;
-                if (!Utils.IsPublic(methodSymbol) && !Utils.IsEntrypointMethod(methodSymbol, ctxt.SemanticModel, ctxt.CancellationToken))
+                if (!methodSymbol.HasAsyncCompatibleReturnType() && !Utils.IsPublic(methodSymbol) && !Utils.IsEntrypointMethod(methodSymbol, ctxt.SemanticModel, ctxt.CancellationToken))
                 {
                     var methodAnalyzer = new MethodAnalyzer();
                     ctxt.RegisterSyntaxNodeAction(methodAnalyzer.AnalyzeInvocation, SyntaxKind.InvocationExpression);
