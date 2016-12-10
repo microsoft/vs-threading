@@ -18,7 +18,7 @@
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK001_MessageFormat" translate="yes" xml:space="preserve">
-          <source>Synchronously waiting on tasks or awaiters is dangerous and may cause dead locks. Please consider the following options: 1) Switch to asynchronous wait if the caller is already a "async" method. 2) Change the chain of callers to be "async" methods, and then change this code to be asynchronous await. 3) Use JoinableTaskFactory.Run() to wait on the tasks or awaiters. Refer to http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx for more info.</source>
+          <source>Synchronously waiting on tasks or awaiters may cause deadlocks. Use JoinableTaskFactory.Run instead.</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">在任務或等待程式同步等待是危險的可能會導致鎖死。請考慮以下選項︰ 1) 切換到非同步等待來電者是否已經"async"方法。2） 鏈的調用方，並將"async"方法，然後更改此代碼是非同步等待的變化。3） 使用 JoinableTaskFactory.Run() 來伺候的任務或等待程式。請參閱 HTTP://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx 更多的資訊。</target>
           <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
@@ -30,15 +30,13 @@
         </trans-unit>
         <trans-unit id="VSSDK002_MessageFormat" translate="yes" xml:space="preserve">
           <source>Visual Studio service "{0}" should be used on main thread explicitly. 
-Please either verify the current thread is main thread, or switch to main thread asynchronously. 
-1) APIs to verify the current thread is main thread: ThreadHelper.ThrowIfNotOnUIThread(), or IThreadHandling.VerifyOnUIThread(). 
-2) APIs to switch to main thread asynchronously: JoinableTaskFactory.SwitchToMainThreadAsync(), or IThreadHandling.SwitchToUIThread(). 
-Refer to http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx for more info.</source>
+Call ThreadHelper.ThrowIfNotOnUIThread() or await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">視覺工作室服務"{0}"應明確在主執行緒上使用。
 請或者驗證當前執行緒是主執行緒，或者切換到主執行緒以非同步方式。
 1) Api 來驗證當前執行緒是主執行緒︰ ThreadHelper.ThrowIfNotOnUIThread() 或 IThreadHandling.VerifyOnUIThread()。
 2) Api 來切換到主執行緒以非同步方式︰ JoinableTaskFactory.SwitchToMainThreadAsync() 或 IThreadHandling.SwitchToUIThread()。對 HTTP://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx 的更多資訊請參閱
 。</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK002_Title" translate="yes" xml:space="preserve">
           <source>Use VS services from UI thread</source>
