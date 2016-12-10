@@ -15,7 +15,7 @@
 
         private DiagnosticResult NewExpectedTemplate() => new DiagnosticResult
         {
-            Id = "VSSDK010",
+            Id = VSSDK010AsyncSuffixAnalyzer.Id,
             SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Warning,
         };

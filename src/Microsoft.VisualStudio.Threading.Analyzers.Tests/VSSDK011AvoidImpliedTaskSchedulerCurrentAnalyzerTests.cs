@@ -10,7 +10,7 @@
     {
         private DiagnosticResult expect = new DiagnosticResult
         {
-            Id = "VSSDK011",
+            Id = VSSDK011AvoidImpliedTaskSchedulerCurrentAnalyzer.Id,
             SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Warning,
         };

@@ -21,7 +21,7 @@
             {
                 results[i] = new DiagnosticResult
                 {
-                    Id = "VSSDK005",
+                    Id = VSSDK005AsyncEventHandlerAnalyzer.Id,
                     SkipVerifyMessage = true,
                     Severity = DiagnosticSeverity.Warning,
                     Locations = new[] { locations[i] }

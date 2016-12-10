@@ -42,6 +42,16 @@
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class VSSDK002VsServiceUsageAnalyzer : DiagnosticAnalyzer
     {
+        public const string Id = "VSSDK002";
+
+        internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
+           id: Id,
+           title: Strings.VSSDK002_Title,
+           messageFormat: Strings.VSSDK002_MessageFormat,
+           category: "Usage",
+           defaultSeverity: DiagnosticSeverity.Warning,
+           isEnabledByDefault: true);
+
         private static readonly IImmutableSet<string> KnownMethodsToVerifyMainThread = ImmutableHashSet.Create(StringComparer.Ordinal,
             "VerifyOnUIThread",
             "ThrowIfNotOnUIThread");
@@ -67,7 +77,7 @@
         {
             get
             {
-                return ImmutableArray.Create(Rules.VsServiceBeingUsedOnUnknownThreadRule);
+                return ImmutableArray.Create(Descriptor);
             }
         }
 
@@ -159,7 +169,7 @@
 
                     if (threadingContext != ThreadingContext.MainThread)
                     {
-                        context.ReportDiagnostic(Diagnostic.Create(Rules.VsServiceBeingUsedOnUnknownThreadRule, context.Node.GetLocation(), type.Name));
+                        context.ReportDiagnostic(Diagnostic.Create(Descriptor, context.Node.GetLocation(), type.Name));
                     }
                 }
             }

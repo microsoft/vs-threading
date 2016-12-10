@@ -8,13 +8,6 @@
 
     public class VSSDK003AsyncVoidMethodCodeFixTests : CodeFixVerifier
     {
-        private DiagnosticResult expect = new DiagnosticResult
-        {
-            Id = "CPS007",
-            SkipVerifyMessage = true,
-            Severity = DiagnosticSeverity.Warning,
-        };
-
         public VSSDK003AsyncVoidMethodCodeFixTests(ITestOutputHelper logger)
             : base(logger)
         {

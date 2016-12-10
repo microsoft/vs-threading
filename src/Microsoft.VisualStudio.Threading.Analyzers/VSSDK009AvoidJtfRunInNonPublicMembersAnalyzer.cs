@@ -18,10 +18,20 @@
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class VSSDK009AvoidJtfRunInNonPublicMembersAnalyzer : DiagnosticAnalyzer
     {
+        public const string Id = "VSSDK009";
+
+        internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
+            id: Id,
+            title: Strings.VSSDK009_Title,
+            messageFormat: Strings.VSSDK009_MessageFormat,
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Info,
+            isEnabledByDefault: true);
+
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         {
-            get { return ImmutableArray.Create(Rules.AvoidJtfRunInNonPublicMembers); }
+            get { return ImmutableArray.Create(Descriptor); }
         }
 
         /// <inheritdoc />
@@ -75,7 +85,7 @@
                             typeReceiver.BelongsToNamespace(item.ContainingTypeNamespace))
                         {
                             var location = memberAccessSyntax.Name.GetLocation();
-                            context.ReportDiagnostic(Diagnostic.Create(Rules.AvoidJtfRunInNonPublicMembers, location));
+                            context.ReportDiagnostic(Diagnostic.Create(Descriptor, location));
                         }
                     }
                 }

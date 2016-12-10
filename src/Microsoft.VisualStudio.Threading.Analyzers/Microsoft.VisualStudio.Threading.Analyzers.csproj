@@ -61,7 +61,6 @@
     <Compile Include="VSSDK004AsyncVoidLambdaAnalyzer.cs" />
     <Compile Include="VSSDK003AsyncVoidMethodAnalyzer.cs" />
     <Compile Include="VSSDK003AsyncVoidMethodCodeFix.cs" />
-    <Compile Include="Rules.cs" />
     <Compile Include="VSSDK001SynchronousWaitAnalyzer.cs" />
     <Compile Include="VSSDK008UseAwaitInAsyncMethodsCodeFix.cs" />
     <Compile Include="Utils.cs" />

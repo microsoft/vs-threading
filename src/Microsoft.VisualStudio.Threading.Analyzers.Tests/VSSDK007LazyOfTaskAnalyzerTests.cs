@@ -10,7 +10,7 @@
     {
         private DiagnosticResult expect = new DiagnosticResult
         {
-            Id = "VSSDK007",
+            Id = VSSDK007LazyOfTaskAnalyzer.Id,
             SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Error,
         };

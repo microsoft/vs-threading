@@ -44,7 +44,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     public class VSSDK003AsyncVoidMethodCodeFix : CodeFixProvider
     {
         private static readonly ImmutableArray<string> ReusableFixableDiagnosticIds = ImmutableArray.Create(
-            Rules.AvoidAsyncVoidMethod.Id);
+            VSSDK003AsyncVoidMethodAnalyzer.Descriptor.Id);
 
         /// <inheritdoc />
         public override ImmutableArray<string> FixableDiagnosticIds => ReusableFixableDiagnosticIds;
@@ -75,7 +75,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             public override string Title => Strings.VSSDK003_CodeFix_Title;
 
             /// <inheritdoc />
-            public override string EquivalenceKey => Rules.AvoidAsyncVoidMethod.Id;
+            public override string EquivalenceKey => VSSDK003AsyncVoidMethodAnalyzer.Descriptor.Id;
 
             protected override async Task<Document> GetChangedDocumentAsync(CancellationToken cancellationToken)
             {

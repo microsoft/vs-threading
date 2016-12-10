@@ -34,7 +34,7 @@
         internal const string AsyncMethodKeyName = "AsyncMethodName";
 
         private static readonly ImmutableArray<string> ReusableFixableDiagnosticIds = ImmutableArray.Create(
-            Rules.UseAwaitInAsyncMethods.Id);
+            VSSDK008UseAwaitInAsyncMethodsAnalyzer.Id);
 
         /// <inheritdoc />
         public override ImmutableArray<string> FixableDiagnosticIds => ReusableFixableDiagnosticIds;
@@ -76,7 +76,7 @@
             }
 
             /// <inheritdoc />
-            public override string EquivalenceKey => Rules.UseAwaitInAsyncMethods.Id;
+            public override string EquivalenceKey => VSSDK008UseAwaitInAsyncMethodsAnalyzer.Id;
 
             private string AlternativeAsyncMethod => this.diagnostic.Properties[AsyncMethodKeyName];
 

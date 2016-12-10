@@ -12,7 +12,7 @@
 
         private DiagnosticResult expect = new DiagnosticResult
         {
-            Id = "VSSDK009",
+            Id = VSSDK009AvoidJtfRunInNonPublicMembersAnalyzer.Id,
             SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Info,
         };

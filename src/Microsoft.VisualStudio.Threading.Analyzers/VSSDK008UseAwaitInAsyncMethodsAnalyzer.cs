@@ -29,10 +29,28 @@
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class VSSDK008UseAwaitInAsyncMethodsAnalyzer : DiagnosticAnalyzer
     {
+        public const string Id = "VSSDK008";
+
+        internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
+            id: Id,
+            title: Strings.VSSDK008_Title,
+            messageFormat: Strings.VSSDK008_MessageFormat,
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+        internal static readonly DiagnosticDescriptor DescriptorNoAlternativeMethod = new DiagnosticDescriptor(
+            id: Id,
+            title: Strings.VSSDK008_Title,
+            messageFormat: Strings.VSSDK008_MessageFormat_UseAwaitInstead,
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(
-            Rules.UseAwaitInAsyncMethods,
-            Rules.UseAwaitInAsyncMethods_NoAlternativeMethod);
+            Descriptor,
+            DescriptorNoAlternativeMethod);
 
         /// <inheritdoc />
         public override void Initialize(AnalysisContext context)
@@ -91,7 +109,7 @@
                             .Add(VSSDK008UseAwaitInAsyncMethodsCodeFix.AsyncMethodKeyName, asyncMethodName);
 
                         Diagnostic diagnostic = Diagnostic.Create(
-                            Rules.UseAwaitInAsyncMethods,
+                            Descriptor,
                             invokedMethodName.GetLocation(),
                             properties,
                             invokedMethodName.Identifier.Text,
@@ -125,13 +143,13 @@
                             if (item.AsyncAlternativeMethodName != null)
                             {
                                 properties = properties.Add(VSSDK008UseAwaitInAsyncMethodsCodeFix.AsyncMethodKeyName, item.AsyncAlternativeMethodName);
-                                descriptor = Rules.UseAwaitInAsyncMethods;
+                                descriptor = Descriptor;
                                 messageArgs.Add(item.AsyncAlternativeMethodName);
                             }
                             else
                             {
                                 properties = properties.Add(VSSDK008UseAwaitInAsyncMethodsCodeFix.AsyncMethodKeyName, string.Empty);
-                                descriptor = Rules.UseAwaitInAsyncMethods_NoAlternativeMethod;
+                                descriptor = DescriptorNoAlternativeMethod;
                             }
 
                             Diagnostic diagnostic = Diagnostic.Create(descriptor, location, properties, messageArgs.ToArray());

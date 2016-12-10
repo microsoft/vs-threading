@@ -18,11 +18,21 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class VSSDK010AsyncSuffixAnalyzer : DiagnosticAnalyzer
     {
+        public const string Id = "VSSDK010";
+
         internal const string MandatoryAsyncSuffix = "Async";
+
+        internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
+            id: Id,
+            title: Strings.VSSDK010_Title,
+            messageFormat: Strings.VSSDK010_MessageFormat,
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
 
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(
-            Rules.UseAsyncSuffixInMethodNames);
+            Descriptor);
 
         /// <inheritdoc />
         public override void Initialize(AnalysisContext context)
@@ -44,7 +54,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     var properties = ImmutableDictionary<string, string>.Empty
                         .Add(VSSDK010AsyncSuffixCodeFix.NewNameKey, methodSymbol.Name + MandatoryAsyncSuffix);
                     context.ReportDiagnostic(Diagnostic.Create(
-                        Rules.UseAsyncSuffixInMethodNames,
+                        Descriptor,
                         methodSymbol.Locations[0],
                         properties));
                 }

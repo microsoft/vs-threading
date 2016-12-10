@@ -14,10 +14,20 @@
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class VSSDK007LazyOfTaskAnalyzer : DiagnosticAnalyzer
     {
+        public const string Id = "VSSDK007";
+
+        internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
+            id: Id,
+            title: Strings.VSSDK007_Title,
+            messageFormat: Strings.VSSDK007_MessageFormat,
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         {
-            get { return ImmutableArray.Create(Rules.AvoidLazyOfTask); }
+            get { return ImmutableArray.Create(Descriptor); }
         }
 
         /// <inheritdoc />
@@ -46,7 +56,7 @@
                     && typeArg.BelongsToNamespace(Namespaces.SystemThreadingTasks);
                 if (typeArgIsTask)
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(Rules.AvoidLazyOfTask, context.Node.GetLocation()));
+                    context.ReportDiagnostic(Diagnostic.Create(Descriptor, context.Node.GetLocation()));
                 }
             }
         }

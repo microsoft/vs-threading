@@ -39,12 +39,22 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class VSSDK005AsyncEventHandlerAnalyzer : DiagnosticAnalyzer
     {
+        public const string Id = "VSSDK005";
+
+        internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
+            id: Id,
+            title: Strings.VSSDK005_Title,
+            messageFormat: Strings.VSSDK005_MessageFormat,
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         {
             get
             {
-                return ImmutableArray.Create(Rules.AsyncEventHandlerShouldBeCalledByInvokeAsync);
+                return ImmutableArray.Create(Descriptor);
             }
         }
 
@@ -95,7 +105,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     if (type.Name == Types.AsyncEventHandler.TypeName &&
                         type.BelongsToNamespace(Types.AsyncEventHandler.Namespace))
                     {
-                        context.ReportDiagnostic(Diagnostic.Create(Rules.AsyncEventHandlerShouldBeCalledByInvokeAsync, context.Node.GetLocation()));
+                        context.ReportDiagnostic(Diagnostic.Create(Descriptor, context.Node.GetLocation()));
                     }
                 }
             }
