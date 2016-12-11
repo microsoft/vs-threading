@@ -275,5 +275,32 @@ class Test {
 ";
             this.VerifyCSharpDiagnostic(test);
         }
+
+        [Fact(Skip = "Unattainable given Roslyn analyzers are sync and find all references is async")]
+        public void JtfRunAndPropertyGetterPrivateMethodUsedAsDelegate_ProducesNoDiagnostic()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+public class Test {
+    JoinableTaskFactory jtf;
+
+    void F() {
+        Advise(SomeSyncMethod);
+    }
+
+    void SomeSyncMethod(int x) {
+        jtf.Run(() => TplExtensions.CompletedTask);
+        Task<int> t = null;
+        int v = t.Result;
+    }
+
+    public void Advise(Action<int> foo) { }
+}
+";
+            this.VerifyCSharpDiagnostic(test);
+        }
     }
 }
