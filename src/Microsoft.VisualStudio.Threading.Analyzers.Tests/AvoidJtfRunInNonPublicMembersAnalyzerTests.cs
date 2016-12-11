@@ -229,5 +229,51 @@ public class Test {
 ";
             this.VerifyCSharpDiagnostic(test, NoDiagnostic);
         }
+
+        [Fact]
+        public void JtfRunAndPropertyGetterInLambda_ProducesNoDiagnostic()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    JoinableTaskFactory jtf;
+
+    void F() {
+        Action action = () => {
+            jtf.Run(() => TplExtensions.CompletedTask);
+            Task<int> t = null;
+            int v = t.Result;
+        };
+    }
+}
+";
+            this.VerifyCSharpDiagnostic(test);
+        }
+
+        [Fact]
+        public void JtfRunAndPropertyGetterInAnonymousDelegate_ProducesNoDiagnostic()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    JoinableTaskFactory jtf;
+
+    void F() {
+        Action action = delegate {
+            jtf.Run(() => TplExtensions.CompletedTask);
+            Task<int> t = null;
+            int v = t.Result;
+        };
+    }
+}
+";
+            this.VerifyCSharpDiagnostic(test);
+        }
     }
 }
