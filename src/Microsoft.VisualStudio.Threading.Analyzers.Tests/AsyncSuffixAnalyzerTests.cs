@@ -139,5 +139,18 @@ class Test {
 ";
             this.VerifyCSharpDiagnostic(test);
         }
+
+        [Fact]
+        public void TaskReturningPropertyWithoutSuffix_GeneratesNoWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task Foo => null;
+}
+";
+            this.VerifyCSharpDiagnostic(test);
+        }
     }
 }
