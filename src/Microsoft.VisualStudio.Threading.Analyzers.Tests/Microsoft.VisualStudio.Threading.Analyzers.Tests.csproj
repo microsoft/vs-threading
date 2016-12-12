@@ -51,6 +51,7 @@
     <Compile Include="Helpers\DiagnosticVerifier.Helper.cs" />
     <Compile Include="JtfRunAwaitTaskAnalyzerTests.cs" />
     <Compile Include="LazyOfTaskAnalyzerTests.cs" />
+    <Compile Include="MultiAnalyzerTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SynchronousWaitAnalyzerTests.cs" />
     <Compile Include="UseAwaitInAsyncMethodsAnalyzerTests.cs" />

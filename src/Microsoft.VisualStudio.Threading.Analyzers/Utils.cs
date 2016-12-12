@@ -111,6 +111,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return currentNamespace?.IsGlobalNamespace ?? false;
         }
 
+        internal static bool HasAsyncCompatibleReturnType(this IMethodSymbol methodSymbol)
+        {
+            return methodSymbol?.ReturnType?.Name == nameof(Task) && methodSymbol.ReturnType.BelongsToNamespace(Namespaces.SystemThreadingTasks);
+        }
+
         /// <summary>
         /// Check if the given method symbol is used as an event handler.
         /// </summary>

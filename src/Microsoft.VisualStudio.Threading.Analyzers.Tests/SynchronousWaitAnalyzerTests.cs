@@ -86,6 +86,23 @@ class Test {
         }
 
         [Fact]
+        public void DoNotReportWarningInTaskReturningMethods()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task F() {
+        var task = Task.Run(() => 1);
+        task.GetAwaiter().GetResult();
+        return Task.CompletedTask;
+    }
+}
+";
+            this.VerifyCSharpDiagnostic(test);
+        }
+
+        [Fact]
         public void DoNotReportWarningOnCodeGeneratedByXaml2CS()
         {
             var test = @"

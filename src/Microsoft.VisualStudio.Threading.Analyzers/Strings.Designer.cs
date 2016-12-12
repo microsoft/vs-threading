@@ -79,7 +79,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Synchronously waiting on tasks or awaiters is dangerous and may cause dead locks. Please consider the following options: 1) Switch to asynchronous wait if the caller is already a &quot;async&quot; method. 2) Change the chain of callers to be &quot;async&quot; methods, and then change this code to be asynchronous await. 3) Use JoinableTaskFactory.Run() to wait on the tasks or awaiters. Refer to http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfa [rest of string was truncated]&quot;;.
+        ///   Looks up a localized string similar to Synchronously waiting on tasks or awaiters may cause deadlocks. Use JoinableTaskFactory.Run instead..
         /// </summary>
         internal static string VSSDK001_MessageFormat {
             get {
@@ -98,10 +98,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         
         /// <summary>
         ///   Looks up a localized string similar to Visual Studio service &quot;{0}&quot; should be used on main thread explicitly. 
-        ///Please either verify the current thread is main thread, or switch to main thread asynchronously. 
-        ///1) APIs to verify the current thread is main thread: ThreadHelper.ThrowIfNotOnUIThread(), or IThreadHandling.VerifyOnUIThread(). 
-        ///2) APIs to switch to main thread asynchronously: JoinableTaskFactory.SwitchToMainThreadAsync(), or IThreadHandling.SwitchToUIThread(). 
-        ///Refer to http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynch [rest of string was truncated]&quot;;.
+        ///Call ThreadHelper.ThrowIfNotOnUIThread() or await JoinableTaskFactory.SwitchToMainThreadAsync() first..
         /// </summary>
         internal static string VSSDK002_MessageFormat {
             get {
@@ -203,8 +200,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Calling Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock when the value factory was previously started.
-        ///You should use AsyncLazy&lt;T&gt; instead..
+        ///   Looks up a localized string similar to Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock.
+        ///Use AsyncLazy&lt;T&gt; instead..
         /// </summary>
         internal static string VSSDK007_MessageFormat {
             get {
@@ -222,7 +219,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The {0} member synchronously blocks. Call {1} instead and await its result..
+        ///   Looks up a localized string similar to {0} synchronously blocks. Await {1} instead..
         /// </summary>
         internal static string VSSDK008_MessageFormat {
             get {
@@ -231,7 +228,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The {0} member synchronously blocks. Use await instead..
+        ///   Looks up a localized string similar to {0} synchronously blocks. Use await instead..
         /// </summary>
         internal static string VSSDK008_MessageFormat_UseAwaitInstead {
             get {

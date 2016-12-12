@@ -3,6 +3,7 @@
 namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Linq;
     using System.Threading;
     using Microsoft.CodeAnalysis;
@@ -82,7 +83,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         private void VerifyFix(string language, DiagnosticAnalyzer analyzer, CodeFixProvider codeFixProvider, string oldSource, string newSource, int? codeFixIndex, bool allowNewCompilerDiagnostics)
         {
             var document = CreateDocument(oldSource, language);
-            var analyzerDiagnostics = GetSortedDiagnosticsFromDocuments(analyzer, new[] { document }, hasEntrypoint: false);
+            var analyzerDiagnostics = GetSortedDiagnosticsFromDocuments(ImmutableArray.Create(analyzer), new[] { document }, hasEntrypoint: false);
             var compilerDiagnostics = GetCompilerDiagnostics(document);
             var attempts = analyzerDiagnostics.Length;
 
@@ -104,7 +105,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 
                 document = ApplyFix(document, actions.ElementAt(0));
                 this.logger.WriteLine("Code after fix:\n{0}", document.GetSyntaxRootAsync().Result.ToFullString());
-                analyzerDiagnostics = GetSortedDiagnosticsFromDocuments(analyzer, new[] { document }, hasEntrypoint: false);
+                analyzerDiagnostics = GetSortedDiagnosticsFromDocuments(ImmutableArray.Create(analyzer), new[] { document }, hasEntrypoint: false);
 
                 var newCompilerDiagnostics = GetNewDiagnostics(compilerDiagnostics, GetCompilerDiagnostics(document));
 
