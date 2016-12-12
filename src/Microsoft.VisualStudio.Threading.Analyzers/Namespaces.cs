@@ -1,25 +1,26 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers
 {
-    using System;
     using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
 
     internal static class Namespaces
     {
+        internal static readonly IReadOnlyList<string> System = new[]
+        {
+            nameof(System),
+        };
+
         internal static readonly IReadOnlyList<string> SystemThreadingTasks = new[]
         {
             nameof(System),
-            nameof(System.Threading),
-            nameof(System.Threading.Tasks),
+            nameof(global::System.Threading),
+            nameof(global::System.Threading.Tasks),
         };
 
         internal static readonly IReadOnlyList<string> SystemRuntimeCompilerServices = new[]
         {
             nameof(System),
-            nameof(System.Runtime),
-            nameof(System.Runtime.CompilerServices),
+            nameof(global::System.Runtime),
+            nameof(global::System.Runtime.CompilerServices),
         };
 
         internal static readonly IReadOnlyList<string> MicrosoftVisualStudioThreading = new[]
