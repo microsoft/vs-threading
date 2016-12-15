@@ -26,7 +26,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             id: Id,
             title: Strings.VSSDK010_Title,
             messageFormat: Strings.VSSDK010_MessageFormat,
-            category: "Usage",
+            category: "Style",
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
