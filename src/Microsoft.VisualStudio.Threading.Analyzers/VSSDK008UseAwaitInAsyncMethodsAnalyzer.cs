@@ -102,7 +102,7 @@
                         symbolInfo.Symbol.ContainingType,
                         asyncMethodName,
                         includeReducedExtensionMethods: true).OfType<IMethodSymbol>();
-                    if (asyncMethodMatches.Any())
+                    if (asyncMethodMatches.Any(m => !m.IsObsolete()))
                     {
                         // An async alternative exists.
                         var properties = ImmutableDictionary<string, string>.Empty

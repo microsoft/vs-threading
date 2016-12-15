@@ -185,6 +185,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return semanticModel.Compilation?.GetEntryPoint(cancellationToken)?.Equals(symbol) ?? false;
         }
 
+        internal static bool IsObsolete(this ISymbol symbol)
+        {
+            return symbol.GetAttributes().Any(a => a.AttributeClass.Name == nameof(ObsoleteAttribute) && a.AttributeClass.BelongsToNamespace(Namespaces.System));
+        }
+
         /// <summary>
         /// Converts a synchronous method to be asynchronous, if it is not already async.
         /// </summary>

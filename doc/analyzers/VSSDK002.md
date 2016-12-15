@@ -34,3 +34,5 @@ private async Task CallVSAsync()
     sln.SetProperty(); // This analyzer will report warning on this invocation.
 }
 ```
+
+Refer to [Asynchronous and multithreaded programming within VS using the JoinableTaskFactory](http://blogs.msdn.com/b/andrewarn[ottms/archive/[2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx) for more info.

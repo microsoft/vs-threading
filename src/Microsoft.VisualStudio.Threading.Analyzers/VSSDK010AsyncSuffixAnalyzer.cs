@@ -46,6 +46,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         private void AnalyzeNode(SymbolAnalysisContext context)
         {
             var methodSymbol = (IMethodSymbol)context.Symbol;
+            if (methodSymbol.AssociatedSymbol is IPropertySymbol)
+            {
+                // Skip accessor methods associated with properties.
+                return;
+            }
+
             if (!methodSymbol.Name.EndsWith(MandatoryAsyncSuffix))
             {
                 if (methodSymbol.ReturnType.Name == nameof(Task) &&

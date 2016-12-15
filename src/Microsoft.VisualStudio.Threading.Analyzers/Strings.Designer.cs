@@ -200,8 +200,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Calling Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock when the value factory was previously started.
-        ///You should use AsyncLazy&lt;T&gt; instead..
+        ///   Looks up a localized string similar to Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock.
+        ///Use AsyncLazy&lt;T&gt; instead..
         /// </summary>
         internal static string VSSDK007_MessageFormat {
             get {
@@ -219,7 +219,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The {0} member synchronously blocks. Call {1} instead and await its result..
+        ///   Looks up a localized string similar to {0} synchronously blocks. Await {1} instead..
         /// </summary>
         internal static string VSSDK008_MessageFormat {
             get {
@@ -228,7 +228,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The {0} member synchronously blocks. Use await instead..
+        ///   Looks up a localized string similar to {0} synchronously blocks. Use await instead..
         /// </summary>
         internal static string VSSDK008_MessageFormat_UseAwaitInstead {
             get {
