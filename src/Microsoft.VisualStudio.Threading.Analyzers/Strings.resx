@@ -145,8 +145,7 @@ Call ThreadHelper.ThrowIfNotOnUIThread() or await JoinableTaskFactory.SwitchToMa
     <comment>Task is a type name and should not be translated.</comment>
   </data>
   <data name="VSSDK003_MessageFormat" xml:space="preserve">
-    <value>Avoid Async Void method, because any exceptions thrown out of an async void method will be raised directly on the SynchronizationContext and will crash the process. 
-Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info.</value>
+    <value>Avoid "async void" methods, because any exceptions not handled by the method will crash the process.</value>
     <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
   </data>
   <data name="VSSDK003_Title" xml:space="preserve">
@@ -154,8 +153,7 @@ Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info.<
     <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
   </data>
   <data name="VSSDK004_MessageFormat" xml:space="preserve">
-    <value>Avoid using async lambda as void returning delegate type, because any exceptions thrown out of an async lambda returning void will be raised directly on the SynchronizationContext and will crash the process. 
-Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info.</value>
+    <value>Avoid using async lambda for a void returning delegate type, because any exceptions not handled by the delegate will crash the process.</value>
     <comment>"void" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSSDK004_Title" xml:space="preserve">

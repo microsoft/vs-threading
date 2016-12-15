@@ -37,10 +37,8 @@ Call ThreadHelper.ThrowIfNotOnUIThread() or await JoinableTaskFactory.SwitchToMa
           <target state="new">Use VS services from UI thread</target>
         </trans-unit>
         <trans-unit id="VSSDK003_MessageFormat" translate="yes" xml:space="preserve">
-          <source>Avoid Async Void method, because any exceptions thrown out of an async void method will be raised directly on the SynchronizationContext and will crash the process. 
-Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info.</source>
-          <target state="new">Avoid Async Void method, because any exceptions thrown out of an async void method will be raised directly on the SynchronizationContext and will crash the process. 
-Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info.</target>
+          <source>Avoid "async void" methods, because any exceptions not handled by the method will crash the process.</source>
+          <target state="new">Avoid "async void" methods, because any exceptions not handled by the method will crash the process.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"async void" is a pair of C# keywords. Do not translate them.</note>
         </trans-unit>
         <trans-unit id="VSSDK003_Title" translate="yes" xml:space="preserve">
@@ -49,10 +47,8 @@ Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info.<
           <note from="MultilingualBuild" annotates="source" priority="2">"async void" is a pair of C# keywords. Do not translate them.</note>
         </trans-unit>
         <trans-unit id="VSSDK004_MessageFormat" translate="yes" xml:space="preserve">
-          <source>Avoid using async lambda as void returning delegate type, because any exceptions thrown out of an async lambda returning void will be raised directly on the SynchronizationContext and will crash the process. 
-Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info.</source>
-          <target state="new">Avoid using async lambda as void returning delegate type, because any exceptions thrown out of an async lambda returning void will be raised directly on the SynchronizationContext and will crash the process. 
-Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info.</target>
+          <source>Avoid using async lambda for a void returning delegate type, because any exceptions not handled by the delegate will crash the process.</source>
+          <target state="new">Avoid using async lambda for a void returning delegate type, because any exceptions not handled by the delegate will crash the process.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"void" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK004_Title" translate="yes" xml:space="preserve">

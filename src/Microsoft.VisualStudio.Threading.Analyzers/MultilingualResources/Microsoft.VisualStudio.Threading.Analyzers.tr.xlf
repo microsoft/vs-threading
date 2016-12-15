@@ -44,10 +44,10 @@ bakın.</target>
           <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK003_MessageFormat" translate="yes" xml:space="preserve">
-          <source>Avoid Async Void method, because any exceptions thrown out of an async void method will be raised directly on the SynchronizationContext and will crash the process. 
-Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info.</source>
+          <source>Avoid "async void" methods, because any exceptions not handled by the method will crash the process.</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">Bir zaman uyumlu olmayan geçersiz yöntem dışında herhangi bir özel durumları doğrudan SynchronizationContext üzerinde oluşturulur ve işlem-ecek gürültüyle çarpmak çünkü zaman uyumsuz Void yöntemi, kaçının. Daha fazla bilgi için https://msdn.microsoft.com/en-us/magazine/jj991977.aspx için 
 bakın.</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
           <note from="MultilingualBuild" annotates="source" priority="2">"async void" is a pair of C# keywords. Do not translate them.</note>
         </trans-unit>
         <trans-unit id="VSSDK003_Title" translate="yes" xml:space="preserve">
@@ -57,10 +57,10 @@ bakın.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"async void" is a pair of C# keywords. Do not translate them.</note>
         </trans-unit>
         <trans-unit id="VSSDK004_MessageFormat" translate="yes" xml:space="preserve">
-          <source>Avoid using async lambda as void returning delegate type, because any exceptions thrown out of an async lambda returning void will be raised directly on the SynchronizationContext and will crash the process. 
-Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info.</source>
+          <source>Avoid using async lambda for a void returning delegate type, because any exceptions not handled by the delegate will crash the process.</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">Void döndüren bir zaman uyumsuz lambda dışarı atılan özel durumları doğrudan SynchronizationContext üzerinde oluşturulur ve işlem-ecek gürültüyle çarpmak çünkü geçersiz geri dönen temsilci türü olarak, zaman uyumsuz lambda kullanmaktan kaçının. Daha fazla bilgi için https://msdn.microsoft.com/en-us/magazine/jj991977.aspx için 
 bakın.</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
           <note from="MultilingualBuild" annotates="source" priority="2">"void" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK004_Title" translate="yes" xml:space="preserve">

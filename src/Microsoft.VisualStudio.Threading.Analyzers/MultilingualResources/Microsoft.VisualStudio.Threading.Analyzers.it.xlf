@@ -44,10 +44,10 @@ Fare riferimento a http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asy
           <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK003_MessageFormat" translate="yes" xml:space="preserve">
-          <source>Avoid Async Void method, because any exceptions thrown out of an async void method will be raised directly on the SynchronizationContext and will crash the process. 
-Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info.</source>
+          <source>Avoid "async void" methods, because any exceptions not handled by the method will crash the process.</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">Evitare il metodo Async Void, perché tutte le eccezioni generate da un metodo void async verranno generate direttamente su SynchronizationContext e andrà in crash il processo. 
 Fare riferimento a https://msdn.microsoft.com/en-us/magazine/jj991977.aspx per maggiori informazioni.</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
           <note from="MultilingualBuild" annotates="source" priority="2">"async void" is a pair of C# keywords. Do not translate them.</note>
         </trans-unit>
         <trans-unit id="VSSDK003_Title" translate="yes" xml:space="preserve">
@@ -57,10 +57,10 @@ Fare riferimento a https://msdn.microsoft.com/en-us/magazine/jj991977.aspx per m
           <note from="MultilingualBuild" annotates="source" priority="2">"async void" is a pair of C# keywords. Do not translate them.</note>
         </trans-unit>
         <trans-unit id="VSSDK004_MessageFormat" translate="yes" xml:space="preserve">
-          <source>Avoid using async lambda as void returning delegate type, because any exceptions thrown out of an async lambda returning void will be raised directly on the SynchronizationContext and will crash the process. 
-Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info.</source>
+          <source>Avoid using async lambda for a void returning delegate type, because any exceptions not handled by the delegate will crash the process.</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">Evitare di utilizzare lambda async come tipo delegato ritorno void, perché tutte le eccezioni generate da una lambda async restituisce void verranno generate direttamente su SynchronizationContext e andrà in crash il processo. 
 Fare riferimento a https://msdn.microsoft.com/en-us/magazine/jj991977.aspx per maggiori informazioni.</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
           <note from="MultilingualBuild" annotates="source" priority="2">"void" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK004_Title" translate="yes" xml:space="preserve">
