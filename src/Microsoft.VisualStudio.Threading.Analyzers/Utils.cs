@@ -190,6 +190,20 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return symbol.GetAttributes().Any(a => a.AttributeClass.Name == nameof(ObsoleteAttribute) && a.AttributeClass.BelongsToNamespace(Namespaces.System));
         }
 
+        internal static bool ImplementsAnInterface(this ISymbol symbol)
+        {
+            if (symbol == null)
+            {
+                return false;
+            }
+
+            var interfaceImplementations = from iface in symbol.ContainingType.AllInterfaces
+                                           from member in iface.GetMembers()
+                                           select symbol.ContainingType.FindImplementationForInterfaceMember(member);
+
+            return interfaceImplementations.Any(s => s.Equals(symbol));
+        }
+
         /// <summary>
         /// Converts a synchronous method to be asynchronous, if it is not already async.
         /// </summary>

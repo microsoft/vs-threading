@@ -141,6 +141,105 @@ class Test {
         }
 
         [Fact]
+        public void TaskReturningMethodWithoutSuffix_ImplementsInterface_GeneratesWarningOnlyOnInterface()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+interface IFoo {
+    Task Foo();
+}
+
+class Test : IFoo {
+    public Task Foo() => null;
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+interface IFoo {
+    Task FooAsync();
+}
+
+class Test : IFoo {
+    public Task FooAsync() => null;
+}
+";
+
+            var expected = this.NewExpectedTemplate();
+            expected.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 5, 10, 5, 13) };
+            this.VerifyCSharpDiagnostic(test, expected);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
+        public void TaskReturningMethodWithoutSuffix_ImplementsInterfaceExplicitly_GeneratesWarningOnlyOnInterface()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+interface IFoo {
+    Task Foo();
+}
+
+class Test : IFoo {
+    Task IFoo.Foo() => null;
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+interface IFoo {
+    Task FooAsync();
+}
+
+class Test : IFoo {
+    Task IFoo.FooAsync() => null;
+}
+";
+
+            var expected = this.NewExpectedTemplate();
+            expected.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 5, 10, 5, 13) };
+            this.VerifyCSharpDiagnostic(test, expected);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
+        public void TaskReturningMethodWithoutSuffix_OverridesAbstract_GeneratesWarningOnlyOnInterface()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+abstract class MyBase {
+    public abstract Task Foo();
+}
+
+class Test : MyBase {
+    public override Task Foo() => null;
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+abstract class MyBase {
+    public abstract Task FooAsync();
+}
+
+class Test : MyBase {
+    public override Task FooAsync() => null;
+}
+";
+
+            var expected = this.NewExpectedTemplate();
+            expected.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 5, 26, 5, 29) };
+            this.VerifyCSharpDiagnostic(test, expected);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
         public void TaskReturningPropertyWithoutSuffix_GeneratesNoWarning()
         {
             var test = @"
