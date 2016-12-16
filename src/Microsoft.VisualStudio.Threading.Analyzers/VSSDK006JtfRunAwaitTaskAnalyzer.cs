@@ -142,8 +142,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     return currentNode;
                 }
 
-                ParenthesizedLambdaExpressionSyntax lambdaExpression = currentNode as ParenthesizedLambdaExpressionSyntax;
-                if (lambdaExpression != null && lambdaExpression.AsyncKeyword != null)
+                if ((currentNode as ParenthesizedLambdaExpressionSyntax)?.AsyncKeyword != null)
                 {
                     return currentNode;
                 }
@@ -162,14 +161,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// <returns>The code block.</returns>
         private BlockSyntax GetBlockOfDelegateOrLambdaExpression(SyntaxNode delegateOrLambdaExpression)
         {
-            AnonymousMethodExpressionSyntax anonymousMethod = delegateOrLambdaExpression as AnonymousMethodExpressionSyntax;
-            if (anonymousMethod != null)
+            if (delegateOrLambdaExpression is AnonymousMethodExpressionSyntax anonymousMethod)
             {
                 return anonymousMethod.Block;
             }
 
-            ParenthesizedLambdaExpressionSyntax lambdaExpression = delegateOrLambdaExpression as ParenthesizedLambdaExpressionSyntax;
-            if (lambdaExpression != null)
+            if (delegateOrLambdaExpression is ParenthesizedLambdaExpressionSyntax lambdaExpression)
             {
                 return lambdaExpression.Body as BlockSyntax;
             }
@@ -188,8 +185,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             while (currentNode != null && !(currentNode is MethodDeclarationSyntax))
             {
-                InvocationExpressionSyntax invocationExpressionSyntax = currentNode as InvocationExpressionSyntax;
-                if (invocationExpressionSyntax != null)
+                if (currentNode is InvocationExpressionSyntax invocationExpressionSyntax)
                 {
                     return invocationExpressionSyntax;
                 }
@@ -209,8 +205,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// <returns>True if the specified invocation is a call to JoinableTaskFactory.Run or RunAsyn</returns>
         private bool IsInvocationExpressionACallToJtfRun(SyntaxNodeAnalysisContext context, InvocationExpressionSyntax invocationExpressionSyntax)
         {
-            MemberAccessExpressionSyntax memberAccessExpressionSyntax = invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax;
-            if (memberAccessExpressionSyntax != null)
+            if (invocationExpressionSyntax.Expression is MemberAccessExpressionSyntax memberAccessExpressionSyntax)
             {
                 // Check if we encountered a call to Run and had already encountered a delegate (so Run is a parent of the delegate)
                 string methodName = memberAccessExpressionSyntax.Name.Identifier.Text;
