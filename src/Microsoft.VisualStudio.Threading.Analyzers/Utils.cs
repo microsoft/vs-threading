@@ -8,6 +8,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -190,18 +191,20 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return symbol.GetAttributes().Any(a => a.AttributeClass.Name == nameof(ObsoleteAttribute) && a.AttributeClass.BelongsToNamespace(Namespaces.System));
         }
 
-        internal static bool ImplementsAnInterface(this ISymbol symbol)
+        internal static IEnumerable<ITypeSymbol> FindInterfacesImplemented(this ISymbol symbol)
         {
             if (symbol == null)
             {
-                return false;
+                return Enumerable.Empty<ITypeSymbol>();
             }
 
             var interfaceImplementations = from iface in symbol.ContainingType.AllInterfaces
                                            from member in iface.GetMembers()
-                                           select symbol.ContainingType.FindImplementationForInterfaceMember(member);
+                                           let implementingMember = symbol.ContainingType.FindImplementationForInterfaceMember(member)
+                                           where implementingMember.Equals(symbol)
+                                           select iface;
 
-            return interfaceImplementations.Any(s => s.Equals(symbol));
+            return interfaceImplementations;
         }
 
         /// <summary>

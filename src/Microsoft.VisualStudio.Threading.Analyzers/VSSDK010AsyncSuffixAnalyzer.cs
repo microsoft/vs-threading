@@ -59,7 +59,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 {
                     // Now that we have done the cheap checks to find that this method may deserve a diagnostic,
                     // Do deeper checks to skip over methods that implement API contracts that are controlled elsewhere.
-                    if (methodSymbol.ImplementsAnInterface() || methodSymbol.IsOverride)
+                    if (methodSymbol.FindInterfacesImplemented().Any() || methodSymbol.IsOverride)
                     {
                         return;
                     }
