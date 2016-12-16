@@ -42,14 +42,24 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     /// ]]>
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class AsyncVoidLambdaAnalyzer : DiagnosticAnalyzer
+    public class VSSDK004AsyncVoidLambdaAnalyzer : DiagnosticAnalyzer
     {
+        public const string Id = "VSSDK004";
+
+        internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
+            id: Id,
+            title: Strings.VSSDK004_Title,
+            messageFormat: Strings.VSSDK004_MessageFormat,
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         {
             get
             {
-                return ImmutableArray.Create(Rules.AvoidAsyncVoidLambda);
+                return ImmutableArray.Create(Descriptor);
             }
         }
 
@@ -75,7 +85,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 // report warnings only if they are not used like that way.
                 if (!Utils.IsEventHandler(methodSymbol, context.SemanticModel.Compilation))
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(Rules.AvoidAsyncVoidLambda, context.Node.GetLocation()));
+                    context.ReportDiagnostic(Diagnostic.Create(Descriptor, context.Node.GetLocation()));
                 }
             }
         }

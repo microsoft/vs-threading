@@ -31,9 +31,19 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     /// <see cref="TaskScheduler.Current"/> itself).
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class AvoidImpliedTaskSchedulerCurrentAnalyzer : DiagnosticAnalyzer
+    public class VSSDK011AvoidImpliedTaskSchedulerCurrentAnalyzer : DiagnosticAnalyzer
     {
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Rules.AvoidImpliedTaskSchedulerCurrent);
+        public const string Id = "VSSDK011";
+
+        internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
+            id: Id,
+            title: Strings.VSSDK011_Title,
+            messageFormat: Strings.VSSDK011_MessageFormat,
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Descriptor);
 
         public override void Initialize(AnalysisContext context)
         {
@@ -55,7 +65,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                         var memberAccessExpression = (MemberAccessExpressionSyntax)node.Expression;
                         context.ReportDiagnostic(
                             Diagnostic.Create(
-                                Rules.AvoidImpliedTaskSchedulerCurrent,
+                                Descriptor,
                                 memberAccessExpression.Name.GetLocation()));
                     }
                 }

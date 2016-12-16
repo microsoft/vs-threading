@@ -27,12 +27,30 @@
     /// ]]>
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class UseAwaitInAsyncMethodsAnalyzer : DiagnosticAnalyzer
+    public class VSSDK008UseAwaitInAsyncMethodsAnalyzer : DiagnosticAnalyzer
     {
+        public const string Id = "VSSDK008";
+
+        internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
+            id: Id,
+            title: Strings.VSSDK008_Title,
+            messageFormat: Strings.VSSDK008_MessageFormat,
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+        internal static readonly DiagnosticDescriptor DescriptorNoAlternativeMethod = new DiagnosticDescriptor(
+            id: Id,
+            title: Strings.VSSDK008_Title,
+            messageFormat: Strings.VSSDK008_MessageFormat_UseAwaitInstead,
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(
-            Rules.UseAwaitInAsyncMethods,
-            Rules.UseAwaitInAsyncMethods_NoAlternativeMethod);
+            Descriptor,
+            DescriptorNoAlternativeMethod);
 
         /// <inheritdoc />
         public override void Initialize(AnalysisContext context)
@@ -76,9 +94,9 @@
                 // Also consider all method calls to check for Async-suffixed alternatives.
                 SimpleNameSyntax invokedMethodName = memberAccessSyntax?.Name ?? invocationExpressionSyntax.Expression as IdentifierNameSyntax;
                 var symbolInfo = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax, context.CancellationToken);
-                if (symbolInfo.Symbol != null && !symbolInfo.Symbol.Name.EndsWith(AsyncSuffixAnalyzer.MandatoryAsyncSuffix))
+                if (symbolInfo.Symbol != null && !symbolInfo.Symbol.Name.EndsWith(VSSDK010AsyncSuffixAnalyzer.MandatoryAsyncSuffix))
                 {
-                    string asyncMethodName = symbolInfo.Symbol.Name + AsyncSuffixAnalyzer.MandatoryAsyncSuffix;
+                    string asyncMethodName = symbolInfo.Symbol.Name + VSSDK010AsyncSuffixAnalyzer.MandatoryAsyncSuffix;
                     var asyncMethodMatches = context.SemanticModel.LookupSymbols(
                         invocationExpressionSyntax.Expression.GetLocation().SourceSpan.Start,
                         symbolInfo.Symbol.ContainingType,
@@ -88,10 +106,10 @@
                     {
                         // An async alternative exists.
                         var properties = ImmutableDictionary<string, string>.Empty
-                            .Add(UseAwaitInAsyncMethodsCodeFix.AsyncMethodKeyName, asyncMethodName);
+                            .Add(VSSDK008UseAwaitInAsyncMethodsCodeFix.AsyncMethodKeyName, asyncMethodName);
 
                         Diagnostic diagnostic = Diagnostic.Create(
-                            Rules.UseAwaitInAsyncMethods,
+                            Descriptor,
                             invokedMethodName.GetLocation(),
                             properties,
                             invokedMethodName.Identifier.Text,
@@ -124,14 +142,14 @@
                             messageArgs.Add(item.MethodName);
                             if (item.AsyncAlternativeMethodName != null)
                             {
-                                properties = properties.Add(UseAwaitInAsyncMethodsCodeFix.AsyncMethodKeyName, item.AsyncAlternativeMethodName);
-                                descriptor = Rules.UseAwaitInAsyncMethods;
+                                properties = properties.Add(VSSDK008UseAwaitInAsyncMethodsCodeFix.AsyncMethodKeyName, item.AsyncAlternativeMethodName);
+                                descriptor = Descriptor;
                                 messageArgs.Add(item.AsyncAlternativeMethodName);
                             }
                             else
                             {
-                                properties = properties.Add(UseAwaitInAsyncMethodsCodeFix.AsyncMethodKeyName, string.Empty);
-                                descriptor = Rules.UseAwaitInAsyncMethods_NoAlternativeMethod;
+                                properties = properties.Add(VSSDK008UseAwaitInAsyncMethodsCodeFix.AsyncMethodKeyName, string.Empty);
+                                descriptor = DescriptorNoAlternativeMethod;
                             }
 
                             Diagnostic diagnostic = Diagnostic.Create(descriptor, location, properties, messageArgs.ToArray());

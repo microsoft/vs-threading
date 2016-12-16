@@ -6,23 +6,23 @@
     using Xunit;
     using Xunit.Abstractions;
 
-    public class SynchronousWaitAnalyzerTests : DiagnosticVerifier
+    public class VSSDK001SynchronousWaitAnalyzerTests : DiagnosticVerifier
     {
         private DiagnosticResult expect = new DiagnosticResult
         {
-            Id = "VSSDK001",
+            Id = VSSDK001SynchronousWaitAnalyzer.Id,
             SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Warning,
         };
 
-        public SynchronousWaitAnalyzerTests(ITestOutputHelper logger)
+        public VSSDK001SynchronousWaitAnalyzerTests(ITestOutputHelper logger)
             : base(logger)
         {
         }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new SynchronousWaitAnalyzer();
+            return new VSSDK001SynchronousWaitAnalyzer();
         }
 
         /// <devremarks>

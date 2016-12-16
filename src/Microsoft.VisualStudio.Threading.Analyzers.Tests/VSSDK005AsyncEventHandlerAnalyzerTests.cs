@@ -7,9 +7,9 @@
     using Xunit;
     using Xunit.Abstractions;
 
-    public class AsyncEventHandlerAnalyzerTests : DiagnosticVerifier
+    public class VSSDK005AsyncEventHandlerAnalyzerTests : DiagnosticVerifier
     {
-        public AsyncEventHandlerAnalyzerTests(ITestOutputHelper logger)
+        public VSSDK005AsyncEventHandlerAnalyzerTests(ITestOutputHelper logger)
             : base(logger)
         {
         }
@@ -21,7 +21,7 @@
             {
                 results[i] = new DiagnosticResult
                 {
-                    Id = "VSSDK005",
+                    Id = VSSDK005AsyncEventHandlerAnalyzer.Id,
                     SkipVerifyMessage = true,
                     Severity = DiagnosticSeverity.Warning,
                     Locations = new[] { locations[i] }
@@ -33,7 +33,7 @@
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new AsyncEventHandlerAnalyzer();
+            return new VSSDK005AsyncEventHandlerAnalyzer();
         }
 
         [Fact]

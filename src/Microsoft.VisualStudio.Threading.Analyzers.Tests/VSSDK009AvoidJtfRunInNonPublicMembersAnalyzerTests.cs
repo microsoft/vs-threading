@@ -6,25 +6,25 @@
     using Xunit;
     using Xunit.Abstractions;
 
-    public class AvoidJtfRunInNonPublicMembersAnalyzerTests : DiagnosticVerifier
+    public class VSSDK009AvoidJtfRunInNonPublicMembersAnalyzerTests : DiagnosticVerifier
     {
         private static readonly DiagnosticResult[] NoDiagnostic = new DiagnosticResult[0];
 
         private DiagnosticResult expect = new DiagnosticResult
         {
-            Id = "VSSDK009",
+            Id = VSSDK009AvoidJtfRunInNonPublicMembersAnalyzer.Id,
             SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Info,
         };
 
-        public AvoidJtfRunInNonPublicMembersAnalyzerTests(ITestOutputHelper logger)
+        public VSSDK009AvoidJtfRunInNonPublicMembersAnalyzerTests(ITestOutputHelper logger)
             : base(logger)
         {
         }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new AvoidJtfRunInNonPublicMembersAnalyzer();
+            return new VSSDK009AvoidJtfRunInNonPublicMembersAnalyzer();
         }
 
         [Fact]

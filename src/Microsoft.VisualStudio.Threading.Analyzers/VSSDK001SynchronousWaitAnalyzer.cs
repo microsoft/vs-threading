@@ -31,14 +31,24 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     ///   task.Wait();  /* This analyzer will report warning on this synchronous wait. */
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class SynchronousWaitAnalyzer : DiagnosticAnalyzer
+    public class VSSDK001SynchronousWaitAnalyzer : DiagnosticAnalyzer
     {
+        public const string Id = "VSSDK001";
+
+        internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
+            id: Id,
+            title: Strings.VSSDK001_Title,
+            messageFormat: Strings.VSSDK001_MessageFormat,
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         {
             get
             {
-                return ImmutableArray.Create(Rules.SynchronousWaitRule);
+                return ImmutableArray.Create(Descriptor);
             }
         }
 
@@ -106,12 +116,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 if (string.Equals(invokeMethod.Name, nameof(Task.Wait), StringComparison.Ordinal)
                     && Utils.IsEqualToOrDerivedFrom(invokeMethod.ContainingType, taskType))
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(Rules.SynchronousWaitRule, context.Node.GetLocation()));
+                    context.ReportDiagnostic(Diagnostic.Create(Descriptor, context.Node.GetLocation()));
                 }
                 else if (string.Equals(invokeMethod.Name, "GetResult", StringComparison.Ordinal)
                     && invokeMethod.ContainingType.Name.EndsWith("Awaiter", StringComparison.Ordinal))
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(Rules.SynchronousWaitRule, context.Node.GetLocation()));
+                    context.ReportDiagnostic(Diagnostic.Create(Descriptor, context.Node.GetLocation()));
                 }
             }
         }
@@ -130,7 +140,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 if (string.Equals(property.Name, nameof(Task<object>.Result), StringComparison.Ordinal)
                     && Utils.IsEqualToOrDerivedFrom(property.ContainingType, taskType))
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(Rules.SynchronousWaitRule, context.Node.GetLocation()));
+                    context.ReportDiagnostic(Diagnostic.Create(Descriptor, context.Node.GetLocation()));
                 }
             }
         }

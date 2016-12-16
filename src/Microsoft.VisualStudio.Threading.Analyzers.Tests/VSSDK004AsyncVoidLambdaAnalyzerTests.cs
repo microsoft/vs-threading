@@ -6,23 +6,23 @@
     using Xunit;
     using Xunit.Abstractions;
 
-    public class AsyncVoidLambdaAnalyzerTests : DiagnosticVerifier
+    public class VSSDK004AsyncVoidLambdaAnalyzerTests : DiagnosticVerifier
     {
         private DiagnosticResult expect = new DiagnosticResult
         {
-            Id = "VSSDK004",
+            Id = VSSDK004AsyncVoidLambdaAnalyzer.Id,
             SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Warning,
         };
 
-        public AsyncVoidLambdaAnalyzerTests(ITestOutputHelper logger)
+        public VSSDK004AsyncVoidLambdaAnalyzerTests(ITestOutputHelper logger)
             : base(logger)
         {
         }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new AsyncVoidLambdaAnalyzer();
+            return new VSSDK004AsyncVoidLambdaAnalyzer();
         }
 
         [Fact]

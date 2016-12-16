@@ -38,14 +38,24 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     /// ]]>
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class JtfRunAwaitTaskAnalyzer : DiagnosticAnalyzer
+    public class VSSDK006JtfRunAwaitTaskAnalyzer : DiagnosticAnalyzer
     {
+        public const string Id = "VSSDK006";
+
+        internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
+            id: Id,
+            title: Strings.VSSDK006_Title,
+            messageFormat: Strings.VSSDK006_MessageFormat,
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         {
             get
             {
-                return ImmutableArray.Create(Rules.AvoidAwaitTaskInsideJoinableTaskFactoryRun);
+                return ImmutableArray.Create(Descriptor);
             }
         }
 
@@ -111,7 +121,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             if (!dataFlowAnalysis.WrittenInside.Contains(symbolAwaitingOn.Symbol))
             {
-                context.ReportDiagnostic(Diagnostic.Create(Rules.AvoidAwaitTaskInsideJoinableTaskFactoryRun, awaitExpressionSyntax.Expression.GetLocation()));
+                context.ReportDiagnostic(Diagnostic.Create(Descriptor, awaitExpressionSyntax.Expression.GetLocation()));
             }
         }
 

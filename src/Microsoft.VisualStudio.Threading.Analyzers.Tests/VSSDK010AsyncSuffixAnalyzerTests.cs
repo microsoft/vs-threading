@@ -6,28 +6,28 @@
     using Xunit;
     using Xunit.Abstractions;
 
-    public class AsyncSuffixAnalyzerTests : CodeFixVerifier
+    public class VSSDK010AsyncSuffixAnalyzerTests : CodeFixVerifier
     {
-        public AsyncSuffixAnalyzerTests(ITestOutputHelper logger)
+        public VSSDK010AsyncSuffixAnalyzerTests(ITestOutputHelper logger)
             : base(logger)
         {
         }
 
         private DiagnosticResult NewExpectedTemplate() => new DiagnosticResult
         {
-            Id = "VSSDK010",
+            Id = VSSDK010AsyncSuffixAnalyzer.Id,
             SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Warning,
         };
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new AsyncSuffixAnalyzer();
+            return new VSSDK010AsyncSuffixAnalyzer();
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()
         {
-            return new AsyncSuffixCodeFix();
+            return new VSSDK010AsyncSuffixCodeFix();
         }
 
         [Fact]

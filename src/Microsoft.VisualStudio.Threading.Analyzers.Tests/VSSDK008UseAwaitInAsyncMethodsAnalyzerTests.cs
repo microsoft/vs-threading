@@ -6,23 +6,23 @@
     using Xunit;
     using Xunit.Abstractions;
 
-    public class UseAwaitInAsyncMethodsAnalyzerTests : CodeFixVerifier
+    public class VSSDK008UseAwaitInAsyncMethodsAnalyzerTests : CodeFixVerifier
     {
         private DiagnosticResult expect = new DiagnosticResult
         {
-            Id = "VSSDK008",
+            Id = VSSDK008UseAwaitInAsyncMethodsAnalyzer.Id,
             SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Warning,
         };
 
-        public UseAwaitInAsyncMethodsAnalyzerTests(ITestOutputHelper logger)
+        public VSSDK008UseAwaitInAsyncMethodsAnalyzerTests(ITestOutputHelper logger)
             : base(logger)
         {
         }
 
-        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer() => new UseAwaitInAsyncMethodsAnalyzer();
+        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer() => new VSSDK008UseAwaitInAsyncMethodsAnalyzer();
 
-        protected override CodeFixProvider GetCSharpCodeFixProvider() => new UseAwaitInAsyncMethodsCodeFix();
+        protected override CodeFixProvider GetCSharpCodeFixProvider() => new VSSDK008UseAwaitInAsyncMethodsCodeFix();
 
         [Fact]
         public void JTFRunInTaskReturningMethodGeneratesWarning()

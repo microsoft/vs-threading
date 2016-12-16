@@ -31,14 +31,24 @@
     /// ]]>
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class AsyncVoidMethodAnalyzer : DiagnosticAnalyzer
+    public class VSSDK003AsyncVoidMethodAnalyzer : DiagnosticAnalyzer
     {
+        public const string Id = "VSSDK003";
+
+        internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
+            id: Id,
+            title: Strings.VSSDK003_Title,
+            messageFormat: Strings.VSSDK003_MessageFormat,
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         {
             get
             {
-                return ImmutableArray.Create(Rules.AvoidAsyncVoidMethod);
+                return ImmutableArray.Create(Descriptor);
             }
         }
 
@@ -60,7 +70,7 @@
                 // report warnings only if they are not used like that way.
                 if (!Utils.IsEventHandler(methodSymbol, context.Compilation))
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(Rules.AvoidAsyncVoidMethod, methodSymbol.Locations[0]));
+                    context.ReportDiagnostic(Diagnostic.Create(Descriptor, methodSymbol.Locations[0]));
                 }
             }
         }

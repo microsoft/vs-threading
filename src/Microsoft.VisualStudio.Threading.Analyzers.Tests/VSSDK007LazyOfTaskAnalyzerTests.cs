@@ -6,23 +6,23 @@
     using Xunit;
     using Xunit.Abstractions;
 
-    public class LazyOfTaskAnalyzerTests : DiagnosticVerifier
+    public class VSSDK007LazyOfTaskAnalyzerTests : DiagnosticVerifier
     {
         private DiagnosticResult expect = new DiagnosticResult
         {
-            Id = "VSSDK007",
+            Id = VSSDK007LazyOfTaskAnalyzer.Id,
             SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Error,
         };
 
-        public LazyOfTaskAnalyzerTests(ITestOutputHelper logger)
+        public VSSDK007LazyOfTaskAnalyzerTests(ITestOutputHelper logger)
             : base(logger)
         {
         }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new LazyOfTaskAnalyzer();
+            return new VSSDK007LazyOfTaskAnalyzer();
         }
 
         [Fact]
