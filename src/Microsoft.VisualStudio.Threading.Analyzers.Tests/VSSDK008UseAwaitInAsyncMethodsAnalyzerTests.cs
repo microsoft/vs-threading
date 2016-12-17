@@ -629,5 +629,24 @@ static class PlateUtils {
 
             this.VerifyCSharpDiagnostic(test);
         }
+
+        [Fact]
+        public void AwaitingAsyncMethodWithoutSuffixProducesNoWarningWhereSuffixVersionExists()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task Foo() => null;
+    Task FooAsync() => null;
+
+    async Task BarAsync() {
+       await Foo();
+    }
+}
+";
+
+            this.VerifyCSharpDiagnostic(test);
+        }
     }
 }

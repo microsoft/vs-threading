@@ -94,7 +94,9 @@
                 // Also consider all method calls to check for Async-suffixed alternatives.
                 SimpleNameSyntax invokedMethodName = memberAccessSyntax?.Name ?? invocationExpressionSyntax.Expression as IdentifierNameSyntax;
                 var symbolInfo = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax, context.CancellationToken);
-                if (symbolInfo.Symbol != null && !symbolInfo.Symbol.Name.EndsWith(VSSDK010AsyncSuffixAnalyzer.MandatoryAsyncSuffix))
+                var methodSymbol = symbolInfo.Symbol as IMethodSymbol;
+                if (symbolInfo.Symbol != null && !symbolInfo.Symbol.Name.EndsWith(VSSDK010AsyncSuffixAnalyzer.MandatoryAsyncSuffix) &&
+                    !(methodSymbol?.ReturnType?.Name == nameof(Task) && methodSymbol.ReturnType.BelongsToNamespace(Namespaces.SystemThreadingTasks)))
                 {
                     string asyncMethodName = symbolInfo.Symbol.Name + VSSDK010AsyncSuffixAnalyzer.MandatoryAsyncSuffix;
                     var asyncMethodMatches = context.SemanticModel.LookupSymbols(
