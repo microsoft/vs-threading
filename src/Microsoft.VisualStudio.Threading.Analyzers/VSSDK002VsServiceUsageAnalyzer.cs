@@ -64,7 +64,11 @@
             SyntaxKind.MethodDeclaration,
             SyntaxKind.AnonymousMethodExpression,
             SyntaxKind.SimpleLambdaExpression,
-            SyntaxKind.ParenthesizedLambdaExpression);
+            SyntaxKind.ParenthesizedLambdaExpression,
+            SyntaxKind.GetAccessorDeclaration,
+            SyntaxKind.SetAccessorDeclaration,
+            SyntaxKind.AddAccessorDeclaration,
+            SyntaxKind.RemoveAccessorDeclaration);
 
         private enum ThreadingContext
         {

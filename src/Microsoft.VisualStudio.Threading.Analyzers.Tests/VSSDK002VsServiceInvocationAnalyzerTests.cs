@@ -82,6 +82,27 @@ class Test {
         }
 
         [Fact]
+        public void InvokeVsSolutionNoCheck_InProperty()
+        {
+            var test = @"
+using System;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    int F {
+        get {
+            IVsSolution sln = null;
+            sln.SetProperty(1000, null);
+            return 0;
+        }
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 13) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
+        [Fact]
         public void InvokeVsSolutionAfterVerifyOnUIThread()
         {
             var test = @"
@@ -315,6 +336,28 @@ class Test {
     }
 
     void VerifyOnUIThread() {
+    }
+}
+";
+            this.VerifyCSharpDiagnostic(test);
+        }
+
+        [Fact]
+        public void InvokeVsSolutionNoCheck_InProperty_AfterThrowIfNotOnUIThread()
+        {
+            var test = @"
+using System;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    int F {
+        get {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            IVsSolution sln = null;
+            sln.SetProperty(1000, null);
+            return 0;
+        }
     }
 }
 ";
