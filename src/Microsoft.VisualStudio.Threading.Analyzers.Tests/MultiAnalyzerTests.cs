@@ -57,6 +57,29 @@ class Test {
             this.VerifyNoMoreThanOneDiagnosticPerLine(test);
         }
 
+        /// <summary>
+        /// Verifies that no analyzer throws due to a missing interface member.
+        /// </summary>
+        [Fact]
+        public void MissingInterfaceImplementationMember()
+        {
+            var test = @"
+public interface A {
+    void Foo();
+}
+
+public class Parent : A {
+    // This class intentionally does not implement the interface
+}
+
+internal class Child : Parent {
+    public Child() { }
+}
+";
+
+            this.VerifyCSharpDiagnostic(new[] { test }, hasEntrypoint: false, allowErrors: true);
+        }
+
         private void VerifyNoMoreThanOneDiagnosticPerLine(string test)
         {
             this.LogFileContent(test);

@@ -201,7 +201,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             var interfaceImplementations = from iface in symbol.ContainingType.AllInterfaces
                                            from member in iface.GetMembers()
                                            let implementingMember = symbol.ContainingType.FindImplementationForInterfaceMember(member)
-                                           where implementingMember.Equals(symbol)
+                                           where implementingMember?.Equals(symbol) ?? false
                                            select iface;
 
             return interfaceImplementations;
