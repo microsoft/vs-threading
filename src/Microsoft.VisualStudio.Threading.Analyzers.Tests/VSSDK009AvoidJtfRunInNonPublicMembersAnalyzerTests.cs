@@ -166,7 +166,7 @@ class Program {
     }
 }
 ";
-            this.VerifyCSharpDiagnostic(new[] { test }, hasEntrypoint: true, expected: NoDiagnostic);
+            this.VerifyCSharpDiagnostic(new[] { test }, hasEntrypoint: true, allowErrors: false, expected: NoDiagnostic);
         }
 
         [Fact]
