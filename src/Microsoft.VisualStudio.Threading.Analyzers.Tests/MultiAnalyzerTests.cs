@@ -21,17 +21,17 @@
         protected override ImmutableArray<DiagnosticAnalyzer> GetCSharpDiagnosticAnalyzers()
         {
             return ImmutableArray.Create<DiagnosticAnalyzer>(
-                new VSSDK005AsyncEventHandlerAnalyzer(),
-                new VSSDK010AsyncSuffixAnalyzer(),
-                new VSSDK004AsyncVoidLambdaAnalyzer(),
+                new VSSDK001SynchronousWaitAnalyzer(),
+                new VSSDK002VsServiceUsageAnalyzer(),
                 new VSSDK003AsyncVoidMethodAnalyzer(),
-                new VSSDK011AvoidImpliedTaskSchedulerCurrentAnalyzer(),
-                new VSSDK009AvoidJtfRunInNonPublicMembersAnalyzer(),
+                new VSSDK004AsyncVoidLambdaAnalyzer(),
+                new VSSDK005AsyncEventHandlerAnalyzer(),
                 new VSSDK006JtfRunAwaitTaskAnalyzer(),
                 new VSSDK007LazyOfTaskAnalyzer(),
-                new VSSDK001SynchronousWaitAnalyzer(),
                 new VSSDK008UseAwaitInAsyncMethodsAnalyzer(),
-                new VSSDK002VsServiceUsageAnalyzer());
+                new VSSDK009AvoidJtfRunInNonPublicMembersAnalyzer(),
+                new VSSDK010AsyncSuffixAnalyzer(),
+                new VSSDK011AvoidImpliedTaskSchedulerCurrentAnalyzer());
         }
 
         [Fact]
