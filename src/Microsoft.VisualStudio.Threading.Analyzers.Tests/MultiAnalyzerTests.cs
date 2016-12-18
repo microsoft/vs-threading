@@ -20,18 +20,10 @@
 
         protected override ImmutableArray<DiagnosticAnalyzer> GetCSharpDiagnosticAnalyzers()
         {
-            return ImmutableArray.Create<DiagnosticAnalyzer>(
-                new VSSDK001SynchronousWaitAnalyzer(),
-                new VSSDK002VsServiceUsageAnalyzer(),
-                new VSSDK003AsyncVoidMethodAnalyzer(),
-                new VSSDK004AsyncVoidLambdaAnalyzer(),
-                new VSSDK005AsyncEventHandlerAnalyzer(),
-                new VSSDK006JtfRunAwaitTaskAnalyzer(),
-                new VSSDK007LazyOfTaskAnalyzer(),
-                new VSSDK008UseAwaitInAsyncMethodsAnalyzer(),
-                new VSSDK009AvoidJtfRunInNonPublicMembersAnalyzer(),
-                new VSSDK010AsyncSuffixAnalyzer(),
-                new VSSDK011AvoidImpliedTaskSchedulerCurrentAnalyzer());
+            var analyzers = from type in typeof(VSSDK001SynchronousWaitAnalyzer).Assembly.GetTypes()
+                            where type.GetCustomAttributes(typeof(DiagnosticAnalyzerAttribute), true).Any()
+                            select (DiagnosticAnalyzer)Activator.CreateInstance(type);
+            return analyzers.ToImmutableArray();
         }
 
         [Fact]
