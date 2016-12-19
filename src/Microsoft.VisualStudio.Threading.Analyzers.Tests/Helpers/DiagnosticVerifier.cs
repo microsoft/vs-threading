@@ -70,7 +70,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <param name="expected"> DiagnosticResults that should appear after the analyzer is run on the source</param>
         protected void VerifyCSharpDiagnostic(string source, params DiagnosticResult[] expected)
         {
-            this.VerifyDiagnostics(new[] { source }, LanguageNames.CSharp, this.GetCSharpDiagnosticAnalyzers(), hasEntrypoint: false, expected: expected);
+            this.VerifyDiagnostics(new[] { source }, LanguageNames.CSharp, this.GetCSharpDiagnosticAnalyzers(), hasEntrypoint: false, allowErrors: false, expected: expected);
         }
 
         /// <summary>
@@ -81,7 +81,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <param name="expected">DiagnosticResults that should appear after the analyzer is run on the source</param>
         protected void VerifyBasicDiagnostic(string source, params DiagnosticResult[] expected)
         {
-            this.VerifyDiagnostics(new[] { source }, LanguageNames.VisualBasic, this.GetBasicDiagnosticAnalyzers(), hasEntrypoint: false, expected: expected);
+            this.VerifyDiagnostics(new[] { source }, LanguageNames.VisualBasic, this.GetBasicDiagnosticAnalyzers(), hasEntrypoint: false, allowErrors: false, expected: expected);
         }
 
         /// <summary>
@@ -92,7 +92,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <param name="expected">DiagnosticResults that should appear after the analyzer is run on the sources</param>
         protected void VerifyCSharpDiagnostic(string[] sources, params DiagnosticResult[] expected)
         {
-            this.VerifyCSharpDiagnostic(sources, hasEntrypoint: false, expected: expected);
+            this.VerifyCSharpDiagnostic(sources, hasEntrypoint: false, allowErrors: false, expected: expected);
         }
 
         /// <summary>
@@ -101,10 +101,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// </summary>
         /// <param name="sources">An array of strings to create source documents from to run the analyzers on</param>
         /// <param name="hasEntrypoint"><c>true</c> to set the compiler in a mode as if it were compiling an exe (as opposed to a dll).</param>
+        /// <param name="allowErrors">A value indicating whether to fail the test if there are compiler errors in the code sample.</param>
         /// <param name="expected">DiagnosticResults that should appear after the analyzer is run on the sources</param>
-        protected void VerifyCSharpDiagnostic(string[] sources, bool hasEntrypoint, params DiagnosticResult[] expected)
+        protected void VerifyCSharpDiagnostic(string[] sources, bool hasEntrypoint, bool allowErrors, params DiagnosticResult[] expected)
         {
-            this.VerifyDiagnostics(sources, LanguageNames.CSharp, this.GetCSharpDiagnosticAnalyzers(), hasEntrypoint, expected);
+            this.VerifyDiagnostics(sources, LanguageNames.CSharp, this.GetCSharpDiagnosticAnalyzers(), hasEntrypoint, allowErrors, expected);
         }
 
         /// <summary>
@@ -113,10 +114,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// </summary>
         /// <param name="sources">An array of strings to create source documents from to run the analyzers on</param>
         /// <param name="hasEntrypoint"><c>true</c> to set the compiler in a mode as if it were compiling an exe (as opposed to a dll).</param>
+        /// <param name="allowErrors">A value indicating whether to fail the test if there are compiler errors in the code sample.</param>
         /// <param name="expected">DiagnosticResults that should appear after the analyzer is run on the sources</param>
-        protected void VerifyBasicDiagnostic(string[] sources, bool hasEntrypoint, params DiagnosticResult[] expected)
+        protected void VerifyBasicDiagnostic(string[] sources, bool hasEntrypoint, bool allowErrors, params DiagnosticResult[] expected)
         {
-            this.VerifyDiagnostics(sources, LanguageNames.VisualBasic, this.GetBasicDiagnosticAnalyzers(), hasEntrypoint, expected);
+            this.VerifyDiagnostics(sources, LanguageNames.VisualBasic, this.GetBasicDiagnosticAnalyzers(), hasEntrypoint, allowErrors, expected);
         }
 
         /// <summary>
@@ -127,8 +129,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <param name="language">The language of the classes represented by the source strings</param>
         /// <param name="analyzers">The analyzers to be run on the source code</param>
         /// <param name="hasEntrypoint"><c>true</c> to set the compiler in a mode as if it were compiling an exe (as opposed to a dll).</param>
+        /// <param name="allowErrors">A value indicating whether to fail the test if there are compiler errors in the code sample.</param>
         /// <param name="expected">DiagnosticResults that should appear after the analyzer is run on the sources</param>
-        private void VerifyDiagnostics(string[] sources, string language, ImmutableArray<DiagnosticAnalyzer> analyzers, bool hasEntrypoint, params DiagnosticResult[] expected)
+        private void VerifyDiagnostics(string[] sources, string language, ImmutableArray<DiagnosticAnalyzer> analyzers, bool hasEntrypoint, bool allowErrors, params DiagnosticResult[] expected)
         {
             for (int i = 0; i < sources.Length; i++)
             {
@@ -136,7 +139,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 this.LogFileContent(sources[i]);
             }
 
-            var diagnostics = GetSortedDiagnostics(sources, language, analyzers, hasEntrypoint);
+            var diagnostics = GetSortedDiagnostics(sources, language, analyzers, hasEntrypoint, allowErrors);
             this.VerifyDiagnosticResults(diagnostics, analyzers, expected);
         }
 

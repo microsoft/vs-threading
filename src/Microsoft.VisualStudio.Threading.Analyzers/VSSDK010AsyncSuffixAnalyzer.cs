@@ -26,7 +26,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             id: Id,
             title: Strings.VSSDK010_Title,
             messageFormat: Strings.VSSDK010_MessageFormat,
-            category: "Usage",
+            category: "Style",
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
@@ -57,6 +57,13 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 if (methodSymbol.ReturnType.Name == nameof(Task) &&
                     methodSymbol.ReturnType.BelongsToNamespace(Namespaces.SystemThreadingTasks))
                 {
+                    // Now that we have done the cheap checks to find that this method may deserve a diagnostic,
+                    // Do deeper checks to skip over methods that implement API contracts that are controlled elsewhere.
+                    if (methodSymbol.FindInterfacesImplemented().Any() || methodSymbol.IsOverride)
+                    {
+                        return;
+                    }
+
                     var properties = ImmutableDictionary<string, string>.Empty
                         .Add(VSSDK010AsyncSuffixCodeFix.NewNameKey, methodSymbol.Name + MandatoryAsyncSuffix);
                     context.ReportDiagnostic(Diagnostic.Create(

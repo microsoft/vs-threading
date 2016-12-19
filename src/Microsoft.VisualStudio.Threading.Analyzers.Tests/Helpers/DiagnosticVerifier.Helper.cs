@@ -49,10 +49,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <param name="language">The language the source classes are in</param>
         /// <param name="analyzers">The analyzers to be run on the sources</param>
         /// <param name="hasEntrypoint"><c>true</c> to set the compiler in a mode as if it were compiling an exe (as opposed to a dll).</param>
+        /// <param name="allowErrors">A value indicating whether to fail the test if there are compiler errors in the code sample.</param>
         /// <returns>An IEnumerable of Diagnostics that surfaced in the source code, sorted by Location</returns>
-        protected static Diagnostic[] GetSortedDiagnostics(string[] sources, string language, ImmutableArray<DiagnosticAnalyzer> analyzers, bool hasEntrypoint)
+        protected static Diagnostic[] GetSortedDiagnostics(string[] sources, string language, ImmutableArray<DiagnosticAnalyzer> analyzers, bool hasEntrypoint, bool allowErrors = false)
         {
-            return GetSortedDiagnosticsFromDocuments(analyzers, GetDocuments(sources, language), hasEntrypoint);
+            return GetSortedDiagnosticsFromDocuments(analyzers, GetDocuments(sources, language), hasEntrypoint, allowErrors);
         }
 
         /// <summary>
@@ -62,8 +63,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <param name="analyzers">The analyzers to run on the documents</param>
         /// <param name="documents">The Documents that the analyzer will be run on</param>
         /// <param name="hasEntrypoint"><c>true</c> to set the compiler in a mode as if it were compiling an exe (as opposed to a dll).</param>
+        /// <param name="allowErrors">A value indicating whether to fail the test if there are compiler errors in the code sample.</param>
         /// <returns>An IEnumerable of Diagnostics that surfaced in the source code, sorted by Location</returns>
-        protected static Diagnostic[] GetSortedDiagnosticsFromDocuments(ImmutableArray<DiagnosticAnalyzer> analyzers, Document[] documents, bool hasEntrypoint)
+        protected static Diagnostic[] GetSortedDiagnosticsFromDocuments(ImmutableArray<DiagnosticAnalyzer> analyzers, Document[] documents, bool hasEntrypoint, bool allowErrors = false)
         {
             var projects = new HashSet<Project>();
             foreach (var document in documents)
@@ -82,7 +84,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 
                 var ordinaryDiags = compilation.GetDiagnostics();
                 var errorDiags = ordinaryDiags.Where(d => d.Severity == DiagnosticSeverity.Error);
-                if (errorDiags.Any())
+                if (!allowErrors && errorDiags.Any())
                 {
                     Assert.False(true, "Compilation errors exist in the test source code, such as:" + Environment.NewLine + errorDiags.First());
                 }

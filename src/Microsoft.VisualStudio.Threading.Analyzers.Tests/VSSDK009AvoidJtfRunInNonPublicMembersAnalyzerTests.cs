@@ -166,7 +166,7 @@ class Program {
     }
 }
 ";
-            this.VerifyCSharpDiagnostic(new[] { test }, hasEntrypoint: true, expected: NoDiagnostic);
+            this.VerifyCSharpDiagnostic(new[] { test }, hasEntrypoint: true, allowErrors: false, expected: NoDiagnostic);
         }
 
         [Fact]
@@ -193,6 +193,29 @@ class Test : IFoo {
         }
 
         [Fact]
+        public void JtfRunInImplicitInterfaceImplementationOfInternalInterface_ProducesDiagnostic()
+        {
+            var test = @"
+using Microsoft.VisualStudio.Threading;
+
+interface IFoo
+{
+    void F();
+}
+
+class Test : IFoo {
+    JoinableTaskFactory jtf;
+
+    public void F() {
+        jtf.Run(() => TplExtensions.CompletedTask);
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 13, 13) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
+        [Fact]
         public void JtfRunInExplicitInterfaceImplementationOfPublicInterface_ProducesNoDiagnostic()
         {
             var test = @"
@@ -207,6 +230,28 @@ class Test : IFoo {
     JoinableTaskFactory jtf;
 
     void IFoo.F() {
+        jtf.Run(() => TplExtensions.CompletedTask);
+    }
+}
+";
+            this.VerifyCSharpDiagnostic(test, NoDiagnostic);
+        }
+
+        [Fact]
+        public void JtfRunInImplicitInterfaceImplementationOfPublicInterface_ProducesNoDiagnostic()
+        {
+            var test = @"
+using Microsoft.VisualStudio.Threading;
+
+public interface IFoo
+{
+    void F();
+}
+
+class Test : IFoo {
+    JoinableTaskFactory jtf;
+
+    public void F() {
         jtf.Run(() => TplExtensions.CompletedTask);
     }
 }

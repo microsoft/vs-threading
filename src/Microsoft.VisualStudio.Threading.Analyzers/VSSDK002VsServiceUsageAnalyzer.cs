@@ -64,7 +64,11 @@
             SyntaxKind.MethodDeclaration,
             SyntaxKind.AnonymousMethodExpression,
             SyntaxKind.SimpleLambdaExpression,
-            SyntaxKind.ParenthesizedLambdaExpression);
+            SyntaxKind.ParenthesizedLambdaExpression,
+            SyntaxKind.GetAccessorDeclaration,
+            SyntaxKind.SetAccessorDeclaration,
+            SyntaxKind.AddAccessorDeclaration,
+            SyntaxKind.RemoveAccessorDeclaration);
 
         private enum ThreadingContext
         {
@@ -110,6 +114,7 @@
 
             internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
             {
+                var invocationSyntax = (InvocationExpressionSyntax)context.Node;
                 var invokeMethod = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
                 if (invokeMethod != null)
                 {
@@ -123,22 +128,27 @@
                         }
                     }
 
-                    this.AnalyzeTypeWithinContext(invokeMethod.ContainingType, context);
+                    // The diagnostic (if any) should underline the method name only.
+                    var focusedNode = invocationSyntax.Expression;
+                    focusedNode = (focusedNode as MemberAccessExpressionSyntax)?.Name ?? focusedNode;
+                    this.AnalyzeTypeWithinContext(invokeMethod.ContainingType, context, focusedNode);
                 }
             }
 
             internal void AnalyzeMemberAccess(SyntaxNodeAnalysisContext context)
             {
+                var memberAccessSyntax = (MemberAccessExpressionSyntax)context.Node;
                 var property = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IPropertySymbol;
                 if (property != null)
                 {
-                    this.AnalyzeTypeWithinContext(property.ContainingType, context);
+                    this.AnalyzeTypeWithinContext(property.ContainingType, context, memberAccessSyntax.Name);
                 }
             }
 
             internal void AnalyzeCast(SyntaxNodeAnalysisContext context)
             {
-                var type = context.SemanticModel.GetSymbolInfo(((CastExpressionSyntax)context.Node).Type).Symbol as ITypeSymbol;
+                var castSyntax = (CastExpressionSyntax)context.Node;
+                var type = context.SemanticModel.GetSymbolInfo(castSyntax.Type).Symbol as ITypeSymbol;
                 if (type != null)
                 {
                     this.AnalyzeTypeWithinContext(type, context);
@@ -147,14 +157,15 @@
 
             internal void AnalyzeAs(SyntaxNodeAnalysisContext context)
             {
-                var type = context.SemanticModel.GetSymbolInfo(((BinaryExpressionSyntax)context.Node).Right).Symbol as ITypeSymbol;
+                var asSyntax = (BinaryExpressionSyntax)context.Node;
+                var type = context.SemanticModel.GetSymbolInfo(asSyntax.Right).Symbol as ITypeSymbol;
                 if (type != null)
                 {
                     this.AnalyzeTypeWithinContext(type, context);
                 }
             }
 
-            private void AnalyzeTypeWithinContext(ITypeSymbol type, SyntaxNodeAnalysisContext context)
+            private void AnalyzeTypeWithinContext(ITypeSymbol type, SyntaxNodeAnalysisContext context, SyntaxNode focusDiagnosticOn = null)
             {
                 if (type.TypeKind == TypeKind.Interface
                     && type.ContainingAssembly != null
@@ -169,7 +180,8 @@
 
                     if (threadingContext != ThreadingContext.MainThread)
                     {
-                        context.ReportDiagnostic(Diagnostic.Create(Descriptor, context.Node.GetLocation(), type.Name));
+                        Location location = (focusDiagnosticOn ?? context.Node).GetLocation();
+                        context.ReportDiagnostic(Diagnostic.Create(Descriptor, location, type.Name));
                     }
                 }
             }

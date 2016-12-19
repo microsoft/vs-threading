@@ -125,8 +125,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Avoid Async Void method, because any exceptions thrown out of an async void method will be raised directly on the SynchronizationContext and will crash the process. 
-        ///Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info..
+        ///   Looks up a localized string similar to Avoid &quot;async void&quot; methods, because any exceptions not handled by the method will crash the process..
         /// </summary>
         internal static string VSSDK003_MessageFormat {
             get {
@@ -144,8 +143,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Avoid using async lambda as void returning delegate type, because any exceptions thrown out of an async lambda returning void will be raised directly on the SynchronizationContext and will crash the process. 
-        ///Refer to https://msdn.microsoft.com/en-us/magazine/jj991977.aspx for more info..
+        ///   Looks up a localized string similar to Avoid using async lambda for a void returning delegate type, because any exceptions not handled by the delegate will crash the process..
         /// </summary>
         internal static string VSSDK004_MessageFormat {
             get {

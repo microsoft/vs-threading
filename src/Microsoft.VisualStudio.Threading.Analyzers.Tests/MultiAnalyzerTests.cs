@@ -20,18 +20,10 @@
 
         protected override ImmutableArray<DiagnosticAnalyzer> GetCSharpDiagnosticAnalyzers()
         {
-            return ImmutableArray.Create<DiagnosticAnalyzer>(
-                new VSSDK005AsyncEventHandlerAnalyzer(),
-                new VSSDK010AsyncSuffixAnalyzer(),
-                new VSSDK004AsyncVoidLambdaAnalyzer(),
-                new VSSDK003AsyncVoidMethodAnalyzer(),
-                new VSSDK011AvoidImpliedTaskSchedulerCurrentAnalyzer(),
-                new VSSDK009AvoidJtfRunInNonPublicMembersAnalyzer(),
-                new VSSDK006JtfRunAwaitTaskAnalyzer(),
-                new VSSDK007LazyOfTaskAnalyzer(),
-                new VSSDK001SynchronousWaitAnalyzer(),
-                new VSSDK008UseAwaitInAsyncMethodsAnalyzer(),
-                new VSSDK002VsServiceUsageAnalyzer());
+            var analyzers = from type in typeof(VSSDK001SynchronousWaitAnalyzer).Assembly.GetTypes()
+                            where type.GetCustomAttributes(typeof(DiagnosticAnalyzerAttribute), true).Any()
+                            select (DiagnosticAnalyzer)Activator.CreateInstance(type);
+            return analyzers.ToImmutableArray();
         }
 
         [Fact]
@@ -55,6 +47,29 @@ class Test {
 }";
 
             this.VerifyNoMoreThanOneDiagnosticPerLine(test);
+        }
+
+        /// <summary>
+        /// Verifies that no analyzer throws due to a missing interface member.
+        /// </summary>
+        [Fact]
+        public void MissingInterfaceImplementationMember()
+        {
+            var test = @"
+public interface A {
+    void Foo();
+}
+
+public class Parent : A {
+    // This class intentionally does not implement the interface
+}
+
+internal class Child : Parent {
+    public Child() { }
+}
+";
+
+            this.VerifyCSharpDiagnostic(new[] { test }, hasEntrypoint: false, allowErrors: true);
         }
 
         private void VerifyNoMoreThanOneDiagnosticPerLine(string test)

@@ -67,3 +67,5 @@ void Callback(Func<Task> action)
     // out of scope of sample
 }
 ```
+
+Refer to [Async/Await - Best Practices in Asynchronous Programming](https://msdn.microsoft.com/en-us/magazine/jj991977.aspx) for more info.

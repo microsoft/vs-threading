@@ -25,3 +25,5 @@ async Task DoSomethingAsync()
 ```
 
 A code fix is offered that automatically changes the return type of the method. 
+
+Refer to [Async/Await - Best Practices in Asynchronous Programming](https://msdn.microsoft.com/en-us/magazine/jj991977.aspx) for more info.

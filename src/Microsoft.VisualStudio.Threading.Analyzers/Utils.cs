@@ -8,6 +8,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -188,6 +189,22 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         internal static bool IsObsolete(this ISymbol symbol)
         {
             return symbol.GetAttributes().Any(a => a.AttributeClass.Name == nameof(ObsoleteAttribute) && a.AttributeClass.BelongsToNamespace(Namespaces.System));
+        }
+
+        internal static IEnumerable<ITypeSymbol> FindInterfacesImplemented(this ISymbol symbol)
+        {
+            if (symbol == null)
+            {
+                return Enumerable.Empty<ITypeSymbol>();
+            }
+
+            var interfaceImplementations = from iface in symbol.ContainingType.AllInterfaces
+                                           from member in iface.GetMembers()
+                                           let implementingMember = symbol.ContainingType.FindImplementationForInterfaceMember(member)
+                                           where implementingMember?.Equals(symbol) ?? false
+                                           select iface;
+
+            return interfaceImplementations;
         }
 
         /// <summary>
