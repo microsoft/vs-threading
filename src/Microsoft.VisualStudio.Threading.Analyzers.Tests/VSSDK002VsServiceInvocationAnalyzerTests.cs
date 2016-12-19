@@ -40,7 +40,7 @@ class Test {
     string name = G.Ref1.Name;
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 10, 19) };
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 10, 26, 10, 30) };
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
@@ -59,7 +59,7 @@ class Test {
     IVsSolution Method() { return null; }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 9) };
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 23, 7, 34) };
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
@@ -77,7 +77,7 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 9) };
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 13, 8, 24) };
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
@@ -98,12 +98,12 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 13) };
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 17, 9, 28) };
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
-        public void InvokeVsSolutionAfterVerifyOnUIThread()
+        public void InvokeVsSolutionBeforeAndAfterVerifyOnUIThread()
         {
             var test = @"
 using System;
@@ -111,8 +111,9 @@ using Microsoft.VisualStudio.Shell.Interop;
 
 class Test {
     void F() {
-        VerifyOnUIThread();
         IVsSolution sln = null;
+        sln.SetProperty(1000, null);
+        VerifyOnUIThread();
         sln.SetProperty(1000, null);
     }
 
@@ -120,7 +121,8 @@ class Test {
     }
 }
 ";
-            this.VerifyCSharpDiagnostic(test);
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 13, 8, 24) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]
@@ -167,7 +169,7 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 11, 13) };
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 11, 17, 11, 28) };
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
@@ -193,7 +195,7 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 12, 13) };
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 12, 17, 12, 28) };
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
@@ -242,7 +244,7 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 11, 13) };
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 11, 17, 11, 28) };
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
@@ -260,7 +262,7 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 20) };
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 22, 8, 26) };
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
