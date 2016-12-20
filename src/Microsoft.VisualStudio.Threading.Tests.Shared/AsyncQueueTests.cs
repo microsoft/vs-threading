@@ -419,7 +419,7 @@
             Assert.Equal(1, invoked);
         }
 
-        [Fact, Trait("GC", "true")]
+        [Fact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest")]
         public void UnusedQueueGCPressure()
         {
             this.CheckGCPressure(
