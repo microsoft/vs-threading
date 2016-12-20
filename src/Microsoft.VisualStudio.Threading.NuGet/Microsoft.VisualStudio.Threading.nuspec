@@ -27,28 +27,28 @@
         <dependency id="System.Threading" version="4.0.0" />
         <dependency id="System.Threading.Tasks" version="4.0.0" />
         <dependency id="System.Xml.XDocument" version="4.0.0" />
-        <dependency id="Microsoft.VisualStudio.Validation" version="15.0.55-pre" />
+        <dependency id="Microsoft.VisualStudio.Validation" version="15.0.67" />
       </group>
       <group targetFramework="MonoAndroid">
-        <dependency id="Microsoft.VisualStudio.Validation" version="15.0.55-pre" />
+        <dependency id="Microsoft.VisualStudio.Validation" version="15.0.67" />
       </group>
       <group targetFramework="MonoTouch">
-        <dependency id="Microsoft.VisualStudio.Validation" version="15.0.55-pre" />
+        <dependency id="Microsoft.VisualStudio.Validation" version="15.0.67" />
       </group>
       <group targetFramework="XamarinIOS">
-        <dependency id="Microsoft.VisualStudio.Validation" version="15.0.55-pre" />
+        <dependency id="Microsoft.VisualStudio.Validation" version="15.0.67" />
       </group>
       <group targetFramework="win">
-        <dependency id="Microsoft.VisualStudio.Validation" version="15.0.55-pre" />
+        <dependency id="Microsoft.VisualStudio.Validation" version="15.0.67" />
       </group>
       <group targetFramework="net">
-        <dependency id="Microsoft.VisualStudio.Validation" version="15.0.55-pre" />
+        <dependency id="Microsoft.VisualStudio.Validation" version="15.0.67" />
       </group>
       <group targetFramework="wpa">
-        <dependency id="Microsoft.VisualStudio.Validation" version="15.0.55-pre" />
+        <dependency id="Microsoft.VisualStudio.Validation" version="15.0.67" />
       </group>
       <group>
-        <dependency id="Microsoft.VisualStudio.Validation" version="15.0.55-pre" />
+        <dependency id="Microsoft.VisualStudio.Validation" version="15.0.67" />
       </group>
     </dependencies>
   </metadata>
