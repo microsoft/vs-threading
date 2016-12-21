@@ -103,14 +103,25 @@
                 // and that renders the default semantic model broken (even though we've already updated the document's SyntaxRoot?!).
                 // So after acquiring the semantic model, update it with the new method body.
                 var semanticModel = await document.GetSemanticModelAsync(cancellationToken);
+                var originalAnonymousMethodContainerIfApplicable = syncMethodName.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>();
                 var originalMethodDeclaration = syncMethodName.FirstAncestorOrSelf<MethodDeclarationSyntax>();
                 if (!semanticModel.TryGetSpeculativeSemanticModelForMethodBody(this.diagnostic.Location.SourceSpan.Start, originalMethodDeclaration, out semanticModel))
                 {
                     throw new InvalidOperationException("Unable to get updated semantic model.");
                 }
 
-                // Ensure that the method is using the async keyword.
-                var updatedMethod = originalMethodDeclaration.MakeMethodAsync(semanticModel);
+                // Ensure that the method or anonymous delegate is using the async keyword.
+                MethodDeclarationSyntax updatedMethod;
+                if (originalAnonymousMethodContainerIfApplicable != null)
+                {
+                    updatedMethod = originalMethodDeclaration.ReplaceNode(
+                        originalAnonymousMethodContainerIfApplicable,
+                        originalAnonymousMethodContainerIfApplicable.MakeMethodAsync(semanticModel, cancellationToken));
+                }
+                else
+                {
+                    updatedMethod = originalMethodDeclaration.MakeMethodAsync(semanticModel);
+                }
 
                 if (updatedMethod != originalMethodDeclaration)
                 {
