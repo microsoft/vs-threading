@@ -63,6 +63,52 @@ class Test {
         }
 
         [Fact]
+        public void JTFRunInTaskReturningMethod_WithExtraReturn_GeneratesWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    Task T() {
+        JoinableTaskFactory jtf = null;
+        jtf.Run(() => TplExtensions.CompletedTask);
+        if (false) {
+            return Task.FromResult(2);
+        }
+
+        this.Run();
+        return Task.FromResult(1);
+    }
+
+    void Run() { }
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task T() {
+        JoinableTaskFactory jtf = null;
+        await jtf.RunAsync(() => TplExtensions.CompletedTask);
+        if (false) {
+            return;
+        }
+
+        this.Run();
+    }
+
+    void Run() { }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 13) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
         public void JTFRunInAsyncMethodGeneratesWarning()
         {
             var test = @"
@@ -239,6 +285,171 @@ class Test {
             this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 24) };
             this.VerifyCSharpDiagnostic(test, this.expect);
             this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
+        public void TaskOfTResultInTaskReturningAnonymousMethodWithinSyncMethod_GeneratesWarning()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void T() {
+        Func<Task<int>> f = delegate {
+            Task<int> t = null;
+            int result = t.Result;
+            return Task.FromResult(result);
+        };
+    }
+}
+";
+
+            var withFix = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void T() {
+        Func<Task<int>> f = async delegate {
+            Task<int> t = null;
+            int result = await t;
+            return result;
+        };
+    }
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 28, 9, 34) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
+        public void TaskOfTResultInTaskReturningSimpleLambdaWithinSyncMethod_GeneratesWarning()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void T() {
+        Func<int, Task<int>> f = a => {
+            Task<int> t = null;
+            int result = t.Result;
+            return Task.FromResult(result);
+        };
+    }
+}
+";
+
+            var withFix = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void T() {
+        Func<int, Task<int>> f = async a => {
+            Task<int> t = null;
+            int result = await t;
+            return result;
+        };
+    }
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 28, 9, 34) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
+        public void TaskOfTResultInTaskReturningSimpleLambdaExpressionWithinSyncMethod_GeneratesWarning()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void T() {
+        Task<int> b = null;
+        Func<int, Task<int>> f = a => Task.FromResult(b.Result);
+    }
+}
+";
+
+            var withFix = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void T() {
+        Task<int> b = null;
+        Func<int, Task<int>> f = async a => await b;
+    }
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 57, 8, 63) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
+        public void TaskOfTResultInTaskReturningParentheticalLambdaWithinSyncMethod_GeneratesWarning()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void T() {
+        Func<Task<int>> f = () => {
+            Task<int> t = null;
+            int result = t.Result;
+            return Task.FromResult(result);
+        };
+    }
+}
+";
+
+            var withFix = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void T() {
+        Func<Task<int>> f = async () => {
+            Task<int> t = null;
+            int result = await t;
+            return result;
+        };
+    }
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 28, 9, 34) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
+        public void TaskOfTResultInTaskReturningMethodAnonymousDelegate_GeneratesNoWarning()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    Task<int> T() {
+        Task<int> task = null;
+        task.ContinueWith(t => { Console.WriteLine(t.Result); });
+        return Task.FromResult(1);
+    }
+}
+";
+
+            this.VerifyCSharpDiagnostic(test);
         }
 
         [Fact]

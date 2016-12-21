@@ -60,16 +60,9 @@
 
             context.RegisterCodeBlockStartAction<SyntaxKind>(ctxt =>
             {
-                // We want to scan invocations that occur inside Task and Task<T>-returning methods.
-                // That is: methods that either are or could be made async.
-                var methodSymbol = ctxt.OwningSymbol as IMethodSymbol;
-                var returnType = methodSymbol?.ReturnType;
-                if (returnType != null && returnType.Name == nameof(Task) && returnType.BelongsToNamespace(Namespaces.SystemThreadingTasks))
-                {
-                    var methodAnalyzer = new MethodAnalyzer();
-                    ctxt.RegisterSyntaxNodeAction(methodAnalyzer.AnalyzeInvocation, SyntaxKind.InvocationExpression);
-                    ctxt.RegisterSyntaxNodeAction(methodAnalyzer.AnalyzePropertyGetter, SyntaxKind.SimpleMemberAccessExpression);
-                }
+                var methodAnalyzer = new MethodAnalyzer();
+                ctxt.RegisterSyntaxNodeAction(methodAnalyzer.AnalyzeInvocation, SyntaxKind.InvocationExpression);
+                ctxt.RegisterSyntaxNodeAction(methodAnalyzer.AnalyzePropertyGetter, SyntaxKind.SimpleMemberAccessExpression);
             });
         }
 
@@ -78,47 +71,75 @@
             internal void AnalyzePropertyGetter(SyntaxNodeAnalysisContext context)
             {
                 var memberAccessSyntax = (MemberAccessExpressionSyntax)context.Node;
-                InspectMemberAccess(context, memberAccessSyntax, CommonInterest.SyncBlockingProperties);
+                if (IsInTaskReturningMethodOrDelegate(context))
+                {
+                    InspectMemberAccess(context, memberAccessSyntax, CommonInterest.SyncBlockingProperties);
+                }
             }
 
             internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
             {
-                var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
-                var memberAccessSyntax = invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax;
-                if (InspectMemberAccess(context, memberAccessSyntax, CommonInterest.SyncBlockingMethods))
+                if (IsInTaskReturningMethodOrDelegate(context))
                 {
-                    // Don't return double-diagnostics.
-                    return;
-                }
-
-                // Also consider all method calls to check for Async-suffixed alternatives.
-                SimpleNameSyntax invokedMethodName = memberAccessSyntax?.Name ?? invocationExpressionSyntax.Expression as IdentifierNameSyntax;
-                var symbolInfo = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax, context.CancellationToken);
-                var methodSymbol = symbolInfo.Symbol as IMethodSymbol;
-                if (symbolInfo.Symbol != null && !symbolInfo.Symbol.Name.EndsWith(VSSDK010AsyncSuffixAnalyzer.MandatoryAsyncSuffix) &&
-                    !(methodSymbol?.ReturnType?.Name == nameof(Task) && methodSymbol.ReturnType.BelongsToNamespace(Namespaces.SystemThreadingTasks)))
-                {
-                    string asyncMethodName = symbolInfo.Symbol.Name + VSSDK010AsyncSuffixAnalyzer.MandatoryAsyncSuffix;
-                    var asyncMethodMatches = context.SemanticModel.LookupSymbols(
-                        invocationExpressionSyntax.Expression.GetLocation().SourceSpan.Start,
-                        symbolInfo.Symbol.ContainingType,
-                        asyncMethodName,
-                        includeReducedExtensionMethods: true).OfType<IMethodSymbol>();
-                    if (asyncMethodMatches.Any(m => !m.IsObsolete()))
+                    var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
+                    var memberAccessSyntax = invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax;
+                    if (InspectMemberAccess(context, memberAccessSyntax, CommonInterest.SyncBlockingMethods))
                     {
-                        // An async alternative exists.
-                        var properties = ImmutableDictionary<string, string>.Empty
-                            .Add(VSSDK008UseAwaitInAsyncMethodsCodeFix.AsyncMethodKeyName, asyncMethodName);
+                        // Don't return double-diagnostics.
+                        return;
+                    }
 
-                        Diagnostic diagnostic = Diagnostic.Create(
-                            Descriptor,
-                            invokedMethodName.GetLocation(),
-                            properties,
-                            invokedMethodName.Identifier.Text,
-                            asyncMethodName);
-                        context.ReportDiagnostic(diagnostic);
+                    // Also consider all method calls to check for Async-suffixed alternatives.
+                    SimpleNameSyntax invokedMethodName = memberAccessSyntax?.Name ?? invocationExpressionSyntax.Expression as IdentifierNameSyntax;
+                    var symbolInfo = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax, context.CancellationToken);
+                    var methodSymbol = symbolInfo.Symbol as IMethodSymbol;
+                    if (symbolInfo.Symbol != null && !symbolInfo.Symbol.Name.EndsWith(VSSDK010AsyncSuffixAnalyzer.MandatoryAsyncSuffix) &&
+                        !(methodSymbol?.ReturnType?.Name == nameof(Task) && methodSymbol.ReturnType.BelongsToNamespace(Namespaces.SystemThreadingTasks)))
+                    {
+                        string asyncMethodName = symbolInfo.Symbol.Name + VSSDK010AsyncSuffixAnalyzer.MandatoryAsyncSuffix;
+                        var asyncMethodMatches = context.SemanticModel.LookupSymbols(
+                            invocationExpressionSyntax.Expression.GetLocation().SourceSpan.Start,
+                            symbolInfo.Symbol.ContainingType,
+                            asyncMethodName,
+                            includeReducedExtensionMethods: true).OfType<IMethodSymbol>();
+                        if (asyncMethodMatches.Any(m => !m.IsObsolete()))
+                        {
+                            // An async alternative exists.
+                            var properties = ImmutableDictionary<string, string>.Empty
+                                .Add(VSSDK008UseAwaitInAsyncMethodsCodeFix.AsyncMethodKeyName, asyncMethodName);
+
+                            Diagnostic diagnostic = Diagnostic.Create(
+                                Descriptor,
+                                invokedMethodName.GetLocation(),
+                                properties,
+                                invokedMethodName.Identifier.Text,
+                                asyncMethodName);
+                            context.ReportDiagnostic(diagnostic);
+                        }
                     }
                 }
+            }
+
+            private static bool IsInTaskReturningMethodOrDelegate(SyntaxNodeAnalysisContext context)
+            {
+                // We want to scan invocations that occur inside Task and Task<T>-returning delegates or methods.
+                // That is: methods that either are or could be made async.
+                IMethodSymbol methodSymbol = null;
+                var anonymousFunc = context.Node.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>();
+                if (anonymousFunc != null)
+                {
+                    var symbolInfo = context.SemanticModel.GetSymbolInfo(anonymousFunc, context.CancellationToken);
+                    methodSymbol = symbolInfo.Symbol as IMethodSymbol;
+                }
+                else
+                {
+                    var methodDecl = context.Node.FirstAncestorOrSelf<MethodDeclarationSyntax>();
+                    methodSymbol = context.SemanticModel.GetDeclaredSymbol(methodDecl, context.CancellationToken);
+                }
+
+                var returnType = methodSymbol?.ReturnType;
+                return returnType?.Name == nameof(Task)
+                    && returnType.BelongsToNamespace(Namespaces.SystemThreadingTasks);
             }
 
             private static bool InspectMemberAccess(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax, IReadOnlyList<CommonInterest.SyncBlockingMethod> problematicMethods)

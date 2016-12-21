@@ -207,6 +207,50 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return interfaceImplementations;
         }
 
+        internal static AnonymousFunctionExpressionSyntax MakeMethodAsync(this AnonymousFunctionExpressionSyntax method, SemanticModel semanticModel, CancellationToken cancellationToken)
+        {
+            if (method.AsyncKeyword.Kind() == SyntaxKind.AsyncKeyword)
+            {
+                // already async
+                return method;
+            }
+
+            var methodSymbol = (IMethodSymbol)semanticModel.GetSymbolInfo(method, cancellationToken).Symbol;
+            bool hasReturnValue = (methodSymbol?.ReturnType as INamedTypeSymbol)?.IsGenericType ?? false;
+            AnonymousFunctionExpressionSyntax updated = null;
+
+            var simpleLambda = method as SimpleLambdaExpressionSyntax;
+            if (simpleLambda != null)
+            {
+                updated = simpleLambda
+                    .WithAsyncKeyword(SyntaxFactory.Token(SyntaxKind.AsyncKeyword))
+                    .WithBody(UpdateStatementsForAsyncMethod(simpleLambda.Body, semanticModel, hasReturnValue));
+            }
+
+            var parentheticalLambda = method as ParenthesizedLambdaExpressionSyntax;
+            if (parentheticalLambda != null)
+            {
+                updated = parentheticalLambda
+                    .WithAsyncKeyword(SyntaxFactory.Token(SyntaxKind.AsyncKeyword))
+                    .WithBody(UpdateStatementsForAsyncMethod(parentheticalLambda.Body, semanticModel, hasReturnValue));
+            }
+
+            var anonymousMethod = method as AnonymousMethodExpressionSyntax;
+            if (anonymousMethod != null)
+            {
+                updated = anonymousMethod
+                    .WithAsyncKeyword(SyntaxFactory.Token(SyntaxKind.AsyncKeyword))
+                    .WithBody(UpdateStatementsForAsyncMethod(anonymousMethod.Body, semanticModel, hasReturnValue));
+            }
+
+            if (updated == null)
+            {
+                throw new NotSupportedException();
+            }
+
+            return updated;
+        }
+
         /// <summary>
         /// Converts a synchronous method to be asynchronous, if it is not already async.
         /// </summary>
@@ -227,9 +271,34 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
 
             // Fix up any return statements to await on the Task it would have returned.
-            bool hasResultValue = method.ReturnType is GenericNameSyntax;
-            var fixedUpAsyncMethod = method.ReplaceNodes(
-                method.Body.Statements.OfType<ReturnStatementSyntax>(),
+            MethodDeclarationSyntax fixedUpAsyncMethod = method
+                .WithBody(UpdateStatementsForAsyncMethod(method.Body, semanticModel, method.ReturnType is GenericNameSyntax))
+                .AddModifiers(SyntaxFactory.Token(SyntaxKind.AsyncKeyword));
+
+            return fixedUpAsyncMethod;
+        }
+
+        private static CSharpSyntaxNode UpdateStatementsForAsyncMethod(CSharpSyntaxNode body, SemanticModel semanticModel, bool hasResultValue)
+        {
+            var blockBody = body as BlockSyntax;
+            if (blockBody != null)
+            {
+                return UpdateStatementsForAsyncMethod(blockBody, semanticModel, hasResultValue);
+            }
+
+            var expressionBody = body as ExpressionSyntax;
+            if (expressionBody != null)
+            {
+                return SyntaxFactory.AwaitExpression(expressionBody).TrySimplify(expressionBody, semanticModel);
+            }
+
+            throw new NotSupportedException();
+        }
+
+        private static BlockSyntax UpdateStatementsForAsyncMethod(BlockSyntax body, SemanticModel semanticModel, bool hasResultValue)
+        {
+            var fixedUpBlock = body.ReplaceNodes(
+                body.DescendantNodes().OfType<ReturnStatementSyntax>(),
                 (f, n) =>
                 {
                     if (hasResultValue)
@@ -237,7 +306,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                         return n.WithExpression(SyntaxFactory.AwaitExpression(n.Expression).TrySimplify(f.Expression, semanticModel));
                     }
 
-                    if (method.Body.Statements.Last() == f)
+                    if (body.Statements.Last() == f)
                     {
                         // If it is the last statement in the method, we can remove it since a return is implied.
                         return null;
@@ -246,10 +315,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     return n
                         .WithExpression(null) // don't return any value
                         .WithReturnKeyword(n.ReturnKeyword.WithTrailingTrivia(SyntaxFactory.TriviaList())); // remove the trailing space after the keyword
-                })
-                .AddModifiers(SyntaxFactory.Token(SyntaxKind.AsyncKeyword));
+                });
 
-            return fixedUpAsyncMethod;
+            return fixedUpBlock;
         }
 
         private static ExpressionSyntax TrySimplify(this AwaitExpressionSyntax awaitExpression, ExpressionSyntax originalSyntax, SemanticModel semanticModel)
