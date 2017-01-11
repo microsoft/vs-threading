@@ -15,5 +15,6 @@ ID | Title
 [VSSDK008](VSSDK008.md) | Call async methods when in an async method
 [VSSDK009](VSSDK009.md) | Implement internal logic asynchronously
 [VSSDK010](VSSDK010.md) | Use `Async` suffix for async methods
+[VSSDK011](VSSDK011.md) | Avoid method overloads that assume TaskScheduler.Current
 
 [1]: https://nuget.org/packages/microsoft.visualstudio.threading.analyzers

@@ -6,7 +6,7 @@
     using Xunit;
     using Xunit.Abstractions;
 
-    public class VSSDK011AvoidImpliedTaskSchedulerCurrentAnalyzerTests : CodeFixVerifier
+    public class VSSDK011AvoidImpliedTaskSchedulerCurrentAnalyzerTests : DiagnosticVerifier
     {
         private DiagnosticResult expect = new DiagnosticResult
         {
