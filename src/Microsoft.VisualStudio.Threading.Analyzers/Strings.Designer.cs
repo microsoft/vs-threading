@@ -305,5 +305,23 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
                 return ResourceManager.GetString("VSSDK011_Title", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread..
+        /// </summary>
+        internal static string VSSDK012_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSSDK012_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Provide JoinableTaskFactory where allowed.
+        /// </summary>
+        internal static string VSSDK012_Title {
+            get {
+                return ResourceManager.GetString("VSSDK012_Title", resourceCulture);
+            }
+        }
     }
 }

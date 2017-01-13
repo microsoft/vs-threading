@@ -210,4 +210,10 @@ Use AsyncLazy&lt;T&gt; instead.</value>
   <data name="VSSDK011_Title" xml:space="preserve">
     <value>Avoid method overloads that assume TaskScheduler.Current</value>
   </data>
+  <data name="VSSDK012_MessageFormat" xml:space="preserve">
+    <value>Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.</value>
+  </data>
+  <data name="VSSDK012_Title" xml:space="preserve">
+    <value>Provide JoinableTaskFactory where allowed</value>
+  </data>
 </root>

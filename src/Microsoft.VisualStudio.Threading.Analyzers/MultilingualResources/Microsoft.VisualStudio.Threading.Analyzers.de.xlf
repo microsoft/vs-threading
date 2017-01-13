@@ -153,6 +153,14 @@ AsyncLazy&lt;T&gt; sollten Sie stattdessen verwenden.</target>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">Änderung Rückgabetyp Aufgabe</target>
           <note from="MultilingualBuild" annotates="source" priority="2">Task is a type name and should not be translated.</note>
         </trans-unit>
+        <trans-unit id="VSSDK012_MessageFormat" translate="yes" xml:space="preserve">
+          <source>Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.</source>
+          <target state="new">Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.</target>
+        </trans-unit>
+        <trans-unit id="VSSDK012_Title" translate="yes" xml:space="preserve">
+          <source>Provide JoinableTaskFactory where allowed</source>
+          <target state="new">Provide JoinableTaskFactory where allowed</target>
+        </trans-unit>
       </group>
     </body>
   </file>

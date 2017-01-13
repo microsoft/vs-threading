@@ -153,6 +153,14 @@ Use AsyncLazy&lt;T&gt; instead.</source>
           <source>Avoid method overloads that assume TaskScheduler.Current</source>
           <target state="needs-review-translation" state-qualifier="mt-suggestion">避免方法重载假定 TaskScheduler.Current</target>
         </trans-unit>
+        <trans-unit id="VSSDK012_MessageFormat" translate="yes" xml:space="preserve">
+          <source>Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.</source>
+          <target state="new">Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.</target>
+        </trans-unit>
+        <trans-unit id="VSSDK012_Title" translate="yes" xml:space="preserve">
+          <source>Provide JoinableTaskFactory where allowed</source>
+          <target state="new">Provide JoinableTaskFactory where allowed</target>
+        </trans-unit>
       </group>
     </body>
   </file>

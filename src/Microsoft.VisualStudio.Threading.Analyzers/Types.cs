@@ -64,6 +64,14 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             internal static readonly IReadOnlyList<string> Namespace = Namespaces.MicrosoftVisualStudioThreading;
         }
 
+        /// <summary>
+        /// Contains descriptors for the JoinableTaskContext type.
+        /// </summary>
+        internal static class JoinableTaskContext
+        {
+            internal const string TypeName = "JoinableTaskContext";
+        }
+
         internal static class JoinableTask
         {
             internal const string TypeName = "JoinableTask";
