@@ -11,8 +11,6 @@
     <AssemblyName>Microsoft.VisualStudio.Threading.Analyzers</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <MicroBuild_GenerateDocumentationFile>false</MicroBuild_GenerateDocumentationFile>
-    <DocumentationFile />
     <TargetFrameworkProfile />
     <PrereleaseVersion>-pre</PrereleaseVersion>
     <OutputPath Condition=" '$(OutputPath)' == '' ">bin\</OutputPath>

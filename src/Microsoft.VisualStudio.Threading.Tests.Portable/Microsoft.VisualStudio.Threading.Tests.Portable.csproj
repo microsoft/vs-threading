@@ -12,8 +12,6 @@
     <AssemblyName>Microsoft.VisualStudio.Threading.Tests.Portable</AssemblyName>
     <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
     <TargetFrameworkProfile />
-    <MicroBuild_GenerateDocumentationFile>false</MicroBuild_GenerateDocumentationFile>
-    <DocumentationFile />
     <DefaultLanguage>en-US</DefaultLanguage>
     <FileAlignment>512</FileAlignment>
     <OutputPathSuffix>Profile111\</OutputPathSuffix>
