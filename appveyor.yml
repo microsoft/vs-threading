@@ -16,6 +16,13 @@ build:
   project: src\Microsoft.VisualStudio.Threading.sln
   parallel: true
   verbosity: minimal
+test_script:
+- cmd: >-
+    %xunit20%\xunit.console.x86 "bin\Release\Profile111\Microsoft.VisualStudio.Threading.Tests.Portable.dll" -appveyor -notrait "TestCategory=FailsInCloudTest"
+
+    %xunit20%\xunit.console.x86 "bin\Release\Microsoft.VisualStudio.Threading.Tests.Desktop.dll" -appveyor -notrait "TestCategory=FailsInCloudTest"
+
+    %xunit20%\xunit.console.x86 "bin\Release\Microsoft.VisualStudio.Threading.Analyzers.Tests.dll" -appveyor -notrait "TestCategory=FailsInCloudTest"
 artifacts:
 - path: bin\**\*.nupkg
   name: NuGet Package
