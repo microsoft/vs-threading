@@ -524,8 +524,23 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(asyncMethod, nameof(asyncMethod));
 
             var job = new JoinableTask(this, synchronouslyBlocking, creationOptions, entrypointOverride ?? asyncMethod);
-            this.ExecuteJob<EmptyStruct>(asyncMethod, job);
-            return job;
+            using (var framework = new RunFramework(this, job))
+            {
+                Task asyncMethodResult;
+                try
+                {
+                    asyncMethodResult = asyncMethod();
+                }
+                catch (Exception ex)
+                {
+                    var tcs = new TaskCompletionSource<EmptyStruct>();
+                    tcs.SetException(ex);
+                    asyncMethodResult = tcs.Task;
+                }
+
+                framework.SetResult(asyncMethodResult);
+                return job;
+            }
         }
 
         /// <summary>
@@ -638,15 +653,9 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(asyncMethod, nameof(asyncMethod));
 
             var job = new JoinableTask<T>(this, synchronouslyBlocking, creationOptions, asyncMethod);
-            this.ExecuteJob<T>(asyncMethod, job);
-            return job;
-        }
-
-        private void ExecuteJob<T>(Func<Task> asyncMethod, JoinableTask job)
-        {
             using (var framework = new RunFramework(this, job))
             {
-                Task asyncMethodResult;
+                Task<T> asyncMethodResult;
                 try
                 {
                     asyncMethodResult = asyncMethod();
@@ -658,7 +667,8 @@ namespace Microsoft.VisualStudio.Threading
                     asyncMethodResult = tcs.Task;
                 }
 
-                job.SetWrappedTask(asyncMethodResult);
+                framework.SetResult(asyncMethodResult);
+                return job;
             }
         }
 
@@ -941,6 +951,12 @@ namespace Microsoft.VisualStudio.Threading
             {
                 this.syncContextRevert.Dispose();
                 this.factory.Context.AmbientTask = this.previousJoinable;
+            }
+
+            internal void SetResult(Task task)
+            {
+                Requires.NotNull(task, nameof(task));
+                this.joinable.SetWrappedTask(task);
             }
         }
 
