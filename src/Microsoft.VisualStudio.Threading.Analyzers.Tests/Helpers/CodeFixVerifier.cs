@@ -131,7 +131,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 
             // After applying all of the code fixes, compare the resulting string to the inputted one
             var actual = GetStringFromDocument(document);
-            Assert.Equal(newSource, actual);
+            Assert.Equal(newSource, actual, ignoreLineEndingDifferences: true);
         }
     }
 }
