@@ -3159,17 +3159,20 @@
                 await Task.Yield(); // this should schedule directly to the .NET ThreadPool.
                 unawaitedWorkCompleted = true;
             };
+            var jtStarted = new AsyncManualResetEvent();
             Task unawaitedWork = null;
             var bkgrndThread = Task.Run(delegate
             {
                 this.asyncPump.Run(delegate
                 {
+                    jtStarted.Set();
                     unawaitedWork = otherAsyncMethod();
                     return TplExtensions.CompletedTask;
                 });
             });
             this.context.Factory.Run(async delegate
             {
+                await jtStarted;
                 var joinTask = this.joinableCollection.JoinTillEmptyAsync();
                 await joinTask.WithTimeout(UnexpectedTimeout);
                 Assert.True(joinTask.IsCompleted);
