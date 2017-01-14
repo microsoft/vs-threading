@@ -642,7 +642,6 @@ namespace Microsoft.VisualStudio.Threading
             return job;
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Justification = "All exceptions are forwarded to the caller by another means.")]
         private void ExecuteJob<T>(Func<Task> asyncMethod, JoinableTask job)
         {
             using (var framework = new RunFramework(this, job))
