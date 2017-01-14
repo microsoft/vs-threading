@@ -1,0 +1,28 @@
+version: 1.0.{build}
+skip_tags: true
+image: Visual Studio 2015
+configuration: Release
+environment:
+  VisualStudioVersion: 14.0
+cache:
+- '%USERPROFILE%\.nuget\packages -> **\project.json'
+- 'obj\tools -> tools\**'
+before_build:
+- ps: >-
+    .\init.ps1
+
+    & "${env:ProgramFiles(x86)}\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6.1 Tools\sn.exe" -Vr *,b03f5f7f11d50a3a
+build:
+  project: src\Microsoft.VisualStudio.Threading.sln
+  parallel: true
+  verbosity: minimal
+test_script:
+- cmd: >-
+    %xunit20%\xunit.console.x86 "bin\Release\Profile111\Microsoft.VisualStudio.Threading.Tests.Portable.dll" -appveyor -notrait "TestCategory=FailsInCloudTest"
+
+    %xunit20%\xunit.console.x86 "bin\Release\Microsoft.VisualStudio.Threading.Tests.Desktop.dll" -appveyor -notrait "TestCategory=FailsInCloudTest"
+
+    %xunit20%\xunit.console.x86 "bin\Release\Microsoft.VisualStudio.Threading.Analyzers.Tests.dll" -appveyor -notrait "TestCategory=FailsInCloudTest"
+artifacts:
+- path: bin\**\*.nupkg
+  name: NuGet Package

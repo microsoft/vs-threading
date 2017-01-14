@@ -2,8 +2,9 @@ Microsoft.VisualStudio.Threading
 =================================
 
 [![NuGet package](https://img.shields.io/nuget/v/Microsoft.VisualStudio.Threading.svg)](https://nuget.org/packages/Microsoft.VisualStudio.Threading)
+[![Build status](https://ci.appveyor.com/api/projects/status/kv58v4d03td5ngna/branch/master?svg=true)](https://ci.appveyor.com/project/AArnott/vs-threading/branch/master)
 
-And our Microsoft.VisualStudio.Threading.Analyzers package: [![NuGet package](https://img.shields.io/nuget/v/Microsoft.VisualStudio.Threading.Analyzers.svg)](https://nuget.org/packages/Microsoft.VisualStudio.Threading.Analyzers)
+Analyzers: [![NuGet package](https://img.shields.io/nuget/v/Microsoft.VisualStudio.Threading.Analyzers.svg)](https://nuget.org/packages/Microsoft.VisualStudio.Threading.Analyzers)
 
 ## Features
 

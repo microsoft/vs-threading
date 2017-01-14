@@ -1,6 +1,6 @@
 ﻿{
   "dependencies": {
-    "MicroBuild.NonShipping": "2.0.22-beta",
+    "MicroBuild.NonShipping": "2.0.33",
     "StyleCop.Analyzers": "1.0.0",
     "xunit": "2.1.0",
     "Xunit.Combinatorial": "1.1.20",

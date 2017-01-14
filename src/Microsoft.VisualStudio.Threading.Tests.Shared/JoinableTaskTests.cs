@@ -509,6 +509,7 @@
         }
 
         [StaFact]
+        [Trait("TestCategory", "FailsInCloudTest")] // see https://github.com/Microsoft/vs-threading/issues/44
         public void TransitionToMainThreadRaisedWhenSwitchingToMainThread()
         {
             var factory = (DerivedJoinableTaskFactory)this.asyncPump;
@@ -3001,6 +3002,7 @@
         }
 
         [StaFact]
+        [Trait("TestCategory", "FailsInCloudTest")] // see https://github.com/Microsoft/vs-threading/issues/46
         public void RunAsyncWithNonYieldingDelegateNestedInRunOverhead()
         {
             var waitCountingJTF = new WaitCountingJoinableTaskFactory(this.asyncPump.Context);
@@ -3024,6 +3026,7 @@
         }
 
         [StaFact]
+        [Trait("TestCategory", "FailsInCloudTest")] // see https://github.com/Microsoft/vs-threading/issues/45
         public void RunAsyncWithYieldingDelegateNestedInRunOverhead()
         {
             var waitCountingJTF = new WaitCountingJoinableTaskFactory(this.asyncPump.Context);
@@ -3159,17 +3162,20 @@
                 await Task.Yield(); // this should schedule directly to the .NET ThreadPool.
                 unawaitedWorkCompleted = true;
             };
+            var jtStarted = new AsyncManualResetEvent();
             Task unawaitedWork = null;
             var bkgrndThread = Task.Run(delegate
             {
                 this.asyncPump.Run(delegate
                 {
+                    jtStarted.Set();
                     unawaitedWork = otherAsyncMethod();
                     return TplExtensions.CompletedTask;
                 });
             });
             this.context.Factory.Run(async delegate
             {
+                await jtStarted;
                 var joinTask = this.joinableCollection.JoinTillEmptyAsync();
                 await joinTask.WithTimeout(UnexpectedTimeout);
                 Assert.True(joinTask.IsCompleted);
