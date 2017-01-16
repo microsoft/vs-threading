@@ -100,4 +100,14 @@
   <data name="VSSDK010_Title" xml:space="preserve">
     <value>在任务返回方法名称中使用"Async"后缀。</value>
   </data>
+  <data name="VSSDK003_CodeFix_Title" xml:space="preserve">
+    <value>返回类型改变为任务</value>
+    <comment>Task is a type name and should not be translated.</comment>
+  </data>
+  <data name="VSSDK011_MessageFormat" xml:space="preserve">
+    <value>避免假设 TaskScheduler.Current 的方法重载。使用接受 TaskScheduler 重载和显式指定 TaskScheduler.Default （或任何其他）。</value>
+  </data>
+  <data name="VSSDK011_Title" xml:space="preserve">
+    <value>避免方法重载假定 TaskScheduler.Current</value>
+  </data>
 </root>

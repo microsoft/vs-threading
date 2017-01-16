@@ -142,15 +142,15 @@ Debe utilizar AsyncLazy&lt;T&gt; en su lugar.</target>
         </trans-unit>
         <trans-unit id="VSSDK011_MessageFormat" translate="yes" xml:space="preserve">
           <source>Avoid method overloads that assume TaskScheduler.Current. Use an overload that accepts a TaskScheduler and specify TaskScheduler.Default (or any other) explicitly.</source>
-          <target state="new">Avoid method overloads that assume TaskScheduler.Current. Use an overload that accepts a TaskScheduler and specify TaskScheduler.Default (or any other) explicitly.</target>
+          <target state="needs-review-translation" state-qualifier="mt-suggestion">Evitar sobrecargas del método que asumen TaskScheduler.Current. Utilice una sobrecarga que acepta un TaskScheduler y especificar explícitamente TaskScheduler.Default (o cualquier otro).</target>
         </trans-unit>
         <trans-unit id="VSSDK011_Title" translate="yes" xml:space="preserve">
           <source>Avoid method overloads that assume TaskScheduler.Current</source>
-          <target state="new">Avoid method overloads that assume TaskScheduler.Current</target>
+          <target state="needs-review-translation" state-qualifier="mt-suggestion">Evitar sobrecargas del método que asumir TaskScheduler.Current</target>
         </trans-unit>
         <trans-unit id="VSSDK003_CodeFix_Title" translate="yes" xml:space="preserve">
           <source>Change return type to Task</source>
-          <target state="new">Change return type to Task</target>
+          <target state="needs-review-translation" state-qualifier="mt-suggestion">Cambiar el tipo de retorno a la tarea</target>
           <note from="MultilingualBuild" annotates="source" priority="2">Task is a type name and should not be translated.</note>
         </trans-unit>
       </group>

@@ -100,4 +100,14 @@ Się do https://msdn.microsoft.com/en-us/magazine/jj991977.aspx Aby uzyskać wi�
   <data name="VSSDK010_Title" xml:space="preserve">
     <value>W nazwach Metoda przekazujących dane zadanie, należy użyć sufiksem "Async".</value>
   </data>
+  <data name="VSSDK011_MessageFormat" xml:space="preserve">
+    <value>Uniknąć przeciążenia metody, które zakładają TaskScheduler.Current. Użyj Przeciążenie akceptującym TaskScheduler i jawnie określić TaskScheduler.Default (lub innych).</value>
+  </data>
+  <data name="VSSDK011_Title" xml:space="preserve">
+    <value>Uniknąć przeciążenia metody, które zakładają TaskScheduler.Current</value>
+  </data>
+  <data name="VSSDK003_CodeFix_Title" xml:space="preserve">
+    <value>Zmień typ zwrotny do zadań</value>
+    <comment>Task is a type name and should not be translated.</comment>
+  </data>
 </root>

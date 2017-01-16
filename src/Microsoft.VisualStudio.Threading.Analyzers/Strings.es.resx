@@ -100,4 +100,14 @@ Debe utilizar AsyncLazy&lt;T&gt; en su lugar.</value>
   <data name="VSSDK010_Title" xml:space="preserve">
     <value>Utilice "Async" sufijo en los nombres de método tarea volver.</value>
   </data>
+  <data name="VSSDK011_MessageFormat" xml:space="preserve">
+    <value>Evitar sobrecargas del método que asumen TaskScheduler.Current. Utilice una sobrecarga que acepta un TaskScheduler y especificar explícitamente TaskScheduler.Default (o cualquier otro).</value>
+  </data>
+  <data name="VSSDK011_Title" xml:space="preserve">
+    <value>Evitar sobrecargas del método que asumir TaskScheduler.Current</value>
+  </data>
+  <data name="VSSDK003_CodeFix_Title" xml:space="preserve">
+    <value>Cambiar el tipo de retorno a la tarea</value>
+    <comment>Task is a type name and should not be translated.</comment>
+  </data>
 </root>
