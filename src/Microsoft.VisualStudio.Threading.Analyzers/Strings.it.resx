@@ -100,4 +100,14 @@ Fare riferimento a https://msdn.microsoft.com/en-us/magazine/jj991977.aspx per m
   <data name="VSSDK010_Title" xml:space="preserve">
     <value>Usare il suffisso "Async" nei nomi di metodo attività-restituendo.</value>
   </data>
+  <data name="VSSDK003_CodeFix_Title" xml:space="preserve">
+    <value>Cambia tipo di ritorno all'attività</value>
+    <comment>Task is a type name and should not be translated.</comment>
+  </data>
+  <data name="VSSDK011_MessageFormat" xml:space="preserve">
+    <value>Evitare gli overload di metodo che assumono TaskScheduler. Utilizzare un overload che accetta un oggetto TaskScheduler e specificare in modo esplicito TaskScheduler (o qualsiasi altro).</value>
+  </data>
+  <data name="VSSDK011_Title" xml:space="preserve">
+    <value>Evitare gli overload di metodo che assumono TaskScheduler</value>
+  </data>
 </root>

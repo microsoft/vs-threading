@@ -100,4 +100,14 @@ AsyncLazy&lt;T&gt; sollten Sie stattdessen verwenden.</value>
   <data name="VSSDK010_Title" xml:space="preserve">
     <value>Verwenden Sie "Async" Suffix im Methodennamen Aufgabe zurückkehren.</value>
   </data>
+  <data name="VSSDK011_MessageFormat" xml:space="preserve">
+    <value>Vermeiden Sie Methodenüberladungen, die TaskScheduler.Current zu übernehmen. Verwenden Sie eine Überladung, die ein TaskScheduler akzeptiert und geben Sie TaskScheduler.Default (oder irgendeine andere an) explizit.</value>
+  </data>
+  <data name="VSSDK011_Title" xml:space="preserve">
+    <value>Vermeiden Sie Methodenüberladungen, die TaskScheduler.Current übernehmen</value>
+  </data>
+  <data name="VSSDK003_CodeFix_Title" xml:space="preserve">
+    <value>Änderung Rückgabetyp Aufgabe</value>
+    <comment>Task is a type name and should not be translated.</comment>
+  </data>
 </root>

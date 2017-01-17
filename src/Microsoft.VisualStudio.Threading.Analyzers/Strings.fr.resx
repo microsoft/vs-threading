@@ -100,4 +100,14 @@ Vous devez plutôt utiliser AsyncLazy&lt;T&gt; .</value>
   <data name="VSSDK010_Title" xml:space="preserve">
     <value>Utilisez « Async » suffixe de tâche retourne les noms de méthodes.</value>
   </data>
+  <data name="VSSDK003_CodeFix_Title" xml:space="preserve">
+    <value>Modifier le type de retour au travail</value>
+    <comment>Task is a type name and should not be translated.</comment>
+  </data>
+  <data name="VSSDK011_MessageFormat" xml:space="preserve">
+    <value>Éviter les surcharges de méthode qui supposent TaskScheduler.Current. Utilisez une surcharge qui accepte un TaskScheduler en spécifiant explicitement le TaskScheduler.Default (ou autre).</value>
+  </data>
+  <data name="VSSDK011_Title" xml:space="preserve">
+    <value>Éviter les surcharges de méthode qui supposent TaskScheduler.Current</value>
+  </data>
 </root>

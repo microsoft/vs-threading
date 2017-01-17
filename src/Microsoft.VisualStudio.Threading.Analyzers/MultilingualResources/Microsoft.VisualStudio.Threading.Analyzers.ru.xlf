@@ -142,16 +142,16 @@ Use AsyncLazy&lt;T&gt; instead.</source>
         </trans-unit>
         <trans-unit id="VSSDK003_CodeFix_Title" translate="yes" xml:space="preserve">
           <source>Change return type to Task</source>
-          <target state="new">Change return type to Task</target>
+          <target state="needs-review-translation" state-qualifier="mt-suggestion">Изменение возвращаемого типа к задаче</target>
           <note from="MultilingualBuild" annotates="source" priority="2">Task is a type name and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK011_MessageFormat" translate="yes" xml:space="preserve">
           <source>Avoid method overloads that assume TaskScheduler.Current. Use an overload that accepts a TaskScheduler and specify TaskScheduler.Default (or any other) explicitly.</source>
-          <target state="new">Avoid method overloads that assume TaskScheduler.Current. Use an overload that accepts a TaskScheduler and specify TaskScheduler.Default (or any other) explicitly.</target>
+          <target state="needs-review-translation" state-qualifier="mt-suggestion">Избегайте перегрузки метода, которые предполагают TaskScheduler.Current. Используйте перегрузку, которая принимает TaskScheduler и явно указать TaskScheduler.Default (или любой другой).</target>
         </trans-unit>
         <trans-unit id="VSSDK011_Title" translate="yes" xml:space="preserve">
           <source>Avoid method overloads that assume TaskScheduler.Current</source>
-          <target state="new">Avoid method overloads that assume TaskScheduler.Current</target>
+          <target state="needs-review-translation" state-qualifier="mt-suggestion">Избегайте перегрузки метода, которые предполагают TaskScheduler.Current</target>
         </trans-unit>
       </group>
     </body>

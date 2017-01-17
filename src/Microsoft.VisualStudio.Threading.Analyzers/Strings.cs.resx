@@ -100,4 +100,14 @@ Byste měli použít AsyncLazy&lt;T&gt; místo.</value>
   <data name="VSSDK010_Title" xml:space="preserve">
     <value>V názvech metoda vrácením úkolu používejte přípony "Async".</value>
   </data>
+  <data name="VSSDK003_CodeFix_Title" xml:space="preserve">
+    <value>Změna, návratový typ úkolu</value>
+    <comment>Task is a type name and should not be translated.</comment>
+  </data>
+  <data name="VSSDK011_MessageFormat" xml:space="preserve">
+    <value>Vyvarujte se přetížení metody, které předpokládají TaskScheduler.Current. Použijte přetížení, které přijímá TaskScheduler a explicitně zadat TaskScheduler.Default (nebo jiný).</value>
+  </data>
+  <data name="VSSDK011_Title" xml:space="preserve">
+    <value>Zabránit přetížení metody, které předpokládají TaskScheduler.Current</value>
+  </data>
 </root>

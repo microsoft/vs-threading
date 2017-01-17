@@ -78,7 +78,7 @@
     <EmbeddedResource Include="Strings.fr.resx" />
     <EmbeddedResource Include="Strings.it.resx" />
     <EmbeddedResource Include="Strings.ja.resx" />
-    <EmbeddedResource Include="Strings.kok.resx" />
+    <EmbeddedResource Include="Strings.ko.resx" />
     <EmbeddedResource Include="Strings.pl.resx" />
     <EmbeddedResource Include="Strings.pt-BR.resx" />
     <EmbeddedResource Include="Strings.resx">
@@ -97,7 +97,7 @@
     <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Analyzers.fr.xlf" />
     <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Analyzers.it.xlf" />
     <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Analyzers.ja.xlf" />
-    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Analyzers.kok.xlf" />
+    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Analyzers.ko.xlf" />
     <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Analyzers.pl.xlf" />
     <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Analyzers.pt-BR.xlf" />
     <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Analyzers.ru.xlf" />

@@ -100,4 +100,14 @@ AsyncLazy&lt;T&gt; yerine kullanmanız gerekir.</value>
   <data name="VSSDK010_Title" xml:space="preserve">
     <value>"Zaman uyumsuz" son eki görev döndüren yöntemi adlarında kullanın.</value>
   </data>
+  <data name="VSSDK011_MessageFormat" xml:space="preserve">
+    <value>TaskScheduler.Current varsayıyorum yöntem yüklemesi kaçının. TaskScheduler.Default (veya diğer) açıkça belirtmek ve bir TaskScheduler kabul eden bir yükleme kullanın.</value>
+  </data>
+  <data name="VSSDK011_Title" xml:space="preserve">
+    <value>TaskScheduler.Current varsayıyorum yöntem yüklemesi kaçınmak</value>
+  </data>
+  <data name="VSSDK003_CodeFix_Title" xml:space="preserve">
+    <value>Göreve dönüş türünü değiştir</value>
+    <comment>Task is a type name and should not be translated.</comment>
+  </data>
 </root>

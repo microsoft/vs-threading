@@ -100,4 +100,14 @@
   <data name="VSSDK010_Title" xml:space="preserve">
     <value>Используйте суффикс «Async» в задаче возвращения имен методов.</value>
   </data>
+  <data name="VSSDK003_CodeFix_Title" xml:space="preserve">
+    <value>Изменение возвращаемого типа к задаче</value>
+    <comment>Task is a type name and should not be translated.</comment>
+  </data>
+  <data name="VSSDK011_MessageFormat" xml:space="preserve">
+    <value>Избегайте перегрузки метода, которые предполагают TaskScheduler.Current. Используйте перегрузку, которая принимает TaskScheduler и явно указать TaskScheduler.Default (или любой другой).</value>
+  </data>
+  <data name="VSSDK011_Title" xml:space="preserve">
+    <value>Избегайте перегрузки метода, которые предполагают TaskScheduler.Current</value>
+  </data>
 </root>
