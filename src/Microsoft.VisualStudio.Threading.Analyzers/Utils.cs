@@ -117,6 +117,37 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return methodSymbol?.ReturnType?.Name == nameof(Task) && methodSymbol.ReturnType.BelongsToNamespace(Namespaces.SystemThreadingTasks);
         }
 
+        internal static bool HasAsyncAlternative(this IMethodSymbol methodSymbol, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return methodSymbol.ContainingType.GetMembers(methodSymbol.Name + VSSDK010AsyncSuffixAnalyzer.MandatoryAsyncSuffix)
+                .Any(alt => IsXAtLeastAsPublicAsY(alt, methodSymbol));
+        }
+
+        internal static bool IsXAtLeastAsPublicAsY(ISymbol x, ISymbol y)
+        {
+            if (y.DeclaredAccessibility == x.DeclaredAccessibility ||
+                x.DeclaredAccessibility == Accessibility.Public)
+            {
+                return true;
+            }
+
+            switch (y.DeclaredAccessibility)
+            {
+                case Accessibility.Private:
+                    return true;
+                case Accessibility.ProtectedAndInternal:
+                case Accessibility.Protected:
+                case Accessibility.Internal:
+                    return x.DeclaredAccessibility == Accessibility.ProtectedOrInternal;
+                case Accessibility.ProtectedOrInternal:
+                case Accessibility.Public:
+                case Accessibility.NotApplicable:
+                default:
+                    return false;
+            }
+        }
+
         /// <summary>
         /// Check if the given method symbol is used as an event handler.
         /// </summary>

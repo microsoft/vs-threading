@@ -57,6 +57,7 @@
     <Compile Include="VSSDK008UseAwaitInAsyncMethodsAnalyzerTests.cs" />
     <Compile Include="VSSDK002VsServiceInvocationAnalyzerTests.cs" />
     <Compile Include="VSSDK012SpecifyJtfWhereAllowedTests.cs" />
+    <Compile Include="VSSDK013OfferAsyncOptionAnalyzerTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.csproj">

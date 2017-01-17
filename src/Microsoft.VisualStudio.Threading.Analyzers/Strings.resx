@@ -216,4 +216,10 @@ Use AsyncLazy&lt;T&gt; instead.</value>
   <data name="VSSDK012_Title" xml:space="preserve">
     <value>Provide JoinableTaskFactory where allowed</value>
   </data>
+  <data name="VSSDK013_MessageFormat" xml:space="preserve">
+    <value>Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate.</value>
+  </data>
+  <data name="VSSDK013_Title" xml:space="preserve">
+    <value>Offer async methods</value>
+  </data>
 </root>

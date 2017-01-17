@@ -323,5 +323,23 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
                 return ResourceManager.GetString("VSSDK012_Title", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate..
+        /// </summary>
+        internal static string VSSDK013_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSSDK013_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Offer async methods.
+        /// </summary>
+        internal static string VSSDK013_Title {
+            get {
+                return ResourceManager.GetString("VSSDK013_Title", resourceCulture);
+            }
+        }
     }
 }
