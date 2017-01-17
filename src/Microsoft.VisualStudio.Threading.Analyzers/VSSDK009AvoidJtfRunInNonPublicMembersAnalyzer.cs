@@ -58,26 +58,12 @@
         {
             internal void AnalyzePropertyGetter(SyntaxNodeAnalysisContext context)
             {
-                if (context.Node.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>() != null)
-                {
-                    // We do not analyze JTF.Run inside anonymous functions because
-                    // they are so often used as callbacks where the signature is constrained.
-                    return;
-                }
-
                 var memberAccessSyntax = (MemberAccessExpressionSyntax)context.Node;
                 InspectMemberAccess(context, memberAccessSyntax, CommonInterest.SyncBlockingProperties);
             }
 
             internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
             {
-                if (context.Node.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>() != null)
-                {
-                    // We do not analyze JTF.Run inside anonymous functions because
-                    // they are so often used as callbacks where the signature is constrained.
-                    return;
-                }
-
                 var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
                 InspectMemberAccess(context, invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax, CommonInterest.SyncBlockingMethods);
             }
@@ -86,6 +72,13 @@
             {
                 if (memberAccessSyntax == null)
                 {
+                    return;
+                }
+
+                if (context.Node.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>() != null)
+                {
+                    // We do not analyze JTF.Run inside anonymous functions because
+                    // they are so often used as callbacks where the signature is constrained.
                     return;
                 }
 
