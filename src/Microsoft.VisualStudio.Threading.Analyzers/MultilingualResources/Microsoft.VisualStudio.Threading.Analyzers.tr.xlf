@@ -1,5 +1,5 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en-US" target-language="tr" original="MICROSOFT.VISUALSTUDIO.THREADING.ANALYZERS/STRINGS.RESX" tool-id="MultilingualAppToolkit" product-name="n/a" product-version="n/a" build-num="n/a">
     <header>
       <tool tool-id="MultilingualAppToolkit" tool-name="Multilingual App Toolkit" tool-version="4.0.1795.0" tool-company="Microsoft" />
@@ -8,149 +8,128 @@
       <group id="MICROSOFT.VISUALSTUDIO.THREADING.ANALYZERS/STRINGS.RESX" datatype="resx">
         <trans-unit id="AwaitXInstead" translate="yes" xml:space="preserve">
           <source>Await {0} instead</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">{0} yerine bekliyor</target>
+          <target state="translated">Bunun yerine: Await {0}</target>
+          
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.
 {0} is a method name.</note>
         </trans-unit>
         <trans-unit id="UseAwaitInstead" translate="yes" xml:space="preserve">
           <source>Use await instead</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Kullanım bekliyor bunun yerine</target>
+          <target state="translated">Bunun yerine await kullanın</target>
+          
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK001_MessageFormat" translate="yes" xml:space="preserve">
           <source>Synchronously waiting on tasks or awaiters may cause deadlocks. Use JoinableTaskFactory.Run instead.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Görevleri veya awaiters zaman uyumlu beklemek tehlikelidir ve ölü kilitleri neden olabilir. Lütfen aşağıdaki seçenekleri göz önünde bulundurun: 1) çağıran bir "zaman uyumsuz" yöntemi ise zaman uyumsuz beklemek-e doğru geçiş yapma. 2) değişiklik zinciri arayanların "zaman uyumsuz" yöntemler ne kadar ve daha sonra zaman uyumsuz olması için bu kodu değiştirmek için bekliyor. 3) görevleri veya awaiters beklemek için JoinableTaskFactory.Run() kullanın. Daha fazla bilgi için http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx bakın.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Görevlerde veya bekleyen öğelerde zaman uyumlu olarak beklemek kilitlenmelere neden olabilir. Bunun yerine JoinableTaskFactory.Run kullanın.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK001_Title" translate="yes" xml:space="preserve">
           <source>Avoid problematic synchronous waits</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Görevleri veya awaiters zaman uyumlu beklemek tehlikelidir ve ölü kilitleri neden olabilir.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Sorunlu zaman uyumlu beklemelerden kaçının</target>
         </trans-unit>
         <trans-unit id="VSSDK002_MessageFormat" translate="yes" xml:space="preserve">
           <source>Visual Studio service "{0}" should be used on main thread explicitly. 
 Call ThreadHelper.ThrowIfNotOnUIThread() or await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">"Visual Studio {0}" hizmeti ana iş parçacığı üzerinde açıkça kullanılmalıdır. 
-Lütfen ya geçerli iş parçacığı ana iş parçacığı veya anahtar ana iş parçacığı için zaman uyumsuz olarak doğrulayın. 
-1) API geçerli iş parçacığı doğrulamak için bu ana iplik: ThreadHelper.ThrowIfNotOnUIThread() veya IThreadHandling.VerifyOnUIThread(). 
-2) API'ları için ana geçiş yapmak için iş parçacığı zaman uyumsuz olarak: JoinableTaskFactory.SwitchToMainThreadAsync() veya IThreadHandling.SwitchToUIThread(). Daha fazla bilgi için http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx için 
-bakın.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">"{0}" Visual Studio hizmeti, ana iş parçacığında açık olarak kullanılmalıdır. 
+ThreadHelper.ThrowIfNotOnUIThread() çağırın veya önce JoinableTaskFactory.SwitchToMainThreadAsync() bekleyin.</target>
         </trans-unit>
         <trans-unit id="VSSDK002_Title" translate="yes" xml:space="preserve">
           <source>Use VS services from UI thread</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Visual Studio hizmeti ana iş parçacığı üzerinde açıkça kullanılmalıdır.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">UI iş parçacığından VS hizmetlerini kullanın</target>
         </trans-unit>
         <trans-unit id="VSSDK003_MessageFormat" translate="yes" xml:space="preserve">
           <source>Avoid "async void" methods, because any exceptions not handled by the method will crash the process.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Bir zaman uyumlu olmayan geçersiz yöntem dışında herhangi bir özel durumları doğrudan SynchronizationContext üzerinde oluşturulur ve işlem-ecek gürültüyle çarpmak çünkü zaman uyumsuz Void yöntemi, kaçının. Daha fazla bilgi için https://msdn.microsoft.com/en-us/magazine/jj991977.aspx için 
-bakın.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">"async void" metotları tarafından işlenmeyen tüm özel durumlar işlemi kilitleyeceğinden bunları kullanmayın.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"async void" is a pair of C# keywords. Do not translate them.</note>
         </trans-unit>
         <trans-unit id="VSSDK003_Title" translate="yes" xml:space="preserve">
           <source>Avoid async void methods</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Zaman uyumlu olmayan geçersiz yöntem kaçının.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Async void metotları kullanmayın</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"async void" is a pair of C# keywords. Do not translate them.</note>
         </trans-unit>
         <trans-unit id="VSSDK004_MessageFormat" translate="yes" xml:space="preserve">
           <source>Avoid using async lambda for a void returning delegate type, because any exceptions not handled by the delegate will crash the process.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Void döndüren bir zaman uyumsuz lambda dışarı atılan özel durumları doğrudan SynchronizationContext üzerinde oluşturulur ve işlem-ecek gürültüyle çarpmak çünkü geçersiz geri dönen temsilci türü olarak, zaman uyumsuz lambda kullanmaktan kaçının. Daha fazla bilgi için https://msdn.microsoft.com/en-us/magazine/jj991977.aspx için 
-bakın.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Temsilci tarafından işlenmeyen tüm özel durumlar işlemi kilitleyeceğinden, temsilci türü döndüren bir void için async lambda kullanmayın.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"void" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK004_Title" translate="yes" xml:space="preserve">
           <source>Avoid unsupported async delegates</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Zaman uyumsuz lambda geçersiz geri dönen temsilci türü olarak kullanılıyor.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Desteklenmeyen async temsilcilerini kullanmayın</target>
         </trans-unit>
         <trans-unit id="VSSDK005_MessageFormat" translate="yes" xml:space="preserve">
           <source>AsyncEventHandler delegates should be invoked via the extension method "TplExtensions.InvokeAsync()" defined in Microsoft.VisualStudio.Threading assembly.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">AsyncEventHandler temsilcileri ile "TplExtensions.InvokeAsync()" Microsoft.VisualStudio.Threading derlemede tanımlanmış genişletme yöntemi çağrılması.</target>
+          <target state="translated">AsyncEventHandler temsilcileri, Microsoft.VisualStudio.Threading bütünleştirilmiş kodunda tanımlanan "TplExtensions.InvokeAsync()" genişletme metodu aracılığıyla çağrılmalıdır.</target>
         </trans-unit>
         <trans-unit id="VSSDK005_Title" translate="yes" xml:space="preserve">
           <source>Use InvokeAsync to raise async events</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">AsyncEventHandler temsilcileri ile "TplExtensions.InvokeAsync()" Microsoft.VisualStudio.Threading derlemede tanımlanmış genişletme yöntemi çağrılması.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Async olayları tetiklemek için InvokeAsync kullanın</target>
         </trans-unit>
         <trans-unit id="VSSDK006_MessageFormat" translate="yes" xml:space="preserve">
           <source>Calling await on a Task inside a JoinableTaskFactory.Run, when the task is initialized outside the delegate can cause potential deadlocks.
 You can avoid this problem by ensuring the task is initialized within the delegate or by using JoinableTask instead of Task.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Arama bekliyor bir JoinableTaskFactory.Run içinde bir görevde görev temsilci dışında ne zaman başlatılır olası kilitlenmeleri neden olabilir. Görev sağlayarak bu sorunu önleyebilirsiniz 
-içinde temsilcinin veya görev yerine JoinableTask kullanarak başlatıldı.</target>
+          <target state="translated">JoinableTaskFactory.Run içindeki bir Task için await çağırmak, görevin temsilci dışında başlatılması durumunda kilitlenmelere neden olabilir.
+Görevin temsilcinin içinde başlatılmasını sağlayarak veya Task yerine JoinableTask kullanarak bu sorunu önleyebilirsiniz.</target>
         </trans-unit>
         <trans-unit id="VSSDK006_Title" translate="yes" xml:space="preserve">
           <source>Avoid awaiting non-joinable tasks in join contexts</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Arama kaçının olası kilitlenmeleri önlemek için temsilci dışında görev tanımladığınızda görev içinde "JoinableTaskFactory.Run" temsilci bekliyor.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Birleşik olmayan görevleri birleşik ortamlarda beklemeyin</target>
         </trans-unit>
         <trans-unit id="VSSDK007_MessageFormat" translate="yes" xml:space="preserve">
           <source>Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock.
 Use AsyncLazy&lt;T&gt; instead.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Tembel&lt;Task&lt;T&gt;&gt;arıyorum. Değer fabrika önceden başlatıldığı değeri kilitlenme. 
-AsyncLazy&lt;T&gt; yerine kullanmanız gerekir.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Lazy&lt;Task&lt;T&gt;&gt;.Value kilitlenebilir.
+Bunun yerine AsyncLazy&lt;T&gt; kullanın.</target>
         </trans-unit>
         <trans-unit id="VSSDK007_Title" translate="yes" xml:space="preserve">
           <source>Avoid using Lazy<it id="1" pos="open">&lt;T&gt;</it> where T is a Task<it id="2" pos="open">&lt;T2&gt;</it></source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Tembel<it id="1" pos="open"> &lt;T&gt; </it> T bir görev nerede kullanmaktan kaçının.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">T’nin Task<it id="1" pos="open">&lt;T&gt;</it> olduğu durumlarda Lazy<it id="2" pos="open">&lt;T2&gt;</it> kullanmayın.</target>
         </trans-unit>
         <trans-unit id="VSSDK008_MessageFormat" translate="yes" xml:space="preserve">
           <source>{0} synchronously blocks. Await {1} instead.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">{0} üyesi zaman uyumlu olarak engeller. {1} çağırın ve sonucunu bekliyor.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">{0} zaman uyumlu olarak engeller. Bunun yerine {1} bekleyin.</target>
         </trans-unit>
         <trans-unit id="VSSDK008_MessageFormat_UseAwaitInstead" translate="yes" xml:space="preserve">
           <source>{0} synchronously blocks. Use await instead.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">{0} üyesi zaman uyumlu olarak engeller. Kullanım yerine bekliyor.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">{0} zaman uyumlu olarak engeller. Bunun yerine await kullanın.</target>
         </trans-unit>
         <trans-unit id="VSSDK008_Title" translate="yes" xml:space="preserve">
           <source>Call async methods when in an async method</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Bir zaman uyumsuz yöntem ne zaman awaitable alternatifleri ara.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Zaman uyumsuz metottayken zaman uyumsuz metotlar çağırın</target>
         </trans-unit>
         <trans-unit id="VSSDK009_MessageFormat" translate="yes" xml:space="preserve">
           <source>Limit use of synchronously blocking method calls such as JoinableTaskFactory.Run or Task.Result to public entrypoint members where you must be synchronous. Using it for internal members can needlessly add synchronous frames between asynchronous frames, leading to threadpool exhaustion.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Zaman uyumlu olarak burada zaman uyumlu olmalıdır genel giriş noktası üyeler için JoinableTaskFactory.Run veya Task.Result gibi yöntem çağrıları engelleme sınırı kullanın. İç üyeleri için kullanarak gereksiz yere zaman uyumlu Çerçeveler arasında iş parçacığı havuzu tükenme için önde gelen zaman uyumsuz çerçeve ekleyebilirsiniz.</target>
+          <target state="translated">Zaman uyumlu olmanız gereken genel giriş noktası üyelerinde, JoinableTaskFactory.Run veya Task.Result gibi zaman uyumlu olarak engelleyen metot çağrılarının kullanımını sınırlayın. Bunu iç üyeler için kullanmak, zaman uyumsuz çerçevelerin arasına gereksiz yere zaman uyumlu çerçeveler ekleyerek iş parçacığı havuzunun tükenmesine sebep olabilir.</target>
         </trans-unit>
         <trans-unit id="VSSDK009_Title" translate="yes" xml:space="preserve">
           <source>Implement internal logic asynchronously</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Halka açık olmayan yöntemleri zaman uyumlu blok kaçının.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">İç mantığı zaman uyumsuz olarak uygulayın</target>
         </trans-unit>
         <trans-unit id="VSSDK010_CodeFix_Title" translate="yes" xml:space="preserve">
           <source>Rename to {0}</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">{0} için yeniden adlandırın.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">{0} olarak yeniden adlandırın</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a method name.</note>
         </trans-unit>
         <trans-unit id="VSSDK010_MessageFormat" translate="yes" xml:space="preserve">
           <source>Use "Async" suffix in names of Task-returning methods.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">"Zaman uyumsuz" son eki görev döndüren yöntemi adlarında kullanın.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Task döndüren metotların adlarında “Async” kullanın.</target>
         </trans-unit>
         <trans-unit id="VSSDK010_Title" translate="yes" xml:space="preserve">
           <source>Use "Async" suffix for async methods</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">"Zaman uyumsuz" son eki görev döndüren yöntemi adlarında kullanın.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Async metotları için "Async" sonekini kullanın</target>
         </trans-unit>
         <trans-unit id="VSSDK011_MessageFormat" translate="yes" xml:space="preserve">
           <source>Avoid method overloads that assume TaskScheduler.Current. Use an overload that accepts a TaskScheduler and specify TaskScheduler.Default (or any other) explicitly.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">TaskScheduler.Current varsayıyorum yöntem yüklemesi kaçının. TaskScheduler.Default (veya diğer) açıkça belirtmek ve bir TaskScheduler kabul eden bir yükleme kullanın.</target>
+          <target state="translated">TaskScheduler.Current varsayan metot aşırı yüklemelerinden kaçının. TaskScheduler kabul eden bir aşırı yükleme kullanın ve TaskScheduler.Default (veya diğer birini) açık olarak belirtin.</target>
         </trans-unit>
         <trans-unit id="VSSDK011_Title" translate="yes" xml:space="preserve">
           <source>Avoid method overloads that assume TaskScheduler.Current</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">TaskScheduler.Current varsayıyorum yöntem yüklemesi kaçınmak</target>
+          <target state="translated">TaskScheduler.Current varsayan metot aşırı yüklemelerinden kaçının</target>
         </trans-unit>
         <trans-unit id="VSSDK003_CodeFix_Title" translate="yes" xml:space="preserve">
           <source>Change return type to Task</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Göreve dönüş türünü değiştir</target>
+          <target state="translated">Döndürme türünü Task olarak değiştirin</target>
+          
           <note from="MultilingualBuild" annotates="source" priority="2">Task is a type name and should not be translated.</note>
         </trans-unit>
       </group>

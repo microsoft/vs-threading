@@ -66,6 +66,7 @@
           <source>An attempt to switch to the main thread failed to reach the expected thread. Was the JoinableTaskContext initialized on the wrong thread or with a SynchronizationContext whose Post method does not execute its delegate on the main thread?</source>
           <target state="translated">嘗試切換至主要執行緒失敗，無法連接至預期的執行緒。JoinableTaskContext 是否在錯誤的執行緒上進行初始化，或具備之 SynchronizationContext 的 Post 方法在主要執行緒上未執行其委派?</target>
           
+          
           <note from="MultilingualBuild" annotates="source" priority="2">An error displayed when there is a serious programming fault with an application. It will usually be thrown early in development in the application and is not expected to be seen by an end user.</note>
         </trans-unit>
         <trans-unit id="ValueFactoryReentrancy" translate="yes" xml:space="preserve">

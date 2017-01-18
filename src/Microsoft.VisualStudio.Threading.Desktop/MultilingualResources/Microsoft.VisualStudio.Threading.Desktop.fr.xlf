@@ -66,6 +66,7 @@
           <source>An attempt to switch to the main thread failed to reach the expected thread. Was the JoinableTaskContext initialized on the wrong thread or with a SynchronizationContext whose Post method does not execute its delegate on the main thread?</source>
           <target state="translated">Une tentative de basculement sur le thread principal n’a pas réussi à atteindre le thread attendu. JoinableTaskContext a-t-il été initialisé sur le mauvais thread ou avec un SynchronizationContext dont la méthode Post n’exécute pas son délégué sur le thread principal ?</target>
           
+          
           <note from="MultilingualBuild" annotates="source" priority="2">An error displayed when there is a serious programming fault with an application. It will usually be thrown early in development in the application and is not expected to be seen by an end user.</note>
         </trans-unit>
         <trans-unit id="ValueFactoryReentrancy" translate="yes" xml:space="preserve">

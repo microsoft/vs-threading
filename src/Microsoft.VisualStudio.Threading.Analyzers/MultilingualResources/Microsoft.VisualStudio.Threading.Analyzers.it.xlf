@@ -1,5 +1,5 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en-US" target-language="it" original="MICROSOFT.VISUALSTUDIO.THREADING.ANALYZERS/STRINGS.RESX" tool-id="MultilingualAppToolkit" product-name="n/a" product-version="n/a" build-num="n/a">
     <header>
       <tool tool-id="MultilingualAppToolkit" tool-name="Multilingual App Toolkit" tool-version="4.0.1795.0" tool-company="Microsoft" />
@@ -8,150 +8,129 @@
       <group id="MICROSOFT.VISUALSTUDIO.THREADING.ANALYZERS/STRINGS.RESX" datatype="resx">
         <trans-unit id="AwaitXInstead" translate="yes" xml:space="preserve">
           <source>Await {0} instead</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Attendono invece {0}</target>
+          <target state="translated">In alternativa, attendere {0}</target>
+          
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.
 {0} is a method name.</note>
         </trans-unit>
         <trans-unit id="UseAwaitInstead" translate="yes" xml:space="preserve">
           <source>Use await instead</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Uso aspettano invece</target>
+          <target state="translated">In alternativa, usare await</target>
+          
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK001_MessageFormat" translate="yes" xml:space="preserve">
           <source>Synchronously waiting on tasks or awaiters may cause deadlocks. Use JoinableTaskFactory.Run instead.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Sincrono attesa sui compiti o awaiters è pericoloso e può causare blocchi morti. Si prega di considerare le seguenti opzioni: 1) passare alla asincrona di attesa se il chiamante è già un metodo di "async". 2) cambiamento attendono la catena dei chiamanti per essere metodi "async" e quindi modificare questo codice per essere asincrona. 3) uso JoinableTaskFactory.Run() di attendere le attività o awaiters. Fare riferimento a http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx per maggiori informazioni.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">L'attesa in modalità sincrona di attività o awaiter può causare deadlock. In alternativa, usare JoinableTaskFactory.Run.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK001_Title" translate="yes" xml:space="preserve">
           <source>Avoid problematic synchronous waits</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Sincrono attesa sui compiti o awaiters è pericoloso e può causare blocchi morti.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Evita attese sincrone problematiche</target>
         </trans-unit>
         <trans-unit id="VSSDK002_MessageFormat" translate="yes" xml:space="preserve">
           <source>Visual Studio service "{0}" should be used on main thread explicitly. 
 Call ThreadHelper.ThrowIfNotOnUIThread() or await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Servizio di Visual Studio "{0}" deve essere utilizzato in modo esplicito sul thread principale. 
-Si prega di verificare sia il thread corrente è il thread principale, o passa al thread principale in modo asincrono. 
-1) API per verificare il thread corrente sono il thread principale: ThreadHelper.ThrowIfNotOnUIThread(), o IThreadHandling.VerifyOnUIThread(). 
-2) API per passare a principale del filetto in modo asincrono: JoinableTaskFactory.SwitchToMainThreadAsync(), o IThreadHandling.SwitchToUIThread(). 
-Fare riferimento a http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx per maggiori informazioni.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Il servizio "{0}" di Visual Studio non deve essere usato sul thread principale in modo esplicito. 
+Chiamare ThreadHelper.ThrowIfNotOnUIThread() o attendere prima JoinableTaskFactory.SwitchToMainThreadAsync().</target>
         </trans-unit>
         <trans-unit id="VSSDK002_Title" translate="yes" xml:space="preserve">
           <source>Use VS services from UI thread</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Servizio di Visual Studio deve essere utilizzato in modo esplicito sul thread principale.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Usa i servizi di Visual Studio dal thread dell'interfaccia utente</target>
         </trans-unit>
         <trans-unit id="VSSDK003_MessageFormat" translate="yes" xml:space="preserve">
           <source>Avoid "async void" methods, because any exceptions not handled by the method will crash the process.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Evitare il metodo Async Void, perché tutte le eccezioni generate da un metodo void async verranno generate direttamente su SynchronizationContext e andrà in crash il processo. 
-Fare riferimento a https://msdn.microsoft.com/en-us/magazine/jj991977.aspx per maggiori informazioni.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Evitare metodi "async void" perché tutte le eccezioni non gestite dal metodo causeranno l'arresto anomalo del processo.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"async void" is a pair of C# keywords. Do not translate them.</note>
         </trans-unit>
         <trans-unit id="VSSDK003_Title" translate="yes" xml:space="preserve">
           <source>Avoid async void methods</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Evitare il metodo Async Void.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Evita metodi asincroni void</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"async void" is a pair of C# keywords. Do not translate them.</note>
         </trans-unit>
         <trans-unit id="VSSDK004_MessageFormat" translate="yes" xml:space="preserve">
           <source>Avoid using async lambda for a void returning delegate type, because any exceptions not handled by the delegate will crash the process.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Evitare di utilizzare lambda async come tipo delegato ritorno void, perché tutte le eccezioni generate da una lambda async restituisce void verranno generate direttamente su SynchronizationContext e andrà in crash il processo. 
-Fare riferimento a https://msdn.microsoft.com/en-us/magazine/jj991977.aspx per maggiori informazioni.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Evitare di usare espressioni lambda asincrone per un tipo di delegato che restituisce void, perché tutte le eccezioni non gestite dal delegato causeranno l'arresto anomalo del processo.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"void" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK004_Title" translate="yes" xml:space="preserve">
           <source>Avoid unsupported async delegates</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Lambda Async sta usanda come tipo delegato ritorno void.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Evita delegati asincroni non supportati</target>
         </trans-unit>
         <trans-unit id="VSSDK005_MessageFormat" translate="yes" xml:space="preserve">
           <source>AsyncEventHandler delegates should be invoked via the extension method "TplExtensions.InvokeAsync()" defined in Microsoft.VisualStudio.Threading assembly.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">AsyncEventHandler delegati devono essere richiamati tramite il metodo di estensione "TplExtensions.InvokeAsync()" definito nell'assembly Microsoft.VisualStudio.Threading.</target>
+          <target state="translated">I delegati di AsyncEventHandler devono essere richiamati tramite il metodo di estensione "TplExtensions.InvokeAsync()" definito nell'assembly Microsoft.VisualStudio.Threading.</target>
         </trans-unit>
         <trans-unit id="VSSDK005_Title" translate="yes" xml:space="preserve">
           <source>Use InvokeAsync to raise async events</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">AsyncEventHandler delegati devono essere richiamati tramite il metodo di estensione "TplExtensions.InvokeAsync()" definito nell'assembly Microsoft.VisualStudio.Threading.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Usa InvokeAsync per generare eventi asincroni</target>
         </trans-unit>
         <trans-unit id="VSSDK006_MessageFormat" translate="yes" xml:space="preserve">
           <source>Calling await on a Task inside a JoinableTaskFactory.Run, when the task is initialized outside the delegate can cause potential deadlocks.
 You can avoid this problem by ensuring the task is initialized within the delegate or by using JoinableTask instead of Task.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Chiamata attendono un'attività all'interno di un JoinableTaskFactory.Run, quando l'attività viene inizializzato all'esterno il delegato può causare potenziali deadlock. 
-è possibile evitare questo problema assicurando l'attività viene inizializzata all'interno del delegato o utilizzando JoinableTask invece di attività.</target>
+          <target state="translated">La chiamata di await su un elemento Task all'interno di un elemento JoinableTaskFactory.Run quando Task è inizializzato all'esterno del delegato può causare possibili deadlock.
+Per evitare il problema, assicurarsi che Task venga inizializzato all'interno del delegato oppure usare JoinableTask invece di Task.</target>
         </trans-unit>
         <trans-unit id="VSSDK006_Title" translate="yes" xml:space="preserve">
           <source>Avoid awaiting non-joinable tasks in join contexts</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Evitare chiamate attendono attività all'interno di "JoinableTaskFactory.Run" delegato quando l'attività è definita di fuori del delegato per evitare potenziali deadlock.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Evita attesa di Task non joinable in contesti di join</target>
         </trans-unit>
         <trans-unit id="VSSDK007_MessageFormat" translate="yes" xml:space="preserve">
           <source>Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock.
 Use AsyncLazy&lt;T&gt; instead.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Chiamando pigro&lt;Task&lt;T&gt;&gt;. Valore possa causare un deadlock quando la fabbrica di valore è stata avviata in precedenza. 
-è invece necessario utilizzare AsyncLazy&lt;T&gt; .</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Lazy&lt;Task&lt;T&gt;&gt;.Value può causare deadlock.
+In alternativa, usare AsyncLazy&lt;T&gt;.</target>
         </trans-unit>
         <trans-unit id="VSSDK007_Title" translate="yes" xml:space="preserve">
           <source>Avoid using Lazy<it id="1" pos="open">&lt;T&gt;</it> where T is a Task<it id="2" pos="open">&lt;T2&gt;</it></source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Evitare di utilizzare Lazy<it id="1" pos="open"> &lt;T&gt; </it> dove T è un compito.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Evitare di usare Lazy<it id="1" pos="open">&lt;T&gt;</it> in cui T è un elemento Task<it id="2" pos="open">&lt;T2&gt;</it></target>
         </trans-unit>
         <trans-unit id="VSSDK008_MessageFormat" translate="yes" xml:space="preserve">
           <source>{0} synchronously blocks. Await {1} instead.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Il membro di {0} blocca in modo sincrono. Chiamare invece {1} e attende il relativo risultato.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">{0} si blocca in modalità sincrona. In alternativa, attendere {1}.</target>
         </trans-unit>
         <trans-unit id="VSSDK008_MessageFormat_UseAwaitInstead" translate="yes" xml:space="preserve">
           <source>{0} synchronously blocks. Use await instead.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Il membro di {0} blocca in modo sincrono. Uso aspettano invece.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">{0} si blocca in modalità sincrona. In alternativa, usare await.</target>
         </trans-unit>
         <trans-unit id="VSSDK008_Title" translate="yes" xml:space="preserve">
           <source>Call async methods when in an async method</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Chiamare awaitable alternative quando in un metodo asincrono.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Chiama metodi asincroni se il metodo è asincrono</target>
         </trans-unit>
         <trans-unit id="VSSDK009_MessageFormat" translate="yes" xml:space="preserve">
           <source>Limit use of synchronously blocking method calls such as JoinableTaskFactory.Run or Task.Result to public entrypoint members where you must be synchronous. Using it for internal members can needlessly add synchronous frames between asynchronous frames, leading to threadpool exhaustion.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Limitare l'uso di bloccare in modo sincrono chiamate a metodi quali JoinableTaskFactory.Run o Task. Result per membri entrypoint pubblico dove si deve essere sincrona. Utilizzarlo per i membri interni possa aggiungere inutilmente sincroni fotogrammi tra i fotogrammi asincrone, che conduce all'esaurimento threadpool.</target>
+          <target state="translated">Limita l'uso di chiamate a metodi con blocco asincrono, come JoinableTaskFactory.Run o Task.Result, a membri di punti di ingresso pubblici in cui è necessario essere sincroni. Se vengono usate per membri interni, è possibile che vengano aggiunti frame sincroni non necessari tra frame asincroni e questo può causare l'esaurimento del pool di thread.</target>
         </trans-unit>
         <trans-unit id="VSSDK009_Title" translate="yes" xml:space="preserve">
           <source>Implement internal logic asynchronously</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Evitare blocchi sincrone a metodi non pubblici.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Implementa la logica interna in modalità asincrona</target>
         </trans-unit>
         <trans-unit id="VSSDK010_CodeFix_Title" translate="yes" xml:space="preserve">
           <source>Rename to {0}</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Rinominare {0}.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Rinomina in {0}</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a method name.</note>
         </trans-unit>
         <trans-unit id="VSSDK010_MessageFormat" translate="yes" xml:space="preserve">
           <source>Use "Async" suffix in names of Task-returning methods.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Usare il suffisso "Async" nei nomi di metodo attività-restituendo.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Usare il suffisso "Async" in nomi di metodi che restituiscono Task.</target>
         </trans-unit>
         <trans-unit id="VSSDK010_Title" translate="yes" xml:space="preserve">
           <source>Use "Async" suffix for async methods</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Usare il suffisso "Async" nei nomi di metodo attività-restituendo.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Usa suffisso "Async" per metodi asincroni</target>
         </trans-unit>
         <trans-unit id="VSSDK003_CodeFix_Title" translate="yes" xml:space="preserve">
           <source>Change return type to Task</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Cambia tipo di ritorno all'attività</target>
+          <target state="translated">Cambia tipo restituito in Task</target>
+          
           <note from="MultilingualBuild" annotates="source" priority="2">Task is a type name and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSSDK011_MessageFormat" translate="yes" xml:space="preserve">
           <source>Avoid method overloads that assume TaskScheduler.Current. Use an overload that accepts a TaskScheduler and specify TaskScheduler.Default (or any other) explicitly.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Evitare gli overload di metodo che assumono TaskScheduler. Utilizzare un overload che accetta un oggetto TaskScheduler e specificare in modo esplicito TaskScheduler (o qualsiasi altro).</target>
+          <target state="translated">Evitare gli overload di metodo che presuppongono TaskScheduler.Current. Usare un overload che accetta un elemento TaskScheduler e specificare TaskScheduler.Default (o qualsiasi altro elemento) in modo esplicito.</target>
         </trans-unit>
         <trans-unit id="VSSDK011_Title" translate="yes" xml:space="preserve">
           <source>Avoid method overloads that assume TaskScheduler.Current</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Evitare gli overload di metodo che assumono TaskScheduler</target>
+          <target state="translated">Evita overload di metodo che presuppongono TaskScheduler.Current</target>
         </trans-unit>
       </group>
     </body>
