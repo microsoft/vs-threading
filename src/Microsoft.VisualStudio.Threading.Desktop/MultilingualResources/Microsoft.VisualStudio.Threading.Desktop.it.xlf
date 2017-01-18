@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en" target-language="it" original="MICROSOFT.VISUALSTUDIO.THREADING.DESKTOP/STRINGS.RESX" tool-id="MultilingualAppToolkit" product-name="n/a" product-version="n/a" build-num="n/a">
     <header>
@@ -65,7 +65,6 @@
         <trans-unit id="SwitchToMainThreadFailedToReachExpectedThread" translate="yes" xml:space="preserve">
           <source>An attempt to switch to the main thread failed to reach the expected thread. Was the JoinableTaskContext initialized on the wrong thread or with a SynchronizationContext whose Post method does not execute its delegate on the main thread?</source>
           <target state="translated">Un tentativo di passare al thread principale per raggiungere il thread previsto non è riuscito. JoinableTaskContext era inizializzato nel thread errato oppure con un elemento SynchronizationContext il cui metodo Post non esegue il relativo delegato nel thread principale?</target>
-          
           <note from="MultilingualBuild" annotates="source" priority="2">An error displayed when there is a serious programming fault with an application. It will usually be thrown early in development in the application and is not expected to be seen by an end user.</note>
         </trans-unit>
         <trans-unit id="ValueFactoryReentrancy" translate="yes" xml:space="preserve">

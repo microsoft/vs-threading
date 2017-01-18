@@ -13,96 +13,96 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="AwaitXInstead" xml:space="preserve">
-    <value>{0}를 대신 기다리고 있습니다</value>
+    <value>대신 {0}을(를) 기다립니다.</value>
     <comment>"await" is a C# keyword and should not be translated.
 {0} is a method name.</comment>
   </data>
   <data name="UseAwaitInstead" xml:space="preserve">
-    <value>사용 대신 기다리고 있습니다.</value>
+    <value>대신 await를 사용합니다.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSSDK001_MessageFormat" xml:space="preserve">
-    <value>동기적으로 작업 또는 awaiters에 기다리는 교착 상태가 발생할 수 있습니다. 대신 JoinableTaskFactory.Run를 사용 합니다.</value>
+    <value>작업을 동기적으로 대기합니다. 그러지 않으면 대기자가 교착 상태를 일으킬 수 있습니다. 대신 JoinableTaskFactory.Run을 사용합니다.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSSDK001_Title" xml:space="preserve">
-    <value>문제가 동기 대기 방지</value>
+    <value>문제가 있는 동기 대기를 사용하지 않습니다.</value>
   </data>
   <data name="VSSDK002_MessageFormat" xml:space="preserve">
-    <value>Visual Studio 서비스 "{0}"은 명시적으로 주 스레드에서 사용 되어야 한다. 
-전화 ThreadHelper.ThrowIfNotOnUIThread() 또는 JoinableTaskFactory.SwitchToMainThreadAsync()를 먼저 기다리고 있습니다.</value>
+    <value>주 스레드에서 Visual Studio 서비스 "{0}"을(를) 명시적으로 사용해야 합니다. 
+ThreadHelper.ThrowIfNotOnUIThread()를 호출하거나 JoinableTaskFactory.SwitchToMainThreadAsync()를 우선 기다립니다.</value>
   </data>
   <data name="VSSDK002_Title" xml:space="preserve">
-    <value>UI 스레드에서 서비스를 사용 하 여 대</value>
-  </data>
-  <data name="VSSDK003_CodeFix_Title" xml:space="preserve">
-    <value>변경 작업에 반환 형식</value>
-    <comment>Task is a type name and should not be translated.</comment>
+    <value>UI 스레드의 VS 서비스를 사용합니다.</value>
   </data>
   <data name="VSSDK003_MessageFormat" xml:space="preserve">
-    <value>메서드에 의해 처리 되지 않은 예외는 프로세스 충돌 때문에 "async"가 void 메서드를 하지 마십시오.</value>
+    <value>메서드에서 처리하지 않은 예외로 프로세스가 중단될 수 있으므로 "async void" 메서드를 사용하지 마세요.</value>
     <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
   </data>
   <data name="VSSDK003_Title" xml:space="preserve">
-    <value>비동기 void 메서드를 방지</value>
+    <value>async void 메서드를 사용하지 않습니다.</value>
     <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
   </data>
   <data name="VSSDK004_MessageFormat" xml:space="preserve">
-    <value>대리자에 의해 처리 되지 않은 예외는 프로세스 충돌 때문에 void 반환 대리자 형식에 대 한 비동기 람다를 사용 하지 마십시오.</value>
+    <value>대리자에서 처리하지 않은 예외로 프로세스가 중단될 수 있으므로 void 반환 대리자 형식에 대해 비동기 람다를 사용하지 마세요.</value>
     <comment>"void" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSSDK004_Title" xml:space="preserve">
-    <value>지원 되지 않는 비동기 대리자를 방지</value>
+    <value>지원되지 않는 비동기 대리자를 사용하지 않습니다.</value>
   </data>
   <data name="VSSDK005_MessageFormat" xml:space="preserve">
-    <value>AsyncEventHandler 대리자는 "TplExtensions.InvokeAsync()" Microsoft.VisualStudio.Threading 어셈블리에 정의 된 확장 메서드를 통해 호출 해야 합니다.</value>
+    <value>Microsoft.VisualStudio.Threading 어셈블리에 정의된 "TplExtensions.InvokeAsync()" 확장 메서드를 통해 AsyncEventHandler 대리자를 호출해야 합니다.</value>
   </data>
   <data name="VSSDK005_Title" xml:space="preserve">
-    <value>InvokeAsync 비동기 이벤트를 사용 하 여</value>
+    <value>비동기 이벤트를 발생하는 InvokeAsync 사용</value>
   </data>
   <data name="VSSDK006_MessageFormat" xml:space="preserve">
-    <value>전화 JoinableTaskFactory.Run, 내부 작업에 기다리고 대리자 외부 작업 초기화 때 잠재적인 교착 상태를 일으킬 수 있습니다. 작업을 함으로써이 문제를 피할 수 있습니다 
-대리자 또는 작업 대신 JoinableTask를 사용 하 여 초기화 됩니다.</value>
+    <value>작업이 외부에서 초기화되면 대리자가 잠재적인 교착 상태를 일으킬 수 있으므로 JoinableTaskFactory.Run 내 Task에서 호출을 대기합니다.
+작업이 대리자 내에서 초기화되도록 하거나 Task 대신 JoinableTask를 사용하여 이 문제를 방지할 수 있습니다.</value>
   </data>
   <data name="VSSDK006_Title" xml:space="preserve">
-    <value>조인 상황에서 비 결합 작업을 대기 하지 마십시오</value>
+    <value>조인 컨텍스트에서 조인할 수 없는 작업을 대기하지 않습니다.</value>
   </data>
   <data name="VSSDK007_MessageFormat" xml:space="preserve">
-    <value>게으른&lt;Task&lt;T&gt;&gt;입니다. 값 교착 상태 수 있습니다. 
-사용 AsyncLazy&lt;T&gt; 대신.</value>
+    <value>Lazy&lt;Task&lt;T&gt;&gt;.Value가 교착 상태가 될 수 있습니다.
+대신 AsyncLazy&lt;T&gt;를 사용하세요.</value>
   </data>
   <data name="VSSDK007_Title" xml:space="preserve">
-    <value>게으른 &lt;T&gt;  T 작업 &lt;T2&gt;  는 사용 하지 마십시오</value>
+    <value>&lt;T&gt;T가 Task인 경우 Lazy를 사용하지 않습니다.&lt;T2&gt;</value>
   </data>
   <data name="VSSDK008_MessageFormat" xml:space="preserve">
-    <value>{0} 동기적으로 차단합니다. 대신 {1}를 기다리고 있습니다.</value>
+    <value>{0}이(가) 동기적으로 차단합니다. 대신 {1}을(를) 기다립니다.</value>
   </data>
   <data name="VSSDK008_MessageFormat_UseAwaitInstead" xml:space="preserve">
-    <value>{0} 동기적으로 차단합니다. 사용 대신 기다리고 있습니다.</value>
+    <value>{0}이(가) 동기적으로 차단합니다. 대신 await를 사용합니다.</value>
   </data>
   <data name="VSSDK008_Title" xml:space="preserve">
-    <value>비동기 메서드에서 비동기 메서드 호출</value>
+    <value>비동기 메서드인 경우 비동기 메서드를 호출합니다.</value>
   </data>
   <data name="VSSDK009_MessageFormat" xml:space="preserve">
-    <value>제한 사용 동기적으로 공용 진입점 회원 동기 해야 어디에 JoinableTaskFactory.Run 또는 Task.Result 같은 메서드 호출을 차단 합니다. 내부 구성원에 대 한 그것을 사용 하 여 불필요 하 게 비동기 프레임, threadpool 고갈으로 이어지는 사이 동기 프레임을 추가할 수 있습니다.</value>
+    <value>동기화되어야 하는 공개 진입점 멤버에 JoinableTaskFactory.Run 또는 Task.Resut처럼 동기적으로 차단하는 메서드 호출 사용을 제한합니다. 내부 멤버에 이러한 매서드 호출을 사용하면 비동기 프레임 사이에 동기 프레임을 불필요하게 추가하여 threadpool이 소모될 수 있습니다.</value>
   </data>
   <data name="VSSDK009_Title" xml:space="preserve">
-    <value>비동기적으로 내부 논리를 구현</value>
+    <value>내부 논리를 비동기적으로 구현</value>
   </data>
   <data name="VSSDK010_CodeFix_Title" xml:space="preserve">
-    <value>{0}의 이름을</value>
+    <value>{0}(으)로 이름 바꾸기</value>
     <comment>{0} is a method name.</comment>
   </data>
   <data name="VSSDK010_MessageFormat" xml:space="preserve">
-    <value>작업 반환 메서드의 이름에 "Async" 접미사를 사용 합니다.</value>
+    <value>Task-returning 메서드의 이름에 "Async" 접미사를 사용합니다.</value>
   </data>
   <data name="VSSDK010_Title" xml:space="preserve">
-    <value>"비동기" 접미사를 사용 하 여 비동기 메서드</value>
+    <value>비동기 메서드에 "Async" 접미사 사용</value>
+  </data>
+  <data name="VSSDK003_CodeFix_Title" xml:space="preserve">
+    <value>반환 형식을 Task로 변경</value>
+    <comment>Task is a type name and should not be translated.</comment>
   </data>
   <data name="VSSDK011_MessageFormat" xml:space="preserve">
-    <value>메서드 오버 로드를 TaskScheduler.Current 가정 하지 마십시오. TaskScheduler 허용 하는 오버 로드를 사용 하 고 TaskScheduler.Default (또는 다른)를 명시적으로 지정 합니다.</value>
+    <value>TaskScheduler.Current를 가정하는 메서드 오버로드를 사용하지 않습니다. TaskScheduler를 수용하고 TaskScheduler.Default(또는 기타)를 명시적으로 지정하는 오버로드를 사용합니다.</value>
   </data>
   <data name="VSSDK011_Title" xml:space="preserve">
-    <value>TaskScheduler.Current 가정 메서드 오버 로드를 방지</value>
+    <value>TaskScheduler.Current를 가정하는 메서드 오버로드를 사용하지 않습니다.</value>
   </data>
 </root>
