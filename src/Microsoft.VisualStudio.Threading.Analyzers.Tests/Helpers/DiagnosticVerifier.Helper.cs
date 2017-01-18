@@ -8,6 +8,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
     using System.IO;
     using System.Linq;
     using System.Threading;
+    using System.Windows.Threading;
     using Microsoft.Build.Utilities;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
@@ -26,6 +27,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         private static readonly MetadataReference CSharpSymbolsReference = MetadataReference.CreateFromFile(typeof(CSharpCompilation).Assembly.Location);
         private static readonly MetadataReference CodeAnalysisReference = MetadataReference.CreateFromFile(typeof(Compilation).Assembly.Location);
         private static readonly MetadataReference ThreadingReference = MetadataReference.CreateFromFile(typeof(AsyncEventHandler).Assembly.Location);
+        private static readonly MetadataReference WindowsBaseReference = MetadataReference.CreateFromFile(typeof(Dispatcher).Assembly.Location);
 
         private static readonly ImmutableArray<string> VSSDKPackageReferences = ImmutableArray.Create(new string[] {
             Path.Combine("Microsoft.VisualStudio.Shell.Interop", "7.10.6071", "lib", "Microsoft.VisualStudio.Shell.Interop.dll"),
@@ -192,6 +194,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 .AddMetadataReference(projectId, CSharpSymbolsReference)
                 .AddMetadataReference(projectId, CodeAnalysisReference)
                 .AddMetadataReference(projectId, ThreadingReference)
+                .AddMetadataReference(projectId, WindowsBaseReference)
                 .WithProjectCompilationOptions(projectId, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
             var pathToLibs = ToolLocationHelper.GetPathToStandardLibraries(".NETFramework", "v4.5.1", string.Empty);

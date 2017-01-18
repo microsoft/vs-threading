@@ -222,4 +222,10 @@ Use AsyncLazy&lt;T&gt; instead.</value>
   <data name="VSSDK013_Title" xml:space="preserve">
     <value>Offer async methods</value>
   </data>
+  <data name="VSSDK014_MessageFormat" xml:space="preserve">
+    <value>Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority.</value>
+  </data>
+  <data name="VSSDK014_Title" xml:space="preserve">
+    <value>Avoid legacy threading switching APIs</value>
+  </data>
 </root>
