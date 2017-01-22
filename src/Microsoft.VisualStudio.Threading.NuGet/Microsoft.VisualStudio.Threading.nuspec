@@ -47,6 +47,9 @@
       <group targetFramework="wpa">
         <dependency id="Microsoft.VisualStudio.Validation" version="15.0.75" />
       </group>
+      <group targetFramework="netstandard1.1">
+        <dependency id="Microsoft.VisualStudio.Validation" version="15.0.75" />
+      </group>
       <group>
         <dependency id="Microsoft.VisualStudio.Validation" version="15.0.75" />
       </group>
