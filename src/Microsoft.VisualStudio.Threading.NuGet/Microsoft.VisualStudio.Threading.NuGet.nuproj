@@ -33,7 +33,7 @@
     <RequireLicenseAcceptance>true</RequireLicenseAcceptance>
     <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=746387</ReleaseNotes>
     <NoPackageAnalysis>true</NoPackageAnalysis>
-    <NoDefaultExcludes>true</NoDefaultExcludes>
+    <NoDefaultExcludes>false</NoDefaultExcludes>
   </PropertyGroup>
   <ItemGroup>
     <None Include="Microsoft.VisualStudio.Threading.nuspec" />
