@@ -14,7 +14,7 @@
     <ProjectGuid>c51acf4a-3e2c-44b2-99fc-1a838518c690</ProjectGuid>
   </PropertyGroup>
   <PropertyGroup>
-    <NuProjPath>$(UserProfile)\.nuget\packages\NuProj\0.10.48-beta-gea4a31bbc5\tools\</NuProjPath>
+    <NuProjPath>$(UserProfile)\.nuget\packages\NuProj\0.11.14-beta\tools\</NuProjPath>
     <NuSpecTemplate>Microsoft.VisualStudio.Threading.nuspec</NuSpecTemplate>
   </PropertyGroup>
   <Import Project="$(NuProjPath)\NuProj.props" Condition="Exists('$(NuProjPath)\NuProj.props')" />

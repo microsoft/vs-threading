@@ -8,13 +8,13 @@
       "version": "2.0.34",
       "suppressParent": "none"
     },
-    "Microsoft.VisualStudio.Validation": "15.0.81",
+    "Microsoft.VisualStudio.Validation": "15.0.82",
     "Nerdbank.GitVersioning": {
       "version": "1.5.58",
       "suppressParent": "none"
     },
     "NuProj.Common": {
-      "version": "0.10.48-beta-gea4a31bbc5",
+      "version": "0.11.14-beta",
       "suppressParent": "none"
     },
     "PdbGit": "3.0.41",
