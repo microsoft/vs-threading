@@ -64,6 +64,7 @@
     <Compile Include="Utils.cs" />
     <Compile Include="VSSDK002VsServiceUsageAnalyzer.cs" />
     <Compile Include="VSSDK012SpecifyJtfWhereAllowed.cs" />
+    <Compile Include="VSSDK013OfferAsyncOptionAnalyzer.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config">

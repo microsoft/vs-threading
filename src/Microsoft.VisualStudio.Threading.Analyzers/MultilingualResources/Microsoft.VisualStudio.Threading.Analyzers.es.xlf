@@ -137,6 +137,14 @@ Use AsyncLazy&lt;T&gt; en su lugar.</target>
           <source>Provide JoinableTaskFactory where allowed</source>
           <target state="new">Provide JoinableTaskFactory where allowed</target>
         </trans-unit>
+        <trans-unit id="VSSDK013_MessageFormat" translate="yes" xml:space="preserve">
+          <source>Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate.</source>
+          <target state="new">Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate.</target>
+        </trans-unit>
+        <trans-unit id="VSSDK013_Title" translate="yes" xml:space="preserve">
+          <source>Offer async methods</source>
+          <target state="new">Offer async methods</target>
+        </trans-unit>
       </group>
     </body>
   </file>

@@ -17,5 +17,6 @@ ID | Title
 [VSSDK010](VSSDK010.md) | Use `Async` suffix for async methods
 [VSSDK011](VSSDK011.md) | Avoid method overloads that assume TaskScheduler.Current
 [VSSDK012](VSSDK012.md) | Provide JoinableTaskFactory where allowed
+[VSSDK013](VSSDK013.md) | Offer async option
 
 [1]: https://nuget.org/packages/microsoft.visualstudio.threading.analyzers

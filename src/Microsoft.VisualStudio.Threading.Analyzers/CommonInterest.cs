@@ -6,6 +6,12 @@
 
     internal static class CommonInterest
     {
+        internal static readonly IReadOnlyList<SyncBlockingMethod> JTFSyncBlockers = new[]
+        {
+            new SyncBlockingMethod(Namespaces.MicrosoftVisualStudioThreading, Types.JoinableTaskFactory.TypeName, Types.JoinableTaskFactory.Run, Types.JoinableTaskFactory.RunAsync),
+            new SyncBlockingMethod(Namespaces.MicrosoftVisualStudioThreading, Types.JoinableTask.TypeName, Types.JoinableTask.Join, Types.JoinableTask.JoinAsync),
+        };
+
         internal static readonly IReadOnlyList<SyncBlockingMethod> SyncBlockingMethods = new[]
         {
             new SyncBlockingMethod(Namespaces.MicrosoftVisualStudioThreading, Types.JoinableTaskFactory.TypeName, Types.JoinableTaskFactory.Run, Types.JoinableTaskFactory.RunAsync),
