@@ -103,6 +103,43 @@ class Test {
         }
 
         [Fact]
+        public void InvokeVsSolutionNoCheck_InCtor()
+        {
+            var test = @"
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    Test() {
+        IVsSolution sln = null;
+        sln.SetProperty(1000, null);
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 13, 7, 24) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
+        [Fact]
+        public void InvokeVsSolutionWithCheck_InCtor()
+        {
+            var test = @"
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    Test() {
+        VerifyOnUIThread();
+        IVsSolution sln = null;
+        sln.SetProperty(1000, null);
+    }
+
+    void VerifyOnUIThread() {
+    }
+}
+";
+            this.VerifyCSharpDiagnostic(test);
+        }
+
+        [Fact]
         public void InvokeVsSolutionBeforeAndAfterVerifyOnUIThread()
         {
             var test = @"

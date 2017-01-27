@@ -61,6 +61,7 @@
             "SwitchToUIThread");
 
         private static readonly IImmutableSet<SyntaxKind> MethodSyntaxKinds = ImmutableHashSet.Create(
+            SyntaxKind.ConstructorDeclaration,
             SyntaxKind.MethodDeclaration,
             SyntaxKind.AnonymousMethodExpression,
             SyntaxKind.SimpleLambdaExpression,
