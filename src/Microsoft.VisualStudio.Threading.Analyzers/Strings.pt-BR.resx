@@ -21,93 +21,93 @@
     <value>Uso aguardam em vez disso</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
-  <data name="VSSDK001_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD002_MessageFormat" xml:space="preserve">
     <value>Síncrona espera nas tarefas ou awaiters é perigosa e pode causar bloqueios de morto. Por favor, considere as seguintes opções: 1) alternar para wait assíncrono se o chamador já é um método de "async". 2) alteração da cadeia de chamadores para ser "async" métodos e altere esse código para ser assíncrono aguardam. 3) Utilize JoinableTaskFactory.Run() para aguardar as tarefas ou awaiters. Consulte http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx para mais informação.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
-  <data name="VSSDK001_Title" xml:space="preserve">
+  <data name="VSTHRD002_Title" xml:space="preserve">
     <value>Síncrona espera nas tarefas ou awaiters é perigosa e pode causar bloqueios de morto.</value>
   </data>
-  <data name="VSSDK002_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD010_MessageFormat" xml:space="preserve">
     <value>Serviço Visual Studio "{0}" deve ser usado explicitamente no thread principal. 
 Ou verifique se o thread atual é a thread principal, ou alternar para o thread principal de forma assíncrona. 
 1) APIs para verificar se o thread atual é a thread principal: ThreadHelper.ThrowIfNotOnUIThread(), ou IThreadHandling.VerifyOnUIThread(). 
 2) APIs para alternar a principal linha de forma assíncrona: JoinableTaskFactory.SwitchToMainThreadAsync(), ou IThreadHandling.SwitchToUIThread(). 
 Consulte a http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx para mais informação.</value>
   </data>
-  <data name="VSSDK002_Title" xml:space="preserve">
+  <data name="VSTHRD010_Title" xml:space="preserve">
     <value>Visual Studio de serviço deve ser usado no thread principal explicitamente.</value>
   </data>
-  <data name="VSSDK003_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD100_MessageFormat" xml:space="preserve">
     <value>Evite método Async Void, porque todas as exceções lançadas fora de um método de vazio async serão geradas diretamente sobre o SynchronizationContext e travará o processo. 
 Consulte a https://msdn.microsoft.com/en-us/magazine/jj991977.aspx para mais informação.</value>
     <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
   </data>
-  <data name="VSSDK003_Title" xml:space="preserve">
+  <data name="VSTHRD100_Title" xml:space="preserve">
     <value>Evite o método Async Void.</value>
     <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
   </data>
-  <data name="VSSDK004_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD101_MessageFormat" xml:space="preserve">
     <value>Evite usar async lambda como tipo de retorno void delegado, porque todas as exceções lançadas fora uma lambda async retornar void serão geradas diretamente sobre o SynchronizationContext e travará o processo. 
 Consulte a https://msdn.microsoft.com/en-us/magazine/jj991977.aspx para mais informação.</value>
     <comment>"void" is a C# keyword and should not be translated.</comment>
   </data>
-  <data name="VSSDK004_Title" xml:space="preserve">
+  <data name="VSTHRD101_Title" xml:space="preserve">
     <value>Async lambda está sendo usado como a tipo de retorno void delegado.</value>
   </data>
-  <data name="VSSDK005_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD106_MessageFormat" xml:space="preserve">
     <value>Delegados de AsyncEventHandler devem ser chamados através do método de extensão "TplExtensions.InvokeAsync()" definida no assembly Microsoft.VisualStudio.Threading.</value>
   </data>
-  <data name="VSSDK005_Title" xml:space="preserve">
+  <data name="VSTHRD106_Title" xml:space="preserve">
     <value>Delegados de AsyncEventHandler devem ser chamados através do método de extensão "TplExtensions.InvokeAsync()" definida no assembly Microsoft.VisualStudio.Threading.</value>
   </data>
-  <data name="VSSDK006_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD003_MessageFormat" xml:space="preserve">
     <value>Chamando aguardam em uma tarefa dentro de um JoinableTaskFactory.Run, quando a tarefa é inicializada fora o delegado pode causar deadlocks potenciais. 
 , Você pode evitar este problema, garantindo que a tarefa é inicializada dentro do delegado ou usando JoinableTask ao invés de tarefa.</value>
   </data>
-  <data name="VSSDK006_Title" xml:space="preserve">
+  <data name="VSTHRD003_Title" xml:space="preserve">
     <value>Evitar chamando aguardam a tarefa dentro de "JoinableTaskFactory.Run" delegado quando a tarefa é definida fora o delegado para evitar deadlocks potenciais.</value>
   </data>
-  <data name="VSSDK007_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD011_MessageFormat" xml:space="preserve">
     <value>Chamando o preguiçoso&lt;Task&lt;T&gt;&gt;. Valor pode bloqueio quando a fábrica de valor anteriormente foi iniciada. 
 , Você deve usar o AsyncLazy&lt;T&gt; em vez disso.</value>
   </data>
-  <data name="VSSDK007_Title" xml:space="preserve">
+  <data name="VSTHRD011_Title" xml:space="preserve">
     <value>Evite usar Lazy &lt;T&gt;  , onde T é uma tarefa.</value>
   </data>
-  <data name="VSSDK008_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD103_MessageFormat" xml:space="preserve">
     <value>O membro {0} sincronicamente bloqueia. Chamar {1} em vez disso e aguarde o seu resultado.</value>
   </data>
-  <data name="VSSDK008_MessageFormat_UseAwaitInstead" xml:space="preserve">
+  <data name="VSTHRD103_MessageFormat_UseAwaitInstead" xml:space="preserve">
     <value>O membro {0} sincronicamente bloqueia. Uso aguardam em vez disso.</value>
   </data>
-  <data name="VSSDK008_Title" xml:space="preserve">
+  <data name="VSTHRD103_Title" xml:space="preserve">
     <value>Chame awaitable alternativas quando em um método assíncrono.</value>
   </data>
-  <data name="VSSDK009_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD102_MessageFormat" xml:space="preserve">
     <value>Limite de uso de forma síncrona, bloquear chamadas de método como JoinableTaskFactory.Run ou Task.Result para público entrypoint Membros onde você deve ser síncrono. Usá-lo para membros internos desnecessariamente pode adicionar quadros síncronos entre quadros assíncronos, conduzindo ao esgotamento do pool de threads.</value>
   </data>
-  <data name="VSSDK009_Title" xml:space="preserve">
+  <data name="VSTHRD102_Title" xml:space="preserve">
     <value>Evite blocos síncronos em métodos não-públicos.</value>
   </data>
-  <data name="VSSDK010_CodeFix_Title" xml:space="preserve">
+  <data name="VSTHRD200_CodeFix_Title" xml:space="preserve">
     <value>Renomear para {0}.</value>
     <comment>{0} is a method name.</comment>
   </data>
-  <data name="VSSDK010_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD200_MessageFormat" xml:space="preserve">
     <value>Use o sufixo "Async" em nomes de método de retorno de tarefa.</value>
   </data>
-  <data name="VSSDK010_Title" xml:space="preserve">
+  <data name="VSTHRD200_Title" xml:space="preserve">
     <value>Use o sufixo "Async" em nomes de método de retorno de tarefa.</value>
   </data>
-  <data name="VSSDK003_CodeFix_Title" xml:space="preserve">
+  <data name="VSTHRD100_CodeFix_Title" xml:space="preserve">
     <value>Tipo de retorno da mudança de tarefa</value>
     <comment>Task is a type name and should not be translated.</comment>
   </data>
-  <data name="VSSDK011_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD105_MessageFormat" xml:space="preserve">
     <value>Evite sobrecargas de método que assumem TaskScheduler. Use uma sobrecarga que aceita um TaskScheduler e especificar explicitamente o TaskScheduler (ou qualquer outro).</value>
   </data>
-  <data name="VSSDK011_Title" xml:space="preserve">
+  <data name="VSTHRD105_Title" xml:space="preserve">
     <value>Evitar sobrecargas de método que assumem TaskScheduler</value>
   </data>
 </root>

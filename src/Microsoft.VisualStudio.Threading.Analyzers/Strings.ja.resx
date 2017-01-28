@@ -21,93 +21,93 @@
     <value>使用を代わりに待っています</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
-  <data name="VSSDK001_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD002_MessageFormat" xml:space="preserve">
     <value>タスクや待機側での同期の待機は危険であり、デッドロックを引き起こす可能性があります。次のオプションを検討してください: 1) 呼び出し元が既に"async"メソッド場合、非同期待機に切り替えます。2) 変更を非同期にするこのコードを変更して"async"メソッドの呼び出し元のチェインを待っています。3) タスクまたは待機側で待機する JoinableTaskFactory.Run() を使用します。詳しくは http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx を参照してください。</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
-  <data name="VSSDK001_Title" xml:space="preserve">
+  <data name="VSTHRD002_Title" xml:space="preserve">
     <value>タスクや待機側での同期の待機は危険であり、デッドロックを引き起こす可能性があります。</value>
   </data>
-  <data name="VSSDK002_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD010_MessageFormat" xml:space="preserve">
     <value>Visual Studio のサービス「{0}」は、メイン スレッドに明示的に使用する必要があります。
 現在のスレッドがメイン スレッド、またはメイン スレッドに切り替える非同期的にいずれかを確認してください。
 1) 現在のスレッドを確認するための Api はメイン スレッド: ThreadHelper.ThrowIfNotOnUIThread()、または IThreadHandling.VerifyOnUIThread()。
 2) にメインを切り替える Api スレッドを非同期的に: JoinableTaskFactory.SwitchToMainThreadAsync()、または IThreadHandling.SwitchToUIThread()。詳しくは http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx に
 参照してください。</value>
   </data>
-  <data name="VSSDK002_Title" xml:space="preserve">
+  <data name="VSTHRD010_Title" xml:space="preserve">
     <value>Visual Studio のサービスは、メイン スレッドに明示的に使用する必要があります。</value>
   </data>
-  <data name="VSSDK003_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD100_MessageFormat" xml:space="preserve">
     <value>非同期の void メソッドからスローされる例外は、SynchronizationContext の直接が発生し、プロセスがクラッシュしますので非同期 Void メソッドは避けてください。詳しくは https://msdn.microsoft.com/en-us/magazine/jj991977.aspx に
 参照してください。</value>
     <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
   </data>
-  <data name="VSSDK003_Title" xml:space="preserve">
+  <data name="VSTHRD100_Title" xml:space="preserve">
     <value>Void で非同期メソッドは避けてください。</value>
     <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
   </data>
-  <data name="VSSDK004_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD101_MessageFormat" xml:space="preserve">
     <value>Void を返す非同期のラムダからスローされるすべての例外は、SynchronizationContext の直接が発生し、プロセスがクラッシュしますので返すデリゲート型が void として非同期ラムダを使用をしないでください。詳しくは https://msdn.microsoft.com/en-us/magazine/jj991977.aspx に
 参照してください。</value>
     <comment>"void" is a C# keyword and should not be translated.</comment>
   </data>
-  <data name="VSSDK004_Title" xml:space="preserve">
+  <data name="VSTHRD101_Title" xml:space="preserve">
     <value>非同期のラムダは、返すデリゲート型が void として使用されています。</value>
   </data>
-  <data name="VSSDK005_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD106_MessageFormat" xml:space="preserve">
     <value>"TplExtensions.InvokeAsync()"は、Microsoft.VisualStudio.Threading アセンブリで定義されている拡張メソッドでは、AsyncEventHandler デリゲートを呼び出す必要があります。</value>
   </data>
-  <data name="VSSDK005_Title" xml:space="preserve">
+  <data name="VSTHRD106_Title" xml:space="preserve">
     <value>"TplExtensions.InvokeAsync()"は、Microsoft.VisualStudio.Threading アセンブリで定義されている拡張メソッドでは、AsyncEventHandler デリゲートを呼び出す必要があります。</value>
   </data>
-  <data name="VSSDK006_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD003_MessageFormat" xml:space="preserve">
     <value>タスク内で、JoinableTaskFactory.Run に呼び出しを待っています潜在的なデッドロックが発生することができますデリゲートの外部タスクを初期化する時。タスクを確保することによってこの問題を回避することができます
 は、デリゲートやタスクではなく JoinableTask を使用して初期化されます。</value>
   </data>
-  <data name="VSSDK006_Title" xml:space="preserve">
+  <data name="VSTHRD003_Title" xml:space="preserve">
     <value>呼び出しを避けるため潜在的なデッドロックを避けるためにデリゲートの外部タスクを定義するときに"JoinableTaskFactory.Run"デリゲート内部タスクを待っています。</value>
   </data>
-  <data name="VSSDK007_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD011_MessageFormat" xml:space="preserve">
     <value>怠惰な&lt;Task&lt;T&gt;&gt;を呼び出します。値値ファクトリが開始されていたデッドロックが発生することができます。
 AsyncLazy&lt;T&gt;を代わりに使用する必要があります。</value>
   </data>
-  <data name="VSSDK007_Title" xml:space="preserve">
+  <data name="VSTHRD011_Title" xml:space="preserve">
     <value>ここで T はタスク Lazy&lt;T&gt;を使用しないでください。</value>
   </data>
-  <data name="VSSDK008_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD103_MessageFormat" xml:space="preserve">
     <value>{0} メンバーは同期的にブロックします。代わりに {1} を呼び出すし、その結果を待っています。</value>
   </data>
-  <data name="VSSDK008_MessageFormat_UseAwaitInstead" xml:space="preserve">
+  <data name="VSTHRD103_MessageFormat_UseAwaitInstead" xml:space="preserve">
     <value>{0} メンバーは同期的にブロックします。使用には、代わりにお待ちしております。</value>
   </data>
-  <data name="VSSDK008_Title" xml:space="preserve">
+  <data name="VSTHRD103_Title" xml:space="preserve">
     <value>非同期のメソッドの待機の選択肢を呼び出します。</value>
   </data>
-  <data name="VSSDK009_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD102_MessageFormat" xml:space="preserve">
     <value>同期する必要があるパブリック エントリ ポイント メンバーに JoinableTaskFactory.Run や Task.Result などのメソッドの呼び出しを同期的にブロックの制限を使用します。内部のメンバーのためにそれを使用して不必要なスレッド プールの枯渇につながる、非同期なフレーム間の同期フレームを追加できます。</value>
   </data>
-  <data name="VSSDK009_Title" xml:space="preserve">
+  <data name="VSTHRD102_Title" xml:space="preserve">
     <value>非パブリック メソッドの同期ブロックを避けてください。</value>
   </data>
-  <data name="VSSDK010_CodeFix_Title" xml:space="preserve">
+  <data name="VSTHRD200_CodeFix_Title" xml:space="preserve">
     <value>{0} の名前を変更します。</value>
     <comment>{0} is a method name.</comment>
   </data>
-  <data name="VSSDK010_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD200_MessageFormat" xml:space="preserve">
     <value>タスクを返すメソッド名のサフィックス"Async"を使用します。</value>
   </data>
-  <data name="VSSDK010_Title" xml:space="preserve">
+  <data name="VSTHRD200_Title" xml:space="preserve">
     <value>タスクを返すメソッド名のサフィックス"Async"を使用します。</value>
   </data>
-  <data name="VSSDK003_CodeFix_Title" xml:space="preserve">
+  <data name="VSTHRD100_CodeFix_Title" xml:space="preserve">
     <value>タスクに戻り値の型を変更</value>
     <comment>Task is a type name and should not be translated.</comment>
   </data>
-  <data name="VSSDK011_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD105_MessageFormat" xml:space="preserve">
     <value>TaskScheduler.Current を前提としているメソッドのオーバー ロードを避けてください。TaskScheduler を受け入れるオーバー ロードを使用し、明示的に TaskScheduler.Default (または他の) を指定します。</value>
   </data>
-  <data name="VSSDK011_Title" xml:space="preserve">
+  <data name="VSTHRD105_Title" xml:space="preserve">
     <value>TaskScheduler.Current を前提としているメソッドのオーバー ロードを避けてください。</value>
   </data>
 </root>

@@ -20,7 +20,7 @@
 
         protected override ImmutableArray<DiagnosticAnalyzer> GetCSharpDiagnosticAnalyzers()
         {
-            var analyzers = from type in typeof(VSSDK001SynchronousWaitAnalyzer).Assembly.GetTypes()
+            var analyzers = from type in typeof(VSTHRD002SynchronousWaitAnalyzer).Assembly.GetTypes()
                             where type.GetCustomAttributes(typeof(DiagnosticAnalyzerAttribute), true).Any()
                             select (DiagnosticAnalyzer)Activator.CreateInstance(type);
             return analyzers.ToImmutableArray();
@@ -38,8 +38,8 @@ class Test {
 
     Task<int> FooAsync() {
         Task t = Task.FromResult(1);
-        t.GetAwaiter().GetResult(); // VSSDK001, VSSDK008, VSSDK009
-        jtf.Run(async delegate { await BarAsync(); }); // VSSDK008, VSSDK009
+        t.GetAwaiter().GetResult(); // VSTHRD002, VSTHRD103, VSTHRD102
+        jtf.Run(async delegate { await BarAsync(); }); // VSTHRD103, VSTHRD102
         return Task.FromResult(1);
     }
 

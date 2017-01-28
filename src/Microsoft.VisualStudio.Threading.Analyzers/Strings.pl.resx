@@ -21,92 +21,92 @@
     <value>Zamiast tego czekają na użycie</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
-  <data name="VSSDK001_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD002_MessageFormat" xml:space="preserve">
     <value>Synchroniczne oczekiwanie na zadania lub awaiters jest niebezpieczne i może powodować blokad martwe. Proszę rozważyć następujące opcje: 1) Przełącz się do asynchronicznego oczekiwania, jeśli obiekt wywołujący jest już metodą "async". (2) zmiana łańcucha wywołań metod "async", a następnie zmienić ten kod, aby być asynchroniczne await. (3) stosowanie JoinableTaskFactory.Run() czekać na zadania lub awaiters. Odnoszą się do http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx Aby uzyskać więcej informacji.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
-  <data name="VSSDK001_Title" xml:space="preserve">
+  <data name="VSTHRD002_Title" xml:space="preserve">
     <value>Synchroniczne oczekiwanie na zadania lub awaiters jest niebezpieczne i może powodować blokad martwe.</value>
   </data>
-  <data name="VSSDK002_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD010_MessageFormat" xml:space="preserve">
     <value>Visual Studio usługi "{0}", należy jawnie w głównym wątku. 
 Albo Sprawdź bieżący wątek jest głównym wątku, lub przełączenie wątku głównego asynchronicznie. 
 1) interfejsów API, aby sprawdzić bieżący wątek jest wątek główny: ThreadHelper.ThrowIfNotOnUIThread(), lub IThreadHandling.VerifyOnUIThread(). 
 2) interfejsów API, aby przełączyć się do głównego wątku asynchronicznie: JoinableTaskFactory.SwitchToMainThreadAsync() lub IThreadHandling.SwitchToUIThread(). 
 Się do http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx Aby uzyskać więcej informacji.</value>
   </data>
-  <data name="VSSDK002_Title" xml:space="preserve">
+  <data name="VSTHRD010_Title" xml:space="preserve">
     <value>Usługi Visual Studio, należy jawnie w głównym wątku.</value>
   </data>
-  <data name="VSSDK003_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD100_MessageFormat" xml:space="preserve">
     <value>Metoda Async Void, należy unikać, ponieważ wszystkie wyjątki, wygenerowany z metody asynchronicznej nieważne będzie uruchamiany bezpośrednio na SynchronizationContext i nastąpi awaria procesu. 
 Się do https://msdn.microsoft.com/en-us/magazine/jj991977.aspx Aby uzyskać więcej informacji.</value>
     <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
   </data>
-  <data name="VSSDK003_Title" xml:space="preserve">
+  <data name="VSTHRD100_Title" xml:space="preserve">
     <value>Uniknąć Metoda Async Void.</value>
     <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
   </data>
-  <data name="VSSDK004_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD101_MessageFormat" xml:space="preserve">
     <value>Unikaj używania async lambda jako void zwracanie typu delegata, ponieważ wszystkie wyjątki, wygenerowany z lambda async zwracające void będzie uruchamiany bezpośrednio na SynchronizationContext i nastąpi awaria procesu. 
 Się do https://msdn.microsoft.com/en-us/magazine/jj991977.aspx Aby uzyskać więcej informacji.</value>
     <comment>"void" is a C# keyword and should not be translated.</comment>
   </data>
-  <data name="VSSDK004_Title" xml:space="preserve">
+  <data name="VSTHRD101_Title" xml:space="preserve">
     <value>Async lambda jest używana jako void zwracanie typu delegata.</value>
   </data>
-  <data name="VSSDK005_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD106_MessageFormat" xml:space="preserve">
     <value>AsyncEventHandler delegatów powinien być wywoływane za pośrednictwem metody rozszerzenia, które "TplExtensions.InvokeAsync()" zdefiniowany w zestawie Microsoft.VisualStudio.Threading.</value>
   </data>
-  <data name="VSSDK005_Title" xml:space="preserve">
+  <data name="VSTHRD106_Title" xml:space="preserve">
     <value>AsyncEventHandler delegatów powinien być wywoływane za pośrednictwem metody rozszerzenia, które "TplExtensions.InvokeAsync()" zdefiniowany w zestawie Microsoft.VisualStudio.Threading.</value>
   </data>
-  <data name="VSSDK006_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD003_MessageFormat" xml:space="preserve">
     <value>Powołanie czekają na zadanie wewnątrz JoinableTaskFactory.Run, kiedy zadanie jest inicjowany poza pełnomocnik może powodować potencjalnego zakleszczenia. Można uniknąć tego problemu, zapewniając, że zadanie jest zainicjowany w ramach pełnomocnika lub za pomocą JoinableTask zamiast 
 .</value>
   </data>
-  <data name="VSSDK006_Title" xml:space="preserve">
+  <data name="VSTHRD003_Title" xml:space="preserve">
     <value>Należy unikać telefonicznej czekają na zadanie wewnątrz delegować "JoinableTaskFactory.Run", gdy zadanie jest zdefiniowana poza delegata, aby uniknąć potencjalnego zakleszczenia.</value>
   </data>
-  <data name="VSSDK007_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD011_MessageFormat" xml:space="preserve">
     <value>Wywołanie leniwy&lt;Task&lt;T&gt;&gt;. Wartość można zakleszczenie, gdy wcześniej została uruchomiona fabryka wartość. Zamiast tego należy użyć AsyncLazy&lt;T&gt; 
 .</value>
   </data>
-  <data name="VSSDK007_Title" xml:space="preserve">
+  <data name="VSTHRD011_Title" xml:space="preserve">
     <value>Należy unikać używania Lazy &lt;T&gt;  , gdzie T jest zadanie.</value>
   </data>
-  <data name="VSSDK008_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD103_MessageFormat" xml:space="preserve">
     <value>Członkowskie {0}, blokuje synchronicznie. Zamiast tego wywołania {1} i czekać na jej wynik.</value>
   </data>
-  <data name="VSSDK008_MessageFormat_UseAwaitInstead" xml:space="preserve">
+  <data name="VSTHRD103_MessageFormat_UseAwaitInstead" xml:space="preserve">
     <value>Członkowskie {0}, blokuje synchronicznie. Użycie await zamiast.</value>
   </data>
-  <data name="VSSDK008_Title" xml:space="preserve">
+  <data name="VSTHRD103_Title" xml:space="preserve">
     <value>Wywołanie awaitable alternatywy w metodę komunikacji asynchronicznej.</value>
   </data>
-  <data name="VSSDK009_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD102_MessageFormat" xml:space="preserve">
     <value>Wykorzystanie limitu blokowanie synchronicznie wywołania metody takie jak JoinableTaskFactory.Run lub Task.Result do członków publicznych entrypoint gdzie musi być synchroniczne. Używając go do wewnętrznego członków niepotrzebnie można dodać synchroniczne klatek między asynchronicznych, co prowadzi do wyczerpania puli wątków.</value>
   </data>
-  <data name="VSSDK009_Title" xml:space="preserve">
+  <data name="VSTHRD102_Title" xml:space="preserve">
     <value>Uniknąć synchronicznego bloki w metody niepublicznej.</value>
   </data>
-  <data name="VSSDK010_CodeFix_Title" xml:space="preserve">
+  <data name="VSTHRD200_CodeFix_Title" xml:space="preserve">
     <value>Zmień nazwę na {0}.</value>
     <comment>{0} is a method name.</comment>
   </data>
-  <data name="VSSDK010_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD200_MessageFormat" xml:space="preserve">
     <value>W nazwach Metoda przekazujących dane zadanie, należy użyć sufiksem "Async".</value>
   </data>
-  <data name="VSSDK010_Title" xml:space="preserve">
+  <data name="VSTHRD200_Title" xml:space="preserve">
     <value>W nazwach Metoda przekazujących dane zadanie, należy użyć sufiksem "Async".</value>
   </data>
-  <data name="VSSDK011_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD105_MessageFormat" xml:space="preserve">
     <value>Uniknąć przeciążenia metody, które zakładają TaskScheduler.Current. Użyj Przeciążenie akceptującym TaskScheduler i jawnie określić TaskScheduler.Default (lub innych).</value>
   </data>
-  <data name="VSSDK011_Title" xml:space="preserve">
+  <data name="VSTHRD105_Title" xml:space="preserve">
     <value>Uniknąć przeciążenia metody, które zakładają TaskScheduler.Current</value>
   </data>
-  <data name="VSSDK003_CodeFix_Title" xml:space="preserve">
+  <data name="VSTHRD100_CodeFix_Title" xml:space="preserve">
     <value>Zmień typ zwrotny do zadań</value>
     <comment>Task is a type name and should not be translated.</comment>
   </data>
