@@ -12,7 +12,7 @@
     using CodeAnalysis.Diagnostics;
 
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class VSTHRD001AvoidLegacyThreadSwitchingAnalyzer : DiagnosticAnalyzer
+    public class VSTHRD001UseSwitchToMainThreadAsyncAnalyzer : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD001";
 

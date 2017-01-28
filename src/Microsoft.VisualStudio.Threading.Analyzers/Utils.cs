@@ -120,7 +120,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         internal static bool HasAsyncAlternative(this IMethodSymbol methodSymbol, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return methodSymbol.ContainingType.GetMembers(methodSymbol.Name + VSTHRD200AsyncSuffixAnalyzer.MandatoryAsyncSuffix)
+            return methodSymbol.ContainingType.GetMembers(methodSymbol.Name + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix)
                 .Any(alt => IsXAtLeastAsPublicAsY(alt, methodSymbol));
         }
 

@@ -22,12 +22,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using CodeAnalysis.Rename;
 
     [ExportCodeFixProvider(LanguageNames.CSharp)]
-    public class VSTHRD200AsyncSuffixCodeFix : CodeFixProvider
+    public class VSTHRD200UseAsyncNamingConventionCodeFix : CodeFixProvider
     {
         internal const string NewNameKey = "NewName";
 
         private static readonly ImmutableArray<string> ReusableFixableDiagnosticIds = ImmutableArray.Create(
-            VSTHRD200AsyncSuffixAnalyzer.Id);
+            VSTHRD200UseAsyncNamingConventionAnalyzer.Id);
 
         /// <inheritdoc />
         public override ImmutableArray<string> FixableDiagnosticIds => ReusableFixableDiagnosticIds;
@@ -60,7 +60,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 this.NewName);
 
             /// <inheritdoc />
-            public override string EquivalenceKey => VSTHRD200AsyncSuffixAnalyzer.Id;
+            public override string EquivalenceKey => VSTHRD200UseAsyncNamingConventionAnalyzer.Id;
 
             private string NewName => this.diagnostic.Properties[NewNameKey];
 

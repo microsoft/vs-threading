@@ -37,7 +37,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     /// ]]>
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class VSTHRD106AsyncEventHandlerAnalyzer : DiagnosticAnalyzer
+    public class VSTHRD106UseInvokeAsyncForAsyncEventsAnalyzer : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD106";
 

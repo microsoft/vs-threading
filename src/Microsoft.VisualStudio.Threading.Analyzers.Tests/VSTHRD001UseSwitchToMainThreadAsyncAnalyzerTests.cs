@@ -10,21 +10,21 @@
     using Xunit;
     using Xunit.Abstractions;
 
-    public class VSTHRD001AvoidLegacyThreadSwitchingAnalyzerTests : DiagnosticVerifier
+    public class VSTHRD001UseSwitchToMainThreadAsyncAnalyzerTests : DiagnosticVerifier
     {
         private DiagnosticResult expect = new DiagnosticResult
         {
-            Id = VSTHRD001AvoidLegacyThreadSwitchingAnalyzer.Id,
+            Id = VSTHRD001UseSwitchToMainThreadAsyncAnalyzer.Id,
             SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Warning,
         };
 
-        public VSTHRD001AvoidLegacyThreadSwitchingAnalyzerTests(ITestOutputHelper logger)
+        public VSTHRD001UseSwitchToMainThreadAsyncAnalyzerTests(ITestOutputHelper logger)
             : base(logger)
         {
         }
 
-        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer() => new VSTHRD001AvoidLegacyThreadSwitchingAnalyzer();
+        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer() => new VSTHRD001UseSwitchToMainThreadAsyncAnalyzer();
 
         [Fact]
         public void ThreadHelperInvoke_ProducesDiagnostic()

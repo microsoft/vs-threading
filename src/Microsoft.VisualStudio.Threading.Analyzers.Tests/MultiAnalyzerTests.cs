@@ -20,7 +20,7 @@
 
         protected override ImmutableArray<DiagnosticAnalyzer> GetCSharpDiagnosticAnalyzers()
         {
-            var analyzers = from type in typeof(VSTHRD002SynchronousWaitAnalyzer).Assembly.GetTypes()
+            var analyzers = from type in typeof(VSTHRD002UseJtfRunAnalyzer).Assembly.GetTypes()
                             where type.GetCustomAttributes(typeof(DiagnosticAnalyzerAttribute), true).Any()
                             select (DiagnosticAnalyzer)Activator.CreateInstance(type);
             return analyzers.ToImmutableArray();

@@ -39,33 +39,33 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="VSTHRD106AsyncEventHandlerAnalyzer.cs" />
-    <Compile Include="VSTHRD200AsyncSuffixAnalyzer.cs" />
-    <Compile Include="VSTHRD200AsyncSuffixCodeFix.cs" />
+    <Compile Include="VSTHRD106UseInvokeAsyncForAsyncEventsAnalyzer.cs" />
+    <Compile Include="VSTHRD200UseAsyncNamingConventionAnalyzer.cs" />
+    <Compile Include="VSTHRD200UseAsyncNamingConventionCodeFix.cs" />
     <Compile Include="CommonInterest.cs" />
-    <Compile Include="VSTHRD003JtfRunAwaitTaskAnalyzer.cs" />
+    <Compile Include="VSTHRD003UseJtfRunAsyncAnalyzer.cs" />
     <Compile Include="VSTHRD102AvoidJtfRunInNonPublicMembersAnalyzer.cs" />
     <Compile Include="Namespaces.cs" />
-    <Compile Include="VSTHRD105AvoidImpliedTaskSchedulerCurrentAnalyzer.cs" />
+    <Compile Include="VSTHRD105AvoidImplicitTaskSchedulerCurrentAnalyzer.cs" />
     <Compile Include="Strings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
-    <Compile Include="VSTHRD103UseAwaitInAsyncMethodsAnalyzer.cs" />
+    <Compile Include="VSTHRD103UseAsyncOptionAnalyzer.cs" />
     <Compile Include="VSTHRD011LazyOfTaskAnalyzer.cs" />
     <Compile Include="Types.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="VSTHRD101AsyncVoidLambdaAnalyzer.cs" />
     <Compile Include="VSTHRD100AsyncVoidMethodAnalyzer.cs" />
     <Compile Include="VSTHRD100AsyncVoidMethodCodeFix.cs" />
-    <Compile Include="VSTHRD002SynchronousWaitAnalyzer.cs" />
-    <Compile Include="VSTHRD103UseAwaitInAsyncMethodsCodeFix.cs" />
+    <Compile Include="VSTHRD002UseJtfRunAnalyzer.cs" />
+    <Compile Include="VSTHRD103UseAsyncOptionCodeFix.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="VSTHRD010VsServiceUsageAnalyzer.cs" />
     <Compile Include="VSTHRD012SpecifyJtfWhereAllowed.cs" />
     <Compile Include="VSTHRD104OfferAsyncOptionAnalyzer.cs" />
-    <Compile Include="VSTHRD001AvoidLegacyThreadSwitchingAnalyzer.cs" />
+    <Compile Include="VSTHRD001UseSwitchToMainThreadAsyncAnalyzer.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config">

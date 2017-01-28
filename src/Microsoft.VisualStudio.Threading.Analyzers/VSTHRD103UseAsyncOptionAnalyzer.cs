@@ -27,7 +27,7 @@
     /// ]]>
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class VSTHRD103UseAwaitInAsyncMethodsAnalyzer : DiagnosticAnalyzer
+    public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD103";
 
@@ -93,10 +93,10 @@
                     SimpleNameSyntax invokedMethodName = memberAccessSyntax?.Name ?? invocationExpressionSyntax.Expression as IdentifierNameSyntax;
                     var symbolInfo = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax, context.CancellationToken);
                     var methodSymbol = symbolInfo.Symbol as IMethodSymbol;
-                    if (symbolInfo.Symbol != null && !symbolInfo.Symbol.Name.EndsWith(VSTHRD200AsyncSuffixAnalyzer.MandatoryAsyncSuffix) &&
+                    if (symbolInfo.Symbol != null && !symbolInfo.Symbol.Name.EndsWith(VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix) &&
                         !(methodSymbol?.ReturnType?.Name == nameof(Task) && methodSymbol.ReturnType.BelongsToNamespace(Namespaces.SystemThreadingTasks)))
                     {
-                        string asyncMethodName = symbolInfo.Symbol.Name + VSTHRD200AsyncSuffixAnalyzer.MandatoryAsyncSuffix;
+                        string asyncMethodName = symbolInfo.Symbol.Name + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix;
                         var asyncMethodMatches = context.SemanticModel.LookupSymbols(
                             invocationExpressionSyntax.Expression.GetLocation().SourceSpan.Start,
                             symbolInfo.Symbol.ContainingType,
@@ -106,7 +106,7 @@
                         {
                             // An async alternative exists.
                             var properties = ImmutableDictionary<string, string>.Empty
-                                .Add(VSTHRD103UseAwaitInAsyncMethodsCodeFix.AsyncMethodKeyName, asyncMethodName);
+                                .Add(VSTHRD103UseAsyncOptionCodeFix.AsyncMethodKeyName, asyncMethodName);
 
                             Diagnostic diagnostic = Diagnostic.Create(
                                 Descriptor,
@@ -165,13 +165,13 @@
                             messageArgs.Add(item.MethodName);
                             if (item.AsyncAlternativeMethodName != null)
                             {
-                                properties = properties.Add(VSTHRD103UseAwaitInAsyncMethodsCodeFix.AsyncMethodKeyName, item.AsyncAlternativeMethodName);
+                                properties = properties.Add(VSTHRD103UseAsyncOptionCodeFix.AsyncMethodKeyName, item.AsyncAlternativeMethodName);
                                 descriptor = Descriptor;
                                 messageArgs.Add(item.AsyncAlternativeMethodName);
                             }
                             else
                             {
-                                properties = properties.Add(VSTHRD103UseAwaitInAsyncMethodsCodeFix.AsyncMethodKeyName, string.Empty);
+                                properties = properties.Add(VSTHRD103UseAsyncOptionCodeFix.AsyncMethodKeyName, string.Empty);
                                 descriptor = DescriptorNoAlternativeMethod;
                             }
 

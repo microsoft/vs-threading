@@ -38,7 +38,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     /// ]]>
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class VSTHRD003JtfRunAwaitTaskAnalyzer : DiagnosticAnalyzer
+    public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD003";
 

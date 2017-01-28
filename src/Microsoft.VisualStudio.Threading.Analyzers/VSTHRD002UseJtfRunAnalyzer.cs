@@ -31,7 +31,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     ///   task.Wait();  /* This analyzer will report warning on this synchronous wait. */
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class VSTHRD002SynchronousWaitAnalyzer : DiagnosticAnalyzer
+    public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD002";
 

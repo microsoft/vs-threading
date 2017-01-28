@@ -16,7 +16,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using CodeAnalysis.Diagnostics;
 
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class VSTHRD200AsyncSuffixAnalyzer : DiagnosticAnalyzer
+    public class VSTHRD200UseAsyncNamingConventionAnalyzer : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD200";
 
@@ -65,7 +65,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     }
 
                     var properties = ImmutableDictionary<string, string>.Empty
-                        .Add(VSTHRD200AsyncSuffixCodeFix.NewNameKey, methodSymbol.Name + MandatoryAsyncSuffix);
+                        .Add(VSTHRD200UseAsyncNamingConventionCodeFix.NewNameKey, methodSymbol.Name + MandatoryAsyncSuffix);
                     context.ReportDiagnostic(Diagnostic.Create(
                         Descriptor,
                         methodSymbol.Locations[0],

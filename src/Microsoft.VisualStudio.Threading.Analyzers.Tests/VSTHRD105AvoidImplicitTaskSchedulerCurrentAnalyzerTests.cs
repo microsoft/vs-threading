@@ -6,21 +6,21 @@
     using Xunit;
     using Xunit.Abstractions;
 
-    public class VSTHRD105AvoidImpliedTaskSchedulerCurrentAnalyzerTests : DiagnosticVerifier
+    public class VSTHRD105AvoidImplicitTaskSchedulerCurrentAnalyzerTests : DiagnosticVerifier
     {
         private DiagnosticResult expect = new DiagnosticResult
         {
-            Id = VSTHRD105AvoidImpliedTaskSchedulerCurrentAnalyzer.Id,
+            Id = VSTHRD105AvoidImplicitTaskSchedulerCurrentAnalyzer.Id,
             SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Warning,
         };
 
-        public VSTHRD105AvoidImpliedTaskSchedulerCurrentAnalyzerTests(ITestOutputHelper logger)
+        public VSTHRD105AvoidImplicitTaskSchedulerCurrentAnalyzerTests(ITestOutputHelper logger)
             : base(logger)
         {
         }
 
-        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer() => new VSTHRD105AvoidImpliedTaskSchedulerCurrentAnalyzer();
+        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer() => new VSTHRD105AvoidImplicitTaskSchedulerCurrentAnalyzer();
 
         [Fact]
         public void ContinueWith_NoTaskScheduler_GeneratesWarning()

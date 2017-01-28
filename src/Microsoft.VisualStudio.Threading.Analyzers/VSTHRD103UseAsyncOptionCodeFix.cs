@@ -29,12 +29,12 @@
     /// ]]>
     /// </remarks>
     [ExportCodeFixProvider(LanguageNames.CSharp)]
-    public class VSTHRD103UseAwaitInAsyncMethodsCodeFix : CodeFixProvider
+    public class VSTHRD103UseAsyncOptionCodeFix : CodeFixProvider
     {
         internal const string AsyncMethodKeyName = "AsyncMethodName";
 
         private static readonly ImmutableArray<string> ReusableFixableDiagnosticIds = ImmutableArray.Create(
-            VSTHRD103UseAwaitInAsyncMethodsAnalyzer.Id);
+            VSTHRD103UseAsyncOptionAnalyzer.Id);
 
         /// <inheritdoc />
         public override ImmutableArray<string> FixableDiagnosticIds => ReusableFixableDiagnosticIds;
@@ -76,7 +76,7 @@
             }
 
             /// <inheritdoc />
-            public override string EquivalenceKey => VSTHRD103UseAwaitInAsyncMethodsAnalyzer.Id;
+            public override string EquivalenceKey => VSTHRD103UseAsyncOptionAnalyzer.Id;
 
             private string AlternativeAsyncMethod => this.diagnostic.Properties[AsyncMethodKeyName];
 

@@ -31,7 +31,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     /// <see cref="TaskScheduler.Current"/> itself).
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class VSTHRD105AvoidImpliedTaskSchedulerCurrentAnalyzer : DiagnosticAnalyzer
+    public class VSTHRD105AvoidImplicitTaskSchedulerCurrentAnalyzer : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD105";
 
