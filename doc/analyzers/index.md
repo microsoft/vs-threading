@@ -3,22 +3,22 @@
 The following are the diagnostic analyzers installed with the [Microsoft.VisualStudio.Threading.Analyzers][1]
 NuGet package.
 
-ID | Title
----- | ---
-[VSTHRD002](VSTHRD002.md) | Avoid problematic synchronous waits
-[VSTHRD010](VSTHRD010.md) | Use VS services from UI thread
-[VSTHRD100](VSTHRD100.md) | Avoid `async void` methods
-[VSTHRD101](VSTHRD101.md) | Avoid unsupported async delegates
-[VSTHRD106](VSTHRD106.md) | Use `InvokeAsync` to raise async events
-[VSTHRD003](VSTHRD003.md) | Avoid awaiting non-joinable tasks in join contexts
-[VSTHRD011](VSTHRD011.md) | Avoid using `Lazy<T>` where `T` is `Task<T2>`
-[VSTHRD103](VSTHRD103.md) | Call async methods when in an async method
-[VSTHRD102](VSTHRD102.md) | Implement internal logic asynchronously
-[VSTHRD200](VSTHRD200.md) | Use `Async` suffix for async methods
-[VSTHRD105](VSTHRD105.md) | Avoid method overloads that assume TaskScheduler.Current
-[VSTHRD012](VSTHRD012.md) | Provide JoinableTaskFactory where allowed
-[VSTHRD104](VSTHRD104.md) | Offer async option
-[VSTHRD001](VSTHRD001.md) | Avoid legacy thread switching methods
+ID | Title | Severity | Supports
+---- | --- | --- | --- |
+[VSTHRD002](VSTHRD002.md) | Use JTF.Run to block | Critical | [2nd rule](../threading_rules.md#Rule2)
+[VSTHRD010](VSTHRD010.md) | Use VS services from UI thread | Critical | [1st rule](../threading_rules.md#Rule1)
+[VSTHRD100](VSTHRD100.md) | Avoid `async void` methods | Advisory
+[VSTHRD101](VSTHRD101.md) | Avoid unsupported async delegates | Advisory | [VSTHRD100](VSTHRD100.md)
+[VSTHRD106](VSTHRD106.md) | Use `InvokeAsync` to raise async events | Advisory
+[VSTHRD003](VSTHRD003.md) | Use JTF.RunAsync to block later | Critical | [3rd rule](../threading_rules.md#Rule3)
+[VSTHRD011](VSTHRD011.md) | Avoid using `Lazy<T>` where `T` is `Task<T2>` | Critical | [3rd rule](../threading_rules.md#Rule3)
+[VSTHRD103](VSTHRD103.md) | Use async option | Advisory
+[VSTHRD102](VSTHRD102.md) | Implement internal logic asynchronously | Advisory | [2nd rule](../threading_rules.md#Rule2)
+[VSTHRD200](VSTHRD200.md) | `Async` naming convention | Guideline | [VSTHRD103](VSTHRD103.md)
+[VSTHRD105](VSTHRD105.md) | Avoid implicit use of TaskScheduler.Current | Advisory
+[VSTHRD012](VSTHRD012.md) | Provide JoinableTaskFactory where allowed | Critical | [All rules](../threading_rules.md)
+[VSTHRD104](VSTHRD104.md) | Offer async option | Advisory
+[VSTHRD001](VSTHRD001.md) | Use JTF.SwitchToMainThread to switch | Critical | [1st rule](../threading_rules.md#Rule1)
 
 ## Severity descriptions
 
