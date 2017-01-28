@@ -5,20 +5,20 @@ NuGet package.
 
 ID | Title | Severity | Supports
 ---- | --- | --- | --- |
+[VSTHRD001](VSTHRD001.md) | Use JTF.SwitchToMainThread to switch | Critical | [1st rule](../threading_rules.md#Rule1)
 [VSTHRD002](VSTHRD002.md) | Use JTF.Run to block | Critical | [2nd rule](../threading_rules.md#Rule2)
+[VSTHRD003](VSTHRD003.md) | Use JTF.RunAsync to block later | Critical | [3rd rule](../threading_rules.md#Rule3)
 [VSTHRD010](VSTHRD010.md) | Use VS services from UI thread | Critical | [1st rule](../threading_rules.md#Rule1)
+[VSTHRD011](VSTHRD011.md) | Avoid using `Lazy<T>` where `T` is `Task<T2>` | Critical | [3rd rule](../threading_rules.md#Rule3)
+[VSTHRD012](VSTHRD012.md) | Provide JoinableTaskFactory where allowed | Critical | [All rules](../threading_rules.md)
 [VSTHRD100](VSTHRD100.md) | Avoid `async void` methods | Advisory
 [VSTHRD101](VSTHRD101.md) | Avoid unsupported async delegates | Advisory | [VSTHRD100](VSTHRD100.md)
-[VSTHRD106](VSTHRD106.md) | Use `InvokeAsync` to raise async events | Advisory
-[VSTHRD003](VSTHRD003.md) | Use JTF.RunAsync to block later | Critical | [3rd rule](../threading_rules.md#Rule3)
-[VSTHRD011](VSTHRD011.md) | Avoid using `Lazy<T>` where `T` is `Task<T2>` | Critical | [3rd rule](../threading_rules.md#Rule3)
-[VSTHRD103](VSTHRD103.md) | Use async option | Advisory
 [VSTHRD102](VSTHRD102.md) | Implement internal logic asynchronously | Advisory | [2nd rule](../threading_rules.md#Rule2)
-[VSTHRD200](VSTHRD200.md) | `Async` naming convention | Guideline | [VSTHRD103](VSTHRD103.md)
-[VSTHRD105](VSTHRD105.md) | Avoid implicit use of TaskScheduler.Current | Advisory
-[VSTHRD012](VSTHRD012.md) | Provide JoinableTaskFactory where allowed | Critical | [All rules](../threading_rules.md)
+[VSTHRD103](VSTHRD103.md) | Use async option | Advisory
 [VSTHRD104](VSTHRD104.md) | Offer async option | Advisory
-[VSTHRD001](VSTHRD001.md) | Use JTF.SwitchToMainThread to switch | Critical | [1st rule](../threading_rules.md#Rule1)
+[VSTHRD105](VSTHRD105.md) | Avoid implicit use of TaskScheduler.Current | Advisory
+[VSTHRD106](VSTHRD106.md) | Use `InvokeAsync` to raise async events | Advisory
+[VSTHRD200](VSTHRD200.md) | `Async` naming convention | Guideline | [VSTHRD103](VSTHRD103.md)
 
 ## Severity descriptions
 
