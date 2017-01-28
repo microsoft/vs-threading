@@ -859,5 +859,27 @@ class Test {
 
             this.VerifyCSharpDiagnostic(test);
         }
+
+        /// <summary>
+        /// Verifies that when method invocations and member access happens in properties
+        /// (which can never be async), nothing bad happens.
+        /// </summary>
+        /// <remarks>
+        /// This may like a trivially simple case. But guess why we had to add a test for it? (it failed).
+        /// </remarks>
+        [Fact]
+        public void NoDiagnosticAndNoExceptionForProperties()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    string Foo => string.Empty;
+    string Bar => string.Join(""a"", string.Empty); 
+}
+";
+
+            this.VerifyCSharpDiagnostic(test);
+        }
     }
 }
