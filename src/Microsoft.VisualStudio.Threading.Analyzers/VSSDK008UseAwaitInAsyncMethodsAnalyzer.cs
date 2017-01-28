@@ -134,7 +134,10 @@
                 else
                 {
                     var methodDecl = context.Node.FirstAncestorOrSelf<MethodDeclarationSyntax>();
-                    methodSymbol = context.SemanticModel.GetDeclaredSymbol(methodDecl, context.CancellationToken);
+                    if (methodDecl != null)
+                    {
+                        methodSymbol = context.SemanticModel.GetDeclaredSymbol(methodDecl, context.CancellationToken);
+                    }
                 }
 
                 var returnType = methodSymbol?.ReturnType;
