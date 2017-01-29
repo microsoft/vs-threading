@@ -103,6 +103,43 @@ class Test {
         }
 
         [Fact]
+        public void InvokeVsSolutionNoCheck_InCtor()
+        {
+            var test = @"
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    Test() {
+        IVsSolution sln = null;
+        sln.SetProperty(1000, null);
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 13, 7, 24) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
+        [Fact]
+        public void InvokeVsSolutionWithCheck_InCtor()
+        {
+            var test = @"
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    Test() {
+        VerifyOnUIThread();
+        IVsSolution sln = null;
+        sln.SetProperty(1000, null);
+    }
+
+    void VerifyOnUIThread() {
+    }
+}
+";
+            this.VerifyCSharpDiagnostic(test);
+        }
+
+        [Fact]
         public void InvokeVsSolutionBeforeAndAfterVerifyOnUIThread()
         {
             var test = @"
@@ -122,6 +159,111 @@ class Test {
 }
 ";
             this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 13, 8, 24) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
+        [Fact(Skip = "Not yet supported. See https://github.com/Microsoft/vs-threading/issues/38")]
+        public void InvokeVsSolutionAfterConditionedVerifyOnUIThread()
+        {
+            var test = @"
+using System;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    void F() {
+        IVsSolution sln = null;
+        if (false) {
+            VerifyOnUIThread();
+        }
+
+        sln.SetProperty(1000, null);
+    }
+
+    void VerifyOnUIThread() {
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 12, 13, 12, 24) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
+        [Fact(Skip = "Not yet supported. See https://github.com/Microsoft/vs-threading/issues/38")]
+        public void InvokeVsSolutionInBlockWithoutVerifyOnUIThread()
+        {
+            var test = @"
+using System;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    void F() {
+        IVsSolution sln = null;
+        if (false) {
+            VerifyOnUIThread();
+        } else {
+            sln.SetProperty(1000, null);
+        }
+    }
+
+    void VerifyOnUIThread() {
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 11, 17, 11, 28) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
+        [Fact(Skip = "Not yet supported. See https://github.com/Microsoft/vs-threading/issues/38")]
+        public void InvokeVsSolutionAfterSwallowingCatchBlockWhereVerifyOnUIThreadWasInTry()
+        {
+            var test = @"
+using System;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    void F() {
+        IVsSolution sln = null;
+        try {
+            VerifyOnUIThread();
+        } catch { }
+
+        sln.SetProperty(1000, null);
+    }
+
+    void VerifyOnUIThread() {
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 12, 13, 12, 24) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
+        [Fact(Skip = "Not yet supported. See https://github.com/Microsoft/vs-threading/issues/38")]
+        public void InvokeVsSolutionAfterUIThreadAssertionAndConditionalSwitchToThreadPool()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task F() {
+        IVsSolution sln = null;
+        VerifyOnUIThread();
+
+        if (false) {
+            // We *might* switch off the UI thread.
+            await TaskScheduler.Default;
+        }
+
+        sln.SetProperty(1000, null);
+    }
+
+    void VerifyOnUIThread() {
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 16, 13, 16, 24) };
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
 

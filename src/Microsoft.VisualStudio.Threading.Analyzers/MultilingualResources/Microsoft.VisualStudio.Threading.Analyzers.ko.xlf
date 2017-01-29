@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en-US" target-language="ko" original="MICROSOFT.VISUALSTUDIO.THREADING.ANALYZERS/STRINGS.RESX" tool-id="MultilingualAppToolkit" product-name="n/a" product-version="n/a" build-num="n/a">
     <header>
       <tool tool-id="MultilingualAppToolkit" tool-name="Multilingual App Toolkit" tool-version="4.0.1795.0" tool-company="Microsoft" />
@@ -8,126 +8,126 @@
       <group id="MICROSOFT.VISUALSTUDIO.THREADING.ANALYZERS/STRINGS.RESX" datatype="resx">
         <trans-unit id="AwaitXInstead" translate="yes" xml:space="preserve">
           <source>Await {0} instead</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">{0}를 대신 기다리고 있습니다</target>
+          <target state="translated">대신 {0}을(를) 기다립니다.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.
 {0} is a method name.</note>
         </trans-unit>
         <trans-unit id="UseAwaitInstead" translate="yes" xml:space="preserve">
           <source>Use await instead</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">사용 대신 기다리고 있습니다.</target>
+          <target state="translated">대신 await를 사용합니다.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD002_MessageFormat" translate="yes" xml:space="preserve">
           <source>Synchronously waiting on tasks or awaiters may cause deadlocks. Use JoinableTaskFactory.Run instead.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">동기적으로 작업 또는 awaiters에 기다리는 교착 상태가 발생할 수 있습니다. 대신 JoinableTaskFactory.Run를 사용 합니다.</target>
+          <target state="translated">작업을 동기적으로 대기합니다. 그러지 않으면 대기자가 교착 상태를 일으킬 수 있습니다. 대신 JoinableTaskFactory.Run을 사용합니다.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD002_Title" translate="yes" xml:space="preserve">
           <source>Avoid problematic synchronous waits</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">문제가 동기 대기 방지</target>
+          <target state="translated">문제가 있는 동기 대기를 사용하지 않습니다.</target>
         </trans-unit>
         <trans-unit id="VSTHRD010_MessageFormat" translate="yes" xml:space="preserve">
           <source>Visual Studio service "{0}" should be used on main thread explicitly. 
 Call ThreadHelper.ThrowIfNotOnUIThread() or await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Visual Studio 서비스 "{0}"은 명시적으로 주 스레드에서 사용 되어야 한다. 
-전화 ThreadHelper.ThrowIfNotOnUIThread() 또는 JoinableTaskFactory.SwitchToMainThreadAsync()를 먼저 기다리고 있습니다.</target>
+          <target state="translated">주 스레드에서 Visual Studio 서비스 "{0}"을(를) 명시적으로 사용해야 합니다. 
+ThreadHelper.ThrowIfNotOnUIThread()를 호출하거나 JoinableTaskFactory.SwitchToMainThreadAsync()를 우선 기다립니다.</target>
         </trans-unit>
         <trans-unit id="VSTHRD010_Title" translate="yes" xml:space="preserve">
           <source>Use VS services from UI thread</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">UI 스레드에서 서비스를 사용 하 여 대</target>
+          <target state="translated">UI 스레드의 VS 서비스를 사용합니다.</target>
         </trans-unit>
         <trans-unit id="VSTHRD100_CodeFix_Title" translate="yes" xml:space="preserve">
           <source>Change return type to Task</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">변경 작업에 반환 형식</target>
+          <target state="new">Change return type to Task</target>
           <note from="MultilingualBuild" annotates="source" priority="2">Task is a type name and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD100_MessageFormat" translate="yes" xml:space="preserve">
           <source>Avoid "async void" methods, because any exceptions not handled by the method will crash the process.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">메서드에 의해 처리 되지 않은 예외는 프로세스 충돌 때문에 "async"가 void 메서드를 하지 마십시오.</target>
+          <target state="translated">메서드에서 처리하지 않은 예외로 프로세스가 중단될 수 있으므로 "async void" 메서드를 사용하지 마세요.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"async void" is a pair of C# keywords. Do not translate them.</note>
         </trans-unit>
         <trans-unit id="VSTHRD100_Title" translate="yes" xml:space="preserve">
           <source>Avoid async void methods</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">비동기 void 메서드를 방지</target>
+          <target state="translated">async void 메서드를 사용하지 않습니다.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"async void" is a pair of C# keywords. Do not translate them.</note>
         </trans-unit>
         <trans-unit id="VSTHRD101_MessageFormat" translate="yes" xml:space="preserve">
           <source>Avoid using async lambda for a void returning delegate type, because any exceptions not handled by the delegate will crash the process.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">대리자에 의해 처리 되지 않은 예외는 프로세스 충돌 때문에 void 반환 대리자 형식에 대 한 비동기 람다를 사용 하지 마십시오.</target>
+          <target state="translated">대리자에서 처리하지 않은 예외로 프로세스가 중단될 수 있으므로 void 반환 대리자 형식에 대해 비동기 람다를 사용하지 마세요.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"void" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD101_Title" translate="yes" xml:space="preserve">
           <source>Avoid unsupported async delegates</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">지원 되지 않는 비동기 대리자를 방지</target>
+          <target state="translated">지원되지 않는 비동기 대리자를 사용하지 않습니다.</target>
         </trans-unit>
         <trans-unit id="VSTHRD106_MessageFormat" translate="yes" xml:space="preserve">
           <source>AsyncEventHandler delegates should be invoked via the extension method "TplExtensions.InvokeAsync()" defined in Microsoft.VisualStudio.Threading assembly.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">AsyncEventHandler 대리자는 "TplExtensions.InvokeAsync()" Microsoft.VisualStudio.Threading 어셈블리에 정의 된 확장 메서드를 통해 호출 해야 합니다.</target>
+          <target state="translated">Microsoft.VisualStudio.Threading 어셈블리에 정의된 "TplExtensions.InvokeAsync()" 확장 메서드를 통해 AsyncEventHandler 대리자를 호출해야 합니다.</target>
         </trans-unit>
         <trans-unit id="VSTHRD106_Title" translate="yes" xml:space="preserve">
           <source>Use InvokeAsync to raise async events</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">InvokeAsync 비동기 이벤트를 사용 하 여</target>
+          <target state="translated">비동기 이벤트를 발생하는 InvokeAsync 사용</target>
         </trans-unit>
         <trans-unit id="VSTHRD003_MessageFormat" translate="yes" xml:space="preserve">
           <source>Calling await on a Task inside a JoinableTaskFactory.Run, when the task is initialized outside the delegate can cause potential deadlocks.
 You can avoid this problem by ensuring the task is initialized within the delegate or by using JoinableTask instead of Task.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">전화 JoinableTaskFactory.Run, 내부 작업에 기다리고 대리자 외부 작업 초기화 때 잠재적인 교착 상태를 일으킬 수 있습니다. 작업을 함으로써이 문제를 피할 수 있습니다 
-대리자 또는 작업 대신 JoinableTask를 사용 하 여 초기화 됩니다.</target>
+          <target state="translated">작업이 외부에서 초기화되면 대리자가 잠재적인 교착 상태를 일으킬 수 있으므로 JoinableTaskFactory.Run 내 Task에서 호출을 대기합니다.
+작업이 대리자 내에서 초기화되도록 하거나 Task 대신 JoinableTask를 사용하여 이 문제를 방지할 수 있습니다.</target>
         </trans-unit>
         <trans-unit id="VSTHRD003_Title" translate="yes" xml:space="preserve">
           <source>Avoid awaiting non-joinable tasks in join contexts</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">조인 상황에서 비 결합 작업을 대기 하지 마십시오</target>
+          <target state="translated">조인 컨텍스트에서 조인할 수 없는 작업을 대기하지 않습니다.</target>
         </trans-unit>
         <trans-unit id="VSTHRD011_MessageFormat" translate="yes" xml:space="preserve">
           <source>Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock.
 Use AsyncLazy&lt;T&gt; instead.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">게으른&lt;Task&lt;T&gt;&gt;입니다. 값 교착 상태 수 있습니다. 
-사용 AsyncLazy&lt;T&gt; 대신.</target>
+          <target state="translated">Lazy&lt;Task&lt;T&gt;&gt;.Value가 교착 상태가 될 수 있습니다.
+대신 AsyncLazy&lt;T&gt;를 사용하세요.</target>
         </trans-unit>
         <trans-unit id="VSTHRD011_Title" translate="yes" xml:space="preserve">
           <source>Avoid using Lazy<it id="1" pos="open">&lt;T&gt;</it> where T is a Task<it id="2" pos="open">&lt;T2&gt;</it></source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">게으른<it id="1" pos="open"> &lt;T&gt; </it> T 작업<it id="2" pos="open"> &lt;T2&gt; </it> 는 사용 하지 마십시오</target>
+          <target state="translated"><it id="1" pos="open">&lt;T&gt;</it>T가 Task인 경우 Lazy를 사용하지 않습니다.<it id="2" pos="open">&lt;T2&gt;</it></target>
         </trans-unit>
         <trans-unit id="VSTHRD103_MessageFormat" translate="yes" xml:space="preserve">
           <source>{0} synchronously blocks. Await {1} instead.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">{0} 동기적으로 차단합니다. 대신 {1}를 기다리고 있습니다.</target>
+          <target state="translated">{0}이(가) 동기적으로 차단합니다. 대신 {1}을(를) 기다립니다.</target>
         </trans-unit>
         <trans-unit id="VSTHRD103_MessageFormat_UseAwaitInstead" translate="yes" xml:space="preserve">
           <source>{0} synchronously blocks. Use await instead.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">{0} 동기적으로 차단합니다. 사용 대신 기다리고 있습니다.</target>
+          <target state="translated">{0}이(가) 동기적으로 차단합니다. 대신 await를 사용합니다.</target>
         </trans-unit>
         <trans-unit id="VSTHRD103_Title" translate="yes" xml:space="preserve">
           <source>Call async methods when in an async method</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">비동기 메서드에서 비동기 메서드 호출</target>
+          <target state="translated">비동기 메서드인 경우 비동기 메서드를 호출합니다.</target>
         </trans-unit>
         <trans-unit id="VSTHRD102_MessageFormat" translate="yes" xml:space="preserve">
           <source>Limit use of synchronously blocking method calls such as JoinableTaskFactory.Run or Task.Result to public entrypoint members where you must be synchronous. Using it for internal members can needlessly add synchronous frames between asynchronous frames, leading to threadpool exhaustion.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">제한 사용 동기적으로 공용 진입점 회원 동기 해야 어디에 JoinableTaskFactory.Run 또는 Task.Result 같은 메서드 호출을 차단 합니다. 내부 구성원에 대 한 그것을 사용 하 여 불필요 하 게 비동기 프레임, threadpool 고갈으로 이어지는 사이 동기 프레임을 추가할 수 있습니다.</target>
+          <target state="translated">동기화되어야 하는 공개 진입점 멤버에 JoinableTaskFactory.Run 또는 Task.Resut처럼 동기적으로 차단하는 메서드 호출 사용을 제한합니다. 내부 멤버에 이러한 매서드 호출을 사용하면 비동기 프레임 사이에 동기 프레임을 불필요하게 추가하여 threadpool이 소모될 수 있습니다.</target>
         </trans-unit>
         <trans-unit id="VSTHRD102_Title" translate="yes" xml:space="preserve">
           <source>Implement internal logic asynchronously</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">비동기적으로 내부 논리를 구현</target>
+          <target state="translated">내부 논리를 비동기적으로 구현</target>
         </trans-unit>
         <trans-unit id="VSTHRD200_CodeFix_Title" translate="yes" xml:space="preserve">
           <source>Rename to {0}</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">{0}의 이름을</target>
+          <target state="translated">{0}(으)로 이름 바꾸기</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a method name.</note>
         </trans-unit>
         <trans-unit id="VSTHRD200_MessageFormat" translate="yes" xml:space="preserve">
           <source>Use "Async" suffix in names of Task-returning methods.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">작업 반환 메서드의 이름에 "Async" 접미사를 사용 합니다.</target>
+          <target state="translated">Task-returning 메서드의 이름에 "Async" 접미사를 사용합니다.</target>
         </trans-unit>
         <trans-unit id="VSTHRD200_Title" translate="yes" xml:space="preserve">
           <source>Use "Async" suffix for async methods</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">"비동기" 접미사를 사용 하 여 비동기 메서드</target>
+          <target state="translated">비동기 메서드에 "Async" 접미사 사용</target>
         </trans-unit>
         <trans-unit id="VSTHRD105_MessageFormat" translate="yes" xml:space="preserve">
           <source>Avoid method overloads that assume TaskScheduler.Current. Use an overload that accepts a TaskScheduler and specify TaskScheduler.Default (or any other) explicitly.</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">메서드 오버 로드를 TaskScheduler.Current 가정 하지 마십시오. TaskScheduler 허용 하는 오버 로드를 사용 하 고 TaskScheduler.Default (또는 다른)를 명시적으로 지정 합니다.</target>
+          <target state="translated">TaskScheduler.Current를 가정하는 메서드 오버로드를 사용하지 않습니다. TaskScheduler를 수용하고 TaskScheduler.Default(또는 기타)를 명시적으로 지정하는 오버로드를 사용합니다.</target>
         </trans-unit>
         <trans-unit id="VSTHRD105_Title" translate="yes" xml:space="preserve">
           <source>Avoid method overloads that assume TaskScheduler.Current</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">TaskScheduler.Current 가정 메서드 오버 로드를 방지</target>
+          <target state="translated">TaskScheduler.Current를 가정하는 메서드 오버로드를 사용하지 않습니다.</target>
         </trans-unit>
         <trans-unit id="VSTHRD012_MessageFormat" translate="yes" xml:space="preserve">
           <source>Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.</source>

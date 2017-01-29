@@ -61,6 +61,7 @@
             "SwitchToUIThread");
 
         private static readonly IImmutableSet<SyntaxKind> MethodSyntaxKinds = ImmutableHashSet.Create(
+            SyntaxKind.ConstructorDeclaration,
             SyntaxKind.MethodDeclaration,
             SyntaxKind.AnonymousMethodExpression,
             SyntaxKind.SimpleLambdaExpression,
@@ -72,8 +73,21 @@
 
         private enum ThreadingContext
         {
+            /// <summary>
+            /// The context is not known, either because it was never asserted or switched to,
+            /// or because a branch in the method exists which changed the context conditionally.
+            /// </summary>
             Unknown,
+
+            /// <summary>
+            /// The context is definitely on the main thread.
+            /// </summary>
             MainThread,
+
+            /// <summary>
+            /// The context is definitely on a non-UI thread.
+            /// </summary>
+            NotMainThread,
         }
 
         /// <inheritdoc />

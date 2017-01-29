@@ -13,101 +13,96 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="AwaitXInstead" xml:space="preserve">
-    <value>Esperam por {0} em vez disso</value>
+    <value>Em vez disso, espere o {0}</value>
     <comment>"await" is a C# keyword and should not be translated.
 {0} is a method name.</comment>
   </data>
   <data name="UseAwaitInstead" xml:space="preserve">
-    <value>Uso aguardam em vez disso</value>
+    <value>Em vez disso, use a espera</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>Síncrona espera nas tarefas ou awaiters é perigosa e pode causar bloqueios de morto. Por favor, considere as seguintes opções: 1) alternar para wait assíncrono se o chamador já é um método de "async". 2) alteração da cadeia de chamadores para ser "async" métodos e altere esse código para ser assíncrono aguardam. 3) Utilize JoinableTaskFactory.Run() para aguardar as tarefas ou awaiters. Consulte http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx para mais informação.</value>
+    <value>Esperar de forma síncrona por tarefas ou awaiters podem causar deadlocks. Em vez disso, use JoinableTaskFactory.Run.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
-    <value>Síncrona espera nas tarefas ou awaiters é perigosa e pode causar bloqueios de morto.</value>
+    <value>Evite esperas síncronas problemáticas</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>Serviço Visual Studio "{0}" deve ser usado explicitamente no thread principal. 
-Ou verifique se o thread atual é a thread principal, ou alternar para o thread principal de forma assíncrona. 
-1) APIs para verificar se o thread atual é a thread principal: ThreadHelper.ThrowIfNotOnUIThread(), ou IThreadHandling.VerifyOnUIThread(). 
-2) APIs para alternar a principal linha de forma assíncrona: JoinableTaskFactory.SwitchToMainThreadAsync(), ou IThreadHandling.SwitchToUIThread(). 
-Consulte a http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx para mais informação.</value>
+    <value>O serviço do Visual Studio "{0}" deve ser usado em um thread principal explicitamente. 
+Chame ThreadHelper.ThrowIfNotOnUIThread() ou espere o JoinableTaskFactory.SwitchToMainThreadAsync() primeiro.</value>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
-    <value>Visual Studio de serviço deve ser usado no thread principal explicitamente.</value>
+    <value>Use serviços do VS do thread de interface do usuário</value>
   </data>
   <data name="VSTHRD100_MessageFormat" xml:space="preserve">
-    <value>Evite método Async Void, porque todas as exceções lançadas fora de um método de vazio async serão geradas diretamente sobre o SynchronizationContext e travará o processo. 
-Consulte a https://msdn.microsoft.com/en-us/magazine/jj991977.aspx para mais informação.</value>
+    <value>Evite métodos "async void”, pois exceções que não são manipuladas pelo método causarão falha no processo.</value>
     <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
   </data>
   <data name="VSTHRD100_Title" xml:space="preserve">
-    <value>Evite o método Async Void.</value>
+    <value>Evite métodos async void</value>
     <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
   </data>
   <data name="VSTHRD101_MessageFormat" xml:space="preserve">
-    <value>Evite usar async lambda como tipo de retorno void delegado, porque todas as exceções lançadas fora uma lambda async retornar void serão geradas diretamente sobre o SynchronizationContext e travará o processo. 
-Consulte a https://msdn.microsoft.com/en-us/magazine/jj991977.aspx para mais informação.</value>
+    <value>Evite usar o lambda async void para um tipo de delegado que é retornado nulo, pois todas as exceções que não são manipuladas pelo delegado causarão falha no processo.</value>
     <comment>"void" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD101_Title" xml:space="preserve">
-    <value>Async lambda está sendo usado como a tipo de retorno void delegado.</value>
+    <value>Evite delegados assíncronos sem suporte</value>
   </data>
   <data name="VSTHRD106_MessageFormat" xml:space="preserve">
-    <value>Delegados de AsyncEventHandler devem ser chamados através do método de extensão "TplExtensions.InvokeAsync()" definida no assembly Microsoft.VisualStudio.Threading.</value>
+    <value>Os delegados do AsyncEventHandler devem ser invocados por meio do método de extensão "TplExtensions.InvokeAsync()" definido no assembly Microsoft.VisualStudio.Threading.</value>
   </data>
   <data name="VSTHRD106_Title" xml:space="preserve">
-    <value>Delegados de AsyncEventHandler devem ser chamados através do método de extensão "TplExtensions.InvokeAsync()" definida no assembly Microsoft.VisualStudio.Threading.</value>
+    <value>Use InvokeAsync para acionar eventos assíncronos</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>Chamando aguardam em uma tarefa dentro de um JoinableTaskFactory.Run, quando a tarefa é inicializada fora o delegado pode causar deadlocks potenciais. 
-, Você pode evitar este problema, garantindo que a tarefa é inicializada dentro do delegado ou usando JoinableTask ao invés de tarefa.</value>
+    <value>Chamar await em uma Task em JoinableTaskFactory.Run, quando a tarefa for inicializada fora do delegado pode causar deadlocks em potencial.
+Você pode evitar esse problema assegurando que a tarefa seja inicializada no delegado ou usando JoinableTask em vez de Task.</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
-    <value>Evitar chamando aguardam a tarefa dentro de "JoinableTaskFactory.Run" delegado quando a tarefa é definida fora o delegado para evitar deadlocks potenciais.</value>
+    <value>Evite aguardar tarefas não unidas em contextos de junção</value>
   </data>
   <data name="VSTHRD011_MessageFormat" xml:space="preserve">
-    <value>Chamando o preguiçoso&lt;Task&lt;T&gt;&gt;. Valor pode bloqueio quando a fábrica de valor anteriormente foi iniciada. 
-, Você deve usar o AsyncLazy&lt;T&gt; em vez disso.</value>
+    <value>Lazy&lt;Task&lt;T&gt;&gt;. O valor pode apresentar deadlock.
+Em vez disso, use AsyncLazy&lt;T&gt;.</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
-    <value>Evite usar Lazy &lt;T&gt;  , onde T é uma tarefa.</value>
+    <value>Evite usar Lazy&lt;T&gt;, no qual T é uma Task&lt;T2&gt;</value>
   </data>
   <data name="VSTHRD103_MessageFormat" xml:space="preserve">
-    <value>O membro {0} sincronicamente bloqueia. Chamar {1} em vez disso e aguarde o seu resultado.</value>
+    <value>O {0} é bloqueado de forma síncrona. Em vez disso, espere o {1}.</value>
   </data>
   <data name="VSTHRD103_MessageFormat_UseAwaitInstead" xml:space="preserve">
-    <value>O membro {0} sincronicamente bloqueia. Uso aguardam em vez disso.</value>
+    <value>O {0} é bloqueado de forma síncrona. Em vez disso, use await.</value>
   </data>
   <data name="VSTHRD103_Title" xml:space="preserve">
-    <value>Chame awaitable alternativas quando em um método assíncrono.</value>
+    <value>Chame métodos assíncronos quando estiver em um método assíncrono</value>
   </data>
   <data name="VSTHRD102_MessageFormat" xml:space="preserve">
-    <value>Limite de uso de forma síncrona, bloquear chamadas de método como JoinableTaskFactory.Run ou Task.Result para público entrypoint Membros onde você deve ser síncrono. Usá-lo para membros internos desnecessariamente pode adicionar quadros síncronos entre quadros assíncronos, conduzindo ao esgotamento do pool de threads.</value>
+    <value>Limite o uso bloqueando sincronicamente chamadas de método como JoinableTaskFactory.Run ou Task.Result para membros de ponto de entrada no qual você deve ser síncrono. Usar isso para membros internos pode adicionar sem necessidade estruturas síncronas entre estruturas assíncronas, levando à exaustão de pool de threads.</value>
   </data>
   <data name="VSTHRD102_Title" xml:space="preserve">
-    <value>Evite blocos síncronos em métodos não-públicos.</value>
+    <value>Implementar a lógica interna de forma assíncrona</value>
   </data>
   <data name="VSTHRD200_CodeFix_Title" xml:space="preserve">
-    <value>Renomear para {0}.</value>
+    <value>Renomear para {0}</value>
     <comment>{0} is a method name.</comment>
   </data>
   <data name="VSTHRD200_MessageFormat" xml:space="preserve">
-    <value>Use o sufixo "Async" em nomes de método de retorno de tarefa.</value>
+    <value>Use o sufixo "Async" em nomes de métodos que retornam tarefas.</value>
   </data>
   <data name="VSTHRD200_Title" xml:space="preserve">
-    <value>Use o sufixo "Async" em nomes de método de retorno de tarefa.</value>
+    <value>Use o sufixo "Async" para métodos assíncronos</value>
   </data>
   <data name="VSTHRD100_CodeFix_Title" xml:space="preserve">
-    <value>Tipo de retorno da mudança de tarefa</value>
+    <value>Alterar o tipo de retorno para Task</value>
     <comment>Task is a type name and should not be translated.</comment>
   </data>
   <data name="VSTHRD105_MessageFormat" xml:space="preserve">
-    <value>Evite sobrecargas de método que assumem TaskScheduler. Use uma sobrecarga que aceita um TaskScheduler e especificar explicitamente o TaskScheduler (ou qualquer outro).</value>
+    <value>Evite sobrecargas de método que assumem TaskScheduler.Current. Use uma sobrecarga que aceita um TaskScheduler e especifique TaskScheduler.Default (ou qualquer outro) explicitamente.</value>
   </data>
   <data name="VSTHRD105_Title" xml:space="preserve">
-    <value>Evitar sobrecargas de método que assumem TaskScheduler</value>
+    <value>Evite sobrecargas de método que assumem TaskScheduler.Current</value>
   </data>
 </root>
