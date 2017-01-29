@@ -88,12 +88,17 @@
         {
             var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
             var memberAccessSyntax = invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax;
-            SimpleNameSyntax invokedMethodName = memberAccessSyntax?.Name ?? invocationExpressionSyntax.Expression as IdentifierNameSyntax;
+            ExpressionSyntax invokedMethodName = memberAccessSyntax?.Name ?? invocationExpressionSyntax.Expression as IdentifierNameSyntax ?? (invocationExpressionSyntax.Expression as MemberBindingExpressionSyntax)?.Name ?? invocationExpressionSyntax.Expression;
             var argList = invocationExpressionSyntax.ArgumentList;
             var symbolInfo = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax, context.CancellationToken);
             var methodSymbol = symbolInfo.Symbol as IMethodSymbol;
-            var otherOverloads = methodSymbol.ContainingType.GetMembers(methodSymbol.Name).OfType<IMethodSymbol>();
-            AnalyzeCall(context, invokedMethodName.GetLocation(), argList, methodSymbol, otherOverloads);
+
+            // nameof(X) has no method symbol. So skip over such.
+            if (methodSymbol != null)
+            {
+                var otherOverloads = methodSymbol.ContainingType.GetMembers(methodSymbol.Name).OfType<IMethodSymbol>();
+                AnalyzeCall(context, invokedMethodName.GetLocation(), argList, methodSymbol, otherOverloads);
+            }
         }
 
         private void AnalyzerObjectCreation(SyntaxNodeAnalysisContext context)

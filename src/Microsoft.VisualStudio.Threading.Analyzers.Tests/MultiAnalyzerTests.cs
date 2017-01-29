@@ -72,6 +72,42 @@ internal class Child : Parent {
             this.VerifyCSharpDiagnostic(new[] { test }, hasEntrypoint: false, allowErrors: true);
         }
 
+        [Fact]
+        public void ManyMethodInvocationStyles()
+        {
+            var test = @"
+using System;
+
+public class A {
+    private Action a;
+
+    public void B() {
+        a();
+        (a).Invoke();
+        D<int>();
+        E().ToString();
+        E()();
+        string v = nameof(E);
+    }
+
+    internal void C() {
+        a();
+        (a).Invoke();
+        D<int>();
+        E().ToString();
+        E()();
+        string v = nameof(E);
+    }
+
+    private void D<T>() { }
+
+    private Action E() => null;
+}
+";
+
+            this.VerifyCSharpDiagnostic(test);
+        }
+
         private void VerifyNoMoreThanOneDiagnosticPerLine(string test)
         {
             this.LogFileContent(test);
