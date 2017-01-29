@@ -73,6 +73,46 @@ internal class Child : Parent {
         }
 
         [Fact]
+        public void AnonymousTypeObjectCreationSyntax()
+        {
+            var test = @"
+using System;
+
+public class A {
+    public void B() {
+        var c = new { D = 5 };
+    }
+
+    internal void C() {
+        var c = new { D = 5 };
+    }
+}
+";
+
+            this.VerifyCSharpDiagnostic(test);
+        }
+
+        [Fact]
+        public void MissingTypeObjectCreationSyntax()
+        {
+            var test = @"
+using System;
+
+public class A {
+    public void B() {
+        var c = new C();
+    }
+
+    internal void C() {
+        var c = new C();
+    }
+}
+";
+
+            this.VerifyCSharpDiagnostic(new[] { test }, hasEntrypoint: false, allowErrors: true);
+        }
+
+        [Fact]
         public void ManyMethodInvocationStyles()
         {
             var test = @"

@@ -106,12 +106,15 @@
             var creationSyntax = (ObjectCreationExpressionSyntax)context.Node;
             var symbolInfo = context.SemanticModel.GetSymbolInfo(creationSyntax, context.CancellationToken);
             var methodSymbol = symbolInfo.Symbol as IMethodSymbol;
-            AnalyzeCall(
-                context,
-                creationSyntax.Type.GetLocation(),
-                creationSyntax.ArgumentList,
-                methodSymbol,
-                methodSymbol.ContainingType.Constructors);
+            if (methodSymbol != null)
+            {
+                AnalyzeCall(
+                    context,
+                    creationSyntax.Type.GetLocation(),
+                    creationSyntax.ArgumentList,
+                    methodSymbol,
+                    methodSymbol.ContainingType.Constructors);
+            }
         }
     }
 }
