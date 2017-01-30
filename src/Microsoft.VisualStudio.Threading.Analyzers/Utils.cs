@@ -30,7 +30,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 }
                 catch (Exception ex) when (LaunchDebuggerExceptionFilter())
                 {
-                    throw new Exception($"Analyzer failure while processing syntax {ctxt.Node}: {ex.GetType()} {ex.Message}", ex);
+                    throw new Exception($"Analyzer failure while processing syntax {ctxt.Node} at {ctxt.Node.SyntaxTree.FilePath}({ctxt.Node.GetLocation()?.GetLineSpan().StartLinePosition.Line},{ctxt.Node.GetLocation()?.GetLineSpan().StartLinePosition.Character}): {ex.GetType()} {ex.Message}", ex);
                 }
             };
         }
@@ -45,7 +45,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 }
                 catch (Exception ex) when (LaunchDebuggerExceptionFilter())
                 {
-                    throw new Exception($"Analyzer failure while processing symbol {ctxt.Symbol}: {ex.GetType()} {ex.Message}", ex);
+                    throw new Exception($"Analyzer failure while processing symbol {ctxt.Symbol} at {ctxt.Symbol.Locations.FirstOrDefault()?.SourceTree?.FilePath}({ctxt.Symbol.Locations.FirstOrDefault()?.GetLineSpan().StartLinePosition.Line},{ctxt.Symbol.Locations.FirstOrDefault()?.GetLineSpan().StartLinePosition.Character}): {ex.GetType()} {ex.Message}", ex);
                 }
             };
         }
