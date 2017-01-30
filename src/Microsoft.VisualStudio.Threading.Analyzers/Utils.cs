@@ -14,11 +14,54 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System.Threading.Tasks;
     using CodeAnalysis.CSharp;
     using CodeAnalysis.CSharp.Syntax;
+    using CodeAnalysis.Diagnostics;
     using Microsoft;
     using Microsoft.CodeAnalysis;
 
     internal static class Utils
     {
+        internal static Action<SyntaxNodeAnalysisContext> DebuggableWrapper(Action<SyntaxNodeAnalysisContext> handler)
+        {
+            return ctxt =>
+            {
+                try
+                {
+                    handler(ctxt);
+                }
+                catch (Exception ex) when (LaunchDebuggerExceptionFilter())
+                {
+                    throw new Exception($"Analyzer failure while processing syntax {ctxt.Node} at {ctxt.Node.SyntaxTree.FilePath}({ctxt.Node.GetLocation()?.GetLineSpan().StartLinePosition.Line},{ctxt.Node.GetLocation()?.GetLineSpan().StartLinePosition.Character}): {ex.GetType()} {ex.Message}", ex);
+                }
+            };
+        }
+
+        internal static Action<SymbolAnalysisContext> DebuggableWrapper(Action<SymbolAnalysisContext> handler)
+        {
+            return ctxt =>
+            {
+                try
+                {
+                    handler(ctxt);
+                }
+                catch (Exception ex) when (LaunchDebuggerExceptionFilter())
+                {
+                    throw new Exception($"Analyzer failure while processing symbol {ctxt.Symbol} at {ctxt.Symbol.Locations.FirstOrDefault()?.SourceTree?.FilePath}({ctxt.Symbol.Locations.FirstOrDefault()?.GetLineSpan().StartLinePosition.Line},{ctxt.Symbol.Locations.FirstOrDefault()?.GetLineSpan().StartLinePosition.Character}): {ex.GetType()} {ex.Message}", ex);
+                }
+            };
+        }
+
+        internal static ExpressionSyntax IsolateMethodName(InvocationExpressionSyntax invocation)
+        {
+            if (invocation == null)
+            {
+                throw new ArgumentNullException(nameof(invocation));
+            }
+
+            var memberAccessExpression = invocation.Expression as MemberAccessExpressionSyntax;
+            ExpressionSyntax invokedMethodName = memberAccessExpression?.Name ?? invocation.Expression as IdentifierNameSyntax ?? (invocation.Expression as MemberBindingExpressionSyntax)?.Name ?? invocation.Expression;
+            return invokedMethodName;
+        }
+
         internal static bool IsEqualToOrDerivedFrom(ITypeSymbol type, ITypeSymbol expectedType)
         {
             return type?.OriginalDefinition == expectedType || IsDerivedFrom(type, expectedType);
@@ -115,6 +158,37 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         internal static bool HasAsyncCompatibleReturnType(this IMethodSymbol methodSymbol)
         {
             return methodSymbol?.ReturnType?.Name == nameof(Task) && methodSymbol.ReturnType.BelongsToNamespace(Namespaces.SystemThreadingTasks);
+        }
+
+        internal static bool HasAsyncAlternative(this IMethodSymbol methodSymbol, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return methodSymbol.ContainingType.GetMembers(methodSymbol.Name + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix)
+                .Any(alt => IsXAtLeastAsPublicAsY(alt, methodSymbol));
+        }
+
+        internal static bool IsXAtLeastAsPublicAsY(ISymbol x, ISymbol y)
+        {
+            if (y.DeclaredAccessibility == x.DeclaredAccessibility ||
+                x.DeclaredAccessibility == Accessibility.Public)
+            {
+                return true;
+            }
+
+            switch (y.DeclaredAccessibility)
+            {
+                case Accessibility.Private:
+                    return true;
+                case Accessibility.ProtectedAndInternal:
+                case Accessibility.Protected:
+                case Accessibility.Internal:
+                    return x.DeclaredAccessibility == Accessibility.ProtectedOrInternal;
+                case Accessibility.ProtectedOrInternal:
+                case Accessibility.Public:
+                case Accessibility.NotApplicable:
+                default:
+                    return false;
+            }
         }
 
         /// <summary>
@@ -345,6 +419,14 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
 
             return awaitExpression;
+        }
+
+        private static bool LaunchDebuggerExceptionFilter()
+        {
+#if DEBUG
+            System.Diagnostics.Debugger.Launch();
+#endif
+            return true;
         }
     }
 }

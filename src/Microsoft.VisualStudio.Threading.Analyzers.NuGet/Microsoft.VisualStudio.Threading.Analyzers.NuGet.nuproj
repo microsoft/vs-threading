@@ -14,7 +14,7 @@
     <ProjectGuid>d539b066-baf1-4f8b-8088-8ae1aa75f34c</ProjectGuid>
   </PropertyGroup>
   <PropertyGroup>
-    <NuProjPath>$(UserProfile)\.nuget\packages\NuProj\0.10.48-beta-gea4a31bbc5\tools\</NuProjPath>
+    <NuProjPath>$(UserProfile)\.nuget\packages\NuProj\0.11.14-beta\tools\</NuProjPath>
     <PrereleaseVersion>-pre</PrereleaseVersion>
   </PropertyGroup>
   <Import Project="$(NuProjPath)\NuProj.props" Condition="Exists('$(NuProjPath)\NuProj.props')" />

@@ -20,7 +20,7 @@
 
         protected override ImmutableArray<DiagnosticAnalyzer> GetCSharpDiagnosticAnalyzers()
         {
-            var analyzers = from type in typeof(VSSDK001SynchronousWaitAnalyzer).Assembly.GetTypes()
+            var analyzers = from type in typeof(VSTHRD002UseJtfRunAnalyzer).Assembly.GetTypes()
                             where type.GetCustomAttributes(typeof(DiagnosticAnalyzerAttribute), true).Any()
                             select (DiagnosticAnalyzer)Activator.CreateInstance(type);
             return analyzers.ToImmutableArray();
@@ -38,8 +38,8 @@ class Test {
 
     Task<int> FooAsync() {
         Task t = Task.FromResult(1);
-        t.GetAwaiter().GetResult(); // VSSDK001, VSSDK008, VSSDK009
-        jtf.Run(async delegate { await BarAsync(); }); // VSSDK008, VSSDK009
+        t.GetAwaiter().GetResult(); // VSTHRD002, VSTHRD103, VSTHRD102
+        jtf.Run(async delegate { await BarAsync(); }); // VSTHRD103, VSTHRD102
         return Task.FromResult(1);
     }
 
@@ -70,6 +70,103 @@ internal class Child : Parent {
 ";
 
             this.VerifyCSharpDiagnostic(new[] { test }, hasEntrypoint: false, allowErrors: true);
+        }
+
+        [Fact]
+        public void AnonymousTypeObjectCreationSyntax()
+        {
+            var test = @"
+using System;
+
+public class A {
+    public void B() {
+        var c = new { D = 5 };
+    }
+
+    internal void C() {
+        var c = new { D = 5 };
+    }
+}
+";
+
+            this.VerifyCSharpDiagnostic(test);
+        }
+
+        [Fact]
+        public void MissingTypeObjectCreationSyntax()
+        {
+            var test = @"
+using System;
+
+public class A {
+    public void B() {
+        var c = new C();
+    }
+
+    internal void C() {
+        var c = new C();
+    }
+}
+";
+
+            this.VerifyCSharpDiagnostic(new[] { test }, hasEntrypoint: false, allowErrors: true);
+        }
+
+        [Fact]
+        public void ManyMethodInvocationStyles()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+public class A {
+    private Action a;
+
+    public void B() {
+        a();
+        (a).Invoke();
+        D<int>();
+        E().ToString();
+        E()();
+        string v = nameof(E);
+    }
+
+    internal void C() {
+        a();
+        (a).Invoke();
+        D<int>();
+        E().ToString();
+        E()();
+        string v = nameof(E);
+    }
+
+     public Task BAsync() {
+        a();
+        (a).Invoke();
+        D<int>();
+        E().ToString();
+        E()();
+        string v = nameof(E);
+        return null;
+    }
+
+    internal Task CAsync() {
+        a();
+        (a).Invoke();
+        D<int>();
+        E().ToString();
+        E()();
+        string v = nameof(E);
+        return null;
+    }
+
+    private void D<T>() { }
+
+    private Action E() => null;
+}
+";
+
+            this.VerifyCSharpDiagnostic(test);
         }
 
         private void VerifyNoMoreThanOneDiagnosticPerLine(string test)

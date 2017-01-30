@@ -204,7 +204,7 @@ namespace Microsoft.VisualStudio.Threading
                         {
                             // We pass in allowInliningWaiters: true,
                             // since we control all waiters and their continuations
-                            // are be benign, and it makes it more efficient.
+                            // are benign, and it makes it more efficient.
                             this.queueNeedProcessEvent = new AsyncManualResetEvent(allowInliningAwaiters: true);
                         }
 
