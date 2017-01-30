@@ -135,7 +135,7 @@
                 if (this.AlternativeAsyncMethod != string.Empty)
                 {
                     // Replace the member being called and await the invocation expression.
-                    var asyncMethodName = SyntaxFactory.IdentifierName(this.diagnostic.Properties[AsyncMethodKeyName]);
+                    var asyncMethodName = syncMethodName.WithIdentifier(SyntaxFactory.Identifier(this.diagnostic.Properties[AsyncMethodKeyName]));
                     awaitExpression = SyntaxFactory.AwaitExpression(syncExpression.ReplaceNode(syncMethodName, asyncMethodName));
                     if (!(syncExpression.Parent is ExpressionStatementSyntax))
                     {

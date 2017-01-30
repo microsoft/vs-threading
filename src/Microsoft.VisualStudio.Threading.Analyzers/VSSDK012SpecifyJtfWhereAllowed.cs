@@ -87,8 +87,7 @@
         private void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
         {
             var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
-            var memberAccessSyntax = invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax;
-            ExpressionSyntax invokedMethodName = memberAccessSyntax?.Name ?? invocationExpressionSyntax.Expression as IdentifierNameSyntax ?? (invocationExpressionSyntax.Expression as MemberBindingExpressionSyntax)?.Name ?? invocationExpressionSyntax.Expression;
+            ExpressionSyntax invokedMethodName = Utils.IsolateMethodName(invocationExpressionSyntax);
             var argList = invocationExpressionSyntax.ArgumentList;
             var symbolInfo = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax, context.CancellationToken);
             var methodSymbol = symbolInfo.Symbol as IMethodSymbol;

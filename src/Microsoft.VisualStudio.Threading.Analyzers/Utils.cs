@@ -50,6 +50,13 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             };
         }
 
+        internal static ExpressionSyntax IsolateMethodName(InvocationExpressionSyntax invocation)
+        {
+            var memberAccessExpression = invocation.Expression as MemberAccessExpressionSyntax;
+            ExpressionSyntax invokedMethodName = memberAccessExpression?.Name ?? invocation.Expression as IdentifierNameSyntax ?? (invocation.Expression as MemberBindingExpressionSyntax)?.Name ?? invocation.Expression;
+            return invokedMethodName;
+        }
+
         internal static bool IsEqualToOrDerivedFrom(ITypeSymbol type, ITypeSymbol expectedType)
         {
             return type?.OriginalDefinition == expectedType || IsDerivedFrom(type, expectedType);
