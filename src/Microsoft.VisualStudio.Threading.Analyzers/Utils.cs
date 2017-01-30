@@ -52,6 +52,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static ExpressionSyntax IsolateMethodName(InvocationExpressionSyntax invocation)
         {
+            if (invocation == null)
+            {
+                throw new ArgumentNullException(nameof(invocation));
+            }
+
             var memberAccessExpression = invocation.Expression as MemberAccessExpressionSyntax;
             ExpressionSyntax invokedMethodName = memberAccessExpression?.Name ?? invocation.Expression as IdentifierNameSyntax ?? (invocation.Expression as MemberBindingExpressionSyntax)?.Name ?? invocation.Expression;
             return invokedMethodName;
