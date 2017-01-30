@@ -65,7 +65,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
 
-            context.RegisterSyntaxNodeAction(this.AnalyzeNode, SyntaxKind.AwaitExpression);
+            context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeNode), SyntaxKind.AwaitExpression);
         }
 
         private void AnalyzeNode(SyntaxNodeAnalysisContext context)

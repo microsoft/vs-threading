@@ -61,8 +61,8 @@
             context.RegisterCodeBlockStartAction<SyntaxKind>(ctxt =>
             {
                 var methodAnalyzer = new MethodAnalyzer();
-                ctxt.RegisterSyntaxNodeAction(methodAnalyzer.AnalyzeInvocation, SyntaxKind.InvocationExpression);
-                ctxt.RegisterSyntaxNodeAction(methodAnalyzer.AnalyzePropertyGetter, SyntaxKind.SimpleMemberAccessExpression);
+                ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeInvocation), SyntaxKind.InvocationExpression);
+                ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzePropertyGetter), SyntaxKind.SimpleMemberAccessExpression);
             });
         }
 
@@ -90,7 +90,7 @@
                     }
 
                     // Also consider all method calls to check for Async-suffixed alternatives.
-                    SimpleNameSyntax invokedMethodName = memberAccessSyntax?.Name ?? invocationExpressionSyntax.Expression as IdentifierNameSyntax;
+                    ExpressionSyntax invokedMethodName = Utils.IsolateMethodName(invocationExpressionSyntax);
                     var symbolInfo = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax, context.CancellationToken);
                     var methodSymbol = symbolInfo.Symbol as IMethodSymbol;
                     if (symbolInfo.Symbol != null && !symbolInfo.Symbol.Name.EndsWith(VSSDK010AsyncSuffixAnalyzer.MandatoryAsyncSuffix) &&
@@ -112,7 +112,7 @@
                                 Descriptor,
                                 invokedMethodName.GetLocation(),
                                 properties,
-                                invokedMethodName.Identifier.Text,
+                                invokedMethodName.ToString(),
                                 asyncMethodName);
                             context.ReportDiagnostic(diagnostic);
                         }

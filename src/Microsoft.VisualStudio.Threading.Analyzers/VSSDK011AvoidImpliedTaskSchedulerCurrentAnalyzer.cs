@@ -47,7 +47,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         public override void Initialize(AnalysisContext context)
         {
-            context.RegisterSyntaxNodeAction(this.AnalyzeInvocation, SyntaxKind.InvocationExpression);
+            context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeInvocation), SyntaxKind.InvocationExpression);
         }
 
         private void AnalyzeInvocation(SyntaxNodeAnalysisContext context)

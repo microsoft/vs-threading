@@ -881,5 +881,46 @@ class Test {
 
             this.VerifyCSharpDiagnostic(test);
         }
+
+        [Fact]
+        public void GenericMethodName()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using static FruitUtils;
+
+class Test {
+    Task T() {
+        Foo<int>();
+        return Task.FromResult(1);
+    }
+}
+
+static class FruitUtils {
+    internal static void Foo<T>() { }
+    internal static Task FooAsync<T>() => null;
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+using static FruitUtils;
+
+class Test {
+    async Task T() {
+        await FooAsync<int>();
+    }
+}
+
+static class FruitUtils {
+    internal static void Foo<T>() { }
+    internal static Task FooAsync<T>() => null;
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 9, 7, 17) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
     }
 }

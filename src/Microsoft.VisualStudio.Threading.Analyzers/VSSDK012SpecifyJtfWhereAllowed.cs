@@ -28,8 +28,8 @@
 
         public override void Initialize(AnalysisContext context)
         {
-            context.RegisterSyntaxNodeAction(this.AnalyzeInvocation, SyntaxKind.InvocationExpression);
-            context.RegisterSyntaxNodeAction(this.AnalyzerObjectCreation, SyntaxKind.ObjectCreationExpression);
+            context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeInvocation), SyntaxKind.InvocationExpression);
+            context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzerObjectCreation), SyntaxKind.ObjectCreationExpression);
         }
 
         private static bool IsJtfParameter(IParameterSymbol ps)
@@ -87,13 +87,17 @@
         private void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
         {
             var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
-            var memberAccessSyntax = invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax;
-            SimpleNameSyntax invokedMethodName = memberAccessSyntax?.Name ?? invocationExpressionSyntax.Expression as IdentifierNameSyntax;
+            ExpressionSyntax invokedMethodName = Utils.IsolateMethodName(invocationExpressionSyntax);
             var argList = invocationExpressionSyntax.ArgumentList;
             var symbolInfo = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax, context.CancellationToken);
             var methodSymbol = symbolInfo.Symbol as IMethodSymbol;
-            var otherOverloads = methodSymbol.ContainingType.GetMembers(methodSymbol.Name).OfType<IMethodSymbol>();
-            AnalyzeCall(context, invokedMethodName.GetLocation(), argList, methodSymbol, otherOverloads);
+
+            // nameof(X) has no method symbol. So skip over such.
+            if (methodSymbol != null)
+            {
+                var otherOverloads = methodSymbol.ContainingType.GetMembers(methodSymbol.Name).OfType<IMethodSymbol>();
+                AnalyzeCall(context, invokedMethodName.GetLocation(), argList, methodSymbol, otherOverloads);
+            }
         }
 
         private void AnalyzerObjectCreation(SyntaxNodeAnalysisContext context)
@@ -101,12 +105,15 @@
             var creationSyntax = (ObjectCreationExpressionSyntax)context.Node;
             var symbolInfo = context.SemanticModel.GetSymbolInfo(creationSyntax, context.CancellationToken);
             var methodSymbol = symbolInfo.Symbol as IMethodSymbol;
-            AnalyzeCall(
-                context,
-                creationSyntax.Type.GetLocation(),
-                creationSyntax.ArgumentList,
-                methodSymbol,
-                methodSymbol.ContainingType.Constructors);
+            if (methodSymbol != null)
+            {
+                AnalyzeCall(
+                    context,
+                    creationSyntax.Type.GetLocation(),
+                    creationSyntax.ArgumentList,
+                    methodSymbol,
+                    methodSymbol.ContainingType.Constructors);
+            }
         }
     }
 }

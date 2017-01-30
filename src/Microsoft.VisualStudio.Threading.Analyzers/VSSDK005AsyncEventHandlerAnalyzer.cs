@@ -72,7 +72,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                       ctxt.OwningSymbol.ContainingType.Name == Types.TplExtensions.TypeName &&
                       ctxt.OwningSymbol.ContainingType.BelongsToNamespace(Types.TplExtensions.Namespace)))
                 {
-                    ctxt.RegisterSyntaxNodeAction(this.AnalyzeInvocation, SyntaxKind.InvocationExpression);
+                    ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeInvocation), SyntaxKind.InvocationExpression);
                 }
             });
         }

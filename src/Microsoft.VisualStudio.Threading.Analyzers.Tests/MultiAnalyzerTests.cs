@@ -72,6 +72,103 @@ internal class Child : Parent {
             this.VerifyCSharpDiagnostic(new[] { test }, hasEntrypoint: false, allowErrors: true);
         }
 
+        [Fact]
+        public void AnonymousTypeObjectCreationSyntax()
+        {
+            var test = @"
+using System;
+
+public class A {
+    public void B() {
+        var c = new { D = 5 };
+    }
+
+    internal void C() {
+        var c = new { D = 5 };
+    }
+}
+";
+
+            this.VerifyCSharpDiagnostic(test);
+        }
+
+        [Fact]
+        public void MissingTypeObjectCreationSyntax()
+        {
+            var test = @"
+using System;
+
+public class A {
+    public void B() {
+        var c = new C();
+    }
+
+    internal void C() {
+        var c = new C();
+    }
+}
+";
+
+            this.VerifyCSharpDiagnostic(new[] { test }, hasEntrypoint: false, allowErrors: true);
+        }
+
+        [Fact]
+        public void ManyMethodInvocationStyles()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+public class A {
+    private Action a;
+
+    public void B() {
+        a();
+        (a).Invoke();
+        D<int>();
+        E().ToString();
+        E()();
+        string v = nameof(E);
+    }
+
+    internal void C() {
+        a();
+        (a).Invoke();
+        D<int>();
+        E().ToString();
+        E()();
+        string v = nameof(E);
+    }
+
+     public Task BAsync() {
+        a();
+        (a).Invoke();
+        D<int>();
+        E().ToString();
+        E()();
+        string v = nameof(E);
+        return null;
+    }
+
+    internal Task CAsync() {
+        a();
+        (a).Invoke();
+        D<int>();
+        E().ToString();
+        E()();
+        string v = nameof(E);
+        return null;
+    }
+
+    private void D<T>() { }
+
+    private Action E() => null;
+}
+";
+
+            this.VerifyCSharpDiagnostic(test);
+        }
+
         private void VerifyNoMoreThanOneDiagnosticPerLine(string test)
         {
             this.LogFileContent(test);
