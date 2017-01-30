@@ -14,11 +14,42 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System.Threading.Tasks;
     using CodeAnalysis.CSharp;
     using CodeAnalysis.CSharp.Syntax;
+    using CodeAnalysis.Diagnostics;
     using Microsoft;
     using Microsoft.CodeAnalysis;
 
     internal static class Utils
     {
+        internal static Action<SyntaxNodeAnalysisContext> DebuggableWrapper(Action<SyntaxNodeAnalysisContext> handler)
+        {
+            return ctxt =>
+            {
+                try
+                {
+                    handler(ctxt);
+                }
+                catch (Exception ex) when (LaunchDebuggerExceptionFilter())
+                {
+                    throw new Exception($"Analyzer failure while processing syntax {ctxt.Node}: {ex.GetType()} {ex.Message}", ex);
+                }
+            };
+        }
+
+        internal static Action<SymbolAnalysisContext> DebuggableWrapper(Action<SymbolAnalysisContext> handler)
+        {
+            return ctxt =>
+            {
+                try
+                {
+                    handler(ctxt);
+                }
+                catch (Exception ex) when (LaunchDebuggerExceptionFilter())
+                {
+                    throw new Exception($"Analyzer failure while processing symbol {ctxt.Symbol}: {ex.GetType()} {ex.Message}", ex);
+                }
+            };
+        }
+
         internal static bool IsEqualToOrDerivedFrom(ITypeSymbol type, ITypeSymbol expectedType)
         {
             return type?.OriginalDefinition == expectedType || IsDerivedFrom(type, expectedType);
@@ -376,6 +407,14 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
 
             return awaitExpression;
+        }
+
+        private static bool LaunchDebuggerExceptionFilter()
+        {
+#if DEBUG
+            System.Diagnostics.Debugger.Launch();
+#endif
+            return true;
         }
     }
 }

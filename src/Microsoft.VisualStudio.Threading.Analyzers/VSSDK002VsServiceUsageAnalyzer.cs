@@ -109,10 +109,10 @@
             {
                 var methodAnalyzer = new MethodAnalyzer();
 
-                ctxt.RegisterSyntaxNodeAction(methodAnalyzer.AnalyzeInvocation, SyntaxKind.InvocationExpression);
-                ctxt.RegisterSyntaxNodeAction(methodAnalyzer.AnalyzeMemberAccess, SyntaxKind.SimpleMemberAccessExpression);
-                ctxt.RegisterSyntaxNodeAction(methodAnalyzer.AnalyzeCast, SyntaxKind.CastExpression);
-                ctxt.RegisterSyntaxNodeAction(methodAnalyzer.AnalyzeAs, SyntaxKind.AsExpression);
+                ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeInvocation), SyntaxKind.InvocationExpression);
+                ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeMemberAccess), SyntaxKind.SimpleMemberAccessExpression);
+                ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeCast), SyntaxKind.CastExpression);
+                ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeAs), SyntaxKind.AsExpression);
             });
         }
 

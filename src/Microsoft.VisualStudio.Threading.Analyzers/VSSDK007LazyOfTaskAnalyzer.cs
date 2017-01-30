@@ -37,7 +37,7 @@
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
 
             context.RegisterSyntaxNodeAction(
-                this.AnalyzeNode,
+                Utils.DebuggableWrapper(this.AnalyzeNode),
                 SyntaxKind.ObjectCreationExpression);
         }
 

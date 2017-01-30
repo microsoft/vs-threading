@@ -61,8 +61,8 @@
             context.RegisterCodeBlockStartAction<SyntaxKind>(ctxt =>
             {
                 var methodAnalyzer = new MethodAnalyzer();
-                ctxt.RegisterSyntaxNodeAction(methodAnalyzer.AnalyzeInvocation, SyntaxKind.InvocationExpression);
-                ctxt.RegisterSyntaxNodeAction(methodAnalyzer.AnalyzePropertyGetter, SyntaxKind.SimpleMemberAccessExpression);
+                ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeInvocation), SyntaxKind.InvocationExpression);
+                ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzePropertyGetter), SyntaxKind.SimpleMemberAccessExpression);
             });
         }
 

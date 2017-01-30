@@ -70,7 +70,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
 
             context.RegisterSyntaxNodeAction(
-                this.AnalyzeNode,
+                Utils.DebuggableWrapper(this.AnalyzeNode),
                 SyntaxKind.AnonymousMethodExpression,
                 SyntaxKind.ParenthesizedLambdaExpression,
                 SyntaxKind.SimpleLambdaExpression);

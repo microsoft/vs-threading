@@ -65,8 +65,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 var propertySymbol = ctxt.OwningSymbol as IPropertySymbol;
                 if (propertySymbol != null || (methodSymbol != null && !methodSymbol.HasAsyncCompatibleReturnType()))
                 {
-                    ctxt.RegisterSyntaxNodeAction(this.AnalyzeInvocation, SyntaxKind.InvocationExpression);
-                    ctxt.RegisterSyntaxNodeAction(this.AnalyzeMemberAccess, SyntaxKind.SimpleMemberAccessExpression);
+                    ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeInvocation), SyntaxKind.InvocationExpression);
+                    ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeMemberAccess), SyntaxKind.SimpleMemberAccessExpression);
                 }
             });
         }

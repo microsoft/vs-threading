@@ -58,7 +58,7 @@
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
 
-            context.RegisterSymbolAction(this.AnalyzeNode, SymbolKind.Method);
+            context.RegisterSymbolAction(Utils.DebuggableWrapper(this.AnalyzeNode), SymbolKind.Method);
         }
 
         private void AnalyzeNode(SymbolAnalysisContext context)
