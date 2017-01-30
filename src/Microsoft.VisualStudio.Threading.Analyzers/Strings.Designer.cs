@@ -81,18 +81,18 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         /// <summary>
         ///   Looks up a localized string similar to Synchronously waiting on tasks or awaiters may cause deadlocks. Use JoinableTaskFactory.Run instead..
         /// </summary>
-        internal static string VSSDK001_MessageFormat {
+        internal static string VSTHRD002_MessageFormat {
             get {
-                return ResourceManager.GetString("VSSDK001_MessageFormat", resourceCulture);
+                return ResourceManager.GetString("VSTHRD002_MessageFormat", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Avoid problematic synchronous waits.
         /// </summary>
-        internal static string VSSDK001_Title {
+        internal static string VSTHRD002_Title {
             get {
-                return ResourceManager.GetString("VSSDK001_Title", resourceCulture);
+                return ResourceManager.GetString("VSTHRD002_Title", resourceCulture);
             }
         }
         
@@ -100,81 +100,81 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         ///   Looks up a localized string similar to Visual Studio service &quot;{0}&quot; should be used on main thread explicitly. 
         ///Call ThreadHelper.ThrowIfNotOnUIThread() or await JoinableTaskFactory.SwitchToMainThreadAsync() first..
         /// </summary>
-        internal static string VSSDK002_MessageFormat {
+        internal static string VSTHRD010_MessageFormat {
             get {
-                return ResourceManager.GetString("VSSDK002_MessageFormat", resourceCulture);
+                return ResourceManager.GetString("VSTHRD010_MessageFormat", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Use VS services from UI thread.
         /// </summary>
-        internal static string VSSDK002_Title {
+        internal static string VSTHRD010_Title {
             get {
-                return ResourceManager.GetString("VSSDK002_Title", resourceCulture);
+                return ResourceManager.GetString("VSTHRD010_Title", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Change return type to Task.
         /// </summary>
-        internal static string VSSDK003_CodeFix_Title {
+        internal static string VSTHRD100_CodeFix_Title {
             get {
-                return ResourceManager.GetString("VSSDK003_CodeFix_Title", resourceCulture);
+                return ResourceManager.GetString("VSTHRD100_CodeFix_Title", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Avoid &quot;async void&quot; methods, because any exceptions not handled by the method will crash the process..
         /// </summary>
-        internal static string VSSDK003_MessageFormat {
+        internal static string VSTHRD100_MessageFormat {
             get {
-                return ResourceManager.GetString("VSSDK003_MessageFormat", resourceCulture);
+                return ResourceManager.GetString("VSTHRD100_MessageFormat", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Avoid async void methods.
         /// </summary>
-        internal static string VSSDK003_Title {
+        internal static string VSTHRD100_Title {
             get {
-                return ResourceManager.GetString("VSSDK003_Title", resourceCulture);
+                return ResourceManager.GetString("VSTHRD100_Title", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Avoid using async lambda for a void returning delegate type, because any exceptions not handled by the delegate will crash the process..
         /// </summary>
-        internal static string VSSDK004_MessageFormat {
+        internal static string VSTHRD101_MessageFormat {
             get {
-                return ResourceManager.GetString("VSSDK004_MessageFormat", resourceCulture);
+                return ResourceManager.GetString("VSTHRD101_MessageFormat", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Avoid unsupported async delegates.
         /// </summary>
-        internal static string VSSDK004_Title {
+        internal static string VSTHRD101_Title {
             get {
-                return ResourceManager.GetString("VSSDK004_Title", resourceCulture);
+                return ResourceManager.GetString("VSTHRD101_Title", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to AsyncEventHandler delegates should be invoked via the extension method &quot;TplExtensions.InvokeAsync()&quot; defined in Microsoft.VisualStudio.Threading assembly..
         /// </summary>
-        internal static string VSSDK005_MessageFormat {
+        internal static string VSTHRD106_MessageFormat {
             get {
-                return ResourceManager.GetString("VSSDK005_MessageFormat", resourceCulture);
+                return ResourceManager.GetString("VSTHRD106_MessageFormat", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Use InvokeAsync to raise async events.
         /// </summary>
-        internal static string VSSDK005_Title {
+        internal static string VSTHRD106_Title {
             get {
-                return ResourceManager.GetString("VSSDK005_Title", resourceCulture);
+                return ResourceManager.GetString("VSTHRD106_Title", resourceCulture);
             }
         }
         
@@ -182,18 +182,18 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         ///   Looks up a localized string similar to Calling await on a Task inside a JoinableTaskFactory.Run, when the task is initialized outside the delegate can cause potential deadlocks.
         ///You can avoid this problem by ensuring the task is initialized within the delegate or by using JoinableTask instead of Task..
         /// </summary>
-        internal static string VSSDK006_MessageFormat {
+        internal static string VSTHRD003_MessageFormat {
             get {
-                return ResourceManager.GetString("VSSDK006_MessageFormat", resourceCulture);
+                return ResourceManager.GetString("VSTHRD003_MessageFormat", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Avoid awaiting non-joinable tasks in join contexts.
         /// </summary>
-        internal static string VSSDK006_Title {
+        internal static string VSTHRD003_Title {
             get {
-                return ResourceManager.GetString("VSSDK006_Title", resourceCulture);
+                return ResourceManager.GetString("VSTHRD003_Title", resourceCulture);
             }
         }
         
@@ -201,162 +201,162 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         ///   Looks up a localized string similar to Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock.
         ///Use AsyncLazy&lt;T&gt; instead..
         /// </summary>
-        internal static string VSSDK007_MessageFormat {
+        internal static string VSTHRD011_MessageFormat {
             get {
-                return ResourceManager.GetString("VSSDK007_MessageFormat", resourceCulture);
+                return ResourceManager.GetString("VSTHRD011_MessageFormat", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Avoid using Lazy&lt;T&gt; where T is a Task&lt;T2&gt;.
         /// </summary>
-        internal static string VSSDK007_Title {
+        internal static string VSTHRD011_Title {
             get {
-                return ResourceManager.GetString("VSSDK007_Title", resourceCulture);
+                return ResourceManager.GetString("VSTHRD011_Title", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to {0} synchronously blocks. Await {1} instead..
         /// </summary>
-        internal static string VSSDK008_MessageFormat {
+        internal static string VSTHRD103_MessageFormat {
             get {
-                return ResourceManager.GetString("VSSDK008_MessageFormat", resourceCulture);
+                return ResourceManager.GetString("VSTHRD103_MessageFormat", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to {0} synchronously blocks. Use await instead..
         /// </summary>
-        internal static string VSSDK008_MessageFormat_UseAwaitInstead {
+        internal static string VSTHRD103_MessageFormat_UseAwaitInstead {
             get {
-                return ResourceManager.GetString("VSSDK008_MessageFormat_UseAwaitInstead", resourceCulture);
+                return ResourceManager.GetString("VSTHRD103_MessageFormat_UseAwaitInstead", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Call async methods when in an async method.
         /// </summary>
-        internal static string VSSDK008_Title {
+        internal static string VSTHRD103_Title {
             get {
-                return ResourceManager.GetString("VSSDK008_Title", resourceCulture);
+                return ResourceManager.GetString("VSTHRD103_Title", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Limit use of synchronously blocking method calls such as JoinableTaskFactory.Run or Task.Result to public entrypoint members where you must be synchronous. Using it for internal members can needlessly add synchronous frames between asynchronous frames, leading to threadpool exhaustion..
         /// </summary>
-        internal static string VSSDK009_MessageFormat {
+        internal static string VSTHRD102_MessageFormat {
             get {
-                return ResourceManager.GetString("VSSDK009_MessageFormat", resourceCulture);
+                return ResourceManager.GetString("VSTHRD102_MessageFormat", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Implement internal logic asynchronously.
         /// </summary>
-        internal static string VSSDK009_Title {
+        internal static string VSTHRD102_Title {
             get {
-                return ResourceManager.GetString("VSSDK009_Title", resourceCulture);
+                return ResourceManager.GetString("VSTHRD102_Title", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Rename to {0}.
         /// </summary>
-        internal static string VSSDK010_CodeFix_Title {
+        internal static string VSTHRD200_CodeFix_Title {
             get {
-                return ResourceManager.GetString("VSSDK010_CodeFix_Title", resourceCulture);
+                return ResourceManager.GetString("VSTHRD200_CodeFix_Title", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Use &quot;Async&quot; suffix in names of Task-returning methods..
         /// </summary>
-        internal static string VSSDK010_MessageFormat {
+        internal static string VSTHRD200_MessageFormat {
             get {
-                return ResourceManager.GetString("VSSDK010_MessageFormat", resourceCulture);
+                return ResourceManager.GetString("VSTHRD200_MessageFormat", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Use &quot;Async&quot; suffix for async methods.
         /// </summary>
-        internal static string VSSDK010_Title {
+        internal static string VSTHRD200_Title {
             get {
-                return ResourceManager.GetString("VSSDK010_Title", resourceCulture);
+                return ResourceManager.GetString("VSTHRD200_Title", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Avoid method overloads that assume TaskScheduler.Current. Use an overload that accepts a TaskScheduler and specify TaskScheduler.Default (or any other) explicitly..
         /// </summary>
-        internal static string VSSDK011_MessageFormat {
+        internal static string VSTHRD105_MessageFormat {
             get {
-                return ResourceManager.GetString("VSSDK011_MessageFormat", resourceCulture);
+                return ResourceManager.GetString("VSTHRD105_MessageFormat", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Avoid method overloads that assume TaskScheduler.Current.
         /// </summary>
-        internal static string VSSDK011_Title {
+        internal static string VSTHRD105_Title {
             get {
-                return ResourceManager.GetString("VSSDK011_Title", resourceCulture);
+                return ResourceManager.GetString("VSTHRD105_Title", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread..
         /// </summary>
-        internal static string VSSDK012_MessageFormat {
+        internal static string VSTHRD012_MessageFormat {
             get {
-                return ResourceManager.GetString("VSSDK012_MessageFormat", resourceCulture);
+                return ResourceManager.GetString("VSTHRD012_MessageFormat", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Provide JoinableTaskFactory where allowed.
         /// </summary>
-        internal static string VSSDK012_Title {
+        internal static string VSTHRD012_Title {
             get {
-                return ResourceManager.GetString("VSSDK012_Title", resourceCulture);
+                return ResourceManager.GetString("VSTHRD012_Title", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate..
         /// </summary>
-        internal static string VSSDK013_MessageFormat {
+        internal static string VSTHRD104_MessageFormat {
             get {
-                return ResourceManager.GetString("VSSDK013_MessageFormat", resourceCulture);
+                return ResourceManager.GetString("VSTHRD104_MessageFormat", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Offer async methods.
         /// </summary>
-        internal static string VSSDK013_Title {
+        internal static string VSTHRD104_Title {
             get {
-                return ResourceManager.GetString("VSSDK013_Title", resourceCulture);
+                return ResourceManager.GetString("VSTHRD104_Title", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority..
         /// </summary>
-        internal static string VSSDK014_MessageFormat {
+        internal static string VSTHRD001_MessageFormat {
             get {
-                return ResourceManager.GetString("VSSDK014_MessageFormat", resourceCulture);
+                return ResourceManager.GetString("VSTHRD001_MessageFormat", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Avoid legacy threading switching APIs.
         /// </summary>
-        internal static string VSSDK014_Title {
+        internal static string VSTHRD001_Title {
             get {
-                return ResourceManager.GetString("VSSDK014_Title", resourceCulture);
+                return ResourceManager.GetString("VSTHRD001_Title", resourceCulture);
             }
         }
     }

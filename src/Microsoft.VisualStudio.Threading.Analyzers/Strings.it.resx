@@ -21,88 +21,88 @@
     <value>In alternativa, usare await</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
-  <data name="VSSDK001_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD002_MessageFormat" xml:space="preserve">
     <value>L'attesa in modalità sincrona di attività o awaiter può causare deadlock. In alternativa, usare JoinableTaskFactory.Run.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
-  <data name="VSSDK001_Title" xml:space="preserve">
+  <data name="VSTHRD002_Title" xml:space="preserve">
     <value>Evita attese sincrone problematiche</value>
   </data>
-  <data name="VSSDK002_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD010_MessageFormat" xml:space="preserve">
     <value>Il servizio "{0}" di Visual Studio non deve essere usato sul thread principale in modo esplicito. 
 Chiamare ThreadHelper.ThrowIfNotOnUIThread() o attendere prima JoinableTaskFactory.SwitchToMainThreadAsync().</value>
   </data>
-  <data name="VSSDK002_Title" xml:space="preserve">
+  <data name="VSTHRD010_Title" xml:space="preserve">
     <value>Usa i servizi di Visual Studio dal thread dell'interfaccia utente</value>
   </data>
-  <data name="VSSDK003_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD100_MessageFormat" xml:space="preserve">
     <value>Evitare metodi "async void" perché tutte le eccezioni non gestite dal metodo causeranno l'arresto anomalo del processo.</value>
     <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
   </data>
-  <data name="VSSDK003_Title" xml:space="preserve">
+  <data name="VSTHRD100_Title" xml:space="preserve">
     <value>Evita metodi asincroni void</value>
     <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
   </data>
-  <data name="VSSDK004_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD101_MessageFormat" xml:space="preserve">
     <value>Evitare di usare espressioni lambda asincrone per un tipo di delegato che restituisce void, perché tutte le eccezioni non gestite dal delegato causeranno l'arresto anomalo del processo.</value>
     <comment>"void" is a C# keyword and should not be translated.</comment>
   </data>
-  <data name="VSSDK004_Title" xml:space="preserve">
+  <data name="VSTHRD101_Title" xml:space="preserve">
     <value>Evita delegati asincroni non supportati</value>
   </data>
-  <data name="VSSDK005_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD106_MessageFormat" xml:space="preserve">
     <value>I delegati di AsyncEventHandler devono essere richiamati tramite il metodo di estensione "TplExtensions.InvokeAsync()" definito nell'assembly Microsoft.VisualStudio.Threading.</value>
   </data>
-  <data name="VSSDK005_Title" xml:space="preserve">
+  <data name="VSTHRD106_Title" xml:space="preserve">
     <value>Usa InvokeAsync per generare eventi asincroni</value>
   </data>
-  <data name="VSSDK006_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD003_MessageFormat" xml:space="preserve">
     <value>La chiamata di await su un elemento Task all'interno di un elemento JoinableTaskFactory.Run quando Task è inizializzato all'esterno del delegato può causare possibili deadlock.
 Per evitare il problema, assicurarsi che Task venga inizializzato all'interno del delegato oppure usare JoinableTask invece di Task.</value>
   </data>
-  <data name="VSSDK006_Title" xml:space="preserve">
+  <data name="VSTHRD003_Title" xml:space="preserve">
     <value>Evita attesa di Task non joinable in contesti di join</value>
   </data>
-  <data name="VSSDK007_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD011_MessageFormat" xml:space="preserve">
     <value>Lazy&lt;Task&lt;T&gt;&gt;.Value può causare deadlock.
 In alternativa, usare AsyncLazy&lt;T&gt;.</value>
   </data>
-  <data name="VSSDK007_Title" xml:space="preserve">
+  <data name="VSTHRD011_Title" xml:space="preserve">
     <value>Evitare di usare Lazy&lt;T&gt; in cui T è un elemento Task&lt;T2&gt;</value>
   </data>
-  <data name="VSSDK008_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD103_MessageFormat" xml:space="preserve">
     <value>{0} si blocca in modalità sincrona. In alternativa, attendere {1}.</value>
   </data>
-  <data name="VSSDK008_MessageFormat_UseAwaitInstead" xml:space="preserve">
+  <data name="VSTHRD103_MessageFormat_UseAwaitInstead" xml:space="preserve">
     <value>{0} si blocca in modalità sincrona. In alternativa, usare await.</value>
   </data>
-  <data name="VSSDK008_Title" xml:space="preserve">
+  <data name="VSTHRD103_Title" xml:space="preserve">
     <value>Chiama metodi asincroni se il metodo è asincrono</value>
   </data>
-  <data name="VSSDK009_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD102_MessageFormat" xml:space="preserve">
     <value>Limita l'uso di chiamate a metodi con blocco asincrono, come JoinableTaskFactory.Run o Task.Result, a membri di punti di ingresso pubblici in cui è necessario essere sincroni. Se vengono usate per membri interni, è possibile che vengano aggiunti frame sincroni non necessari tra frame asincroni e questo può causare l'esaurimento del pool di thread.</value>
   </data>
-  <data name="VSSDK009_Title" xml:space="preserve">
+  <data name="VSTHRD102_Title" xml:space="preserve">
     <value>Implementa la logica interna in modalità asincrona</value>
   </data>
-  <data name="VSSDK010_CodeFix_Title" xml:space="preserve">
+  <data name="VSTHRD200_CodeFix_Title" xml:space="preserve">
     <value>Rinomina in {0}</value>
     <comment>{0} is a method name.</comment>
   </data>
-  <data name="VSSDK010_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD200_MessageFormat" xml:space="preserve">
     <value>Usare il suffisso "Async" in nomi di metodi che restituiscono Task.</value>
   </data>
-  <data name="VSSDK010_Title" xml:space="preserve">
+  <data name="VSTHRD200_Title" xml:space="preserve">
     <value>Usa suffisso "Async" per metodi asincroni</value>
   </data>
-  <data name="VSSDK003_CodeFix_Title" xml:space="preserve">
+  <data name="VSTHRD100_CodeFix_Title" xml:space="preserve">
     <value>Cambia tipo restituito in Task</value>
     <comment>Task is a type name and should not be translated.</comment>
   </data>
-  <data name="VSSDK011_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD105_MessageFormat" xml:space="preserve">
     <value>Evitare gli overload di metodo che presuppongono TaskScheduler.Current. Usare un overload che accetta un elemento TaskScheduler e specificare TaskScheduler.Default (o qualsiasi altro elemento) in modo esplicito.</value>
   </data>
-  <data name="VSSDK011_Title" xml:space="preserve">
+  <data name="VSTHRD105_Title" xml:space="preserve">
     <value>Evita overload di metodo che presuppongono TaskScheduler.Current</value>
   </data>
 </root>

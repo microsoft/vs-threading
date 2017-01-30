@@ -21,87 +21,87 @@
     <value>Bunun yerine await kullanın</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
-  <data name="VSSDK001_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD002_MessageFormat" xml:space="preserve">
     <value>Görevlerde veya bekleyen öğelerde zaman uyumlu olarak beklemek kilitlenmelere neden olabilir. Bunun yerine JoinableTaskFactory.Run kullanın.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
-  <data name="VSSDK001_Title" xml:space="preserve">
+  <data name="VSTHRD002_Title" xml:space="preserve">
     <value>Sorunlu zaman uyumlu beklemelerden kaçının</value>
   </data>
-  <data name="VSSDK002_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD010_MessageFormat" xml:space="preserve">
     <value>"{0}" Visual Studio hizmeti, ana iş parçacığında açık olarak kullanılmalıdır. 
 ThreadHelper.ThrowIfNotOnUIThread() çağırın veya önce JoinableTaskFactory.SwitchToMainThreadAsync() bekleyin.</value>
   </data>
-  <data name="VSSDK002_Title" xml:space="preserve">
+  <data name="VSTHRD010_Title" xml:space="preserve">
     <value>UI iş parçacığından VS hizmetlerini kullanın</value>
   </data>
-  <data name="VSSDK003_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD100_MessageFormat" xml:space="preserve">
     <value>"async void" metotları tarafından işlenmeyen tüm özel durumlar işlemi kilitleyeceğinden bunları kullanmayın.</value>
     <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
   </data>
-  <data name="VSSDK003_Title" xml:space="preserve">
+  <data name="VSTHRD100_Title" xml:space="preserve">
     <value>Async void metotları kullanmayın</value>
     <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
   </data>
-  <data name="VSSDK004_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD101_MessageFormat" xml:space="preserve">
     <value>Temsilci tarafından işlenmeyen tüm özel durumlar işlemi kilitleyeceğinden, temsilci türü döndüren bir void için async lambda kullanmayın.</value>
     <comment>"void" is a C# keyword and should not be translated.</comment>
   </data>
-  <data name="VSSDK004_Title" xml:space="preserve">
+  <data name="VSTHRD101_Title" xml:space="preserve">
     <value>Desteklenmeyen async temsilcilerini kullanmayın</value>
   </data>
-  <data name="VSSDK005_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD106_MessageFormat" xml:space="preserve">
     <value>AsyncEventHandler temsilcileri, Microsoft.VisualStudio.Threading bütünleştirilmiş kodunda tanımlanan "TplExtensions.InvokeAsync()" genişletme metodu aracılığıyla çağrılmalıdır.</value>
   </data>
-  <data name="VSSDK005_Title" xml:space="preserve">
+  <data name="VSTHRD106_Title" xml:space="preserve">
     <value>Async olayları tetiklemek için InvokeAsync kullanın</value>
   </data>
-  <data name="VSSDK006_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD003_MessageFormat" xml:space="preserve">
     <value>JoinableTaskFactory.Run içindeki bir Task için await çağırmak, görevin temsilci dışında başlatılması durumunda kilitlenmelere neden olabilir.
 Görevin temsilcinin içinde başlatılmasını sağlayarak veya Task yerine JoinableTask kullanarak bu sorunu önleyebilirsiniz.</value>
   </data>
-  <data name="VSSDK006_Title" xml:space="preserve">
+  <data name="VSTHRD003_Title" xml:space="preserve">
     <value>Birleşik olmayan görevleri birleşik ortamlarda beklemeyin</value>
   </data>
-  <data name="VSSDK007_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD011_MessageFormat" xml:space="preserve">
     <value>Lazy&lt;Task&lt;T&gt;&gt;.Value kilitlenebilir.
 Bunun yerine AsyncLazy&lt;T&gt; kullanın.</value>
   </data>
-  <data name="VSSDK007_Title" xml:space="preserve">
+  <data name="VSTHRD011_Title" xml:space="preserve">
     <value>T’nin Task&lt;T&gt; olduğu durumlarda Lazy&lt;T2&gt; kullanmayın.</value>
   </data>
-  <data name="VSSDK008_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD103_MessageFormat" xml:space="preserve">
     <value>{0} zaman uyumlu olarak engeller. Bunun yerine {1} bekleyin.</value>
   </data>
-  <data name="VSSDK008_MessageFormat_UseAwaitInstead" xml:space="preserve">
+  <data name="VSTHRD103_MessageFormat_UseAwaitInstead" xml:space="preserve">
     <value>{0} zaman uyumlu olarak engeller. Bunun yerine await kullanın.</value>
   </data>
-  <data name="VSSDK008_Title" xml:space="preserve">
+  <data name="VSTHRD103_Title" xml:space="preserve">
     <value>Zaman uyumsuz metottayken zaman uyumsuz metotlar çağırın</value>
   </data>
-  <data name="VSSDK009_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD102_MessageFormat" xml:space="preserve">
     <value>Zaman uyumlu olmanız gereken genel giriş noktası üyelerinde, JoinableTaskFactory.Run veya Task.Result gibi zaman uyumlu olarak engelleyen metot çağrılarının kullanımını sınırlayın. Bunu iç üyeler için kullanmak, zaman uyumsuz çerçevelerin arasına gereksiz yere zaman uyumlu çerçeveler ekleyerek iş parçacığı havuzunun tükenmesine sebep olabilir.</value>
   </data>
-  <data name="VSSDK009_Title" xml:space="preserve">
+  <data name="VSTHRD102_Title" xml:space="preserve">
     <value>İç mantığı zaman uyumsuz olarak uygulayın</value>
   </data>
-  <data name="VSSDK010_CodeFix_Title" xml:space="preserve">
+  <data name="VSTHRD200_CodeFix_Title" xml:space="preserve">
     <value>{0} olarak yeniden adlandırın</value>
     <comment>{0} is a method name.</comment>
   </data>
-  <data name="VSSDK010_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD200_MessageFormat" xml:space="preserve">
     <value>Task döndüren metotların adlarında “Async” kullanın.</value>
   </data>
-  <data name="VSSDK010_Title" xml:space="preserve">
+  <data name="VSTHRD200_Title" xml:space="preserve">
     <value>Async metotları için "Async" sonekini kullanın</value>
   </data>
-  <data name="VSSDK011_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD105_MessageFormat" xml:space="preserve">
     <value>TaskScheduler.Current varsayan metot aşırı yüklemelerinden kaçının. TaskScheduler kabul eden bir aşırı yükleme kullanın ve TaskScheduler.Default (veya diğer birini) açık olarak belirtin.</value>
   </data>
-  <data name="VSSDK011_Title" xml:space="preserve">
+  <data name="VSTHRD105_Title" xml:space="preserve">
     <value>TaskScheduler.Current varsayan metot aşırı yüklemelerinden kaçının</value>
   </data>
-  <data name="VSSDK003_CodeFix_Title" xml:space="preserve">
+  <data name="VSTHRD100_CodeFix_Title" xml:space="preserve">
     <value>Döndürme türünü Task olarak değiştirin</value>
     <comment>Task is a type name and should not be translated.</comment>
   </data>
