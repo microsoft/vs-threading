@@ -117,6 +117,7 @@ public class A {
         {
             var test = @"
 using System;
+using System.Threading.Tasks;
 
 public class A {
     private Action a;
@@ -137,6 +138,26 @@ public class A {
         E().ToString();
         E()();
         string v = nameof(E);
+    }
+
+     public Task BAsync() {
+        a();
+        (a).Invoke();
+        D<int>();
+        E().ToString();
+        E()();
+        string v = nameof(E);
+        return null;
+    }
+
+    internal Task CAsync() {
+        a();
+        (a).Invoke();
+        D<int>();
+        E().ToString();
+        E()();
+        string v = nameof(E);
+        return null;
     }
 
     private void D<T>() { }
