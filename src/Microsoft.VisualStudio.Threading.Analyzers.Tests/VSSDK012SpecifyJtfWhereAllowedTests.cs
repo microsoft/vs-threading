@@ -167,5 +167,30 @@ class Test {
 
             this.VerifyCSharpDiagnostic(test);
         }
+
+        [Fact]
+        public void JTF_RunAsync_GeneratesNoWarning()
+        {
+            var test = @"
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
+using System.Threading.Tasks;
+using Task = System.Threading.Tasks.Task;
+
+class Test {
+    JoinableTaskFactory jtf;
+
+    void F() {
+        jtf.RunAsync(
+            VsTaskRunContext.UIThreadBackgroundPriority,
+            async delegate {
+                await Task.Yield();
+            });
+    }
+}
+";
+
+            this.VerifyCSharpDiagnostic(test);
+        }
     }
 }

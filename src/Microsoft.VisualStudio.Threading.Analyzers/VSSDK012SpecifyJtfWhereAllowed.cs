@@ -73,7 +73,7 @@
                 // The method being invoked doesn't take any JTC/JTF parameters.
                 // Look for an overload that does.
                 bool preferableAlternativesExist = otherOverloads
-                    .Any(m => m.Parameters.Any(IsJtfParameter));
+                    .Any(m => m.Parameters.Skip(m.IsExtensionMethod ? 1 : 0).Any(IsJtfParameter));
                 if (preferableAlternativesExist)
                 {
                     Diagnostic diagnostic = Diagnostic.Create(
