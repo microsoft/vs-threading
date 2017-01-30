@@ -80,5 +80,36 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             internal const string JoinAsync = "JoinAsync";
         }
+
+        internal static class SynchronizationContext
+        {
+            internal const string TypeName = nameof(System.Threading.SynchronizationContext);
+
+            internal const string Post = nameof(System.Threading.SynchronizationContext.Post);
+
+            internal const string Send = nameof(System.Threading.SynchronizationContext.Send);
+        }
+
+        internal static class ThreadHelper
+        {
+            internal const string TypeName = "ThreadHelper";
+
+            internal const string Invoke = "Invoke";
+
+            internal const string InvokeAsync = "InvokeAsync";
+
+            internal const string BeginInvoke = "BeginInvoke";
+        }
+
+        internal static class Dispatcher
+        {
+            internal const string TypeName = "Dispatcher";
+
+            internal const string Invoke = "Invoke";
+
+            internal const string BeginInvoke = "BeginInvoke";
+
+            internal const string InvokeAsync = "InvokeAsync";
+        }
     }
 }

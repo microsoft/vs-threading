@@ -18,5 +18,6 @@ ID | Title
 [VSSDK011](VSSDK011.md) | Avoid method overloads that assume TaskScheduler.Current
 [VSSDK012](VSSDK012.md) | Provide JoinableTaskFactory where allowed
 [VSSDK013](VSSDK013.md) | Offer async option
+[VSSDK014](VSSDK014.md) | Avoid legacy thread switching methods
 
 [1]: https://nuget.org/packages/microsoft.visualstudio.threading.analyzers

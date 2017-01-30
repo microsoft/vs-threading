@@ -341,5 +341,23 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
                 return ResourceManager.GetString("VSSDK013_Title", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority..
+        /// </summary>
+        internal static string VSSDK014_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSSDK014_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Avoid legacy threading switching APIs.
+        /// </summary>
+        internal static string VSSDK014_Title {
+            get {
+                return ResourceManager.GetString("VSSDK014_Title", resourceCulture);
+            }
+        }
     }
 }

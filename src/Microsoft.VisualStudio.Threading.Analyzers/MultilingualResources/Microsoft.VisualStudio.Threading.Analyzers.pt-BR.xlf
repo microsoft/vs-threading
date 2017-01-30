@@ -145,6 +145,14 @@ Em vez disso, use AsyncLazy&lt;T&gt;.</target>
           <source>Offer async methods</source>
           <target state="new">Offer async methods</target>
         </trans-unit>
+        <trans-unit id="VSSDK014_MessageFormat" translate="yes" xml:space="preserve">
+          <source>Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority.</source>
+          <target state="new">Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority.</target>
+        </trans-unit>
+        <trans-unit id="VSSDK014_Title" translate="yes" xml:space="preserve">
+          <source>Avoid legacy threading switching APIs</source>
+          <target state="new">Avoid legacy threading switching APIs</target>
+        </trans-unit>
       </group>
     </body>
   </file>
