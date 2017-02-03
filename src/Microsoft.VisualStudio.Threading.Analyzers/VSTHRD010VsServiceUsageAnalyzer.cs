@@ -119,6 +119,7 @@
         private static bool IsVisualStudioShellInteropAssembly(string assemblyName)
         {
             return assemblyName.StartsWith("Microsoft.VisualStudio.Shell.Interop", StringComparison.OrdinalIgnoreCase)
+                || assemblyName.Equals("Microsoft.VisualStudio.OLE.Interop", StringComparison.OrdinalIgnoreCase)
                 || assemblyName.StartsWith("Microsoft.Internal.VisualStudio.Shell.Interop", StringComparison.OrdinalIgnoreCase);
         }
 
@@ -145,7 +146,17 @@
                     // The diagnostic (if any) should underline the method name only.
                     var focusedNode = invocationSyntax.Expression;
                     focusedNode = (focusedNode as MemberAccessExpressionSyntax)?.Name ?? focusedNode;
-                    this.AnalyzeTypeWithinContext(invokeMethod.ContainingType, context, focusedNode);
+                    if (!this.AnalyzeTypeWithinContext(invokeMethod.ContainingType, invokeMethod, context, focusedNode))
+                    {
+                        foreach (var iface in invokeMethod.FindInterfacesImplemented())
+                        {
+                            if (this.AnalyzeTypeWithinContext(iface, invokeMethod, context, focusedNode))
+                            {
+                                // Just report the first diagnostic.
+                                break;
+                            }
+                        }
+                    }
                 }
             }
 
@@ -155,7 +166,7 @@
                 var property = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IPropertySymbol;
                 if (property != null)
                 {
-                    this.AnalyzeTypeWithinContext(property.ContainingType, context, memberAccessSyntax.Name);
+                    this.AnalyzeTypeWithinContext(property.ContainingType, property, context, memberAccessSyntax.Name);
                 }
             }
 
@@ -165,7 +176,7 @@
                 var type = context.SemanticModel.GetSymbolInfo(castSyntax.Type).Symbol as ITypeSymbol;
                 if (type != null)
                 {
-                    this.AnalyzeTypeWithinContext(type, context);
+                    this.AnalyzeTypeWithinContext(type, null, context);
                 }
             }
 
@@ -175,15 +186,24 @@
                 var type = context.SemanticModel.GetSymbolInfo(asSyntax.Right).Symbol as ITypeSymbol;
                 if (type != null)
                 {
-                    this.AnalyzeTypeWithinContext(type, context);
+                    this.AnalyzeTypeWithinContext(type, null, context);
                 }
             }
 
-            private void AnalyzeTypeWithinContext(ITypeSymbol type, SyntaxNodeAnalysisContext context, SyntaxNode focusDiagnosticOn = null)
+            private bool AnalyzeTypeWithinContext(ITypeSymbol type, ISymbol symbol, SyntaxNodeAnalysisContext context, SyntaxNode focusDiagnosticOn = null)
             {
-                if (type.TypeKind == TypeKind.Interface
+                if (type == null)
+                {
+                    throw new ArgumentNullException(nameof(type));
+                }
+
+                bool requiresUIThread = type.TypeKind == TypeKind.Interface
                     && type.ContainingAssembly != null
-                    && IsVisualStudioShellInteropAssembly(type.ContainingAssembly.Name))
+                    && IsVisualStudioShellInteropAssembly(type.ContainingAssembly.Name);
+                requiresUIThread |= symbol?.Name == "GetService" && type.Name == "Package" && type.BelongsToNamespace(Namespaces.MicrosoftVisualStudioShell);
+                requiresUIThread |= symbol != null && !symbol.IsStatic && type.Name == "ServiceProvider" && type.BelongsToNamespace(Namespaces.MicrosoftVisualStudioShell);
+
+                if (requiresUIThread)
                 {
                     var threadingContext = ThreadingContext.Unknown;
                     var methodDeclaration = context.Node.FirstAncestorOrSelf<SyntaxNode>(n => MethodSyntaxKinds.Contains(n.Kind()));
@@ -196,8 +216,11 @@
                     {
                         Location location = (focusDiagnosticOn ?? context.Node).GetLocation();
                         context.ReportDiagnostic(Diagnostic.Create(Descriptor, location, type.Name));
+                        return true;
                     }
                 }
+
+                return false;
             }
         }
     }
