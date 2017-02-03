@@ -560,5 +560,71 @@ class Test {
             this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 16, 9, 85) };
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
+
+        /// <summary>
+        /// Verifies that calling a public method of a public class is still considered requiring
+        /// the UI thread because it implements the IServiceProvider interface.
+        /// </summary>
+        [Fact]
+        public void GlobalServiceProvider_GetService_OffUIThread_ProducesDiagnostic()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+
+class Test {
+    void Foo()
+    {
+        object shell = ServiceProvider.GlobalProvider.GetService(typeof(Microsoft.VisualStudio.Shell.Interop.IVsShell));
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 55, 9, 65) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
+        [Fact]
+        public void Package_GetService_OffUIThread_ProducesDiagnostic()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+
+class Test : Package {
+    void Foo() {
+        object shell = this.GetService(typeof(Microsoft.VisualStudio.Shell.Interop.IVsShell));
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 29, 8, 39) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
+        [Fact]
+        public void InterfaceAccessByClassMethod_OffUIThread_ProducesDiagnostic()
+        {
+            var test = @"
+using System;
+using Microsoft.VisualStudio.Shell;
+
+class Test : Microsoft.VisualStudio.OLE.Interop.IServiceProvider {
+    public int QueryService(ref Guid guid1, ref Guid guid2, out IntPtr result)
+    {
+        result = IntPtr.Zero;
+        return 0;
+    }
+
+    void Foo() {
+        Guid guid1 = Guid.Empty, guid2 = Guid.Empty;
+        IntPtr result;
+        this.QueryService(ref guid1, ref guid2, out result);
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 15, 14, 15, 26) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
     }
 }
