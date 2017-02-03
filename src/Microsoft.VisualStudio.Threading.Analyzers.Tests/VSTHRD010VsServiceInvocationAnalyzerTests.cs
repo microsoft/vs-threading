@@ -541,5 +541,24 @@ class Test {
 ";
             this.VerifyCSharpDiagnostic(test);
         }
+
+        [Fact]
+        public void OleServiceProviderCast_OffUIThread_ProducesDiagnostic()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+
+class Test {
+    object Foo()
+    {
+        return (new object()) as Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 16, 9, 85) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
     }
 }

@@ -119,6 +119,7 @@
         private static bool IsVisualStudioShellInteropAssembly(string assemblyName)
         {
             return assemblyName.StartsWith("Microsoft.VisualStudio.Shell.Interop", StringComparison.OrdinalIgnoreCase)
+                || assemblyName.Equals("Microsoft.VisualStudio.OLE.Interop", StringComparison.OrdinalIgnoreCase)
                 || assemblyName.StartsWith("Microsoft.Internal.VisualStudio.Shell.Interop", StringComparison.OrdinalIgnoreCase);
         }
 
