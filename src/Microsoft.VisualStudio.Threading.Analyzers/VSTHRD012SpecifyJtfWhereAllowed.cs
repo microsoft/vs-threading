@@ -34,7 +34,9 @@
 
         private static bool IsJtfParameter(IParameterSymbol ps)
         {
-            return (ps.Type.Name == Types.JoinableTaskContext.TypeName || ps.Type.Name == Types.JoinableTaskFactory.TypeName)
+            return (ps.Type.Name == Types.JoinableTaskContext.TypeName
+                || ps.Type.Name == Types.JoinableTaskFactory.TypeName
+                || ps.Type.Name == Types.JoinableTaskCollection.TypeName)
                 && ps.Type.BelongsToNamespace(Namespaces.MicrosoftVisualStudioThreading);
         }
 
