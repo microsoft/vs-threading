@@ -65,6 +65,14 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         }
 
         /// <summary>
+        /// Contains descriptors for the JoinableTaskCollection type.
+        /// </summary>
+        internal static class JoinableTaskCollection
+        {
+            internal const string TypeName = "JoinableTaskCollection";
+        }
+
+        /// <summary>
         /// Contains descriptors for the JoinableTaskContext type.
         /// </summary>
         internal static class JoinableTaskContext
