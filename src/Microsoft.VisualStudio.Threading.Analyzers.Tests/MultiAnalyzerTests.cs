@@ -169,6 +169,56 @@ public class A {
             this.VerifyCSharpDiagnostic(test);
         }
 
+        [Fact]
+        public void UseOf_nameof_DoesNotProduceWarnings()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+public class Test {
+    void PrivateFoo() {
+        const string f = nameof(Task<int>.Result);
+        const string g = nameof(Task.Wait);
+        Task<int> t = null;
+        const string h = nameof(t.Result);
+        const string i = nameof(t.Wait);
+    }
+
+    public void PublicFoo() {
+        const string f = nameof(Task<int>.Result);
+        const string g = nameof(Task.Wait);
+        Task<int> t = null;
+        const string h = nameof(t.Result);
+        const string i = nameof(t.Wait);
+    }
+}
+";
+            this.VerifyCSharpDiagnostic(test);
+        }
+
+        [Fact]
+        public void UseOf_Delegate_DoesNotProduceWarnings()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+public class Test {
+    void PrivateFoo() {
+        Task<int> t = null;
+        var i = new Action(t.Wait);
+    }
+
+    public void PublicFoo() {
+        Task<int> t = null;
+        var i = new Action(t.Wait);
+    }
+}
+";
+            this.VerifyCSharpDiagnostic(test);
+        }
+
         private void VerifyNoMoreThanOneDiagnosticPerLine(string test)
         {
             this.LogFileContent(test);
