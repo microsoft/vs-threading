@@ -170,6 +170,28 @@ public class A {
         }
 
         [Fact]
+        public void UseOf_XmlDocRefs_DoesNotProduceWarnings()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+public class Test {
+    /// <summary>Check out <see cref=""Task{int}.Result"" /></summary>
+    /// <remarks>Ya, <see cref=""Task&lt;int&gt;.Result"" /> is ... <see cref=""Task.Wait()"" />...</remarks>
+    void PrivateFoo() {
+    }
+
+    /// <summary>Check out <see cref=""Task{int}.Result"" /></summary>
+    /// <remarks>Ya, <see cref=""Task&lt;int&gt;.Result"" /> is ... <see cref=""Task.Wait()"" />...</remarks>
+    public void PublicFoo() {
+    }
+}
+";
+            this.VerifyCSharpDiagnostic(test);
+        }
+
+        [Fact]
         public void UseOf_nameof_DoesNotProduceWarnings()
         {
             var test = @"
