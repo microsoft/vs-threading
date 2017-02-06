@@ -99,6 +99,7 @@
             this.evt.Set();
             setReturned = true;
             Assert.True(inlinedContinuation.IsCompleted);
+            inlinedContinuation.GetAwaiter().GetResult(); // rethrow any exceptions in the continuation
         }
 
         [Fact]
