@@ -1,5 +1,6 @@
 ﻿{
   "dependencies": {
+    "OpenCover": "4.6.519",
     "MicroBuild.NonShipping": "2.0.34",
     "StyleCop.Analyzers": "1.0.0",
     "xunit": "2.1.0",

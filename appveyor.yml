@@ -22,7 +22,22 @@ build:
   verbosity: minimal
 test_script:
 - cmd: >-
-    %xunit20%\xunit.console.x86 "bin\Release\Profile111\Microsoft.VisualStudio.Threading.Tests.Portable.dll" "bin\Release\Microsoft.VisualStudio.Threading.Tests.Desktop.dll" "bin\Release\Microsoft.VisualStudio.Threading.Analyzers.Tests.dll" -noshadow -html bin\release\testresults.html -xml bin\release\testresults.xml -appveyor -notrait "TestCategory=FailsInCloudTest" -nologo
+    "%userprofile%\.nuget\packages\OpenCover\4.6.519\tools\OpenCover.Console.exe" 
+    -register:user
+    -target:"%xunit20%\xunit.console.x86.exe"
+    -targetargs:"bin\Release\Profile111\Microsoft.VisualStudio.Threading.Tests.Portable.dll bin\Release\Microsoft.VisualStudio.Threading.Tests.Desktop.dll bin\Release\Microsoft.VisualStudio.Threading.Analyzers.Tests.dll -noshadow -html bin\release\testresults.html -xml bin\release\testresults.xml -appveyor -notrait TestCategory=FailsInCloudTest -nologo"
+    -returntargetcode
+    -excludebyattribute:*.ExcludeFromCodeCoverage*
+    -excludebyfile:*\*Designer.cs
+    -filter:"+[Microsoft.VisualStudio.Threading]* +[Microsoft.VisualStudio.Threading.Analyzers]*"
+    -hideskipped:All
+    -output:bin\Release\Threading_coverage.xml
+
+    SET PATH=C:\Python34;C:\Python34\Scripts;%PATH%
+
+    pip install codecov
+
+    codecov -f "bin\Release\Threading_coverage.xml"
 artifacts:
 - path: bin\**\*.nupkg
   name: NuGet Package
