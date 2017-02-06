@@ -12,7 +12,7 @@ configuration: Release
 environment:
   VisualStudioVersion: 14.0
 cache:
-- '%USERPROFILE%\.nuget\packages -> **\project.json'
+#- '%USERPROFILE%\.nuget\packages -> **\project.json'
 - 'obj\tools -> tools\**'
 before_build:
 - ps: .\init.ps1
