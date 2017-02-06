@@ -514,7 +514,7 @@ namespace Microsoft.VisualStudio.Threading
 
             using (this.AmbientJobJoinsThis())
             {
-                await this.Task.WithCancellation(cancellationToken);
+                await this.Task.WithCancellation(cancellationToken).ConfigureAwait(false);
             }
         }
 
