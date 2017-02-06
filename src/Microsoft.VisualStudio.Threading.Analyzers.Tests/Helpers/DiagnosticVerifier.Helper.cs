@@ -28,6 +28,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         private static readonly MetadataReference CodeAnalysisReference = MetadataReference.CreateFromFile(typeof(Compilation).Assembly.Location);
         private static readonly MetadataReference ThreadingReference = MetadataReference.CreateFromFile(typeof(AsyncEventHandler).Assembly.Location);
         private static readonly MetadataReference WindowsBaseReference = MetadataReference.CreateFromFile(typeof(Dispatcher).Assembly.Location);
+        private static readonly MetadataReference OleInteropReference = MetadataReference.CreateFromFile(typeof(Microsoft.VisualStudio.OLE.Interop.IServiceProvider).Assembly.Location);
 
         private static readonly ImmutableArray<string> VSSDKPackageReferences = ImmutableArray.Create(new string[] {
             Path.Combine("Microsoft.VisualStudio.Shell.Interop", "7.10.6071", "lib", "Microsoft.VisualStudio.Shell.Interop.dll"),
@@ -195,6 +196,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 .AddMetadataReference(projectId, CodeAnalysisReference)
                 .AddMetadataReference(projectId, ThreadingReference)
                 .AddMetadataReference(projectId, WindowsBaseReference)
+                .AddMetadataReference(projectId, OleInteropReference)
                 .WithProjectCompilationOptions(projectId, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
             var pathToLibs = ToolLocationHelper.GetPathToStandardLibraries(".NETFramework", "v4.5.1", string.Empty);

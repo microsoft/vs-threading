@@ -133,6 +133,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 return;
             }
 
+            if (Utils.IsWithinNameOf(context.Node as ExpressionSyntax))
+            {
+                // We do not consider arguments to nameof( ) because they do not represent invocations of code.
+                return;
+            }
+
             var property = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IPropertySymbol;
             if (property != null)
             {

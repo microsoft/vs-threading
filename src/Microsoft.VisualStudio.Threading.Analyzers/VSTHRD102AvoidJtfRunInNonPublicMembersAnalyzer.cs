@@ -82,6 +82,12 @@
                     return;
                 }
 
+                if (Utils.IsWithinNameOf(context.Node as ExpressionSyntax))
+                {
+                    // We do not consider arguments to nameof( ) because they do not represent invocations of code.
+                    return;
+                }
+
                 var typeReceiver = context.SemanticModel.GetTypeInfo(memberAccessSyntax.Expression).Type;
                 if (typeReceiver != null)
                 {

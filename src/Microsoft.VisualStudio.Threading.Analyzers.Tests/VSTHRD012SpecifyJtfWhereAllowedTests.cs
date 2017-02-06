@@ -192,5 +192,26 @@ class Test {
 
             this.VerifyCSharpDiagnostic(test);
         }
+
+        [Fact]
+        public void JTF_Ctor_GeneratesNoWarning()
+        {
+            var test = @"
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
+using System.Threading.Tasks;
+using Task = System.Threading.Tasks.Task;
+
+class Test {
+    JoinableTaskCollection jtc;
+
+    void F() {
+        var jtf = new JoinableTaskFactory(jtc);
+    }
+}
+";
+
+            this.VerifyCSharpDiagnostic(test);
+        }
     }
 }
