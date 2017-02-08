@@ -186,7 +186,7 @@
 
             for (int i = 0; i < dequeuers.Length; i++)
             {
-                Assert.True(dequeuers.Any(d => d.Result.Data == i));
+                Assert.Equal(i, dequeuers[i].Result.Data);
             }
         }
 
