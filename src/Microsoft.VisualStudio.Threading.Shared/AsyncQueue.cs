@@ -197,11 +197,12 @@ namespace Microsoft.VisualStudio.Threading
 
                 if (this.dequeuingTasks != null)
                 {
-                    foreach (var entry in this.dequeuingTasks)
-                    {
-                        CancellationToken cancellationToken = entry.Key;
-                        CancellableDequeuers dequeurs = entry.Value;
+                    var entry = this.dequeuingTasks.FirstOrDefault();
+                    CancellationToken cancellationToken = entry.Key;
+                    CancellableDequeuers dequeurs = entry.Value;
 
+                    if (dequeurs != null)
+                    {
                         // Remove the last dequeuer from the list.
                         dequeuer = dequeurs.PopDequeuer();
 
@@ -216,8 +217,6 @@ namespace Microsoft.VisualStudio.Threading
 
                             valuesToDispose.Add(dequeurs);
                         }
-
-                        break;
                     }
                 }
 
