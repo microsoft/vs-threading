@@ -194,7 +194,7 @@
         }
 
         /// <summary>
-        /// Verifies that long-lived, uncanceled CancellationTokens do not result in leaking memory.
+        /// Verifies that canceled CancellationTokens do not result in leaking memory.
         /// </summary>
         [Fact, Trait("TestCategory", "FailsInCloudTest")]
         public void WaitAsync_WithCancellationToken_DoesNotLeakWhenCanceled()
