@@ -46,6 +46,61 @@
         }
 
         [Fact]
+        public void OrderPreservedAcrossCancellationTokens()
+        {
+            var cts1 = new CancellationTokenSource();
+            var cts2 = new CancellationTokenSource();
+
+            var dequeue1 = this.queue.DequeueAsync(cts1.Token);
+            var dequeue2 = this.queue.DequeueAsync(CancellationToken.None);
+            var dequeue3 = this.queue.DequeueAsync(cts2.Token);
+
+            this.queue.Enqueue(new GenericParameterHelper(1));
+            this.queue.Enqueue(new GenericParameterHelper(2));
+            this.queue.Enqueue(new GenericParameterHelper(3));
+
+            Assert.Equal(1, dequeue1.Result.Data);
+            Assert.Equal(2, dequeue2.Result.Data);
+            Assert.Equal(3, dequeue3.Result.Data);
+        }
+
+        [Fact]
+        public async Task OrderPreservedAcrossCancellationTokens_WithSynchronousDequeuers()
+        {
+            var cts1 = new CancellationTokenSource();
+
+            bool terminate = false;
+            try
+            {
+                var yielding = new AsyncManualResetEvent();
+                var dequeue1 = this.queue.DequeueAsync(cts1.Token);
+                var dequeuer2 = Task.Run(async delegate
+                {
+                    while (!terminate)
+                    {
+                        var dequeueTask = this.queue.DequeueAsync(CancellationToken.None);
+                        await dequeueTask.GetAwaiter().YieldAndNotify(yielding);
+                        var item = dequeueTask.Result;
+                        this.Logger.WriteLine("Dequeuer2 obtained {0}", item.Data);
+                    }
+                });
+
+                await yielding;
+                this.queue.Enqueue(new GenericParameterHelper(1));
+                this.queue.Enqueue(new GenericParameterHelper(2));
+                this.queue.Enqueue(new GenericParameterHelper(3));
+                this.queue.Enqueue(new GenericParameterHelper(4));
+
+                Assert.True(dequeue1.IsCompleted);
+                Assert.Equal(1, dequeue1.Result.Data);
+            }
+            finally
+            {
+                terminate = true;
+            }
+        }
+
+        [Fact]
         public void PeekThrowsOnEmptyQueue()
         {
             Assert.Throws<InvalidOperationException>(() => this.queue.Peek());
