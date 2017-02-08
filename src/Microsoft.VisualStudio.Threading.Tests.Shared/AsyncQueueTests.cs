@@ -337,7 +337,7 @@
         {
             var cts = new CancellationTokenSource();
             var dequeueTask = this.queue.DequeueAsync(cts.Token);
-            dequeueTask.ContinueWith(
+            Task enqueueTask = dequeueTask.ContinueWith(
                 delegate
                 {
                     Task.Run(delegate
@@ -353,6 +353,9 @@
                 TaskContinuationOptions.ExecuteSynchronously);
 
             cts.Cancel();
+
+            enqueueTask.GetAwaiter().GetResult(); // rethrow any failures in the continuation
+            Assert.Equal(1, this.queue.Count);
         }
 
         [Fact]
