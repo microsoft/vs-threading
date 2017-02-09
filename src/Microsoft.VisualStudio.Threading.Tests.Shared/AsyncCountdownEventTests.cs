@@ -101,7 +101,7 @@
         }
 
         /// <summary>
-        /// Verifies that the exception is returned in a task rather than thrown from the synchronous method.
+        /// Verifies that the exception is thrown from the synchronous method.
         /// </summary>
         [Fact]
         public void SignalThrowsOnError()

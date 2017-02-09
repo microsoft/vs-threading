@@ -2,7 +2,7 @@ version: 1.0.{build}
 branches:
   only:
   - master
-  - /^v\d+(?:.\d+)?$/
+  - /^v\d+(?:\.\d+)?$/
   - /[\b_]validate\b/
 skip_tags: true
 nuget:
@@ -12,7 +12,7 @@ configuration: Release
 environment:
   VisualStudioVersion: 14.0
 cache:
-- '%USERPROFILE%\.nuget\packages -> **\project.json'
+#- '%USERPROFILE%\.nuget\packages -> **\project.json'
 - 'obj\tools -> tools\**'
 before_build:
 - ps: .\init.ps1

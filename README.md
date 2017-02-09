@@ -3,6 +3,7 @@ Microsoft.VisualStudio.Threading
 
 [![NuGet package](https://img.shields.io/nuget/v/Microsoft.VisualStudio.Threading.svg)](https://nuget.org/packages/Microsoft.VisualStudio.Threading)
 [![Build status](https://ci.appveyor.com/api/projects/status/kv58v4d03td5ngna/branch/master?svg=true)](https://ci.appveyor.com/project/AArnott/vs-threading/branch/master)
+[![Join the chat at https://gitter.im/vs-threading/Lobby](https://badges.gitter.im/vs-threading/Lobby.svg)](https://gitter.im/vs-threading/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Analyzers: [![NuGet package](https://img.shields.io/nuget/v/Microsoft.VisualStudio.Threading.Analyzers.svg)](https://nuget.org/packages/Microsoft.VisualStudio.Threading.Analyzers)
 
