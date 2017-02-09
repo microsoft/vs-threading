@@ -149,9 +149,9 @@ namespace Microsoft.VisualStudio.Threading
                         this.valueFactory = null;
                         Func<Task<T>> valueFactory = async delegate
                         {
-                            await resumableAwaiter;
                             try
                             {
+                                await resumableAwaiter;
                                 return await originalValueFactory().ConfigureAwait(continueOnCapturedContext: false);
                             }
                             finally
