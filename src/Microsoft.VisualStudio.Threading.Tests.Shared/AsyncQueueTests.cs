@@ -48,20 +48,36 @@
         [Fact]
         public void OrderPreservedAcrossCancellationTokens()
         {
-            var cts1 = new CancellationTokenSource();
-            var cts2 = new CancellationTokenSource();
+            int seed = (int)DateTime.Now.Ticks;
+            this.Logger.WriteLine("Using random seed {0}", seed);
+            var r = new Random(seed);
 
-            var dequeue1 = this.queue.DequeueAsync(cts1.Token);
-            var dequeue2 = this.queue.DequeueAsync(CancellationToken.None);
-            var dequeue3 = this.queue.DequeueAsync(cts2.Token);
+            // Prepare a bunch of unique CancellationTokens, including one CancellationToken.None.
+            var cts = new CancellationToken[10];
+            for (int i = 1; i < cts.Length; i++)
+            {
+                cts[i] = new CancellationTokenSource().Token;
+            }
 
-            this.queue.Enqueue(new GenericParameterHelper(1));
-            this.queue.Enqueue(new GenericParameterHelper(2));
-            this.queue.Enqueue(new GenericParameterHelper(3));
+            // Arrange 100 DequeueAsync tasks that use random tokens.
+            var dequeueTasks = new Task<GenericParameterHelper>[100];
+            for (int i = 0; i < dequeueTasks.Length; i++)
+            {
+                CancellationToken ct = cts[r.Next() % cts.Length];
+                dequeueTasks[i] = this.queue.DequeueAsync(ct);
+            }
 
-            Assert.Equal(1, dequeue1.Result.Data);
-            Assert.Equal(2, dequeue2.Result.Data);
-            Assert.Equal(3, dequeue3.Result.Data);
+            // Now enqueue that many elements
+            for (int i = 0; i < dequeueTasks.Length; i++)
+            {
+                this.queue.Enqueue(new GenericParameterHelper(i));
+            }
+
+            // And verify that the dequeue tasks got them in order.
+            for (int i = 0; i < dequeueTasks.Length; i++)
+            {
+                Assert.Equal(i, dequeueTasks[i].Result.Data);
+            }
         }
 
         [Fact]
