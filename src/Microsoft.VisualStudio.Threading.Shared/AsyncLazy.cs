@@ -171,6 +171,8 @@ namespace Microsoft.VisualStudio.Threading
                                         that.joinableTask = null;
                                     },
                                     this,
+                                    CancellationToken.None,
+                                    TaskContinuationOptions.ExecuteSynchronously,
                                     TaskScheduler.Default);
                             }
                             else
