@@ -81,38 +81,49 @@
         }
 
         [Fact]
-        public async Task OrderPreservedAcrossCancellationTokens_WithSynchronousDequeuers()
+        public void OrderPreservedAcrossCancellationTokensAndMultipleDequeuers()
         {
-            var cts1 = new CancellationTokenSource();
+            const int tokenCount = 3;
+            const int dequeueDepth = 2;
 
-            bool terminate = false;
-            try
+            // Arrange for one unique CancellationToken per logical dequeuer.
+            var tokens = new CancellationToken[tokenCount];
+            for (int i = 0; i < tokens.Length; i++)
             {
-                var yielding = new AsyncManualResetEvent();
-                var dequeue1 = this.queue.DequeueAsync(cts1.Token);
-                var dequeuer2 = Task.Run(async delegate
-                {
-                    while (!terminate)
-                    {
-                        var dequeueTask = this.queue.DequeueAsync(CancellationToken.None);
-                        await dequeueTask.GetAwaiter().YieldAndNotify(yielding);
-                        var item = dequeueTask.Result;
-                        this.Logger.WriteLine("Dequeuer2 obtained {0}", item.Data);
-                    }
-                });
-
-                await yielding;
-                this.queue.Enqueue(new GenericParameterHelper(1));
-                this.queue.Enqueue(new GenericParameterHelper(2));
-                this.queue.Enqueue(new GenericParameterHelper(3));
-                this.queue.Enqueue(new GenericParameterHelper(4));
-
-                Assert.True(dequeue1.IsCompleted);
-                Assert.Equal(1, dequeue1.Result.Data);
+                tokens[i] = new CancellationTokenSource().Token;
             }
-            finally
+
+            // Prepare each dequeuing CancellationToken to be used multiple times.
+            var dequeuers = new Task<GenericParameterHelper>[tokenCount][];
+            for (int i = 0; i < dequeuers.Length; i++)
             {
-                terminate = true;
+                dequeuers[i] = new Task<GenericParameterHelper>[dequeueDepth];
+            }
+
+            // Now in a round robin fashion, each CancellationToken gets to call DequeueAsync.
+            // When they've all had a turn, do it again.
+            for (int j = 0; j < dequeueDepth; j++)
+            {
+                for (int i = 0; i < dequeuers.Length; i++)
+                {
+                    dequeuers[i][j] = this.queue.DequeueAsync(tokens[i]);
+                }
+            }
+
+            // Now enqueue enough items to let all the DequeueAsync calls complete.
+            for (int i = 0; i < tokenCount * dequeueDepth; i++)
+            {
+                this.queue.Enqueue(new GenericParameterHelper(i));
+            }
+
+            // Verify that each DequeueAsync call got the enqueued value in FIFO order.
+            for (int j = 0; j < dequeueDepth; j++)
+            {
+                for (int i = 0; i < dequeuers.Length; i++)
+                {
+                    int actual = dequeuers[i][j].Result.Data;
+                    Assert.Equal((j * dequeuers.Length) + i, actual);
+                }
             }
         }
 
