@@ -149,8 +149,16 @@ namespace Microsoft.VisualStudio.Threading
                         this.valueFactory = null;
                         Func<Task<T>> valueFactory = async delegate
                         {
-                            await resumableAwaiter;
-                            return await originalValueFactory().ConfigureAwait(continueOnCapturedContext: false);
+                            try
+                            {
+                                await resumableAwaiter;
+                                return await originalValueFactory().ConfigureAwait(continueOnCapturedContext: false);
+                            }
+                            finally
+                            {
+                                this.jobFactory = null;
+                                this.joinableTask = null;
+                            }
                         };
 
                         this.recursiveFactoryCheck.Value = RecursiveCheckSentinel;
@@ -163,15 +171,6 @@ namespace Microsoft.VisualStudio.Threading
                                 // without leading to deadlocks.
                                 this.joinableTask = this.jobFactory.RunAsync(valueFactory);
                                 this.value = this.joinableTask.Task;
-                                this.value.ContinueWith(
-                                    (_, state) =>
-                                    {
-                                        var that = (AsyncLazy<T>)state;
-                                        that.jobFactory = null;
-                                        that.joinableTask = null;
-                                    },
-                                    this,
-                                    TaskScheduler.Default);
                             }
                             else
                             {
