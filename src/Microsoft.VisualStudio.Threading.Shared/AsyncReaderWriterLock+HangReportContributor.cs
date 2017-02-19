@@ -246,7 +246,8 @@ namespace Microsoft.VisualStudio.Threading
 
             public override bool Equals(object obj)
             {
-                return this.Awaiter.Equals(obj);
+                var otherAwaiter = obj as AwaiterMetadata;
+                return otherAwaiter != null && this.Awaiter.Equals(otherAwaiter.Awaiter);
             }
 
             internal static AwaiterMetadata Released(Awaiter awaiter)
