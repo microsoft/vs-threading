@@ -988,6 +988,19 @@
             await this.StressHelper(MaxLockAcquisitions, MaxLockHeldDelay, overallTimeout, iterationTimeout, maxWorkers, maxResources, testCancellation);
         }
 
+        [StaFact]
+        public async Task CaptureDiagnosticsCtor()
+        {
+            Assert.False(this.resourceLock.CaptureDiagnostics);
+            this.resourceLock = new ResourceLockWrapper(this.resources, this.Logger, captureDiagnostics: true);
+            Assert.True(this.resourceLock.CaptureDiagnostics);
+
+            // For a sanity check, test basic functionality.
+            using (var lck = await this.resourceLock.ReadLockAsync(this.TimeoutToken))
+            {
+            }
+        }
+
         private static void VerboseLog(ITestOutputHelper logger, string message, params object[] args)
         {
             Requires.NotNull(logger, nameof(logger));
@@ -1187,10 +1200,19 @@
                 this.logger = logger;
             }
 
+            internal ResourceLockWrapper(List<Resource> resources, ITestOutputHelper logger, bool captureDiagnostics)
+                : base(captureDiagnostics)
+            {
+                this.resources = resources;
+                this.logger = logger;
+            }
+
             internal AsyncAutoResetEvent PreparationTaskBegun
             {
                 get { return this.preparationTaskBegun; }
             }
+
+            internal new bool CaptureDiagnostics => base.CaptureDiagnostics;
 
             internal Task SetPreparationTask(Resource resource, Task task)
             {

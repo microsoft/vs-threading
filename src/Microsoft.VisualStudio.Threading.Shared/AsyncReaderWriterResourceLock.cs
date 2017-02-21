@@ -47,6 +47,7 @@ namespace Microsoft.VisualStudio.Threading
         protected AsyncReaderWriterResourceLock(bool captureDiagnostics)
             : base(captureDiagnostics)
         {
+            this.helper = new Helper(this);
         }
 
         /// <summary>
