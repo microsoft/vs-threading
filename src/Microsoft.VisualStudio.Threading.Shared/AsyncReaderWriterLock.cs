@@ -1837,16 +1837,19 @@ namespace Microsoft.VisualStudio.Threading
                         using (nonConcurrentSyncContext != null ? nonConcurrentSyncContext.LoanBackAnyHeldResource(this.awaiter.OwningLock) : default(NonConcurrentSynchronizationContext.LoanBack))
                         {
                             var releaseTask = this.awaiter.ReleaseAsync();
-                            try
+                            using (NoMessagePumpSyncContext.Default.Apply())
                             {
-                                while (!releaseTask.Wait(1000))
-                                { // this loop allows us to break into the debugger and step into managed code to analyze a hang.
+                                try
+                                {
+                                    while (!releaseTask.Wait(1000))
+                                    { // this loop allows us to break into the debugger and step into managed code to analyze a hang.
+                                    }
                                 }
-                            }
-                            catch (AggregateException)
-                            {
-                                // We want to throw the inner exception itself -- not the AggregateException.
-                                releaseTask.GetAwaiter().GetResult();
+                                catch (AggregateException)
+                                {
+                                    // We want to throw the inner exception itself -- not the AggregateException.
+                                    releaseTask.GetAwaiter().GetResult();
+                                }
                             }
                         }
                     }
