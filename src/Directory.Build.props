@@ -1,0 +1,23 @@
+<Project>
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)..\obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <OutputPath>$(MSBuildThisFileDirectory)..\bin\$(MSBuildProjectName)\$(Configuration)\</OutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Nerdbank.GitVersioning" Version="1.6.25" PrivateAssets="all" />
+    <PackageReference Include="StyleCop.Analyzers" Version="1.0.0" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)stylecop.json" />
+  </ItemGroup>
+
+  <!-- Workaround https://github.com/AArnott/Nerdbank.GitVersioning/issues/113#issuecomment-285903085 -->
+  <ImportGroup Condition=" '$(ExcludeRestorePackageImports)' == 'true' ">
+    <Import Project="$(UserProfile)\.nuget\packages\nerdbank.gitversioning\1.6.25\buildCrossTargeting\Nerdbank.GitVersioning.targets"
+            Condition="Exists('$(UserProfile)\.nuget\packages\nerdbank.gitversioning\1.6.25\buildCrossTargeting\Nerdbank.GitVersioning.targets')" />
+  </ImportGroup>
+  <Target Name="FixUpVersion"
+      BeforeTargets="_GenerateRestoreProjectSpec"
+      DependsOnTargets="GetBuildVersion"
+      Condition=" '$(NerdbankGitVersioningTasksPath)' != '' " />
+</Project>

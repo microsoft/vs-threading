@@ -1,4 +1,4 @@
-version: 1.0.{build}
+version: '{build}'
 branches:
   only:
   - master
@@ -7,22 +7,38 @@ branches:
 skip_tags: true
 nuget:
   disable_publish_on_pr: true
-image: Visual Studio 2015
+image: Visual Studio 2017
 configuration: Release
 environment:
-  VisualStudioVersion: 14.0
-cache:
-#- '%USERPROFILE%\.nuget\packages -> **\project.json'
-- 'obj\tools -> tools\**'
+  VisualStudioVersion: 15.0
 before_build:
-- ps: .\init.ps1
-build:
-  project: src\Microsoft.VisualStudio.Threading.sln
-  parallel: true
-  verbosity: minimal
+- |- # Restore TWICE. See https://github.com/AArnott/Nerdbank.GitVersioning/issues/113#issuecomment-285903085
+  msbuild src\Microsoft.VisualStudio.Threading.sln /nologo /m /v:quiet /t:restore > nul
+  msbuild src\Microsoft.VisualStudio.Threading.sln /nologo /m /v:quiet /t:restore
+build_script:
+- msbuild src\Microsoft.VisualStudio.Threading.sln /nologo /m /fl /v:minimal /t:build,pack
 test_script:
-- cmd: >-
-    %xunit20%\xunit.console.x86 "bin\Release\Profile111\Microsoft.VisualStudio.Threading.Tests.Portable.dll" "bin\Release\Microsoft.VisualStudio.Threading.Tests.Desktop.dll" "bin\Release\Microsoft.VisualStudio.Threading.Analyzers.Tests.dll" -noshadow -html bin\release\testresults.html -xml bin\release\testresults.xml -appveyor -notrait "TestCategory=FailsInCloudTest" -nologo
+- >-
+    md "bin\%configuration%"
+
+    SET testdir=bin\Microsoft.VisualStudio.Threading.Tests\%configuration%\
+
+    "%xunit20%\xunit.console.x86.exe"
+    "bin\Microsoft.VisualStudio.Threading.Tests\%configuration%\net452\Microsoft.VisualStudio.Threading.Tests.dll"
+    "bin\Microsoft.VisualStudio.Threading.Analyzers.Tests\%configuration%\net452\Microsoft.VisualStudio.Threading.Analyzers.Tests.dll"
+    -noshadow
+    -html "bin\%configuration%\testresults.html" -xml "bin\%configuration%\testresults.xml"
+    -appveyor
+    -notrait "TestCategory=FailsInCloudTest"
+    -nologo
+
+    dotnet test src\Microsoft.VisualStudio.Threading.Tests\Microsoft.VisualStudio.Threading.Tests.csproj
+    --no-build
+    -f netcoreapp1.0
 artifacts:
 - path: bin\**\*.nupkg
   name: NuGet Package
+- path: msbuild.log
+  name: Build log
+- path: bin\**\testresults.*
+  name: Test results
