@@ -3274,6 +3274,36 @@
             Assert.True(joinTask.Wait(AsyncDelay));
         }
 
+        [StaFact]
+        public void JoinAsyncOfTShouldCompleteWithoutUIThreadAfterCancellation()
+        {
+            var jt = this.asyncPump.RunAsync(async delegate {
+                await Task.Yield();
+                return 2;
+            });
+            var cts = new CancellationTokenSource();
+            var joinTask = jt.JoinAsync(cts.Token);
+            cts.Cancel();
+
+            // We expect to be able to block on the UI thread and the Task complete.
+            // In completing, it will throw a TaskCanceledException, wrapped by an
+            // AggregateException. If it 'hangs', it will timeout, returning false.
+            Assert.Throws<AggregateException>(() => joinTask.Wait(AsyncDelay));
+        }
+
+        [StaFact]
+        public void JoinAsyncOfTShouldCompleteWithoutUIThreadAfterTaskCompletes()
+        {
+            var mre = new AsyncManualResetEvent();
+            var jt = this.asyncPump.RunAsync(async delegate {
+                await mre.WaitAsync().ConfigureAwait(false);
+                return 2;
+            });
+            var joinTask = jt.JoinAsync();
+            mre.Set();
+            Assert.True(joinTask.Wait(AsyncDelay));
+        }
+
         protected override JoinableTaskContext CreateJoinableTaskContext()
         {
             return new DerivedJoinableTaskContext();
