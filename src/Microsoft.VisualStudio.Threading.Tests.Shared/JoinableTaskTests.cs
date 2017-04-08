@@ -2348,8 +2348,7 @@
 
             // Simulate a modal dialog, with a message pump that is willing
             // to execute hiPriFactory messages but not loPriFactory messages.
-            hiPriFactory.DoModalLoopTillEmpty();
-            Assert.True(outer.IsCompleted);
+            hiPriFactory.DoModalLoopTillEmptyAndTaskCompleted(outer.Task, this.TimeoutToken);
         }
 
         /// <summary>
@@ -2467,8 +2466,7 @@
 
             // Simulate a modal dialog, with a message pump that is willing
             // to execute hiPriFactory messages but not loPriFactory messages.
-            hiPriFactory.DoModalLoopTillEmpty();
-            Assert.True(outer.IsCompleted);
+            hiPriFactory.DoModalLoopTillEmptyAndTaskCompleted(outer.Task, this.TimeoutToken);
         }
 
         /// <summary>
@@ -2502,8 +2500,7 @@
 
             // Simulate a modal dialog, with a message pump that is willing
             // to execute hiPriFactory messages but not loPriFactory messages.
-            hiPriFactory.DoModalLoopTillEmpty();
-            Assert.True(outer.IsCompleted);
+            hiPriFactory.DoModalLoopTillEmptyAndTaskCompleted(outer.Task, this.TimeoutToken);
         }
 
         [SkippableFact]
@@ -3249,6 +3246,64 @@
             });
         }
 
+        [StaFact]
+        public void JoinAsyncShouldCompleteWithoutUIThreadAfterCancellation()
+        {
+            var jt = this.asyncPump.RunAsync(async delegate {
+                await Task.Yield();
+            });
+            var cts = new CancellationTokenSource();
+            var joinTask = jt.JoinAsync(cts.Token);
+            cts.Cancel();
+
+            // We expect to be able to block on the UI thread and the Task complete.
+            // In completing, it will throw a TaskCanceledException, wrapped by an
+            // AggregateException. If it 'hangs', it will timeout, returning false.
+            Assert.Throws<AggregateException>(() => joinTask.Wait(AsyncDelay));
+        }
+
+        [StaFact]
+        public void JoinAsyncShouldCompleteWithoutUIThreadAfterTaskCompletes()
+        {
+            var mre = new AsyncManualResetEvent();
+            var jt = this.asyncPump.RunAsync(async delegate {
+                await mre.WaitAsync().ConfigureAwait(false);
+            });
+            var joinTask = jt.JoinAsync();
+            mre.Set();
+            Assert.True(joinTask.Wait(AsyncDelay));
+        }
+
+        [StaFact]
+        public void JoinAsyncOfTShouldCompleteWithoutUIThreadAfterCancellation()
+        {
+            var jt = this.asyncPump.RunAsync(async delegate {
+                await Task.Yield();
+                return 2;
+            });
+            var cts = new CancellationTokenSource();
+            var joinTask = jt.JoinAsync(cts.Token);
+            cts.Cancel();
+
+            // We expect to be able to block on the UI thread and the Task complete.
+            // In completing, it will throw a TaskCanceledException, wrapped by an
+            // AggregateException. If it 'hangs', it will timeout, returning false.
+            Assert.Throws<AggregateException>(() => joinTask.Wait(AsyncDelay));
+        }
+
+        [StaFact]
+        public void JoinAsyncOfTShouldCompleteWithoutUIThreadAfterTaskCompletes()
+        {
+            var mre = new AsyncManualResetEvent();
+            var jt = this.asyncPump.RunAsync(async delegate {
+                await mre.WaitAsync().ConfigureAwait(false);
+                return 2;
+            });
+            var joinTask = jt.JoinAsync();
+            mre.Set();
+            Assert.True(joinTask.Wait(AsyncDelay));
+        }
+
         protected override JoinableTaskContext CreateJoinableTaskContext()
         {
             return new DerivedJoinableTaskContext();
@@ -3544,7 +3599,8 @@
 
         private class ModalPumpingJoinableTaskFactory : JoinableTaskFactory
         {
-            private ConcurrentQueue<Tuple<SendOrPostCallback, object>> queuedMessages = new ConcurrentQueue<Tuple<SendOrPostCallback, object>>();
+            private readonly ConcurrentQueue<Tuple<SendOrPostCallback, object>> queuedMessages = new ConcurrentQueue<Tuple<SendOrPostCallback, object>>();
+            private readonly AutoResetEvent messageQueued = new AutoResetEvent(false);
 
             internal ModalPumpingJoinableTaskFactory(JoinableTaskContext context)
                 : base(context)
@@ -3568,10 +3624,42 @@
                 }
             }
 
+            /// <summary>
+            /// Executes all work posted to this factory, and waits for more work
+            /// till the specified <paramref name="task"/> completes.
+            /// </summary>
+            /// <param name="task">The task that completes to indicate we can stop pumping messages.</param>
+            /// <param name="cancellationToken">A cancellation token.</param>
+            /// <exception cref="TaskCanceledException">Thrown when <paramref name="cancellationToken"/> is canceled.</exception>
+            /// <remarks>
+            /// This method is useful when we cannot guarantee that all work that will be queued to the
+            /// <see cref="SynchronizationContext"/> has been queued before a Task completes.
+            /// For instance, when work is mixed between the threadpool and the (simulated) message queue.
+            /// </remarks>
+            internal void DoModalLoopTillEmptyAndTaskCompleted(Task task, CancellationToken cancellationToken)
+            {
+                do
+                {
+                    Tuple<SendOrPostCallback, object> work;
+                    while (this.queuedMessages.TryDequeue(out work))
+                    {
+                        work.Item1(work.Item2);
+                        cancellationToken.ThrowIfCancellationRequested();
+                    }
+
+                    WaitHandle.WaitAny(new WaitHandle[] {
+                        cancellationToken.WaitHandle,
+                        this.messageQueued,
+                        ((IAsyncResult)task).AsyncWaitHandle,
+                    });
+                } while (!task.IsCompleted || this.queuedMessages.Count > 0);
+            }
+
             protected override void PostToUnderlyingSynchronizationContext(SendOrPostCallback callback, object state)
             {
                 this.queuedMessages.Enqueue(Tuple.Create(callback, state));
                 base.PostToUnderlyingSynchronizationContext(callback, state);
+                this.messageQueued.Set();
             }
         }
 
