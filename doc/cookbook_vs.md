@@ -1,7 +1,7 @@
 Cookbook for Visual Studio
 ==========================
 
-Important for CPS users: If you're in CPS or a CPS extension, please
+Important for CPS extension authors and clients: please
 replace all references to `ThreadHelper.JoinableTaskFactory` with
 `this.ThreadHandling.AsyncPump`, where `this.ThreadHandling` is an `[Import]
 IThreadHandling`.
@@ -52,29 +52,20 @@ ThreadHelper.JoinableTaskFactory.Run(async delegate
 });
 ```
 
-## How to switch to or use the UI thread using a specific (VS-defined) priority
+## How to switch to or use the UI thread with background priority
 
-Simply call the `JoinableTaskFactory.RunAsync` extension method 
-passing in a priority as the first parameter, like this:
+For those times when you need the UI thread but you don't want to introduce UI delays for the user,
+you can use the `StartOnIdle` extension method which will run your code on the UI thread when it is otherwise idle.
 
 ```csharp
-await ThreadHelper.JoinableTaskFactory.RunAsync(
-    VsTaskRunContext.UIThreadBackgroundPriority,
+await ThreadHelper.JoinableTaskFactory.StartOnIdle(
     async delegate
     {
-        // We're still on the caller's thread. Switch to main thread (if we're not already there).
-        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-
-        // Now yield, in case we were already on the UI thread and thereby skipped the background priority scheduling.
-        await Task.Yield();
-
-        // Resumed on UI thread via background priority.
         for (int i = 0; i < 10; i++)
         {
             DoSomeWorkOn(i);
             
-            // Ensure we quickly yield the UI thread to the user if necessary.
-            // Each time we resume, we're using the background priority scheduler.
+            // Ensure we frequently yield the UI thread in case user input is waiting.
             await Task.Yield();
         }
     });
@@ -110,34 +101,19 @@ instead of calling the method `Task DoSomethingAsync()` you might call it `void 
 Notwithstanding the `void` return type, you'll want to be async internally in order to actually
 do the work later instead of on your caller's callstack. But you also should be sure your async
 work finishes before your object claims to be disposed. You can accomplish both of these objectives
-using the `JoinableTaskFactory.RunAsync` method:
+using the `JoinableTaskFactory.RunAsync` method, and tacking on the `FileAndForget` method at the end
+so that faults are detectable. You may want to handle your own exceptions within the async delegate as well.
 
 ```csharp
 void StartOperation()
 {
   this.JoinableTaskFactory.RunAsync(async delegate
   {
-    try
-    {
-      await Task.Yield(); // get off the caller's callstack.
-      DoWork();
-      this.DisposalToken.ThrowIfCancellationRequested();
-      DoMoreWork();
-    }
-    catch (Exception ex)
-    {
-      // Since fire and forget tasks will fail silently,
-      // fire off telemetry to let us know that we have a problem to fix.
-      TelemetryService.DefaultSession.PostFault(
-        eventName: EventNames.StartSomeService,
-        description: $"Failed to start some operation",
-        exceptionObject: ex);
-#if DEBUG
-      await this.JoinableTaskFactory.SwitchToMainThreadAsync();
-      Debug.Fail(ex);
-#endif
-    }
-  });
+    await Task.Yield(); // get off the caller's callstack.
+    DoWork();
+    this.DisposalToken.ThrowIfCancellationRequested();
+    DoMoreWork();
+  }).FileAndForget("vs/YOUR-FEATURE/YOUR-ACTION");
 }
 ```
 
@@ -205,7 +181,7 @@ some other way. In a *few* cases this may be desirable.
 Since calling a `Task`-returning method without awaiting its result will often make C# emit
 a compiler warning, a `void`-returning `Forget()` extension method exists so you can tack it
 onto the end of an async method call to suppress the compiler warning, and make it clear to
-others reading the code that you are intentionally ignoring the result:
+others reading the code that you are intentionally ignoring the result. 
 
 ```csharp
 DoSomeWork();
@@ -213,17 +189,13 @@ DoSomeWorkAsync().Forget(); // no await here
 DoABitMore();
 ```
 
-It is usually more preferable to track the Task so that if it fails, you can report it to the user
-and/or file failure telemetry.
+Better than `Forget()` is to use `FileAndForget(string)` which will handle faulted Tasks by
+adding the error to the VS activity log and file a fault event for telemetry collection so
+the fault can be detected and fixed.
 
 ```csharp
 DoSomeWork();
-DoSomeWorkAsync().ContinueWith(
-  t => TelemetryService.DefaultSession.PostFault(
-    eventName: EventNames.TippingFailed,
-    description: $"Failed to tip for scenario {tippingScenario}.",
-    exceptionObject: t.Exception.InnerException),
-  TaskContinuationOptions.OnlyOnFaulted);
+DoSomeWorkAsync().FileAndForget("vs/YOUR-FEATURE/YOUR-ACTION"); // no await here
 DoABitMore();
 ```
 
@@ -272,6 +244,39 @@ public IVsTask DoAsync()
         });
     return jt.AsVsTask();
 }
+```
+
+## How can I block the UI thread for long or async work while displaying a (cancelable) wait dialog?
+
+While it's generally preferable that you do work quickly or asynchronously so as to not block the user
+from interacting with the IDE, it is sometimes necessary and/or desirable to block user input.
+While doing so, it's good to provide feedback so the user knows the application hasn't hung.
+To display a dialog explaining what's going on while you're on and blocking the UI thread, and even
+give the user a chance to cancel the operation, you can call this extension method on `JoinableTaskFactory`:
+
+```csharp
+ThreadHelper.JoinableTaskFactory.Run(
+    "I'm churning on your data",
+    async (progress, cancellationToken) =>
+    {
+        DoLongRunningWork();
+        progress.Report(new ThreadedWaitDialogProgressData("Getting closer to being done.", isCancelable: true));
+        await AndSomeAsyncWorkButBlockMainThreadAnyway(cancellationToken);
+    });
+```
+
+If your operation cannot be canceled, just drop the `CancellationToken` parameter from your anonymous delegate
+and the dialog that is shown to the user will not include a Cancel button:
+
+```csharp
+ThreadHelper.JoinableTaskFactory.Run(
+    "I'm churning on your data",
+    async (progress) =>
+    {
+        DoLongRunningWork();
+        progress.Report(new ThreadedWaitDialogProgressData("Getting closer to being done."));
+        await AndSomeAsyncWorkButBlockMainThreadAnyway();
+    });
 ```
 
 ## How can I initialize my VS package asynchronously?
