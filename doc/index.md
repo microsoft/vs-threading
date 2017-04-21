@@ -1,7 +1,11 @@
-Overview documentation
-=======================
+# Threading documentation
+
+## Overview
 
 * [3 Threading Rules](threading_rules.md)
-* [Cookbook for Visual Studio](cookbook_vs.md)
 * [Diagnostic analyzer rules](analyzers/index.md)
-* [Threadpool starvation](threadpool_starvation.md)
+* [Cookbook for Visual Studio](cookbook_vs.md)
+
+## Performance and responsiveness investigation techniques
+
+* [Investigating Threadpool starvation issues](threadpool_starvation.md)
