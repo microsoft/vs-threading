@@ -166,5 +166,34 @@
             IDisposable disposable = this.lck;
             disposable.Dispose();
         }
+
+        [Fact]
+        public async Task AllowReleaseAfterDispose()
+        {
+            using (await this.lck.EnterAsync().ConfigureAwait(false))
+            {
+                this.lck.Dispose();
+            }
+        }
+
+        [Fact]
+        public async Task DisposeDoesNotAffectEnter()
+        {
+            var first = this.lck.EnterAsync();
+            Assert.Equal(TaskStatus.RanToCompletion, first.Status);
+
+            var second = this.lck.EnterAsync();
+            Assert.False(second.IsCompleted);
+
+            this.lck.Dispose();
+
+            using (await first)
+            {
+            }
+
+            using (await second)
+            {
+            }
+        }
     }
 }

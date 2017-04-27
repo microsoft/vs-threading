@@ -97,7 +97,14 @@ namespace Microsoft.VisualStudio.Threading
         {
             if (disposing)
             {
-                this.semaphore.Dispose();
+                // !!DO NOT!! dispose the semaphore, for the following reasons:
+                // 1. SemaphoreSlim.Dispose is not safe for concurrent use while something is waiting. Calling Dispose
+                //    requires tracking of all outstanding requests for enter/release.
+                // 2. SemaphoreSlim only allocates resources that could need to be be disposed if the
+                //    SemaphoreSlim.AvailableWaitHandle property is accessed. The semaphore field here is private and we
+                //    do not access this property.
+                //
+                ////this.semaphore.Dispose();
             }
         }
 
