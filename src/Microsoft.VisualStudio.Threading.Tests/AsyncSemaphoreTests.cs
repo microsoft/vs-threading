@@ -161,6 +161,34 @@
         }
 
         [Fact]
+        public async Task CurrentCount()
+        {
+            const int initialCapacity = 3;
+            var sem = new AsyncSemaphore(initialCapacity);
+            Assert.Equal(initialCapacity, sem.CurrentCount);
+
+            var releasers = new AsyncSemaphore.Releaser[initialCapacity];
+            for (int i = 0; i < initialCapacity; i++)
+            {
+                releasers[i] = await sem.EnterAsync();
+                Assert.Equal(initialCapacity - (i + 1), sem.CurrentCount);
+            }
+
+            // After requesting another beyond its capacity, it should still report 0.
+            var extraReleaser = sem.EnterAsync();
+            Assert.Equal(0, sem.CurrentCount);
+
+            for (int i = 0; i < initialCapacity; i++)
+            {
+                releasers[i].Dispose();
+                Assert.Equal(i, sem.CurrentCount);
+            }
+
+            extraReleaser.Result.Dispose();
+            Assert.Equal(initialCapacity, sem.CurrentCount);
+        }
+
+        [Fact]
         public void Disposable()
         {
             IDisposable disposable = this.lck;
