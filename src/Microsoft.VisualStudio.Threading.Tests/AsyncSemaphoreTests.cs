@@ -276,6 +276,48 @@
         }
 
         [Fact]
+        public async Task TooManyReleases_SameStruct()
+        {
+            var releaser = await this.lck.EnterAsync();
+            releaser.Dispose();
+            releaser.Dispose();
+            Assert.Equal(2, this.lck.CurrentCount);
+        }
+
+        [Fact]
+        public async Task TooManyReleases_CopyOfStruct_OverInitialCount()
+        {
+            var releaser = await this.lck.EnterAsync();
+            var releaserCopy = releaser;
+
+            releaser.Dispose();
+            Assert.Equal(1, this.lck.CurrentCount);
+            releaserCopy.Dispose();
+            Assert.Equal(2, this.lck.CurrentCount);
+        }
+
+        [Fact]
+        public async Task TooManyReleases_CopyOfStruct()
+        {
+            var sem = new AsyncSemaphore(2);
+            var releaser1 = await sem.EnterAsync();
+            var releaser2 = await sem.EnterAsync();
+
+            // Assigning the releaser struct to another local variable copies it.
+            var releaser2Copy = releaser2;
+
+            // Dispose of each copy of the releaser.
+            // The double-release is undetectable. The semaphore should be back at capacity 2.
+            releaser2.Dispose();
+            Assert.Equal(1, sem.CurrentCount);
+            releaser2Copy.Dispose();
+            Assert.Equal(2, sem.CurrentCount);
+
+            releaser1.Dispose();
+            Assert.Equal(3, sem.CurrentCount);
+        }
+
+        [Fact]
         public void InitialCapacityZero()
         {
             var sem = new AsyncSemaphore(0);
