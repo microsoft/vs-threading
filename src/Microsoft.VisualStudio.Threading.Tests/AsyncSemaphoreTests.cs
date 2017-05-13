@@ -208,7 +208,9 @@
             Assert.False(second.IsCompleted);
             try
             {
-                await second;
+                // We expect second to complete and throw OperationCanceledException,
+                // but we add WithTimeout here to prevent a test hang if it fails to do so.
+                await second.WithTimeout(TimeSpan.FromMilliseconds(TestTimeout));
             }
             catch (OperationCanceledException)
             {
@@ -322,6 +324,21 @@
         {
             var sem = new AsyncSemaphore(0);
             Assert.False(sem.EnterAsync().IsCompleted);
+        }
+
+        [Fact]
+        public void NoLeakForAllCanceledRequests()
+        {
+            var sem = new AsyncSemaphore(0);
+            this.CheckGCPressure(
+                () =>
+                {
+                    var cts = new CancellationTokenSource();
+                    sem.EnterAsync(cts.Token);
+                    cts.Cancel();
+                },
+                maxBytesAllocated: 3300,
+                iterations: 5);
         }
 
         [Fact]
