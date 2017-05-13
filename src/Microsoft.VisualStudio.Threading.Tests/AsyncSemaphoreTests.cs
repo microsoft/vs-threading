@@ -418,18 +418,20 @@
         [Fact]
         public async Task Stress()
         {
-            var cts = new CancellationTokenSource(TestTimeout * 3);
-            var parallelTasks = new Task[Environment.ProcessorCount * 5];
+            int cycles = 0;
+            var parallelTasks = new Task[Environment.ProcessorCount];
             var barrier = new Barrier(parallelTasks.Length);
             for (int i = 0; i < parallelTasks.Length; i++)
             {
                 parallelTasks[i] = Task.Run(async delegate
                 {
-                    barrier.SignalAndWait(cts.Token);
+                    barrier.SignalAndWait();
+                    var cts = new CancellationTokenSource(TestTimeout * 3);
                     while (!cts.Token.IsCancellationRequested)
                     {
                         using (await this.lck.EnterAsync(cts.Token))
                         {
+                            Interlocked.Increment(ref cycles);
                             await Task.Yield();
                         }
                     }
@@ -438,6 +440,8 @@
 
             // Wait for them to finish
             await Task.WhenAll(parallelTasks).NoThrowAwaitable();
+            this.Logger.WriteLine("Completed {0} cycles", cycles);
+
             try
             {
                 // And rethrow any and *all* exceptions
