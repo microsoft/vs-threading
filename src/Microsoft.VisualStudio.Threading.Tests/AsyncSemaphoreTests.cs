@@ -337,8 +337,117 @@
                     sem.EnterAsync(cts.Token);
                     cts.Cancel();
                 },
-                maxBytesAllocated: 3300,
+                maxBytesAllocated: 5000,
                 iterations: 5);
+        }
+
+        [Theory, MemberData(nameof(SemaphoreCapacitySizes))]
+        public void NoLeakForUncontestedRequests(int initialCapacity)
+        {
+            var sem = new AsyncSemaphore(initialCapacity);
+            var releasers = new AsyncSemaphore.Releaser[initialCapacity];
+            this.CheckGCPressure(
+                async delegate
+                {
+                    for (int i = 0; i < releasers.Length; i++)
+                    {
+                        releasers[i] = await sem.EnterAsync();
+                    }
+
+                    for (int i = 0; i < releasers.Length; i++)
+                    {
+                        releasers[i].Dispose();
+                    }
+                },
+                maxBytesAllocated: 163 * initialCapacity,
+                iterations: 5);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(3)]
+        public void NoLeakForContestedRequests_ThatAreCanceled(int contestingNumbers)
+        {
+            var sem = new AsyncSemaphore(0);
+            var releasers = new Task<AsyncSemaphore.Releaser>[contestingNumbers];
+            this.CheckGCPressure(
+                async delegate
+                {
+                    var cts = new CancellationTokenSource();
+                    for (int i = 0; i < releasers.Length; i++)
+                    {
+                        releasers[i] = sem.EnterAsync(cts.Token);
+                    }
+
+                    cts.Cancel();
+                    await Task.WhenAll(releasers).NoThrowAwaitable();
+                },
+                maxBytesAllocated: 5200 * contestingNumbers,
+                iterations: 5);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(3)]
+        public void NoLeakForContestedRequests_ThatAreEventuallyAdmitted(int contestingNumbers)
+        {
+            var sem = new AsyncSemaphore(1);
+            var releasers = new Task<AsyncSemaphore.Releaser>[contestingNumbers];
+            this.CheckGCPressure(
+                async delegate
+                {
+                    var blockingReleaser = await sem.EnterAsync();
+                    for (int i = 0; i < releasers.Length; i++)
+                    {
+                        releasers[i] = sem.EnterAsync();
+                    }
+
+                    // Now let the first one in.
+                    blockingReleaser.Dispose();
+
+                    // Now dispose the first one, and each one afterward as it is let in.
+                    for (int i = 0; i < releasers.Length; i++)
+                    {
+                        (await releasers[i]).Dispose();
+                    }
+                },
+                maxBytesAllocated: 3300 * contestingNumbers,
+                iterations: 5);
+        }
+
+        [Fact]
+        public async Task Stress()
+        {
+            var cts = new CancellationTokenSource(TestTimeout * 3);
+            var parallelTasks = new Task[Environment.ProcessorCount * 5];
+            var barrier = new Barrier(parallelTasks.Length);
+            for (int i = 0; i < parallelTasks.Length; i++)
+            {
+                parallelTasks[i] = Task.Run(async delegate
+                {
+                    barrier.SignalAndWait(cts.Token);
+                    while (!cts.Token.IsCancellationRequested)
+                    {
+                        using (await this.lck.EnterAsync(cts.Token))
+                        {
+                            await Task.Yield();
+                        }
+                    }
+                });
+            }
+
+            // Wait for them to finish
+            await Task.WhenAll(parallelTasks).NoThrowAwaitable();
+            try
+            {
+                // And rethrow any and *all* exceptions
+                Task.WaitAll(parallelTasks);
+            }
+            catch (AggregateException ex)
+            {
+                // Swallow just the cancellation exceptions (which we expect).
+                ex.Handle(x => x is OperationCanceledException);
+            }
         }
 
         [Fact]
