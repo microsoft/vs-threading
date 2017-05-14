@@ -90,6 +90,47 @@ class Tests
         }
 
         [Fact]
+        public void ReportWarningWhenTaskTIsReturnedDirectly()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
+
+class Tests
+{
+    public static T WaitAndGetResult<T>(Task<T> task)
+    {
+        return ThreadHelper.JoinableTaskFactory.Run(() => task);
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 19) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
+        [Fact]
+        public void ReportWarningWhenTaskTIsReturnedDirectlyWithCancellation()
+        {
+            var test = @"
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
+
+class Tests
+{
+    public static T WaitAndGetResult<T>(Task<T> task, CancellationToken cancellationToken)
+    {
+        return ThreadHelper.JoinableTaskFactory.Run(() => task.WithCancellation(cancellationToken));
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 19) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
+        [Fact]
         public void ReportWarningWhenTaskIsDefinedOutsideDelegateUsingRunAsync()
         {
             var test = @"
