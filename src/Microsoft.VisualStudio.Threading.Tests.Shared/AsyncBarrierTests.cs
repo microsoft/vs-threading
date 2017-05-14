@@ -67,6 +67,8 @@
 
                 await Task.WhenAll(playerTasks).WithTimeout(TimeSpan.FromMilliseconds(TestTimeout * 2));
             }
+
+            this.Logger.WriteLine("Test reached {0} signals.", signalsCount);
         }
 
         private async Task MultipleParticipantsHelperAsync(int participants, int steps)
