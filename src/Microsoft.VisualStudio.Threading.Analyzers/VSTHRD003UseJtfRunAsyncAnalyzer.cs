@@ -67,7 +67,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeAwaitExpression), SyntaxKind.AwaitExpression);
             context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeLambdaExpression), SyntaxKind.ParenthesizedLambdaExpression);
-            context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeLambdaExpression), SyntaxKind.SimpleLambdaExpression);
         }
 
         private void AnalyzeLambdaExpression(SyntaxNodeAnalysisContext context)
