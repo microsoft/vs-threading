@@ -90,7 +90,7 @@ class Tests
         }
 
         [Fact]
-        public void ReportWarningWhenTaskTIsReturnedDirectly()
+        public void ReportWarningWhenTaskTIsReturnedDirectlyFromLambda()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -105,7 +105,27 @@ class Tests
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 19) };
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 10, 59) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
+        [Fact]
+        public void ReportWarningWhenTaskTIsReturnedDirectlyFromDelegate()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
+
+class Tests
+{
+    public static T WaitAndGetResult<T>(Task<T> task)
+    {
+        return ThreadHelper.JoinableTaskFactory.Run(() => { return task; });
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 10, 68) };
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
@@ -126,8 +146,31 @@ class Tests
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 19) };
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 11, 59) };
             this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
+        [Fact]
+        public void DoNotReportWarningWhenTaskTIsPassedAsArgument()
+        {
+            var test = @"
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
+using Task = System.Threading.Tasks.Task;
+
+class Tests
+{
+    public static void WaitAndGetResult<T>(Task<T> task, CancellationToken cancellationToken)
+    {
+        ThreadHelper.JoinableTaskFactory.Run(() => DoSomethingWith(task));
+    }
+
+    private static Task DoSomethingWith(Task t) => null;
+}
+";
+            this.VerifyCSharpDiagnostic(test);
         }
 
         [Fact]

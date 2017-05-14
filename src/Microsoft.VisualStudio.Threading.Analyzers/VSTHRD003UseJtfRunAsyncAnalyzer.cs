@@ -65,10 +65,45 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
 
-            context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeNode), SyntaxKind.AwaitExpression);
+            context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeAwaitExpression), SyntaxKind.AwaitExpression);
+            context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeLambdaExpression), SyntaxKind.ParenthesizedLambdaExpression);
+            context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeLambdaExpression), SyntaxKind.SimpleLambdaExpression);
         }
 
-        private void AnalyzeNode(SyntaxNodeAnalysisContext context)
+        private void AnalyzeLambdaExpression(SyntaxNodeAnalysisContext context)
+        {
+            var anonFuncSyntax = (AnonymousFunctionExpressionSyntax)context.Node;
+
+            // Check whether it is called by Jtf.Run
+            InvocationExpressionSyntax invocationExpressionSyntax = this.FindInvocationOfDelegateOrLambdaExpression(anonFuncSyntax);
+            if (invocationExpressionSyntax == null || !this.IsInvocationExpressionACallToJtfRun(context, invocationExpressionSyntax))
+            {
+                return;
+            }
+
+            var expressionsToSearch = Enumerable.Empty<ExpressionSyntax>();
+            switch (anonFuncSyntax.Body)
+            {
+                case ExpressionSyntax expr:
+                    expressionsToSearch = new ExpressionSyntax[] { expr };
+                    break;
+                case BlockSyntax block:
+                    expressionsToSearch = block.DescendantNodes().OfType<ReturnStatementSyntax>()
+                        .Select(s => s.Expression);
+                    break;
+            }
+
+            var identifiers = from ex in expressionsToSearch
+                              from identifier in ex.DescendantNodesAndSelf(n => !(n is ArgumentListSyntax)).OfType<IdentifierNameSyntax>()
+                              select new { expression = ex, identifier };
+
+            foreach (var identifier in identifiers)
+            {
+                this.ReportDiagnosticIfSymbolIsExternalTask(context, identifier.expression, identifier.identifier, anonFuncSyntax);
+            }
+        }
+
+        private void AnalyzeAwaitExpression(SyntaxNodeAnalysisContext context)
         {
             AwaitExpressionSyntax awaitExpressionSyntax = (AwaitExpressionSyntax)context.Node;
             IdentifierNameSyntax identifierNameSyntaxAwaitingOn = awaitExpressionSyntax.Expression as IdentifierNameSyntax;
@@ -93,35 +128,60 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 return;
             }
 
+            this.ReportDiagnosticIfSymbolIsExternalTask(context, awaitExpressionSyntax.Expression, identifierNameSyntaxAwaitingOn, delegateOrLambdaNode);
+        }
+
+        private void ReportDiagnosticIfSymbolIsExternalTask(SyntaxNodeAnalysisContext context, ExpressionSyntax expressionSyntax, IdentifierNameSyntax identifierNameToConsider, SyntaxNode delegateOrLambdaNode)
+        {
             // Step 3: Is the symbol we are waiting on a System.Threading.Tasks.Task
-            SymbolInfo symbolAwaitingOn = context.SemanticModel.GetSymbolInfo(identifierNameSyntaxAwaitingOn);
-            ILocalSymbol localSymbol = symbolAwaitingOn.Symbol as ILocalSymbol;
-            if (localSymbol?.Type == null || localSymbol.Type.Name != nameof(Task) || !localSymbol.Type.BelongsToNamespace(Namespaces.SystemThreadingTasks))
+            SymbolInfo symbolToConsider = context.SemanticModel.GetSymbolInfo(identifierNameToConsider);
+            ITypeSymbol symbolType;
+            switch (symbolToConsider.Symbol)
+            {
+                case ILocalSymbol localSymbol:
+                    symbolType = localSymbol.Type;
+                    break;
+                case IParameterSymbol parameterSymbol:
+                    symbolType = parameterSymbol.Type;
+                    break;
+                default:
+                    return;
+            }
+
+            if (symbolType == null || symbolType.Name != nameof(Task) || !symbolType.BelongsToNamespace(Namespaces.SystemThreadingTasks))
             {
                 return;
             }
 
             // Step 4: Report warning if the task was not initialized within the current delegate or lambda expression
-            BlockSyntax delegateBlock = this.GetBlockOfDelegateOrLambdaExpression(delegateOrLambdaNode);
+            CSharpSyntaxNode delegateBlockOrBlock = this.GetBlockOrExpressionBodyOfDelegateOrLambdaExpression(delegateOrLambdaNode);
 
-            // Run data flow analysis to understand where the task was defined
-            DataFlowAnalysis dataFlowAnalysis;
-
-            // When possible (await is direct child of the block), execute data flow analysis by passing first and last statement to capture only what happens before the await
-            // Check if the await is direct child of the code block (first parent is ExpressionStantement, second parent is the block itself)
-            if (awaitExpressionSyntax.Parent.Parent.Equals(delegateBlock))
+            if (delegateBlockOrBlock is BlockSyntax delegateBlock)
             {
-                dataFlowAnalysis = context.SemanticModel.AnalyzeDataFlow(delegateBlock.ChildNodes().First(), awaitExpressionSyntax.Parent);
+                // Run data flow analysis to understand where the task was defined
+                DataFlowAnalysis dataFlowAnalysis;
+
+                // When possible (await is direct child of the block), execute data flow analysis by passing first and last statement to capture only what happens before the await
+                // Check if the await is direct child of the code block (first parent is ExpressionStantement, second parent is the block itself)
+                if (expressionSyntax.Parent.Parent.Parent.Equals(delegateBlock))
+                {
+                    dataFlowAnalysis = context.SemanticModel.AnalyzeDataFlow(delegateBlock.ChildNodes().First(), expressionSyntax.Parent.Parent);
+                }
+                else
+                {
+                    // Otherwise analyze the data flow for the entire block. One caveat: it doesn't distinguish if the initalization happens after the await.
+                    dataFlowAnalysis = context.SemanticModel.AnalyzeDataFlow(delegateBlock);
+                }
+
+                if (!dataFlowAnalysis.WrittenInside.Contains(symbolToConsider.Symbol))
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(Descriptor, expressionSyntax.GetLocation()));
+                }
             }
             else
             {
-                // Otherwise analyze the data flow for the entire block. One caveat: it doesn't distinguish if the initalization happens after the await.
-                dataFlowAnalysis = context.SemanticModel.AnalyzeDataFlow(delegateBlock);
-            }
-
-            if (!dataFlowAnalysis.WrittenInside.Contains(symbolAwaitingOn.Symbol))
-            {
-                context.ReportDiagnostic(Diagnostic.Create(Descriptor, awaitExpressionSyntax.Expression.GetLocation()));
+                // It's not a block, it's just a lambda expression, so the variable must be external.
+                context.ReportDiagnostic(Diagnostic.Create(Descriptor, expressionSyntax.GetLocation()));
             }
         }
 
@@ -160,7 +220,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// </summary>
         /// <param name="delegateOrLambdaExpression">The delegate or lambda expression.</param>
         /// <returns>The code block.</returns>
-        private BlockSyntax GetBlockOfDelegateOrLambdaExpression(SyntaxNode delegateOrLambdaExpression)
+        private CSharpSyntaxNode GetBlockOrExpressionBodyOfDelegateOrLambdaExpression(SyntaxNode delegateOrLambdaExpression)
         {
             AnonymousMethodExpressionSyntax anonymousMethod = delegateOrLambdaExpression as AnonymousMethodExpressionSyntax;
             if (anonymousMethod != null)
@@ -171,7 +231,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             ParenthesizedLambdaExpressionSyntax lambdaExpression = delegateOrLambdaExpression as ParenthesizedLambdaExpressionSyntax;
             if (lambdaExpression != null)
             {
-                return lambdaExpression.Body as BlockSyntax;
+                return lambdaExpression.Body;
             }
 
             throw new ArgumentException("Must be of type AnonymousMethodExpressionSyntax or ParenthesizedLambdaExpressionSyntax", nameof(delegateOrLambdaExpression));
