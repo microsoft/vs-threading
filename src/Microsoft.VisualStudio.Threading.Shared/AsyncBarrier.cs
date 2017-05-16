@@ -27,7 +27,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// The set of participants who have reached the barrier, with their awaiters that can resume those participants.
         /// </summary>
-        private Stack<TaskCompletionSource<EmptyStruct>> waiters;
+        private readonly Stack<TaskCompletionSource<EmptyStruct>> waiters;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AsyncBarrier"/> class.
@@ -44,10 +44,10 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Signals that a participant has completed work, and returns an awaitable
-        /// that completes when all other participants have also completed work.
+        /// Signals that a participant is ready, and returns a Task
+        /// that completes when all other participants have also signaled ready.
         /// </summary>
-        /// <returns>An awaitable.</returns>
+        /// <returns>A Task, which will complete (or may already be completed) when the last participant calls this method.</returns>
         public Task SignalAndWait()
         {
             lock (this.waiters)
