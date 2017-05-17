@@ -151,11 +151,21 @@
         [Fact]
         public void WaitWithoutInlining()
         {
+            var sluggishScheduler = new SluggishInliningTaskScheduler();
             var originalThread = Thread.CurrentThread;
-            var task = Task.Run(delegate
-            {
-                Assert.NotSame(originalThread, Thread.CurrentThread);
-            });
+            var task = Task.Factory.StartNew(
+                delegate
+                {
+                    Assert.NotSame(originalThread, Thread.CurrentThread);
+                },
+                CancellationToken.None,
+                TaskCreationOptions.None,
+                sluggishScheduler);
+
+            // Schedule the task such that we'll be very likely to call WaitWithoutInlining
+            // *before* the task is scheduled to run on its own.
+            sluggishScheduler.ScheduleTasksLater();
+
             task.WaitWithoutInlining();
         }
 
@@ -703,6 +713,51 @@
         private static void EndTestOperation(IAsyncResult asyncResult)
         {
             ((Task)asyncResult).Wait(); // rethrow exceptions
+        }
+
+        /// <summary>
+        /// A TaskScheduler that doesn't schedule tasks right away,
+        /// allowing inlining tests to deterministically pass or fail.
+        /// </summary>
+        private class SluggishInliningTaskScheduler : TaskScheduler
+        {
+            private readonly Queue<Task> tasks = new Queue<Task>();
+
+            internal void ScheduleTasksLater(int delay = AsyncDelay)
+            {
+                Task.Delay(delay).ContinueWith(
+                    _ => this.ScheduleTasksNow(),
+                    TaskScheduler.Default);
+            }
+
+            internal void ScheduleTasksNow()
+            {
+                lock (this.tasks)
+                {
+                    while (this.tasks.Count > 0)
+                    {
+                        Task.Run(() => this.TryExecuteTask(this.tasks.Dequeue()));
+                    }
+                }
+            }
+
+            protected override IEnumerable<Task> GetScheduledTasks()
+            {
+                throw new NotImplementedException();
+            }
+
+            protected override void QueueTask(Task task)
+            {
+                lock (this.tasks)
+                {
+                    this.tasks.Enqueue(task);
+                }
+            }
+
+            protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
+            {
+                return this.TryExecuteTask(task);
+            }
         }
     }
 }
