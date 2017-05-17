@@ -170,6 +170,31 @@
         }
 
         [Fact]
+        public void WaitWithoutInlining_DoesNotWaitForOtherInlinedContinuations()
+        {
+            var sluggishScheduler = new SluggishInliningTaskScheduler();
+
+            var task = Task.Factory.StartNew(
+                delegate
+                {
+                },
+                CancellationToken.None,
+                TaskCreationOptions.None,
+                TaskScheduler.Default);
+            var continuationUnblocked = new ManualResetEventSlim();
+            var continuationTask = task.ContinueWith(
+                delegate
+                {
+                    continuationUnblocked.Wait();
+                },
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                sluggishScheduler); // ensures the continuation never runs unless inlined
+            task.WaitWithoutInlining();
+            continuationUnblocked.Set();
+        }
+
+        [Fact]
         public async Task NoThrowAwaitable()
         {
             var tcs = new TaskCompletionSource<object>();
