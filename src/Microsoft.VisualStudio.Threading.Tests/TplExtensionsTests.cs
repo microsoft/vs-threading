@@ -192,6 +192,63 @@
                 sluggishScheduler); // ensures the continuation never runs unless inlined
             task.WaitWithoutInlining();
             continuationUnblocked.Set();
+            continuationTask.Wait();
+        }
+
+        [Fact]
+        public void WaitWithoutInlining_Faulted()
+        {
+            var tcs = new TaskCompletionSource<int>();
+            tcs.SetException(new InvalidOperationException());
+            try
+            {
+                tcs.Task.WaitWithoutInlining();
+                Assert.False(true, "Expected exception not thrown.");
+            }
+            catch (AggregateException ex)
+            {
+                ex.Handle(x => x is InvalidOperationException);
+            }
+        }
+
+        [Fact]
+        public void WaitWithoutInlining_Canceled()
+        {
+            var tcs = new TaskCompletionSource<int>();
+            tcs.SetCanceled();
+            try
+            {
+                tcs.Task.WaitWithoutInlining();
+                Assert.False(true, "Expected exception not thrown.");
+            }
+            catch (AggregateException ex)
+            {
+                ex.Handle(x => x is TaskCanceledException);
+            }
+        }
+
+        [Fact]
+        public void WaitWithoutInlining_AttachToParent()
+        {
+            Task attachedTask = null;
+            int originalThreadId = Environment.CurrentManagedThreadId;
+            var task = Task.Factory.StartNew(
+                delegate
+                {
+                    attachedTask = Task.Factory.StartNew(
+                        delegate
+                        {
+                            Assert.NotEqual(originalThreadId, Environment.CurrentManagedThreadId);
+                        },
+                        CancellationToken.None,
+                        TaskCreationOptions.AttachedToParent,
+                        TaskScheduler.Default);
+                },
+                CancellationToken.None,
+                TaskCreationOptions.None,
+                TaskScheduler.Default);
+            task.WaitWithoutInlining();
+            attachedTask.GetAwaiter().GetResult(); // rethrow any exceptions
         }
 
         [Fact]
