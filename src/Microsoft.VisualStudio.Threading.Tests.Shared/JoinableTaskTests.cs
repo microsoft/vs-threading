@@ -2653,6 +2653,51 @@
             this.PushFrame();
         }
 
+        [StaFact]
+        public void StressFireAndForgetWorkFromCapturedSynchronizationContext()
+        {
+            for (int count = 0; count < 5000; count++)
+            {
+                var postDelegateInvoked = new ManualResetEventSlim();
+                Task innerTask = null;
+                SynchronizationContext capturedContext = null;
+                bool posted = false;
+
+                // Do the scheduling off the simulated STA thread so we can conveniently block later.
+                Task.Run(delegate
+                {
+                    this.asyncPump.Run(delegate
+                    {
+                        capturedContext = SynchronizationContext.Current;
+                        innerTask = Task.Run(async delegate
+                        {
+                            await Task.Yield();
+
+                            capturedContext.Post(
+                                s =>
+                                {
+                                    postDelegateInvoked.Set();
+                                },
+                                null);
+                            posted = true;
+                        });
+                        return TplExtensions.CompletedTask;
+                    });
+                }).Wait();
+
+                try
+                {
+                    innerTask.GetAwaiter().GetResult();
+                    Assert.True(postDelegateInvoked.Wait(AsyncDelay), "Timed out waiting for posted delegate to execute. Posted: " + posted);
+                }
+                catch
+                {
+                    this.Logger.WriteLine("iteration {0}", count);
+                    throw;
+                }
+            }
+        }
+
         /// <summary>
         /// Verifies that in the scenario when the initializing thread doesn't have a sync context at all (vcupgrade.exe)
         /// that reasonable behavior still occurs.
