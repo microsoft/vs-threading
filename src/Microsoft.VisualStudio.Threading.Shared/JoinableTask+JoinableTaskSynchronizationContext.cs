@@ -75,9 +75,10 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             public override void Post(SendOrPostCallback d, object state)
             {
-                if (this.job != null)
+                JoinableTask job = this.job; // capture as local in case field becomes null later.
+                if (job != null)
                 {
-                    this.job.Post(d, state, this.mainThreadAffinitized);
+                    job.Post(d, state, this.mainThreadAffinitized);
                 }
                 else
                 {
