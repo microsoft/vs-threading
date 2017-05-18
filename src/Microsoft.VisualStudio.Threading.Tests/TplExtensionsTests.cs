@@ -151,12 +151,104 @@
         [Fact]
         public void WaitWithoutInlining()
         {
+            var sluggishScheduler = new SluggishInliningTaskScheduler();
             var originalThread = Thread.CurrentThread;
-            var task = Task.Run(delegate
-            {
-                Assert.NotSame(originalThread, Thread.CurrentThread);
-            });
+            var task = Task.Factory.StartNew(
+                delegate
+                {
+                    Assert.NotSame(originalThread, Thread.CurrentThread);
+                },
+                CancellationToken.None,
+                TaskCreationOptions.None,
+                sluggishScheduler);
+
+            // Schedule the task such that we'll be very likely to call WaitWithoutInlining
+            // *before* the task is scheduled to run on its own.
+            sluggishScheduler.ScheduleTasksLater();
+
             task.WaitWithoutInlining();
+        }
+
+        [Fact]
+        public void WaitWithoutInlining_DoesNotWaitForOtherInlinedContinuations()
+        {
+            var sluggishScheduler = new SluggishInliningTaskScheduler();
+
+            var task = Task.Factory.StartNew(
+                delegate
+                {
+                },
+                CancellationToken.None,
+                TaskCreationOptions.None,
+                TaskScheduler.Default);
+            var continuationUnblocked = new ManualResetEventSlim();
+            var continuationTask = task.ContinueWith(
+                delegate
+                {
+                    continuationUnblocked.Wait();
+                },
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                sluggishScheduler); // ensures the continuation never runs unless inlined
+            task.WaitWithoutInlining();
+            continuationUnblocked.Set();
+            continuationTask.Wait();
+        }
+
+        [Fact]
+        public void WaitWithoutInlining_Faulted()
+        {
+            var tcs = new TaskCompletionSource<int>();
+            tcs.SetException(new InvalidOperationException());
+            try
+            {
+                tcs.Task.WaitWithoutInlining();
+                Assert.False(true, "Expected exception not thrown.");
+            }
+            catch (AggregateException ex)
+            {
+                ex.Handle(x => x is InvalidOperationException);
+            }
+        }
+
+        [Fact]
+        public void WaitWithoutInlining_Canceled()
+        {
+            var tcs = new TaskCompletionSource<int>();
+            tcs.SetCanceled();
+            try
+            {
+                tcs.Task.WaitWithoutInlining();
+                Assert.False(true, "Expected exception not thrown.");
+            }
+            catch (AggregateException ex)
+            {
+                ex.Handle(x => x is TaskCanceledException);
+            }
+        }
+
+        [Fact]
+        public void WaitWithoutInlining_AttachToParent()
+        {
+            Task attachedTask = null;
+            int originalThreadId = Environment.CurrentManagedThreadId;
+            var task = Task.Factory.StartNew(
+                delegate
+                {
+                    attachedTask = Task.Factory.StartNew(
+                        delegate
+                        {
+                            Assert.NotEqual(originalThreadId, Environment.CurrentManagedThreadId);
+                        },
+                        CancellationToken.None,
+                        TaskCreationOptions.AttachedToParent,
+                        TaskScheduler.Default);
+                },
+                CancellationToken.None,
+                TaskCreationOptions.None,
+                TaskScheduler.Default);
+            task.WaitWithoutInlining();
+            attachedTask.GetAwaiter().GetResult(); // rethrow any exceptions
         }
 
         [Fact]
@@ -703,6 +795,51 @@
         private static void EndTestOperation(IAsyncResult asyncResult)
         {
             ((Task)asyncResult).Wait(); // rethrow exceptions
+        }
+
+        /// <summary>
+        /// A TaskScheduler that doesn't schedule tasks right away,
+        /// allowing inlining tests to deterministically pass or fail.
+        /// </summary>
+        private class SluggishInliningTaskScheduler : TaskScheduler
+        {
+            private readonly Queue<Task> tasks = new Queue<Task>();
+
+            internal void ScheduleTasksLater(int delay = AsyncDelay)
+            {
+                Task.Delay(delay).ContinueWith(
+                    _ => this.ScheduleTasksNow(),
+                    TaskScheduler.Default);
+            }
+
+            internal void ScheduleTasksNow()
+            {
+                lock (this.tasks)
+                {
+                    while (this.tasks.Count > 0)
+                    {
+                        Task.Run(() => this.TryExecuteTask(this.tasks.Dequeue()));
+                    }
+                }
+            }
+
+            protected override IEnumerable<Task> GetScheduledTasks()
+            {
+                throw new NotImplementedException();
+            }
+
+            protected override void QueueTask(Task task)
+            {
+                lock (this.tasks)
+                {
+                    this.tasks.Enqueue(task);
+                }
+            }
+
+            protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
+            {
+                return this.TryExecuteTask(task);
+            }
         }
     }
 }
