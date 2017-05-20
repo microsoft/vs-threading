@@ -6,6 +6,9 @@
     <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Tests.ruleset</CodeAnalysisRuleSet>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <IsPackable>false</IsPackable>
+
+    <!-- VS2017 Test Explorer test navigation and callstack links don't work with portable PDBs yet. -->
+    <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="net452\**" Condition=" '$(TargetFramework)' != 'net452' " />
