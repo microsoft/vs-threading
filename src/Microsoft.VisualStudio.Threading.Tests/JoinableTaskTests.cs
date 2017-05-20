@@ -2519,7 +2519,7 @@
                 await inner;
             });
 
-            outerFactory.DoModalLoopTillEmpty();
+            outerFactory.DoModalLoopTillEmptyAndTaskCompleted(outer.Task, this.TimeoutToken);
             Skip.IfNot(outer.IsCompleted, "this is a product defect, but this test assumes this works to test something else.");
 
             // Allow the dispatcher to drain all messages that may be holding references.
@@ -3655,18 +3655,6 @@
             internal IEnumerable<Tuple<SendOrPostCallback, object>> JoinableTasksPendingMainthread
             {
                 get { return this.queuedMessages; }
-            }
-
-            /// <summary>
-            /// Executes all work posted to this factory.
-            /// </summary>
-            internal void DoModalLoopTillEmpty()
-            {
-                Tuple<SendOrPostCallback, object> work;
-                while (this.queuedMessages.TryDequeue(out work))
-                {
-                    work.Item1(work.Item2);
-                }
             }
 
             /// <summary>
