@@ -65,7 +65,7 @@
                     });
                 }
 
-                await Task.WhenAll(playerTasks).WithTimeout(TimeSpan.FromMilliseconds(4000));
+                await Task.WhenAll(playerTasks).WithTimeout(UnexpectedTimeout);
             }
 
             this.Logger.WriteLine("Test reached {0} signals.", signalsCount);
