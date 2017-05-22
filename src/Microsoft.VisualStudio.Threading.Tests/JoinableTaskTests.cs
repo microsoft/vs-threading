@@ -2519,7 +2519,7 @@
                 await inner;
             });
 
-            outerFactory.DoModalLoopTillEmpty();
+            outerFactory.DoModalLoopTillEmptyAndTaskCompleted(outer.Task, this.TimeoutToken);
             Skip.IfNot(outer.IsCompleted, "this is a product defect, but this test assumes this works to test something else.");
 
             // Allow the dispatcher to drain all messages that may be holding references.
@@ -2846,7 +2846,7 @@
                     await TaskScheduler.Default;
                     await this.asyncPump.SwitchToMainThreadAsync(tokenSource.Token);
                 },
-                2800);
+                3800);
         }
 
         [StaFact]
@@ -3163,10 +3163,10 @@
                 // and then we will signal a test event to resume the main thread execution, to let the remaining parts
                 // in the async delegate go through.
                 var joinable = this.asyncPump.RunAsync(async () =>
-            {
-                await this.asyncPump.SwitchToMainThreadAsync(cts.Token);
-                return result;
-            });
+                {
+                    await this.asyncPump.SwitchToMainThreadAsync(cts.Token);
+                    return result;
+                });
 
                 // Resume the main thread after OnCompleted() finishes.
                 // This is to ensure the timing that GetResult() must be called after OnCompleted() is fully done.
@@ -3174,15 +3174,26 @@
                 await joinable;
             });
 
-            // Needs to give the dispatcher a chance to run the posted action in order to release
-            // the last reference to the JoinableTask.
-            this.PushFrameTillQueueIsEmpty();
-
-            result = null;
-            GC.Collect();
-
             object target;
-            weakResult.TryGetTarget(out target);
+            do
+            {
+                // Needs to give the dispatcher a chance to run the posted action in order to release
+                // the last reference to the JoinableTask.
+                this.PushFrameTillQueueIsEmpty();
+
+                result = null;
+                GC.Collect();
+
+                // Test for our success condition. If it fails, we'll loop around
+                // waiting for the continuation to be posted to the UI thread as long as we can.
+                if (!weakResult.TryGetTarget(out target))
+                {
+                    break;
+                }
+
+                target = null;
+            } while (!this.TimeoutToken.IsCancellationRequested);
+
             Assert.Null(target); // The task's result should be collected unless the JoinableTask is leaked
         }
 
@@ -3655,18 +3666,6 @@
             internal IEnumerable<Tuple<SendOrPostCallback, object>> JoinableTasksPendingMainthread
             {
                 get { return this.queuedMessages; }
-            }
-
-            /// <summary>
-            /// Executes all work posted to this factory.
-            /// </summary>
-            internal void DoModalLoopTillEmpty()
-            {
-                Tuple<SendOrPostCallback, object> work;
-                while (this.queuedMessages.TryDequeue(out work))
-                {
-                    work.Item1(work.Item2);
-                }
             }
 
             /// <summary>
