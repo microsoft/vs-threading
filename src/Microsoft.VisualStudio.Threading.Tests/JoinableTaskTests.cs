@@ -2846,7 +2846,7 @@
                     await TaskScheduler.Default;
                     await this.asyncPump.SwitchToMainThreadAsync(tokenSource.Token);
                 },
-                2800);
+                3800);
         }
 
         [StaFact]
