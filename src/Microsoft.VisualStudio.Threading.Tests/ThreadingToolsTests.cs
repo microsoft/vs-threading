@@ -221,21 +221,19 @@
         }
 
         [Fact]
-        public void WithCancellationNoDeadlockFromSyncContext()
+        public void WithCancellationNoDeadlockFromSyncContext_Canceled()
         {
             var dispatcher = SingleThreadedSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(dispatcher);
-            var tcs = new TaskCompletionSource<object>();
-            var cts = new CancellationTokenSource(AsyncDelay / 4);
-            try
-            {
-                ((Task)tcs.Task).WithCancellation(cts.Token).Wait(TestTimeout);
-                Assert.True(false, "Expected OperationCanceledException not thrown.");
-            }
-            catch (AggregateException ex)
-            {
-                ex.Handle(x => x is OperationCanceledException);
-            }
+            WithCancellationSyncBlock(simulateCancellation: true);
+        }
+
+        [Fact]
+        public void WithCancellationNoDeadlockFromSyncContext_Completed()
+        {
+            var dispatcher = SingleThreadedSynchronizationContext.New();
+            SynchronizationContext.SetSynchronizationContext(dispatcher);
+            WithCancellationSyncBlock(simulateCancellation: false);
         }
 
         [Fact]
@@ -243,6 +241,76 @@
         {
             var dispatcher = SingleThreadedSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(dispatcher);
+            WithCancellationSyncBlockOnNoncancelableToken();
+        }
+
+        [StaFact]
+        public void WithCancellationNoDeadlockFromSyncContextWithinJTFRun_Canceled()
+        {
+            var dispatcher = SingleThreadedSynchronizationContext.New();
+            SynchronizationContext.SetSynchronizationContext(dispatcher);
+            var jtc = new JoinableTaskContext();
+            jtc.Factory.Run(delegate
+            {
+                WithCancellationSyncBlock(simulateCancellation: true);
+                return TplExtensions.CompletedTask;
+            });
+        }
+
+        [StaFact]
+        public void WithCancellationNoDeadlockFromSyncContextWithinJTFRun_Completed()
+        {
+            var dispatcher = SingleThreadedSynchronizationContext.New();
+            SynchronizationContext.SetSynchronizationContext(dispatcher);
+            var jtc = new JoinableTaskContext();
+            jtc.Factory.Run(delegate
+            {
+                WithCancellationSyncBlock(simulateCancellation: false);
+                return TplExtensions.CompletedTask;
+            });
+        }
+
+        [StaFact]
+        public void WithCancellationNoncancelableNoDeadlockFromSyncContextWithinJTFRun()
+        {
+            var dispatcher = SingleThreadedSynchronizationContext.New();
+            SynchronizationContext.SetSynchronizationContext(dispatcher);
+            var jtc = new JoinableTaskContext();
+            jtc.Factory.Run(delegate
+            {
+                WithCancellationSyncBlockOnNoncancelableToken();
+                return TplExtensions.CompletedTask;
+            });
+        }
+
+        private static void WithCancellationSyncBlock(bool simulateCancellation)
+        {
+            var tcs = new TaskCompletionSource<object>();
+            const int completeAfter = AsyncDelay / 4;
+            var cts = new CancellationTokenSource(simulateCancellation ? completeAfter : Timeout.Infinite);
+            if (!simulateCancellation)
+            {
+                Task.Run(async delegate
+                {
+                    await Task.Delay(completeAfter);
+                    tcs.SetResult(null);
+                });
+            }
+
+            try
+            {
+                Assert.True(((Task)tcs.Task).WithCancellation(cts.Token).Wait(TestTimeout), $"Timed out waiting for completion.");
+                Assert.False(simulateCancellation, "Expected OperationCanceledException not thrown.");
+            }
+            catch (AggregateException ex)
+            {
+                Assert.True(simulateCancellation);
+                ex.Handle(x => x is OperationCanceledException);
+            }
+        }
+
+        private static void WithCancellationSyncBlockOnNoncancelableToken()
+        {
             var tcs = new TaskCompletionSource<object>();
             Task.Run(async delegate
             {
