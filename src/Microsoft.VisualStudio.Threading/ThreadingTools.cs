@@ -184,7 +184,7 @@ namespace Microsoft.VisualStudio.Threading
             var tcs = new TaskCompletionSource<bool>();
             using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s).TrySetResult(true), tcs))
             {
-                if (task != await Task.WhenAny(task, tcs.Task).ConfigureAwait(false))
+                if (task != await Task.WhenAny(task, tcs.Task).ConfigureAwait(JoinableTask.AwaitShouldCaptureSyncContext))
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                 }
@@ -193,7 +193,7 @@ namespace Microsoft.VisualStudio.Threading
             // Rethrow any fault/cancellation exception, even if we awaited above.
             // But if we skipped the above if branch, this will actually yield
             // on an incompleted task.
-            await task.ConfigureAwait(false);
+            await task.ConfigureAwait(JoinableTask.AwaitShouldCaptureSyncContext);
         }
     }
 }
