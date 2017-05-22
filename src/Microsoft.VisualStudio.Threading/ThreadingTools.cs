@@ -97,7 +97,7 @@ namespace Microsoft.VisualStudio.Threading
                 return TaskFromCanceled(cancellationToken);
             }
 
-            return WithCancellationSlow(task, cancellationToken);
+            return WithCancellationSlow(task, cancellationToken, jtfAware: false);
         }
 
         /// <summary>
@@ -108,6 +108,30 @@ namespace Microsoft.VisualStudio.Threading
         public static SpecializedSyncContext Apply(this SynchronizationContext syncContext, bool checkForChangesOnRevert = true)
         {
             return SpecializedSyncContext.Apply(syncContext, checkForChangesOnRevert);
+        }
+
+        /// <summary>
+        /// Wraps a task with one that will complete as cancelled based on a cancellation token,
+        /// allowing someone to await a task but be able to break out early by cancelling the token.
+        /// </summary>
+        /// <param name="task">The task to wrap.</param>
+        /// <param name="cancellationToken">The token that can be canceled to break out of the await.</param>
+        /// <returns>The wrapping task.</returns>
+        internal static Task WithCancellationJtfAware(this Task task, CancellationToken cancellationToken)
+        {
+            Requires.NotNull(task, nameof(task));
+
+            if (!cancellationToken.CanBeCanceled || task.IsCompleted)
+            {
+                return task;
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return TaskFromCanceled(cancellationToken);
+            }
+
+            return WithCancellationSlow(task, cancellationToken, jtfAware: true);
         }
 
         internal static bool TrySetCanceled<T>(this TaskCompletionSource<T> tcs, CancellationToken cancellationToken)
@@ -175,8 +199,9 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="task">The task to wrap.</param>
         /// <param name="cancellationToken">The token that can be canceled to break out of the await.</param>
+        /// <param name="jtfAware">A value indicating whether the caller is expected to be following the rules of the <see cref="JoinableTaskFactory"/>.</param>
         /// <returns>The wrapping task.</returns>
-        private static async Task WithCancellationSlow(this Task task, CancellationToken cancellationToken)
+        private static async Task WithCancellationSlow(this Task task, CancellationToken cancellationToken, bool jtfAware)
         {
             Assumes.NotNull(task);
             Assumes.True(cancellationToken.CanBeCanceled);
@@ -184,7 +209,7 @@ namespace Microsoft.VisualStudio.Threading
             var tcs = new TaskCompletionSource<bool>();
             using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s).TrySetResult(true), tcs))
             {
-                if (task != await Task.WhenAny(task, tcs.Task).ConfigureAwait(JoinableTask.AwaitShouldCaptureSyncContext))
+                if (task != await Task.WhenAny(task, tcs.Task).ConfigureAwait(jtfAware && JoinableTask.AwaitShouldCaptureSyncContext))
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                 }
@@ -193,7 +218,7 @@ namespace Microsoft.VisualStudio.Threading
             // Rethrow any fault/cancellation exception, even if we awaited above.
             // But if we skipped the above if branch, this will actually yield
             // on an incompleted task.
-            await task.ConfigureAwait(JoinableTask.AwaitShouldCaptureSyncContext);
+            await task.ConfigureAwait(jtfAware && JoinableTask.AwaitShouldCaptureSyncContext);
         }
     }
 }
