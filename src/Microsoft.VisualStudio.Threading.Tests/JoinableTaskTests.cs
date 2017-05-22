@@ -3349,6 +3349,66 @@
             Assert.True(joinTask.Wait(AsyncDelay));
         }
 
+        [StaFact]
+        public void JoinShouldCompleteWithStarvedThreadPool()
+        {
+            using (TestUtilities.StarveThreadpool())
+            {
+                var jt = this.asyncPump.RunAsync(async delegate
+                {
+                    await Task.Yield();
+                });
+                jt.Join(this.TimeoutToken);
+            }
+        }
+
+        [StaFact]
+        public void JoinOfTShouldCompleteWithStarvedThreadPool()
+        {
+            using (TestUtilities.StarveThreadpool())
+            {
+                var jt = this.asyncPump.RunAsync(async delegate
+                {
+                    await Task.Yield();
+                    return 1;
+                });
+                int result = jt.Join(this.TimeoutToken);
+            }
+        }
+
+        [StaFact]
+        public void JoinAsyncShouldCompleteWithStarvedThreadPool()
+        {
+            using (TestUtilities.StarveThreadpool())
+            {
+                var jt = this.asyncPump.RunAsync(async delegate
+                {
+                    await Task.Yield();
+                });
+                this.asyncPump.Run(async delegate
+                {
+                    await jt.JoinAsync(this.TimeoutToken);
+                });
+            }
+        }
+
+        [StaFact]
+        public void JoinAsyncOfTShouldCompleteWithStarvedThreadPool()
+        {
+            using (TestUtilities.StarveThreadpool())
+            {
+                var jt = this.asyncPump.RunAsync(async delegate
+                {
+                    await Task.Yield();
+                    return 1;
+                });
+                this.asyncPump.Run(async delegate
+                {
+                    int result = await jt.JoinAsync(this.TimeoutToken);
+                });
+            }
+        }
+
         protected override JoinableTaskContext CreateJoinableTaskContext()
         {
             return new DerivedJoinableTaskContext();
