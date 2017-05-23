@@ -3045,13 +3045,16 @@
         }
 
         [StaFact]
-        [Trait("TestCategory", "FailsInCloudTest")] // see https://github.com/Microsoft/vs-threading/issues/46
         public void RunAsyncWithNonYieldingDelegateNestedInRunOverhead()
         {
             var waitCountingJTF = new WaitCountingJoinableTaskFactory(this.asyncPump.Context);
             waitCountingJTF.Run(async delegate
             {
                 await TaskScheduler.Default;
+
+                // Be sure the main thread sleeps at *least* once.
+                await waitCountingJTF.WaitedOnce.WaitAsync().WithCancellation(this.TimeoutToken);
+
                 for (int i = 0; i < 1000; i++)
                 {
                     // TIP: spinning gives the blocking thread longer to wake up, which
@@ -3069,13 +3072,16 @@
         }
 
         [StaFact]
-        [Trait("TestCategory", "FailsInCloudTest")] // see https://github.com/Microsoft/vs-threading/issues/45
         public void RunAsyncWithYieldingDelegateNestedInRunOverhead()
         {
             var waitCountingJTF = new WaitCountingJoinableTaskFactory(this.asyncPump.Context);
             waitCountingJTF.Run(async delegate
             {
                 await TaskScheduler.Default;
+
+                // Be sure the main thread sleeps at *least* once.
+                await waitCountingJTF.WaitedOnce.WaitAsync().WithCancellation(this.TimeoutToken);
+
                 for (int i = 0; i < 1000; i++)
                 {
                     // TIP: spinning gives the blocking thread longer to wake up, which
@@ -3508,14 +3514,14 @@
             {
             }
 
-            internal int WaitCount
-            {
-                get { return this.waitCount; }
-            }
+            internal int WaitCount => Volatile.Read(ref this.waitCount);
+
+            internal AsyncManualResetEvent WaitedOnce { get; } = new AsyncManualResetEvent();
 
             protected override void WaitSynchronously(Task task)
             {
                 Interlocked.Increment(ref this.waitCount);
+                this.WaitedOnce.Set();
                 base.WaitSynchronously(task);
             }
         }
