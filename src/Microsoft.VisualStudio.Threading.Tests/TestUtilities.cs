@@ -152,24 +152,21 @@
         /// </remarks>
         internal static IDisposable StarveThreadpool()
         {
-            var evt = new ManualResetEventSlim();
-
-            // Flood the threadpool with work items that will just block
-            // any threads assigned to them.
-            int workerThreads;
 #if NET452
-            ThreadPool.GetMinThreads(out workerThreads, out int completionPortThreads);
+            ThreadPool.GetMaxThreads(out int workerThreads, out int completionPortThreads);
 #else
-            workerThreads = Environment.ProcessorCount;
+            int workerThreads = 1023;
 #endif
-            for (int i = 0; i < workerThreads * 10; i++)
+            var disposalTokenSource = new CancellationTokenSource();
+            var unblockThreadpool = new ManualResetEventSlim();
+            for (int i = 0; i < workerThreads; i++)
             {
-                ThreadPool.QueueUserWorkItem(
-                    s => ((ManualResetEventSlim)s).Wait(),
-                    evt);
+                Task.Run(
+                    () => unblockThreadpool.Wait(disposalTokenSource.Token),
+                    disposalTokenSource.Token);
             }
 
-            return new ThreadpoolStarvation(evt);
+            return new DisposalAction(disposalTokenSource.Cancel);
         }
 
         internal struct YieldAndNotifyAwaitable
@@ -250,20 +247,16 @@
             }
         }
 
-        private class ThreadpoolStarvation : IDisposable
+        private class DisposalAction : IDisposable
         {
-            private readonly ManualResetEventSlim releaser;
+            private readonly Action disposeAction;
 
-            internal ThreadpoolStarvation(ManualResetEventSlim releaser)
+            internal DisposalAction(Action disposeAction)
             {
-                Requires.NotNull(releaser, nameof(releaser));
-                this.releaser = releaser;
+                this.disposeAction = disposeAction;
             }
 
-            public void Dispose()
-            {
-                this.releaser.Set();
-            }
+            public void Dispose() => this.disposeAction();
         }
     }
 }
