@@ -532,7 +532,7 @@ namespace Microsoft.VisualStudio.Threading
 
             using (this.AmbientJobJoinsThis())
             {
-                await this.Task.WithCancellationJtfAware(cancellationToken).ConfigureAwait(AwaitShouldCaptureSyncContext);
+                await this.Task.WithCancellation(AwaitShouldCaptureSyncContext, cancellationToken).ConfigureAwait(AwaitShouldCaptureSyncContext);
             }
         }
 
