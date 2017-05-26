@@ -12,4 +12,53 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AppliedSynchronizationContextNotAllowed" xml:space="preserve">
+    <value>Non è consentito acquisire blocchi su thread in cui è applicato un elemento SynchronizationContext.</value>
+  </data>
+  <data name="CannotUpgradeNonUpgradeableLock" xml:space="preserve">
+    <value>Il chiamante mantiene un blocco lettura non aggiornabile, di conseguenza non è possibile aggiornarlo.</value>
+  </data>
+  <data name="DangerousReadLockRequestFromWriteLockFork" xml:space="preserve">
+    <value>La biforcazione del blocco scrittura ha effettuato una richiesta pericolosa per il blocco lettura.</value>
+  </data>
+  <data name="InvalidAfterCompleted" xml:space="preserve">
+    <value>Il passaggio allo stato Completato è già stato eseguito.</value>
+  </data>
+  <data name="InvalidLock" xml:space="preserve">
+    <value>Questa operazione può essere eseguita solo su un blocco valido.</value>
+  </data>
+  <data name="InvalidWithoutLock" xml:space="preserve">
+    <value>È richiesto un blocco.</value>
+  </data>
+  <data name="JoinableTaskContextAndCollectionMismatch" xml:space="preserve">
+    <value>JoinableTask non appartiene al contesto con cui è stata creata un'istanza di questa raccolta.</value>
+  </data>
+  <data name="JoinableTaskContextNodeAlreadyRegistered" xml:space="preserve">
+    <value>Questo nodo è già registrato.</value>
+  </data>
+  <data name="LazyValueFaulted" xml:space="preserve">
+    <value>Si è verificato un errore durante la costruzione del valore creato in modo differito.</value>
+  </data>
+  <data name="LazyValueNotCreated" xml:space="preserve">
+    <value>Il valore creato in modo differito non è stato ancora costruito.</value>
+  </data>
+  <data name="LockCompletionAlreadyRequested" xml:space="preserve">
+    <value>Questo blocco è già stato contrassegnato per il completamento.  Non è possibile eseguire nuovi blocchi di primo livello.</value>
+  </data>
+  <data name="NotAllowedUnderURorWLock" xml:space="preserve">
+    <value>Questa operazione non è consentita quando si mantiene un blocco lettura o scrittura aggiornabile attivo da un elemento AsyncReaderWriterLock.</value>
+  </data>
+  <data name="QueueEmpty" xml:space="preserve">
+    <value>La coda è vuota.</value>
+  </data>
+  <data name="STAThreadCallerNotAllowed" xml:space="preserve">
+    <value>Non è possibile completare questa operazione su un thread STA.</value>
+  </data>
+  <data name="SwitchToMainThreadFailedToReachExpectedThread" xml:space="preserve">
+    <value>Un tentativo di passare al thread principale per raggiungere il thread previsto non è riuscito. JoinableTaskContext era inizializzato nel thread errato oppure con un elemento SynchronizationContext il cui metodo Post non esegue il relativo delegato nel thread principale?</value>
+    <comment>An error displayed when there is a serious programming fault with an application. It will usually be thrown early in development in the application and is not expected to be seen by an end user.</comment>
+  </data>
+  <data name="ValueFactoryReentrancy" xml:space="preserve">
+    <value>La factory del valore ha richiesto il valore nella stessa istanza.</value>
+  </data>
 </root>
