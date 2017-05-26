@@ -12,4 +12,53 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AppliedSynchronizationContextNotAllowed" xml:space="preserve">
+    <value>Não é permitido adquirir bloqueios em threads com SynchronizationContext aplicado.</value>
+  </data>
+  <data name="CannotUpgradeNonUpgradeableLock" xml:space="preserve">
+    <value>Um bloqueio de leitura não atualizável é mantido pelo chamador e não pode ser atualizado.</value>
+  </data>
+  <data name="DangerousReadLockRequestFromWriteLockFork" xml:space="preserve">
+    <value>Solicitação perigosa para bloqueio de leitura na bifurcação do bloqueio de gravação.</value>
+  </data>
+  <data name="InvalidAfterCompleted" xml:space="preserve">
+    <value>Transição já efetuada para o estado Concluído.</value>
+  </data>
+  <data name="InvalidLock" xml:space="preserve">
+    <value>Esta operação só pode ser executada em um bloqueio válido.</value>
+  </data>
+  <data name="InvalidWithoutLock" xml:space="preserve">
+    <value>É necessário um bloqueio.</value>
+  </data>
+  <data name="JoinableTaskContextAndCollectionMismatch" xml:space="preserve">
+    <value>JoinableTask não pertence ao contexto com o qual esta coleção foi instanciada.</value>
+  </data>
+  <data name="JoinableTaskContextNodeAlreadyRegistered" xml:space="preserve">
+    <value>Este nó já está registrado.</value>
+  </data>
+  <data name="LazyValueFaulted" xml:space="preserve">
+    <value>O valor criado de forma lenta apresentou falha durante a construção.</value>
+  </data>
+  <data name="LazyValueNotCreated" xml:space="preserve">
+    <value>O valor criado de forma lenta ainda não foi construído.</value>
+  </data>
+  <data name="LockCompletionAlreadyRequested" xml:space="preserve">
+    <value>Este bloqueio já foi marcado para conclusão.  Nenhum bloqueio de nível superior pode ser atendido.</value>
+  </data>
+  <data name="NotAllowedUnderURorWLock" xml:space="preserve">
+    <value>Esta operação não é permitida ao manter uma leitura atualizável ativa ou um bloqueio de gravação de um AsyncReaderWriterLock.</value>
+  </data>
+  <data name="QueueEmpty" xml:space="preserve">
+    <value>A fila está vazia.</value>
+  </data>
+  <data name="STAThreadCallerNotAllowed" xml:space="preserve">
+    <value>Esta operação não pode ser concluída em um thread STA.</value>
+  </data>
+  <data name="SwitchToMainThreadFailedToReachExpectedThread" xml:space="preserve">
+    <value>Uma tentativa de mudar para o thread principal falhou ao alcançar o thread esperado. O JoinableTaskContext foi inicializado no thread incorreto ou com um SynchronizationContext cujo método Post não executa seu delegado no thread principal?</value>
+    <comment>An error displayed when there is a serious programming fault with an application. It will usually be thrown early in development in the application and is not expected to be seen by an end user.</comment>
+  </data>
+  <data name="ValueFactoryReentrancy" xml:space="preserve">
+    <value>O alocador de valor chamou o valor na mesma instância.</value>
+  </data>
 </root>

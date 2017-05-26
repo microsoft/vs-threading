@@ -12,4 +12,53 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AppliedSynchronizationContextNotAllowed" xml:space="preserve">
+    <value>無法取得套用了 SynchronizationContext 的執行緒鎖定。</value>
+  </data>
+  <data name="CannotUpgradeNonUpgradeableLock" xml:space="preserve">
+    <value>呼叫者持有不可升級的讀取鎖定，所以無法升級。</value>
+  </data>
+  <data name="DangerousReadLockRequestFromWriteLockFork" xml:space="preserve">
+    <value>從寫入鎖定分岔要求讀取鎖定十分危險。</value>
+  </data>
+  <data name="InvalidAfterCompleted" xml:space="preserve">
+    <value>已轉換成「已完成」狀態。</value>
+  </data>
+  <data name="InvalidLock" xml:space="preserve">
+    <value>這項作業只能針對有效的鎖定執行。</value>
+  </data>
+  <data name="InvalidWithoutLock" xml:space="preserve">
+    <value>必須鎖定。</value>
+  </data>
+  <data name="JoinableTaskContextAndCollectionMismatch" xml:space="preserve">
+    <value>JoinableTask 不屬於此集合個體化所在的內容。</value>
+  </data>
+  <data name="JoinableTaskContextNodeAlreadyRegistered" xml:space="preserve">
+    <value>此節點已註冊。</value>
+  </data>
+  <data name="LazyValueFaulted" xml:space="preserve">
+    <value>建構期間，延遲建立的值發生錯誤。</value>
+  </data>
+  <data name="LazyValueNotCreated" xml:space="preserve">
+    <value>尚未建構延遲建立的值。</value>
+  </data>
+  <data name="LockCompletionAlreadyRequested" xml:space="preserve">
+    <value>此鎖定已標記為待完成。無法服務新的最上層鎖定。</value>
+  </data>
+  <data name="NotAllowedUnderURorWLock" xml:space="preserve">
+    <value>從 AsyncReaderWriterLock 持有可升級的現用讀取或寫入鎖定期間，不允許執行這項作業。</value>
+  </data>
+  <data name="QueueEmpty" xml:space="preserve">
+    <value>此佇列是空的。</value>
+  </data>
+  <data name="STAThreadCallerNotAllowed" xml:space="preserve">
+    <value>無法對 STA 執行緒完成此作業。</value>
+  </data>
+  <data name="SwitchToMainThreadFailedToReachExpectedThread" xml:space="preserve">
+    <value>嘗試切換至主要執行緒失敗，無法連接至預期的執行緒。JoinableTaskContext 是否在錯誤的執行緒上進行初始化，或具備之 SynchronizationContext 的 Post 方法在主要執行緒上未執行其委派?</value>
+    <comment>An error displayed when there is a serious programming fault with an application. It will usually be thrown early in development in the application and is not expected to be seen by an end user.</comment>
+  </data>
+  <data name="ValueFactoryReentrancy" xml:space="preserve">
+    <value>值 Factory 需要相同執行個體上的值。</value>
+  </data>
 </root>
