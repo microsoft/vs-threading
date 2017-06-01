@@ -19,7 +19,7 @@
         </trans-unit>
         <trans-unit id="VSTHRD002_MessageFormat" translate="yes" xml:space="preserve">
           <source>Synchronously waiting on tasks or awaiters may cause deadlocks. Use JoinableTaskFactory.Run instead.</source>
-          <target state="translated">Das synchrone Warten auf Tasks oder Awaiters führt unter Umständen zu Deadlocks. Verwenden Sie stattdessen JoinableTaskFactory.Run.</target>
+          <target state="translated">Das synchrone Warten auf Aufgaben oder Awaiters führt unter Umständen zu Deadlocks. Verwenden Sie stattdessen "JoinableTaskFactory.Run".</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD002_Title" translate="yes" xml:space="preserve">
@@ -30,7 +30,7 @@
           <source>Visual Studio service "{0}" should be used on main thread explicitly. 
 Call ThreadHelper.ThrowIfNotOnUIThread() or await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
           <target state="translated">Der Visual Studio-Dienst "{0}" sollte explizit im Hauptthread verwendet werden. 
-Rufen Sie ThreadHelper.ThrowIfNotOnUIThread() auf, oder warten Sie zuerst auf JoinableTaskFactory.SwitchToMainThreadAsync().</target>
+Rufen Sie "ThreadHelper.ThrowIfNotOnUIThread()" auf, oder warten Sie zuerst auf "JoinableTaskFactory.SwitchToMainThreadAsync()".</target>
         </trans-unit>
         <trans-unit id="VSTHRD010_Title" translate="yes" xml:space="preserve">
           <source>Use VS services from UI thread</source>
@@ -66,8 +66,8 @@ Rufen Sie ThreadHelper.ThrowIfNotOnUIThread() auf, oder warten Sie zuerst auf Jo
         <trans-unit id="VSTHRD003_MessageFormat" translate="yes" xml:space="preserve">
           <source>Calling await on a Task inside a JoinableTaskFactory.Run, when the task is initialized outside the delegate can cause potential deadlocks.
 You can avoid this problem by ensuring the task is initialized within the delegate or by using JoinableTask instead of Task.</source>
-          <target state="translated">Das Aufrufen von "await" für einen Task innerhalb von JoinableTaskFactory.Run führt unter Umständen zu Deadlocks, wenn der Task außerhalb des Delegaten initialisiert wird.
-Sie können dies vermeiden, indem Sie sicherstellen, dass der Task innerhalb des Delegaten initialisiert wird, oder JoinableTask anstelle von Task verwenden.</target>
+          <target state="translated">Das Aufrufen von "await" für eine Aufgabe innerhalb von "JoinableTaskFactory.Run" führt unter Umständen zu Deadlocks, wenn die Aufgabe außerhalb des Delegaten initialisiert wird.
+Sie können dies vermeiden, indem Sie sicherstellen, dass die Aufgabe innerhalb des Delegaten initialisiert wird, oder "JoinableTask" anstelle der Aufgabe verwenden.</target>
         </trans-unit>
         <trans-unit id="VSTHRD003_Title" translate="yes" xml:space="preserve">
           <source>Avoid awaiting non-joinable tasks in join contexts</source>
@@ -76,8 +76,8 @@ Sie können dies vermeiden, indem Sie sicherstellen, dass der Task innerhalb des
         <trans-unit id="VSTHRD011_MessageFormat" translate="yes" xml:space="preserve">
           <source>Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock.
 Use AsyncLazy&lt;T&gt; instead.</source>
-          <target state="translated">Lazy&lt;Task&lt;T&gt;&gt;.Value führt unter Umständen zu einem Deadlock.
-Verwenden Sie stattdessen AsyncLazy&lt;T&gt;.</target>
+          <target state="translated">"Lazy&lt;Task&lt;T&gt;&gt;.Value" führt unter Umständen zu einem Deadlock.
+Verwenden Sie stattdessen "AsyncLazy&lt;T&gt;".</target>
         </trans-unit>
         <trans-unit id="VSTHRD011_Title" translate="yes" xml:space="preserve">
           <source>Avoid using Lazy<it id="1" pos="open">&lt;T&gt;</it> where T is a Task<it id="2" pos="open">&lt;T2&gt;</it></source>
@@ -97,7 +97,7 @@ Verwenden Sie stattdessen AsyncLazy&lt;T&gt;.</target>
         </trans-unit>
         <trans-unit id="VSTHRD102_MessageFormat" translate="yes" xml:space="preserve">
           <source>Limit use of synchronously blocking method calls such as JoinableTaskFactory.Run or Task.Result to public entrypoint members where you must be synchronous. Using it for internal members can needlessly add synchronous frames between asynchronous frames, leading to threadpool exhaustion.</source>
-          <target state="translated">Beschränken Sie die Verwendung synchron blockierender Methodenaufrufe wie JoinableTaskFactory.Run oder Task.Result auf öffentliche Einstiegspunktmitglieder, bei denen Sie synchron sein müssen. Wenn Sie sie für interne Mitglieder verwenden, werden asynchronen Frames unter Umständen unnötigerweise synchrone Frames hinzugefügt, was zu einer Auslastung des Threadpools führt.</target>
+          <target state="translated">Beschränken Sie die Verwendung synchron blockierender Methodenaufrufe wie "JoinableTaskFactory.Run" oder "Task.Result" auf öffentliche Einstiegspunktmitglieder, bei denen Sie synchron sein müssen. Wenn Sie sie für interne Mitglieder verwenden, werden asynchronen Frames unter Umständen unnötigerweise synchrone Frames hinzugefügt, was zu einer Auslastung des Threadpools führt.</target>
         </trans-unit>
         <trans-unit id="VSTHRD102_Title" translate="yes" xml:space="preserve">
           <source>Implement internal logic asynchronously</source>
@@ -118,7 +118,7 @@ Verwenden Sie stattdessen AsyncLazy&lt;T&gt;.</target>
         </trans-unit>
         <trans-unit id="VSTHRD105_MessageFormat" translate="yes" xml:space="preserve">
           <source>Avoid method overloads that assume TaskScheduler.Current. Use an overload that accepts a TaskScheduler and specify TaskScheduler.Default (or any other) explicitly.</source>
-          <target state="translated">Vermeiden Sie Methodenüberladungen, die TaskScheduler.Current annehmen. Verwenden Sie eine Überladung, die einen TaskScheduler akzeptiert, und geben Sie explizit TaskScheduler.Default (o. a.) an.</target>
+          <target state="translated">Vermeiden Sie Methodenüberladungen, die "TaskScheduler.Current" annehmen. Verwenden Sie eine Überladung, die einen TaskScheduler akzeptiert, und geben Sie explizit "TaskScheduler.Default" (o. a.) an.</target>
         </trans-unit>
         <trans-unit id="VSTHRD105_Title" translate="yes" xml:space="preserve">
           <source>Avoid method overloads that assume TaskScheduler.Current</source>
@@ -131,27 +131,27 @@ Verwenden Sie stattdessen AsyncLazy&lt;T&gt;.</target>
         </trans-unit>
         <trans-unit id="VSTHRD012_MessageFormat" translate="yes" xml:space="preserve">
           <source>Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.</source>
-          <target state="new">Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.</target>
+          <target state="translated">Stellen Sie in diesem Aufruf (oder einer anderen Überladung) eine Instanz von "JoinableTaskFactory" bereit, um Deadlocks beim Hauptthread zu vermeiden.</target>
         </trans-unit>
         <trans-unit id="VSTHRD012_Title" translate="yes" xml:space="preserve">
           <source>Provide JoinableTaskFactory where allowed</source>
-          <target state="new">Provide JoinableTaskFactory where allowed</target>
+          <target state="translated">"JoinableTaskFactory" bereitstellen, wenn zulässig</target>
         </trans-unit>
         <trans-unit id="VSTHRD104_MessageFormat" translate="yes" xml:space="preserve">
           <source>Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate.</source>
-          <target state="new">Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate.</target>
+          <target state="translated">Machen Sie eine asynchrone Version dieser Methode verfügbar, die nicht synchron blockiert. Vereinfachen Sie diese Methode anschließend, um die asynchrone Methode innerhalb eines Delegaten vom Typ "JoinableTaskFactory.Run" aufzurufen.</target>
         </trans-unit>
         <trans-unit id="VSTHRD104_Title" translate="yes" xml:space="preserve">
           <source>Offer async methods</source>
-          <target state="new">Offer async methods</target>
+          <target state="translated">Asynchrone Methoden bieten</target>
         </trans-unit>
         <trans-unit id="VSTHRD001_MessageFormat" translate="yes" xml:space="preserve">
           <source>Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority.</source>
-          <target state="new">Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority.</target>
+          <target state="translated">Warten Sie darauf, dass "JoinableTaskFactory.SwitchToMainThreadAsync()" zum UI-Thread wechselt anstelle von APIs, bei denen Deadlocks auftreten können oder für die unter Umständen eine Priorität festgelegt werden muss.</target>
         </trans-unit>
         <trans-unit id="VSTHRD001_Title" translate="yes" xml:space="preserve">
           <source>Avoid legacy threading switching APIs</source>
-          <target state="new">Avoid legacy threading switching APIs</target>
+          <target state="translated">Legacy-Threading beim Wechseln von APIs vermeiden</target>
         </trans-unit>
       </group>
     </body>

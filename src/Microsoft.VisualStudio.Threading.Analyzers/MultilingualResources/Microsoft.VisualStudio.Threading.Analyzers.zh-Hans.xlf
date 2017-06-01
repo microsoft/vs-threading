@@ -131,27 +131,27 @@ Use AsyncLazy&lt;T&gt; instead.</source>
         </trans-unit>
         <trans-unit id="VSTHRD012_MessageFormat" translate="yes" xml:space="preserve">
           <source>Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.</source>
-          <target state="new">Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.</target>
+          <target state="translated">在此调用中提供 JoinableTaskFactory 的实例（或其他重载）以避免主线程死锁。</target>
         </trans-unit>
         <trans-unit id="VSTHRD012_Title" translate="yes" xml:space="preserve">
           <source>Provide JoinableTaskFactory where allowed</source>
-          <target state="new">Provide JoinableTaskFactory where allowed</target>
+          <target state="translated">在允许的地方提供 JoinableTaskFactory</target>
         </trans-unit>
         <trans-unit id="VSTHRD104_MessageFormat" translate="yes" xml:space="preserve">
           <source>Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate.</source>
-          <target state="new">Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate.</target>
+          <target state="translated">公开此方法的异步版（不同步阻止）。然后简化此方法以在 JoinableTaskFactory.Run 委托内调用该异步方法。</target>
         </trans-unit>
         <trans-unit id="VSTHRD104_Title" translate="yes" xml:space="preserve">
           <source>Offer async methods</source>
-          <target state="new">Offer async methods</target>
+          <target state="translated">提供异步方法</target>
         </trans-unit>
         <trans-unit id="VSTHRD001_MessageFormat" translate="yes" xml:space="preserve">
           <source>Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority.</source>
-          <target state="new">Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority.</target>
+          <target state="translated">等待 JoinableTaskFactory.SwitchToMainThreadAsync() 切换到 UI 线程，而非切换到可死锁或要求指定优先级的 API。</target>
         </trans-unit>
         <trans-unit id="VSTHRD001_Title" translate="yes" xml:space="preserve">
           <source>Avoid legacy threading switching APIs</source>
-          <target state="new">Avoid legacy threading switching APIs</target>
+          <target state="translated">避免旧线程切换 API</target>
         </trans-unit>
       </group>
     </body>
