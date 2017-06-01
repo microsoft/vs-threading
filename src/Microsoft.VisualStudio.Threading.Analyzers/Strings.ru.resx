@@ -57,7 +57,7 @@
     <value>Использование InvokeAsync для вызова асинхронных событий</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>При вызове await в объекте Task в JoinableTaskFactory.Run (и при условии, что задача инициализирована за пределами делегата), могут произойти взаимоблокировки.
+    <value>При вызове await в объекте Task в JoinableTaskFactory.Run (и при условии, что задача инициализирована за пределами делегата) могут произойти взаимоблокировки.
 Вы можете избежать этой проблемы, инициализировав задачу в делегате или использовав JoinableTask вместо Task.</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
@@ -80,7 +80,7 @@
     <value>Вызов асинхронных методов в методе async</value>
   </data>
   <data name="VSTHRD102_MessageFormat" xml:space="preserve">
-    <value>Разрешите использовать вызовы методов синхронной блокировки, такие как JoinableTaskFactory.Run или Task.Result, только элементам общедоступных точек входа, где требуется синхронизация. Если их будут использовать внутренние элементы, между асинхронным фреймами могут быть добавлены лишние синхронные фреймы, что приведет к нехватке ресурсов в пуле потока.</value>
+    <value>Разрешите использовать вызовы методов синхронной блокировки, такие как JoinableTaskFactory.Run или Task.Result, только элементам общедоступных точек входа, где требуется синхронизация. Если их будут использовать внутренние элементы, между асинхронными фреймами могут быть добавлены лишние синхронные фреймы, что приведет к нехватке ресурсов в пуле потока.</value>
   </data>
   <data name="VSTHRD102_Title" xml:space="preserve">
     <value>Реализация внутренней логики асинхронно</value>
@@ -104,5 +104,23 @@
   </data>
   <data name="VSTHRD105_Title" xml:space="preserve">
     <value>Избегание перегрузок методов, предполагающих TaskScheduler.Current</value>
+  </data>
+  <data name="VSTHRD012_MessageFormat" xml:space="preserve">
+    <value>Укажите экземпляр JoinableTaskFactory в этом вызове (или другой перегрузке), чтобы избежать взаимоблокировки с основным потоком.</value>
+  </data>
+  <data name="VSTHRD012_Title" xml:space="preserve">
+    <value>Указывайте JoinableTaskFactory, где это возможно</value>
+  </data>
+  <data name="VSTHRD104_MessageFormat" xml:space="preserve">
+    <value>Предоставьте асинхронную версию этого метода, которая не использует синхронную блокировку. Затем упростите этот метод, вызывая асинхронную версию внутри делегата JoinableTaskFactory.Run.</value>
+  </data>
+  <data name="VSTHRD104_Title" xml:space="preserve">
+    <value>Предоставляйте асинхронные методы</value>
+  </data>
+  <data name="VSTHRD001_MessageFormat" xml:space="preserve">
+    <value>Дождитесь, когда JoinableTaskFactory.SwitchToMainThreadAsync() переключится на поток пользовательского интерфейса, и не используйте API, которые могут вызывать взаимоблокировки или требуют указания приоритета.</value>
+  </data>
+  <data name="VSTHRD001_Title" xml:space="preserve">
+    <value>Избегайте использования устаревших API переключения потоков</value>
   </data>
 </root>
