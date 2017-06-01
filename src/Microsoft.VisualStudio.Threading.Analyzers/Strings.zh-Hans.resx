@@ -105,4 +105,22 @@
   <data name="VSTHRD105_Title" xml:space="preserve">
     <value>避免假定 TaskScheduler.Current 的方法重载</value>
   </data>
+  <data name="VSTHRD012_MessageFormat" xml:space="preserve">
+    <value>在此调用中提供 JoinableTaskFactory 的实例（或其他重载）以避免主线程死锁。</value>
+  </data>
+  <data name="VSTHRD012_Title" xml:space="preserve">
+    <value>在允许的地方提供 JoinableTaskFactory</value>
+  </data>
+  <data name="VSTHRD104_MessageFormat" xml:space="preserve">
+    <value>公开此方法的异步版（不同步阻止）。然后简化此方法以在 JoinableTaskFactory.Run 委托内调用该异步方法。</value>
+  </data>
+  <data name="VSTHRD104_Title" xml:space="preserve">
+    <value>提供异步方法</value>
+  </data>
+  <data name="VSTHRD001_MessageFormat" xml:space="preserve">
+    <value>等待 JoinableTaskFactory.SwitchToMainThreadAsync() 切换到 UI 线程，而非切换到可死锁或要求指定优先级的 API。</value>
+  </data>
+  <data name="VSTHRD001_Title" xml:space="preserve">
+    <value>避免旧线程切换 API</value>
+  </data>
 </root>

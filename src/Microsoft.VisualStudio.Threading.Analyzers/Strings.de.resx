@@ -22,7 +22,7 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>Das synchrone Warten auf Tasks oder Awaiters führt unter Umständen zu Deadlocks. Verwenden Sie stattdessen JoinableTaskFactory.Run.</value>
+    <value>Das synchrone Warten auf Aufgaben oder Awaiters führt unter Umständen zu Deadlocks. Verwenden Sie stattdessen "JoinableTaskFactory.Run".</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
@@ -30,7 +30,7 @@
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
     <value>Der Visual Studio-Dienst "{0}" sollte explizit im Hauptthread verwendet werden. 
-Rufen Sie ThreadHelper.ThrowIfNotOnUIThread() auf, oder warten Sie zuerst auf JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+Rufen Sie "ThreadHelper.ThrowIfNotOnUIThread()" auf, oder warten Sie zuerst auf "JoinableTaskFactory.SwitchToMainThreadAsync()".</value>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
     <value>VS-Dienste aus dem UI-Thread verwenden</value>
@@ -57,15 +57,15 @@ Rufen Sie ThreadHelper.ThrowIfNotOnUIThread() auf, oder warten Sie zuerst auf Jo
     <value>InvokeAsync zum Auslösen asynchroner Ereignisse verwenden</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>Das Aufrufen von "await" für einen Task innerhalb von JoinableTaskFactory.Run führt unter Umständen zu Deadlocks, wenn der Task außerhalb des Delegaten initialisiert wird.
-Sie können dies vermeiden, indem Sie sicherstellen, dass der Task innerhalb des Delegaten initialisiert wird, oder JoinableTask anstelle von Task verwenden.</value>
+    <value>Das Aufrufen von "await" für eine Aufgabe innerhalb von "JoinableTaskFactory.Run" führt unter Umständen zu Deadlocks, wenn die Aufgabe außerhalb des Delegaten initialisiert wird.
+Sie können dies vermeiden, indem Sie sicherstellen, dass die Aufgabe innerhalb des Delegaten initialisiert wird, oder "JoinableTask" anstelle der Aufgabe verwenden.</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
     <value>Warten auf Tasks, für die kein Beitritt möglich ist, in Join-Kontexten vermeiden</value>
   </data>
   <data name="VSTHRD011_MessageFormat" xml:space="preserve">
-    <value>Lazy&lt;Task&lt;T&gt;&gt;.Value führt unter Umständen zu einem Deadlock.
-Verwenden Sie stattdessen AsyncLazy&lt;T&gt;.</value>
+    <value>"Lazy&lt;Task&lt;T&gt;&gt;.Value" führt unter Umständen zu einem Deadlock.
+Verwenden Sie stattdessen "AsyncLazy&lt;T&gt;".</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
     <value>Die Verwendung von Lazy&lt;T&gt; vermeiden, wenn T ein Task&lt;T2&gt; ist</value>
@@ -80,7 +80,7 @@ Verwenden Sie stattdessen AsyncLazy&lt;T&gt;.</value>
     <value>Asynchrone Methoden in einer asynchronen Methode aufrufen</value>
   </data>
   <data name="VSTHRD102_MessageFormat" xml:space="preserve">
-    <value>Beschränken Sie die Verwendung synchron blockierender Methodenaufrufe wie JoinableTaskFactory.Run oder Task.Result auf öffentliche Einstiegspunktmitglieder, bei denen Sie synchron sein müssen. Wenn Sie sie für interne Mitglieder verwenden, werden asynchronen Frames unter Umständen unnötigerweise synchrone Frames hinzugefügt, was zu einer Auslastung des Threadpools führt.</value>
+    <value>Beschränken Sie die Verwendung synchron blockierender Methodenaufrufe wie "JoinableTaskFactory.Run" oder "Task.Result" auf öffentliche Einstiegspunktmitglieder, bei denen Sie synchron sein müssen. Wenn Sie sie für interne Mitglieder verwenden, werden asynchronen Frames unter Umständen unnötigerweise synchrone Frames hinzugefügt, was zu einer Auslastung des Threadpools führt.</value>
   </data>
   <data name="VSTHRD102_Title" xml:space="preserve">
     <value>Interne Logik asynchron implementieren</value>
@@ -96,7 +96,7 @@ Verwenden Sie stattdessen AsyncLazy&lt;T&gt;.</value>
     <value>Verwenden Sie das Suffix "Async" für asynchrone Methoden</value>
   </data>
   <data name="VSTHRD105_MessageFormat" xml:space="preserve">
-    <value>Vermeiden Sie Methodenüberladungen, die TaskScheduler.Current annehmen. Verwenden Sie eine Überladung, die einen TaskScheduler akzeptiert, und geben Sie explizit TaskScheduler.Default (o. a.) an.</value>
+    <value>Vermeiden Sie Methodenüberladungen, die "TaskScheduler.Current" annehmen. Verwenden Sie eine Überladung, die einen TaskScheduler akzeptiert, und geben Sie explizit "TaskScheduler.Default" (o. a.) an.</value>
   </data>
   <data name="VSTHRD105_Title" xml:space="preserve">
     <value>Methodenüberladungen, die TaskScheduler.Current annehmen, vermeiden</value>
@@ -104,5 +104,23 @@ Verwenden Sie stattdessen AsyncLazy&lt;T&gt;.</value>
   <data name="VSTHRD100_CodeFix_Title" xml:space="preserve">
     <value>Rückgabetyp in Task ändern</value>
     <comment>Task is a type name and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD012_MessageFormat" xml:space="preserve">
+    <value>Stellen Sie in diesem Aufruf (oder einer anderen Überladung) eine Instanz von "JoinableTaskFactory" bereit, um Deadlocks beim Hauptthread zu vermeiden.</value>
+  </data>
+  <data name="VSTHRD012_Title" xml:space="preserve">
+    <value>"JoinableTaskFactory" bereitstellen, wenn zulässig</value>
+  </data>
+  <data name="VSTHRD104_MessageFormat" xml:space="preserve">
+    <value>Machen Sie eine asynchrone Version dieser Methode verfügbar, die nicht synchron blockiert. Vereinfachen Sie diese Methode anschließend, um die asynchrone Methode innerhalb eines Delegaten vom Typ "JoinableTaskFactory.Run" aufzurufen.</value>
+  </data>
+  <data name="VSTHRD104_Title" xml:space="preserve">
+    <value>Asynchrone Methoden bieten</value>
+  </data>
+  <data name="VSTHRD001_MessageFormat" xml:space="preserve">
+    <value>Warten Sie darauf, dass "JoinableTaskFactory.SwitchToMainThreadAsync()" zum UI-Thread wechselt anstelle von APIs, bei denen Deadlocks auftreten können oder für die unter Umständen eine Priorität festgelegt werden muss.</value>
+  </data>
+  <data name="VSTHRD001_Title" xml:space="preserve">
+    <value>Legacy-Threading beim Wechseln von APIs vermeiden</value>
   </data>
 </root>

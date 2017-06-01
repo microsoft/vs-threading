@@ -105,4 +105,22 @@ Použijte raději AsyncLazy&lt;T&gt;.</value>
   <data name="VSTHRD105_Title" xml:space="preserve">
     <value>Vyhněte se přetížením metod, která předpokládají TaskScheduler.Current</value>
   </data>
+  <data name="VSTHRD012_MessageFormat" xml:space="preserve">
+    <value>Zadejte instanci JoinableTaskFactory v tomto volání (nebo v jiném přetížení), aby se předešlo zablokováním s hlavním vláknem.</value>
+  </data>
+  <data name="VSTHRD012_Title" xml:space="preserve">
+    <value>Zadejte JoinableTaskFactory, kde je to povoleno</value>
+  </data>
+  <data name="VSTHRD104_MessageFormat" xml:space="preserve">
+    <value>Nabízejte asynchronní verzi této metody, která se synchronně neblokuje. Pak zjednodušte tuto metodu tak, aby volala tuto asynchronní metodu v delegátovi JoinableTaskFactory.Run.</value>
+  </data>
+  <data name="VSTHRD104_Title" xml:space="preserve">
+    <value>Nabízejte asynchronní metody</value>
+  </data>
+  <data name="VSTHRD001_MessageFormat" xml:space="preserve">
+    <value>Počkejte, než se na vlákno uživatelského rozhraní přepne JoinableTaskFactory.SwitchToMainThreadAsync(), a ne rozhraní API, která se můžou zablokovat nebo vyžadovat zadání priority.</value>
+  </data>
+  <data name="VSTHRD001_Title" xml:space="preserve">
+    <value>Vyhněte se starším verzím rozhraní API pro přepínání vláken</value>
+  </data>
 </root>

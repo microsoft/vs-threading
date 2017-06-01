@@ -57,8 +57,8 @@ ThreadHelper.ThrowIfNotOnUIThread() çağırın veya önce JoinableTaskFactory.S
     <value>Async olayları tetiklemek için InvokeAsync kullanın</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>JoinableTaskFactory.Run içindeki bir Task için await çağırmak, görevin temsilci dışında başlatılması durumunda kilitlenmelere neden olabilir.
-Görevin temsilcinin içinde başlatılmasını sağlayarak veya Task yerine JoinableTask kullanarak bu sorunu önleyebilirsiniz.</value>
+    <value>JoinableTaskFactory.Run içindeki bir Task için await çağırmak, görevin temsilci dışında başlatılması durumunda olası kilitlenmelere neden olabilir.
+Görevin temsilci içinde başlatılmasını sağlayarak veya Task yerine JoinableTask kullanarak bu sorunu önleyebilirsiniz.</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
     <value>Birleşik olmayan görevleri birleşik ortamlarda beklemeyin</value>
@@ -96,7 +96,7 @@ Bunun yerine AsyncLazy&lt;T&gt; kullanın.</value>
     <value>Async metotları için "Async" sonekini kullanın</value>
   </data>
   <data name="VSTHRD105_MessageFormat" xml:space="preserve">
-    <value>TaskScheduler.Current varsayan metot aşırı yüklemelerinden kaçının. TaskScheduler kabul eden bir aşırı yükleme kullanın ve TaskScheduler.Default (veya diğer birini) açık olarak belirtin.</value>
+    <value>TaskScheduler.Current varsayan metot aşırı yüklemelerinden kaçının. TaskScheduler kabul eden bir aşırı yükleme kullanın ve TaskScheduler.Default (veya başka birini) açık olarak belirtin.</value>
   </data>
   <data name="VSTHRD105_Title" xml:space="preserve">
     <value>TaskScheduler.Current varsayan metot aşırı yüklemelerinden kaçının</value>
@@ -104,5 +104,23 @@ Bunun yerine AsyncLazy&lt;T&gt; kullanın.</value>
   <data name="VSTHRD100_CodeFix_Title" xml:space="preserve">
     <value>Döndürme türünü Task olarak değiştirin</value>
     <comment>Task is a type name and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD012_MessageFormat" xml:space="preserve">
+    <value>Ana iş parçacığında kilitlenmeleri önlemek için bu çağrıda (veya başka bir aşırı yüklemede) bir JoinableTaskFactory örneği sağlayın.</value>
+  </data>
+  <data name="VSTHRD012_Title" xml:space="preserve">
+    <value>İzin veriliyorsa JoinableTaskFactory sağlayın</value>
+  </data>
+  <data name="VSTHRD104_MessageFormat" xml:space="preserve">
+    <value>Bu metodun zaman uyumlu olarak engellemeyen zaman uyumsuz bir sürümünü sunun. Sonra bir JoinableTaskFactory.Run temsilcisi içinde bu zaman uyumsuz metoda çağrı yapmak için bu metodu basitleştirin.</value>
+  </data>
+  <data name="VSTHRD104_Title" xml:space="preserve">
+    <value>Zaman uyumsuz metotlar sunun</value>
+  </data>
+  <data name="VSTHRD001_MessageFormat" xml:space="preserve">
+    <value>Kilitlenebilen ya da öncelik belirtilmesini gerektiren API’ler yerine JoinableTaskFactory.SwitchToMainThreadAsync() öğesinin UI iş parçacığına geçmesini bekleyin.</value>
+  </data>
+  <data name="VSTHRD001_Title" xml:space="preserve">
+    <value>İş parçacıkları arasında geçiş yapan eski API’lerden kaçının</value>
   </data>
 </root>

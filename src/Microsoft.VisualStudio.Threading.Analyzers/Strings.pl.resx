@@ -29,8 +29,8 @@
     <value>Unikaj problematycznych oczekiwań synchronicznych</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>Usługa programu Visual Studio „{0}” powinna być używana w wątku głównym w sposób jawny. 
-Najpierw oczekuj na metodę JoinableTaskFactory.SwitchToMainThreadAsync() lub wywołaj metodę ThreadHelper.ThrowIfNotOnUIThread().</value>
+    <value>Usługa programu Visual Studio „{0}” powinna być używana w wątku głównym w sposób jawny.
+Najpierw wywołaj metodę ThreadHelper.ThrowIfNotOnUIThread() lub oczekuj na metodę JoinableTaskFactory.SwitchToMainThreadAsync().</value>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
     <value>Używaj usług programu VS z wątku interfejsu użytkownika</value>
@@ -104,5 +104,23 @@ Zamiast tego używaj klasy AsyncLazy&lt;T&gt;.</value>
   <data name="VSTHRD100_CodeFix_Title" xml:space="preserve">
     <value>Zmień zwracany typ na Task</value>
     <comment>Task is a type name and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD012_MessageFormat" xml:space="preserve">
+    <value>Podaj wystąpienie elementu JoinableTaskFactory w tym wywołaniu (albo innym przeciążeniu), aby uniknąć zakleszczeń w wątku głównym.</value>
+  </data>
+  <data name="VSTHRD012_Title" xml:space="preserve">
+    <value>Podaj element JoinableTaskFactory w miejscach, gdzie jest to dopuszczalne</value>
+  </data>
+  <data name="VSTHRD104_MessageFormat" xml:space="preserve">
+    <value>Uwidocznij asynchroniczną wersję tej metody, która nie powoduje synchronicznego blokowania. Następnie uprość tę metodę, aby wywołać tę metodę asynchroniczną w ramach delegata JoinableTaskFactory.Run.</value>
+  </data>
+  <data name="VSTHRD104_Title" xml:space="preserve">
+    <value>Oferuj metody asynchroniczne</value>
+  </data>
+  <data name="VSTHRD001_MessageFormat" xml:space="preserve">
+    <value>Zaczekaj, aż metoda JoinableTaskFactory.SwitchToMainThreadAsync() przełączy się do wątku interfejsu użytkownika zamiast interfejsów API, które mogą ulec zakleszczeniu lub wymagać określenia priorytetu.</value>
+  </data>
+  <data name="VSTHRD001_Title" xml:space="preserve">
+    <value>Unikaj starszych interfejsów API przełączających wątki</value>
   </data>
 </root>
