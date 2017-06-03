@@ -12,4 +12,53 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AppliedSynchronizationContextNotAllowed" xml:space="preserve">
+    <value>Uzyskiwanie blokad wątków z zastosowanym ustawieniem SynchronizationContext nie jest dozwolone.</value>
+  </data>
+  <data name="CannotUpgradeNonUpgradeableLock" xml:space="preserve">
+    <value>Niemożliwa do uaktualnienia blokada odczytu jest trzymana przez wywołującego i nie może zostać uaktualniona.</value>
+  </data>
+  <data name="DangerousReadLockRequestFromWriteLockFork" xml:space="preserve">
+    <value>Niebezpieczne żądanie blokady odczytu z rozwidlenia po żądaniu blokady zapisu.</value>
+  </data>
+  <data name="InvalidAfterCompleted" xml:space="preserve">
+    <value>Nastąpiło już przejście do stanu Ukończone.</value>
+  </data>
+  <data name="InvalidLock" xml:space="preserve">
+    <value>Operacja może zostać wykonana tylko w stosunku do prawidłowej blokady.</value>
+  </data>
+  <data name="InvalidWithoutLock" xml:space="preserve">
+    <value>Wymagana jest blokada.</value>
+  </data>
+  <data name="JoinableTaskContextAndCollectionMismatch" xml:space="preserve">
+    <value>Zadanie JoinableTask nie należy do kontekstu, w którym utworzono wystąpienie tej kolekcji.</value>
+  </data>
+  <data name="JoinableTaskContextNodeAlreadyRegistered" xml:space="preserve">
+    <value>Ten węzeł jest już zarejestrowany.</value>
+  </data>
+  <data name="LazyValueFaulted" xml:space="preserve">
+    <value>Wystąpił błąd podczas tworzenia wartości z opóźnieniem.</value>
+  </data>
+  <data name="LazyValueNotCreated" xml:space="preserve">
+    <value>Wartość tworzona z opóźnieniem nie została jeszcze utworzona.</value>
+  </data>
+  <data name="LockCompletionAlreadyRequested" xml:space="preserve">
+    <value>Ta blokada została już oznaczona do ukończenia.  Nie można obsłużyć żadnych nowych blokad najwyższego poziomu.</value>
+  </data>
+  <data name="NotAllowedUnderURorWLock" xml:space="preserve">
+    <value>Ta operacja nie jest dozwolona w trakcie trzymania aktywnej, możliwej do uaktualniania blokady odczytu lub zapisu z elementu AsyncReaderWriterLock.</value>
+  </data>
+  <data name="QueueEmpty" xml:space="preserve">
+    <value>Kolejka jest pusta.</value>
+  </data>
+  <data name="STAThreadCallerNotAllowed" xml:space="preserve">
+    <value>Nie można ukończyć tej operacji w wątku STA.</value>
+  </data>
+  <data name="SwitchToMainThreadFailedToReachExpectedThread" xml:space="preserve">
+    <value>Próba przełączenia się na główny wątek zakończyła się niepowodzeniem. Nie udało się osiągnąć oczekiwanego wątku. Czy element JoinableTaskContext został zainicjowany w niewłaściwym wątku albo z kontekstem SynchronizationContext, którego metoda Post nie uruchamia swojego delegata w wątku głównym?</value>
+    <comment>An error displayed when there is a serious programming fault with an application. It will usually be thrown early in development in the application and is not expected to be seen by an end user.</comment>
+  </data>
+  <data name="ValueFactoryReentrancy" xml:space="preserve">
+    <value>Fabryka wartości zażądała wartości w tym samym wystąpieniu.</value>
+  </data>
 </root>

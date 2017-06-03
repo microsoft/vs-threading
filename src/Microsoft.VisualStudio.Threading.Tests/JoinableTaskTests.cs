@@ -509,7 +509,6 @@
         }
 
         [StaFact]
-        [Trait("TestCategory", "FailsInCloudTest")] // see https://github.com/Microsoft/vs-threading/issues/44
         public void TransitionToMainThreadRaisedWhenSwitchingToMainThread()
         {
             var factory = (DerivedJoinableTaskFactory)this.asyncPump;
@@ -522,11 +521,13 @@
                 Assert.Equal(0, factory.TransitionedToMainThreadHitCount); //, "No transition expected since we're already on the main thread.");
 
                 // While on the main thread, await something that executes on a background thread.
-                await Task.Run(delegate
+                var task = Task.Run(delegate
                 {
                     Assert.Equal(0, factory.TransitioningToMainThreadHitCount); //, "No transition expected when moving off the main thread.");
                     Assert.Equal(0, factory.TransitionedToMainThreadHitCount); //, "No transition expected when moving off the main thread.");
                 });
+                await task.GetAwaiter().YieldAndNotify(); // ensure we yield for this task.
+                await task; // rethrow any exceptions.
                 Assert.Equal(1, factory.TransitioningToMainThreadHitCount); //, "Reacquisition of main thread should have raised transition events.");
                 Assert.Equal(1, factory.TransitionedToMainThreadHitCount); //, "Reacquisition of main thread should have raised transition events.");
 
@@ -3044,13 +3045,16 @@
         }
 
         [StaFact]
-        [Trait("TestCategory", "FailsInCloudTest")] // see https://github.com/Microsoft/vs-threading/issues/46
         public void RunAsyncWithNonYieldingDelegateNestedInRunOverhead()
         {
             var waitCountingJTF = new WaitCountingJoinableTaskFactory(this.asyncPump.Context);
             waitCountingJTF.Run(async delegate
             {
                 await TaskScheduler.Default;
+
+                // Be sure the main thread sleeps at *least* once.
+                await waitCountingJTF.WaitedOnce.WaitAsync().WithCancellation(this.TimeoutToken);
+
                 for (int i = 0; i < 1000; i++)
                 {
                     // TIP: spinning gives the blocking thread longer to wake up, which
@@ -3068,13 +3072,16 @@
         }
 
         [StaFact]
-        [Trait("TestCategory", "FailsInCloudTest")] // see https://github.com/Microsoft/vs-threading/issues/45
         public void RunAsyncWithYieldingDelegateNestedInRunOverhead()
         {
             var waitCountingJTF = new WaitCountingJoinableTaskFactory(this.asyncPump.Context);
             waitCountingJTF.Run(async delegate
             {
                 await TaskScheduler.Default;
+
+                // Be sure the main thread sleeps at *least* once.
+                await waitCountingJTF.WaitedOnce.WaitAsync().WithCancellation(this.TimeoutToken);
+
                 for (int i = 0; i < 1000; i++)
                 {
                     // TIP: spinning gives the blocking thread longer to wake up, which
@@ -3360,6 +3367,66 @@
             Assert.True(joinTask.Wait(AsyncDelay));
         }
 
+        [StaFact]
+        public void JoinShouldCompleteWithStarvedThreadPool()
+        {
+            using (TestUtilities.StarveThreadpool())
+            {
+                var jt = this.asyncPump.RunAsync(async delegate
+                {
+                    await Task.Yield();
+                });
+                jt.Join(this.TimeoutToken);
+            }
+        }
+
+        [StaFact]
+        public void JoinOfTShouldCompleteWithStarvedThreadPool()
+        {
+            using (TestUtilities.StarveThreadpool())
+            {
+                var jt = this.asyncPump.RunAsync(async delegate
+                {
+                    await Task.Yield();
+                    return 1;
+                });
+                int result = jt.Join(this.TimeoutToken);
+            }
+        }
+
+        [StaFact]
+        public void JoinAsyncShouldCompleteWithStarvedThreadPool()
+        {
+            using (TestUtilities.StarveThreadpool())
+            {
+                var jt = this.asyncPump.RunAsync(async delegate
+                {
+                    await Task.Yield();
+                });
+                this.asyncPump.Run(async delegate
+                {
+                    await jt.JoinAsync(this.TimeoutToken);
+                });
+            }
+        }
+
+        [StaFact]
+        public void JoinAsyncOfTShouldCompleteWithStarvedThreadPool()
+        {
+            using (TestUtilities.StarveThreadpool())
+            {
+                var jt = this.asyncPump.RunAsync(async delegate
+                {
+                    await Task.Yield();
+                    return 1;
+                });
+                this.asyncPump.Run(async delegate
+                {
+                    int result = await jt.JoinAsync(this.TimeoutToken);
+                });
+            }
+        }
+
         protected override JoinableTaskContext CreateJoinableTaskContext()
         {
             return new DerivedJoinableTaskContext();
@@ -3507,14 +3574,14 @@
             {
             }
 
-            internal int WaitCount
-            {
-                get { return this.waitCount; }
-            }
+            internal int WaitCount => Volatile.Read(ref this.waitCount);
+
+            internal AsyncManualResetEvent WaitedOnce { get; } = new AsyncManualResetEvent();
 
             protected override void WaitSynchronously(Task task)
             {
                 Interlocked.Increment(ref this.waitCount);
+                this.WaitedOnce.Set();
                 base.WaitSynchronously(task);
             }
         }

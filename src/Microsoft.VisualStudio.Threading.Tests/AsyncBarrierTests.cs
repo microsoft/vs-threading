@@ -57,10 +57,10 @@
                 {
                     playerTasks[i] = Task.Run(async delegate
                     {
-                        while (!cts.Token.IsCancellationRequested || (Volatile.Read(ref signalsCount) % groupSize) != 0)
+                        while (!cts.Token.IsCancellationRequested)
                         {
                             Interlocked.Increment(ref signalsCount);
-                            await barrier.SignalAndWait();
+                            await barrier.SignalAndWait().WithCancellation(cts.Token).NoThrowAwaitable();
                         }
                     });
                 }

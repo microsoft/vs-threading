@@ -131,27 +131,27 @@ In alternativa, usare AsyncLazy&lt;T&gt;.</target>
         </trans-unit>
         <trans-unit id="VSTHRD012_MessageFormat" translate="yes" xml:space="preserve">
           <source>Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.</source>
-          <target state="new">Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.</target>
+          <target state="translated">Specificare in questa chiamata un'istanza di JoinableTaskFactory o di un altro overload per evitare deadlock con il thread principale.</target>
         </trans-unit>
         <trans-unit id="VSTHRD012_Title" translate="yes" xml:space="preserve">
           <source>Provide JoinableTaskFactory where allowed</source>
-          <target state="new">Provide JoinableTaskFactory where allowed</target>
+          <target state="translated">Specifica JoinableTaskFactory quando consentito</target>
         </trans-unit>
         <trans-unit id="VSTHRD104_MessageFormat" translate="yes" xml:space="preserve">
           <source>Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate.</source>
-          <target state="new">Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate.</target>
+          <target state="translated">Esporre una versione asincrona di questo metodo che non applica il blocco asincrono. Semplificare quindi questo metodo in modo da chiamare il metodo asincrono in un delegato di JoinableTaskFactory.Run.</target>
         </trans-unit>
         <trans-unit id="VSTHRD104_Title" translate="yes" xml:space="preserve">
           <source>Offer async methods</source>
-          <target state="new">Offer async methods</target>
+          <target state="translated">Offri metodi asincroni</target>
         </trans-unit>
         <trans-unit id="VSTHRD001_MessageFormat" translate="yes" xml:space="preserve">
           <source>Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority.</source>
-          <target state="new">Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority.</target>
+          <target state="translated">Attendere JoinableTaskFactory.SwitchToMainThreadAsync() per passare al thread dell'interfaccia utente invece di usare API che possono causare deadlock o per le quali è necessario specificare una priorità.</target>
         </trans-unit>
         <trans-unit id="VSTHRD001_Title" translate="yes" xml:space="preserve">
           <source>Avoid legacy threading switching APIs</source>
-          <target state="new">Avoid legacy threading switching APIs</target>
+          <target state="translated">Evita API legacy per il passaggio a thread</target>
         </trans-unit>
       </group>
     </body>

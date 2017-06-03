@@ -66,8 +66,8 @@ ThreadHelper.ThrowIfNotOnUIThread() çağırın veya önce JoinableTaskFactory.S
         <trans-unit id="VSTHRD003_MessageFormat" translate="yes" xml:space="preserve">
           <source>Calling await on a Task inside a JoinableTaskFactory.Run, when the task is initialized outside the delegate can cause potential deadlocks.
 You can avoid this problem by ensuring the task is initialized within the delegate or by using JoinableTask instead of Task.</source>
-          <target state="translated">JoinableTaskFactory.Run içindeki bir Task için await çağırmak, görevin temsilci dışında başlatılması durumunda kilitlenmelere neden olabilir.
-Görevin temsilcinin içinde başlatılmasını sağlayarak veya Task yerine JoinableTask kullanarak bu sorunu önleyebilirsiniz.</target>
+          <target state="translated">JoinableTaskFactory.Run içindeki bir Task için await çağırmak, görevin temsilci dışında başlatılması durumunda olası kilitlenmelere neden olabilir.
+Görevin temsilci içinde başlatılmasını sağlayarak veya Task yerine JoinableTask kullanarak bu sorunu önleyebilirsiniz.</target>
         </trans-unit>
         <trans-unit id="VSTHRD003_Title" translate="yes" xml:space="preserve">
           <source>Avoid awaiting non-joinable tasks in join contexts</source>
@@ -118,7 +118,7 @@ Bunun yerine AsyncLazy&lt;T&gt; kullanın.</target>
         </trans-unit>
         <trans-unit id="VSTHRD105_MessageFormat" translate="yes" xml:space="preserve">
           <source>Avoid method overloads that assume TaskScheduler.Current. Use an overload that accepts a TaskScheduler and specify TaskScheduler.Default (or any other) explicitly.</source>
-          <target state="translated">TaskScheduler.Current varsayan metot aşırı yüklemelerinden kaçının. TaskScheduler kabul eden bir aşırı yükleme kullanın ve TaskScheduler.Default (veya diğer birini) açık olarak belirtin.</target>
+          <target state="translated">TaskScheduler.Current varsayan metot aşırı yüklemelerinden kaçının. TaskScheduler kabul eden bir aşırı yükleme kullanın ve TaskScheduler.Default (veya başka birini) açık olarak belirtin.</target>
         </trans-unit>
         <trans-unit id="VSTHRD105_Title" translate="yes" xml:space="preserve">
           <source>Avoid method overloads that assume TaskScheduler.Current</source>
@@ -131,27 +131,27 @@ Bunun yerine AsyncLazy&lt;T&gt; kullanın.</target>
         </trans-unit>
         <trans-unit id="VSTHRD012_MessageFormat" translate="yes" xml:space="preserve">
           <source>Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.</source>
-          <target state="new">Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.</target>
+          <target state="translated">Ana iş parçacığında kilitlenmeleri önlemek için bu çağrıda (veya başka bir aşırı yüklemede) bir JoinableTaskFactory örneği sağlayın.</target>
         </trans-unit>
         <trans-unit id="VSTHRD012_Title" translate="yes" xml:space="preserve">
           <source>Provide JoinableTaskFactory where allowed</source>
-          <target state="new">Provide JoinableTaskFactory where allowed</target>
+          <target state="translated">İzin veriliyorsa JoinableTaskFactory sağlayın</target>
         </trans-unit>
         <trans-unit id="VSTHRD104_MessageFormat" translate="yes" xml:space="preserve">
           <source>Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate.</source>
-          <target state="new">Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate.</target>
+          <target state="translated">Bu metodun zaman uyumlu olarak engellemeyen zaman uyumsuz bir sürümünü sunun. Sonra bir JoinableTaskFactory.Run temsilcisi içinde bu zaman uyumsuz metoda çağrı yapmak için bu metodu basitleştirin.</target>
         </trans-unit>
         <trans-unit id="VSTHRD104_Title" translate="yes" xml:space="preserve">
           <source>Offer async methods</source>
-          <target state="new">Offer async methods</target>
+          <target state="translated">Zaman uyumsuz metotlar sunun</target>
         </trans-unit>
         <trans-unit id="VSTHRD001_MessageFormat" translate="yes" xml:space="preserve">
           <source>Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority.</source>
-          <target state="new">Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority.</target>
+          <target state="translated">Kilitlenebilen ya da öncelik belirtilmesini gerektiren API’ler yerine JoinableTaskFactory.SwitchToMainThreadAsync() öğesinin UI iş parçacığına geçmesini bekleyin.</target>
         </trans-unit>
         <trans-unit id="VSTHRD001_Title" translate="yes" xml:space="preserve">
           <source>Avoid legacy threading switching APIs</source>
-          <target state="new">Avoid legacy threading switching APIs</target>
+          <target state="translated">İş parçacıkları arasında geçiş yapan eski API’lerden kaçının</target>
         </trans-unit>
       </group>
     </body>

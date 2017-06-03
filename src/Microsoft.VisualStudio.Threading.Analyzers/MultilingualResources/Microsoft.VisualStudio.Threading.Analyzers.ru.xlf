@@ -66,7 +66,7 @@ Call ThreadHelper.ThrowIfNotOnUIThread() or await JoinableTaskFactory.SwitchToMa
         <trans-unit id="VSTHRD003_MessageFormat" translate="yes" xml:space="preserve">
           <source>Calling await on a Task inside a JoinableTaskFactory.Run, when the task is initialized outside the delegate can cause potential deadlocks.
 You can avoid this problem by ensuring the task is initialized within the delegate or by using JoinableTask instead of Task.</source>
-          <target state="translated">При вызове await в объекте Task в JoinableTaskFactory.Run (и при условии, что задача инициализирована за пределами делегата), могут произойти взаимоблокировки.
+          <target state="translated">При вызове await в объекте Task в JoinableTaskFactory.Run (и при условии, что задача инициализирована за пределами делегата) могут произойти взаимоблокировки.
 Вы можете избежать этой проблемы, инициализировав задачу в делегате или использовав JoinableTask вместо Task.</target>
         </trans-unit>
         <trans-unit id="VSTHRD003_Title" translate="yes" xml:space="preserve">
@@ -97,7 +97,7 @@ Use AsyncLazy&lt;T&gt; instead.</source>
         </trans-unit>
         <trans-unit id="VSTHRD102_MessageFormat" translate="yes" xml:space="preserve">
           <source>Limit use of synchronously blocking method calls such as JoinableTaskFactory.Run or Task.Result to public entrypoint members where you must be synchronous. Using it for internal members can needlessly add synchronous frames between asynchronous frames, leading to threadpool exhaustion.</source>
-          <target state="translated">Разрешите использовать вызовы методов синхронной блокировки, такие как JoinableTaskFactory.Run или Task.Result, только элементам общедоступных точек входа, где требуется синхронизация. Если их будут использовать внутренние элементы, между асинхронным фреймами могут быть добавлены лишние синхронные фреймы, что приведет к нехватке ресурсов в пуле потока.</target>
+          <target state="translated">Разрешите использовать вызовы методов синхронной блокировки, такие как JoinableTaskFactory.Run или Task.Result, только элементам общедоступных точек входа, где требуется синхронизация. Если их будут использовать внутренние элементы, между асинхронными фреймами могут быть добавлены лишние синхронные фреймы, что приведет к нехватке ресурсов в пуле потока.</target>
         </trans-unit>
         <trans-unit id="VSTHRD102_Title" translate="yes" xml:space="preserve">
           <source>Implement internal logic asynchronously</source>
@@ -131,27 +131,27 @@ Use AsyncLazy&lt;T&gt; instead.</source>
         </trans-unit>
         <trans-unit id="VSTHRD012_MessageFormat" translate="yes" xml:space="preserve">
           <source>Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.</source>
-          <target state="new">Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.</target>
+          <target state="translated">Укажите экземпляр JoinableTaskFactory в этом вызове (или другой перегрузке), чтобы избежать взаимоблокировки с основным потоком.</target>
         </trans-unit>
         <trans-unit id="VSTHRD012_Title" translate="yes" xml:space="preserve">
           <source>Provide JoinableTaskFactory where allowed</source>
-          <target state="new">Provide JoinableTaskFactory where allowed</target>
+          <target state="translated">Указывайте JoinableTaskFactory, где это возможно</target>
         </trans-unit>
         <trans-unit id="VSTHRD104_MessageFormat" translate="yes" xml:space="preserve">
           <source>Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate.</source>
-          <target state="new">Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate.</target>
+          <target state="translated">Предоставьте асинхронную версию этого метода, которая не использует синхронную блокировку. Затем упростите этот метод, вызывая асинхронную версию внутри делегата JoinableTaskFactory.Run.</target>
         </trans-unit>
         <trans-unit id="VSTHRD104_Title" translate="yes" xml:space="preserve">
           <source>Offer async methods</source>
-          <target state="new">Offer async methods</target>
+          <target state="translated">Предоставляйте асинхронные методы</target>
         </trans-unit>
         <trans-unit id="VSTHRD001_MessageFormat" translate="yes" xml:space="preserve">
           <source>Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority.</source>
-          <target state="new">Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority.</target>
+          <target state="translated">Дождитесь, когда JoinableTaskFactory.SwitchToMainThreadAsync() переключится на поток пользовательского интерфейса, и не используйте API, которые могут вызывать взаимоблокировки или требуют указания приоритета.</target>
         </trans-unit>
         <trans-unit id="VSTHRD001_Title" translate="yes" xml:space="preserve">
           <source>Avoid legacy threading switching APIs</source>
-          <target state="new">Avoid legacy threading switching APIs</target>
+          <target state="translated">Избегайте использования устаревших API переключения потоков</target>
         </trans-unit>
       </group>
     </body>

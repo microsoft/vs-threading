@@ -105,4 +105,22 @@ In alternativa, usare AsyncLazy&lt;T&gt;.</value>
   <data name="VSTHRD105_Title" xml:space="preserve">
     <value>Evita overload di metodo che presuppongono TaskScheduler.Current</value>
   </data>
+  <data name="VSTHRD012_MessageFormat" xml:space="preserve">
+    <value>Specificare in questa chiamata un'istanza di JoinableTaskFactory o di un altro overload per evitare deadlock con il thread principale.</value>
+  </data>
+  <data name="VSTHRD012_Title" xml:space="preserve">
+    <value>Specifica JoinableTaskFactory quando consentito</value>
+  </data>
+  <data name="VSTHRD104_MessageFormat" xml:space="preserve">
+    <value>Esporre una versione asincrona di questo metodo che non applica il blocco asincrono. Semplificare quindi questo metodo in modo da chiamare il metodo asincrono in un delegato di JoinableTaskFactory.Run.</value>
+  </data>
+  <data name="VSTHRD104_Title" xml:space="preserve">
+    <value>Offri metodi asincroni</value>
+  </data>
+  <data name="VSTHRD001_MessageFormat" xml:space="preserve">
+    <value>Attendere JoinableTaskFactory.SwitchToMainThreadAsync() per passare al thread dell'interfaccia utente invece di usare API che possono causare deadlock o per le quali è necessario specificare una priorità.</value>
+  </data>
+  <data name="VSTHRD001_Title" xml:space="preserve">
+    <value>Evita API legacy per il passaggio a thread</value>
+  </data>
 </root>

@@ -484,6 +484,20 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Gets a value indicating whether an awaiter should capture the
+        /// <see cref="SynchronizationContext"/>.
+        /// </summary>
+        /// <remarks>
+        /// As a library, we generally wouldn't capture the <see cref="SynchronizationContext"/>
+        /// when awaiting, except that where our thread is synchronously blocking anyway, it is actually
+        /// more efficient to capture the <see cref="SynchronizationContext"/> so that the continuation
+        /// will resume on the blocking thread instead of occupying yet another one in order to execute.
+        /// In fact, when threadpool starvation conditions exist, resuming on the calling thread
+        /// can avoid significant delays in executing an often trivial continuation.
+        /// </remarks>
+        internal static bool AwaitShouldCaptureSyncContext => SynchronizationContext.Current is JoinableTaskSynchronizationContext;
+
+        /// <summary>
         /// Synchronously blocks the calling thread until the operation has completed.
         /// If the caller is on the Main thread (or is executing within a JoinableTask that has access to the main thread)
         /// the caller's access to the Main thread propagates to this JoinableTask so that it may also access the main thread.
@@ -518,7 +532,7 @@ namespace Microsoft.VisualStudio.Threading
 
             using (this.AmbientJobJoinsThis())
             {
-                await this.Task.WithCancellation(cancellationToken).ConfigureAwait(false);
+                await this.Task.WithCancellation(AwaitShouldCaptureSyncContext, cancellationToken).ConfigureAwait(AwaitShouldCaptureSyncContext);
             }
         }
 

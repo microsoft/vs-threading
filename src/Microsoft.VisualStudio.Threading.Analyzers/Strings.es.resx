@@ -57,7 +57,7 @@ Llame a ThreadHelper.ThrowIfNotOnUIThread() o el elemento await JoinableTaskFact
     <value>Use InvokeAsync para desencadenar eventos asincrónicos</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>La llamada a await en un elemento Task dentro de JoinableTaskFactory.Run, cuando la tarea se ha iniciado fuera del delegado, puede provocar potenciales interbloqueos.
+    <value>La llamada a await en un elemento Task dentro de JoinableTaskFactory.Run, cuando la tarea se ha iniciado fuera del delegado, puede provocar posibles interbloqueos.
 Puede evitar este problema asegurándose de que la tarea se ha iniciado dentro del delegado o usando JoinableTask en lugar de Task.</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
@@ -104,5 +104,23 @@ Use AsyncLazy&lt;T&gt; en su lugar.</value>
   <data name="VSTHRD100_CodeFix_Title" xml:space="preserve">
     <value>Cambie el tipo de valor devuelto a Task</value>
     <comment>Task is a type name and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD012_MessageFormat" xml:space="preserve">
+    <value>Proporcione una instancia de JoinableTaskFactory en esta llamada (u otra sobrecarga) para evitar interbloqueos con el subproceso principal.</value>
+  </data>
+  <data name="VSTHRD012_Title" xml:space="preserve">
+    <value>Proporcione JoinableTaskFactory donde se permita</value>
+  </data>
+  <data name="VSTHRD104_MessageFormat" xml:space="preserve">
+    <value>Exponga una versión asincrónica de este método que no cause bloqueo de manera sincrónica. A continuación, simplifique este método para llamar a ese método asincrónico dentro de un delegado JoinableTaskFactory.Run.</value>
+  </data>
+  <data name="VSTHRD104_Title" xml:space="preserve">
+    <value>Ofrezca métodos asincrónicos</value>
+  </data>
+  <data name="VSTHRD001_MessageFormat" xml:space="preserve">
+    <value>Use el método await JoinableTaskFactory.SwitchToMainThreadAsync() para cambiar al subproceso de interfaz de usuario en lugar de a API que pueden causar interbloqueo o requerir que se especifique una prioridad.</value>
+  </data>
+  <data name="VSTHRD001_Title" xml:space="preserve">
+    <value>Evite cambiar a API de subprocesos heredados</value>
   </data>
 </root>
