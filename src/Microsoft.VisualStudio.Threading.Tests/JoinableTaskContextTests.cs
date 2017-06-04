@@ -592,7 +592,7 @@
         [StaFact]
         public void IsMainThreadBlockedFalseWhenSyncBlockingOtherThread()
         {
-            var task = Task.Run(delegate
+            Task.Run(delegate
             {
                 this.Factory.Run(async delegate
                 {
@@ -600,7 +600,7 @@
                     await Task.Yield();
                     Assert.False(this.Context.IsMainThreadBlocked());
                 });
-            });
+            }).GetAwaiter().GetResult();
         }
 
         [StaFact]
