@@ -228,4 +228,11 @@ Use AsyncLazy&lt;T&gt; instead.</value>
   <data name="VSTHRD001_Title" xml:space="preserve">
     <value>Avoid legacy threading switching APIs</value>
   </data>
+  <data name="VSTHRD107_MessageFormat" xml:space="preserve">
+    <value>Missing await operator for "using" expression.</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_Title" xml:space="preserve">
+    <value>Using Task&lt;T&gt; instead of result T</value>
+  </data>
 </root>
