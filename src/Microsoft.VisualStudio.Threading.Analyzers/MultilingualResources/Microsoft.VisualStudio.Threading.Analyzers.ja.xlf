@@ -162,6 +162,11 @@ Use AsyncLazy&lt;T&gt; instead.</source>
           <source>Using Task<it id="1" pos="open">&lt;T&gt;</it> instead of result T</source>
           <target state="new">Using Task<it id="1" pos="open">&lt;T&gt;</it> instead of result T</target>
         </trans-unit>
+        <trans-unit id="VSTHRD107_CodeFix_Title" translate="yes" xml:space="preserve">
+          <source>Await using expression</source>
+          <target state="new">Await using expression</target>
+          <note from="MultilingualBuild" annotates="source" priority="2">"await" and "using" are C# keywords and should not be translated.</note>
+        </trans-unit>
       </group>
     </body>
   </file>

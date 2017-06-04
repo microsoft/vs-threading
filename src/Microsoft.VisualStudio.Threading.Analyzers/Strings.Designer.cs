@@ -335,6 +335,15 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Await using expression.
+        /// </summary>
+        internal static string VSTHRD107_CodeFix_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD107_CodeFix_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Missing await operator for &quot;using&quot; expression..
         /// </summary>
         internal static string VSTHRD107_MessageFormat {
