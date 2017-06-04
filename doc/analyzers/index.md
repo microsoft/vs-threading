@@ -18,6 +18,7 @@ ID | Title | Severity | Supports
 [VSTHRD104](VSTHRD104.md) | Offer async option | Advisory
 [VSTHRD105](VSTHRD105.md) | Avoid implicit use of TaskScheduler.Current | Advisory
 [VSTHRD106](VSTHRD106.md) | Use `InvokeAsync` to raise async events | Advisory
+[VSTHRD107](VSTHRD107.md) | Await Task within using expression | Advisory
 [VSTHRD200](VSTHRD200.md) | Use `Async` naming convention | Guideline | [VSTHRD103](VSTHRD103.md)
 
 ## Severity descriptions

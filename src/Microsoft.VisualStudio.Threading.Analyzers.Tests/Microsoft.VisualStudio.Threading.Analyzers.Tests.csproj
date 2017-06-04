@@ -5,6 +5,9 @@
     <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Analyzers.Tests.ruleset</CodeAnalysisRuleSet>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <IsPackable>false</IsPackable>
+
+    <!-- VS2017 Test Explorer test navigation and callstack links don't work with portable PDBs yet. -->
+    <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="WindowsBase" />
