@@ -233,7 +233,8 @@ Use AsyncLazy&lt;T&gt; instead.</value>
     <comment>"await" and "using" are C# keywords and should not be translated.</comment>
   </data>
   <data name="VSTHRD107_Title" xml:space="preserve">
-    <value>Using Task&lt;T&gt; instead of result T</value>
+    <value>Await Task within using expression</value>
+    <comment>"await Task" is a C# compound term, and "using" is a C# keyword. These should not be translated.</comment>
   </data>
   <data name="VSTHRD107_CodeFix_Title" xml:space="preserve">
     <value>Await using expression</value>

@@ -353,7 +353,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Using Task&lt;T&gt; instead of result T.
+        ///   Looks up a localized string similar to Await Task within using expression.
         /// </summary>
         internal static string VSTHRD107_Title {
             get {

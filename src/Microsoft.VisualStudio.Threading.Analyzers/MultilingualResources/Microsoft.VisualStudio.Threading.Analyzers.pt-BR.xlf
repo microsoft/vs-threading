@@ -159,8 +159,9 @@ Em vez disso, use AsyncLazy&lt;T&gt;.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"await" and "using" are C# keywords and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD107_Title" translate="yes" xml:space="preserve">
-          <source>Using Task<it id="1" pos="open">&lt;T&gt;</it> instead of result T</source>
-          <target state="new">Using Task<it id="1" pos="open">&lt;T&gt;</it> instead of result T</target>
+          <source>Await Task within using expression</source>
+          <target state="new">Await Task within using expression</target>
+          <note from="MultilingualBuild" annotates="source" priority="2">"await Task" is a C# compound term, and "using" is a C# keyword. These should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD107_CodeFix_Title" translate="yes" xml:space="preserve">
           <source>Await using expression</source>

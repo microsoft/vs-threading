@@ -17,10 +17,10 @@
     using Microsoft.VisualStudio.Threading;
 
     [ExportCodeFixProvider(LanguageNames.CSharp)]
-    public class VSTHRD107UsingTaskOfTInsteadOfResultTCodeFix : CodeFixProvider
+    public class VSTHRD107AwaitTaskWithinUsingExpressionCodeFix : CodeFixProvider
     {
         private static readonly ImmutableArray<string> ReusableFixableDiagnosticIds = ImmutableArray.Create(
-            VSTHRD107UsingTaskOfTInsteadOfResultTAnalyzer.Id);
+            VSTHRD107AwaitTaskWithinUsingExpressionAnalyzer.Id);
 
         public override ImmutableArray<string> FixableDiagnosticIds => ReusableFixableDiagnosticIds;
 
@@ -42,7 +42,7 @@
                         var modifiedDocument = context.Document.WithSyntaxRoot(root.ReplaceNode(usingStatement, modifiedUsingStatement));
                         return modifiedDocument;
                     },
-                    VSTHRD107UsingTaskOfTInsteadOfResultTAnalyzer.Id),
+                    VSTHRD107AwaitTaskWithinUsingExpressionAnalyzer.Id),
                 diagnostic);
 
             return Task.FromResult<object>(null);

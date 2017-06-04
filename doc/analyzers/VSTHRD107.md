@@ -1,4 +1,4 @@
-# VSTHRD107 Using `Task<T>` instead of result `T`
+# VSTHRD107 Await Task within using expression
 
 The C# `using` statement requires that the used expression implement `IDisposable`.
 Because `Task<T>` implements `IDisposable`, one may accidentally omit an `await` operator

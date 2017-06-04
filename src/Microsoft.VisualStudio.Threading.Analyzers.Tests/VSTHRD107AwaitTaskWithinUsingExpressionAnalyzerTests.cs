@@ -7,28 +7,28 @@
     using Xunit;
     using Xunit.Abstractions;
 
-    public class VSTHRD107UsingTaskOfTInsteadOfResultTAnalyzerTests : CodeFixVerifier
+    public class VSTHRD107AwaitTaskWithinUsingExpressionAnalyzerTests : CodeFixVerifier
     {
         private DiagnosticResult expect = new DiagnosticResult
         {
-            Id = VSTHRD107UsingTaskOfTInsteadOfResultTAnalyzer.Id,
+            Id = VSTHRD107AwaitTaskWithinUsingExpressionAnalyzer.Id,
             SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Error,
         };
 
-        public VSTHRD107UsingTaskOfTInsteadOfResultTAnalyzerTests(ITestOutputHelper logger)
+        public VSTHRD107AwaitTaskWithinUsingExpressionAnalyzerTests(ITestOutputHelper logger)
             : base(logger)
         {
         }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new VSTHRD107UsingTaskOfTInsteadOfResultTAnalyzer();
+            return new VSTHRD107AwaitTaskWithinUsingExpressionAnalyzer();
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()
         {
-            return new VSTHRD107UsingTaskOfTInsteadOfResultTCodeFix();
+            return new VSTHRD107AwaitTaskWithinUsingExpressionCodeFix();
         }
 
         [Fact]

@@ -32,7 +32,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     /// ]]>
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class VSTHRD107UsingTaskOfTInsteadOfResultTAnalyzer : DiagnosticAnalyzer
+    public class VSTHRD107AwaitTaskWithinUsingExpressionAnalyzer : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD107";
 
