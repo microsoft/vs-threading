@@ -95,9 +95,12 @@
                     syncMethodName = syncMemberAccess.Name;
                 }
 
-                root = root.ReplaceNode(syncMethodName, syncMethodName.WithAdditionalAnnotations(syncAccessBookmark));
+                // When we give the Document a modified SyntaxRoot, yet another is created. So we first assign it to the Document,
+                // then we query for the SyntaxRoot from the Document.
+                document = document.WithSyntaxRoot(
+                    root.ReplaceNode(syncMethodName, syncMethodName.WithAdditionalAnnotations(syncAccessBookmark)));
+                root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
                 syncMethodName = (SimpleNameSyntax)root.GetAnnotatedNodes(syncAccessBookmark).Single();
-                document = document.WithSyntaxRoot(root);
 
                 // We'll need the semantic model later. But because we've annotated a node, that changes the SyntaxRoot
                 // and that renders the default semantic model broken (even though we've already updated the document's SyntaxRoot?!).
@@ -105,10 +108,6 @@
                 var semanticModel = await document.GetSemanticModelAsync(cancellationToken);
                 var originalAnonymousMethodContainerIfApplicable = syncMethodName.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>();
                 var originalMethodDeclaration = syncMethodName.FirstAncestorOrSelf<MethodDeclarationSyntax>();
-                if (!semanticModel.TryGetSpeculativeSemanticModelForMethodBody(this.diagnostic.Location.SourceSpan.Start, originalMethodDeclaration, out semanticModel))
-                {
-                    throw new InvalidOperationException("Unable to get updated semantic model.");
-                }
 
                 // Ensure that the method or anonymous delegate is using the async keyword.
                 MethodDeclarationSyntax updatedMethod;
@@ -120,7 +119,8 @@
                 }
                 else
                 {
-                    updatedMethod = originalMethodDeclaration.MakeMethodAsync(semanticModel);
+                    var methodSymbol = semanticModel.GetDeclaredSymbol(originalMethodDeclaration);
+                    updatedMethod = originalMethodDeclaration.MakeMethodAsync(methodSymbol, semanticModel);
                 }
 
                 if (updatedMethod != originalMethodDeclaration)

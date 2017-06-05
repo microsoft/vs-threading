@@ -35,11 +35,24 @@
                     {
                         var root = await context.Document.GetSyntaxRootAsync(ct).ConfigureAwait(false);
                         var usingStatement = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<UsingStatementSyntax>();
+                        var originalMethod = usingStatement.FirstAncestorOrSelf<MethodDeclarationSyntax>();
                         var awaitExpression = SyntaxFactory.AwaitExpression(
                             SyntaxFactory.ParenthesizedExpression(usingStatement.Expression));
                         var modifiedUsingStatement = usingStatement.WithExpression(awaitExpression)
                             .WithAdditionalAnnotations(Simplifier.Annotation);
-                        var modifiedDocument = context.Document.WithSyntaxRoot(root.ReplaceNode(usingStatement, modifiedUsingStatement));
+                        var modifiedMethod = originalMethod.ReplaceNode(usingStatement, modifiedUsingStatement);
+                        if (!modifiedMethod.Modifiers.Contains(SyntaxFactory.Token(SyntaxKind.AsyncKeyword)))
+                        {
+                            SemanticModel semanticModel = await context.Document.GetSemanticModelAsync(ct);
+                            var originalMethodSymbol = semanticModel.GetDeclaredSymbol(originalMethod);
+                            if (semanticModel.TryGetSpeculativeSemanticModelForMethodBody(diagnostic.Location.SourceSpan.Start, modifiedMethod, out semanticModel))
+                            {
+                                modifiedMethod = modifiedMethod.MakeMethodAsync(originalMethodSymbol, semanticModel);
+                            }
+                        }
+
+                        var modifiedDocument = context.Document.WithSyntaxRoot(
+                            root.ReplaceNode(originalMethod, modifiedMethod));
                         return modifiedDocument;
                     },
                     VSTHRD107AwaitTaskWithinUsingExpressionAnalyzer.Id),

@@ -17,6 +17,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using CodeAnalysis.Diagnostics;
     using Microsoft;
     using Microsoft.CodeAnalysis;
+    using Microsoft.CodeAnalysis.Simplification;
 
     internal static class Utils
     {
@@ -329,13 +330,23 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// Converts a synchronous method to be asynchronous, if it is not already async.
         /// </summary>
         /// <param name="method">The method to convert.</param>
-        /// <param name="semanticModel">The semantic model for the document.</param>
-        /// <returns>The converted method, or the original if it was already async.</returns>
-        internal static MethodDeclarationSyntax MakeMethodAsync(this MethodDeclarationSyntax method, SemanticModel semanticModel)
+        /// <param name="originalMethodSymbol">The method symbol.</param>
+        /// <param name="speculativeMethodBodySemanticModel">The semantic model for the document.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>
+        /// The converted method, or the original if it was already async.
+        /// </returns>
+        /// <exception cref="System.ArgumentNullException">method</exception>
+        internal static MethodDeclarationSyntax MakeMethodAsync(this MethodDeclarationSyntax method, IMethodSymbol originalMethodSymbol, SemanticModel speculativeMethodBodySemanticModel, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (method == null)
             {
                 throw new ArgumentNullException(nameof(method));
+            }
+
+            if (originalMethodSymbol == null)
+            {
+                throw new ArgumentNullException(nameof(originalMethodSymbol));
             }
 
             if (method.Modifiers.Any(SyntaxKind.AsyncKeyword))
@@ -344,12 +355,78 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 return method;
             }
 
+            bool hasReturnValue;
+            TypeSyntax returnType = method.ReturnType;
+            if (!HasAsyncCompatibleReturnType(originalMethodSymbol))
+            {
+                hasReturnValue = (method.ReturnType as PredefinedTypeSyntax)?.Keyword.Kind() != SyntaxKind.VoidKeyword;
+
+                // Determine new return type.
+                returnType = hasReturnValue
+                    ? QualifyName(
+                        Namespaces.SystemThreadingTasks,
+                        SyntaxFactory.GenericName(SyntaxFactory.Identifier(nameof(Task)))
+                            .AddTypeArgumentListArguments(method.ReturnType))
+                    : SyntaxFactory.ParseTypeName(typeof(Task).FullName);
+                returnType = returnType
+                    .WithAdditionalAnnotations(Simplifier.Annotation)
+                    .WithTrailingTrivia(method.ReturnType.GetTrailingTrivia());
+            }
+            else
+            {
+                TypeSyntax t = method.ReturnType;
+                while (t is QualifiedNameSyntax q)
+                {
+                    t = q.Right;
+                }
+
+                hasReturnValue = t is GenericNameSyntax;
+            }
+
+            ////SyntaxToken newName = method.Identifier.ValueText.EndsWith(VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix, StringComparison.Ordinal)
+            ////    ? method.Identifier
+            ////    : SyntaxFactory.Identifier(method.Identifier.ValueText + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix);
+
+            BlockSyntax updatedBody = UpdateStatementsForAsyncMethod(
+                method.Body,
+                speculativeMethodBodySemanticModel,
+                hasReturnValue,
+                method.ReturnType != returnType);
+
             // Fix up any return statements to await on the Task it would have returned.
             MethodDeclarationSyntax fixedUpAsyncMethod = method
-                .WithBody(UpdateStatementsForAsyncMethod(method.Body, semanticModel, method.ReturnType is GenericNameSyntax))
-                .AddModifiers(SyntaxFactory.Token(SyntaxKind.AsyncKeyword));
+                .WithBody(updatedBody)
+                .AddModifiers(SyntaxFactory.Token(SyntaxKind.AsyncKeyword))
+                .WithReturnType(returnType);
 
             return fixedUpAsyncMethod;
+        }
+
+        internal static NameSyntax QualifyName(IReadOnlyList<string> qualifiers, SimpleNameSyntax simpleName)
+        {
+            if (qualifiers == null)
+            {
+                throw new ArgumentNullException(nameof(qualifiers));
+            }
+
+            if (simpleName == null)
+            {
+                throw new ArgumentNullException(nameof(simpleName));
+            }
+
+            if (qualifiers.Count == 0)
+            {
+                throw new ArgumentException("At least one qualifier required.");
+            }
+
+            NameSyntax result = SyntaxFactory.IdentifierName(qualifiers[0]);
+            for (int i = 1; i < qualifiers.Count; i++)
+            {
+                var rightSide = SyntaxFactory.IdentifierName(qualifiers[i]);
+                result = SyntaxFactory.QualifiedName(result, rightSide);
+            }
+
+            return SyntaxFactory.QualifiedName(result, simpleName);
         }
 
         /// <summary>
@@ -367,7 +444,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             var blockBody = body as BlockSyntax;
             if (blockBody != null)
             {
-                return UpdateStatementsForAsyncMethod(blockBody, semanticModel, hasResultValue);
+                return UpdateStatementsForAsyncMethod(blockBody, semanticModel, hasResultValue, returnTypeChanged: false/*probably not right, but we don't have a failing test yet.*/);
             }
 
             var expressionBody = body as ExpressionSyntax;
@@ -379,7 +456,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             throw new NotSupportedException();
         }
 
-        private static BlockSyntax UpdateStatementsForAsyncMethod(BlockSyntax body, SemanticModel semanticModel, bool hasResultValue)
+        private static BlockSyntax UpdateStatementsForAsyncMethod(BlockSyntax body, SemanticModel semanticModel, bool hasResultValue, bool returnTypeChanged)
         {
             var fixedUpBlock = body.ReplaceNodes(
                 body.DescendantNodes().OfType<ReturnStatementSyntax>(),
@@ -387,7 +464,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 {
                     if (hasResultValue)
                     {
-                        return n.WithExpression(SyntaxFactory.AwaitExpression(n.Expression).TrySimplify(f.Expression, semanticModel));
+                        return returnTypeChanged
+                            ? n
+                            : n.WithExpression(SyntaxFactory.AwaitExpression(n.Expression).TrySimplify(f.Expression, semanticModel));
                     }
 
                     if (body.Statements.Last() == f)
