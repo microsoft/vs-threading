@@ -4,6 +4,9 @@
 *                                                        *
 *********************************************************/
 
+// https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/2267
+#pragma warning disable SA1009 // Closing parenthesis must be spaced correctly
+
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
@@ -17,6 +20,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using CodeAnalysis.Diagnostics;
     using Microsoft;
     using Microsoft.CodeAnalysis;
+    using Microsoft.CodeAnalysis.Rename;
     using Microsoft.CodeAnalysis.Simplification;
 
     internal static class Utils
@@ -330,34 +334,42 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// Converts a synchronous method to be asynchronous, if it is not already async.
         /// </summary>
         /// <param name="method">The method to convert.</param>
-        /// <param name="originalMethodSymbol">The method symbol.</param>
-        /// <param name="speculativeMethodBodySemanticModel">The semantic model for the document.</param>
+        /// <param name="document">The document.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>
-        /// The converted method, or the original if it was already async.
+        /// The new Document and method syntax, or the original if it was already async.
         /// </returns>
-        /// <exception cref="System.ArgumentNullException">method</exception>
-        internal static MethodDeclarationSyntax MakeMethodAsync(this MethodDeclarationSyntax method, IMethodSymbol originalMethodSymbol, SemanticModel speculativeMethodBodySemanticModel, CancellationToken cancellationToken = default(CancellationToken))
+        /// <exception cref="System.ArgumentNullException">
+        /// method
+        /// or
+        /// document
+        /// or
+        /// originalMethodSymbol
+        /// </exception>
+        internal static async Task<(Document, MethodDeclarationSyntax)> MakeMethodAsync(this MethodDeclarationSyntax method, Document document, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (method == null)
             {
                 throw new ArgumentNullException(nameof(method));
             }
 
-            if (originalMethodSymbol == null)
+            if (document == null)
             {
-                throw new ArgumentNullException(nameof(originalMethodSymbol));
+                throw new ArgumentNullException(nameof(document));
             }
 
             if (method.Modifiers.Any(SyntaxKind.AsyncKeyword))
             {
                 // Already asynchronous.
-                return method;
+                return (document, method);
             }
+
+            var semanticModel = await document.GetSemanticModelAsync(cancellationToken);
+            var methodSymbol = semanticModel.GetDeclaredSymbol(method);
 
             bool hasReturnValue;
             TypeSyntax returnType = method.ReturnType;
-            if (!HasAsyncCompatibleReturnType(originalMethodSymbol))
+            if (!HasAsyncCompatibleReturnType(methodSymbol))
             {
                 hasReturnValue = (method.ReturnType as PredefinedTypeSyntax)?.Keyword.Kind() != SyntaxKind.VoidKeyword;
 
@@ -383,23 +395,72 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 hasReturnValue = t is GenericNameSyntax;
             }
 
-            ////SyntaxToken newName = method.Identifier.ValueText.EndsWith(VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix, StringComparison.Ordinal)
-            ////    ? method.Identifier
-            ////    : SyntaxFactory.Identifier(method.Identifier.ValueText + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix);
-
+            // Fix up any return statements to await on the Task it would have returned.
             BlockSyntax updatedBody = UpdateStatementsForAsyncMethod(
                 method.Body,
-                speculativeMethodBodySemanticModel,
+                semanticModel,
                 hasReturnValue,
                 method.ReturnType != returnType);
 
-            // Fix up any return statements to await on the Task it would have returned.
-            MethodDeclarationSyntax fixedUpAsyncMethod = method
-                .WithBody(updatedBody)
-                .AddModifiers(SyntaxFactory.Token(SyntaxKind.AsyncKeyword))
-                .WithReturnType(returnType);
+            // Apply the changes to the document, and null out stale data.
+            (document, method) = await UpdateDocumentAsync(
+                document,
+                method,
+                m => m
+                    .WithBody(updatedBody)
+                    .AddModifiers(SyntaxFactory.Token(SyntaxKind.AsyncKeyword))
+                    .WithReturnType(returnType),
+                cancellationToken);
+            semanticModel = null;
+            methodSymbol = null;
 
-            return fixedUpAsyncMethod;
+            // Rename the method to have an Async suffix if necessary.
+            if (!method.Identifier.ValueText.EndsWith(VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix, StringComparison.Ordinal))
+            {
+                string newName = method.Identifier.ValueText + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix;
+
+                semanticModel = await document.GetSemanticModelAsync(cancellationToken);
+                methodSymbol = semanticModel.GetDeclaredSymbol(method, cancellationToken);
+                var solution = await Renamer.RenameSymbolAsync(
+                    document.Project.Solution,
+                    methodSymbol,
+                    newName,
+                    document.Project.Solution.Workspace.Options,
+                    cancellationToken).ConfigureAwait(false);
+                document = solution.GetDocument(document.Id);
+            }
+
+            return (document, method);
+        }
+
+        internal static async Task<(Document, T)> UpdateDocumentAsync<T>(Document document, T syntaxNode, Func<T, T> syntaxNodeTransform, CancellationToken cancellationToken)
+            where T : SyntaxNode
+        {
+            SyntaxAnnotation bookmark;
+            SyntaxNode root;
+            (bookmark, document, syntaxNode, root) = await BookmarkSyntaxAsync(document, syntaxNode, cancellationToken);
+
+            var newSyntaxNode = syntaxNodeTransform(syntaxNode);
+
+            root = root.ReplaceNode(syntaxNode, newSyntaxNode);
+            document = document.WithSyntaxRoot(root);
+            root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+            newSyntaxNode = (T)root.GetAnnotatedNodes(bookmark).Single();
+
+            return (document, newSyntaxNode);
+        }
+
+        internal static async Task<(SyntaxAnnotation, Document, T, SyntaxNode)> BookmarkSyntaxAsync<T>(Document document, T syntaxNode, CancellationToken cancellationToken)
+            where T : SyntaxNode
+        {
+            var bookmark = new SyntaxAnnotation();
+            var root = await syntaxNode.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
+            root = root.ReplaceNode(syntaxNode, syntaxNode.WithAdditionalAnnotations(bookmark));
+            document = document.WithSyntaxRoot(root);
+            root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+            syntaxNode = (T)root.GetAnnotatedNodes(bookmark).Single();
+
+            return (bookmark, document, syntaxNode, root);
         }
 
         internal static NameSyntax QualifyName(IReadOnlyList<string> qualifiers, SimpleNameSyntax simpleName)

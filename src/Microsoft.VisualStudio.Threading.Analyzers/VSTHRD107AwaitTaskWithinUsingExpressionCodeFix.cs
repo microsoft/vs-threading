@@ -16,6 +16,22 @@
     using Microsoft.CodeAnalysis.Simplification;
     using Microsoft.VisualStudio.Threading;
 
+    /// <summary>
+    /// Offers a code fix for diagnostics produced by the
+    /// <see cref="VSTHRD107AwaitTaskWithinUsingExpressionAnalyzer" />.
+    /// </summary>
+    /// <remarks>
+    /// The code fix changes code like this as described:
+    /// <![CDATA[
+    ///   AsyncSemaphore semaphore;
+    ///   async Task FooAsync()
+    ///   {
+    ///     using (semaphore.EnterAsync()) // CODE FIX: add await to the using expression
+    ///     {
+    ///     }
+    ///   }
+    /// ]]>
+    /// </remarks>
     [ExportCodeFixProvider(LanguageNames.CSharp)]
     public class VSTHRD107AwaitTaskWithinUsingExpressionCodeFix : CodeFixProvider
     {
@@ -33,27 +49,27 @@
                     Strings.VSTHRD107_CodeFix_Title,
                     async ct =>
                     {
-                        var root = await context.Document.GetSyntaxRootAsync(ct).ConfigureAwait(false);
-                        var usingStatement = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<UsingStatementSyntax>();
-                        var originalMethod = usingStatement.FirstAncestorOrSelf<MethodDeclarationSyntax>();
-                        var awaitExpression = SyntaxFactory.AwaitExpression(
-                            SyntaxFactory.ParenthesizedExpression(usingStatement.Expression));
-                        var modifiedUsingStatement = usingStatement.WithExpression(awaitExpression)
-                            .WithAdditionalAnnotations(Simplifier.Annotation);
-                        var modifiedMethod = originalMethod.ReplaceNode(usingStatement, modifiedUsingStatement);
-                        if (!modifiedMethod.Modifiers.Contains(SyntaxFactory.Token(SyntaxKind.AsyncKeyword)))
-                        {
-                            SemanticModel semanticModel = await context.Document.GetSemanticModelAsync(ct);
-                            var originalMethodSymbol = semanticModel.GetDeclaredSymbol(originalMethod);
-                            if (semanticModel.TryGetSpeculativeSemanticModelForMethodBody(diagnostic.Location.SourceSpan.Start, modifiedMethod, out semanticModel))
-                            {
-                                modifiedMethod = modifiedMethod.MakeMethodAsync(originalMethodSymbol, semanticModel);
-                            }
-                        }
+                        var document = context.Document;
+                        var root = await document.GetSyntaxRootAsync(ct).ConfigureAwait(false);
+                        var method = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<MethodDeclarationSyntax>();
 
-                        var modifiedDocument = context.Document.WithSyntaxRoot(
-                            root.ReplaceNode(originalMethod, modifiedMethod));
-                        return modifiedDocument;
+                        (document, method) = await Utils.UpdateDocumentAsync(
+                            document,
+                            method,
+                            m =>
+                            {
+                                root = m.SyntaxTree.GetRoot(ct);
+                                var usingStatement = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<UsingStatementSyntax>();
+                                var awaitExpression = SyntaxFactory.AwaitExpression(
+                                    SyntaxFactory.ParenthesizedExpression(usingStatement.Expression));
+                                var modifiedUsingStatement = usingStatement.WithExpression(awaitExpression)
+                                    .WithAdditionalAnnotations(Simplifier.Annotation);
+                                return m.ReplaceNode(usingStatement, modifiedUsingStatement);
+                            },
+                            ct);
+                        (document, method) = await method.MakeMethodAsync(document, ct);
+
+                        return document.Project.Solution;
                     },
                     VSTHRD107AwaitTaskWithinUsingExpressionAnalyzer.Id),
                 diagnostic);

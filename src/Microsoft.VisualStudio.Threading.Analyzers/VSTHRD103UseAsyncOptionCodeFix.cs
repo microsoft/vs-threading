@@ -80,7 +80,7 @@
 
             private string AlternativeAsyncMethod => this.diagnostic.Properties[AsyncMethodKeyName];
 
-            protected override async Task<Document> GetChangedDocumentAsync(CancellationToken cancellationToken)
+            protected override async Task<Solution> GetChangedSolutionAsync(CancellationToken cancellationToken)
             {
                 var document = this.document;
                 var root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
@@ -119,8 +119,8 @@
                 }
                 else
                 {
-                    var methodSymbol = semanticModel.GetDeclaredSymbol(originalMethodDeclaration);
-                    updatedMethod = originalMethodDeclaration.MakeMethodAsync(methodSymbol, semanticModel);
+                    (document, updatedMethod) = await originalMethodDeclaration.MakeMethodAsync(document, cancellationToken);
+                    semanticModel = null; // out-dated
                 }
 
                 if (updatedMethod != originalMethodDeclaration)
@@ -164,7 +164,7 @@
 
                 var newRoot = root.ReplaceNode(originalMethodDeclaration, updatedMethod);
                 var newDocument = document.WithSyntaxRoot(newRoot);
-                return newDocument;
+                return newDocument.Project.Solution;
             }
         }
     }
