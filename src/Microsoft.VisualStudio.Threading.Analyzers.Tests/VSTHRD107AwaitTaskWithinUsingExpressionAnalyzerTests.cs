@@ -52,7 +52,7 @@ using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
 class Test {
-    async Task F() {
+    async Task FAsync() {
         AsyncSemaphore lck = null;
         using (await lck.EnterAsync())
         {
@@ -128,7 +128,7 @@ using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
 class Test {
-    async Task F() {
+    async Task FAsync() {
         AsyncSemaphore lck = null;
         using (await lck.EnterAsync())
         {
