@@ -286,7 +286,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return interfaceImplementations;
         }
 
+#pragma warning disable AvoidAsyncSuffix // Avoid Async suffix
         internal static AnonymousFunctionExpressionSyntax MakeMethodAsync(this AnonymousFunctionExpressionSyntax method, SemanticModel semanticModel, CancellationToken cancellationToken)
+#pragma warning restore AvoidAsyncSuffix // Avoid Async suffix
         {
             if (method.AsyncKeyword.Kind() == SyntaxKind.AsyncKeyword)
             {
@@ -364,7 +366,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 return Tuple.Create(document, method);
             }
 
-            var semanticModel = await document.GetSemanticModelAsync(cancellationToken);
+            var semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
             var methodSymbol = semanticModel.GetDeclaredSymbol(method);
 
             bool hasReturnValue;
@@ -410,7 +412,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     .WithBody(updatedBody)
                     .AddModifiers(SyntaxFactory.Token(SyntaxKind.AsyncKeyword))
                     .WithReturnType(returnType),
-                cancellationToken);
+                cancellationToken).ConfigureAwait(false);
             semanticModel = null;
             methodSymbol = null;
 
@@ -419,7 +421,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             {
                 string newName = method.Identifier.ValueText + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix;
 
-                semanticModel = await document.GetSemanticModelAsync(cancellationToken);
+                semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
                 methodSymbol = semanticModel.GetDeclaredSymbol(method, cancellationToken);
                 var solution = await Renamer.RenameSymbolAsync(
                     document.Project.Solution,
@@ -438,7 +440,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         {
             SyntaxAnnotation bookmark;
             SyntaxNode root;
-            (bookmark, document, syntaxNode, root) = await BookmarkSyntaxAsync(document, syntaxNode, cancellationToken);
+            (bookmark, document, syntaxNode, root) = await BookmarkSyntaxAsync(document, syntaxNode, cancellationToken).ConfigureAwait(false);
 
             var newSyntaxNode = syntaxNodeTransform(syntaxNode);
 

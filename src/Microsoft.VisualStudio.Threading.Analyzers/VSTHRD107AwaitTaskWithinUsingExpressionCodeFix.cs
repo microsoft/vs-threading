@@ -66,8 +66,8 @@
                                     .WithAdditionalAnnotations(Simplifier.Annotation);
                                 return m.ReplaceNode(usingStatement, modifiedUsingStatement);
                             },
-                            ct);
-                        (document, method) = await method.MakeMethodAsync(document, ct);
+                            ct).ConfigureAwait(false);
+                        (document, method) = await method.MakeMethodAsync(document, ct).ConfigureAwait(false);
 
                         return document.Project.Solution;
                     },

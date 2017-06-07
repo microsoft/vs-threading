@@ -56,6 +56,7 @@
     <PackageReference Include="MicroBuild.VisualStudio" Version="2.0.40" />
     <PackageReference Include="PdbGit" Version="3.0.41" />
     <PackageReference Include="System.ValueTuple" Version="4.3.0" />
+    <PackageReference Include="AsyncUsageAnalyzers" Version="1.0.0-alpha003" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Microsoft\Multilingual App Toolkit\Microsoft.Multilingual.ResxResources.targets" Label="MultilingualAppToolkit" Condition="Exists('$(MSBuildExtensionsPath)\Microsoft\Multilingual App Toolkit\v$(MultilingualAppToolkitVersion)\Microsoft.Multilingual.ResxResources.targets')" />
   <Target Name="MATPrerequisite" BeforeTargets="PrepareForBuild" Condition="!Exists('$(MSBuildExtensionsPath)\Microsoft\Multilingual App Toolkit\Microsoft.Multilingual.ResxResources.targets')" Label="MultilingualAppToolkit">
