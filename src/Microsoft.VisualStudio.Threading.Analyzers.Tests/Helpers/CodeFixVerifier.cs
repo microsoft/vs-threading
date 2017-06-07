@@ -67,6 +67,27 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
             this.VerifyFix(LanguageNames.VisualBasic, this.GetBasicDiagnosticAnalyzer(), this.GetBasicCodeFixProvider(), oldSource, newSource, codeFixIndex, allowNewCompilerDiagnostics);
         }
 
+        protected void VerifyNoCSharpFixOffered(string oldSource)
+        {
+            this.VerifyNoFixOffered(LanguageNames.CSharp, this.GetCSharpDiagnosticAnalyzer(), this.GetCSharpCodeFixProvider(), oldSource);
+        }
+
+        private void VerifyNoFixOffered(string language, DiagnosticAnalyzer analyzer, CodeFixProvider codeFixProvider, string source)
+        {
+            var document = CreateDocument(source, language);
+            var analyzerDiagnostics = GetSortedDiagnosticsFromDocuments(ImmutableArray.Create(analyzer), new[] { document }, hasEntrypoint: false);
+            var compilerDiagnostics = GetCompilerDiagnostics(document);
+            var attempts = analyzerDiagnostics.Length;
+
+            for (int i = 0; i < attempts; ++i)
+            {
+                var actions = new List<CodeAction>();
+                var context = new CodeFixContext(document, analyzerDiagnostics[0], (a, d) => actions.Add(a), CancellationToken.None);
+                codeFixProvider.RegisterCodeFixesAsync(context).Wait();
+                Assert.Empty(actions);
+            }
+        }
+
         /// <summary>
         /// General verifier for codefixes.
         /// Creates a Document from the source string, then gets diagnostics on it and applies the relevant codefixes.

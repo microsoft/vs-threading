@@ -443,6 +443,10 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             (bookmark, document, syntaxNode, root) = await BookmarkSyntaxAsync(document, syntaxNode, cancellationToken).ConfigureAwait(false);
 
             var newSyntaxNode = syntaxNodeTransform(syntaxNode);
+            if (!newSyntaxNode.HasAnnotation(bookmark))
+            {
+                newSyntaxNode = syntaxNode.CopyAnnotationsTo(newSyntaxNode);
+            }
 
             root = root.ReplaceNode(syntaxNode, newSyntaxNode);
             document = document.WithSyntaxRoot(root);
