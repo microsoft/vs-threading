@@ -346,7 +346,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// or
         /// originalMethodSymbol
         /// </exception>
-        internal static async Task<(Document, MethodDeclarationSyntax)> MakeMethodAsync(this MethodDeclarationSyntax method, Document document, CancellationToken cancellationToken = default(CancellationToken))
+        internal static async Task<Tuple<Document, MethodDeclarationSyntax>> MakeMethodAsync(this MethodDeclarationSyntax method, Document document, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (method == null)
             {
@@ -361,7 +361,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             if (method.Modifiers.Any(SyntaxKind.AsyncKeyword))
             {
                 // Already asynchronous.
-                return (document, method);
+                return Tuple.Create(document, method);
             }
 
             var semanticModel = await document.GetSemanticModelAsync(cancellationToken);
@@ -430,10 +430,10 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 document = solution.GetDocument(document.Id);
             }
 
-            return (document, method);
+            return Tuple.Create(document, method);
         }
 
-        internal static async Task<(Document, T)> UpdateDocumentAsync<T>(Document document, T syntaxNode, Func<T, T> syntaxNodeTransform, CancellationToken cancellationToken)
+        internal static async Task<Tuple<Document, T>> UpdateDocumentAsync<T>(Document document, T syntaxNode, Func<T, T> syntaxNodeTransform, CancellationToken cancellationToken)
             where T : SyntaxNode
         {
             SyntaxAnnotation bookmark;
@@ -447,10 +447,10 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
             newSyntaxNode = (T)root.GetAnnotatedNodes(bookmark).Single();
 
-            return (document, newSyntaxNode);
+            return Tuple.Create(document, newSyntaxNode);
         }
 
-        internal static async Task<(SyntaxAnnotation, Document, T, SyntaxNode)> BookmarkSyntaxAsync<T>(Document document, T syntaxNode, CancellationToken cancellationToken)
+        internal static async Task<Tuple<SyntaxAnnotation, Document, T, SyntaxNode>> BookmarkSyntaxAsync<T>(Document document, T syntaxNode, CancellationToken cancellationToken)
             where T : SyntaxNode
         {
             var bookmark = new SyntaxAnnotation();
@@ -460,7 +460,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
             syntaxNode = (T)root.GetAnnotatedNodes(bookmark).Single();
 
-            return (bookmark, document, syntaxNode, root);
+            return Tuple.Create(bookmark, document, syntaxNode, root);
         }
 
         internal static NameSyntax QualifyName(IReadOnlyList<string> qualifiers, SimpleNameSyntax simpleName)
@@ -498,6 +498,20 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             var invocation = memberAccess?.FirstAncestorOrSelf<InvocationExpressionSyntax>();
             return (invocation?.Expression as IdentifierNameSyntax)?.Identifier.Text == "nameof"
                 && invocation.ArgumentList.Arguments.Count == 1;
+        }
+
+        internal static void Deconstruct<T1, T2>(this Tuple<T1, T2> tuple, out T1 item1, out T2 item2)
+        {
+            item1 = tuple.Item1;
+            item2 = tuple.Item2;
+        }
+
+        internal static void Deconstruct<T1, T2, T3, T4>(this Tuple<T1, T2, T3, T4> tuple, out T1 item1, out T2 item2, out T3 item3, out T4 item4)
+        {
+            item1 = tuple.Item1;
+            item2 = tuple.Item2;
+            item3 = tuple.Item3;
+            item4 = tuple.Item4;
         }
 
         private static CSharpSyntaxNode UpdateStatementsForAsyncMethod(CSharpSyntaxNode body, SemanticModel semanticModel, bool hasResultValue)

@@ -61,9 +61,7 @@
   <Target Name="MATPrerequisite" BeforeTargets="PrepareForBuild" Condition="!Exists('$(MSBuildExtensionsPath)\Microsoft\Multilingual App Toolkit\Microsoft.Multilingual.ResxResources.targets')" Label="MultilingualAppToolkit">
     <Warning Text="$(MSBuildProjectFile) is Multilingual build enabled, but the Multilingual App Toolkit is unavailable during the build. If building with Visual Studio, please check to ensure that toolkit is properly installed." />
   </Target>
-  <Target Name="PackBuildOutputs"
-          BeforeTargets="_GetPackageFiles"
-          DependsOnTargets="SatelliteDllsProjectOutputGroup;DebugSymbolsProjectOutputGroup">
+  <Target Name="PackBuildOutputs" BeforeTargets="_GetPackageFiles" DependsOnTargets="SatelliteDllsProjectOutputGroup;DebugSymbolsProjectOutputGroup">
     <ItemGroup>
       <Content Include="$(TargetPath)" Pack="true" PackagePath="analyzers\cs\" />
       <!--<Content Include="@(DebugSymbolsProjectOutputGroupOutput)" Pack="true" PackagePath="analyzers\cs\" />-->
