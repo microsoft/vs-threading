@@ -159,6 +159,52 @@ class Test {
         }
 
         [Fact]
+        public void TaskResult_FixUpdatesCallers()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    int GetNumber(int a) {
+        var task = Task.Run(() => a);
+        return task.Result;
+    }
+
+    int Add(int a, int b) {
+        return GetNumber(a) + b;
+    }
+
+    int Subtract(int a, int b) {
+        return GetNumber(a) - b;
+    }
+}
+";
+            var withFix = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    async Task<int> GetNumberAsync(int a) {
+        var task = Task.Run(() => a);
+        return await task;
+    }
+
+    async Task<int> AddAsync(int a, int b) {
+        return await GetNumberAsync(a) + b;
+    }
+
+    async Task<int> SubtractAsync(int a, int b) {
+        return await GetNumberAsync(a) - b;
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 16, 8, 27) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
         public void DoNotReportWarningInTaskReturningMethods()
         {
             var test = @"

@@ -67,7 +67,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                         {
                             var document = context.Document;
                             var node = (ExpressionSyntax)root.FindNode(diagnostic.Location.SourceSpan);
-                            (document, node) = await Utils.UpdateDocumentAsync(
+                            (document, node, _) = await Utils.UpdateDocumentAsync(
                                 document,
                                 node,
                                 n => SyntaxFactory.AwaitExpression(transform(n, ct)),
