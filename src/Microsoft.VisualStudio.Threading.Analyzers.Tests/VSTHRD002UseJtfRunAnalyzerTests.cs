@@ -161,12 +161,13 @@ class Test {
         [Fact]
         public void TaskResult_FixUpdatesCallers()
         {
-            var test = @"
+            var test = new[] {
+                @"
 using System;
 using System.Threading.Tasks;
 
 class Test {
-    int GetNumber(int a) {
+    internal static int GetNumber(int a) {
         var task = Task.Run(() => a);
         return task.Result;
     }
@@ -179,13 +180,21 @@ class Test {
         return GetNumber(a) - b;
     }
 }
-";
-            var withFix = @"
+",
+                @"
+class TestClient {
+    int Multiply(int a, int b) {
+        return Test.GetNumber(a) * b;
+    }
+}
+" };
+            var withFix = new[] {
+                @"
 using System;
 using System.Threading.Tasks;
 
 class Test {
-    async Task<int> GetNumberAsync(int a) {
+    internal static async Task<int> GetNumberAsync(int a) {
         var task = Task.Run(() => a);
         return await task;
     }
@@ -198,7 +207,14 @@ class Test {
         return await GetNumberAsync(a) - b;
     }
 }
-";
+",
+                @"
+class TestClient {
+    async System.Threading.Tasks.Task<int> MultiplyAsync(int a, int b) {
+        return await Test.GetNumberAsync(a) * b;
+    }
+}
+" };
             this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 16, 8, 27) };
             this.VerifyCSharpDiagnostic(test, this.expect);
             this.VerifyCSharpFix(test, withFix);
