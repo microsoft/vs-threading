@@ -27,10 +27,11 @@
           <target state="translated">Evite esperas sincrónicas problemáticas</target>
         </trans-unit>
         <trans-unit id="VSTHRD010_MessageFormat" translate="yes" xml:space="preserve">
-          <source>Visual Studio service "{0}" should be used on main thread explicitly. 
+          <source>Visual Studio service "{0}" should be used on main thread explicitly.
 Call ThreadHelper.ThrowIfNotOnUIThread() or await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
-          <target state="translated">El servicio "{0}" de Visual Studio debe usarse explícitamente en el subproceso principal. 
+          <target state="needs-review-translation">El servicio "{0}" de Visual Studio debe usarse explícitamente en el subproceso principal. 
 Llame a ThreadHelper.ThrowIfNotOnUIThread() o el elemento await JoinableTaskFactory.SwitchToMainThreadAsync() en primer lugar.</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD010_Title" translate="yes" xml:space="preserve">
           <source>Use VS services from UI thread</source>
@@ -150,8 +151,10 @@ Use AsyncLazy&lt;T&gt; en su lugar.</target>
           <target state="translated">Use el método await JoinableTaskFactory.SwitchToMainThreadAsync() para cambiar al subproceso de interfaz de usuario en lugar de a API que pueden causar interbloqueo o requerir que se especifique una prioridad.</target>
         </trans-unit>
         <trans-unit id="VSTHRD001_Title" translate="yes" xml:space="preserve">
-          <source>Avoid legacy threading switching APIs</source>
-          <target state="translated">Evite cambiar a API de subprocesos heredados</target>
+          <source>Avoid legacy thread switching APIs</source>
+          <target state="needs-review-translation">Evite cambiar a API de subprocesos heredados</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <note from="MultilingualBuild" annotates="source" priority="2">thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.</note>
         </trans-unit>
         <trans-unit id="VSTHRD107_MessageFormat" translate="yes" xml:space="preserve">
           <source>Missing await operator for "using" expression.</source>

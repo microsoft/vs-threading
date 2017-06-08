@@ -122,5 +122,6 @@ Verwenden Sie stattdessen "AsyncLazy&lt;T&gt;".</value>
   </data>
   <data name="VSTHRD001_Title" xml:space="preserve">
     <value>Legacy-Threading beim Wechseln von APIs vermeiden</value>
+    <comment>thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.</comment>
   </data>
 </root>

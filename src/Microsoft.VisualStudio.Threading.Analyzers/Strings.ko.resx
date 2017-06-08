@@ -122,5 +122,6 @@ ThreadHelper.ThrowIfNotOnUIThread()를 호출하거나 JoinableTaskFactory.Switc
   </data>
   <data name="VSTHRD001_Title" xml:space="preserve">
     <value>레거시 스레딩 전환 API 방지</value>
+    <comment>thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.</comment>
   </data>
 </root>

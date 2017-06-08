@@ -122,5 +122,6 @@ Bunun yerine AsyncLazy&lt;T&gt; kullanın.</value>
   </data>
   <data name="VSTHRD001_Title" xml:space="preserve">
     <value>İş parçacıkları arasında geçiş yapan eski API’lerden kaçının</value>
+    <comment>thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.</comment>
   </data>
 </root>
