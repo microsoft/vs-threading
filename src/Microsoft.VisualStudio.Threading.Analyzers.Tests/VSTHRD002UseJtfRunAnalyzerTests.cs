@@ -6,7 +6,7 @@
     using Xunit;
     using Xunit.Abstractions;
 
-    public class VSTHRD002UseJtfRunAnalyzerTests : DiagnosticVerifier
+    public class VSTHRD002UseJtfRunAnalyzerTests : CodeFixVerifier
     {
         private DiagnosticResult expect = new DiagnosticResult
         {
@@ -20,10 +20,9 @@
         {
         }
 
-        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
-        {
-            return new VSTHRD002UseJtfRunAnalyzer();
-        }
+        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer() => new VSTHRD002UseJtfRunAnalyzer();
+
+        protected override CodeFixProvider GetCSharpCodeFixProvider() => new VSTHRD002UseJtfRunCodeFixWithAwait();
 
         /// <devremarks>
         /// We set TestCategory=AnyCategory here so that *some* test in our assembly uses
@@ -45,8 +44,39 @@ class Test {
     }
 }
 ";
+            var withFix = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    async Task FAsync() {
+        var task = Task.Run(() => {});
+        await task;
+    }
+}
+";
             this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 9) };
             this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
+        public void TaskWaitShouldReportWarning_WithinAnonymousDelegate()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void F() {
+        var task = Task.Run(() => {});
+        Action a = () => task.Wait();
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 26, 8, 37) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyNoCSharpFixOffered(test);
         }
 
         [Fact]
@@ -63,8 +93,39 @@ class Test {
     }
 }
 ";
+            var withFix = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    async Task FAsync() {
+        var task = Task.Run(() => 1);
+        var result = await task;
+    }
+}
+";
             this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 22) };
             this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
+        public void TaskResultShouldReportWarning_WithinAnonymousDelegate()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void F() {
+        var task = Task.Run(() => 5);
+        Func<int> a = () => task.Result;
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 29, 8, 40) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyNoCSharpFixOffered(test);
         }
 
         [Fact]
@@ -81,8 +142,82 @@ class Test {
     }
 }
 ";
+            var withFix = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    async Task FAsync() {
+        var task = Task.Run(() => 1);
+        await task;
+    }
+}
+";
             this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 9) };
             this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
+        public void TaskResult_FixUpdatesCallers()
+        {
+            var test = new[] {
+                @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    internal static int GetNumber(int a) {
+        var task = Task.Run(() => a);
+        return task.Result;
+    }
+
+    int Add(int a, int b) {
+        return GetNumber(a) + b;
+    }
+
+    int Subtract(int a, int b) {
+        return GetNumber(a) - b;
+    }
+}
+",
+                @"
+class TestClient {
+    int Multiply(int a, int b) {
+        return Test.GetNumber(a) * b;
+    }
+}
+" };
+            var withFix = new[] {
+                @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    internal static async Task<int> GetNumberAsync(int a) {
+        var task = Task.Run(() => a);
+        return await task;
+    }
+
+    async Task<int> AddAsync(int a, int b) {
+        return await GetNumberAsync(a) + b;
+    }
+
+    async Task<int> SubtractAsync(int a, int b) {
+        return await GetNumberAsync(a) - b;
+    }
+}
+",
+                @"
+class TestClient {
+    async System.Threading.Tasks.Task<int> MultiplyAsync(int a, int b) {
+        return await Test.GetNumberAsync(a) * b;
+    }
+}
+" };
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 16, 8, 27) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
         }
 
         [Fact]

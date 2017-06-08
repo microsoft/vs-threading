@@ -18,8 +18,9 @@
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD002_MessageFormat" translate="yes" xml:space="preserve">
-          <source>Synchronously waiting on tasks or awaiters may cause deadlocks. Use JoinableTaskFactory.Run instead.</source>
-          <target state="translated">同期的にタスクまたは awaiter を待機すると、デッドロックが引き起こされる可能性があります。代わりに JoinableTaskFactory.Run を使用してください。</target>
+          <source>Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or JoinableTaskFactory.Run instead.</source>
+          <target state="needs-review-translation">同期的にタスクまたは awaiter を待機すると、デッドロックが引き起こされる可能性があります。代わりに JoinableTaskFactory.Run を使用してください。</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD002_Title" translate="yes" xml:space="preserve">
@@ -167,6 +168,11 @@ Use AsyncLazy&lt;T&gt; instead.</source>
           <source>Await using expression</source>
           <target state="new">Await using expression</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"await" and "using" are C# keywords and should not be translated.</note>
+        </trans-unit>
+        <trans-unit id="VSTHRD002_CodeFix_Await_Title" translate="yes" xml:space="preserve">
+          <source>Use await instead</source>
+          <target state="new">Use await instead</target>
+          <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
         </trans-unit>
       </group>
     </body>

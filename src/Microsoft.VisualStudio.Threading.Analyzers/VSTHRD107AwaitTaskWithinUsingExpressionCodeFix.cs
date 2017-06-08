@@ -53,7 +53,7 @@
                         var root = await document.GetSyntaxRootAsync(ct).ConfigureAwait(false);
                         var method = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<MethodDeclarationSyntax>();
 
-                        (document, method) = await Utils.UpdateDocumentAsync(
+                        (document, method, _) = await Utils.UpdateDocumentAsync(
                             document,
                             method,
                             m =>
@@ -66,8 +66,8 @@
                                     .WithAdditionalAnnotations(Simplifier.Annotation);
                                 return m.ReplaceNode(usingStatement, modifiedUsingStatement);
                             },
-                            ct);
-                        (document, method) = await method.MakeMethodAsync(document, ct);
+                            ct).ConfigureAwait(false);
+                        (document, method) = await method.MakeMethodAsync(document, ct).ConfigureAwait(false);
 
                         return document.Project.Solution;
                     },

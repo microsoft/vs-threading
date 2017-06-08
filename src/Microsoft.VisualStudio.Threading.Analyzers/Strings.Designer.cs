@@ -98,7 +98,16 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Synchronously waiting on tasks or awaiters may cause deadlocks. Use JoinableTaskFactory.Run instead..
+        ///   Looks up a localized string similar to Use await instead.
+        /// </summary>
+        internal static string VSTHRD002_CodeFix_Await_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD002_CodeFix_Await_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or JoinableTaskFactory.Run instead..
         /// </summary>
         internal static string VSTHRD002_MessageFormat {
             get {

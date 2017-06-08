@@ -20,6 +20,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using CodeAnalysis.Diagnostics;
     using Microsoft;
     using Microsoft.CodeAnalysis;
+    using Microsoft.CodeAnalysis.FindSymbols;
     using Microsoft.CodeAnalysis.Rename;
     using Microsoft.CodeAnalysis.Simplification;
 
@@ -286,7 +287,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return interfaceImplementations;
         }
 
+#pragma warning disable AvoidAsyncSuffix // Avoid Async suffix
         internal static AnonymousFunctionExpressionSyntax MakeMethodAsync(this AnonymousFunctionExpressionSyntax method, SemanticModel semanticModel, CancellationToken cancellationToken)
+#pragma warning restore AvoidAsyncSuffix // Avoid Async suffix
         {
             if (method.AsyncKeyword.Kind() == SyntaxKind.AsyncKeyword)
             {
@@ -364,7 +367,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 return Tuple.Create(document, method);
             }
 
-            var semanticModel = await document.GetSemanticModelAsync(cancellationToken);
+            DocumentId documentId = document.Id;
+            var semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
             var methodSymbol = semanticModel.GetDeclaredSymbol(method);
 
             bool hasReturnValue;
@@ -396,30 +400,33 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
 
             // Fix up any return statements to await on the Task it would have returned.
+            bool returnTypeChanged = method.ReturnType != returnType;
             BlockSyntax updatedBody = UpdateStatementsForAsyncMethod(
                 method.Body,
                 semanticModel,
                 hasReturnValue,
-                method.ReturnType != returnType);
+                returnTypeChanged);
 
             // Apply the changes to the document, and null out stale data.
-            (document, method) = await UpdateDocumentAsync(
+            SyntaxAnnotation methodBookmark;
+            (document, method, methodBookmark) = await UpdateDocumentAsync(
                 document,
                 method,
                 m => m
                     .WithBody(updatedBody)
                     .AddModifiers(SyntaxFactory.Token(SyntaxKind.AsyncKeyword))
                     .WithReturnType(returnType),
-                cancellationToken);
+                cancellationToken).ConfigureAwait(false);
             semanticModel = null;
             methodSymbol = null;
 
-            // Rename the method to have an Async suffix if necessary.
-            if (!method.Identifier.ValueText.EndsWith(VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix, StringComparison.Ordinal))
+            // Rename the method to have an Async suffix if we changed the return type,
+            // and it doesn't already have that suffix.
+            if (returnTypeChanged && !method.Identifier.ValueText.EndsWith(VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix, StringComparison.Ordinal))
             {
                 string newName = method.Identifier.ValueText + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix;
 
-                semanticModel = await document.GetSemanticModelAsync(cancellationToken);
+                semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
                 methodSymbol = semanticModel.GetDeclaredSymbol(method, cancellationToken);
                 var solution = await Renamer.RenameSymbolAsync(
                     document.Project.Solution,
@@ -428,26 +435,123 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     document.Project.Solution.Workspace.Options,
                     cancellationToken).ConfigureAwait(false);
                 document = solution.GetDocument(document.Id);
+                semanticModel = null;
+                methodSymbol = null;
+                var root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+                method = (MethodDeclarationSyntax)root.GetAnnotatedNodes(methodBookmark).Single();
+            }
+
+            // Update callers to await calls to this method if we made it awaitable.
+            if (returnTypeChanged)
+            {
+                semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
+                methodSymbol = semanticModel.GetDeclaredSymbol(method, cancellationToken);
+                SyntaxAnnotation callerAnnotation;
+                Solution solution = document.Project.Solution;
+                List<DocumentId> annotatedDocumentIds;
+                (solution, callerAnnotation, annotatedDocumentIds) = await AnnotateAllCallersAsync(solution, methodSymbol, cancellationToken).ConfigureAwait(false);
+                foreach (DocumentId docId in annotatedDocumentIds)
+                {
+                    document = solution.GetDocument(docId);
+                    var tree = await document.GetSyntaxTreeAsync(cancellationToken).ConfigureAwait(false);
+                    var root = await tree.GetRootAsync(cancellationToken).ConfigureAwait(false);
+                    var rewriter = new AwaitCallRewriter(callerAnnotation);
+                    root = rewriter.Visit(root);
+                    solution = solution.GetDocument(tree).WithSyntaxRoot(root).Project.Solution;
+                }
+
+                foreach (DocumentId docId in annotatedDocumentIds)
+                {
+                    document = solution.GetDocument(docId);
+                    var tree = await document.GetSyntaxTreeAsync(cancellationToken).ConfigureAwait(false);
+                    var root = await tree.GetRootAsync(cancellationToken).ConfigureAwait(false);
+                    for (var node = root.GetAnnotatedNodes(callerAnnotation).FirstOrDefault(); node != null; node = root.GetAnnotatedNodes(callerAnnotation).FirstOrDefault())
+                    {
+                        var callingMethod = node.FirstAncestorOrSelf<MethodDeclarationSyntax>();
+                        if (callingMethod != null)
+                        {
+                            (document, callingMethod) = await MakeMethodAsync(callingMethod, document, cancellationToken).ConfigureAwait(false);
+
+                            // Clear all annotations of callers from this method so we don't revisit it.
+                            root = await callingMethod.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
+                            var annotationRemover = new RemoveAnnotationRewriter(callerAnnotation);
+                            root = root.ReplaceNode(callingMethod, annotationRemover.Visit(callingMethod));
+                            document = document.WithSyntaxRoot(root);
+                            root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            // Clear all annotations of callers from this method so we don't revisit it.
+                            root = await node.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
+                            root = root.ReplaceNode(node, node.WithoutAnnotations(callerAnnotation));
+                            document = document.WithSyntaxRoot(root);
+                            root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+                        }
+                    }
+
+                    solution = document.Project.Solution;
+                }
+
+                // Make sure we return the latest of everything.
+                document = solution.GetDocument(documentId);
+                var finalTree = await document.GetSyntaxTreeAsync(cancellationToken).ConfigureAwait(false);
+                var finalRoot = await finalTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
+                method = (MethodDeclarationSyntax)finalRoot.GetAnnotatedNodes(methodBookmark).Single();
             }
 
             return Tuple.Create(document, method);
         }
 
-        internal static async Task<Tuple<Document, T>> UpdateDocumentAsync<T>(Document document, T syntaxNode, Func<T, T> syntaxNodeTransform, CancellationToken cancellationToken)
+        internal static async Task<Tuple<Solution, SyntaxAnnotation, List<DocumentId>>> AnnotateAllCallersAsync(Solution solution, ISymbol symbol, CancellationToken cancellationToken)
+        {
+            var bookmark = new SyntaxAnnotation();
+            var callers = await SymbolFinder.FindCallersAsync(symbol, solution, cancellationToken).ConfigureAwait(false);
+            var callersByFile = from caller in callers
+                                from location in caller.Locations
+                                group location by location.SourceTree into file
+                                select file;
+            var updatedDocs = new List<DocumentId>();
+            foreach (var callerByFile in callersByFile)
+            {
+                var root = await callerByFile.Key.GetRootAsync(cancellationToken).ConfigureAwait(false);
+                foreach (var caller in callerByFile)
+                {
+                    var node = root.FindNode(caller.SourceSpan);
+                    var invocation = node.FirstAncestorOrSelf<InvocationExpressionSyntax>();
+                    if (invocation != null)
+                    {
+                        root = root.ReplaceNode(invocation, invocation.WithAdditionalAnnotations(bookmark));
+                    }
+                }
+
+                Document updatedDocument = solution.GetDocument(callerByFile.Key)
+                    .WithSyntaxRoot(root);
+                updatedDocs.Add(updatedDocument.Id);
+                solution = updatedDocument.Project.Solution;
+            }
+
+            return Tuple.Create(solution, bookmark, updatedDocs);
+        }
+
+        internal static async Task<Tuple<Document, T, SyntaxAnnotation>> UpdateDocumentAsync<T>(Document document, T syntaxNode, Func<T, T> syntaxNodeTransform, CancellationToken cancellationToken)
             where T : SyntaxNode
         {
             SyntaxAnnotation bookmark;
             SyntaxNode root;
-            (bookmark, document, syntaxNode, root) = await BookmarkSyntaxAsync(document, syntaxNode, cancellationToken);
+            (bookmark, document, syntaxNode, root) = await BookmarkSyntaxAsync(document, syntaxNode, cancellationToken).ConfigureAwait(false);
 
             var newSyntaxNode = syntaxNodeTransform(syntaxNode);
+            if (!newSyntaxNode.HasAnnotation(bookmark))
+            {
+                newSyntaxNode = syntaxNode.CopyAnnotationsTo(newSyntaxNode);
+            }
 
             root = root.ReplaceNode(syntaxNode, newSyntaxNode);
             document = document.WithSyntaxRoot(root);
             root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
             newSyntaxNode = (T)root.GetAnnotatedNodes(bookmark).Single();
 
-            return Tuple.Create(document, newSyntaxNode);
+            return Tuple.Create(document, newSyntaxNode, bookmark);
         }
 
         internal static async Task<Tuple<SyntaxAnnotation, Document, T, SyntaxNode>> BookmarkSyntaxAsync<T>(Document document, T syntaxNode, CancellationToken cancellationToken)
@@ -504,6 +608,13 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         {
             item1 = tuple.Item1;
             item2 = tuple.Item2;
+        }
+
+        internal static void Deconstruct<T1, T2, T3>(this Tuple<T1, T2, T3> tuple, out T1 item1, out T2 item2, out T3 item3)
+        {
+            item1 = tuple.Item1;
+            item2 = tuple.Item2;
+            item3 = tuple.Item3;
         }
 
         internal static void Deconstruct<T1, T2, T3, T4>(this Tuple<T1, T2, T3, T4> tuple, out T1 item1, out T2 item2, out T3 item3, out T4 item4)
@@ -591,6 +702,48 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             System.Diagnostics.Debugger.Launch();
 #endif
             return true;
+        }
+
+        private class AwaitCallRewriter : CSharpSyntaxRewriter
+        {
+            private readonly SyntaxAnnotation callAnnotation;
+
+            public AwaitCallRewriter(SyntaxAnnotation callAnnotation)
+                : base(visitIntoStructuredTrivia: false)
+            {
+                this.callAnnotation = callAnnotation ?? throw new ArgumentNullException(nameof(callAnnotation));
+            }
+
+            public override SyntaxNode VisitInvocationExpression(InvocationExpressionSyntax node)
+            {
+                if (node.HasAnnotation(this.callAnnotation))
+                {
+                    return SyntaxFactory.ParenthesizedExpression(
+                        SyntaxFactory.AwaitExpression(node))
+                        .WithAdditionalAnnotations(Simplifier.Annotation);
+                }
+
+                return base.VisitInvocationExpression(node);
+            }
+        }
+
+        private class RemoveAnnotationRewriter : CSharpSyntaxRewriter
+        {
+            private readonly SyntaxAnnotation annotationToRemove;
+
+            public RemoveAnnotationRewriter(SyntaxAnnotation annotationToRemove)
+                : base(visitIntoStructuredTrivia: false)
+            {
+                this.annotationToRemove = annotationToRemove ?? throw new ArgumentNullException(nameof(annotationToRemove));
+            }
+
+            public override SyntaxNode Visit(SyntaxNode node)
+            {
+                return base.Visit(
+                    (node?.HasAnnotation(this.annotationToRemove) ?? false)
+                    ? node.WithoutAnnotations(this.annotationToRemove)
+                    : node);
+            }
         }
     }
 }
