@@ -124,4 +124,16 @@ Zamiast tego używaj klasy AsyncLazy&lt;T&gt;.</value>
     <value>Unikaj starszych interfejsów API przełączających wątki</value>
     <comment>thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.</comment>
   </data>
+  <data name="VSTHRD107_MessageFormat" xml:space="preserve">
+    <value>Brak operatora await dla wyrażenia „using”.</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_Title" xml:space="preserve">
+    <value>Oczekuj na zadanie wewnątrz wyrażenia using</value>
+    <comment>"await Task" is a C# compound term, and "using" is a C# keyword. These should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_CodeFix_Title" xml:space="preserve">
+    <value>Oczekuj w wyrażeniu using</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
 </root>
