@@ -29,7 +29,7 @@
         <trans-unit id="VSTHRD010_MessageFormat" translate="yes" xml:space="preserve">
           <source>Visual Studio service "{0}" should be used on main thread explicitly.
 Call ThreadHelper.ThrowIfNotOnUIThread() or await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
-          <target state="needs-review-translation">Usługa programu Visual Studio „{0}” powinna być używana w wątku głównym w sposób jawny.
+          <target state="translated">Usługa programu Visual Studio „{0}” powinna być używana w wątku głównym w sposób jawny.
 Najpierw wywołaj metodę ThreadHelper.ThrowIfNotOnUIThread() lub oczekuj na metodę JoinableTaskFactory.SwitchToMainThreadAsync().</target>
           <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
@@ -152,23 +152,23 @@ Zamiast tego używaj klasy AsyncLazy&lt;T&gt;.</target>
         </trans-unit>
         <trans-unit id="VSTHRD001_Title" translate="yes" xml:space="preserve">
           <source>Avoid legacy thread switching APIs</source>
-          <target state="needs-review-translation">Unikaj starszych interfejsów API przełączających wątki</target>
+          <target state="translated">Unikaj starszych interfejsów API przełączających wątki</target>
           <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
           <note from="MultilingualBuild" annotates="source" priority="2">thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.</note>
         </trans-unit>
         <trans-unit id="VSTHRD107_MessageFormat" translate="yes" xml:space="preserve">
           <source>Missing await operator for "using" expression.</source>
-          <target state="new">Missing await operator for "using" expression.</target>
+          <target state="translated">Brak operatora await dla wyrażenia „using”.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"await" and "using" are C# keywords and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD107_Title" translate="yes" xml:space="preserve">
           <source>Await Task within using expression</source>
-          <target state="new">Await Task within using expression</target>
+          <target state="translated">Oczekuj na zadanie wewnątrz wyrażenia using</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"await Task" is a C# compound term, and "using" is a C# keyword. These should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD107_CodeFix_Title" translate="yes" xml:space="preserve">
           <source>Await using expression</source>
-          <target state="new">Await using expression</target>
+          <target state="translated">Oczekuj w wyrażeniu using</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"await" and "using" are C# keywords and should not be translated.</note>
         </trans-unit>
       </group>
