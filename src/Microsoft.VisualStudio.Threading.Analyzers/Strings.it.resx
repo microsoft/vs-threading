@@ -13,7 +13,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="AwaitXInstead" xml:space="preserve">
-    <value>In alternativa, attendere {0}</value>
+    <value>In alternativa, usare await {0}</value>
     <comment>"await" is a C# keyword and should not be translated.
 {0} is a method name.</comment>
   </data>
@@ -29,8 +29,8 @@
     <value>Evita attese sincrone problematiche</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>Il servizio "{0}" di Visual Studio non deve essere usato sul thread principale in modo esplicito. 
-Chiamare ThreadHelper.ThrowIfNotOnUIThread() o attendere prima JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+    <value>Il servizio "{0}" di Visual Studio non deve essere usato sul thread principale in modo esplicito.
+Chiamare prima ThreadHelper.ThrowIfNotOnUIThread() o await JoinableTaskFactory.SwitchToMainThreadAsync().</value>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
     <value>Usa i servizi di Visual Studio dal thread dell'interfaccia utente</value>
@@ -61,7 +61,7 @@ Chiamare ThreadHelper.ThrowIfNotOnUIThread() o attendere prima JoinableTaskFacto
 Per evitare il problema, assicurarsi che Task venga inizializzato all'interno del delegato oppure usare JoinableTask invece di Task.</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
-    <value>Evita attesa di Task non joinable in contesti di join</value>
+    <value>Evita l'uso di await Task non joinable in contesti di join</value>
   </data>
   <data name="VSTHRD011_MessageFormat" xml:space="preserve">
     <value>Lazy&lt;Task&lt;T&gt;&gt;.Value può causare deadlock.
@@ -71,7 +71,7 @@ In alternativa, usare AsyncLazy&lt;T&gt;.</value>
     <value>Evitare di usare Lazy&lt;T&gt; in cui T è un elemento Task&lt;T2&gt;</value>
   </data>
   <data name="VSTHRD103_MessageFormat" xml:space="preserve">
-    <value>{0} si blocca in modalità sincrona. In alternativa, attendere {1}.</value>
+    <value>{0} si blocca in modalità sincrona. In alternativa, usare await {1}.</value>
   </data>
   <data name="VSTHRD103_MessageFormat_UseAwaitInstead" xml:space="preserve">
     <value>{0} si blocca in modalità sincrona. In alternativa, usare await.</value>
@@ -118,9 +118,22 @@ In alternativa, usare AsyncLazy&lt;T&gt;.</value>
     <value>Offri metodi asincroni</value>
   </data>
   <data name="VSTHRD001_MessageFormat" xml:space="preserve">
-    <value>Attendere JoinableTaskFactory.SwitchToMainThreadAsync() per passare al thread dell'interfaccia utente invece di usare API che possono causare deadlock o per le quali è necessario specificare una priorità.</value>
+    <value>Usare await JoinableTaskFactory.SwitchToMainThreadAsync() per passare al thread dell'interfaccia utente invece di usare API che possono causare deadlock o per le quali è necessario specificare una priorità.</value>
   </data>
   <data name="VSTHRD001_Title" xml:space="preserve">
     <value>Evita API legacy per il passaggio a thread</value>
+    <comment>thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.</comment>
+  </data>
+  <data name="VSTHRD107_MessageFormat" xml:space="preserve">
+    <value>Manca l'operatore await per l'espressione "using".</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_Title" xml:space="preserve">
+    <value>await Task in espressione using</value>
+    <comment>"await Task" is a C# compound term, and "using" is a C# keyword. These should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_CodeFix_Title" xml:space="preserve">
+    <value>Espressione using await</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
   </data>
 </root>

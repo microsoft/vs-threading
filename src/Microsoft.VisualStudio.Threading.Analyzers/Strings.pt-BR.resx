@@ -30,7 +30,7 @@
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
     <value>O serviço do Visual Studio "{0}" deve ser usado em um thread principal explicitamente. 
-Chame ThreadHelper.ThrowIfNotOnUIThread() ou espere o JoinableTaskFactory.SwitchToMainThreadAsync() primeiro.</value>
+Chame ThreadHelper.ThrowIfNotOnUIThread() ou espere primeiro pelo JoinableTaskFactory.SwitchToMainThreadAsync().</value>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
     <value>Use serviços do VS do thread de interface do usuário</value>
@@ -121,6 +121,19 @@ Em vez disso, use AsyncLazy&lt;T&gt;.</value>
     <value>Espere que o JoinableTaskFactory.SwitchToMainThreadAsync() mude o thread da interface do usuário em vez das APIs que podem realizar deadlock ou requerer a especificação de uma prioridade.</value>
   </data>
   <data name="VSTHRD001_Title" xml:space="preserve">
-    <value>Evitar APIs de troca de treading herdadas</value>
+    <value>Evitar APIs de troca de treads herdadas</value>
+    <comment>thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.</comment>
+  </data>
+  <data name="VSTHRD107_MessageFormat" xml:space="preserve">
+    <value>Operador await ausente para a expressão “using”</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_Title" xml:space="preserve">
+    <value>Await Task em uma expressão using</value>
+    <comment>"await Task" is a C# compound term, and "using" is a C# keyword. These should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_CodeFix_Title" xml:space="preserve">
+    <value>Expressão await using</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
   </data>
 </root>

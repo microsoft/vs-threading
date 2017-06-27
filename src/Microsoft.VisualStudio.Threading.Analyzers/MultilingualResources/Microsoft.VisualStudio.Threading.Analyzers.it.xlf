@@ -8,7 +8,7 @@
       <group id="MICROSOFT.VISUALSTUDIO.THREADING.ANALYZERS/STRINGS.RESX" datatype="resx">
         <trans-unit id="AwaitXInstead" translate="yes" xml:space="preserve">
           <source>Await {0} instead</source>
-          <target state="translated">In alternativa, attendere {0}</target>
+          <target state="translated">In alternativa, usare await {0}</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.
 {0} is a method name.</note>
         </trans-unit>
@@ -27,10 +27,11 @@
           <target state="translated">Evita attese sincrone problematiche</target>
         </trans-unit>
         <trans-unit id="VSTHRD010_MessageFormat" translate="yes" xml:space="preserve">
-          <source>Visual Studio service "{0}" should be used on main thread explicitly. 
+          <source>Visual Studio service "{0}" should be used on main thread explicitly.
 Call ThreadHelper.ThrowIfNotOnUIThread() or await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
-          <target state="translated">Il servizio "{0}" di Visual Studio non deve essere usato sul thread principale in modo esplicito. 
-Chiamare ThreadHelper.ThrowIfNotOnUIThread() o attendere prima JoinableTaskFactory.SwitchToMainThreadAsync().</target>
+          <target state="translated">Il servizio "{0}" di Visual Studio non deve essere usato sul thread principale in modo esplicito.
+Chiamare prima ThreadHelper.ThrowIfNotOnUIThread() o await JoinableTaskFactory.SwitchToMainThreadAsync().</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD010_Title" translate="yes" xml:space="preserve">
           <source>Use VS services from UI thread</source>
@@ -71,7 +72,7 @@ Per evitare il problema, assicurarsi che Task venga inizializzato all'interno de
         </trans-unit>
         <trans-unit id="VSTHRD003_Title" translate="yes" xml:space="preserve">
           <source>Avoid awaiting non-joinable tasks in join contexts</source>
-          <target state="translated">Evita attesa di Task non joinable in contesti di join</target>
+          <target state="translated">Evita l'uso di await Task non joinable in contesti di join</target>
         </trans-unit>
         <trans-unit id="VSTHRD011_MessageFormat" translate="yes" xml:space="preserve">
           <source>Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock.
@@ -85,7 +86,7 @@ In alternativa, usare AsyncLazy&lt;T&gt;.</target>
         </trans-unit>
         <trans-unit id="VSTHRD103_MessageFormat" translate="yes" xml:space="preserve">
           <source>{0} synchronously blocks. Await {1} instead.</source>
-          <target state="translated">{0} si blocca in modalità sincrona. In alternativa, attendere {1}.</target>
+          <target state="translated">{0} si blocca in modalità sincrona. In alternativa, usare await {1}.</target>
         </trans-unit>
         <trans-unit id="VSTHRD103_MessageFormat_UseAwaitInstead" translate="yes" xml:space="preserve">
           <source>{0} synchronously blocks. Use await instead.</source>
@@ -147,11 +148,28 @@ In alternativa, usare AsyncLazy&lt;T&gt;.</target>
         </trans-unit>
         <trans-unit id="VSTHRD001_MessageFormat" translate="yes" xml:space="preserve">
           <source>Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority.</source>
-          <target state="translated">Attendere JoinableTaskFactory.SwitchToMainThreadAsync() per passare al thread dell'interfaccia utente invece di usare API che possono causare deadlock o per le quali è necessario specificare una priorità.</target>
+          <target state="translated">Usare await JoinableTaskFactory.SwitchToMainThreadAsync() per passare al thread dell'interfaccia utente invece di usare API che possono causare deadlock o per le quali è necessario specificare una priorità.</target>
         </trans-unit>
         <trans-unit id="VSTHRD001_Title" translate="yes" xml:space="preserve">
-          <source>Avoid legacy threading switching APIs</source>
+          <source>Avoid legacy thread switching APIs</source>
           <target state="translated">Evita API legacy per il passaggio a thread</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <note from="MultilingualBuild" annotates="source" priority="2">thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.</note>
+        </trans-unit>
+        <trans-unit id="VSTHRD107_MessageFormat" translate="yes" xml:space="preserve">
+          <source>Missing await operator for "using" expression.</source>
+          <target state="translated">Manca l'operatore await per l'espressione "using".</target>
+          <note from="MultilingualBuild" annotates="source" priority="2">"await" and "using" are C# keywords and should not be translated.</note>
+        </trans-unit>
+        <trans-unit id="VSTHRD107_Title" translate="yes" xml:space="preserve">
+          <source>Await Task within using expression</source>
+          <target state="translated">await Task in espressione using</target>
+          <note from="MultilingualBuild" annotates="source" priority="2">"await Task" is a C# compound term, and "using" is a C# keyword. These should not be translated.</note>
+        </trans-unit>
+        <trans-unit id="VSTHRD107_CodeFix_Title" translate="yes" xml:space="preserve">
+          <source>Await using expression</source>
+          <target state="translated">Espressione using await</target>
+          <note from="MultilingualBuild" annotates="source" priority="2">"await" and "using" are C# keywords and should not be translated.</note>
         </trans-unit>
       </group>
     </body>

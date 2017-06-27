@@ -27,10 +27,11 @@
           <target state="translated">問題のある同期待機を避ける</target>
         </trans-unit>
         <trans-unit id="VSTHRD010_MessageFormat" translate="yes" xml:space="preserve">
-          <source>Visual Studio service "{0}" should be used on main thread explicitly. 
+          <source>Visual Studio service "{0}" should be used on main thread explicitly.
 Call ThreadHelper.ThrowIfNotOnUIThread() or await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
           <target state="translated">Visual Studio サービス "{0}" は、明示的にメイン スレッドで使用する必要があります。
 ThreadHelper.ThrowIfNotOnUIThread() を呼び出すか、まず JoinableTaskFactory.SwitchToMainThreadAsync() を待機してください。</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD010_Title" translate="yes" xml:space="preserve">
           <source>Use VS services from UI thread</source>
@@ -150,8 +151,25 @@ Use AsyncLazy&lt;T&gt; instead.</source>
           <target state="translated">UI スレッドに切り替えるためには、デッドロックを引き起こす可能性や、優先順位の指定の必要がある API を使用するのではなく、JoinableTaskFactory.SwitchToMainThreadAsync() を待機してください。</target>
         </trans-unit>
         <trans-unit id="VSTHRD001_Title" translate="yes" xml:space="preserve">
-          <source>Avoid legacy threading switching APIs</source>
+          <source>Avoid legacy thread switching APIs</source>
           <target state="translated">従来のスレッド切り替え API を使用しない</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <note from="MultilingualBuild" annotates="source" priority="2">thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.</note>
+        </trans-unit>
+        <trans-unit id="VSTHRD107_MessageFormat" translate="yes" xml:space="preserve">
+          <source>Missing await operator for "using" expression.</source>
+          <target state="translated">"using" 式に await 演算子がありません。</target>
+          <note from="MultilingualBuild" annotates="source" priority="2">"await" and "using" are C# keywords and should not be translated.</note>
+        </trans-unit>
+        <trans-unit id="VSTHRD107_Title" translate="yes" xml:space="preserve">
+          <source>Await Task within using expression</source>
+          <target state="translated">using 式内の Task を待機する</target>
+          <note from="MultilingualBuild" annotates="source" priority="2">"await Task" is a C# compound term, and "using" is a C# keyword. These should not be translated.</note>
+        </trans-unit>
+        <trans-unit id="VSTHRD107_CodeFix_Title" translate="yes" xml:space="preserve">
+          <source>Await using expression</source>
+          <target state="translated">using 式を待機する</target>
+          <note from="MultilingualBuild" annotates="source" priority="2">"await" and "using" are C# keywords and should not be translated.</note>
         </trans-unit>
       </group>
     </body>

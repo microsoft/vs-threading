@@ -469,7 +469,7 @@
             };
 
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
-            try
+            Assert.Throws<OperationCanceledException>(delegate
             {
                 this.Factory.Run(delegate
                 {
@@ -484,11 +484,7 @@
                         });
                     }
                 });
-            }
-            catch (OperationCanceledException)
-            {
-                // we expect this.
-            }
+            });
         }
 
         [StaFact]
@@ -592,7 +588,7 @@
         [StaFact]
         public void IsMainThreadBlockedFalseWhenSyncBlockingOtherThread()
         {
-            var task = Task.Run(delegate
+            Task.Run(delegate
             {
                 this.Factory.Run(async delegate
                 {
@@ -600,7 +596,7 @@
                     await Task.Yield();
                     Assert.False(this.Context.IsMainThreadBlocked());
                 });
-            });
+            }).GetAwaiter().GetResult();
         }
 
         [StaFact]

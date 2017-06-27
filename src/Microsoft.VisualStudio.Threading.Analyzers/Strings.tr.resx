@@ -29,7 +29,7 @@
     <value>Sorunlu zaman uyumlu beklemelerden kaçının</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>"{0}" Visual Studio hizmeti, ana iş parçacığında açık olarak kullanılmalıdır. 
+    <value>"{0}" Visual Studio hizmeti, ana iş parçacığında açık olarak kullanılmalıdır.
 ThreadHelper.ThrowIfNotOnUIThread() çağırın veya önce JoinableTaskFactory.SwitchToMainThreadAsync() bekleyin.</value>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
@@ -122,5 +122,18 @@ Bunun yerine AsyncLazy&lt;T&gt; kullanın.</value>
   </data>
   <data name="VSTHRD001_Title" xml:space="preserve">
     <value>İş parçacıkları arasında geçiş yapan eski API’lerden kaçının</value>
+    <comment>thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.</comment>
+  </data>
+  <data name="VSTHRD107_MessageFormat" xml:space="preserve">
+    <value>“using” ifadesi için await işleci eksik.</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_Title" xml:space="preserve">
+    <value>using ifadesi içinde await Task</value>
+    <comment>"await Task" is a C# compound term, and "using" is a C# keyword. These should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_CodeFix_Title" xml:space="preserve">
+    <value>Await using ifadesi</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
   </data>
 </root>

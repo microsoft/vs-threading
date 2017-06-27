@@ -92,7 +92,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         internal static ITypeSymbol ResolveTypeFromSymbol(ISymbol symbol)
         {
             ITypeSymbol type = null;
-            switch (symbol.Kind)
+            switch (symbol?.Kind)
             {
                 case SymbolKind.Local:
                     type = ((ILocalSymbol)symbol).Type;
