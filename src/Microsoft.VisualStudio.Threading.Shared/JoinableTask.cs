@@ -465,7 +465,8 @@ namespace Microsoft.VisualStudio.Threading
             get
             {
                 return (this.state & JoinableTaskFlags.StartedSynchronously) == JoinableTaskFlags.StartedSynchronously
-                    && (this.state & JoinableTaskFlags.StartedOnMainThread) == JoinableTaskFlags.None;
+                    && (this.state & JoinableTaskFlags.StartedOnMainThread) != JoinableTaskFlags.StartedOnMainThread
+                    && (this.state & JoinableTaskFlags.CompleteRequested) != JoinableTaskFlags.CompleteRequested;
             }
         }
 
@@ -475,7 +476,8 @@ namespace Microsoft.VisualStudio.Threading
             get
             {
                 return (this.state & JoinableTaskFlags.StartedSynchronously) == JoinableTaskFlags.StartedSynchronously
-                && (this.state & JoinableTaskFlags.StartedOnMainThread) == JoinableTaskFlags.StartedOnMainThread;
+                    && (this.state & JoinableTaskFlags.StartedOnMainThread) == JoinableTaskFlags.StartedOnMainThread
+                    && (this.state & JoinableTaskFlags.CompleteRequested) != JoinableTaskFlags.CompleteRequested;
             }
         }
 
