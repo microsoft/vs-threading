@@ -101,8 +101,11 @@
                             invocationExpressionSyntax.Expression.GetLocation().SourceSpan.Start,
                             symbolInfo.Symbol.ContainingType,
                             asyncMethodName,
-                            includeReducedExtensionMethods: true).OfType<IMethodSymbol>();
-                        if (asyncMethodMatches.Any(m => !m.IsObsolete()))
+                            includeReducedExtensionMethods: true).OfType<IMethodSymbol>()
+                            .Where(m => !m.IsObsolete())
+                            .Where(m => HasSupersetOfParameterTypes(m, methodSymbol));
+
+                        if (asyncMethodMatches.Any())
                         {
                             // An async alternative exists.
                             var properties = ImmutableDictionary<string, string>.Empty
@@ -118,6 +121,19 @@
                         }
                     }
                 }
+            }
+
+            /// <summary>
+            /// Determines whether the given method has parameters to cover all the parameter types in another method.
+            /// </summary>
+            /// <param name="candidateMethod">The candidate method.</param>
+            /// <param name="baselineMethod">The baseline method.</param>
+            /// <returns>
+            ///   <c>true</c> if <paramref name="candidateMethod"/> has a superset of parameter types found in <paramref name="baselineMethod"/>; otherwise <c>false</c>.
+            /// </returns>
+            private static bool HasSupersetOfParameterTypes(IMethodSymbol candidateMethod, IMethodSymbol baselineMethod)
+            {
+                return candidateMethod.Parameters.All(p => baselineMethod.Parameters.Any(pSync => pSync.Type?.Equals(p.Type) ?? false));
             }
 
             private static bool IsInTaskReturningMethodOrDelegate(SyntaxNodeAnalysisContext context)
