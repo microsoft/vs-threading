@@ -49,23 +49,16 @@
                 {
                     var methodAnalyzer = new MethodAnalyzer();
                     ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeInvocation), SyntaxKind.InvocationExpression);
-                    ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzePropertyGetter), SyntaxKind.SimpleMemberAccessExpression);
                 }
             });
         }
 
         private class MethodAnalyzer
         {
-            internal void AnalyzePropertyGetter(SyntaxNodeAnalysisContext context)
-            {
-                var memberAccessSyntax = (MemberAccessExpressionSyntax)context.Node;
-                InspectMemberAccess(context, memberAccessSyntax, CommonInterest.SyncBlockingProperties);
-            }
-
             internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
             {
                 var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
-                InspectMemberAccess(context, invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax, CommonInterest.SyncBlockingMethods);
+                InspectMemberAccess(context, invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax, CommonInterest.JTFSyncBlockers);
             }
 
             private static void InspectMemberAccess(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax, IReadOnlyList<CommonInterest.SyncBlockingMethod> problematicMethods)
