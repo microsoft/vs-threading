@@ -44,6 +44,12 @@ class Test {
     }
 
     Task BarAsync() => null;
+
+    static void SetTaskSourceIfCompleted<T>(Task<T> task, TaskCompletionSource<T> tcs) {
+        if (task.IsCompleted) {
+            tcs.SetResult(task.Result);
+        }
+    }
 }";
 
             this.VerifyNoMoreThanOneDiagnosticPerLine(test);
