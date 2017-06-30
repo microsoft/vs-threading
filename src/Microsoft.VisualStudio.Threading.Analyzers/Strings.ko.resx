@@ -29,8 +29,8 @@
     <value>문제가 있는 동기 대기를 사용하지 않습니다.</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>주 스레드에서 Visual Studio 서비스 "{0}"을(를) 명시적으로 사용해야 합니다. 
-ThreadHelper.ThrowIfNotOnUIThread()를 호출하거나 JoinableTaskFactory.SwitchToMainThreadAsync()를 우선 기다립니다.</value>
+    <value>주 스레드에서 Visual Studio 서비스 "{0}"을(를) 명시적으로 사용해야 합니다.
+ThreadHelper.ThrowIfNotOnUIThread()를 호출하거나, 우선 JoinableTaskFactory.SwitchToMainThreadAsync()를 대기합니다.</value>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
     <value>UI 스레드의 VS 서비스를 사용합니다.</value>
@@ -121,6 +121,19 @@ ThreadHelper.ThrowIfNotOnUIThread()를 호출하거나 JoinableTaskFactory.Switc
     <value>JoinableTaskFactory.SwitchToMainThreadAsync()가 교착 상태를 일으킬 수 있고 우선 순위를 지정해야 하는 API 대신 UI 스레드로 전환될 때까지 기다립니다.</value>
   </data>
   <data name="VSTHRD001_Title" xml:space="preserve">
-    <value>레거시 스레딩 전환 API 방지</value>
+    <value>레거시 스레드 전환 API 방지</value>
+    <comment>thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.</comment>
+  </data>
+  <data name="VSTHRD107_MessageFormat" xml:space="preserve">
+    <value>“using” 식의 await 연산자 누락</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_Title" xml:space="preserve">
+    <value>using 식의 await Task</value>
+    <comment>"await Task" is a C# compound term, and "using" is a C# keyword. These should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_CodeFix_Title" xml:space="preserve">
+    <value>await using 식</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
   </data>
 </root>
