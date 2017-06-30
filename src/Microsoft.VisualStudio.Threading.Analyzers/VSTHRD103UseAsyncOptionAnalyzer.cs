@@ -133,7 +133,7 @@
             /// </returns>
             private static bool HasSupersetOfParameterTypes(IMethodSymbol candidateMethod, IMethodSymbol baselineMethod)
             {
-                return candidateMethod.Parameters.All(p => baselineMethod.Parameters.Any(pSync => pSync.Type?.Equals(p.Type) ?? false));
+                return candidateMethod.Parameters.All(candidateParameter => baselineMethod.Parameters.Any(baselineParameter => baselineParameter.Type?.Equals(candidateParameter.Type) ?? false));
             }
 
             private static bool IsInTaskReturningMethodOrDelegate(SyntaxNodeAnalysisContext context)
