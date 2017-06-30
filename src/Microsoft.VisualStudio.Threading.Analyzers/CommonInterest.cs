@@ -72,7 +72,11 @@
             return false;
         }
 
-        internal static void InspectMemberAccess(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax, DiagnosticDescriptor descriptor, IReadOnlyList<SyncBlockingMethod> problematicMethods)
+        internal static void InspectMemberAccess(
+            SyntaxNodeAnalysisContext context,
+            MemberAccessExpressionSyntax memberAccessSyntax,
+            DiagnosticDescriptor descriptor,
+            IReadOnlyList<SyncBlockingMethod> problematicMethods)
         {
             if (descriptor == null)
             {
