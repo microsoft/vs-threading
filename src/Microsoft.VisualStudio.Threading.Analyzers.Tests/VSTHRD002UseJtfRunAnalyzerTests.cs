@@ -45,7 +45,7 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 9) };
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 14, 8, 18) };
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
@@ -63,7 +63,7 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 22) };
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 27, 8, 33) };
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
@@ -81,7 +81,7 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 9) };
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 27, 8, 36) };
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
