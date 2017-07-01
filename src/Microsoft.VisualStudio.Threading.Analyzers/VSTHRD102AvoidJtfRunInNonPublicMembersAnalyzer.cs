@@ -62,7 +62,8 @@
                     context,
                     invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax,
                     Descriptor,
-                    CommonInterest.JTFSyncBlockers);
+                    CommonInterest.JTFSyncBlockers,
+                    ignoreIfInsideAnonymousDelegate: true);
             }
         }
     }

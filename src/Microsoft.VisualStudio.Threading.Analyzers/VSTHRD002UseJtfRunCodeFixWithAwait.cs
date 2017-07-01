@@ -34,31 +34,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             var diagnostic = context.Diagnostics.First();
 
             var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
-            var problemSyntax = (ExpressionSyntax)root.FindNode(diagnostic.Location.SourceSpan);
-            if (problemSyntax.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>() != null)
-            {
-                // We don't support converting anonymous delegates to async.
-                return;
-            }
 
-            Func<ExpressionSyntax, CancellationToken, ExpressionSyntax> transform = null;
-
-            switch (root.FindNode(diagnostic.Location.SourceSpan))
-            {
-                case InvocationExpressionSyntax invocation when invocation.Expression is MemberAccessExpressionSyntax inner && inner.Expression is InvocationExpressionSyntax innerInvoke && innerInvoke.Expression is MemberAccessExpressionSyntax innerAccess2:
-                    transform = (expr, ct) => innerAccess2.Expression;
-                    break;
-                case InvocationExpressionSyntax invocation when invocation.Expression is MemberAccessExpressionSyntax inner:
-                    transform = (expr, ct) => inner.Expression;
-                    break;
-                case MemberAccessExpressionSyntax memberAccess:
-                    transform = (expr, ct) => memberAccess.Expression;
-                    break;
-                default:
-                    break;
-            }
-
-            if (transform != null)
+            if (TryFindNodeAtSource(diagnostic, root, out _, out _))
             {
                 context.RegisterCodeFix(
                     CodeAction.Create(
@@ -66,16 +43,18 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                         async ct =>
                         {
                             var document = context.Document;
-                            var node = (ExpressionSyntax)root.FindNode(diagnostic.Location.SourceSpan);
-                            (document, node, _) = await Utils.UpdateDocumentAsync(
-                                document,
-                                node,
-                                n => SyntaxFactory.AwaitExpression(transform(n, ct)),
-                                ct).ConfigureAwait(false);
-                            var method = node.FirstAncestorOrSelf<MethodDeclarationSyntax>();
-                            if (method != null)
+                            if (TryFindNodeAtSource(diagnostic, root, out var node, out var transform))
                             {
-                                (document, method) = await Utils.MakeMethodAsync(method, document, ct).ConfigureAwait(false);
+                                (document, node, _) = await Utils.UpdateDocumentAsync(
+                                    document,
+                                    node,
+                                    n => SyntaxFactory.AwaitExpression(transform(n, ct)),
+                                    ct).ConfigureAwait(false);
+                                var method = node.FirstAncestorOrSelf<MethodDeclarationSyntax>();
+                                if (method != null)
+                                {
+                                    (document, method) = await Utils.MakeMethodAsync(method, document, ct).ConfigureAwait(false);
+                                }
                             }
 
                             return document.Project.Solution;
@@ -87,5 +66,49 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         /// <inheritdoc />
         public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
+
+        private static bool TryFindNodeAtSource(Diagnostic diagnostic, SyntaxNode root, out ExpressionSyntax target, out Func<ExpressionSyntax, CancellationToken, ExpressionSyntax> transform)
+        {
+            transform = null;
+            target = null;
+
+            var syntaxNode = (ExpressionSyntax)root.FindNode(diagnostic.Location.SourceSpan);
+            if (syntaxNode.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>() != null)
+            {
+                // We don't support converting anonymous delegates to async.
+                return false;
+            }
+
+            ExpressionSyntax FindTwoLevelDeepIdentifierInvocation(ExpressionSyntax from, CancellationToken cancellationToken = default(CancellationToken)) =>
+                ((((from as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax)?.Expression as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax)?.Expression;
+            ExpressionSyntax FindOneLevelDeepIdentifierInvocation(ExpressionSyntax from, CancellationToken cancellationToken = default(CancellationToken)) =>
+                ((from as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax)?.Expression;
+            ExpressionSyntax FindParentMemberAccess(ExpressionSyntax from, CancellationToken cancellationToken = default(CancellationToken)) =>
+                (from as MemberAccessExpressionSyntax)?.Expression;
+
+            var parentInvocation = syntaxNode.FirstAncestorOrSelf<InvocationExpressionSyntax>();
+            var parentMemberAccess = syntaxNode.FirstAncestorOrSelf<MemberAccessExpressionSyntax>();
+            if (FindTwoLevelDeepIdentifierInvocation(parentInvocation) != null)
+            {
+                transform = FindTwoLevelDeepIdentifierInvocation;
+                target = parentInvocation;
+            }
+            else if (FindOneLevelDeepIdentifierInvocation(parentInvocation) != null)
+            {
+                transform = FindOneLevelDeepIdentifierInvocation;
+                target = parentInvocation;
+            }
+            else if (FindParentMemberAccess(parentMemberAccess) != null)
+            {
+                transform = FindParentMemberAccess;
+                target = parentMemberAccess;
+            }
+            else
+            {
+                return false;
+            }
+
+            return true;
+        }
     }
 }
