@@ -25,7 +25,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public void WithPriority_ThrowsOnInvalidInputs()
         {
-            Assert.Throws<ArgumentNullException>(() => this.asyncPump.WithPriority(DispatcherPriority.Normal, null));
+            Assert.Throws<ArgumentNullException>(() => this.asyncPump.WithPriority(null, DispatcherPriority.Normal));
         }
 
         [Fact]
@@ -33,8 +33,8 @@ namespace Microsoft.VisualStudio.Threading.Tests
         {
             this.SimulateUIThread(async delegate
             {
-                var idlePriorityJtf = this.asyncPump.WithPriority(DispatcherPriority.ApplicationIdle, Dispatcher.CurrentDispatcher);
-                var normalPriorityJtf = this.asyncPump.WithPriority(DispatcherPriority.Normal, Dispatcher.CurrentDispatcher);
+                var idlePriorityJtf = this.asyncPump.WithPriority(Dispatcher.CurrentDispatcher, DispatcherPriority.ApplicationIdle);
+                var normalPriorityJtf = this.asyncPump.WithPriority(Dispatcher.CurrentDispatcher, DispatcherPriority.Normal);
                 var idleTask = idlePriorityJtf.RunAsync(async delegate
                 {
                     await Task.Yield();
@@ -53,8 +53,8 @@ namespace Microsoft.VisualStudio.Threading.Tests
         {
             this.SimulateUIThread(async delegate
             {
-                var idlePriorityJtf = this.asyncPump.WithPriority(DispatcherPriority.ApplicationIdle, Dispatcher.CurrentDispatcher);
-                var normalPriorityJtf = this.asyncPump.WithPriority(DispatcherPriority.Normal, Dispatcher.CurrentDispatcher);
+                var idlePriorityJtf = this.asyncPump.WithPriority(Dispatcher.CurrentDispatcher, DispatcherPriority.ApplicationIdle);
+                var normalPriorityJtf = this.asyncPump.WithPriority(Dispatcher.CurrentDispatcher, DispatcherPriority.Normal);
                 JoinableTask normalTask = null;
                 var unblockNormalPriorityWork = new AsyncManualResetEvent();
                 var idleTask = idlePriorityJtf.RunAsync(async delegate

@@ -23,13 +23,13 @@ namespace Microsoft.VisualStudio.Threading
         /// <see cref="Dispatcher"/> and <see cref="DispatcherPriority"/>.
         /// </summary>
         /// <param name="joinableTaskFactory">The underlying <see cref="JoinableTaskFactory"/> to use.</param>
+        /// <param name="dispatcher">The <see cref="Dispatcher"/> that schedules work on the main thread.</param>
         /// <param name="priority">
         /// The priority with which to schedule any work on the UI thread,
         /// when and if <see cref="JoinableTaskFactory.SwitchToMainThreadAsync"/> is called.
         /// </param>
-        /// <param name="dispatcher">The <see cref="Dispatcher"/> that schedules work on the main thread.</param>
         /// <returns>A <see cref="JoinableTaskFactory"/> that may be used for scheduling async work with the specified priority.</returns>
-        public static JoinableTaskFactory WithPriority(this JoinableTaskFactory joinableTaskFactory, DispatcherPriority priority, Dispatcher dispatcher)
+        public static JoinableTaskFactory WithPriority(this JoinableTaskFactory joinableTaskFactory, Dispatcher dispatcher, DispatcherPriority priority)
         {
             Requires.NotNull(joinableTaskFactory, nameof(joinableTaskFactory));
             Requires.NotNull(dispatcher, nameof(dispatcher));
