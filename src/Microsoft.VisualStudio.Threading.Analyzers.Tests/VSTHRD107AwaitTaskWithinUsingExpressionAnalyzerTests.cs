@@ -35,6 +35,7 @@
         public void UsingTaskOfTReturningMethodInSyncMethod_GeneratesError()
         {
             var test = @"
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
 class Test {
@@ -46,9 +47,62 @@ class Test {
     }
 }
 ";
+            var withFix = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 16, 7, 32) };
+class Test {
+    async Task FAsync() {
+        AsyncSemaphore lck = null;
+        using (await lck.EnterAsync())
+        {
+        }
+    }
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 16, 8, 32) };
             this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
+        public void UsingTaskOfTReturningMethodInIntReturningMethod_GeneratesError()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    int F() {
+        AsyncSemaphore lck = null;
+        using (lck.EnterAsync())
+        {
+        }
+
+        return 3;
+    }
+}
+";
+            var withFix = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task<int> FAsync() {
+        AsyncSemaphore lck = null;
+        using (await lck.EnterAsync())
+        {
+        }
+
+        return 3;
+    }
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 16, 8, 32) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
         }
 
         [Fact]
@@ -69,9 +123,23 @@ class Test {
     }
 }
 ";
+            var withFix = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task F() {
+        AsyncSemaphore lck = null;
+        using (await lck.EnterAsync())
+        {
+        }
+    }
+}
+";
 
             this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 16, 8, 32) };
             this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
         }
 
         [Fact]

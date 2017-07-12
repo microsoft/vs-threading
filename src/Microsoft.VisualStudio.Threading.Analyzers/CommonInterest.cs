@@ -76,7 +76,8 @@
             SyntaxNodeAnalysisContext context,
             MemberAccessExpressionSyntax memberAccessSyntax,
             DiagnosticDescriptor descriptor,
-            IReadOnlyList<SyncBlockingMethod> problematicMethods)
+            IReadOnlyList<SyncBlockingMethod> problematicMethods,
+            bool ignoreIfInsideAnonymousDelegate = false)
         {
             if (descriptor == null)
             {
@@ -93,7 +94,7 @@
                 return;
             }
 
-            if (context.Node.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>() != null)
+            if (ignoreIfInsideAnonymousDelegate && context.Node.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>() != null)
             {
                 // We do not analyze JTF.Run inside anonymous functions because
                 // they are so often used as callbacks where the signature is constrained.

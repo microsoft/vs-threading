@@ -247,6 +247,24 @@ public class Test {
             this.VerifyCSharpDiagnostic(test);
         }
 
+        /// <summary>
+        /// Verifies that no reference to System.ValueTuple exists,
+        /// so we know the analyzers will work on VS2015.
+        /// </summary>
+        /// <remarks>
+        /// We have to reference the assembly during compilation due to
+        /// https://github.com/dotnet/roslyn/issues/18629
+        /// So this unit test guards that we don't accidentally require the assembly
+        /// at runtime.
+        /// </remarks>
+        [Fact]
+        public void NoValueTupleReference()
+        {
+            var refAssemblies = typeof(VSTHRD001UseSwitchToMainThreadAsyncAnalyzer)
+                .Assembly.GetReferencedAssemblies();
+            Assert.False(refAssemblies.Any(a => a.Name.Equals("System.ValueTuple", StringComparison.OrdinalIgnoreCase)));
+        }
+
         private void VerifyNoMoreThanOneDiagnosticPerLine(string test)
         {
             this.LogFileContent(test);

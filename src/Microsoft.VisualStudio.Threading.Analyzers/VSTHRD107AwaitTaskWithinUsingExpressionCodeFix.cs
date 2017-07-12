@@ -16,6 +16,22 @@
     using Microsoft.CodeAnalysis.Simplification;
     using Microsoft.VisualStudio.Threading;
 
+    /// <summary>
+    /// Offers a code fix for diagnostics produced by the
+    /// <see cref="VSTHRD107AwaitTaskWithinUsingExpressionAnalyzer" />.
+    /// </summary>
+    /// <remarks>
+    /// The code fix changes code like this as described:
+    /// <![CDATA[
+    ///   AsyncSemaphore semaphore;
+    ///   async Task FooAsync()
+    ///   {
+    ///     using (semaphore.EnterAsync()) // CODE FIX: add await to the using expression
+    ///     {
+    ///     }
+    ///   }
+    /// ]]>
+    /// </remarks>
     [ExportCodeFixProvider(LanguageNames.CSharp)]
     public class VSTHRD107AwaitTaskWithinUsingExpressionCodeFix : CodeFixProvider
     {
@@ -33,14 +49,27 @@
                     Strings.VSTHRD107_CodeFix_Title,
                     async ct =>
                     {
-                        var root = await context.Document.GetSyntaxRootAsync(ct).ConfigureAwait(false);
-                        var usingStatement = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<UsingStatementSyntax>();
-                        var awaitExpression = SyntaxFactory.AwaitExpression(
-                            SyntaxFactory.ParenthesizedExpression(usingStatement.Expression));
-                        var modifiedUsingStatement = usingStatement.WithExpression(awaitExpression)
-                            .WithAdditionalAnnotations(Simplifier.Annotation);
-                        var modifiedDocument = context.Document.WithSyntaxRoot(root.ReplaceNode(usingStatement, modifiedUsingStatement));
-                        return modifiedDocument;
+                        var document = context.Document;
+                        var root = await document.GetSyntaxRootAsync(ct).ConfigureAwait(false);
+                        var method = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<MethodDeclarationSyntax>();
+
+                        (document, method, _) = await Utils.UpdateDocumentAsync(
+                            document,
+                            method,
+                            m =>
+                            {
+                                root = m.SyntaxTree.GetRoot(ct);
+                                var usingStatement = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<UsingStatementSyntax>();
+                                var awaitExpression = SyntaxFactory.AwaitExpression(
+                                    SyntaxFactory.ParenthesizedExpression(usingStatement.Expression));
+                                var modifiedUsingStatement = usingStatement.WithExpression(awaitExpression)
+                                    .WithAdditionalAnnotations(Simplifier.Annotation);
+                                return m.ReplaceNode(usingStatement, modifiedUsingStatement);
+                            },
+                            ct).ConfigureAwait(false);
+                        (document, method) = await method.MakeMethodAsync(document, ct).ConfigureAwait(false);
+
+                        return document.Project.Solution;
                     },
                     VSTHRD107AwaitTaskWithinUsingExpressionAnalyzer.Id),
                 diagnostic);
