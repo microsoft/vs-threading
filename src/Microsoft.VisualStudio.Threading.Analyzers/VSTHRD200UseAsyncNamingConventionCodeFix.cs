@@ -66,10 +66,10 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             protected override async Task<Solution> GetChangedSolutionAsync(CancellationToken cancellationToken)
             {
-                var root = await this.document.GetSyntaxRootAsync(cancellationToken);
+                var root = await this.document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
                 var methodDeclaration = (MethodDeclarationSyntax)root.FindNode(this.diagnostic.Location.SourceSpan);
 
-                var semanticModel = await this.document.GetSemanticModelAsync(cancellationToken);
+                var semanticModel = await this.document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
                 var methodSymbol = semanticModel.GetDeclaredSymbol(methodDeclaration, cancellationToken);
 
                 var solution = this.document.Project.Solution;
@@ -78,7 +78,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     methodSymbol,
                     this.NewName,
                     solution.Workspace.Options,
-                    cancellationToken);
+                    cancellationToken).ConfigureAwait(false);
 
                 return updatedSolution;
             }

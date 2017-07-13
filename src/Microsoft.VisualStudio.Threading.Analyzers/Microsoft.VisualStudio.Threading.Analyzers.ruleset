@@ -91,4 +91,7 @@
     <Rule Id="SA1640" Action="Hidden" />
     <Rule Id="SA1641" Action="Hidden" />
   </Rules>
+  <Rules AnalyzerId="AsyncUsageAnalyzers" RuleNamespace="AsyncUsageAnalyzers">
+    <Rule Id="UseConfigureAwait" Action="Error" />
+  </Rules>
 </RuleSet>
