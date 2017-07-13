@@ -251,7 +251,7 @@
         }
 
         [Fact]
-        public void MultipleDequeuers()
+        public async Task MultipleDequeuers()
         {
             var dequeuers = new Task<GenericParameterHelper>[5];
             for (int i = 0; i < dequeuers.Length; i++)
@@ -261,7 +261,13 @@
 
             for (int i = 0; i < dequeuers.Length; i++)
             {
-                int completedCount = dequeuers.Count(d => d.IsCompleted);
+                int completedCount = 0;
+                while (completedCount < i)
+                {
+                    await Task.WhenAny(dequeuers.Skip(completedCount)).WithTimeout(TimeSpan.FromMilliseconds(TestTimeout));
+                    completedCount = dequeuers.Count(d => d.IsCompleted);
+                }
+
                 Assert.Equal(i, completedCount);
                 this.queue.Enqueue(new GenericParameterHelper(i));
             }
@@ -273,7 +279,7 @@
         }
 
         [Fact]
-        public void MultipleDequeuersCancelled()
+        public async Task MultipleDequeuersCancelled()
         {
             var cts = new CancellationTokenSource[2];
             for (int i = 0; i < cts.Length; i++)
@@ -291,7 +297,15 @@
 
             for (int i = 0; i < dequeuers.Length; i++)
             {
-                Assert.Equal(i % 2 == 0, dequeuers[i].IsCanceled);
+                if (i % 2 == 0)
+                {
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => dequeuers[i]).WithTimeout(UnexpectedTimeout);
+                    Assert.True(dequeuers[i].IsCanceled);
+                }
+                else
+                {
+                    Assert.False(dequeuers[i].IsCanceled);
+                }
 
                 if (!dequeuers[i].IsCanceled)
                 {
@@ -299,6 +313,7 @@
                 }
             }
 
+            await Task.WhenAll(dequeuers).WithTimeout(UnexpectedTimeout).NoThrowAwaitable();
             Assert.True(dequeuers.All(d => d.IsCompleted));
         }
 
@@ -355,11 +370,12 @@
         }
 
         [Fact]
-        public void CompleteWhileDequeuersWaiting()
+        public async Task CompleteWhileDequeuersWaiting()
         {
             var dequeueTask = this.queue.DequeueAsync();
             this.queue.Complete();
             Assert.True(this.queue.Completion.IsCompleted);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => dequeueTask).WithTimeout(UnexpectedTimeout);
             Assert.True(dequeueTask.IsCanceled);
         }
 
