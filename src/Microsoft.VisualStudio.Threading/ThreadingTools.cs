@@ -263,18 +263,40 @@ namespace Microsoft.VisualStudio.Threading
             await task.ConfigureAwait(continueOnCapturedContext);
         }
 
+        /// <summary>
+        /// A state object for tracking cancellation and a TaskCompletionSource.
+        /// </summary>
+        /// <typeparam name="T">The type of value returned from a task.</typeparam>
+        /// <remarks>
+        /// We use this class so that we only allocate one object to support all continuations
+        /// required for cancellation handling, rather than a special closure and delegate for each one.
+        /// </remarks>
         private class CancelableTaskCompletionSource<T>
         {
+            /// <summary>
+            /// Initializes a new instance of the <see cref="CancelableTaskCompletionSource{T}"/> class.
+            /// </summary>
+            /// <param name="taskCompletionSource">The task completion source.</param>
+            /// <param name="cancellationToken">The cancellation token.</param>
             internal CancelableTaskCompletionSource(TaskCompletionSource<T> taskCompletionSource, CancellationToken cancellationToken)
             {
                 this.TaskCompletionSource = taskCompletionSource ?? throw new ArgumentNullException(nameof(taskCompletionSource));
                 this.CancellationToken = cancellationToken;
             }
 
+            /// <summary>
+            /// Gets the cancellation token.
+            /// </summary>
             internal CancellationToken CancellationToken { get; }
 
+            /// <summary>
+            /// Gets the Task completion source.
+            /// </summary>
             internal TaskCompletionSource<T> TaskCompletionSource { get; }
 
+            /// <summary>
+            /// Gets or sets the cancellation token registration.
+            /// </summary>
             internal CancellationTokenRegistration CancellationTokenRegistration { get; set; }
         }
     }
