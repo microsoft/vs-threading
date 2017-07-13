@@ -475,7 +475,7 @@
         }
 
         [Fact]
-        public void OnEnqueuedAlreadyDispatched()
+        public async Task OnEnqueuedAlreadyDispatched()
         {
             var queue = new DerivedQueue<int>();
             bool callbackFired = false;
@@ -489,7 +489,7 @@
             var dequeuer = queue.DequeueAsync();
             queue.Enqueue(5);
             Assert.True(callbackFired);
-            Assert.True(dequeuer.IsCompleted);
+            Assert.Equal(5, await dequeuer.WithTimeout(UnexpectedTimeout));
         }
 
         [Fact]
