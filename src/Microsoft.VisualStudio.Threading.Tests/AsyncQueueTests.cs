@@ -48,35 +48,38 @@
         [Fact]
         public void OrderPreservedAcrossCancellationTokens()
         {
-            int seed = (int)DateTime.Now.Ticks;
-            this.Logger.WriteLine("Using random seed {0}", seed);
-            var r = new Random(seed);
-
-            // Prepare a bunch of unique CancellationTokens, including one CancellationToken.None.
-            var cts = new CancellationToken[10];
-            for (int i = 1; i < cts.Length; i++)
+            int[] seedsToUse = new int[] { -2100387291, (int)DateTime.Now.Ticks };
+            foreach (int seed in seedsToUse)
             {
-                cts[i] = new CancellationTokenSource().Token;
-            }
+                this.Logger.WriteLine("Using random seed {0}", seed);
+                var r = new Random(seed);
 
-            // Arrange 100 DequeueAsync tasks that use random tokens.
-            var dequeueTasks = new Task<GenericParameterHelper>[100];
-            for (int i = 0; i < dequeueTasks.Length; i++)
-            {
-                CancellationToken ct = cts[r.Next() % cts.Length];
-                dequeueTasks[i] = this.queue.DequeueAsync(ct);
-            }
+                // Prepare a bunch of unique CancellationTokens, including one CancellationToken.None.
+                var cts = new CancellationToken[10];
+                for (int i = 1; i < cts.Length; i++)
+                {
+                    cts[i] = new CancellationTokenSource().Token;
+                }
 
-            // Now enqueue that many elements
-            for (int i = 0; i < dequeueTasks.Length; i++)
-            {
-                this.queue.Enqueue(new GenericParameterHelper(i));
-            }
+                // Arrange 100 DequeueAsync tasks that use random tokens.
+                var dequeueTasks = new Task<GenericParameterHelper>[100];
+                for (int i = 0; i < dequeueTasks.Length; i++)
+                {
+                    CancellationToken ct = cts[r.Next() % cts.Length];
+                    dequeueTasks[i] = this.queue.DequeueAsync(ct);
+                }
 
-            // And verify that the dequeue tasks got them in order.
-            for (int i = 0; i < dequeueTasks.Length; i++)
-            {
-                Assert.Equal(i, dequeueTasks[i].Result.Data);
+                // Now enqueue that many elements
+                for (int i = 0; i < dequeueTasks.Length; i++)
+                {
+                    this.queue.Enqueue(new GenericParameterHelper(i));
+                }
+
+                // And verify that the dequeue tasks got them in order.
+                for (int i = 0; i < dequeueTasks.Length; i++)
+                {
+                    Assert.Equal(i, dequeueTasks[i].Result.Data);
+                }
             }
         }
 
