@@ -174,6 +174,8 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         internal static void AttachCancellation<T>(this TaskCompletionSource<T> taskCompletionSource, CancellationToken cancellationToken)
         {
+            Requires.NotNull(taskCompletionSource, nameof(taskCompletionSource));
+
             if (cancellationToken.CanBeCanceled)
             {
                 if (cancellationToken.IsCancellationRequested)
