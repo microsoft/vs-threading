@@ -23,11 +23,6 @@ namespace Microsoft.VisualStudio.Threading
     public class AsyncQueue<T>
     {
         /// <summary>
-        /// The event that is signaled whenever the queue is non-empty. Lazily constructed.
-        /// </summary>
-        private volatile AsyncAutoResetEvent enqueuedEvent;
-
-        /// <summary>
         /// The source of the task returned by <see cref="Completion"/>. Lazily constructed.
         /// </summary>
         /// <remarks>
@@ -44,6 +39,11 @@ namespace Microsoft.VisualStudio.Threading
         /// The internal queue of elements. Lazily constructed.
         /// </summary>
         private Queue<T> queueElements;
+
+        /// <summary>
+        /// The internal queue of <see cref="DequeueAsync(CancellationToken)"/> waiters. Lazily constructed.
+        /// </summary>
+        private Queue<TaskCompletionSource<T>> dequeuingWaiters;
 
         /// <summary>
         /// A value indicating whether <see cref="Complete"/> has been called.
@@ -79,7 +79,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 lock (this.SyncRoot)
                 {
-                    return this.queueElements != null ? this.queueElements.Count : 0;
+                    return this.queueElements?.Count ?? 0;
                 }
             }
         }
@@ -140,29 +140,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets the initial capacity for the queue.
         /// </summary>
-        protected virtual int InitialCapacity
-        {
-            get { return 4; }
-        }
-
-        private AsyncAutoResetEvent EnqueuedEvent
-        {
-            get
-            {
-                if (this.enqueuedEvent == null)
-                {
-                    lock (this.SyncRoot)
-                    {
-                        if (this.enqueuedEvent == null)
-                        {
-                            this.enqueuedEvent = new AsyncAutoResetEvent(false);
-                        }
-                    }
-                }
-
-                return this.enqueuedEvent;
-            }
-        }
+        protected virtual int InitialCapacity => 4;
 
         /// <summary>
         /// Signals that no further elements will be enqueued.
@@ -196,6 +174,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns><c>true</c> if the value was added to the queue; <c>false</c> if the queue is already completed.</returns>
         public bool TryEnqueue(T value)
         {
+            bool alreadyDispatched = false;
             lock (this.SyncRoot)
             {
                 if (this.completeSignaled)
@@ -203,16 +182,29 @@ namespace Microsoft.VisualStudio.Threading
                     return false;
                 }
 
-                if (this.queueElements == null)
+                // Is a dequeuer waiting for this?
+                while (this.dequeuingWaiters?.Count > 0)
                 {
-                    this.queueElements = new Queue<T>(this.InitialCapacity);
+                    TaskCompletionSource<T> waitingDequeuer = this.dequeuingWaiters.Dequeue();
+                    if (waitingDequeuer.TrySetResult(value))
+                    {
+                        alreadyDispatched = true;
+                        break;
+                    }
                 }
 
-                this.queueElements.Enqueue(value);
-                this.EnqueuedEvent.Set();
+                if (!alreadyDispatched)
+                {
+                    if (this.queueElements == null)
+                    {
+                        this.queueElements = new Queue<T>(this.InitialCapacity);
+                    }
+
+                    this.queueElements.Enqueue(value);
+                }
             }
 
-            this.OnEnqueued(value, false);
+            this.OnEnqueued(value, alreadyDispatched);
 
             return true;
         }
@@ -267,32 +259,38 @@ namespace Microsoft.VisualStudio.Threading
         /// </param>
         /// <returns>A task whose result is the head element.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
-        public async Task<T> DequeueAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public Task<T> DequeueAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            await this.EnqueuedEvent.WaitAsync(cancellationToken);
-
             T result;
             lock (this.SyncRoot)
             {
-                if (this.completeSignaled && (this.queueElements == null || this.queueElements.Count == 0))
+                if (this.IsCompleted)
                 {
-                    this.EnqueuedEvent.Set(); // allow the next task in the chain to cancel too.
-
-                    // Use the caller's CancellationToken if provided.
+                    // Prefer the caller's CancellationToken if provided and canceled.
                     cancellationToken.ThrowIfCancellationRequested();
                     throw new OperationCanceledException();
                 }
 
-                result = this.queueElements.Dequeue();
-                if (this.queueElements.Count > 0)
+                if (this.queueElements?.Count > 0)
                 {
-                    this.EnqueuedEvent.Set();
+                    result = this.queueElements.Dequeue();
+                }
+                else
+                {
+                    if (this.dequeuingWaiters == null)
+                    {
+                        this.dequeuingWaiters = new Queue<TaskCompletionSource<T>>(capacity: 2);
+                    }
+
+                    var waiterTcs = new TaskCompletionSourceWithoutInlining<T>(allowInliningContinuations: false);
+                    waiterTcs.AttachCancellation(cancellationToken);
+                    this.dequeuingWaiters.Enqueue(waiterTcs);
+                    return waiterTcs.Task;
                 }
             }
 
             this.CompleteIfNecessary();
-
-            return result;
+            return Task.FromResult(result);
         }
 
         /// <summary>
@@ -415,17 +413,11 @@ namespace Microsoft.VisualStudio.Threading
 
             if (transitionTaskSource)
             {
-                if (this.completedSource != null)
-                {
-                    this.completedSource.TrySetResult(null);
-                }
-
+                this.completedSource?.TrySetResult(null);
                 if (invokeOnCompleted)
                 {
                     this.OnCompleted();
                 }
-
-                this.enqueuedEvent?.Set();
             }
         }
     }

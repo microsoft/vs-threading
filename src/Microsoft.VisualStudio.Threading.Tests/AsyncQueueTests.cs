@@ -415,16 +415,16 @@
                 {
                     var otherThread = Task.Run(delegate
                     {
-                        barrier.SignalAndWait();
+                        Assert.True(barrier.SignalAndWait(TestTimeout));
                         queue.DequeueAsync(cts.Token);
-                        barrier.SignalAndWait();
+                        Assert.True(barrier.SignalAndWait(TestTimeout));
                     });
 
-                    barrier.SignalAndWait();
+                    Assert.True(barrier.SignalAndWait(TestTimeout));
                     cts.Cancel();
-                    barrier.SignalAndWait();
+                    Assert.True(barrier.SignalAndWait(TestTimeout));
 
-                    otherThread.Wait();
+                    Assert.True(otherThread.Wait(TestTimeout));
                 }
 
                 iterations++;

@@ -116,23 +116,7 @@ namespace Microsoft.VisualStudio.Threading
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "tcs")]
         public static void ApplyResultTo<T>(this Task<T> task, TaskCompletionSource<T> tcs)
         {
-            Requires.NotNull(task, nameof(task));
-            Requires.NotNull(tcs, nameof(tcs));
-
-            if (task.IsCompleted)
-            {
-                ApplyCompletedTaskResultTo(task, tcs);
-            }
-            else
-            {
-                // Using a minimum of allocations (just one task, and no closure) ensure that one task's completion sets equivalent completion on another task.
-                task.ContinueWith(
-                    (t, s) => ApplyCompletedTaskResultTo(t, (TaskCompletionSource<T>)s),
-                    tcs,
-                    CancellationToken.None,
-                    TaskContinuationOptions.ExecuteSynchronously,
-                    TaskScheduler.Default);
-            }
+            ApplyResultTo(task, tcs, applySynchronously: true);
         }
 
         /// <summary>
@@ -442,6 +426,37 @@ namespace Microsoft.VisualStudio.Threading
                 TaskScheduler.Default);
 
             return tcs.Task;
+        }
+
+        /// <summary>
+        /// Applies one task's results to another.
+        /// </summary>
+        /// <typeparam name="T">The type of value returned by a task.</typeparam>
+        /// <param name="task">The task whose completion should be applied to another.</param>
+        /// <param name="tcs">The task that should receive the completion status.</param>
+        /// <param name="applySynchronously">
+        /// <c>true</c> to complete the supplied <paramref name="tcs"/> as efficiently as possible (inline with the completion of <paramref name="task"/>);
+        /// <c>false</c> to complete the <paramref name="tcs"/> asynchronously.
+        /// </param>
+        internal static void ApplyResultTo<T>(this Task<T> task, TaskCompletionSource<T> tcs, bool applySynchronously)
+        {
+            Requires.NotNull(task, nameof(task));
+            Requires.NotNull(tcs, nameof(tcs));
+
+            if (task.IsCompleted)
+            {
+                ApplyCompletedTaskResultTo(task, tcs);
+            }
+            else
+            {
+                // Using a minimum of allocations (just one task, and no closure) ensure that one task's completion sets equivalent completion on another task.
+                task.ContinueWith(
+                    (t, s) => ApplyCompletedTaskResultTo(t, (TaskCompletionSource<T>)s),
+                    tcs,
+                    CancellationToken.None,
+                    applySynchronously ? TaskContinuationOptions.ExecuteSynchronously : TaskContinuationOptions.None,
+                    TaskScheduler.Default);
+            }
         }
 
         /// <summary>

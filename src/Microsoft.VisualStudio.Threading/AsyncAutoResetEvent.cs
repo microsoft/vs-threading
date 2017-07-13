@@ -126,7 +126,7 @@ namespace Microsoft.VisualStudio.Threading
             if (toRelease != null)
             {
                 toRelease.Registration.Dispose();
-                toRelease.TrySetResultToDefault();
+                toRelease.TrySetResult(default(EmptyStruct));
             }
         }
 

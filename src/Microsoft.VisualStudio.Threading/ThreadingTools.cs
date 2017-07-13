@@ -167,6 +167,45 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Cancels a <see cref="TaskCompletionSource{TResult}.Task"/> if a given <see cref="CancellationToken"/> is canceled.
+        /// </summary>
+        /// <typeparam name="T">The type of value returned by a successfully completed <see cref="Task{TResult}"/>.</typeparam>
+        /// <param name="taskCompletionSource">The <see cref="TaskCompletionSource{TResult}"/> to cancel.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
+        internal static void AttachCancellation<T>(this TaskCompletionSource<T> taskCompletionSource, CancellationToken cancellationToken)
+        {
+            if (cancellationToken.CanBeCanceled)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    taskCompletionSource.TrySetCanceled(cancellationToken);
+                }
+                else
+                {
+                    var tuple = new CancelableTaskCompletionSource<T>(taskCompletionSource, cancellationToken);
+                    tuple.CancellationTokenRegistration = cancellationToken.Register(
+                        s =>
+                        {
+                            var t = (CancelableTaskCompletionSource<T>)s;
+                            t.TaskCompletionSource.TrySetCanceled(t.CancellationToken);
+                        },
+                        tuple,
+                        useSynchronizationContext: false);
+                    taskCompletionSource.Task.ContinueWith(
+                        (_, s) =>
+                        {
+                            var t = (CancelableTaskCompletionSource<T>)s;
+                            t.CancellationTokenRegistration.Dispose();
+                        },
+                        tuple,
+                        CancellationToken.None,
+                        TaskContinuationOptions.ExecuteSynchronously,
+                        TaskScheduler.Default);
+                }
+            }
+        }
+
+        /// <summary>
         /// Wraps a task with one that will complete as cancelled based on a cancellation token,
         /// allowing someone to await a task but be able to break out early by cancelling the token.
         /// </summary>
@@ -220,6 +259,21 @@ namespace Microsoft.VisualStudio.Threading
             // But if we skipped the above if branch, this will actually yield
             // on an incompleted task.
             await task.ConfigureAwait(continueOnCapturedContext);
+        }
+
+        private class CancelableTaskCompletionSource<T>
+        {
+            internal CancelableTaskCompletionSource(TaskCompletionSource<T> taskCompletionSource, CancellationToken cancellationToken)
+            {
+                this.TaskCompletionSource = taskCompletionSource ?? throw new ArgumentNullException(nameof(taskCompletionSource));
+                this.CancellationToken = cancellationToken;
+            }
+
+            internal CancellationToken CancellationToken { get; }
+
+            internal TaskCompletionSource<T> TaskCompletionSource { get; }
+
+            internal CancellationTokenRegistration CancellationTokenRegistration { get; set; }
         }
     }
 }
