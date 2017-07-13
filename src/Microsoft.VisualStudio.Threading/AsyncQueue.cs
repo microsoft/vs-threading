@@ -408,6 +408,10 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     invokeOnCompleted = !this.onCompletedInvoked;
                     this.onCompletedInvoked = true;
+                    while (this.dequeuingWaiters?.Count > 0)
+                    {
+                        this.dequeuingWaiters.Dequeue().TrySetCanceled();
+                    }
                 }
             }
 
