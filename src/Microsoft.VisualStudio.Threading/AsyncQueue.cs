@@ -274,7 +274,7 @@ namespace Microsoft.VisualStudio.Threading
             T result;
             lock (this.SyncRoot)
             {
-                if (this.completeSignaled && this.queueElements.Count == 0)
+                if (this.completeSignaled && (this.queueElements == null || this.queueElements.Count == 0))
                 {
                     this.EnqueuedEvent.Set(); // allow the next task in the chain to cancel too.
 
