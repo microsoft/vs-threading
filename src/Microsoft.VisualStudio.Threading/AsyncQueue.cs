@@ -23,11 +23,6 @@ namespace Microsoft.VisualStudio.Threading
     public class AsyncQueue<T>
     {
         /// <summary>
-        /// The object to lock when reading/writing the internal data structures.
-        /// </summary>
-        private readonly object syncObject;
-
-        /// <summary>
         /// The event that is signaled whenever the queue is non-empty. Lazily constructed.
         /// </summary>
         private volatile AsyncAutoResetEvent enqueuedEvent;
@@ -65,7 +60,6 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         public AsyncQueue()
         {
-            this.syncObject = this; // save allocations by using this instead of a new object.
         }
 
         /// <summary>
@@ -83,7 +77,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                lock (this.syncObject)
+                lock (this.SyncRoot)
                 {
                     return this.queueElements != null ? this.queueElements.Count : 0;
                 }
@@ -102,7 +96,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                lock (this.syncObject)
+                lock (this.SyncRoot)
                 {
                     return this.completeSignaled && this.IsEmpty;
                 }
@@ -118,7 +112,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 if (this.completedSource == null)
                 {
-                    lock (this.syncObject)
+                    lock (this.SyncRoot)
                     {
                         if (this.completedSource == null)
                         {
@@ -141,10 +135,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets the synchronization object used by this queue.
         /// </summary>
-        protected object SyncRoot
-        {
-            get { return this.syncObject; }
-        }
+        protected object SyncRoot => this; // save allocations by using this instead of a new object.
 
         /// <summary>
         /// Gets the initial capacity for the queue.
@@ -160,7 +151,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 if (this.enqueuedEvent == null)
                 {
-                    lock (this.syncObject)
+                    lock (this.SyncRoot)
                     {
                         if (this.enqueuedEvent == null)
                         {
@@ -178,7 +169,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         public void Complete()
         {
-            lock (this.syncObject)
+            lock (this.SyncRoot)
             {
                 this.completeSignaled = true;
             }
@@ -205,7 +196,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns><c>true</c> if the value was added to the queue; <c>false</c> if the queue is already completed.</returns>
         public bool TryEnqueue(T value)
         {
-            lock (this.syncObject)
+            lock (this.SyncRoot)
             {
                 if (this.completeSignaled)
                 {
@@ -233,7 +224,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns><c>true</c> if the queue was non-empty; <c>false</c> otherwise.</returns>
         public bool TryPeek(out T value)
         {
-            lock (this.syncObject)
+            lock (this.SyncRoot)
             {
                 if (this.queueElements != null && this.queueElements.Count > 0)
                 {
@@ -281,7 +272,7 @@ namespace Microsoft.VisualStudio.Threading
             await this.EnqueuedEvent.WaitAsync(cancellationToken);
 
             T result;
-            lock (this.syncObject)
+            lock (this.SyncRoot)
             {
                 if (this.completeSignaled && this.queueElements.Count == 0)
                 {
@@ -382,7 +373,7 @@ namespace Microsoft.VisualStudio.Threading
         private bool TryDequeueInternal(Predicate<T> valueCheck, out T value)
         {
             bool dequeued;
-            lock (this.syncObject)
+            lock (this.SyncRoot)
             {
                 if (this.queueElements != null && this.queueElements.Count > 0 && (valueCheck == null || valueCheck(this.queueElements.Peek())))
                 {
@@ -409,10 +400,10 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         private void CompleteIfNecessary()
         {
-            Assumes.False(Monitor.IsEntered(this.syncObject)); // important because we'll transition a task to complete.
+            Assumes.False(Monitor.IsEntered(this.SyncRoot)); // important because we'll transition a task to complete.
 
             bool transitionTaskSource, invokeOnCompleted = false;
-            lock (this.syncObject)
+            lock (this.SyncRoot)
             {
                 transitionTaskSource = this.completeSignaled && (this.queueElements == null || this.queueElements.Count == 0);
                 if (transitionTaskSource)
