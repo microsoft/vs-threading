@@ -536,6 +536,23 @@
                 maxBytesAllocated: 81);
         }
 
+        [Fact]
+        public void DequeueAsyncContinuationsNotInlinedWithinPrivateLock()
+        {
+            var dequeuerTask = this.queue.DequeueAsync();
+            var continuationTask = dequeuerTask.ContinueWith(
+                _ =>
+                {
+                    Assert.True(Task.Run(delegate
+                    {
+                        this.queue.Enqueue(new GenericParameterHelper(2));
+                    }).Wait(UnexpectedTimeout));
+                },
+                TaskContinuationOptions.ExecuteSynchronously);
+            this.queue.Enqueue(new GenericParameterHelper(1));
+            continuationTask.Wait(UnexpectedTimeout);
+        }
+
         private class DerivedQueue<T> : AsyncQueue<T>
         {
             internal Action<T, bool> OnEnqueuedDelegate { get; set; }
