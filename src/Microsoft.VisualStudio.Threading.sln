@@ -1,66 +1,34 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26228.9
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Threading.Desktop", "Microsoft.VisualStudio.Threading.Desktop\Microsoft.VisualStudio.Threading.Desktop.csproj", "{2C0DFFBD-49C8-4F12-A964-E3096AD4C7F4}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Threading.Tests.Desktop", "Microsoft.VisualStudio.Threading.Tests.Desktop\Microsoft.VisualStudio.Threading.Tests.Desktop.csproj", "{7B8BF2E6-7D7B-4F4E-B1A4-B08312F6294F}"
-EndProject
-Project("{13B669BE-BB05-4DDF-9536-439F39A36129}") = "Microsoft.VisualStudio.Threading.NuGet", "Microsoft.VisualStudio.Threading.NuGet\Microsoft.VisualStudio.Threading.NuGet.nuproj", "{C51ACF4A-3E2C-44B2-99FC-1A838518C690}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Threading.Analyzers", "Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.csproj", "{536F3F9A-B457-43B8-BC93-CE1C16959037}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Threading.Analyzers.Tests", "Microsoft.VisualStudio.Threading.Analyzers.Tests\Microsoft.VisualStudio.Threading.Analyzers.Tests.csproj", "{620ED702-B6DA-4454-BF3E-5494D3652724}"
 EndProject
-Project("{FF286327-C783-4F7A-AB73-9BCBAD0D4460}") = "Microsoft.VisualStudio.Threading.Analyzers.NuGet", "Microsoft.VisualStudio.Threading.Analyzers.NuGet\Microsoft.VisualStudio.Threading.Analyzers.NuGet.nuproj", "{D539B066-BAF1-4F8B-8088-8AE1AA75F34C}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Threading.Portable", "Microsoft.VisualStudio.Threading.Portable\Microsoft.VisualStudio.Threading.Portable.csproj", "{E5CA28DA-7538-4CE5-809F-C4B8EF2E8DBB}"
-EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Microsoft.VisualStudio.Threading.Shared", "Microsoft.VisualStudio.Threading.Shared\Microsoft.VisualStudio.Threading.Shared.shproj", "{56941B77-5BDF-4B99-8DF1-E130C046E2D7}"
-EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Microsoft.VisualStudio.Threading.Tests.Shared", "Microsoft.VisualStudio.Threading.Tests.Shared\Microsoft.VisualStudio.Threading.Tests.Shared.shproj", "{C215568D-96D0-483B-AFF6-C03FD9D8D471}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Threading.Tests.Portable", "Microsoft.VisualStudio.Threading.Tests.Portable\Microsoft.VisualStudio.Threading.Tests.Portable.csproj", "{B8A3489B-0888-4E49-8AFA-D41121381542}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{AA091F9F-B40A-466F-B09F-22EAD115996F}"
 	ProjectSection(SolutionItems) = preProject
 		..\appveyor.yml = ..\appveyor.yml
-		..\EnlistmentInfo.props = ..\EnlistmentInfo.props
-		..\EnlistmentInfo.targets = ..\EnlistmentInfo.targets
-		..\init.ps1 = ..\init.ps1
+		..\Directory.Build.props = ..\Directory.Build.props
 		..\nuget.config = ..\nuget.config
-		..\version.json = ..\version.json
+		.editorconfig = .editorconfig
+		stylecop.json = stylecop.json
+		version.json = version.json
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher", "Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher\Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.csproj", "{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.VisualStudio.Threading", "Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj", "{D9BB9FB6-3833-44E8-B7A7-DE729FCE214D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.VisualStudio.Threading.Tests", "Microsoft.VisualStudio.Threading.Tests\Microsoft.VisualStudio.Threading.Tests.csproj", "{CBEDB102-ABAE-40B1-AF3F-A6226DB6713D}"
+EndProject
 Global
-	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		Microsoft.VisualStudio.Threading.Shared\Microsoft.VisualStudio.Threading.Shared.projitems*{2c0dffbd-49c8-4f12-a964-e3096ad4c7f4}*SharedItemsImports = 4
-		Microsoft.VisualStudio.Threading.Shared\Microsoft.VisualStudio.Threading.Shared.projitems*{56941b77-5bdf-4b99-8df1-e130c046e2d7}*SharedItemsImports = 13
-		Microsoft.VisualStudio.Threading.Tests.Shared\Microsoft.VisualStudio.Threading.Tests.Shared.projitems*{7b8bf2e6-7d7b-4f4e-b1a4-b08312f6294f}*SharedItemsImports = 4
-		Microsoft.VisualStudio.Threading.Tests.Shared\Microsoft.VisualStudio.Threading.Tests.Shared.projitems*{b8a3489b-0888-4e49-8afa-d41121381542}*SharedItemsImports = 4
-		Microsoft.VisualStudio.Threading.Tests.Shared\Microsoft.VisualStudio.Threading.Tests.Shared.projitems*{c215568d-96d0-483b-aff6-c03fd9d8d471}*SharedItemsImports = 13
-		Microsoft.VisualStudio.Threading.Shared\Microsoft.VisualStudio.Threading.Shared.projitems*{e5ca28da-7538-4ce5-809f-c4b8ef2e8dbb}*SharedItemsImports = 4
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{2C0DFFBD-49C8-4F12-A964-E3096AD4C7F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2C0DFFBD-49C8-4F12-A964-E3096AD4C7F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2C0DFFBD-49C8-4F12-A964-E3096AD4C7F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2C0DFFBD-49C8-4F12-A964-E3096AD4C7F4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7B8BF2E6-7D7B-4F4E-B1A4-B08312F6294F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7B8BF2E6-7D7B-4F4E-B1A4-B08312F6294F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7B8BF2E6-7D7B-4F4E-B1A4-B08312F6294F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7B8BF2E6-7D7B-4F4E-B1A4-B08312F6294F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C51ACF4A-3E2C-44B2-99FC-1A838518C690}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C51ACF4A-3E2C-44B2-99FC-1A838518C690}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C51ACF4A-3E2C-44B2-99FC-1A838518C690}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C51ACF4A-3E2C-44B2-99FC-1A838518C690}.Release|Any CPU.Build.0 = Release|Any CPU
 		{536F3F9A-B457-43B8-BC93-CE1C16959037}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{536F3F9A-B457-43B8-BC93-CE1C16959037}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{536F3F9A-B457-43B8-BC93-CE1C16959037}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -69,22 +37,18 @@ Global
 		{620ED702-B6DA-4454-BF3E-5494D3652724}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{620ED702-B6DA-4454-BF3E-5494D3652724}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{620ED702-B6DA-4454-BF3E-5494D3652724}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D539B066-BAF1-4F8B-8088-8AE1AA75F34C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D539B066-BAF1-4F8B-8088-8AE1AA75F34C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D539B066-BAF1-4F8B-8088-8AE1AA75F34C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D539B066-BAF1-4F8B-8088-8AE1AA75F34C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E5CA28DA-7538-4CE5-809F-C4B8EF2E8DBB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E5CA28DA-7538-4CE5-809F-C4B8EF2E8DBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E5CA28DA-7538-4CE5-809F-C4B8EF2E8DBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E5CA28DA-7538-4CE5-809F-C4B8EF2E8DBB}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B8A3489B-0888-4E49-8AFA-D41121381542}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B8A3489B-0888-4E49-8AFA-D41121381542}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B8A3489B-0888-4E49-8AFA-D41121381542}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B8A3489B-0888-4E49-8AFA-D41121381542}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D9BB9FB6-3833-44E8-B7A7-DE729FCE214D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D9BB9FB6-3833-44E8-B7A7-DE729FCE214D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D9BB9FB6-3833-44E8-B7A7-DE729FCE214D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D9BB9FB6-3833-44E8-B7A7-DE729FCE214D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CBEDB102-ABAE-40B1-AF3F-A6226DB6713D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CBEDB102-ABAE-40B1-AF3F-A6226DB6713D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CBEDB102-ABAE-40B1-AF3F-A6226DB6713D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CBEDB102-ABAE-40B1-AF3F-A6226DB6713D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

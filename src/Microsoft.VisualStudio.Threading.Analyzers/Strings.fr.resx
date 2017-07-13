@@ -22,15 +22,15 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>L’attente de manière synchrone de tâches ou d’éléments en attente peut entraîner des blocages. Utilisez JoinableTaskFactory.Run à la place.</value>
+    <value>L'attente de manière synchrone de tâches ou d’éléments en attente peut entraîner des blocages. Utilisez JoinableTaskFactory.Run à la place.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
     <value>Éviter les attentes synchrones problématiques</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>Le service Visual Studio "{0}"doit être utilisé sur le thread principal de manière explicite. 
-Appelez ThreadHelper.ThrowIfNotOnUIThread() ou attendez d’abord JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+    <value>Le service Visual Studio "{0}"doit être utilisé sur le thread principal de manière explicite.
+Appelez ThreadHelper.ThrowIfNotOnUIThread() ou attendez d'abord JoinableTaskFactory.SwitchToMainThreadAsync().</value>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
     <value>Utiliser les services VS à partir du thread d’interface utilisateur</value>
@@ -57,7 +57,7 @@ Appelez ThreadHelper.ThrowIfNotOnUIThread() ou attendez d’abord JoinableTaskFa
     <value>Utiliser InvokeAsync pour déclencher des événements async</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>Le fait d’appeler await sur une tâche dans une méthode JoinableTaskFactory.Run quand la tâche est initialisée en dehors du délégué peut entraîner des blocages.
+    <value>Le fait d'appeler await sur une tâche dans une méthode JoinableTaskFactory.Run quand la tâche est initialisée en dehors du délégué peut entraîner des blocages.
 Vous pouvez éviter ce problème en vérifiant que la tâche est initialisée dans le délégué ou en utilisant JoinableTask à la place de Task.</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
@@ -80,7 +80,7 @@ Utilisez AsyncLazy&lt;T&gt; à la place</value>
     <value>Appeler des méthodes async dans une méthode async</value>
   </data>
   <data name="VSTHRD102_MessageFormat" xml:space="preserve">
-    <value>Limitez l’utilisation des appels de méthode de blocage synchrones, comme JoinableTaskFactory.Run ou Task.Result, aux membres de point d’entrée publics où il est nécessaire d’être synchrone. Son utilisation pour des membres internes peut inutilement ajouter des frames synchrones entre les frames asynchrones, provoquant l’épuisement du pool de threads.</value>
+    <value>Limitez l'utilisation des appels de méthode de blocage synchrones, comme JoinableTaskFactory.Run ou Task.Result, aux membres de point d’entrée publics où il est nécessaire d’être synchrone. Son utilisation pour des membres internes peut inutilement ajouter des frames synchrones entre les frames asynchrones, provoquant l'épuisement du pool de threads.</value>
   </data>
   <data name="VSTHRD102_Title" xml:space="preserve">
     <value>Implémenter la logique interne de façon asynchrone</value>
@@ -104,5 +104,36 @@ Utilisez AsyncLazy&lt;T&gt; à la place</value>
   </data>
   <data name="VSTHRD105_Title" xml:space="preserve">
     <value>Éviter les surcharges de méthode qui optent par défaut pour TaskScheduler.Current</value>
+  </data>
+  <data name="VSTHRD012_MessageFormat" xml:space="preserve">
+    <value>Fournissez une instance de JoinableTaskFactory dans cet appel (ou une autre surcharge) pour éviter les blocages avec le même thread.</value>
+  </data>
+  <data name="VSTHRD012_Title" xml:space="preserve">
+    <value>Fournir JoinableTaskFactory quand autorisé</value>
+  </data>
+  <data name="VSTHRD104_MessageFormat" xml:space="preserve">
+    <value>Exposez une version asynchrone de cette méthode qui ne se bloque pas de manière synchrone. Ensuite, simplifiez cette méthode pour appeler cette méthode async dans un délégué JoinableTaskFactory.Run.</value>
+  </data>
+  <data name="VSTHRD104_Title" xml:space="preserve">
+    <value>Offrir des méthodes async</value>
+  </data>
+  <data name="VSTHRD001_MessageFormat" xml:space="preserve">
+    <value>Attendez que JoinableTaskFactory.SwitchToMainThreadAsync() passe au thread d'interface utilisateur au lieu des API susceptibles de se bloquer ou de demander une priorité.</value>
+  </data>
+  <data name="VSTHRD001_Title" xml:space="preserve">
+    <value>Éviter les API de commutation de thread héritées</value>
+    <comment>thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.</comment>
+  </data>
+  <data name="VSTHRD107_MessageFormat" xml:space="preserve">
+    <value>Opérateur await manquant pour l’expression "using".</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_Title" xml:space="preserve">
+    <value>Tâche Await dans l’expression using</value>
+    <comment>"await Task" is a C# compound term, and "using" is a C# keyword. These should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_CodeFix_Title" xml:space="preserve">
+    <value>Attendre l’expression using</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
   </data>
 </root>

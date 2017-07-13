@@ -69,6 +69,7 @@
     <Rule Id="CA2242" Action="Warning" />
   </Rules>
   <Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
+    <Rule Id="AD0001" Action="None" />
     <Rule Id="SA1600" Action="None" />
     <Rule Id="SA1401" Action="None" />
     <Rule Id="SA1602" Action="Hidden" />
@@ -89,5 +90,8 @@
     <Rule Id="SA1639" Action="Hidden" />
     <Rule Id="SA1640" Action="Hidden" />
     <Rule Id="SA1641" Action="Hidden" />
+  </Rules>
+  <Rules AnalyzerId="AsyncUsageAnalyzers" RuleNamespace="AsyncUsageAnalyzers">
+    <Rule Id="UseConfigureAwait" Action="Error" />
   </Rules>
 </RuleSet>

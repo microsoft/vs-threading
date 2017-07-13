@@ -29,7 +29,7 @@
     <value>Vyhněte se problematickým synchronním čekáním</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>Službu Visual Studio {0} je třeba používat explicitně v hlavním vlákně. 
+    <value>Službu Visual Studio {0} je třeba používat explicitně v hlavním vlákně.
 Nejprve zavolejte ThreadHelper.ThrowIfNotOnUIThread() nebo počkejte na JoinableTaskFactory.SwitchToMainThreadAsync().</value>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
@@ -104,5 +104,36 @@ Použijte raději AsyncLazy&lt;T&gt;.</value>
   </data>
   <data name="VSTHRD105_Title" xml:space="preserve">
     <value>Vyhněte se přetížením metod, která předpokládají TaskScheduler.Current</value>
+  </data>
+  <data name="VSTHRD012_MessageFormat" xml:space="preserve">
+    <value>Zadejte instanci JoinableTaskFactory v tomto volání (nebo v jiném přetížení), aby se předešlo zablokováním s hlavním vláknem.</value>
+  </data>
+  <data name="VSTHRD012_Title" xml:space="preserve">
+    <value>Zadejte JoinableTaskFactory, kde je to povoleno</value>
+  </data>
+  <data name="VSTHRD104_MessageFormat" xml:space="preserve">
+    <value>Nabízejte asynchronní verzi této metody, která se synchronně neblokuje. Pak zjednodušte tuto metodu tak, aby volala tuto asynchronní metodu v delegátovi JoinableTaskFactory.Run.</value>
+  </data>
+  <data name="VSTHRD104_Title" xml:space="preserve">
+    <value>Nabízejte asynchronní metody</value>
+  </data>
+  <data name="VSTHRD001_MessageFormat" xml:space="preserve">
+    <value>Počkejte, než se na vlákno uživatelského rozhraní přepne JoinableTaskFactory.SwitchToMainThreadAsync(), a ne rozhraní API, která se můžou zablokovat nebo vyžadovat zadání priority.</value>
+  </data>
+  <data name="VSTHRD001_Title" xml:space="preserve">
+    <value>Vyhněte se starším verzím rozhraní API pro přepínání vláken</value>
+    <comment>thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.</comment>
+  </data>
+  <data name="VSTHRD107_MessageFormat" xml:space="preserve">
+    <value>Chybí operátor await ve výrazu using.</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_Title" xml:space="preserve">
+    <value>Úloha await ve výrazu using</value>
+    <comment>"await Task" is a C# compound term, and "using" is a C# keyword. These should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_CodeFix_Title" xml:space="preserve">
+    <value>Výraz using s operátorem await</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
   </data>
 </root>

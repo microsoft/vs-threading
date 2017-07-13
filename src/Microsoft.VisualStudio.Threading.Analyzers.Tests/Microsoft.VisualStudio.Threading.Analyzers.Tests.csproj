@@ -1,88 +1,34 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{620ED702-B6DA-4454-BF3E-5494D3652724}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Microsoft.VisualStudio.Threading.Analyzers.Tests</RootNamespace>
-    <AssemblyName>Microsoft.VisualStudio.Threading.Analyzers.Tests</AssemblyName>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
-    <TargetFrameworkProfile />
-    <OutputPath Condition=" '$(OutputPath)' == '' ">bin\$(Configuration)</OutputPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
+    <TargetFramework>net452</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Analyzers.Tests.ruleset</CodeAnalysisRuleSet>
-    <NoWarn>CS1591</NoWarn>
-    <DocumentationFile>..\..\bin\Debug\Microsoft.VisualStudio.Threading.Analyzers.Tests.XML</DocumentationFile>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Analyzers.Tests.ruleset</CodeAnalysisRuleSet>
-    <NoWarn>CS1591</NoWarn>
-    <DocumentationFile>..\..\bin\Release\Microsoft.VisualStudio.Threading.Analyzers.Tests.XML</DocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <IsPackable>false</IsPackable>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+
+    <!-- VS2017 Test Explorer test navigation and callstack links don't work with portable PDBs yet. -->
+    <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="Microsoft.CSharp" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="VSTHRD106UseInvokeAsyncForAsyncEventsAnalyzerTests.cs" />
-    <Compile Include="VSTHRD200UseAsyncNamingConventionAnalyzerTests.cs" />
-    <Compile Include="VSTHRD101AsyncVoidLambdaAnalyzerTests.cs" />
-    <Compile Include="VSTHRD100AsyncVoidMethodAnalyzerTests.cs" />
-    <Compile Include="VSTHRD100AsyncVoidMethodCodeFixTests.cs" />
-    <Compile Include="VSTHRD105AvoidImplicitTaskSchedulerCurrentAnalyzerTests.cs" />
-    <Compile Include="VSTHRD102AvoidJtfRunInNonPublicMembersAnalyzerTests.cs" />
-    <Compile Include="Helpers\CodeFixVerifier.cs" />
-    <Compile Include="Helpers\CodeFixVerifier.Helper.cs" />
-    <Compile Include="Helpers\DiagnosticResult.cs" />
-    <Compile Include="Helpers\DiagnosticResultLocation.cs" />
-    <Compile Include="Helpers\DiagnosticVerifier.cs" />
-    <Compile Include="Helpers\DiagnosticVerifier.Helper.cs" />
-    <Compile Include="VSTHRD003UseJtfRunAsyncAnalyzerTests.cs" />
-    <Compile Include="VSTHRD011LazyOfTaskAnalyzerTests.cs" />
-    <Compile Include="MultiAnalyzerTests.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="VSTHRD002UseJtfRunAnalyzerTests.cs" />
-    <Compile Include="VSTHRD103UseAsyncOptionAnalyzerTests.cs" />
-    <Compile Include="VSTHRD010VsServiceInvocationAnalyzerTests.cs" />
-    <Compile Include="VSTHRD012SpecifyJtfWhereAllowedTests.cs" />
-    <Compile Include="VSTHRD104OfferAsyncOptionAnalyzerTests.cs" />
-    <Compile Include="VSTHRD001UseSwitchToMainThreadAsyncAnalyzerTests.cs" />
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.csproj" />
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.csproj">
-      <Project>{536f3f9a-b457-43b8-bc93-ce1c16959037}</Project>
-      <Name>Microsoft.VisualStudio.Threading.Analyzers</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Desktop\Microsoft.VisualStudio.Threading.Desktop.csproj">
-      <Project>{2c0dffbd-49c8-4f12-a964-e3096ad4c7f4}</Project>
-      <Name>Microsoft.VisualStudio.Threading.Desktop</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\Microsoft.VisualStudio.Threading.Analyzers.TestAssets\project.json">
-      <Link>Assets\project.json</Link>
-    </None>
-    <None Include="Microsoft.VisualStudio.Threading.Analyzers.Tests.ruleset" />
-    <None Include="project.json" />
-    <None Include="app.config">
-      <SubType>Designer</SubType>
-    </None>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="1.2.0" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="14.3.0" />
+    <PackageReference Include="Microsoft.VisualStudio.OLE.Interop" Version="7.10.6070" />
+    <PackageReference Include="Microsoft.VisualStudio.Shell.14.0" Version="14.3.25407" IncludeAssets="none" />
+    <PackageReference Include="Microsoft.VisualStudio.Shell.Interop.11.0" Version="11.0.61030" IncludeAssets="none" />
+    <PackageReference Include="xunit" Version="2.2.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.2.0" />
+    <PackageReference Include="MicroBuild.Nonshipping" Version="2.0.40" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

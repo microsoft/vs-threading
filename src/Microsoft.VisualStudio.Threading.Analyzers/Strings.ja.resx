@@ -22,15 +22,15 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>同期的にタスクまたは待機側を待機すると、デッドロックが引き起こされる可能性があります。代わりに JoinableTaskFactory.Run を使用します。</value>
+    <value>同期的にタスクまたは awaiter を待機すると、デッドロックが引き起こされる可能性があります。代わりに JoinableTaskFactory.Run を使用してください。</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
     <value>問題のある同期待機を避ける</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>Visual Studio サービス "{0}" は、メイン スレッドで明示的に使用する必要があります。
-最初に ThreadHelper.ThrowIfNotOnUIThread() を呼び出すか、JoinableTaskFactory.SwitchToMainThreadAsync() を待機します。</value>
+    <value>Visual Studio サービス "{0}" は、明示的にメイン スレッドで使用する必要があります。
+ThreadHelper.ThrowIfNotOnUIThread() を呼び出すか、まず JoinableTaskFactory.SwitchToMainThreadAsync() を待機してください。</value>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
     <value>UI スレッドから VS サービスを使用する</value>
@@ -57,7 +57,7 @@
     <value>InvokeAsync を使用して非同期イベントを発生させる</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>タスクがデリゲート外部で初期化されている場合、JoinableTaskFactory.Run 内の Task で Await を呼び出すと、デッドロックが引き起こされる可能性があります。
+    <value>タスクがデリゲート外部で初期化されている場合、JoinableTaskFactory.Run 内の Task で await を呼び出すと、デッドロックが引き起こされる可能性があります。
 この問題は、タスクが確実にデリゲート内で初期化されるようにするか、Task の代わりに JoinableTask を使用することによって回避できます。</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
@@ -65,22 +65,22 @@
   </data>
   <data name="VSTHRD011_MessageFormat" xml:space="preserve">
     <value>Lazy&lt;Task&lt;T&gt;&gt;.Value はデッドロックを引き起こす可能性があります。
-代わりに AsyncLazy&lt;T&gt; を使用します。</value>
+代わりに AsyncLazy&lt;T&gt; を使用してください。</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
     <value>T が Task&lt;T2&gt; を表す Lazy&lt;T&gt; を使用しない</value>
   </data>
   <data name="VSTHRD103_MessageFormat" xml:space="preserve">
-    <value>{0} は同期的にブロックされます。代わりに {1} を待機します。</value>
+    <value>{0} は同期的にブロックを実行します。代わりに {1} を待機してください。</value>
   </data>
   <data name="VSTHRD103_MessageFormat_UseAwaitInstead" xml:space="preserve">
-    <value>{0} は同期的にブロックされます。代わりに Await を使用します。</value>
+    <value>{0} は同期的にブロックを実行します。代わりに await を使用してください。</value>
   </data>
   <data name="VSTHRD103_Title" xml:space="preserve">
     <value>非同期メソッドの場合に非同期メソッドを呼び出す</value>
   </data>
   <data name="VSTHRD102_MessageFormat" xml:space="preserve">
-    <value>JoinableTaskFactory.Run または Task.Result など、同期的にブロックしているメソッド呼び出しの使用を、同期している必要のある公開エントリポイント メンバーに限定します。内部メンバーに対して使用すると、非同期フレーム間に同期フレームが不必要に追加され、スレッドプールが消費されます。</value>
+    <value>JoinableTaskFactory.Run または Task.Result など、同期的にブロックを行うメソッド呼び出しの使用は、同期が必要な公開エントリポイント メンバーに限定してください。内部メンバーに対して使用すると、非同期フレーム間に同期フレームが不必要に追加され、スレッドプールが消費されます。</value>
   </data>
   <data name="VSTHRD102_Title" xml:space="preserve">
     <value>内部論理を非同期的に実装する</value>
@@ -104,5 +104,36 @@
   </data>
   <data name="VSTHRD105_Title" xml:space="preserve">
     <value>TaskScheduler.Current を仮定するメソッド オーバーロードを使用しない</value>
+  </data>
+  <data name="VSTHRD012_MessageFormat" xml:space="preserve">
+    <value>この呼び出し (または別のオーバーロード) で JoinableTaskFactory のインスタンスを提供して、メイン スレッドとのデッドロックを回避します。</value>
+  </data>
+  <data name="VSTHRD012_Title" xml:space="preserve">
+    <value>許可されている場合は JoinableTaskFactory を提供する</value>
+  </data>
+  <data name="VSTHRD104_MessageFormat" xml:space="preserve">
+    <value>このメソッドの、同期的にブロックしない非同期バージョンを公開してください。次に、このメソッドを単純化し、JoinableTaskFactory.Run デリゲート内でその非同期メソッドを呼び出すようにします。</value>
+  </data>
+  <data name="VSTHRD104_Title" xml:space="preserve">
+    <value>非同期メソッドを提供する</value>
+  </data>
+  <data name="VSTHRD001_MessageFormat" xml:space="preserve">
+    <value>UI スレッドに切り替えるためには、デッドロックを引き起こす可能性や、優先順位の指定の必要がある API を使用するのではなく、JoinableTaskFactory.SwitchToMainThreadAsync() を待機してください。</value>
+  </data>
+  <data name="VSTHRD001_Title" xml:space="preserve">
+    <value>従来のスレッド切り替え API を使用しない</value>
+    <comment>thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.</comment>
+  </data>
+  <data name="VSTHRD107_MessageFormat" xml:space="preserve">
+    <value>"using" 式に await 演算子がありません。</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_Title" xml:space="preserve">
+    <value>using 式内の Task を待機する</value>
+    <comment>"await Task" is a C# compound term, and "using" is a C# keyword. These should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_CodeFix_Title" xml:space="preserve">
+    <value>using 式を待機する</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
   </data>
 </root>

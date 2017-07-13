@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RuleSet Name="MS.VS.Threading rules" Description="This ruleset contains all the rules that MS.VS.Threading is expected to pass." ToolsVersion="12.0">
+  <IncludeAll Action="Warning" />
+  <Rules AnalyzerId="Microsoft.Analyzers.ManagedCodeAnalysis" RuleNamespace="Microsoft.Rules.Managed">
+    <Rule Id="CA1006" Action="None" />
+    <Rule Id="CA1026" Action="None" />
+    <Rule Id="CA1034" Action="None" />
+    <Rule Id="CA1500" Action="None" />
+    <Rule Id="CA2210" Action="None" />
+  </Rules>
+  <Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
+    <Rule Id="AD0001" Action="None" />
+    <Rule Id="SA1500" Action="None" />
+    <Rule Id="SA1404" Action="None" />
+    <Rule Id="SA1600" Action="Hidden" />
+    <Rule Id="SA1601" Action="Hidden" />
+    <Rule Id="SA1602" Action="Hidden" />
+    <Rule Id="SA1609" Action="Hidden" />
+    <Rule Id="SA1611" Action="Hidden" />
+    <Rule Id="SA1615" Action="Hidden" />
+    <Rule Id="SA1124" Action="None" />
+    <Rule Id="SA1205" Action="Hidden" />
+    <Rule Id="SA1401" Action="None" />
+    <Rule Id="SA1008" Action="Hidden" />
+    <Rule Id="SA1211" Action="Hidden" />
+    <Rule Id="SX1309" Action="None" />
+    <Rule Id="SX1309S" Action="None" />
+    <Rule Id="SA1641" Action="Hidden" />
+    <Rule Id="SA1640" Action="Hidden" />
+    <Rule Id="SA1639" Action="Hidden" />
+    <Rule Id="SA1638" Action="Hidden" />
+    <Rule Id="SA1637" Action="Hidden" />
+    <Rule Id="SA1636" Action="Hidden" />
+    <Rule Id="SA1635" Action="Hidden" />
+    <Rule Id="SA1634" Action="Hidden" />
+    <Rule Id="SA1633" Action="Hidden" />
+    <Rule Id="SA1130" Action="None" />
+    <Rule Id="SA1649" Action="Hidden" />
+    <Rule Id="SA1116" Action="Hidden" />
+    <Rule Id="SA1201" Action="Hidden" />
+    <Rule Id="SA1202" Action="Hidden" />
+    <Rule Id="SA1203" Action="Hidden" />
+    <Rule Id="SA1204" Action="Hidden" />
+    <Rule Id="SA1207" Action="Hidden" />
+    <Rule Id="SA1133" Action="Hidden" />
+  </Rules>
+</RuleSet>

@@ -1,0 +1,52 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net452;netcoreapp1.0</TargetFrameworks>
+    <PackageTargetFallback>portable-net45+win8+wp8+wpa81</PackageTargetFallback>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Tests.ruleset</CodeAnalysisRuleSet>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <IsPackable>false</IsPackable>
+
+    <!-- VS2017 Test Explorer test navigation and callstack links don't work with portable PDBs yet. -->
+    <DebugType>Full</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="net452\**" Condition=" '$(TargetFramework)' != 'net452' " />
+    <Compile Remove="netstandard1.5\**" Condition=" '$(TargetFramework)' != 'netstandard1.5' and '$(TargetFramework)' != 'netcoreapp1.0' " />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Microsoft.VisualStudio.Threading\InternalUtilities.cs">
+      <Link>InternalUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.VisualStudio.Threading\ListOfOftenOne.cs">
+      <Link>ListOfOftenOne.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.VisualStudio.Threading\WeakKeyDictionary.cs">
+      <Link>WeakKeyDictionary.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="xunit" Version="2.2.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.2.0" />
+    <PackageReference Include="Xunit.Combinatorial" Version="1.2.1" />
+    <PackageReference Include="Xunit.SkippableFact" Version="1.3.1" />
+    <PackageReference Include="Xunit.StaFact" Version="0.2.3-beta" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.0.0" />
+    <PackageReference Include="OpenCover" Version="4.6.519" />
+    <PackageReference Include="MicroBuild.Nonshipping" Version="2.0.40" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net452' ">
+    <Reference Include="System.Configuration" />
+    <Reference Include="WindowsBase" />
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher\Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <Private>true</Private>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+</Project>
