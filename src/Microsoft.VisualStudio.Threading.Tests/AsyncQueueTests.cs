@@ -533,7 +533,8 @@
                     queue.Complete();
                     Assert.True(queue.IsCompleted);
                 },
-                maxBytesAllocated: 81);
+                maxBytesAllocated: 81,
+                allowedAttempts: 30);
         }
 
         [Fact]
