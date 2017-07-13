@@ -460,6 +460,12 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Returns a reusable task that is already canceled.
+        /// </summary>
+        /// <typeparam name="T">The type parameter for the returned task.</typeparam>
+        internal static Task<T> CanceledTaskOfT<T>() => CanceledTaskOfTCache<T>.CanceledTask;
+
+        /// <summary>
         /// Applies a completed task's results to another.
         /// </summary>
         /// <typeparam name="T">The type of value returned by a task.</typeparam>
@@ -728,6 +734,19 @@ namespace Microsoft.VisualStudio.Threading
             /// Gets or sets the state passed into the constructor.
             /// </summary>
             internal TState SourceState { get; set; }
+        }
+
+        /// <summary>
+        /// A cache for canceled <see cref="Task{T}"/> instances.
+        /// </summary>
+        /// <typeparam name="T">The type parameter for the returned task.</typeparam>
+        private static class CanceledTaskOfTCache<T>
+        {
+            /// <summary>
+            /// A task that is already canceled.
+            /// </summary>
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
+            internal static readonly Task<T> CanceledTask = ThreadingTools.TaskFromCanceled<T>(new CancellationToken(canceled: true));
         }
     }
 }

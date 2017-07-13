@@ -267,8 +267,12 @@ namespace Microsoft.VisualStudio.Threading
                 if (this.IsCompleted)
                 {
                     // Prefer the caller's CancellationToken if provided and canceled.
-                    cancellationToken.ThrowIfCancellationRequested();
-                    throw new OperationCanceledException();
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return ThreadingTools.TaskFromCanceled<T>(cancellationToken);
+                    }
+
+                    return TplExtensions.CanceledTaskOfT<T>();
                 }
 
                 if (this.queueElements?.Count > 0)
