@@ -261,17 +261,16 @@ namespace Microsoft.VisualStudio.Threading
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         public Task<T> DequeueAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ThreadingTools.TaskFromCanceled<T>(cancellationToken);
+            }
+
             T result;
             lock (this.SyncRoot)
             {
                 if (this.IsCompleted)
                 {
-                    // Prefer the caller's CancellationToken if provided and canceled.
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        return ThreadingTools.TaskFromCanceled<T>(cancellationToken);
-                    }
-
                     return TplExtensions.CanceledTaskOfT<T>();
                 }
 
