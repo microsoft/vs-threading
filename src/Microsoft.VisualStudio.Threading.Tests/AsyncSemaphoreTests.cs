@@ -331,11 +331,12 @@
         {
             var sem = new AsyncSemaphore(0);
             this.CheckGCPressure(
-                () =>
+                async delegate
                 {
                     var cts = new CancellationTokenSource();
-                    sem.EnterAsync(cts.Token);
+                    var enterTask = sem.EnterAsync(cts.Token);
                     cts.Cancel();
+                    await enterTask.NoThrowAwaitable();
                 },
                 maxBytesAllocated: 5000,
                 iterations: 5);
