@@ -149,9 +149,12 @@
 
                 waitPeriodAllocations = Math.Abs(waitForQuietMemory2 - waitForQuietMemory1);
                 this.Logger.WriteLine("Bytes allocated during quiet wait period: {0}", waitPeriodAllocations);
-                Skip.If(++waitForQuietAttemptCount > quietPeriodMaxAttempts, "Unable to establish a quiet period.");
             }
-            while (waitPeriodAllocations > quietThreshold);
+            while (waitPeriodAllocations > quietThreshold || ++waitForQuietAttemptCount >= quietPeriodMaxAttempts);
+            if (waitPeriodAllocations > quietThreshold)
+            {
+                this.Logger.WriteLine("WARNING: Unable to establish a quiet period.");
+            }
 
             // This test is rather rough.  So we're willing to try it a few times in order to observe the desired value.
             bool attemptWithNoLeakObserved = false;
