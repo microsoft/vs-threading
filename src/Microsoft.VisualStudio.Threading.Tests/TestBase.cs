@@ -105,53 +105,18 @@
         /// <param name="allowedAttempts">The number of times the (scenario * iterations) loop repeats with a failing result before ultimately giving up.</param>
         protected void CheckGCPressure(Action scenario, int maxBytesAllocated, int iterations = 100, int allowedAttempts = GCAllocationAttempts)
         {
-            // prime the pump
-            for (int i = 0; i < iterations; i++)
-            {
-                scenario();
-            }
-
-            // This test is rather rough.  So we're willing to try it a few times in order to observe the desired value.
-            bool passingAttemptObserved = false;
-            for (int attempt = 1; attempt <= allowedAttempts; attempt++)
-            {
-                this.Logger?.WriteLine("Iteration {0}", attempt);
-                long initialMemory = GC.GetTotalMemory(true);
-                for (int i = 0; i < iterations; i++)
+            Task task = this.CheckGCPressureAsync(
+                () =>
                 {
                     scenario();
-                }
-
-                long allocated = (GC.GetTotalMemory(false) - initialMemory) / iterations;
-
-                // If there is a dispatcher sync context, let it run for a bit.
-                // This allows any posted messages that are now obsolete to be released.
-                if (SingleThreadedSynchronizationContext.IsSingleThreadedSyncContext(SynchronizationContext.Current))
-                {
-                    var frame = SingleThreadedSynchronizationContext.NewFrame();
-                    SynchronizationContext.Current.Post(state => frame.Continue = false, null);
-                    SingleThreadedSynchronizationContext.PushFrame(SynchronizationContext.Current, frame);
-                }
-
-                long leaked = (GC.GetTotalMemory(true) - initialMemory) / iterations;
-
-                this.Logger?.WriteLine("{0} bytes leaked per iteration.", leaked);
-                this.Logger?.WriteLine("{0} bytes allocated per iteration ({1} allowed).", allocated, maxBytesAllocated);
-
-                if (leaked <= 0 && (maxBytesAllocated == -1 || allocated <= maxBytesAllocated))
-                {
-                    passingAttemptObserved = true;
-                }
-
-                if (!passingAttemptObserved)
-                {
-                    // give the system a bit of cool down time to increase the odds we'll pass next time.
-                    GC.Collect();
-                    Thread.Sleep(250);
-                }
-            }
-
-            Assert.True(passingAttemptObserved);
+                    return TplExtensions.CompletedTask;
+                },
+                maxBytesAllocated,
+                iterations,
+                allowedAttempts,
+                completeSynchronously: true);
+            Assumes.True(task.IsCompleted);
+            task.GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -161,55 +126,95 @@
         /// <param name="maxBytesAllocated">The maximum number of bytes allowed to be allocated by one run of the scenario. Use -1 to indicate no limit.</param>
         /// <param name="iterations">The number of times to invoke <paramref name="scenario"/> in a row before measuring average memory impact.</param>
         /// <param name="allowedAttempts">The number of times the (scenario * iterations) loop repeats with a failing result before ultimately giving up.</param>
+        /// <param name="completeSynchronously"><c>true</c> to synchronously complete instead of yielding.</param>
         /// <returns>A task that captures the result of the operation.</returns>
-        protected async Task CheckGCPressureAsync(Func<Task> scenario, int maxBytesAllocated, int iterations = 100, int allowedAttempts = GCAllocationAttempts)
+        protected async Task CheckGCPressureAsync(Func<Task> scenario, int maxBytesAllocated, int iterations = 100, int allowedAttempts = GCAllocationAttempts, bool completeSynchronously = false)
         {
+            const int quietPeriodMaxAttempts = 3;
+            const int shortDelayDuration = 250;
+            const int quietThreshold = 1200;
+
             // prime the pump
-            for (int i = 0; i < iterations; i++)
+            for (int i = 0; i < 2; i++)
             {
-                await scenario();
+                await MaybeShouldBeComplete(scenario(), completeSynchronously);
             }
 
+            long waitForQuietMemory1, waitForQuietMemory2, waitPeriodAllocations, waitForQuietAttemptCount = 0;
+            do
+            {
+                waitForQuietMemory1 = GC.GetTotalMemory(true);
+                await MaybeShouldBlock(Task.Delay(shortDelayDuration), completeSynchronously);
+                waitForQuietMemory2 = GC.GetTotalMemory(true);
+
+                waitPeriodAllocations = Math.Abs(waitForQuietMemory2 - waitForQuietMemory1);
+                this.Logger.WriteLine("Bytes allocated during quiet wait period: {0}", waitPeriodAllocations);
+                Skip.If(++waitForQuietAttemptCount > quietPeriodMaxAttempts, "Unable to establish a quiet period.");
+            }
+            while (waitPeriodAllocations > quietThreshold);
+
             // This test is rather rough.  So we're willing to try it a few times in order to observe the desired value.
-            bool passingAttemptObserved = false;
+            bool attemptWithNoLeakObserved = false;
+            bool attemptWithinMemoryLimitsObserved = false;
             for (int attempt = 1; attempt <= allowedAttempts; attempt++)
             {
                 this.Logger?.WriteLine("Iteration {0}", attempt);
                 long initialMemory = GC.GetTotalMemory(true);
                 for (int i = 0; i < iterations; i++)
                 {
-                    await scenario();
+                    await MaybeShouldBeComplete(scenario(), completeSynchronously);
                 }
 
                 long allocated = (GC.GetTotalMemory(false) - initialMemory) / iterations;
+                attemptWithinMemoryLimitsObserved |= maxBytesAllocated == -1 || allocated <= maxBytesAllocated;
+                long leaked = long.MaxValue;
+                for (int leakCheck = 0; leakCheck < 3; leakCheck++)
+                {
+                    // Allow the message queue to drain.
+                    if (completeSynchronously)
+                    {
+                        // If there is a dispatcher sync context, let it run for a bit.
+                        // This allows any posted messages that are now obsolete to be released.
+                        if (SingleThreadedSynchronizationContext.IsSingleThreadedSyncContext(SynchronizationContext.Current))
+                        {
+                            var frame = SingleThreadedSynchronizationContext.NewFrame();
+                            SynchronizationContext.Current.Post(state => frame.Continue = false, null);
+                            SingleThreadedSynchronizationContext.PushFrame(SynchronizationContext.Current, frame);
+                        }
+                    }
+                    else
+                    {
+                        await Task.Yield();
+                    }
 
-                // Allow the message queue to drain.
-                await Task.Yield();
+                    leaked = (GC.GetTotalMemory(true) - initialMemory) / iterations;
+                    attemptWithNoLeakObserved |= leaked <= 0;
+                    if (attemptWithNoLeakObserved)
+                    {
+                        break;
+                    }
 
-                long leaked = (GC.GetTotalMemory(true) - initialMemory) / iterations;
+                    await MaybeShouldBlock(Task.Delay(shortDelayDuration), completeSynchronously);
+                }
 
                 this.Logger?.WriteLine("{0} bytes leaked per iteration.", leaked);
                 this.Logger?.WriteLine("{0} bytes allocated per iteration ({1} allowed).", allocated, maxBytesAllocated);
 
-                if (leaked <= 0 && (maxBytesAllocated == -1 || allocated <= maxBytesAllocated))
-                {
-                    passingAttemptObserved = true;
-                }
-
-                if (!passingAttemptObserved)
+                if (!attemptWithNoLeakObserved || !attemptWithinMemoryLimitsObserved)
                 {
                     // give the system a bit of cool down time to increase the odds we'll pass next time.
                     GC.Collect();
-                    Task.Delay(250).Wait();
+                    await MaybeShouldBlock(Task.Delay(shortDelayDuration), completeSynchronously);
                 }
             }
 
-            Assert.True(passingAttemptObserved);
+            Assert.True(attemptWithNoLeakObserved, "Leaks observed in every iteration.");
+            Assert.True(attemptWithinMemoryLimitsObserved, "Excess memory allocations in every iteration.");
         }
 
         protected void CheckGCPressure(Func<Task> scenario, int maxBytesAllocated, int iterations = 100, int allowedAttempts = GCAllocationAttempts)
         {
-            this.ExecuteOnDispatcher(() => this.CheckGCPressureAsync(scenario, maxBytesAllocated));
+            this.ExecuteOnDispatcher(() => this.CheckGCPressureAsync(scenario, maxBytesAllocated, iterations, allowedAttempts));
         }
 
 #if NET452
@@ -323,6 +328,22 @@
                 }).GetAwaiter().GetResult();
             }
 #endif
+        }
+
+        private static Task MaybeShouldBeComplete(Task task, bool shouldBeSynchronous)
+        {
+            Assert.True(task.IsCompleted || !shouldBeSynchronous);
+            return task;
+        }
+
+        private static Task MaybeShouldBlock(Task task, bool shouldBlock)
+        {
+            if (shouldBlock)
+            {
+                task.GetAwaiter().GetResult();
+            }
+
+            return task;
         }
     }
 }

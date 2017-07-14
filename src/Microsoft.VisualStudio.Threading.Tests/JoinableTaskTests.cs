@@ -2788,7 +2788,7 @@
                     await TaskScheduler.Default;
                     await this.asyncPump.SwitchToMainThreadAsync(CancellationToken.None);
                 },
-                2615);
+                3600);
         }
 
         [StaFact, Trait("Stress", "true"), Trait("TestCategory", "FailsInCloudTest"), Trait("FailsInLocalBatch", "true")]
@@ -2801,7 +2801,7 @@
                     await TaskScheduler.Default;
                     await this.asyncPump.SwitchToMainThreadAsync(tokenSource.Token);
                 },
-                2800);
+                3800);
         }
 
         [StaFact]
@@ -2923,7 +2923,7 @@
                 {
                     await Task.Yield();
                 });
-            }, maxBytesAllocated: 1800);
+            }, maxBytesAllocated: 2800);
         }
 
         /// <summary>
