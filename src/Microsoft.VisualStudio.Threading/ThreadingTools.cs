@@ -172,7 +172,8 @@ namespace Microsoft.VisualStudio.Threading
         /// <typeparam name="T">The type of value returned by a successfully completed <see cref="Task{TResult}"/>.</typeparam>
         /// <param name="taskCompletionSource">The <see cref="TaskCompletionSource{TResult}"/> to cancel.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
-        internal static void AttachCancellation<T>(this TaskCompletionSource<T> taskCompletionSource, CancellationToken cancellationToken)
+        /// <param name="cancellationCallback">A callback to invoke when cancellation occurs.</param>
+        internal static void AttachCancellation<T>(this TaskCompletionSource<T> taskCompletionSource, CancellationToken cancellationToken, ICancellationNotification cancellationCallback = null)
         {
             Requires.NotNull(taskCompletionSource, nameof(taskCompletionSource));
 
@@ -184,12 +185,13 @@ namespace Microsoft.VisualStudio.Threading
                 }
                 else
                 {
-                    var tuple = new CancelableTaskCompletionSource<T>(taskCompletionSource, cancellationToken);
+                    var tuple = new CancelableTaskCompletionSource<T>(taskCompletionSource, cancellationToken, cancellationCallback);
                     tuple.CancellationTokenRegistration = cancellationToken.Register(
                         s =>
                         {
                             var t = (CancelableTaskCompletionSource<T>)s;
                             t.TaskCompletionSource.TrySetCanceled(t.CancellationToken);
+                            t.CancellationCallback?.OnCanceled();
                         },
                         tuple,
                         useSynchronizationContext: false);
@@ -263,6 +265,11 @@ namespace Microsoft.VisualStudio.Threading
             await task.ConfigureAwait(continueOnCapturedContext);
         }
 
+        internal interface ICancellationNotification
+        {
+            void OnCanceled();
+        }
+
         /// <summary>
         /// A state object for tracking cancellation and a TaskCompletionSource.
         /// </summary>
@@ -278,10 +285,12 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             /// <param name="taskCompletionSource">The task completion source.</param>
             /// <param name="cancellationToken">The cancellation token.</param>
-            internal CancelableTaskCompletionSource(TaskCompletionSource<T> taskCompletionSource, CancellationToken cancellationToken)
+            /// <param name="cancellationCallback">A callback to invoke when cancellation occurs.</param>
+            internal CancelableTaskCompletionSource(TaskCompletionSource<T> taskCompletionSource, CancellationToken cancellationToken, ICancellationNotification cancellationCallback)
             {
                 this.TaskCompletionSource = taskCompletionSource ?? throw new ArgumentNullException(nameof(taskCompletionSource));
                 this.CancellationToken = cancellationToken;
+                this.CancellationCallback = cancellationCallback;
             }
 
             /// <summary>
@@ -293,6 +302,8 @@ namespace Microsoft.VisualStudio.Threading
             /// Gets the Task completion source.
             /// </summary>
             internal TaskCompletionSource<T> TaskCompletionSource { get; }
+
+            internal ICancellationNotification CancellationCallback { get; }
 
             /// <summary>
             /// Gets or sets the cancellation token registration.

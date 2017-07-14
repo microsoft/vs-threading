@@ -20,7 +20,7 @@ namespace Microsoft.VisualStudio.Threading
     /// <typeparam name="T">The type of values kept by the queue.</typeparam>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
     [DebuggerDisplay("Count = {Count}, Completed = {completeSignaled}")]
-    public class AsyncQueue<T>
+    public class AsyncQueue<T> : ThreadingTools.ICancellationNotification
     {
         /// <summary>
         /// The source of the task returned by <see cref="Completion"/>. Lazily constructed.
@@ -193,6 +193,8 @@ namespace Microsoft.VisualStudio.Threading
                     }
                 }
 
+                this.FreeCanceledDequeuers();
+
                 if (!alreadyDispatched)
                 {
                     if (this.queueElements == null)
@@ -284,9 +286,13 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         this.dequeuingWaiters = new Queue<TaskCompletionSource<T>>(capacity: 2);
                     }
+                    else
+                    {
+                        this.FreeCanceledDequeuers();
+                    }
 
                     var waiterTcs = new TaskCompletionSourceWithoutInlining<T>(allowInliningContinuations: false);
-                    waiterTcs.AttachCancellation(cancellationToken);
+                    waiterTcs.AttachCancellation(cancellationToken, this);
                     this.dequeuingWaiters.Enqueue(waiterTcs);
                     return waiterTcs.Task;
                 }
@@ -308,6 +314,9 @@ namespace Microsoft.VisualStudio.Threading
             this.CompleteIfNecessary();
             return result;
         }
+
+        /// <inheritdoc />
+        void ThreadingTools.ICancellationNotification.OnCanceled() => this.FreeCanceledDequeuers();
 
         /// <summary>
         /// Returns a copy of this queue as an array.
@@ -424,6 +433,20 @@ namespace Microsoft.VisualStudio.Threading
                 if (invokeOnCompleted)
                 {
                     this.OnCompleted();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Clears as many canceled dequeuers as we can from the head of the waiting queue.
+        /// </summary>
+        private void FreeCanceledDequeuers()
+        {
+            lock (this.SyncRoot)
+            {
+                while (this.dequeuingWaiters?.Count > 0 && this.dequeuingWaiters.Peek().Task.IsCompleted)
+                {
+                    this.dequeuingWaiters.Dequeue();
                 }
             }
         }
