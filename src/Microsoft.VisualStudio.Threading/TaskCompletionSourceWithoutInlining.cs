@@ -39,7 +39,7 @@ namespace Microsoft.VisualStudio.Threading
             if (!allowInliningContinuations && !LightUps.IsRunContinuationsAsynchronouslySupported)
             {
                 var innerTcs = new TaskCompletionSource<T>(state, options);
-                base.Task.ApplyResultTo(innerTcs, applySynchronously: false);
+                base.Task.ApplyResultTo(innerTcs, inlineSubsequentCompletion: false);
                 this.exposedTask = innerTcs.Task;
             }
             else

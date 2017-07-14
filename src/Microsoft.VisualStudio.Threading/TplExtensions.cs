@@ -116,7 +116,7 @@ namespace Microsoft.VisualStudio.Threading
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "tcs")]
         public static void ApplyResultTo<T>(this Task<T> task, TaskCompletionSource<T> tcs)
         {
-            ApplyResultTo(task, tcs, applySynchronously: true);
+            ApplyResultTo(task, tcs, inlineSubsequentCompletion: true);
         }
 
         /// <summary>
@@ -434,11 +434,12 @@ namespace Microsoft.VisualStudio.Threading
         /// <typeparam name="T">The type of value returned by a task.</typeparam>
         /// <param name="task">The task whose completion should be applied to another.</param>
         /// <param name="tcs">The task that should receive the completion status.</param>
-        /// <param name="applySynchronously">
+        /// <param name="inlineSubsequentCompletion">
         /// <c>true</c> to complete the supplied <paramref name="tcs"/> as efficiently as possible (inline with the completion of <paramref name="task"/>);
         /// <c>false</c> to complete the <paramref name="tcs"/> asynchronously.
+        /// Note if <paramref name="task"/> is completed when this method is invoked, then <paramref name="tcs"/> is always completed synchronously.
         /// </param>
-        internal static void ApplyResultTo<T>(this Task<T> task, TaskCompletionSource<T> tcs, bool applySynchronously)
+        internal static void ApplyResultTo<T>(this Task<T> task, TaskCompletionSource<T> tcs, bool inlineSubsequentCompletion)
         {
             Requires.NotNull(task, nameof(task));
             Requires.NotNull(tcs, nameof(tcs));
@@ -454,7 +455,7 @@ namespace Microsoft.VisualStudio.Threading
                     (t, s) => ApplyCompletedTaskResultTo(t, (TaskCompletionSource<T>)s),
                     tcs,
                     CancellationToken.None,
-                    applySynchronously ? TaskContinuationOptions.ExecuteSynchronously : TaskContinuationOptions.None,
+                    inlineSubsequentCompletion ? TaskContinuationOptions.ExecuteSynchronously : TaskContinuationOptions.None,
                     TaskScheduler.Default);
             }
         }
