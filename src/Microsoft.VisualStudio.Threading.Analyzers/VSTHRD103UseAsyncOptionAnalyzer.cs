@@ -89,6 +89,8 @@
                         return;
                     }
 
+                    MethodDeclarationSyntax invocationDeclaringMethod = invocationExpressionSyntax.FirstAncestorOrSelf<MethodDeclarationSyntax>();
+
                     // Also consider all method calls to check for Async-suffixed alternatives.
                     ExpressionSyntax invokedMethodName = Utils.IsolateMethodName(invocationExpressionSyntax);
                     var symbolInfo = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax, context.CancellationToken);
@@ -103,7 +105,8 @@
                             asyncMethodName,
                             includeReducedExtensionMethods: true).OfType<IMethodSymbol>()
                             .Where(m => !m.IsObsolete())
-                            .Where(m => HasSupersetOfParameterTypes(m, methodSymbol));
+                            .Where(m => HasSupersetOfParameterTypes(m, methodSymbol))
+                            .Where(m => m.Name != invocationDeclaringMethod?.Identifier.Text);
 
                         if (asyncMethodMatches.Any())
                         {

@@ -48,8 +48,11 @@
   <ItemGroup>
      <XliffResource Include="MultilingualResources\*.xlf" />
   </ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
+    <Reference Include="System.Configuration" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Configuration" Condition=" '$(TargetFramework)' == 'net45' " />
     <PackageReference Include="Microsoft.VisualStudio.Validation" Version="15.3.15" />
     <PackageReference Include="MicroBuild.VisualStudio" Version="2.0.40" PrivateAssets="all" />
     <PackageReference Include="MSBuild.SDK.Extras" Version="1.0.0-rc4.23" PrivateAssets="all" />

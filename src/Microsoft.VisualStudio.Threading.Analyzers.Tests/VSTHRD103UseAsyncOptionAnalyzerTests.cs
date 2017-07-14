@@ -944,5 +944,30 @@ class Test {
 
             this.VerifyCSharpDiagnostic(test);
         }
+
+        [Fact]
+        public void DoNotSuggestAsyncAlternativeWhenItIsSelf()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    public async Task CallMainAsync()
+    {
+        // do stuff
+        CallMain();
+        // do stuff
+    }
+
+    public void CallMain()
+    {
+        // more stuff
+    }
+}
+";
+
+            this.VerifyCSharpDiagnostic(test);
+        }
     }
 }
