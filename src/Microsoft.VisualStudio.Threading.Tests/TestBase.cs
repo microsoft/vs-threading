@@ -112,7 +112,8 @@
             }
 
             // This test is rather rough.  So we're willing to try it a few times in order to observe the desired value.
-            bool passingAttemptObserved = false;
+            bool attemptWithNoLeakObserved = false;
+            bool attemptWithinMemoryLimitsObserved = false;
             for (int attempt = 1; attempt <= allowedAttempts; attempt++)
             {
                 this.Logger?.WriteLine("Iteration {0}", attempt);
@@ -138,12 +139,10 @@
                 this.Logger?.WriteLine("{0} bytes leaked per iteration.", leaked);
                 this.Logger?.WriteLine("{0} bytes allocated per iteration ({1} allowed).", allocated, maxBytesAllocated);
 
-                if (leaked <= 0 && (maxBytesAllocated == -1 || allocated <= maxBytesAllocated))
-                {
-                    passingAttemptObserved = true;
-                }
+                attemptWithNoLeakObserved |= leaked <= 0;
+                attemptWithinMemoryLimitsObserved |= maxBytesAllocated == -1 || allocated <= maxBytesAllocated;
 
-                if (!passingAttemptObserved)
+                if (!attemptWithNoLeakObserved || !attemptWithinMemoryLimitsObserved)
                 {
                     // give the system a bit of cool down time to increase the odds we'll pass next time.
                     GC.Collect();
@@ -151,7 +150,8 @@
                 }
             }
 
-            Assert.True(passingAttemptObserved);
+            Assert.True(attemptWithNoLeakObserved, "Leaks observed in every iteration.");
+            Assert.True(attemptWithinMemoryLimitsObserved, "Excess memory allocations in every iteration.");
         }
 
         /// <summary>
