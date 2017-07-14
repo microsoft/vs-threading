@@ -12,6 +12,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
     using System;
     using System.Reflection;
 
+
     /// <summary>
     ///   A strongly-typed resource class, for looking up localized strings, etc.
     /// </summary>
@@ -19,7 +20,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Strings {
@@ -79,7 +80,34 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to Synchronously waiting on tasks or awaiters may cause deadlocks. Use JoinableTaskFactory.Run instead..
+        ///   Looks up a localized string similar to Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority..
+        /// </summary>
+        internal static string VSTHRD001_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSTHRD001_MessageFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Avoid legacy thread switching APIs.
+        /// </summary>
+        internal static string VSTHRD001_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD001_Title", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Use await instead.
+        /// </summary>
+        internal static string VSTHRD002_CodeFix_Await_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD002_CodeFix_Await_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or JoinableTaskFactory.Run instead..
         /// </summary>
         internal static string VSTHRD002_MessageFormat {
             get {
@@ -93,6 +121,25 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         internal static string VSTHRD002_Title {
             get {
                 return ResourceManager.GetString("VSTHRD002_Title", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Calling await on a Task inside a JoinableTaskFactory.Run, when the task is initialized outside the delegate can cause potential deadlocks.
+        ///You can avoid this problem by ensuring the task is initialized within the delegate or by using JoinableTask instead of Task..
+        /// </summary>
+        internal static string VSTHRD003_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSTHRD003_MessageFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Avoid awaiting non-joinable tasks in join contexts.
+        /// </summary>
+        internal static string VSTHRD003_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD003_Title", resourceCulture);
             }
         }
 
@@ -112,6 +159,43 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         internal static string VSTHRD010_Title {
             get {
                 return ResourceManager.GetString("VSTHRD010_Title", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock.
+        ///Use AsyncLazy&lt;T&gt; instead..
+        /// </summary>
+        internal static string VSTHRD011_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSTHRD011_MessageFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Avoid using Lazy&lt;T&gt; where T is a Task&lt;T2&gt;.
+        /// </summary>
+        internal static string VSTHRD011_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD011_Title", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread..
+        /// </summary>
+        internal static string VSTHRD012_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSTHRD012_MessageFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Provide JoinableTaskFactory where allowed.
+        /// </summary>
+        internal static string VSTHRD012_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD012_Title", resourceCulture);
             }
         }
 
@@ -161,58 +245,20 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to AsyncEventHandler delegates should be invoked via the extension method &quot;TplExtensions.InvokeAsync()&quot; defined in Microsoft.VisualStudio.Threading assembly..
+        ///   Looks up a localized string similar to Limit use of synchronously blocking method calls such as JoinableTaskFactory.Run or Task.Result to public entrypoint members where you must be synchronous. Using it for internal members can needlessly add synchronous frames between asynchronous frames, leading to threadpool exhaustion..
         /// </summary>
-        internal static string VSTHRD106_MessageFormat {
+        internal static string VSTHRD102_MessageFormat {
             get {
-                return ResourceManager.GetString("VSTHRD106_MessageFormat", resourceCulture);
+                return ResourceManager.GetString("VSTHRD102_MessageFormat", resourceCulture);
             }
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to Use InvokeAsync to raise async events.
+        ///   Looks up a localized string similar to Implement internal logic asynchronously.
         /// </summary>
-        internal static string VSTHRD106_Title {
+        internal static string VSTHRD102_Title {
             get {
-                return ResourceManager.GetString("VSTHRD106_Title", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Calling await on a Task inside a JoinableTaskFactory.Run, when the task is initialized outside the delegate can cause potential deadlocks.
-        ///You can avoid this problem by ensuring the task is initialized within the delegate or by using JoinableTask instead of Task..
-        /// </summary>
-        internal static string VSTHRD003_MessageFormat {
-            get {
-                return ResourceManager.GetString("VSTHRD003_MessageFormat", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Avoid awaiting non-joinable tasks in join contexts.
-        /// </summary>
-        internal static string VSTHRD003_Title {
-            get {
-                return ResourceManager.GetString("VSTHRD003_Title", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock.
-        ///Use AsyncLazy&lt;T&gt; instead..
-        /// </summary>
-        internal static string VSTHRD011_MessageFormat {
-            get {
-                return ResourceManager.GetString("VSTHRD011_MessageFormat", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Avoid using Lazy&lt;T&gt; where T is a Task&lt;T2&gt;.
-        /// </summary>
-        internal static string VSTHRD011_Title {
-            get {
-                return ResourceManager.GetString("VSTHRD011_Title", resourceCulture);
+                return ResourceManager.GetString("VSTHRD102_Title", resourceCulture);
             }
         }
 
@@ -244,20 +290,83 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to Limit use of synchronously blocking method calls such as JoinableTaskFactory.Run or Task.Result to public entrypoint members where you must be synchronous. Using it for internal members can needlessly add synchronous frames between asynchronous frames, leading to threadpool exhaustion..
+        ///   Looks up a localized string similar to Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate..
         /// </summary>
-        internal static string VSTHRD102_MessageFormat {
+        internal static string VSTHRD104_MessageFormat {
             get {
-                return ResourceManager.GetString("VSTHRD102_MessageFormat", resourceCulture);
+                return ResourceManager.GetString("VSTHRD104_MessageFormat", resourceCulture);
             }
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to Implement internal logic asynchronously.
+        ///   Looks up a localized string similar to Offer async methods.
         /// </summary>
-        internal static string VSTHRD102_Title {
+        internal static string VSTHRD104_Title {
             get {
-                return ResourceManager.GetString("VSTHRD102_Title", resourceCulture);
+                return ResourceManager.GetString("VSTHRD104_Title", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Avoid method overloads that assume TaskScheduler.Current. Use an overload that accepts a TaskScheduler and specify TaskScheduler.Default (or any other) explicitly..
+        /// </summary>
+        internal static string VSTHRD105_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSTHRD105_MessageFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Avoid method overloads that assume TaskScheduler.Current.
+        /// </summary>
+        internal static string VSTHRD105_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD105_Title", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to AsyncEventHandler delegates should be invoked via the extension method &quot;TplExtensions.InvokeAsync()&quot; defined in Microsoft.VisualStudio.Threading assembly..
+        /// </summary>
+        internal static string VSTHRD106_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSTHRD106_MessageFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Use InvokeAsync to raise async events.
+        /// </summary>
+        internal static string VSTHRD106_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD106_Title", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Await using expression.
+        /// </summary>
+        internal static string VSTHRD107_CodeFix_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD107_CodeFix_Title", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Missing await operator for &quot;using&quot; expression..
+        /// </summary>
+        internal static string VSTHRD107_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSTHRD107_MessageFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Await Task within using expression.
+        /// </summary>
+        internal static string VSTHRD107_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD107_Title", resourceCulture);
             }
         }
 
@@ -285,78 +394,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         internal static string VSTHRD200_Title {
             get {
                 return ResourceManager.GetString("VSTHRD200_Title", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Avoid method overloads that assume TaskScheduler.Current. Use an overload that accepts a TaskScheduler and specify TaskScheduler.Default (or any other) explicitly..
-        /// </summary>
-        internal static string VSTHRD105_MessageFormat {
-            get {
-                return ResourceManager.GetString("VSTHRD105_MessageFormat", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Avoid method overloads that assume TaskScheduler.Current.
-        /// </summary>
-        internal static string VSTHRD105_Title {
-            get {
-                return ResourceManager.GetString("VSTHRD105_Title", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread..
-        /// </summary>
-        internal static string VSTHRD012_MessageFormat {
-            get {
-                return ResourceManager.GetString("VSTHRD012_MessageFormat", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Provide JoinableTaskFactory where allowed.
-        /// </summary>
-        internal static string VSTHRD012_Title {
-            get {
-                return ResourceManager.GetString("VSTHRD012_Title", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate..
-        /// </summary>
-        internal static string VSTHRD104_MessageFormat {
-            get {
-                return ResourceManager.GetString("VSTHRD104_MessageFormat", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Offer async methods.
-        /// </summary>
-        internal static string VSTHRD104_Title {
-            get {
-                return ResourceManager.GetString("VSTHRD104_Title", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority..
-        /// </summary>
-        internal static string VSTHRD001_MessageFormat {
-            get {
-                return ResourceManager.GetString("VSTHRD001_MessageFormat", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Avoid legacy threading switching APIs.
-        /// </summary>
-        internal static string VSTHRD001_Title {
-            get {
-                return ResourceManager.GetString("VSTHRD001_Title", resourceCulture);
             }
         }
     }

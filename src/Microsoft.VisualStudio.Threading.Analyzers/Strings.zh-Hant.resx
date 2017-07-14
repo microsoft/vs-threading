@@ -22,14 +22,14 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>同步等候工作或 awaiter 可能會造成鎖死。請改用 JoinableTaskFactory.Run。</value>
+    <value>同步等候 task 或 awaiter 可能會造成死結。請改用 JoinableTaskFactory.Run。</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
     <value>避免有問題的同步等候</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>Visual Studio 服務 "{0}" 應該明確用在主要執行緒。
+    <value>Visual Studio 服務 "{0}" 應該明確用在主執行緒。
 請先呼叫 ThreadHelper.ThrowIfNotOnUIThread() 或 await JoinableTaskFactory.SwitchToMainThreadAsync()。</value>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
@@ -57,21 +57,21 @@
     <value>使用 InvokeAsync 引發非同步事件</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>當工作在委派外部初始化時，在 JoinableTaskFactory.Run 內的 Task 上呼叫 await，可能會造成潛在的鎖死情形。
-您可以藉由確認工作在委派內初始化，或將 Task 改為使用 JoinableTask，來避免此問題。</value>
+    <value>當工作在委派的外部初始化時，對 JoinableTaskFactory.Run 內的 Task 上呼叫 await 可能會造成潛在的死結。
+您可以讓工作在委派內初始化，或不使用 Task 而改用 JoinableTask 來避免此問題。</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
     <value>避免在加入內容中等候不可加入的工作</value>
   </data>
   <data name="VSTHRD011_MessageFormat" xml:space="preserve">
-    <value>Lazy&lt;Task&lt;T&gt;&gt;.Value 可能會鎖死。
+    <value>Lazy&lt;Task&lt;T&gt;&gt;.Value 可能會造成死結。
 請改用 AsyncLazy&lt;T&gt;。</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
     <value>避免在 T 為 Task&lt;T2&gt; 時使用 Lazy&lt;T&gt;</value>
   </data>
   <data name="VSTHRD103_MessageFormat" xml:space="preserve">
-    <value>{0} 會同步封鎖。請改為 await {1}。</value>
+    <value>{0} 會同步封鎖。請改用 await {1}。</value>
   </data>
   <data name="VSTHRD103_MessageFormat_UseAwaitInstead" xml:space="preserve">
     <value>{0} 會同步封鎖。請改用 await。</value>
@@ -96,7 +96,7 @@
     <value>對非同步方法使用 "Async" 尾碼</value>
   </data>
   <data name="VSTHRD105_MessageFormat" xml:space="preserve">
-    <value>請避免假設 TaskScheduler.Current 的方法多載。請使用接受 TaskScheduler 的多載，並明確指定 TaskScheduler.Default (或其他任一項)。</value>
+    <value>請避免會假設 TaskScheduler.Current 的方法多載。請使用接受 TaskScheduler 的多載，並明確指定 TaskScheduler.Default (或其他任一項)。</value>
   </data>
   <data name="VSTHRD105_Title" xml:space="preserve">
     <value>避免假設 TaskScheduler.Current 的方法多載</value>
@@ -104,5 +104,36 @@
   <data name="VSTHRD100_CodeFix_Title" xml:space="preserve">
     <value>將傳回類型變更為 Task</value>
     <comment>Task is a type name and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD012_MessageFormat" xml:space="preserve">
+    <value>在此呼叫 (或其他多載) 中提供 JoinableTaskFactory 執行個體，以避免主執行緒發生死結。</value>
+  </data>
+  <data name="VSTHRD012_Title" xml:space="preserve">
+    <value>在允許的情況下提供 JoinableTaskFactory</value>
+  </data>
+  <data name="VSTHRD104_MessageFormat" xml:space="preserve">
+    <value>提供此方法不會同步封鎖的非同步版本，讓此方法在 JoinableTaskFactory.Run 委派中只呼叫該非同步方法。</value>
+  </data>
+  <data name="VSTHRD104_Title" xml:space="preserve">
+    <value>提供非同步方法</value>
+  </data>
+  <data name="VSTHRD001_MessageFormat" xml:space="preserve">
+    <value>Await JoinableTaskFactory.SwitchToMainThreadAsync() 可切換至 UI 執行緒，而不會切換至可能會造成死結，或必須指定優先順序的 API。</value>
+  </data>
+  <data name="VSTHRD001_Title" xml:space="preserve">
+    <value>避免傳統執行緒切換 API</value>
+    <comment>thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.</comment>
+  </data>
+  <data name="VSTHRD107_MessageFormat" xml:space="preserve">
+    <value>"using" 運算式缺少 await 運算子。</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_Title" xml:space="preserve">
+    <value>using 運算式中的 Await Task</value>
+    <comment>"await Task" is a C# compound term, and "using" is a C# keyword. These should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_CodeFix_Title" xml:space="preserve">
+    <value>Await using 運算式</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
   </data>
 </root>

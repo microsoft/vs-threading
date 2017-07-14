@@ -46,6 +46,91 @@
         }
 
         [Fact]
+        public void OrderPreservedAcrossCancellationTokens()
+        {
+            int[] seedsToUse = new int[] { -2100387291, (int)DateTime.Now.Ticks };
+            foreach (int seed in seedsToUse)
+            {
+                this.Logger.WriteLine("Using random seed {0}", seed);
+                var r = new Random(seed);
+
+                // Prepare a bunch of unique CancellationTokens, including one CancellationToken.None.
+                var cts = new CancellationToken[10];
+                for (int i = 1; i < cts.Length; i++)
+                {
+                    cts[i] = new CancellationTokenSource().Token;
+                }
+
+                // Arrange 100 DequeueAsync tasks that use random tokens.
+                var dequeueTasks = new Task<GenericParameterHelper>[100];
+                for (int i = 0; i < dequeueTasks.Length; i++)
+                {
+                    CancellationToken ct = cts[r.Next() % cts.Length];
+                    dequeueTasks[i] = this.queue.DequeueAsync(ct);
+                }
+
+                // Now enqueue that many elements
+                for (int i = 0; i < dequeueTasks.Length; i++)
+                {
+                    this.queue.Enqueue(new GenericParameterHelper(i));
+                }
+
+                // And verify that the dequeue tasks got them in order.
+                for (int i = 0; i < dequeueTasks.Length; i++)
+                {
+                    Assert.Equal(i, dequeueTasks[i].Result.Data);
+                }
+            }
+        }
+
+        [Fact]
+        public void OrderPreservedAcrossCancellationTokensAndMultipleDequeuers()
+        {
+            const int tokenCount = 3;
+            const int dequeueDepth = 2;
+
+            // Arrange for one unique CancellationToken per logical dequeuer.
+            var tokens = new CancellationToken[tokenCount];
+            for (int i = 0; i < tokens.Length; i++)
+            {
+                tokens[i] = new CancellationTokenSource().Token;
+            }
+
+            // Prepare each dequeuing CancellationToken to be used multiple times.
+            var dequeuers = new Task<GenericParameterHelper>[tokenCount][];
+            for (int i = 0; i < dequeuers.Length; i++)
+            {
+                dequeuers[i] = new Task<GenericParameterHelper>[dequeueDepth];
+            }
+
+            // Now in a round robin fashion, each CancellationToken gets to call DequeueAsync.
+            // When they've all had a turn, do it again.
+            for (int j = 0; j < dequeueDepth; j++)
+            {
+                for (int i = 0; i < dequeuers.Length; i++)
+                {
+                    dequeuers[i][j] = this.queue.DequeueAsync(tokens[i]);
+                }
+            }
+
+            // Now enqueue enough items to let all the DequeueAsync calls complete.
+            for (int i = 0; i < tokenCount * dequeueDepth; i++)
+            {
+                this.queue.Enqueue(new GenericParameterHelper(i));
+            }
+
+            // Verify that each DequeueAsync call got the enqueued value in FIFO order.
+            for (int j = 0; j < dequeueDepth; j++)
+            {
+                for (int i = 0; i < dequeuers.Length; i++)
+                {
+                    int actual = dequeuers[i][j].Result.Data;
+                    Assert.Equal((j * dequeuers.Length) + i, actual);
+                }
+            }
+        }
+
+        [Fact]
         public void PeekThrowsOnEmptyQueue()
         {
             Assert.Throws<InvalidOperationException>(() => this.queue.Peek());
@@ -169,7 +254,7 @@
         }
 
         [Fact]
-        public void MultipleDequeuers()
+        public async Task MultipleDequeuers()
         {
             var dequeuers = new Task<GenericParameterHelper>[5];
             for (int i = 0; i < dequeuers.Length; i++)
@@ -179,19 +264,25 @@
 
             for (int i = 0; i < dequeuers.Length; i++)
             {
-                int completedCount = dequeuers.Count(d => d.IsCompleted);
+                int completedCount = 0;
+                while (completedCount < i)
+                {
+                    await Task.WhenAny(dequeuers.Skip(completedCount)).WithTimeout(TimeSpan.FromMilliseconds(TestTimeout));
+                    completedCount = dequeuers.Count(d => d.IsCompleted);
+                }
+
                 Assert.Equal(i, completedCount);
                 this.queue.Enqueue(new GenericParameterHelper(i));
             }
 
             for (int i = 0; i < dequeuers.Length; i++)
             {
-                Assert.True(dequeuers.Any(d => d.Result.Data == i));
+                Assert.Equal(i, dequeuers[i].Result.Data);
             }
         }
 
         [Fact]
-        public void MultipleDequeuersCancelled()
+        public async Task MultipleDequeuersCancelled()
         {
             var cts = new CancellationTokenSource[2];
             for (int i = 0; i < cts.Length; i++)
@@ -209,7 +300,15 @@
 
             for (int i = 0; i < dequeuers.Length; i++)
             {
-                Assert.Equal(i % 2 == 0, dequeuers[i].IsCanceled);
+                if (i % 2 == 0)
+                {
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => dequeuers[i]).WithTimeout(UnexpectedTimeout);
+                    Assert.True(dequeuers[i].IsCanceled);
+                }
+                else
+                {
+                    Assert.False(dequeuers[i].IsCanceled);
+                }
 
                 if (!dequeuers[i].IsCanceled)
                 {
@@ -217,6 +316,7 @@
                 }
             }
 
+            await Task.WhenAll(dequeuers).WithTimeout(UnexpectedTimeout).NoThrowAwaitable();
             Assert.True(dequeuers.All(d => d.IsCompleted));
         }
 
@@ -273,11 +373,12 @@
         }
 
         [Fact]
-        public void CompleteWhileDequeuersWaiting()
+        public async Task CompleteWhileDequeuersWaiting()
         {
             var dequeueTask = this.queue.DequeueAsync();
             this.queue.Complete();
             Assert.True(this.queue.Completion.IsCompleted);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => dequeueTask).WithTimeout(UnexpectedTimeout);
             Assert.True(dequeueTask.IsCanceled);
         }
 
@@ -314,16 +415,16 @@
                 {
                     var otherThread = Task.Run(delegate
                     {
-                        barrier.SignalAndWait();
+                        Assert.True(barrier.SignalAndWait(TestTimeout));
                         queue.DequeueAsync(cts.Token);
-                        barrier.SignalAndWait();
+                        Assert.True(barrier.SignalAndWait(TestTimeout));
                     });
 
-                    barrier.SignalAndWait();
+                    Assert.True(barrier.SignalAndWait(TestTimeout));
                     cts.Cancel();
-                    barrier.SignalAndWait();
+                    Assert.True(barrier.SignalAndWait(TestTimeout));
 
-                    otherThread.Wait();
+                    Assert.True(otherThread.Wait(TestTimeout));
                 }
 
                 iterations++;
@@ -374,7 +475,7 @@
         }
 
         [Fact]
-        public void OnEnqueuedAlreadyDispatched()
+        public async Task OnEnqueuedAlreadyDispatched()
         {
             var queue = new DerivedQueue<int>();
             bool callbackFired = false;
@@ -388,7 +489,7 @@
             var dequeuer = queue.DequeueAsync();
             queue.Enqueue(5);
             Assert.True(callbackFired);
-            Assert.True(dequeuer.IsCompleted);
+            Assert.Equal(5, await dequeuer.WithTimeout(UnexpectedTimeout));
         }
 
         [Fact]
@@ -432,7 +533,25 @@
                     queue.Complete();
                     Assert.True(queue.IsCompleted);
                 },
-                maxBytesAllocated: 81);
+                maxBytesAllocated: 81,
+                allowedAttempts: 30);
+        }
+
+        [Fact]
+        public void DequeueAsyncContinuationsNotInlinedWithinPrivateLock()
+        {
+            var dequeuerTask = this.queue.DequeueAsync();
+            var continuationTask = dequeuerTask.ContinueWith(
+                _ =>
+                {
+                    Assert.True(Task.Run(delegate
+                    {
+                        this.queue.Enqueue(new GenericParameterHelper(2));
+                    }).Wait(UnexpectedTimeout));
+                },
+                TaskContinuationOptions.ExecuteSynchronously);
+            this.queue.Enqueue(new GenericParameterHelper(1));
+            continuationTask.Wait(UnexpectedTimeout);
         }
 
         private class DerivedQueue<T> : AsyncQueue<T>

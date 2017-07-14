@@ -21,7 +21,7 @@ For the logic of making more threads available for work, CLR will follow a somet
 * Once thread pool queue is empty or number of queued items decreases, CLR will quickly retire available threads to reserved status. In traces we see this happening under a second for example if no more work is scheduled. 
 * Reserved threads will only be destroyed if they are not used for a while (in order of minutes). This is to avoid constant cost of thread creation/destruction.
 
-On a quad core machine, there will be minimum of 4 active threads at any given time. A starvation may occur anytime these 4 active threads are blockedn a long running operation.
+On a quad core machine, there will be minimum of 4 active threads at any given time. A starvation may occur anytime these 4 active threads are blocked in a long running operation.
 
 ## Investigating the root cause of thread starvation
 
@@ -39,3 +39,19 @@ While CLR has thread pool ETW events to indicate thread starvation, these events
 
 * RPS machines are quad core machines.
 * ETW events that indicate threadpool starvation are not collected on RPS machines due to their cost and volume.
+
+## Avoiding thread pool starvation
+
+There are multiple major causes of thread pool starvation. Each is briefly described below with mitigation options.
+
+### Blocking a thread pool thread while waiting for the UI thread
+
+When a thread pool thread tries to access an STA COM object such as Visual Studio's IServiceProvider or a service previously obtained from this interface, the call to that COM object will require an RPC (Remote Procedure Call) transition which blocks the thread pool thread until the UI thread has time to respond to the request. Learn more about RPC calls from [this blog post](https://blogs.msdn.microsoft.com/andrewarnottms/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory/).
+
+The mitigation for this is to have the method that is executing on the thread pool asynchronously switch to the UI thread *before* calling into an STA COM object. This allows the thread pool thread to work on something else on the thread pool's queue while the UI thread is busy or servicing this request. After interacting with the STA COM object, the async method can switch back to the thread pool if desired.
+
+### Flooding the thread pool queue
+
+When a component sends many work items to the thread pool in a short timeframe, the queue will grow to store them till one of the thread pool threads can execute them all. Any subsequently queued items will be added to the end of the queue, regardless of their relative priority in the application. When the queue is long, and a work item is appended to the end of the queue that is required for the UI of the application to feel responsive, the application can hang or feel sluggish due to the work that otherwise should be running in the background without impacting UI responsiveness.
+
+The mitigation is for components that have many work items to send to the threadpool to throttle the rate at which new items are introduced to the threadpool to a reasonably small number. This helps keep the queue short, and thus any newly enqueued work will execute much sooner, keeping the application responsive. Throttling work can be done such that the CPU stays busy and the background work moving along quickly, but without sacrificing UI responsiveness. See [this blog post](https://blogs.msdn.microsoft.com/andrewarnottms/2017/05/11/limiting-concurrency-for-faster-and-more-responsive-apps/) for more information on how to easily throttle concurrent work.

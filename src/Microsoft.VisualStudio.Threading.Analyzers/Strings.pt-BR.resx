@@ -22,7 +22,7 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>Esperar de forma síncrona por tarefas ou awaiters podem causar deadlocks. Em vez disso, use JoinableTaskFactory.Run.</value>
+    <value>Esperar de forma síncrona por tarefas ou awaiters pode causar deadlocks. Em vez disso, use JoinableTaskFactory.Run.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
@@ -30,7 +30,7 @@
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
     <value>O serviço do Visual Studio "{0}" deve ser usado em um thread principal explicitamente. 
-Chame ThreadHelper.ThrowIfNotOnUIThread() ou espere o JoinableTaskFactory.SwitchToMainThreadAsync() primeiro.</value>
+Chame ThreadHelper.ThrowIfNotOnUIThread() ou espere primeiro pelo JoinableTaskFactory.SwitchToMainThreadAsync().</value>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
     <value>Use serviços do VS do thread de interface do usuário</value>
@@ -104,5 +104,36 @@ Em vez disso, use AsyncLazy&lt;T&gt;.</value>
   </data>
   <data name="VSTHRD105_Title" xml:space="preserve">
     <value>Evite sobrecargas de método que assumem TaskScheduler.Current</value>
+  </data>
+  <data name="VSTHRD012_MessageFormat" xml:space="preserve">
+    <value>Forneça uma instância de JoinableTaskFactory nessa chamada (ou outra sobrecarga) para evitar deadlocks com o thread principal.</value>
+  </data>
+  <data name="VSTHRD012_Title" xml:space="preserve">
+    <value>Fornecer o JoinableTaskFactory quando permitido</value>
+  </data>
+  <data name="VSTHRD104_MessageFormat" xml:space="preserve">
+    <value>Exporte uma versão assíncrona desse método que não bloqueia de forma síncrona. Em seguida, simplifique esse método para chamar esse método assíncrono em um delegado JoinableTaskFactory.Run.</value>
+  </data>
+  <data name="VSTHRD104_Title" xml:space="preserve">
+    <value>Oferecer métodos assíncronos</value>
+  </data>
+  <data name="VSTHRD001_MessageFormat" xml:space="preserve">
+    <value>Espere que o JoinableTaskFactory.SwitchToMainThreadAsync() mude o thread da interface do usuário em vez das APIs que podem realizar deadlock ou requerer a especificação de uma prioridade.</value>
+  </data>
+  <data name="VSTHRD001_Title" xml:space="preserve">
+    <value>Evitar APIs de troca de treads herdadas</value>
+    <comment>thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.</comment>
+  </data>
+  <data name="VSTHRD107_MessageFormat" xml:space="preserve">
+    <value>Operador await ausente para a expressão “using”</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_Title" xml:space="preserve">
+    <value>Await Task em uma expressão using</value>
+    <comment>"await Task" is a C# compound term, and "using" is a C# keyword. These should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_CodeFix_Title" xml:space="preserve">
+    <value>Expressão await using</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
   </data>
 </root>

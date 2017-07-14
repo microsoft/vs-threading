@@ -12,4 +12,53 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AppliedSynchronizationContextNotAllowed" xml:space="preserve">
+    <value>L'acquisition de verrous sur des threads avec application d'un SynchronizationContext n'est pas autorisée.</value>
+  </data>
+  <data name="CannotUpgradeNonUpgradeableLock" xml:space="preserve">
+    <value>L'appelant possède un verrou en lecture qui ne peut pas être mis à niveau et la mise à niveau est impossible.</value>
+  </data>
+  <data name="DangerousReadLockRequestFromWriteLockFork" xml:space="preserve">
+    <value>Demande dangereuse de verrou en lecture à partir d'une bifurcation d'un verrou en écriture.</value>
+  </data>
+  <data name="InvalidAfterCompleted" xml:space="preserve">
+    <value>Déjà passé à l'état Terminé.</value>
+  </data>
+  <data name="InvalidLock" xml:space="preserve">
+    <value>Cette opération peut seulement être exécutée sur un verrou valide.</value>
+  </data>
+  <data name="InvalidWithoutLock" xml:space="preserve">
+    <value>Un verrou est requis.</value>
+  </data>
+  <data name="JoinableTaskContextAndCollectionMismatch" xml:space="preserve">
+    <value>JoinableTask n'appartient pas au contexte avec lequel cette collection a été instanciée.</value>
+  </data>
+  <data name="JoinableTaskContextNodeAlreadyRegistered" xml:space="preserve">
+    <value>Ce nœud est déjà inscrit.</value>
+  </data>
+  <data name="LazyValueFaulted" xml:space="preserve">
+    <value>La valeur créée tardivement a provoqué un échec pendant la construction.</value>
+  </data>
+  <data name="LazyValueNotCreated" xml:space="preserve">
+    <value>La valeur créée tardivement n'a pas encore été construite.</value>
+  </data>
+  <data name="LockCompletionAlreadyRequested" xml:space="preserve">
+    <value>Ce verrou a déjà été marqué pour achèvement.  Aucun nouveau verrou de niveau supérieur ne peut être pris en charge.</value>
+  </data>
+  <data name="NotAllowedUnderURorWLock" xml:space="preserve">
+    <value>Cette opération n'est pas autorisée durant l'application d'un verrou actif en lecture ou en écriture pouvant être mis à niveau à partir de AsyncReaderWriterLock.</value>
+  </data>
+  <data name="QueueEmpty" xml:space="preserve">
+    <value>La file d'attente est vide.</value>
+  </data>
+  <data name="STAThreadCallerNotAllowed" xml:space="preserve">
+    <value>Impossible d'achever cette opération sur un thread STA.</value>
+  </data>
+  <data name="SwitchToMainThreadFailedToReachExpectedThread" xml:space="preserve">
+    <value>Une tentative de basculement sur le thread principal n’a pas réussi à atteindre le thread attendu. JoinableTaskContext a-t-il été initialisé sur le mauvais thread ou avec un SynchronizationContext dont la méthode Post n’exécute pas son délégué sur le thread principal ?</value>
+    <comment>An error displayed when there is a serious programming fault with an application. It will usually be thrown early in development in the application and is not expected to be seen by an end user.</comment>
+  </data>
+  <data name="ValueFactoryReentrancy" xml:space="preserve">
+    <value>La fabrique de valeurs a fait appel à la valeur sur la même instance.</value>
+  </data>
 </root>

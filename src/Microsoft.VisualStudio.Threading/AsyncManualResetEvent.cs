@@ -137,7 +137,7 @@ namespace Microsoft.VisualStudio.Threading
 
             if (transitionRequired)
             {
-                tcs.TrySetResultToDefault();
+                tcs.TrySetResult(default(EmptyStruct));
             }
 
             return tcs.Task;
@@ -199,7 +199,7 @@ namespace Microsoft.VisualStudio.Threading
                 this.isSet = false;
             }
 
-            tcs.TrySetResultToDefault();
+            tcs.TrySetResult(default(EmptyStruct));
             return tcs.Task;
         }
 

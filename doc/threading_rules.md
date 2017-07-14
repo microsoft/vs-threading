@@ -7,7 +7,7 @@ rules to avoid deadlocks, unwanted reentrancy, and keep an easier to maintain
 codebase.  We do this by comprehensively applying just three rules, as outlined
 below. In each case, the instance of `JoinableTaskFactory` used in the samples
 comes from `ThreadHelper.JoinableTaskFactory` ([except for code in CPS and its
-extensions](cookbook.md)).
+extensions](cookbook_vs.md)).
 
 ### 1. If a method has certain thread apartment requirements (STA or MTA) it must either:
    - Have an asynchronous signature, and asynchronously marshal to the appropriate
@@ -244,7 +244,7 @@ almost nothing to do but fix the code bug.
 In the meantime, the most useful technique for analyzing async hangs is to
 attach WinDBG to the process and dump out incomplete async methods' states.
 This can be tedious, but we have a script in this file that you can use
-to make it much easier: [Async hang debugging](../scenario/analyze_hangs.md)
+to make it much easier: [Async hang debugging][AsyncHangDebugging]
 
 ##### What is threadpool exhaustion, and why is it bad?
 
@@ -342,4 +342,7 @@ type by passing in either a `JoinableTaskContext` or a `JoinableTaskCollection`.
 
 For more information on this topic, see Andrew Arnott's blog post 
 [Asynchronous and multithreaded programming within VS using the 
-`JoinableTaskFactory`](https://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx)
+`JoinableTaskFactory`][JTFBlog].
+
+[AsyncHangDebugging]: https://github.com/Microsoft/VSProjectSystem/blob/master/doc/scenario/analyze_hangs.md
+[JTFBlog]: https://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx

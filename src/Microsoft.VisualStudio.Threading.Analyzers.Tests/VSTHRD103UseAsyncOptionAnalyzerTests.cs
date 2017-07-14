@@ -922,5 +922,27 @@ static class FruitUtils {
             this.VerifyCSharpDiagnostic(test, this.expect);
             this.VerifyCSharpFix(test, withFix);
         }
+
+        [Fact]
+        public void XunitThrowAsyncNotSuggestedInAsyncTestMethod()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    Task T() {
+        Throws<Exception>(() => { });
+        return Task.FromResult(1);
+    }
+
+    void Throws<T>(Action action) { }
+    Task ThrowsAsync<T>(Func<Task> action) { return TplExtensions.CompletedTask; }
+}
+";
+
+            this.VerifyCSharpDiagnostic(test);
+        }
     }
 }

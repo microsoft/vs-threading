@@ -528,12 +528,12 @@
         [Fact]
         public async Task ToTaskOnHandleSignaledAfterNonZeroTimeout()
         {
-            var handle = new ManualResetEvent(initialState: false);
-            Task<bool> actual = TplExtensions.ToTask(handle, timeout: 1);
-            await Task.Delay(2);
-            handle.Set();
-            bool result = await actual;
-            Assert.False(result);
+            using (var handle = new ManualResetEvent(initialState: false))
+            {
+                Task<bool> actual = TplExtensions.ToTask(handle, timeout: 1);
+                bool result = await actual.WithTimeout(TimeSpan.FromMilliseconds(AsyncDelay));
+                Assert.False(result);
+            }
         }
 
         [Fact]

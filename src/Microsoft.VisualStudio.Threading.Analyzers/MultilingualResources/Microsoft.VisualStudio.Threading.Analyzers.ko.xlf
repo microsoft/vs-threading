@@ -18,8 +18,9 @@
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD002_MessageFormat" translate="yes" xml:space="preserve">
-          <source>Synchronously waiting on tasks or awaiters may cause deadlocks. Use JoinableTaskFactory.Run instead.</source>
-          <target state="translated">작업을 동기적으로 대기합니다. 그러지 않으면 대기자가 교착 상태를 일으킬 수 있습니다. 대신 JoinableTaskFactory.Run을 사용합니다.</target>
+          <source>Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or JoinableTaskFactory.Run instead.</source>
+          <target state="needs-review-translation">작업을 동기적으로 대기합니다. 그러지 않으면 대기자가 교착 상태를 일으킬 수 있습니다. 대신 JoinableTaskFactory.Run을 사용합니다.</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD002_Title" translate="yes" xml:space="preserve">
@@ -27,10 +28,11 @@
           <target state="translated">문제가 있는 동기 대기를 사용하지 않습니다.</target>
         </trans-unit>
         <trans-unit id="VSTHRD010_MessageFormat" translate="yes" xml:space="preserve">
-          <source>Visual Studio service "{0}" should be used on main thread explicitly. 
+          <source>Visual Studio service "{0}" should be used on main thread explicitly.
 Call ThreadHelper.ThrowIfNotOnUIThread() or await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
-          <target state="translated">주 스레드에서 Visual Studio 서비스 "{0}"을(를) 명시적으로 사용해야 합니다. 
-ThreadHelper.ThrowIfNotOnUIThread()를 호출하거나 JoinableTaskFactory.SwitchToMainThreadAsync()를 우선 기다립니다.</target>
+          <target state="translated">주 스레드에서 Visual Studio 서비스 "{0}"을(를) 명시적으로 사용해야 합니다.
+ThreadHelper.ThrowIfNotOnUIThread()를 호출하거나, 우선 JoinableTaskFactory.SwitchToMainThreadAsync()를 대기합니다.</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD010_Title" translate="yes" xml:space="preserve">
           <source>Use VS services from UI thread</source>
@@ -38,7 +40,7 @@ ThreadHelper.ThrowIfNotOnUIThread()를 호출하거나 JoinableTaskFactory.Switc
         </trans-unit>
         <trans-unit id="VSTHRD100_CodeFix_Title" translate="yes" xml:space="preserve">
           <source>Change return type to Task</source>
-          <target state="new">Change return type to Task</target>
+          <target state="translated">반환 형식을 Task로 변경</target>
           <note from="MultilingualBuild" annotates="source" priority="2">Task is a type name and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD100_MessageFormat" translate="yes" xml:space="preserve">
@@ -131,27 +133,49 @@ Use AsyncLazy&lt;T&gt; instead.</source>
         </trans-unit>
         <trans-unit id="VSTHRD012_MessageFormat" translate="yes" xml:space="preserve">
           <source>Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.</source>
-          <target state="new">Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.</target>
+          <target state="translated">주 스레드에서 교착 상태를 방지하려면 이 호출(또는 다른 오버로드)에서 JoinableTaskFactory의 인스턴스를 제공하세요.</target>
         </trans-unit>
         <trans-unit id="VSTHRD012_Title" translate="yes" xml:space="preserve">
           <source>Provide JoinableTaskFactory where allowed</source>
-          <target state="new">Provide JoinableTaskFactory where allowed</target>
+          <target state="translated">허용되는 경우 JoinableTaskFactory 제공</target>
         </trans-unit>
         <trans-unit id="VSTHRD104_MessageFormat" translate="yes" xml:space="preserve">
           <source>Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate.</source>
-          <target state="new">Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate.</target>
+          <target state="translated">동기적으로 차단되지 않는 이 메서드의 비동기 버전을 노출하세요. 그런 다음 JoinableTaskFactory.Run 대리자 내의 해당 비동기 메서드를 호출하도록 이 메서드를 단순화하세요.</target>
         </trans-unit>
         <trans-unit id="VSTHRD104_Title" translate="yes" xml:space="preserve">
           <source>Offer async methods</source>
-          <target state="new">Offer async methods</target>
+          <target state="translated">비동기 메서드 제공</target>
         </trans-unit>
         <trans-unit id="VSTHRD001_MessageFormat" translate="yes" xml:space="preserve">
           <source>Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority.</source>
-          <target state="new">Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority.</target>
+          <target state="translated">JoinableTaskFactory.SwitchToMainThreadAsync()가 교착 상태를 일으킬 수 있고 우선 순위를 지정해야 하는 API 대신 UI 스레드로 전환될 때까지 기다립니다.</target>
         </trans-unit>
         <trans-unit id="VSTHRD001_Title" translate="yes" xml:space="preserve">
-          <source>Avoid legacy threading switching APIs</source>
-          <target state="new">Avoid legacy threading switching APIs</target>
+          <source>Avoid legacy thread switching APIs</source>
+          <target state="translated">레거시 스레드 전환 API 방지</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <note from="MultilingualBuild" annotates="source" priority="2">thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.</note>
+        </trans-unit>
+        <trans-unit id="VSTHRD107_MessageFormat" translate="yes" xml:space="preserve">
+          <source>Missing await operator for "using" expression.</source>
+          <target state="translated">“using” 식의 await 연산자 누락</target>
+          <note from="MultilingualBuild" annotates="source" priority="2">"await" and "using" are C# keywords and should not be translated.</note>
+        </trans-unit>
+        <trans-unit id="VSTHRD107_Title" translate="yes" xml:space="preserve">
+          <source>Await Task within using expression</source>
+          <target state="translated">using 식의 await Task</target>
+          <note from="MultilingualBuild" annotates="source" priority="2">"await Task" is a C# compound term, and "using" is a C# keyword. These should not be translated.</note>
+        </trans-unit>
+        <trans-unit id="VSTHRD107_CodeFix_Title" translate="yes" xml:space="preserve">
+          <source>Await using expression</source>
+          <target state="translated">await using 식</target>
+          <note from="MultilingualBuild" annotates="source" priority="2">"await" and "using" are C# keywords and should not be translated.</note>
+        </trans-unit>
+        <trans-unit id="VSTHRD002_CodeFix_Await_Title" translate="yes" xml:space="preserve">
+          <source>Use await instead</source>
+          <target state="new">Use await instead</target>
+          <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
         </trans-unit>
       </group>
     </body>

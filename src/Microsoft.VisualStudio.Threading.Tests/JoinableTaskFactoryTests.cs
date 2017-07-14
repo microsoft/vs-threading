@@ -102,6 +102,31 @@
             });
         }
 
+        [StaFact]
+        public void RunShouldCompleteWithStarvedThreadPool()
+        {
+            using (TestUtilities.StarveThreadpool())
+            {
+                this.asyncPump.Run(async delegate
+                {
+                    await Task.Yield();
+                });
+            }
+        }
+
+        [StaFact]
+        public void RunOfTShouldCompleteWithStarvedThreadPool()
+        {
+            using (TestUtilities.StarveThreadpool())
+            {
+                int result = this.asyncPump.Run(async delegate
+                {
+                    await Task.Yield();
+                    return 1;
+                });
+            }
+        }
+
         /// <summary>
         /// A <see cref="JoinableTaskFactory"/> that allows a test to inject code
         /// in the main thread transition events.

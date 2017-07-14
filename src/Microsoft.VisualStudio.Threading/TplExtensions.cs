@@ -116,23 +116,7 @@ namespace Microsoft.VisualStudio.Threading
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "tcs")]
         public static void ApplyResultTo<T>(this Task<T> task, TaskCompletionSource<T> tcs)
         {
-            Requires.NotNull(task, nameof(task));
-            Requires.NotNull(tcs, nameof(tcs));
-
-            if (task.IsCompleted)
-            {
-                ApplyCompletedTaskResultTo(task, tcs);
-            }
-            else
-            {
-                // Using a minimum of allocations (just one task, and no closure) ensure that one task's completion sets equivalent completion on another task.
-                task.ContinueWith(
-                    (t, s) => ApplyCompletedTaskResultTo(t, (TaskCompletionSource<T>)s),
-                    tcs,
-                    CancellationToken.None,
-                    TaskContinuationOptions.ExecuteSynchronously,
-                    TaskScheduler.Default);
-            }
+            ApplyResultTo(task, tcs, inlineSubsequentCompletion: true);
         }
 
         /// <summary>
@@ -445,6 +429,44 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Applies one task's results to another.
+        /// </summary>
+        /// <typeparam name="T">The type of value returned by a task.</typeparam>
+        /// <param name="task">The task whose completion should be applied to another.</param>
+        /// <param name="tcs">The task that should receive the completion status.</param>
+        /// <param name="inlineSubsequentCompletion">
+        /// <c>true</c> to complete the supplied <paramref name="tcs"/> as efficiently as possible (inline with the completion of <paramref name="task"/>);
+        /// <c>false</c> to complete the <paramref name="tcs"/> asynchronously.
+        /// Note if <paramref name="task"/> is completed when this method is invoked, then <paramref name="tcs"/> is always completed synchronously.
+        /// </param>
+        internal static void ApplyResultTo<T>(this Task<T> task, TaskCompletionSource<T> tcs, bool inlineSubsequentCompletion)
+        {
+            Requires.NotNull(task, nameof(task));
+            Requires.NotNull(tcs, nameof(tcs));
+
+            if (task.IsCompleted)
+            {
+                ApplyCompletedTaskResultTo(task, tcs);
+            }
+            else
+            {
+                // Using a minimum of allocations (just one task, and no closure) ensure that one task's completion sets equivalent completion on another task.
+                task.ContinueWith(
+                    (t, s) => ApplyCompletedTaskResultTo(t, (TaskCompletionSource<T>)s),
+                    tcs,
+                    CancellationToken.None,
+                    inlineSubsequentCompletion ? TaskContinuationOptions.ExecuteSynchronously : TaskContinuationOptions.None,
+                    TaskScheduler.Default);
+            }
+        }
+
+        /// <summary>
+        /// Returns a reusable task that is already canceled.
+        /// </summary>
+        /// <typeparam name="T">The type parameter for the returned task.</typeparam>
+        internal static Task<T> CanceledTaskOfT<T>() => CanceledTaskOfTCache<T>.CanceledTask;
+
+        /// <summary>
         /// Applies a completed task's results to another.
         /// </summary>
         /// <typeparam name="T">The type of value returned by a task.</typeparam>
@@ -713,6 +735,19 @@ namespace Microsoft.VisualStudio.Threading
             /// Gets or sets the state passed into the constructor.
             /// </summary>
             internal TState SourceState { get; set; }
+        }
+
+        /// <summary>
+        /// A cache for canceled <see cref="Task{T}"/> instances.
+        /// </summary>
+        /// <typeparam name="T">The type parameter for the returned task.</typeparam>
+        private static class CanceledTaskOfTCache<T>
+        {
+            /// <summary>
+            /// A task that is already canceled.
+            /// </summary>
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
+            internal static readonly Task<T> CanceledTask = ThreadingTools.TaskFromCanceled<T>(new CancellationToken(canceled: true));
         }
     }
 }

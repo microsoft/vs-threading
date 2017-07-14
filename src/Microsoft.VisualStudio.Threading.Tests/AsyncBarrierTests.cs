@@ -1,9 +1,8 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Tests
 {
     using System;
-    using System.Collections.Generic;
     using System.Linq;
-    using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
     using Xunit;
     using Xunit.Abstractions;
@@ -40,10 +39,42 @@
             await this.MultipleParticipantsHelperAsync(100, 50);
         }
 
+        /// <summary>
+        /// Verifies that with multiple threads constantly fulfilling the participant count
+        /// and resetting and fulfilling it again, it still performs as expected.
+        /// </summary>
+        [Theory(Skip = "Not passing on AppVeyor consistently. See #119.")]
+        [InlineData(2, 1)]
+        [InlineData(4, 3)]
+        public async Task StressMultipleGroups(int players, int groupSize)
+        {
+            var barrier = new AsyncBarrier(groupSize);
+            var playerTasks = new Task[players];
+            int signalsCount = 0;
+            using (var cts = new CancellationTokenSource(300))
+            {
+                for (int i = 0; i < playerTasks.Length; i++)
+                {
+                    playerTasks[i] = Task.Run(async delegate
+                    {
+                        while (!cts.Token.IsCancellationRequested)
+                        {
+                            Interlocked.Increment(ref signalsCount);
+                            await barrier.SignalAndWait().WithCancellation(cts.Token).NoThrowAwaitable();
+                        }
+                    });
+                }
+
+                await Task.WhenAll(playerTasks).WithTimeout(UnexpectedTimeout);
+            }
+
+            this.Logger.WriteLine("Test reached {0} signals.", signalsCount);
+        }
+
         private async Task MultipleParticipantsHelperAsync(int participants, int steps)
         {
-            Requires.Range(participants > 0, "participants");
-            Requires.Range(steps > 0, "steps");
+            Requires.Range(participants > 0, nameof(participants));
+            Requires.Range(steps > 0, nameof(steps));
             var barrier = new AsyncBarrier(1 + participants); // 1 for test coordinator
 
             int[] currentStepForActors = new int[participants];
