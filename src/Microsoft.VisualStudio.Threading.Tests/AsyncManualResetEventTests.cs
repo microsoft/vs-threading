@@ -212,5 +212,18 @@
                 Assert.Same(waitTask, setTask2);
             }
         }
+
+        [Fact]
+        public void WaitIsCompleteOnSignaledEvent()
+        {
+            using (TestUtilities.StarveThreadpool())
+            {
+                var presignaledEvent = new AsyncManualResetEvent(initialState: true, allowInliningAwaiters: false);
+
+                // We must assert that the exposed Task is complete as quickly as possible
+                // after creation of the AMRE, since we're testing for possible asynchronously completing Tasks.
+                Assert.True(presignaledEvent.WaitAsync().IsCompleted);
+            }
+        }
     }
 }

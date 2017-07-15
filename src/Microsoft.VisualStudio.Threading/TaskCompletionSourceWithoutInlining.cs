@@ -51,7 +51,13 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets the <see cref="Task"/> that may never complete inline with completion of this <see cref="TaskCompletionSource{TResult}"/>.
         /// </summary>
-        internal new Task<T> Task => this.exposedTask;
+        /// <devremarks>
+        /// Return the base.Task if it is already completed since inlining continuations
+        /// on the completer is no longer a concern. Also, when we are not inlining continuations,
+        /// this.exposedTask completes slightly later than base.Task, and callers expect
+        /// the Task we return to be complete as soon as they call TrySetResult.
+        /// </devremarks>
+        internal new Task<T> Task => base.Task.IsCompleted ? base.Task : this.exposedTask;
 
         /// <summary>
         /// Modifies the specified flags to include RunContinuationsAsynchronously
