@@ -185,14 +185,14 @@
             var continuationTask = task.ContinueWith(
                 delegate
                 {
-                    continuationUnblocked.Wait();
+                    Assert.True(continuationUnblocked.Wait(UnexpectedTimeout));
                 },
                 CancellationToken.None,
                 TaskContinuationOptions.ExecuteSynchronously,
                 sluggishScheduler); // ensures the continuation never runs unless inlined
             task.WaitWithoutInlining();
             continuationUnblocked.Set();
-            continuationTask.Wait();
+            continuationTask.GetAwaiter().GetResult();
         }
 
         [Fact]
