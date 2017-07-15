@@ -35,7 +35,7 @@
             this.originalThreadManagedId = Environment.CurrentManagedThreadId;
             this.testFrame = SingleThreadedSynchronizationContext.NewFrame();
 
-#if NET452
+#if DESKTOP
             // Suppress the assert dialog that appears and causes test runs to hang.
             Trace.Listeners.OfType<DefaultTraceListener>().Single().AssertUiEnabled = false;
 #endif

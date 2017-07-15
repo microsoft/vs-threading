@@ -1,4 +1,4 @@
-﻿#if NET452
+﻿#if DESKTOP
 #define UseWpfContext
 #endif
 
@@ -8,7 +8,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
     using System.Collections.Generic;
     using System.Reflection;
     using System.Threading;
-#if NET452
+#if DESKTOP
     using System.Windows.Threading;
 #endif
 

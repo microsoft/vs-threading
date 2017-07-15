@@ -3,6 +3,7 @@
     <TargetFrameworks>netstandard1.1;portable-net45+win8+wpa81;net45</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <CodeAnalysisRuleSet>FxCopRules.ruleset</CodeAnalysisRuleSet>
+    <DefineConstants Condition=" '$(TargetFramework)' == 'net45' ">$(DefineConstants);DESKTOP</DefineConstants>
 
     <Summary>Async synchronization primitives, async collections, TPL and dataflow extensions.</Summary>
     <Description>Async synchronization primitives, async collections, TPL and dataflow extensions. The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This package is applicable to any .NET application (not just Visual Studio).</Description>

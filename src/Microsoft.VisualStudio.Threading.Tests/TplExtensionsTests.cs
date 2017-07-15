@@ -574,7 +574,7 @@
             await callbackResult.Task;
         }
 
-#if NET452
+#if DESKTOP
 
         [Fact]
         public void ToTaskReturnsCompletedTaskPreSignaled()

@@ -38,7 +38,7 @@
         public AsyncReaderWriterLockTests(ITestOutputHelper logger)
             : base(logger)
         {
-#if NET452
+#if DESKTOP
             this.asyncLock = new StaAverseLock();
 #else
             this.asyncLock = new AsyncReaderWriterLock();
@@ -265,7 +265,7 @@
             });
         }
 
-#if NET452
+#if DESKTOP
         [StaFact, Trait("TestCategory", "FailsInCloudTest")]
         public async Task CallAcrossAppDomainBoundariesWithLock()
         {
@@ -859,7 +859,7 @@
             await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync(), false);
         }
 
-#if NET452
+#if DESKTOP
         [StaFact]
         public void LockAsyncThrowsOnGetResultBySta()
         {
@@ -1345,7 +1345,7 @@
             });
         }
 
-#if NET452
+#if DESKTOP
         /// <summary>
         /// Tests that a common way to accidentally fork an exclusive lock for
         /// concurrent access gets called out as an error.
@@ -1696,7 +1696,7 @@
             }).GetAwaiter().GetResult();
         }
 
-#if NET452
+#if DESKTOP
         /// <summary>
         /// Tests that a common way to accidentally fork an exclusive lock for
         /// concurrent access gets called out as an error.
@@ -2490,7 +2490,7 @@
 
 #region Completion tests
 
-#if NET452
+#if DESKTOP
         [StaFact]
         public void CompleteBlocksNewTopLevelLocksSTA()
         {
@@ -3168,7 +3168,7 @@
                 }));
         }
 
-#if NET452
+#if DESKTOP
         [StaFact]
         public void OnBeforeWriteLockReleasedCallbackNeverInvokedOnSTA()
         {
@@ -3299,7 +3299,7 @@
 #endregion
 
 #region Thread apartment rules
-#if NET452
+#if DESKTOP
 
         /// <summary>Verifies that locks requested on STA threads will marshal to an MTA.</summary>
         [StaFact]
@@ -3894,7 +3894,7 @@
                         {
                             try
                             {
-#if NET452
+#if DESKTOP
                                 Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
 #endif
                                 secondLockObtained.SetAsync();
@@ -4470,7 +4470,7 @@
             }
         }
 
-#if NET452
+#if DESKTOP
         private class OtherDomainProxy : MarshalByRefObject
         {
             internal void SomeMethod(int callingAppDomainId)

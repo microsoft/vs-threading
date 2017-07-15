@@ -16,7 +16,7 @@
         {
         }
 
-#if NET452
+#if DESKTOP
         [Fact]
         public void ExecuteOnSTA_ExecutesDelegateOnSTA()
         {

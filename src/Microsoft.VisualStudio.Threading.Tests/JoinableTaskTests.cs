@@ -3671,14 +3671,14 @@
 
                 if (canceled)
                 {
-#if NET452
+#if DESKTOP
                     Assert.NotSame(this.Context.MainThread, Thread.CurrentThread); // A canceled transition should not complete on the main thread.
 #endif
                     Assert.False(this.Context.IsOnMainThread);
                 }
                 else
                 {
-#if NET452
+#if DESKTOP
                     Assert.Same(this.Context.MainThread, Thread.CurrentThread); // We should be on the main thread if we've just transitioned.
 #endif
                     Assert.True(this.Context.IsOnMainThread);

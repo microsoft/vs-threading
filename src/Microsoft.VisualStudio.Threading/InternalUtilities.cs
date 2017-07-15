@@ -155,7 +155,7 @@ namespace Microsoft.VisualStudio.Threading
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "value", Justification = "We no-op on one platform.")]
         private static IntPtr GetAddress(object value)
         {
-#if NET45
+#if DESKTOP
             unsafe
             {
                 TypedReference tr = __makeref(value);
