@@ -33,9 +33,6 @@
     <SuppressPseudoWarning Condition="'$(Configuration)' == 'Debug'">true</SuppressPseudoWarning>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="net45\**" Condition=" '$(TargetsDesktop)' != 'true' " />
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Update="Strings.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Strings.Designer.cs</LastGenOutput>
