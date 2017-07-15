@@ -174,25 +174,19 @@
         {
             var sluggishScheduler = new SluggishInliningTaskScheduler();
 
-            var task = Task.Factory.StartNew(
-                delegate
-                {
-                },
-                CancellationToken.None,
-                TaskCreationOptions.None,
-                TaskScheduler.Default);
+            var task = Task.Delay(200); // This must not complete before we call WaitWithoutInlining.
             var continuationUnblocked = new ManualResetEventSlim();
             var continuationTask = task.ContinueWith(
                 delegate
                 {
-                    continuationUnblocked.Wait();
+                    Assert.True(continuationUnblocked.Wait(UnexpectedTimeout));
                 },
                 CancellationToken.None,
                 TaskContinuationOptions.ExecuteSynchronously,
                 sluggishScheduler); // ensures the continuation never runs unless inlined
             task.WaitWithoutInlining();
             continuationUnblocked.Set();
-            continuationTask.Wait();
+            continuationTask.GetAwaiter().GetResult();
         }
 
         [Fact]
