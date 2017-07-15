@@ -2,7 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
-#if NET452
+#if DESKTOP
     using System.Configuration;
 #endif
     using System.Linq;

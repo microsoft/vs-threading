@@ -4,7 +4,7 @@
 *                                                        *
 *********************************************************/
 
-#if NET452
+#if DESKTOP
 
 namespace Microsoft.VisualStudio.Threading.Tests
 {

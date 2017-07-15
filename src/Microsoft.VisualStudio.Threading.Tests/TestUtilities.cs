@@ -2,7 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
-#if NET452
+#if DESKTOP
     using System.Configuration;
 #endif
     using System.Diagnostics;
@@ -18,7 +18,7 @@
         /// <summary>
         /// A value indicating whether the library is operating in .NET 4.5 mode.
         /// </summary>
-#if NET452
+#if DESKTOP
         internal static readonly bool IsNet45Mode = ConfigurationManager.AppSettings["Microsoft.VisualStudio.Threading.NET45Mode"] == "true";
 #else
         internal static readonly bool IsNet45Mode = false;
@@ -101,7 +101,7 @@
 
         internal static DebugAssertionRevert DisableAssertionDialog()
         {
-#if NET452
+#if DESKTOP
             var listener = Debug.Listeners.OfType<DefaultTraceListener>().FirstOrDefault();
             if (listener != null)
             {
@@ -152,7 +152,7 @@
         /// </remarks>
         internal static IDisposable StarveThreadpool()
         {
-#if NET452
+#if DESKTOP
             ThreadPool.GetMaxThreads(out int workerThreads, out int completionPortThreads);
 #else
             int workerThreads = 1023;
@@ -237,7 +237,7 @@
         {
             public void Dispose()
             {
-#if NET452
+#if DESKTOP
                 var listener = Debug.Listeners.OfType<DefaultTraceListener>().FirstOrDefault();
                 if (listener != null)
                 {
