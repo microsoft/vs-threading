@@ -127,7 +127,7 @@ namespace Microsoft.VisualStudio.Threading
                     // TaskScheduler.Current is never null.  Even if no scheduler is really active and the current
                     // thread is not a threadpool thread, TaskScheduler.Current == TaskScheduler.Default, so we have
                     // to protect against that case too.
-#if NET45
+#if DESKTOP
                     bool isThreadPoolThread = Thread.CurrentThread.IsThreadPoolThread;
 #else
                     // An approximation of whether we're on a threadpool thread is whether

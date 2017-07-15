@@ -14,7 +14,7 @@ namespace Microsoft.VisualStudio.Threading
     /// </summary>
     internal static partial class NativeMethods
     {
-#if NET45
+#if DESKTOP
         /// <summary>
         /// Really truly non pumping wait.
         /// Raw IntPtrs have to be used, because the marshaller does not support arrays of SafeHandle, only

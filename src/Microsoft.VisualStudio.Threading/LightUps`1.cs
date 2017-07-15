@@ -19,11 +19,17 @@ namespace Microsoft.VisualStudio.Threading
     /// <typeparam name="T">The generic type argument.</typeparam>
     internal static class LightUps<T>
     {
+#if !NET46
         /// <summary>
         /// A delegate that invokes the <see cref="TaskCompletionSource{TResult}.TrySetCanceled"/>
         /// method that takes <see cref="CancellationToken"/> as an argument.
         /// Will be <c>null</c> on .NET Framework versions under 4.6.
         /// </summary>
+#else
+        /// <summary>
+        /// A delegate that invokes <see cref="TaskCompletionSource{TResult}.TrySetCanceled(CancellationToken)"/>.
+        /// </summary>
+#endif
         internal static readonly Func<TaskCompletionSource<T>, CancellationToken, bool> TrySetCanceled;
 
         /// <summary>

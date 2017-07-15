@@ -9,7 +9,7 @@ namespace Microsoft.VisualStudio.Threading
     using System;
     using System.Threading;
 
-#if NET45
+#if DESKTOP
     /// <summary>
     /// A SynchronizationContext whose synchronously blocking Wait method does not allow
     /// any reentrancy via the message pump.
@@ -35,7 +35,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         public NoMessagePumpSyncContext()
         {
-#if NET45
+#if DESKTOP
             // This is required so that our override of Wait is invoked.
             this.SetWaitNotificationRequired();
 #endif
@@ -49,7 +49,7 @@ namespace Microsoft.VisualStudio.Threading
             get { return DefaultInstance; }
         }
 
-#if NET45
+#if DESKTOP
         /// <summary>
         /// Synchronously blocks without a message pump.
         /// </summary>

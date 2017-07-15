@@ -1,9 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.1;portable-net45+win8+wpa81;net45</TargetFrameworks>
+    <TargetFrameworks>netstandard1.1;portable-net45+win8+wpa81;net45;net46</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <CodeAnalysisRuleSet>FxCopRules.ruleset</CodeAnalysisRuleSet>
-    <DefineConstants Condition=" '$(TargetFramework)' == 'net45' ">$(DefineConstants);DESKTOP</DefineConstants>
+    <TargetsDesktop Condition=" '$(TargetFramework)' == 'net45' or '$(TargetFramework)' == 'net46' ">true</TargetsDesktop>
+    <DefineConstants Condition=" '$(TargetsDesktop)' == 'true' ">$(DefineConstants);DESKTOP</DefineConstants>
 
     <Summary>Async synchronization primitives, async collections, TPL and dataflow extensions.</Summary>
     <Description>Async synchronization primitives, async collections, TPL and dataflow extensions. The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This package is applicable to any .NET application (not just Visual Studio).</Description>
@@ -27,7 +28,7 @@
     <SuppressPseudoWarning Condition="'$(Configuration)' == 'Debug'">true</SuppressPseudoWarning>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="net45\**" Condition=" '$(TargetFramework)' != 'net45' " />
+    <Compile Remove="net45\**" Condition=" '$(TargetsDesktop)' != 'true' " />
     <Compile Remove="netstandard1.1\**" Condition=" '$(TargetFramework)' != 'netstandard1.1' and '$(TargetFramework)' != 'portable-net45+win8+wpa81' " />
   </ItemGroup>
   <ItemGroup>
@@ -49,7 +50,7 @@
   <ItemGroup>
      <XliffResource Include="MultilingualResources\*.xlf" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
+  <ItemGroup Condition=" '$(TargetsDesktop)' == 'true'  ">
     <Reference Include="System.Configuration" />
     <Reference Include="WindowsBase" />
   </ItemGroup>

@@ -15,7 +15,7 @@ namespace Microsoft.VisualStudio.Threading
     /// </summary>
     internal static class LightUps
     {
-#if NET45
+#if DESKTOP
         /// <summary>
         /// The <see cref="OperatingSystem.Version"/> for Windows 8.
         /// </summary>
@@ -25,13 +25,13 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets a value indicating whether we execute .NET 4.5 code even on later versions of the Framework.
         /// </summary>
-#if NET45
+#if DESKTOP
         internal static readonly bool ForceNet45Mode = System.Configuration.ConfigurationManager.AppSettings["Microsoft.VisualStudio.Threading.NET45Mode"] == "true";
 #else
         internal const bool ForceNet45Mode = false;
 #endif
 
-#if NET45
+#if DESKTOP
         /// <summary>
         /// Gets a value indicating whether we execute Windows 7 code even on later versions of Windows.
         /// </summary>
@@ -74,7 +74,7 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
-#if NET45
+#if DESKTOP
         /// <summary>
         /// Gets a value indicating whether the current operating system is Windows 8 or later.
         /// </summary>

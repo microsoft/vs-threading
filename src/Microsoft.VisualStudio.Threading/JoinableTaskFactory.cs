@@ -19,7 +19,7 @@ namespace Microsoft.VisualStudio.Threading
     using System.Threading;
     using System.Threading.Tasks;
     using JoinableTaskSynchronizationContext = Microsoft.VisualStudio.Threading.JoinableTask.JoinableTaskSynchronizationContext;
-#if !NET45
+#if !DESKTOP
     using WaitCallback = System.Action<object>;
 #endif
 
