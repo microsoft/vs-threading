@@ -74,12 +74,7 @@ namespace Microsoft.VisualStudio.Threading
             this.isSet = initialState;
             if (initialState)
             {
-                // Complete the task immediately. We upcast first so that
-                // the task always completes immediately rather than sometimes
-                // being pushed to another thread and completed asynchronously
-                // on .NET 4.5.
-                TaskCompletionSource<EmptyStruct> tcs = this.taskCompletionSource;
-                tcs.SetResult(EmptyStruct.Instance);
+                this.taskCompletionSource.SetResult(EmptyStruct.Instance);
             }
         }
 
