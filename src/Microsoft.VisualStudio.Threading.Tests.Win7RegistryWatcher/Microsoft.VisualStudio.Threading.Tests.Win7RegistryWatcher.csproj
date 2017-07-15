@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net452</TargetFramework>
+    <TargetFramework>net45</TargetFramework>
     <OutputType>Exe</OutputType>
     <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.ruleset</CodeAnalysisRuleSet>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>

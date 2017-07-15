@@ -26,6 +26,7 @@ test_script:
     SET testdir=bin\Microsoft.VisualStudio.Threading.Tests\%configuration%\
 
     "%xunit20%\xunit.console.x86.exe"
+    "bin\Microsoft.VisualStudio.Threading.Tests\%configuration%\net451\Microsoft.VisualStudio.Threading.Tests.dll"
     "bin\Microsoft.VisualStudio.Threading.Tests\%configuration%\net452\Microsoft.VisualStudio.Threading.Tests.dll"
     "bin\Microsoft.VisualStudio.Threading.Tests\%configuration%\net46\Microsoft.VisualStudio.Threading.Tests.dll"
     "bin\Microsoft.VisualStudio.Threading.Analyzers.Tests\%configuration%\net452\Microsoft.VisualStudio.Threading.Analyzers.Tests.dll"

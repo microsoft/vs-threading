@@ -1,6 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net452;net46;netcoreapp1.0</TargetFrameworks>
+    <!-- We target net451 to test library code to support NET45 -->
+    <!-- We target net452 to test library code to support NET46 light-up from a net45 assembly -->
+    <!-- We target net46 to test library code that supports net46 natively. -->
+    <TargetFrameworks>net451;net452;net46;netcoreapp1.0</TargetFrameworks>
     <PackageTargetFallback>portable-net45+win8+wp8+wpa81</PackageTargetFallback>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Tests.ruleset</CodeAnalysisRuleSet>
@@ -8,9 +11,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>false</IsPackable>
 
-    <TargetsDesktop Condition=" '$(TargetFramework)' == 'net452' or '$(TargetFramework)' == 'net46' ">true</TargetsDesktop>
+    <TargetsDesktop Condition=" '$(TargetFramework)' == 'net451' or '$(TargetFramework)' == 'net452' or '$(TargetFramework)' == 'net46' ">true</TargetsDesktop>
     <DefineConstants Condition=" '$(TargetsDesktop)' == 'true' ">$(DefineConstants);DESKTOP</DefineConstants>
-    <AppConfig Condition=" '$(TargetFramework)' == 'net452' ">App.net45.config</AppConfig>
+    <AppConfig Condition=" '$(TargetFramework)' == 'net451' ">App.net45.config</AppConfig>
 
     <!-- VS2017 Test Explorer test navigation and callstack links don't work with portable PDBs yet. -->
     <DebugType>Full</DebugType>
