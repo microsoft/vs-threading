@@ -2969,7 +2969,7 @@
                 {
                     await Task.Yield();
                 });
-            }, maxBytesAllocated: 1800);
+            }, maxBytesAllocated: 1810);
         }
 
         /// <summary>
