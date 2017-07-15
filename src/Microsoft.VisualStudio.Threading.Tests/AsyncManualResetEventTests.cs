@@ -209,7 +209,9 @@
                 // actually propagated to the Task returned by WaitAsync earlier.
                 // In fact we'll go so far as to assert the Task itself should be the same.
                 Assert.Same(waitTask, setTask1);
+#if !NET452 // The same Task can only be guaranteed where .NET supports completing TCS without inlining continuations.
                 Assert.Same(waitTask, setTask2);
+#endif
             }
         }
 
