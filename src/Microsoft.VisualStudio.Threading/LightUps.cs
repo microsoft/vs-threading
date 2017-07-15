@@ -38,6 +38,7 @@ namespace Microsoft.VisualStudio.Threading
         internal static readonly bool ForceWindows7Mode = System.Configuration.ConfigurationManager.AppSettings["Microsoft.VisualStudio.Threading.Windows7Mode"] == "true";
 #endif
 
+#if !ASYNCLOCAL
         /// <summary>
         /// The System.Threading.AsyncLocal open generic type, if present.
         /// </summary>
@@ -46,6 +47,7 @@ namespace Microsoft.VisualStudio.Threading
         /// This field will be <c>null</c> on earlier versions of .NET.
         /// </remarks>
         internal static readonly Type BclAsyncLocalType;
+#endif
 
         /// <summary>
         /// A value indicating whether TaskCreationOptions.RunContinuationsAsynchronously
@@ -70,7 +72,9 @@ namespace Microsoft.VisualStudio.Threading
                 IsRunContinuationsAsynchronouslySupported = Enum.TryParse(
                     "RunContinuationsAsynchronously",
                     out RunContinuationsAsynchronously);
+#if !ASYNCLOCAL
                 BclAsyncLocalType = Type.GetType("System.Threading.AsyncLocal`1");
+#endif
             }
         }
 

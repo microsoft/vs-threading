@@ -1,10 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.1;portable-net45+win8+wpa81;net45;net46</TargetFrameworks>
+    <TargetFrameworks>netstandard1.1;netstandard1.3;portable-net45+win8+wpa81;net45;net46</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <CodeAnalysisRuleSet>FxCopRules.ruleset</CodeAnalysisRuleSet>
+
     <TargetsDesktop Condition=" '$(TargetFramework)' == 'net45' or '$(TargetFramework)' == 'net46' ">true</TargetsDesktop>
     <DefineConstants Condition=" '$(TargetsDesktop)' == 'true' ">$(DefineConstants);DESKTOP</DefineConstants>
+    <DefineConstants Condition=" '$(TargetFramework)' == 'net46' or '$(TargetFramework)' == 'netstandard1.3' ">$(DefineConstants);ASYNCLOCAL</DefineConstants>
+    <DefineConstants Condition=" '$(TargetFramework)' == 'net46' or '$(TargetFramework)' == 'netstandard1.3' ">$(DefineConstants);TRYSETCANCELEDCT</DefineConstants>
+    <DefineConstants Condition=" '$(TargetsDesktop)' == 'true' ">$(DefineConstants);CALLCONTEXT</DefineConstants>
+    <DefineConstants Condition=" '$(TargetsDesktop)' == 'true' ">$(DefineConstants);THREADPOOL</DefineConstants>
 
     <Summary>Async synchronization primitives, async collections, TPL and dataflow extensions.</Summary>
     <Description>Async synchronization primitives, async collections, TPL and dataflow extensions. The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This package is applicable to any .NET application (not just Visual Studio).</Description>
@@ -29,7 +34,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="net45\**" Condition=" '$(TargetsDesktop)' != 'true' " />
-    <Compile Remove="netstandard1.1\**" Condition=" '$(TargetFramework)' != 'netstandard1.1' and '$(TargetFramework)' != 'portable-net45+win8+wpa81' " />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Update="Strings.resx">
