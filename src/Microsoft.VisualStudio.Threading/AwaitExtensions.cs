@@ -48,7 +48,7 @@ namespace Microsoft.VisualStudio.Threading
             return new TaskSchedulerAwaitable(scheduler, alwaysYield);
         }
 
-#if DESKTOP
+#if DESKTOP || NETSTANDARD2_0
 
         /// <summary>
         /// Provides await functionality for ordinary <see cref="WaitHandle"/>s.
@@ -102,6 +102,9 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
+#endif
+
+#if DESKTOP
         /// <summary>
         /// Returns a Task that completes when the specified registry key changes.
         /// </summary>
@@ -480,7 +483,7 @@ namespace Microsoft.VisualStudio.Threading
                     // TaskScheduler.Current is never null.  Even if no scheduler is really active and the current
                     // thread is not a threadpool thread, TaskScheduler.Current == TaskScheduler.Default, so we have
                     // to protect against that case too.
-#if DESKTOP
+#if DESKTOP || NETSTANDARD2_0
                     bool isThreadPoolThread = Thread.CurrentThread.IsThreadPoolThread;
 #else
                     // An approximation of whether we're on a threadpool thread is whether

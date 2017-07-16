@@ -428,7 +428,7 @@ namespace Microsoft.VisualStudio.Threading
             return tcs.Task;
         }
 
-#if DESKTOP
+#if DESKTOP || NETSTANDARD2_0
 
         /// <summary>
         /// Creates a TPL Task that returns <c>true</c> when a <see cref="WaitHandle"/> is signaled or returns <c>false</c> if a timeout occurs first.

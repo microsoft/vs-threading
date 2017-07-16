@@ -132,7 +132,7 @@ namespace Microsoft.VisualStudio.Threading
         /// to the main thread from another thread.
         /// </summary>
         public JoinableTaskContext()
-#if DESKTOP
+#if DESKTOP || NETSTANDARD2_0
             : this(Thread.CurrentThread, SynchronizationContext.Current)
         {
 #else
@@ -141,7 +141,7 @@ namespace Microsoft.VisualStudio.Threading
 #endif
         }
 
-#if DESKTOP
+#if DESKTOP || NETSTANDARD2_0
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JoinableTaskContext"/> class.
@@ -207,7 +207,7 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
-#if DESKTOP
+#if DESKTOP || NETSTANDARD2_0
         /// <summary>
         /// Gets the main thread that can be shared by tasks created by this context.
         /// </summary>
@@ -270,7 +270,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-#if DESKTOP
+#if DESKTOP || NETSTANDARD2_0
                 // Callers of this method are about to take a private lock, which tends
                 // to cause a deadlock while debugging because of lock contention with the
                 // debugger's expression evaluator. So prevent that.

@@ -15,7 +15,7 @@ namespace Microsoft.VisualStudio.Threading
     /// </summary>
     internal static class LightUps
     {
-#if DESKTOP
+#if DESKTOP || NETSTANDARD2_0
         /// <summary>
         /// The <see cref="OperatingSystem.Version"/> for Windows 8.
         /// </summary>
@@ -36,7 +36,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Gets a value indicating whether we execute Windows 7 code even on later versions of Windows.
         /// </summary>
         internal static readonly bool ForceWindows7Mode = System.Configuration.ConfigurationManager.AppSettings["Microsoft.VisualStudio.Threading.Windows7Mode"] == "true";
-#elif DESKTOP
+#elif DESKTOP || NETSTANDARD2_0
         /// <summary>
         /// Gets a value indicating whether we execute Windows 7 code even on later versions of Windows.
         /// </summary>
@@ -88,7 +88,7 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
-#if DESKTOP
+#if DESKTOP || NETSTANDARD2_0
         /// <summary>
         /// Gets a value indicating whether the current operating system is Windows 8 or later.
         /// </summary>
