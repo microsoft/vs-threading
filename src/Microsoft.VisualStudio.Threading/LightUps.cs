@@ -25,17 +25,22 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets a value indicating whether we execute .NET 4.5 code even on later versions of the Framework.
         /// </summary>
-#if DESKTOP
+#if NET45
         internal static readonly bool ForceNet45Mode = System.Configuration.ConfigurationManager.AppSettings["Microsoft.VisualStudio.Threading.NET45Mode"] == "true";
 #else
         internal const bool ForceNet45Mode = false;
 #endif
 
-#if DESKTOP
+#if NET45 // only test Win7 mode on NET45 builds
         /// <summary>
         /// Gets a value indicating whether we execute Windows 7 code even on later versions of Windows.
         /// </summary>
         internal static readonly bool ForceWindows7Mode = System.Configuration.ConfigurationManager.AppSettings["Microsoft.VisualStudio.Threading.Windows7Mode"] == "true";
+#elif DESKTOP
+        /// <summary>
+        /// Gets a value indicating whether we execute Windows 7 code even on later versions of Windows.
+        /// </summary>
+        internal static readonly bool ForceWindows7Mode = false;
 #endif
 
 #if !ASYNCLOCAL

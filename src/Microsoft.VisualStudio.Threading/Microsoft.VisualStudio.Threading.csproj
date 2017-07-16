@@ -52,7 +52,7 @@
      <XliffResource Include="MultilingualResources\*.xlf" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsDesktop)' == 'true'  ">
-    <Reference Include="System.Configuration" />
+    <Reference Include="System.Configuration" Condition=" '$(TargetFramework)' == 'net45' " />
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
