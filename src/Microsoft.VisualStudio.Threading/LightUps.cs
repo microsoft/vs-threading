@@ -69,9 +69,14 @@ namespace Microsoft.VisualStudio.Threading
         {
             if (!ForceNet45Mode)
             {
+#if TRYSETCANCELEDCT
+                IsRunContinuationsAsynchronouslySupported = true;
+                RunContinuationsAsynchronously = TaskCreationOptions.RunContinuationsAsynchronously;
+#else
                 IsRunContinuationsAsynchronouslySupported = Enum.TryParse(
                     "RunContinuationsAsynchronously",
                     out RunContinuationsAsynchronously);
+#endif
 #if !ASYNCLOCAL
                 BclAsyncLocalType = Type.GetType("System.Threading.AsyncLocal`1");
 #endif
