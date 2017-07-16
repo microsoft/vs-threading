@@ -19,18 +19,14 @@ namespace Microsoft.VisualStudio.Threading
     /// <typeparam name="T">The generic type argument.</typeparam>
     internal static class LightUps<T>
     {
-#if TRYSETCANCELEDCT
-        /// <summary>
-        /// A delegate that invokes <see cref="TaskCompletionSource{TResult}.TrySetCanceled(CancellationToken)"/>.
-        /// </summary>
-#else
+#if !TRYSETCANCELEDCT
         /// <summary>
         /// A delegate that invokes the <see cref="TaskCompletionSource{TResult}.TrySetCanceled"/>
         /// method that takes <see cref="CancellationToken"/> as an argument.
         /// Will be <c>null</c> on .NET Framework versions under 4.6.
         /// </summary>
-#endif
         internal static readonly Func<TaskCompletionSource<T>, CancellationToken, bool> TrySetCanceled;
+#endif
 
 #if !ASYNCLOCAL
 
@@ -63,6 +59,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             if (!LightUps.ForceNet45Mode)
             {
+#if !TRYSETCANCELEDCT
                 var methodInfo = typeof(TaskCompletionSource<T>).GetTypeInfo()
                     .GetDeclaredMethods(nameof(TaskCompletionSource<int>.TrySetCanceled))
                     .FirstOrDefault(m => m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType == typeof(CancellationToken));
@@ -70,6 +67,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     TrySetCanceled = (Func<TaskCompletionSource<T>, CancellationToken, bool>)methodInfo.CreateDelegate(typeof(Func<TaskCompletionSource<T>, CancellationToken, bool>));
                 }
+#endif
 
 #if !ASYNCLOCAL
                 if (LightUps.BclAsyncLocalType != null)

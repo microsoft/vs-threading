@@ -135,12 +135,14 @@ namespace Microsoft.VisualStudio.Threading
             return WithCancellationSlow(task, continueOnCapturedContext, cancellationToken);
         }
 
+#if !TRYSETCANCELEDCT
         internal static bool TrySetCanceled<T>(this TaskCompletionSource<T> tcs, CancellationToken cancellationToken)
         {
             return LightUps<T>.TrySetCanceled != null
                 ? LightUps<T>.TrySetCanceled(tcs, cancellationToken)
                 : tcs.TrySetCanceled();
         }
+#endif
 
         internal static Task TaskFromCanceled(CancellationToken cancellationToken)
         {
@@ -149,9 +151,13 @@ namespace Microsoft.VisualStudio.Threading
 
         internal static Task<T> TaskFromCanceled<T>(CancellationToken cancellationToken)
         {
+#if TRYSETCANCELEDCT
+            return Task.FromCanceled<T>(cancellationToken);
+#else
             var tcs = new TaskCompletionSource<T>();
             tcs.TrySetCanceled(cancellationToken);
             return tcs.Task;
+#endif
         }
 
         internal static Task TaskFromException(Exception exception)
@@ -161,9 +167,13 @@ namespace Microsoft.VisualStudio.Threading
 
         internal static Task<T> TaskFromException<T>(Exception exception)
         {
+#if TRYSETCANCELEDCT
+            return Task.FromException<T>(exception);
+#else
             var tcs = new TaskCompletionSource<T>();
             tcs.TrySetException(exception);
             return tcs.Task;
+#endif
         }
 
         /// <summary>
