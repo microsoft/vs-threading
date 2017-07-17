@@ -16,7 +16,7 @@
         {
         }
 
-#if DESKTOP
+#if DESKTOP || NETCOREAPP2_0
         [Fact]
         public void ExecuteOnSTA_ExecutesDelegateOnSTA()
         {

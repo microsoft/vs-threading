@@ -574,7 +574,7 @@
             await callbackResult.Task;
         }
 
-#if DESKTOP
+#if DESKTOP || NETCOREAPP2_0
 
         [Fact]
         public void ToTaskReturnsCompletedTaskPreSignaled()
