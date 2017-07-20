@@ -2826,6 +2826,7 @@
         }
 
         [StaFact, Trait("Stress", "true"), Trait("TestCategory", "FailsInCloudTest"), Trait("FailsInLocalBatch", "true")]
+        [Trait("GC", "true")]
         public void SwitchToMainThreadMemoryLeak()
         {
             this.CheckGCPressure(
@@ -2838,6 +2839,7 @@
         }
 
         [StaFact, Trait("Stress", "true"), Trait("TestCategory", "FailsInCloudTest"), Trait("FailsInLocalBatch", "true")]
+        [Trait("GC", "true")]
         public void SwitchToMainThreadMemoryLeakWithCancellationToken()
         {
             CancellationTokenSource tokenSource = new CancellationTokenSource();
@@ -2969,7 +2971,7 @@
                 {
                     await Task.Yield();
                 });
-            }, maxBytesAllocated: 1800);
+            }, maxBytesAllocated: 1810);
         }
 
         /// <summary>
