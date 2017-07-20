@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26711.1
+VisualStudioVersion = 15.0.26718.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.VisualStudio.Threading.Analyzers", "Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.csproj", "{536F3F9A-B457-43B8-BC93-CE1C16959037}"
 EndProject
@@ -22,6 +22,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.VisualStudio.Threading", "Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj", "{D9BB9FB6-3833-44E8-B7A7-DE729FCE214D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.VisualStudio.Threading.Tests", "Microsoft.VisualStudio.Threading.Tests\Microsoft.VisualStudio.Threading.Tests.csproj", "{CBEDB102-ABAE-40B1-AF3F-A6226DB6713D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IsolatedTestHost", "IsolatedTestHost\IsolatedTestHost.csproj", "{BA4643D8-E6B2-4DED-882F-4827F3AB6AB0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -49,6 +51,10 @@ Global
 		{CBEDB102-ABAE-40B1-AF3F-A6226DB6713D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CBEDB102-ABAE-40B1-AF3F-A6226DB6713D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CBEDB102-ABAE-40B1-AF3F-A6226DB6713D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BA4643D8-E6B2-4DED-882F-4827F3AB6AB0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BA4643D8-E6B2-4DED-882F-4827F3AB6AB0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BA4643D8-E6B2-4DED-882F-4827F3AB6AB0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BA4643D8-E6B2-4DED-882F-4827F3AB6AB0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
