@@ -74,12 +74,7 @@ namespace Microsoft.VisualStudio.Threading
             this.isSet = initialState;
             if (initialState)
             {
-                // Complete the task immediately. We upcast first so that
-                // the task always completes immediately rather than sometimes
-                // being pushed to another thread and completed asynchronously
-                // on .NET 4.5.
-                TaskCompletionSource<EmptyStruct> tcs = this.taskCompletionSource;
-                tcs.SetResult(EmptyStruct.Instance);
+                this.taskCompletionSource.SetResult(EmptyStruct.Instance);
             }
         }
 
@@ -135,12 +130,18 @@ namespace Microsoft.VisualStudio.Threading
                 this.isSet = true;
             }
 
+            // Snap the Task that is exposed to the outside so we return that one.
+            // Once we complete the TaskCompletionSourceWithoutInlinining's task,
+            // the Task property will return the inner Task.
+            // SetAsync should return the same Task that WaitAsync callers would have observed previously.
+            Task result = tcs.Task;
+
             if (transitionRequired)
             {
                 tcs.TrySetResult(default(EmptyStruct));
             }
 
-            return tcs.Task;
+            return result;
         }
 
         /// <summary>
@@ -199,8 +200,13 @@ namespace Microsoft.VisualStudio.Threading
                 this.isSet = false;
             }
 
+            // Snap the Task that is exposed to the outside so we return that one.
+            // Once we complete the TaskCompletionSourceWithoutInlinining's task,
+            // the Task property will return the inner Task.
+            // PulseAllAsync should return the same Task that WaitAsync callers would have observed previously.
+            Task result = tcs.Task;
             tcs.TrySetResult(default(EmptyStruct));
-            return tcs.Task;
+            return result;
         }
 
         /// <summary>

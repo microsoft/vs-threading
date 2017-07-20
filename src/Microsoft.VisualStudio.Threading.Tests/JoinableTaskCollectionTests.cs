@@ -80,9 +80,6 @@
         [StaFact]
         public void EmptyThenMore()
         {
-            var awaiter = this.joinableCollection.JoinTillEmptyAsync().GetAwaiter();
-            Assert.True(awaiter.IsCompleted);
-
             var evt = new AsyncManualResetEvent();
             var joinable = this.JoinableFactory.RunAsync(async delegate
             {

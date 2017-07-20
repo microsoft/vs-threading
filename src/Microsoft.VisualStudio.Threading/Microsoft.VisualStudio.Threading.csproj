@@ -3,6 +3,7 @@
     <TargetFrameworks>netstandard1.1;portable-net45+win8+wpa81;net45</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <CodeAnalysisRuleSet>FxCopRules.ruleset</CodeAnalysisRuleSet>
+    <DefineConstants Condition=" '$(TargetFramework)' == 'net45' ">$(DefineConstants);DESKTOP</DefineConstants>
 
     <Summary>Async synchronization primitives, async collections, TPL and dataflow extensions.</Summary>
     <Description>Async synchronization primitives, async collections, TPL and dataflow extensions. The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This package is applicable to any .NET application (not just Visual Studio).</Description>
@@ -55,7 +56,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Validation" Version="15.3.15" />
     <PackageReference Include="MicroBuild.VisualStudio" Version="2.0.40" PrivateAssets="all" />
-    <PackageReference Include="MSBuild.SDK.Extras" Version="1.0.0-rc4.23" PrivateAssets="all" />
+    <PackageReference Include="MSBuild.SDK.Extras" Version="1.0.5" PrivateAssets="all" />
     <PackageReference Include="PdbGit" Version="3.0.41" PrivateAssets="all" />
   </ItemGroup>
   <Import Project="$(MSBuildSDKExtrasTargets)" Condition="Exists('$(MSBuildSDKExtrasTargets)')" />

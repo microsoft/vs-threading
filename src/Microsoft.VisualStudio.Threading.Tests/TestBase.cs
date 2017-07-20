@@ -220,7 +220,7 @@
             this.ExecuteOnDispatcher(() => this.CheckGCPressureAsync(scenario, maxBytesAllocated, iterations, allowedAttempts));
         }
 
-#if NET452
+#if DESKTOP
         /// <summary>
         /// Executes the delegate on a thread with <see cref="ApartmentState.STA"/>
         /// and without a current <see cref="SynchronizationContext"/>.
@@ -299,7 +299,7 @@
                 }
             };
 
-#if NET452
+#if DESKTOP
             if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA &&
                 SingleThreadedSynchronizationContext.IsSingleThreadedSyncContext(SynchronizationContext.Current))
             {

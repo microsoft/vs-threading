@@ -1,3 +1,5 @@
+#if NETCOREAPP1_0
+
 namespace Microsoft.VisualStudio.Threading.Tests
 {
     public class ApplicationException : System.Exception
@@ -17,3 +19,5 @@ namespace Microsoft.VisualStudio.Threading.Tests
         }
     }
 }
+
+#endif
