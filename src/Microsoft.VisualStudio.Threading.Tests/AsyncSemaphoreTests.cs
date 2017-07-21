@@ -323,7 +323,9 @@
         public void InitialCapacityZero()
         {
             var sem = new AsyncSemaphore(0);
+            Assert.Equal(0, sem.CurrentCount);
             Assert.False(sem.EnterAsync().IsCompleted);
+            Assert.Equal(0, sem.CurrentCount);
         }
 
         [Fact]
