@@ -46,6 +46,11 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Gets the number of openings that remain in the semaphore.
+        /// </summary>
+        public int CurrentCount => this.semaphore.CurrentCount;
+
+        /// <summary>
         /// Requests access to the lock.
         /// </summary>
         /// <param name="cancellationToken">A token whose cancellation signals lost interest in the lock.</param>

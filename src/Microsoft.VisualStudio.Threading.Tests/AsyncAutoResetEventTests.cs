@@ -179,34 +179,42 @@
         /// <summary>
         /// Verifies that long-lived, uncanceled CancellationTokens do not result in leaking memory.
         /// </summary>
-        [Fact, Trait("TestCategory", "FailsInCloudTest")]
-        public void WaitAsync_WithCancellationToken_DoesNotLeakWhenNotCanceled()
+        [SkippableFact]
+        [Trait("GC", "true")]
+        public async Task WaitAsync_WithCancellationToken_DoesNotLeakWhenNotCanceled()
         {
-            var cts = new CancellationTokenSource();
+            if (await this.ExecuteInIsolationAsync())
+            {
+                var cts = new CancellationTokenSource();
 
-            this.CheckGCPressure(
-                () =>
-                {
-                    this.evt.WaitAsync(cts.Token);
-                    this.evt.Set();
-                },
-                500);
+                this.CheckGCPressure(
+                    () =>
+                    {
+                        this.evt.WaitAsync(cts.Token);
+                        this.evt.Set();
+                    },
+                    408);
+            }
         }
 
         /// <summary>
         /// Verifies that canceled CancellationTokens do not result in leaking memory.
         /// </summary>
-        [Fact, Trait("TestCategory", "FailsInCloudTest")]
-        public void WaitAsync_WithCancellationToken_DoesNotLeakWhenCanceled()
+        [SkippableFact]
+        [Trait("GC", "true")]
+        public async Task WaitAsync_WithCancellationToken_DoesNotLeakWhenCanceled()
         {
-            this.CheckGCPressure(
-                () =>
-                {
-                    var cts = new CancellationTokenSource();
-                    this.evt.WaitAsync(cts.Token);
-                    cts.Cancel();
-                },
-                1000);
+            if (await this.ExecuteInIsolationAsync())
+            {
+                this.CheckGCPressure(
+                    () =>
+                    {
+                        var cts = new CancellationTokenSource();
+                        this.evt.WaitAsync(cts.Token);
+                        cts.Cancel();
+                    },
+                    1000);
+            }
         }
     }
 }
