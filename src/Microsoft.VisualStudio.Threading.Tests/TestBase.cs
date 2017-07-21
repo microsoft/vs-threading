@@ -192,7 +192,7 @@
                     }
 
                     leaked = (GC.GetTotalMemory(true) - initialMemory) / iterations;
-                    attemptWithNoLeakObserved |= leaked <= 0;
+                    attemptWithNoLeakObserved |= leaked <= 3 * IntPtr.Size; // any real leak would be an object, which is at least this size.
                     if (attemptWithNoLeakObserved)
                     {
                         break;
