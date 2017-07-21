@@ -204,12 +204,15 @@
                 this.Logger?.WriteLine("{0} bytes leaked per iteration.", leaked);
                 this.Logger?.WriteLine("{0} bytes allocated per iteration ({1} allowed).", allocated, maxBytesAllocated);
 
-                if (!attemptWithNoLeakObserved || !attemptWithinMemoryLimitsObserved)
+                if (attemptWithNoLeakObserved && attemptWithinMemoryLimitsObserved)
                 {
-                    // give the system a bit of cool down time to increase the odds we'll pass next time.
-                    GC.Collect();
-                    await MaybeShouldBlock(Task.Delay(shortDelayDuration), completeSynchronously);
+                    // Don't keep looping. We got what we needed.
+                    break;
                 }
+
+                // give the system a bit of cool down time to increase the odds we'll pass next time.
+                GC.Collect();
+                await MaybeShouldBlock(Task.Delay(shortDelayDuration), completeSynchronously);
             }
 
             Assert.True(attemptWithNoLeakObserved, "Leaks observed in every iteration.");
