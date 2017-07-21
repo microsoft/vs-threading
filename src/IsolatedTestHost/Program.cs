@@ -12,9 +12,9 @@
     {
         private static int Main(string[] args)
         {
-            if (args.Length < 3)
+            if (args.Length != 3)
             {
-                return (int)ExitCodes.CommandLineArgsIncomplete;
+                return (int)ExitCodes.UnexpectedCommandLineArgs;
             }
 
             string assemblyFile = args[0];

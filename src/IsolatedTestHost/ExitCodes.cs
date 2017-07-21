@@ -47,8 +47,8 @@ namespace IsolatedTestHost
         TestNotSupported,
 
         /// <summary>
-        /// Insufficient command line arguments passed to this process.
+        /// Too few or too many command line arguments passed to this process.
         /// </summary>
-        CommandLineArgsIncomplete,
+        UnexpectedCommandLineArgs,
     }
 }
