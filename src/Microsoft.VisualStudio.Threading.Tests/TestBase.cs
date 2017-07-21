@@ -2,6 +2,7 @@
 {
     using System;
     using System.Diagnostics;
+    using System.Runtime.CompilerServices;
     using System.Runtime.ExceptionServices;
     using System.Threading;
     using System.Threading.Tasks;
@@ -323,6 +324,38 @@
                 }).GetAwaiter().GetResult();
             }
 #endif
+        }
+
+        /// <summary>
+        /// Executes the specified test method in its own process, offering maximum isolation from ambient noise from other threads
+        /// and GC.
+        /// </summary>
+        /// <param name="testMethodName">The name of the test method.</param>
+        /// <returns>
+        /// A task whose result is <c>true</c> if test execution is already isolated and should therefore proceed with the body of the test,
+        /// or <c>false</c> after the isolated instance of the test has completed execution.
+        /// </returns>
+        /// <exception cref="Xunit.Sdk.XunitException">Thrown if the isolated test result is a Failure.</exception>
+        /// <exception cref="SkipException">Thrown if on a platform that we do not yet support test isolation on.</exception>
+        protected Task<bool> ExecuteInIsolationAsync([CallerMemberName] string testMethodName = null)
+        {
+            return TestUtilities.ExecuteInIsolationAsync(this, testMethodName, this.Logger);
+        }
+
+        /// <summary>
+        /// Executes the specified test method in its own process, offering maximum isolation from ambient noise from other threads
+        /// and GC.
+        /// </summary>
+        /// <param name="testMethodName">The name of the test method.</param>
+        /// <returns>
+        /// <c>true</c> if test execution is already isolated and should therefore proceed with the body of the test,
+        /// or <c>false</c> after the isolated instance of the test has completed execution.
+        /// </returns>
+        /// <exception cref="Xunit.Sdk.XunitException">Thrown if the isolated test result is a Failure.</exception>
+        /// <exception cref="SkipException">Thrown if on a platform that we do not yet support test isolation on.</exception>
+        protected bool ExecuteInIsolation([CallerMemberName] string testMethodName = null)
+        {
+            return TestUtilities.ExecuteInIsolationAsync(this, testMethodName, this.Logger).GetAwaiter().GetResult();
         }
     }
 }

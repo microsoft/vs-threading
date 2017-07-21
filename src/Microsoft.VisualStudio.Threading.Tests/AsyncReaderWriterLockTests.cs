@@ -23,7 +23,7 @@
         private const char WriteChar = 'W';
 
         private const int GCAllocationAttempts = 3;
-        private const int MaxGarbagePerLock = 300;
+        private const int MaxGarbagePerLock = 500;
         private const int MaxGarbagePerYield = 1000;
 
         /// <summary>
@@ -228,11 +228,10 @@
             await continuation;
         }
 
-        [StaFact]
+        [SkippableFact]
         public async Task NoMemoryLeakForManyLocks()
         {
-            // Get on an MTA thread so that locks do not necessarily yield.
-            await Task.Run(async delegate
+            if (await this.ExecuteInIsolationAsync())
             {
                 // First prime the pump to allocate some fixed cost memory.
                 {
@@ -262,7 +261,7 @@
                 }
 
                 Assert.True(passingAttemptObserved);
-            });
+            }
         }
 
 #if DESKTOP
@@ -846,18 +845,26 @@
             this.LockReleaseTestHelper(this.asyncLock.ReadLockAsync());
         }
 
-        [StaFact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest")]
+#if ISOLATED_TEST_SUPPORT
+        [StaFact, Trait("GC", "true")]
         public async Task UncontestedTopLevelReadLockAsyncGarbageCheck()
         {
-            var cts = new CancellationTokenSource();
-            await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync(cts.Token), false);
+            if (await this.ExecuteInIsolationAsync())
+            {
+                var cts = new CancellationTokenSource();
+                await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync(cts.Token), false);
+            }
         }
 
-        [StaFact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest")]
+        [StaFact, Trait("GC", "true")]
         public async Task NestedReadLockAsyncGarbageCheck()
         {
-            await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync(), false);
+            if (await this.ExecuteInIsolationAsync())
+            {
+                await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.ReadLockAsync(), false);
+            }
         }
+#endif
 
 #if DESKTOP
         [StaFact]
@@ -1131,18 +1138,26 @@
             this.LockReleaseTestHelper(this.asyncLock.UpgradeableReadLockAsync());
         }
 
-        [StaFact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest")]
+#if ISOLATED_TEST_SUPPORT
+        [StaFact, Trait("GC", "true")]
         public async Task UncontestedTopLevelUpgradeableReadLockAsyncGarbageCheck()
         {
-            var cts = new CancellationTokenSource();
-            await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync(cts.Token), true);
+            if (await this.ExecuteInIsolationAsync())
+            {
+                var cts = new CancellationTokenSource();
+                await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync(cts.Token), true);
+            }
         }
 
-        [StaFact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest")]
+        [StaFact, Trait("GC", "true")]
         public async Task NestedUpgradeableReadLockAsyncGarbageCheck()
         {
-            await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync(), true);
+            if (await this.ExecuteInIsolationAsync())
+            {
+                await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.UpgradeableReadLockAsync(), true);
+            }
         }
+#endif
 
         [StaFact]
         public async Task ExclusiveLockReleasedEventsFireOnlyWhenWriteLockReleased()
@@ -1653,18 +1668,26 @@
                 }));
         }
 
-        [StaFact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest")]
+#if ISOLATED_TEST_SUPPORT
+        [StaFact, Trait("GC", "true")]
         public async Task UncontestedTopLevelWriteLockAsyncGarbageCheck()
         {
-            var cts = new CancellationTokenSource();
-            await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync(cts.Token), true);
+            if (await this.ExecuteInIsolationAsync())
+            {
+                var cts = new CancellationTokenSource();
+                await this.UncontestedTopLevelLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync(cts.Token), true);
+            }
         }
 
-        [StaFact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest")]
+        [StaFact, Trait("GC", "true")]
         public async Task NestedWriteLockAsyncGarbageCheck()
         {
-            await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync(), true);
+            if (await this.ExecuteInIsolationAsync())
+            {
+                await this.NestedLocksAllocFreeHelperAsync(() => this.asyncLock.WriteLockAsync(), true);
+            }
         }
+#endif
 
         [StaFact]
         public async Task MitigationAgainstAccidentalWriteLockConcurrency()

@@ -27,10 +27,17 @@ test_script:
 
     "%xunit20%\xunit.console.x86.exe"
     "bin\Microsoft.VisualStudio.Threading.Tests\%configuration%\net452\Microsoft.VisualStudio.Threading.Tests.dll"
-    "bin\Microsoft.VisualStudio.Threading.Tests\%configuration%\net46\Microsoft.VisualStudio.Threading.Tests.dll"
     "bin\Microsoft.VisualStudio.Threading.Analyzers.Tests\%configuration%\net452\Microsoft.VisualStudio.Threading.Analyzers.Tests.dll"
     -noshadow
-    -html "bin\%configuration%\testresults.html" -xml "bin\%configuration%\testresults.xml"
+    -html "bin\%configuration%\testresults_net452.html" -xml "bin\%configuration%\testresults_net452.xml"
+    -appveyor
+    -notrait "TestCategory=FailsInCloudTest"
+    -nologo
+
+    "%xunit20%\xunit.console.x86.exe"
+    "bin\Microsoft.VisualStudio.Threading.Tests\%configuration%\net46\Microsoft.VisualStudio.Threading.Tests.dll"
+    -noshadow
+    -html "bin\%configuration%\testresults_net46.html" -xml "bin\%configuration%\testresults_net46.xml"
     -appveyor
     -notrait "TestCategory=FailsInCloudTest"
     -nologo
@@ -43,5 +50,5 @@ artifacts:
   name: NuGet Package
 - path: msbuild.log
   name: Build log
-- path: bin\**\testresults.*
+- path: bin\**\testresults*
   name: Test results
