@@ -523,18 +523,21 @@
             Assert.Equal(1, invoked);
         }
 
-        [Fact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest")]
+        [SkippableFact, Trait("GC", "true")]
         public void UnusedQueueGCPressure()
         {
-            this.CheckGCPressure(
-                delegate
-                {
-                    var queue = new AsyncQueue<GenericParameterHelper>();
-                    queue.Complete();
-                    Assert.True(queue.IsCompleted);
-                },
-                maxBytesAllocated: 81,
-                allowedAttempts: 30);
+            if (this.ExecuteInIsolation())
+            {
+                this.CheckGCPressure(
+                    delegate
+                    {
+                        var queue = new AsyncQueue<GenericParameterHelper>();
+                        queue.Complete();
+                        Assert.True(queue.IsCompleted);
+                    },
+                    maxBytesAllocated: 81,
+                    allowedAttempts: 30);
+            }
         }
 
         [Fact]
