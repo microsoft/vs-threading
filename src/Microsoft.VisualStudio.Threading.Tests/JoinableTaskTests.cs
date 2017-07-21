@@ -2838,7 +2838,7 @@
                         await TaskScheduler.Default;
                         await this.asyncPump.SwitchToMainThreadAsync(CancellationToken.None);
                     },
-                    3421);
+                    3423);
             }
         }
 
