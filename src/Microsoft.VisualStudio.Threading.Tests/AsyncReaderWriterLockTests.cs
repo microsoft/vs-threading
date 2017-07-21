@@ -228,11 +228,10 @@
             await continuation;
         }
 
-        [StaFact]
+        [SkippableFact]
         public async Task NoMemoryLeakForManyLocks()
         {
-            // Get on an MTA thread so that locks do not necessarily yield.
-            await Task.Run(async delegate
+            if (await this.ExecuteInIsolationAsync())
             {
                 // First prime the pump to allocate some fixed cost memory.
                 {
@@ -262,7 +261,7 @@
                 }
 
                 Assert.True(passingAttemptObserved);
-            });
+            }
         }
 
 #if DESKTOP
