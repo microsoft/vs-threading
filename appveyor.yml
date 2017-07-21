@@ -27,6 +27,13 @@ test_script:
 
     "%xunit20%\xunit.console.x86.exe"
     "bin\Microsoft.VisualStudio.Threading.Tests\%configuration%\net451\Microsoft.VisualStudio.Threading.Tests.dll"
+    -noshadow
+    -html "bin\%configuration%\testresults_net451.html" -xml "bin\%configuration%\testresults_net451.xml"
+    -appveyor
+    -notrait "TestCategory=FailsInCloudTest"
+    -nologo
+
+    "%xunit20%\xunit.console.x86.exe"
     "bin\Microsoft.VisualStudio.Threading.Tests\%configuration%\net452\Microsoft.VisualStudio.Threading.Tests.dll"
     "bin\Microsoft.VisualStudio.Threading.Analyzers.Tests\%configuration%\net452\Microsoft.VisualStudio.Threading.Analyzers.Tests.dll"
     -noshadow
