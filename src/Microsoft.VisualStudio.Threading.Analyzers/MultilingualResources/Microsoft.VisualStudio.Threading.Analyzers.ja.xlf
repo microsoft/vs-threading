@@ -20,7 +20,6 @@
         <trans-unit id="VSTHRD002_MessageFormat" translate="yes" xml:space="preserve">
           <source>Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or JoinableTaskFactory.Run instead.</source>
           <target state="translated">同期的にタスクまたは awaiter を待機すると、デッドロックが引き起こされる可能性があります。代わりに await または JoinableTaskFactory.Run を使用してください。</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD002_Title" translate="yes" xml:space="preserve">
@@ -32,7 +31,6 @@
 Call ThreadHelper.ThrowIfNotOnUIThread() or await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
           <target state="translated">Visual Studio サービス "{0}" は、明示的にメイン スレッドで使用する必要があります。
 ThreadHelper.ThrowIfNotOnUIThread() を呼び出すか、まず JoinableTaskFactory.SwitchToMainThreadAsync() を待機してください。</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD010_Title" translate="yes" xml:space="preserve">
           <source>Use VS services from UI thread</source>
@@ -154,7 +152,6 @@ Use AsyncLazy&lt;T&gt; instead.</source>
         <trans-unit id="VSTHRD001_Title" translate="yes" xml:space="preserve">
           <source>Avoid legacy thread switching APIs</source>
           <target state="translated">従来のスレッド切り替え API を使用しない</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
           <note from="MultilingualBuild" annotates="source" priority="2">thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.</note>
         </trans-unit>
         <trans-unit id="VSTHRD107_MessageFormat" translate="yes" xml:space="preserve">
