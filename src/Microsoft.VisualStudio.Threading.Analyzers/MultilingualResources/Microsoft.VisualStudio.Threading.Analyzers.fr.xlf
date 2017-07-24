@@ -19,7 +19,7 @@
         </trans-unit>
         <trans-unit id="VSTHRD002_MessageFormat" translate="yes" xml:space="preserve">
           <source>Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or JoinableTaskFactory.Run instead.</source>
-          <target state="needs-review-translation">L'attente de manière synchrone de tâches ou d’éléments en attente peut entraîner des blocages. Utilisez JoinableTaskFactory.Run à la place.</target>
+          <target state="translated">L'attente de manière synchrone de tâches ou d’éléments en attente peut entraîner des blocages. Utilisez await ou JoinableTaskFactory.Run à la place.</target>
           <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
         </trans-unit>
@@ -174,7 +174,7 @@ Utilisez AsyncLazy&lt;T&gt; à la place</target>
         </trans-unit>
         <trans-unit id="VSTHRD002_CodeFix_Await_Title" translate="yes" xml:space="preserve">
           <source>Use await instead</source>
-          <target state="new">Use await instead</target>
+          <target state="translated">Utiliser await à la place</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
         </trans-unit>
       </group>
