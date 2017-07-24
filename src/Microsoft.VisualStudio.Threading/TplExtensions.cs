@@ -481,8 +481,8 @@ namespace Microsoft.VisualStudio.Threading
 
             RegisteredWaitHandle callbackHandle = ThreadPool.RegisterWaitForSingleObject(
                 handle,
-                (state, timedOut) => tcs.TrySetResult(!timedOut),
-                state: null,
+                (state, timedOut) => ((TaskCompletionSource<bool>)state).TrySetResult(!timedOut),
+                state: tcs,
                 millisecondsTimeOutInterval: timeout,
                 executeOnlyOnce: true);
 
