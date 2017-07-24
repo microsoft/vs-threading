@@ -22,7 +22,7 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>同期的にタスクまたは awaiter を待機すると、デッドロックが引き起こされる可能性があります。代わりに JoinableTaskFactory.Run を使用してください。</value>
+    <value>同期的にタスクまたは awaiter を待機すると、デッドロックが引き起こされる可能性があります。代わりに await または JoinableTaskFactory.Run を使用してください。</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
@@ -135,5 +135,9 @@ ThreadHelper.ThrowIfNotOnUIThread() を呼び出すか、まず JoinableTaskFact
   <data name="VSTHRD107_CodeFix_Title" xml:space="preserve">
     <value>using 式を待機する</value>
     <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD002_CodeFix_Await_Title" xml:space="preserve">
+    <value>代わりに Await を使用する</value>
+    <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
 </root>

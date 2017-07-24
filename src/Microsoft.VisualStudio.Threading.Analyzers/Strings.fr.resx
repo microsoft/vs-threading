@@ -22,7 +22,7 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>L'attente de manière synchrone de tâches ou d’éléments en attente peut entraîner des blocages. Utilisez JoinableTaskFactory.Run à la place.</value>
+    <value>L'attente de manière synchrone de tâches ou d’éléments en attente peut entraîner des blocages. Utilisez await ou JoinableTaskFactory.Run à la place.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
@@ -135,5 +135,9 @@ Utilisez AsyncLazy&lt;T&gt; à la place</value>
   <data name="VSTHRD107_CodeFix_Title" xml:space="preserve">
     <value>Attendre l’expression using</value>
     <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD002_CodeFix_Await_Title" xml:space="preserve">
+    <value>Utiliser await à la place</value>
+    <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
 </root>

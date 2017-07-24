@@ -22,7 +22,7 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>Das synchrone Warten auf Aufgaben oder Awaiters führt unter Umständen zu Deadlocks. Verwenden Sie stattdessen "JoinableTaskFactory.Run".</value>
+    <value>Das synchrone Warten auf Aufgaben oder Awaiters führt unter Umständen zu Deadlocks. Verwenden Sie stattdessen "await" oder "JoinableTaskFactory.Run".</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
@@ -135,5 +135,9 @@ Verwenden Sie stattdessen "AsyncLazy&lt;T&gt;".</value>
   <data name="VSTHRD107_CodeFix_Title" xml:space="preserve">
     <value>Await using-Ausdruck</value>
     <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD002_CodeFix_Await_Title" xml:space="preserve">
+    <value>Stattdessen "await" verwenden</value>
+    <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
 </root>

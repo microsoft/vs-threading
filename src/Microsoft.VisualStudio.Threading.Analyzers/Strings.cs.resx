@@ -22,7 +22,7 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>Synchronní čekání na položky typu task nebo awaiter může způsobit vzájemné zablokování. Místo toho použijte JoinableTaskFactory.Run.</value>
+    <value>Synchronní čekání na položky typu task nebo awaiter může způsobit vzájemné zablokování. Místo toho použijte await nebo JoinableTaskFactory.Run.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
@@ -135,5 +135,9 @@ Použijte raději AsyncLazy&lt;T&gt;.</value>
   <data name="VSTHRD107_CodeFix_Title" xml:space="preserve">
     <value>Výraz using s operátorem await</value>
     <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD002_CodeFix_Await_Title" xml:space="preserve">
+    <value>Použijte raději await.</value>
+    <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
 </root>
