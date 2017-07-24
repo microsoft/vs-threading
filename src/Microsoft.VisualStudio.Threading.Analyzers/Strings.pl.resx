@@ -22,7 +22,7 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>Synchroniczne oczekiwanie na zadania lub elementy typu awaiter mogą powodować zakleszczenia. Zamiast tego używaj metody JoinableTaskFactory.Run.</value>
+    <value>Synchroniczne oczekiwanie na zadania lub elementy typu awaiter mogą powodować zakleszczenia. Zamiast tego używaj metody await lub JoinableTaskFactory.Run.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
@@ -135,5 +135,9 @@ Zamiast tego używaj klasy AsyncLazy&lt;T&gt;.</value>
   <data name="VSTHRD107_CodeFix_Title" xml:space="preserve">
     <value>Oczekuj w wyrażeniu using</value>
     <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD002_CodeFix_Await_Title" xml:space="preserve">
+    <value>Zamiast tego używaj oczekiwania</value>
+    <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
 </root>
