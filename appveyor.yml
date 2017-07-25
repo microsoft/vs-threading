@@ -53,6 +53,7 @@ test_script:
     dotnet test src\Microsoft.VisualStudio.Threading.Tests\Microsoft.VisualStudio.Threading.Tests.csproj
     --no-build
     -f netcoreapp1.0
+    --filter "TestCategory!=FailsInCloudTest"
 artifacts:
 - path: bin\**\*.nupkg
   name: NuGet Package
