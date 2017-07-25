@@ -15,7 +15,7 @@ namespace Microsoft.VisualStudio.Threading
     /// </summary>
     internal static class LightUps
     {
-#if NET45
+#if DESKTOP
         /// <summary>
         /// The <see cref="OperatingSystem.Version"/> for Windows 8.
         /// </summary>
@@ -31,13 +31,19 @@ namespace Microsoft.VisualStudio.Threading
         internal const bool ForceNet45Mode = false;
 #endif
 
-#if NET45
+#if NET45 // only test Win7 mode on NET45 builds
         /// <summary>
         /// Gets a value indicating whether we execute Windows 7 code even on later versions of Windows.
         /// </summary>
         internal static readonly bool ForceWindows7Mode = System.Configuration.ConfigurationManager.AppSettings["Microsoft.VisualStudio.Threading.Windows7Mode"] == "true";
+#elif DESKTOP
+        /// <summary>
+        /// Gets a value indicating whether we execute Windows 7 code even on later versions of Windows.
+        /// </summary>
+        internal const bool ForceWindows7Mode = false;
 #endif
 
+#if !ASYNCLOCAL
         /// <summary>
         /// The System.Threading.AsyncLocal open generic type, if present.
         /// </summary>
@@ -46,18 +52,27 @@ namespace Microsoft.VisualStudio.Threading
         /// This field will be <c>null</c> on earlier versions of .NET.
         /// </remarks>
         internal static readonly Type BclAsyncLocalType;
+#endif
 
         /// <summary>
         /// A value indicating whether TaskCreationOptions.RunContinuationsAsynchronously
         /// is supported by this version of the .NET Framework.
         /// </summary>
+#if TRYSETCANCELEDCT
+        internal const bool IsRunContinuationsAsynchronouslySupported = true;
+#else
         internal static readonly bool IsRunContinuationsAsynchronouslySupported;
+#endif
 
         /// <summary>
         /// The TaskCreationOptions.RunContinuationsAsynchronously flag as found in .NET 4.6
         /// or <see cref="TaskCreationOptions.None"/> if on earlier versions of .NET.
         /// </summary>
+#if TRYSETCANCELEDCT
+        internal const TaskCreationOptions RunContinuationsAsynchronously = TaskCreationOptions.RunContinuationsAsynchronously;
+#else
         internal static readonly TaskCreationOptions RunContinuationsAsynchronously;
+#endif
 
         /// <summary>
         /// Initializes static members of the <see cref="LightUps"/> class.
@@ -67,14 +82,18 @@ namespace Microsoft.VisualStudio.Threading
         {
             if (!ForceNet45Mode)
             {
+#if !TRYSETCANCELEDCT
                 IsRunContinuationsAsynchronouslySupported = Enum.TryParse(
                     "RunContinuationsAsynchronously",
                     out RunContinuationsAsynchronously);
+#endif
+#if !ASYNCLOCAL
                 BclAsyncLocalType = Type.GetType("System.Threading.AsyncLocal`1");
+#endif
             }
         }
 
-#if NET45
+#if DESKTOP
         /// <summary>
         /// Gets a value indicating whether the current operating system is Windows 8 or later.
         /// </summary>

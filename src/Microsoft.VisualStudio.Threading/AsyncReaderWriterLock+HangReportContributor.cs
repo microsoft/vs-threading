@@ -147,7 +147,7 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             Delegate lockWaitingContinuation;
-#if NET45
+#if DESKTOP
             if (awaiter.RequestingStackTrace != null)
             {
                 label.AppendLine(awaiter.RequestingStackTrace.ToString());

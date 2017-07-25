@@ -19,12 +19,16 @@ namespace Microsoft.VisualStudio.Threading
     /// <typeparam name="T">The generic type argument.</typeparam>
     internal static class LightUps<T>
     {
+#if !TRYSETCANCELEDCT
         /// <summary>
         /// A delegate that invokes the <see cref="TaskCompletionSource{TResult}.TrySetCanceled"/>
         /// method that takes <see cref="CancellationToken"/> as an argument.
         /// Will be <c>null</c> on .NET Framework versions under 4.6.
         /// </summary>
         internal static readonly Func<TaskCompletionSource<T>, CancellationToken, bool> TrySetCanceled;
+#endif
+
+#if !ASYNCLOCAL
 
         /// <summary>
         /// A value indicating whether the BCL AsyncLocal{T} type is available.
@@ -45,6 +49,8 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         private static readonly PropertyInfo BclAsyncLocalValueProperty;
 
+#endif
+
         /// <summary>
         /// Initializes static members of the <see cref="LightUps{T}"/> class.
         /// </summary>
@@ -53,6 +59,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             if (!LightUps.ForceNet45Mode)
             {
+#if !TRYSETCANCELEDCT
                 var methodInfo = typeof(TaskCompletionSource<T>).GetTypeInfo()
                     .GetDeclaredMethods(nameof(TaskCompletionSource<int>.TrySetCanceled))
                     .FirstOrDefault(m => m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType == typeof(CancellationToken));
@@ -60,15 +67,20 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     TrySetCanceled = (Func<TaskCompletionSource<T>, CancellationToken, bool>)methodInfo.CreateDelegate(typeof(Func<TaskCompletionSource<T>, CancellationToken, bool>));
                 }
+#endif
 
+#if !ASYNCLOCAL
                 if (LightUps.BclAsyncLocalType != null)
                 {
                     BclAsyncLocalType = LightUps.BclAsyncLocalType.MakeGenericType(typeof(T));
                     BclAsyncLocalValueProperty = BclAsyncLocalType.GetTypeInfo().GetDeclaredProperty("Value");
                     IsAsyncLocalSupported = true;
                 }
+#endif
             }
         }
+
+#if !ASYNCLOCAL
 
         /// <summary>
         /// Creates an instance of the BCL AsyncLocal{T} type.
@@ -162,5 +174,6 @@ namespace Microsoft.VisualStudio.Threading
             /// <inheritdoc />
             internal override object CreateAsyncLocal() => new TAsyncLocal();
         }
+#endif
     }
 }

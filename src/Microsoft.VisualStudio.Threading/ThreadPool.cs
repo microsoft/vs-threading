@@ -10,6 +10,8 @@ namespace Microsoft.VisualStudio.Threading
     using System.Threading;
     using System.Threading.Tasks;
 
+#if !THREADPOOL
+
     /// <summary>
     /// Resembles the ThreadPool class as found in the .NET Framework so code
     /// written for that can work on the portable profile.
@@ -29,4 +31,6 @@ namespace Microsoft.VisualStudio.Threading
             Task.Factory.StartNew(action, state, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
         }
     }
+
+#endif
 }

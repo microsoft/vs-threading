@@ -4,7 +4,7 @@
 *                                                        *
 *********************************************************/
 
-#if NET45
+#if DESKTOP
 
 namespace Microsoft.VisualStudio.Threading
 {

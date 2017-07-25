@@ -26,6 +26,14 @@ test_script:
     SET testdir=bin\Microsoft.VisualStudio.Threading.Tests\%configuration%\
 
     "%xunit20%\xunit.console.x86.exe"
+    "bin\Microsoft.VisualStudio.Threading.Tests\%configuration%\net451\Microsoft.VisualStudio.Threading.Tests.dll"
+    -noshadow
+    -html "bin\%configuration%\testresults_net451.html" -xml "bin\%configuration%\testresults_net451.xml"
+    -appveyor
+    -notrait "TestCategory=FailsInCloudTest"
+    -nologo
+
+    "%xunit20%\xunit.console.x86.exe"
     "bin\Microsoft.VisualStudio.Threading.Tests\%configuration%\net452\Microsoft.VisualStudio.Threading.Tests.dll"
     "bin\Microsoft.VisualStudio.Threading.Analyzers.Tests\%configuration%\net452\Microsoft.VisualStudio.Threading.Analyzers.Tests.dll"
     -noshadow
@@ -45,6 +53,7 @@ test_script:
     dotnet test src\Microsoft.VisualStudio.Threading.Tests\Microsoft.VisualStudio.Threading.Tests.csproj
     --no-build
     -f netcoreapp1.0
+    --filter "TestCategory!=FailsInCloudTest"
 artifacts:
 - path: bin\**\*.nupkg
   name: NuGet Package
