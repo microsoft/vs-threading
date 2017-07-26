@@ -2,7 +2,7 @@
 
 ## Summary
 
-Thread starvation are cases where tasks dispatched to managed thread pool doesn't start executing immediately due to other work in the thread pool. In certain cases, the starvation can cause task execution to delay up to a second and if main thread is waiting for the task to complete, this will cause elapsed time regressions as well as responsiveness issues in the product.
+Thread starvation are cases where tasks dispatched to managed thread pool doesn't start executing immediately due to other work in the thread pool. In certain cases, the starvation can cause task execution to delay up to a second and if the main thread is waiting for the task to complete, this will cause elapsed time regressions as well as responsiveness issues in the product.
 
 A thread pool starvation issue usually manifests itself as a long blocked time on main thread waiting for background work.
 
