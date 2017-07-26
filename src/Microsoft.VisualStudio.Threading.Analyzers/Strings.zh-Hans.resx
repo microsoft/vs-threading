@@ -22,7 +22,7 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>同步等待任务或 awaiter 可能导致死锁。改用 JoinableTaskFactory.Run。</value>
+    <value>同步等待任务或 awaiter 可能导致死锁。请等待或改用 JoinableTaskFactory.Run。</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
@@ -135,5 +135,9 @@
   <data name="VSTHRD107_CodeFix_Title" xml:space="preserve">
     <value>等待 using 表达式</value>
     <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD002_CodeFix_Await_Title" xml:space="preserve">
+    <value>改用 await</value>
+    <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
 </root>

@@ -22,7 +22,7 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>Синхронное ожидание задач или объектов awaiter может вызвать взаимоблокировки. Вместо этого используйте метод JoinableTaskFactory.Run.</value>
+    <value>Синхронное ожидание задач или объектов awaiter может приводить к взаимоблокировкам. Используйте вместо этого await или JoinableTaskFactory.Run.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
@@ -135,5 +135,9 @@
   <data name="VSTHRD107_CodeFix_Title" xml:space="preserve">
     <value>Выражение "using" в await</value>
     <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD002_CodeFix_Await_Title" xml:space="preserve">
+    <value>Вместо этого используйте await.</value>
+    <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
 </root>
