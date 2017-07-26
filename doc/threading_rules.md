@@ -1,6 +1,8 @@
 3 Threading Rules
 =================
 
+## Background
+
 In Visual Studio 2013, we consolidated all our lessons learned from writing a complex,
 multi-threaded component of Visual Studio into a small and simple set of
 rules to avoid deadlocks, unwanted reentrancy, and keep an easier to maintain
@@ -8,6 +10,10 @@ codebase.  We do this by comprehensively applying just three rules, as outlined
 below. In each case, the instance of `JoinableTaskFactory` used in the samples
 comes from `ThreadHelper.JoinableTaskFactory` ([except for code in CPS and its
 extensions](cookbook_vs.md)).
+
+## The Rules
+
+The rules are listed below with minimal examples. For a more thorough explanation with more examples, check out [this slideshow](https://www.slideshare.net/aarnott/the-3-vs-threading-rules).
 
 ### Rule #1. If a method has certain thread apartment requirements (STA or MTA) it must either:
    1. Have an asynchronous signature, and asynchronously marshal to the appropriate
