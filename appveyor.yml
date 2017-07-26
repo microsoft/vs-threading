@@ -5,6 +5,10 @@ branches:
   - /^v\d+(?:\.\d+)?$/
   - /[\b_]validate\b/
 skip_tags: true
+skip_commits:
+  files:
+    - doc/*
+    - '**/*.md'
 nuget:
   disable_publish_on_pr: true
 image: Visual Studio 2017
