@@ -364,7 +364,7 @@ namespace Microsoft.VisualStudio.Threading
                     return true;
                 }
 
-                using (NoMessagePumpSyncContext.Default.Apply())
+                using (this.Context.NoMessagePumpSynchronizationContext.Apply())
                 {
                     var allJoinedJobs = new HashSet<JoinableTask>();
                     lock (this.Context.SyncContextLock)
@@ -798,15 +798,18 @@ namespace Microsoft.VisualStudio.Threading
                         // and before "this.cancellationToken.Register()". If that happens, that means we lose the interest on the cancellation
                         // and should not register the cancellation here. Without protecting that, "this.cancellationRegistrationPtr" will be leaked.
                         bool disposeThisRegistration = false;
-                        lock (this.cancellationRegistrationPtr)
+                        using (this.jobFactory.Context.NoMessagePumpSynchronizationContext.Apply())
                         {
-                            if (!this.cancellationRegistrationPtr.Value.HasValue)
+                            lock (this.cancellationRegistrationPtr)
                             {
-                                this.cancellationRegistrationPtr.Value = registration;
-                            }
-                            else
-                            {
-                                disposeThisRegistration = true;
+                                if (!this.cancellationRegistrationPtr.Value.HasValue)
+                                {
+                                    this.cancellationRegistrationPtr.Value = registration;
+                                }
+                                else
+                                {
+                                    disposeThisRegistration = true;
+                                }
                             }
                         }
 
@@ -840,25 +843,28 @@ namespace Microsoft.VisualStudio.Threading
                 if (this.cancellationRegistrationPtr != null)
                 {
                     CancellationTokenRegistration registration = default(CancellationTokenRegistration);
-                    lock (this.cancellationRegistrationPtr)
+                    using (this.jobFactory.Context.NoMessagePumpSynchronizationContext.Apply())
                     {
-                        if (this.cancellationRegistrationPtr.Value.HasValue)
+                        lock (this.cancellationRegistrationPtr)
                         {
-                            registration = this.cancellationRegistrationPtr.Value.Value;
-                        }
+                            if (this.cancellationRegistrationPtr.Value.HasValue)
+                            {
+                                registration = this.cancellationRegistrationPtr.Value.Value;
+                            }
 
-                        // The reason we set this is to effectively null the struct that
-                        // the strong box points to. Dispose does not seem to do this. If we
-                        // have two copies of MainThreadAwaiter pointing to the same strongbox,
-                        // then if one copy executes but the other does not, we could end
-                        // up holding onto the memory pointed to through this pointer. By
-                        // resetting the value here we make sure it gets cleaned.
-                        //
-                        // In addition, assigning default(CancellationTokenRegistration) to a field that
-                        // stores a Nullable<CancellationTokenRegistration> effectively gives it a HasValue status,
-                        // which will let OnCompleted know it lost the interest on the cancellation. That is an
-                        // important hint for OnCompleted() in order NOT to leak the cancellation registration.
-                        this.cancellationRegistrationPtr.Value = default(CancellationTokenRegistration);
+                            // The reason we set this is to effectively null the struct that
+                            // the strong box points to. Dispose does not seem to do this. If we
+                            // have two copies of MainThreadAwaiter pointing to the same strongbox,
+                            // then if one copy executes but the other does not, we could end
+                            // up holding onto the memory pointed to through this pointer. By
+                            // resetting the value here we make sure it gets cleaned.
+                            //
+                            // In addition, assigning default(CancellationTokenRegistration) to a field that
+                            // stores a Nullable<CancellationTokenRegistration> effectively gives it a HasValue status,
+                            // which will let OnCompleted know it lost the interest on the cancellation. That is an
+                            // important hint for OnCompleted() in order NOT to leak the cancellation registration.
+                            this.cancellationRegistrationPtr.Value = default(CancellationTokenRegistration);
+                        }
                     }
 
                     // Intentionally deferring disposal till we exit the lock to avoid executing outside code within the lock.

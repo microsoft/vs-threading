@@ -414,9 +414,12 @@ namespace Microsoft.VisualStudio.Threading
         protected internal virtual void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId)
         {
             List<JoinableTaskContextNode> listeners;
-            lock (this.hangNotifications)
+            using (this.NoMessagePumpSynchronizationContext.Apply())
             {
-                listeners = this.hangNotifications.ToList();
+                lock (this.hangNotifications)
+                {
+                    listeners = this.hangNotifications.ToList();
+                }
             }
 
             var blockingTask = JoinableTask.TaskCompletingOnThisThread;
@@ -447,9 +450,12 @@ namespace Microsoft.VisualStudio.Threading
         protected internal virtual void OnFalseHangDetected(TimeSpan hangDuration, Guid hangId)
         {
             List<JoinableTaskContextNode> listeners;
-            lock (this.hangNotifications)
+            using (this.NoMessagePumpSynchronizationContext.Apply())
             {
-                listeners = this.hangNotifications.ToList();
+                lock (this.hangNotifications)
+                {
+                    listeners = this.hangNotifications.ToList();
+                }
             }
 
             foreach (var listener in listeners)
@@ -486,16 +492,19 @@ namespace Microsoft.VisualStudio.Threading
         {
             Requires.NotNull(task, nameof(task));
 
-            lock (this.pendingTasks)
+            using (this.NoMessagePumpSynchronizationContext.Apply())
             {
-                Assumes.True(this.pendingTasks.Add(task));
-            }
-
-            if ((task.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)
-            {
-                lock (this.initializingSynchronouslyMainThreadTasks)
+                lock (this.pendingTasks)
                 {
-                    this.initializingSynchronouslyMainThreadTasks.Push(task);
+                    Assumes.True(this.pendingTasks.Add(task));
+                }
+
+                if ((task.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)
+                {
+                    lock (this.initializingSynchronouslyMainThreadTasks)
+                    {
+                        this.initializingSynchronouslyMainThreadTasks.Push(task);
+                    }
                 }
             }
         }
@@ -508,9 +517,12 @@ namespace Microsoft.VisualStudio.Threading
         {
             Requires.NotNull(task, nameof(task));
 
-            lock (this.pendingTasks)
+            using (this.NoMessagePumpSynchronizationContext.Apply())
             {
-                this.pendingTasks.Remove(task);
+                lock (this.pendingTasks)
+                {
+                    this.pendingTasks.Remove(task);
+                }
             }
         }
 
@@ -522,11 +534,14 @@ namespace Microsoft.VisualStudio.Threading
         {
             Requires.NotNull(task, nameof(task));
 
-            lock (this.initializingSynchronouslyMainThreadTasks)
+            using (this.NoMessagePumpSynchronizationContext.Apply())
             {
-                Assumes.True(this.initializingSynchronouslyMainThreadTasks.Count > 0);
-                Assumes.True(this.initializingSynchronouslyMainThreadTasks.Peek() == task);
-                this.initializingSynchronouslyMainThreadTasks.Pop();
+                lock (this.initializingSynchronouslyMainThreadTasks)
+                {
+                    Assumes.True(this.initializingSynchronouslyMainThreadTasks.Count > 0);
+                    Assumes.True(this.initializingSynchronouslyMainThreadTasks.Peek() == task);
+                    this.initializingSynchronouslyMainThreadTasks.Pop();
+                }
             }
         }
 
@@ -538,11 +553,15 @@ namespace Microsoft.VisualStudio.Threading
         internal IDisposable RegisterHangNotifications(JoinableTaskContextNode node)
         {
             Requires.NotNull(node, nameof(node));
-            lock (this.hangNotifications)
+
+            using (this.NoMessagePumpSynchronizationContext.Apply())
             {
-                if (!this.hangNotifications.Add(node))
+                lock (this.hangNotifications)
                 {
-                    Verify.FailOperation(Strings.JoinableTaskContextNodeAlreadyRegistered);
+                    if (!this.hangNotifications.Add(node))
+                    {
+                        Verify.FailOperation(Strings.JoinableTaskContextNodeAlreadyRegistered);
+                    }
                 }
             }
 
@@ -629,9 +648,12 @@ namespace Microsoft.VisualStudio.Threading
                 var node = this.node;
                 if (node != null)
                 {
-                    lock (node.Context.hangNotifications)
+                    using (node.Context.NoMessagePumpSynchronizationContext.Apply())
                     {
-                        Assumes.True(node.Context.hangNotifications.Remove(node));
+                        lock (node.Context.hangNotifications)
+                        {
+                            Assumes.True(node.Context.hangNotifications.Remove(node));
+                        }
                     }
 
                     this.node = null;

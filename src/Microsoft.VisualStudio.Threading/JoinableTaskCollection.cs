@@ -100,30 +100,33 @@ namespace Microsoft.VisualStudio.Threading
 
             if (!joinableTask.IsCompleted)
             {
-                lock (this.Context.SyncContextLock)
+                using (this.Context.NoMessagePumpSynchronizationContext.Apply())
                 {
-                    int refCount;
-                    if (!this.joinables.TryGetValue(joinableTask, out refCount) || this.refCountAddedJobs)
+                    lock (this.Context.SyncContextLock)
                     {
-                        this.joinables[joinableTask] = refCount + 1;
-                        if (refCount == 0)
+                        int refCount;
+                        if (!this.joinables.TryGetValue(joinableTask, out refCount) || this.refCountAddedJobs)
                         {
-                            joinableTask.OnAddedToCollection(this);
-
-                            // Now that we've added a joinable task to our collection, any folks who
-                            // have already joined this collection should be joined to this joinable task.
-                            foreach (var joiner in this.joiners)
+                            this.joinables[joinableTask] = refCount + 1;
+                            if (refCount == 0)
                             {
-                                // We can discard the JoinRelease result of AddDependency
-                                // because we directly disjoin without that helper struct.
-                                joiner.Key.AddDependency(joinableTask);
+                                joinableTask.OnAddedToCollection(this);
+
+                                // Now that we've added a joinable task to our collection, any folks who
+                                // have already joined this collection should be joined to this joinable task.
+                                foreach (var joiner in this.joiners)
+                                {
+                                    // We can discard the JoinRelease result of AddDependency
+                                    // because we directly disjoin without that helper struct.
+                                    joiner.Key.AddDependency(joinableTask);
+                                }
                             }
                         }
-                    }
 
-                    if (this.emptyEvent != null)
-                    {
-                        this.emptyEvent.Reset();
+                        if (this.emptyEvent != null)
+                        {
+                            this.emptyEvent.Reset();
+                        }
                     }
                 }
             }
