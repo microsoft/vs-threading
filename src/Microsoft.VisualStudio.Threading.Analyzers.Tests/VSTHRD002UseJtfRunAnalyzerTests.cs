@@ -266,5 +266,48 @@ namespace Microsoft.VisualStudio.JavaScript.Project {
 ";
             this.VerifyCSharpDiagnostic(test);
         }
+
+        [Fact]
+        public void DoNotReportWarningOnJTFRun()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class ProjectProperties {
+    JoinableTaskFactory jtf;
+
+    void F() {
+        jtf.Run(async delegate {
+            await Task.Yield();
+        }); 
+    }
+}
+";
+            this.VerifyCSharpDiagnostic(test);
+        }
+
+        [Fact]
+        public void DoNotReportWarningOnJoinableTaskJoin()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class ProjectProperties {
+    JoinableTaskFactory jtf;
+
+    void F() {
+        var jt = jtf.RunAsync(async delegate {
+            await Task.Yield();
+        }); 
+        jt.Join();
+    }
+}
+";
+            this.VerifyCSharpDiagnostic(test);
+        }
     }
 }
