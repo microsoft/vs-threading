@@ -206,7 +206,7 @@ class Tests
         }
 
         [Fact]
-        public void ReportWarningWhenTaskIsDefinedOutsideParanthesisedLambdaExpression()
+        public void ReportWarningWhenTaskIsDefinedOutsideParanthesizedLambdaExpression()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -222,6 +222,7 @@ class Tests
         jtf.Run(async () =>
         {
             await task;
+            return; // also test for return statements without expressions
         });
     }
 
@@ -660,6 +661,7 @@ class Tests
             await jtf.RunAsync(async () =>
             {
                 await task;
+                return; // also test for return statements without expressions
             });
         });
     }
