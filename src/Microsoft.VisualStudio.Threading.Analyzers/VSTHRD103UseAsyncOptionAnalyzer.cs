@@ -164,7 +164,7 @@
                     && returnType.BelongsToNamespace(Namespaces.SystemThreadingTasks);
             }
 
-            private static bool InspectMemberAccess(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax, IReadOnlyList<CommonInterest.SyncBlockingMethod> problematicMethods)
+            private static bool InspectMemberAccess(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax, IEnumerable<CommonInterest.SyncBlockingMethod> problematicMethods)
             {
                 if (memberAccessSyntax == null)
                 {

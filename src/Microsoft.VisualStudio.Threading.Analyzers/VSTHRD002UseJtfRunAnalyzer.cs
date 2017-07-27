@@ -78,29 +78,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 context,
                 invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax,
                 Descriptor,
-                CommonInterest.SyncBlockingMethods);
-
-            //if (CommonInterest.ShouldIgnoreContext(context))
-            //{
-            //    return;
-            //}
-
-            //var node = (InvocationExpressionSyntax)context.Node;
-            //var invokeMethod = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
-            //if (invokeMethod != null)
-            //{
-            //    var taskType = context.SemanticModel.Compilation.GetTypeByMetadataName(typeof(Task).FullName);
-            //    if (string.Equals(invokeMethod.Name, nameof(Task.Wait), StringComparison.Ordinal)
-            //        && Utils.IsEqualToOrDerivedFrom(invokeMethod.ContainingType, taskType))
-            //    {
-            //        context.ReportDiagnostic(Diagnostic.Create(Descriptor, context.Node.GetLocation()));
-            //    }
-            //    else if (string.Equals(invokeMethod.Name, "GetResult", StringComparison.Ordinal)
-            //        && invokeMethod.ContainingType.Name.EndsWith("Awaiter", StringComparison.Ordinal))
-            //    {
-            //        context.ReportDiagnostic(Diagnostic.Create(Descriptor, context.Node.GetLocation()));
-            //    }
-            //}
+                CommonInterest.ProblematicSyncBlockingMethods);
         }
 
         private void AnalyzeMemberAccess(SyntaxNodeAnalysisContext context)
@@ -111,28 +89,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 memberAccessSyntax,
                 Descriptor,
                 CommonInterest.SyncBlockingProperties);
-
-            //if (CommonInterest.ShouldIgnoreContext(context))
-            //{
-            //    return;
-            //}
-
-            //if (Utils.IsWithinNameOf(context.Node as ExpressionSyntax))
-            //{
-            //    // We do not consider arguments to nameof( ) because they do not represent invocations of code.
-            //    return;
-            //}
-
-            //var property = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IPropertySymbol;
-            //if (property != null)
-            //{
-            //    var taskType = context.SemanticModel.Compilation.GetTypeByMetadataName(typeof(Task).FullName);
-            //    if (string.Equals(property.Name, nameof(Task<object>.Result), StringComparison.Ordinal)
-            //        && Utils.IsEqualToOrDerivedFrom(property.ContainingType, taskType))
-            //    {
-            //        context.ReportDiagnostic(Diagnostic.Create(Descriptor, context.Node.GetLocation()));
-            //    }
-            //}
         }
     }
 }
