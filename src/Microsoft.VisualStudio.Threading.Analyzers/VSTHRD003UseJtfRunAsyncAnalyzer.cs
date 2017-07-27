@@ -87,8 +87,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     expressionsToSearch = new ExpressionSyntax[] { expr };
                     break;
                 case BlockSyntax block:
-                    expressionsToSearch = block.DescendantNodes().OfType<ReturnStatementSyntax>()
-                        .Select(s => s.Expression);
+                    expressionsToSearch = from ret in block.DescendantNodes().OfType<ReturnStatementSyntax>()
+                                          where ret.Expression != null
+                                          select ret.Expression;
                     break;
             }
 
