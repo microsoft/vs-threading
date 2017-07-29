@@ -924,6 +924,94 @@ static class FruitUtils {
         }
 
         [Fact]
+        public void AsyncAlternative_CodeFixRespectsTrivia()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void Foo() { }
+    Task FooAsync() => Task.CompletedTask;
+
+    async Task DoWorkAsync()
+    {
+        await Task.Yield();
+        Console.WriteLine(""Foo"");
+
+        // Some comment
+        Foo(); // another comment
+    }
+}
+";
+            var withFix = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void Foo() { }
+    Task FooAsync() => Task.CompletedTask;
+
+    async Task DoWorkAsync()
+    {
+        await Task.Yield();
+        Console.WriteLine(""Foo"");
+
+        // Some comment
+        await FooAsync(); // another comment
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 15, 9, 15, 12) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
+        public void AwaitRatherThanWait_CodeFixRespectsTrivia()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void Foo() { }
+    Task FooAsync() => Task.CompletedTask;
+
+    async Task DoWorkAsync()
+    {
+        await Task.Yield();
+        Console.WriteLine(""Foo"");
+
+        // Some comment
+        FooAsync().Wait(); // another comment
+    }
+}
+";
+            var withFix = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void Foo() { }
+    Task FooAsync() => Task.CompletedTask;
+
+    async Task DoWorkAsync()
+    {
+        await Task.Yield();
+        Console.WriteLine(""Foo"");
+
+        // Some comment
+        await FooAsync(); // another comment
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 15, 20, 15, 24) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
         public void XunitThrowAsyncNotSuggestedInAsyncTestMethod()
         {
             var test = @"
