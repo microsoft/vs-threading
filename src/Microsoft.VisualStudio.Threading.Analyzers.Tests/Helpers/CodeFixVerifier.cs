@@ -52,7 +52,19 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <param name="allowNewCompilerDiagnostics">A bool controlling whether or not the test will fail if the CodeFix introduces other warnings after being applied</param>
         protected void VerifyCSharpFix(string oldSource, string newSource, int? codeFixIndex = null, bool allowNewCompilerDiagnostics = false)
         {
-            this.VerifyFix(LanguageNames.CSharp, this.GetCSharpDiagnosticAnalyzer(), this.GetCSharpCodeFixProvider(), oldSource, newSource, codeFixIndex, allowNewCompilerDiagnostics);
+            this.VerifyFix(LanguageNames.CSharp, this.GetCSharpDiagnosticAnalyzer(), this.GetCSharpCodeFixProvider(), new[] { oldSource }, new[] { newSource }, codeFixIndex, allowNewCompilerDiagnostics);
+        }
+
+        /// <summary>
+        /// Called to test a C# codefix when applied on the inputted string as a source
+        /// </summary>
+        /// <param name="oldSources">Code files, each in the form of a string before the CodeFix was applied to it</param>
+        /// <param name="newSources">Code files, each in the form of a string after the CodeFix was applied to it</param>
+        /// <param name="codeFixIndex">Index determining which codefix to apply if there are multiple</param>
+        /// <param name="allowNewCompilerDiagnostics">A bool controlling whether or not the test will fail if the CodeFix introduces other warnings after being applied</param>
+        protected void VerifyCSharpFix(string[] oldSources, string[] newSources, int? codeFixIndex = null, bool allowNewCompilerDiagnostics = false)
+        {
+            this.VerifyFix(LanguageNames.CSharp, this.GetCSharpDiagnosticAnalyzer(), this.GetCSharpCodeFixProvider(), oldSources, newSources, codeFixIndex, allowNewCompilerDiagnostics);
         }
 
         /// <summary>
@@ -64,7 +76,28 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <param name="allowNewCompilerDiagnostics">A bool controlling whether or not the test will fail if the CodeFix introduces other warnings after being applied</param>
         protected void VerifyBasicFix(string oldSource, string newSource, int? codeFixIndex = null, bool allowNewCompilerDiagnostics = false)
         {
-            this.VerifyFix(LanguageNames.VisualBasic, this.GetBasicDiagnosticAnalyzer(), this.GetBasicCodeFixProvider(), oldSource, newSource, codeFixIndex, allowNewCompilerDiagnostics);
+            this.VerifyFix(LanguageNames.VisualBasic, this.GetBasicDiagnosticAnalyzer(), this.GetBasicCodeFixProvider(), new[] { oldSource }, new[] { newSource }, codeFixIndex, allowNewCompilerDiagnostics);
+        }
+
+        protected void VerifyNoCSharpFixOffered(string oldSource)
+        {
+            this.VerifyNoFixOffered(LanguageNames.CSharp, this.GetCSharpDiagnosticAnalyzer(), this.GetCSharpCodeFixProvider(), oldSource);
+        }
+
+        private void VerifyNoFixOffered(string language, DiagnosticAnalyzer analyzer, CodeFixProvider codeFixProvider, string source)
+        {
+            var document = CreateDocument(source, language);
+            var analyzerDiagnostics = GetSortedDiagnosticsFromDocuments(ImmutableArray.Create(analyzer), new[] { document }, hasEntrypoint: false);
+            var compilerDiagnostics = GetCompilerDiagnostics(document);
+            var attempts = analyzerDiagnostics.Length;
+
+            for (int i = 0; i < attempts; ++i)
+            {
+                var actions = new List<CodeAction>();
+                var context = new CodeFixContext(document, analyzerDiagnostics[0], (a, d) => actions.Add(a), CancellationToken.None);
+                codeFixProvider.RegisterCodeFixesAsync(context).Wait();
+                Assert.Empty(actions);
+            }
         }
 
         /// <summary>
@@ -76,38 +109,39 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <param name="language">The language the source code is in</param>
         /// <param name="analyzer">The analyzer to be applied to the source code</param>
         /// <param name="codeFixProvider">The codefix to be applied to the code wherever the relevant Diagnostic is found</param>
-        /// <param name="oldSource">A class in the form of a string before the CodeFix was applied to it</param>
-        /// <param name="newSource">A class in the form of a string after the CodeFix was applied to it</param>
+        /// <param name="oldSources">Code files, each in the form of a string before the CodeFix was applied to it</param>
+        /// <param name="newSources">Code files, each in the form of a string after the CodeFix was applied to it</param>
         /// <param name="codeFixIndex">Index determining which codefix to apply if there are multiple in the same location</param>
         /// <param name="allowNewCompilerDiagnostics">A bool controlling whether or not the test will fail if the CodeFix introduces other warnings after being applied</param>
-        private void VerifyFix(string language, DiagnosticAnalyzer analyzer, CodeFixProvider codeFixProvider, string oldSource, string newSource, int? codeFixIndex, bool allowNewCompilerDiagnostics)
+        private void VerifyFix(string language, DiagnosticAnalyzer analyzer, CodeFixProvider codeFixProvider, string[] oldSources, string[] newSources, int? codeFixIndex, bool allowNewCompilerDiagnostics)
         {
-            var document = CreateDocument(oldSource, language);
-            var analyzerDiagnostics = GetSortedDiagnosticsFromDocuments(ImmutableArray.Create(analyzer), new[] { document }, hasEntrypoint: false);
-            var compilerDiagnostics = GetCompilerDiagnostics(document);
+            var project = CreateProject(oldSources, language);
+            var analyzerDiagnostics = GetSortedDiagnosticsFromDocuments(ImmutableArray.Create(analyzer), project.Documents.ToArray(), hasEntrypoint: false);
+            var compilerDiagnostics = project.Documents.SelectMany(doc => GetCompilerDiagnostics(doc));
             var attempts = analyzerDiagnostics.Length;
 
+            // We'll go through enough for each diagnostic to be caught once
             for (int i = 0; i < attempts; ++i)
             {
+                var diagnostic = analyzerDiagnostics[0]; // just get the first one -- the list gets smaller with each loop.
+                var document = project.GetDocument(diagnostic.Location.SourceTree);
                 var actions = new List<CodeAction>();
-                var context = new CodeFixContext(document, analyzerDiagnostics[0], (a, d) => actions.Add(a), CancellationToken.None);
+                var context = new CodeFixContext(document, diagnostic, (a, d) => actions.Add(a), CancellationToken.None);
                 codeFixProvider.RegisterCodeFixesAsync(context).Wait();
                 if (!actions.Any())
                 {
-                    break;
+                    continue;
                 }
 
-                if (codeFixIndex != null)
-                {
-                    document = ApplyFix(document, actions.ElementAt((int)codeFixIndex));
-                    break;
-                }
+                document = ApplyFix(document, actions[codeFixIndex ?? 0]);
+                project = document.Project;
 
-                document = ApplyFix(document, actions.ElementAt(0));
                 this.logger.WriteLine("Code after fix:\n{0}", document.GetSyntaxRootAsync().Result.ToFullString());
-                analyzerDiagnostics = GetSortedDiagnosticsFromDocuments(ImmutableArray.Create(analyzer), new[] { document }, hasEntrypoint: false);
 
-                var newCompilerDiagnostics = GetNewDiagnostics(compilerDiagnostics, GetCompilerDiagnostics(document));
+                analyzerDiagnostics = GetSortedDiagnosticsFromDocuments(ImmutableArray.Create(analyzer), project.Documents.ToArray(), hasEntrypoint: false);
+                var newCompilerDiagnostics = GetNewDiagnostics(
+                    compilerDiagnostics,
+                    project.Documents.SelectMany(doc => GetCompilerDiagnostics(doc)));
 
                 // Check if applying the code fix introduced any new compiler diagnostics
                 if (!allowNewCompilerDiagnostics && newCompilerDiagnostics.Any())
@@ -121,17 +155,15 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                             string.Join("\r\n", newCompilerDiagnostics.Select(d => d.ToString())),
                             document.GetSyntaxRootAsync().Result.ToFullString()));
                 }
-
-                // Check if there are analyzer diagnostics left after the code fix
-                if (!analyzerDiagnostics.Any())
-                {
-                    break;
-                }
             }
 
             // After applying all of the code fixes, compare the resulting string to the inputted one
-            var actual = GetStringFromDocument(document);
-            Assert.Equal(newSource, actual);
+            int j = 0;
+            foreach (var document in project.Documents)
+            {
+                var actual = GetStringFromDocument(document);
+                Assert.Equal(newSources[j++], actual, ignoreLineEndingDifferences: true);
+            }
         }
     }
 }

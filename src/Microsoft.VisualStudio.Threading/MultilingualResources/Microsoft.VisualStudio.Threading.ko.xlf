@@ -1,0 +1,77 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en-US" target-language="ko" original="MICROSOFT.VISUALSTUDIO.THREADING/STRINGS.RESX" tool-id="MultilingualAppToolkit" product-name="n/a" product-version="n/a" build-num="n/a">
+    <header>
+      <tool tool-id="MultilingualAppToolkit" tool-name="Multilingual App Toolkit" tool-version="4.0.1605.0" tool-company="Microsoft" />
+    </header>
+    <body>
+      <group id="MICROSOFT.VISUALSTUDIO.THREADING/STRINGS.RESX" datatype="resx">
+        <trans-unit id="AppliedSynchronizationContextNotAllowed" translate="yes" xml:space="preserve">
+          <source>Acquiring locks on threads with a SynchronizationContext applied is not allowed.</source>
+          <target state="translated">적용된 SynchronizationContext로 스레드 잠금을 가져오는 것은 허용되지 않습니다.</target>
+        </trans-unit>
+        <trans-unit id="CannotUpgradeNonUpgradeableLock" translate="yes" xml:space="preserve">
+          <source>A non-upgradeable read lock is held by the caller and cannot be upgraded.</source>
+          <target state="translated">호출자에 업그레이드할 수 없는 읽기 잠금이 있으며 이 잠금을 업그레이드할 수 없습니다.</target>
+        </trans-unit>
+        <trans-unit id="DangerousReadLockRequestFromWriteLockFork" translate="yes" xml:space="preserve">
+          <source>Dangerous request for read lock from fork of write lock.</source>
+          <target state="translated">쓰기 잠금 분기로부터의 읽기 잠금 요청은 위험합니다.</target>
+        </trans-unit>
+        <trans-unit id="InvalidAfterCompleted" translate="yes" xml:space="preserve">
+          <source>Already transitioned to the Completed state.</source>
+          <target state="translated">완료 상태로 이미 전환되었습니다.</target>
+        </trans-unit>
+        <trans-unit id="InvalidLock" translate="yes" xml:space="preserve">
+          <source>This operation can only be executed against a valid lock.</source>
+          <target state="translated">유효한 잠금에 대해서만 이 작업을 실행할 수 있습니다.</target>
+        </trans-unit>
+        <trans-unit id="InvalidWithoutLock" translate="yes" xml:space="preserve">
+          <source>A lock is required.</source>
+          <target state="translated">잠금이 필요합니다.</target>
+        </trans-unit>
+        <trans-unit id="JoinableTaskContextAndCollectionMismatch" translate="yes" xml:space="preserve">
+          <source>JoinableTask does not belong to the context this collection was instantiated with.</source>
+          <target state="translated">JoinableTask는 이 컬렉션이 인스턴스화된 컨텍스트에 속하지 않습니다.</target>
+        </trans-unit>
+        <trans-unit id="JoinableTaskContextNodeAlreadyRegistered" translate="yes" xml:space="preserve">
+          <source>This node already registered.</source>
+          <target state="translated">이 노드는 이미 등록되었습니다.</target>
+        </trans-unit>
+        <trans-unit id="LazyValueFaulted" translate="yes" xml:space="preserve">
+          <source>Lazily created value faulted during construction.</source>
+          <target state="translated">생성하는 동안 값을 만드는 시간이 지연되어 오류가 발생했습니다.</target>
+        </trans-unit>
+        <trans-unit id="LazyValueNotCreated" translate="yes" xml:space="preserve">
+          <source>Lazily created value not yet constructed.</source>
+          <target state="translated">값을 만드는 시간이 지연되어 값이 아직 생성되지 않았습니다.</target>
+        </trans-unit>
+        <trans-unit id="LockCompletionAlreadyRequested" translate="yes" xml:space="preserve">
+          <source>This lock has already been marked for completion.  No new top-level locks can be serviced.</source>
+          <target state="translated">이 잠금은 이미 완료로 표시되었습니다.  이제 새로운 최상위 잠금을 처리할 수 없습니다.</target>
+        </trans-unit>
+        <trans-unit id="NotAllowedUnderURorWLock" translate="yes" xml:space="preserve">
+          <source>This operation is not allowed while holding an active upgradeable read or write lock from an AsyncReaderWriterLock.</source>
+          <target state="translated">AsyncReaderWriterLock으로 인해 업그레이드 가능한 활성 읽기 또는 쓰기 잠금이 있으면 이 작업을 수행할 수 없습니다.</target>
+        </trans-unit>
+        <trans-unit id="QueueEmpty" translate="yes" xml:space="preserve">
+          <source>The queue is empty.</source>
+          <target state="translated">큐가 비어 있습니다.</target>
+        </trans-unit>
+        <trans-unit id="STAThreadCallerNotAllowed" translate="yes" xml:space="preserve">
+          <source>This operation cannot be completed on an STA thread.</source>
+          <target state="translated">이 작업은 STA 스레드에서 완료할 수 없습니다.</target>
+        </trans-unit>
+        <trans-unit id="SwitchToMainThreadFailedToReachExpectedThread" translate="yes" xml:space="preserve">
+          <source>An attempt to switch to the main thread failed to reach the expected thread. Was the JoinableTaskContext initialized on the wrong thread or with a SynchronizationContext whose Post method does not execute its delegate on the main thread?</source>
+          <target state="translated">주 스레드로 전환하려 했지만 필요한 스레드에 도달하지 못했습니다. JoinableTaskContext가 잘못된 스레드에서 초기화되었거나 Post 메서드가 주 스레드에서 해당 대리자를 실행하지 않는 SynchronizationContext를 사용하여 초기화되었나요?</target>
+          <note from="MultilingualBuild" annotates="source" priority="2">An error displayed when there is a serious programming fault with an application. It will usually be thrown early in development in the application and is not expected to be seen by an end user.</note>
+        </trans-unit>
+        <trans-unit id="ValueFactoryReentrancy" translate="yes" xml:space="preserve">
+          <source>The value factory has called for the value on the same instance.</source>
+          <target state="translated">값 팩토리가 같은 인스턴스의 값을 호출했습니다.</target>
+        </trans-unit>
+      </group>
+    </body>
+  </file>
+</xliff>

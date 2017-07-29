@@ -13,91 +13,131 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="AwaitXInstead" xml:space="preserve">
-    <value>而等待 {0}</value>
+    <value>改為 await {0}</value>
     <comment>"await" is a C# keyword and should not be translated.
 {0} is a method name.</comment>
   </data>
   <data name="UseAwaitInstead" xml:space="preserve">
-    <value>使用等待相反</value>
+    <value>改用 await</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
-  <data name="VSSDK001_MessageFormat" xml:space="preserve">
-    <value>在任務或等待程式同步等待是危險的可能會導致鎖死。請考慮以下選項︰ 1) 切換到非同步等待來電者是否已經"async"方法。2） 鏈的調用方，並將"async"方法，然後更改此代碼是非同步等待的變化。3） 使用 JoinableTaskFactory.Run() 來伺候的任務或等待程式。請參閱 HTTP://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx 更多的資訊。</value>
+  <data name="VSTHRD002_MessageFormat" xml:space="preserve">
+    <value>同步等候 task 或 awaiter 可能會造成死結。請改用 await 或 JoinableTaskFactory.Run。</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
-  <data name="VSSDK001_Title" xml:space="preserve">
-    <value>在任務或等待程式同步等待是危險的可能會導致鎖死。</value>
+  <data name="VSTHRD002_Title" xml:space="preserve">
+    <value>避免有問題的同步等候</value>
   </data>
-  <data name="VSSDK002_MessageFormat" xml:space="preserve">
-    <value>視覺工作室服務"{0}"應明確在主執行緒上使用。
-請或者驗證當前執行緒是主執行緒，或者切換到主執行緒以非同步方式。
-1) Api 來驗證當前執行緒是主執行緒︰ ThreadHelper.ThrowIfNotOnUIThread() 或 IThreadHandling.VerifyOnUIThread()。
-2) Api 來切換到主執行緒以非同步方式︰ JoinableTaskFactory.SwitchToMainThreadAsync() 或 IThreadHandling.SwitchToUIThread()。對 HTTP://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx 的更多資訊請參閱
-。</value>
+  <data name="VSTHRD010_MessageFormat" xml:space="preserve">
+    <value>Visual Studio 服務 "{0}" 應該明確用在主執行緒。
+請先呼叫 ThreadHelper.ThrowIfNotOnUIThread() 或 await JoinableTaskFactory.SwitchToMainThreadAsync()。</value>
   </data>
-  <data name="VSSDK002_Title" xml:space="preserve">
-    <value>視覺工作室服務應明確在主執行緒上使用。</value>
+  <data name="VSTHRD010_Title" xml:space="preserve">
+    <value>從 UI 執行緒使用 VS 服務</value>
   </data>
-  <data name="VSSDK003_MessageFormat" xml:space="preserve">
-    <value>避免非同步 Void 方法，因為從非同步 void 方法引發的任何異常將直接在 SynchronizationCoNtext 上提出，將會使進程崩潰。對 HTTPs://msdn.microsoft.com/en-us/magazine/jj991977.aspx 的更多資訊請參閱
-。</value>
+  <data name="VSTHRD100_MessageFormat" xml:space="preserve">
+    <value>因為任何不是由 "async void" 方法處理的例外狀況都會使處理序損毀，所以請避免該方法。</value>
     <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
   </data>
-  <data name="VSSDK003_Title" xml:space="preserve">
-    <value>避免非同步 Void 方法。</value>
+  <data name="VSTHRD100_Title" xml:space="preserve">
+    <value>避免 async void 方法</value>
     <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
   </data>
-  <data name="VSSDK004_MessageFormat" xml:space="preserve">
-    <value>避免使用非同步 lambda 作為 void 返回委託類型，因為從返回 void 非同步 lambda 引發的任何異常將直接在 SynchronizationCoNtext 上提出，將會使進程崩潰。對 HTTPs://msdn.microsoft.com/en-us/magazine/jj991977.aspx 的更多資訊請參閱
-。</value>
+  <data name="VSTHRD101_MessageFormat" xml:space="preserve">
+    <value>因為任何不是由 void 傳回委派類型處理的例外狀況都會使處理序損毀，所以請避免對該類型使用非同步 lambda。</value>
     <comment>"void" is a C# keyword and should not be translated.</comment>
   </data>
-  <data name="VSSDK004_Title" xml:space="preserve">
-    <value>非同步 lambda 是被用作 void 返回委託類型。</value>
+  <data name="VSTHRD101_Title" xml:space="preserve">
+    <value>避免不支援的非同步委派</value>
   </data>
-  <data name="VSSDK005_MessageFormat" xml:space="preserve">
-    <value>AsyncEventHandler 代表應該通過"TplExtensions.InvokeAsync()"Microsoft.VisualStudio.Threading 程式集中定義的擴充方法調用。</value>
+  <data name="VSTHRD106_MessageFormat" xml:space="preserve">
+    <value>AsyncEventHandler 委派應透過在 Microsoft.VisualStudio.Threading 組件中定義的延伸模組方法 "TplExtensions.InvokeAsync()" 叫用。</value>
   </data>
-  <data name="VSSDK005_Title" xml:space="preserve">
-    <value>AsyncEventHandler 代表應該通過"TplExtensions.InvokeAsync()"Microsoft.VisualStudio.Threading 程式集中定義的擴充方法調用。</value>
+  <data name="VSTHRD106_Title" xml:space="preserve">
+    <value>使用 InvokeAsync 引發非同步事件</value>
   </data>
-  <data name="VSSDK006_MessageFormat" xml:space="preserve">
-    <value>呼叫等待任務裡面的 JoinableTaskFactory.Run，這項任務委託外面的初始化時可能導致潛在的鎖死。
-通過確保任務初始化委託內或通過使用 JoinableTask 而不任務，你可以避免此問題。</value>
+  <data name="VSTHRD003_MessageFormat" xml:space="preserve">
+    <value>當工作在委派的外部初始化時，對 JoinableTaskFactory.Run 內的 Task 上呼叫 await 可能會造成潛在的死結。
+您可以讓工作在委派內初始化，或不使用 Task 而改用 JoinableTask 來避免此問題。</value>
   </data>
-  <data name="VSSDK006_Title" xml:space="preserve">
-    <value>避免調用內"JoinableTaskFactory.Run"委託等待任務，當任務定義之外的委託，以避免潛在的鎖死。</value>
+  <data name="VSTHRD003_Title" xml:space="preserve">
+    <value>避免在加入內容中等候不可加入的工作</value>
   </data>
-  <data name="VSSDK007_MessageFormat" xml:space="preserve">
-    <value>調用懶&lt;Task&lt;T&gt;&gt;。值工廠以前啟動時，值會出現鎖死。您應改用 AsyncLazy&lt;T&gt; 
-。</value>
+  <data name="VSTHRD011_MessageFormat" xml:space="preserve">
+    <value>Lazy&lt;Task&lt;T&gt;&gt;.Value 可能會造成死結。
+請改用 AsyncLazy&lt;T&gt;。</value>
   </data>
-  <data name="VSSDK007_Title" xml:space="preserve">
-    <value>避免使用懶&lt;T&gt;其中 T 一項任務。</value>
+  <data name="VSTHRD011_Title" xml:space="preserve">
+    <value>避免在 T 為 Task&lt;T2&gt; 時使用 Lazy&lt;T&gt;</value>
   </data>
-  <data name="VSSDK008_MessageFormat" xml:space="preserve">
-    <value>{0} 成員同步塊。改用 {1} 並等待其結果。</value>
+  <data name="VSTHRD103_MessageFormat" xml:space="preserve">
+    <value>{0} 會同步封鎖。請改用 await {1}。</value>
   </data>
-  <data name="VSSDK008_MessageFormat_UseAwaitInstead" xml:space="preserve">
-    <value>{0} 成員同步塊。使用等待相反。</value>
+  <data name="VSTHRD103_MessageFormat_UseAwaitInstead" xml:space="preserve">
+    <value>{0} 會同步封鎖。請改用 await。</value>
   </data>
-  <data name="VSSDK008_Title" xml:space="preserve">
-    <value>可等待的替代品時非同步方法調用</value>
+  <data name="VSTHRD103_Title" xml:space="preserve">
+    <value>在使用非同步方法時呼叫非同步方法</value>
   </data>
-  <data name="VSSDK009_MessageFormat" xml:space="preserve">
-    <value>限制使用的同步阻塞如 JoinableTaskFactory.Run 或 Task.Result 各位公共進入點，在那裡你必須同步的方法調用。它為內部成員可以使用不必要添加同步幀之間非同步幀，導致執行緒池用盡。</value>
+  <data name="VSTHRD102_MessageFormat" xml:space="preserve">
+    <value>在必須同步時，請限制對公開輸入點成員使用 JoinableTaskFactory.Run 或 Task.Result 這類同步封鎖方法呼叫。對內部成員使用這種方法，可能會在非同步框架之間新增不必要的同步框架，而消耗執行緒集區。</value>
   </data>
-  <data name="VSSDK009_Title" xml:space="preserve">
-    <value>避免使用同步塊中的非公共方法。</value>
+  <data name="VSTHRD102_Title" xml:space="preserve">
+    <value>以非同步方式實作內部邏輯</value>
   </data>
-  <data name="VSSDK010_CodeFix_Title" xml:space="preserve">
-    <value>重命名為 {0}。</value>
+  <data name="VSTHRD200_CodeFix_Title" xml:space="preserve">
+    <value>重新命名為 {0}</value>
     <comment>{0} is a method name.</comment>
   </data>
-  <data name="VSSDK010_MessageFormat" xml:space="preserve">
-    <value>在任務返回方法名稱中使用"Async"尾碼。</value>
+  <data name="VSTHRD200_MessageFormat" xml:space="preserve">
+    <value>請在 Task 傳回方法的名稱中使用 "Async" 尾碼。</value>
   </data>
-  <data name="VSSDK010_Title" xml:space="preserve">
-    <value>在任務返回方法名稱中使用"Async"尾碼。</value>
+  <data name="VSTHRD200_Title" xml:space="preserve">
+    <value>對非同步方法使用 "Async" 尾碼</value>
+  </data>
+  <data name="VSTHRD105_MessageFormat" xml:space="preserve">
+    <value>請避免會假設 TaskScheduler.Current 的方法多載。請使用接受 TaskScheduler 的多載，並明確指定 TaskScheduler.Default (或其他任一項)。</value>
+  </data>
+  <data name="VSTHRD105_Title" xml:space="preserve">
+    <value>避免假設 TaskScheduler.Current 的方法多載</value>
+  </data>
+  <data name="VSTHRD100_CodeFix_Title" xml:space="preserve">
+    <value>將傳回類型變更為 Task</value>
+    <comment>Task is a type name and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD012_MessageFormat" xml:space="preserve">
+    <value>在此呼叫 (或其他多載) 中提供 JoinableTaskFactory 執行個體，以避免主執行緒發生死結。</value>
+  </data>
+  <data name="VSTHRD012_Title" xml:space="preserve">
+    <value>在允許的情況下提供 JoinableTaskFactory</value>
+  </data>
+  <data name="VSTHRD104_MessageFormat" xml:space="preserve">
+    <value>提供此方法不會同步封鎖的非同步版本，讓此方法在 JoinableTaskFactory.Run 委派中只呼叫該非同步方法。</value>
+  </data>
+  <data name="VSTHRD104_Title" xml:space="preserve">
+    <value>提供非同步方法</value>
+  </data>
+  <data name="VSTHRD001_MessageFormat" xml:space="preserve">
+    <value>Await JoinableTaskFactory.SwitchToMainThreadAsync() 可切換至 UI 執行緒，而不會切換至可能會造成死結，或必須指定優先順序的 API。</value>
+  </data>
+  <data name="VSTHRD001_Title" xml:space="preserve">
+    <value>避免傳統執行緒切換 API</value>
+    <comment>thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.</comment>
+  </data>
+  <data name="VSTHRD107_MessageFormat" xml:space="preserve">
+    <value>"using" 運算式缺少 await 運算子。</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_Title" xml:space="preserve">
+    <value>using 運算式中的 Await Task</value>
+    <comment>"await Task" is a C# compound term, and "using" is a C# keyword. These should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_CodeFix_Title" xml:space="preserve">
+    <value>Await using 運算式</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD002_CodeFix_Await_Title" xml:space="preserve">
+    <value>改用 await</value>
+    <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
 </root>

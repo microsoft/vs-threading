@@ -1,0 +1,67 @@
+version: '{build}'
+branches:
+  only:
+  - master
+  - /^v\d+(?:\.\d+)?$/
+  - /[\b_]validate\b/
+skip_tags: true
+skip_commits:
+  files:
+    - doc/*
+    - '**/*.md'
+nuget:
+  disable_publish_on_pr: true
+image: Visual Studio 2017
+configuration: Release
+environment:
+  VisualStudioVersion: 15.0
+  TreatWarningsAsErrors: true
+  CodeAnalysisTreatWarningsAsErrors: true
+before_build:
+- |- # Restore TWICE. See https://github.com/AArnott/Nerdbank.GitVersioning/issues/113#issuecomment-285903085
+  msbuild src\Microsoft.VisualStudio.Threading.sln /nologo /m /v:quiet /t:restore
+  msbuild src\Microsoft.VisualStudio.Threading.sln /nologo /m /v:quiet /t:restore > nul
+build_script:
+- msbuild src\Microsoft.VisualStudio.Threading.sln /nologo /m /fl /v:minimal /t:build,pack
+test_script:
+- >-
+    md "bin\%configuration%"
+
+    SET testdir=bin\Microsoft.VisualStudio.Threading.Tests\%configuration%\
+
+    "%xunit20%\xunit.console.x86.exe"
+    "bin\Microsoft.VisualStudio.Threading.Tests\%configuration%\net451\Microsoft.VisualStudio.Threading.Tests.dll"
+    -noshadow
+    -html "bin\%configuration%\testresults_net451.html" -xml "bin\%configuration%\testresults_net451.xml"
+    -appveyor
+    -notrait "TestCategory=FailsInCloudTest"
+    -nologo
+
+    "%xunit20%\xunit.console.x86.exe"
+    "bin\Microsoft.VisualStudio.Threading.Tests\%configuration%\net452\Microsoft.VisualStudio.Threading.Tests.dll"
+    "bin\Microsoft.VisualStudio.Threading.Analyzers.Tests\%configuration%\net452\Microsoft.VisualStudio.Threading.Analyzers.Tests.dll"
+    -noshadow
+    -html "bin\%configuration%\testresults_net452.html" -xml "bin\%configuration%\testresults_net452.xml"
+    -appveyor
+    -notrait "TestCategory=FailsInCloudTest"
+    -nologo
+
+    "%xunit20%\xunit.console.x86.exe"
+    "bin\Microsoft.VisualStudio.Threading.Tests\%configuration%\net46\Microsoft.VisualStudio.Threading.Tests.dll"
+    -noshadow
+    -html "bin\%configuration%\testresults_net46.html" -xml "bin\%configuration%\testresults_net46.xml"
+    -appveyor
+    -notrait "TestCategory=FailsInCloudTest"
+    -nologo
+
+    dotnet test src\Microsoft.VisualStudio.Threading.Tests\Microsoft.VisualStudio.Threading.Tests.csproj
+    --no-build
+    -f netcoreapp1.0
+    --filter "TestCategory!=FailsInCloudTest"
+artifacts:
+- path: bin\**\*.nupkg
+  name: NuGet Package
+- path: msbuild.log
+  name: Build log
+- path: bin\**\testresults*
+  name: Test results

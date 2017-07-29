@@ -13,91 +13,131 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="AwaitXInstead" xml:space="preserve">
-    <value>Вместо этого ждать {0}</value>
+    <value>Вместо этого используйте Await {0}.</value>
     <comment>"await" is a C# keyword and should not be translated.
 {0} is a method name.</comment>
   </data>
   <data name="UseAwaitInstead" xml:space="preserve">
-    <value>Используйте вместо этого ждут</value>
+    <value>Вместо этого используйте await.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
-  <data name="VSSDK001_MessageFormat" xml:space="preserve">
-    <value>Синхронное ожидание задач или ждущие является опасным и может привести к врезные замки. Пожалуйста, рассмотрите следующие варианты: 1) переключиться на асинхронное ожидание, если вызывающий метод «async». 2) изменить цепочку вызывающих объектов, чтобы быть «async» методы, а затем измените этот код для асинхронной ждать. 3) использование JoinableTaskFactory.Run() для ожидания задач или ждущие. Обратитесь к http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx для получения дополнительной информации.</value>
+  <data name="VSTHRD002_MessageFormat" xml:space="preserve">
+    <value>Синхронное ожидание задач или объектов awaiter может приводить к взаимоблокировкам. Используйте вместо этого await или JoinableTaskFactory.Run.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
-  <data name="VSSDK001_Title" xml:space="preserve">
-    <value>Синхронное ожидание задач или ждущие является опасным и может привести к врезные замки.</value>
+  <data name="VSTHRD002_Title" xml:space="preserve">
+    <value>Избегание проблемных синхронных ожиданий</value>
   </data>
-  <data name="VSSDK002_MessageFormat" xml:space="preserve">
-    <value>Visual Studio Служба «{0}» должен использоваться на основном потоке явным образом. 
-Пожалуйста, либо Проверьте текущий поток является основной поток или переключиться на основной поток асинхронно. 
-1) API для проверки текущего потока является основной поток: ThreadHelper.ThrowIfNotOnUIThread() или IThreadHandling.VerifyOnUIThread(). 
-2) API, чтобы переключиться на основной поток асинхронно: JoinableTaskFactory.SwitchToMainThreadAsync() или IThreadHandling.SwitchToUIThread(). 
-Обратитесь к http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx для получения дополнительной информации.</value>
+  <data name="VSTHRD010_MessageFormat" xml:space="preserve">
+    <value>Службу Visual Studio "{0}" следует явно использовать в основном потоке.
+Сначала вызовите ThreadHelper.ThrowIfNotOnUIThread() или используйте await в JoinableTaskFactory.SwitchToMainThreadAsync().</value>
   </data>
-  <data name="VSSDK002_Title" xml:space="preserve">
-    <value>Visual Studio Служба должна использоваться на основном потоке явным образом.</value>
+  <data name="VSTHRD010_Title" xml:space="preserve">
+    <value>Использование служб VS в потоке пользовательского интерфейса</value>
   </data>
-  <data name="VSSDK003_MessageFormat" xml:space="preserve">
-    <value>Избегайте метода Async Void, потому что любые исключения из асинхронного метода void будет поднят на SynchronizationContext и приведет к краху процесса. 
-Обратитесь к https://msdn.microsoft.com/en-us/magazine/jj991977.aspx для получения дополнительной информации.</value>
+  <data name="VSTHRD100_MessageFormat" xml:space="preserve">
+    <value>Избегайте методов "async void", так как любые исключения, не обработанные этим методом, вызовут сбой процесса.</value>
     <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
   </data>
-  <data name="VSSDK003_Title" xml:space="preserve">
-    <value>Избегайте метод Async Void.</value>
+  <data name="VSTHRD100_Title" xml:space="preserve">
+    <value>Избегание методов async void</value>
     <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
   </data>
-  <data name="VSSDK004_MessageFormat" xml:space="preserve">
-    <value>Избегайте использования async лямбда как void возвращаемый тип делегата, поскольку любые исключения из async лямбда, возвращая значение void, будет непосредственно на SynchronizationContext и приведет к краху процесса. 
-Обратитесь к https://msdn.microsoft.com/en-us/magazine/jj991977.aspx для получения дополнительной информации.</value>
+  <data name="VSTHRD101_MessageFormat" xml:space="preserve">
+    <value>Не используйте лямбда-выражения async в типах делегатов, которые возвращают void, так как исключения, не обработанные делегатом, вызовут сбой процесса.</value>
     <comment>"void" is a C# keyword and should not be translated.</comment>
   </data>
-  <data name="VSSDK004_Title" xml:space="preserve">
-    <value>Async лямбда используется как void возвращаемый тип делегата.</value>
+  <data name="VSTHRD101_Title" xml:space="preserve">
+    <value>Избегание неподдерживаемых делегатов async</value>
   </data>
-  <data name="VSSDK005_MessageFormat" xml:space="preserve">
-    <value>AsyncEventHandler делегатов следует ссылаться через метод расширения, который «TplExtensions.InvokeAsync()» определен в сборке Microsoft.VisualStudio.Threading.</value>
+  <data name="VSTHRD106_MessageFormat" xml:space="preserve">
+    <value>Делегаты AsyncEventHandler следует вызывать при помощи метода расширения "TplExtensions.InvokeAsync()", определенного в сборке Microsoft.VisualStudio.Threading.</value>
   </data>
-  <data name="VSSDK005_Title" xml:space="preserve">
-    <value>AsyncEventHandler делегатов следует ссылаться через метод расширения, который «TplExtensions.InvokeAsync()» определен в сборке Microsoft.VisualStudio.Threading.</value>
+  <data name="VSTHRD106_Title" xml:space="preserve">
+    <value>Использование InvokeAsync для вызова асинхронных событий</value>
   </data>
-  <data name="VSSDK006_MessageFormat" xml:space="preserve">
-    <value>Вызов ожидают задачи внутри JoinableTaskFactory.Run при инициализации задачи за пределами делегата может привести к потенциальной взаимоблокировки. 
-, Вы можете избежать этой проблемы путем обеспечения задачи инициализации делегата или с помощью JoinableTask вместо задачи.</value>
+  <data name="VSTHRD003_MessageFormat" xml:space="preserve">
+    <value>При вызове await в объекте Task в JoinableTaskFactory.Run (и при условии, что задача инициализирована за пределами делегата) могут произойти взаимоблокировки.
+Вы можете избежать этой проблемы, инициализировав задачу в делегате или использовав JoinableTask вместо Task.</value>
   </data>
-  <data name="VSSDK006_Title" xml:space="preserve">
-    <value>Избегайте вызова ожидают задачи внутри делегата «JoinableTaskFactory.Run», когда задача определяется за пределами делегата, избежать потенциальных взаимоблокировок.</value>
+  <data name="VSTHRD003_Title" xml:space="preserve">
+    <value>Избегание await в неприсоединяемых задачах в контекстах соединения</value>
   </data>
-  <data name="VSSDK007_MessageFormat" xml:space="preserve">
-    <value>Вызов Lazy&lt;Task&lt;T&gt;&gt;. Значение может взаимоблокироваться при значение фабрики ранее было начато. 
-, Вместо этого следует использовать AsyncLazy&lt;T&gt; .</value>
+  <data name="VSTHRD011_MessageFormat" xml:space="preserve">
+    <value>Lazy&lt;Task&lt;T&gt;&gt;.Value может вызвать взаимоблокировку.
+Вместо этого используйте AsyncLazy&lt;T&gt;.</value>
   </data>
-  <data name="VSSDK007_Title" xml:space="preserve">
-    <value>Избегайте использования Lazy &lt;T&gt;  , где T является задачей.</value>
+  <data name="VSTHRD011_Title" xml:space="preserve">
+    <value>Не используйте Lazy&lt;T&gt;, где T — объект Task&lt;T2&gt;</value>
   </data>
-  <data name="VSSDK008_MessageFormat" xml:space="preserve">
-    <value>Член {0} синхронно блоков. Вместо этого вызовите {1} и дождаться его результатов.</value>
+  <data name="VSTHRD103_MessageFormat" xml:space="preserve">
+    <value>{0} синхронно блокирует. Вместо этого используйте Await {1}.</value>
   </data>
-  <data name="VSSDK008_MessageFormat_UseAwaitInstead" xml:space="preserve">
-    <value>Член {0} синхронно блоков. Используйте вместо этого ждут.</value>
+  <data name="VSTHRD103_MessageFormat_UseAwaitInstead" xml:space="preserve">
+    <value>{0} синхронно блокирует. Вместо этого используйте await.</value>
   </data>
-  <data name="VSSDK008_Title" xml:space="preserve">
-    <value>Вызовите awaitable альтернативы, когда в методе async.</value>
+  <data name="VSTHRD103_Title" xml:space="preserve">
+    <value>Вызов асинхронных методов в методе async</value>
   </data>
-  <data name="VSSDK009_MessageFormat" xml:space="preserve">
-    <value>Ограничение использования синхронно блокировки вызовов метода например JoinableTaskFactory.Run или Task.Result общественного entrypoint членов, где вы должны быть синхронным. Используя для внутренних членов needlessly можно добавить синхронные кадры между асинхронным кадрами, приводит к истощению threadpool.</value>
+  <data name="VSTHRD102_MessageFormat" xml:space="preserve">
+    <value>Разрешите использовать вызовы методов синхронной блокировки, такие как JoinableTaskFactory.Run или Task.Result, только элементам общедоступных точек входа, где требуется синхронизация. Если их будут использовать внутренние элементы, между асинхронными фреймами могут быть добавлены лишние синхронные фреймы, что приведет к нехватке ресурсов в пуле потока.</value>
   </data>
-  <data name="VSSDK009_Title" xml:space="preserve">
-    <value>Избегайте синхронных блоков методов, не являющихся открытыми.</value>
+  <data name="VSTHRD102_Title" xml:space="preserve">
+    <value>Реализация внутренней логики асинхронно</value>
   </data>
-  <data name="VSSDK010_CodeFix_Title" xml:space="preserve">
-    <value>Переименуйте {0}.</value>
+  <data name="VSTHRD200_CodeFix_Title" xml:space="preserve">
+    <value>Переименование в {0}</value>
     <comment>{0} is a method name.</comment>
   </data>
-  <data name="VSSDK010_MessageFormat" xml:space="preserve">
-    <value>Используйте суффикс «Async» в задаче возвращения имен методов.</value>
+  <data name="VSTHRD200_MessageFormat" xml:space="preserve">
+    <value>Используйте суффикс "Async" в названиях методов, возвращающих Task.</value>
   </data>
-  <data name="VSSDK010_Title" xml:space="preserve">
-    <value>Используйте суффикс «Async» в задаче возвращения имен методов.</value>
+  <data name="VSTHRD200_Title" xml:space="preserve">
+    <value>Использование суффикса "Async" в асинхронных методах</value>
+  </data>
+  <data name="VSTHRD100_CodeFix_Title" xml:space="preserve">
+    <value>Изменение типа возвращаемого значения на Task</value>
+    <comment>Task is a type name and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD105_MessageFormat" xml:space="preserve">
+    <value>Избегайте перегрузок методов, предполагающих TaskScheduler.Current. Используйте перегрузку, которая допускает TaskScheduler, и явно укажите свойство TaskScheduler.Default (или любое другое).</value>
+  </data>
+  <data name="VSTHRD105_Title" xml:space="preserve">
+    <value>Избегание перегрузок методов, предполагающих TaskScheduler.Current</value>
+  </data>
+  <data name="VSTHRD012_MessageFormat" xml:space="preserve">
+    <value>Укажите экземпляр JoinableTaskFactory в этом вызове (или другой перегрузке), чтобы избежать взаимоблокировки с основным потоком.</value>
+  </data>
+  <data name="VSTHRD012_Title" xml:space="preserve">
+    <value>Указывайте JoinableTaskFactory, где это возможно</value>
+  </data>
+  <data name="VSTHRD104_MessageFormat" xml:space="preserve">
+    <value>Предоставьте асинхронную версию этого метода, которая не использует синхронную блокировку. Затем упростите этот метод, вызывая асинхронную версию внутри делегата JoinableTaskFactory.Run.</value>
+  </data>
+  <data name="VSTHRD104_Title" xml:space="preserve">
+    <value>Предоставляйте асинхронные методы</value>
+  </data>
+  <data name="VSTHRD001_MessageFormat" xml:space="preserve">
+    <value>Дождитесь, когда JoinableTaskFactory.SwitchToMainThreadAsync() переключится на поток пользовательского интерфейса, и не используйте API, которые могут вызывать взаимоблокировки или требуют указания приоритета.</value>
+  </data>
+  <data name="VSTHRD001_Title" xml:space="preserve">
+    <value>Избегайте использования устаревших API переключения потоков</value>
+    <comment>thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.</comment>
+  </data>
+  <data name="VSTHRD107_MessageFormat" xml:space="preserve">
+    <value>Отсутствует оператор await для выражения "using".</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_Title" xml:space="preserve">
+    <value>Задача await в выражении "using"</value>
+    <comment>"await Task" is a C# compound term, and "using" is a C# keyword. These should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_CodeFix_Title" xml:space="preserve">
+    <value>Выражение "using" в await</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD002_CodeFix_Await_Title" xml:space="preserve">
+    <value>Вместо этого используйте await.</value>
+    <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
 </root>

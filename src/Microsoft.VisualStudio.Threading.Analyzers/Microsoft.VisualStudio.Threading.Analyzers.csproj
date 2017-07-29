@@ -1,33 +1,24 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{536F3F9A-B457-43B8-BC93-CE1C16959037}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Microsoft.VisualStudio.Threading.Analyzers</RootNamespace>
-    <AssemblyName>Microsoft.VisualStudio.Threading.Analyzers</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <MicroBuild_GenerateDocumentationFile>false</MicroBuild_GenerateDocumentationFile>
-    <DocumentationFile />
-    <TargetFrameworkProfile />
-    <PrereleaseVersion>-pre</PrereleaseVersion>
-    <OutputPath Condition=" '$(OutputPath)' == '' ">bin\</OutputPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DebugSymbols>true</DebugSymbols>
+    <TargetFramework>netstandard1.1</TargetFramework>
+    <PackageTargetFallback>$(PackageTargetFallback);portable-net45+win8</PackageTargetFallback>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Analyzers.ruleset</CodeAnalysisRuleSet>
+
+    <Description>Static code analyzer to detect common mistakes or potential issues on the C# code that uses Visual Studio SDK APIs.</Description>
+    <PackageTags>analyzers visualstudio vssdk sdk threading</PackageTags>
+    <Authors>Microsoft</Authors>
+    <Owners>Microsoft, VisualStudioExtensibility</Owners>
+    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+    <PackageProjectUrl>https://github.com/Microsoft/vs-threading</PackageProjectUrl>
+    <PackageIconUrl>https://aka.ms/VsExtensibilityIcon</PackageIconUrl>
+    <PackageReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=746387</PackageReleaseNotes>
+
     <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Analyzers.ruleset</CodeAnalysisRuleSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Analyzers.ruleset</CodeAnalysisRuleSet>
+
+    <!-- Analyzers should not be added to the lib folder. -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
   </PropertyGroup>
   <PropertyGroup Label="MultilingualAppToolkit">
     <MultilingualAppToolkitVersion>4.0</MultilingualAppToolkitVersion>
@@ -36,102 +27,50 @@
     <SuppressPseudoWarning Condition="'$(Configuration)' == 'Debug'">true</SuppressPseudoWarning>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="Microsoft.CSharp" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="VSSDK005AsyncEventHandlerAnalyzer.cs" />
-    <Compile Include="VSSDK010AsyncSuffixAnalyzer.cs" />
-    <Compile Include="VSSDK010AsyncSuffixCodeFix.cs" />
-    <Compile Include="CommonInterest.cs" />
-    <Compile Include="VSSDK006JtfRunAwaitTaskAnalyzer.cs" />
-    <Compile Include="VSSDK009AvoidJtfRunInNonPublicMembersAnalyzer.cs" />
-    <Compile Include="Namespaces.cs" />
-    <Compile Include="VSSDK011AvoidImpliedTaskSchedulerCurrentAnalyzer.cs" />
-    <Compile Include="Strings.Designer.cs">
+    <Compile Update="Strings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
-    <Compile Include="VSSDK008UseAwaitInAsyncMethodsAnalyzer.cs" />
-    <Compile Include="VSSDK007LazyOfTaskAnalyzer.cs" />
-    <Compile Include="Types.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="VSSDK004AsyncVoidLambdaAnalyzer.cs" />
-    <Compile Include="VSSDK003AsyncVoidMethodAnalyzer.cs" />
-    <Compile Include="VSSDK003AsyncVoidMethodCodeFix.cs" />
-    <Compile Include="VSSDK001SynchronousWaitAnalyzer.cs" />
-    <Compile Include="VSSDK008UseAwaitInAsyncMethodsCodeFix.cs" />
-    <Compile Include="Utils.cs" />
-    <Compile Include="VSSDK002VsServiceUsageAnalyzer.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="Microsoft.VisualStudio.Threading.Analyzers.ruleset" />
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Strings.cs.resx" />
-    <EmbeddedResource Include="Strings.de.resx" />
-    <EmbeddedResource Include="Strings.es.resx" />
-    <EmbeddedResource Include="Strings.fr.resx" />
-    <EmbeddedResource Include="Strings.it.resx" />
-    <EmbeddedResource Include="Strings.ja.resx" />
-    <EmbeddedResource Include="Strings.kok.resx" />
-    <EmbeddedResource Include="Strings.pl.resx" />
-    <EmbeddedResource Include="Strings.pt-BR.resx" />
-    <EmbeddedResource Include="Strings.resx">
+    <EmbeddedResource Update="Strings.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Strings.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <EmbeddedResource Include="Strings.ru.resx" />
-    <EmbeddedResource Include="Strings.tr.resx" />
-    <EmbeddedResource Include="Strings.zh-Hans.resx" />
-    <EmbeddedResource Include="Strings.zh-Hant.resx" />
   </ItemGroup>
   <ItemGroup>
-    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Analyzers.cs.xlf" />
-    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Analyzers.de.xlf" />
-    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Analyzers.es.xlf" />
-    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Analyzers.fr.xlf" />
-    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Analyzers.it.xlf" />
-    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Analyzers.ja.xlf" />
-    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Analyzers.kok.xlf" />
-    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Analyzers.pl.xlf" />
-    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Analyzers.pt-BR.xlf" />
-    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Analyzers.ru.xlf" />
-    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Analyzers.tr.xlf" />
-    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Analyzers.zh-Hans.xlf" />
-    <XliffResource Include="MultilingualResources\Microsoft.VisualStudio.Threading.Analyzers.zh-Hant.xlf" />
+    <Content Include="tools\*.ps1" Pack="true" PackagePath="tools\" />
+  </ItemGroup>
+  <ItemGroup>
+     <XliffResource Include="MultilingualResources\*.xlf" />
   </ItemGroup>
   <ItemDefinitionGroup>
-    <Reference>
-      <!-- Prevent all references from being packaged since VS supplies them. -->
-      <ExcludeFromNuPkg>true</ExcludeFromNuPkg>
-    </Reference>
+    <PackageReference>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
   </ItemDefinitionGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="1.2.0" />
+    <PackageReference Include="MicroBuild.VisualStudio" Version="2.0.40" />
+    <PackageReference Include="PdbGit" Version="3.0.41" />
+    <PackageReference Include="System.ValueTuple" Version="4.3.0" />
+    <PackageReference Include="AsyncUsageAnalyzers" Version="1.0.0-alpha003" />
+  </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Microsoft\Multilingual App Toolkit\Microsoft.Multilingual.ResxResources.targets" Label="MultilingualAppToolkit" Condition="Exists('$(MSBuildExtensionsPath)\Microsoft\Multilingual App Toolkit\v$(MultilingualAppToolkitVersion)\Microsoft.Multilingual.ResxResources.targets')" />
   <Target Name="MATPrerequisite" BeforeTargets="PrepareForBuild" Condition="!Exists('$(MSBuildExtensionsPath)\Microsoft\Multilingual App Toolkit\Microsoft.Multilingual.ResxResources.targets')" Label="MultilingualAppToolkit">
     <Warning Text="$(MSBuildProjectFile) is Multilingual build enabled, but the Multilingual App Toolkit is unavailable during the build. If building with Visual Studio, please check to ensure that toolkit is properly installed." />
   </Target>
-  <!-- Redefine this output group so we can preserve the Culture metadata on the returned items, so that NuProj can package it up properly later. -->
-  <Target Name="SatelliteDllsProjectOutputGroup" Returns="@(SatelliteDllsProjectOutputGroupOutput)" DependsOnTargets="$(SatelliteDllsProjectOutputGroupDependsOn)">
+  <Target Name="PackBuildOutputs" BeforeTargets="_GetPackageFiles" DependsOnTargets="SatelliteDllsProjectOutputGroup;DebugSymbolsProjectOutputGroup">
     <ItemGroup>
-      <SatelliteDllsProjectOutputGroupOutputIntermediate Include="$(IntermediateOutputPath)%(EmbeddedResource.Culture)\$(TargetName).resources.dll" Condition="'%(WithCulture)' == 'true'">
-        <TargetPath>%(EmbeddedResource.Culture)\$(TargetName).resources.dll</TargetPath>
-        <Culture>%(EmbeddedResource.Culture)</Culture>
-      </SatelliteDllsProjectOutputGroupOutputIntermediate>
+      <Content Include="$(TargetPath)" Pack="true" PackagePath="analyzers\cs\" />
+      <!--<Content Include="@(DebugSymbolsProjectOutputGroupOutput)" Pack="true" PackagePath="analyzers\cs\" />-->
+      <Content Include="@(SatelliteDllsProjectOutputGroupOutput)" Pack="true" PackagePath="analyzers\cs\%(SatelliteDllsProjectOutputGroupOutput.Culture)\" />
     </ItemGroup>
-    <!-- Convert intermediate items into final items; this way we can get the full path for each item. -->
-    <ItemGroup>
-      <SatelliteDllsProjectOutputGroupOutput Include="@(SatelliteDllsProjectOutputGroupOutputIntermediate->'%(FullPath)')">
-        <!-- For compatibility with 2.0 -->
-        <OriginalItemSpec>%(SatelliteDllsProjectOutputGroupOutputIntermediate.Identity)</OriginalItemSpec>
-      </SatelliteDllsProjectOutputGroupOutput>
-    </ItemGroup>
+  </Target>
+  <Target Name="SetNuSpecProperties" BeforeTargets="GenerateNuspec" DependsOnTargets="GetBuildVersion">
+    <PropertyGroup>
+      <PackageLicenseUrl>https://raw.githubusercontent.com/Microsoft/vs-threading/$(GitCommitIdShort)/LICENSE</PackageLicenseUrl>
+    </PropertyGroup>
   </Target>
 </Project>
