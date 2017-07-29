@@ -219,8 +219,10 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             // For a new synchronous task, we need apply it to our child tasks.
-            DependentSynchronousTask newTaskTracking = new DependentSynchronousTask(task);
-            newTaskTracking.Next = this.dependingSynchronousTaskTracking;
+            DependentSynchronousTask newTaskTracking = new DependentSynchronousTask(task)
+            {
+                Next = this.dependingSynchronousTaskTracking
+            };
             this.dependingSynchronousTaskTracking = newTaskTracking;
 
             if (this.childOrJoinedJobs != null)

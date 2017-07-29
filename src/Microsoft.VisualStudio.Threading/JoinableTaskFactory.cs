@@ -1128,8 +1128,7 @@ namespace Microsoft.VisualStudio.Threading
                     var syncContext = this.job != null ? this.job.ApplicableJobSyncContext : this.job.Factory.ApplicableJobSyncContext;
                     using (syncContext.Apply(checkForChangesOnRevert: false))
                     {
-                        var action = invokeDelegate as Action;
-                        if (action != null)
+                        if (invokeDelegate is Action action)
                         {
                             action();
                         }

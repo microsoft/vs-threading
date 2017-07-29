@@ -104,8 +104,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     lock (this.Context.SyncContextLock)
                     {
-                        int refCount;
-                        if (!this.joinables.TryGetValue(joinableTask, out refCount) || this.refCountAddedJobs)
+                        if (!this.joinables.TryGetValue(joinableTask, out int refCount) || this.refCountAddedJobs)
                         {
                             this.joinables[joinableTask] = refCount + 1;
                             if (refCount == 0)
@@ -145,8 +144,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 lock (this.Context.SyncContextLock)
                 {
-                    int refCount;
-                    if (this.joinables.TryGetValue(joinableTask, out refCount))
+                    if (this.joinables.TryGetValue(joinableTask, out int refCount))
                     {
                         if (refCount == 1 || joinableTask.IsCompleted)
                         { // remove regardless of ref count if job is completed
@@ -198,8 +196,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 lock (this.Context.SyncContextLock)
                 {
-                    int count;
-                    this.joiners.TryGetValue(ambientJob, out count);
+                    this.joiners.TryGetValue(ambientJob, out int count);
                     this.joiners[ambientJob] = count + 1;
                     if (count == 0)
                     {
@@ -299,8 +296,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 lock (this.Context.SyncContextLock)
                 {
-                    int count;
-                    this.joiners.TryGetValue(joinableTask, out count);
+                    this.joiners.TryGetValue(joinableTask, out int count);
                     if (count == 1)
                     {
                         this.joiners.Remove(joinableTask);

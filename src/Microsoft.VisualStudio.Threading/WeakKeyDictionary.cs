@@ -113,8 +113,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </remarks>
         public bool ContainsKey(TKey key)
         {
-            TValue value;
-            bool contained = this.TryGetValue(key, out value);
+            bool contained = this.TryGetValue(key, out TValue value);
             return contained;
         }
 
@@ -326,9 +325,8 @@ namespace Microsoft.VisualStudio.Threading
                 // We can't implement equals in the same terms as GetHashCode() because
                 // our target object may have been collected.  Instead just go based on
                 // equality of our weak references.
-                if (obj is WeakReference<T>)
+                if (obj is WeakReference<T> other)
                 {
-                    var other = (WeakReference<T>)obj;
                     return this.weakReference.Equals(other.weakReference);
                 }
 

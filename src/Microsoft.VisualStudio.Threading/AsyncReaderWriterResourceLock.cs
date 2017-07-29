@@ -676,8 +676,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 lock (this.service.SyncObject)
                 {
-                    ResourcePreparationTaskAndValidity previousState;
-                    this.resourcePreparationTasks.TryGetValue(resource, out previousState);
+                    this.resourcePreparationTasks.TryGetValue(resource, out ResourcePreparationTaskAndValidity previousState);
                     this.resourcePreparationTasks[resource] = new ResourcePreparationTaskAndValidity(
                         previousState.PreparationTask ?? TplExtensions.CompletedTask, // preserve the original task if it exists in case it's not finished
                         ResourceState.Unknown);
@@ -707,7 +706,6 @@ namespace Microsoft.VisualStudio.Threading
             {
                 Requires.NotNull(resource, nameof(resource));
                 Assumes.True(Monitor.IsEntered(this.service.SyncObject));
-                ResourcePreparationTaskAndValidity preparationTask;
 
                 // We deliberately ignore the cancellation token in the tasks we create and save because the tasks can be shared
                 // across requests and we can't have task continuation chains where tasks within the chain get canceled
@@ -718,7 +716,7 @@ namespace Microsoft.VisualStudio.Threading
                     ? (object)resource
                     : Tuple.Create(resource, this.service.GetAggregateLockFlags());
 
-                if (!this.resourcePreparationTasks.TryGetValue(resource, out preparationTask))
+                if (!this.resourcePreparationTasks.TryGetValue(resource, out ResourcePreparationTaskAndValidity preparationTask))
                 {
                     var preparationDelegate = forConcurrentUse
                         ? this.prepareResourceConcurrentDelegate

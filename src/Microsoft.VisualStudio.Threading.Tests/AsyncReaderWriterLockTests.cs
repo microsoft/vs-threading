@@ -3063,10 +3063,12 @@
         [StaFact]
         public async Task OnBeforeWriteLockReleasedWithStickyUpgradedWriteWithNestedLocks()
         {
-            var asyncLock = new LockDerived();
-            asyncLock.OnExclusiveLockReleasedAsyncDelegate = async delegate
+            var asyncLock = new LockDerived
             {
-                await Task.Yield();
+                OnExclusiveLockReleasedAsyncDelegate = async delegate
+                {
+                    await Task.Yield();
+                }
             };
             var releaseCallback = new TaskCompletionSource<object>();
             using (await asyncLock.UpgradeableReadLockAsync(AsyncReaderWriterLock.LockFlags.StickyWrite))
@@ -4561,10 +4563,7 @@
             {
                 base.OnUpgradeableReadLockReleased();
 
-                if (this.OnUpgradeableReadLockReleasedDelegate != null)
-                {
-                    this.OnUpgradeableReadLockReleasedDelegate();
-                }
+                this.OnUpgradeableReadLockReleasedDelegate?.Invoke();
             }
 
             protected override async Task OnBeforeExclusiveLockReleasedAsync()

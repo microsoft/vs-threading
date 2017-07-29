@@ -939,8 +939,7 @@ namespace Microsoft.VisualStudio.Threading
                     }
                     else
                     {
-                        bool hasRead, hasUpgradeableRead, hasWrite;
-                        this.AggregateLockStackKinds(awaiter, out hasRead, out hasUpgradeableRead, out hasWrite);
+                        this.AggregateLockStackKinds(awaiter, out bool hasRead, out bool hasUpgradeableRead, out bool hasWrite);
                         switch (awaiter.Kind)
                         {
                             case LockKind.Read:
@@ -1514,8 +1513,7 @@ namespace Microsoft.VisualStudio.Threading
                 // We also avoid executing the synchronous portions all in a row and awaiting them all
                 // because that too would violate an individual callback's sense of isolation in a write lock.
                 List<Exception> exceptions = null;
-                Func<Task> callback;
-                while (this.TryDequeueBeforeWriteReleasedCallback(out callback))
+                while (this.TryDequeueBeforeWriteReleasedCallback(out Func<Task> callback))
                 {
                     try
                     {

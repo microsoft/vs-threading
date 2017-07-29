@@ -77,8 +77,7 @@ namespace Microsoft.VisualStudio.Threading
 
             private void Scavenge()
             {
-                SingleExecuteProtector stale;
-                while (this.TryDequeue(p => p.HasBeenExecuted, out stale))
+                while (this.TryDequeue(p => p.HasBeenExecuted, out SingleExecuteProtector stale))
                 {
                 }
             }

@@ -427,7 +427,7 @@ namespace Microsoft.VisualStudio.Threading
                 hangDuration,
                 notificationCount,
                 hangId,
-                blockingTask != null ? blockingTask.EntryMethodInfo : null);
+                blockingTask?.EntryMethodInfo);
             foreach (var listener in listeners)
             {
                 try
@@ -590,8 +590,7 @@ namespace Microsoft.VisualStudio.Threading
                 this.oldJoinable = pump.AmbientTask;
                 pump.AmbientTask = null;
 
-                var jobSyncContext = SynchronizationContext.Current as JoinableTaskSynchronizationContext;
-                if (jobSyncContext != null)
+                if (SynchronizationContext.Current is JoinableTaskSynchronizationContext jobSyncContext)
                 {
                     SynchronizationContext appliedSyncContext = null;
                     if (jobSyncContext.MainThreadAffinitized)

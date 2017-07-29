@@ -141,12 +141,11 @@ namespace Microsoft.VisualStudio.Threading
                 get
                 {
                     object boxKey = CallContext.LogicalGetData(this.callContextKey);
-                    T value;
                     if (boxKey != null)
                     {
                         lock (this.syncObject)
                         {
-                            if (this.valueTable.TryGetValue(boxKey, out value))
+                            if (this.valueTable.TryGetValue(boxKey, out T value))
                             {
                                 return value;
                             }
@@ -162,8 +161,7 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         lock (this.syncObject)
                         {
-                            object callContextValue;
-                            if (!this.reverseLookupTable.TryGetValue(value, out callContextValue))
+                            if (!this.reverseLookupTable.TryGetValue(value, out object callContextValue))
                             {
                                 // Use a MarshalByRefObject for the value so it doesn't
                                 // lose reference identity across appdomain transitions.

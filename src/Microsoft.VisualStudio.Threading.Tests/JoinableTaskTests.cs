@@ -3162,8 +3162,7 @@
             result = null;
             GC.Collect();
 
-            object target;
-            weakResult.TryGetTarget(out target);
+            weakResult.TryGetTarget(out object target);
             Assert.Null(target); //, "The task's result should be collected unless the JoinableTask is leaked");
         }
 
@@ -3678,10 +3677,7 @@
                     Assert.Equal(this.TransitionedToMainThreadHitCount + 1, this.TransitioningToMainThreadHitCount); //, "Imbalance of transition events.");
                 }
 
-                if (this.TransitioningToMainThreadCallback != null)
-                {
-                    this.TransitioningToMainThreadCallback(joinableTask);
-                }
+                this.TransitioningToMainThreadCallback?.Invoke(joinableTask);
             }
 
             protected override void OnTransitionedToMainThread(JoinableTask joinableTask, bool canceled)
@@ -3717,10 +3713,7 @@
                     Assert.Equal(this.TransitionedToMainThreadHitCount, this.TransitioningToMainThreadHitCount); //, "Imbalance of transition events.");
                 }
 
-                if (this.TransitionedToMainThreadCallback != null)
-                {
-                    this.TransitionedToMainThreadCallback(joinableTask);
-                }
+                this.TransitionedToMainThreadCallback?.Invoke(joinableTask);
             }
 
             protected override void WaitSynchronously(Task task)
@@ -3735,10 +3728,7 @@
                 Assert.NotNull(callback);
                 Assert.True(SingleThreadedSynchronizationContext.IsSingleThreadedSyncContext(this.UnderlyingSynchronizationContext));
                 base.PostToUnderlyingSynchronizationContext(callback, state);
-                if (this.PostToUnderlyingSynchronizationContextCallback != null)
-                {
-                    this.PostToUnderlyingSynchronizationContextCallback();
-                }
+                this.PostToUnderlyingSynchronizationContextCallback?.Invoke();
             }
         }
 
@@ -3773,8 +3763,7 @@
             {
                 do
                 {
-                    Tuple<SendOrPostCallback, object> work;
-                    while (this.queuedMessages.TryDequeue(out work))
+                    while (this.queuedMessages.TryDequeue(out Tuple<SendOrPostCallback, object> work))
                     {
                         work.Item1(work.Item2);
                         cancellationToken.ThrowIfCancellationRequested();

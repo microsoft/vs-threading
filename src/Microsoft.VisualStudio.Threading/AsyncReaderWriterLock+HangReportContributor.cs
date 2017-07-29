@@ -75,8 +75,7 @@ namespace Microsoft.VisualStudio.Threading
                 try
                 {
                     Monitor.TryEnter(this.syncObject, 1000, ref lockAcquired);
-                    XElement nodes, links;
-                    var dgml = CreateDgml(out nodes, out links);
+                    var dgml = CreateDgml(out XElement nodes, out XElement links);
 
                     if (!lockAcquired)
                     {
