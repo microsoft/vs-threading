@@ -106,7 +106,8 @@
                             includeReducedExtensionMethods: true).OfType<IMethodSymbol>()
                             .Where(m => !m.IsObsolete())
                             .Where(m => HasSupersetOfParameterTypes(m, methodSymbol))
-                            .Where(m => m.Name != invocationDeclaringMethod?.Identifier.Text);
+                            .Where(m => m.Name != invocationDeclaringMethod?.Identifier.Text)
+                            .Where(Utils.HasAsyncCompatibleReturnType);
 
                         if (asyncMethodMatches.Any())
                         {

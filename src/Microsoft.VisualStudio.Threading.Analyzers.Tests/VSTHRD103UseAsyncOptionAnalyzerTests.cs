@@ -969,5 +969,27 @@ class Test {
 
             this.VerifyCSharpDiagnostic(test);
         }
+
+        [Fact]
+        public void DoNotSuggestAsyncAlternativeWhenItReturnsVoid()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void LogInformation() { }
+    void LogInformationAsync() { }
+
+    Task MethodAsync()
+    {
+        LogInformation();
+        return Task.CompletedTask;
+    }
+}
+";
+
+            this.VerifyCSharpDiagnostic(test);
+        }
     }
 }
