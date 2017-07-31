@@ -940,7 +940,7 @@ class Test {
         Console.WriteLine(""Foo"");
 
         // Some comment
-        Foo(); // another comment
+        Foo(/*argcomment*/); // another comment
     }
 }
 ";
@@ -958,7 +958,7 @@ class Test {
         Console.WriteLine(""Foo"");
 
         // Some comment
-        await FooAsync(); // another comment
+        await FooAsync(/*argcomment*/); // another comment
     }
 }
 ";
@@ -984,7 +984,7 @@ class Test {
         Console.WriteLine(""Foo"");
 
         // Some comment
-        FooAsync().Wait(); // another comment
+        FooAsync(/*argcomment*/).Wait(); // another comment
     }
 }
 ";
@@ -1002,11 +1002,11 @@ class Test {
         Console.WriteLine(""Foo"");
 
         // Some comment
-        await FooAsync(); // another comment
+        await FooAsync(/*argcomment*/); // another comment
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 15, 20, 15, 24) };
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 15, 34, 15, 38) };
             this.VerifyCSharpDiagnostic(test, this.expect);
             this.VerifyCSharpFix(test, withFix);
         }
