@@ -69,6 +69,27 @@ class Test {
         }
 
         [Fact]
+        public void SiblingMethodOverloadsWithOptionalAttribute_WithoutJTC_GeneratesNoWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using System.Runtime.InteropServices;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    void F() {
+        G();
+    }
+
+    void G() { }
+    void G([Optional] JoinableTaskContext jtc) { }
+}
+";
+
+            this.VerifyCSharpDiagnostic(test);
+        }
+
+        [Fact]
         public void SiblingCtorOverloads_WithoutJTF_GeneratesWarning()
         {
             var test = @"
