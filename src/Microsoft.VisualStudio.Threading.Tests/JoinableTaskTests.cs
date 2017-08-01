@@ -3430,8 +3430,20 @@
         }
 
 #if NET452
+        /// <summary>
+        /// Verifies that <see cref="JoinableTask.CompleteOnCurrentThread"/> does not hang
+        /// when a JoinableTask's <see cref="Func{Task}"/> completes at about the same time as
+        /// someone else Posts a message to its mainThreadQueue.
+        /// </summary>
+        /// <remarks>
+        /// Repro for https://github.com/Microsoft/vs-threading/issues/173
+        /// With the SyncPoints in place (as defined in the commit that introduced this comment)
+        /// set a breakpoint on in SyncPoints.Step line 47 `if (current + 1 == step)` and then
+        /// Debug this unit test. Each time the breakpoint is hit, just F5 again. That reproduces
+        /// the race quite reliably.
+        /// </remarks>
         [Fact]
-        public void Repro173()
+        public void CompleteOnCurrentThread_DoesNotDeadlockWhenThreadPoolWorkPostRacesWithCompletion()
         {
             SynchronizationContext.SetSynchronizationContext(null);
             var ctxt = new JoinableTaskContext();
