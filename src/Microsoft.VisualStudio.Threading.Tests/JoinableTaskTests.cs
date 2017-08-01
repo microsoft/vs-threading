@@ -3441,7 +3441,7 @@
                 await Task.Run(async delegate
                 {
                     await Task.Yield();
-                    // STEPX 2
+                    SyncPoints.Step(2);
                 });
             }
 
@@ -3449,7 +3449,7 @@
             {
                 WorkForAWhileAfterYield().Forget();
                 await Task.Yield();
-                // STEPX 3:
+                SyncPoints.Step(3);
             });
         }
 #endif
