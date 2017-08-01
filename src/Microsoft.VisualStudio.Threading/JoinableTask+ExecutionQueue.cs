@@ -72,7 +72,6 @@ namespace Microsoft.VisualStudio.Threading
 
             internal void OnExecuting(object sender, EventArgs e)
             {
-                SyncPoints.Step(7, 2);
                 this.Scavenge();
             }
 

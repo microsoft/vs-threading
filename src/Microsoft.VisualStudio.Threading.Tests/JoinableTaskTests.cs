@@ -3429,7 +3429,6 @@
             }
         }
 
-#if NET452
         /// <summary>
         /// Verifies that <see cref="JoinableTask.CompleteOnCurrentThread"/> does not hang
         /// when a JoinableTask's <see cref="Func{Task}"/> completes at about the same time as
@@ -3453,7 +3452,6 @@
                 await Task.Run(async delegate
                 {
                     await Task.Yield();
-                    SyncPoints.Step(2);
                 });
             }
 
@@ -3461,10 +3459,8 @@
             {
                 WorkForAWhileAfterYield().Forget();
                 await Task.Yield();
-                SyncPoints.Step(3);
             });
         }
-#endif
 
         protected override JoinableTaskContext CreateJoinableTaskContext()
         {
