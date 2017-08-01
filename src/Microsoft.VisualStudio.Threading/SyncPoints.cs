@@ -2,7 +2,9 @@
 
 namespace Microsoft.VisualStudio.Threading
 {
+    using System;
     using System.Diagnostics;
+    using System.Text;
     using System.Threading;
 
     /// <summary>
@@ -45,7 +47,7 @@ namespace Microsoft.VisualStudio.Threading
                 if (current + 1 == step)
                 {
 #if NET45
-                    Debug.WriteLine($"Allowing step {step} through in sequence.");
+                    Debug.WriteLine($"Allowing step {step} through in sequence." + GetStackTrace());
 #endif
                     current = step;
                     Monitor.PulseAll(SyncObject);
@@ -57,6 +59,50 @@ namespace Microsoft.VisualStudio.Threading
 #endif
                 }
             }
+        }
+
+        private static string GetStackTrace()
+        {
+#if NET45
+            const string indent = "    ";
+            var stackTrace = new StackTrace(2, fNeedFileInfo: true);
+            var sb = new StringBuilder();
+            sb.Append(Environment.NewLine);
+            bool inExternalCode = false;
+            foreach (var frame in stackTrace.GetFrames())
+            {
+                if (frame.GetFileName() != null)
+                {
+                    inExternalCode = false;
+                    sb.Append(indent);
+                    //// at System.Runtime.Remoting.Channels.CrossAppDomainSink.DoDispatch(Byte[] reqStmBuff, SmuggledMethodCallMessage smuggledMcm, SmuggledMethodReturnMessage& smuggledMrm)
+                    sb.Append($"at {frame.GetMethod().DeclaringType.FullName}.{frame.GetMethod().Name}(");
+                    bool firstParameter = true;
+                    foreach (var p in frame.GetMethod().GetParameters())
+                    {
+                        if (!firstParameter)
+                        {
+                            sb.Append(", ");
+                        }
+
+                        sb.Append($"{p.ParameterType.Name} {p.Name}");
+                        firstParameter = false;
+                    }
+
+                    sb.AppendLine($") in {frame.GetFileName()}:{frame.GetFileLineNumber()}");
+                }
+                else if (!inExternalCode)
+                {
+                    inExternalCode = true;
+                    sb.Append(indent);
+                    sb.AppendLine("[External Code]");
+                }
+            }
+
+            return sb.ToString();
+#else
+            return string.Empty;
+#endif
         }
     }
 }
