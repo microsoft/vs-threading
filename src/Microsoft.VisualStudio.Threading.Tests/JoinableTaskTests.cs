@@ -3429,6 +3429,31 @@
             }
         }
 
+#if NET452
+        [Fact]
+        public void Repro173()
+        {
+            SynchronizationContext.SetSynchronizationContext(null);
+            var ctxt = new JoinableTaskContext();
+            async Task WorkForAWhileAfterYield()
+            {
+                // Get onto another thread so that SynchronizationContext.Post is called from that other thread.
+                await Task.Run(async delegate
+                {
+                    await Task.Yield();
+                    // STEPX 2
+                });
+            }
+
+            ctxt.Factory.Run(async delegate
+            {
+                WorkForAWhileAfterYield().Forget();
+                await Task.Yield();
+                // STEPX 3:
+            });
+        }
+#endif
+
         protected override JoinableTaskContext CreateJoinableTaskContext()
         {
             return new DerivedJoinableTaskContext();

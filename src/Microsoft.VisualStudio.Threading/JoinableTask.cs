@@ -709,6 +709,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         internal void Complete()
         {
+            // STEPX 4
             using (this.Factory.Context.NoMessagePumpSynchronizationContext.Apply())
             {
                 AsyncManualResetEvent queueNeedProcessEvent = null;
@@ -743,6 +744,8 @@ namespace Microsoft.VisualStudio.Threading
                     // We explicitly do this outside our lock.
                     queueNeedProcessEvent.PulseAll();
                 }
+
+                // STEPX 5
             }
         }
 
@@ -853,6 +856,7 @@ namespace Microsoft.VisualStudio.Threading
                             else if (tryAgainAfter != null)
                             {
                                 ThreadingEventSource.Instance.WaitSynchronouslyStart();
+                                // STEPX 1
                                 this.owner.WaitSynchronously(tryAgainAfter);
                                 ThreadingEventSource.Instance.WaitSynchronouslyStop();
                                 Assumes.True(tryAgainAfter.IsCompleted);
@@ -966,6 +970,7 @@ namespace Microsoft.VisualStudio.Threading
 
         private bool TryDequeueSelfOrDependencies(bool onMainThread, ref HashSet<JoinableTask> visited, out SingleExecuteProtector work, out Task tryAgainAfter)
         {
+            // STEPX 6 (block only after the first time)
             using (this.Factory.Context.NoMessagePumpSynchronizationContext.Apply())
             {
                 lock (this.owner.Context.SyncContextLock)
@@ -977,6 +982,7 @@ namespace Microsoft.VisualStudio.Threading
                         return false;
                     }
 
+                    // STEPX 8 (block only after the first time)
                     if (this.pendingEventCount > 0)
                     {
                         this.pendingEventCount--;

@@ -72,6 +72,7 @@ namespace Microsoft.VisualStudio.Threading
 
             internal void OnExecuting(object sender, EventArgs e)
             {
+                // STEPX: 7 (block after step 2)
                 this.Scavenge();
             }
 
