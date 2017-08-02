@@ -1021,7 +1021,7 @@ namespace Microsoft.VisualStudio.Threading
                     this.pendingEventCount = 0;
 
                     work = null;
-                    tryAgainAfter = this.QueueNeedProcessEvent;
+                    tryAgainAfter = this.IsCompleteRequested ? null : this.QueueNeedProcessEvent;
                     return false;
                 }
             }
@@ -1032,7 +1032,7 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(visited, nameof(visited));
             Report.IfNot(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
-            // We only need find the first work item.
+            // We only need to find the first work item.
             work = null;
             if (visited.Add(this))
             {
