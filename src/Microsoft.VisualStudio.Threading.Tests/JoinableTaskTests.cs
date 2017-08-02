@@ -3430,7 +3430,7 @@
         }
 
         /// <summary>
-        /// Verifies that <see cref="JoinableTask.CompleteOnCurrentThread"/> does not hang
+        /// Verifies that JoinableTask.CompleteOnCurrentThread does not hang
         /// when a JoinableTask's <see cref="Func{Task}"/> completes at about the same time as
         /// someone else Posts a message to its mainThreadQueue.
         /// </summary>
