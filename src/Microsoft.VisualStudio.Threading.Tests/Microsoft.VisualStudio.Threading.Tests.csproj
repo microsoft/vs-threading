@@ -41,7 +41,7 @@
     <PackageReference Include="Xunit.StaFact" Version="0.2.9" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.0.0" />
     <PackageReference Include="OpenCover" Version="4.6.519" />
-    <PackageReference Include="MicroBuild.Nonshipping" Version="2.0.40" />
+    <PackageReference Include="MicroBuild.Nonshipping" Version="2.0.42" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj" />
