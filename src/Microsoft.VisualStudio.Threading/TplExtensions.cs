@@ -371,10 +371,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     ApplyCompletedTaskResultTo(t, tcs);
 
-                    if (callback != null)
-                    {
-                        callback(tcs.Task);
-                    }
+                    callback?.Invoke(tcs.Task);
                 },
                 CancellationToken.None,
                 TaskContinuationOptions.None,
@@ -416,10 +413,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     ApplyCompletedTaskResultTo(t, tcs, null);
 
-                    if (callback != null)
-                    {
-                        callback(tcs.Task);
-                    }
+                    callback?.Invoke(tcs.Task);
                 },
                 CancellationToken.None,
                 TaskContinuationOptions.None,
@@ -481,8 +475,8 @@ namespace Microsoft.VisualStudio.Threading
 
             RegisteredWaitHandle callbackHandle = ThreadPool.RegisterWaitForSingleObject(
                 handle,
-                (state, timedOut) => tcs.TrySetResult(!timedOut),
-                state: null,
+                (state, timedOut) => ((TaskCompletionSource<bool>)state).TrySetResult(!timedOut),
+                state: tcs,
                 millisecondsTimeOutInterval: timeout,
                 executeOnlyOnce: true);
 

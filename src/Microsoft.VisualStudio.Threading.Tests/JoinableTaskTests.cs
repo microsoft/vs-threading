@@ -2825,30 +2825,40 @@
             }
         }
 
-        [StaFact, Trait("Stress", "true"), Trait("TestCategory", "FailsInCloudTest"), Trait("FailsInLocalBatch", "true")]
+#if ISOLATED_TEST_SUPPORT
+        [StaFact, Trait("Stress", "true")]
+        [Trait("GC", "true")]
         public void SwitchToMainThreadMemoryLeak()
         {
-            this.CheckGCPressure(
-                async delegate
-                {
-                    await TaskScheduler.Default;
-                    await this.asyncPump.SwitchToMainThreadAsync(CancellationToken.None);
-                },
-                2615);
+            if (this.ExecuteInIsolation())
+            {
+                this.CheckGCPressure(
+                    async delegate
+                    {
+                        await TaskScheduler.Default;
+                        await this.asyncPump.SwitchToMainThreadAsync(CancellationToken.None);
+                    },
+                    3585);
+            }
         }
 
-        [StaFact, Trait("Stress", "true"), Trait("TestCategory", "FailsInCloudTest"), Trait("FailsInLocalBatch", "true")]
+        [StaFact, Trait("Stress", "true")]
+        [Trait("GC", "true")]
         public void SwitchToMainThreadMemoryLeakWithCancellationToken()
         {
-            CancellationTokenSource tokenSource = new CancellationTokenSource();
-            this.CheckGCPressure(
-                async delegate
-                {
-                    await TaskScheduler.Default;
-                    await this.asyncPump.SwitchToMainThreadAsync(tokenSource.Token);
-                },
-                3800);
+            if (this.ExecuteInIsolation())
+            {
+                CancellationTokenSource tokenSource = new CancellationTokenSource();
+                this.CheckGCPressure(
+                    async delegate
+                    {
+                        await TaskScheduler.Default;
+                        await this.asyncPump.SwitchToMainThreadAsync(tokenSource.Token);
+                    },
+                    3800);
+            }
         }
+#endif
 
         [StaFact]
         public void SwitchToMainThreadSucceedsWhenConstructedUnderMTAOperation()
@@ -2920,57 +2930,69 @@
             outerJoinable.Join();
         }
 
-        [StaFact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest")]
+#if ISOLATED_TEST_SUPPORT
+        [StaFact, Trait("GC", "true")]
         public void RunSynchronouslyTaskNoYieldGCPressure()
         {
-            this.CheckGCPressure(delegate
+            if (this.ExecuteInIsolation())
             {
-                this.asyncPump.Run(delegate
+                this.CheckGCPressure(delegate
                 {
-                    return TplExtensions.CompletedTask;
-                });
-            }, maxBytesAllocated: 573);
+                    this.asyncPump.Run(delegate
+                    {
+                        return TplExtensions.CompletedTask;
+                    });
+                }, maxBytesAllocated: 819);
+            }
         }
 
-        [StaFact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest")]
+        [StaFact, Trait("GC", "true")]
         public void RunSynchronouslyTaskOfTNoYieldGCPressure()
         {
             Task<object> completedTask = Task.FromResult<object>(null);
 
-            this.CheckGCPressure(delegate
+            if (this.ExecuteInIsolation())
             {
-                this.asyncPump.Run(delegate
+                this.CheckGCPressure(delegate
                 {
-                    return completedTask;
-                });
-            }, maxBytesAllocated: 572);
+                    this.asyncPump.Run(delegate
+                    {
+                        return completedTask;
+                    });
+                }, maxBytesAllocated: 819);
+            }
         }
 
-        [StaFact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest"), Trait("FailsInLocalBatch", "true")]
+        [StaFact, Trait("GC", "true")]
         public void RunSynchronouslyTaskWithYieldGCPressure()
         {
-            this.CheckGCPressure(delegate
+            if (this.ExecuteInIsolation())
             {
-                this.asyncPump.Run(async delegate
+                this.CheckGCPressure(delegate
                 {
-                    await Task.Yield();
-                });
-            }, maxBytesAllocated: 1800);
+                    this.asyncPump.Run(async delegate
+                    {
+                        await Task.Yield();
+                    });
+                }, maxBytesAllocated: 2457);
+            }
         }
 
-        [StaFact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest"), Trait("FailsInLocalBatch", "true")]
+        [StaFact, Trait("GC", "true")]
         public void RunSynchronouslyTaskOfTWithYieldGCPressure()
         {
-            Task<object> completedTask = Task.FromResult<object>(null);
-
-            this.CheckGCPressure(delegate
+            if (this.ExecuteInIsolation())
             {
-                this.asyncPump.Run(async delegate
+                this.CheckGCPressure(delegate
                 {
-                    await Task.Yield();
-                });
-            }, maxBytesAllocated: 1800);
+                    this.asyncPump.Run(async delegate
+                    {
+                        await Task.Yield();
+                    });
+                }, maxBytesAllocated: 2457);
+            }
         }
+#endif
 
         /// <summary>
         /// Verifies that when two AsyncPumps are stacked on the main thread by (unrelated) COM reentrancy
@@ -3140,8 +3162,7 @@
             result = null;
             GC.Collect();
 
-            object target;
-            weakResult.TryGetTarget(out target);
+            weakResult.TryGetTarget(out object target);
             Assert.Null(target); //, "The task's result should be collected unless the JoinableTask is leaked");
         }
 
@@ -3427,6 +3448,39 @@
             }
         }
 
+        /// <summary>
+        /// Verifies that JoinableTask.CompleteOnCurrentThread does not hang
+        /// when a JoinableTask's <see cref="Func{Task}"/> completes at about the same time as
+        /// someone else Posts a message to its mainThreadQueue.
+        /// </summary>
+        /// <remarks>
+        /// Repro for https://github.com/Microsoft/vs-threading/issues/173
+        /// With the SyncPoints in place (as defined in the commit that introduced this comment)
+        /// set a breakpoint on in SyncPoints.Step line 47 `if (current + 1 == step)` and then
+        /// Debug this unit test. Each time the breakpoint is hit, just F5 again. That reproduces
+        /// the race quite reliably.
+        /// </remarks>
+        [Fact]
+        public void CompleteOnCurrentThread_DoesNotDeadlockWhenThreadPoolWorkPostRacesWithCompletion()
+        {
+            SynchronizationContext.SetSynchronizationContext(null);
+            var ctxt = new JoinableTaskContext();
+            async Task WorkForAWhileAfterYield()
+            {
+                // Get onto another thread so that SynchronizationContext.Post is called from that other thread.
+                await Task.Run(async delegate
+                {
+                    await Task.Yield();
+                });
+            }
+
+            ctxt.Factory.Run(async delegate
+            {
+                WorkForAWhileAfterYield().Forget();
+                await Task.Yield();
+            });
+        }
+
         protected override JoinableTaskContext CreateJoinableTaskContext()
         {
             return new DerivedJoinableTaskContext();
@@ -3656,10 +3710,7 @@
                     Assert.Equal(this.TransitionedToMainThreadHitCount + 1, this.TransitioningToMainThreadHitCount); //, "Imbalance of transition events.");
                 }
 
-                if (this.TransitioningToMainThreadCallback != null)
-                {
-                    this.TransitioningToMainThreadCallback(joinableTask);
-                }
+                this.TransitioningToMainThreadCallback?.Invoke(joinableTask);
             }
 
             protected override void OnTransitionedToMainThread(JoinableTask joinableTask, bool canceled)
@@ -3695,10 +3746,7 @@
                     Assert.Equal(this.TransitionedToMainThreadHitCount, this.TransitioningToMainThreadHitCount); //, "Imbalance of transition events.");
                 }
 
-                if (this.TransitionedToMainThreadCallback != null)
-                {
-                    this.TransitionedToMainThreadCallback(joinableTask);
-                }
+                this.TransitionedToMainThreadCallback?.Invoke(joinableTask);
             }
 
             protected override void WaitSynchronously(Task task)
@@ -3713,10 +3761,7 @@
                 Assert.NotNull(callback);
                 Assert.True(SingleThreadedSynchronizationContext.IsSingleThreadedSyncContext(this.UnderlyingSynchronizationContext));
                 base.PostToUnderlyingSynchronizationContext(callback, state);
-                if (this.PostToUnderlyingSynchronizationContextCallback != null)
-                {
-                    this.PostToUnderlyingSynchronizationContextCallback();
-                }
+                this.PostToUnderlyingSynchronizationContextCallback?.Invoke();
             }
         }
 
@@ -3751,8 +3796,7 @@
             {
                 do
                 {
-                    Tuple<SendOrPostCallback, object> work;
-                    while (this.queuedMessages.TryDequeue(out work))
+                    while (this.queuedMessages.TryDequeue(out Tuple<SendOrPostCallback, object> work))
                     {
                         work.Item1(work.Item2);
                         cancellationToken.ThrowIfCancellationRequested();

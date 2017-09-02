@@ -106,7 +106,8 @@
                             includeReducedExtensionMethods: true).OfType<IMethodSymbol>()
                             .Where(m => !m.IsObsolete())
                             .Where(m => HasSupersetOfParameterTypes(m, methodSymbol))
-                            .Where(m => m.Name != invocationDeclaringMethod?.Identifier.Text);
+                            .Where(m => m.Name != invocationDeclaringMethod?.Identifier.Text)
+                            .Where(Utils.HasAsyncCompatibleReturnType);
 
                         if (asyncMethodMatches.Any())
                         {
@@ -164,7 +165,7 @@
                     && returnType.BelongsToNamespace(Namespaces.SystemThreadingTasks);
             }
 
-            private static bool InspectMemberAccess(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax, IReadOnlyList<CommonInterest.SyncBlockingMethod> problematicMethods)
+            private static bool InspectMemberAccess(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax, IEnumerable<CommonInterest.SyncBlockingMethod> problematicMethods)
             {
                 if (memberAccessSyntax == null)
                 {

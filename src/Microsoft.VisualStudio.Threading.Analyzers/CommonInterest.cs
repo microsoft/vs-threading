@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis;
@@ -11,21 +12,21 @@
 
     internal static class CommonInterest
     {
-        internal static readonly IReadOnlyList<SyncBlockingMethod> JTFSyncBlockers = new[]
+        internal static readonly IEnumerable<SyncBlockingMethod> JTFSyncBlockers = new[]
         {
             new SyncBlockingMethod(Namespaces.MicrosoftVisualStudioThreading, Types.JoinableTaskFactory.TypeName, Types.JoinableTaskFactory.Run, Types.JoinableTaskFactory.RunAsync),
             new SyncBlockingMethod(Namespaces.MicrosoftVisualStudioThreading, Types.JoinableTask.TypeName, Types.JoinableTask.Join, Types.JoinableTask.JoinAsync),
         };
 
-        internal static readonly IReadOnlyList<SyncBlockingMethod> SyncBlockingMethods = new[]
+        internal static readonly IEnumerable<SyncBlockingMethod> ProblematicSyncBlockingMethods = new[]
         {
-            new SyncBlockingMethod(Namespaces.MicrosoftVisualStudioThreading, Types.JoinableTaskFactory.TypeName, Types.JoinableTaskFactory.Run, Types.JoinableTaskFactory.RunAsync),
-            new SyncBlockingMethod(Namespaces.MicrosoftVisualStudioThreading, Types.JoinableTask.TypeName, Types.JoinableTask.Join, Types.JoinableTask.JoinAsync),
             new SyncBlockingMethod(Namespaces.SystemThreadingTasks, nameof(Task), nameof(Task.Wait), null),
             new SyncBlockingMethod(Namespaces.SystemRuntimeCompilerServices, nameof(TaskAwaiter), nameof(TaskAwaiter.GetResult), null),
         };
 
-        internal static readonly IReadOnlyList<LegacyThreadSwitchingMethod> LegacyThreadSwitchingMethods = new[]
+        internal static readonly IEnumerable<SyncBlockingMethod> SyncBlockingMethods = JTFSyncBlockers.Concat(ProblematicSyncBlockingMethods);
+
+        internal static readonly IEnumerable<LegacyThreadSwitchingMethod> LegacyThreadSwitchingMethods = new[]
         {
             new LegacyThreadSwitchingMethod(Namespaces.MicrosoftVisualStudioShell, Types.ThreadHelper.TypeName, Types.ThreadHelper.Invoke),
             new LegacyThreadSwitchingMethod(Namespaces.MicrosoftVisualStudioShell, Types.ThreadHelper.TypeName, Types.ThreadHelper.InvokeAsync),
@@ -76,7 +77,7 @@
             SyntaxNodeAnalysisContext context,
             MemberAccessExpressionSyntax memberAccessSyntax,
             DiagnosticDescriptor descriptor,
-            IReadOnlyList<SyncBlockingMethod> problematicMethods,
+            IEnumerable<SyncBlockingMethod> problematicMethods,
             bool ignoreIfInsideAnonymousDelegate = false)
         {
             if (descriptor == null)

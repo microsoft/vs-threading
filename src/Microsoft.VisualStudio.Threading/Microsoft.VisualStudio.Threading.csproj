@@ -19,7 +19,6 @@
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <PackageProjectUrl>https://github.com/Microsoft/vs-threading</PackageProjectUrl>
     <PackageIconUrl>https://aka.ms/VsExtensibilityIcon</PackageIconUrl>
-    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=746387</PackageReleaseNotes>
 
     <DebugType>full</DebugType>
@@ -57,7 +56,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Validation" Version="15.3.15" />
-    <PackageReference Include="MicroBuild.VisualStudio" Version="2.0.40" PrivateAssets="all" />
+    <PackageReference Include="MicroBuild.VisualStudio" Version="2.0.42" PrivateAssets="all" />
     <PackageReference Include="MSBuild.SDK.Extras" Version="1.0.5" PrivateAssets="all" />
     <PackageReference Include="PdbGit" Version="3.0.41" PrivateAssets="all" />
   </ItemGroup>

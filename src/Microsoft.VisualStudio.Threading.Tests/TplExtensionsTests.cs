@@ -172,21 +172,32 @@
         [Fact]
         public void WaitWithoutInlining_DoesNotWaitForOtherInlinedContinuations()
         {
-            var sluggishScheduler = new SluggishInliningTaskScheduler();
+            while (true)
+            {
+                var sluggishScheduler = new SluggishInliningTaskScheduler();
 
-            var task = Task.Delay(200); // This must not complete before we call WaitWithoutInlining.
-            var continuationUnblocked = new ManualResetEventSlim();
-            var continuationTask = task.ContinueWith(
-                delegate
+                var task = Task.Delay(200); // This must not complete before we call WaitWithoutInlining.
+                var continuationUnblocked = new ManualResetEventSlim();
+                var continuationTask = task.ContinueWith(
+                    delegate
+                    {
+                        Assert.True(continuationUnblocked.Wait(UnexpectedTimeout));
+                    },
+                    CancellationToken.None,
+                    TaskContinuationOptions.ExecuteSynchronously,
+                    sluggishScheduler); // ensures the continuation never runs unless inlined
+                if (continuationTask.IsCompleted)
                 {
-                    Assert.True(continuationUnblocked.Wait(UnexpectedTimeout));
-                },
-                CancellationToken.None,
-                TaskContinuationOptions.ExecuteSynchronously,
-                sluggishScheduler); // ensures the continuation never runs unless inlined
-            task.WaitWithoutInlining();
-            continuationUnblocked.Set();
-            continuationTask.GetAwaiter().GetResult();
+                    // Evidently our Delay task completed too soon (and our continuationTask likely faulted due to timeout).
+                    // Start over.
+                    continue;
+                }
+
+                task.WaitWithoutInlining();
+                continuationUnblocked.Set();
+                continuationTask.GetAwaiter().GetResult();
+                break;
+            }
         }
 
         [Fact]

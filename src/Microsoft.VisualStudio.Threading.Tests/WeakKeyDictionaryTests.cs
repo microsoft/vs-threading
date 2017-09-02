@@ -75,8 +75,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             dictionary[k1] = v1;
 
             // Now look for the same key we inserted
-            string v2;
-            bool result = dictionary.TryGetValue(k1, out v2);
+            bool result = dictionary.TryGetValue(k1, out string v2);
 
             Assert.True(result);
             Assert.True(object.ReferenceEquals(v1, v2));
@@ -90,8 +89,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         {
             var dictionary = new WeakKeyDictionary<string, string>();
 
-            string v;
-            bool result = dictionary.TryGetValue("x", out v);
+            bool result = dictionary.TryGetValue("x", out string v);
 
             Assert.False(result);
             Assert.Null(v);

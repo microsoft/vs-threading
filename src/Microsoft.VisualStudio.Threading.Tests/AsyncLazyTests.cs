@@ -187,7 +187,6 @@ namespace Microsoft.VisualStudio.Threading.Tests
         }
 
         [Theory, CombinatorialData]
-        [Trait("TestCategory", "FailsInCloudTest")]
         public async Task AsyncPumpReleasedAfterExecution(bool throwInValueFactory)
         {
             WeakReference collectible = null;
@@ -209,7 +208,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Assert.True(collectible.IsAlive);
             await lazy.GetValueAsync().NoThrowAwaitable();
 
-            var cts = new CancellationTokenSource(AsyncDelay);
+            var cts = new CancellationTokenSource(UnexpectedTimeout);
             while (!cts.IsCancellationRequested && collectible.IsAlive)
             {
                 await Task.Yield();

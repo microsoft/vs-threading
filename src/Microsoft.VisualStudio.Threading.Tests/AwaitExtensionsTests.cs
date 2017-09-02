@@ -376,9 +376,11 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 "net45",
                 "Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.exe");
             this.Logger.WriteLine("Using testexe path: {0}", testExePath);
-            var psi = new ProcessStartInfo(testExePath);
-            psi.CreateNoWindow = true;
-            psi.WindowStyle = ProcessWindowStyle.Hidden;
+            var psi = new ProcessStartInfo(testExePath)
+            {
+                CreateNoWindow = true,
+                WindowStyle = ProcessWindowStyle.Hidden
+            };
             Process testExeProcess = Process.Start(psi);
             try
             {

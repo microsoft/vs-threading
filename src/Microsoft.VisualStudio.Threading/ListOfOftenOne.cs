@@ -130,8 +130,7 @@ namespace Microsoft.VisualStudio.Threading
                 return value;
             }
 
-            var singleValue = baseValue as T;
-            if (singleValue != null)
+            if (baseValue is T singleValue)
             {
                 return new T[] { singleValue, value };
             }

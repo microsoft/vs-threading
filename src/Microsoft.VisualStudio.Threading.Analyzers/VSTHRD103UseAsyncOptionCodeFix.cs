@@ -135,8 +135,11 @@
                 if (this.AlternativeAsyncMethod != string.Empty)
                 {
                     // Replace the member being called and await the invocation expression.
+                    // While doing so, move leading trivia to the surrounding await expression.
                     var asyncMethodName = syncMethodName.WithIdentifier(SyntaxFactory.Identifier(this.diagnostic.Properties[AsyncMethodKeyName]));
-                    awaitExpression = SyntaxFactory.AwaitExpression(syncExpression.ReplaceNode(syncMethodName, asyncMethodName));
+                    awaitExpression = SyntaxFactory.AwaitExpression(
+                        syncExpression.ReplaceNode(syncMethodName, asyncMethodName).WithoutLeadingTrivia())
+                        .WithLeadingTrivia(syncExpression.GetLeadingTrivia());
                     if (!(syncExpression.Parent is ExpressionStatementSyntax))
                     {
                         awaitExpression = SyntaxFactory.ParenthesizedExpression(awaitExpression)
@@ -156,7 +159,8 @@
                         syncMemberStrippedExpression = expressionMethodCall.Expression;
                     }
 
-                    awaitExpression = SyntaxFactory.AwaitExpression(syncMemberStrippedExpression);
+                    awaitExpression = SyntaxFactory.AwaitExpression(syncMemberStrippedExpression.WithoutLeadingTrivia())
+                        .WithLeadingTrivia(syncMemberStrippedExpression.GetLeadingTrivia());
                 }
 
                 updatedMethod = updatedMethod

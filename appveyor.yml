@@ -5,6 +5,10 @@ branches:
   - /^v\d+(?:\.\d+)?$/
   - /[\b_]validate\b/
 skip_tags: true
+skip_commits:
+  files:
+    - doc/*
+    - '**/*.md'
 nuget:
   disable_publish_on_pr: true
 image: Visual Studio 2017
@@ -27,11 +31,25 @@ test_script:
 
     "%xunit20%\xunit.console.x86.exe"
     "bin\Microsoft.VisualStudio.Threading.Tests\%configuration%\net451\Microsoft.VisualStudio.Threading.Tests.dll"
+    -noshadow
+    -html "bin\%configuration%\testresults_net451.html" -xml "bin\%configuration%\testresults_net451.xml"
+    -appveyor
+    -notrait "TestCategory=FailsInCloudTest"
+    -nologo
+
+    "%xunit20%\xunit.console.x86.exe"
     "bin\Microsoft.VisualStudio.Threading.Tests\%configuration%\net452\Microsoft.VisualStudio.Threading.Tests.dll"
-    "bin\Microsoft.VisualStudio.Threading.Tests\%configuration%\net46\Microsoft.VisualStudio.Threading.Tests.dll"
     "bin\Microsoft.VisualStudio.Threading.Analyzers.Tests\%configuration%\net452\Microsoft.VisualStudio.Threading.Analyzers.Tests.dll"
     -noshadow
-    -html "bin\%configuration%\testresults.html" -xml "bin\%configuration%\testresults.xml"
+    -html "bin\%configuration%\testresults_net452.html" -xml "bin\%configuration%\testresults_net452.xml"
+    -appveyor
+    -notrait "TestCategory=FailsInCloudTest"
+    -nologo
+
+    "%xunit20%\xunit.console.x86.exe"
+    "bin\Microsoft.VisualStudio.Threading.Tests\%configuration%\net46\Microsoft.VisualStudio.Threading.Tests.dll"
+    -noshadow
+    -html "bin\%configuration%\testresults_net46.html" -xml "bin\%configuration%\testresults_net46.xml"
     -appveyor
     -notrait "TestCategory=FailsInCloudTest"
     -nologo
@@ -39,6 +57,7 @@ test_script:
     dotnet test src\Microsoft.VisualStudio.Threading.Tests\Microsoft.VisualStudio.Threading.Tests.csproj
     --no-build
     -f netcoreapp1.0
+    --filter "TestCategory!=FailsInCloudTest"
 
     dotnet test src\Microsoft.VisualStudio.Threading.Tests\Microsoft.VisualStudio.Threading.Tests.csproj
     --no-build
@@ -48,5 +67,5 @@ artifacts:
   name: NuGet Package
 - path: msbuild.log
   name: Build log
-- path: bin\**\testresults.*
+- path: bin\**\testresults*
   name: Test results

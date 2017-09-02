@@ -22,7 +22,7 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>Görevlerde veya bekleyen öğelerde zaman uyumlu olarak beklemek kilitlenmelere neden olabilir. Bunun yerine JoinableTaskFactory.Run kullanın.</value>
+    <value>Görevlerde veya bekleyen öğelerde zaman uyumlu olarak beklemek kilitlenmelere neden olabilir. Bunun yerine bekleyen veya JoinableTaskFactory.Run kullanın.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
@@ -135,5 +135,9 @@ Bunun yerine AsyncLazy&lt;T&gt; kullanın.</value>
   <data name="VSTHRD107_CodeFix_Title" xml:space="preserve">
     <value>Await using ifadesi</value>
     <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD002_CodeFix_Await_Title" xml:space="preserve">
+    <value>Bunun yerine await kullanın</value>
+    <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
 </root>

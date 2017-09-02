@@ -668,10 +668,7 @@
 
             protected override void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId)
             {
-                if (this.OnReportHang != null)
-                {
-                    this.OnReportHang(hangDuration, notificationCount, hangId);
-                }
+                this.OnReportHang?.Invoke(hangDuration, notificationCount, hangId);
             }
         }
 

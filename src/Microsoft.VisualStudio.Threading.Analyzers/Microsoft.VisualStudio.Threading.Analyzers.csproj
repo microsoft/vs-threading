@@ -13,7 +13,6 @@
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <PackageProjectUrl>https://github.com/Microsoft/vs-threading</PackageProjectUrl>
     <PackageIconUrl>https://aka.ms/VsExtensibilityIcon</PackageIconUrl>
-    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=746387</PackageReleaseNotes>
 
     <DebugType>full</DebugType>
@@ -53,7 +52,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="1.2.0" />
-    <PackageReference Include="MicroBuild.VisualStudio" Version="2.0.40" />
+    <PackageReference Include="MicroBuild.VisualStudio" Version="2.0.42" />
     <PackageReference Include="PdbGit" Version="3.0.41" />
     <PackageReference Include="System.ValueTuple" Version="4.3.0" />
     <PackageReference Include="AsyncUsageAnalyzers" Version="1.0.0-alpha003" />

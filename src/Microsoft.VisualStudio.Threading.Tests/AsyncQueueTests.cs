@@ -139,14 +139,12 @@
         [Fact]
         public void TryPeek()
         {
-            GenericParameterHelper value;
-            Assert.False(this.queue.TryPeek(out value));
+            Assert.False(this.queue.TryPeek(out GenericParameterHelper value));
             Assert.Null(value);
 
             var enqueuedValue = new GenericParameterHelper(1);
             this.queue.Enqueue(enqueuedValue);
-            GenericParameterHelper peekedValue;
-            Assert.True(this.queue.TryPeek(out peekedValue));
+            Assert.True(this.queue.TryPeek(out GenericParameterHelper peekedValue));
             Assert.Same(enqueuedValue, peekedValue);
         }
 
@@ -168,8 +166,7 @@
             peekedValue = this.queue.Peek();
             Assert.Same(enqueuedValue, peekedValue);
 
-            GenericParameterHelper dequeuedValue;
-            Assert.True(this.queue.TryDequeue(out dequeuedValue));
+            Assert.True(this.queue.TryDequeue(out GenericParameterHelper dequeuedValue));
             Assert.Same(enqueuedValue, dequeuedValue);
 
             peekedValue = this.queue.Peek();
@@ -325,8 +322,7 @@
         {
             var enqueuedValue = new GenericParameterHelper(1);
             this.queue.Enqueue(enqueuedValue);
-            GenericParameterHelper dequeuedValue;
-            bool result = this.queue.TryDequeue(out dequeuedValue);
+            bool result = this.queue.TryDequeue(out GenericParameterHelper dequeuedValue);
             Assert.True(result);
             Assert.Same(enqueuedValue, dequeuedValue);
             Assert.Equal(0, this.queue.Count);
@@ -366,8 +362,7 @@
             this.queue.Complete();
             Assert.False(this.queue.Completion.IsCompleted);
 
-            GenericParameterHelper dequeuedValue;
-            Assert.True(this.queue.TryDequeue(out dequeuedValue));
+            Assert.True(this.queue.TryDequeue(out GenericParameterHelper dequeuedValue));
             Assert.Same(enqueuedValue, dequeuedValue);
             Assert.True(this.queue.Completion.IsCompleted);
         }
@@ -504,8 +499,7 @@
             };
 
             queue.Enqueue(5);
-            int dequeuedValue;
-            Assert.True(queue.TryDequeue(out dequeuedValue));
+            Assert.True(queue.TryDequeue(out int dequeuedValue));
             Assert.True(callbackFired);
         }
 
@@ -523,18 +517,21 @@
             Assert.Equal(1, invoked);
         }
 
-        [Fact, Trait("GC", "true"), Trait("TestCategory", "FailsInCloudTest")]
+        [SkippableFact, Trait("GC", "true")]
         public void UnusedQueueGCPressure()
         {
-            this.CheckGCPressure(
-                delegate
-                {
-                    var queue = new AsyncQueue<GenericParameterHelper>();
-                    queue.Complete();
-                    Assert.True(queue.IsCompleted);
-                },
-                maxBytesAllocated: 81,
-                allowedAttempts: 30);
+            if (this.ExecuteInIsolation())
+            {
+                this.CheckGCPressure(
+                    delegate
+                    {
+                        var queue = new AsyncQueue<GenericParameterHelper>();
+                        queue.Complete();
+                        Assert.True(queue.IsCompleted);
+                    },
+                    maxBytesAllocated: 81,
+                    allowedAttempts: 30);
+            }
         }
 
         [Fact]
@@ -566,30 +563,21 @@
             {
                 base.OnEnqueued(value, alreadyDispatched);
 
-                if (this.OnEnqueuedDelegate != null)
-                {
-                    this.OnEnqueuedDelegate(value, alreadyDispatched);
-                }
+                this.OnEnqueuedDelegate?.Invoke(value, alreadyDispatched);
             }
 
             protected override void OnDequeued(T value)
             {
                 base.OnDequeued(value);
 
-                if (this.OnDequeuedDelegate != null)
-                {
-                    this.OnDequeuedDelegate(value);
-                }
+                this.OnDequeuedDelegate?.Invoke(value);
             }
 
             protected override void OnCompleted()
             {
                 base.OnCompleted();
 
-                if (this.OnCompletedDelegate != null)
-                {
-                    this.OnCompletedDelegate();
-                }
+                this.OnCompletedDelegate?.Invoke();
             }
         }
     }

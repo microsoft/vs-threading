@@ -239,8 +239,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <exception cref="InvalidOperationException">Thrown if the queue is empty.</exception>
         public T Peek()
         {
-            T value;
-            if (!this.TryPeek(out value))
+            if (!this.TryPeek(out T value))
             {
                 Verify.FailOperation(Strings.QueueEmpty);
             }

@@ -22,7 +22,7 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>La espera sincrónica de tareas o elementos que ejecutan await puede provocar interbloqueos. Use JoinableTaskFactory.Run en su lugar.</value>
+    <value>La espera sincrónica de tareas o elementos que ejecutan await puede provocar interbloqueos. Use await o JoinableTaskFactory.Run en su lugar.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
@@ -135,5 +135,9 @@ Use AsyncLazy&lt;T&gt; en su lugar.</value>
   <data name="VSTHRD107_CodeFix_Title" xml:space="preserve">
     <value>Usar await en expresión using</value>
     <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD002_CodeFix_Await_Title" xml:space="preserve">
+    <value>Use await en su lugar</value>
+    <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
 </root>

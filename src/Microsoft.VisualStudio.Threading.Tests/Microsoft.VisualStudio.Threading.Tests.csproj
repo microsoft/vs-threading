@@ -14,7 +14,7 @@
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
 
     <TargetsDesktop Condition=" '$(TargetFramework)' == 'net451' or '$(TargetFramework)' == 'net452' or '$(TargetFramework)' == 'net46' ">true</TargetsDesktop>
-    <DefineConstants Condition=" '$(TargetsDesktop)' == 'true' ">$(DefineConstants);DESKTOP</DefineConstants>
+    <DefineConstants Condition=" '$(TargetsDesktop)' == 'true' ">$(DefineConstants);DESKTOP;ISOLATED_TEST_SUPPORT</DefineConstants>
     <AppConfig Condition=" '$(TargetFramework)' == 'net451' ">App.net45.config</AppConfig>
 
     <!-- VS2017 Test Explorer test navigation and callstack links don't work with portable PDBs yet. -->
@@ -40,7 +40,7 @@
     <PackageReference Include="Xunit.StaFact" Version="0.2.9" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.0.0" />
     <PackageReference Include="OpenCover" Version="4.6.519" />
-    <PackageReference Include="MicroBuild.Nonshipping" Version="2.0.40" />
+    <PackageReference Include="MicroBuild.Nonshipping" Version="2.0.42" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj" />
@@ -48,6 +48,9 @@
   <ItemGroup Condition=" '$(TargetsDesktop)' == 'true' ">
     <Reference Include="System.Configuration" />
     <Reference Include="WindowsBase" />
+    <ProjectReference Include="..\IsolatedTestHost\IsolatedTestHost.csproj">
+      <Private>true</Private>
+    </ProjectReference>
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher\Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <Private>true</Private>

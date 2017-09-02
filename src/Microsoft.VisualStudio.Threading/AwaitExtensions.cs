@@ -263,9 +263,11 @@ namespace Microsoft.VisualStudio.Threading
                         if (keepAliveCount == 1)
                           {
                             Assumes.Null(liveThread);
-                            liveThread = new Thread(Worker, SmallThreadStackSize);
-                            liveThread.IsBackground = true;
-                            liveThread.Name = "Registry watcher";
+                            liveThread = new Thread(Worker, SmallThreadStackSize)
+                            {
+                                IsBackground = true,
+                                Name = "Registry watcher"
+                            };
                             liveThread.Start();
                         }
                         else
