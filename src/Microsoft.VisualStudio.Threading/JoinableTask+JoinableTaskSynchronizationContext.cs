@@ -109,7 +109,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
                 else
                 {
-#if DESKTOP
+#if DESKTOP || NETSTANDARD2_0
                     bool isThreadPoolThread = Thread.CurrentThread.IsThreadPoolThread;
 #else
                     // On portable profile this is the best estimation we can do.

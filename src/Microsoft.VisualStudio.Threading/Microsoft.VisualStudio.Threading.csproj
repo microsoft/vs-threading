@@ -1,15 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.1;netstandard1.3;portable-net45+win8+wpa81;net45;net46</TargetFrameworks>
+    <TargetFrameworks>netstandard1.1;netstandard1.3;netstandard2.0;portable-net45+win8+wpa81;net45;net46</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <CodeAnalysisRuleSet>FxCopRules.ruleset</CodeAnalysisRuleSet>
 
     <TargetsDesktop Condition=" '$(TargetFramework)' == 'net45' or '$(TargetFramework)' == 'net46' ">true</TargetsDesktop>
     <DefineConstants Condition=" '$(TargetsDesktop)' == 'true' ">$(DefineConstants);DESKTOP</DefineConstants>
-    <DefineConstants Condition=" '$(TargetFramework)' == 'net46' or '$(TargetFramework)' == 'netstandard1.3' ">$(DefineConstants);ASYNCLOCAL</DefineConstants>
-    <DefineConstants Condition=" '$(TargetFramework)' == 'net46' or '$(TargetFramework)' == 'netstandard1.3' ">$(DefineConstants);TRYSETCANCELEDCT</DefineConstants>
+    <DefineConstants Condition=" '$(TargetFramework)' == 'net46' or '$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == 'netstandard2.0' ">$(DefineConstants);ASYNCLOCAL</DefineConstants>
+    <DefineConstants Condition=" '$(TargetFramework)' == 'net46' or '$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == 'netstandard2.0' ">$(DefineConstants);TRYSETCANCELEDCT</DefineConstants>
     <DefineConstants Condition=" '$(TargetsDesktop)' == 'true' ">$(DefineConstants);CALLCONTEXT</DefineConstants>
-    <DefineConstants Condition=" '$(TargetsDesktop)' == 'true' ">$(DefineConstants);THREADPOOL</DefineConstants>
+    <DefineConstants Condition=" '$(TargetsDesktop)' == 'true'  or '$(TargetFramework)' == 'netstandard2.0' ">$(DefineConstants);THREADPOOL</DefineConstants>
 
     <Summary>Async synchronization primitives, async collections, TPL and dataflow extensions.</Summary>
     <Description>Async synchronization primitives, async collections, TPL and dataflow extensions. The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This package is applicable to any .NET application (not just Visual Studio).</Description>
@@ -22,7 +22,7 @@
     <PackageReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=746387</PackageReleaseNotes>
 
     <DebugType>full</DebugType>
-    <RunCodeAnalysis Condition=" '$(TargetFramework)' != 'portable-net45+win8+wpa81' and '$(Configuration)' != 'Debug' ">true</RunCodeAnalysis>
+    <RunCodeAnalysis Condition=" '$(TargetFramework)' != 'portable-net45+win8+wpa81' and '$(TargetFramework)' != 'netstandard2.0' and '$(Configuration)' != 'Debug' ">true</RunCodeAnalysis>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Label="MultilingualAppToolkit">

@@ -50,7 +50,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public void AwaitThreadPoolSchedulerYieldsOnNonThreadPoolThreads()
         {
-#if DESKTOP
+#if DESKTOP || NETCOREAPP2_0
             // In some test runs (including VSTS cloud test), this test runs on a threadpool thread.
             if (Thread.CurrentThread.IsThreadPoolThread)
             {
@@ -77,7 +77,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         {
             Task.Run(delegate
             {
-#if DESKTOP
+#if DESKTOP || NETCOREAPP2_0
                 Assert.True(Thread.CurrentThread.IsThreadPoolThread, "Test depends on thread looking like threadpool thread.");
 #else
                 // Erase AsyncTestSyncContext, which somehow still is set in VSTS cloud tests.
@@ -87,7 +87,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }).GetAwaiter().GetResult();
         }
 
-#if DESKTOP
+#if DESKTOP || NETCOREAPP2_0
 
         [Fact]
         public void AwaitWaitHandle()
@@ -182,6 +182,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 p.Kill();
             }
         }
+
+#endif
+
+#if DESKTOP
 
         [Fact]
         public async Task AwaitRegKeyChange()

@@ -2,7 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
-#if DESKTOP
+#if DESKTOP || NETCOREAPP2_0
     using System.Configuration;
 #endif
     using System.Linq;

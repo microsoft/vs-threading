@@ -353,7 +353,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </remarks>
         protected virtual bool CanCurrentThreadHoldActiveLock
         {
-#if DESKTOP
+#if DESKTOP || NETSTANDARD2_0
             get { return Thread.CurrentThread.GetApartmentState() != ApartmentState.STA; }
 #else
             get { return true; }
@@ -1022,7 +1022,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     this.etw.WaitStart(awaiter);
 
-#if DESKTOP
+#if DESKTOP || NETSTANDARD2_0
                     // If the lock is immediately available, we don't need to coordinate with other threads.
                     // But if it is NOT available, we'd have to wait potentially for other threads to do more work.
                     Debugger.NotifyOfCrossThreadDependency();
@@ -2116,7 +2116,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             private Task releaseAsyncTask;
 
-#if DESKTOP
+#if DESKTOP || NETSTANDARD2_0
             /// <summary>
             /// The stacktrace of the caller originally requesting the lock.
             /// </summary>
@@ -2150,7 +2150,7 @@ namespace Microsoft.VisualStudio.Threading
                 this.options = options;
                 this.cancellationToken = cancellationToken;
                 this.nestingLock = lck.GetFirstActiveSelfOrAncestor(lck.topAwaiter.Value);
-#if DESKTOP
+#if DESKTOP || NETSTANDARD2_0
                 this.requestingStackTrace = lck.captureDiagnostics ? new StackTrace(2, true) : null;
 #endif
             }
@@ -2171,7 +2171,7 @@ namespace Microsoft.VisualStudio.Threading
                 get { return this.lck; }
             }
 
-#if DESKTOP
+#if DESKTOP || NETSTANDARD2_0
             /// <summary>
             /// Gets the stack trace of the requestor of this lock.
             /// </summary>

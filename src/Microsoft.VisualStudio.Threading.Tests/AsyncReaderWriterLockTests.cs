@@ -38,7 +38,7 @@
         public AsyncReaderWriterLockTests(ITestOutputHelper logger)
             : base(logger)
         {
-#if DESKTOP
+#if DESKTOP || NETCOREAPP2_0
             this.asyncLock = new StaAverseLock();
 #else
             this.asyncLock = new AsyncReaderWriterLock();
@@ -866,7 +866,7 @@
         }
 #endif
 
-#if DESKTOP
+#if DESKTOP || NETCOREAPP2_0
         [StaFact]
         public void LockAsyncThrowsOnGetResultBySta()
         {
@@ -1360,7 +1360,7 @@
             });
         }
 
-#if DESKTOP
+#if DESKTOP || NETCOREAPP2_0
         /// <summary>
         /// Tests that a common way to accidentally fork an exclusive lock for
         /// concurrent access gets called out as an error.
@@ -1719,7 +1719,7 @@
             }).GetAwaiter().GetResult();
         }
 
-#if DESKTOP
+#if DESKTOP || NETCOREAPP2_0
         /// <summary>
         /// Tests that a common way to accidentally fork an exclusive lock for
         /// concurrent access gets called out as an error.
@@ -2513,7 +2513,7 @@
 
 #region Completion tests
 
-#if DESKTOP
+#if DESKTOP || NETCOREAPP2_0
         [StaFact]
         public void CompleteBlocksNewTopLevelLocksSTA()
         {
@@ -3193,7 +3193,7 @@
                 }));
         }
 
-#if DESKTOP
+#if DESKTOP || NETCOREAPP2_0
         [StaFact]
         public void OnBeforeWriteLockReleasedCallbackNeverInvokedOnSTA()
         {
@@ -3324,7 +3324,7 @@
 #endregion
 
 #region Thread apartment rules
-#if DESKTOP
+#if DESKTOP || NETCOREAPP2_0
 
         /// <summary>Verifies that locks requested on STA threads will marshal to an MTA.</summary>
         [StaFact]
@@ -3919,7 +3919,7 @@
                         {
                             try
                             {
-#if DESKTOP
+#if DESKTOP || NETCOREAPP2_0
                                 Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
 #endif
                                 secondLockObtained.SetAsync();
@@ -4503,7 +4503,9 @@
                 AssertEx.NotEqual(callingAppDomainId, AppDomain.CurrentDomain.Id, "AppDomain boundaries not crossed.");
             }
         }
+#endif
 
+#if DESKTOP || NETCOREAPP2_0
         private class StaAverseLock : AsyncReaderWriterLock
         {
             protected override bool CanCurrentThreadHoldActiveLock

@@ -2,7 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
-#if DESKTOP
+#if DESKTOP || NETCOREAPP2_0
     using System.Configuration;
 #endif
     using System.Diagnostics;
@@ -21,7 +21,7 @@
         /// <summary>
         /// A value indicating whether the library is operating in .NET 4.5 mode.
         /// </summary>
-#if DESKTOP
+#if NET451 || NET452
         internal static readonly bool IsNet45Mode = ConfigurationManager.AppSettings["Microsoft.VisualStudio.Threading.NET45Mode"] == "true";
 #else
         internal static readonly bool IsNet45Mode = false;
@@ -155,7 +155,7 @@
         /// </remarks>
         internal static IDisposable StarveThreadpool()
         {
-#if DESKTOP
+#if DESKTOP || NETCOREAPP2_0
             ThreadPool.GetMaxThreads(out int workerThreads, out int completionPortThreads);
 #else
             int workerThreads = 1023;
