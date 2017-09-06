@@ -3,6 +3,8 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)..\obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
     <BaseOutputPath Condition=" '$(BaseOutputPath)' == '' ">$(MSBuildThisFileDirectory)..\bin\$(MSBuildProjectName)\</BaseOutputPath>
+
+    <MicroBuildVersion>2.0.43</MicroBuildVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Nerdbank.GitVersioning" Version="1.6.35" PrivateAssets="all" />
