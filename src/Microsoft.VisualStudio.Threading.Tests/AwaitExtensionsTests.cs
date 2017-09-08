@@ -27,10 +27,15 @@ namespace Microsoft.VisualStudio.Threading.Tests
         {
             this.ExecuteOnDispatcher(async delegate
             {
+                var asyncLocal = new AsyncLocal<object> { Value = 3 };
                 int originalThreadId = Environment.CurrentManagedThreadId;
+
                 await Task.Yield().ConfigureAwait(true);
+                Assert.Equal(3, asyncLocal.Value);
                 Assert.Equal(originalThreadId, Environment.CurrentManagedThreadId);
+
                 await Task.Yield().ConfigureAwait(false);
+                Assert.Equal(3, asyncLocal.Value);
                 Assert.NotEqual(originalThreadId, Environment.CurrentManagedThreadId);
             });
         }
