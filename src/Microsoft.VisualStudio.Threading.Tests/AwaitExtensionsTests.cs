@@ -24,6 +24,115 @@ namespace Microsoft.VisualStudio.Threading.Tests
         {
         }
 
+        [Theory, CombinatorialData]
+        public void TaskYield_ConfigureAwait_OnDispatcher(bool useDefaultYield)
+        {
+            this.ExecuteOnDispatcher(async delegate
+            {
+                var asyncLocal = new AsyncLocal<object> { Value = 3 };
+                int originalThreadId = Environment.CurrentManagedThreadId;
+
+                if (useDefaultYield)
+                {
+                    await Task.Yield();
+                }
+                else
+                {
+                    await Task.Yield().ConfigureAwait(true);
+                }
+
+                Assert.Equal(3, asyncLocal.Value);
+                Assert.Equal(originalThreadId, Environment.CurrentManagedThreadId);
+
+                await Task.Yield().ConfigureAwait(false);
+                Assert.Equal(3, asyncLocal.Value);
+                Assert.NotEqual(originalThreadId, Environment.CurrentManagedThreadId);
+            });
+        }
+
+        [Theory, CombinatorialData]
+        public void TaskYield_ConfigureAwait_OnDefaultSyncContext(bool useDefaultYield)
+        {
+            Task.Run(async delegate
+            {
+                SynchronizationContext defaultSyncContext = new SynchronizationContext();
+                SynchronizationContext.SetSynchronizationContext(defaultSyncContext);
+                var asyncLocal = new AsyncLocal<object> { Value = 3 };
+
+                if (useDefaultYield)
+                {
+                    await Task.Yield();
+                }
+                else
+                {
+                    await Task.Yield().ConfigureAwait(true);
+                }
+
+                Assert.Equal(3, asyncLocal.Value);
+                Assert.Null(SynchronizationContext.Current);
+
+                await Task.Yield().ConfigureAwait(false);
+                Assert.Equal(3, asyncLocal.Value);
+                Assert.Null(SynchronizationContext.Current);
+            });
+        }
+
+        [Theory, CombinatorialData]
+        public void TaskYield_ConfigureAwait_OnNonDefaultTaskScheduler(bool useDefaultYield)
+        {
+            var scheduler = new MockTaskScheduler();
+            Task.Factory.StartNew(
+                async delegate
+                {
+                    var asyncLocal = new AsyncLocal<object> { Value = 3 };
+
+                    if (useDefaultYield)
+                    {
+                        await Task.Yield();
+                    }
+                    else
+                    {
+                        await Task.Yield().ConfigureAwait(true);
+                    }
+
+                    Assert.Equal(3, asyncLocal.Value);
+                    Assert.Same(scheduler, TaskScheduler.Current);
+
+                    await Task.Yield().ConfigureAwait(false);
+                    Assert.Equal(3, asyncLocal.Value);
+                    Assert.NotSame(scheduler, TaskScheduler.Current);
+                },
+                CancellationToken.None,
+                TaskCreationOptions.None,
+                scheduler).Unwrap().GetAwaiter().GetResult();
+        }
+
+        [Theory, CombinatorialData]
+        public void TaskYield_ConfigureAwait_OnDefaultTaskScheduler(bool useDefaultYield)
+        {
+            Task.Run(
+                async delegate
+                {
+                    var asyncLocal = new AsyncLocal<object> { Value = 3 };
+
+                    if (useDefaultYield)
+                    {
+                        await Task.Yield();
+                    }
+                    else
+                    {
+                        await Task.Yield().ConfigureAwait(true);
+                    }
+
+                    Assert.Equal(3, asyncLocal.Value);
+                    Assert.Same(TaskScheduler.Default, TaskScheduler.Current);
+
+                    await Task.Yield().ConfigureAwait(false);
+                    Assert.Equal(3, asyncLocal.Value);
+                    Assert.Same(TaskScheduler.Default, TaskScheduler.Current);
+                }).GetAwaiter().GetResult();
+        }
+
         [Fact]
         public void AwaitCustomTaskScheduler()
         {
