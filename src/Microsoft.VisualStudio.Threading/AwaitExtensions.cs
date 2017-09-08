@@ -230,28 +230,12 @@ namespace Microsoft.VisualStudio.Threading
             {
                 if (this.continueOnCapturedContext)
                 {
-                    // Get the current SynchronizationContext, and if there is one,
-                    // post the continuation to it.  However, treat the base type
-                    // as if there wasn't a SynchronizationContext, since that's what it
-                    // logically represents.
-                    var syncContext = SynchronizationContext.Current;
-                    if (syncContext != null && syncContext.GetType() != typeof(SynchronizationContext))
-                    {
-                        syncContext.Post(state => ((Action)state)(), continuation);
-                        return;
-                    }
-
-                    // If there was no SynchronizationContext, then try for the current scheduler.
-                    // We only care about it if it's not the default.
-                    var scheduler = TaskScheduler.Current;
-                    if (scheduler != null && scheduler != TaskScheduler.Default)
-                    {
-                        Task.Factory.StartNew(state => ((Action)state)(), continuation, CancellationToken.None, TaskCreationOptions.None, scheduler);
-                        return;
-                    }
+                    Task.Yield().GetAwaiter().OnCompleted(continuation);
                 }
-
-                ThreadPool.QueueUserWorkItem(state => ((Action)state)(), continuation);
+                else
+                {
+                    ThreadPool.QueueUserWorkItem(state => ((Action)state)(), continuation);
+                }
             }
 
             /// <summary>
