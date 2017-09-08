@@ -46,6 +46,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="yieldAwaitable">The result of <see cref="Task.Yield()"/>.</param>
         /// <param name="continueOnCapturedContext">A value indicating whether the continuation should run on the captured <see cref="SynchronizationContext"/>, if any.</param>
         /// <returns>An awaitable.</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "yieldAwaitable", Justification = "This allows the extension method syntax to work.")]
         public static ConfiguredTaskYieldAwaitable ConfigureAwait(this YieldAwaitable yieldAwaitable, bool continueOnCapturedContext)
         {
             return new ConfiguredTaskYieldAwaitable(continueOnCapturedContext);
@@ -173,6 +174,7 @@ namespace Microsoft.VisualStudio.Threading
         /// An awaitable that will always lead the calling async method to yield,
         /// then immediately resume, possibly on the original <see cref="SynchronizationContext"/>.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
         public struct ConfiguredTaskYieldAwaitable
         {
             /// <summary>
@@ -193,6 +195,7 @@ namespace Microsoft.VisualStudio.Threading
             /// Gets the awaiter.
             /// </summary>
             /// <returns>The awaiter.</returns>
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
             public ConfiguredTaskYieldAwaiter GetAwaiter() => new ConfiguredTaskYieldAwaiter(this.continueOnCapturedContext);
         }
 
@@ -200,6 +203,7 @@ namespace Microsoft.VisualStudio.Threading
         /// An awaiter that will always lead the calling async method to yield,
         /// then immediately resume, possibly on the original <see cref="SynchronizationContext"/>.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
         public struct ConfiguredTaskYieldAwaiter : INotifyCompletion
         {
             /// <summary>
@@ -220,6 +224,7 @@ namespace Microsoft.VisualStudio.Threading
             /// Gets a value indicating whether the caller should yield.
             /// </summary>
             /// <value>Always false.</value>
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
             public bool IsCompleted => false;
 
             /// <summary>
