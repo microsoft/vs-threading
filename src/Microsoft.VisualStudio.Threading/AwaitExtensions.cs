@@ -41,6 +41,17 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Converts a <see cref="YieldAwaitable"/> to a <see cref="ConfiguredTaskYieldAwaitable"/>.
+        /// </summary>
+        /// <param name="yieldAwaitable">The result of <see cref="Task.Yield()"/>.</param>
+        /// <param name="continueOnCapturedContext">A value indicating whether the continuation should run on the captured <see cref="SynchronizationContext"/>, if any.</param>
+        /// <returns>An awaitable.</returns>
+        public static ConfiguredTaskYieldAwaitable ConfigureAwait(this YieldAwaitable yieldAwaitable, bool continueOnCapturedContext)
+        {
+            return new ConfiguredTaskYieldAwaitable(continueOnCapturedContext);
+        }
+
+        /// <summary>
         /// An awaitable that executes continuations on the specified task scheduler.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
@@ -147,6 +158,85 @@ namespace Microsoft.VisualStudio.Threading
             public void OnCompleted(Action continuation)
             {
                 Task.Factory.StartNew(continuation, CancellationToken.None, TaskCreationOptions.None, this.scheduler);
+            }
+
+            /// <summary>
+            /// Does nothing.
+            /// </summary>
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
+            public void GetResult()
+            {
+            }
+        }
+
+        /// <summary>
+        /// An awaitable that will always lead the calling async method to yield,
+        /// then immediately resume, possibly on the original <see cref="SynchronizationContext"/>.
+        /// </summary>
+        public struct ConfiguredTaskYieldAwaitable
+        {
+            /// <summary>
+            /// A value indicating whether the continuation should run on the captured <see cref="SynchronizationContext"/>, if any.
+            /// </summary>
+            private readonly bool continueOnCapturedContext;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ConfiguredTaskYieldAwaitable"/> struct.
+            /// </summary>
+            /// <param name="continueOnCapturedContext">A value indicating whether the continuation should run on the captured <see cref="SynchronizationContext"/>, if any.</param>
+            public ConfiguredTaskYieldAwaitable(bool continueOnCapturedContext)
+            {
+                this.continueOnCapturedContext = continueOnCapturedContext;
+            }
+
+            /// <summary>
+            /// Gets the awaiter.
+            /// </summary>
+            /// <returns>The awaiter.</returns>
+            public ConfiguredTaskYieldAwaiter GetAwaiter() => new ConfiguredTaskYieldAwaiter(this.continueOnCapturedContext);
+        }
+
+        /// <summary>
+        /// An awaiter that will always lead the calling async method to yield,
+        /// then immediately resume, possibly on the original <see cref="SynchronizationContext"/>.
+        /// </summary>
+        public struct ConfiguredTaskYieldAwaiter : INotifyCompletion
+        {
+            /// <summary>
+            /// A value indicating whether the continuation should run on the captured <see cref="SynchronizationContext"/>, if any.
+            /// </summary>
+            private readonly bool continueOnCapturedContext;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ConfiguredTaskYieldAwaiter"/> struct.
+            /// </summary>
+            /// <param name="continueOnCapturedContext">A value indicating whether the continuation should run on the captured <see cref="SynchronizationContext"/>, if any.</param>
+            public ConfiguredTaskYieldAwaiter(bool continueOnCapturedContext)
+            {
+                this.continueOnCapturedContext = continueOnCapturedContext;
+            }
+
+            /// <summary>
+            /// Gets a value indicating whether the caller should yield.
+            /// </summary>
+            /// <value>Always false.</value>
+            public bool IsCompleted => false;
+
+            /// <summary>
+            /// Schedules a continuation to execute immediately (but not synchronously).
+            /// </summary>
+            /// <param name="continuation">The delegate to invoke.</param>
+            public void OnCompleted(Action continuation)
+            {
+                SynchronizationContext syncContext;
+                if (this.continueOnCapturedContext && (syncContext = SynchronizationContext.Current) != null)
+                {
+                    syncContext.Post(state => ((Action)state)(), continuation);
+                }
+                else
+                {
+                    ThreadPool.QueueUserWorkItem(state => ((Action)state)(), continuation);
+                }
             }
 
             /// <summary>

@@ -23,6 +23,19 @@ namespace Microsoft.VisualStudio.Threading.Tests
         }
 
         [Fact]
+        public void TaskYield_ConfigureAwait()
+        {
+            this.ExecuteOnDispatcher(async delegate
+            {
+                int originalThreadId = Environment.CurrentManagedThreadId;
+                await Task.Yield().ConfigureAwait(true);
+                Assert.Equal(originalThreadId, Environment.CurrentManagedThreadId);
+                await Task.Yield().ConfigureAwait(false);
+                Assert.NotEqual(originalThreadId, Environment.CurrentManagedThreadId);
+            });
+        }
+
+        [Fact]
         public void AwaitCustomTaskScheduler()
         {
             var mockScheduler = new MockTaskScheduler();
