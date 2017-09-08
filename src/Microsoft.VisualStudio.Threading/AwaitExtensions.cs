@@ -228,15 +228,30 @@ namespace Microsoft.VisualStudio.Threading
             /// <param name="continuation">The delegate to invoke.</param>
             public void OnCompleted(Action continuation)
             {
-                SynchronizationContext syncContext;
-                if (this.continueOnCapturedContext && (syncContext = SynchronizationContext.Current) != null)
+                if (this.continueOnCapturedContext)
                 {
-                    syncContext.Post(state => ((Action)state)(), continuation);
+                    // Get the current SynchronizationContext, and if there is one,
+                    // post the continuation to it.  However, treat the base type
+                    // as if there wasn't a SynchronizationContext, since that's what it
+                    // logically represents.
+                    var syncContext = SynchronizationContext.Current;
+                    if (syncContext != null && syncContext.GetType() != typeof(SynchronizationContext))
+                    {
+                        syncContext.Post(state => ((Action)state)(), continuation);
+                        return;
+                    }
+
+                    // If there was no SynchronizationContext, then try for the current scheduler.
+                    // We only care about it if it's not the default.
+                    var scheduler = TaskScheduler.Current;
+                    if (scheduler != null && scheduler != TaskScheduler.Default)
+                    {
+                        Task.Factory.StartNew(state => ((Action)state)(), continuation, CancellationToken.None, TaskCreationOptions.None, scheduler);
+                        return;
+                    }
                 }
-                else
-                {
-                    ThreadPool.QueueUserWorkItem(state => ((Action)state)(), continuation);
-                }
+
+                ThreadPool.QueueUserWorkItem(state => ((Action)state)(), continuation);
             }
 
             /// <summary>
