@@ -176,6 +176,26 @@
             VerifyCanInlineContinuations(task, () => cts.Cancel());
         }
 
+        [Fact]
+        public async Task WaitAsync_Canceled_Stress()
+        {
+            for (int i = 0; i < 500; i++)
+            {
+                var cts = new CancellationTokenSource();
+                Task mostRecentWaitTask;
+                try
+                {
+                    Task.Run(() => cts.Cancel()).Forget();
+                    await Assert.ThrowsAsync<TaskCanceledException>(() => mostRecentWaitTask = this.evt.WaitAsync(cts.Token)).WithTimeout(UnexpectedTimeout);
+                }
+                catch (TimeoutException)
+                {
+                    this.Logger.WriteLine("Failed after {0} iterations.", i);
+                    throw;
+                }
+            }
+        }
+
         /// <summary>
         /// Verifies that long-lived, uncanceled CancellationTokens do not result in leaking memory.
         /// </summary>
