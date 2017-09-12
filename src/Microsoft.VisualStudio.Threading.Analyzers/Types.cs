@@ -107,6 +107,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             internal const string InvokeAsync = "InvokeAsync";
 
             internal const string BeginInvoke = "BeginInvoke";
+
+            internal const string CheckAccess = "CheckAccess";
         }
 
         internal static class Dispatcher

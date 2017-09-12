@@ -15,6 +15,12 @@
             nameof(global::System.Threading),
         };
 
+        internal static readonly IReadOnlyList<string> SystemDiagnostics = new[]
+        {
+            nameof(System),
+            nameof(global::System.Diagnostics),
+        };
+
         internal static readonly IReadOnlyList<string> SystemThreadingTasks = new[]
         {
             nameof(System),

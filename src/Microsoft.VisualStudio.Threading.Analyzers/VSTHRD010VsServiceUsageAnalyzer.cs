@@ -52,24 +52,9 @@
            defaultSeverity: DiagnosticSeverity.Warning,
            isEnabledByDefault: true);
 
-        private static readonly IImmutableSet<string> KnownMethodsToVerifyMainThread = ImmutableHashSet.Create(StringComparer.Ordinal,
-            "VerifyOnUIThread",
-            "ThrowIfNotOnUIThread");
-
         private static readonly IImmutableSet<string> KnownMethodsToSwitchToMainThread = ImmutableHashSet.Create(StringComparer.Ordinal,
             Types.JoinableTaskFactory.SwitchToMainThreadAsync,
             "SwitchToUIThread");
-
-        private static readonly IImmutableSet<SyntaxKind> MethodSyntaxKinds = ImmutableHashSet.Create(
-            SyntaxKind.ConstructorDeclaration,
-            SyntaxKind.MethodDeclaration,
-            SyntaxKind.AnonymousMethodExpression,
-            SyntaxKind.SimpleLambdaExpression,
-            SyntaxKind.ParenthesizedLambdaExpression,
-            SyntaxKind.GetAccessorDeclaration,
-            SyntaxKind.SetAccessorDeclaration,
-            SyntaxKind.AddAccessorDeclaration,
-            SyntaxKind.RemoveAccessorDeclaration);
 
         private enum ThreadingContext
         {
@@ -133,10 +118,10 @@
                 var invokeMethod = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
                 if (invokeMethod != null)
                 {
-                    var methodDeclaration = context.Node.FirstAncestorOrSelf<SyntaxNode>(n => MethodSyntaxKinds.Contains(n.Kind()));
+                    var methodDeclaration = context.Node.FirstAncestorOrSelf<SyntaxNode>(n => CommonInterest.MethodSyntaxKinds.Contains(n.Kind()));
                     if (methodDeclaration != null)
                     {
-                        if (KnownMethodsToVerifyMainThread.Contains(invokeMethod.Name) || KnownMethodsToSwitchToMainThread.Contains(invokeMethod.Name))
+                        if (CommonInterest.KnownMethodsToVerifyMainThread.Contains(invokeMethod.Name) || KnownMethodsToSwitchToMainThread.Contains(invokeMethod.Name))
                         {
                             this.methodDeclarationNodes = this.methodDeclarationNodes.SetItem(methodDeclaration, ThreadingContext.MainThread);
                             return;
@@ -206,7 +191,7 @@
                 if (requiresUIThread)
                 {
                     var threadingContext = ThreadingContext.Unknown;
-                    var methodDeclaration = context.Node.FirstAncestorOrSelf<SyntaxNode>(n => MethodSyntaxKinds.Contains(n.Kind()));
+                    var methodDeclaration = context.Node.FirstAncestorOrSelf<SyntaxNode>(n => CommonInterest.MethodSyntaxKinds.Contains(n.Kind()));
                     if (methodDeclaration != null)
                     {
                         threadingContext = this.methodDeclarationNodes.GetValueOrDefault(methodDeclaration);
