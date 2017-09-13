@@ -10,21 +10,21 @@
     using Xunit;
     using Xunit.Abstractions;
 
-    public class VSTHRD013AssertThreadRequirementUnconditionallyTests : DiagnosticVerifier
+    public class VSTHRD108AssertThreadRequirementUnconditionallyTests : DiagnosticVerifier
     {
         private DiagnosticResult expect = new DiagnosticResult
         {
-            Id = VSTHRD013AssertThreadRequirementUnconditionally.Id,
+            Id = VSTHRD108AssertThreadRequirementUnconditionally.Id,
             SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Warning,
         };
 
-        public VSTHRD013AssertThreadRequirementUnconditionallyTests(ITestOutputHelper logger)
+        public VSTHRD108AssertThreadRequirementUnconditionallyTests(ITestOutputHelper logger)
             : base(logger)
         {
         }
 
-        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer() => new VSTHRD013AssertThreadRequirementUnconditionally();
+        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer() => new VSTHRD108AssertThreadRequirementUnconditionally();
 
         [Fact]
         public void AffinityAssertion_Unconditional_ProducesNoDiagnostic()

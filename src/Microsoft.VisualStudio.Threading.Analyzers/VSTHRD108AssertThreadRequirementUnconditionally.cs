@@ -32,14 +32,14 @@
     /// So a new analyzer should require that the thread-asserting statement appear near the top of the method, and outside of any conditional blocks.
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class VSTHRD013AssertThreadRequirementUnconditionally : DiagnosticAnalyzer
+    public class VSTHRD108AssertThreadRequirementUnconditionally : DiagnosticAnalyzer
     {
-        public const string Id = "VSTHRD013";
+        public const string Id = "VSTHRD108";
 
         internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
            id: Id,
-           title: Strings.VSTHRD013_Title,
-           messageFormat: Strings.VSTHRD013_MessageFormat,
+           title: Strings.VSTHRD108_Title,
+           messageFormat: Strings.VSTHRD108_MessageFormat,
            category: "Usage",
            defaultSeverity: DiagnosticSeverity.Warning,
            isEnabledByDefault: true);

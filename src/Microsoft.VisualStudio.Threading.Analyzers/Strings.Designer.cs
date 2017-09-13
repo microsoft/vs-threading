@@ -202,18 +202,18 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         /// <summary>
         ///   Looks up a localized string similar to Thread affinity checks should be unconditional..
         /// </summary>
-        internal static string VSTHRD013_MessageFormat {
+        internal static string VSTHRD108_MessageFormat {
             get {
-                return ResourceManager.GetString("VSTHRD013_MessageFormat", resourceCulture);
+                return ResourceManager.GetString("VSTHRD108_MessageFormat", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Assert thread affinity unconditionally.
         /// </summary>
-        internal static string VSTHRD013_Title {
+        internal static string VSTHRD108_Title {
             get {
-                return ResourceManager.GetString("VSTHRD013_Title", resourceCulture);
+                return ResourceManager.GetString("VSTHRD108_Title", resourceCulture);
             }
         }
         
