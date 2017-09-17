@@ -428,17 +428,22 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
                 semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
                 methodSymbol = semanticModel.GetDeclaredSymbol(method, cancellationToken);
-                var solution = await Renamer.RenameSymbolAsync(
-                    document.Project.Solution,
-                    methodSymbol,
-                    newName,
-                    document.Project.Solution.Workspace.Options,
-                    cancellationToken).ConfigureAwait(false);
-                document = solution.GetDocument(document.Id);
-                semanticModel = null;
-                methodSymbol = null;
-                var root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-                method = (MethodDeclarationSyntax)root.GetAnnotatedNodes(methodBookmark).Single();
+
+                // Don't rename entrypoint (i.e. "Main") methods.
+                if (!IsEntrypointMethod(methodSymbol, semanticModel, cancellationToken))
+                {
+                    var solution = await Renamer.RenameSymbolAsync(
+                        document.Project.Solution,
+                        methodSymbol,
+                        newName,
+                        document.Project.Solution.Workspace.Options,
+                        cancellationToken).ConfigureAwait(false);
+                    document = solution.GetDocument(document.Id);
+                    semanticModel = null;
+                    methodSymbol = null;
+                    var root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+                    method = (MethodDeclarationSyntax)root.GetAnnotatedNodes(methodBookmark).Single();
+                }
             }
 
             // Update callers to await calls to this method if we made it awaitable.
