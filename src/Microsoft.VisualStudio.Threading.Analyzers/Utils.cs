@@ -263,7 +263,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static bool IsEntrypointMethod(ISymbol symbol, SemanticModel semanticModel, CancellationToken cancellationToken)
         {
-            return semanticModel.Compilation?.GetEntryPoint(cancellationToken)?.Equals(symbol) ?? false;
+            return semanticModel.Compilation != null && IsEntrypointMethod(symbol, semanticModel.Compilation, cancellationToken);
+        }
+
+        internal static bool IsEntrypointMethod(ISymbol symbol, Compilation compilation, CancellationToken cancellationToken)
+        {
+            return compilation.GetEntryPoint(cancellationToken)?.Equals(symbol) ?? false;
         }
 
         internal static bool IsObsolete(this ISymbol symbol)

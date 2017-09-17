@@ -57,6 +57,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 if (methodSymbol.ReturnType.Name == nameof(Task) &&
                     methodSymbol.ReturnType.BelongsToNamespace(Namespaces.SystemThreadingTasks))
                 {
+                    // Skip entrypoint methods since they must be called Main.
+                    if (Utils.IsEntrypointMethod(methodSymbol, context.Compilation, context.CancellationToken))
+                    {
+                        return;
+                    }
+
                     // Now that we have done the cheap checks to find that this method may deserve a diagnostic,
                     // Do deeper checks to skip over methods that implement API contracts that are controlled elsewhere.
                     if (methodSymbol.FindInterfacesImplemented().Any() || methodSymbol.IsOverride)
