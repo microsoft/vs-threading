@@ -226,8 +226,8 @@ class TestClient {
 }
 " };
             this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 21, 8, 27) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
-            this.VerifyCSharpFix(test, withFix);
+            this.VerifyCSharpDiagnostic(test, hasEntrypoint: true, allowErrors: false, expected: this.expect);
+            this.VerifyCSharpFix(test, withFix, hasEntrypoint: true);
         }
 
         [Fact]
