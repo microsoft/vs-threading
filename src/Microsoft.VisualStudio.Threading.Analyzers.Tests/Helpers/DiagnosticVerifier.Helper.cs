@@ -197,7 +197,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 .AddMetadataReference(projectId, ThreadingReference)
                 .AddMetadataReference(projectId, WindowsBaseReference)
                 .AddMetadataReference(projectId, OleInteropReference)
-                .WithProjectCompilationOptions(projectId, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+                .WithProjectCompilationOptions(projectId, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
+                .WithProjectParseOptions(projectId, new CSharpParseOptions(LanguageVersion.Latest));
 
             var pathToLibs = ToolLocationHelper.GetPathToStandardLibraries(".NETFramework", "v4.5.1", string.Empty);
             if (!string.IsNullOrEmpty(pathToLibs))
