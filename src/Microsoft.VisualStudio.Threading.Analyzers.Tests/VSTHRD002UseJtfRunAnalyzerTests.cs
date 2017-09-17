@@ -179,6 +179,11 @@ class Test {
     int Subtract(int a, int b) {
         return GetNumber(a) - b;
     }
+
+    static int Main(string[] args)
+    {
+        return new Test().Add(1, 2);
+    }
 }
 ",
                 @"
@@ -205,6 +210,11 @@ class Test {
 
     async Task<int> SubtractAsync(int a, int b) {
         return await GetNumberAsync(a) - b;
+    }
+
+    static async Task<int> Main(string[] args)
+    {
+        return await new Test().AddAsync(1, 2);
     }
 }
 ",
