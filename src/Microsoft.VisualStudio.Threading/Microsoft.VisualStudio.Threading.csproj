@@ -50,8 +50,8 @@
   <ItemGroup>
     <Reference Include="System.Configuration" Condition=" '$(TargetFramework)' == 'net45' " />
     <PackageReference Include="Microsoft.VisualStudio.Validation" Version="15.3.15" />
-    <PackageReference Include="MicroBuild.VisualStudio" Version="2.0.42" PrivateAssets="all" />
-    <PackageReference Include="MSBuild.SDK.Extras" Version="1.0.5" PrivateAssets="all" />
+    <PackageReference Include="MicroBuild.VisualStudio" Version="$(MicroBuildVersion)" PrivateAssets="all" />
+    <PackageReference Include="MSBuild.SDK.Extras" Version="1.0.6" PrivateAssets="all" />
     <PackageReference Include="PdbGit" Version="3.0.41" PrivateAssets="all" />
   </ItemGroup>
   <Import Project="$(MSBuildSDKExtrasTargets)" Condition="Exists('$(MSBuildSDKExtrasTargets)')" />
