@@ -174,6 +174,14 @@ Bunun yerine AsyncLazy&lt;T&gt; kullanın.</target>
           <target state="translated">Bunun yerine await kullanın</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
         </trans-unit>
+        <trans-unit id="VSTHRD108_MessageFormat" translate="yes" xml:space="preserve">
+          <source>Thread affinity checks should be unconditional.</source>
+          <target state="new">Thread affinity checks should be unconditional.</target>
+        </trans-unit>
+        <trans-unit id="VSTHRD108_Title" translate="yes" xml:space="preserve">
+          <source>Assert thread affinity unconditionally</source>
+          <target state="new">Assert thread affinity unconditionally</target>
+        </trans-unit>
       </group>
     </body>
   </file>
