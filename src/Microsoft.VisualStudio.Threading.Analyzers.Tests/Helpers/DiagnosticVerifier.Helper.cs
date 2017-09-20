@@ -56,7 +56,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <returns>An IEnumerable of Diagnostics that surfaced in the source code, sorted by Location</returns>
         protected static Diagnostic[] GetSortedDiagnostics(string[] sources, string language, ImmutableArray<DiagnosticAnalyzer> analyzers, bool hasEntrypoint, bool allowErrors = false)
         {
-            return GetSortedDiagnosticsFromDocuments(analyzers, GetDocuments(sources, language), hasEntrypoint, allowErrors);
+            return GetSortedDiagnosticsFromDocuments(analyzers, GetDocuments(sources, language, hasEntrypoint), allowErrors);
         }
 
         /// <summary>
@@ -65,10 +65,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// </summary>
         /// <param name="analyzers">The analyzers to run on the documents</param>
         /// <param name="documents">The Documents that the analyzer will be run on</param>
-        /// <param name="hasEntrypoint"><c>true</c> to set the compiler in a mode as if it were compiling an exe (as opposed to a dll).</param>
         /// <param name="allowErrors">A value indicating whether to fail the test if there are compiler errors in the code sample.</param>
         /// <returns>An IEnumerable of Diagnostics that surfaced in the source code, sorted by Location</returns>
-        protected static Diagnostic[] GetSortedDiagnosticsFromDocuments(ImmutableArray<DiagnosticAnalyzer> analyzers, Document[] documents, bool hasEntrypoint, bool allowErrors = false)
+        protected static Diagnostic[] GetSortedDiagnosticsFromDocuments(ImmutableArray<DiagnosticAnalyzer> analyzers, Document[] documents, bool allowErrors = false)
         {
             var projects = new HashSet<Project>();
             foreach (var document in documents)
@@ -80,11 +79,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
             foreach (var project in projects)
             {
                 var compilation = project.GetCompilationAsync().GetAwaiter().GetResult();
-                if (hasEntrypoint)
-                {
-                    compilation = compilation.WithOptions(compilation.Options.WithOutputKind(OutputKind.ConsoleApplication));
-                }
-
                 var ordinaryDiags = compilation.GetDiagnostics();
                 var errorDiags = ordinaryDiags.Where(d => d.Severity == DiagnosticSeverity.Error);
                 if (!allowErrors && errorDiags.Any())
@@ -139,8 +133,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// </summary>
         /// <param name="sources">Classes in the form of strings</param>
         /// <param name="language">The language the source code is in</param>
+        /// <param name="hasEntrypoint"><c>true</c> to set the compiler in a mode as if it were compiling an exe (as opposed to a dll).</param>
         /// <returns>An array of Documents produced from the source strings</returns>
-        private static Document[] GetDocuments(string[] sources, string language)
+        private static Document[] GetDocuments(string[] sources, string language, bool hasEntrypoint)
         {
             if (language != LanguageNames.CSharp && language != LanguageNames.VisualBasic)
             {
@@ -152,7 +147,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 string fileName = language == LanguageNames.CSharp ? "Test" + i + ".cs" : "Test" + i + ".vb";
             }
 
-            var project = CreateProject(sources, language);
+            var project = CreateProject(sources, language, hasEntrypoint);
             var documents = project.Documents.ToArray();
 
             if (sources.Length != documents.Length)
@@ -168,10 +163,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// </summary>
         /// <param name="source">Classes in the form of a string</param>
         /// <param name="language">The language the source code is in</param>
+        /// <param name="hasEntrypoint"><c>true</c> to set the compiler in a mode as if it were compiling an exe (as opposed to a dll).</param>
         /// <returns>A Document created from the source string</returns>
-        protected static Document CreateDocument(string source, string language = LanguageNames.CSharp)
+        protected static Document CreateDocument(string source, string language = LanguageNames.CSharp, bool hasEntrypoint = false)
         {
-            return CreateProject(new[] { source }, language).Documents.First();
+            return CreateProject(new[] { source }, language, hasEntrypoint).Documents.First();
         }
 
         /// <summary>
@@ -179,8 +175,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// </summary>
         /// <param name="sources">Classes in the form of strings</param>
         /// <param name="language">The language the source code is in</param>
+        /// <param name="hasEntrypoint"><c>true</c> to set the compiler in a mode as if it were compiling an exe (as opposed to a dll).</param>
         /// <returns>A Project created out of the Documents created from the source strings</returns>
-        protected static Project CreateProject(string[] sources, string language = LanguageNames.CSharp)
+        protected static Project CreateProject(string[] sources, string language = LanguageNames.CSharp, bool hasEntrypoint = false)
         {
             string fileNamePrefix = DefaultFilePathPrefix;
             string fileExt = language == LanguageNames.CSharp ? CSharpDefaultFileExt : VisualBasicDefaultExt;
@@ -197,7 +194,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 .AddMetadataReference(projectId, ThreadingReference)
                 .AddMetadataReference(projectId, WindowsBaseReference)
                 .AddMetadataReference(projectId, OleInteropReference)
-                .WithProjectCompilationOptions(projectId, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
+                .WithProjectCompilationOptions(projectId, new CSharpCompilationOptions(hasEntrypoint ? OutputKind.ConsoleApplication : OutputKind.DynamicallyLinkedLibrary))
                 .WithProjectParseOptions(projectId, new CSharpParseOptions(LanguageVersion.Latest));
 
             var pathToLibs = ToolLocationHelper.GetPathToStandardLibraries(".NETFramework", "v4.5.1", string.Empty);
