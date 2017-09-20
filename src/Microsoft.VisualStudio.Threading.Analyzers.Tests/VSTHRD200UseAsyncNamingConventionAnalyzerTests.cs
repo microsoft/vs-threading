@@ -56,6 +56,58 @@ class Test {
         }
 
         [Fact]
+        public void TaskReturningMainMethodWithoutSuffix_GeneratesNoWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    static async Task Main()
+    {
+        await Task.Yield();
+    }
+}
+";
+
+            this.VerifyCSharpDiagnostic(new[] { test }, true, allowErrors: false);
+        }
+
+        [Fact]
+        public void TaskReturningMainMethodWithArgsWithoutSuffix_GeneratesNoWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    static async Task Main(string[] args)
+    {
+        await Task.Yield();
+    }
+}
+";
+
+            this.VerifyCSharpDiagnostic(new[] { test }, true, allowErrors: false);
+        }
+
+        [Fact]
+        public void TaskOfIntReturningMainMethodWithoutSuffix_GeneratesNoWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    static async Task<int> Main()
+    {
+        await Task.Yield();
+        return 0;
+    }
+}
+";
+
+            this.VerifyCSharpDiagnostic(new[] { test }, true, allowErrors: false);
+        }
+
+        [Fact]
         public void TaskReturningMethodWithoutSuffix_CodeFixUpdatesCallers()
         {
             var test = @"
