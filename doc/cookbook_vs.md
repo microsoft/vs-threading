@@ -71,6 +71,28 @@ await ThreadHelper.JoinableTaskFactory.StartOnIdle(
     });
 ```
 
+## Run on a threadpool thread with low I/O priority
+
+If you do not need the UI thread, and further want to take care that any I/O you require takes low priority
+so as to not compete with the rest of Visual Studio's I/O needs (for truly background work), you can
+await a specialized VS TaskScheduler that does just that:
+
+```csharp
+await ThreadHelper.JoinableTaskFactory.RunAsync(
+    async delegate
+    {
+        // Switch to a threadpool thread with a specially set "low I/O priority" bit.
+        IVsTaskSchedulerService2 service = (IVsTaskSchedulerService2)VsTaskLibraryHelper.ServiceInstance;
+        await (TaskScheduler)service.GetTaskScheduler((uint)VsTaskRunContext.BackgroundThreadLowIOPriority);
+
+        await DoSomeWorkOnAsync(); // Don't use .ConfigureAwait(false) here, in order to remain on low I/O priority.
+        await DoSomeMoreWorkOnAsync();
+    });
+```
+
+Note you can use `StartOnIdle` instead of `RunAsync` from the snippet above if you want to wait to start your work
+till a point when the VS UI thread is idle as well.
+
 ## Call async code from a synchronous method (and block on the result)
 
 ```csharp
