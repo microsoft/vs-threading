@@ -50,9 +50,10 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <param name="newSource">A class in the form of a string after the CodeFix was applied to it</param>
         /// <param name="codeFixIndex">Index determining which codefix to apply if there are multiple</param>
         /// <param name="allowNewCompilerDiagnostics">A bool controlling whether or not the test will fail if the CodeFix introduces other warnings after being applied</param>
-        protected void VerifyCSharpFix(string oldSource, string newSource, int? codeFixIndex = null, bool allowNewCompilerDiagnostics = false)
+        /// <param name="hasEntrypoint"><c>true</c> to set the compiler in a mode as if it were compiling an exe (as opposed to a dll).</param>
+        protected void VerifyCSharpFix(string oldSource, string newSource, int? codeFixIndex = null, bool allowNewCompilerDiagnostics = false, bool hasEntrypoint = false)
         {
-            this.VerifyFix(LanguageNames.CSharp, this.GetCSharpDiagnosticAnalyzer(), this.GetCSharpCodeFixProvider(), new[] { oldSource }, new[] { newSource }, codeFixIndex, allowNewCompilerDiagnostics);
+            this.VerifyFix(LanguageNames.CSharp, this.GetCSharpDiagnosticAnalyzer(), this.GetCSharpCodeFixProvider(), new[] { oldSource }, new[] { newSource }, codeFixIndex, allowNewCompilerDiagnostics, hasEntrypoint);
         }
 
         /// <summary>
@@ -62,9 +63,10 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <param name="newSources">Code files, each in the form of a string after the CodeFix was applied to it</param>
         /// <param name="codeFixIndex">Index determining which codefix to apply if there are multiple</param>
         /// <param name="allowNewCompilerDiagnostics">A bool controlling whether or not the test will fail if the CodeFix introduces other warnings after being applied</param>
-        protected void VerifyCSharpFix(string[] oldSources, string[] newSources, int? codeFixIndex = null, bool allowNewCompilerDiagnostics = false)
+        /// <param name="hasEntrypoint"><c>true</c> to set the compiler in a mode as if it were compiling an exe (as opposed to a dll).</param>
+        protected void VerifyCSharpFix(string[] oldSources, string[] newSources, int? codeFixIndex = null, bool allowNewCompilerDiagnostics = false, bool hasEntrypoint = false)
         {
-            this.VerifyFix(LanguageNames.CSharp, this.GetCSharpDiagnosticAnalyzer(), this.GetCSharpCodeFixProvider(), oldSources, newSources, codeFixIndex, allowNewCompilerDiagnostics);
+            this.VerifyFix(LanguageNames.CSharp, this.GetCSharpDiagnosticAnalyzer(), this.GetCSharpCodeFixProvider(), oldSources, newSources, codeFixIndex, allowNewCompilerDiagnostics, hasEntrypoint);
         }
 
         /// <summary>
@@ -74,20 +76,21 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <param name="newSource">A class in the form of a string after the CodeFix was applied to it</param>
         /// <param name="codeFixIndex">Index determining which codefix to apply if there are multiple in the same location</param>
         /// <param name="allowNewCompilerDiagnostics">A bool controlling whether or not the test will fail if the CodeFix introduces other warnings after being applied</param>
-        protected void VerifyBasicFix(string oldSource, string newSource, int? codeFixIndex = null, bool allowNewCompilerDiagnostics = false)
+        /// <param name="hasEntrypoint"><c>true</c> to set the compiler in a mode as if it were compiling an exe (as opposed to a dll).</param>
+        protected void VerifyBasicFix(string oldSource, string newSource, int? codeFixIndex = null, bool allowNewCompilerDiagnostics = false, bool hasEntrypoint = false)
         {
-            this.VerifyFix(LanguageNames.VisualBasic, this.GetBasicDiagnosticAnalyzer(), this.GetBasicCodeFixProvider(), new[] { oldSource }, new[] { newSource }, codeFixIndex, allowNewCompilerDiagnostics);
+            this.VerifyFix(LanguageNames.VisualBasic, this.GetBasicDiagnosticAnalyzer(), this.GetBasicCodeFixProvider(), new[] { oldSource }, new[] { newSource }, codeFixIndex, allowNewCompilerDiagnostics, hasEntrypoint);
         }
 
-        protected void VerifyNoCSharpFixOffered(string oldSource)
+        protected void VerifyNoCSharpFixOffered(string oldSource, bool hasEntrypoint = false)
         {
-            this.VerifyNoFixOffered(LanguageNames.CSharp, this.GetCSharpDiagnosticAnalyzer(), this.GetCSharpCodeFixProvider(), oldSource);
+            this.VerifyNoFixOffered(LanguageNames.CSharp, this.GetCSharpDiagnosticAnalyzer(), this.GetCSharpCodeFixProvider(), oldSource, hasEntrypoint);
         }
 
-        private void VerifyNoFixOffered(string language, DiagnosticAnalyzer analyzer, CodeFixProvider codeFixProvider, string source)
+        private void VerifyNoFixOffered(string language, DiagnosticAnalyzer analyzer, CodeFixProvider codeFixProvider, string source, bool hasEntrypoint)
         {
-            var document = CreateDocument(source, language);
-            var analyzerDiagnostics = GetSortedDiagnosticsFromDocuments(ImmutableArray.Create(analyzer), new[] { document }, hasEntrypoint: false);
+            var document = CreateDocument(source, language, hasEntrypoint);
+            var analyzerDiagnostics = GetSortedDiagnosticsFromDocuments(ImmutableArray.Create(analyzer), new[] { document });
             var compilerDiagnostics = GetCompilerDiagnostics(document);
             var attempts = analyzerDiagnostics.Length;
 
@@ -113,10 +116,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         /// <param name="newSources">Code files, each in the form of a string after the CodeFix was applied to it</param>
         /// <param name="codeFixIndex">Index determining which codefix to apply if there are multiple in the same location</param>
         /// <param name="allowNewCompilerDiagnostics">A bool controlling whether or not the test will fail if the CodeFix introduces other warnings after being applied</param>
-        private void VerifyFix(string language, DiagnosticAnalyzer analyzer, CodeFixProvider codeFixProvider, string[] oldSources, string[] newSources, int? codeFixIndex, bool allowNewCompilerDiagnostics)
+        /// <param name="hasEntrypoint"><c>true</c> to set the compiler in a mode as if it were compiling an exe (as opposed to a dll).</param>
+        private void VerifyFix(string language, DiagnosticAnalyzer analyzer, CodeFixProvider codeFixProvider, string[] oldSources, string[] newSources, int? codeFixIndex, bool allowNewCompilerDiagnostics, bool hasEntrypoint)
         {
-            var project = CreateProject(oldSources, language);
-            var analyzerDiagnostics = GetSortedDiagnosticsFromDocuments(ImmutableArray.Create(analyzer), project.Documents.ToArray(), hasEntrypoint: false);
+            var project = CreateProject(oldSources, language, hasEntrypoint);
+            var analyzerDiagnostics = GetSortedDiagnosticsFromDocuments(ImmutableArray.Create(analyzer), project.Documents.ToArray(), hasEntrypoint);
             var compilerDiagnostics = project.Documents.SelectMany(doc => GetCompilerDiagnostics(doc));
             var attempts = analyzerDiagnostics.Length;
 
@@ -138,7 +142,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 
                 this.logger.WriteLine("Code after fix:\n{0}", document.GetSyntaxRootAsync().Result.ToFullString());
 
-                analyzerDiagnostics = GetSortedDiagnosticsFromDocuments(ImmutableArray.Create(analyzer), project.Documents.ToArray(), hasEntrypoint: false);
+                analyzerDiagnostics = GetSortedDiagnosticsFromDocuments(ImmutableArray.Create(analyzer), project.Documents.ToArray());
                 var newCompilerDiagnostics = GetNewDiagnostics(
                     compilerDiagnostics,
                     project.Documents.SelectMany(doc => GetCompilerDiagnostics(doc)));
