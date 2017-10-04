@@ -265,11 +265,11 @@ public class Test {
             Assert.False(refAssemblies.Any(a => a.Name.Equals("System.ValueTuple", StringComparison.OrdinalIgnoreCase)));
         }
 
-        private void VerifyNoMoreThanOneDiagnosticPerLine(string test)
+        private void VerifyNoMoreThanOneDiagnosticPerLine(string test, bool hasEntrypoint = false)
         {
             this.LogFileContent(test);
             ImmutableArray<DiagnosticAnalyzer> analyzers = this.GetCSharpDiagnosticAnalyzers();
-            var actualResults = GetSortedDiagnostics(new[] { test }, LanguageNames.CSharp, analyzers, false);
+            var actualResults = GetSortedDiagnostics(new[] { test }, LanguageNames.CSharp, analyzers, hasEntrypoint);
             string diagnosticsOutput = actualResults.Any() ? FormatDiagnostics(analyzers, actualResults.ToArray()) : "    NONE.";
             this.logger.WriteLine("Actual diagnostics:\n" + diagnosticsOutput);
 

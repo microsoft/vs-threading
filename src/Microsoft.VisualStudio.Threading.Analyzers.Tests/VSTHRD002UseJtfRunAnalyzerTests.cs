@@ -179,6 +179,11 @@ class Test {
     int Subtract(int a, int b) {
         return GetNumber(a) - b;
     }
+
+    static int Main(string[] args)
+    {
+        return new Test().Add(1, 2);
+    }
 }
 ",
                 @"
@@ -206,6 +211,11 @@ class Test {
     async Task<int> SubtractAsync(int a, int b) {
         return await GetNumberAsync(a) - b;
     }
+
+    static async Task<int> Main(string[] args)
+    {
+        return await new Test().AddAsync(1, 2);
+    }
 }
 ",
                 @"
@@ -216,8 +226,8 @@ class TestClient {
 }
 " };
             this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 21, 8, 27) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
-            this.VerifyCSharpFix(test, withFix);
+            this.VerifyCSharpDiagnostic(test, hasEntrypoint: true, allowErrors: false, expected: this.expect);
+            this.VerifyCSharpFix(test, withFix, hasEntrypoint: true);
         }
 
         [Fact]
