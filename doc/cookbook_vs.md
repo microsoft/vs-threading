@@ -24,6 +24,10 @@ IThreadHandling`.
   using Task = System.Threading.Tasks.Task;
   ```
 
+### Installing the analyzers
+
+It is highly recommended that you install the [Microsoft.VisualStudio.Threading.Analyzers][AnalyzerNuPkg] NuGet package which adds analyzers to your project to help catch many common violations of [the threading rules](threading_rules.md), helping you prevent your code from deadlocking.
+
 ## How to switch to a background thread
 
 ```csharp
@@ -293,5 +297,6 @@ Your async work should generally also honor the `AsyncPackage.DisposalToken` and
 token is signaled so that VS shutdown is not slowed down significantly by work that no longer matters.
 
 [NuPkg]: https://www.nuget.org/packages/Microsoft.VisualStudio.Threading
+[AnalyzerNuPkg]: https://www.nuget.org/packages/Microsoft.VisualStudio.Threading.Analyzers
 [MSDNIVsTaskGetAwaiter]: https://msdn.microsoft.com/en-us/library/vstudio/hh598836.aspx
 [AsyncPackage101]: https://microsoft.sharepoint.com/teams/DD_VSIDE/_layouts/15/WopiFrame.aspx?sourcedoc=%7b84C6ABED-E111-4B5D-B2D6-8B6FAF37F0D4%7d&file=Async%20Package%20101.docx&action=default
