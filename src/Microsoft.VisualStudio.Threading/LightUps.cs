@@ -26,7 +26,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Gets a value indicating whether we execute .NET 4.5 code even on later versions of the Framework.
         /// </summary>
 #if NET45
-        internal static readonly bool ForceNet45Mode = System.Configuration.ConfigurationManager.AppSettings["Microsoft.VisualStudio.Threading.NET45Mode"] == "true";
+        internal static readonly bool ForceNet45Mode = IsAppSettingTrue("Microsoft.VisualStudio.Threading.NET45Mode");
 #else
         internal const bool ForceNet45Mode = false;
 #endif
@@ -35,7 +35,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets a value indicating whether we execute Windows 7 code even on later versions of Windows.
         /// </summary>
-        internal static readonly bool ForceWindows7Mode = System.Configuration.ConfigurationManager.AppSettings["Microsoft.VisualStudio.Threading.Windows7Mode"] == "true";
+        internal static readonly bool ForceWindows7Mode = IsAppSettingTrue("Microsoft.VisualStudio.Threading.Windows7Mode");
 #elif DESKTOP || NETSTANDARD2_0
         /// <summary>
         /// Gets a value indicating whether we execute Windows 7 code even on later versions of Windows.
@@ -104,6 +104,27 @@ namespace Microsoft.VisualStudio.Threading
                 return !ForceWindows7Mode
                     && Environment.OSVersion.Platform == PlatformID.Win32NT
                     && Environment.OSVersion.Version >= Windows8Version;
+            }
+        }
+#endif
+
+#if NET45
+        /// <summary>
+        /// Gets the app.config AppSettings entry with the specified name.
+        /// </summary>
+        /// <param name="name">The name of the app setting.</param>
+        /// <returns>The value, or null if it isn't specified.</returns>
+        private static bool IsAppSettingTrue(string name)
+        {
+            try
+            {
+                return System.Configuration.ConfigurationManager.AppSettings[name] == "true";
+            }
+            catch (System.Configuration.ConfigurationErrorsException)
+            {
+                // A parsing error in the .config file will cause this to be thrown, and we should silently swallow it
+                // rather than throw in our static constructor.
+                return false;
             }
         }
 #endif
