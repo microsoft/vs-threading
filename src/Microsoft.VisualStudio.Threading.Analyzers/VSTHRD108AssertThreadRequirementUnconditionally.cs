@@ -82,7 +82,7 @@
         private static bool IsArgInInvocationToConditionalMethod(SyntaxNodeAnalysisContext context)
         {
             var argument = GetAncestorsWithinMethod(context.Node).OfType<ArgumentSyntax>().FirstOrDefault();
-            var containingInvocationSyntax = argument.FirstAncestorOrSelf<InvocationExpressionSyntax>();
+            var containingInvocationSyntax = argument?.FirstAncestorOrSelf<InvocationExpressionSyntax>();
             if (containingInvocationSyntax != null)
             {
                 var symbolOfContainingMethodInvocation = context.SemanticModel.GetSymbolInfo(containingInvocationSyntax.Expression).Symbol;
