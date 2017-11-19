@@ -215,5 +215,25 @@ class Test {
             this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 33, 8, 44) };
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
+
+        [Fact]
+        public void ThreadCheckWithinIfExpression_ProducesNoDiagnostic()
+        {
+            var test = @"
+using System;
+using Microsoft.VisualStudio.Shell;
+
+class Test {
+    bool check;
+
+    void F() {
+        if (ThreadHelper.CheckAccess())
+        {
+        }
+    }
+}
+";
+            this.VerifyCSharpDiagnostic(test);
+        }
     }
 }
