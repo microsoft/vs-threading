@@ -35,4 +35,4 @@ private async Task CallVSAsync()
 }
 ```
 
-Refer to [Asynchronous and multithreaded programming within VS using the JoinableTaskFactory](http://blogs.msdn.com/b/andrewarn[ottms/archive/[2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx) for more info.
+Refer to [Asynchronous and multithreaded programming within VS using the JoinableTaskFactory](http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory/) for more info.
