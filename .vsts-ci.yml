@@ -11,7 +11,7 @@ steps:
 
 - task: MicroBuildIBCMergePlugin@0
   inputs:
-    branch: svc/d15svc
+    branch: rel/d15.6
 
 - task: MicroBuildSigningPlugin@1
   inputs:
