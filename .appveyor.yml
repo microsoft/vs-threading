@@ -9,6 +9,7 @@ skip_commits:
   files:
     - doc/*
     - '**/*.md'
+    - .vsts-ci.yml
 nuget:
   disable_publish_on_pr: true
 image: Visual Studio 2017
