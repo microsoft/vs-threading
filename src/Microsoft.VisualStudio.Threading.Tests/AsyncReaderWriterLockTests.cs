@@ -2586,9 +2586,9 @@
             await readlockTask.WithTimeout(UnexpectedTimeout);
         }
 
-        #endregion
+#endregion
 
-        #region Completion tests
+#region Completion tests
 
 #if DESKTOP || NETCOREAPP2_0
         [StaFact]
