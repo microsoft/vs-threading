@@ -2287,7 +2287,7 @@ namespace Microsoft.VisualStudio.Threading
                 this.cancellationRegistration = this.cancellationToken.Register(CancellationResponseAction, this, useSynchronizationContext: false);
                 this.lck.PendAwaiter(this);
 
-                if (this.cancellationRegistration == default(CancellationTokenRegistration))
+                if (this.cancellationToken.IsCancellationRequested && this.cancellationRegistration == default(CancellationTokenRegistration))
                 {
                     CancellationResponder(this);
                 }
