@@ -2523,25 +2523,18 @@
 
             if (awaiter.IsCompleted)
             {
-                try
-                {
-                    awaiter.GetResult().Dispose();
-                    Assert.True(false, "The lock should not be issued on an STA thread.");
-                }
-                catch (OperationCanceledException)
-                {
-                }
-
+                // The lock should not be issued on an STA thread
+                Assert.ThrowsAny<OperationCanceledException>(() => awaiter.GetResult().Dispose());
                 await lockAwaitFinished.SetAsync();
             }
             else
             {
                 awaiter.OnCompleted(delegate
                 {
-                    Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
                     try
                     {
                         awaiter.GetResult().Dispose();
+                        Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
                     }
                     catch (OperationCanceledException)
                     {
@@ -2551,7 +2544,7 @@
                 });
             }
 
-            await lockAwaitFinished.Task;
+            await lockAwaitFinished.Task.WithTimeout(UnexpectedTimeout);
 
             // No lock is leaked
             using (await this.asyncLock.UpgradeableReadLockAsync())
@@ -2581,23 +2574,16 @@
 
             var awaitable = this.asyncLock.WriteLockAsync(cts.Token);
             var awaiter = awaitable.GetAwaiter();
-            Assert.False(awaiter.IsCompleted, "The lock should not be issued until read lock is issued.");
+            Assert.False(awaiter.IsCompleted, "The lock should not be issued until read lock is released.");
 
             cts.Cancel();
             awaiter.OnCompleted(delegate
             {
-                try
-                {
-                    awaiter.GetResult().Dispose();
-                }
-                catch (OperationCanceledException)
-                {
-                }
-
+                Assert.ThrowsAny<OperationCanceledException>(() => awaiter.GetResult().Dispose());
                 testCompleted.SetAsync();
             });
 
-            await readlockTask;
+            await readlockTask.WithTimeout(UnexpectedTimeout);
         }
 
         #endregion
