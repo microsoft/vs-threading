@@ -2510,7 +2510,7 @@
         }
 
         [StaFact]
-        public async Task CancelAfterIsCompletedNoLeak()
+        public async Task CancelJustBeforeIsCompletedNoLeak()
         {
             var lockAwaitFinished = new TaskCompletionSource<object>();
             var testCompleted = new TaskCompletionSource<object>();
@@ -2533,7 +2533,6 @@
                         }
                         catch (OperationCanceledException)
                         {
-
                         }
 
                         lockAwaitFinished.SetAsync();
