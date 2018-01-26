@@ -2509,8 +2509,6 @@
             Assert.False(this.asyncLock.IsWriteLockHeld);
         }
 
-#if DESKTOP || NETCOREAPP2_0
-
         [StaFact]
         public async Task CancelJustBeforeIsCompletedNoLeak()
         {
@@ -2534,7 +2532,10 @@
                     try
                     {
                         awaiter.GetResult().Dispose();
+#if DESKTOP || NETCOREAPP2_0
+
                         Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
+#endif
                     }
                     catch (OperationCanceledException)
                     {
@@ -2549,10 +2550,11 @@
             // No lock is leaked
             using (await this.asyncLock.UpgradeableReadLockAsync())
             {
+#if DESKTOP || NETCOREAPP2_0
                 Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
+#endif
             }
         }
-#endif
 
         [StaFact]
         public async Task CancelJustAfterIsCompleted()
