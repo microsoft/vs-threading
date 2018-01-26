@@ -2578,6 +2578,45 @@
             await testCompleted.Task;
         }
 
+        [StaFact]
+        public async Task CancelJustAfterIsCompleted()
+        {
+            var lockAwaitFinished = new TaskCompletionSource<object>();
+            var testCompleted = new TaskCompletionSource<object>();
+            var readlockTask = Task.Run(async delegate
+            {
+                using (await this.asyncLock.ReadLockAsync())
+                {
+                    await lockAwaitFinished.SetAsync();
+                    await testCompleted.Task;
+                }
+            });
+
+            await lockAwaitFinished.Task;
+
+            var cts = new CancellationTokenSource();
+
+            var awaitable = this.asyncLock.WriteLockAsync(cts.Token);
+            var awaiter = awaitable.GetAwaiter();
+            Assert.False(awaiter.IsCompleted, "The lock should not be issued until read lock is issued.");
+
+            cts.Cancel();
+            awaiter.OnCompleted(delegate
+            {
+                try
+                {
+                    awaiter.GetResult().Dispose();
+                }
+                catch (OperationCanceledException)
+                {
+                }
+
+                testCompleted.SetAsync();
+            });
+
+            await readlockTask;
+        }
+
         #endregion
 
         #region Completion tests
