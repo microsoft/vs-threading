@@ -2284,8 +2284,8 @@ namespace Microsoft.VisualStudio.Threading
                     throw new NotSupportedException("Multiple continuations are not supported.");
                 }
 
-                this.cancellationRegistration = this.cancellationToken.Register(CancellationResponseAction, this, useSynchronizationContext: false);
                 this.lck.PendAwaiter(this);
+                this.cancellationRegistration = this.cancellationToken.Register(CancellationResponseAction, this, useSynchronizationContext: false);
             }
 
             /// <summary>
