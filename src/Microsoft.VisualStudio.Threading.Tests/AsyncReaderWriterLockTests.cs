@@ -2509,9 +2509,79 @@
             Assert.False(this.asyncLock.IsWriteLockHeld);
         }
 
-#endregion
+        [StaFact]
+        public async Task CancelAfterIsCompletedNoLeak()
+        {
+            var lockAwaitFinished = new TaskCompletionSource<object>();
+            var testCompleted = new TaskCompletionSource<object>();
+            var cts = new CancellationTokenSource();
 
-#region Completion tests
+            Thread staThread = new Thread((ThreadStart)delegate
+            {
+                try
+                {
+                    var awaitable = this.asyncLock.UpgradeableReadLockAsync(cts.Token);
+                    var awaiter = awaitable.GetAwaiter();
+                    cts.Cancel();
+
+                    if (awaiter.IsCompleted)
+                    {
+                        try
+                        {
+                            awaiter.GetResult().Dispose();
+                            Assert.True(false, "The lock should not be issued on an STA thread.");
+                        }
+                        catch (OperationCanceledException)
+                        {
+
+                        }
+
+                        lockAwaitFinished.SetAsync();
+                    }
+                    else
+                    {
+                        awaiter.OnCompleted(delegate
+                        {
+                            Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
+                            try
+                            {
+                                awaiter.GetResult().Dispose();
+                            }
+                            catch (OperationCanceledException)
+                            {
+                            }
+
+                            lockAwaitFinished.SetAsync();
+                        });
+                    }
+
+                    lockAwaitFinished.Task.Wait();
+
+                    // No lock is leaked
+                    awaitable = this.asyncLock.UpgradeableReadLockAsync();
+                    awaiter = awaitable.GetAwaiter();
+                    Assert.False(awaiter.IsCompleted, "The lock should not be issued on an STA thread.");
+                    awaiter.OnCompleted(delegate
+                    {
+                        Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
+                        awaiter.GetResult().Dispose();
+                        testCompleted.SetAsync();
+                    });
+                }
+                catch (Exception ex)
+                {
+                    testCompleted.TrySetException(ex);
+                }
+            });
+
+            staThread.SetApartmentState(ApartmentState.STA);
+            staThread.Start();
+            await testCompleted.Task;
+        }
+
+        #endregion
+
+        #region Completion tests
 
 #if DESKTOP || NETCOREAPP2_0
         [StaFact]
