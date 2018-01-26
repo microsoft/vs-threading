@@ -2167,7 +2167,7 @@ namespace Microsoft.VisualStudio.Threading
                         return true;
                     }
 
-                    // If lock has already been issued, we have to switch to the right context, and ignore the CancellationToken. 
+                    // If lock has already been issued, we have to switch to the right context, and ignore the CancellationToken.
                     if (this.lck.IsLockActive(this, considerStaActive: true))
                     {
                         return this.lck.IsLockSupportingContext(this);
