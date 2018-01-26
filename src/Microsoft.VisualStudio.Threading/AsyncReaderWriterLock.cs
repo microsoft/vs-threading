@@ -2160,7 +2160,21 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             public bool IsCompleted
             {
-                get { return this.cancellationToken.IsCancellationRequested || this.fault != null || this.LockIssued; }
+                get
+                {
+                    if (this.fault != null)
+                    {
+                        return true;
+                    }
+
+                    // If lock has already been issued, we have to switch to the right context, and ignore the CancellationToken. 
+                    if (this.lck.IsLockActive(this, considerStaActive: true))
+                    {
+                        return this.lck.IsLockSupportingContext(this);
+                    }
+
+                    return this.cancellationToken.IsCancellationRequested;
+                }
             }
 
             /// <summary>
@@ -2270,8 +2284,8 @@ namespace Microsoft.VisualStudio.Threading
                     throw new NotSupportedException("Multiple continuations are not supported.");
                 }
 
-                this.cancellationRegistration = this.cancellationToken.Register(CancellationResponseAction, this, useSynchronizationContext: false);
                 this.lck.PendAwaiter(this);
+                this.cancellationRegistration = this.cancellationToken.Register(CancellationResponseAction, this, useSynchronizationContext: false);
             }
 
             /// <summary>
