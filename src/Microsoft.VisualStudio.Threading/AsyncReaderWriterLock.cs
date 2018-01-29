@@ -2160,7 +2160,21 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             public bool IsCompleted
             {
-                get { return this.cancellationToken.IsCancellationRequested || this.fault != null || this.LockIssued; }
+                get
+                {
+                    if (this.fault != null)
+                    {
+                        return true;
+                    }
+
+                    // If lock has already been issued, we have to switch to the right context, and ignore the CancellationToken.
+                    if (this.lck.IsLockActive(this, considerStaActive: true))
+                    {
+                        return this.lck.IsLockSupportingContext(this);
+                    }
+
+                    return this.cancellationToken.IsCancellationRequested;
+                }
             }
 
             /// <summary>
@@ -2272,6 +2286,11 @@ namespace Microsoft.VisualStudio.Threading
 
                 this.cancellationRegistration = this.cancellationToken.Register(CancellationResponseAction, this, useSynchronizationContext: false);
                 this.lck.PendAwaiter(this);
+
+                if (this.cancellationToken.IsCancellationRequested && this.cancellationRegistration == default(CancellationTokenRegistration))
+                {
+                    CancellationResponder(this);
+                }
             }
 
             /// <summary>

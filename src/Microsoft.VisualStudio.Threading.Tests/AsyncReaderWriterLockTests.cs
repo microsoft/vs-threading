@@ -2509,6 +2509,85 @@
             Assert.False(this.asyncLock.IsWriteLockHeld);
         }
 
+        [StaFact]
+        public async Task CancelJustBeforeIsCompletedNoLeak()
+        {
+            var lockAwaitFinished = new TaskCompletionSource<object>();
+            var cts = new CancellationTokenSource();
+
+            var awaitable = this.asyncLock.UpgradeableReadLockAsync(cts.Token);
+            var awaiter = awaitable.GetAwaiter();
+            cts.Cancel();
+
+            if (awaiter.IsCompleted)
+            {
+                // The lock should not be issued on an STA thread
+                Assert.ThrowsAny<OperationCanceledException>(() => awaiter.GetResult().Dispose());
+                await lockAwaitFinished.SetAsync();
+            }
+            else
+            {
+                awaiter.OnCompleted(delegate
+                {
+                    try
+                    {
+                        awaiter.GetResult().Dispose();
+#if DESKTOP || NETCOREAPP2_0
+
+                        Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
+#endif
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
+
+                    lockAwaitFinished.SetAsync();
+                });
+            }
+
+            await lockAwaitFinished.Task.WithTimeout(UnexpectedTimeout);
+
+            // No lock is leaked
+            using (await this.asyncLock.UpgradeableReadLockAsync())
+            {
+#if DESKTOP || NETCOREAPP2_0
+                Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
+#endif
+            }
+        }
+
+        [StaFact]
+        public async Task CancelJustAfterIsCompleted()
+        {
+            var lockAwaitFinished = new TaskCompletionSource<object>();
+            var testCompleted = new TaskCompletionSource<object>();
+            var readlockTask = Task.Run(async delegate
+            {
+                using (await this.asyncLock.ReadLockAsync())
+                {
+                    await lockAwaitFinished.SetAsync();
+                    await testCompleted.Task;
+                }
+            });
+
+            await lockAwaitFinished.Task;
+
+            var cts = new CancellationTokenSource();
+
+            var awaitable = this.asyncLock.WriteLockAsync(cts.Token);
+            var awaiter = awaitable.GetAwaiter();
+            Assert.False(awaiter.IsCompleted, "The lock should not be issued until read lock is released.");
+
+            cts.Cancel();
+            awaiter.OnCompleted(delegate
+            {
+                Assert.ThrowsAny<OperationCanceledException>(() => awaiter.GetResult().Dispose());
+                testCompleted.SetAsync();
+            });
+
+            await readlockTask.WithTimeout(UnexpectedTimeout);
+        }
+
 #endregion
 
 #region Completion tests
