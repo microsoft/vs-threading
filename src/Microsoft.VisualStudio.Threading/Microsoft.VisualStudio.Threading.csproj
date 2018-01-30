@@ -60,6 +60,12 @@
     <PackageReference Include="MSBuild.SDK.Extras" Version="1.0.6" PrivateAssets="all" />
     <PackageReference Include="GitLink" Version="3.2.0-unstable0014" PrivateAssets="all" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Don't consume the analyzers in this library itself,
+         but have a package dependency so users of this library will automatically get the analyzers. -->
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.csproj"
+      PrivateAssets="none" />
+  </ItemGroup>
   <Import Project="$(MSBuildSDKExtrasTargets)" Condition="Exists('$(MSBuildSDKExtrasTargets)')" />
   <Import Project="$(MSBuildExtensionsPath)\Microsoft\Multilingual App Toolkit\Microsoft.Multilingual.ResxResources.targets" Label="MultilingualAppToolkit" Condition="Exists('$(MSBuildExtensionsPath)\Microsoft\Multilingual App Toolkit\v$(MultilingualAppToolkitVersion)\Microsoft.Multilingual.ResxResources.targets')" />
   <Target Name="MATPrerequisite" BeforeTargets="PrepareForBuild" Condition="!Exists('$(MSBuildExtensionsPath)\Microsoft\Multilingual App Toolkit\Microsoft.Multilingual.ResxResources.targets')" Label="MultilingualAppToolkit">
