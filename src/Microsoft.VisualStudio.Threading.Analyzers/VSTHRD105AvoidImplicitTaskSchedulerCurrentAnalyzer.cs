@@ -39,6 +39,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             id: Id,
             title: Strings.VSTHRD105_Title,
             messageFormat: Strings.VSTHRD105_MessageFormat,
+            helpLinkUri: Utils.GetHelpLink(Id),
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);

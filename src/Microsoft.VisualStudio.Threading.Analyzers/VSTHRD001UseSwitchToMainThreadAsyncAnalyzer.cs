@@ -20,6 +20,7 @@
             id: Id,
             title: Strings.VSTHRD001_Title,
             messageFormat: Strings.VSTHRD001_MessageFormat,
+            helpLinkUri: Utils.GetHelpLink(Id),
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
