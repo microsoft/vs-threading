@@ -26,6 +26,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             id: Id,
             title: Strings.VSTHRD200_Title,
             messageFormat: Strings.VSTHRD200_MessageFormat,
+            helpLinkUri: Utils.GetHelpLink(Id),
             category: "Style",
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
