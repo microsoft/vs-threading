@@ -35,6 +35,7 @@
             id: Id,
             title: Strings.VSTHRD103_Title,
             messageFormat: Strings.VSTHRD103_MessageFormat,
+            helpLinkUri: Utils.GetHelpLink(Id),
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
