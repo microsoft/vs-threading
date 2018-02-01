@@ -45,12 +45,13 @@
         public const string Id = "VSTHRD010";
 
         internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
-           id: Id,
-           title: Strings.VSTHRD010_Title,
-           messageFormat: Strings.VSTHRD010_MessageFormat,
-           category: "Usage",
-           defaultSeverity: DiagnosticSeverity.Warning,
-           isEnabledByDefault: true);
+            id: Id,
+            title: Strings.VSTHRD010_Title,
+            messageFormat: Strings.VSTHRD010_MessageFormat,
+            helpLinkUri: Utils.GetHelpLink(Id),
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
 
         private static readonly IImmutableSet<string> KnownMethodsToSwitchToMainThread = ImmutableHashSet.Create(StringComparer.Ordinal,
             Types.JoinableTaskFactory.SwitchToMainThreadAsync,

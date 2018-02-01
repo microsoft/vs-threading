@@ -635,6 +635,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             item4 = tuple.Item4;
         }
 
+        internal static string GetHelpLink(string analyzerId)
+        {
+            return $"https://github.com/Microsoft/vs-threading/blob/master/doc/analyzers/{analyzerId}.md";
+        }
+
         private static CSharpSyntaxNode UpdateStatementsForAsyncMethod(CSharpSyntaxNode body, SemanticModel semanticModel, bool hasResultValue)
         {
             var blockBody = body as BlockSyntax;
