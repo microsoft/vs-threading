@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en-US" target-language="es" original="MICROSOFT.VISUALSTUDIO.THREADING.ANALYZERS/STRINGS.RESX" tool-id="MultilingualAppToolkit" product-name="n/a" product-version="n/a" build-num="n/a">
     <header>
@@ -176,11 +176,11 @@ Use AsyncLazy&lt;T&gt; en su lugar.</target>
         </trans-unit>
         <trans-unit id="VSTHRD108_MessageFormat" translate="yes" xml:space="preserve">
           <source>Thread affinity checks should be unconditional.</source>
-          <target state="new">Thread affinity checks should be unconditional.</target>
+          <target state="translated">Las comprobaciones de afinidad de subproceso deben ser incondicionales.</target>
         </trans-unit>
         <trans-unit id="VSTHRD108_Title" translate="yes" xml:space="preserve">
           <source>Assert thread affinity unconditionally</source>
-          <target state="new">Assert thread affinity unconditionally</target>
+          <target state="translated">Declarar afinidad de subproceso incondicionalmente</target>
         </trans-unit>
       </group>
     </body>
