@@ -140,4 +140,10 @@ Bunun yerine AsyncLazy&lt;T&gt; kullanın.</value>
     <value>Bunun yerine await kullanın</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
+  <data name="VSTHRD108_MessageFormat" xml:space="preserve">
+    <value>İş parçacığı benzeşim denetimleri koşulsuz olmalıdır.</value>
+  </data>
+  <data name="VSTHRD108_Title" xml:space="preserve">
+    <value>İş parçacığı benzeşimini koşulsuz olarak onayla</value>
+  </data>
 </root>

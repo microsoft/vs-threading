@@ -140,4 +140,10 @@
     <value>改用 await</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
+  <data name="VSTHRD108_MessageFormat" xml:space="preserve">
+    <value>应无条件检查线程关联。</value>
+  </data>
+  <data name="VSTHRD108_Title" xml:space="preserve">
+    <value>无条件断言线程关联</value>
+  </data>
 </root>

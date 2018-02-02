@@ -140,4 +140,10 @@ In alternativa, usare AsyncLazy&lt;T&gt;.</value>
     <value>In alternativa, usare await</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
+  <data name="VSTHRD108_MessageFormat" xml:space="preserve">
+    <value>I controlli di affinità dei thread non devono essere condizionali.</value>
+  </data>
+  <data name="VSTHRD108_Title" xml:space="preserve">
+    <value>Asserisci l'affinità dei thread in modo non condizionale</value>
+  </data>
 </root>

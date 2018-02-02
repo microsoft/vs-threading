@@ -140,4 +140,10 @@ ThreadHelper.ThrowIfNotOnUIThread()를 호출하거나, 우선 JoinableTaskFacto
     <value>대신 await를 사용합니다.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
+  <data name="VSTHRD108_MessageFormat" xml:space="preserve">
+    <value>스레드 선호도 검사는 비조건부여야 합니다.</value>
+  </data>
+  <data name="VSTHRD108_Title" xml:space="preserve">
+    <value>무조건 스레드 선호도 어설션</value>
+  </data>
 </root>

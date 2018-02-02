@@ -140,4 +140,10 @@ Použijte raději AsyncLazy&lt;T&gt;.</value>
     <value>Použijte raději await.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
+  <data name="VSTHRD108_MessageFormat" xml:space="preserve">
+    <value>Kontroly spřažení vláken by měly být bez podmínek.</value>
+  </data>
+  <data name="VSTHRD108_Title" xml:space="preserve">
+    <value>Vyhodnotit spřažení vláken bez podmínek</value>
+  </data>
 </root>

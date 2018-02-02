@@ -140,4 +140,10 @@
     <value>改用 await</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
+  <data name="VSTHRD108_MessageFormat" xml:space="preserve">
+    <value>執行緒親和性檢查應該無條件。</value>
+  </data>
+  <data name="VSTHRD108_Title" xml:space="preserve">
+    <value>無條件判斷提示執行緒親和性</value>
+  </data>
 </root>

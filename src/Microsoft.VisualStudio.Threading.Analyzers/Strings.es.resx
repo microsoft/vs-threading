@@ -140,4 +140,10 @@ Use AsyncLazy&lt;T&gt; en su lugar.</value>
     <value>Use await en su lugar</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
+  <data name="VSTHRD108_MessageFormat" xml:space="preserve">
+    <value>Las comprobaciones de afinidad de subproceso deben ser incondicionales.</value>
+  </data>
+  <data name="VSTHRD108_Title" xml:space="preserve">
+    <value>Declarar afinidad de subproceso incondicionalmente</value>
+  </data>
 </root>
