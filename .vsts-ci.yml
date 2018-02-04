@@ -16,6 +16,8 @@ steps:
 - task: MicroBuildSigningPlugin@1
   inputs:
     signType: $(SignType)
+    esrpSigning: true
+    zipSources: false
 
 - task: PowerShell@2
   displayName: Set package upload feed
