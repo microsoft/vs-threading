@@ -466,6 +466,24 @@ class Test {
         }
 
         [Fact]
+        public void TestVsSolutionViaIs()
+        {
+            var test = @"
+using System;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    void F() {
+        object obj1 = null;
+        bool match = obj1 is IVsSolution;
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 22, 8, 41) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
+        [Fact]
         public void CastToVsSolutionViaAsAfterVerifyOnUIThread()
         {
             var test = @"
