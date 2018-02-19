@@ -55,7 +55,7 @@
 
             context.RegisterCompilationStartAction(ctxt =>
             {
-                var mainThreadAssertingMethods = CommonInterest.ReadAdditionalFiles(ctxt, CommonInterest.FileNamePatternForMethodsThatAssertMainThread);
+                var mainThreadAssertingMethods = CommonInterest.ReadMethods(ctxt, CommonInterest.FileNamePatternForMethodsThatAssertMainThread).ToImmutableArray();
 
                 ctxt.RegisterCodeBlockStartAction<SyntaxKind>(ctxt2 =>
                 {
@@ -99,7 +99,7 @@
             return false;
         }
 
-        private void AnalyzeInvocation(SyntaxNodeAnalysisContext context, HashSet<string> mainThreadAssertingMethods)
+        private void AnalyzeInvocation(SyntaxNodeAnalysisContext context, ImmutableArray<CommonInterest.QualifiedMember> mainThreadAssertingMethods)
         {
             var invocationExpression = (InvocationExpressionSyntax)context.Node;
             var symbolInfo = context.SemanticModel.GetSymbolInfo((InvocationExpressionSyntax)context.Node, context.CancellationToken);
@@ -107,7 +107,7 @@
             if (symbol != null)
             {
                 bool reportDiagnostic = false;
-                if (mainThreadAssertingMethods.Contains(symbol.Name))
+                if (mainThreadAssertingMethods.Contains(symbol))
                 {
                     if (IsInConditional(invocationExpression))
                     {

@@ -98,9 +98,9 @@
 
             context.RegisterCompilationStartAction(ctxt =>
             {
-                var mainThreadAssertingMethods = CommonInterest.ReadAdditionalFiles(ctxt, CommonInterest.FileNamePatternForMethodsThatAssertMainThread);
-                var mainThreadSwitchingMethods = CommonInterest.ReadAdditionalFiles(ctxt, CommonInterest.FileNamePatternForMethodsThatSwitchToMainThread);
-                var typesRequiringMainThread = CommonInterest.ReadAdditionalFiles(ctxt, CommonInterest.FileNamePatternForTypesRequiringMainThread);
+                var mainThreadAssertingMethods = CommonInterest.ReadMethods(ctxt, CommonInterest.FileNamePatternForMethodsThatAssertMainThread).ToImmutableArray();
+                var mainThreadSwitchingMethods = CommonInterest.ReadMethods(ctxt, CommonInterest.FileNamePatternForMethodsThatSwitchToMainThread).ToImmutableArray();
+                var typesRequiringMainThread = CommonInterest.ReadAdditionalFiles(ctxt, CommonInterest.FileNamePatternForTypesRequiringMainThread).ToImmutableArray();
 
                 ctxt.RegisterCodeBlockStartAction<SyntaxKind>(ctxt2 =>
                 {
@@ -123,22 +123,22 @@
         {
             private ImmutableDictionary<SyntaxNode, ThreadingContext> methodDeclarationNodes = ImmutableDictionary<SyntaxNode, ThreadingContext>.Empty;
 
-            internal HashSet<string> MainThreadAssertingMethods { get; set; }
+            internal ImmutableArray<CommonInterest.QualifiedMember> MainThreadAssertingMethods { get; set; }
 
-            internal HashSet<string> MainThreadSwitchingMethods { get; set; }
+            internal ImmutableArray<CommonInterest.QualifiedMember> MainThreadSwitchingMethods { get; set; }
 
-            internal HashSet<string> TypesRequiringMainThread { get; set; }
+            internal ImmutableArray<string> TypesRequiringMainThread { get; set; }
 
             internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
             {
                 var invocationSyntax = (InvocationExpressionSyntax)context.Node;
-                var invokeMethod = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
-                if (invokeMethod != null)
+                var invokedMethod = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
+                if (invokedMethod != null)
                 {
                     var methodDeclaration = context.Node.FirstAncestorOrSelf<SyntaxNode>(n => CommonInterest.MethodSyntaxKinds.Contains(n.Kind()));
                     if (methodDeclaration != null)
                     {
-                        if (this.MainThreadAssertingMethods.Contains(invokeMethod.Name) || this.MainThreadSwitchingMethods.Contains(invokeMethod.Name))
+                        if (this.MainThreadAssertingMethods.Contains(invokedMethod) || this.MainThreadSwitchingMethods.Contains(invokedMethod))
                         {
                             this.methodDeclarationNodes = this.methodDeclarationNodes.SetItem(methodDeclaration, ThreadingContext.MainThread);
                             return;
@@ -148,11 +148,11 @@
                     // The diagnostic (if any) should underline the method name only.
                     var focusedNode = invocationSyntax.Expression;
                     focusedNode = (focusedNode as MemberAccessExpressionSyntax)?.Name ?? focusedNode;
-                    if (!this.AnalyzeTypeWithinContext(invokeMethod.ContainingType, invokeMethod, context, focusedNode))
+                    if (!this.AnalyzeTypeWithinContext(invokedMethod.ContainingType, invokedMethod, context, focusedNode))
                     {
-                        foreach (var iface in invokeMethod.FindInterfacesImplemented())
+                        foreach (var iface in invokedMethod.FindInterfacesImplemented())
                         {
-                            if (this.AnalyzeTypeWithinContext(iface, invokeMethod, context, focusedNode))
+                            if (this.AnalyzeTypeWithinContext(iface, invokedMethod, context, focusedNode))
                             {
                                 // Just report the first diagnostic.
                                 break;
@@ -217,9 +217,9 @@
                     if (threadingContext != ThreadingContext.MainThread)
                     {
                         Location location = (focusDiagnosticOn ?? context.Node).GetLocation();
-                        string exampleAssertingMethod = this.MainThreadAssertingMethods.FirstOrDefault();
-                        var descriptor = exampleAssertingMethod != null ? Descriptor : DescriptorNoAssertingMethod;
-                        context.ReportDiagnostic(Diagnostic.Create(descriptor, location, type.Name, descriptor));
+                        var exampleAssertingMethod = this.MainThreadAssertingMethods.FirstOrDefault();
+                        var descriptor = exampleAssertingMethod.Name != null ? Descriptor : DescriptorNoAssertingMethod;
+                        context.ReportDiagnostic(Diagnostic.Create(descriptor, location, type.Name, exampleAssertingMethod.ToString()));
                         return true;
                     }
                 }

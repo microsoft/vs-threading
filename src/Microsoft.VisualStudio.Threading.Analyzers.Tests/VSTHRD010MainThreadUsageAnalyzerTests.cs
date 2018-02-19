@@ -274,16 +274,15 @@ class Test {
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Threading;
 
 class Test {
+    JoinableTaskFactory jtf;
+
     async Task F() {
-        await SwitchToMainThreadAsync();
+        await jtf.SwitchToMainThreadAsync();
         IVsSolution sln = null;
         sln.SetProperty(1000, null);
-    }
-
-    async Task SwitchToMainThreadAsync() {
-        await Task.Yield();
     }
 }
 ";

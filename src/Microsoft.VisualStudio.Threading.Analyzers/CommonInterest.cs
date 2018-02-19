@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Runtime.CompilerServices;
@@ -22,38 +23,38 @@
 
         internal static readonly IEnumerable<SyncBlockingMethod> JTFSyncBlockers = new[]
         {
-            new SyncBlockingMethod(Namespaces.MicrosoftVisualStudioThreading, Types.JoinableTaskFactory.TypeName, Types.JoinableTaskFactory.Run, Types.JoinableTaskFactory.RunAsync),
-            new SyncBlockingMethod(Namespaces.MicrosoftVisualStudioThreading, Types.JoinableTask.TypeName, Types.JoinableTask.Join, Types.JoinableTask.JoinAsync),
+            new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.MicrosoftVisualStudioThreading, Types.JoinableTaskFactory.TypeName), Types.JoinableTaskFactory.Run), Types.JoinableTaskFactory.RunAsync),
+            new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.MicrosoftVisualStudioThreading, Types.JoinableTask.TypeName), Types.JoinableTask.Join), Types.JoinableTask.JoinAsync),
         };
 
         internal static readonly IEnumerable<SyncBlockingMethod> ProblematicSyncBlockingMethods = new[]
         {
-            new SyncBlockingMethod(Namespaces.SystemThreadingTasks, nameof(Task), nameof(Task.Wait), null),
-            new SyncBlockingMethod(Namespaces.SystemRuntimeCompilerServices, nameof(TaskAwaiter), nameof(TaskAwaiter.GetResult), null),
+            new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemThreadingTasks, nameof(Task)), nameof(Task.Wait)), null),
+            new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemRuntimeCompilerServices, nameof(TaskAwaiter)), nameof(TaskAwaiter.GetResult)), null),
         };
 
         internal static readonly IEnumerable<SyncBlockingMethod> SyncBlockingMethods = JTFSyncBlockers.Concat(ProblematicSyncBlockingMethods);
 
-        internal static readonly IEnumerable<LegacyThreadSwitchingMethod> LegacyThreadSwitchingMethods = new[]
+        internal static readonly IEnumerable<QualifiedMember> LegacyThreadSwitchingMethods = new[]
         {
-            new LegacyThreadSwitchingMethod(Namespaces.MicrosoftVisualStudioShell, Types.ThreadHelper.TypeName, Types.ThreadHelper.Invoke),
-            new LegacyThreadSwitchingMethod(Namespaces.MicrosoftVisualStudioShell, Types.ThreadHelper.TypeName, Types.ThreadHelper.InvokeAsync),
-            new LegacyThreadSwitchingMethod(Namespaces.MicrosoftVisualStudioShell, Types.ThreadHelper.TypeName, Types.ThreadHelper.BeginInvoke),
-            new LegacyThreadSwitchingMethod(Namespaces.SystemWindowsThreading, Types.Dispatcher.TypeName, Types.Dispatcher.Invoke),
-            new LegacyThreadSwitchingMethod(Namespaces.SystemWindowsThreading, Types.Dispatcher.TypeName, Types.Dispatcher.BeginInvoke),
-            new LegacyThreadSwitchingMethod(Namespaces.SystemWindowsThreading, Types.Dispatcher.TypeName, Types.Dispatcher.InvokeAsync),
-            new LegacyThreadSwitchingMethod(Namespaces.SystemThreading, Types.SynchronizationContext.TypeName, Types.SynchronizationContext.Send),
-            new LegacyThreadSwitchingMethod(Namespaces.SystemThreading, Types.SynchronizationContext.TypeName, Types.SynchronizationContext.Post),
+            new QualifiedMember(new QualifiedType(Namespaces.MicrosoftVisualStudioShell, Types.ThreadHelper.TypeName), Types.ThreadHelper.Invoke),
+            new QualifiedMember(new QualifiedType(Namespaces.MicrosoftVisualStudioShell, Types.ThreadHelper.TypeName), Types.ThreadHelper.InvokeAsync),
+            new QualifiedMember(new QualifiedType(Namespaces.MicrosoftVisualStudioShell, Types.ThreadHelper.TypeName), Types.ThreadHelper.BeginInvoke),
+            new QualifiedMember(new QualifiedType(Namespaces.SystemWindowsThreading, Types.Dispatcher.TypeName), Types.Dispatcher.Invoke),
+            new QualifiedMember(new QualifiedType(Namespaces.SystemWindowsThreading, Types.Dispatcher.TypeName), Types.Dispatcher.BeginInvoke),
+            new QualifiedMember(new QualifiedType(Namespaces.SystemWindowsThreading, Types.Dispatcher.TypeName), Types.Dispatcher.InvokeAsync),
+            new QualifiedMember(new QualifiedType(Namespaces.SystemThreading, Types.SynchronizationContext.TypeName), Types.SynchronizationContext.Send),
+            new QualifiedMember(new QualifiedType(Namespaces.SystemThreading, Types.SynchronizationContext.TypeName), Types.SynchronizationContext.Post),
         };
 
         internal static readonly IReadOnlyList<SyncBlockingMethod> SyncBlockingProperties = new[]
         {
-            new SyncBlockingMethod(Namespaces.SystemThreadingTasks, nameof(Task), nameof(Task<int>.Result), null),
+            new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemThreadingTasks, nameof(Task)), nameof(Task<int>.Result)), null),
         };
 
-        internal static readonly IEnumerable<Method> ThreadAffinityTestingMethods = new[]
+        internal static readonly IEnumerable<QualifiedMember> ThreadAffinityTestingMethods = new[]
         {
-            new Method(Namespaces.MicrosoftVisualStudioShell, Types.ThreadHelper.TypeName, Types.ThreadHelper.CheckAccess),
+            new QualifiedMember(new QualifiedType(Namespaces.MicrosoftVisualStudioShell, Types.ThreadHelper.TypeName), Types.ThreadHelper.CheckAccess),
         };
 
         internal static readonly IImmutableSet<SyntaxKind> MethodSyntaxKinds = ImmutableHashSet.Create(
@@ -68,6 +69,11 @@
             SyntaxKind.RemoveAccessorDeclaration);
 
         private const RegexOptions FileNamePatternRegexOptions = RegexOptions.IgnoreCase | RegexOptions.Singleline;
+
+        /// <summary>
+        /// An array with '.' as its only element.
+        /// </summary>
+        private static readonly char[] QualifiedIdentifierSeparators = new[] { '.' };
 
         /// <summary>
         /// This is an explicit rule to ignore the code that was generated by Xaml2CS.
@@ -139,9 +145,9 @@
             {
                 foreach (var item in problematicMethods)
                 {
-                    if (memberAccessSyntax.Name.Identifier.Text == item.MethodName &&
-                        typeReceiver.Name == item.ContainingTypeName &&
-                        typeReceiver.BelongsToNamespace(item.ContainingTypeNamespace))
+                    if (memberAccessSyntax.Name.Identifier.Text == item.Method.Name &&
+                        typeReceiver.Name == item.Method.ContainingType.Name &&
+                        typeReceiver.BelongsToNamespace(item.Method.ContainingType.Namespace))
                     {
                         var location = memberAccessSyntax.Name.GetLocation();
                         context.ReportDiagnostic(Diagnostic.Create(descriptor, location));
@@ -150,7 +156,19 @@
             }
         }
 
-        internal static HashSet<string> ReadAdditionalFiles(CompilationStartAnalysisContext context, Regex fileNamePattern)
+        internal static IEnumerable<QualifiedMember> ReadMethods(CompilationStartAnalysisContext context, Regex fileNamePattern)
+        {
+            foreach (string line in ReadAdditionalFiles(context, fileNamePattern))
+            {
+                string[] elements = line.TrimEnd(null).Split(QualifiedIdentifierSeparators);
+                string methodName = elements[elements.Length - 1];
+                string typeName = elements[elements.Length - 2];
+                var containingType = new QualifiedType(elements.Take(elements.Length - 2).ToImmutableArray(), typeName);
+                yield return new QualifiedMember(containingType, methodName);
+            }
+        }
+
+        internal static IEnumerable<string> ReadAdditionalFiles(CompilationStartAnalysisContext context, Regex fileNamePattern)
         {
             if (context == null)
             {
@@ -162,82 +180,90 @@
                 throw new ArgumentNullException(nameof(fileNamePattern));
             }
 
-            var content = new HashSet<string>(StringComparer.Ordinal);
-            var files = context.Options.AdditionalFiles.Where(at => fileNamePattern.IsMatch(Path.GetFileName(at.Path)));
-            foreach (var file in files)
+            var lines = from file in context.Options.AdditionalFiles
+                        let fileName = Path.GetFileName(file.Path)
+                        where fileNamePattern.IsMatch(fileName)
+                        let text = file.GetText(context.CancellationToken)
+                        from line in text.Lines
+                        select line;
+            foreach (TextLine line in lines)
             {
-                SourceText text = file.GetText(context.CancellationToken);
-                foreach (TextLine line in text.Lines)
-                {
-                    string lineText = line.ToString();
+                string lineText = line.ToString();
 
-                    if (!string.IsNullOrWhiteSpace(lineText) && !lineText.StartsWith("#"))
-                    {
-                        content.Add(lineText);
-                    }
+                if (!string.IsNullOrWhiteSpace(lineText) && !lineText.StartsWith("#"))
+                {
+                    yield return lineText;
+                }
+            }
+        }
+
+        internal static bool Contains(this ImmutableArray<QualifiedMember> methods, ISymbol symbol)
+        {
+            foreach (var method in methods)
+            {
+                if (method.IsMatch(symbol))
+                {
+                    return true;
                 }
             }
 
-            return content;
+            return false;
         }
 
-        internal struct Method
+        internal struct QualifiedType
         {
-            public Method(IReadOnlyList<string> containingTypeNamespace, string containingTypeName, string methodName)
+            public QualifiedType(IReadOnlyList<string> containingTypeNamespace, string typeName)
             {
-                this.ContainingTypeNamespace = containingTypeNamespace;
-                this.ContainingTypeName = containingTypeName;
-                this.MethodName = methodName;
+                this.Namespace = containingTypeNamespace;
+                this.Name = typeName;
             }
 
-            public IReadOnlyList<string> ContainingTypeNamespace { get; }
+            public IReadOnlyList<string> Namespace { get; }
 
-            public string ContainingTypeName { get; }
-
-            public string MethodName { get; }
+            public string Name { get; }
 
             public bool IsMatch(ISymbol symbol)
             {
-                var methodSymbol = symbol as IMethodSymbol;
-                return methodSymbol?.Name == this.MethodName
-                    && methodSymbol.ContainingType.Name == this.ContainingTypeName
-                    && methodSymbol.BelongsToNamespace(this.ContainingTypeNamespace);
+                return symbol?.Name == this.Name
+                    && symbol.BelongsToNamespace(this.Namespace);
             }
+
+            public override string ToString() => string.Join(".", this.Namespace) + "." + this.Name;
         }
 
+        internal struct QualifiedMember
+        {
+            public QualifiedMember(QualifiedType containingType, string methodName)
+            {
+                this.ContainingType = containingType;
+                this.Name = methodName;
+            }
+
+            public QualifiedType ContainingType { get; }
+
+            public string Name { get; }
+
+            public bool IsMatch(ISymbol symbol)
+            {
+                return symbol?.Name == this.Name
+                    && this.ContainingType.IsMatch(symbol.ContainingType);
+            }
+
+            public override string ToString() => this.ContainingType.ToString() + "." + this.Name;
+        }
+
+        [DebuggerDisplay("{" + nameof(Method) + "} -> {" + nameof(AsyncAlternativeMethodName) + "}")]
         internal struct SyncBlockingMethod
         {
-            public SyncBlockingMethod(IReadOnlyList<string> containingTypeNamespace, string containingTypeName, string methodName, string asyncAlternativeMethodName)
+            public SyncBlockingMethod(QualifiedMember method, string asyncAlternativeMethodName)
             {
-                this.ContainingTypeNamespace = containingTypeNamespace;
-                this.ContainingTypeName = containingTypeName;
-                this.MethodName = methodName;
+                this.Method = method;
                 this.AsyncAlternativeMethodName = asyncAlternativeMethodName;
             }
 
-            public IReadOnlyList<string> ContainingTypeNamespace { get; private set; }
+            public QualifiedMember Method { get; }
 
-            public string ContainingTypeName { get; private set; }
-
-            public string MethodName { get; private set; }
-
-            public string AsyncAlternativeMethodName { get; private set; }
-        }
-
-        internal struct LegacyThreadSwitchingMethod
-        {
-            public LegacyThreadSwitchingMethod(IReadOnlyList<string> containingTypeNamespace, string containingTypeName, string methodName)
-            {
-                this.ContainingTypeNamespace = containingTypeNamespace;
-                this.ContainingTypeName = containingTypeName;
-                this.MethodName = methodName;
-            }
-
-            public IReadOnlyList<string> ContainingTypeNamespace { get; private set; }
-
-            public string ContainingTypeName { get; private set; }
-
-            public string MethodName { get; private set; }
+            public string AsyncAlternativeMethodName { get; }
         }
     }
 }

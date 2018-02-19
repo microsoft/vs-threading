@@ -29,7 +29,7 @@
     <PackageReference Include="MicroBuild.Nonshipping" Version="$(MicroBuildVersion)" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="..\Microsoft.VisualStudio.Threading.Analyzers\build\AdditionalFiles\**" LinkBase="AdditionalFiles">
+    <EmbeddedResource Include="..\Microsoft.VisualStudio.Threading.Analyzers\build\AdditionalFiles\**" LinkBase="BuiltIn.AdditionalFiles">
       <LogicalName>AdditionalFiles.%(FileName)%(Extension)</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="AdditionalFiles\**">
