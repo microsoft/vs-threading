@@ -43,7 +43,7 @@
     ///     sln.SetProperty(); /* Good */
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class VSTHRD010VsServiceUsageAnalyzer : DiagnosticAnalyzer
+    public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD010";
 
@@ -51,6 +51,15 @@
             id: Id,
             title: Strings.VSTHRD010_Title,
             messageFormat: Strings.VSTHRD010_MessageFormat,
+            helpLinkUri: Utils.GetHelpLink(Id),
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+        internal static readonly DiagnosticDescriptor DescriptorNoAssertingMethod = new DiagnosticDescriptor(
+            id: Id,
+            title: Strings.VSTHRD010_Title,
+            messageFormat: Strings.VSTHRD010_MessageFormat_NoAssertingMethod,
             helpLinkUri: Utils.GetHelpLink(Id),
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Warning,
@@ -211,7 +220,9 @@
                     if (threadingContext != ThreadingContext.MainThread)
                     {
                         Location location = (focusDiagnosticOn ?? context.Node).GetLocation();
-                        context.ReportDiagnostic(Diagnostic.Create(Descriptor, location, type.Name));
+                        string exampleAssertingMethod = this.MainThreadAssertingMethods.FirstOrDefault();
+                        var descriptor = exampleAssertingMethod != null ? Descriptor : DescriptorNoAssertingMethod;
+                        context.ReportDiagnostic(Diagnostic.Create(descriptor, location, type.Name, descriptor));
                         return true;
                     }
                 }

@@ -1,4 +1,4 @@
-# VSTHRD010 Use VS services from UI thread
+# VSTHRD010 Invoke single-threaded types on Main thread
 
 Acquiring, casting, or invoking Visual Studio services should be done after ensuring
 that your code is running on the UI thread.

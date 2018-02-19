@@ -144,8 +144,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Visual Studio service &quot;{0}&quot; should be used on main thread explicitly.
-        ///Call ThreadHelper.ThrowIfNotOnUIThread() or await JoinableTaskFactory.SwitchToMainThreadAsync() first..
+        ///   Looks up a localized string similar to The type &quot;{0}&quot; should be used on main thread explicitly.
+        ///Call {1}() or await JoinableTaskFactory.SwitchToMainThreadAsync() first..
         /// </summary>
         internal static string VSTHRD010_MessageFormat {
             get {
@@ -154,7 +154,17 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Use VS services from UI thread.
+        ///   Looks up a localized string similar to The type &quot;{0}&quot; should be used on main thread explicitly.
+        ///Await JoinableTaskFactory.SwitchToMainThreadAsync() first..
+        /// </summary>
+        internal static string VSTHRD010_MessageFormat_NoAssertingMethod {
+            get {
+                return ResourceManager.GetString("VSTHRD010_MessageFormat_NoAssertingMethod", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invoke single-threaded types on Main thread.
         /// </summary>
         internal static string VSTHRD010_Title {
             get {
@@ -196,24 +206,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         internal static string VSTHRD012_Title {
             get {
                 return ResourceManager.GetString("VSTHRD012_Title", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Thread affinity checks should be unconditional..
-        /// </summary>
-        internal static string VSTHRD108_MessageFormat {
-            get {
-                return ResourceManager.GetString("VSTHRD108_MessageFormat", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Assert thread affinity unconditionally.
-        /// </summary>
-        internal static string VSTHRD108_Title {
-            get {
-                return ResourceManager.GetString("VSTHRD108_Title", resourceCulture);
             }
         }
         
@@ -385,6 +377,24 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         internal static string VSTHRD107_Title {
             get {
                 return ResourceManager.GetString("VSTHRD107_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Thread affinity checks should be unconditional..
+        /// </summary>
+        internal static string VSTHRD108_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSTHRD108_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Assert thread affinity unconditionally.
+        /// </summary>
+        internal static string VSTHRD108_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD108_Title", resourceCulture);
             }
         }
         

@@ -6,23 +6,23 @@
     using Xunit;
     using Xunit.Abstractions;
 
-    public class VSTHRD010VsServiceInvocationAnalyzerTests : DiagnosticVerifier
+    public class VSTHRD010MainThreadUsageAnalyzerTests : DiagnosticVerifier
     {
         private DiagnosticResult expect = new DiagnosticResult
         {
-            Id = VSTHRD010VsServiceUsageAnalyzer.Id,
+            Id = VSTHRD010MainThreadUsageAnalyzer.Id,
             SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Warning,
         };
 
-        public VSTHRD010VsServiceInvocationAnalyzerTests(ITestOutputHelper logger)
+        public VSTHRD010MainThreadUsageAnalyzerTests(ITestOutputHelper logger)
             : base(logger)
         {
         }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new VSTHRD010VsServiceUsageAnalyzer();
+            return new VSTHRD010MainThreadUsageAnalyzer();
         }
 
         [Fact]
