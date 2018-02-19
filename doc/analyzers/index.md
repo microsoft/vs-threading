@@ -30,4 +30,8 @@ Critical  | 1-99    | Code issues that often result in deadlocks
 Advisory  | 100-199 | Code that may perform differently than intended or lead to occasional deadlocks
 Guideline | 200-299 | Code that deviates from best practices and may limit the benefits of other analyzers
 
+## Configuration
+
+Some analyzers' behavior can be configured. See our [configuration](configuration.md) topic for more information.
+
 [1]: https://nuget.org/packages/microsoft.visualstudio.threading.analyzers

@@ -9,6 +9,8 @@ This analyzer can be configured to:
 3. Recognize methods that switch to the main thread when the caller awaits them.
    Calls to `JoinableTaskFactory.SwitchToMainThreadAsync` methods are pre-configured.
 
+See our [configuration](configuration.md) topic for more information.
+
 ## Examples of patterns that are flagged by this analyzer
 
 This example is based on the configuration available from the Visual Studio SDK
@@ -49,7 +51,3 @@ private async Task CallVSAsync()
 ```
 
 Refer to [Asynchronous and multithreaded programming within VS using the JoinableTaskFactory](http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory/) for more info.
-
-## Configuration
-
-TODO
