@@ -3,21 +3,18 @@
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
-    using System.IO;
     using System.Linq;
-    using System.Text.RegularExpressions;
     using System.Threading;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Diagnostics;
-    using Microsoft.CodeAnalysis.Text;
-    using Microsoft.VisualStudio.Shell;
     using Microsoft.VisualStudio.Threading;
 
     /// <summary>
-    /// Report warnings when detect the usage on Visual Studio services (i.e. IVsSolution) without verified
-    /// that the current thread is main thread, or switched to main thread prior invocation explicitly.
+    /// Flag usage of objects that must only be invoked while on the main thread (e.g. STA COM objects)
+    /// without having first verified that the current thread is main thread either by throwing if on
+    /// the wrong thread or asynchronously switching to the main thread.
     /// </summary>
     /// <remarks>
     /// [Background] Most of Visual Studio services especially the legacy services which are implemented in native code
