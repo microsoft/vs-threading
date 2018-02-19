@@ -3,12 +3,15 @@
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using System.IO;
     using System.Linq;
+    using System.Text.RegularExpressions;
     using System.Threading;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Diagnostics;
+    using Microsoft.CodeAnalysis.Text;
     using Microsoft.VisualStudio.Shell;
     using Microsoft.VisualStudio.Threading;
 
@@ -53,10 +56,6 @@
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
-        private static readonly IImmutableSet<string> KnownMethodsToSwitchToMainThread = ImmutableHashSet.Create(StringComparer.Ordinal,
-            Types.JoinableTaskFactory.SwitchToMainThreadAsync,
-            "SwitchToUIThread");
-
         private enum ThreadingContext
         {
             /// <summary>
@@ -91,28 +90,38 @@
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
 
-            context.RegisterCodeBlockStartAction<SyntaxKind>(ctxt =>
+            context.RegisterCompilationStartAction(ctxt =>
             {
-                var methodAnalyzer = new MethodAnalyzer();
+                var mainThreadAssertingMethods = CommonInterest.ReadAdditionalFiles(ctxt, CommonInterest.FileNamePatternForMethodsThatAssertMainThread);
+                var mainThreadSwitchingMethods = CommonInterest.ReadAdditionalFiles(ctxt, CommonInterest.FileNamePatternForMethodsThatSwitchToMainThread);
+                var typesRequiringMainThread = CommonInterest.ReadAdditionalFiles(ctxt, CommonInterest.FileNamePatternForTypesRequiringMainThread);
 
-                ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeInvocation), SyntaxKind.InvocationExpression);
-                ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeMemberAccess), SyntaxKind.SimpleMemberAccessExpression);
-                ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeCast), SyntaxKind.CastExpression);
-                ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeAs), SyntaxKind.AsExpression);
-                ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeAs), SyntaxKind.IsExpression);
+                ctxt.RegisterCodeBlockStartAction<SyntaxKind>(ctxt2 =>
+                {
+                    var methodAnalyzer = new MethodAnalyzer
+                    {
+                        MainThreadAssertingMethods = mainThreadAssertingMethods,
+                        MainThreadSwitchingMethods = mainThreadSwitchingMethods,
+                        TypesRequiringMainThread = typesRequiringMainThread,
+                    };
+                    ctxt2.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeInvocation), SyntaxKind.InvocationExpression);
+                    ctxt2.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeMemberAccess), SyntaxKind.SimpleMemberAccessExpression);
+                    ctxt2.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeCast), SyntaxKind.CastExpression);
+                    ctxt2.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeAs), SyntaxKind.AsExpression);
+                    ctxt2.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeAs), SyntaxKind.IsExpression);
+                });
             });
-        }
-
-        private static bool IsVisualStudioShellInteropAssembly(string assemblyName)
-        {
-            return assemblyName.StartsWith("Microsoft.VisualStudio.Shell.Interop", StringComparison.OrdinalIgnoreCase)
-                || assemblyName.Equals("Microsoft.VisualStudio.OLE.Interop", StringComparison.OrdinalIgnoreCase)
-                || assemblyName.StartsWith("Microsoft.Internal.VisualStudio.Shell.Interop", StringComparison.OrdinalIgnoreCase);
         }
 
         private class MethodAnalyzer
         {
             private ImmutableDictionary<SyntaxNode, ThreadingContext> methodDeclarationNodes = ImmutableDictionary<SyntaxNode, ThreadingContext>.Empty;
+
+            internal HashSet<string> MainThreadAssertingMethods { get; set; }
+
+            internal HashSet<string> MainThreadSwitchingMethods { get; set; }
+
+            internal HashSet<string> TypesRequiringMainThread { get; set; }
 
             internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
             {
@@ -123,7 +132,7 @@
                     var methodDeclaration = context.Node.FirstAncestorOrSelf<SyntaxNode>(n => CommonInterest.MethodSyntaxKinds.Contains(n.Kind()));
                     if (methodDeclaration != null)
                     {
-                        if (CommonInterest.KnownMethodsToVerifyMainThread.Contains(invokeMethod.Name) || KnownMethodsToSwitchToMainThread.Contains(invokeMethod.Name))
+                        if (this.MainThreadAssertingMethods.Contains(invokeMethod.Name) || this.MainThreadSwitchingMethods.Contains(invokeMethod.Name))
                         {
                             this.methodDeclarationNodes = this.methodDeclarationNodes.SetItem(methodDeclaration, ThreadingContext.MainThread);
                             return;
@@ -186,7 +195,7 @@
 
                 bool requiresUIThread = type.TypeKind == TypeKind.Interface
                     && type.ContainingAssembly != null
-                    && IsVisualStudioShellInteropAssembly(type.ContainingAssembly.Name);
+                    && this.TypesRequiringMainThread.Any(type.ContainingAssembly.Name.StartsWith);
                 requiresUIThread |= symbol?.Name == "GetService" && type.Name == "Package" && type.BelongsToNamespace(Namespaces.MicrosoftVisualStudioShell);
                 requiresUIThread |= symbol != null && !symbol.IsStatic && type.Name == "ServiceProvider" && type.BelongsToNamespace(Namespaces.MicrosoftVisualStudioShell);
 

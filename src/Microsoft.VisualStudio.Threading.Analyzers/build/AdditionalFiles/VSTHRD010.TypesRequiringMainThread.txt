@@ -1,0 +1,4 @@
+﻿# These are actually assembly name prefixes
+Microsoft.VisualStudio.Shell.Interop
+Microsoft.VisualStudio.OLE.Interop
+Microsoft.Internal.VisualStudio.Shell.Interop
