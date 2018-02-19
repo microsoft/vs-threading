@@ -17,9 +17,9 @@
 
     internal static class CommonInterest
     {
-        internal static readonly Regex FileNamePatternForTypesRequiringMainThread = new Regex(@"^VSTHRD010\.TypesRequiringMainThread(\..*)?.txt$", FileNamePatternRegexOptions);
-        internal static readonly Regex FileNamePatternForMethodsThatAssertMainThread = new Regex(@"^VSTHRD010\.MainThreadAssertingMethods(\..*)?.txt$", FileNamePatternRegexOptions);
-        internal static readonly Regex FileNamePatternForMethodsThatSwitchToMainThread = new Regex(@"^VSTHRD010\.MainThreadSwitchingMethods(\..*)?.txt$", FileNamePatternRegexOptions);
+        internal static readonly Regex FileNamePatternForTypesRequiringMainThread = new Regex(@"^vs-threading\.TypesRequiringMainThread(\..*)?.txt$", FileNamePatternRegexOptions);
+        internal static readonly Regex FileNamePatternForMethodsThatAssertMainThread = new Regex(@"^vs-threading\.MainThreadAssertingMethods(\..*)?.txt$", FileNamePatternRegexOptions);
+        internal static readonly Regex FileNamePatternForMethodsThatSwitchToMainThread = new Regex(@"^vs-threading\.MainThreadSwitchingMethods(\..*)?.txt$", FileNamePatternRegexOptions);
 
         internal static readonly IEnumerable<SyncBlockingMethod> JTFSyncBlockers = new[]
         {

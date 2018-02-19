@@ -42,5 +42,5 @@ public int GetAge()
 
 ## Configuration
 
-This analyzer is configurable via the `VSTHRD010.MainThreadAssertingMethods.txt` file.
+This analyzer is configurable via the `vs-threading.MainThreadAssertingMethods.txt` file.
 See our [configuration](configuration.md) topic for more information.

@@ -32,7 +32,7 @@ to throw an exception if called off the main thread. These methods are used by
 various analyzers to ensure that single-threaded objects are only invoked on the main thread.
 These methods are identified as described below:
 
-**Filename:** `VSTHRD010.MainThreadAssertingMethods.txt`
+**Filename:** `vs-threading.MainThreadAssertingMethods.txt`
 
 **Line format:** `Namespace.TypeName.MethodName`
 
@@ -45,7 +45,7 @@ to switch the caller to the main thread if not already there. These methods are 
 various analyzers to ensure that single-threaded objects are only invoked on the main thread.
 These methods are identified as described below:
 
-**Filename:** `VSTHRD010.MainThreadSwitchingMethods.txt`
+**Filename:** `vs-threading.MainThreadSwitchingMethods.txt`
 
 **Line format:** `Namespace.TypeName.MethodName`
 
@@ -58,7 +58,7 @@ the main thread of the application can be configured into these analyzers so tha
 static analysis can help ensure thread safety of the application.
 These types are identified as described below:
 
-**Filename:** `VSTHRD010.TypesRequiringMainThread.txt`
+**Filename:** `vs-threading.TypesRequiringMainThread.txt`
 
 **Line format:** `Namespace.TypeName` or `Namespace.*`
 
