@@ -100,7 +100,7 @@
             {
                 var mainThreadAssertingMethods = CommonInterest.ReadMethods(ctxt, CommonInterest.FileNamePatternForMethodsThatAssertMainThread).ToImmutableArray();
                 var mainThreadSwitchingMethods = CommonInterest.ReadMethods(ctxt, CommonInterest.FileNamePatternForMethodsThatSwitchToMainThread).ToImmutableArray();
-                var typesRequiringMainThread = CommonInterest.ReadAdditionalFiles(ctxt, CommonInterest.FileNamePatternForTypesRequiringMainThread).ToImmutableArray();
+                var typesRequiringMainThread = CommonInterest.ReadTypes(ctxt, CommonInterest.FileNamePatternForTypesRequiringMainThread).ToImmutableArray();
 
                 ctxt.RegisterCodeBlockStartAction<SyntaxKind>(ctxt2 =>
                 {
@@ -127,7 +127,7 @@
 
             internal ImmutableArray<CommonInterest.QualifiedMember> MainThreadSwitchingMethods { get; set; }
 
-            internal ImmutableArray<string> TypesRequiringMainThread { get; set; }
+            internal ImmutableArray<CommonInterest.QualifiedType> TypesRequiringMainThread { get; set; }
 
             internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
             {
@@ -199,9 +199,8 @@
                     throw new ArgumentNullException(nameof(type));
                 }
 
-                bool requiresUIThread = type.TypeKind == TypeKind.Interface
-                    && type.ContainingAssembly != null
-                    && this.TypesRequiringMainThread.Any(type.ContainingAssembly.Name.StartsWith);
+                bool requiresUIThread = (type.TypeKind == TypeKind.Interface || type.TypeKind == TypeKind.Class)
+                    && this.TypesRequiringMainThread.Contains(type);
                 requiresUIThread |= symbol?.Name == "GetService" && type.Name == "Package" && type.BelongsToNamespace(Namespaces.MicrosoftVisualStudioShell);
                 requiresUIThread |= symbol != null && !symbol.IsStatic && type.Name == "ServiceProvider" && type.BelongsToNamespace(Namespaces.MicrosoftVisualStudioShell);
 

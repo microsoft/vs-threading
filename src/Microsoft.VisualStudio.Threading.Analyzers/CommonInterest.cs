@@ -168,6 +168,17 @@
             }
         }
 
+        internal static IEnumerable<QualifiedType> ReadTypes(CompilationStartAnalysisContext context, Regex fileNamePattern)
+        {
+            foreach (string line in ReadAdditionalFiles(context, fileNamePattern))
+            {
+                string[] elements = line.TrimEnd(null).Split(QualifiedIdentifierSeparators);
+                string typeName = elements[elements.Length - 1];
+                var containingNamespace = elements.Take(elements.Length - 1).ToImmutableArray();
+                yield return new QualifiedType(containingNamespace, typeName);
+            }
+        }
+
         internal static IEnumerable<string> ReadAdditionalFiles(CompilationStartAnalysisContext context, Regex fileNamePattern)
         {
             if (context == null)
@@ -210,6 +221,19 @@
             return false;
         }
 
+        internal static bool Contains(this ImmutableArray<QualifiedType> types, ISymbol symbol)
+        {
+            foreach (var type in types)
+            {
+                if (type.IsMatch(symbol))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         internal struct QualifiedType
         {
             public QualifiedType(IReadOnlyList<string> containingTypeNamespace, string typeName)
@@ -224,7 +248,7 @@
 
             public bool IsMatch(ISymbol symbol)
             {
-                return symbol?.Name == this.Name
+                return (this.Name == "*" || symbol?.Name == this.Name)
                     && symbol.BelongsToNamespace(this.Namespace);
             }
 
