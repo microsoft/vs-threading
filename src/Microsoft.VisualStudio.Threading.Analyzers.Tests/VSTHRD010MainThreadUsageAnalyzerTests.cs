@@ -643,5 +643,55 @@ class Test : Microsoft.VisualStudio.OLE.Interop.IServiceProvider {
             this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 15, 14, 15, 26) };
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
+
+        [Fact]
+        public void MainThreadRequiringTypes_SupportsExclusionFromWildcard()
+        {
+            var test = @"
+using System;
+using Microsoft.VisualStudio.Shell;
+
+class Test {
+    object o;
+    void Foo() {
+        object v;
+        v = o as TestNS.FreeThreadedType;
+        v = o as TestNS.SingleThreadedType;
+        v = o as TestNS2.FreeThreadedType;
+        v = o as TestNS2.SingleThreadedType;
+    }
+}
+
+namespace TestNS {
+    interface SingleThreadedType { }
+
+    interface FreeThreadedType { }
+}
+
+namespace TestNS2 {
+    interface SingleThreadedType { }
+
+    interface FreeThreadedType { }
+}
+";
+            var expect = new[]
+            {
+                new DiagnosticResult
+                {
+                    Id = VSTHRD010MainThreadUsageAnalyzer.Id,
+                    SkipVerifyMessage = true,
+                    Severity = DiagnosticSeverity.Warning,
+                    Locations = new DiagnosticResultLocation[] { new DiagnosticResultLocation("Test0.cs", 10, 13, 10, 43), },
+                },
+                new DiagnosticResult
+                {
+                    Id = VSTHRD010MainThreadUsageAnalyzer.Id,
+                    SkipVerifyMessage = true,
+                    Severity = DiagnosticSeverity.Warning,
+                    Locations = new DiagnosticResultLocation[] { new DiagnosticResultLocation("Test0.cs", 12, 13, 12, 44), },
+                },
+            };
+            this.VerifyCSharpDiagnostic(test, expect);
+        }
     }
 }

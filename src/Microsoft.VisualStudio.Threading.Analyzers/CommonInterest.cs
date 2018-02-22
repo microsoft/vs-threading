@@ -168,14 +168,15 @@
             }
         }
 
-        internal static IEnumerable<QualifiedType> ReadTypes(CompilationStartAnalysisContext context, Regex fileNamePattern)
+        internal static IEnumerable<TypeMatchSpec> ReadTypes(CompilationStartAnalysisContext context, Regex fileNamePattern)
         {
             foreach (string line in ReadAdditionalFiles(context, fileNamePattern))
             {
-                string[] elements = line.TrimEnd(null).Split(QualifiedIdentifierSeparators);
+                bool inverted = line.StartsWith("!", StringComparison.Ordinal);
+                string[] elements = line.Substring(inverted ? 1 : 0).TrimEnd(null).Split(QualifiedIdentifierSeparators);
                 string typeName = elements[elements.Length - 1];
                 var containingNamespace = elements.Take(elements.Length - 1).ToImmutableArray();
-                yield return new QualifiedType(containingNamespace, typeName);
+                yield return new TypeMatchSpec(new QualifiedType(containingNamespace, typeName), inverted);
             }
         }
 
@@ -221,17 +222,64 @@
             return false;
         }
 
-        internal static bool Contains(this ImmutableArray<QualifiedType> types, ISymbol symbol)
+        internal static bool Contains(this ImmutableArray<TypeMatchSpec> types, ISymbol symbol)
         {
+            TypeMatchSpec matching = default(TypeMatchSpec);
             foreach (var type in types)
             {
                 if (type.IsMatch(symbol))
                 {
-                    return true;
+                    if (matching.IsEmpty || matching.IsWildcard)
+                    {
+                        matching = type;
+                        if (!matching.IsWildcard)
+                        {
+                            // It's an exact match, so return it immediately.
+                            return !matching.InvertedLogic;
+                        }
+                    }
                 }
             }
 
-            return false;
+            return !matching.IsEmpty && !matching.InvertedLogic;
+        }
+
+        internal struct TypeMatchSpec
+        {
+            internal TypeMatchSpec(QualifiedType type, bool inverted)
+            {
+                this.InvertedLogic = inverted;
+                this.Type = type;
+            }
+
+            /// <summary>
+            /// Gets a value indicating whether this entry appeared in a file with a leading "!" character.
+            /// </summary>
+            internal bool InvertedLogic { get; }
+
+            /// <summary>
+            /// Gets the type described by this type entry.
+            /// </summary>
+            internal QualifiedType Type { get; }
+
+            /// <summary>
+            /// Gets a value indicating whether the typename is a wildcard.
+            /// </summary>
+            internal bool IsWildcard => this.Type.Name == "*";
+
+            /// <summary>
+            /// Gets a value indicating whether this is an uninitialized (default) instance.
+            /// </summary>
+            internal bool IsEmpty => this.Type.Namespace == null;
+
+            /// <summary>
+            /// Tests whether a given symbol matches the description of a type (independent of its <see cref="InvertedLogic"/> property).
+            /// </summary>
+            internal bool IsMatch(ISymbol symbol)
+            {
+                return (this.IsWildcard || symbol?.Name == this.Type.Name)
+                    && symbol.BelongsToNamespace(this.Type.Namespace);
+            }
         }
 
         internal struct QualifiedType
@@ -248,7 +296,7 @@
 
             public bool IsMatch(ISymbol symbol)
             {
-                return (this.Name == "*" || symbol?.Name == this.Name)
+                return symbol?.Name == this.Name
                     && symbol.BelongsToNamespace(this.Namespace);
             }
 
