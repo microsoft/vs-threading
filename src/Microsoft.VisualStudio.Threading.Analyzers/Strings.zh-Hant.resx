@@ -31,6 +31,7 @@
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
     <value>Visual Studio 服務 "{0}" 應該明確用在主執行緒。
 請先呼叫 ThreadHelper.ThrowIfNotOnUIThread() 或 await JoinableTaskFactory.SwitchToMainThreadAsync()。</value>
+    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
     <value>從 UI 執行緒使用 VS 服務</value>

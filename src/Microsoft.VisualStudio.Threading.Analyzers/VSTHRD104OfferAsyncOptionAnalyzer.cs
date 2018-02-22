@@ -88,14 +88,12 @@
                     return;
                 }
 
-                var typeReceiver = context.SemanticModel.GetTypeInfo(memberAccessSyntax.Expression).Type;
-                if (typeReceiver != null)
+                var invokedMember = context.SemanticModel.GetSymbolInfo(memberAccessSyntax).Symbol;
+                if (invokedMember != null)
                 {
                     foreach (var item in problematicMethods)
                     {
-                        if (memberAccessSyntax.Name.Identifier.Text == item.MethodName &&
-                            typeReceiver.Name == item.ContainingTypeName &&
-                            typeReceiver.BelongsToNamespace(item.ContainingTypeNamespace))
+                        if (item.Method.IsMatch(invokedMember))
                         {
                             var location = memberAccessSyntax.Name.GetLocation();
                             context.ReportDiagnostic(Diagnostic.Create(Descriptor, location));

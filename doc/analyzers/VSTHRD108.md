@@ -39,3 +39,8 @@ public int GetAge()
     return this.age.Value;
 }
 ```
+
+## Configuration
+
+This analyzer is configurable via the `vs-threading.MainThreadAssertingMethods.txt` file.
+See our [configuration](configuration.md) topic for more information.

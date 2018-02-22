@@ -173,20 +173,18 @@
                     return false;
                 }
 
-                var typeReceiver = context.SemanticModel.GetTypeInfo(memberAccessSyntax.Expression).Type;
-                if (typeReceiver != null)
+                var memberSymbol = context.SemanticModel.GetSymbolInfo(memberAccessSyntax).Symbol;
+                if (memberSymbol != null)
                 {
                     foreach (var item in problematicMethods)
                     {
-                        if (memberAccessSyntax.Name.Identifier.Text == item.MethodName &&
-                            typeReceiver.Name == item.ContainingTypeName &&
-                            typeReceiver.BelongsToNamespace(item.ContainingTypeNamespace))
+                        if (item.Method.IsMatch(memberSymbol))
                         {
                             var location = memberAccessSyntax.Name.GetLocation();
                             var properties = ImmutableDictionary<string, string>.Empty;
                             DiagnosticDescriptor descriptor;
                             var messageArgs = new List<object>(2);
-                            messageArgs.Add(item.MethodName);
+                            messageArgs.Add(item.Method.Name);
                             if (item.AsyncAlternativeMethodName != null)
                             {
                                 properties = properties.Add(VSTHRD103UseAsyncOptionCodeFix.AsyncMethodKeyName, item.AsyncAlternativeMethodName);

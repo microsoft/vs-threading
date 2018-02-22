@@ -6,23 +6,23 @@
     using Xunit;
     using Xunit.Abstractions;
 
-    public class VSTHRD010VsServiceInvocationAnalyzerTests : DiagnosticVerifier
+    public class VSTHRD010MainThreadUsageAnalyzerTests : DiagnosticVerifier
     {
         private DiagnosticResult expect = new DiagnosticResult
         {
-            Id = VSTHRD010VsServiceUsageAnalyzer.Id,
+            Id = VSTHRD010MainThreadUsageAnalyzer.Id,
             SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Warning,
         };
 
-        public VSTHRD010VsServiceInvocationAnalyzerTests(ITestOutputHelper logger)
+        public VSTHRD010MainThreadUsageAnalyzerTests(ITestOutputHelper logger)
             : base(logger)
         {
         }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new VSTHRD010VsServiceUsageAnalyzer();
+            return new VSTHRD010MainThreadUsageAnalyzer();
         }
 
         [Fact]
@@ -274,16 +274,15 @@ class Test {
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Threading;
 
 class Test {
+    JoinableTaskFactory jtf;
+
     async Task F() {
-        await SwitchToMainThreadAsync();
+        await jtf.SwitchToMainThreadAsync();
         IVsSolution sln = null;
         sln.SetProperty(1000, null);
-    }
-
-    async Task SwitchToMainThreadAsync() {
-        await Task.Yield();
     }
 }
 ";
@@ -462,6 +461,24 @@ class Test {
 }
 ";
             this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 19) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
+        [Fact]
+        public void TestVsSolutionViaIs()
+        {
+            var test = @"
+using System;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    void F() {
+        object obj1 = null;
+        bool match = obj1 is IVsSolution;
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 22, 8, 41) };
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
