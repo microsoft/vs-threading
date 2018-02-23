@@ -460,7 +460,7 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 19) };
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 24, 8, 38) };
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
@@ -478,7 +478,7 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 22, 8, 41) };
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 27, 8, 41) };
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
@@ -574,7 +574,7 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 16, 9, 85) };
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 31, 9, 85) };
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
@@ -617,6 +617,74 @@ class Test : Package {
 ";
             this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 29, 8, 39) };
             this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
+        [Fact]
+        public void Package_GetServiceAsync_OffUIThread_ProducesNoDiagnostic()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using Task = System.Threading.Tasks.Task;
+
+class Test : AsyncPackage {
+    Microsoft.VisualStudio.Shell.IAsyncServiceProvider asp;
+    Microsoft.VisualStudio.Shell.Interop.IAsyncServiceProvider asp2;
+
+    async Task Foo() {
+        Guid guid = Guid.Empty;
+        object shell;
+        shell = await this.GetServiceAsync(typeof(Microsoft.VisualStudio.Shell.Interop.IVsShell));
+        shell = await asp.GetServiceAsync(typeof(Microsoft.VisualStudio.Shell.Interop.IVsShell));
+        shell = await asp2.QueryServiceAsync(ref guid);
+    }
+}
+";
+            this.VerifyCSharpDiagnostic(test);
+        }
+
+        [Fact]
+        public void Package_GetServiceAsync_ThenCast_OffUIThread_ProducesDiagnostic()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using Task = System.Threading.Tasks.Task;
+
+class Test : AsyncPackage {
+    Microsoft.VisualStudio.Shell.IAsyncServiceProvider asp;
+    Microsoft.VisualStudio.Shell.Interop.IAsyncServiceProvider asp2;
+
+    async Task Foo() {
+        Guid guid = Guid.Empty;
+        object shell;
+        shell = await asp.GetServiceAsync(typeof(SVsShell)) as IVsShell;
+        shell = await asp2.QueryServiceAsync(ref guid) as IVsShell;
+    }
+}
+";
+            var expect = new DiagnosticResult[]
+            {
+                new DiagnosticResult
+                {
+                    Id = this.expect.Id,
+                    SkipVerifyMessage = this.expect.SkipVerifyMessage,
+                    Severity = this.expect.Severity,
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 15, 61, 15, 72) },
+                },
+                new DiagnosticResult
+                {
+                    Id = this.expect.Id,
+                    SkipVerifyMessage = this.expect.SkipVerifyMessage,
+                    Severity = this.expect.Severity,
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 16, 56, 16, 67) },
+                },
+            };
+            this.VerifyCSharpDiagnostic(test, expect);
         }
 
         [Fact]
@@ -681,14 +749,14 @@ namespace TestNS2 {
                     Id = VSTHRD010MainThreadUsageAnalyzer.Id,
                     SkipVerifyMessage = true,
                     Severity = DiagnosticSeverity.Warning,
-                    Locations = new DiagnosticResultLocation[] { new DiagnosticResultLocation("Test0.cs", 10, 13, 10, 43), },
+                    Locations = new DiagnosticResultLocation[] { new DiagnosticResultLocation("Test0.cs", 10, 15, 10, 43), },
                 },
                 new DiagnosticResult
                 {
                     Id = VSTHRD010MainThreadUsageAnalyzer.Id,
                     SkipVerifyMessage = true,
                     Severity = DiagnosticSeverity.Warning,
-                    Locations = new DiagnosticResultLocation[] { new DiagnosticResultLocation("Test0.cs", 12, 13, 12, 44), },
+                    Locations = new DiagnosticResultLocation[] { new DiagnosticResultLocation("Test0.cs", 12, 15, 12, 44), },
                 },
             };
             this.VerifyCSharpDiagnostic(test, expect);
