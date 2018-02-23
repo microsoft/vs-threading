@@ -620,6 +620,74 @@ class Test : Package {
         }
 
         [Fact]
+        public void Package_GetServiceAsync_OffUIThread_ProducesNoDiagnostic()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using Task = System.Threading.Tasks.Task;
+
+class Test : AsyncPackage {
+    Microsoft.VisualStudio.Shell.IAsyncServiceProvider asp;
+    Microsoft.VisualStudio.Shell.Interop.IAsyncServiceProvider asp2;
+
+    async Task Foo() {
+        Guid guid = Guid.Empty;
+        object shell;
+        shell = await this.GetServiceAsync(typeof(Microsoft.VisualStudio.Shell.Interop.IVsShell));
+        shell = await asp.GetServiceAsync(typeof(Microsoft.VisualStudio.Shell.Interop.IVsShell));
+        shell = await asp2.QueryServiceAsync(ref guid);
+    }
+}
+";
+            this.VerifyCSharpDiagnostic(test);
+        }
+
+        [Fact]
+        public void Package_GetServiceAsync_ThenCast_OffUIThread_ProducesDiagnostic()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using Task = System.Threading.Tasks.Task;
+
+class Test : AsyncPackage {
+    Microsoft.VisualStudio.Shell.IAsyncServiceProvider asp;
+    Microsoft.VisualStudio.Shell.Interop.IAsyncServiceProvider asp2;
+
+    async Task Foo() {
+        Guid guid = Guid.Empty;
+        object shell;
+        shell = await asp.GetServiceAsync(typeof(SVsShell)) as IVsShell;
+        shell = await asp2.QueryServiceAsync(ref guid) as IVsShell;
+    }
+}
+";
+            var expect = new DiagnosticResult[]
+            {
+                new DiagnosticResult
+                {
+                    Id = this.expect.Id,
+                    SkipVerifyMessage = this.expect.SkipVerifyMessage,
+                    Severity = this.expect.Severity,
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 15, 17, 15, 72) },
+                },
+                new DiagnosticResult
+                {
+                    Id = this.expect.Id,
+                    SkipVerifyMessage = this.expect.SkipVerifyMessage,
+                    Severity = this.expect.Severity,
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 16, 17, 16, 67) },
+                },
+            };
+            this.VerifyCSharpDiagnostic(test, expect);
+        }
+
+        [Fact]
         public void InterfaceAccessByClassMethod_OffUIThread_ProducesDiagnostic()
         {
             var test = @"
