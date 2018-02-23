@@ -460,7 +460,7 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 19) };
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 24, 8, 38) };
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
@@ -478,7 +478,7 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 22, 8, 41) };
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 27, 8, 41) };
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
@@ -574,7 +574,7 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 16, 9, 85) };
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 31, 9, 85) };
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
@@ -674,14 +674,14 @@ class Test : AsyncPackage {
                     Id = this.expect.Id,
                     SkipVerifyMessage = this.expect.SkipVerifyMessage,
                     Severity = this.expect.Severity,
-                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 15, 17, 15, 72) },
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 15, 61, 15, 72) },
                 },
                 new DiagnosticResult
                 {
                     Id = this.expect.Id,
                     SkipVerifyMessage = this.expect.SkipVerifyMessage,
                     Severity = this.expect.Severity,
-                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 16, 17, 16, 67) },
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 16, 56, 16, 67) },
                 },
             };
             this.VerifyCSharpDiagnostic(test, expect);
@@ -749,14 +749,14 @@ namespace TestNS2 {
                     Id = VSTHRD010MainThreadUsageAnalyzer.Id,
                     SkipVerifyMessage = true,
                     Severity = DiagnosticSeverity.Warning,
-                    Locations = new DiagnosticResultLocation[] { new DiagnosticResultLocation("Test0.cs", 10, 13, 10, 43), },
+                    Locations = new DiagnosticResultLocation[] { new DiagnosticResultLocation("Test0.cs", 10, 15, 10, 43), },
                 },
                 new DiagnosticResult
                 {
                     Id = VSTHRD010MainThreadUsageAnalyzer.Id,
                     SkipVerifyMessage = true,
                     Severity = DiagnosticSeverity.Warning,
-                    Locations = new DiagnosticResultLocation[] { new DiagnosticResultLocation("Test0.cs", 12, 13, 12, 44), },
+                    Locations = new DiagnosticResultLocation[] { new DiagnosticResultLocation("Test0.cs", 12, 15, 12, 44), },
                 },
             };
             this.VerifyCSharpDiagnostic(test, expect);

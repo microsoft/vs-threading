@@ -9,7 +9,7 @@
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Diagnostics;
-    using Microsoft.VisualStudio.Threading;
+    using Microsoft.CodeAnalysis.Text;
 
     /// <summary>
     /// Flag usage of objects that must only be invoked while on the main thread (e.g. STA COM objects)
@@ -148,11 +148,11 @@
                     // The diagnostic (if any) should underline the method name only.
                     var focusedNode = invocationSyntax.Expression;
                     focusedNode = (focusedNode as MemberAccessExpressionSyntax)?.Name ?? focusedNode;
-                    if (!this.AnalyzeTypeWithinContext(invokedMethod.ContainingType, invokedMethod, context, focusedNode))
+                    if (!this.AnalyzeTypeWithinContext(invokedMethod.ContainingType, invokedMethod, context, focusedNode.GetLocation()))
                     {
                         foreach (var iface in invokedMethod.FindInterfacesImplemented())
                         {
-                            if (this.AnalyzeTypeWithinContext(iface, invokedMethod, context, focusedNode))
+                            if (this.AnalyzeTypeWithinContext(iface, invokedMethod, context, focusedNode.GetLocation()))
                             {
                                 // Just report the first diagnostic.
                                 break;
@@ -168,7 +168,7 @@
                 var property = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IPropertySymbol;
                 if (property != null)
                 {
-                    this.AnalyzeTypeWithinContext(property.ContainingType, property, context, memberAccessSyntax.Name);
+                    this.AnalyzeTypeWithinContext(property.ContainingType, property, context, memberAccessSyntax.Name.GetLocation());
                 }
             }
 
@@ -188,11 +188,12 @@
                 var type = context.SemanticModel.GetSymbolInfo(asSyntax.Right).Symbol as ITypeSymbol;
                 if (type != null)
                 {
-                    this.AnalyzeTypeWithinContext(type, null, context);
+                    Location asAndRightSide = Location.Create(context.Node.SyntaxTree, TextSpan.FromBounds(asSyntax.OperatorToken.Span.Start, asSyntax.Right.Span.End));
+                    this.AnalyzeTypeWithinContext(type, null, context, asAndRightSide);
                 }
             }
 
-            private bool AnalyzeTypeWithinContext(ITypeSymbol type, ISymbol symbol, SyntaxNodeAnalysisContext context, SyntaxNode focusDiagnosticOn = null)
+            private bool AnalyzeTypeWithinContext(ITypeSymbol type, ISymbol symbol, SyntaxNodeAnalysisContext context, Location focusDiagnosticOn = null)
             {
                 if (type == null)
                 {
@@ -215,7 +216,7 @@
 
                     if (threadingContext != ThreadingContext.MainThread)
                     {
-                        Location location = (focusDiagnosticOn ?? context.Node).GetLocation();
+                        Location location = focusDiagnosticOn ?? context.Node.GetLocation();
                         var exampleAssertingMethod = this.MainThreadAssertingMethods.FirstOrDefault();
                         var descriptor = exampleAssertingMethod.Name != null ? Descriptor : DescriptorNoAssertingMethod;
                         context.ReportDiagnostic(Diagnostic.Create(descriptor, location, type.Name, exampleAssertingMethod.ToString()));
