@@ -127,7 +127,7 @@
 
             internal ImmutableArray<CommonInterest.QualifiedMember> MainThreadSwitchingMethods { get; set; }
 
-            internal ImmutableArray<CommonInterest.QualifiedType> TypesRequiringMainThread { get; set; }
+            internal ImmutableArray<CommonInterest.TypeMatchSpec> TypesRequiringMainThread { get; set; }
 
             internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
             {

@@ -1,0 +1,4 @@
+﻿TestNS.*
+!TestNS.FreeThreadedType
+!TestNS2.FreeThreadedType
+TestNS2.*
