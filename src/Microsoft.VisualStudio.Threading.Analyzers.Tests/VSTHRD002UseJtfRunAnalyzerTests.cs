@@ -129,6 +129,29 @@ class Test {
         }
 
         [Fact]
+        public void TaskResultShouldNotReportWarning_WithinItsOwnContinuationDelegate()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void F() {
+        var irrelevantTask = Task.Run(() => 1);
+        var task = Task.Run(() => 5);
+        task.ContinueWith(t => irrelevantTask.Result);
+        task.ContinueWith(t => t.Result);
+        task.ContinueWith(t => t.Wait());
+        task.ContinueWith((t, s) => t.Result, new object());
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 47, 9, 53) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyNoCSharpFixOffered(test);
+        }
+
+        [Fact]
         public void AwaiterGetResultShouldReportWarning()
         {
             var test = @"
