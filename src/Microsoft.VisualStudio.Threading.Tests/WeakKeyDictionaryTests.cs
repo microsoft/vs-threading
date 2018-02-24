@@ -10,6 +10,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using Xunit;
     using Xunit.Abstractions;
 
@@ -125,16 +126,8 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public void KeysCollectable()
         {
-            string k1 = new string('k', BigMemoryFootprintTest);
             string v1 = new string('v', BigMemoryFootprintTest);
-
-            // Each character is 2 bytes, so about 4MB of this should be the strings
-            long memory1 = GC.GetTotalMemory(true);
-
-            var dictionary = new WeakKeyDictionary<string, string>();
-            dictionary[k1] = v1;
-
-            k1 = null;
+            WeakKeyDictionary<string, string> dictionary = AllocateDictionaryWithLargeKey(v1, out long memory1);
 
             long memory2 = GC.GetTotalMemory(true);
 
@@ -142,7 +135,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             long difference = memory1 - memory2;
 
             this.logger.WriteLine("Start {0}, end {1}, diff {2}", memory1, memory2, difference);
-            Assert.True(difference > 1500000); // 2MB minus big noise allowance
+            Assert.True(difference > 1500000, $"Actual difference is {difference}."); // 2MB minus big noise allowance
 
             // This line is VERY important, as it keeps the GC from being too smart and collecting
             // the dictionary and its large strings because we never use them again.
@@ -223,6 +216,22 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Assert.Equal(2, enumeratedContents.Count);
             Assert.True(enumeratedContents.Contains(new KeyValuePair<object, int>(keepAlive1, 0)));
             Assert.True(enumeratedContents.Contains(new KeyValuePair<object, int>(keepAlive2, 2)));
+        }
+
+        /// <summary>
+        /// A helper method to allocate a dictionary with a large key.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)] // must not be inlined so that locals are guaranteed to be freed.
+        private static WeakKeyDictionary<string, string> AllocateDictionaryWithLargeKey(string v1, out long memoryAfterKeyAndBeforeDictionary)
+        {
+            string k1 = new string('k', BigMemoryFootprintTest);
+
+            // Each character is 2 bytes, so about 4MB of this should be the strings
+            memoryAfterKeyAndBeforeDictionary = GC.GetTotalMemory(true);
+            return new WeakKeyDictionary<string, string>
+            {
+                [k1] = v1
+            };
         }
     }
 }
