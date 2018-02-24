@@ -232,24 +232,30 @@
         public void HangReportNotSuppressedOnUnrelatedLongRunningTask()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
-            bool hangReported = false;
-            this.Context.OnReportHang = (hangDuration, iterations, id) => hangReported = true;
+            var hangReported = new AsyncManualResetEvent();
+            var releaseUnrelatedTask = new AsyncManualResetEvent();
+            this.Context.OnReportHang = (hangDuration, iterations, id) => hangReported.Set();
 
             var task = this.Factory.RunAsync(
                 async () =>
                 {
-                    await Task.Delay(40);
+                    await releaseUnrelatedTask;
                 },
                 JoinableTaskCreationOptions.LongRunning);
 
-            this.Factory.Run(
-                async () =>
-                {
-                    await Task.Delay(20);
-                });
-
-            Assert.True(hangReported);
-            task.Join();
+            try
+            {
+                this.Factory.Run(
+                    async () =>
+                    {
+                        await hangReported.WaitAsync().WithTimeout(UnexpectedTimeout);
+                    });
+            }
+            finally
+            {
+                releaseUnrelatedTask.Set();
+                task.Join();
+            }
         }
 
         [StaFact]
