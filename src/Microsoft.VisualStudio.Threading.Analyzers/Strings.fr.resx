@@ -31,6 +31,7 @@
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
     <value>Le service Visual Studio "{0}"doit être utilisé sur le thread principal de manière explicite.
 Appelez ThreadHelper.ThrowIfNotOnUIThread() ou attendez d'abord JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
     <value>Utiliser les services VS à partir du thread d’interface utilisateur</value>

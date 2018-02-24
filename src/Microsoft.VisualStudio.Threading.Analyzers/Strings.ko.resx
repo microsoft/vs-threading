@@ -31,6 +31,7 @@
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
     <value>주 스레드에서 Visual Studio 서비스 "{0}"을(를) 명시적으로 사용해야 합니다.
 ThreadHelper.ThrowIfNotOnUIThread()를 호출하거나, 우선 JoinableTaskFactory.SwitchToMainThreadAsync()를 대기합니다.</value>
+    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
     <value>UI 스레드의 VS 서비스를 사용합니다.</value>

@@ -53,9 +53,14 @@
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
 
-            context.RegisterCodeBlockStartAction<SyntaxKind>(ctxt =>
+            context.RegisterCompilationStartAction(ctxt =>
             {
-                ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeInvocation), SyntaxKind.InvocationExpression);
+                var mainThreadAssertingMethods = CommonInterest.ReadMethods(ctxt, CommonInterest.FileNamePatternForMethodsThatAssertMainThread).ToImmutableArray();
+
+                ctxt.RegisterCodeBlockStartAction<SyntaxKind>(ctxt2 =>
+                {
+                    ctxt2.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => this.AnalyzeInvocation(c, mainThreadAssertingMethods)), SyntaxKind.InvocationExpression);
+                });
             });
         }
 
@@ -94,7 +99,7 @@
             return false;
         }
 
-        private void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
+        private void AnalyzeInvocation(SyntaxNodeAnalysisContext context, ImmutableArray<CommonInterest.QualifiedMember> mainThreadAssertingMethods)
         {
             var invocationExpression = (InvocationExpressionSyntax)context.Node;
             var symbolInfo = context.SemanticModel.GetSymbolInfo((InvocationExpressionSyntax)context.Node, context.CancellationToken);
@@ -102,7 +107,7 @@
             if (symbol != null)
             {
                 bool reportDiagnostic = false;
-                if (CommonInterest.KnownMethodsToVerifyMainThread.Contains(symbol.Name))
+                if (mainThreadAssertingMethods.Contains(symbol))
                 {
                     if (IsInConditional(invocationExpression))
                     {

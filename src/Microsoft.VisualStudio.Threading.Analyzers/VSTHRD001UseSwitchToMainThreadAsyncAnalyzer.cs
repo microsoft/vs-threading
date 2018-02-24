@@ -45,9 +45,7 @@
                 {
                     context.CancellationToken.ThrowIfCancellationRequested();
 
-                    if (invokeMethod.Name == legacyMethod.MethodName &&
-                        invokeMethod.ContainingType.Name == legacyMethod.ContainingTypeName &&
-                        invokeMethod.ContainingType.BelongsToNamespace(legacyMethod.ContainingTypeNamespace))
+                    if (legacyMethod.IsMatch(invokeMethod))
                     {
                         var diagnostic = Diagnostic.Create(
                             Descriptor,

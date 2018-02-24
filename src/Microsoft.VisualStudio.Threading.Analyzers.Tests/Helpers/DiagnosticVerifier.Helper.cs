@@ -8,6 +8,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
+    using System.Reflection;
     using System.Threading;
     using System.Windows.Threading;
     using Microsoft.Build.Utilities;
@@ -35,6 +36,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         private static readonly ImmutableArray<string> VSSDKPackageReferences = ImmutableArray.Create(new string[] {
             Path.Combine("Microsoft.VisualStudio.Shell.Interop", "7.10.6071", "lib", "Microsoft.VisualStudio.Shell.Interop.dll"),
             Path.Combine("Microsoft.VisualStudio.Shell.Interop.11.0", "11.0.61030", "lib", "Microsoft.VisualStudio.Shell.Interop.11.0.dll"),
+            Path.Combine("Microsoft.VisualStudio.Shell.Interop.14.0.DesignTime", "14.3.25407", "lib", "Microsoft.VisualStudio.Shell.Interop.14.0.DesignTime.dll"),
+            Path.Combine("Microsoft.VisualStudio.Shell.Immutable.14.0", "14.3.25407", "lib\\net45", "Microsoft.VisualStudio.Shell.Immutable.14.0.dll"),
             Path.Combine("Microsoft.VisualStudio.Shell.14.0", "14.3.25407", "lib", "Microsoft.VisualStudio.Shell.14.0.dll"),
         });
 
@@ -77,6 +80,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 projects.Add(document.Project);
             }
 
+            const string additionalFilePrefix = "AdditionalFiles.";
+            var additionalFiles = from resourceName in Assembly.GetExecutingAssembly().GetManifestResourceNames()
+                                  where resourceName.StartsWith(additionalFilePrefix, StringComparison.Ordinal)
+                                  select new MockAdditionalText(resourceName, resourceName.Substring(additionalFilePrefix.Length));
+
             var diagnostics = new List<Diagnostic>();
             foreach (var project in projects)
             {
@@ -88,7 +96,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                     Assert.False(true, "Compilation errors exist in the test source code, such as:" + Environment.NewLine + errorDiags.First());
                 }
 
-                var compilationWithAnalyzers = compilation.WithAnalyzers(analyzers);
+                var compilationWithAnalyzers = compilation.WithAnalyzers(
+                    analyzers,
+                    new AnalyzerOptions(additionalFiles.ToImmutableArray<AdditionalText>()));
                 var diags = compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync().GetAwaiter().GetResult();
                 foreach (var diag in diags)
                 {
@@ -236,5 +246,27 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
             return solution.GetProject(projectId);
         }
         #endregion
+
+        private class MockAdditionalText : AdditionalText
+        {
+            private readonly string manifestResourceName;
+            private readonly string path;
+
+            internal MockAdditionalText(string manifestResourceName, string path)
+            {
+                this.manifestResourceName = manifestResourceName ?? throw new ArgumentNullException(nameof(manifestResourceName));
+                this.path = path ?? throw new ArgumentNullException(nameof(path));
+            }
+
+            public override string Path => this.path;
+
+            public override SourceText GetText(CancellationToken cancellationToken = default(CancellationToken))
+            {
+                using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(this.manifestResourceName))
+                {
+                    return SourceText.From(stream);
+                }
+            }
+        }
     }
 }

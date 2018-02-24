@@ -24,11 +24,28 @@
     <PackageReference Include="Microsoft.VisualStudio.OLE.Interop" Version="7.10.6070" />
     <PackageReference Include="Microsoft.VisualStudio.Shell.14.0" Version="14.3.25407" IncludeAssets="none" />
     <PackageReference Include="Microsoft.VisualStudio.Shell.Interop.11.0" Version="11.0.61030" IncludeAssets="none" />
+    <PackageReference Include="Microsoft.VisualStudio.Shell.Interop.14.0.DesignTime" Version="14.3.25407" IncludeAssets="none" />
     <PackageReference Include="xunit" Version="2.2.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
     <PackageReference Include="MicroBuild.Nonshipping" Version="$(MicroBuildVersion)" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="..\Microsoft.VisualStudio.Threading.Analyzers\build\AdditionalFiles\**" LinkBase="BuiltIn.AdditionalFiles">
+      <LogicalName>AdditionalFiles.%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="AdditionalFiles\**">
+      <LogicalName>AdditionalFiles.%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="AdditionalFiles\**" />
+  </ItemGroup>
+  <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="..\Microsoft.VisualStudio.Threading.Analyzers\build\AdditionalFiles\VSTHRD010.MainThreadSwitchingMethods.txt">
+      <CustomToolNamespace>AdditionalFiles</CustomToolNamespace>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>

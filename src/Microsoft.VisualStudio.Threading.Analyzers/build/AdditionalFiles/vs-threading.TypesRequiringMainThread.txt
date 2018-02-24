@@ -1,0 +1,4 @@
+﻿Microsoft.VisualStudio.Shell.Interop.*
+Microsoft.VisualStudio.OLE.Interop.*
+Microsoft.Internal.VisualStudio.Shell.Interop.*
+!Microsoft.VisualStudio.Shell.Interop.IAsyncServiceProvider

@@ -27,14 +27,17 @@
           <target state="translated">Evite esperas sincrónicas problemáticas</target>
         </trans-unit>
         <trans-unit id="VSTHRD010_MessageFormat" translate="yes" xml:space="preserve">
-          <source>Visual Studio service "{0}" should be used on main thread explicitly.
-Call ThreadHelper.ThrowIfNotOnUIThread() or await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
-          <target state="translated">El servicio "{0}" de Visual Studio debe usarse explícitamente en el subproceso principal. 
+          <source>The type "{0}" should be used on main thread explicitly.
+Call {1}() or await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
+          <target state="needs-review-translation">El servicio "{0}" de Visual Studio debe usarse explícitamente en el subproceso principal. 
 Llame a ThreadHelper.ThrowIfNotOnUIThread() o el elemento await JoinableTaskFactory.SwitchToMainThreadAsync() en primer lugar.</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</note>
         </trans-unit>
         <trans-unit id="VSTHRD010_Title" translate="yes" xml:space="preserve">
-          <source>Use VS services from UI thread</source>
-          <target state="translated">Use servicios de VS desde el subproceso de IU</target>
+          <source>Invoke single-threaded types on Main thread</source>
+          <target state="needs-review-translation">Use servicios de VS desde el subproceso de IU</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD100_MessageFormat" translate="yes" xml:space="preserve">
           <source>Avoid "async void" methods, because any exceptions not handled by the method will crash the process.</source>
@@ -181,6 +184,13 @@ Use AsyncLazy&lt;T&gt; en su lugar.</target>
         <trans-unit id="VSTHRD108_Title" translate="yes" xml:space="preserve">
           <source>Assert thread affinity unconditionally</source>
           <target state="translated">Declarar afinidad de subproceso incondicionalmente</target>
+        </trans-unit>
+        <trans-unit id="VSTHRD010_MessageFormat_NoAssertingMethod" translate="yes" xml:space="preserve">
+          <source>The type "{0}" should be used on main thread explicitly.
+Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
+          <target state="new">The type "{0}" should be used on main thread explicitly.
+Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</target>
+          <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</note>
         </trans-unit>
       </group>
     </body>
