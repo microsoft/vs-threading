@@ -195,6 +195,18 @@
                 return;
             }
 
+            IMethodSymbol GetPropertyAccessor(IPropertySymbol propertySymbol)
+            {
+                if (propertySymbol != null)
+                {
+                    return Utils.IsOnLeftHandOfAssignment(context.Node)
+                        ? propertySymbol.SetMethod
+                        : propertySymbol.GetMethod;
+                }
+
+                return null;
+            }
+
             ISymbol targetMethod = null;
             switch (context.Node)
             {
@@ -202,24 +214,10 @@
                     targetMethod = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax.Expression).Symbol;
                     break;
                 case MemberAccessExpressionSyntax memberAccessExpressionSyntax:
-                    var targetProperty = context.SemanticModel.GetSymbolInfo(memberAccessExpressionSyntax.Name).Symbol as IPropertySymbol;
-                    if (targetProperty != null)
-                    {
-                        targetMethod = context.Node.Parent is AssignmentExpressionSyntax assignmentSyntax && context.Node == assignmentSyntax.Left
-                            ? targetProperty.SetMethod
-                            : targetProperty.GetMethod;
-                    }
-
+                    targetMethod = GetPropertyAccessor(context.SemanticModel.GetSymbolInfo(memberAccessExpressionSyntax.Name).Symbol as IPropertySymbol);
                     break;
                 case IdentifierNameSyntax identifierNameSyntax:
-                    targetProperty = context.SemanticModel.GetSymbolInfo(identifierNameSyntax).Symbol as IPropertySymbol;
-                    if (targetProperty != null)
-                    {
-                        targetMethod = context.Node.Parent is AssignmentExpressionSyntax assignmentSyntax && context.Node == assignmentSyntax.Left
-                            ? targetProperty.SetMethod
-                            : targetProperty.GetMethod;
-                    }
-
+                    targetMethod = GetPropertyAccessor(context.SemanticModel.GetSymbolInfo(identifierNameSyntax).Symbol as IPropertySymbol);
                     break;
             }
 

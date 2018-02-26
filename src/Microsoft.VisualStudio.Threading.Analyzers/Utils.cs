@@ -276,6 +276,22 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return symbol.GetAttributes().Any(a => a.AttributeClass.Name == nameof(ObsoleteAttribute) && a.AttributeClass.BelongsToNamespace(Namespaces.System));
         }
 
+        internal static bool IsOnLeftHandOfAssignment(SyntaxNode syntaxNode)
+        {
+            SyntaxNode parent = null;
+            while ((parent = syntaxNode.Parent) != null)
+            {
+                if (parent is AssignmentExpressionSyntax assignment)
+                {
+                    return assignment.Left == syntaxNode;
+                }
+
+                syntaxNode = parent;
+            }
+
+            return false;
+        }
+
         internal static IEnumerable<ITypeSymbol> FindInterfacesImplemented(this ISymbol symbol)
         {
             if (symbol == null)
