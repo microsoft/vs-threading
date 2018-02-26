@@ -192,6 +192,11 @@ Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
 Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</note>
         </trans-unit>
+        <trans-unit id="VSTHRD010_MessageFormat_TransitiveMainThreadUser" translate="yes" xml:space="preserve">
+          <source>Add call to {0}() at start of member body because this member invokes other members that require the main thread.</source>
+          <target state="new">Add call to {0}() at start of member body because this member invokes other members that require the main thread.</target>
+          <note from="MultilingualBuild" annotates="source" priority="2">{0} is a method name.</note>
+        </trans-unit>
       </group>
     </body>
   </file>

@@ -607,9 +607,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// <summary>
         /// Determines whether an expression appears inside a C# "nameof" pseudo-method.
         /// </summary>
-        internal static bool IsWithinNameOf(ExpressionSyntax memberAccess)
+        internal static bool IsWithinNameOf(SyntaxNode syntaxNode)
         {
-            var invocation = memberAccess?.FirstAncestorOrSelf<InvocationExpressionSyntax>();
+            var invocation = syntaxNode?.FirstAncestorOrSelf<InvocationExpressionSyntax>();
             return (invocation?.Expression as IdentifierNameSyntax)?.Identifier.Text == "nameof"
                 && invocation.ArgumentList.Arguments.Count == 1;
         }

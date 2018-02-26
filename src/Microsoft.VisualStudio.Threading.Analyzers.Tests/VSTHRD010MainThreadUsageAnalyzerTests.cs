@@ -268,6 +268,136 @@ class Test {
         }
 
         [Fact]
+        public void RequiresUIThreadTransitive()
+        {
+            var test = @"
+using System;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    void F() {
+        VerifyOnUIThread();
+        IVsSolution sln = null;
+        sln.SetProperty(1000, null);
+    }
+
+    void G() {
+        F();
+    }
+
+    void H() {
+        G();
+    }
+
+    int Foo {
+        get {
+            H();
+            return 0;
+        }
+
+        set {
+            G();
+        }
+    }
+
+    int I() => Foo; // intentionally leave off `this.` to exercise identifier name access
+
+    void J() => this.Foo = 5; // intentionally include `this.` to exercise member access
+
+    // None of these should produce diagnostics since we're not invoking the members.
+    string NameOfFoo() => nameof(Foo);
+    string NameOfThisFoo() => nameof(this.Foo);
+    string NameOfH() => nameof(H);
+    Action GAsDelegate() => this.G;
+
+    void VerifyOnUIThread() {
+    }
+}
+";
+            var expect = new DiagnosticResult[]
+            {
+                new DiagnosticResult
+                {
+                    Id = this.expect.Id,
+                    Message = this.expect.Message,
+                    SkipVerifyMessage = this.expect.SkipVerifyMessage,
+                    Severity = this.expect.Severity,
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 12, 10, 12, 11) },
+                },
+                new DiagnosticResult
+                {
+                    Id = this.expect.Id,
+                    Message = this.expect.Message,
+                    SkipVerifyMessage = this.expect.SkipVerifyMessage,
+                    Severity = this.expect.Severity,
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 16, 10, 16, 11) },
+                },
+                new DiagnosticResult
+                {
+                    Id = this.expect.Id,
+                    Message = this.expect.Message,
+                    SkipVerifyMessage = this.expect.SkipVerifyMessage,
+                    Severity = this.expect.Severity,
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 21, 9, 21, 12) },
+                },
+                new DiagnosticResult
+                {
+                    Id = this.expect.Id,
+                    Message = this.expect.Message,
+                    SkipVerifyMessage = this.expect.SkipVerifyMessage,
+                    Severity = this.expect.Severity,
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 26, 9, 26, 12) },
+                },
+                new DiagnosticResult
+                {
+                    Id = this.expect.Id,
+                    Message = this.expect.Message,
+                    SkipVerifyMessage = this.expect.SkipVerifyMessage,
+                    Severity = this.expect.Severity,
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 31, 9, 31, 10) },
+                },
+                new DiagnosticResult
+                {
+                    Id = this.expect.Id,
+                    Message = this.expect.Message,
+                    SkipVerifyMessage = this.expect.SkipVerifyMessage,
+                    Severity = this.expect.Severity,
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 33, 10, 33, 11) },
+                },
+            };
+            this.VerifyCSharpDiagnostic(test, expect);
+        }
+
+        [Fact]
+        public void RequiresUIThreadNotTransitiveIfNotExplicit()
+        {
+            var test = @"
+using System;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    void F() {
+        IVsSolution sln = null;
+        sln.SetProperty(1000, null);
+    }
+
+    void G() {
+        F();
+    }
+
+    void H() {
+        G();
+    }
+
+    void VerifyOnUIThread() {
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 13, 8, 24) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
+        [Fact]
         public void InvokeVsSolutionAfterSwitchedToMainThreadAsync()
         {
             var test = @"
