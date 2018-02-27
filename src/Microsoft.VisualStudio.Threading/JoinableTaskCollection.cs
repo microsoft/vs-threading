@@ -26,14 +26,14 @@ namespace Microsoft.VisualStudio.Threading
         /// The value is the number of times the joinable was added to this collection (and not yet removed)
         /// if this collection is ref counted; otherwise the value is always 1.
         /// </summary>
-        private readonly WeakKeyDictionary<JoinableTask, int> joinables = new WeakKeyDictionary<JoinableTask, int>();
+        private readonly WeakKeyDictionary<JoinableTask, int> joinables = new WeakKeyDictionary<JoinableTask, int>(capacity: 2);
 
         /// <summary>
         /// The set of joinable tasks that have Joined this collection -- that is, the set of joinable tasks that are interested
         /// in the completion of any and all joinable tasks that belong to this collection.
         /// The value is the number of times a particular joinable task has Joined this collection.
         /// </summary>
-        private readonly WeakKeyDictionary<JoinableTask, int> joiners = new WeakKeyDictionary<JoinableTask, int>();
+        private readonly WeakKeyDictionary<JoinableTask, int> joiners = new WeakKeyDictionary<JoinableTask, int>(capacity: 2);
 
         /// <summary>
         /// A value indicating whether joinable tasks are only removed when completed or removed as many times as they were added.
