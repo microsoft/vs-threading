@@ -164,6 +164,15 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Add call to {0}() at start of member body because this member invokes other members that require the main thread..
+        /// </summary>
+        internal static string VSTHRD010_MessageFormat_TransitiveMainThreadUser {
+            get {
+                return ResourceManager.GetString("VSTHRD010_MessageFormat_TransitiveMainThreadUser", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Invoke single-threaded types on Main thread.
         /// </summary>
         internal static string VSTHRD010_Title {

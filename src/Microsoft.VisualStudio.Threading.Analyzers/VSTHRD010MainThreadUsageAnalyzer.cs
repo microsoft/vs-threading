@@ -9,6 +9,7 @@
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Diagnostics;
+    using Microsoft.CodeAnalysis.Semantics;
     using Microsoft.CodeAnalysis.Text;
 
     /// <summary>
@@ -62,6 +63,23 @@
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
+        internal static readonly DiagnosticDescriptor DescriptorTransitiveMainThreadUser = new DiagnosticDescriptor(
+            id: Id,
+            title: Strings.VSTHRD010_Title,
+            messageFormat: Strings.VSTHRD010_MessageFormat_TransitiveMainThreadUser,
+            helpLinkUri: Utils.GetHelpLink(Id),
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+        /// <summary>
+        /// A reusable value to return from <see cref="SupportedDiagnostics"/>.
+        /// </summary>
+        private static readonly ImmutableArray<DiagnosticDescriptor> ReusableSupportedDescriptors = ImmutableArray.Create(
+            Descriptor,
+            DescriptorNoAssertingMethod,
+            DescriptorTransitiveMainThreadUser);
+
         private enum ThreadingContext
         {
             /// <summary>
@@ -82,13 +100,7 @@
         }
 
         /// <inheritdoc />
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
-        {
-            get
-            {
-                return ImmutableArray.Create(Descriptor);
-            }
-        }
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ReusableSupportedDescriptors;
 
         /// <inheritdoc />
         public override void Initialize(AnalysisContext context)
@@ -96,27 +108,152 @@
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
 
-            context.RegisterCompilationStartAction(ctxt =>
+            context.RegisterCompilationStartAction(compilationStartContext =>
             {
-                var mainThreadAssertingMethods = CommonInterest.ReadMethods(ctxt, CommonInterest.FileNamePatternForMethodsThatAssertMainThread).ToImmutableArray();
-                var mainThreadSwitchingMethods = CommonInterest.ReadMethods(ctxt, CommonInterest.FileNamePatternForMethodsThatSwitchToMainThread).ToImmutableArray();
-                var typesRequiringMainThread = CommonInterest.ReadTypes(ctxt, CommonInterest.FileNamePatternForTypesRequiringMainThread).ToImmutableArray();
+                var mainThreadAssertingMethods = CommonInterest.ReadMethods(compilationStartContext, CommonInterest.FileNamePatternForMethodsThatAssertMainThread).ToImmutableArray();
+                var mainThreadSwitchingMethods = CommonInterest.ReadMethods(compilationStartContext, CommonInterest.FileNamePatternForMethodsThatSwitchToMainThread).ToImmutableArray();
+                var typesRequiringMainThread = CommonInterest.ReadTypes(compilationStartContext, CommonInterest.FileNamePatternForTypesRequiringMainThread).ToImmutableArray();
 
-                ctxt.RegisterCodeBlockStartAction<SyntaxKind>(ctxt2 =>
+                var methodsDeclaringUIThreadRequirement = new HashSet<IMethodSymbol>();
+                var callerToCalleeMap = new Dictionary<IMethodSymbol, HashSet<IMethodSymbol>>();
+
+                compilationStartContext.RegisterCodeBlockStartAction<SyntaxKind>(codeBlockStartContext =>
                 {
                     var methodAnalyzer = new MethodAnalyzer
                     {
                         MainThreadAssertingMethods = mainThreadAssertingMethods,
                         MainThreadSwitchingMethods = mainThreadSwitchingMethods,
                         TypesRequiringMainThread = typesRequiringMainThread,
+                        MethodsDeclaringUIThreadRequirement = methodsDeclaringUIThreadRequirement,
                     };
-                    ctxt2.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeInvocation), SyntaxKind.InvocationExpression);
-                    ctxt2.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeMemberAccess), SyntaxKind.SimpleMemberAccessExpression);
-                    ctxt2.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeCast), SyntaxKind.CastExpression);
-                    ctxt2.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeAs), SyntaxKind.AsExpression);
-                    ctxt2.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeAs), SyntaxKind.IsExpression);
+                    codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeInvocation), SyntaxKind.InvocationExpression);
+                    codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeMemberAccess), SyntaxKind.SimpleMemberAccessExpression);
+                    codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeCast), SyntaxKind.CastExpression);
+                    codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeAs), SyntaxKind.AsExpression);
+                    codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeAs), SyntaxKind.IsExpression);
+                });
+
+                compilationStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => AddToCallerCalleeMap(c, callerToCalleeMap)), SyntaxKind.InvocationExpression);
+                compilationStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => AddToCallerCalleeMap(c, callerToCalleeMap)), SyntaxKind.SimpleMemberAccessExpression);
+                compilationStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => AddToCallerCalleeMap(c, callerToCalleeMap)), SyntaxKind.IdentifierName);
+
+                compilationStartContext.RegisterCompilationEndAction(compilationEndContext =>
+                {
+                    var calleeToCallerMap = CreateCalleeToCallerMap(callerToCalleeMap);
+                    var transitiveClosureOfMainThreadRequiringMethods = GetTransitiveClosureOfMainThreadRequiringMethods(methodsDeclaringUIThreadRequirement, calleeToCallerMap);
+                    foreach (var implicitUserMethod in transitiveClosureOfMainThreadRequiringMethods.Except(methodsDeclaringUIThreadRequirement))
+                    {
+                        var declarationSyntax = implicitUserMethod.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax(compilationEndContext.CancellationToken);
+                        SyntaxToken memberNameSyntax = default(SyntaxToken);
+                        switch (declarationSyntax)
+                        {
+                            case MethodDeclarationSyntax methodDeclarationSyntax:
+                                memberNameSyntax = methodDeclarationSyntax.Identifier;
+                                break;
+                            case AccessorDeclarationSyntax accessorDeclarationSyntax:
+                                memberNameSyntax = accessorDeclarationSyntax.Keyword;
+                                break;
+                        }
+                        var location = memberNameSyntax.GetLocation();
+                        if (location != null)
+                        {
+                            var exampleAssertingMethod = mainThreadAssertingMethods.FirstOrDefault();
+                            compilationEndContext.ReportDiagnostic(Diagnostic.Create(DescriptorTransitiveMainThreadUser, location, exampleAssertingMethod));
+                        }
+                    }
                 });
             });
+        }
+
+        private static HashSet<IMethodSymbol> GetTransitiveClosureOfMainThreadRequiringMethods(HashSet<IMethodSymbol> methodsRequiringUIThread, Dictionary<IMethodSymbol, HashSet<IMethodSymbol>> calleeToCallerMap)
+        {
+            var result = new HashSet<IMethodSymbol>();
+
+            void MarkMethod(IMethodSymbol method)
+            {
+                if (result.Add(method) && calleeToCallerMap.TryGetValue(method, out var callers))
+                {
+                    foreach (var caller in callers)
+                    {
+                        MarkMethod(caller);
+                    }
+                }
+            }
+
+            foreach (var method in methodsRequiringUIThread)
+            {
+                MarkMethod(method);
+            }
+
+            return result;
+        }
+
+        private static void AddToCallerCalleeMap(SyntaxNodeAnalysisContext context, Dictionary<IMethodSymbol, HashSet<IMethodSymbol>> callerToCalleeMap)
+        {
+            if (Utils.IsWithinNameOf(context.Node))
+            {
+                return;
+            }
+
+            IMethodSymbol GetPropertyAccessor(IPropertySymbol propertySymbol)
+            {
+                if (propertySymbol != null)
+                {
+                    return Utils.IsOnLeftHandOfAssignment(context.Node)
+                        ? propertySymbol.SetMethod
+                        : propertySymbol.GetMethod;
+                }
+
+                return null;
+            }
+
+            ISymbol targetMethod = null;
+            switch (context.Node)
+            {
+                case InvocationExpressionSyntax invocationExpressionSyntax:
+                    targetMethod = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax.Expression).Symbol;
+                    break;
+                case MemberAccessExpressionSyntax memberAccessExpressionSyntax:
+                    targetMethod = GetPropertyAccessor(context.SemanticModel.GetSymbolInfo(memberAccessExpressionSyntax.Name).Symbol as IPropertySymbol);
+                    break;
+                case IdentifierNameSyntax identifierNameSyntax:
+                    targetMethod = GetPropertyAccessor(context.SemanticModel.GetSymbolInfo(identifierNameSyntax).Symbol as IPropertySymbol);
+                    break;
+            }
+
+            if (context.ContainingSymbol is IMethodSymbol caller && targetMethod is IMethodSymbol callee)
+            {
+                lock (callerToCalleeMap)
+                {
+                    if (!callerToCalleeMap.TryGetValue(caller, out HashSet<IMethodSymbol> callees))
+                    {
+                        callerToCalleeMap[caller] = callees = new HashSet<IMethodSymbol>();
+                    }
+
+                    callees.Add(callee);
+                }
+            }
+        }
+
+        private static Dictionary<IMethodSymbol, HashSet<IMethodSymbol>> CreateCalleeToCallerMap(Dictionary<IMethodSymbol, HashSet<IMethodSymbol>> callerToCalleeMap)
+        {
+            var result = new Dictionary<IMethodSymbol, HashSet<IMethodSymbol>>();
+
+            foreach (var item in callerToCalleeMap)
+            {
+                var caller = item.Key;
+                foreach (var callee in item.Value)
+                {
+                    if (!result.TryGetValue(callee, out var callers))
+                    {
+                        result[callee] = callers = new HashSet<IMethodSymbol>();
+                    }
+
+                    callers.Add(caller);
+                }
+            }
+
+            return result;
         }
 
         private class MethodAnalyzer
@@ -129,6 +266,8 @@
 
             internal ImmutableArray<CommonInterest.TypeMatchSpec> TypesRequiringMainThread { get; set; }
 
+            internal HashSet<IMethodSymbol> MethodsDeclaringUIThreadRequirement { get; set; }
+
             internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
             {
                 var invocationSyntax = (InvocationExpressionSyntax)context.Node;
@@ -140,6 +279,14 @@
                     {
                         if (this.MainThreadAssertingMethods.Contains(invokedMethod) || this.MainThreadSwitchingMethods.Contains(invokedMethod))
                         {
+                            if (context.ContainingSymbol is IMethodSymbol callingMethod)
+                            {
+                                lock (this.MethodsDeclaringUIThreadRequirement)
+                                {
+                                    this.MethodsDeclaringUIThreadRequirement.Add(callingMethod);
+                                }
+                            }
+
                             this.methodDeclarationNodes = this.methodDeclarationNodes.SetItem(methodDeclaration, ThreadingContext.MainThread);
                             return;
                         }
@@ -219,7 +366,7 @@
                         Location location = focusDiagnosticOn ?? context.Node.GetLocation();
                         var exampleAssertingMethod = this.MainThreadAssertingMethods.FirstOrDefault();
                         var descriptor = exampleAssertingMethod.Name != null ? Descriptor : DescriptorNoAssertingMethod;
-                        context.ReportDiagnostic(Diagnostic.Create(descriptor, location, type.Name, exampleAssertingMethod.ToString()));
+                        context.ReportDiagnostic(Diagnostic.Create(descriptor, location, type.Name, exampleAssertingMethod));
                         return true;
                     }
                 }
