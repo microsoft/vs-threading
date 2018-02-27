@@ -268,6 +268,121 @@ class Test {
         }
 
         [Fact]
+        public void RequiresUIThreadTransitive()
+        {
+            var test = @"
+using System;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    void F() {
+        VerifyOnUIThread();
+        IVsSolution sln = null;
+        sln.SetProperty(1000, null);
+    }
+
+    void G() {
+        F();
+    }
+
+    void H() {
+        G();
+    }
+
+    int MainThreadGetter {
+        get {
+            H();
+            return 0;
+        }
+
+        set {
+        }
+    }
+
+    int MainThreadSetter {
+        get => 0;
+        set => H();
+    }
+
+    int CallMainThreadGetter_get() => MainThreadGetter;               // Flagged
+    int CallMainThreadGetter_get2() => this.MainThreadGetter;         // Flagged
+    int CallMainThreadGetter_get3() => ((Test)this).MainThreadGetter; // Flagged
+    int CallMainThreadGetter_set() => MainThreadGetter = 1;
+    int CallMainThreadGetter_set2() => this.MainThreadGetter = 1;
+
+    int CallMainThreadSetter_get() => MainThreadSetter;
+    int CallMainThreadSetter_get2() => this.MainThreadSetter;
+    int CallMainThreadSetter_set() => MainThreadSetter = 1;               // Flagged
+    int CallMainThreadSetter_set2() => this.MainThreadSetter = 1;         // Flagged
+    int CallMainThreadSetter_set3() => ((Test)this).MainThreadSetter = 1; // Flagged
+
+    // None of these should produce diagnostics since we're not invoking the members.
+    string NameOfFoo1() => nameof(MainThreadGetter);
+    string NameOfFoo2() => nameof(MainThreadSetter);
+    string NameOfThisFoo1() => nameof(this.MainThreadGetter);
+    string NameOfThisFoo2() => nameof(this.MainThreadSetter);
+    string NameOfH() => nameof(H);
+    Action GAsDelegate() => this.G;
+
+    void VerifyOnUIThread() {
+    }
+}
+";
+            DiagnosticResult CreateDiagnostic(int line, int column, int endLine, int endColumn) =>
+                new DiagnosticResult
+                {
+                    Id = this.expect.Id,
+                    Message = this.expect.Message,
+                    SkipVerifyMessage = this.expect.SkipVerifyMessage,
+                    Severity = this.expect.Severity,
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", line, column, endLine, endColumn) },
+                };
+            var expect = new DiagnosticResult[]
+            {
+                CreateDiagnostic(12, 10, 12, 11),
+                CreateDiagnostic(16, 10, 16, 11),
+                CreateDiagnostic(21, 9, 21, 12),
+                CreateDiagnostic(32, 9, 32, 12),
+                CreateDiagnostic(35, 9, 35, 33),
+                CreateDiagnostic(36, 9, 36, 34),
+                CreateDiagnostic(37, 9, 37, 34),
+                CreateDiagnostic(43, 9, 43, 33),
+                CreateDiagnostic(44, 9, 44, 34),
+                CreateDiagnostic(45, 9, 45, 34),
+            };
+            this.VerifyCSharpDiagnostic(test, expect);
+        }
+
+        [Fact]
+        public void RequiresUIThreadNotTransitiveIfNotExplicit()
+        {
+            var test = @"
+using System;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    void F() {
+        IVsSolution sln = null;
+        sln.SetProperty(1000, null);
+    }
+
+    void G() {
+        F();
+    }
+
+    void H() {
+        G();
+    }
+
+    void VerifyOnUIThread() {
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 13, 8, 24) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
+        [Fact]
         public void InvokeVsSolutionAfterSwitchedToMainThreadAsync()
         {
             var test = @"
