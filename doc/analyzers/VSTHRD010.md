@@ -9,7 +9,13 @@ This analyzer can be configured to:
 3. Recognize methods that switch to the main thread when the caller awaits them.
    Calls to `JoinableTaskFactory.SwitchToMainThreadAsync` methods are pre-configured.
 
-See our [configuration](configuration.md) topic for more information.
+See our [configuration](configuration.md) topic to learn more about customizing this analyzer.
+
+This analyzer also recognizes requirements to use the main thread transitively within your solution.
+For example, if method `A()` invokes a type that we know from configuration requires the main thread,
+and `B()` calls `A()`, then the `B` method also needs the UI thread transitively.
+This analyzer flags `B()` as needing to call a method that throws if not already on the main thread
+only when `A()` is written to call such a method.
 
 ## Examples of patterns that are flagged by this analyzer
 
