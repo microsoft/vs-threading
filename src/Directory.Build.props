@@ -7,7 +7,7 @@
     <MicroBuildVersion>2.0.44</MicroBuildVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Nerdbank.GitVersioning" Version="1.6.35" PrivateAssets="all" />
+    <PackageReference Include="Nerdbank.GitVersioning" Version="2.1.23" PrivateAssets="all" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.0.2" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
@@ -16,8 +16,8 @@
 
   <!-- Workaround https://github.com/AArnott/Nerdbank.GitVersioning/issues/113#issuecomment-285903085 -->
   <ImportGroup Condition=" '$(ExcludeRestorePackageImports)' == 'true' ">
-    <Import Project="$(UserProfile)\.nuget\packages\nerdbank.gitversioning\1.6.35\buildCrossTargeting\Nerdbank.GitVersioning.targets"
-            Condition="Exists('$(UserProfile)\.nuget\packages\nerdbank.gitversioning\1.6.35\buildCrossTargeting\Nerdbank.GitVersioning.targets')" />
+    <Import Project="$(UserProfile)\.nuget\packages\nerdbank.gitversioning\2.1.23\buildCrossTargeting\Nerdbank.GitVersioning.targets"
+            Condition="Exists('$(UserProfile)\.nuget\packages\nerdbank.gitversioning\2.1.23\buildCrossTargeting\Nerdbank.GitVersioning.targets')" />
   </ImportGroup>
   <Target Name="FixUpVersion"
       BeforeTargets="_GenerateRestoreProjectSpec"
