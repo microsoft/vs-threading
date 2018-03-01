@@ -129,6 +129,53 @@ class Test {
         }
 
         [Fact]
+        public void TaskResultShouldNotReportWarning_WithinItsOwnContinuationDelegate()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void F() {
+        var irrelevantTask = Task.Run(() => 1);
+        var task = Task.Run(() => 5);
+        task.ContinueWith(t => irrelevantTask.Result);
+        ContinueWith(t => t.Result);
+        task.ContinueWith(t => t.Result);
+        task.ContinueWith((t) => t.Result);
+        task.ContinueWith(delegate (Task<int> t) { return t.Result; });
+        task.ContinueWith(t => t.Wait());
+        ((Task)task).ContinueWith(t => t.Wait());
+        task.ContinueWith((t, s) => t.Result, new object());
+    }
+
+    void ContinueWith(Func<Task<int>, int> del) { }
+}
+";
+            var expect = new DiagnosticResult[]
+            {
+                new DiagnosticResult
+                {
+                    Message = this.expect.Message,
+                    Id = this.expect.Id,
+                    Severity = this.expect.Severity,
+                    SkipVerifyMessage = this.expect.SkipVerifyMessage,
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 47, 9, 53) },
+                },
+                new DiagnosticResult
+                {
+                    Message = this.expect.Message,
+                    Id = this.expect.Id,
+                    Severity = this.expect.Severity,
+                    SkipVerifyMessage = this.expect.SkipVerifyMessage,
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 10, 29, 10, 35) },
+                },
+            };
+            this.VerifyCSharpDiagnostic(test, expect);
+            this.VerifyNoCSharpFixOffered(test);
+        }
+
+        [Fact]
         public void AwaiterGetResultShouldReportWarning()
         {
             var test = @"

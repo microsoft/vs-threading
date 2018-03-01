@@ -121,5 +121,14 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             internal const string InvokeAsync = "InvokeAsync";
         }
+
+        internal static class Task
+        {
+            internal const string TypeName = nameof(System.Threading.Tasks.Task);
+
+            internal const string Namespace = "System.Threading.Tasks.";
+
+            internal const string FullName = Namespace + TypeName;
+        }
     }
 }
