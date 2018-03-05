@@ -29,12 +29,12 @@
     <value>避免有问题的同步等待</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>应对主线程显式使用 Visual Studio 服务“{0}”。
-首先调用 ThreadHelper.ThrowIfNotOnUIThread() 或等待 JoinableTaskFactory.SwitchToMainThreadAsync()。</value>
+    <value>应在主线程上显式使用类型“{0}”。
+首先调用 {1}() 或等待 JoinableTaskFactory.SwitchToMainThreadAsync()。</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
-    <value>使用 UI 线程中的 VS 服务</value>
+    <value>在主线程上调用单线程类型</value>
   </data>
   <data name="VSTHRD100_MessageFormat" xml:space="preserve">
     <value>避免使用“Async Void”方法，因为此方法未处理的任何异常都将导致进程故障。</value>
@@ -140,5 +140,16 @@
   <data name="VSTHRD002_CodeFix_Await_Title" xml:space="preserve">
     <value>改用 await</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD108_MessageFormat" xml:space="preserve">
+    <value>应无条件检查线程关联。</value>
+  </data>
+  <data name="VSTHRD108_Title" xml:space="preserve">
+    <value>无条件断言线程关联</value>
+  </data>
+  <data name="VSTHRD010_MessageFormat_NoAssertingMethod" xml:space="preserve">
+    <value>应在主线程上显式使用类型“{0}”。
+首先等待 JoinableTaskFactory.SwitchToMainThreadAsync()。</value>
+    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
 </root>

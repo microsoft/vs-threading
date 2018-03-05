@@ -29,12 +29,12 @@
     <value>Unikaj problematycznych oczekiwań synchronicznych</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>Usługa programu Visual Studio „{0}” powinna być używana w wątku głównym w sposób jawny.
-Najpierw wywołaj metodę ThreadHelper.ThrowIfNotOnUIThread() lub oczekuj na metodę JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+    <value>Typ „{0}” powinien być używany w wątku głównym w sposób jawny.
+Najpierw wywołaj metodę {1}() lub zaczekaj na metodę JoinableTaskFactory.SwitchToMainThreadAsync().</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
-    <value>Używaj usług programu VS z wątku interfejsu użytkownika</value>
+    <value>Wywołuj typy jednowątkowe w wątku głównym</value>
   </data>
   <data name="VSTHRD100_MessageFormat" xml:space="preserve">
     <value>Unikaj metod „async void”, ponieważ wszelkie wyjątki, które nie zostaną przez nie obsłużone, spowodują awarię procesu.</value>
@@ -140,5 +140,16 @@ Zamiast tego używaj klasy AsyncLazy&lt;T&gt;.</value>
   <data name="VSTHRD002_CodeFix_Await_Title" xml:space="preserve">
     <value>Zamiast tego używaj oczekiwania</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD108_MessageFormat" xml:space="preserve">
+    <value>Testy koligacji wątku powinny być bezwarunkowe.</value>
+  </data>
+  <data name="VSTHRD108_Title" xml:space="preserve">
+    <value>Bezwarunkowo potwierdź koligację wątku</value>
+  </data>
+  <data name="VSTHRD010_MessageFormat_NoAssertingMethod" xml:space="preserve">
+    <value>Typ „{0}” powinien być używany w wątku głównym w sposób jawny.
+Najpierw zaczekaj na metodę JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
 </root>

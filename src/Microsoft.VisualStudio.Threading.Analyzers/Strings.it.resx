@@ -29,12 +29,12 @@
     <value>Evita attese sincrone problematiche</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>Il servizio "{0}" di Visual Studio non deve essere usato sul thread principale in modo esplicito.
-Chiamare prima ThreadHelper.ThrowIfNotOnUIThread() o await JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+    <value>Il tipo "{0}" deve essere usato sul thread principale in modo esplicito.
+Chiamare {1}() o usare prima await JoinableTaskFactory.SwitchToMainThreadAsync().</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
-    <value>Usa i servizi di Visual Studio dal thread dell'interfaccia utente</value>
+    <value>Richiamare tipi a thread singolo sul thread principale</value>
   </data>
   <data name="VSTHRD100_MessageFormat" xml:space="preserve">
     <value>Evitare metodi "async void" perché tutte le eccezioni non gestite dal metodo causeranno l'arresto anomalo del processo.</value>
@@ -140,5 +140,16 @@ In alternativa, usare AsyncLazy&lt;T&gt;.</value>
   <data name="VSTHRD002_CodeFix_Await_Title" xml:space="preserve">
     <value>In alternativa, usare await</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD108_MessageFormat" xml:space="preserve">
+    <value>I controlli di affinità dei thread non devono essere condizionali.</value>
+  </data>
+  <data name="VSTHRD108_Title" xml:space="preserve">
+    <value>Asserisci l'affinità dei thread in modo non condizionale</value>
+  </data>
+  <data name="VSTHRD010_MessageFormat_NoAssertingMethod" xml:space="preserve">
+    <value>Il tipo "{0}" deve essere usato sul thread principale in modo esplicito.
+Usare prima await JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
 </root>

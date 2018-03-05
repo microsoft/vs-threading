@@ -29,12 +29,12 @@
     <value>문제가 있는 동기 대기를 사용하지 않습니다.</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>주 스레드에서 Visual Studio 서비스 "{0}"을(를) 명시적으로 사용해야 합니다.
-ThreadHelper.ThrowIfNotOnUIThread()를 호출하거나, 우선 JoinableTaskFactory.SwitchToMainThreadAsync()를 대기합니다.</value>
+    <value>주 스레드에서 형식 "{0}"을(를) 명시적으로 사용해야 합니다.
+{1}()을(를) 호출하거나, 우선 JoinableTaskFactory.SwitchToMainThreadAsync()를 대기합니다.</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
-    <value>UI 스레드의 VS 서비스를 사용합니다.</value>
+    <value>주 스레드에서 단일 스레드 형식을 호출</value>
   </data>
   <data name="VSTHRD100_CodeFix_Title" xml:space="preserve">
     <value>반환 형식을 Task로 변경</value>
@@ -140,5 +140,16 @@ ThreadHelper.ThrowIfNotOnUIThread()를 호출하거나, 우선 JoinableTaskFacto
   <data name="VSTHRD002_CodeFix_Await_Title" xml:space="preserve">
     <value>대신 await를 사용합니다.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD108_MessageFormat" xml:space="preserve">
+    <value>스레드 선호도 검사는 비조건부여야 합니다.</value>
+  </data>
+  <data name="VSTHRD108_Title" xml:space="preserve">
+    <value>무조건 스레드 선호도 어설션</value>
+  </data>
+  <data name="VSTHRD010_MessageFormat_NoAssertingMethod" xml:space="preserve">
+    <value>주 스레드에서 형식 "{0}"을(를) 명시적으로 사용해야 합니다.
+우선 JoinableTaskFactory.SwitchToMainThreadAsync()를 대기합니다.</value>
+    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
 </root>
