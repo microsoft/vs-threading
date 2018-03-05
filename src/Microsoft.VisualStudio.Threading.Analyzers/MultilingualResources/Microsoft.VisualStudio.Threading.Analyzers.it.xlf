@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en-US" target-language="it" original="MICROSOFT.VISUALSTUDIO.THREADING.ANALYZERS/STRINGS.RESX" tool-id="MultilingualAppToolkit" product-name="n/a" product-version="n/a" build-num="n/a">
     <header>
@@ -29,15 +29,13 @@
         <trans-unit id="VSTHRD010_MessageFormat" translate="yes" xml:space="preserve">
           <source>The type "{0}" should be used on main thread explicitly.
 Call {1}() or await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
-          <target state="needs-review-translation">Il servizio "{0}" di Visual Studio non deve essere usato sul thread principale in modo esplicito.
-Chiamare prima ThreadHelper.ThrowIfNotOnUIThread() o await JoinableTaskFactory.SwitchToMainThreadAsync().</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Il tipo "{0}" deve essere usato sul thread principale in modo esplicito.
+Chiamare {1}() o usare prima await JoinableTaskFactory.SwitchToMainThreadAsync().</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</note>
         </trans-unit>
         <trans-unit id="VSTHRD010_Title" translate="yes" xml:space="preserve">
           <source>Invoke single-threaded types on Main thread</source>
-          <target state="needs-review-translation">Usa i servizi di Visual Studio dal thread dell'interfaccia utente</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">Richiamare tipi a thread singolo sul thread principale</target>
         </trans-unit>
         <trans-unit id="VSTHRD100_MessageFormat" translate="yes" xml:space="preserve">
           <source>Avoid "async void" methods, because any exceptions not handled by the method will crash the process.</source>
@@ -179,17 +177,17 @@ In alternativa, usare AsyncLazy&lt;T&gt;.</target>
         </trans-unit>
         <trans-unit id="VSTHRD108_MessageFormat" translate="yes" xml:space="preserve">
           <source>Thread affinity checks should be unconditional.</source>
-          <target state="new">Thread affinity checks should be unconditional.</target>
+          <target state="translated">I controlli di affinità dei thread non devono essere condizionali.</target>
         </trans-unit>
         <trans-unit id="VSTHRD108_Title" translate="yes" xml:space="preserve">
           <source>Assert thread affinity unconditionally</source>
-          <target state="new">Assert thread affinity unconditionally</target>
+          <target state="translated">Asserisci l'affinità dei thread in modo non condizionale</target>
         </trans-unit>
         <trans-unit id="VSTHRD010_MessageFormat_NoAssertingMethod" translate="yes" xml:space="preserve">
           <source>The type "{0}" should be used on main thread explicitly.
 Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
-          <target state="new">The type "{0}" should be used on main thread explicitly.
-Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</target>
+          <target state="translated">Il tipo "{0}" deve essere usato sul thread principale in modo esplicito.
+Usare prima await JoinableTaskFactory.SwitchToMainThreadAsync().</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</note>
         </trans-unit>
       </group>
