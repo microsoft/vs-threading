@@ -115,6 +115,7 @@
                 var typesRequiringMainThread = CommonInterest.ReadTypes(compilationStartContext, CommonInterest.FileNamePatternForTypesRequiringMainThread).ToImmutableArray();
 
                 var methodsDeclaringUIThreadRequirement = new HashSet<IMethodSymbol>();
+                var methodsAssertingUIThreadRequirement = new HashSet<IMethodSymbol>();
                 var callerToCalleeMap = new Dictionary<IMethodSymbol, HashSet<IMethodSymbol>>();
 
                 compilationStartContext.RegisterCodeBlockStartAction<SyntaxKind>(codeBlockStartContext =>
@@ -125,6 +126,7 @@
                         MainThreadSwitchingMethods = mainThreadSwitchingMethods,
                         TypesRequiringMainThread = typesRequiringMainThread,
                         MethodsDeclaringUIThreadRequirement = methodsDeclaringUIThreadRequirement,
+                        MethodsAssertingUIThreadRequirement = methodsAssertingUIThreadRequirement,
                     };
                     codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeInvocation), SyntaxKind.InvocationExpression);
                     codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeMemberAccess), SyntaxKind.SimpleMemberAccessExpression);
@@ -140,7 +142,7 @@
                 compilationStartContext.RegisterCompilationEndAction(compilationEndContext =>
                 {
                     var calleeToCallerMap = CreateCalleeToCallerMap(callerToCalleeMap);
-                    var transitiveClosureOfMainThreadRequiringMethods = GetTransitiveClosureOfMainThreadRequiringMethods(methodsDeclaringUIThreadRequirement, calleeToCallerMap);
+                    var transitiveClosureOfMainThreadRequiringMethods = GetTransitiveClosureOfMainThreadRequiringMethods(methodsAssertingUIThreadRequirement, calleeToCallerMap);
                     foreach (var implicitUserMethod in transitiveClosureOfMainThreadRequiringMethods.Except(methodsDeclaringUIThreadRequirement))
                     {
                         var declarationSyntax = implicitUserMethod.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax(compilationEndContext.CancellationToken);
@@ -270,6 +272,8 @@
 
             internal HashSet<IMethodSymbol> MethodsDeclaringUIThreadRequirement { get; set; }
 
+            internal HashSet<IMethodSymbol> MethodsAssertingUIThreadRequirement { get; set; }
+
             internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
             {
                 var invocationSyntax = (InvocationExpressionSyntax)context.Node;
@@ -279,13 +283,23 @@
                     var methodDeclaration = context.Node.FirstAncestorOrSelf<SyntaxNode>(n => CommonInterest.MethodSyntaxKinds.Contains(n.Kind()));
                     if (methodDeclaration != null)
                     {
-                        if (this.MainThreadAssertingMethods.Contains(invokedMethod) || this.MainThreadSwitchingMethods.Contains(invokedMethod))
+                        bool assertsMainThread = this.MainThreadAssertingMethods.Contains(invokedMethod);
+                        bool switchesToMainThread = this.MainThreadSwitchingMethods.Contains(invokedMethod);
+                        if (assertsMainThread || switchesToMainThread)
                         {
                             if (context.ContainingSymbol is IMethodSymbol callingMethod)
                             {
                                 lock (this.MethodsDeclaringUIThreadRequirement)
                                 {
                                     this.MethodsDeclaringUIThreadRequirement.Add(callingMethod);
+                                }
+
+                                if (assertsMainThread)
+                                {
+                                    lock (this.MethodsAssertingUIThreadRequirement)
+                                    {
+                                        this.MethodsAssertingUIThreadRequirement.Add(callingMethod);
+                                    }
                                 }
                             }
 
