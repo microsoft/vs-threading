@@ -29,12 +29,12 @@
     <value>Sorunlu zaman uyumlu beklemelerden kaçının</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>"{0}" Visual Studio hizmeti, ana iş parçacığında açık olarak kullanılmalıdır.
-ThreadHelper.ThrowIfNotOnUIThread() çağırın veya önce JoinableTaskFactory.SwitchToMainThreadAsync() bekleyin.</value>
+    <value>"{0}" türü, ana iş parçacığında açık olarak kullanılmalıdır.
+{1}() çağırın veya önce JoinableTaskFactory.SwitchToMainThreadAsync() bekleyin.</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
-    <value>UI iş parçacığından VS hizmetlerini kullanın</value>
+    <value>Ana iş parçacığındaki tek iş parçacıklı türleri çağırın</value>
   </data>
   <data name="VSTHRD100_MessageFormat" xml:space="preserve">
     <value>"async void" metotları tarafından işlenmeyen tüm özel durumlar işlemi kilitleyeceğinden bunları kullanmayın.</value>
@@ -140,5 +140,16 @@ Bunun yerine AsyncLazy&lt;T&gt; kullanın.</value>
   <data name="VSTHRD002_CodeFix_Await_Title" xml:space="preserve">
     <value>Bunun yerine await kullanın</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD108_MessageFormat" xml:space="preserve">
+    <value>İş parçacığı benzeşim denetimleri koşulsuz olmalıdır.</value>
+  </data>
+  <data name="VSTHRD108_Title" xml:space="preserve">
+    <value>İş parçacığı benzeşimini koşulsuz olarak onayla</value>
+  </data>
+  <data name="VSTHRD010_MessageFormat_NoAssertingMethod" xml:space="preserve">
+    <value>"{0}" türü, ana iş parçacığında açık olarak kullanılmalıdır.
+Önce JoinableTaskFactory.SwitchToMainThreadAsync() bekleyin.</value>
+    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
 </root>

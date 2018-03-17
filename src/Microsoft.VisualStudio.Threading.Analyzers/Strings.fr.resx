@@ -29,12 +29,12 @@
     <value>Éviter les attentes synchrones problématiques</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>Le service Visual Studio "{0}"doit être utilisé sur le thread principal de manière explicite.
-Appelez ThreadHelper.ThrowIfNotOnUIThread() ou attendez d'abord JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+    <value>Le type "{0}"doit être utilisé sur le thread principal de manière explicite.
+Appelez {1}() ou attendez d'abord JoinableTaskFactory.SwitchToMainThreadAsync().</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
-    <value>Utiliser les services VS à partir du thread d’interface utilisateur</value>
+    <value>Appeler les types à thread unique sur le thread principal</value>
   </data>
   <data name="VSTHRD100_MessageFormat" xml:space="preserve">
     <value>Évitez les méthodes "async void", car toute exception non traitée par la méthode bloque le processus.</value>
@@ -140,5 +140,16 @@ Utilisez AsyncLazy&lt;T&gt; à la place</value>
   <data name="VSTHRD002_CodeFix_Await_Title" xml:space="preserve">
     <value>Utiliser await à la place</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD108_MessageFormat" xml:space="preserve">
+    <value>Les vérifications d'affinité de thread doivent être inconditionnelles.</value>
+  </data>
+  <data name="VSTHRD108_Title" xml:space="preserve">
+    <value>Effectuer l'assertion de l'affinité de thread de manière inconditionnelle</value>
+  </data>
+  <data name="VSTHRD010_MessageFormat_NoAssertingMethod" xml:space="preserve">
+    <value>Le type "{0}"doit être utilisé sur le thread principal de manière explicite.
+Attendez d'abord JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
 </root>

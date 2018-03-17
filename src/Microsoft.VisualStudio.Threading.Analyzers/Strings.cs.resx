@@ -29,12 +29,12 @@
     <value>Vyhněte se problematickým synchronním čekáním</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>Službu Visual Studio {0} je třeba používat explicitně v hlavním vlákně.
-Nejprve zavolejte ThreadHelper.ThrowIfNotOnUIThread() nebo počkejte na JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+    <value>Typ {0} by se měl používat explicitně v hlavním vlákně.
+Zavolejte metodu {1}() nebo nejdříve počkejte na dokončení volání metody JoinableTaskFactory.SwitchToMainThreadAsync().</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
-    <value>Použití služeb VS z vlákna uživatelského rozhraní</value>
+    <value>Vyvolání typů s jedním vláknem z hlavního vlákna</value>
   </data>
   <data name="VSTHRD100_MessageFormat" xml:space="preserve">
     <value>Nepoužívejte metody async void, protože veškeré výjimky neošetřené metodou způsobí selhání procesu.</value>
@@ -140,5 +140,16 @@ Použijte raději AsyncLazy&lt;T&gt;.</value>
   <data name="VSTHRD002_CodeFix_Await_Title" xml:space="preserve">
     <value>Použijte raději await.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD108_MessageFormat" xml:space="preserve">
+    <value>Kontroly spřažení vláken by měly být bez podmínek.</value>
+  </data>
+  <data name="VSTHRD108_Title" xml:space="preserve">
+    <value>Vyhodnotit spřažení vláken bez podmínek</value>
+  </data>
+  <data name="VSTHRD010_MessageFormat_NoAssertingMethod" xml:space="preserve">
+    <value>Typ {0} by se měl používat explicitně v hlavním vlákně.
+Nejdříve počkejte na dokončení volání metody JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
 </root>

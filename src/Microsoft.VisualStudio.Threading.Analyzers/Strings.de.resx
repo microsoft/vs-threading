@@ -29,12 +29,12 @@
     <value>Problematische synchrone Wartevorgänge vermeiden</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>Der Visual Studio-Dienst "{0}" sollte explizit im Hauptthread verwendet werden.
-Rufen Sie "ThreadHelper.ThrowIfNotOnUIThread()" auf, oder warten Sie zuerst auf "JoinableTaskFactory.SwitchToMainThreadAsync()".</value>
+    <value>Der Typ "{0}" muss explizit im Hauptthread verwendet werden.
+Rufen Sie "{1}()" auf, oder warten Sie zuerst auf "JoinableTaskFactory.SwitchToMainThreadAsync()".</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
-    <value>VS-Dienste aus dem UI-Thread verwenden</value>
+    <value>Singlethread-Typen im Hauptthread aufrufen</value>
   </data>
   <data name="VSTHRD100_MessageFormat" xml:space="preserve">
     <value>Vermeiden Sie "async void"-Methoden, da Ausnahmen, die nicht von der Methode verarbeitet werden, zu einem Absturz des Prozesses führen.</value>
@@ -140,5 +140,16 @@ Verwenden Sie stattdessen "AsyncLazy&lt;T&gt;".</value>
   <data name="VSTHRD002_CodeFix_Await_Title" xml:space="preserve">
     <value>Stattdessen "await" verwenden</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD108_MessageFormat" xml:space="preserve">
+    <value>Überprüfungen der Threadaffinität dürfen keine Bedingungen umfassen.</value>
+  </data>
+  <data name="VSTHRD108_Title" xml:space="preserve">
+    <value>Threadaffinität ohne Bedingungen bestätigen</value>
+  </data>
+  <data name="VSTHRD010_MessageFormat_NoAssertingMethod" xml:space="preserve">
+    <value>Der Typ "{0}" muss explizit im Hauptthread verwendet werden.
+Warten Sie zuerst auf "JoinableTaskFactory.SwitchToMainThreadAsync()".</value>
+    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
 </root>
