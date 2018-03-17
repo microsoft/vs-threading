@@ -44,13 +44,6 @@ steps:
     nugetConfigPath: nuget.config
   displayName: Nuget restore packages
 
-- task: NuGetCommand@2
-  inputs:
-    restoreSolution: '**\*.sln'
-    feedsToUse: config
-    nugetConfigPath: nuget.config
-  displayName: Nuget restore packages (again, to workaround Nuget bug)
-
 - task: VSBuild@1
   inputs:
     vsVersion: 15.0
