@@ -29,12 +29,12 @@
     <value>Evite esperas sincrónicas problemáticas</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>El servicio "{0}" de Visual Studio debe usarse explícitamente en el subproceso principal. 
-Llame a ThreadHelper.ThrowIfNotOnUIThread() o el elemento await JoinableTaskFactory.SwitchToMainThreadAsync() en primer lugar.</value>
+    <value>El tipo "{0}" debe usarse en el subproceso principal de forma explícita.
+Llame a {1}() o use await JoinableTaskFactory.SwitchToMainThreadAsync() primero.</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
-    <value>Use servicios de VS desde el subproceso de IU</value>
+    <value>Invocar tipos uniproceso en el subproceso principal</value>
   </data>
   <data name="VSTHRD100_MessageFormat" xml:space="preserve">
     <value>Evite métodos "async void", porque las excepciones no controladas por el método bloquearán el proceso.</value>
@@ -146,5 +146,10 @@ Use AsyncLazy&lt;T&gt; en su lugar.</value>
   </data>
   <data name="VSTHRD108_Title" xml:space="preserve">
     <value>Declarar afinidad de subproceso incondicionalmente</value>
+  </data>
+  <data name="VSTHRD010_MessageFormat_NoAssertingMethod" xml:space="preserve">
+    <value>El tipo "{0}" debe usarse en el subproceso principal de forma explícita.
+Use await JoinableTaskFactory.SwitchToMainThreadAsync() primero.</value>
+    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
 </root>

@@ -29,12 +29,12 @@
     <value>避免有問題的同步等候</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>Visual Studio 服務 "{0}" 應該明確用在主執行緒。
-請先呼叫 ThreadHelper.ThrowIfNotOnUIThread() 或 await JoinableTaskFactory.SwitchToMainThreadAsync()。</value>
+    <value>類型 "{0}" 應明確用於主執行緒。
+請先呼叫 {1}() 或 await JoinableTaskFactory.SwitchToMainThreadAsync()。</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
-    <value>從 UI 執行緒使用 VS 服務</value>
+    <value>在主執行緒叫用單一執行緒類型</value>
   </data>
   <data name="VSTHRD100_MessageFormat" xml:space="preserve">
     <value>因為任何不是由 "async void" 方法處理的例外狀況都會使處理序損毀，所以請避免該方法。</value>
@@ -146,5 +146,10 @@
   </data>
   <data name="VSTHRD108_Title" xml:space="preserve">
     <value>無條件判斷提示執行緒親和性</value>
+  </data>
+  <data name="VSTHRD010_MessageFormat_NoAssertingMethod" xml:space="preserve">
+    <value>類型 "{0}" 應明確用於主執行緒。
+請先 await JoinableTaskFactory.SwitchToMainThreadAsync()。</value>
+    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
 </root>

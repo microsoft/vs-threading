@@ -29,15 +29,13 @@
         <trans-unit id="VSTHRD010_MessageFormat" translate="yes" xml:space="preserve">
           <source>The type "{0}" should be used on main thread explicitly.
 Call {1}() or await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
-          <target state="needs-review-translation">Visual Studio サービス "{0}" は、明示的にメイン スレッドで使用する必要があります。
-ThreadHelper.ThrowIfNotOnUIThread() を呼び出すか、まず JoinableTaskFactory.SwitchToMainThreadAsync() を待機してください。</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">型 "{0}" は、明示的にメイン スレッドで使用する必要があります。
+{1}() を呼び出すか、まず JoinableTaskFactory.SwitchToMainThreadAsync() を待機してください。</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</note>
         </trans-unit>
         <trans-unit id="VSTHRD010_Title" translate="yes" xml:space="preserve">
           <source>Invoke single-threaded types on Main thread</source>
-          <target state="needs-review-translation">UI スレッドから VS サービスを使用する</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <target state="translated">メイン スレッドでシングルスレッド型を呼び出す</target>
         </trans-unit>
         <trans-unit id="VSTHRD100_MessageFormat" translate="yes" xml:space="preserve">
           <source>Avoid "async void" methods, because any exceptions not handled by the method will crash the process.</source>
@@ -188,8 +186,8 @@ Use AsyncLazy&lt;T&gt; instead.</source>
         <trans-unit id="VSTHRD010_MessageFormat_NoAssertingMethod" translate="yes" xml:space="preserve">
           <source>The type "{0}" should be used on main thread explicitly.
 Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
-          <target state="new">The type "{0}" should be used on main thread explicitly.
-Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</target>
+          <target state="translated">型 "{0}" は明示的にメイン スレッドで使用する必要があります。
+まず JoinableTaskFactory.SwitchToMainThreadAsync() を待機してください。</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</note>
         </trans-unit>
         <trans-unit id="VSTHRD010_MessageFormat_TransitiveMainThreadUser" translate="yes" xml:space="preserve">

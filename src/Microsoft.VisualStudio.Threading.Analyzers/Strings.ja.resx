@@ -29,12 +29,12 @@
     <value>問題のある同期待機を避ける</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>Visual Studio サービス "{0}" は、明示的にメイン スレッドで使用する必要があります。
-ThreadHelper.ThrowIfNotOnUIThread() を呼び出すか、まず JoinableTaskFactory.SwitchToMainThreadAsync() を待機してください。</value>
+    <value>型 "{0}" は、明示的にメイン スレッドで使用する必要があります。
+{1}() を呼び出すか、まず JoinableTaskFactory.SwitchToMainThreadAsync() を待機してください。</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
-    <value>UI スレッドから VS サービスを使用する</value>
+    <value>メイン スレッドでシングルスレッド型を呼び出す</value>
   </data>
   <data name="VSTHRD100_MessageFormat" xml:space="preserve">
     <value>"async void" メソッドは使用しないでください。このメソッドで処理されていない例外によりプロセスがクラッシュします。</value>
@@ -146,5 +146,10 @@ ThreadHelper.ThrowIfNotOnUIThread() を呼び出すか、まず JoinableTaskFact
   </data>
   <data name="VSTHRD108_Title" xml:space="preserve">
     <value>スレッド アフィニティを無条件でアサートする</value>
+  </data>
+  <data name="VSTHRD010_MessageFormat_NoAssertingMethod" xml:space="preserve">
+    <value>型 "{0}" は明示的にメイン スレッドで使用する必要があります。
+まず JoinableTaskFactory.SwitchToMainThreadAsync() を待機してください。</value>
+    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
 </root>

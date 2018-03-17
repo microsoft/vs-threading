@@ -29,12 +29,12 @@
     <value>Evite esperas síncronas problemáticas</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>O serviço do Visual Studio "{0}" deve ser usado em um thread principal explicitamente. 
-Chame ThreadHelper.ThrowIfNotOnUIThread() ou espere primeiro pelo JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+    <value>O tipo "{0}" deve ser usado no thread principal de forma explícita.
+Chame{1}() ou espere antes JoinableTaskFactory.SwitchToMainThreadAsync().</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
-    <value>Use serviços do VS do thread de interface do usuário</value>
+    <value>Invoque os tipos single-threaded no thread principal</value>
   </data>
   <data name="VSTHRD100_MessageFormat" xml:space="preserve">
     <value>Evite métodos "async void”, pois exceções que não são manipuladas pelo método causarão falha no processo.</value>
@@ -146,5 +146,10 @@ Em vez disso, use AsyncLazy&lt;T&gt;.</value>
   </data>
   <data name="VSTHRD108_Title" xml:space="preserve">
     <value>Declarar a afinidade de thread de forma incondicional</value>
+  </data>
+  <data name="VSTHRD010_MessageFormat_NoAssertingMethod" xml:space="preserve">
+    <value>O tipo "{0}" deve ser usado no thread principal de forma explícita.
+Espere antes JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
 </root>
