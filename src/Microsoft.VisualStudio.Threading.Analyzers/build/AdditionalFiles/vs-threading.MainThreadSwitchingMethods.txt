@@ -1,2 +1,1 @@
-﻿Microsoft.VisualStudio.ProjectSystem.IProjectThreadingService.SwitchToUIThread
-Microsoft.VisualStudio.Threading.JoinableTaskFactory.SwitchToMainThreadAsync
+﻿Microsoft.VisualStudio.Threading.JoinableTaskFactory.SwitchToMainThreadAsync
