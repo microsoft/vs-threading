@@ -13,7 +13,7 @@
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <PackageProjectUrl>https://github.com/Microsoft/vs-threading</PackageProjectUrl>
     <PackageIconUrl>https://aka.ms/VsExtensibilityIcon</PackageIconUrl>
-    <PackageReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=746387</PackageReleaseNotes>
+    <PackageReleaseNotes>In the v15.8 release, analyzers are incomplete in the context of Visual Studio without the Microsoft.VisualStudio.Sdk.Analyzers 15.8 package also installed.</PackageReleaseNotes>
 
     <DebugType>full</DebugType>
 
