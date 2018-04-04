@@ -477,7 +477,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// A map of resources to the tasks that most recently began evaluating them.
             /// </summary>
-            private WeakKeyDictionary<TResource, ResourcePreparationTaskAndValidity> resourcePreparationTasks = new WeakKeyDictionary<TResource, ResourcePreparationTaskAndValidity>();
+            private WeakKeyDictionary<TResource, ResourcePreparationTaskAndValidity> resourcePreparationTasks = new WeakKeyDictionary<TResource, ResourcePreparationTaskAndValidity>(capacity: 2);
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Helper"/> class.
