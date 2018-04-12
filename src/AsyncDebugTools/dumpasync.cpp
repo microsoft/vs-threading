@@ -36,27 +36,39 @@ dumpasync(PDEBUG_CLIENT pDebugClient, PCSTR args)
         return E_FAIL;
     }
 
-	/*
+    /*
     if (IsThreadPoolExhausted(pDebugClient, strSOS))
     {
         return OnThreadPoolExhausted(pDebugClient, strSOS);
     }
-	*/
+    */
 
-    // TODO: Support .NET Core by allowing AsyncMethodBuilderCore to be defined in System.Private.CoreLib.ni.dll
-    //       and perhaps other modules. 
-    HRESULT hr = Execute(pDebugClient, GetFullCommand(strSOS, "name2ee mscorlib.dll!System.Runtime.CompilerServices.AsyncMethodBuilderCore+MoveNextRunner"), strOutput);
-    if (FAILED(hr))
+    std::string strAsyncMethodBuilderModules[] = {
+        "mscorlib.dll", // .NET Framework
+        "System.Private.CoreLib.dll", // CoreCLR
+    };
+
+    HRESULT hr;
+    std::string strMethodTable;
+    for (int i = 0; i < 2; i++)
     {
-        srpControl->Output(DEBUG_OUTPUT_ERROR, "Failed to run !name2ee: %s\n", strOutput.c_str());
-        return hr;
+        hr = Execute(pDebugClient, GetFullCommand(strSOS, "name2ee " + strAsyncMethodBuilderModules[i] + "!System.Runtime.CompilerServices.AsyncMethodBuilderCore+MoveNextRunner"), strOutput);
+        if (FAILED(hr))
+        {
+            srpControl->Output(DEBUG_OUTPUT_ERROR, "Failed to run !name2ee: %s\n", strOutput.c_str());
+            return hr;
+        }
+
+        if (ParseName2EEOutput(strOutput, strMethodTable))
+        {
+            break;
+        }
     }
 
-    std::string strMethodTable;
-    if (!ParseName2EEOutput(strOutput, strMethodTable))
+    if (strMethodTable.empty())
     {
         srpControl->Output(DEBUG_OUTPUT_ERROR, "Failed to parse the output of !name2ee: %s\n", strOutput.c_str());
-        return hr;
+        return E_FAIL;
     }
 
     hr = Execute(pDebugClient, GetFullCommand(strSOS, "dumpheap -short -mt " + strMethodTable), strOutput);
