@@ -27,11 +27,13 @@ steps:
   condition: and(succeeded(), ne(variables['Hosted'], 'true'))
 
 - task: MicroBuildIBCMergePlugin@0
+  displayName: MicroBuild IBCMerge Plugin
   inputs:
     branch: lab/vsuvscore
   condition: and(succeeded(), ne(variables['Hosted'], 'true'))
 
 - task: MicroBuildSigningPlugin@1
+  displayName: MicroBuild Signing Plugin
   inputs:
     signType: $(SignType)
     esrpSigning: true
@@ -53,6 +55,7 @@ steps:
   displayName: Build Visual Studio solution
 
 - task: MicroBuildCleanup@1
+  displayName: MicroBuild Cleanup
   condition: succeededOrFailed()
 
 ## The rest of these steps are for deployment and skipped for PR builds
@@ -65,6 +68,7 @@ steps:
 #  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
 - task: PublishBuildArtifacts@1
+  displayName: Publish build_logs
   inputs:
     PathtoPublish: $(Build.ArtifactStagingDirectory)/build_logs
     ArtifactName: build_logs
@@ -72,6 +76,7 @@ steps:
   condition: succeededOrFailed()
 
 - task: CopyFiles@1
+  displayName: Collecting symbols artifacts
   inputs:
     SourceFolder: bin
     Contents: |
@@ -80,10 +85,10 @@ steps:
       Microsoft.VisualStudio.Threading.Analyzers/$(BuildConfiguration)/**/Microsoft.VisualStudio.Threading.Analyzers.dll
       Microsoft.VisualStudio.Threading.Analyzers/$(BuildConfiguration)/**/Microsoft.VisualStudio.Threading.Analyzers.pdb
     TargetFolder: $(Build.ArtifactStagingDirectory)/symbols
-  displayName: Collecting symbols artifacts
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
 - task: PublishBuildArtifacts@1
+  displayName: Publish symbols
   inputs:
     PathtoPublish: $(Build.ArtifactStagingDirectory)/symbols
     ArtifactName: symbols
@@ -91,15 +96,16 @@ steps:
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
 - task: CopyFiles@1
+  displayName: Collecting deployables
   inputs:
     Contents: |
       bin/**/$(BuildConfiguration)/**/*.nupkg
     TargetFolder: $(Build.ArtifactStagingDirectory)/deployables
     flattenFolders: true
-  displayName: Collecting deployables
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
 - task: PublishBuildArtifacts@1
+  displayName: Publish deployables
   inputs:
     PathtoPublish: $(Build.ArtifactStagingDirectory)/deployables
     ArtifactName: deployables
@@ -107,6 +113,7 @@ steps:
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
 - task: PublishSymbols@2
+  displayName: Archive symbols
   inputs:
     SymbolsFolder: $(Build.ArtifactStagingDirectory)/symbols
     SearchPattern: '**/*.pdb'
@@ -115,6 +122,7 @@ steps:
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
 - task: NuGetCommand@2
+  displayName: Push NuGet packages
   inputs:
     command: push
     searchPatternPush: '$(Build.SourcesDirectory)\bin\**\$(BuildConfiguration)\**\*.nupkg;!**\*.symbols.nupkg;!**/VS.*.nupkg'
