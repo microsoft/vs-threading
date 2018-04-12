@@ -56,9 +56,6 @@
     <ClCompile Include="outputcallbacks.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CpsNfeAnalyzer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ThreadPoolExhausted.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
