@@ -48,16 +48,31 @@ steps:
   inputs:
     restoreSolution: '**\*.sln'
     feedsToUse: config
-    nugetConfigPath: nuget.config
   displayName: Nuget restore packages
 
 - task: VSBuild@1
   inputs:
     vsVersion: 15.0
     msbuildArgs: /t:build,pack /m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/msbuild.binlog"
-    platform: $(BuildPlatform)
+    platform: Any CPU
     configuration: $(BuildConfiguration)
   displayName: Build Visual Studio solution
+
+- task: VSBuild@1
+  inputs:
+    vsVersion: 15.0
+    msbuildArgs: /t:build /m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/msbuild_x86.binlog"
+    platform: x86
+    configuration: $(BuildConfiguration)
+  displayName: Build AsyncDebugTools x86
+
+- task: VSBuild@1
+  inputs:
+    vsVersion: 15.0
+    msbuildArgs: /t:build /m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/msbuild_x64.binlog"
+    platform: x64
+    configuration: $(BuildConfiguration)
+  displayName: Build AsyncDebugTools x64
 
 - task: MicroBuildCleanup@1
   displayName: MicroBuild Cleanup
@@ -89,6 +104,10 @@ steps:
       Microsoft.VisualStudio.Threading/$(BuildConfiguration)/**/Microsoft.VisualStudio.Threading.pdb
       Microsoft.VisualStudio.Threading.Analyzers/$(BuildConfiguration)/**/Microsoft.VisualStudio.Threading.Analyzers.dll
       Microsoft.VisualStudio.Threading.Analyzers/$(BuildConfiguration)/**/Microsoft.VisualStudio.Threading.Analyzers.pdb
+      AsyncDebugTools/x86/$(BuildConfiguration)/AsyncDebugTools.dll
+      AsyncDebugTools/x86/$(BuildConfiguration)/AsyncDebugTools.pdb
+      AsyncDebugTools/x64/$(BuildConfiguration)/AsyncDebugTools.dll
+      AsyncDebugTools/x64/$(BuildConfiguration)/AsyncDebugTools.pdb
     TargetFolder: $(Build.ArtifactStagingDirectory)/symbols
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
@@ -101,12 +120,22 @@ steps:
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
 - task: CopyFiles@1
-  displayName: Collecting deployables
+  displayName: Collecting deployable packages
   inputs:
     Contents: |
       bin/**/$(BuildConfiguration)/**/*.nupkg
     TargetFolder: $(Build.ArtifactStagingDirectory)/deployables
     flattenFolders: true
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+
+- task: CopyFiles@1
+  displayName: Collecting deployable binaries
+  inputs:
+    Contents: |
+      x86/$(BuildConfiguration)/AsyncDebugTools.dll
+      x64/$(BuildConfiguration)/AsyncDebugTools.dll
+    SourceFolder: bin/AsyncDebugTools
+    TargetFolder: $(Build.ArtifactStagingDirectory)/deployables
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
 - task: PublishBuildArtifacts@1

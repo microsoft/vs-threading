@@ -9,4 +9,5 @@
 
 ## Performance and responsiveness investigation techniques
 
+* [Async hang investigations](async_hang.md)
 * [Investigating Threadpool starvation issues](threadpool_starvation.md)
