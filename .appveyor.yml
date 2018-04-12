@@ -18,10 +18,14 @@ environment:
   VisualStudioVersion: 15.0
   TreatWarningsAsErrors: true
   CodeAnalysisTreatWarningsAsErrors: true
+install:
+  appveyor DownloadFile https://dist.nuget.org/win-x86-commandline/v4.6.1/nuget.exe
 before_build:
-  msbuild src\Microsoft.VisualStudio.Threading.sln /nologo /m /v:quiet /t:restore
+  nuget restore src
 build_script:
-- msbuild src\Microsoft.VisualStudio.Threading.sln /nologo /m /fl /v:minimal /t:build,pack
+- msbuild src\Microsoft.VisualStudio.Threading.sln /p:platform="Any CPU" /nologo /m /v:minimal /t:build,pack /bl:msbuild.binlog
+- msbuild src\Microsoft.VisualStudio.Threading.sln /p:platform=x64 /nologo /m /v:minimal /bl:msbuild_x64.binlog
+- msbuild src\Microsoft.VisualStudio.Threading.sln /p:platform=x86 /nologo /m /v:minimal /bl:msbuild_x86.binlog
 test_script:
 - >-
     md "bin\%configuration%"
@@ -64,7 +68,11 @@ test_script:
 artifacts:
 - path: bin\**\*.nupkg
   name: NuGet Package
-- path: msbuild.log
-  name: Build log
+- path: bin\AsyncDebugTools\x64\$(Configuration)\AsyncDebugTools.dll
+  name: WinDbg extension (x64)
+- path: bin\AsyncDebugTools\x86\$(Configuration)\AsyncDebugTools.dll
+  name: WinDbg extension (x86)
+- path: msbuild*.binlog
+  name: Build logs
 - path: bin\**\testresults*
   name: Test results

@@ -6,7 +6,7 @@
 
     <MicroBuildVersion>2.0.54</MicroBuildVersion>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition=" '$(MSBuildProjectExtension)' != '.vcxproj' ">
     <PackageReference Include="Nerdbank.GitVersioning" Version="2.1.23" PrivateAssets="all" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.0.2" PrivateAssets="all" />
   </ItemGroup>

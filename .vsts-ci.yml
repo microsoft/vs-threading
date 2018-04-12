@@ -26,12 +26,19 @@ steps:
   displayName: Purge package caches
   condition: and(succeeded(), ne(variables['Hosted'], 'true'))
 
+- task: NuGetToolInstaller@0
+  displayName: Pin nuget.exe version
+  inputs:
+    versionSpec: 4.6.1
+
 - task: MicroBuildIBCMergePlugin@0
+  displayName: MicroBuild IBCMerge Plugin
   inputs:
     branch: lab/vsuvscore
   condition: and(succeeded(), ne(variables['Hosted'], 'true'))
 
 - task: MicroBuildSigningPlugin@1
+  displayName: MicroBuild Signing Plugin
   inputs:
     signType: $(SignType)
     esrpSigning: true
@@ -41,18 +48,34 @@ steps:
   inputs:
     restoreSolution: '**\*.sln'
     feedsToUse: config
-    nugetConfigPath: nuget.config
   displayName: Nuget restore packages
 
 - task: VSBuild@1
   inputs:
     vsVersion: 15.0
     msbuildArgs: /t:build,pack /m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/msbuild.binlog"
-    platform: $(BuildPlatform)
+    platform: Any CPU
     configuration: $(BuildConfiguration)
   displayName: Build Visual Studio solution
 
+- task: VSBuild@1
+  inputs:
+    vsVersion: 15.0
+    msbuildArgs: /t:build /m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/msbuild_x86.binlog"
+    platform: x86
+    configuration: $(BuildConfiguration)
+  displayName: Build AsyncDebugTools x86
+
+- task: VSBuild@1
+  inputs:
+    vsVersion: 15.0
+    msbuildArgs: /t:build /m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/msbuild_x64.binlog"
+    platform: x64
+    configuration: $(BuildConfiguration)
+  displayName: Build AsyncDebugTools x64
+
 - task: MicroBuildCleanup@1
+  displayName: MicroBuild Cleanup
   condition: succeededOrFailed()
 
 ## The rest of these steps are for deployment and skipped for PR builds
@@ -65,6 +88,7 @@ steps:
 #  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
 - task: PublishBuildArtifacts@1
+  displayName: Publish build_logs
   inputs:
     PathtoPublish: $(Build.ArtifactStagingDirectory)/build_logs
     ArtifactName: build_logs
@@ -72,6 +96,7 @@ steps:
   condition: succeededOrFailed()
 
 - task: CopyFiles@1
+  displayName: Collecting symbols artifacts
   inputs:
     SourceFolder: bin
     Contents: |
@@ -79,11 +104,15 @@ steps:
       Microsoft.VisualStudio.Threading/$(BuildConfiguration)/**/Microsoft.VisualStudio.Threading.pdb
       Microsoft.VisualStudio.Threading.Analyzers/$(BuildConfiguration)/**/Microsoft.VisualStudio.Threading.Analyzers.dll
       Microsoft.VisualStudio.Threading.Analyzers/$(BuildConfiguration)/**/Microsoft.VisualStudio.Threading.Analyzers.pdb
+      AsyncDebugTools/x86/$(BuildConfiguration)/AsyncDebugTools.dll
+      AsyncDebugTools/x86/$(BuildConfiguration)/AsyncDebugTools.pdb
+      AsyncDebugTools/x64/$(BuildConfiguration)/AsyncDebugTools.dll
+      AsyncDebugTools/x64/$(BuildConfiguration)/AsyncDebugTools.pdb
     TargetFolder: $(Build.ArtifactStagingDirectory)/symbols
-  displayName: Collecting symbols artifacts
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
 - task: PublishBuildArtifacts@1
+  displayName: Publish symbols
   inputs:
     PathtoPublish: $(Build.ArtifactStagingDirectory)/symbols
     ArtifactName: symbols
@@ -91,15 +120,26 @@ steps:
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
 - task: CopyFiles@1
+  displayName: Collecting deployable packages
   inputs:
     Contents: |
       bin/**/$(BuildConfiguration)/**/*.nupkg
     TargetFolder: $(Build.ArtifactStagingDirectory)/deployables
     flattenFolders: true
-  displayName: Collecting deployables
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+
+- task: CopyFiles@1
+  displayName: Collecting deployable binaries
+  inputs:
+    Contents: |
+      x86/$(BuildConfiguration)/AsyncDebugTools.dll
+      x64/$(BuildConfiguration)/AsyncDebugTools.dll
+    SourceFolder: bin/AsyncDebugTools
+    TargetFolder: $(Build.ArtifactStagingDirectory)/deployables
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
 - task: PublishBuildArtifacts@1
+  displayName: Publish deployables
   inputs:
     PathtoPublish: $(Build.ArtifactStagingDirectory)/deployables
     ArtifactName: deployables
@@ -107,6 +147,7 @@ steps:
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
 - task: PublishSymbols@2
+  displayName: Archive symbols
   inputs:
     SymbolsFolder: $(Build.ArtifactStagingDirectory)/symbols
     SearchPattern: '**/*.pdb'
@@ -115,6 +156,7 @@ steps:
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
 - task: NuGetCommand@2
+  displayName: Push NuGet packages
   inputs:
     command: push
     searchPatternPush: '$(Build.SourcesDirectory)\bin\**\$(BuildConfiguration)\**\*.nupkg;!**\*.symbols.nupkg;!**/VS.*.nupkg'
