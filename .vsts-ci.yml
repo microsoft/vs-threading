@@ -26,6 +26,11 @@ steps:
   displayName: Purge package caches
   condition: and(succeeded(), ne(variables['Hosted'], 'true'))
 
+- task: NuGetToolInstaller@0
+  displayName: Pin nuget.exe version
+  inputs:
+    versionSpec: 4.6.1
+
 - task: MicroBuildIBCMergePlugin@0
   displayName: MicroBuild IBCMerge Plugin
   inputs:

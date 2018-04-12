@@ -18,8 +18,10 @@ environment:
   VisualStudioVersion: 15.0
   TreatWarningsAsErrors: true
   CodeAnalysisTreatWarningsAsErrors: true
+install:
+  appveyor DownloadFile https://dist.nuget.org/win-x86-commandline/v4.6.1/nuget.exe
 before_build:
-  msbuild src\Microsoft.VisualStudio.Threading.sln /nologo /m /v:quiet /t:restore
+  nuget restore src
 build_script:
 - msbuild src\Microsoft.VisualStudio.Threading.sln /nologo /m /fl /v:minimal /t:build,pack
 test_script:
