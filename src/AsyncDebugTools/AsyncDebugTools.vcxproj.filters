@@ -68,9 +68,6 @@
     <ClCompile Include="DML.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="dumpversions.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="AsyncDebugTools.def">

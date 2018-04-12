@@ -188,7 +188,6 @@
       </PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="DML.cpp" />
-    <ClCompile Include="dumpversions.cpp" />
     <ClCompile Include="Helpers.cpp" />
     <ClCompile Include="outputcallbacks.cpp" />
     <ClCompile Include="stdafx.cpp">

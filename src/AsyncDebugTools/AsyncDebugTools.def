@@ -1,7 +1,6 @@
 EXPORTS
      cpsnfeanalyze
      dumpasync
-     dumpversions
      DebugExtensionNotify
      DebugExtensionInitialize
      DebugExtensionUninitialize
