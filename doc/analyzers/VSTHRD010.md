@@ -45,14 +45,14 @@ private void CallVS()
 {
     ThreadHelper.ThrowIfNotOnUIThread();
     IVsSolution sln = GetIVsSolution();
-    sln.SetProperty(); // This analyzer will report warning on this invocation.
+    sln.SetProperty(); // This analyzer will not report warning on this invocation.
 }
 
 private async Task CallVSAsync()
 {
     await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
     IVsSolution sln = GetIVsSolution();
-    sln.SetProperty(); // This analyzer will report warning on this invocation.
+    sln.SetProperty(); // This analyzer will not report warning on this invocation.
 }
 ```
 
