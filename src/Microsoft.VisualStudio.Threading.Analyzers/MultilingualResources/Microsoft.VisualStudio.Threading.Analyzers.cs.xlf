@@ -29,8 +29,8 @@
         <trans-unit id="VSTHRD010_MessageFormat" translate="yes" xml:space="preserve">
           <source>The type "{0}" should be used on main thread explicitly.
 Call {1}() or await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
-          <target state="translated">Typ {0} by se měl používat explicitně v hlavním vlákně.
-Zavolejte metodu {1}() nebo nejdříve počkejte na dokončení volání metody JoinableTaskFactory.SwitchToMainThreadAsync().</target>
+          <target state="translated">Typ {0} je třeba používat explicitně v hlavním vlákně.
+Nejprve volejte metodu {1}() nebo použijte await JoinableTaskFactory.SwitchToMainThreadAsync().</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</note>
         </trans-unit>
         <trans-unit id="VSTHRD010_Title" translate="yes" xml:space="preserve">
@@ -140,7 +140,7 @@ Použijte raději AsyncLazy&lt;T&gt;.</target>
         </trans-unit>
         <trans-unit id="VSTHRD104_MessageFormat" translate="yes" xml:space="preserve">
           <source>Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate.</source>
-          <target state="translated">Nabízejte asynchronní verzi této metody, která se synchronně neblokuje. Pak zjednodušte tuto metodu tak, aby volala tuto asynchronní metodu v delegátovi JoinableTaskFactory.Run.</target>
+          <target state="translated">Vystavte asynchronní verzi této metody, která neprovádí synchronní blokování. Potom tuto metodu zjednodušte tak, aby volala danou asynchronní metodu v rámci delegáta JoinableTaskFactory.Run.</target>
         </trans-unit>
         <trans-unit id="VSTHRD104_Title" translate="yes" xml:space="preserve">
           <source>Offer async methods</source>
@@ -186,13 +186,13 @@ Použijte raději AsyncLazy&lt;T&gt;.</target>
         <trans-unit id="VSTHRD010_MessageFormat_NoAssertingMethod" translate="yes" xml:space="preserve">
           <source>The type "{0}" should be used on main thread explicitly.
 Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
-          <target state="translated">Typ {0} by se měl používat explicitně v hlavním vlákně.
-Nejdříve počkejte na dokončení volání metody JoinableTaskFactory.SwitchToMainThreadAsync().</target>
+          <target state="translated">Typ {0} je třeba používat explicitně v hlavním vlákně.
+Nejprve použijte await JoinableTaskFactory.SwitchToMainThreadAsync().</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</note>
         </trans-unit>
         <trans-unit id="VSTHRD010_MessageFormat_TransitiveMainThreadUser" translate="yes" xml:space="preserve">
           <source>Add call to {0}() at start of member body because this member invokes other members that require the main thread.</source>
-          <target state="new">Add call to {0}() at start of member body because this member invokes other members that require the main thread.</target>
+          <target state="translated">Přidejte volání metody {0}() na začátek těla člena, protože tento člen volá jiné členy vyžadující hlavní vlákno.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a method name.</note>
         </trans-unit>
       </group>
