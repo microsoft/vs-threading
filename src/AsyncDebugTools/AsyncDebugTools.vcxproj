@@ -188,7 +188,6 @@
       </PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="DML.cpp" />
-    <ClCompile Include="dumpversions.cpp" />
     <ClCompile Include="Helpers.cpp" />
     <ClCompile Include="outputcallbacks.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -197,7 +196,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="CpsNfeAnalyzer.cpp" />
     <ClCompile Include="ThreadPoolExhausted.cpp" />
   </ItemGroup>
   <ItemGroup>
