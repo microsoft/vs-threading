@@ -22,15 +22,15 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>同步等待任务或 awaiter 可能导致死锁。请等待或改用 JoinableTaskFactory.Run。</value>
+    <value>同步等待任务或 awaiter 可能导致死锁。改用 await 或 JoinableTaskFactory.Run。</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
     <value>避免有问题的同步等待</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>应在主线程上显式使用类型“{0}”。
-首先调用 {1}() 或等待 JoinableTaskFactory.SwitchToMainThreadAsync()。</value>
+    <value>应对主线程显式使用类型“{0}”。
+先调用 {1}() 或等待 JoinableTaskFactory.SwitchToMainThreadAsync()。</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
@@ -113,7 +113,7 @@
     <value>在允许的地方提供 JoinableTaskFactory</value>
   </data>
   <data name="VSTHRD104_MessageFormat" xml:space="preserve">
-    <value>公开此方法的异步版（不同步阻止）。然后简化此方法以在 JoinableTaskFactory.Run 委托内调用该异步方法。</value>
+    <value>公开这个未进行同步阻止的方法的异步版本。然后简化此方法，在 JoinableTaskFactory.Run 委托内调用该异步方法。</value>
   </data>
   <data name="VSTHRD104_Title" xml:space="preserve">
     <value>提供异步方法</value>
@@ -148,8 +148,12 @@
     <value>无条件断言线程关联</value>
   </data>
   <data name="VSTHRD010_MessageFormat_NoAssertingMethod" xml:space="preserve">
-    <value>应在主线程上显式使用类型“{0}”。
-首先等待 JoinableTaskFactory.SwitchToMainThreadAsync()。</value>
+    <value>应对主线程显式使用类型“{0}”。
+先等待 JoinableTaskFactory.SwitchToMainThreadAsync()。</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
+  </data>
+  <data name="VSTHRD010_MessageFormat_TransitiveMainThreadUser" xml:space="preserve">
+    <value>在成员体的开头添加对 {0}() 的调用，因为此成员调用其他需要主线程的成员。</value>
+    <comment>{0} is a method name.</comment>
   </data>
 </root>

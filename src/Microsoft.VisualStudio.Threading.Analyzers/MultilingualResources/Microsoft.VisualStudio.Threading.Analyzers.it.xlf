@@ -30,7 +30,7 @@
           <source>The type "{0}" should be used on main thread explicitly.
 Call {1}() or await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
           <target state="translated">Il tipo "{0}" deve essere usato sul thread principale in modo esplicito.
-Chiamare {1}() o usare prima await JoinableTaskFactory.SwitchToMainThreadAsync().</target>
+Chiamare {1}() o attendere prima JoinableTaskFactory.SwitchToMainThreadAsync().</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</note>
         </trans-unit>
         <trans-unit id="VSTHRD010_Title" translate="yes" xml:space="preserve">
@@ -72,7 +72,7 @@ Per evitare il problema, assicurarsi che Task venga inizializzato all'interno de
         </trans-unit>
         <trans-unit id="VSTHRD003_Title" translate="yes" xml:space="preserve">
           <source>Avoid awaiting non-joinable tasks in join contexts</source>
-          <target state="translated">Evita l'uso di await Task non joinable in contesti di join</target>
+          <target state="translated">Evita attesa di Task non joinable in contesti di join</target>
         </trans-unit>
         <trans-unit id="VSTHRD011_MessageFormat" translate="yes" xml:space="preserve">
           <source>Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock.
@@ -86,7 +86,7 @@ In alternativa, usare AsyncLazy&lt;T&gt;.</target>
         </trans-unit>
         <trans-unit id="VSTHRD103_MessageFormat" translate="yes" xml:space="preserve">
           <source>{0} synchronously blocks. Await {1} instead.</source>
-          <target state="translated">{0} si blocca in modalità sincrona. In alternativa, usare await {1}.</target>
+          <target state="translated">{0} si blocca in modalità sincrona. In alternativa, attendere {1}.</target>
         </trans-unit>
         <trans-unit id="VSTHRD103_MessageFormat_UseAwaitInstead" translate="yes" xml:space="preserve">
           <source>{0} synchronously blocks. Use await instead.</source>
@@ -187,12 +187,12 @@ In alternativa, usare AsyncLazy&lt;T&gt;.</target>
           <source>The type "{0}" should be used on main thread explicitly.
 Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
           <target state="translated">Il tipo "{0}" deve essere usato sul thread principale in modo esplicito.
-Usare prima await JoinableTaskFactory.SwitchToMainThreadAsync().</target>
+Attendere prima JoinableTaskFactory.SwitchToMainThreadAsync().</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</note>
         </trans-unit>
         <trans-unit id="VSTHRD010_MessageFormat_TransitiveMainThreadUser" translate="yes" xml:space="preserve">
           <source>Add call to {0}() at start of member body because this member invokes other members that require the main thread.</source>
-          <target state="new">Add call to {0}() at start of member body because this member invokes other members that require the main thread.</target>
+          <target state="translated">Aggiungere la chiamata a {0}() all'inizio del corpo del membro perché questo membro richiama altri membri che richiedono il thread principale.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a method name.</note>
         </trans-unit>
       </group>

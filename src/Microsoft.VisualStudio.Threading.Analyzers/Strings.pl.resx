@@ -22,7 +22,7 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>Synchroniczne oczekiwanie na zadania lub elementy typu awaiter mogą powodować zakleszczenia. Zamiast tego używaj metody await lub JoinableTaskFactory.Run.</value>
+    <value>Synchroniczne oczekiwanie na zadania lub elementy typu awaiter mogą powodować zakleszczenia. Zamiast tego użyj operatora await albo metody JoinableTaskFactory.Run.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
@@ -113,7 +113,7 @@ Zamiast tego używaj klasy AsyncLazy&lt;T&gt;.</value>
     <value>Podaj element JoinableTaskFactory w miejscach, gdzie jest to dopuszczalne</value>
   </data>
   <data name="VSTHRD104_MessageFormat" xml:space="preserve">
-    <value>Uwidocznij asynchroniczną wersję tej metody, która nie powoduje synchronicznego blokowania. Następnie uprość tę metodę, aby wywołać tę metodę asynchroniczną w ramach delegata JoinableTaskFactory.Run.</value>
+    <value>Uwidocznij asynchroniczną wersję tej metody, która nie powoduje blokowania synchronicznego. Następnie uprość tę metodę w celu wywoływania tej metody asynchronicznej w ramach delegata JoinableTaskFactory.Run.</value>
   </data>
   <data name="VSTHRD104_Title" xml:space="preserve">
     <value>Oferuj metody asynchroniczne</value>
@@ -151,5 +151,9 @@ Zamiast tego używaj klasy AsyncLazy&lt;T&gt;.</value>
     <value>Typ „{0}” powinien być używany w wątku głównym w sposób jawny.
 Najpierw zaczekaj na metodę JoinableTaskFactory.SwitchToMainThreadAsync().</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
+  </data>
+  <data name="VSTHRD010_MessageFormat_TransitiveMainThreadUser" xml:space="preserve">
+    <value>Dodaj wywołanie metody {0}() na początku treści składowej, ponieważ ta składowa wywołuje inne składowe wymagające wątku głównego.</value>
+    <comment>{0} is a method name.</comment>
   </data>
 </root>

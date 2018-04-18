@@ -29,7 +29,7 @@
     <value>Evite esperas sincrónicas problemáticas</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>El tipo "{0}" debe usarse en el subproceso principal de forma explícita.
+    <value>El tipo "{0}" debe usarse explícitamente en el subproceso principal.
 Llame a {1}() o use await JoinableTaskFactory.SwitchToMainThreadAsync() primero.</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
@@ -58,7 +58,7 @@ Llame a {1}() o use await JoinableTaskFactory.SwitchToMainThreadAsync() primero.
     <value>Use InvokeAsync para desencadenar eventos asincrónicos</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>La llamada a await en un elemento Task dentro de JoinableTaskFactory.Run, cuando la tarea se ha iniciado fuera del delegado, puede provocar posibles interbloqueos.
+    <value>La llamada a await en un elemento Task dentro de JoinableTaskFactory.Run, cuando la tarea se ha iniciado fuera del delegado, puede provocar potenciales interbloqueos.
 Puede evitar este problema asegurándose de que la tarea se ha iniciado dentro del delegado o usando JoinableTask en lugar de Task.</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
@@ -113,7 +113,7 @@ Use AsyncLazy&lt;T&gt; en su lugar.</value>
     <value>Proporcione JoinableTaskFactory donde se permita</value>
   </data>
   <data name="VSTHRD104_MessageFormat" xml:space="preserve">
-    <value>Exponga una versión asincrónica de este método que no cause bloqueo de manera sincrónica. A continuación, simplifique este método para llamar a ese método asincrónico dentro de un delegado JoinableTaskFactory.Run.</value>
+    <value>Exponga una versión asincrónica de este método que no bloquee sincrónicamente. Luego simplifique este método para llamar a ese método asincrónico con un delegado JoinableTaskFactory.Run.</value>
   </data>
   <data name="VSTHRD104_Title" xml:space="preserve">
     <value>Ofrezca métodos asincrónicos</value>
@@ -148,8 +148,12 @@ Use AsyncLazy&lt;T&gt; en su lugar.</value>
     <value>Declarar afinidad de subproceso incondicionalmente</value>
   </data>
   <data name="VSTHRD010_MessageFormat_NoAssertingMethod" xml:space="preserve">
-    <value>El tipo "{0}" debe usarse en el subproceso principal de forma explícita.
+    <value>El tipo "{0}" debe usarse explícitamente en el subproceso principal.
 Use await JoinableTaskFactory.SwitchToMainThreadAsync() primero.</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
+  </data>
+  <data name="VSTHRD010_MessageFormat_TransitiveMainThreadUser" xml:space="preserve">
+    <value>Agregue la llamada a {0}() al inicio del cuerpo del miembro porque este miembro invoca a otros medios que requieren el subproceso principal.</value>
+    <comment>{0} is a method name.</comment>
   </data>
 </root>
