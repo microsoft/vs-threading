@@ -19,7 +19,7 @@
         </trans-unit>
         <trans-unit id="VSTHRD002_MessageFormat" translate="yes" xml:space="preserve">
           <source>Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or JoinableTaskFactory.Run instead.</source>
-          <target state="translated">작업을 동기적으로 대기합니다. 그러지 않으면 대기자가 교착 상태를 일으킬 수 있습니다. 대신 await나 JoinableTaskFactory.Run을 사용합니다.</target>
+          <target state="translated">작업을 동기적으로 대기합니다. 그러지 않으면 대기자가 교착 상태를 일으킬 수 있습니다. 대신 await 또는 JoinableTaskFactory.Run을 사용합니다.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD002_Title" translate="yes" xml:space="preserve">
@@ -29,8 +29,8 @@
         <trans-unit id="VSTHRD010_MessageFormat" translate="yes" xml:space="preserve">
           <source>The type "{0}" should be used on main thread explicitly.
 Call {1}() or await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
-          <target state="translated">주 스레드에서 형식 "{0}"을(를) 명시적으로 사용해야 합니다.
-{1}()을(를) 호출하거나, 우선 JoinableTaskFactory.SwitchToMainThreadAsync()를 대기합니다.</target>
+          <target state="translated">주 스레드에서 "{0}" 형식을 명시적으로 사용해야 합니다.
+{1}()을(를) 호출하거나 우선 JoinableTaskFactory.SwitchToMainThreadAsync()를 대기합니다.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</note>
         </trans-unit>
         <trans-unit id="VSTHRD010_Title" translate="yes" xml:space="preserve">
@@ -140,7 +140,7 @@ Use AsyncLazy&lt;T&gt; instead.</source>
         </trans-unit>
         <trans-unit id="VSTHRD104_MessageFormat" translate="yes" xml:space="preserve">
           <source>Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate.</source>
-          <target state="translated">동기적으로 차단되지 않는 이 메서드의 비동기 버전을 노출하세요. 그런 다음 JoinableTaskFactory.Run 대리자 내의 해당 비동기 메서드를 호출하도록 이 메서드를 단순화하세요.</target>
+          <target state="translated">동기적으로 차단되지 않는 이 메서드의 비동기 버전을 노출합니다. 그런 다음, JoinableTaskFactory.Run 대리자 내의 해당 비동기 메서드를 호출하도록 이 메서드를 단순화합니다.</target>
         </trans-unit>
         <trans-unit id="VSTHRD104_Title" translate="yes" xml:space="preserve">
           <source>Offer async methods</source>
@@ -157,7 +157,7 @@ Use AsyncLazy&lt;T&gt; instead.</source>
         </trans-unit>
         <trans-unit id="VSTHRD107_MessageFormat" translate="yes" xml:space="preserve">
           <source>Missing await operator for "using" expression.</source>
-          <target state="translated">“using” 식의 await 연산자 누락</target>
+          <target state="translated">"using" 식의 await 연산자 누락</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"await" and "using" are C# keywords and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD107_Title" translate="yes" xml:space="preserve">
@@ -186,13 +186,13 @@ Use AsyncLazy&lt;T&gt; instead.</source>
         <trans-unit id="VSTHRD010_MessageFormat_NoAssertingMethod" translate="yes" xml:space="preserve">
           <source>The type "{0}" should be used on main thread explicitly.
 Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
-          <target state="translated">주 스레드에서 형식 "{0}"을(를) 명시적으로 사용해야 합니다.
-우선 JoinableTaskFactory.SwitchToMainThreadAsync()를 대기합니다.</target>
+          <target state="translated">주 스레드에서 "{0}" 형식을 명시적으로 사용해야 합니다.
+Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</note>
         </trans-unit>
         <trans-unit id="VSTHRD010_MessageFormat_TransitiveMainThreadUser" translate="yes" xml:space="preserve">
           <source>Add call to {0}() at start of member body because this member invokes other members that require the main thread.</source>
-          <target state="new">Add call to {0}() at start of member body because this member invokes other members that require the main thread.</target>
+          <target state="translated">이 멤버는 주 스레드가 필요한 다른 멤버를 호출하므로 멤버 본문 시작에 {0}()에 대한 호출을 추가합니다.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a method name.</note>
         </trans-unit>
       </group>

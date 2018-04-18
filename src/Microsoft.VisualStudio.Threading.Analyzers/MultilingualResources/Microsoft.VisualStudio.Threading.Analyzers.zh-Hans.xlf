@@ -19,7 +19,7 @@
         </trans-unit>
         <trans-unit id="VSTHRD002_MessageFormat" translate="yes" xml:space="preserve">
           <source>Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or JoinableTaskFactory.Run instead.</source>
-          <target state="translated">同步等待任务或 awaiter 可能导致死锁。请等待或改用 JoinableTaskFactory.Run。</target>
+          <target state="translated">同步等待任务或 awaiter 可能导致死锁。改用 await 或 JoinableTaskFactory.Run。</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD002_Title" translate="yes" xml:space="preserve">
@@ -29,8 +29,8 @@
         <trans-unit id="VSTHRD010_MessageFormat" translate="yes" xml:space="preserve">
           <source>The type "{0}" should be used on main thread explicitly.
 Call {1}() or await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
-          <target state="translated">应在主线程上显式使用类型“{0}”。
-首先调用 {1}() 或等待 JoinableTaskFactory.SwitchToMainThreadAsync()。</target>
+          <target state="translated">应对主线程显式使用类型“{0}”。
+先调用 {1}() 或等待 JoinableTaskFactory.SwitchToMainThreadAsync()。</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</note>
         </trans-unit>
         <trans-unit id="VSTHRD010_Title" translate="yes" xml:space="preserve">
@@ -140,7 +140,7 @@ Use AsyncLazy&lt;T&gt; instead.</source>
         </trans-unit>
         <trans-unit id="VSTHRD104_MessageFormat" translate="yes" xml:space="preserve">
           <source>Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate.</source>
-          <target state="translated">公开此方法的异步版（不同步阻止）。然后简化此方法以在 JoinableTaskFactory.Run 委托内调用该异步方法。</target>
+          <target state="translated">公开这个未进行同步阻止的方法的异步版本。然后简化此方法，在 JoinableTaskFactory.Run 委托内调用该异步方法。</target>
         </trans-unit>
         <trans-unit id="VSTHRD104_Title" translate="yes" xml:space="preserve">
           <source>Offer async methods</source>
@@ -186,13 +186,13 @@ Use AsyncLazy&lt;T&gt; instead.</source>
         <trans-unit id="VSTHRD010_MessageFormat_NoAssertingMethod" translate="yes" xml:space="preserve">
           <source>The type "{0}" should be used on main thread explicitly.
 Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
-          <target state="translated">应在主线程上显式使用类型“{0}”。
-首先等待 JoinableTaskFactory.SwitchToMainThreadAsync()。</target>
+          <target state="translated">应对主线程显式使用类型“{0}”。
+先等待 JoinableTaskFactory.SwitchToMainThreadAsync()。</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</note>
         </trans-unit>
         <trans-unit id="VSTHRD010_MessageFormat_TransitiveMainThreadUser" translate="yes" xml:space="preserve">
           <source>Add call to {0}() at start of member body because this member invokes other members that require the main thread.</source>
-          <target state="new">Add call to {0}() at start of member body because this member invokes other members that require the main thread.</target>
+          <target state="translated">在成员体的开头添加对 {0}() 的调用，因为此成员调用其他需要主线程的成员。</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a method name.</note>
         </trans-unit>
       </group>
