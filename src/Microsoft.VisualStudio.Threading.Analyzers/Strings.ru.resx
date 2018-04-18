@@ -22,15 +22,15 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>Синхронное ожидание задач или объектов awaiter может приводить к взаимоблокировкам. Используйте вместо этого await или JoinableTaskFactory.Run.</value>
+    <value>Синхронное ожидание задач или объектов awaiter может вызвать взаимоблокировки. Вместо этого используйте await или JoinableTaskFactory.Run.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
     <value>Избегание проблемных синхронных ожиданий</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>Используйте тип "{0}" явно в основном потоке.
-Сначала вызовите {1}() или используйте await в JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+    <value>Тип "{0}" нужно использовать с основным потоком в явном виде.
+Сначала вызовите {1}() или await JoinableTaskFactory.SwitchToMainThreadAsync().</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
@@ -58,7 +58,7 @@
     <value>Использование InvokeAsync для вызова асинхронных событий</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>При вызове await в объекте Task в JoinableTaskFactory.Run (и при условии, что задача инициализирована за пределами делегата) могут произойти взаимоблокировки.
+    <value>При вызове await в объекте Task в JoinableTaskFactory.Run (и при условии, что задача инициализирована за пределами делегата), могут произойти взаимоблокировки.
 Вы можете избежать этой проблемы, инициализировав задачу в делегате или использовав JoinableTask вместо Task.</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
@@ -81,7 +81,7 @@
     <value>Вызов асинхронных методов в методе async</value>
   </data>
   <data name="VSTHRD102_MessageFormat" xml:space="preserve">
-    <value>Разрешите использовать вызовы методов синхронной блокировки, такие как JoinableTaskFactory.Run или Task.Result, только элементам общедоступных точек входа, где требуется синхронизация. Если их будут использовать внутренние элементы, между асинхронными фреймами могут быть добавлены лишние синхронные фреймы, что приведет к нехватке ресурсов в пуле потока.</value>
+    <value>Разрешите использовать вызовы методов синхронной блокировки, такие как JoinableTaskFactory.Run или Task.Result, только элементам общедоступных точек входа, где требуется синхронизация. Если их будут использовать внутренние элементы, между асинхронным фреймами могут быть добавлены лишние синхронные фреймы, что приведет к нехватке ресурсов в пуле потока.</value>
   </data>
   <data name="VSTHRD102_Title" xml:space="preserve">
     <value>Реализация внутренней логики асинхронно</value>
@@ -113,7 +113,7 @@
     <value>Указывайте JoinableTaskFactory, где это возможно</value>
   </data>
   <data name="VSTHRD104_MessageFormat" xml:space="preserve">
-    <value>Предоставьте асинхронную версию этого метода, которая не использует синхронную блокировку. Затем упростите этот метод, вызывая асинхронную версию внутри делегата JoinableTaskFactory.Run.</value>
+    <value>Предоставьте асинхронную версию этого метода, которая не выполняет блокирование синхронно. Затем упростите этот метод, чтобы вызывать этот асинхронный метод внутри делегата JoinableTaskFactory.Run.</value>
   </data>
   <data name="VSTHRD104_Title" xml:space="preserve">
     <value>Предоставляйте асинхронные методы</value>
@@ -148,8 +148,12 @@
     <value>Утверждайте сходства потоков безусловно</value>
   </data>
   <data name="VSTHRD010_MessageFormat_NoAssertingMethod" xml:space="preserve">
-    <value>Используйте тип "{0}" явно в основном потоке.
-Сначала используйте await в JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+    <value>Тип "{0}" нужно использовать с основным потоком в явном виде.
+Сначала используйте await JoinableTaskFactory.SwitchToMainThreadAsync().</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
+  </data>
+  <data name="VSTHRD010_MessageFormat_TransitiveMainThreadUser" xml:space="preserve">
+    <value>Добавьте вызов {0}() в начале тела элемента, так как он вызывает другие элементы, которым требуется основной поток.</value>
+    <comment>{0} is a method name.</comment>
   </data>
 </root>

@@ -22,7 +22,7 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>Görevlerde veya bekleyen öğelerde zaman uyumlu olarak beklemek kilitlenmelere neden olabilir. Bunun yerine bekleyen veya JoinableTaskFactory.Run kullanın.</value>
+    <value>Görevlerde veya bekleyen öğelerde zaman uyumlu olarak beklemek kilitlenmelere neden olabilir. Bunun yerine await veya JoinableTaskFactory.Run kullanın.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
@@ -58,8 +58,8 @@
     <value>Async olayları tetiklemek için InvokeAsync kullanın</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>JoinableTaskFactory.Run içindeki bir Task için await çağırmak, görevin temsilci dışında başlatılması durumunda olası kilitlenmelere neden olabilir.
-Görevin temsilci içinde başlatılmasını sağlayarak veya Task yerine JoinableTask kullanarak bu sorunu önleyebilirsiniz.</value>
+    <value>JoinableTaskFactory.Run içindeki bir Task için await çağırmak, görevin temsilci dışında başlatılması durumunda kilitlenmelere neden olabilir.
+Görevin temsilcinin içinde başlatılmasını sağlayarak veya Task yerine JoinableTask kullanarak bu sorunu önleyebilirsiniz.</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
     <value>Birleşik olmayan görevleri birleşik ortamlarda beklemeyin</value>
@@ -97,7 +97,7 @@ Bunun yerine AsyncLazy&lt;T&gt; kullanın.</value>
     <value>Async metotları için "Async" sonekini kullanın</value>
   </data>
   <data name="VSTHRD105_MessageFormat" xml:space="preserve">
-    <value>TaskScheduler.Current varsayan metot aşırı yüklemelerinden kaçının. TaskScheduler kabul eden bir aşırı yükleme kullanın ve TaskScheduler.Default (veya başka birini) açık olarak belirtin.</value>
+    <value>TaskScheduler.Current varsayan metot aşırı yüklemelerinden kaçının. TaskScheduler kabul eden bir aşırı yükleme kullanın ve TaskScheduler.Default (veya diğer birini) açık olarak belirtin.</value>
   </data>
   <data name="VSTHRD105_Title" xml:space="preserve">
     <value>TaskScheduler.Current varsayan metot aşırı yüklemelerinden kaçının</value>
@@ -113,7 +113,7 @@ Bunun yerine AsyncLazy&lt;T&gt; kullanın.</value>
     <value>İzin veriliyorsa JoinableTaskFactory sağlayın</value>
   </data>
   <data name="VSTHRD104_MessageFormat" xml:space="preserve">
-    <value>Bu metodun zaman uyumlu olarak engellemeyen zaman uyumsuz bir sürümünü sunun. Sonra bir JoinableTaskFactory.Run temsilcisi içinde bu zaman uyumsuz metoda çağrı yapmak için bu metodu basitleştirin.</value>
+    <value>Bu metodun, eş zamanlı olarak engellemeyen zaman uyumsuz bir sürümünü kullanıma açın. Sonra, JoinableTaskFactory.Run temsilcisi içinde bu zaman uyumsuz metodu çağırmak için bu metodu basitleştirin.</value>
   </data>
   <data name="VSTHRD104_Title" xml:space="preserve">
     <value>Zaman uyumsuz metotlar sunun</value>
@@ -151,5 +151,9 @@ Bunun yerine AsyncLazy&lt;T&gt; kullanın.</value>
     <value>"{0}" türü, ana iş parçacığında açık olarak kullanılmalıdır.
 Önce JoinableTaskFactory.SwitchToMainThreadAsync() bekleyin.</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
+  </data>
+  <data name="VSTHRD010_MessageFormat_TransitiveMainThreadUser" xml:space="preserve">
+    <value>Bu üye, ana iş parçacığını gerektiren diğer üyeleri çağırdığından üye gövdesinin başına {0}() araması ekleyin.</value>
+    <comment>{0} is a method name.</comment>
   </data>
 </root>

@@ -22,14 +22,14 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>同步等候 task 或 awaiter 可能會造成死結。請改用 await 或 JoinableTaskFactory.Run。</value>
+    <value>同步等候工作或 awaiter 可能會造成鎖死。請改用 await 或 JoinableTaskFactory.Run。</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
     <value>避免有問題的同步等候</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>類型 "{0}" 應明確用於主執行緒。
+    <value>主執行緒應明確使用類型 "{0}"。
 請先呼叫 {1}() 或 await JoinableTaskFactory.SwitchToMainThreadAsync()。</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
@@ -58,21 +58,21 @@
     <value>使用 InvokeAsync 引發非同步事件</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>當工作在委派的外部初始化時，對 JoinableTaskFactory.Run 內的 Task 上呼叫 await 可能會造成潛在的死結。
-您可以讓工作在委派內初始化，或不使用 Task 而改用 JoinableTask 來避免此問題。</value>
+    <value>當工作在委派外部初始化時，在 JoinableTaskFactory.Run 內的 Task 上呼叫 await，可能會造成潛在的鎖死情形。
+您可以藉由確認工作在委派內初始化，或將 Task 改為使用 JoinableTask，來避免此問題。</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
     <value>避免在加入內容中等候不可加入的工作</value>
   </data>
   <data name="VSTHRD011_MessageFormat" xml:space="preserve">
-    <value>Lazy&lt;Task&lt;T&gt;&gt;.Value 可能會造成死結。
+    <value>Lazy&lt;Task&lt;T&gt;&gt;.Value 可能會鎖死。
 請改用 AsyncLazy&lt;T&gt;。</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
     <value>避免在 T 為 Task&lt;T2&gt; 時使用 Lazy&lt;T&gt;</value>
   </data>
   <data name="VSTHRD103_MessageFormat" xml:space="preserve">
-    <value>{0} 會同步封鎖。請改用 await {1}。</value>
+    <value>{0} 會同步封鎖。請改為 await {1}。</value>
   </data>
   <data name="VSTHRD103_MessageFormat_UseAwaitInstead" xml:space="preserve">
     <value>{0} 會同步封鎖。請改用 await。</value>
@@ -97,7 +97,7 @@
     <value>對非同步方法使用 "Async" 尾碼</value>
   </data>
   <data name="VSTHRD105_MessageFormat" xml:space="preserve">
-    <value>請避免會假設 TaskScheduler.Current 的方法多載。請使用接受 TaskScheduler 的多載，並明確指定 TaskScheduler.Default (或其他任一項)。</value>
+    <value>請避免假設 TaskScheduler.Current 的方法多載。請使用接受 TaskScheduler 的多載，並明確指定 TaskScheduler.Default (或其他任一項)。</value>
   </data>
   <data name="VSTHRD105_Title" xml:space="preserve">
     <value>避免假設 TaskScheduler.Current 的方法多載</value>
@@ -113,7 +113,7 @@
     <value>在允許的情況下提供 JoinableTaskFactory</value>
   </data>
   <data name="VSTHRD104_MessageFormat" xml:space="preserve">
-    <value>提供此方法不會同步封鎖的非同步版本，讓此方法在 JoinableTaskFactory.Run 委派中只呼叫該非同步方法。</value>
+    <value>公開此方法不會同步封鎖的非同步版本。接著將此方法簡化成在 JoinableTaskFactory.Run delegate 中呼叫該非同步方法。</value>
   </data>
   <data name="VSTHRD104_Title" xml:space="preserve">
     <value>提供非同步方法</value>
@@ -148,8 +148,12 @@
     <value>無條件判斷提示執行緒親和性</value>
   </data>
   <data name="VSTHRD010_MessageFormat_NoAssertingMethod" xml:space="preserve">
-    <value>類型 "{0}" 應明確用於主執行緒。
-請先 await JoinableTaskFactory.SwitchToMainThreadAsync()。</value>
+    <value>主執行緒應明確使用類型 "{0}"。
+先呼叫 Await JoinableTaskFactory.SwitchToMainThreadAsync()。</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
+  </data>
+  <data name="VSTHRD010_MessageFormat_TransitiveMainThreadUser" xml:space="preserve">
+    <value>因為此成員會叫用其他需要主執行緒的成員，所以請在成員主體開頭新增對 {0}() 的呼叫。</value>
+    <comment>{0} is a method name.</comment>
   </data>
 </root>

@@ -29,8 +29,8 @@
     <value>Vyhněte se problematickým synchronním čekáním</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>Typ {0} by se měl používat explicitně v hlavním vlákně.
-Zavolejte metodu {1}() nebo nejdříve počkejte na dokončení volání metody JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+    <value>Typ {0} je třeba používat explicitně v hlavním vlákně.
+Nejprve volejte metodu {1}() nebo použijte await JoinableTaskFactory.SwitchToMainThreadAsync().</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
@@ -113,7 +113,7 @@ Použijte raději AsyncLazy&lt;T&gt;.</value>
     <value>Zadejte JoinableTaskFactory, kde je to povoleno</value>
   </data>
   <data name="VSTHRD104_MessageFormat" xml:space="preserve">
-    <value>Nabízejte asynchronní verzi této metody, která se synchronně neblokuje. Pak zjednodušte tuto metodu tak, aby volala tuto asynchronní metodu v delegátovi JoinableTaskFactory.Run.</value>
+    <value>Vystavte asynchronní verzi této metody, která neprovádí synchronní blokování. Potom tuto metodu zjednodušte tak, aby volala danou asynchronní metodu v rámci delegáta JoinableTaskFactory.Run.</value>
   </data>
   <data name="VSTHRD104_Title" xml:space="preserve">
     <value>Nabízejte asynchronní metody</value>
@@ -148,8 +148,12 @@ Použijte raději AsyncLazy&lt;T&gt;.</value>
     <value>Vyhodnotit spřažení vláken bez podmínek</value>
   </data>
   <data name="VSTHRD010_MessageFormat_NoAssertingMethod" xml:space="preserve">
-    <value>Typ {0} by se měl používat explicitně v hlavním vlákně.
-Nejdříve počkejte na dokončení volání metody JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+    <value>Typ {0} je třeba používat explicitně v hlavním vlákně.
+Nejprve použijte await JoinableTaskFactory.SwitchToMainThreadAsync().</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
+  </data>
+  <data name="VSTHRD010_MessageFormat_TransitiveMainThreadUser" xml:space="preserve">
+    <value>Přidejte volání metody {0}() na začátek těla člena, protože tento člen volá jiné členy vyžadující hlavní vlákno.</value>
+    <comment>{0} is a method name.</comment>
   </data>
 </root>

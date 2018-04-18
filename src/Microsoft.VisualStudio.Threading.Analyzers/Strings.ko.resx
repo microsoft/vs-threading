@@ -22,15 +22,15 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>작업을 동기적으로 대기합니다. 그러지 않으면 대기자가 교착 상태를 일으킬 수 있습니다. 대신 await나 JoinableTaskFactory.Run을 사용합니다.</value>
+    <value>작업을 동기적으로 대기합니다. 그러지 않으면 대기자가 교착 상태를 일으킬 수 있습니다. 대신 await 또는 JoinableTaskFactory.Run을 사용합니다.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
     <value>문제가 있는 동기 대기를 사용하지 않습니다.</value>
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>주 스레드에서 형식 "{0}"을(를) 명시적으로 사용해야 합니다.
-{1}()을(를) 호출하거나, 우선 JoinableTaskFactory.SwitchToMainThreadAsync()를 대기합니다.</value>
+    <value>주 스레드에서 "{0}" 형식을 명시적으로 사용해야 합니다.
+{1}()을(를) 호출하거나 우선 JoinableTaskFactory.SwitchToMainThreadAsync()를 대기합니다.</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
@@ -113,7 +113,7 @@
     <value>허용되는 경우 JoinableTaskFactory 제공</value>
   </data>
   <data name="VSTHRD104_MessageFormat" xml:space="preserve">
-    <value>동기적으로 차단되지 않는 이 메서드의 비동기 버전을 노출하세요. 그런 다음 JoinableTaskFactory.Run 대리자 내의 해당 비동기 메서드를 호출하도록 이 메서드를 단순화하세요.</value>
+    <value>동기적으로 차단되지 않는 이 메서드의 비동기 버전을 노출합니다. 그런 다음, JoinableTaskFactory.Run 대리자 내의 해당 비동기 메서드를 호출하도록 이 메서드를 단순화합니다.</value>
   </data>
   <data name="VSTHRD104_Title" xml:space="preserve">
     <value>비동기 메서드 제공</value>
@@ -126,7 +126,7 @@
     <comment>thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.</comment>
   </data>
   <data name="VSTHRD107_MessageFormat" xml:space="preserve">
-    <value>“using” 식의 await 연산자 누락</value>
+    <value>"using" 식의 await 연산자 누락</value>
     <comment>"await" and "using" are C# keywords and should not be translated.</comment>
   </data>
   <data name="VSTHRD107_Title" xml:space="preserve">
@@ -148,8 +148,12 @@
     <value>무조건 스레드 선호도 어설션</value>
   </data>
   <data name="VSTHRD010_MessageFormat_NoAssertingMethod" xml:space="preserve">
-    <value>주 스레드에서 형식 "{0}"을(를) 명시적으로 사용해야 합니다.
-우선 JoinableTaskFactory.SwitchToMainThreadAsync()를 대기합니다.</value>
+    <value>주 스레드에서 "{0}" 형식을 명시적으로 사용해야 합니다.
+Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
+  </data>
+  <data name="VSTHRD010_MessageFormat_TransitiveMainThreadUser" xml:space="preserve">
+    <value>이 멤버는 주 스레드가 필요한 다른 멤버를 호출하므로 멤버 본문 시작에 {0}()에 대한 호출을 추가합니다.</value>
+    <comment>{0} is a method name.</comment>
   </data>
 </root>
