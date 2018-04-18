@@ -22,7 +22,7 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>L'attente de manière synchrone de tâches ou d’éléments en attente peut entraîner des blocages. Utilisez await ou JoinableTaskFactory.Run à la place.</value>
+    <value>L’attente de manière synchrone de tâches ou d’éléments en attente peut entraîner des blocages. Utilisez await ou JoinableTaskFactory.Run à la place.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
@@ -30,7 +30,7 @@
   </data>
   <data name="VSTHRD010_MessageFormat" xml:space="preserve">
     <value>Le type "{0}"doit être utilisé sur le thread principal de manière explicite.
-Appelez {1}() ou attendez d'abord JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+Appelez {1}() ou attendez JoinableTaskFactory.SwitchToMainThreadAsync() en premier.</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
@@ -58,7 +58,7 @@ Appelez {1}() ou attendez d'abord JoinableTaskFactory.SwitchToMainThreadAsync().
     <value>Utiliser InvokeAsync pour déclencher des événements async</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>Le fait d'appeler await sur une tâche dans une méthode JoinableTaskFactory.Run quand la tâche est initialisée en dehors du délégué peut entraîner des blocages.
+    <value>Le fait d’appeler await sur une tâche dans une méthode JoinableTaskFactory.Run quand la tâche est initialisée en dehors du délégué peut entraîner des blocages.
 Vous pouvez éviter ce problème en vérifiant que la tâche est initialisée dans le délégué ou en utilisant JoinableTask à la place de Task.</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
@@ -81,7 +81,7 @@ Utilisez AsyncLazy&lt;T&gt; à la place</value>
     <value>Appeler des méthodes async dans une méthode async</value>
   </data>
   <data name="VSTHRD102_MessageFormat" xml:space="preserve">
-    <value>Limitez l'utilisation des appels de méthode de blocage synchrones, comme JoinableTaskFactory.Run ou Task.Result, aux membres de point d’entrée publics où il est nécessaire d’être synchrone. Son utilisation pour des membres internes peut inutilement ajouter des frames synchrones entre les frames asynchrones, provoquant l'épuisement du pool de threads.</value>
+    <value>Limitez l’utilisation des appels de méthode de blocage synchrones, comme JoinableTaskFactory.Run ou Task.Result, aux membres de point d’entrée publics où il est nécessaire d’être synchrone. Son utilisation pour des membres internes peut inutilement ajouter des frames synchrones entre les frames asynchrones, provoquant l’épuisement du pool de threads.</value>
   </data>
   <data name="VSTHRD102_Title" xml:space="preserve">
     <value>Implémenter la logique interne de façon asynchrone</value>
@@ -113,7 +113,7 @@ Utilisez AsyncLazy&lt;T&gt; à la place</value>
     <value>Fournir JoinableTaskFactory quand autorisé</value>
   </data>
   <data name="VSTHRD104_MessageFormat" xml:space="preserve">
-    <value>Exposez une version asynchrone de cette méthode qui ne se bloque pas de manière synchrone. Ensuite, simplifiez cette méthode pour appeler cette méthode async dans un délégué JoinableTaskFactory.Run.</value>
+    <value>Exposez une version async de cette méthode qui ne se bloque pas de façon synchrone. Ensuite, simplifiez cette méthode pour appeler la méthode async au sein d’un délégué JoinableTaskFactory.Run.</value>
   </data>
   <data name="VSTHRD104_Title" xml:space="preserve">
     <value>Offrir des méthodes async</value>
@@ -149,7 +149,11 @@ Utilisez AsyncLazy&lt;T&gt; à la place</value>
   </data>
   <data name="VSTHRD010_MessageFormat_NoAssertingMethod" xml:space="preserve">
     <value>Le type "{0}"doit être utilisé sur le thread principal de manière explicite.
-Attendez d'abord JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+Attendez d’abord JoinableTaskFactory.SwitchToMainThreadAsync().</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
+  </data>
+  <data name="VSTHRD010_MessageFormat_TransitiveMainThreadUser" xml:space="preserve">
+    <value>Ajoutez un appel à {0}() au début du corps du membre parce que ce membre appelle d’autres membres qui nécessitent le thread principal.</value>
+    <comment>{0} is a method name.</comment>
   </data>
 </root>
