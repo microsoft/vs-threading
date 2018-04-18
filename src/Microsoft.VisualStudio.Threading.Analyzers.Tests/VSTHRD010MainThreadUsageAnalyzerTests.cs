@@ -383,6 +383,32 @@ class Test {
         }
 
         [Fact]
+        public void RequiresUIThread_NotTransitiveThroughAsyncCalls()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    private JoinableTaskFactory jtf;
+
+    private void ShowToolWindow(object sender, EventArgs e) {
+        jtf.RunAsync(async delegate {
+            await FooAsync(); // this line is what adds the VSTHRD010 diagnostic
+        });
+    }
+
+    private async Task FooAsync() {
+        await jtf.SwitchToMainThreadAsync();
+    }
+}
+";
+
+            this.VerifyCSharpDiagnostic(test);
+        }
+
+        [Fact]
         public void InvokeVsSolutionAfterSwitchedToMainThreadAsync()
         {
             var test = @"
