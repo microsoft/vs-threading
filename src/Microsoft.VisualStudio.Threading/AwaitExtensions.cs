@@ -262,7 +262,7 @@ namespace Microsoft.VisualStudio.Threading
                         }
 
                         if (keepAliveCount == 1)
-                          {
+                        {
                             Assumes.Null(liveThread);
                             liveThread = new Thread(Worker, SmallThreadStackSize)
                             {
@@ -455,7 +455,7 @@ namespace Microsoft.VisualStudio.Threading
         /// An awaiter returned from <see cref="GetAwaiter(TaskScheduler)"/>.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct TaskSchedulerAwaiter : INotifyCompletion
+        public struct TaskSchedulerAwaiter : ICriticalNotifyCompletion
         {
             /// <summary>
             /// The scheduler for continuations.
@@ -517,7 +517,37 @@ namespace Microsoft.VisualStudio.Threading
             /// <param name="continuation">The delegate to invoke.</param>
             public void OnCompleted(Action continuation)
             {
-                Task.Factory.StartNew(continuation, CancellationToken.None, TaskCreationOptions.None, this.scheduler);
+                if (this.scheduler == TaskScheduler.Default)
+                {
+                    ThreadPool.QueueUserWorkItem(state => ((Action)state)(), continuation);
+                }
+                else
+                {
+                    Task.Factory.StartNew(continuation, CancellationToken.None, TaskCreationOptions.None, this.scheduler);
+                }
+            }
+
+            /// <summary>
+            /// Schedules a continuation to execute using the specified task scheduler
+            /// without capturing the ExecutionContext.
+            /// </summary>
+            /// <param name="continuation">The action.</param>
+            [SecurityCritical]
+            public void UnsafeOnCompleted(Action continuation)
+            {
+                if (this.scheduler == TaskScheduler.Default)
+                {
+#if THREADPOOL
+                    ThreadPool.UnsafeQueueUserWorkItem(state => ((Action)state)(), continuation);
+#else
+                    ThreadPool.QueueUserWorkItem(state => ((Action)state)(), continuation);
+#endif
+                }
+                else
+                {
+                    // There is no API for scheduling a Task without capturing the ExecutionContext.
+                    Task.Factory.StartNew(continuation, CancellationToken.None, TaskCreationOptions.None, this.scheduler);
+                }
             }
 
             /// <summary>
