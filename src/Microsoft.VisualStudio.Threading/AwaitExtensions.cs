@@ -12,6 +12,7 @@ namespace Microsoft.VisualStudio.Threading
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.CompilerServices;
+    using System.Security;
     using System.Threading;
     using System.Threading.Tasks;
 #if DESKTOP
@@ -562,7 +563,7 @@ namespace Microsoft.VisualStudio.Threading
         /// then immediately resume, possibly on the original <see cref="SynchronizationContext"/>.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct ConfiguredTaskYieldAwaiter : INotifyCompletion
+        public struct ConfiguredTaskYieldAwaiter : ICriticalNotifyCompletion
         {
             /// <summary>
             /// A value indicating whether the continuation should run on the captured <see cref="SynchronizationContext"/>, if any.
@@ -598,6 +599,28 @@ namespace Microsoft.VisualStudio.Threading
                 else
                 {
                     ThreadPool.QueueUserWorkItem(state => ((Action)state)(), continuation);
+                }
+            }
+
+            /// <summary>
+            /// Schedules a delegate for execution at the conclusion of a task's execution
+            /// without capturing the ExecutionContext.
+            /// </summary>
+            /// <param name="continuation">The action.</param>
+            [SecurityCritical]
+            public void UnsafeOnCompleted(Action continuation)
+            {
+                if (this.continueOnCapturedContext)
+                {
+                    Task.Yield().GetAwaiter().UnsafeOnCompleted(continuation);
+                }
+                else
+                {
+#if THREADPOOL
+                    ThreadPool.UnsafeQueueUserWorkItem(state => ((Action)state)(), continuation);
+#else
+                    ThreadPool.QueueUserWorkItem(state => ((Action)state)(), continuation);
+#endif
                 }
             }
 

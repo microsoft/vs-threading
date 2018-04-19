@@ -133,6 +133,28 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 }).GetAwaiter().GetResult();
         }
 
+        [Theory, CombinatorialData]
+        public async Task TaskYield_ConfigureAwait_OnCompleted_CapturesExecutionContext(bool captureContext)
+        {
+            var taskResultSource = new TaskCompletionSource<object>();
+            AsyncLocal<object> asyncLocal = new AsyncLocal<object>();
+            asyncLocal.Value = "expected";
+            Task.Yield().ConfigureAwait(captureContext).GetAwaiter().OnCompleted(delegate
+            {
+                try
+                {
+                    Assert.Equal("expected", asyncLocal.Value);
+                    taskResultSource.SetResult(null);
+                }
+                catch (Exception ex)
+                {
+                    taskResultSource.SetException(ex);
+                }
+            });
+            asyncLocal.Value = null;
+            await taskResultSource.Task;
+        }
+
         [Fact]
         public void AwaitCustomTaskScheduler()
         {
