@@ -218,7 +218,9 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }).GetAwaiter().GetResult();
         }
 
+#if !NETCOREAPP1_0 // .NET Core 1.0 doesn't offer a way to avoid flowing ExecutionContext
         [Fact]
+#endif
         public async Task AwaitTaskScheduler_UnsafeOnCompleted_DoesNotCaptureExecutionContext()
         {
             var taskResultSource = new TaskCompletionSource<object>();
