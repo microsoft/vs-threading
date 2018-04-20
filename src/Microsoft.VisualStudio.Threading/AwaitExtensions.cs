@@ -532,7 +532,6 @@ namespace Microsoft.VisualStudio.Threading
             /// without capturing the ExecutionContext.
             /// </summary>
             /// <param name="continuation">The action.</param>
-            [SecurityCritical]
             public void UnsafeOnCompleted(Action continuation)
             {
                 if (this.scheduler == TaskScheduler.Default)
@@ -637,7 +636,6 @@ namespace Microsoft.VisualStudio.Threading
             /// without capturing the ExecutionContext.
             /// </summary>
             /// <param name="continuation">The action.</param>
-            [SecurityCritical]
             public void UnsafeOnCompleted(Action continuation)
             {
                 if (this.continueOnCapturedContext)

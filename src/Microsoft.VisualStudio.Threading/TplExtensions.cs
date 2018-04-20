@@ -746,7 +746,6 @@ namespace Microsoft.VisualStudio.Threading
             /// without capturing the ExecutionContext.
             /// </summary>
             /// <param name="continuation">The action.</param>
-            [SecurityCritical]
             public void UnsafeOnCompleted(Action continuation)
             {
                 this.task.ConfigureAwait(this.captureContext).GetAwaiter().UnsafeOnCompleted(continuation);
