@@ -793,7 +793,7 @@ namespace Microsoft.VisualStudio.Threading
 
                         // Needs a lock to avoid a race condition between this method and GetResult().
                         // This method is called on a background thread. After "this.jobFactory.RequestSwitchToMainThread()" returns,
-                        // the continuation is scheduled and GetResult() will be called whenver it is ready on main thread.
+                        // the continuation is scheduled and GetResult() will be called whenever it is ready on main thread.
                         // We have observed sometimes GetResult() was called right after "this.jobFactory.RequestSwitchToMainThread()"
                         // and before "this.cancellationToken.Register()". If that happens, that means we lose the interest on the cancellation
                         // and should not register the cancellation here. Without protecting that, "this.cancellationRegistrationPtr" will be leaked.
