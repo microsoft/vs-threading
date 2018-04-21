@@ -13,7 +13,7 @@
     {
         protected const int AsyncDelay = 500;
 
-        protected const int TestTimeout = 1000;
+        protected const int TestTimeout = 5000;
 
         /// <summary>
         /// The maximum length of time to wait for something that we expect will happen
