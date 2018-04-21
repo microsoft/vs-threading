@@ -168,10 +168,17 @@ namespace Microsoft.VisualStudio.Threading.Tests
                         }
                     }
 
-                    ExecutionContext.Run(
-                        message.Context,
-                        new ContextCallback(message.Callback),
-                        message.State);
+                    if (message.Context != null)
+                    {
+                        ExecutionContext.Run(
+                            message.Context,
+                            new ContextCallback(message.Callback),
+                            message.State);
+                    }
+                    else
+                    {
+                        message.Callback(message.State);
+                    }
                 }
             }
 
