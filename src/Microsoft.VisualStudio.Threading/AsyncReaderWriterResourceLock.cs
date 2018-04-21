@@ -298,7 +298,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
         [DebuggerDisplay("{awaiter.kind}")]
-        public struct ResourceAwaiter : INotifyCompletion
+        public struct ResourceAwaiter : ICriticalNotifyCompletion
         {
             /// <summary>
             /// The underlying lock awaiter.
@@ -352,6 +352,20 @@ namespace Microsoft.VisualStudio.Threading
                 }
 
                 this.awaiter.OnCompleted(continuation);
+            }
+
+            /// <summary>
+            /// Sets the delegate to execute when the lock is available.
+            /// </summary>
+            /// <param name="continuation">The delegate.</param>
+            public void UnsafeOnCompleted(Action continuation)
+            {
+                if (this.awaiter == null)
+                {
+                    throw new InvalidOperationException();
+                }
+
+                this.awaiter.UnsafeOnCompleted(continuation);
             }
 
             /// <summary>

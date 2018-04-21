@@ -3948,6 +3948,77 @@
             await writerTask;
         }
 
+        [Fact]
+        public async Task ReadLockAsync_Await_CapturesExecutionContext()
+        {
+            var asyncLocal = new Microsoft.VisualStudio.Threading.AsyncLocal<string>();
+            asyncLocal.Value = "expected";
+            using (var lck = await this.asyncLock.ReadLockAsync())
+            {
+                Assert.Equal("expected", asyncLocal.Value);
+            }
+        }
+
+        [Fact]
+        public async Task ReadLockAsync_OnCompleted_CapturesExecutionContext()
+        {
+            var asyncLocal = new Microsoft.VisualStudio.Threading.AsyncLocal<string>();
+            asyncLocal.Value = "expected";
+            var awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
+            Assumes.False(awaiter.IsCompleted);
+            var testResultSource = new TaskCompletionSource<object>();
+            awaiter.OnCompleted(delegate
+            {
+                try
+                {
+                    using (awaiter.GetResult())
+                    {
+                        Assert.Equal("expected", asyncLocal.Value);
+                        testResultSource.SetResult(null);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    testResultSource.SetException(ex);
+                }
+                finally
+                {
+                }
+            });
+            await testResultSource.Task;
+        }
+
+#if !NETCOREAPP1_0
+        [Fact]
+#endif
+        public async Task ReadLockAsync_UnsafeOnCompleted_DoesNotCaptureExecutionContext()
+        {
+            var asyncLocal = new Microsoft.VisualStudio.Threading.AsyncLocal<string>();
+            asyncLocal.Value = "expected";
+            var awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
+            Assumes.False(awaiter.IsCompleted);
+            var testResultSource = new TaskCompletionSource<object>();
+            awaiter.UnsafeOnCompleted(delegate
+            {
+                try
+                {
+                    using (awaiter.GetResult())
+                    {
+                        Assert.Null(asyncLocal.Value);
+                        testResultSource.SetResult(null);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    testResultSource.SetException(ex);
+                }
+                finally
+                {
+                }
+            });
+            await testResultSource.Task;
+        }
+
         [StaFact]
         public void Disposable()
         {
