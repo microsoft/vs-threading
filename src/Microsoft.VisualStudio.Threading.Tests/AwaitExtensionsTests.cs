@@ -133,6 +133,28 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 }).GetAwaiter().GetResult();
         }
 
+        [Theory, CombinatorialData]
+        public async Task TaskYield_ConfigureAwait_OnCompleted_CapturesExecutionContext(bool captureContext)
+        {
+            var taskResultSource = new TaskCompletionSource<object>();
+            AsyncLocal<object> asyncLocal = new AsyncLocal<object>();
+            asyncLocal.Value = "expected";
+            Task.Yield().ConfigureAwait(captureContext).GetAwaiter().OnCompleted(delegate
+            {
+                try
+                {
+                    Assert.Equal("expected", asyncLocal.Value);
+                    taskResultSource.SetResult(null);
+                }
+                catch (Exception ex)
+                {
+                    taskResultSource.SetException(ex);
+                }
+            });
+            asyncLocal.Value = null;
+            await taskResultSource.Task;
+        }
+
         [Fact]
         public void AwaitCustomTaskScheduler()
         {
@@ -194,6 +216,53 @@ namespace Microsoft.VisualStudio.Threading.Tests
 #endif
                 Assert.True(TaskScheduler.Default.GetAwaiter().IsCompleted);
             }).GetAwaiter().GetResult();
+        }
+
+#if !NETCOREAPP1_0 // .NET Core 1.0 doesn't offer a way to avoid flowing ExecutionContext
+        [Fact]
+#endif
+        public async Task AwaitTaskScheduler_UnsafeOnCompleted_DoesNotCaptureExecutionContext()
+        {
+            var taskResultSource = new TaskCompletionSource<object>();
+            AsyncLocal<object> asyncLocal = new AsyncLocal<object>();
+            asyncLocal.Value = "expected";
+            TaskScheduler.Default.GetAwaiter().UnsafeOnCompleted(delegate
+            {
+                try
+                {
+                    Assert.Null(asyncLocal.Value);
+                    taskResultSource.SetResult(null);
+                }
+                catch (Exception ex)
+                {
+                    taskResultSource.SetException(ex);
+                }
+            });
+            asyncLocal.Value = null;
+            await taskResultSource.Task;
+        }
+
+        [Theory, CombinatorialData]
+        public async Task AwaitTaskScheduler_OnCompleted_CapturesExecutionContext(bool defaultTaskScheduler)
+        {
+            var taskResultSource = new TaskCompletionSource<object>();
+            AsyncLocal<object> asyncLocal = new AsyncLocal<object>();
+            asyncLocal.Value = "expected";
+            TaskScheduler scheduler = defaultTaskScheduler ? TaskScheduler.Default : new MockTaskScheduler();
+            scheduler.GetAwaiter().OnCompleted(delegate
+            {
+                try
+                {
+                    Assert.Equal("expected", asyncLocal.Value);
+                    taskResultSource.SetResult(null);
+                }
+                catch (Exception ex)
+                {
+                    taskResultSource.SetException(ex);
+                }
+            });
+            asyncLocal.Value = null;
+            await taskResultSource.Task;
         }
 
 #if DESKTOP || NETCOREAPP2_0

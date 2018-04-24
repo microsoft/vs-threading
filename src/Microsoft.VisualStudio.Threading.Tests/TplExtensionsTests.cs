@@ -272,6 +272,89 @@
             await nothrowTask;
         }
 
+        /// <summary>
+        /// Verifies that independent of whether the <see cref="SynchronizationContext" /> or <see cref="TaskScheduler"/>
+        /// is captured and used to schedule the continuation, the <see cref="ExecutionContext"/> is always captured and applied.
+        /// </summary>
+        [Theory]
+        [CombinatorialData]
+        public async Task NoThrowAwaitable_Await_CapturesExecutionContext(bool captureContext)
+        {
+            var awaitableTcs = new TaskCompletionSource<object>();
+            var asyncLocal = new AsyncLocal<object>();
+            asyncLocal.Value = "expected";
+            var testResult = Task.Run(async delegate
+            {
+                await awaitableTcs.Task.NoThrowAwaitable(captureContext); // uses UnsafeOnCompleted
+                Assert.Equal("expected", asyncLocal.Value);
+            });
+            asyncLocal.Value = null;
+            await Task.Delay(AsyncDelay); // Make sure the delegate above has time to yield
+            awaitableTcs.SetResult(null);
+
+            await testResult.WithTimeout(UnexpectedTimeout);
+        }
+
+        /// <summary>
+        /// Verifies that independent of whether the <see cref="SynchronizationContext" /> or <see cref="TaskScheduler"/>
+        /// is captured and used to schedule the continuation, the <see cref="ExecutionContext"/> is always captured and applied.
+        /// </summary>
+        [Theory]
+        [CombinatorialData]
+        public async Task NoThrowAwaitable_OnCompleted_CapturesExecutionContext(bool captureContext)
+        {
+            var testResultTcs = new TaskCompletionSource<object>();
+            var awaitableTcs = new TaskCompletionSource<object>();
+            var asyncLocal = new AsyncLocal<object>();
+            asyncLocal.Value = "expected";
+            var awaiter = awaitableTcs.Task.NoThrowAwaitable(captureContext).GetAwaiter();
+            awaiter.OnCompleted(delegate
+            {
+                try
+                {
+                    Assert.Equal("expected", asyncLocal.Value);
+                    testResultTcs.SetResult(null);
+                }
+                catch (Exception ex)
+                {
+                    testResultTcs.SetException(ex);
+                }
+            });
+            asyncLocal.Value = null;
+            await Task.Yield();
+            awaitableTcs.SetResult(null);
+
+            await testResultTcs.Task.WithTimeout(UnexpectedTimeout);
+        }
+
+        [Theory]
+        [CombinatorialData]
+        public async Task NoThrowAwaitable_UnsafeOnCompleted_DoesNotCaptureExecutionContext(bool captureContext)
+        {
+            var testResultTcs = new TaskCompletionSource<object>();
+            var awaitableTcs = new TaskCompletionSource<object>();
+            var asyncLocal = new AsyncLocal<object>();
+            asyncLocal.Value = "expected";
+            var awaiter = awaitableTcs.Task.NoThrowAwaitable(captureContext).GetAwaiter();
+            awaiter.UnsafeOnCompleted(delegate
+            {
+                try
+                {
+                    Assert.Null(asyncLocal.Value);
+                    testResultTcs.SetResult(null);
+                }
+                catch (Exception ex)
+                {
+                    testResultTcs.SetException(ex);
+                }
+            });
+            asyncLocal.Value = null;
+            await Task.Yield();
+            awaitableTcs.SetResult(null);
+
+            await testResultTcs.Task.WithTimeout(UnexpectedTimeout);
+        }
+
         [Fact]
         public void InvokeAsyncNullEverything()
         {

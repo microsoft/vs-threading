@@ -9,6 +9,7 @@ namespace Microsoft.VisualStudio.Threading
     using System;
     using System.Collections.Generic;
     using System.Runtime.CompilerServices;
+    using System.Security;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -699,7 +700,7 @@ namespace Microsoft.VisualStudio.Threading
         /// An awaiter that wraps a task and never throws an exception when waited on.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct NoThrowTaskAwaiter : INotifyCompletion
+        public struct NoThrowTaskAwaiter : ICriticalNotifyCompletion
         {
             /// <summary>
             /// The task
@@ -738,6 +739,16 @@ namespace Microsoft.VisualStudio.Threading
             public void OnCompleted(Action continuation)
             {
                 this.task.ConfigureAwait(this.captureContext).GetAwaiter().OnCompleted(continuation);
+            }
+
+            /// <summary>
+            /// Schedules a delegate for execution at the conclusion of a task's execution
+            /// without capturing the ExecutionContext.
+            /// </summary>
+            /// <param name="continuation">The action.</param>
+            public void UnsafeOnCompleted(Action continuation)
+            {
+                this.task.ConfigureAwait(this.captureContext).GetAwaiter().UnsafeOnCompleted(continuation);
             }
 
             /// <summary>
