@@ -9,6 +9,7 @@ namespace Microsoft.VisualStudio.Threading
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Runtime.CompilerServices;
     using System.Threading;
@@ -2054,7 +2055,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Manages asynchronous access to a lock.
         /// </summary>
         [DebuggerDisplay("{kind}")]
-        public class Awaiter : INotifyCompletion
+        public class Awaiter : ICriticalNotifyCompletion
         {
             #region Fields
 
@@ -2272,26 +2273,14 @@ namespace Microsoft.VisualStudio.Threading
             /// Sets the delegate to execute when the lock is available.
             /// </summary>
             /// <param name="continuation">The delegate.</param>
-            public void OnCompleted(Action continuation)
-            {
-                if (this.LockIssued)
-                {
-                    throw new InvalidOperationException();
-                }
+            public void OnCompleted(Action continuation) => this.OnCompleted(continuation, flowExecutionContext: true);
 
-                if (Interlocked.CompareExchange(ref this.continuation, continuation, null) != null)
-                {
-                    throw new NotSupportedException("Multiple continuations are not supported.");
-                }
-
-                this.cancellationRegistration = this.cancellationToken.Register(CancellationResponseAction, this, useSynchronizationContext: false);
-                this.lck.PendAwaiter(this);
-
-                if (this.cancellationToken.IsCancellationRequested && this.cancellationRegistration == default(CancellationTokenRegistration))
-                {
-                    CancellationResponder(this);
-                }
-            }
+            /// <summary>
+            /// Sets the delegate to execute when the lock is available
+            /// without flowing ExecutionContext.
+            /// </summary>
+            /// <param name="continuation">The delegate.</param>
+            public void UnsafeOnCompleted(Action continuation) => this.OnCompleted(continuation, flowExecutionContext: false);
 
             /// <summary>
             /// Applies the issued lock to the caller and returns the value used to release the lock.
@@ -2438,6 +2427,53 @@ namespace Microsoft.VisualStudio.Threading
 
                 // Release memory of the registered handler, since we only need it to fire once.
                 awaiter.cancellationRegistration.Dispose();
+            }
+
+            /// <summary>
+            /// Sets the delegate to execute when the lock is available.
+            /// </summary>
+            /// <param name="continuation">The delegate.</param>
+            /// <param name="flowExecutionContext">A value indicating whether to flow ExecutionContext.</param>
+            [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "flowExecutionContext", Justification = "Parameter is used in #if for some compilations.")]
+            private void OnCompleted(Action continuation, bool flowExecutionContext)
+            {
+                if (this.LockIssued)
+                {
+                    throw new InvalidOperationException();
+                }
+
+                if (Interlocked.CompareExchange(ref this.continuation, continuation, null) != null)
+                {
+                    throw new NotSupportedException("Multiple continuations are not supported.");
+                }
+
+#if THREADPOOL
+                bool restoreFlow = !flowExecutionContext && !ExecutionContext.IsFlowSuppressed();
+                if (restoreFlow)
+                {
+                    ExecutionContext.SuppressFlow();
+                }
+#endif
+
+                try
+                {
+                    this.cancellationRegistration = this.cancellationToken.Register(CancellationResponseAction, this, useSynchronizationContext: false);
+                    this.lck.PendAwaiter(this);
+
+                    if (this.cancellationToken.IsCancellationRequested && this.cancellationRegistration == default(CancellationTokenRegistration))
+                    {
+                        CancellationResponder(this);
+                    }
+                }
+                finally
+                {
+#if THREADPOOL
+                    if (restoreFlow)
+                    {
+                        ExecutionContext.RestoreFlow();
+                    }
+#endif
+                }
             }
         }
 

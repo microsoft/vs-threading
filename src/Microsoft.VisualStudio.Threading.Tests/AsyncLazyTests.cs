@@ -502,6 +502,36 @@ namespace Microsoft.VisualStudio.Threading.Tests
             });
         }
 
+        [Fact]
+        public async Task ExecutionContextFlowsFromFirstCaller_NoJTF()
+        {
+            var asyncLocal = new Threading.AsyncLocal<string>();
+            var asyncLazy = new AsyncLazy<int>(delegate
+            {
+                Assert.Equal("expected", asyncLocal.Value);
+                return Task.FromResult(1);
+            });
+            asyncLocal.Value = "expected";
+            await asyncLazy.GetValueAsync();
+        }
+
+        [Fact]
+        public async Task ExecutionContextFlowsFromFirstCaller_JTF()
+        {
+            var context = this.InitializeJTCAndSC();
+            var jtf = context.Factory;
+            var asyncLocal = new Threading.AsyncLocal<string>();
+            var asyncLazy = new AsyncLazy<int>(
+                delegate
+                {
+                    Assert.Equal("expected", asyncLocal.Value);
+                    return Task.FromResult(1);
+                },
+                jtf);
+            asyncLocal.Value = "expected";
+            await asyncLazy.GetValueAsync();
+        }
+
         [Fact(Skip = "Hangs. This test documents a deadlock scenario that is not fixed (by design, IIRC).")]
         public async Task ValueFactoryRequiresReadLockHeldByOther()
         {

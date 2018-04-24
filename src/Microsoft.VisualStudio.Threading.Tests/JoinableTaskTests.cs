@@ -327,6 +327,154 @@
             }
         }
 
+        [StaFact]
+        public void SwitchToMainThreadAsync_Await_CapturesExecutionContext()
+        {
+            this.SimulateUIThread(async delegate
+            {
+                await TaskScheduler.Default;
+                Assert.NotEqual(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
+                AsyncLocal<object> asyncLocal = new AsyncLocal<object>();
+                asyncLocal.Value = "expected";
+                await this.asyncPump.SwitchToMainThreadAsync();
+                Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
+                Assert.Equal("expected", asyncLocal.Value);
+            });
+        }
+
+        [Fact]
+        public void SwitchToMainThreadAsync_Await_Canceled_CapturesExecutionContext()
+        {
+            var factory = (DerivedJoinableTaskFactory)this.asyncPump;
+            var cts = new CancellationTokenSource();
+            var transitionRequested = new ManualResetEventSlim();
+            factory.TransitioningToMainThreadCallback = jt => transitionRequested.Set();
+            var task = Task.Run(async delegate
+            {
+                AsyncLocal<object> asyncLocal = new AsyncLocal<object>();
+                asyncLocal.Value = "expected";
+                await Assert.ThrowsAsync<OperationCanceledException>(async () => await this.asyncPump.SwitchToMainThreadAsync(cts.Token));
+                Assert.NotEqual(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
+                Assert.Equal("expected", asyncLocal.Value);
+            });
+            transitionRequested.Wait();
+            cts.Cancel();
+            task.Wait(this.TimeoutToken);
+        }
+
+#if !NETCOREAPP1_0
+        [Fact]
+#endif
+        public void SwitchToMainThreadAsync_UnsafeOnCompleted_DoesNotCaptureExecutionContext()
+        {
+            this.SimulateUIThread(async delegate
+            {
+                await TaskScheduler.Default;
+                var testResultSource = new TaskCompletionSource<object>();
+                AsyncLocal<object> asyncLocal = new AsyncLocal<object>();
+                asyncLocal.Value = "expected";
+                this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().UnsafeOnCompleted(delegate
+                {
+                    try
+                    {
+                        Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
+                        Assert.Null(asyncLocal.Value);
+                        testResultSource.SetResult(null);
+                    }
+                    catch (Exception ex)
+                    {
+                        testResultSource.SetException(ex);
+                    }
+                });
+                await testResultSource.Task;
+            });
+        }
+
+#if !NETCOREAPP1_0
+        [Fact]
+#endif
+        public void SwitchToMainThreadAsync_UnsafeOnCompleted_DoesNotCaptureExecutionContext_WhenCanceled()
+        {
+            this.SimulateUIThread(delegate
+            {
+                var testResultSource = new TaskCompletionSource<object>();
+                AsyncLocal<object> asyncLocal = new AsyncLocal<object>();
+                asyncLocal.Value = "expected";
+                var cts = new CancellationTokenSource();
+                this.asyncPump.SwitchToMainThreadAsync(cts.Token).GetAwaiter().UnsafeOnCompleted(delegate
+                {
+                    try
+                    {
+                        Assert.NotEqual(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
+                        Assert.Null(asyncLocal.Value);
+                        testResultSource.SetResult(null);
+                    }
+                    catch (Exception ex)
+                    {
+                        testResultSource.SetException(ex);
+                    }
+                });
+                cts.Cancel();
+                testResultSource.Task.Wait(this.TimeoutToken);
+                return TplExtensions.CompletedTask;
+            });
+        }
+
+        [Fact]
+        public void SwitchToMainThreadAsync_OnCompleted_CapturesExecutionContext()
+        {
+            this.SimulateUIThread(async delegate
+            {
+                await TaskScheduler.Default;
+                var testResultSource = new TaskCompletionSource<object>();
+                AsyncLocal<object> asyncLocal = new AsyncLocal<object>();
+                asyncLocal.Value = "expected";
+                this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().OnCompleted(delegate
+                {
+                    try
+                    {
+                        Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
+                        Assert.Equal("expected", asyncLocal.Value);
+                        testResultSource.SetResult(null);
+                    }
+                    catch (Exception ex)
+                    {
+                        testResultSource.SetException(ex);
+                    }
+                });
+                await testResultSource.Task;
+            });
+        }
+
+        [Fact]
+        public void SwitchToMainThreadAsync_OnCompleted_CapturesExecutionContext_WhenCanceled()
+        {
+            this.SimulateUIThread(delegate
+            {
+                var testResultSource = new TaskCompletionSource<object>();
+                AsyncLocal<object> asyncLocal = new AsyncLocal<object>();
+                asyncLocal.Value = "expected";
+                var cts = new CancellationTokenSource();
+                this.asyncPump.SwitchToMainThreadAsync(cts.Token).GetAwaiter().OnCompleted(delegate
+                {
+                    try
+                    {
+                        Assert.NotEqual(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
+                        Assert.Equal("expected", asyncLocal.Value);
+                        testResultSource.SetResult(null);
+                    }
+                    catch (Exception ex)
+                    {
+                        testResultSource.SetException(ex);
+                    }
+                });
+                asyncLocal.Value = null;
+                cts.Cancel();
+                testResultSource.Task.Wait(this.TimeoutToken);
+                return TplExtensions.CompletedTask;
+            });
+        }
+
         /// <summary>
         /// Verify that if the <see cref="JoinableTaskContext"/> was initialized
         /// without a <see cref="SynchronizationContext"/> whose

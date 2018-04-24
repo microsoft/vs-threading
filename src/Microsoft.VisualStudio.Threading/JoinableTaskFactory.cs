@@ -15,6 +15,7 @@ namespace Microsoft.VisualStudio.Threading
     using System.Linq;
     using System.Reflection;
     using System.Runtime.CompilerServices;
+    using System.Security;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -166,7 +167,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Responds to calls to <see cref="JoinableTaskFactory.MainThreadAwaiter.OnCompleted"/>
+        /// Responds to calls to <see cref="JoinableTaskFactory.MainThreadAwaiter.OnCompleted(Action)"/>
         /// by scheduling a continuation to execute on the Main thread.
         /// </summary>
         /// <param name="callback">The callback to invoke.</param>
@@ -702,8 +703,16 @@ namespace Microsoft.VisualStudio.Threading
         /// An awaiter struct that facilitates an asynchronous transition to the Main thread.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct MainThreadAwaiter : INotifyCompletion
+        public struct MainThreadAwaiter : ICriticalNotifyCompletion
         {
+            private static readonly Action<object> SafeCancellationAction = state => ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, state);
+
+#if THREADPOOL
+            private static readonly Action<object> UnsafeCancellationAction = state => ThreadPool.UnsafeQueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, state);
+#else
+            private static readonly Action<object> UnsafeCancellationAction = SafeCancellationAction; // unsafe option not available
+#endif
+
             private readonly JoinableTaskFactory jobFactory;
 
             private readonly CancellationToken cancellationToken;
@@ -764,68 +773,22 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
+            /// Schedules a continuation for execution on the Main thread
+            /// without capturing the ExecutionContext.
+            /// </summary>
+            /// <param name="continuation">The action to invoke when the operation completes.</param>
+            public void UnsafeOnCompleted(Action continuation)
+            {
+                this.OnCompleted(continuation, flowExecutionContext: false);
+            }
+
+            /// <summary>
             /// Schedules a continuation for execution on the Main thread.
             /// </summary>
             /// <param name="continuation">The action to invoke when the operation completes.</param>
-            [SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters", MessageId = "System.Environment.FailFast(System.String,System.Exception)"), SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Justification = "Failing here is worth crashing the process for.")]
             public void OnCompleted(Action continuation)
             {
-                Assumes.True(this.jobFactory != null);
-
-                try
-                {
-                    // In the event of a cancellation request, it becomes a race as to whether the threadpool
-                    // or the main thread will execute the continuation first. So we must wrap the continuation
-                    // in a SingleExecuteProtector so that it can't be executed twice by accident.
-                    // Success case of the main thread.
-                    var wrapper = this.jobFactory.RequestSwitchToMainThread(continuation);
-
-                    // Cancellation case of a threadpool thread.
-                    if (this.cancellationRegistrationPtr != null)
-                    {
-                        // Store the cancellation token registration in the struct pointer. This way,
-                        // if the awaiter has been copied (since it's a struct), each copy of the awaiter
-                        // points to the same registration. Without this we can have a memory leak.
-                        var registration = this.cancellationToken.Register(
-                            state => ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, state),
-                            wrapper,
-                            useSynchronizationContext: false);
-
-                        // Needs a lock to avoid a race condition between this method and GetResult().
-                        // This method is called on a background thread. After "this.jobFactory.RequestSwitchToMainThread()" returns,
-                        // the continuation is scheduled and GetResult() will be called whenever it is ready on main thread.
-                        // We have observed sometimes GetResult() was called right after "this.jobFactory.RequestSwitchToMainThread()"
-                        // and before "this.cancellationToken.Register()". If that happens, that means we lose the interest on the cancellation
-                        // and should not register the cancellation here. Without protecting that, "this.cancellationRegistrationPtr" will be leaked.
-                        bool disposeThisRegistration = false;
-                        using (this.jobFactory.Context.NoMessagePumpSynchronizationContext.Apply())
-                        {
-                            lock (this.cancellationRegistrationPtr)
-                            {
-                                if (!this.cancellationRegistrationPtr.Value.HasValue)
-                                {
-                                    this.cancellationRegistrationPtr.Value = registration;
-                                }
-                                else
-                                {
-                                    disposeThisRegistration = true;
-                                }
-                            }
-                        }
-
-                        if (disposeThisRegistration)
-                        {
-                            registration.Dispose();
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    // This is bad. It would cause a hang without a trace as to why, since we if can't
-                    // schedule the continuation, stuff would just never happen.
-                    // Crash now, so that a Watson report would capture the original error.
-                    Environment.FailFast("Failed to schedule time on the UI thread. A continuation would never execute.", ex);
-                }
+                this.OnCompleted(continuation, flowExecutionContext: true);
             }
 
             /// <summary>
@@ -886,6 +849,89 @@ namespace Microsoft.VisualStudio.Threading
                 // changes they apply (including SynchronizationContext) when they complete, thanks to the way .NET 4.5 works.
                 var syncContext = this.job != null ? this.job.ApplicableJobSyncContext : this.jobFactory.ApplicableJobSyncContext;
                 syncContext.Apply();
+            }
+
+            /// <summary>
+            /// Schedules a continuation for execution on the Main thread.
+            /// </summary>
+            /// <param name="continuation">The action to invoke when the operation completes.</param>
+            /// <param name="flowExecutionContext">A value indicating whether to capture and reapply the current ExecutionContext for the continuation.</param>
+            [SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters", MessageId = "System.Environment.FailFast(System.String,System.Exception)"), SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Justification = "Failing here is worth crashing the process for.")]
+            private void OnCompleted(Action continuation, bool flowExecutionContext)
+            {
+                Assumes.True(this.jobFactory != null);
+
+#if THREADPOOL
+                bool restoreFlow = !flowExecutionContext && !ExecutionContext.IsFlowSuppressed();
+                if (restoreFlow)
+                {
+                    ExecutionContext.SuppressFlow();
+                }
+#endif
+
+                try
+                {
+                    // In the event of a cancellation request, it becomes a race as to whether the threadpool
+                    // or the main thread will execute the continuation first. So we must wrap the continuation
+                    // in a SingleExecuteProtector so that it can't be executed twice by accident.
+                    // Success case of the main thread.
+                    var wrapper = this.jobFactory.RequestSwitchToMainThread(continuation);
+
+                    // Cancellation case of a threadpool thread.
+                    if (this.cancellationRegistrationPtr != null)
+                    {
+                        // Store the cancellation token registration in the struct pointer. This way,
+                        // if the awaiter has been copied (since it's a struct), each copy of the awaiter
+                        // points to the same registration. Without this we can have a memory leak.
+                        var registration = this.cancellationToken.Register(
+                            flowExecutionContext ? SafeCancellationAction : UnsafeCancellationAction,
+                            wrapper,
+                            useSynchronizationContext: false);
+
+                        // Needs a lock to avoid a race condition between this method and GetResult().
+                        // This method is called on a background thread. After "this.jobFactory.RequestSwitchToMainThread()" returns,
+                        // the continuation is scheduled and GetResult() will be called whenever it is ready on main thread.
+                        // We have observed sometimes GetResult() was called right after "this.jobFactory.RequestSwitchToMainThread()"
+                        // and before "this.cancellationToken.Register()". If that happens, that means we lose the interest on the cancellation
+                        // and should not register the cancellation here. Without protecting that, "this.cancellationRegistrationPtr" will be leaked.
+                        bool disposeThisRegistration = false;
+                        using (this.jobFactory.Context.NoMessagePumpSynchronizationContext.Apply())
+                        {
+                            lock (this.cancellationRegistrationPtr)
+                            {
+                                if (!this.cancellationRegistrationPtr.Value.HasValue)
+                                {
+                                    this.cancellationRegistrationPtr.Value = registration;
+                                }
+                                else
+                                {
+                                    disposeThisRegistration = true;
+                                }
+                            }
+                        }
+
+                        if (disposeThisRegistration)
+                        {
+                            registration.Dispose();
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // This is bad. It would cause a hang without a trace as to why, since we if can't
+                    // schedule the continuation, stuff would just never happen.
+                    // Crash now, so that a Watson report would capture the original error.
+                    Environment.FailFast("Failed to schedule time on the UI thread. A continuation would never execute.", ex);
+                }
+#if THREADPOOL
+                finally
+                {
+                    if (restoreFlow)
+                    {
+                        ExecutionContext.RestoreFlow();
+                    }
+                }
+#endif
             }
         }
 
