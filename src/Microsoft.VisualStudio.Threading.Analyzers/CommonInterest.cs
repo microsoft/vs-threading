@@ -1,4 +1,4 @@
-﻿namespace Microsoft.VisualStudio.Threading.Analyzers
+namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
     using System.Collections.Generic;
@@ -17,7 +17,7 @@
 
     internal static class CommonInterest
     {
-        internal static readonly Regex FileNamePatternForTypesRequiringMainThread = new Regex(@"^vs-threading\.TypesRequiringMainThread(\..*)?.txt$", FileNamePatternRegexOptions);
+        internal static readonly Regex FileNamePatternForMembersRequiringMainThread = new Regex(@"^vs-threading\.MembersRequiringMainThread(\..*)?.txt$", FileNamePatternRegexOptions);
         internal static readonly Regex FileNamePatternForMethodsThatAssertMainThread = new Regex(@"^vs-threading\.MainThreadAssertingMethods(\..*)?.txt$", FileNamePatternRegexOptions);
         internal static readonly Regex FileNamePatternForMethodsThatSwitchToMainThread = new Regex(@"^vs-threading\.MainThreadSwitchingMethods(\..*)?.txt$", FileNamePatternRegexOptions);
 
@@ -69,6 +69,10 @@
             SyntaxKind.RemoveAccessorDeclaration);
 
         private const RegexOptions FileNamePatternRegexOptions = RegexOptions.IgnoreCase | RegexOptions.Singleline;
+
+        private static readonly Regex NegatableTypeOrMemberReferenceRegex = new Regex(@"^(?<negated>!)?\[(?<typeName>[^\[\]\:]+)+\](?:\:\:(?<memberName>\S+))?\s*$", RegexOptions.Singleline | RegexOptions.CultureInvariant);
+
+        private static readonly Regex MemberReferenceRegex = new Regex(@"^\[(?<typeName>[^\[\]\:]+)+\]::(?<memberName>\S+)\s*$", RegexOptions.Singleline | RegexOptions.CultureInvariant);
 
         /// <summary>
         /// An array with '.' as its only element.
@@ -160,23 +164,37 @@
         {
             foreach (string line in ReadAdditionalFiles(context, fileNamePattern))
             {
-                string[] elements = line.TrimEnd(null).Split(QualifiedIdentifierSeparators);
-                string methodName = elements[elements.Length - 1];
-                string typeName = elements[elements.Length - 2];
-                var containingType = new QualifiedType(elements.Take(elements.Length - 2).ToImmutableArray(), typeName);
+                Match match = MemberReferenceRegex.Match(line);
+                if (!match.Success)
+                {
+                    throw new InvalidOperationException($"Parsing error on line: {line}");
+                }
+
+                string methodName = match.Groups["memberName"].Value;
+                string[] typeNameElements = match.Groups["typeName"].Value.Split(QualifiedIdentifierSeparators);
+                string typeName = typeNameElements[typeNameElements.Length - 1];
+                var containingType = new QualifiedType(typeNameElements.Take(typeNameElements.Length - 1).ToImmutableArray(), typeName);
                 yield return new QualifiedMember(containingType, methodName);
             }
         }
 
-        internal static IEnumerable<TypeMatchSpec> ReadTypes(CompilationStartAnalysisContext context, Regex fileNamePattern)
+        internal static IEnumerable<TypeMatchSpec> ReadTypesAndMembers(CompilationStartAnalysisContext context, Regex fileNamePattern)
         {
             foreach (string line in ReadAdditionalFiles(context, fileNamePattern))
             {
-                bool inverted = line.StartsWith("!", StringComparison.Ordinal);
-                string[] elements = line.Substring(inverted ? 1 : 0).TrimEnd(null).Split(QualifiedIdentifierSeparators);
-                string typeName = elements[elements.Length - 1];
-                var containingNamespace = elements.Take(elements.Length - 1).ToImmutableArray();
-                yield return new TypeMatchSpec(new QualifiedType(containingNamespace, typeName), inverted);
+                Match match = NegatableTypeOrMemberReferenceRegex.Match(line);
+                if (!match.Success)
+                {
+                    throw new InvalidOperationException($"Parsing error on line: {line}");
+                }
+
+                bool inverted = match.Groups["negated"].Success;
+                string[] typeNameElements = match.Groups["typeName"].Value.Split(QualifiedIdentifierSeparators);
+                string typeName = typeNameElements[typeNameElements.Length - 1];
+                var containingNamespace = typeNameElements.Take(typeNameElements.Length - 1).ToImmutableArray();
+                var type = new QualifiedType(containingNamespace, typeName);
+                var member = match.Groups["memberName"].Success ? new QualifiedMember(type, match.Groups["memberName"].Value) : default(QualifiedMember);
+                yield return new TypeMatchSpec(type, member, inverted);
             }
         }
 
@@ -222,12 +240,12 @@
             return false;
         }
 
-        internal static bool Contains(this ImmutableArray<TypeMatchSpec> types, ISymbol symbol)
+        internal static bool Contains(this ImmutableArray<TypeMatchSpec> types, ITypeSymbol typeSymbol, ISymbol memberSymbol)
         {
             TypeMatchSpec matching = default(TypeMatchSpec);
             foreach (var type in types)
             {
-                if (type.IsMatch(symbol))
+                if (type.IsMatch(typeSymbol, memberSymbol))
                 {
                     if (matching.IsEmpty || matching.IsWildcard)
                     {
@@ -246,10 +264,16 @@
 
         internal struct TypeMatchSpec
         {
-            internal TypeMatchSpec(QualifiedType type, bool inverted)
+            internal TypeMatchSpec(QualifiedType type, QualifiedMember member, bool inverted)
             {
                 this.InvertedLogic = inverted;
                 this.Type = type;
+                this.Member = member;
+
+                if (this.IsWildcard && this.Member.Name != null)
+                {
+                    throw new ArgumentException("Wildcard use is not allowed when member of type is specified.");
+                }
             }
 
             /// <summary>
@@ -258,9 +282,19 @@
             internal bool InvertedLogic { get; }
 
             /// <summary>
-            /// Gets the type described by this type entry.
+            /// Gets the type described by this entry.
             /// </summary>
             internal QualifiedType Type { get; }
+
+            /// <summary>
+            /// Gets the member described by this entry.
+            /// </summary>
+            internal QualifiedMember Member { get; }
+
+            /// <summary>
+            /// Gets a value indicating whether a member match is reuqired.
+            /// </summary>
+            internal bool IsMember => this.Member.Name != null;
 
             /// <summary>
             /// Gets a value indicating whether the typename is a wildcard.
@@ -275,10 +309,29 @@
             /// <summary>
             /// Tests whether a given symbol matches the description of a type (independent of its <see cref="InvertedLogic"/> property).
             /// </summary>
-            internal bool IsMatch(ISymbol symbol)
+            internal bool IsMatch(ITypeSymbol typeSymbol, ISymbol memberSymbol)
             {
-                return (this.IsWildcard || symbol?.Name == this.Type.Name)
-                    && symbol.BelongsToNamespace(this.Type.Namespace);
+                if (typeSymbol == null)
+                {
+                    return false;
+                }
+
+                if (!this.IsMember
+                    && (this.IsWildcard || typeSymbol.Name == this.Type.Name)
+                    && typeSymbol.BelongsToNamespace(this.Type.Namespace))
+                {
+                    return true;
+                }
+
+                if (this.IsMember
+                    && memberSymbol?.Name == this.Member.Name
+                    && typeSymbol.Name == this.Type.Name
+                    && typeSymbol.BelongsToNamespace(this.Type.Namespace))
+                {
+                    return true;
+                }
+
+                return false;
             }
         }
 

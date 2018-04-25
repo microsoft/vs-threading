@@ -738,8 +738,24 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 55, 9, 65) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expect = new DiagnosticResult[]
+            {
+                new DiagnosticResult
+                {
+                    Id = this.expect.Id,
+                    SkipVerifyMessage = this.expect.SkipVerifyMessage,
+                    Severity = this.expect.Severity,
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 40, 9, 54) },
+                },
+                new DiagnosticResult
+                {
+                    Id = this.expect.Id,
+                    SkipVerifyMessage = this.expect.SkipVerifyMessage,
+                    Severity = this.expect.Severity,
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 55, 9, 65) },
+                },
+            };
+            this.VerifyCSharpDiagnostic(test, expect);
         }
 
         [Fact]
@@ -753,6 +769,7 @@ using Microsoft.VisualStudio.Shell;
 class Test : Package {
     void Foo() {
         object shell = this.GetService(typeof(Microsoft.VisualStudio.Shell.Interop.IVsShell));
+        this.AddOptionKey(""bar"");
     }
 }
 ";
@@ -898,6 +915,65 @@ namespace TestNS2 {
                     SkipVerifyMessage = true,
                     Severity = DiagnosticSeverity.Warning,
                     Locations = new DiagnosticResultLocation[] { new DiagnosticResultLocation("Test0.cs", 12, 15, 12, 44), },
+                },
+            };
+            this.VerifyCSharpDiagnostic(test, expect);
+        }
+
+        [Fact]
+        public void NegatedMethodOverridesMatchingWildcardType()
+        {
+            var test = @"
+namespace TestNS2
+{
+    class A // this type inherits thread affinity from a wildcard match on TestNS2.*
+    {
+        void FreeThreadedMethod() { } // this method is explicitly marked free-threaded
+
+        void ThreadAffinitizedMethod() { }
+
+        void Foo()
+        {
+            this.FreeThreadedMethod();
+            this.ThreadAffinitizedMethod();
+        }
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 13, 18, 13, 41) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
+        [Fact]
+        public void Properties()
+        {
+            var test = @"
+class A
+{
+    string UIPropertyName { get; set; }
+
+    void Foo()
+    {
+        string v = this.UIPropertyName;
+        this.UIPropertyName = v;
+    }
+}
+";
+            var expect = new[]
+            {
+                new DiagnosticResult
+                {
+                    Id = VSTHRD010MainThreadUsageAnalyzer.Id,
+                    SkipVerifyMessage = true,
+                    Severity = DiagnosticSeverity.Warning,
+                    Locations = new DiagnosticResultLocation[] { new DiagnosticResultLocation("Test0.cs", 8, 25, 8, 39), },
+                },
+                new DiagnosticResult
+                {
+                    Id = VSTHRD010MainThreadUsageAnalyzer.Id,
+                    SkipVerifyMessage = true,
+                    Severity = DiagnosticSeverity.Warning,
+                    Locations = new DiagnosticResultLocation[] { new DiagnosticResultLocation("Test0.cs", 9, 14, 9, 28), },
                 },
             };
             this.VerifyCSharpDiagnostic(test, expect);

@@ -1,2 +1,2 @@
-﻿Test.VerifyOnUIThread
-Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread
+﻿[Test]::VerifyOnUIThread
+[Microsoft.VisualStudio.Shell.ThreadHelper]::ThrowIfNotOnUIThread
