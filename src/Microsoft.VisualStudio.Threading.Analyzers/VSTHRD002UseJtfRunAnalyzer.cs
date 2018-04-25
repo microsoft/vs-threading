@@ -120,6 +120,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             IEnumerable<CommonInterest.SyncBlockingMethod> problematicMethods,
             INamedTypeSymbol taskSymbol)
         {
+            if (memberAccessSyntax == null)
+            {
+                return;
+            }
+
             // Are we in the context of an anonymous function that is passed directly in as an argument to another method?
             var anonymousFunctionSyntax = context.Node.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>();
             var anonFuncAsArgument = anonymousFunctionSyntax?.Parent as ArgumentSyntax;
@@ -138,7 +143,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     if (firstParameter != null)
                     {
                         // Are we accessing a member of the completed task?
-                        ISymbol invokedObjectSymbol = context.SemanticModel.GetSymbolInfo(memberAccessSyntax?.Expression).Symbol;
+                        ISymbol invokedObjectSymbol = context.SemanticModel.GetSymbolInfo(memberAccessSyntax.Expression).Symbol;
                         IParameterSymbol completedTask = context.SemanticModel.GetDeclaredSymbol(firstParameter);
                         if (invokedObjectSymbol.Equals(completedTask))
                         {

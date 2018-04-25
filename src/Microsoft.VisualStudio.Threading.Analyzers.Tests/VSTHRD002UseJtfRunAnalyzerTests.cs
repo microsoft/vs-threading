@@ -366,5 +366,28 @@ class ProjectProperties {
 ";
             this.VerifyCSharpDiagnostic(test);
         }
+
+        [Fact]
+        public void MethodsWithoutLeadingMember()
+        {
+            var test = @"
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class ProjectProperties {
+    public void Start(Task action, Action<Exception> exceptionHandler = null)
+    {
+        Task task = action.ContinueWith(
+            t => exceptionHandler(t.Exception.InnerException),
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted,
+            TaskScheduler.Default);
+    }
+}
+";
+            this.VerifyCSharpDiagnostic(test);
+        }
     }
 }
