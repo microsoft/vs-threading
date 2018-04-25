@@ -1,1 +1,1 @@
-﻿System.Windows.Threading.Dispatcher.VerifyAccess
+﻿[System.Windows.Threading.Dispatcher]::VerifyAccess

@@ -34,7 +34,7 @@ These methods are identified as described below:
 
 **Filename:** `vs-threading.MainThreadAssertingMethods.txt`
 
-**Line format:** `Namespace.TypeName.MethodName`
+**Line format:** `[Namespace.TypeName]::MethodName`
 
 **Sample:** `Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread`
 
@@ -47,19 +47,22 @@ These methods are identified as described below:
 
 **Filename:** `vs-threading.MainThreadSwitchingMethods.txt`
 
-**Line format:** `Namespace.TypeName.MethodName`
+**Line format:** `[Namespace.TypeName]::MethodName`
 
 **Sample:** `Microsoft.VisualStudio.Threading.JoinableTaskFactory.SwitchToMainThreadAsync`
 
-## Types that require the main thread
+## Members that require the main thread
 
-Types that are STA COM objects or otherwise require all invocations to occur on
+Types or members that are STA COM objects or otherwise require all invocations to occur on
 the main thread of the application can be configured into these analyzers so that
 static analysis can help ensure thread safety of the application.
-These types are identified as described below:
+These are identified as described below:
 
-**Filename:** `vs-threading.TypesRequiringMainThread.txt`
+**Filename:** `vs-threading.MembersRequiringMainThread.txt`
 
-**Line format:** `Namespace.TypeName` or `Namespace.*`
+**Line format:** `[Namespace.TypeName]` or `[Namespace.*]` or `[Namespace.TypeName]::MemberName`
 
-**Sample:** `Microsoft.VisualStudio.Shell.Interop.*`
+**Sample:** `Microsoft.VisualStudio.Shell.Interop.*` or `[Microsoft.VisualStudio.Shell.Package]::GetService`
+
+Properties are specified by their name, not the name of their accessors.
+For example, a property should be specified by `PropertyName`, not `get_PropertyName`.

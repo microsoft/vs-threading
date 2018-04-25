@@ -112,7 +112,7 @@
             {
                 var mainThreadAssertingMethods = CommonInterest.ReadMethods(compilationStartContext, CommonInterest.FileNamePatternForMethodsThatAssertMainThread).ToImmutableArray();
                 var mainThreadSwitchingMethods = CommonInterest.ReadMethods(compilationStartContext, CommonInterest.FileNamePatternForMethodsThatSwitchToMainThread).ToImmutableArray();
-                var typesRequiringMainThread = CommonInterest.ReadTypes(compilationStartContext, CommonInterest.FileNamePatternForTypesRequiringMainThread).ToImmutableArray();
+                var membersRequiringMainThread = CommonInterest.ReadTypesAndMembers(compilationStartContext, CommonInterest.FileNamePatternForMembersRequiringMainThread).ToImmutableArray();
 
                 var methodsDeclaringUIThreadRequirement = new HashSet<IMethodSymbol>();
                 var methodsAssertingUIThreadRequirement = new HashSet<IMethodSymbol>();
@@ -124,7 +124,7 @@
                     {
                         MainThreadAssertingMethods = mainThreadAssertingMethods,
                         MainThreadSwitchingMethods = mainThreadSwitchingMethods,
-                        TypesRequiringMainThread = typesRequiringMainThread,
+                        MembersRequiringMainThread = membersRequiringMainThread,
                         MethodsDeclaringUIThreadRequirement = methodsDeclaringUIThreadRequirement,
                         MethodsAssertingUIThreadRequirement = methodsAssertingUIThreadRequirement,
                     };
@@ -266,7 +266,7 @@
 
             internal ImmutableArray<CommonInterest.QualifiedMember> MainThreadSwitchingMethods { get; set; }
 
-            internal ImmutableArray<CommonInterest.TypeMatchSpec> TypesRequiringMainThread { get; set; }
+            internal ImmutableArray<CommonInterest.TypeMatchSpec> MembersRequiringMainThread { get; set; }
 
             internal HashSet<IMethodSymbol> MethodsDeclaringUIThreadRequirement { get; set; }
 
@@ -362,9 +362,7 @@
                 }
 
                 bool requiresUIThread = (type.TypeKind == TypeKind.Interface || type.TypeKind == TypeKind.Class)
-                    && this.TypesRequiringMainThread.Contains(type);
-                requiresUIThread |= symbol?.Name == "GetService" && type.Name == "Package" && type.BelongsToNamespace(Namespaces.MicrosoftVisualStudioShell);
-                requiresUIThread |= symbol != null && !symbol.IsStatic && type.Name == "ServiceProvider" && type.BelongsToNamespace(Namespaces.MicrosoftVisualStudioShell);
+                    && this.MembersRequiringMainThread.Contains(type, symbol);
 
                 if (requiresUIThread)
                 {
