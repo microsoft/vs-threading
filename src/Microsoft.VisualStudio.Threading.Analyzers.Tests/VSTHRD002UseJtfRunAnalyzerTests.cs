@@ -338,7 +338,7 @@ class ProjectProperties {
     void F() {
         jtf.Run(async delegate {
             await Task.Yield();
-        }); 
+        });
     }
 }
 ";
@@ -359,7 +359,7 @@ class ProjectProperties {
     void F() {
         var jt = jtf.RunAsync(async delegate {
             await Task.Yield();
-        }); 
+        });
         jt.Join();
     }
 }
@@ -383,6 +383,30 @@ class ProjectProperties {
             t => exceptionHandler(t.Exception.InnerException),
             CancellationToken.None,
             TaskContinuationOptions.OnlyOnFaulted,
+            TaskScheduler.Default);
+    }
+}
+";
+            this.VerifyCSharpDiagnostic(test);
+        }
+
+        [Fact]
+        public void AnonymousDelegateWithExplicitCast()
+        {
+            var test = @"
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class ProjectProperties {
+    public void Start(JoinableTask joinableTask, object registration)
+    {
+        joinableTask.Task.ContinueWith(
+            (_, state) => ((CancellationTokenRegistration)state).Dispose(),
+            registration,
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
             TaskScheduler.Default);
     }
 }

@@ -145,7 +145,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                         // Are we accessing a member of the completed task?
                         ISymbol invokedObjectSymbol = context.SemanticModel.GetSymbolInfo(memberAccessSyntax.Expression).Symbol;
                         IParameterSymbol completedTask = context.SemanticModel.GetDeclaredSymbol(firstParameter);
-                        if (invokedObjectSymbol.Equals(completedTask))
+                        if (EqualityComparer<ISymbol>.Default.Equals(invokedObjectSymbol, completedTask))
                         {
                             // Skip analysis since Task.Result (et. al) of a completed Task is fair game.
                             return;
