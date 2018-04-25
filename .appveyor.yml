@@ -18,10 +18,8 @@ environment:
   VisualStudioVersion: 15.0
   TreatWarningsAsErrors: true
   CodeAnalysisTreatWarningsAsErrors: true
-before_build:
-  msbuild src\Microsoft.VisualStudio.Threading.sln /nologo /m /v:quiet /t:restore
 build_script:
-- msbuild src\Microsoft.VisualStudio.Threading.sln /nologo /m /fl /v:minimal /t:build,pack
+- msbuild src /nologo /m /fl /v:minimal /restore /t:build,pack
 test_script:
 - >-
     md "bin\%configuration%"
