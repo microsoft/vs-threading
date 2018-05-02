@@ -2588,9 +2588,58 @@
             await readlockTask.WithTimeout(UnexpectedTimeout);
         }
 
-#endregion
+        [Fact]
+        public async Task CancelWriteLockUnblocksReadLocks()
+        {
+            var firstReadLockAcquired = new AsyncManualResetEvent();
+            var firstReadLockToRelease = new AsyncManualResetEvent();
+            var firstReadLockTask = Task.Run(async () =>
+            {
+                using (await this.asyncLock.ReadLockAsync())
+                {
+                    firstReadLockAcquired.Set();
+                    await firstReadLockToRelease.WaitAsync();
+                }
+            });
 
-#region Completion tests
+            await firstReadLockAcquired.WaitAsync();
+            var cancellationSource = new CancellationTokenSource();
+            var writeLockAwaiter = this.asyncLock.WriteLockAsync(cancellationSource.Token).GetAwaiter();
+            Assert.False(writeLockAwaiter.IsCompleted);
+
+            writeLockAwaiter.OnCompleted(delegate
+            {
+                try
+                {
+                    writeLockAwaiter.GetResult();
+                }
+                catch (OperationCanceledException)
+                {
+                }
+            });
+
+            var readLockAwaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
+            var secondReadLockAcquired = new AsyncManualResetEvent();
+            Assert.False(readLockAwaiter.IsCompleted);
+
+            readLockAwaiter.OnCompleted(delegate
+            {
+                using (readLockAwaiter.GetResult())
+                {
+                    secondReadLockAcquired.Set();
+                }
+            });
+
+            cancellationSource.Cancel();
+            await secondReadLockAcquired.WaitAsync();
+
+            firstReadLockToRelease.Set();
+            await firstReadLockTask;
+        }
+
+        #endregion
+
+        #region Completion tests
 
 #if DESKTOP || NETCOREAPP2_0
         [StaFact]

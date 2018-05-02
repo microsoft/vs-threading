@@ -2423,7 +2423,17 @@ namespace Microsoft.VisualStudio.Threading
                 // We're in a race with the lock suddenly becoming available.
                 // Our control in the race is asking the lock class to execute for us (within their private lock).
                 // unblock the awaiter immediately (which will then experience an OperationCanceledException).
-                awaiter.lck.ExecuteOrHandleCancellation(awaiter, stillInQueue: true);
+                if (awaiter.lck.ExecuteOrHandleCancellation(awaiter, stillInQueue: true))
+                {
+                    // A pending write lock can block read locks, so we need issue them when the request is cancelled.
+                    if (awaiter.Kind == LockKind.Write)
+                    {
+                        lock (awaiter.OwningLock.SyncObject)
+                        {
+                            awaiter.OwningLock.TryInvokeLockConsumer(searchAllWaiters: false);
+                        }
+                    }
+                }
 
                 // Release memory of the registered handler, since we only need it to fire once.
                 awaiter.cancellationRegistration.Dispose();
