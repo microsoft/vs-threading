@@ -2637,6 +2637,108 @@
             await firstReadLockTask;
         }
 
+        [Fact]
+        public async Task CancelWriteLockUnblocksUpgradeableReadLocks()
+        {
+            var firstReadLockAcquired = new AsyncManualResetEvent();
+            var firstReadLockToRelease = new AsyncManualResetEvent();
+            var firstReadLockTask = Task.Run(async () =>
+            {
+                using (await this.asyncLock.ReadLockAsync())
+                {
+                    firstReadLockAcquired.Set();
+                    await firstReadLockToRelease.WaitAsync();
+                }
+            });
+
+            await firstReadLockAcquired.WaitAsync();
+            var cancellationSource = new CancellationTokenSource();
+            var writeLockAwaiter = this.asyncLock.WriteLockAsync(cancellationSource.Token).GetAwaiter();
+            Assert.False(writeLockAwaiter.IsCompleted);
+
+            writeLockAwaiter.OnCompleted(delegate
+            {
+                try
+                {
+                    writeLockAwaiter.GetResult();
+                }
+                catch (OperationCanceledException)
+                {
+                }
+            });
+
+            var upgradeableReadLockAwaiter = this.asyncLock.UpgradeableReadLockAsync().GetAwaiter();
+            var upgradeableReadLockAcquired = new AsyncManualResetEvent();
+            Assert.False(upgradeableReadLockAwaiter.IsCompleted);
+
+            upgradeableReadLockAwaiter.OnCompleted(delegate
+            {
+                using (upgradeableReadLockAwaiter.GetResult())
+                {
+                    upgradeableReadLockAcquired.Set();
+                }
+            });
+
+            cancellationSource.Cancel();
+            await upgradeableReadLockAcquired.WaitAsync();
+
+            firstReadLockToRelease.Set();
+            await firstReadLockTask;
+        }
+
+        [Fact]
+        public async Task CancelWriteLockDoesNotUnblocksReadLocksIncorrectly()
+        {
+            var firstWriteLockAcquired = new AsyncManualResetEvent();
+            var firstWriteLockToRelease = new AsyncManualResetEvent();
+            var firstCancellationSource = new CancellationTokenSource();
+            var firstWriteLockTask = Task.Run(async () =>
+            {
+                using (await this.asyncLock.WriteLockAsync(firstCancellationSource.Token))
+                {
+                    firstWriteLockAcquired.Set();
+                    await firstWriteLockToRelease.WaitAsync();
+                }
+            });
+
+            await firstWriteLockAcquired.WaitAsync();
+            var cancellationSource = new CancellationTokenSource();
+            var writeLockAwaiter = this.asyncLock.WriteLockAsync(cancellationSource.Token).GetAwaiter();
+            Assert.False(writeLockAwaiter.IsCompleted);
+
+            writeLockAwaiter.OnCompleted(delegate
+            {
+                try
+                {
+                    writeLockAwaiter.GetResult();
+                }
+                catch (OperationCanceledException)
+                {
+                }
+            });
+
+            var readLockAwaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
+            var readLockAcquired = new AsyncManualResetEvent();
+            Assert.False(readLockAwaiter.IsCompleted);
+
+            readLockAwaiter.OnCompleted(delegate
+            {
+                using (readLockAwaiter.GetResult())
+                {
+                    readLockAcquired.Set();
+                }
+            });
+
+            cancellationSource.Cancel();
+            firstCancellationSource.Cancel();
+            Assert.False(readLockAcquired.WaitAsync().Wait(AsyncDelay));
+
+            firstWriteLockToRelease.Set();
+            await firstWriteLockAcquired;
+
+            await readLockAcquired.WaitAsync();
+        }
+
         #endregion
 
         #region Completion tests
