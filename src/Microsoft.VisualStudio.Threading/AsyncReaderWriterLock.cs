@@ -640,11 +640,14 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Get the task scheduler to execute the continuation when the lock is aquired.
-        ///  AsyncReaderWriterLock uses a special <see cref="SynchronizationContext"/> to handle execusive locks, and will ignore task scheduler provided, so this is only used in a Reader lock scenario.
+        /// Get the task scheduler to execute the continuation when the lock is acquired.
+        ///  AsyncReaderWriterLock uses a special <see cref="SynchronizationContext"/> to handle execusive locks, and will ignore task scheduler provided, so this is only used in a read lock scenario.
+        /// This method is called within the execution context to wait the read lock, so it can pick up <see cref="TaskScheduler"/> based on the current execution context.
+        /// Note: the task scheduler is only used, when the lock is issued later.  If the lock is issued immediately when <see cref="CanCurrentThreadHoldActiveLock"/> returns true, it will be ignored.
         /// </summary>
         /// <returns>A task scheduler to schedule the continutation task when a lock is issued.</returns>
-        protected virtual TaskScheduler GetTaskSchedulerForLockRequest()
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
+        protected virtual TaskScheduler GetTaskSchedulerForReadLockRequest()
         {
             return TaskScheduler.Default;
         }
@@ -2474,7 +2477,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     if (this.Kind == LockKind.Read)
                     {
-                        this.continuationTaskScheduler = this.OwningLock.GetTaskSchedulerForLockRequest();
+                        this.continuationTaskScheduler = this.OwningLock.GetTaskSchedulerForReadLockRequest();
                     }
 
                     this.cancellationRegistration = this.cancellationToken.Register(CancellationResponseAction, this, useSynchronizationContext: false);

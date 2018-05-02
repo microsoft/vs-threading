@@ -4855,7 +4855,7 @@
 
             public SemaphoreSlim ScheduleSemaphore { get; } = new SemaphoreSlim(0);
 
-            protected override TaskScheduler GetTaskSchedulerForLockRequest()
+            protected override TaskScheduler GetTaskSchedulerForReadLockRequest()
             {
                 return this.scheduler;
             }
