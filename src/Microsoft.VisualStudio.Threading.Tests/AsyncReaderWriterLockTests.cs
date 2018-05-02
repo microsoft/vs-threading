@@ -4019,6 +4019,52 @@
             await testResultSource.Task;
         }
 
+        [Fact]
+        public async Task ReadLockAsync_UseTaskScheduler()
+        {
+            var asyncLock = new AsyncReaderWriterLockWithSpecialScheduler();
+            Assumes.Equals(0, asyncLock.StartedTaskCount);
+
+            // A reader lock issued immediately will not be rescheduled.
+            using (await asyncLock.ReadLockAsync())
+            {
+            }
+            Assumes.Equals(0, asyncLock.StartedTaskCount);
+
+            var writeLockObtained = new AsyncManualResetEvent();
+            var readLockObtained = new AsyncManualResetEvent();
+            var writeLockToRelease = new AsyncManualResetEvent();
+            var writeLockTask = Task.Run(async () =>
+            {
+                using (await asyncLock.WriteLockAsync())
+                {
+                    // Write lock is not scheduled through the read lock scheduler.
+                    Assumes.Equals(0, asyncLock.StartedTaskCount);
+                    writeLockObtained.Set();
+                    await writeLockToRelease.WaitAsync();
+                }
+            });
+
+            await writeLockObtained.WaitAsync();
+            var readLockTask = Task.Run(async () =>
+            {
+                using (await asyncLock.ReadLockAsync())
+                {
+                    // Newly issued read lock is using the task scheduler.
+                    Assumes.Equals(1, asyncLock.StartedTaskCount);
+                    readLockObtained.Set();
+                }
+            });
+
+            await asyncLock.ScheduleSemaphore.WaitAsync();
+            writeLockToRelease.Set();
+
+            await writeLockTask;
+            await readLockTask;
+
+            Assumes.Equals(1, asyncLock.StartedTaskCount);
+        }
+
         [StaFact]
         public void Disposable()
         {
@@ -4792,6 +4838,61 @@
             {
                 using (await this.ReadLockAsync())
                 {
+                }
+            }
+        }
+
+        private class AsyncReaderWriterLockWithSpecialScheduler : AsyncReaderWriterLock
+        {
+            private readonly SpecialTaskScheduler scheduler;
+
+            public AsyncReaderWriterLockWithSpecialScheduler()
+            {
+                this.scheduler = new SpecialTaskScheduler(this.ScheduleSemaphore);
+            }
+
+            public int StartedTaskCount => this.scheduler.StartedTaskCount;
+
+            public SemaphoreSlim ScheduleSemaphore { get; } = new SemaphoreSlim(0);
+
+            protected override TaskScheduler GetTaskSchedulerForLockRequest()
+            {
+                return this.scheduler;
+            }
+
+            protected class SpecialTaskScheduler : TaskScheduler
+            {
+                private readonly SemaphoreSlim schedulerSemaphore;
+                private int startedTaskCount;
+
+                public SpecialTaskScheduler(SemaphoreSlim schedulerSemaphore)
+                {
+                    this.schedulerSemaphore = schedulerSemaphore;
+                }
+
+                public int StartedTaskCount => this.startedTaskCount;
+
+                protected override void QueueTask(Task task)
+                {
+                    ThreadPool.QueueUserWorkItem(
+                        s =>
+                        {
+                            var tuple = (Tuple<SpecialTaskScheduler, Task>)s;
+                            Interlocked.Increment(ref tuple.Item1.startedTaskCount);
+                            tuple.Item1.TryExecuteTask(tuple.Item2);
+                        },
+                        new Tuple<SpecialTaskScheduler, Task>(this, task));
+                    this.schedulerSemaphore.Release();
+                }
+
+                protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
+                {
+                    return false;
+                }
+
+                protected override IEnumerable<Task> GetScheduledTasks()
+                {
+                    throw new NotSupportedException();
                 }
             }
         }

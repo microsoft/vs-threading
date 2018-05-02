@@ -640,6 +640,16 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Get the task scheduler to execute the continuation when the lock is aquired.
+        ///  AsyncReaderWriterLock uses a special <see cref="SynchronizationContext"/> to handle execusive locks, and will ignore task scheduler provided, so this is only used in a Reader lock scenario.
+        /// </summary>
+        /// <returns>A task scheduler to schedule the continutation task when a lock is issued.</returns>
+        protected virtual TaskScheduler GetTaskSchedulerForLockRequest()
+        {
+            return TaskScheduler.Default;
+        }
+
+        /// <summary>
         /// Throws an exception if called on an STA thread.
         /// </summary>
         private void ThrowIfUnsupportedThreadOrSyncContext()
@@ -2113,6 +2123,11 @@ namespace Microsoft.VisualStudio.Threading
             private Action continuationAfterLockIssued;
 
             /// <summary>
+            /// The TaskScheduler to invoke the continuation.
+            /// </summary>
+            private TaskScheduler continuationTaskScheduler;
+
+            /// <summary>
             /// The task from a prior call to <see cref="ReleaseAsync"/>, if any.
             /// </summary>
             private Task releaseAsyncTask;
@@ -2393,7 +2408,7 @@ namespace Microsoft.VisualStudio.Threading
                     }
                     else
                     {
-                        Task.Run(continuation);
+                        Task.Factory.StartNew(continuation, CancellationToken.None, TaskCreationOptions.PreferFairness, this.continuationTaskScheduler ?? TaskScheduler.Default);
                     }
 
                     return true;
@@ -2457,6 +2472,11 @@ namespace Microsoft.VisualStudio.Threading
 
                 try
                 {
+                    if (this.Kind == LockKind.Read)
+                    {
+                        this.continuationTaskScheduler = this.OwningLock.GetTaskSchedulerForLockRequest();
+                    }
+
                     this.cancellationRegistration = this.cancellationToken.Register(CancellationResponseAction, this, useSynchronizationContext: false);
                     this.lck.PendAwaiter(this);
 
