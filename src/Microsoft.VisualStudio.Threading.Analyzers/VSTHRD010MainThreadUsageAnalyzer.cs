@@ -155,6 +155,9 @@
                             case AccessorDeclarationSyntax accessorDeclarationSyntax:
                                 memberNameSyntax = accessorDeclarationSyntax.Keyword;
                                 break;
+                            case ConstructorDeclarationSyntax constructorDeclarationSyntax:
+                                memberNameSyntax = constructorDeclarationSyntax.Identifier;
+                                break;
                         }
                         var location = memberNameSyntax.GetLocation();
                         if (location != null)

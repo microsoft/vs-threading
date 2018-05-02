@@ -120,6 +120,31 @@ class Test {
         }
 
         [Fact]
+        public void TransitiveNoCheck_InCtor()
+        {
+            var test = @"
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    Test() {
+        Foo();
+    }
+
+    void Foo() {
+        VerifyOnUIThread();
+        IVsSolution sln = null;
+        sln.SetProperty(1000, null);
+    }
+
+    void VerifyOnUIThread() {
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 5, 5, 5, 9) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
+        [Fact]
         public void InvokeVsSolutionWithCheck_InCtor()
         {
             var test = @"
