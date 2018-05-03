@@ -557,7 +557,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             var psi = new ProcessStartInfo(testExePath)
             {
                 CreateNoWindow = true,
-                WindowStyle = ProcessWindowStyle.Hidden
+                WindowStyle = ProcessWindowStyle.Hidden,
             };
             Process testExeProcess = Process.Start(psi);
             try
