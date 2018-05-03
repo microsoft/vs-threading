@@ -110,9 +110,12 @@
 
             context.RegisterCompilationStartAction(compilationStartContext =>
             {
-                var mainThreadAssertingMethods = CommonInterest.ReadMethods(compilationStartContext, CommonInterest.FileNamePatternForMethodsThatAssertMainThread).ToImmutableArray();
-                var mainThreadSwitchingMethods = CommonInterest.ReadMethods(compilationStartContext, CommonInterest.FileNamePatternForMethodsThatSwitchToMainThread).ToImmutableArray();
-                var membersRequiringMainThread = CommonInterest.ReadTypesAndMembers(compilationStartContext, CommonInterest.FileNamePatternForMembersRequiringMainThread).ToImmutableArray();
+                var mainThreadAssertingMethods = CommonInterest.ReadMethods(compilationStartContext.Options, CommonInterest.FileNamePatternForMethodsThatAssertMainThread, compilationStartContext.CancellationToken).ToImmutableArray();
+                var mainThreadSwitchingMethods = CommonInterest.ReadMethods(compilationStartContext.Options, CommonInterest.FileNamePatternForMethodsThatSwitchToMainThread, compilationStartContext.CancellationToken).ToImmutableArray();
+                var membersRequiringMainThread = CommonInterest.ReadTypesAndMembers(compilationStartContext.Options, CommonInterest.FileNamePatternForMembersRequiringMainThread, compilationStartContext.CancellationToken).ToImmutableArray();
+                var diagnosticProperties = ImmutableDictionary<string, string>.Empty
+                    .Add(CommonInterest.FileNamePatternForMethodsThatAssertMainThread.ToString(), string.Join("\n", mainThreadAssertingMethods))
+                    .Add(CommonInterest.FileNamePatternForMethodsThatSwitchToMainThread.ToString(), string.Join("\n", mainThreadSwitchingMethods));
 
                 var methodsDeclaringUIThreadRequirement = new HashSet<IMethodSymbol>();
                 var methodsAssertingUIThreadRequirement = new HashSet<IMethodSymbol>();
@@ -155,6 +158,7 @@
                             Diagnostic diagnostic = Diagnostic.Create(
                                 DescriptorTransitiveMainThreadUser,
                                 primaryLocation,
+                                diagnosticProperties,
                                 Utils.GetFullName(implicitUserMethod),
                                 exampleAssertingMethod);
                             compilationEndContext.ReportDiagnostic(diagnostic);

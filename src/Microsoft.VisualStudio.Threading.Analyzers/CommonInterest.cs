@@ -8,6 +8,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Text.RegularExpressions;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
@@ -160,9 +161,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
         }
 
-        internal static IEnumerable<QualifiedMember> ReadMethods(CompilationStartAnalysisContext context, Regex fileNamePattern)
+        internal static IEnumerable<QualifiedMember> ReadMethods(AnalyzerOptions analyzerOptions, Regex fileNamePattern, CancellationToken cancellationToken)
         {
-            foreach (string line in ReadAdditionalFiles(context, fileNamePattern))
+            foreach (string line in ReadAdditionalFiles(analyzerOptions, fileNamePattern, cancellationToken))
             {
                 Match match = MemberReferenceRegex.Match(line);
                 if (!match.Success)
@@ -178,9 +179,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
         }
 
-        internal static IEnumerable<TypeMatchSpec> ReadTypesAndMembers(CompilationStartAnalysisContext context, Regex fileNamePattern)
+        internal static IEnumerable<TypeMatchSpec> ReadTypesAndMembers(AnalyzerOptions analyzerOptions, Regex fileNamePattern, CancellationToken cancellationToken)
         {
-            foreach (string line in ReadAdditionalFiles(context, fileNamePattern))
+            foreach (string line in ReadAdditionalFiles(analyzerOptions, fileNamePattern, cancellationToken))
             {
                 Match match = NegatableTypeOrMemberReferenceRegex.Match(line);
                 if (!match.Success)
@@ -198,11 +199,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
         }
 
-        internal static IEnumerable<string> ReadAdditionalFiles(CompilationStartAnalysisContext context, Regex fileNamePattern)
+        internal static IEnumerable<string> ReadAdditionalFiles(AnalyzerOptions analyzerOptions, Regex fileNamePattern, CancellationToken cancellationToken)
         {
-            if (context == null)
+            if (analyzerOptions == null)
             {
-                throw new ArgumentNullException(nameof(context));
+                throw new ArgumentNullException(nameof(analyzerOptions));
             }
 
             if (fileNamePattern == null)
@@ -210,10 +211,10 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 throw new ArgumentNullException(nameof(fileNamePattern));
             }
 
-            var lines = from file in context.Options.AdditionalFiles
+            var lines = from file in analyzerOptions.AdditionalFiles
                         let fileName = Path.GetFileName(file.Path)
                         where fileNamePattern.IsMatch(fileName)
-                        let text = file.GetText(context.CancellationToken)
+                        let text = file.GetText(cancellationToken)
                         from line in text.Lines
                         select line;
             foreach (TextLine line in lines)
