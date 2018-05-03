@@ -8,7 +8,7 @@
   </PropertyGroup>
   <ItemGroup Condition=" '$(MSBuildProjectExtension)' != '.vcxproj' ">
     <PackageReference Include="Nerdbank.GitVersioning" Version="2.1.23" PrivateAssets="all" />
-    <PackageReference Include="StyleCop.Analyzers" Version="1.0.2" PrivateAssets="all" />
+    <PackageReference Include="StyleCop.Analyzers" Version="1.1.0-beta006" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
     <AdditionalFiles Include="$(MSBuildThisFileDirectory)stylecop.json" />

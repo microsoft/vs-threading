@@ -156,6 +156,7 @@
                                 memberNameSyntax = accessorDeclarationSyntax.Keyword;
                                 break;
                         }
+
                         var location = memberNameSyntax.GetLocation();
                         if (location != null)
                         {

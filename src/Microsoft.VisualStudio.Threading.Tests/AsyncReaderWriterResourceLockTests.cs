@@ -624,15 +624,15 @@
                         var resource2 = await access.GetResourceAsync(2);
                     }
                 }),
-            Task.Run(async delegate
-            {
-                // This is the part of the test that ensures that preparation is executed concurrently
-                // across resources.  If concurrency were not allowed, this would deadlock as we won't
-                // complete the first resource's preparation until the second one has begun.
-                await Task.WhenAll(preparationEnteredTask1, preparationEnteredTask2);
-                resourceTask1.SetResult(null);
-                resourceTask2.SetResult(null);
-            }));
+                Task.Run(async delegate
+                {
+                    // This is the part of the test that ensures that preparation is executed concurrently
+                    // across resources.  If concurrency were not allowed, this would deadlock as we won't
+                    // complete the first resource's preparation until the second one has begun.
+                    await Task.WhenAll(preparationEnteredTask1, preparationEnteredTask2);
+                    resourceTask1.SetResult(null);
+                    resourceTask2.SetResult(null);
+                }));
         }
 
         /// <summary>
