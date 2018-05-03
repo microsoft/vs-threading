@@ -230,7 +230,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             memoryAfterKeyAndBeforeDictionary = GC.GetTotalMemory(true);
             return new WeakKeyDictionary<string, string>
             {
-                [k1] = v1
+                [k1] = v1,
             };
         }
     }

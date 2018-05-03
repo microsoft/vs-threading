@@ -24,7 +24,7 @@
                     Id = VSTHRD106UseInvokeAsyncForAsyncEventsAnalyzer.Id,
                     SkipVerifyMessage = true,
                     Severity = DiagnosticSeverity.Warning,
-                    Locations = new[] { locations[i] }
+                    Locations = new[] { locations[i] },
                 };
             }
 
