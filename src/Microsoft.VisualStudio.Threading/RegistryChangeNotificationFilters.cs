@@ -44,7 +44,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Notify the caller of changes to the security descriptor of the key.
         /// Corresponds to Win32 value REG_NOTIFY_CHANGE_SECURITY.
         /// </summary>
-        Security = 0x8
+        Security = 0x8,
     }
 }
 
