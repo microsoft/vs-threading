@@ -130,6 +130,7 @@
                         MembersRequiringMainThread = membersRequiringMainThread,
                         MethodsDeclaringUIThreadRequirement = methodsDeclaringUIThreadRequirement,
                         MethodsAssertingUIThreadRequirement = methodsAssertingUIThreadRequirement,
+                        DiagnosticProperties = diagnosticProperties,
                     };
                     codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeInvocation), SyntaxKind.InvocationExpression);
                     codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeMemberAccess), SyntaxKind.SimpleMemberAccessExpression);
@@ -282,6 +283,8 @@
 
             internal HashSet<IMethodSymbol> MethodsAssertingUIThreadRequirement { get; set; }
 
+            internal ImmutableDictionary<string, string> DiagnosticProperties { get; set; }
+
             internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
             {
                 var invocationSyntax = (InvocationExpressionSyntax)context.Node;
@@ -388,7 +391,7 @@
                         Location location = focusDiagnosticOn ?? context.Node.GetLocation();
                         var exampleAssertingMethod = this.MainThreadAssertingMethods.FirstOrDefault();
                         var descriptor = exampleAssertingMethod.Name != null ? Descriptor : DescriptorNoAssertingMethod;
-                        context.ReportDiagnostic(Diagnostic.Create(descriptor, location, type.Name, exampleAssertingMethod));
+                        context.ReportDiagnostic(Diagnostic.Create(descriptor, location, this.DiagnosticProperties, type.Name,  exampleAssertingMethod));
                         return true;
                     }
                 }

@@ -6,7 +6,7 @@
     using Xunit;
     using Xunit.Abstractions;
 
-    public class VSTHRD010MainThreadUsageAnalyzerTests : DiagnosticVerifier
+    public class VSTHRD010MainThreadUsageAnalyzerTests : CodeFixVerifier
     {
         private DiagnosticResult expect = new DiagnosticResult
         {
@@ -20,10 +20,9 @@
         {
         }
 
-        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
-        {
-            return new VSTHRD010MainThreadUsageAnalyzer();
-        }
+        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer() => new VSTHRD010MainThreadUsageAnalyzer();
+
+        protected override CodeFixProvider GetCSharpCodeFixProvider() => new VSTHRD010MainThreadUsageCodeFix();
 
         [Fact]
         public void InvokeVsReferenceOutsideMethod()
@@ -77,8 +76,21 @@ class Test {
     }
 }
 ";
+            var fix = @"
+using System;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    void F() {
+        Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();
+        IVsSolution sln = null;
+        sln.SetProperty(1000, null);
+    }
+}
+";
             this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 13, 8, 24) };
             this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, fix);
         }
 
         [Fact]
@@ -123,6 +135,7 @@ class Test {
         public void TransitiveNoCheck_InCtor()
         {
             var test = @"
+using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 
 class Test {
@@ -136,12 +149,54 @@ class Test {
         sln.SetProperty(1000, null);
     }
 
-    void VerifyOnUIThread() {
+    static void VerifyOnUIThread() {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 6, 9, 6, 12) };
+            var fix1 = @"
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    Test() {
+        Test.VerifyOnUIThread();
+        Foo();
+    }
+
+    void Foo() {
+        VerifyOnUIThread();
+        IVsSolution sln = null;
+        sln.SetProperty(1000, null);
+    }
+
+    static void VerifyOnUIThread() {
+    }
+}
+";
+            var fix2 = @"
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    Test() {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        Foo();
+    }
+
+    void Foo() {
+        VerifyOnUIThread();
+        IVsSolution sln = null;
+        sln.SetProperty(1000, null);
+    }
+
+    static void VerifyOnUIThread() {
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 9, 7, 12) };
             this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, fix1, codeAction => codeAction.Title.Contains("VerifyOnUIThread"));
+            this.VerifyCSharpFix(test, fix2, codeAction => codeAction.Title.Contains("ThrowIfNotOnUIThread"));
         }
 
         [Fact]

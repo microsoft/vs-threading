@@ -56,9 +56,11 @@
                 {
                     // We can only offer fixes when they involve adding calls to static methods, since otherwise we don't know
                     // where to find the instance on which to invoke the method.
+                    // TODO: find static fields/properties that return the matching type from other (non-generic) types.
+                    // TODO: also, if we're in an instance member, check instance fields/properties on `this`
                     var (typeName, methodName) = SplitTypeAndMethodNames(option);
                     var proposedType = semanticModel.Compilation.GetTypeByMetadataName(typeName);
-                    var proposedMethod = proposedType?.GetMembers(methodName).FirstOrDefault();
+                    var proposedMethod = proposedType?.GetMembers(methodName).OfType<IMethodSymbol>().FirstOrDefault(m => !m.Parameters.Any(p => !p.HasExplicitDefaultValue));
                     if (proposedMethod?.IsStatic ?? false)
                     {
                         Func<CancellationToken, Task<Document>> fix = cancellationToken =>

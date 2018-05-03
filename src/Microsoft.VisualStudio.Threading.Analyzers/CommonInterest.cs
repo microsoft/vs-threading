@@ -354,7 +354,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     && symbol.BelongsToNamespace(this.Namespace);
             }
 
-            public override string ToString() => string.Join(".", this.Namespace) + "." + this.Name;
+            public override string ToString() => string.Join(".", this.Namespace.Concat(new[] { this.Name }));
         }
 
         internal struct QualifiedMember
