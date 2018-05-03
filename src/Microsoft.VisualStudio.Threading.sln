@@ -10,7 +10,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{AA091F9F-B40A-466F-B09F-22EAD115996F}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
-		..\appveyor.yml = ..\appveyor.yml
+		..\.appveyor.yml = ..\.appveyor.yml
 		Directory.Build.props = Directory.Build.props
 		..\nuget.config = ..\nuget.config
 		stylecop.json = stylecop.json
