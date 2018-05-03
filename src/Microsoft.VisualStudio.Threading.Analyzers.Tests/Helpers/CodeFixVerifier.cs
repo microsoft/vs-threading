@@ -126,7 +126,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
             var attempts = analyzerDiagnostics.Length;
 
             // We'll go through enough for each diagnostic to be caught once
-            for (int i = 0; i < attempts; ++i)
+            bool fixApplied = false;
+            for (int i = 0; i < attempts && analyzerDiagnostics.Length > 0; ++i)
             {
                 var diagnostic = analyzerDiagnostics[0]; // just get the first one -- the list gets smaller with each loop.
                 var document = project.GetDocument(diagnostic.Location.SourceTree);
@@ -135,11 +136,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 codeFixProvider.RegisterCodeFixesAsync(context).Wait();
                 if (!actions.Any())
                 {
-                    continue;
+                    break;
                 }
 
                 var action = codeFixChooser != null ? actions.Single(codeFixChooser) : actions.Single();
                 document = ApplyFix(document, action);
+                fixApplied = true;
                 project = document.Project;
 
                 this.logger.WriteLine("Code after fix:\n{0}", document.GetSyntaxRootAsync().Result.ToFullString());
@@ -162,6 +164,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                             document.GetSyntaxRootAsync().Result.ToFullString()));
                 }
             }
+
+            Assert.True(fixApplied, "No code fix offered.");
 
             // After applying all of the code fixes, compare the resulting string to the inputted one
             int j = 0;

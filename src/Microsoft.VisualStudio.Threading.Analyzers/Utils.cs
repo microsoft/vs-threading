@@ -166,6 +166,46 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return currentNamespace?.IsGlobalNamespace ?? false;
         }
 
+        /// <summary>
+        /// Finds the local function, anonymous function, method, accessor, or ctor that most directly owns a given syntax node.
+        /// </summary>
+        /// <param name="syntaxNode">The syntax node to begin the search from.</param>
+        /// <returns>The containing function, and metadata for it.</returns>
+        internal static (CSharpSyntaxNode Function, bool IsAsync, CSharpSyntaxNode BlockOrExpression) GetContainingFunction(CSharpSyntaxNode syntaxNode)
+        {
+            while (syntaxNode != null)
+            {
+                if (syntaxNode is SimpleLambdaExpressionSyntax simpleLambda)
+                {
+                    return (simpleLambda, simpleLambda.AsyncKeyword != default(SyntaxToken), simpleLambda.Body);
+                }
+
+                if (syntaxNode is AnonymousMethodExpressionSyntax anonymousMethod)
+                {
+                    return (anonymousMethod, anonymousMethod.AsyncKeyword != default(SyntaxToken), anonymousMethod.Body);
+                }
+
+                if (syntaxNode is ParenthesizedLambdaExpressionSyntax lambda)
+                {
+                    return (lambda, lambda.AsyncKeyword != default(SyntaxToken), lambda.Body);
+                }
+
+                if (syntaxNode is AccessorDeclarationSyntax accessor)
+                {
+                    return (accessor, false, accessor.Body);
+                }
+
+                if (syntaxNode is BaseMethodDeclarationSyntax method)
+                {
+                    return (method, method.Modifiers.Any(SyntaxKind.AsyncKeyword), method.Body);
+                }
+
+                syntaxNode = (CSharpSyntaxNode)syntaxNode.Parent;
+            }
+
+            return (null, false, null);
+        }
+
         internal static bool HasAsyncCompatibleReturnType(this IMethodSymbol methodSymbol)
         {
             return methodSymbol?.ReturnType?.Name == nameof(Task) && methodSymbol.ReturnType.BelongsToNamespace(Namespaces.SystemThreadingTasks);
