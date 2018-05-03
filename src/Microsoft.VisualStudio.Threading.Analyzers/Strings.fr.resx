@@ -154,6 +154,6 @@ Attendez d’abord JoinableTaskFactory.SwitchToMainThreadAsync().</value>
   </data>
   <data name="VSTHRD010_MessageFormat_TransitiveMainThreadUser" xml:space="preserve">
     <value>Ajoutez un appel à {0}() au début du corps du membre parce que ce membre appelle d’autres membres qui nécessitent le thread principal.</value>
-    <comment>{0} is a method name.</comment>
+    <comment>All placeholders are to type or member names.</comment>
   </data>
 </root>

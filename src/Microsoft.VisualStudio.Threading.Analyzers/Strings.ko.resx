@@ -154,6 +154,6 @@ Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</value>
   </data>
   <data name="VSTHRD010_MessageFormat_TransitiveMainThreadUser" xml:space="preserve">
     <value>이 멤버는 주 스레드가 필요한 다른 멤버를 호출하므로 멤버 본문 시작에 {0}()에 대한 호출을 추가합니다.</value>
-    <comment>{0} is a method name.</comment>
+    <comment>All placeholders are to type or member names.</comment>
   </data>
 </root>

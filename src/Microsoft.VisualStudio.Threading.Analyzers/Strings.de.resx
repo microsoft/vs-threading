@@ -154,6 +154,6 @@ Rufen Sie zuerst "await JoinableTaskFactory.SwitchToMainThreadAsync()" auf.</val
   </data>
   <data name="VSTHRD010_MessageFormat_TransitiveMainThreadUser" xml:space="preserve">
     <value>Fügen Sie den Aufruf an "{0}()" am Beginn des Elementtexts hinzu, weil dieses Element andere Elemente aufruft, für die der Hauptthread erforderlich ist.</value>
-    <comment>{0} is a method name.</comment>
+    <comment>All placeholders are to type or member names.</comment>
   </data>
 </root>

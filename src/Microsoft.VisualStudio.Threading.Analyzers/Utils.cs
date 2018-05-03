@@ -13,6 +13,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Linq;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using CodeAnalysis.CSharp;
@@ -622,6 +623,34 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
 
             return SyntaxFactory.QualifiedName(result, simpleName);
+        }
+
+        internal static string GetFullName(ISymbol symbol)
+        {
+            if (symbol == null)
+            {
+                throw new ArgumentNullException(nameof(symbol));
+            }
+
+            var sb = new StringBuilder();
+            sb.Append(symbol.Name);
+            while (symbol.ContainingType != null)
+            {
+                sb.Insert(0, symbol.ContainingType.Name + ".");
+                symbol = symbol.ContainingType;
+            }
+
+            while (symbol.ContainingNamespace != null)
+            {
+                if (!string.IsNullOrEmpty(symbol.ContainingNamespace.Name))
+                {
+                    sb.Insert(0, symbol.ContainingNamespace.Name + ".");
+                }
+
+                symbol = symbol.ContainingNamespace;
+            }
+
+            return sb.ToString();
         }
 
         /// <summary>

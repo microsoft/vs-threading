@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en-US" target-language="tr" original="MICROSOFT.VISUALSTUDIO.THREADING.ANALYZERS/STRINGS.RESX" tool-id="MultilingualAppToolkit" product-name="n/a" product-version="n/a" build-num="n/a">
     <header>
@@ -191,9 +191,10 @@ Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</note>
         </trans-unit>
         <trans-unit id="VSTHRD010_MessageFormat_TransitiveMainThreadUser" translate="yes" xml:space="preserve">
-          <source>Add call to {0}() at start of member body because this member invokes other members that require the main thread.</source>
-          <target state="translated">Bu üye, ana iş parçacığını gerektiren diğer üyeleri çağırdığından üye gövdesinin başına {0}() araması ekleyin.</target>
-          <note from="MultilingualBuild" annotates="source" priority="2">{0} is a method name.</note>
+          <source>Accessing this type or member must be done on the main thread. "{0}" should start with a statement to assert this condition. For example: "{1}();"</source>
+          <target state="needs-review-translation">Bu üye, ana iş parçacığını gerektiren diğer üyeleri çağırdığından üye gövdesinin başına {0}() araması ekleyin.</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
+          <note from="MultilingualBuild" annotates="source" priority="2">All placeholders are to type or member names.</note>
         </trans-unit>
       </group>
     </body>
