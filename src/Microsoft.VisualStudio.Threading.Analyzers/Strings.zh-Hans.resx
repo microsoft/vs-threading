@@ -154,6 +154,6 @@
   </data>
   <data name="VSTHRD010_MessageFormat_TransitiveMainThreadUser" xml:space="preserve">
     <value>在成员体的开头添加对 {0}() 的调用，因为此成员调用其他需要主线程的成员。</value>
-    <comment>{0} is a method name.</comment>
+    <comment>All placeholders are to type or member names.</comment>
   </data>
 </root>

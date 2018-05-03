@@ -164,7 +164,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Add call to {0}() at start of member body because this member invokes other members that require the main thread..
+        ///   Looks up a localized string similar to Accessing this type or member must be done on the main thread. &quot;{0}&quot; should start with a statement to assert this condition. For example: &quot;{1}();&quot;.
         /// </summary>
         internal static string VSTHRD010_MessageFormat_TransitiveMainThreadUser {
             get {

@@ -120,6 +120,31 @@ class Test {
         }
 
         [Fact]
+        public void TransitiveNoCheck_InCtor()
+        {
+            var test = @"
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    Test() {
+        Foo();
+    }
+
+    void Foo() {
+        VerifyOnUIThread();
+        IVsSolution sln = null;
+        sln.SetProperty(1000, null);
+    }
+
+    void VerifyOnUIThread() {
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 6, 9, 6, 12) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
+        [Fact]
         public void InvokeVsSolutionWithCheck_InCtor()
         {
             var test = @"
@@ -268,6 +293,43 @@ class Test {
         }
 
         [Fact]
+        public void RequiresUIThreadTransitive_MultipleInMember()
+        {
+            var test = @"
+using System;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    void F() {
+        VerifyOnUIThread();
+        IVsSolution sln = null;
+        sln.SetProperty(1000, null);
+    }
+
+    void G() {
+        VerifyOnUIThread();
+        IVsSolution sln = null;
+        sln.SetProperty(1000, null);
+    }
+
+    void H() {
+        F();
+        G();
+    }
+
+    void VerifyOnUIThread() { }
+}
+";
+
+            var expect = new DiagnosticResult[]
+            {
+                this.CreateDiagnostic(19, 9, 19, 10),
+                this.CreateDiagnostic(20, 9, 20, 10),
+            };
+            this.VerifyCSharpDiagnostic(test, expect);
+        }
+
+        [Fact]
         public void RequiresUIThreadTransitive()
         {
             var test = @"
@@ -328,27 +390,18 @@ class Test {
     }
 }
 ";
-            DiagnosticResult CreateDiagnostic(int line, int column, int endLine, int endColumn) =>
-                new DiagnosticResult
-                {
-                    Id = this.expect.Id,
-                    Message = this.expect.Message,
-                    SkipVerifyMessage = this.expect.SkipVerifyMessage,
-                    Severity = this.expect.Severity,
-                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", line, column, endLine, endColumn) },
-                };
             var expect = new DiagnosticResult[]
             {
-                CreateDiagnostic(12, 10, 12, 11),
-                CreateDiagnostic(16, 10, 16, 11),
-                CreateDiagnostic(21, 9, 21, 12),
-                CreateDiagnostic(32, 9, 32, 12),
-                CreateDiagnostic(35, 9, 35, 33),
-                CreateDiagnostic(36, 9, 36, 34),
-                CreateDiagnostic(37, 9, 37, 34),
-                CreateDiagnostic(43, 9, 43, 33),
-                CreateDiagnostic(44, 9, 44, 34),
-                CreateDiagnostic(45, 9, 45, 34),
+                this.CreateDiagnostic(13, 9, 13, 10),
+                this.CreateDiagnostic(17, 9, 17, 10),
+                this.CreateDiagnostic(22, 13, 22, 14),
+                this.CreateDiagnostic(32, 16, 32, 17),
+                this.CreateDiagnostic(35, 39, 35, 55),
+                this.CreateDiagnostic(36, 40, 36, 61),
+                this.CreateDiagnostic(37, 40, 37, 69),
+                this.CreateDiagnostic(43, 39, 43, 55),
+                this.CreateDiagnostic(44, 40, 44, 61),
+                this.CreateDiagnostic(45, 40, 45, 69),
             };
             this.VerifyCSharpDiagnostic(test, expect);
         }
@@ -978,5 +1031,15 @@ class A
             };
             this.VerifyCSharpDiagnostic(test, expect);
         }
+
+        private DiagnosticResult CreateDiagnostic(int line, int column, int endLine, int endColumn) =>
+            new DiagnosticResult
+            {
+                Id = this.expect.Id,
+                Message = this.expect.Message,
+                SkipVerifyMessage = this.expect.SkipVerifyMessage,
+                Severity = this.expect.Severity,
+                Locations = new[] { new DiagnosticResultLocation("Test0.cs", line, column, endLine, endColumn) },
+            };
     }
 }

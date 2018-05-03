@@ -154,6 +154,6 @@ Nejprve použijte await JoinableTaskFactory.SwitchToMainThreadAsync().</value>
   </data>
   <data name="VSTHRD010_MessageFormat_TransitiveMainThreadUser" xml:space="preserve">
     <value>Přidejte volání metody {0}() na začátek těla člena, protože tento člen volá jiné členy vyžadující hlavní vlákno.</value>
-    <comment>{0} is a method name.</comment>
+    <comment>All placeholders are to type or member names.</comment>
   </data>
 </root>

@@ -258,7 +258,7 @@ Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</value>
     <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
   <data name="VSTHRD010_MessageFormat_TransitiveMainThreadUser" xml:space="preserve">
-    <value>Add call to {0}() at start of member body because this member invokes other members that require the main thread.</value>
-    <comment>{0} is a method name.</comment>
+    <value>Accessing this type or member must be done on the main thread. "{0}" should start with a statement to assert this condition. For example: "{1}();"</value>
+    <comment>All placeholders are to type or member names.</comment>
   </data>
 </root>

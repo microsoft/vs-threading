@@ -154,6 +154,6 @@
   </data>
   <data name="VSTHRD010_MessageFormat_TransitiveMainThreadUser" xml:space="preserve">
     <value>因為此成員會叫用其他需要主執行緒的成員，所以請在成員主體開頭新增對 {0}() 的呼叫。</value>
-    <comment>{0} is a method name.</comment>
+    <comment>All placeholders are to type or member names.</comment>
   </data>
 </root>

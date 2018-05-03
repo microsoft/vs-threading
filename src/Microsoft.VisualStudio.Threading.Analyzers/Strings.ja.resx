@@ -154,6 +154,6 @@
   </data>
   <data name="VSTHRD010_MessageFormat_TransitiveMainThreadUser" xml:space="preserve">
     <value>メンバー本体の開始時に {0}() への呼び出しを追加します。このメンバーによって、メイン スレッドを必要とする他のメンバーが呼び出されるためです。</value>
-    <comment>{0} is a method name.</comment>
+    <comment>All placeholders are to type or member names.</comment>
   </data>
 </root>

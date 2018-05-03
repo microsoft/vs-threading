@@ -154,6 +154,6 @@
   </data>
   <data name="VSTHRD010_MessageFormat_TransitiveMainThreadUser" xml:space="preserve">
     <value>Добавьте вызов {0}() в начале тела элемента, так как он вызывает другие элементы, которым требуется основной поток.</value>
-    <comment>{0} is a method name.</comment>
+    <comment>All placeholders are to type or member names.</comment>
   </data>
 </root>

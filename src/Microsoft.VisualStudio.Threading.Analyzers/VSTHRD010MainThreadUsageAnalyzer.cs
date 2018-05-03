@@ -116,7 +116,7 @@
 
                 var methodsDeclaringUIThreadRequirement = new HashSet<IMethodSymbol>();
                 var methodsAssertingUIThreadRequirement = new HashSet<IMethodSymbol>();
-                var callerToCalleeMap = new Dictionary<IMethodSymbol, HashSet<IMethodSymbol>>();
+                var callerToCalleeMap = new Dictionary<IMethodSymbol, List<CallInfo>>();
 
                 compilationStartContext.RegisterCodeBlockStartAction<SyntaxKind>(codeBlockStartContext =>
                 {
@@ -145,30 +145,26 @@
                     var transitiveClosureOfMainThreadRequiringMethods = GetTransitiveClosureOfMainThreadRequiringMethods(methodsAssertingUIThreadRequirement, calleeToCallerMap);
                     foreach (var implicitUserMethod in transitiveClosureOfMainThreadRequiringMethods.Except(methodsDeclaringUIThreadRequirement))
                     {
-                        var declarationSyntax = implicitUserMethod.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax(compilationEndContext.CancellationToken);
-                        SyntaxToken memberNameSyntax = default(SyntaxToken);
-                        switch (declarationSyntax)
-                        {
-                            case MethodDeclarationSyntax methodDeclarationSyntax:
-                                memberNameSyntax = methodDeclarationSyntax.Identifier;
-                                break;
-                            case AccessorDeclarationSyntax accessorDeclarationSyntax:
-                                memberNameSyntax = accessorDeclarationSyntax.Keyword;
-                                break;
-                        }
-
-                        var location = memberNameSyntax.GetLocation();
-                        if (location != null)
+                        var locations = from info in callerToCalleeMap[implicitUserMethod]
+                                        where transitiveClosureOfMainThreadRequiringMethods.Contains(info.MethodSymbol)
+                                        group info by info.MethodSymbol into bySymbol
+                                        select bySymbol.First().InvocationSyntax.GetLocation();
+                        foreach (var primaryLocation in locations)
                         {
                             var exampleAssertingMethod = mainThreadAssertingMethods.FirstOrDefault();
-                            compilationEndContext.ReportDiagnostic(Diagnostic.Create(DescriptorTransitiveMainThreadUser, location, exampleAssertingMethod));
+                            Diagnostic diagnostic = Diagnostic.Create(
+                                DescriptorTransitiveMainThreadUser,
+                                primaryLocation,
+                                Utils.GetFullName(implicitUserMethod),
+                                exampleAssertingMethod);
+                            compilationEndContext.ReportDiagnostic(diagnostic);
                         }
                     }
                 });
             });
         }
 
-        private static HashSet<IMethodSymbol> GetTransitiveClosureOfMainThreadRequiringMethods(HashSet<IMethodSymbol> methodsRequiringUIThread, Dictionary<IMethodSymbol, HashSet<IMethodSymbol>> calleeToCallerMap)
+        private static HashSet<IMethodSymbol> GetTransitiveClosureOfMainThreadRequiringMethods(HashSet<IMethodSymbol> methodsRequiringUIThread, Dictionary<IMethodSymbol, List<CallInfo>> calleeToCallerMap)
         {
             var result = new HashSet<IMethodSymbol>();
 
@@ -178,7 +174,7 @@
                 {
                     foreach (var caller in callers)
                     {
-                        MarkMethod(caller);
+                        MarkMethod(caller.MethodSymbol);
                     }
                 }
             }
@@ -191,7 +187,7 @@
             return result;
         }
 
-        private static void AddToCallerCalleeMap(SyntaxNodeAnalysisContext context, Dictionary<IMethodSymbol, HashSet<IMethodSymbol>> callerToCalleeMap)
+        private static void AddToCallerCalleeMap(SyntaxNodeAnalysisContext context, Dictionary<IMethodSymbol, List<CallInfo>> callerToCalleeMap)
         {
             if (Utils.IsWithinNameOf(context.Node))
             {
@@ -211,10 +207,12 @@
             }
 
             ISymbol targetMethod = null;
+            SyntaxNode locationToBlame = context.Node;
             switch (context.Node)
             {
                 case InvocationExpressionSyntax invocationExpressionSyntax:
                     targetMethod = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax.Expression).Symbol;
+                    locationToBlame = invocationExpressionSyntax.Expression;
                     break;
                 case MemberAccessExpressionSyntax memberAccessExpressionSyntax:
                     targetMethod = GetPropertyAccessor(context.SemanticModel.GetSymbolInfo(memberAccessExpressionSyntax.Name).Symbol as IPropertySymbol);
@@ -228,35 +226,42 @@
             {
                 lock (callerToCalleeMap)
                 {
-                    if (!callerToCalleeMap.TryGetValue(caller, out HashSet<IMethodSymbol> callees))
+                    if (!callerToCalleeMap.TryGetValue(caller, out List<CallInfo> callees))
                     {
-                        callerToCalleeMap[caller] = callees = new HashSet<IMethodSymbol>();
+                        callerToCalleeMap[caller] = callees = new List<CallInfo>();
                     }
 
-                    callees.Add(callee);
+                    callees.Add(new CallInfo { MethodSymbol = callee, InvocationSyntax = locationToBlame });
                 }
             }
         }
 
-        private static Dictionary<IMethodSymbol, HashSet<IMethodSymbol>> CreateCalleeToCallerMap(Dictionary<IMethodSymbol, HashSet<IMethodSymbol>> callerToCalleeMap)
+        private static Dictionary<IMethodSymbol, List<CallInfo>> CreateCalleeToCallerMap(Dictionary<IMethodSymbol, List<CallInfo>> callerToCalleeMap)
         {
-            var result = new Dictionary<IMethodSymbol, HashSet<IMethodSymbol>>();
+            var result = new Dictionary<IMethodSymbol, List<CallInfo>>();
 
             foreach (var item in callerToCalleeMap)
             {
                 var caller = item.Key;
                 foreach (var callee in item.Value)
                 {
-                    if (!result.TryGetValue(callee, out var callers))
+                    if (!result.TryGetValue(callee.MethodSymbol, out var callers))
                     {
-                        result[callee] = callers = new HashSet<IMethodSymbol>();
+                        result[callee.MethodSymbol] = callers = new List<CallInfo>();
                     }
 
-                    callers.Add(caller);
+                    callers.Add(new CallInfo { MethodSymbol = caller, InvocationSyntax = callee.InvocationSyntax });
                 }
             }
 
             return result;
+        }
+
+        private struct CallInfo
+        {
+            public IMethodSymbol MethodSymbol { get; set; }
+
+            public SyntaxNode InvocationSyntax { get; set; }
         }
 
         private class MethodAnalyzer

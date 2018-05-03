@@ -154,6 +154,6 @@ Bunun yerine AsyncLazy&lt;T&gt; kullanın.</value>
   </data>
   <data name="VSTHRD010_MessageFormat_TransitiveMainThreadUser" xml:space="preserve">
     <value>Bu üye, ana iş parçacığını gerektiren diğer üyeleri çağırdığından üye gövdesinin başına {0}() araması ekleyin.</value>
-    <comment>{0} is a method name.</comment>
+    <comment>All placeholders are to type or member names.</comment>
   </data>
 </root>
