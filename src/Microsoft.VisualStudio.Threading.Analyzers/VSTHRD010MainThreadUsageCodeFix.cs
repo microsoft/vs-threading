@@ -165,20 +165,20 @@
             bool IsCancellationTokenParameter(IParameterSymbol parameterSymbol) => parameterSymbol.Type.Name == nameof(CancellationToken) && parameterSymbol.Type.BelongsToNamespace(Namespaces.SystemThreading);
         }
 
-        private static (string, string) SplitOffLastElement(string qualifiedName)
+        private static Tuple<string, string> SplitOffLastElement(string qualifiedName)
         {
             if (qualifiedName == null)
             {
-                return (null, null);
+                return Tuple.Create<string, string>(null, null);
             }
 
             int lastPeriod = qualifiedName.LastIndexOf('.');
             if (lastPeriod < 0)
             {
-                return (null, qualifiedName);
+                return Tuple.Create<string, string>(null, qualifiedName);
             }
 
-            return (qualifiedName.Substring(0, lastPeriod), qualifiedName.Substring(lastPeriod + 1));
+            return Tuple.Create(qualifiedName.Substring(0, lastPeriod), qualifiedName.Substring(lastPeriod + 1));
         }
     }
 }

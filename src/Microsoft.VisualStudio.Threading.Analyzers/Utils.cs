@@ -171,39 +171,39 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// </summary>
         /// <param name="syntaxNode">The syntax node to begin the search from.</param>
         /// <returns>The containing function, and metadata for it.</returns>
-        internal static (CSharpSyntaxNode Function, bool IsAsync, ParameterListSyntax ParameterList, CSharpSyntaxNode BlockOrExpression) GetContainingFunction(CSharpSyntaxNode syntaxNode)
+        internal static ContainingFunctionData GetContainingFunction(CSharpSyntaxNode syntaxNode)
         {
             while (syntaxNode != null)
             {
                 if (syntaxNode is SimpleLambdaExpressionSyntax simpleLambda)
                 {
-                    return (simpleLambda, simpleLambda.AsyncKeyword != default(SyntaxToken), SyntaxFactory.ParameterList().AddParameters(simpleLambda.Parameter), simpleLambda.Body);
+                    return new ContainingFunctionData(simpleLambda, simpleLambda.AsyncKeyword != default(SyntaxToken), SyntaxFactory.ParameterList().AddParameters(simpleLambda.Parameter), simpleLambda.Body);
                 }
 
                 if (syntaxNode is AnonymousMethodExpressionSyntax anonymousMethod)
                 {
-                    return (anonymousMethod, anonymousMethod.AsyncKeyword != default(SyntaxToken), anonymousMethod.ParameterList, anonymousMethod.Body);
+                    return new ContainingFunctionData(anonymousMethod, anonymousMethod.AsyncKeyword != default(SyntaxToken), anonymousMethod.ParameterList, anonymousMethod.Body);
                 }
 
                 if (syntaxNode is ParenthesizedLambdaExpressionSyntax lambda)
                 {
-                    return (lambda, lambda.AsyncKeyword != default(SyntaxToken), lambda.ParameterList, lambda.Body);
+                    return new ContainingFunctionData(lambda, lambda.AsyncKeyword != default(SyntaxToken), lambda.ParameterList, lambda.Body);
                 }
 
                 if (syntaxNode is AccessorDeclarationSyntax accessor)
                 {
-                    return (accessor, false, SyntaxFactory.ParameterList(), accessor.Body);
+                    return new ContainingFunctionData(accessor, false, SyntaxFactory.ParameterList(), accessor.Body);
                 }
 
                 if (syntaxNode is BaseMethodDeclarationSyntax method)
                 {
-                    return (method, method.Modifiers.Any(SyntaxKind.AsyncKeyword), method.ParameterList, method.Body);
+                    return new ContainingFunctionData(method, method.Modifiers.Any(SyntaxKind.AsyncKeyword), method.ParameterList, method.Body);
                 }
 
                 syntaxNode = (CSharpSyntaxNode)syntaxNode.Parent;
             }
 
-            return (null, false, null, null);
+            return default(ContainingFunctionData);
         }
 
         internal static bool HasAsyncCompatibleReturnType(this IMethodSymbol methodSymbol)
@@ -806,6 +806,27 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             System.Diagnostics.Debugger.Launch();
 #endif
             return true;
+        }
+
+        internal struct ContainingFunctionData
+        {
+            internal ContainingFunctionData(CSharpSyntaxNode function, bool isAsync, ParameterListSyntax parameterList, CSharpSyntaxNode blockOrExpression)
+            {
+                this.Function = function;
+                this.IsAsync = isAsync;
+                this.ParameterList = parameterList;
+                this.BlockOrExpression = blockOrExpression;
+            }
+
+            internal CSharpSyntaxNode Function { get; set; }
+
+#pragma warning disable AvoidAsyncSuffix // Avoid Async suffix
+            internal bool IsAsync { get; set; }
+#pragma warning restore AvoidAsyncSuffix // Avoid Async suffix
+
+            internal ParameterListSyntax ParameterList { get; set; }
+
+            internal CSharpSyntaxNode BlockOrExpression { get; set; }
         }
 
         private class AwaitCallRewriter : CSharpSyntaxRewriter
