@@ -46,8 +46,20 @@
             string[] options = diagnostic.Properties[lookupKey.ToString()].Split('\n');
             if (options.Length > 0)
             {
+                // For any symbol lookups, we want to consider the position of the very first statement in the block.
+                int positionForLookup = container.BlockOrExpression.GetLocation().SourceSpan.Start + 1;
+
                 var semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
                 var enclosingSymbol = semanticModel.GetEnclosingSymbol(diagnostic.Location.SourceSpan.Start, context.CancellationToken);
+                if (enclosingSymbol == null)
+                {
+                    return;
+                }
+
+                var cancellationTokenSymbol = new Lazy<ISymbol>(() => semanticModel.LookupSymbols(positionForLookup)
+                    .Where(s => (s.IsStatic || !enclosingSymbol.IsStatic) && s.CanBeReferencedByName && IsSymbolTheRightType(s, nameof(CancellationToken), Namespaces.SystemThreading))
+                    .OrderBy(s => s.ContainingSymbol.Equals(enclosingSymbol) ? 1 : s.ContainingType.Equals(enclosingSymbol.ContainingType) ? 2 : 3) // prefer locality
+                    .FirstOrDefault());
                 foreach (var option in options)
                 {
                     var (fullTypeName, methodName) = SplitOffLastElement(option);
@@ -59,7 +71,12 @@
                     }
 
                     var proposedType = semanticModel.Compilation.GetTypeByMetadataName(fullTypeName);
-                    var proposedMethod = proposedType?.GetMembers(methodName).OfType<IMethodSymbol>().FirstOrDefault(m => !m.Parameters.Any(p => !p.HasExplicitDefaultValue));
+
+                    // We're looking for methods that either require no parameters,
+                    // or (if we have one to give) that have just one parameter that is a CancellationToken.
+                    var proposedMethod = proposedType?.GetMembers(methodName).OfType<IMethodSymbol>()
+                        .FirstOrDefault(m => !m.Parameters.Any(p => !p.HasExplicitDefaultValue) ||
+                            (cancellationTokenSymbol.Value != null && m.Parameters.Length == 1 && IsCancellationTokenParameter(m.Parameters[0])));
                     if (proposedMethod == null)
                     {
                         // We can't find it, so don't offer to use it.
@@ -73,13 +90,14 @@
                     else
                     {
                         // Search fields on the declaring type.
-                        // Don't search local variables, since we'd need to dereference it at the top of the function (before they're initialized).
+                        // Consider local variables too, if they're captured in a closure from some surrounding code block
+                        // such that they would presumably be initialized by the time the first statement in our own code block runs.
                         ITypeSymbol enclosingTypeSymbol = enclosingSymbol as ITypeSymbol ?? enclosingSymbol.ContainingType;
                         if (enclosingTypeSymbol != null)
                         {
-                            var candidateMembers = from symbol in semanticModel.LookupSymbols(diagnostic.Location.SourceSpan.Start, enclosingTypeSymbol)
+                            var candidateMembers = from symbol in semanticModel.LookupSymbols(positionForLookup, enclosingTypeSymbol)
                                                    where symbol.IsStatic || !enclosingSymbol.IsStatic
-                                                   where IsSymbolTheRightType(symbol)
+                                                   where IsSymbolTheRightType(symbol, leafTypeName, namespaces)
                                                    select symbol;
                             foreach (var candidate in candidateMembers)
                             {
@@ -88,9 +106,9 @@
                         }
 
                         // Find static fields/properties that return the matching type from other public, non-generic types.
-                        var candidateStatics = from offering in semanticModel.LookupStaticMembers(diagnostic.Location.SourceSpan.Start).OfType<ITypeSymbol>()
+                        var candidateStatics = from offering in semanticModel.LookupStaticMembers(positionForLookup).OfType<ITypeSymbol>()
                                                from symbol in offering.GetMembers()
-                                               where symbol.IsStatic && symbol.CanBeReferencedByName && IsSymbolTheRightType(symbol)
+                                               where symbol.IsStatic && symbol.CanBeReferencedByName && IsSymbolTheRightType(symbol, leafTypeName, namespaces)
                                                select symbol;
                         foreach (var candidate in candidateStatics)
                         {
@@ -98,24 +116,38 @@
                         }
                     }
 
-                    bool IsSymbolTheRightType(ISymbol symbol)
+                    void OfferFix(string fullyQualifiedMethod)
                     {
-                        var fieldSymbol = symbol as IFieldSymbol;
-                        var propertySymbol = symbol as IPropertySymbol;
-                        var memberType = fieldSymbol?.Type ?? propertySymbol?.Type;
-                        return memberType?.Name == leafTypeName && memberType.BelongsToNamespace(namespaces);
+                        context.RegisterCodeFix(CodeAction.Create($"Add call to {fullyQualifiedMethod}", ct => Fix(fullyQualifiedMethod, proposedMethod, cancellationTokenSymbol, ct), $"{container.BlockOrExpression.GetLocation()}-{fullyQualifiedMethod}"), context.Diagnostics);
                     }
                 }
             }
 
-            void OfferFix(string option)
+            bool IsSymbolTheRightType(ISymbol symbol, string typeName, IReadOnlyList<string> namespaces)
             {
-                context.RegisterCodeFix(CodeAction.Create($"Add call to {option}", ct => Fix(option, ct), $"{container.BlockOrExpression.GetLocation()}-{option}"), context.Diagnostics);
+                var fieldSymbol = symbol as IFieldSymbol;
+                var propertySymbol = symbol as IPropertySymbol;
+                var parameterSymbol = symbol as IParameterSymbol;
+                var localSymbol = symbol as ILocalSymbol;
+                var memberType = fieldSymbol?.Type ?? propertySymbol?.Type ?? parameterSymbol?.Type ?? localSymbol?.Type;
+                return memberType?.Name == typeName && memberType.BelongsToNamespace(namespaces);
             }
 
-            Task<Document> Fix(string option, CancellationToken cancellationToken)
+            Task<Document> Fix(string fullyQualifiedMethod, IMethodSymbol methodSymbol, Lazy<ISymbol> cancellationTokenSymbol, CancellationToken cancellationToken)
             {
-                var invocationExpression = SyntaxFactory.InvocationExpression(SyntaxFactory.ParseName(option));
+                var invocationExpression = SyntaxFactory.InvocationExpression(SyntaxFactory.ParseName(fullyQualifiedMethod));
+                var cancellationTokenParameter = methodSymbol.Parameters.FirstOrDefault(IsCancellationTokenParameter);
+                if (cancellationTokenParameter != null && cancellationTokenSymbol.Value != null)
+                {
+                    var arg = SyntaxFactory.Argument(SyntaxFactory.IdentifierName(cancellationTokenSymbol.Value.Name));
+                    if (methodSymbol.Parameters.IndexOf(cancellationTokenParameter) > 0)
+                    {
+                        arg = arg.WithNameColon(SyntaxFactory.NameColon(SyntaxFactory.IdentifierName(cancellationTokenParameter.Name)));
+                    }
+
+                    invocationExpression = invocationExpression.AddArgumentListArguments(arg);
+                }
+
                 ExpressionSyntax awaitExpression = container.IsAsync ? SyntaxFactory.AwaitExpression(invocationExpression) : null;
                 var addedStatement = SyntaxFactory.ExpressionStatement(awaitExpression ?? invocationExpression)
                     .WithAdditionalAnnotations(Simplifier.Annotation, Formatter.Annotation);
@@ -129,6 +161,8 @@
                 var newBlock = initialBlockSyntax.WithStatements(initialBlockSyntax.Statements.Insert(0, addedStatement));
                 return Task.FromResult(context.Document.WithSyntaxRoot(root.ReplaceNode(container.BlockOrExpression, newBlock)));
             }
+
+            bool IsCancellationTokenParameter(IParameterSymbol parameterSymbol) => parameterSymbol.Type.Name == nameof(CancellationToken) && parameterSymbol.Type.BelongsToNamespace(Namespaces.SystemThreading);
         }
 
         private static (string, string) SplitOffLastElement(string qualifiedName)

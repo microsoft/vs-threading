@@ -1094,7 +1094,7 @@ class Test : AsyncPackage {
     Microsoft.VisualStudio.Shell.Interop.IAsyncServiceProvider asp2;
 
     async Task Foo() {
-        await JoinableTaskFactory.SwitchToMainThreadAsync();
+        await JoinableTaskFactory.SwitchToMainThreadAsync(DisposalToken);
         Guid guid = Guid.Empty;
         object shell;
         shell = await asp.GetServiceAsync(typeof(SVsShell)) as IVsShell;
@@ -1120,7 +1120,7 @@ class Test : AsyncPackage {
                 },
             };
             this.VerifyCSharpDiagnostic(test, expect);
-            this.VerifyCSharpFix(test, fix);
+            this.VerifyCSharpFix(test, fix, f => !f.Title.Contains("ThreadHelper"));
         }
 
         [Fact]
@@ -1160,6 +1160,96 @@ class Test : AsyncPackage {
             this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 12, 65, 12, 76) };
             this.VerifyCSharpDiagnostic(test, this.expect);
             this.VerifyCSharpFix(test, fix);
+        }
+
+        [Fact]
+        public void CodeFixAddsSwitchCallWithCancellationToken()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using Task = System.Threading.Tasks.Task;
+
+class Test : AsyncPackage {
+    static Microsoft.VisualStudio.Shell.IAsyncServiceProvider asp;
+
+    protected override async Task InitializeAsync(System.Threading.CancellationToken cancellationToken, IProgress<ServiceProgressData> progress) {
+        await base.InitializeAsync(cancellationToken, progress);
+        var shell = await asp.GetServiceAsync(typeof(SVsShell)) as IVsShell;
+    }
+}
+";
+            var fix = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using Task = System.Threading.Tasks.Task;
+
+class Test : AsyncPackage {
+    static Microsoft.VisualStudio.Shell.IAsyncServiceProvider asp;
+
+    protected override async Task InitializeAsync(System.Threading.CancellationToken cancellationToken, IProgress<ServiceProgressData> progress) {
+        await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+        await base.InitializeAsync(cancellationToken, progress);
+        var shell = await asp.GetServiceAsync(typeof(SVsShell)) as IVsShell;
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 13, 65, 13, 76) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, fix, f => !f.Title.Contains("ThreadHelper"));
+        }
+
+        [Fact]
+        public void CodeFixAddsSwitchCallWithCancellationTokenAsNamedParameter()
+        {
+            var test = @"
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Threading;
+using Task = System.Threading.Tasks.Task;
+
+class Test : AsyncPackage {
+    static Microsoft.VisualStudio.Shell.IAsyncServiceProvider asp;
+
+    static Task MySwitchingMethodAsync(bool foo = false, CancellationToken ct = default(CancellationToken)) => TplExtensions.CompletedTask;
+
+    protected override async Task InitializeAsync(System.Threading.CancellationToken cancellationToken, IProgress<ServiceProgressData> progress) {
+        await base.InitializeAsync(cancellationToken, progress);
+        var shell = await asp.GetServiceAsync(typeof(SVsShell)) as IVsShell;
+    }
+}
+";
+            var fix = @"
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Threading;
+using Task = System.Threading.Tasks.Task;
+
+class Test : AsyncPackage {
+    static Microsoft.VisualStudio.Shell.IAsyncServiceProvider asp;
+
+    static Task MySwitchingMethodAsync(bool foo = false, CancellationToken ct = default(CancellationToken)) => TplExtensions.CompletedTask;
+
+    protected override async Task InitializeAsync(System.Threading.CancellationToken cancellationToken, IProgress<ServiceProgressData> progress) {
+        await Test.MySwitchingMethodAsync(ct: cancellationToken);
+        await base.InitializeAsync(cancellationToken, progress);
+        var shell = await asp.GetServiceAsync(typeof(SVsShell)) as IVsShell;
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 17, 65, 17, 76) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, fix, f => f.Title.Contains("MySwitchingMethodAsync"));
         }
 
         [Fact]

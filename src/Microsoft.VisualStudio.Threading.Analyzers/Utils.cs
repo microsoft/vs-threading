@@ -171,39 +171,39 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// </summary>
         /// <param name="syntaxNode">The syntax node to begin the search from.</param>
         /// <returns>The containing function, and metadata for it.</returns>
-        internal static (CSharpSyntaxNode Function, bool IsAsync, CSharpSyntaxNode BlockOrExpression) GetContainingFunction(CSharpSyntaxNode syntaxNode)
+        internal static (CSharpSyntaxNode Function, bool IsAsync, ParameterListSyntax ParameterList, CSharpSyntaxNode BlockOrExpression) GetContainingFunction(CSharpSyntaxNode syntaxNode)
         {
             while (syntaxNode != null)
             {
                 if (syntaxNode is SimpleLambdaExpressionSyntax simpleLambda)
                 {
-                    return (simpleLambda, simpleLambda.AsyncKeyword != default(SyntaxToken), simpleLambda.Body);
+                    return (simpleLambda, simpleLambda.AsyncKeyword != default(SyntaxToken), SyntaxFactory.ParameterList().AddParameters(simpleLambda.Parameter), simpleLambda.Body);
                 }
 
                 if (syntaxNode is AnonymousMethodExpressionSyntax anonymousMethod)
                 {
-                    return (anonymousMethod, anonymousMethod.AsyncKeyword != default(SyntaxToken), anonymousMethod.Body);
+                    return (anonymousMethod, anonymousMethod.AsyncKeyword != default(SyntaxToken), anonymousMethod.ParameterList, anonymousMethod.Body);
                 }
 
                 if (syntaxNode is ParenthesizedLambdaExpressionSyntax lambda)
                 {
-                    return (lambda, lambda.AsyncKeyword != default(SyntaxToken), lambda.Body);
+                    return (lambda, lambda.AsyncKeyword != default(SyntaxToken), lambda.ParameterList, lambda.Body);
                 }
 
                 if (syntaxNode is AccessorDeclarationSyntax accessor)
                 {
-                    return (accessor, false, accessor.Body);
+                    return (accessor, false, SyntaxFactory.ParameterList(), accessor.Body);
                 }
 
                 if (syntaxNode is BaseMethodDeclarationSyntax method)
                 {
-                    return (method, method.Modifiers.Any(SyntaxKind.AsyncKeyword), method.Body);
+                    return (method, method.Modifiers.Any(SyntaxKind.AsyncKeyword), method.ParameterList, method.Body);
                 }
 
                 syntaxNode = (CSharpSyntaxNode)syntaxNode.Parent;
             }
 
-            return (null, false, null);
+            return (null, false, null, null);
         }
 
         internal static bool HasAsyncCompatibleReturnType(this IMethodSymbol methodSymbol)
