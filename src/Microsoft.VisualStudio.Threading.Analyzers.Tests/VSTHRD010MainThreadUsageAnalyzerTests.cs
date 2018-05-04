@@ -108,6 +108,46 @@ class Test {
             this.VerifyCSharpFix(test, fix);
         }
 
+        /// <summary>
+        /// Describes an idea for how another code fix can offer to wrap a method in a JTF.Run delegate to switch to the main thread.
+        /// </summary>
+        /// <remarks>
+        /// This will need much more thorough testing than just this method, when the feature is implemented.
+        /// There are ref and out parameters, and return values to consider, for example.
+        /// </remarks>
+        [Fact(Skip = "Feature is not yet implemented.")]
+        public void InvokeVsSolutionNoCheck_FixByJTFRunAndSwitch()
+        {
+            var test = @"
+using System;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    void F() {
+        IVsSolution sln = null;
+        sln.SetProperty(1000, null);
+    }
+}
+";
+            var fix = @"
+using System;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    void F() {
+        Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.Run(async delegate {
+            await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            IVsSolution sln = null;
+            sln.SetProperty(1000, null);
+        });
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 13, 8, 24) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, fix, f => f.Title.Contains("SwitchToMainThreadAsync"));
+        }
+
         [Fact]
         public void InvokeVsSolutionNoCheck_InProperty()
         {
