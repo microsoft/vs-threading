@@ -1222,6 +1222,7 @@ class Test : AsyncPackage {
     }
 }
 ";
+#pragma warning disable CS0219 // Variable is assigned but its value is never used
             var fix = @"
 using System;
 using System.Threading.Tasks;
@@ -1238,7 +1239,9 @@ class Test : AsyncPackage {
         var shell = asp.GetServiceAsync(typeof(SVsShell)) as IVsShell;
     }
 }
-";
+"
+#pragma warning restore CS0219 // Variable is assigned but its value is never used
+;
             this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 13, 59, 13, 70) };
             this.VerifyCSharpDiagnostic(test, this.expect);
             this.VerifyNoCSharpFixOffered(test); // till we have it implemented.
