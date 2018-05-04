@@ -41,20 +41,29 @@
                 return;
             }
 
-            // TODO: even if it isn't async, if the returned type is Task or Task<T>, we should *make* it async
-            Regex lookupKey = container.IsAsync ? CommonInterest.FileNamePatternForMethodsThatSwitchToMainThread : CommonInterest.FileNamePatternForMethodsThatAssertMainThread;
+            var semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
+            var enclosingSymbol = semanticModel.GetEnclosingSymbol(diagnostic.Location.SourceSpan.Start, context.CancellationToken);
+            if (enclosingSymbol == null)
+            {
+                return;
+            }
+
+            bool convertToAsync = !container.IsAsync && Utils.HasAsyncCompatibleReturnType(enclosingSymbol as IMethodSymbol);
+            if (convertToAsync)
+            {
+                // We don't support this yet, and we don't want to take the sync method path in this case.
+                // The user will have to fix this themselves.
+                return;
+            }
+
+            Regex lookupKey = (container.IsAsync || convertToAsync)
+                ? CommonInterest.FileNamePatternForMethodsThatSwitchToMainThread
+                : CommonInterest.FileNamePatternForMethodsThatAssertMainThread;
             string[] options = diagnostic.Properties[lookupKey.ToString()].Split('\n');
             if (options.Length > 0)
             {
                 // For any symbol lookups, we want to consider the position of the very first statement in the block.
                 int positionForLookup = container.BlockOrExpression.GetLocation().SourceSpan.Start + 1;
-
-                var semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
-                var enclosingSymbol = semanticModel.GetEnclosingSymbol(diagnostic.Location.SourceSpan.Start, context.CancellationToken);
-                if (enclosingSymbol == null)
-                {
-                    return;
-                }
 
                 var cancellationTokenSymbol = new Lazy<ISymbol>(() => semanticModel.LookupSymbols(positionForLookup)
                     .Where(s => (s.IsStatic || !enclosingSymbol.IsStatic) && s.CanBeReferencedByName && IsSymbolTheRightType(s, nameof(CancellationToken), Namespaces.SystemThreading))

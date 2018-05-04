@@ -1203,6 +1203,49 @@ class Test : AsyncPackage {
         }
 
         [Fact]
+        public void TaskReturningNonAsyncMethod()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Threading;
+using Task = System.Threading.Tasks.Task;
+
+class Test : AsyncPackage {
+    static Microsoft.VisualStudio.Shell.IAsyncServiceProvider asp;
+
+    static Task Foo() {
+        var shell = asp.GetServiceAsync(typeof(SVsShell)) as IVsShell;
+        return TplExtensions.CompletedTask;
+    }
+}
+";
+            var fix = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Threading;
+using Task = System.Threading.Tasks.Task;
+
+class Test : AsyncPackage {
+    static Microsoft.VisualStudio.Shell.IAsyncServiceProvider asp;
+
+    static async Task Foo() {
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+        var shell = asp.GetServiceAsync(typeof(SVsShell)) as IVsShell;
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 13, 59, 13, 70) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyNoCSharpFixOffered(test); // till we have it implemented.
+            ////this.VerifyCSharpFix(test, fix);
+        }
+
+        [Fact]
         public void CodeFixAddsSwitchCallWithCancellationToken()
         {
             var test = @"
