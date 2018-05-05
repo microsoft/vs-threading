@@ -863,6 +863,31 @@ class Test {
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
+        /// <summary>
+        /// Verifies that the () cast operator does not produce a diagnostic when the type is to a managed type.
+        /// </summary>
+        [Fact]
+        public void CastToManagedType_ProducesNoDiagnostic()
+        {
+            var test = @"
+using System;
+
+namespace TestNS {
+    class SomeClass { }
+    class SomeInterface { }
+}
+
+class Test {
+    void F() {
+        object obj1 = null;
+        var o1 = (TestNS.SomeClass)obj1;
+        var o2 = (TestNS.SomeInterface)obj1;
+    }
+}
+";
+            this.VerifyCSharpDiagnostic(test);
+        }
+
         [Fact]
         public void CastToVsSolutionAfterVerifyOnUIThread()
         {
@@ -902,6 +927,31 @@ class Test {
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
+        /// <summary>
+        /// Verifies that the as cast operator does not produce a diagnostic when the type is to a managed type.
+        /// </summary>
+        [Fact]
+        public void CastToManagedTypeViaAs_ProducesNoDiagnostic()
+        {
+            var test = @"
+using System;
+
+namespace TestNS {
+    class SomeClass { }
+    class SomeInterface { }
+}
+
+class Test {
+    void F() {
+        object obj1 = null;
+        var o1 = obj1 as TestNS.SomeClass;
+        var o2 = obj1 as TestNS.SomeInterface;
+    }
+}
+";
+            this.VerifyCSharpDiagnostic(test);
+        }
+
         [Fact]
         public void TestVsSolutionViaIs()
         {
@@ -918,6 +968,31 @@ class Test {
 ";
             this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 27, 8, 41) };
             this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
+        /// <summary>
+        /// Verifies that the is type check operator does not produce a diagnostic when the type is to a managed type.
+        /// </summary>
+        [Fact]
+        public void CastToManagedTypeViaIs_ProducesNoDiagnostic()
+        {
+            var test = @"
+using System;
+
+namespace TestNS {
+    class SomeClass { }
+    class SomeInterface { }
+}
+
+class Test {
+    void F() {
+        object obj1 = null;
+        var o1 = obj1 is TestNS.SomeClass;
+        var o2 = obj1 is TestNS.SomeInterface;
+    }
+}
+";
+            this.VerifyCSharpDiagnostic(test);
         }
 
         [Fact]
@@ -1371,26 +1446,25 @@ using System;
 using Microsoft.VisualStudio.Shell;
 
 class Test {
-    object o;
     void Foo() {
-        object v;
-        v = o as TestNS.FreeThreadedType;
-        v = o as TestNS.SingleThreadedType;
-        v = o as TestNS2.FreeThreadedType;
-        v = o as TestNS2.SingleThreadedType;
+        object o = null;
+        ((TestNS.FreeThreadedType) o).Foo();
+        ((TestNS.SingleThreadedType) o).Foo();
+        ((TestNS2.FreeThreadedType) o).Foo();
+        ((TestNS2.SingleThreadedType) o).Foo();
     }
 }
 
 namespace TestNS {
-    interface SingleThreadedType { }
+    interface SingleThreadedType { void Foo(); }
 
-    interface FreeThreadedType { }
+    interface FreeThreadedType { void Foo(); }
 }
 
 namespace TestNS2 {
-    interface SingleThreadedType { }
+    interface SingleThreadedType { void Foo(); }
 
-    interface FreeThreadedType { }
+    interface FreeThreadedType { void Foo(); }
 }
 ";
             var expect = new[]
@@ -1400,14 +1474,14 @@ namespace TestNS2 {
                     Id = VSTHRD010MainThreadUsageAnalyzer.Id,
                     SkipVerifyMessage = true,
                     Severity = DiagnosticSeverity.Warning,
-                    Locations = new DiagnosticResultLocation[] { new DiagnosticResultLocation("Test0.cs", 10, 15, 10, 43), },
+                    Locations = new DiagnosticResultLocation[] { new DiagnosticResultLocation("Test0.cs", 9, 41, 9, 44), },
                 },
                 new DiagnosticResult
                 {
                     Id = VSTHRD010MainThreadUsageAnalyzer.Id,
                     SkipVerifyMessage = true,
                     Severity = DiagnosticSeverity.Warning,
-                    Locations = new DiagnosticResultLocation[] { new DiagnosticResultLocation("Test0.cs", 12, 15, 12, 44), },
+                    Locations = new DiagnosticResultLocation[] { new DiagnosticResultLocation("Test0.cs", 11, 42, 11, 45), },
                 },
             };
             this.VerifyCSharpDiagnostic(test, expect);

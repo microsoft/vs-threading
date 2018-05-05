@@ -130,5 +130,26 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             internal const string FullName = Namespace + TypeName;
         }
+
+        internal static class ComImportAttribute
+        {
+            internal const string TypeName = nameof(System.Runtime.InteropServices.ComImportAttribute);
+
+            internal static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeInteropServices;
+        }
+
+        internal static class InterfaceTypeAttribute
+        {
+            internal const string TypeName = nameof(System.Runtime.InteropServices.InterfaceTypeAttribute);
+
+            internal static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeInteropServices;
+        }
+
+        internal static class TypeLibTypeAttribute
+        {
+            internal const string TypeName = "TypeLibTypeAttribute";
+
+            internal static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeInteropServices;
+        }
     }
 }
