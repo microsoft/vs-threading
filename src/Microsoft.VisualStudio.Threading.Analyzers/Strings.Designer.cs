@@ -408,6 +408,24 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Avoid throwing when not on the main thread while in an async or Task-returning method. Switch to the thread required instead..
+        /// </summary>
+        internal static string VSTHRD109_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSTHRD109_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Switch instead of assert in async methods.
+        /// </summary>
+        internal static string VSTHRD109_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD109_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Rename to {0}.
         /// </summary>
         internal static string VSTHRD200_CodeFix_Title {

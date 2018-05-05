@@ -20,6 +20,7 @@ ID | Title | Severity | Supports
 [VSTHRD106](VSTHRD106.md) | Use `InvokeAsync` to raise async events | Advisory
 [VSTHRD107](VSTHRD107.md) | Await Task within using expression | Advisory
 [VSTHRD108](VSTHRD108.md) | Assert thread affinity unconditionally | Advisory | [1st rule](../threading_rules.md#Rule1), [VSTHRD010](VSTHRD010.md)
+[VSTHRD109](VSTHRD109.md) | Switch instead of assert in async methods | Advisory | [1st rule](../threading_rules.md#Rule1)
 [VSTHRD200](VSTHRD200.md) | Use `Async` naming convention | Guideline | [VSTHRD103](VSTHRD103.md)
 
 ## Severity descriptions
