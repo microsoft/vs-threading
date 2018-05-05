@@ -55,7 +55,7 @@
 
             context.RegisterCompilationStartAction(ctxt =>
             {
-                var mainThreadAssertingMethods = CommonInterest.ReadMethods(ctxt, CommonInterest.FileNamePatternForMethodsThatAssertMainThread).ToImmutableArray();
+                var mainThreadAssertingMethods = CommonInterest.ReadMethods(ctxt.Options, CommonInterest.FileNamePatternForMethodsThatAssertMainThread, ctxt.CancellationToken).ToImmutableArray();
 
                 ctxt.RegisterCodeBlockStartAction<SyntaxKind>(ctxt2 =>
                 {

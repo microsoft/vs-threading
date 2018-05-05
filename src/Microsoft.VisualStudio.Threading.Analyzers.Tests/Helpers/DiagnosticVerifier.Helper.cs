@@ -207,7 +207,14 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 .AddMetadataReference(projectId, ThreadingReference)
                 .AddMetadataReference(projectId, WindowsBaseReference)
                 .AddMetadataReference(projectId, OleInteropReference)
-                .WithProjectCompilationOptions(projectId, new CSharpCompilationOptions(hasEntrypoint ? OutputKind.ConsoleApplication : OutputKind.DynamicallyLinkedLibrary))
+                .WithProjectCompilationOptions(
+                    projectId,
+                    new CSharpCompilationOptions(
+                        hasEntrypoint ? OutputKind.ConsoleApplication : OutputKind.DynamicallyLinkedLibrary,
+                        specificDiagnosticOptions: new Dictionary<string, ReportDiagnostic>
+                        {
+                            { "CS1701", ReportDiagnostic.Suppress }, // we don't reference mscorlib, which can cause assembly reference ambiguities
+                        }))
                 .WithProjectParseOptions(projectId, new CSharpParseOptions(LanguageVersion.Latest));
 
             var pathToLibs = ToolLocationHelper.GetPathToStandardLibraries(".NETFramework", "v4.5.1", string.Empty);
