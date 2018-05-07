@@ -350,7 +350,7 @@
             {
                 var castSyntax = (CastExpressionSyntax)context.Node;
                 var type = context.SemanticModel.GetSymbolInfo(castSyntax.Type).Symbol as ITypeSymbol;
-                if (type != null)
+                if (type != null && IsObjectLikelyToBeCOMObject(type))
                 {
                     this.AnalyzeTypeWithinContext(type, null, context);
                 }
@@ -360,11 +360,31 @@
             {
                 var asSyntax = (BinaryExpressionSyntax)context.Node;
                 var type = context.SemanticModel.GetSymbolInfo(asSyntax.Right).Symbol as ITypeSymbol;
-                if (type != null)
+                if (type != null && IsObjectLikelyToBeCOMObject(type))
                 {
                     Location asAndRightSide = Location.Create(context.Node.SyntaxTree, TextSpan.FromBounds(asSyntax.OperatorToken.Span.Start, asSyntax.Right.Span.End));
                     this.AnalyzeTypeWithinContext(type, null, context, asAndRightSide);
                 }
+            }
+
+            /// <summary>
+            /// Determines whether a given type is likely to be (or implemented by) a COM object.
+            /// </summary>
+            /// <returns><c>true</c> if the type appears to be a COM object; <c>false</c> if a managed object.</returns>
+            /// <remarks>
+            /// Type casts and type checks are thread-affinitized for (STA) COM objects, and free-threaded for managed ones.
+            /// </remarks>
+            private static bool IsObjectLikelyToBeCOMObject(ITypeSymbol typeSymbol)
+            {
+                if (typeSymbol == null)
+                {
+                    throw new ArgumentNullException(nameof(typeSymbol));
+                }
+
+                return typeSymbol.GetAttributes().Any(ad =>
+                    (ad.AttributeClass.Name == Types.ComImportAttribute.TypeName && ad.AttributeClass.BelongsToNamespace(Types.ComImportAttribute.Namespace)) ||
+                    (ad.AttributeClass.Name == Types.InterfaceTypeAttribute.TypeName && ad.AttributeClass.BelongsToNamespace(Types.InterfaceTypeAttribute.Namespace)) ||
+                    (ad.AttributeClass.Name == Types.TypeLibTypeAttribute.TypeName && ad.AttributeClass.BelongsToNamespace(Types.TypeLibTypeAttribute.Namespace)));
             }
 
             private bool AnalyzeTypeWithinContext(ITypeSymbol type, ISymbol symbol, SyntaxNodeAnalysisContext context, Location focusDiagnosticOn = null)
@@ -391,13 +411,13 @@
                         Location location = focusDiagnosticOn ?? context.Node.GetLocation();
                         var exampleAssertingMethod = this.MainThreadAssertingMethods.FirstOrDefault();
                         var descriptor = exampleAssertingMethod.Name != null ? Descriptor : DescriptorNoAssertingMethod;
-                        context.ReportDiagnostic(Diagnostic.Create(descriptor, location, this.DiagnosticProperties, type.Name,  exampleAssertingMethod));
+                        context.ReportDiagnostic(Diagnostic.Create(descriptor, location, this.DiagnosticProperties, type.Name, exampleAssertingMethod));
                         return true;
                     }
                 }
 
                 return false;
             }
-        }
+       }
     }
 }
