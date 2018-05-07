@@ -33,7 +33,7 @@
             var diagnostic = context.Diagnostics.First();
 
             var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
-            var syntaxNode = (ExpressionSyntax)root.FindNode(diagnostic.Location.SourceSpan);
+            var syntaxNode = (ExpressionSyntax)root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: true);
 
             var container = Utils.GetContainingFunction(syntaxNode);
             if (container.BlockOrExpression == null)
