@@ -196,6 +196,14 @@ Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
           <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
           <note from="MultilingualBuild" annotates="source" priority="2">All placeholders are to type or member names.</note>
         </trans-unit>
+        <trans-unit id="VSTHRD109_MessageFormat" translate="yes" xml:space="preserve">
+          <source>Avoid throwing when not on the main thread while in an async or Task-returning method. Switch to the thread required instead.</source>
+          <target state="new">Avoid throwing when not on the main thread while in an async or Task-returning method. Switch to the thread required instead.</target>
+        </trans-unit>
+        <trans-unit id="VSTHRD109_Title" translate="yes" xml:space="preserve">
+          <source>Switch instead of assert in async methods</source>
+          <target state="new">Switch instead of assert in async methods</target>
+        </trans-unit>
       </group>
     </body>
   </file>
