@@ -1542,6 +1542,41 @@ class A
             this.VerifyCSharpFix(test, fix);
         }
 
+        [Fact]
+        public void ArgumentExpressionEntirelyMadeOfViolatingCast()
+        {
+            var test = @"
+using Microsoft.VisualStudio.Shell.Interop;
+
+class A
+{
+    void Foo() {
+        object o = null;
+        Bar((IVsSolution)o);
+    }
+
+    void Bar(IVsSolution solution) { }
+}
+";
+            var fix = @"
+using Microsoft.VisualStudio.Shell.Interop;
+
+class A
+{
+    void Foo() {
+        Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();
+        object o = null;
+        Bar((IVsSolution)o);
+    }
+
+    void Bar(IVsSolution solution) { }
+}
+";
+            this.expect = this.CreateDiagnostic(8, 13, 8, 27);
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, fix);
+        }
+
         private DiagnosticResult CreateDiagnostic(int line, int column, int endLine, int endColumn) =>
             new DiagnosticResult
             {
