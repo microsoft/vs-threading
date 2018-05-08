@@ -4,20 +4,20 @@ about: Create a report to help us improve
 
 ---
 
-**Describe the bug**
+#### Describe the bug
 A clear and concise description of what the bug is.
 
-**To Reproduce**
+#### To Reproduce
 Code to reproduce the behavior.
 
-**Expected behavior**
+#### Expected behavior
 A clear and concise description of what you expected to happen.
 
-**Actual behavior**
+#### Actual behavior
 What happened instead of what you expected.
 
- - Version used [e.g. 15.8.35]
- - Application (if applicable)
+- Version used [e.g. 15.8.35]
+- Application (if applicable)
 
-**Additional context**
+#### Additional context
 Add any other context about the problem here.
