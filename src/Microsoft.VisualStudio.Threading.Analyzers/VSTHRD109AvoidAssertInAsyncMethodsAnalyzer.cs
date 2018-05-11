@@ -29,12 +29,13 @@
         public const string Id = "VSTHRD109";
 
         internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
-           id: Id,
-           title: Strings.VSTHRD109_Title,
-           messageFormat: Strings.VSTHRD109_MessageFormat,
-           category: "Usage",
-           defaultSeverity: DiagnosticSeverity.Error,
-           isEnabledByDefault: true);
+            id: Id,
+            title: Strings.VSTHRD109_Title,
+            messageFormat: Strings.VSTHRD109_MessageFormat,
+            helpLinkUri: Utils.GetHelpLink(Id),
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
 
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Descriptor);
