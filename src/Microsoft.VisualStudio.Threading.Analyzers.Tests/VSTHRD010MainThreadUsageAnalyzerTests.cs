@@ -1652,7 +1652,7 @@ class A
         }
 
         [Fact]
-        public void AffinityPropagationExtendsToDirectCallersOnly()
+        public void AffinityPropagationExtendsToAllCallers()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -1682,8 +1682,47 @@ class Test
     }
 }
 ";
-            this.expect.Locations = new DiagnosticResultLocation[] { new DiagnosticResultLocation("Test0.cs", 15, 78, 15, 92) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expect = new DiagnosticResult[] {
+                this.CreateDiagnostic(11, 9, 11, 12),
+                this.CreateDiagnostic(21, 9, 21, 14),
+                this.CreateDiagnostic(25, 15, 25, 25),
+            };
+            this.VerifyCSharpDiagnostic(test, expect);
+        }
+
+        [Fact]
+        public void AffinityPropagationDoesNotExtendBeyondProperAsyncSwitch()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using Task = System.Threading.Tasks.Task;
+
+class Test
+{
+    void Reset()
+    {
+        Foo();
+    }
+    void Foo()
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        IVsSolution solution = Package.GetGlobalService(typeof(SVsSolution)) as IVsSolution;
+    }
+    async Task FirstAsync()
+    {
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+        Reset(); // this generates a warning, even though Reset() doesn't assert
+    }
+    async void SecondAsync()
+    {
+        await FirstAsync(); // this generates a warning
+    }
+}
+";
+            var expect = new DiagnosticResult[] { this.CreateDiagnostic(11, 9, 11, 12) };
+            this.VerifyCSharpDiagnostic(test, expect);
         }
 
         private DiagnosticResult CreateDiagnostic(int line, int column, int endLine, int endColumn) =>
