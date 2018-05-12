@@ -1651,6 +1651,41 @@ class A
             this.VerifyCSharpFix(test, fix);
         }
 
+        [Fact]
+        public void AffinityPropagationExtendsToDirectCallersOnly()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using Task = System.Threading.Tasks.Task;
+
+class Test
+{
+    void Reset()
+    {
+        Foo();
+    }
+    void Foo()
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        IVsSolution solution = Package.GetGlobalService(typeof(SVsSolution)) as IVsSolution;
+    }
+    async Task FirstAsync()
+    {
+        await Task.Yield();
+        Reset(); // this generates a warning, even though Reset() doesn't assert
+    }
+    async void SecondAsync()
+    {
+        await FirstAsync(); // this generates a warning
+    }
+}
+";
+            this.expect.Locations = new DiagnosticResultLocation[] { new DiagnosticResultLocation("Test0.cs", 15, 78, 15, 92) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
         private DiagnosticResult CreateDiagnostic(int line, int column, int endLine, int endColumn) =>
             new DiagnosticResult
             {
