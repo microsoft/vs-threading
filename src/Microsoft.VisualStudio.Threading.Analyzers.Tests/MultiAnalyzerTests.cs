@@ -265,6 +265,16 @@ public class Test {
             Assert.False(refAssemblies.Any(a => a.Name.Equals("System.ValueTuple", StringComparison.OrdinalIgnoreCase)));
         }
 
+        [Fact]
+        public void NameOfUsedInAttributeArgument()
+        {
+            var test = @"
+[System.Diagnostics.DebuggerDisplay(""hi"", Name = nameof(System.Console))]
+class Foo { }
+";
+            this.VerifyCSharpDiagnostic(test);
+        }
+
         private void VerifyNoMoreThanOneDiagnosticPerLine(string test, bool hasEntrypoint = false)
         {
             this.LogFileContent(test);
