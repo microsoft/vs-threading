@@ -56,6 +56,14 @@
         private void AnalyzeInvocation(SyntaxNodeAnalysisContext context, ImmutableArray<CommonInterest.QualifiedMember> mainThreadAssertingMethods)
         {
             var functionInfo = Utils.GetContainingFunction((CSharpSyntaxNode)context.Node);
+            if (functionInfo.Function == null)
+            {
+                // One case where this happens is the use of nameof(X) in the argument of a custom attribute on a type, such as:
+                // [System.Diagnostics.DebuggerDisplay(""hi"", Name = nameof(System.Console))]
+                // class Foo { }
+                return;
+            }
+
             var methodSymbol = context.SemanticModel.GetDeclaredSymbol(functionInfo.Function);
             ITypeSymbol implicitReturnType = null;
             if (methodSymbol == null)
