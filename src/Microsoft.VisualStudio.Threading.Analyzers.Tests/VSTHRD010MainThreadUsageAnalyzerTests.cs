@@ -1652,7 +1652,7 @@ class A
         }
 
         [Fact]
-        public void AffinityPropagationExtendsToAllCallers()
+        public void AffinityPropagationExtendsToAllCallersOfSyncMethods()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -1685,7 +1685,6 @@ class Test
             var expect = new DiagnosticResult[] {
                 this.CreateDiagnostic(11, 9, 11, 12),
                 this.CreateDiagnostic(21, 9, 21, 14),
-                this.CreateDiagnostic(25, 15, 25, 25),
             };
             this.VerifyCSharpDiagnostic(test, expect);
         }

@@ -177,9 +177,13 @@
             {
                 if (result.Add(method) && calleeToCallerMap.TryGetValue(method, out var callers))
                 {
-                    foreach (var caller in callers)
+                    // If this is an async method, do *not* propagate its thread affinity to its callers.
+                    if (!Utils.IsAsyncCompatibleReturnType(method.ReturnType))
                     {
-                        MarkMethod(caller.MethodSymbol);
+                        foreach (var caller in callers)
+                        {
+                            MarkMethod(caller.MethodSymbol);
+                        }
                     }
                 }
             }
@@ -418,6 +422,6 @@
 
                 return false;
             }
-       }
+        }
     }
 }
