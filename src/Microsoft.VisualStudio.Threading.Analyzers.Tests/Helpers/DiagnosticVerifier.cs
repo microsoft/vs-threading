@@ -225,6 +225,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                             expected.Severity, actual.Severity, FormatDiagnostics(analyzers, actual)));
                 }
 
+                Assert.False(Regex.IsMatch(actual.GetMessage(), @"{\d+}"), "Diagnostic is missing formatting arguments: " + actual.GetMessage());
+
                 if (expected.MessagePattern != null && !Regex.IsMatch(actual.GetMessage(), expected.MessagePattern))
                 {
                     Assert.True(false,
