@@ -28,11 +28,6 @@
   <data name="VSTHRD002_Title" xml:space="preserve">
     <value>Evite esperas síncronas problemáticas</value>
   </data>
-  <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>O tipo "{0}" deve ser usado explicitamente no thread principal.
-Chame {1}() ou await JoinableTaskFactory.SwitchToMainThreadAsync() primeiro.</value>
-    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
-  </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
     <value>Invoque os tipos single-threaded no thread principal</value>
   </data>
@@ -146,14 +141,5 @@ Em vez disso, use AsyncLazy&lt;T&gt;.</value>
   </data>
   <data name="VSTHRD108_Title" xml:space="preserve">
     <value>Declarar a afinidade de thread de forma incondicional</value>
-  </data>
-  <data name="VSTHRD010_MessageFormat_NoAssertingMethod" xml:space="preserve">
-    <value>O tipo "{0}" deve ser usado explicitamente no thread principal.
-Await JoinableTaskFactory.SwitchToMainThreadAsync() primeiro.</value>
-    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
-  </data>
-  <data name="VSTHRD010_MessageFormat_TransitiveMainThreadUser" xml:space="preserve">
-    <value>Adicione uma chamada a {0}() no início do corpo do membro porque esse membro invoca outros membros que exigem o thread principal.</value>
-    <comment>All placeholders are to type or member names.</comment>
   </data>
 </root>

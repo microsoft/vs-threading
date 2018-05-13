@@ -1678,8 +1678,8 @@ class Test
 }
 ";
             var expect = new DiagnosticResult[] {
-                this.CreateDiagnostic(11, 9, 11, 12),
-                this.CreateDiagnostic(21, 9, 21, 14),
+                this.CreateDiagnostic(11, 9, 11, 12, @"Test\.Foo.*VerifyAccess"),
+                this.CreateDiagnostic(21, 9, 21, 14, @"Test\.Reset.*SwitchToMainThreadAsync"),
             };
             this.VerifyCSharpDiagnostic(test, expect);
         }
@@ -1715,16 +1715,17 @@ class Test
     }
 }
 ";
-            var expect = new DiagnosticResult[] { this.CreateDiagnostic(11, 9, 11, 12) };
+            var expect = new DiagnosticResult[] {
+                this.CreateDiagnostic(11, 9, 11, 12, @"Test\.Foo.*VerifyAccess"),
+            };
             this.VerifyCSharpDiagnostic(test, expect);
         }
 
-        private DiagnosticResult CreateDiagnostic(int line, int column, int endLine, int endColumn) =>
+        private DiagnosticResult CreateDiagnostic(int line, int column, int endLine, int endColumn, string messagePattern = null) =>
             new DiagnosticResult
             {
                 Id = this.expect.Id,
-                Message = this.expect.Message,
-                SkipVerifyMessage = this.expect.SkipVerifyMessage,
+                MessagePattern = messagePattern ?? this.expect.MessagePattern,
                 Severity = this.expect.Severity,
                 Locations = new[] { new DiagnosticResultLocation("Test0.cs", line, column, endLine, endColumn) },
             };

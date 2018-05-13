@@ -133,10 +133,9 @@
   <data name="VSTHRD002_Title" xml:space="preserve">
     <value>Avoid problematic synchronous waits</value>
   </data>
-  <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>The type "{0}" should be used on main thread explicitly.
-Call {1}() or await JoinableTaskFactory.SwitchToMainThreadAsync() first.</value>
-    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
+  <data name="VSTHRD010_MessageFormat_Sync" xml:space="preserve">
+    <value>Accessing "{0}" should only be done on the main thread. Call {1}() first.</value>
+    <comment>{0} is a type or member name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
     <value>Invoke single-threaded types on Main thread</value>
@@ -252,14 +251,9 @@ Use AsyncLazy&lt;T&gt; instead.</value>
   <data name="VSTHRD108_Title" xml:space="preserve">
     <value>Assert thread affinity unconditionally</value>
   </data>
-  <data name="VSTHRD010_MessageFormat_NoAssertingMethod" xml:space="preserve">
-    <value>The type "{0}" should be used on main thread explicitly.
-Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</value>
-    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
-  </data>
-  <data name="VSTHRD010_MessageFormat_TransitiveMainThreadUser" xml:space="preserve">
-    <value>Accessing this type or member must be done on the main thread. "{0}" should start with a statement to assert this condition. For example: "{1}();"</value>
-    <comment>All placeholders are to type or member names.</comment>
+  <data name="VSTHRD010_MessageFormat_Async" xml:space="preserve">
+    <value>Accessing "{0}" should only be done on the main thread. Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</value>
+    <comment>{0} is a type or member name.</comment>
   </data>
   <data name="VSTHRD109_MessageFormat" xml:space="preserve">
     <value>Avoid throwing when not on the main thread while in an async or Task-returning method. Switch to the thread required instead.</value>
