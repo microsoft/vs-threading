@@ -11,7 +11,6 @@
         private DiagnosticResult expect = new DiagnosticResult
         {
             Id = VSTHRD011LazyOfTaskAnalyzer.Id,
-            SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Error,
         };
 

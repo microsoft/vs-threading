@@ -15,7 +15,6 @@
         private DiagnosticResult expect = new DiagnosticResult
         {
             Id = VSTHRD109AvoidAssertInAsyncMethodsAnalyzer.Id,
-            SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Error,
         };
 

@@ -11,7 +11,6 @@
         private DiagnosticResult expect = new DiagnosticResult
         {
             Id = VSTHRD003UseJtfRunAsyncAnalyzer.Id,
-            SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Warning,
         };
 
@@ -541,13 +540,13 @@ class Tests
 ";
             DiagnosticResult[] expected = new[]
             {
-                new DiagnosticResult() { Id = this.expect.Id, SkipVerifyMessage = this.expect.SkipVerifyMessage, Severity = DiagnosticSeverity.Warning,
+                new DiagnosticResult() { Id = this.expect.Id, MessagePattern = this.expect.MessagePattern, Severity = DiagnosticSeverity.Warning,
                 Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 19) }, },
 
-                new DiagnosticResult() { Id = this.expect.Id, SkipVerifyMessage = this.expect.SkipVerifyMessage, Severity = DiagnosticSeverity.Warning,
+                new DiagnosticResult() { Id = this.expect.Id, MessagePattern = this.expect.MessagePattern, Severity = DiagnosticSeverity.Warning,
                 Locations = new[] { new DiagnosticResultLocation("Test0.cs", 15, 19) }, },
 
-                new DiagnosticResult() { Id = this.expect.Id, SkipVerifyMessage = this.expect.SkipVerifyMessage, Severity = DiagnosticSeverity.Warning,
+                new DiagnosticResult() { Id = this.expect.Id, MessagePattern = this.expect.MessagePattern, Severity = DiagnosticSeverity.Warning,
                 Locations = new[] { new DiagnosticResultLocation("Test0.cs", 16, 19) }, },
             };
 

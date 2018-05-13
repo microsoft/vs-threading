@@ -16,7 +16,6 @@
         private DiagnosticResult NewExpectedTemplate() => new DiagnosticResult
         {
             Id = VSTHRD200UseAsyncNamingConventionAnalyzer.Id,
-            SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Warning,
         };
 

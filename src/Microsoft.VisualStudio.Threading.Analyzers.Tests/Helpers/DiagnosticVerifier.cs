@@ -7,6 +7,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
     using System.IO;
     using System.Linq;
     using System.Text;
+    using System.Text.RegularExpressions;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.Diagnostics;
@@ -224,11 +225,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                             expected.Severity, actual.Severity, FormatDiagnostics(analyzers, actual)));
                 }
 
-                if (!expected.SkipVerifyMessage && actual.GetMessage() != expected.Message)
+                if (expected.MessagePattern != null && !Regex.IsMatch(actual.GetMessage(), expected.MessagePattern))
                 {
                     Assert.True(false,
-                        string.Format("Expected diagnostic message to be \"{0}\" was \"{1}\"\r\n\r\nDiagnostic:\r\n    {2}\r\n",
-                            expected.Message, actual.GetMessage(), FormatDiagnostics(analyzers, actual)));
+                        string.Format("Expected diagnostic message to match \"{0}\" but was \"{1}\"\r\n\r\nDiagnostic:\r\n    {2}\r\n",
+                            expected.MessagePattern, actual.GetMessage(), FormatDiagnostics(analyzers, actual)));
                 }
             }
         }

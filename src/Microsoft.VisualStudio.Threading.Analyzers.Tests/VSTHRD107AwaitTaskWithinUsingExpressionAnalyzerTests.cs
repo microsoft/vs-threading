@@ -12,7 +12,6 @@
         private DiagnosticResult expect = new DiagnosticResult
         {
             Id = VSTHRD107AwaitTaskWithinUsingExpressionAnalyzer.Id,
-            SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Error,
         };
 

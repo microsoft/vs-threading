@@ -15,7 +15,6 @@
         private DiagnosticResult expect = new DiagnosticResult
         {
             Id = VSTHRD108AssertThreadRequirementUnconditionally.Id,
-            SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Warning,
         };
 

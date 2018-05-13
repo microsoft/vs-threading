@@ -34,7 +34,10 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 
         public string Id { get; set; }
 
-        public string Message { get; set; }
+        /// <summary>
+        /// Gets or sets a regex pattern that must match against the diagnostic's message, if not null.
+        /// </summary>
+        public string MessagePattern { get; set; }
 
         public string Path
         {
@@ -59,7 +62,5 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 return this.Locations.Length > 0 ? this.Locations[0].Column : -1;
             }
         }
-
-        public bool SkipVerifyMessage { get; set; }
     }
 }

@@ -11,7 +11,6 @@
         private DiagnosticResult expect = new DiagnosticResult
         {
             Id = VSTHRD010MainThreadUsageAnalyzer.Id,
-            SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Warning,
         };
 
@@ -1115,15 +1114,15 @@ class Test {
                 new DiagnosticResult
                 {
                     Id = this.expect.Id,
-                    SkipVerifyMessage = this.expect.SkipVerifyMessage,
                     Severity = this.expect.Severity,
+                    MessagePattern = this.expect.MessagePattern,
                     Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 40, 9, 54) },
                 },
                 new DiagnosticResult
                 {
                     Id = this.expect.Id,
-                    SkipVerifyMessage = this.expect.SkipVerifyMessage,
                     Severity = this.expect.Severity,
+                    MessagePattern = this.expect.MessagePattern,
                     Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 55, 9, 65) },
                 },
             };
@@ -1222,14 +1221,14 @@ class Test : AsyncPackage {
                 new DiagnosticResult
                 {
                     Id = this.expect.Id,
-                    SkipVerifyMessage = this.expect.SkipVerifyMessage,
+                    MessagePattern = this.expect.MessagePattern,
                     Severity = this.expect.Severity,
                     Locations = new[] { new DiagnosticResultLocation("Test0.cs", 15, 61, 15, 72) },
                 },
                 new DiagnosticResult
                 {
                     Id = this.expect.Id,
-                    SkipVerifyMessage = this.expect.SkipVerifyMessage,
+                    MessagePattern = this.expect.MessagePattern,
                     Severity = this.expect.Severity,
                     Locations = new[] { new DiagnosticResultLocation("Test0.cs", 16, 56, 16, 67) },
                 },
@@ -1472,14 +1471,12 @@ namespace TestNS2 {
                 new DiagnosticResult
                 {
                     Id = VSTHRD010MainThreadUsageAnalyzer.Id,
-                    SkipVerifyMessage = true,
                     Severity = DiagnosticSeverity.Warning,
                     Locations = new DiagnosticResultLocation[] { new DiagnosticResultLocation("Test0.cs", 9, 41, 9, 44), },
                 },
                 new DiagnosticResult
                 {
                     Id = VSTHRD010MainThreadUsageAnalyzer.Id,
-                    SkipVerifyMessage = true,
                     Severity = DiagnosticSeverity.Warning,
                     Locations = new DiagnosticResultLocation[] { new DiagnosticResultLocation("Test0.cs", 11, 42, 11, 45), },
                 },
@@ -1531,14 +1528,12 @@ class A
                 new DiagnosticResult
                 {
                     Id = VSTHRD010MainThreadUsageAnalyzer.Id,
-                    SkipVerifyMessage = true,
                     Severity = DiagnosticSeverity.Warning,
                     Locations = new DiagnosticResultLocation[] { new DiagnosticResultLocation("Test0.cs", 8, 25, 8, 39), },
                 },
                 new DiagnosticResult
                 {
                     Id = VSTHRD010MainThreadUsageAnalyzer.Id,
-                    SkipVerifyMessage = true,
                     Severity = DiagnosticSeverity.Warning,
                     Locations = new DiagnosticResultLocation[] { new DiagnosticResultLocation("Test0.cs", 9, 14, 9, 28), },
                 },
