@@ -22,7 +22,6 @@
                 results[i] = new DiagnosticResult
                 {
                     Id = VSTHRD106UseInvokeAsyncForAsyncEventsAnalyzer.Id,
-                    SkipVerifyMessage = true,
                     Severity = DiagnosticSeverity.Warning,
                     Locations = new[] { locations[i] },
                 };

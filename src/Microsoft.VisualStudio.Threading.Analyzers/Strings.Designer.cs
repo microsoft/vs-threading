@@ -144,31 +144,20 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The type &quot;{0}&quot; should be used on main thread explicitly.
-        ///Call {1}() or await JoinableTaskFactory.SwitchToMainThreadAsync() first..
+        ///   Looks up a localized string similar to Accessing &quot;{0}&quot; should only be done on the main thread. Await JoinableTaskFactory.SwitchToMainThreadAsync() first..
         /// </summary>
-        internal static string VSTHRD010_MessageFormat {
+        internal static string VSTHRD010_MessageFormat_Async {
             get {
-                return ResourceManager.GetString("VSTHRD010_MessageFormat", resourceCulture);
+                return ResourceManager.GetString("VSTHRD010_MessageFormat_Async", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The type &quot;{0}&quot; should be used on main thread explicitly.
-        ///Await JoinableTaskFactory.SwitchToMainThreadAsync() first..
+        ///   Looks up a localized string similar to Accessing &quot;{0}&quot; should only be done on the main thread. Call {1}() first..
         /// </summary>
-        internal static string VSTHRD010_MessageFormat_NoAssertingMethod {
+        internal static string VSTHRD010_MessageFormat_Sync {
             get {
-                return ResourceManager.GetString("VSTHRD010_MessageFormat_NoAssertingMethod", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Accessing this type or member must be done on the main thread. &quot;{0}&quot; should start with a statement to assert this condition. For example: &quot;{1}();&quot;.
-        /// </summary>
-        internal static string VSTHRD010_MessageFormat_TransitiveMainThreadUser {
-            get {
-                return ResourceManager.GetString("VSTHRD010_MessageFormat_TransitiveMainThreadUser", resourceCulture);
+                return ResourceManager.GetString("VSTHRD010_MessageFormat_Sync", resourceCulture);
             }
         }
         

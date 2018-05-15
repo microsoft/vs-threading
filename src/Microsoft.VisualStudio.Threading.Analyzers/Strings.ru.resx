@@ -28,11 +28,6 @@
   <data name="VSTHRD002_Title" xml:space="preserve">
     <value>Избегание проблемных синхронных ожиданий</value>
   </data>
-  <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>Тип "{0}" нужно использовать с основным потоком в явном виде.
-Сначала вызовите {1}() или await JoinableTaskFactory.SwitchToMainThreadAsync().</value>
-    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
-  </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
     <value>Использование однопоточных типов в основном потоке</value>
   </data>
@@ -146,14 +141,5 @@
   </data>
   <data name="VSTHRD108_Title" xml:space="preserve">
     <value>Утверждайте сходства потоков безусловно</value>
-  </data>
-  <data name="VSTHRD010_MessageFormat_NoAssertingMethod" xml:space="preserve">
-    <value>Тип "{0}" нужно использовать с основным потоком в явном виде.
-Сначала используйте await JoinableTaskFactory.SwitchToMainThreadAsync().</value>
-    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
-  </data>
-  <data name="VSTHRD010_MessageFormat_TransitiveMainThreadUser" xml:space="preserve">
-    <value>Добавьте вызов {0}() в начале тела элемента, так как он вызывает другие элементы, которым требуется основной поток.</value>
-    <comment>All placeholders are to type or member names.</comment>
   </data>
 </root>

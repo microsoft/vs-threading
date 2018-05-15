@@ -45,28 +45,25 @@
     {
         public const string Id = "VSTHRD010";
 
-        internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
+        /// <summary>
+        /// The descriptor to use for diagnostics reported in synchronous methods.
+        /// </summary>
+        internal static readonly DiagnosticDescriptor DescriptorSync = new DiagnosticDescriptor(
             id: Id,
             title: Strings.VSTHRD010_Title,
-            messageFormat: Strings.VSTHRD010_MessageFormat,
+            messageFormat: Strings.VSTHRD010_MessageFormat_Sync,
             helpLinkUri: Utils.GetHelpLink(Id),
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
-        internal static readonly DiagnosticDescriptor DescriptorNoAssertingMethod = new DiagnosticDescriptor(
+        /// <summary>
+        /// The descriptor to use for diagnostics reported in async methods.
+        /// </summary>
+        internal static readonly DiagnosticDescriptor DescriptorAsync = new DiagnosticDescriptor(
             id: Id,
             title: Strings.VSTHRD010_Title,
-            messageFormat: Strings.VSTHRD010_MessageFormat_NoAssertingMethod,
-            helpLinkUri: Utils.GetHelpLink(Id),
-            category: "Usage",
-            defaultSeverity: DiagnosticSeverity.Warning,
-            isEnabledByDefault: true);
-
-        internal static readonly DiagnosticDescriptor DescriptorTransitiveMainThreadUser = new DiagnosticDescriptor(
-            id: Id,
-            title: Strings.VSTHRD010_Title,
-            messageFormat: Strings.VSTHRD010_MessageFormat_TransitiveMainThreadUser,
+            messageFormat: Strings.VSTHRD010_MessageFormat_Async,
             helpLinkUri: Utils.GetHelpLink(Id),
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Warning,
@@ -76,9 +73,8 @@
         /// A reusable value to return from <see cref="SupportedDiagnostics"/>.
         /// </summary>
         private static readonly ImmutableArray<DiagnosticDescriptor> ReusableSupportedDescriptors = ImmutableArray.Create(
-            Descriptor,
-            DescriptorNoAssertingMethod,
-            DescriptorTransitiveMainThreadUser);
+            DescriptorSync,
+            DescriptorAsync);
 
         private enum ThreadingContext
         {
@@ -149,19 +145,21 @@
                     var transitiveClosureOfMainThreadRequiringMethods = GetTransitiveClosureOfMainThreadRequiringMethods(methodsAssertingUIThreadRequirement, calleeToCallerMap);
                     foreach (var implicitUserMethod in transitiveClosureOfMainThreadRequiringMethods.Except(methodsDeclaringUIThreadRequirement))
                     {
-                        var locations = from info in callerToCalleeMap[implicitUserMethod]
-                                        where transitiveClosureOfMainThreadRequiringMethods.Contains(info.MethodSymbol)
-                                        group info by info.MethodSymbol into bySymbol
-                                        select bySymbol.First().InvocationSyntax.GetLocation();
-                        foreach (var primaryLocation in locations)
+                        var reportSites = from info in callerToCalleeMap[implicitUserMethod]
+                                          where transitiveClosureOfMainThreadRequiringMethods.Contains(info.MethodSymbol)
+                                          group info by info.MethodSymbol into bySymbol
+                                          select new { Location = bySymbol.First().InvocationSyntax.GetLocation(), CalleeMethod = bySymbol.Key };
+                        foreach (var site in reportSites)
                         {
-                            var exampleAssertingMethod = mainThreadAssertingMethods.FirstOrDefault();
+                            bool isAsync = Utils.IsAsyncReady(implicitUserMethod);
+                            var descriptor = isAsync ? DescriptorAsync : DescriptorSync;
+                            string calleeName = Utils.GetFullName(site.CalleeMethod);
+                            var formattingArgs = isAsync ? new object[] { calleeName } : new object[] { calleeName, mainThreadAssertingMethods.FirstOrDefault() };
                             Diagnostic diagnostic = Diagnostic.Create(
-                                DescriptorTransitiveMainThreadUser,
-                                primaryLocation,
+                                descriptor,
+                                site.Location,
                                 diagnosticProperties,
-                                Utils.GetFullName(implicitUserMethod),
-                                exampleAssertingMethod);
+                                formattingArgs);
                             compilationEndContext.ReportDiagnostic(diagnostic);
                         }
                     }
@@ -177,9 +175,13 @@
             {
                 if (result.Add(method) && calleeToCallerMap.TryGetValue(method, out var callers))
                 {
-                    foreach (var caller in callers)
+                    // If this is an async method, do *not* propagate its thread affinity to its callers.
+                    if (!Utils.IsAsyncCompatibleReturnType(method.ReturnType))
                     {
-                        MarkMethod(caller.MethodSymbol);
+                        foreach (var caller in callers)
+                        {
+                            MarkMethod(caller.MethodSymbol);
+                        }
                     }
                 }
             }
@@ -322,11 +324,11 @@
                     // The diagnostic (if any) should underline the method name only.
                     var focusedNode = invocationSyntax.Expression;
                     focusedNode = (focusedNode as MemberAccessExpressionSyntax)?.Name ?? focusedNode;
-                    if (!this.AnalyzeTypeWithinContext(invokedMethod.ContainingType, invokedMethod, context, focusedNode.GetLocation()))
+                    if (!this.AnalyzeMemberWithinContext(invokedMethod.ContainingType, invokedMethod, context, focusedNode.GetLocation()))
                     {
                         foreach (var iface in invokedMethod.FindInterfacesImplemented())
                         {
-                            if (this.AnalyzeTypeWithinContext(iface, invokedMethod, context, focusedNode.GetLocation()))
+                            if (this.AnalyzeMemberWithinContext(iface, invokedMethod, context, focusedNode.GetLocation()))
                             {
                                 // Just report the first diagnostic.
                                 break;
@@ -342,7 +344,7 @@
                 var property = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IPropertySymbol;
                 if (property != null)
                 {
-                    this.AnalyzeTypeWithinContext(property.ContainingType, property, context, memberAccessSyntax.Name.GetLocation());
+                    this.AnalyzeMemberWithinContext(property.ContainingType, property, context, memberAccessSyntax.Name.GetLocation());
                 }
             }
 
@@ -352,7 +354,7 @@
                 var type = context.SemanticModel.GetSymbolInfo(castSyntax.Type).Symbol as ITypeSymbol;
                 if (type != null && IsObjectLikelyToBeCOMObject(type))
                 {
-                    this.AnalyzeTypeWithinContext(type, null, context);
+                    this.AnalyzeMemberWithinContext(type, null, context);
                 }
             }
 
@@ -363,7 +365,7 @@
                 if (type != null && IsObjectLikelyToBeCOMObject(type))
                 {
                     Location asAndRightSide = Location.Create(context.Node.SyntaxTree, TextSpan.FromBounds(asSyntax.OperatorToken.Span.Start, asSyntax.Right.Span.End));
-                    this.AnalyzeTypeWithinContext(type, null, context, asAndRightSide);
+                    this.AnalyzeMemberWithinContext(type, null, context, asAndRightSide);
                 }
             }
 
@@ -387,7 +389,7 @@
                     (ad.AttributeClass.Name == Types.TypeLibTypeAttribute.TypeName && ad.AttributeClass.BelongsToNamespace(Types.TypeLibTypeAttribute.Namespace)));
             }
 
-            private bool AnalyzeTypeWithinContext(ITypeSymbol type, ISymbol symbol, SyntaxNodeAnalysisContext context, Location focusDiagnosticOn = null)
+            private bool AnalyzeMemberWithinContext(ITypeSymbol type, ISymbol symbol, SyntaxNodeAnalysisContext context, Location focusDiagnosticOn = null)
             {
                 if (type == null)
                 {
@@ -408,16 +410,17 @@
 
                     if (threadingContext != ThreadingContext.MainThread)
                     {
+                        var function = Utils.GetContainingFunction((CSharpSyntaxNode)context.Node);
                         Location location = focusDiagnosticOn ?? context.Node.GetLocation();
-                        var exampleAssertingMethod = this.MainThreadAssertingMethods.FirstOrDefault();
-                        var descriptor = exampleAssertingMethod.Name != null ? Descriptor : DescriptorNoAssertingMethod;
-                        context.ReportDiagnostic(Diagnostic.Create(descriptor, location, this.DiagnosticProperties, type.Name, exampleAssertingMethod));
+                        var descriptor = function.IsAsync ? DescriptorAsync : DescriptorSync;
+                        var formattingArgs = function.IsAsync ? new object[] { type.Name } : new object[] { type.Name, this.MainThreadAssertingMethods.FirstOrDefault() };
+                        context.ReportDiagnostic(Diagnostic.Create(descriptor, location, this.DiagnosticProperties, formattingArgs));
                         return true;
                     }
                 }
 
                 return false;
             }
-       }
+        }
     }
 }

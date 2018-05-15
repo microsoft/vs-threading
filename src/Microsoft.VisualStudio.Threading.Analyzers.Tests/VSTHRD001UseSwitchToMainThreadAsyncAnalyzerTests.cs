@@ -15,7 +15,6 @@
         private DiagnosticResult expect = new DiagnosticResult
         {
             Id = VSTHRD001UseSwitchToMainThreadAsyncAnalyzer.Id,
-            SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Warning,
         };
 

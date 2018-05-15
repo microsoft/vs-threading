@@ -11,7 +11,6 @@
         private DiagnosticResult expect = new DiagnosticResult
         {
             Id = VSTHRD101AsyncVoidLambdaAnalyzer.Id,
-            SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Warning,
         };
 

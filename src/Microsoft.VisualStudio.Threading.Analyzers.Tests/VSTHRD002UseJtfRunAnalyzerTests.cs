@@ -11,7 +11,6 @@
         private DiagnosticResult expect = new DiagnosticResult
         {
             Id = VSTHRD002UseJtfRunAnalyzer.Id,
-            SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Warning,
         };
 
@@ -156,18 +155,16 @@ class Test {
             {
                 new DiagnosticResult
                 {
-                    Message = this.expect.Message,
+                    MessagePattern = this.expect.MessagePattern,
                     Id = this.expect.Id,
                     Severity = this.expect.Severity,
-                    SkipVerifyMessage = this.expect.SkipVerifyMessage,
                     Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 47, 9, 53) },
                 },
                 new DiagnosticResult
                 {
-                    Message = this.expect.Message,
+                    MessagePattern = this.expect.MessagePattern,
                     Id = this.expect.Id,
                     Severity = this.expect.Severity,
-                    SkipVerifyMessage = this.expect.SkipVerifyMessage,
                     Locations = new[] { new DiagnosticResultLocation("Test0.cs", 10, 29, 10, 35) },
                 },
             };

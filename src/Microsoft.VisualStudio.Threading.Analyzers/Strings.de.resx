@@ -28,11 +28,6 @@
   <data name="VSTHRD002_Title" xml:space="preserve">
     <value>Problematische synchrone Wartevorgänge vermeiden</value>
   </data>
-  <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>Der Typ "{0}" muss explizit im Hauptthread verwendet werden.
-Rufen Sie zuerst "{1}()" oder "await JoinableTaskFactory.SwitchToMainThreadAsync()" auf.</value>
-    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
-  </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
     <value>Singlethread-Typen im Hauptthread aufrufen</value>
   </data>
@@ -146,14 +141,5 @@ Verwenden Sie stattdessen AsyncLazy&lt;T&gt;.</value>
   </data>
   <data name="VSTHRD108_Title" xml:space="preserve">
     <value>Threadaffinität ohne Bedingungen bestätigen</value>
-  </data>
-  <data name="VSTHRD010_MessageFormat_NoAssertingMethod" xml:space="preserve">
-    <value>Der Typ "{0}" muss explizit im Hauptthread verwendet werden.
-Rufen Sie zuerst "await JoinableTaskFactory.SwitchToMainThreadAsync()" auf.</value>
-    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
-  </data>
-  <data name="VSTHRD010_MessageFormat_TransitiveMainThreadUser" xml:space="preserve">
-    <value>Fügen Sie den Aufruf an "{0}()" am Beginn des Elementtexts hinzu, weil dieses Element andere Elemente aufruft, für die der Hauptthread erforderlich ist.</value>
-    <comment>All placeholders are to type or member names.</comment>
   </data>
 </root>

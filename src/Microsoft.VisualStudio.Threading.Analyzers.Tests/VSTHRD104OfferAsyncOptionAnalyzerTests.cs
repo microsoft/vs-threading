@@ -15,7 +15,6 @@
         private DiagnosticResult expect = new DiagnosticResult
         {
             Id = VSTHRD104OfferAsyncOptionAnalyzer.Id,
-            SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Info,
         };
 

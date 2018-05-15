@@ -28,11 +28,6 @@
   <data name="VSTHRD002_Title" xml:space="preserve">
     <value>문제가 있는 동기 대기를 사용하지 않습니다.</value>
   </data>
-  <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>주 스레드에서 "{0}" 형식을 명시적으로 사용해야 합니다.
-{1}()을(를) 호출하거나 우선 JoinableTaskFactory.SwitchToMainThreadAsync()를 대기합니다.</value>
-    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
-  </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
     <value>주 스레드에서 단일 스레드 형식을 호출</value>
   </data>
@@ -146,14 +141,5 @@
   </data>
   <data name="VSTHRD108_Title" xml:space="preserve">
     <value>무조건 스레드 선호도 어설션</value>
-  </data>
-  <data name="VSTHRD010_MessageFormat_NoAssertingMethod" xml:space="preserve">
-    <value>주 스레드에서 "{0}" 형식을 명시적으로 사용해야 합니다.
-Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</value>
-    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
-  </data>
-  <data name="VSTHRD010_MessageFormat_TransitiveMainThreadUser" xml:space="preserve">
-    <value>이 멤버는 주 스레드가 필요한 다른 멤버를 호출하므로 멤버 본문 시작에 {0}()에 대한 호출을 추가합니다.</value>
-    <comment>All placeholders are to type or member names.</comment>
   </data>
 </root>

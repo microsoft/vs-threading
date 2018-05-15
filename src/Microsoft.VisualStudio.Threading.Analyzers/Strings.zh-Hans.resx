@@ -28,11 +28,6 @@
   <data name="VSTHRD002_Title" xml:space="preserve">
     <value>避免有问题的同步等待</value>
   </data>
-  <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>应对主线程显式使用类型“{0}”。
-先调用 {1}() 或等待 JoinableTaskFactory.SwitchToMainThreadAsync()。</value>
-    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
-  </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
     <value>在主线程上调用单线程类型</value>
   </data>
@@ -146,14 +141,5 @@
   </data>
   <data name="VSTHRD108_Title" xml:space="preserve">
     <value>无条件断言线程关联</value>
-  </data>
-  <data name="VSTHRD010_MessageFormat_NoAssertingMethod" xml:space="preserve">
-    <value>应对主线程显式使用类型“{0}”。
-先等待 JoinableTaskFactory.SwitchToMainThreadAsync()。</value>
-    <comment>{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</comment>
-  </data>
-  <data name="VSTHRD010_MessageFormat_TransitiveMainThreadUser" xml:space="preserve">
-    <value>在成员体的开头添加对 {0}() 的调用，因为此成员调用其他需要主线程的成员。</value>
-    <comment>All placeholders are to type or member names.</comment>
   </data>
 </root>

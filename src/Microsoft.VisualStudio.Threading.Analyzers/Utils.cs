@@ -213,6 +213,15 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return typeSymbol?.Name == nameof(Task) && typeSymbol.BelongsToNamespace(Namespaces.SystemThreadingTasks);
         }
 
+        /// <summary>
+        /// Gets a value indicating whether a method is async or is ready to be async by having an async-compatible return type.
+        /// </summary>
+        /// <remarks>
+        /// A method might be async but not have an async compatible return type if it returns void and is an "async void" method.
+        /// However, a non-async void method is *not* considered async ready and gets a false value returned from this method.
+        /// </remarks>
+        internal static bool IsAsyncReady(this IMethodSymbol methodSymbol) => methodSymbol.IsAsync || methodSymbol.HasAsyncCompatibleReturnType();
+
         internal static bool HasAsyncAlternative(this IMethodSymbol methodSymbol, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();

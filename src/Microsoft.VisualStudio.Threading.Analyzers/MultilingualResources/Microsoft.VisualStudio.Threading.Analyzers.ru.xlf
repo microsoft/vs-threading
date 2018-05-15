@@ -26,13 +26,6 @@
           <source>Avoid problematic synchronous waits</source>
           <target state="translated">Избегание проблемных синхронных ожиданий</target>
         </trans-unit>
-        <trans-unit id="VSTHRD010_MessageFormat" translate="yes" xml:space="preserve">
-          <source>The type "{0}" should be used on main thread explicitly.
-Call {1}() or await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
-          <target state="translated">Тип "{0}" нужно использовать с основным потоком в явном виде.
-Сначала вызовите {1}() или await JoinableTaskFactory.SwitchToMainThreadAsync().</target>
-          <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</note>
-        </trans-unit>
         <trans-unit id="VSTHRD010_Title" translate="yes" xml:space="preserve">
           <source>Invoke single-threaded types on Main thread</source>
           <target state="translated">Использование однопоточных типов в основном потоке</target>
@@ -183,19 +176,6 @@ Use AsyncLazy&lt;T&gt; instead.</source>
           <source>Assert thread affinity unconditionally</source>
           <target state="translated">Утверждайте сходства потоков безусловно</target>
         </trans-unit>
-        <trans-unit id="VSTHRD010_MessageFormat_NoAssertingMethod" translate="yes" xml:space="preserve">
-          <source>The type "{0}" should be used on main thread explicitly.
-Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
-          <target state="translated">Тип "{0}" нужно использовать с основным потоком в явном виде.
-Сначала используйте await JoinableTaskFactory.SwitchToMainThreadAsync().</target>
-          <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type name and {1} is the name of a method that throws if not called from the main thread.</note>
-        </trans-unit>
-        <trans-unit id="VSTHRD010_MessageFormat_TransitiveMainThreadUser" translate="yes" xml:space="preserve">
-          <source>Accessing this type or member must be done on the main thread. "{0}" should start with a statement to assert this condition. For example: "{1}();"</source>
-          <target state="needs-review-translation">Добавьте вызов {0}() в начале тела элемента, так как он вызывает другие элементы, которым требуется основной поток.</target>
-          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
-          <note from="MultilingualBuild" annotates="source" priority="2">All placeholders are to type or member names.</note>
-        </trans-unit>
         <trans-unit id="VSTHRD109_MessageFormat" translate="yes" xml:space="preserve">
           <source>Avoid throwing when not on the main thread while in an async or Task-returning method. Switch to the thread required instead.</source>
           <target state="new">Avoid throwing when not on the main thread while in an async or Task-returning method. Switch to the thread required instead.</target>
@@ -203,6 +183,16 @@ Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
         <trans-unit id="VSTHRD109_Title" translate="yes" xml:space="preserve">
           <source>Switch instead of assert in async methods</source>
           <target state="new">Switch instead of assert in async methods</target>
+        </trans-unit>
+        <trans-unit id="VSTHRD010_MessageFormat_Sync" translate="yes" xml:space="preserve">
+          <source>Accessing "{0}" should only be done on the main thread. Call {1}() first.</source>
+          <target state="new">Accessing "{0}" should only be done on the main thread. Call {1}() first.</target>
+          <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type or member name and {1} is the name of a method that throws if not called from the main thread.</note>
+        </trans-unit>
+        <trans-unit id="VSTHRD010_MessageFormat_Async" translate="yes" xml:space="preserve">
+          <source>Accessing "{0}" should only be done on the main thread. Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
+          <target state="new">Accessing "{0}" should only be done on the main thread. Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</target>
+          <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type or member name.</note>
         </trans-unit>
       </group>
     </body>

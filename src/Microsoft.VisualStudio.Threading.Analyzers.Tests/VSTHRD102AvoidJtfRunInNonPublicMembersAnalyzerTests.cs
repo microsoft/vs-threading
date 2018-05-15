@@ -13,7 +13,6 @@
         private DiagnosticResult expect = new DiagnosticResult
         {
             Id = VSTHRD102AvoidJtfRunInNonPublicMembersAnalyzer.Id,
-            SkipVerifyMessage = true,
             Severity = DiagnosticSeverity.Info,
         };
 
