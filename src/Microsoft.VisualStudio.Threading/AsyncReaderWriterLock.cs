@@ -365,7 +365,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Gets a value indicating whether the current SynchronizationContext is one that is not supported
         /// by this lock.
         /// </summary>
-        private static bool IsUnsupportedSynchronizationContext
+        protected virtual bool IsUnsupportedSynchronizationContext
         {
             get
             {
@@ -662,7 +662,7 @@ namespace Microsoft.VisualStudio.Threading
                 Verify.FailOperation(Strings.STAThreadCallerNotAllowed);
             }
 
-            if (IsUnsupportedSynchronizationContext)
+            if (this.IsUnsupportedSynchronizationContext)
             {
                 Verify.FailOperation(Strings.AppliedSynchronizationContextNotAllowed);
             }
@@ -674,7 +674,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         private bool IsLockSupportingContext(Awaiter awaiter = null)
         {
-            if (!this.CanCurrentThreadHoldActiveLock || IsUnsupportedSynchronizationContext)
+            if (!this.CanCurrentThreadHoldActiveLock || this.IsUnsupportedSynchronizationContext)
             {
                 return false;
             }
@@ -2070,7 +2070,7 @@ namespace Microsoft.VisualStudio.Threading
         [DebuggerDisplay("{kind}")]
         public class Awaiter : ICriticalNotifyCompletion
         {
-            #region Fields
+#region Fields
 
             /// <summary>
             /// A singleton delegate for use in cancellation token registration to avoid memory allocations for delegates each time.
@@ -2151,7 +2151,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             private object data;
 
-            #endregion
+#endregion
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Awaiter"/> class.
