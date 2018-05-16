@@ -4855,6 +4855,19 @@
 
             public SemaphoreSlim ScheduleSemaphore { get; } = new SemaphoreSlim(0);
 
+            protected override bool IsUnsupportedSynchronizationContext
+            {
+                get
+                {
+                    if (SynchronizationContext.Current == this.scheduler.SynchronizationContext)
+                    {
+                        return false;
+                    }
+
+                    return base.IsUnsupportedSynchronizationContext;
+                }
+            }
+
             protected override TaskScheduler GetTaskSchedulerForReadLockRequest()
             {
                 return this.scheduler;
@@ -4868,9 +4881,12 @@
                 public SpecialTaskScheduler(SemaphoreSlim schedulerSemaphore)
                 {
                     this.schedulerSemaphore = schedulerSemaphore;
+                    this.SynchronizationContext = new SpecialSynchorizationContext();
                 }
 
                 public int StartedTaskCount => this.startedTaskCount;
+
+                public SynchronizationContext SynchronizationContext { get; }
 
                 protected override void QueueTask(Task task)
                 {
@@ -4879,7 +4895,10 @@
                         {
                             var tuple = (Tuple<SpecialTaskScheduler, Task>)s;
                             Interlocked.Increment(ref tuple.Item1.startedTaskCount);
+                            var originalContext = SynchronizationContext.Current;
+                            SynchronizationContext.SetSynchronizationContext(this.SynchronizationContext);
                             tuple.Item1.TryExecuteTask(tuple.Item2);
+                            SynchronizationContext.SetSynchronizationContext(originalContext);
                         },
                         new Tuple<SpecialTaskScheduler, Task>(this, task));
                     this.schedulerSemaphore.Release();
@@ -4893,6 +4912,13 @@
                 protected override IEnumerable<Task> GetScheduledTasks()
                 {
                     throw new NotSupportedException();
+                }
+
+                /// <summary>
+                /// A customized synchroization context to verify that the schedule can use one.
+                /// </summary>
+                private class SpecialSynchorizationContext : SynchronizationContext
+                {
                 }
             }
         }
