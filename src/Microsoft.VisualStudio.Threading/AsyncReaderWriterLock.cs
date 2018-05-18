@@ -365,7 +365,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Gets a value indicating whether the current SynchronizationContext is one that is not supported
         /// by this lock.
         /// </summary>
-        private static bool IsUnsupportedSynchronizationContext
+        protected virtual bool IsUnsupportedSynchronizationContext
         {
             get
             {
@@ -640,6 +640,19 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Get the task scheduler to execute the continuation when the lock is acquired.
+        ///  AsyncReaderWriterLock uses a special <see cref="SynchronizationContext"/> to handle execusive locks, and will ignore task scheduler provided, so this is only used in a read lock scenario.
+        /// This method is called within the execution context to wait the read lock, so it can pick up <see cref="TaskScheduler"/> based on the current execution context.
+        /// Note: the task scheduler is only used, when the lock is issued later.  If the lock is issued immediately when <see cref="CanCurrentThreadHoldActiveLock"/> returns true, it will be ignored.
+        /// </summary>
+        /// <returns>A task scheduler to schedule the continutation task when a lock is issued.</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
+        protected virtual TaskScheduler GetTaskSchedulerForReadLockRequest()
+        {
+            return TaskScheduler.Default;
+        }
+
+        /// <summary>
         /// Throws an exception if called on an STA thread.
         /// </summary>
         private void ThrowIfUnsupportedThreadOrSyncContext()
@@ -649,7 +662,7 @@ namespace Microsoft.VisualStudio.Threading
                 Verify.FailOperation(Strings.STAThreadCallerNotAllowed);
             }
 
-            if (IsUnsupportedSynchronizationContext)
+            if (this.IsUnsupportedSynchronizationContext)
             {
                 Verify.FailOperation(Strings.AppliedSynchronizationContextNotAllowed);
             }
@@ -661,7 +674,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         private bool IsLockSupportingContext(Awaiter awaiter = null)
         {
-            if (!this.CanCurrentThreadHoldActiveLock || IsUnsupportedSynchronizationContext)
+            if (!this.CanCurrentThreadHoldActiveLock || this.IsUnsupportedSynchronizationContext)
             {
                 return false;
             }
@@ -2057,7 +2070,7 @@ namespace Microsoft.VisualStudio.Threading
         [DebuggerDisplay("{kind}")]
         public class Awaiter : ICriticalNotifyCompletion
         {
-            #region Fields
+#region Fields
 
             /// <summary>
             /// A singleton delegate for use in cancellation token registration to avoid memory allocations for delegates each time.
@@ -2113,6 +2126,11 @@ namespace Microsoft.VisualStudio.Threading
             private Action continuationAfterLockIssued;
 
             /// <summary>
+            /// The TaskScheduler to invoke the continuation.
+            /// </summary>
+            private TaskScheduler continuationTaskScheduler;
+
+            /// <summary>
             /// The task from a prior call to <see cref="ReleaseAsync"/>, if any.
             /// </summary>
             private Task releaseAsyncTask;
@@ -2133,7 +2151,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             private object data;
 
-            #endregion
+#endregion
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Awaiter"/> class.
@@ -2393,7 +2411,7 @@ namespace Microsoft.VisualStudio.Threading
                     }
                     else
                     {
-                        Task.Run(continuation);
+                        Task.Factory.StartNew(continuation, CancellationToken.None, TaskCreationOptions.PreferFairness, this.continuationTaskScheduler ?? TaskScheduler.Default);
                     }
 
                     return true;
@@ -2467,6 +2485,11 @@ namespace Microsoft.VisualStudio.Threading
 
                 try
                 {
+                    if (this.Kind == LockKind.Read)
+                    {
+                        this.continuationTaskScheduler = this.OwningLock.GetTaskSchedulerForReadLockRequest();
+                    }
+
                     this.cancellationRegistration = this.cancellationToken.Register(CancellationResponseAction, this, useSynchronizationContext: false);
                     this.lck.PendAwaiter(this);
 
