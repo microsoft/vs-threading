@@ -68,7 +68,7 @@ await ThreadHelper.JoinableTaskFactory.StartOnIdle(
         for (int i = 0; i < 10; i++)
         {
             DoSomeWorkOn(i);
-            
+
             // Ensure we frequently yield the UI thread in case user input is waiting.
             await Task.Yield();
         }
@@ -87,7 +87,7 @@ ThreadHelper.JoinableTaskFactory.Run(async delegate
 ## How to write a "fire and forget" method responsibly?
 
 "Fire and forget" methods are async methods that are called without awaiting the
-`Task` that they (may) return. 
+`Task` that they (may) return.
 
 Do *not* implement your fire and forget async method by returning `async void`.
 These methods will crash the process if they throw an unhandled exception.
@@ -128,7 +128,7 @@ by re-implementing this pattern in your own class:
 class MyResponsibleType : IDisposable
 {
   private readonly CancellationTokenSource disposeCancellationTokenSource = new CancellationTokenSource();
- 
+
   internal MyResponsibleType()
   {
     this.JoinableTaskCollection = ThreadHelper.JoinableTaskContext.CreateCollection();
@@ -137,7 +137,7 @@ class MyResponsibleType : IDisposable
 
   JoinableTaskFactory JoinableTaskFactory { get; }
   JoinableTaskCollection JoinableTaskCollection { get; }
-  
+
   /// <summary>
   /// Gets a <see cref="CancellationToken"/> that can be used to check if the package has been disposed.
   /// </summary>
@@ -148,7 +148,7 @@ class MyResponsibleType : IDisposable
     this.Dispose(true);
     GC.SuppressFinalize(this);
   }
-  
+
   protected virtual void Dispose(bool disposing)
   {
     if (disposing)
@@ -181,11 +181,11 @@ These are your typical async methods, but called without awaiting the resulting 
 Not awaiting on the `Task` means that if that async method were to throw an exception
 (thus faulting the returned Task) that no one would notice. The error would go unreported
 and undetected -- until the side effects of the async method are discovered to be incomplete
-some other way. In a *few* cases this may be desirable. 
+some other way. In a *few* cases this may be desirable.
 Since calling a `Task`-returning method without awaiting its result will often make C# emit
 a compiler warning, a `void`-returning `Forget()` extension method exists so you can tack it
 onto the end of an async method call to suppress the compiler warning, and make it clear to
-others reading the code that you are intentionally ignoring the result. 
+others reading the code that you are intentionally ignoring the result.
 
 ```csharp
 DoSomeWork();
@@ -296,7 +296,85 @@ This ensures that on package close, your async work must complete before the App
 Your async work should generally also honor the `AsyncPackage.DisposalToken` and cancel itself right away when that
 token is signaled so that VS shutdown is not slowed down significantly by work that no longer matters.
 
+## How do I effectively verify that my code is fully free-threaded?
+
+Code is free-threaded if it (and all code it invokes transitively) can complete on the caller's thread, no matter which thread that is. Code that is *not* free-threaded is said to be *thread-affinitized*, meaning some of its work may require execution on a particular thread.
+
+It is not always necessary for code to be free-threaded. There are many cases where code *must* run on the main thread because it calls into other code that itself has thread-affinity or is not thread-safe. Important places to be free-threaded include:
+
+1. Code that runs in the MEF activation code paths (e.g. importing constructors, OnImportsSatisfied callbacks, and any code called therefrom).
+1. Code that may run on a background thread, especially when run within an async context.
+1. Static field initializers and static constructors.
+
+In Visual Studio, thread-affinitized code typically requires the main thread (a.k.a. the UI thread). Code that has main thread affinity may appear to work when called from background threads for a few reasons, including:
+
+1. The code can sometimes run without requiring the main thread. For example, it only requires the main thread the first time it runs, and subsequent calls are effectively free-threaded.
+1. The code may switch itself to the main thread if its caller didn't call it on that thread. This approach only works if the main thread is available to service such a request to switch from a background thread.
+
+The foregoing conditions can make it difficult to test whether your code is truly free-threaded. Knowing your code is free-threaded is important before executing it off the main thread, particularly when that code executes synchronously, since otherwise it can deadlock or contribute to [threadpool starvation][ThreadpoolStarvation].
+
+To test whether your code executes without any requirement on the main thread, you can run that code in VS within such a construct as this:
+
+```cs
+jtf.Run(async delegate
+{
+   using (jtf.Context.SuppressRelevance())
+   {
+      await Task.Run(delegate
+      {
+         var c = ActivateComponent();
+         c.UseComponent();
+      });
+   }
+});
+```
+
+This would effectively ensure that the main thread will *not* respond to any request from your test method, thus forcing a deadlock if one was lurking and could occur in otherwise non-deterministic conditions.
+
+Try to execute such test code as early in the VS process as possible. This will help you catch any issues with code you may call that is thread affinitized the first time it is executed.
+
+Note that being free-threaded is *not* the same thing as being thread-*safe*, which is an independent metric. Code can be free-threaded, thread-safe, both, or neither.
+
+## How do I effectively verify that my code is fully thread-safe?
+
+Code is thread-safe if your code does not malfunction when called from more than one thread at a time.
+
+It is not always necessary for code to be thread-safe. In fact many classes in the Base Class Library of .NET itself is not thread-safe. Writing thread-safe code involves mitigating data corruption, deadlocks, and higher level goals such as avoiding lock contention and threadpool starvation. Validating that code is thread-safe requires exhaustive reviews and testing, and thread-safety bugs can still slip through. Whether thread-safety should be a goal should typically be determined at the class level and clearly documented. Changing from thread-safe to non-thread-safe should be considered a breaking change. A class should be made thread-safe if being called from multiple threads at once is a supported scenario.
+
+Techniques for writing thread-safe code include:
+
+1. Using synchronization primitives such as C# `lock` when accessing fields.
+1. Using immutable data structures and interlocked exchange methods while handling race conditions.
+
+Techniques for verifying that code is thread-safe include both thorough code reviews and automated tests. Automated tests should execute your code concurrently. You may find you can shake out different bugs by testing with concurrency levels equal to `Environment.ProcessorCount` to maximize parallelism and throughput as well as a multiplier of that number (e.g. `Environment.ProcessorCount * 3`) so that hyper-switching of the CPU leads to different time slices and unique thread-safety bugs to be found. Such tests should verify that unexpected exceptions are not thrown, no hangs occur, and that the data at the conclusion of such concurrent execution is not corrupted.
+
+Code can be made to run concurrently from a unit test using this technique:
+
+```csharp
+int concurrencyLevel = Environment.ProcessorCount; // * 3
+await Task.WhenAll(Enumerable.Range(1, concurrencyLevel).Select(i => Task.Run(delegate {
+    CallYourCodeHere();
+})));
+```
+
+If `CallYourCodeHere()` executes fast enough, it's possible that the above does not lead to actual concurrent execution since `Task.Run` does not guarantee that the delegate executes at a particular time. To increase the chances of concurrent execution, you can use the `CountdownEvent` class:
+
+```csharp
+int concurrencyLevel = Environment.ProcessorCount; // * 3
+var countdown = new CountdownEvent(concurrencyLevel);
+await Task.WhenAll(Enumerable.Range(1, concurrencyLevel).Select(i => Task.Run(delegate {
+    countdown.Signal();
+    countdown.Wait();
+    CallYourCodeHere();
+})));
+```
+
+The above code will force allocation of a thread for each degree of concurrency you specify, and each thread will block until all threads are ready to go, at which point they will all unblock together (subject to kernel thread scheduling).
+
+Note that being thread-safe is *not* the same thing as being free-threaded, which is an independent metric. Code can be free-threaded, thread-safe, both, or neither.
+
 [NuPkg]: https://www.nuget.org/packages/Microsoft.VisualStudio.Threading
 [AnalyzerNuPkg]: https://www.nuget.org/packages/Microsoft.VisualStudio.Threading.Analyzers
 [MSDNIVsTaskGetAwaiter]: https://msdn.microsoft.com/en-us/library/vstudio/hh598836.aspx
 [AsyncPackage101]: https://microsoft.sharepoint.com/teams/DD_VSIDE/_layouts/15/WopiFrame.aspx?sourcedoc=%7b84C6ABED-E111-4B5D-B2D6-8B6FAF37F0D4%7d&file=Async%20Package%20101.docx&action=default
+[ThreadpoolStarvation]: threadpool_starvation.md
