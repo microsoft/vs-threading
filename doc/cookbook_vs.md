@@ -329,7 +329,7 @@ jtf.Run(async delegate
 });
 ```
 
-This would effectively ensure that the main thread will *not* respond to any request from your test method, thus forcing a deadlock if one was lurking and would bite you in certain otherwise non-deterministic conditions.
+This would effectively ensure that the main thread will *not* respond to any request from your test method, thus forcing a deadlock if one was lurking and could occur in otherwise non-deterministic conditions.
 
 Try to execute such test code as early in the VS process as possible. This will help you catch any issues with code you may call that is thread affinitized the first time it is executed.
 
@@ -339,7 +339,7 @@ Note that being free-threaded is *not* the same thing as being thread-*safe*, wh
 
 Code is thread-safe if your code does not malfunction when called from more than one thread at a time.
 
-It is not always necessary for code to be thread-safe. In fact many classes in the Base Class Library of .NET itself is not thread-safe. Writing thread-safe code involves mitigating data corruption, deadlocks, and higher level goals such as avoiding lock contention and threadpool starvation. Validating that code is thread-safe requires exhaustive reviews and testing, and thread-safety bugs can still slip through. Whether thread-safety should be a goal should typically be determined at the class level and clearly documented. A class should be made thread-safe if being called from multiple threads at once is a supported scenario.
+It is not always necessary for code to be thread-safe. In fact many classes in the Base Class Library of .NET itself is not thread-safe. Writing thread-safe code involves mitigating data corruption, deadlocks, and higher level goals such as avoiding lock contention and threadpool starvation. Validating that code is thread-safe requires exhaustive reviews and testing, and thread-safety bugs can still slip through. Whether thread-safety should be a goal should typically be determined at the class level and clearly documented. Changing from thread-safe to non-thread-safe should be considered a breaking change. A class should be made thread-safe if being called from multiple threads at once is a supported scenario.
 
 Techniques for writing thread-safe code include:
 
