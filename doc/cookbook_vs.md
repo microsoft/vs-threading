@@ -316,6 +316,7 @@ The foregoing conditions can make it difficult to test whether your code is trul
 To test whether your code executes without any requirement on the main thread, you can run that code in VS within such a construct as this:
 
 ```cs
+ThreadHelper.ThrowIfNotOnUIThread(); // this test only catches issues when it blocks the UI thread.
 jtf.Run(async delegate
 {
    using (jtf.Context.SuppressRelevance())
