@@ -105,8 +105,10 @@ instead of calling the method `Task DoSomethingAsync()` you might call it `void 
 Notwithstanding the `void` return type, you'll want to be async internally in order to actually
 do the work later instead of on your caller's callstack. But you also should be sure your async
 work finishes before your object claims to be disposed. You can accomplish both of these objectives
-using the `JoinableTaskFactory.RunAsync` method, and tacking on the `FileAndForget` method at the end
-so that faults are detectable. You may want to handle your own exceptions within the async delegate as well.
+using the `JoinableTaskFactory.RunAsync` method, and tacking on an extension method that captures
+failures and reports them for your analysis later. For the Visual Studio team's own internal use,
+the `FileAndForget` method can be tacked on at the end to send failure reports via VS telemetry fault events.
+You may want to handle your own exceptions within the async delegate as well.
 
 ```csharp
 void StartOperation()
@@ -117,7 +119,7 @@ void StartOperation()
     DoWork();
     this.DisposalToken.ThrowIfCancellationRequested();
     DoMoreWork();
-  }).FileAndForget("vs/YOUR-FEATURE/YOUR-ACTION");
+  }).FileAndForget("vs/YOUR-FEATURE/YOUR-ACTION"); // Microsoft's own internal extension method
 }
 ```
 
