@@ -373,6 +373,30 @@ The above code will force allocation of a thread for each degree of concurrency 
 
 Note that being thread-safe is *not* the same thing as being free-threaded, which is an independent metric. Code can be free-threaded, thread-safe, both, or neither.
 
+## Should I await a Task with `.ConfigureAwait(false)`?
+
+Short answer: no. Explanation follows.
+
+Awaiting tasks with `.ConfigureAwait(false)` is a popular trend for a couple reasons:
+
+1. It allows the continuation (when scheduled) to run on the threadpool instead of returning to an unknown `SynchronizationContext` set by the caller. This can improve efficiency, and keep CPU intensive work off the UI thread, thereby increasing an application's responsiveness to user input.
+1. It can avoid deadlocks when people use `Task.Wait()` or `Task.Result` from the UI thread.
+
+But `.ConfigureAwait(false)` carries disadvantages as well:
+
+1. The tendency for `Task.Wait()` to work actually encourages such synchronously blocking code, yet deadlocks can still happen if the UI thread is actually required for one of the scheduled continuations.
+1. It makes for harder to read and maintain async code.
+1. It may not actually move CPU intensive work off the UI thread since it only makes the switch on the first *yielding* await.
+1. It contributes to [threadpool starvation][ThreadpoolStarvation] when the code using it is called in the context of a `JoinableTaskFactory.Run` delegate.
+
+The last disadvantage above deserves some elaboration. The `JoinableTaskFactory.Run` method sets a special `SynchronizationContext` when invoking its delegate so that async continuations automatically run on the original thread (without deadlocking). When awaits use `.ConfigureAwait(false)` it ignores the `SynchronizationContext` and defeats this optimization. As a result the scheduled continuation will execute on a (new) thread from the threadpool, even though the JTF.Run thread is blocked waiting for the delegate to complete and could have executed the continuation. In this scenario, *two* threads are allocated although only one is active.
+
+The problem grows when multiple frames in the callstack use `Task.Wait` or `JoinableTaskFactory.Run`. With each synchronously blocking frame, that thread now becomes useless till the whole operation that it is waiting for is complete, and yet another thread is allocated to make that possible. In some severe cases, we've seen the application hang for over a minute while 75+ threadpool threads were allocated one at a time, each to try to make progress after the thread previously allocated just synchronously blocks for completion. Using `JoinableTaskFactory.Run` consistently prevents this, but only when the code executed by the delegate passed to it avoids using `.ConfigureAwait(false)`.
+
+So how do we get the best of both worlds? How can we have a responsive app, keeping CPU intensive work off the UI thread while not using `.ConfigureAwait(false)`? The guideline is that when you're about to start some CPU intensive, free-threaded work is to first explicitly switch to the threadpool using `await TaskScheduler.Default;`. This simple approach works consistently without many of the disadvantages listed above.
+
+**Note:** Use of `.ConfigureAwait(true)` is equivalent to awaiting a `Task` directly. Using this suffix is a way to suppress the warning emitted by some analyzers that like to see `.ConfigureAwait(false)` everywhere.
+
 [NuPkg]: https://www.nuget.org/packages/Microsoft.VisualStudio.Threading
 [AnalyzerNuPkg]: https://www.nuget.org/packages/Microsoft.VisualStudio.Threading.Analyzers
 [MSDNIVsTaskGetAwaiter]: https://msdn.microsoft.com/en-us/library/vstudio/hh598836.aspx
