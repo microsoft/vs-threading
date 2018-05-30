@@ -378,7 +378,7 @@ Note that being thread-safe is *not* the same thing as being free-threaded, whic
 ### Short answer
 
 * Use `ConfigureAwait(false)` when writing app-independent library code. Such a library should avoid frequent use of `Task.Wait()` and `Task.Result`.
-* Use `ConfigureAwait(true)` when writing code where a `JoinableTaskFactory` is available.
+* Use `ConfigureAwait(true)` when writing code where a `JoinableTaskFactory` is available. Use `await TaskScheduler.Default;` before CPU intensive tasks.
 
 **Note:** Use of `.ConfigureAwait(true)` is equivalent to awaiting a `Task` directly. Using this suffix is a way to suppress the warning emitted by some analyzers that like to see `.ConfigureAwait(false)` everywhere. Where no such analyzer is active, omitting the suffix is recommended for improved code readability.
 
