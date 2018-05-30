@@ -375,7 +375,14 @@ Note that being thread-safe is *not* the same thing as being free-threaded, whic
 
 ## Should I await a Task with `.ConfigureAwait(false)`?
 
-Short answer: no. Explanation follows.
+### Short answer
+
+* Use `ConfigureAwait(false)` when writing app-independent library code. Such a library should avoid frequent use of `Task.Wait()` and `Task.Result`.
+* Use `ConfigureAwait(true)` when writing code where a `JoinableTaskFactory` is available.
+
+**Note:** Use of `.ConfigureAwait(true)` is equivalent to awaiting a `Task` directly. Using this suffix is a way to suppress the warning emitted by some analyzers that like to see `.ConfigureAwait(false)` everywhere. Where no such analyzer is active, omitting the suffix is recommended for improved code readability.
+
+### Explanation
 
 Awaiting tasks with `.ConfigureAwait(false)` is a popular trend for a couple reasons:
 
@@ -393,9 +400,9 @@ The last disadvantage above deserves some elaboration. The `JoinableTaskFactory.
 
 The problem grows when multiple frames in the callstack use `Task.Wait` or `JoinableTaskFactory.Run`. With each synchronously blocking frame, that thread now becomes useless till the whole operation that it is waiting for is complete, and yet another thread is allocated to make that possible. In some severe cases, we've seen the application hang for over a minute while 75+ threadpool threads were allocated one at a time, each to try to make progress after the thread previously allocated just synchronously blocks for completion. Using `JoinableTaskFactory.Run` consistently prevents this, but only when the code executed by the delegate passed to it avoids using `.ConfigureAwait(false)`.
 
-So how do we get the best of both worlds? How can we have a responsive app, keeping CPU intensive work off the UI thread while not using `.ConfigureAwait(false)`? The guideline is that when you're about to start some CPU intensive, free-threaded work is to first explicitly switch to the threadpool using `await TaskScheduler.Default;`. This simple approach works consistently without many of the disadvantages listed above.
+Code invoked from within `JoinableTaskFactory.RunAsync` (the async version) does not immediately synchronously block and thus tends to be less of a concern when using `.ConfigureAwait(false)`. However, since a delegated passed to this method can become blocking later using `JoinableTask.Join()` or await the `JoinableTask` within another `JoinableTaskFactory.Run` call, it is similarly recommended to avoid `.ConfigureAwait(false)` in all JTF contexts.
 
-**Note:** Use of `.ConfigureAwait(true)` is equivalent to awaiting a `Task` directly. Using this suffix is a way to suppress the warning emitted by some analyzers that like to see `.ConfigureAwait(false)` everywhere.
+So how do we get the best of both worlds? How can we have a responsive app, keeping CPU intensive work off the UI thread while not using `.ConfigureAwait(false)`? The guideline is that when you're about to start some CPU intensive, free-threaded work is to first explicitly switch to the threadpool using `await TaskScheduler.Default;`. This simple approach works consistently without many of the disadvantages listed above.
 
 [NuPkg]: https://www.nuget.org/packages/Microsoft.VisualStudio.Threading
 [AnalyzerNuPkg]: https://www.nuget.org/packages/Microsoft.VisualStudio.Threading.Analyzers
