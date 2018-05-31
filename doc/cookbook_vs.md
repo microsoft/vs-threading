@@ -375,14 +375,28 @@ Note that being thread-safe is *not* the same thing as being free-threaded, whic
 
 ## Should I await a Task with `.ConfigureAwait(false)`?
 
-### Short answer
+### What does it even mean?
 
-* Use `ConfigureAwait(false)` when writing app-independent library code. Such a library should avoid frequent use of `Task.Wait()` and `Task.Result`.
-* Use `ConfigureAwait(true)` when writing code where a `JoinableTaskFactory` is available. Use `await TaskScheduler.Default;` before CPU intensive tasks.
+When you *await* an expression (e.g. a `Task` or `Task<T>`), that expression must produce an "awaiter". This is mostly hidden as an implementation detail by the compiler. At runtime this "awaiter" can indicate whether the expression being awaited on represents a completed operation or one that is not yet complete. When the operation is complete, the awaiting code simply continues execution immediately (no yielding, no thread switching, etc.).
+When the operation is not complete, the awaiter is asked to execute a delegate when the operation is done.
+At a high level, this means that when you write `await SomethingAsync()` the next line of code in your method will not execute until the `Task` returned by `SomethingAsync()` is complete.
+
+Suppose that `SomethingAsync()` returns a `Task` that does not complete for 5 seconds. During that time, your method is no longer on the callstack (because it yielded when the `Task` wasn't complete). So when the `Task` completes, it now has a responsibility to invoke the callback the compiler created in order to "resume" your method right where it left off. Which thread should it use to invoke your delegate? That is up to the awaiter to decide.
+
+When you await a `Task`, the policy for what thread the next part of your async method executes on is determined by a type called `TaskAwaiter`. It will execute the callback on the same thread/context that your async method was on when it originally awaited the `Task`. This allows you to be on the UI thread, await something, and then continue your code, still on the UI thread. This is independent of which thread the `Task` itself may have been running on. `TaskAwaiter` does this by capturing the `SynchronizationContext` or `TaskScheduler.Current` from the caller and using either of those as a means of scheduling the invocation of the callback. When neither of those are present, it will simply schedule the callback to execute on the threadpool.
+
+But what if your code may be on the UI thread, but does not need the UI thread to finish its work after the awaited `Task` has completed? You can express to the awaited `Task` that you don't mind executing on the threadpool by adding `.ConfigureAwait(false)` to the end of the `Task`. This causes the compiler to interact with `ConfiguredTaskAwaiter` instead of `TaskAwaiter`. The `ConfiguredTaskAwaiter`'s policy is (if you pass in `false` when creating it) to always schedule continuations to the threadpool (or in some cases inline the continuation immediately after the `Task` itself is completed).
 
 **Note:** Use of `.ConfigureAwait(true)` is equivalent to awaiting a `Task` directly. Using this suffix is a way to suppress the warning emitted by some analyzers that like to see `.ConfigureAwait(false)` everywhere. Where no such analyzer is active, omitting the suffix is recommended for improved code readability.
 
-### Explanation
+### Short answer
+
+* Use `ConfigureAwait(false)` when writing app-independent library code. Such a library should avoid frequent use of `Task.Wait()` and `Task.Result`.
+* Use `ConfigureAwait(true)` when writing code where a `JoinableTaskFactory` is available. Use `await TaskScheduler.Default;` before CPU intensive, free-threaded work.
+
+For Visual Studio packages, the recommendation is to *not* use `.ConfigureAwait(false)`.
+
+### Justification
 
 Awaiting tasks with `.ConfigureAwait(false)` is a popular trend for a couple reasons:
 
@@ -396,13 +410,20 @@ But `.ConfigureAwait(false)` carries disadvantages as well:
 1. It may not actually move CPU intensive work off the UI thread since it only makes the switch on the first *yielding* await.
 1. It contributes to [threadpool starvation][ThreadpoolStarvation] when the code using it is called in the context of a `JoinableTaskFactory.Run` delegate.
 
-The last disadvantage above deserves some elaboration. The `JoinableTaskFactory.Run` method sets a special `SynchronizationContext` when invoking its delegate so that async continuations automatically run on the original thread (without deadlocking). When awaits use `.ConfigureAwait(false)` it ignores the `SynchronizationContext` and defeats this optimization. As a result the scheduled continuation will execute on a (new) thread from the threadpool, even though the JTF.Run thread is blocked waiting for the delegate to complete and could have executed the continuation. In this scenario, *two* threads are allocated although only one is active.
+The last disadvantage above deserves some elaboration. The `JoinableTaskFactory.Run` method sets a special `SynchronizationContext` when invoking its delegate so that async continuations automatically run on the original thread (without deadlocking). When awaits use `.ConfigureAwait(false)` it ignores the `SynchronizationContext` and defeats this optimization. As a result the scheduled continuation will occupy a thread from the threadpool, even though the JTF.Run thread is blocked waiting for the delegate to complete and could have executed the continuation. In this scenario, *two* threads are allocated although only one is active.
 
 The problem grows when multiple frames in the callstack use `Task.Wait` or `JoinableTaskFactory.Run`. With each synchronously blocking frame, that thread now becomes useless till the whole operation that it is waiting for is complete, and yet another thread is allocated to make that possible. In some severe cases, we've seen the application hang for over a minute while 75+ threadpool threads were allocated one at a time, each to try to make progress after the thread previously allocated just synchronously blocks for completion. Using `JoinableTaskFactory.Run` consistently prevents this, but only when the code executed by the delegate passed to it avoids using `.ConfigureAwait(false)`.
 
 Code invoked from within `JoinableTaskFactory.RunAsync` (the async version) does not immediately synchronously block and thus tends to be less of a concern when using `.ConfigureAwait(false)`. However, since a delegated passed to this method can become blocking later using `JoinableTask.Join()` or await the `JoinableTask` within another `JoinableTaskFactory.Run` call, it is similarly recommended to avoid `.ConfigureAwait(false)` in all JTF contexts.
 
 So how do we get the best of both worlds? How can we have a responsive app, keeping CPU intensive work off the UI thread while not using `.ConfigureAwait(false)`? The guideline is that when you're about to start some CPU intensive, free-threaded work is to first explicitly switch to the threadpool using `await TaskScheduler.Default;`. This simple approach works consistently without many of the disadvantages listed above.
+
+### Some important notes
+
+1. Using `.ConfigureAwait(false)` does *not* guarantee that code after it will be on the threadpool. It has absolutely no effect at all if the `Task` itself is already complete since the compiler will simply continue execution immediately as if there were no await there.
+1. If you have a policy to use `.ConfigureAwait(false)` it is important to use it *everywhere* (not just on the first await in a method), because the first awaited expression might not yield but the second one may, and therefore the yielding expression must have that suffix to get the effect.
+1. If the awaited `Task` completes on the UI thread, continuations are typically *not* inlined, even if `.ConfigureAwait(false)` is used when awaiting the `Task`.
+1. If the awaited `Task` completes on a threadpool thread, then it will usually inline continuations that are expecting to be invoked on the threadpool as an optimization. This includes continuations scheduled with `.ConfigureAwait(false)` and those that were scheduled while already on the threadpool.
 
 [NuPkg]: https://www.nuget.org/packages/Microsoft.VisualStudio.Threading
 [AnalyzerNuPkg]: https://www.nuget.org/packages/Microsoft.VisualStudio.Threading.Analyzers
