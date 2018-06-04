@@ -144,6 +144,24 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Calls to JoinableTaskFactory.SwitchToMainThreadAsync() must be awaited..
+        /// </summary>
+        internal static string VSTHRD004_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSTHRD004_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Await SwitchToMainThreadAsync.
+        /// </summary>
+        internal static string VSTHRD004_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD004_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Accessing &quot;{0}&quot; should only be done on the main thread. Await JoinableTaskFactory.SwitchToMainThreadAsync() first..
         /// </summary>
         internal static string VSTHRD010_MessageFormat_Async {

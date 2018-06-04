@@ -194,6 +194,15 @@ Verwenden Sie stattdessen AsyncLazy&lt;T&gt;.</target>
           <target state="new">Accessing "{0}" should only be done on the main thread. Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type or member name.</note>
         </trans-unit>
+        <trans-unit id="VSTHRD004_MessageFormat" translate="yes" xml:space="preserve">
+          <source>Calls to JoinableTaskFactory.SwitchToMainThreadAsync() must be awaited.</source>
+          <target state="new">Calls to JoinableTaskFactory.SwitchToMainThreadAsync() must be awaited.</target>
+        </trans-unit>
+        <trans-unit id="VSTHRD004_Title" translate="yes" xml:space="preserve">
+          <source>Await SwitchToMainThreadAsync</source>
+          <target state="new">Await SwitchToMainThreadAsync</target>
+          <note from="MultilingualBuild" annotates="source" priority="2">Do not translate either of these. The first is a keyword, the second is a method name.</note>
+        </trans-unit>
       </group>
     </body>
   </file>

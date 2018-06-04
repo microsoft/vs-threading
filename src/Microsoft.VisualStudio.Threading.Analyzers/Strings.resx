@@ -261,4 +261,11 @@ Use AsyncLazy&lt;T&gt; instead.</value>
   <data name="VSTHRD109_Title" xml:space="preserve">
     <value>Switch instead of assert in async methods</value>
   </data>
+  <data name="VSTHRD004_MessageFormat" xml:space="preserve">
+    <value>Calls to JoinableTaskFactory.SwitchToMainThreadAsync() must be awaited.</value>
+  </data>
+  <data name="VSTHRD004_Title" xml:space="preserve">
+    <value>Await SwitchToMainThreadAsync</value>
+    <comment>Do not translate either of these. The first is a keyword, the second is a method name.</comment>
+  </data>
 </root>
