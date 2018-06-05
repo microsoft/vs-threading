@@ -203,6 +203,14 @@ Em vez disso, use AsyncLazy&lt;T&gt;.</target>
           <target state="new">Await SwitchToMainThreadAsync</target>
           <note from="MultilingualBuild" annotates="source" priority="2">Do not translate either of these. The first is a keyword, the second is a method name.</note>
         </trans-unit>
+        <trans-unit id="VSTHRD110_MessageFormat" translate="yes" xml:space="preserve">
+          <source>Observe the awaitable result of this method call by awaiting it, assigning to a variable, or passing it to another method.</source>
+          <target state="new">Observe the awaitable result of this method call by awaiting it, assigning to a variable, or passing it to another method.</target>
+        </trans-unit>
+        <trans-unit id="VSTHRD110_Title" translate="yes" xml:space="preserve">
+          <source>Observe result of async calls</source>
+          <target state="new">Observe result of async calls</target>
+        </trans-unit>
       </group>
     </body>
   </file>

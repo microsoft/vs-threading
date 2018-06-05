@@ -126,9 +126,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         {
             internal const string TypeName = nameof(System.Threading.Tasks.Task);
 
-            internal const string Namespace = "System.Threading.Tasks.";
+            internal const string FullName = "System.Threading.Tasks." + TypeName;
 
-            internal const string FullName = Namespace + TypeName;
+            internal static readonly IReadOnlyList<string> Namespace = Namespaces.SystemThreadingTasks;
         }
 
         internal static class ComImportAttribute

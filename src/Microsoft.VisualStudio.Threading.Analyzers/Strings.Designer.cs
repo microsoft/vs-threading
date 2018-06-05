@@ -433,6 +433,24 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Observe the awaitable result of this method call by awaiting it, assigning to a variable, or passing it to another method..
+        /// </summary>
+        internal static string VSTHRD110_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSTHRD110_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Observe result of async calls.
+        /// </summary>
+        internal static string VSTHRD110_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD110_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Rename to {0}.
         /// </summary>
         internal static string VSTHRD200_CodeFix_Title {
