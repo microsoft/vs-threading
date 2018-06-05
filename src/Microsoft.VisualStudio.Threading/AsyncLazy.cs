@@ -148,7 +148,7 @@ namespace Microsoft.VisualStudio.Threading
                         Func<Task<T>> originalValueFactory = this.valueFactory;
                         this.valueFactory = null;
 
-                        Task<T> ValueFactory()
+                        Func<Task<T>> valueFactory = delegate
                         {
                             var taskCompletionSource = new TaskCompletionSource<T>();
                             async Task InnerValueFactory()
@@ -195,7 +195,7 @@ namespace Microsoft.VisualStudio.Threading
 
                             InnerValueFactory().Forget();
                             return taskCompletionSource.Task;
-                        }
+                        };
 
                         this.recursiveFactoryCheck.Value = RecursiveCheckSentinel;
                         try
@@ -205,12 +205,12 @@ namespace Microsoft.VisualStudio.Threading
                                 // Wrapping with RunAsync allows a future caller
                                 // to synchronously block the Main thread waiting for the result
                                 // without leading to deadlocks.
-                                this.joinableTask = this.jobFactory.RunAsync(ValueFactory);
+                                this.joinableTask = this.jobFactory.RunAsync(valueFactory);
                                 this.value = this.joinableTask.Task;
                             }
                             else
                             {
-                                this.value = ValueFactory();
+                                this.value = valueFactory();
                             }
                         }
                         finally
