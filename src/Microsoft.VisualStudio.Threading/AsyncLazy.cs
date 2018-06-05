@@ -147,19 +147,55 @@ namespace Microsoft.VisualStudio.Threading
                         resumableAwaiter = new InlineResumable();
                         Func<Task<T>> originalValueFactory = this.valueFactory;
                         this.valueFactory = null;
-                        Func<Task<T>> valueFactory = async delegate
+
+                        Task<T> ValueFactory()
                         {
-                            try
+                            var taskCompletionSource = new TaskCompletionSource<T>();
+                            async Task InnerValueFactory()
                             {
-                                await resumableAwaiter;
-                                return await originalValueFactory().ConfigureAwait(continueOnCapturedContext: false);
+                                try
+                                {
+                                    await resumableAwaiter;
+                                    originalValueFactory().ContinueWith(
+                                        (task, state) =>
+                                        {
+                                            var tuple = (Tuple<AsyncLazy<T>, TaskCompletionSource<T>>)state;
+                                            var that = tuple.Item1;
+                                            var tsc = tuple.Item2;
+                                            that.jobFactory = null;
+                                            that.joinableTask = null;
+
+                                            switch (task.Status)
+                                            {
+                                                case TaskStatus.RanToCompletion:
+                                                    tsc.TrySetResult(task.Result);
+                                                    break;
+
+                                                case TaskStatus.Faulted:
+                                                    tsc.TrySetException(task.Exception.InnerException);
+                                                    break;
+
+                                                case TaskStatus.Canceled:
+                                                    tsc.TrySetCanceled();
+                                                    break;
+                                            }
+                                        },
+                                        Tuple.Create(this, taskCompletionSource),
+                                        CancellationToken.None,
+                                        TaskContinuationOptions.ExecuteSynchronously,
+                                        TaskScheduler.Default).Forget();
+                                }
+                                catch (Exception ex)
+                                {
+                                    this.jobFactory = null;
+                                    this.joinableTask = null;
+                                    taskCompletionSource.TrySetException(ex);
+                                }
                             }
-                            finally
-                            {
-                                this.jobFactory = null;
-                                this.joinableTask = null;
-                            }
-                        };
+
+                            InnerValueFactory().Forget();
+                            return taskCompletionSource.Task;
+                        }
 
                         this.recursiveFactoryCheck.Value = RecursiveCheckSentinel;
                         try
@@ -169,12 +205,12 @@ namespace Microsoft.VisualStudio.Threading
                                 // Wrapping with RunAsync allows a future caller
                                 // to synchronously block the Main thread waiting for the result
                                 // without leading to deadlocks.
-                                this.joinableTask = this.jobFactory.RunAsync(valueFactory);
+                                this.joinableTask = this.jobFactory.RunAsync(ValueFactory);
                                 this.value = this.joinableTask.Task;
                             }
                             else
                             {
-                                this.value = valueFactory();
+                                this.value = ValueFactory();
                             }
                         }
                         finally
