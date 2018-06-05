@@ -366,6 +366,70 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Assert.NotEqual(string.Empty, result);
         }
 
+        [Fact]
+        public void AsyncLazyNoExtraThreadSwitching()
+        {
+            var ctxt = SingleThreadedSynchronizationContext.New();
+            SynchronizationContext.SetSynchronizationContext(ctxt);
+            var tcs = new TaskCompletionSource<bool>();
+
+            var lazy = new AsyncLazy<object>(
+                async delegate
+                {
+                    await tcs.Task;
+                    return null;
+                });
+
+            var computingTask = lazy.GetValueAsync();
+            Assert.False(computingTask.IsCompleted);
+
+            SynchronizationContext synchronizationContext = null;
+            var verificationTask = computingTask.ContinueWith(_ =>
+                {
+                    synchronizationContext = SynchronizationContext.Current;
+                },
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+
+            tcs.SetResult(true);
+
+            // If AsyncLazy doesn't require extra switching, the verificationTask will complete inline.  Otherwise, it won't have a chance to get back to the SingleThreadedSynchronizationContext.
+            Assert.True(verificationTask.IsCompleted);
+            Assert.Same(ctxt, synchronizationContext);
+        }
+
+        [Fact]
+        public void AsyncLazyCompletedInline()
+        {
+            var tcs = new TaskCompletionSource<bool>();
+
+            var lazy = new AsyncLazy<object>(
+                async delegate
+                {
+                    await tcs.Task;
+                    return null;
+                });
+
+            var computingTask = lazy.GetValueAsync();
+            Assert.False(computingTask.IsCompleted);
+
+            int threadId = 0;
+            var verificationTask = computingTask.ContinueWith(_ =>
+                {
+                    threadId = Thread.CurrentThread.ManagedThreadId;
+                },
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+
+            tcs.SetResult(true);
+
+            // Verify the AsyncLazy finishes inline without extra thread switching
+            Assert.True(verificationTask.IsCompleted);
+            Assert.Equal(threadId, Thread.CurrentThread.ManagedThreadId);
+        }
+
         /// <summary>
         /// Verifies that even after the value factory has been invoked
         /// its dependency on the Main thread can be satisfied by
