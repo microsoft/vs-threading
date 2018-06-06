@@ -24,6 +24,13 @@ namespace Microsoft.VisualStudio.Threading.Tests
         {
         }
 
+        public enum NamedSyncContexts
+        {
+            None,
+            A,
+            B,
+        }
+
         [Theory, CombinatorialData]
         public void TaskYield_ConfigureAwait_OnDispatcher(bool useDefaultYield)
         {
@@ -216,6 +223,108 @@ namespace Microsoft.VisualStudio.Threading.Tests
 #endif
                 Assert.True(TaskScheduler.Default.GetAwaiter().IsCompleted);
             }).GetAwaiter().GetResult();
+        }
+
+        [Theory]
+        [CombinatorialData]
+        public void ConfigureAwaitRunInline_NoExtraThreadSwitching(NamedSyncContexts invokeOn, NamedSyncContexts completeOn)
+        {
+            // Set up various SynchronizationContexts that we may invoke or complete the async method with.
+            var aSyncContext = SingleThreadedSynchronizationContext.New();
+            var bSyncContext = SingleThreadedSynchronizationContext.New();
+            var invokeOnSyncContext = invokeOn == NamedSyncContexts.None ? null
+                : invokeOn == NamedSyncContexts.A ? aSyncContext
+                : invokeOn == NamedSyncContexts.B ? bSyncContext
+                : throw new ArgumentOutOfRangeException(nameof(invokeOn));
+            var completeOnSyncContext = completeOn == NamedSyncContexts.None ? null
+                : completeOn == NamedSyncContexts.A ? aSyncContext
+                : completeOn == NamedSyncContexts.B ? bSyncContext
+                : throw new ArgumentOutOfRangeException(nameof(completeOn));
+
+            // Set up a single-threaded SynchronizationContext that we'll invoke the async method within.
+            SynchronizationContext.SetSynchronizationContext(invokeOnSyncContext);
+
+            var unblockAsyncMethod = new TaskCompletionSource<bool>();
+            var asyncTask = AwaitThenGetThreadAsync(unblockAsyncMethod.Task);
+
+            SynchronizationContext.SetSynchronizationContext(completeOnSyncContext);
+            unblockAsyncMethod.SetResult(true);
+
+            // Confirm that setting the intermediate task allowed the async method to complete immediately, using our thread to do it.
+            Assert.True(asyncTask.IsCompleted);
+            Assert.Equal(Environment.CurrentManagedThreadId, asyncTask.Result);
+
+            async Task<int> AwaitThenGetThreadAsync(Task antecedent)
+            {
+                await antecedent.ConfigureAwaitRunInline();
+                return Environment.CurrentManagedThreadId;
+            }
+        }
+
+        [Theory]
+        [CombinatorialData]
+        public void ConfigureAwaitRunInlineOfT_NoExtraThreadSwitching(NamedSyncContexts invokeOn, NamedSyncContexts completeOn)
+        {
+            // Set up various SynchronizationContexts that we may invoke or complete the async method with.
+            var aSyncContext = SingleThreadedSynchronizationContext.New();
+            var bSyncContext = SingleThreadedSynchronizationContext.New();
+            var invokeOnSyncContext = invokeOn == NamedSyncContexts.None ? null
+                : invokeOn == NamedSyncContexts.A ? aSyncContext
+                : invokeOn == NamedSyncContexts.B ? bSyncContext
+                : throw new ArgumentOutOfRangeException(nameof(invokeOn));
+            var completeOnSyncContext = completeOn == NamedSyncContexts.None ? null
+                : completeOn == NamedSyncContexts.A ? aSyncContext
+                : completeOn == NamedSyncContexts.B ? bSyncContext
+                : throw new ArgumentOutOfRangeException(nameof(completeOn));
+
+            // Set up a single-threaded SynchronizationContext that we'll invoke the async method within.
+            SynchronizationContext.SetSynchronizationContext(invokeOnSyncContext);
+
+            var unblockAsyncMethod = new TaskCompletionSource<bool>();
+            var asyncTask = AwaitThenGetThreadAsync(unblockAsyncMethod.Task);
+
+            SynchronizationContext.SetSynchronizationContext(completeOnSyncContext);
+            unblockAsyncMethod.SetResult(true);
+
+            // Confirm that setting the intermediate task allowed the async method to complete immediately, using our thread to do it.
+            Assert.True(asyncTask.IsCompleted);
+            Assert.Equal(Environment.CurrentManagedThreadId, asyncTask.Result);
+
+            async Task<int> AwaitThenGetThreadAsync(Task<bool> antecedent)
+            {
+                bool result = await antecedent.ConfigureAwaitRunInline();
+                Assert.True(result);
+                return Environment.CurrentManagedThreadId;
+            }
+        }
+
+        [Fact]
+        public void ConfigureAwaitRunInline_AlreadyCompleted()
+        {
+            var asyncTask = AwaitThenGetThreadAsync(Task.FromResult(true));
+            Assert.True(asyncTask.IsCompleted);
+            Assert.Equal(Environment.CurrentManagedThreadId, asyncTask.Result);
+
+            async Task<int> AwaitThenGetThreadAsync(Task antecedent)
+            {
+                await antecedent.ConfigureAwaitRunInline();
+                return Environment.CurrentManagedThreadId;
+            }
+        }
+
+        [Fact]
+        public void ConfigureAwaitRunInlineOfT_AlreadyCompleted()
+        {
+            var asyncTask = AwaitThenGetThreadAsync(Task.FromResult(true));
+            Assert.True(asyncTask.IsCompleted);
+            Assert.Equal(Environment.CurrentManagedThreadId, asyncTask.Result);
+
+            async Task<int> AwaitThenGetThreadAsync(Task<bool> antecedent)
+            {
+                bool result = await antecedent.ConfigureAwaitRunInline();
+                Assert.True(result);
+                return Environment.CurrentManagedThreadId;
+            }
         }
 
 #if !NETCOREAPP1_0 // .NET Core 1.0 doesn't offer a way to avoid flowing ExecutionContext
