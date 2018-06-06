@@ -147,54 +147,18 @@ namespace Microsoft.VisualStudio.Threading
                         resumableAwaiter = new InlineResumable();
                         Func<Task<T>> originalValueFactory = this.valueFactory;
                         this.valueFactory = null;
-
-                        Func<Task<T>> valueFactory = delegate
+                        Func<Task<T>> valueFactory = async delegate
                         {
-                            var taskCompletionSource = new TaskCompletionSource<T>();
-                            async Task InnerValueFactory()
+                            try
                             {
-                                try
-                                {
-                                    await resumableAwaiter;
-                                    originalValueFactory().ContinueWith(
-                                        (task, state) =>
-                                        {
-                                            var tuple = (Tuple<AsyncLazy<T>, TaskCompletionSource<T>>)state;
-                                            var that = tuple.Item1;
-                                            var tsc = tuple.Item2;
-                                            that.jobFactory = null;
-                                            that.joinableTask = null;
-
-                                            switch (task.Status)
-                                            {
-                                                case TaskStatus.RanToCompletion:
-                                                    tsc.TrySetResult(task.Result);
-                                                    break;
-
-                                                case TaskStatus.Faulted:
-                                                    tsc.TrySetException(task.Exception.InnerException);
-                                                    break;
-
-                                                case TaskStatus.Canceled:
-                                                    tsc.TrySetCanceled();
-                                                    break;
-                                            }
-                                        },
-                                        Tuple.Create(this, taskCompletionSource),
-                                        CancellationToken.None,
-                                        TaskContinuationOptions.ExecuteSynchronously,
-                                        TaskScheduler.Default).Forget();
-                                }
-                                catch (Exception ex)
-                                {
-                                    this.jobFactory = null;
-                                    this.joinableTask = null;
-                                    taskCompletionSource.TrySetException(ex);
-                                }
+                                await resumableAwaiter;
+                                return await originalValueFactory().ConfigureAwaitRunInline();
                             }
-
-                            InnerValueFactory().Forget();
-                            return taskCompletionSource.Task;
+                            finally
+                            {
+                                this.jobFactory = null;
+                                this.joinableTask = null;
+                            }
                         };
 
                         this.recursiveFactoryCheck.Value = RecursiveCheckSentinel;
