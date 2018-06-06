@@ -14,6 +14,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
     using System.Threading.Tasks;
     using Xunit;
     using Xunit.Abstractions;
+    using NamedSyncContexts = Microsoft.VisualStudio.Threading.Tests.AwaitExtensionsTests.NamedSyncContexts;
 
     public class AsyncLazyTests : TestBase
     {
@@ -366,68 +367,44 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Assert.NotEqual(string.Empty, result);
         }
 
-        [Fact]
-        public void AsyncLazyNoExtraThreadSwitching()
+        [Theory]
+        [CombinatorialData]
+        public void AsyncLazy_CompletesOnThreadWithValueFactory(NamedSyncContexts invokeOn, NamedSyncContexts completeOn)
         {
-            var ctxt = SingleThreadedSynchronizationContext.New();
-            SynchronizationContext.SetSynchronizationContext(ctxt);
-            var tcs = new TaskCompletionSource<bool>();
+            // Set up various SynchronizationContexts that we may invoke or complete the async method with.
+            var aSyncContext = SingleThreadedSynchronizationContext.New();
+            var bSyncContext = SingleThreadedSynchronizationContext.New();
+            var invokeOnSyncContext = invokeOn == NamedSyncContexts.None ? null
+                : invokeOn == NamedSyncContexts.A ? aSyncContext
+                : invokeOn == NamedSyncContexts.B ? bSyncContext
+                : throw new ArgumentOutOfRangeException(nameof(invokeOn));
+            var completeOnSyncContext = completeOn == NamedSyncContexts.None ? null
+                : completeOn == NamedSyncContexts.A ? aSyncContext
+                : completeOn == NamedSyncContexts.B ? bSyncContext
+                : throw new ArgumentOutOfRangeException(nameof(completeOn));
 
-            var lazy = new AsyncLazy<object>(
-                async delegate
-                {
-                    await tcs.Task;
-                    return null;
-                });
+            // Set up a single-threaded SynchronizationContext that we'll invoke the async method within.
+            SynchronizationContext.SetSynchronizationContext(invokeOnSyncContext);
 
-            var computingTask = lazy.GetValueAsync();
-            Assert.False(computingTask.IsCompleted);
+            var unblockAsyncMethod = new TaskCompletionSource<bool>();
+            var getValueTask = new AsyncLazy<int>(async delegate
+            {
+                await unblockAsyncMethod.Task.ConfigureAwaitRunInline();
+                return Environment.CurrentManagedThreadId;
+            }).GetValueAsync();
 
-            SynchronizationContext synchronizationContext = null;
-            var verificationTask = computingTask.ContinueWith(_ =>
-                {
-                    synchronizationContext = SynchronizationContext.Current;
-                },
+            var verificationTask = getValueTask.ContinueWith(
+                lazyValue => Environment.CurrentManagedThreadId,
                 CancellationToken.None,
                 TaskContinuationOptions.ExecuteSynchronously,
                 TaskScheduler.Default);
 
-            tcs.SetResult(true);
+            SynchronizationContext.SetSynchronizationContext(completeOnSyncContext);
+            unblockAsyncMethod.SetResult(true);
 
-            // If AsyncLazy doesn't require extra switching, the verificationTask will complete inline.  Otherwise, it won't have a chance to get back to the SingleThreadedSynchronizationContext.
+            // Confirm that setting the intermediate task allowed the async method to complete immediately, using our thread to do it.
             Assert.True(verificationTask.IsCompleted);
-            Assert.Same(ctxt, synchronizationContext);
-        }
-
-        [Fact]
-        public void AsyncLazyCompletedInline()
-        {
-            var tcs = new TaskCompletionSource<bool>();
-
-            var lazy = new AsyncLazy<object>(
-                async delegate
-                {
-                    await tcs.Task;
-                    return null;
-                });
-
-            var computingTask = lazy.GetValueAsync();
-            Assert.False(computingTask.IsCompleted);
-
-            int threadId = 0;
-            var verificationTask = computingTask.ContinueWith(_ =>
-                {
-                    threadId = Thread.CurrentThread.ManagedThreadId;
-                },
-                CancellationToken.None,
-                TaskContinuationOptions.ExecuteSynchronously,
-                TaskScheduler.Default);
-
-            tcs.SetResult(true);
-
-            // Verify the AsyncLazy finishes inline without extra thread switching
-            Assert.True(verificationTask.IsCompleted);
-            Assert.Equal(threadId, Thread.CurrentThread.ManagedThreadId);
+            Assert.Equal(Environment.CurrentManagedThreadId, verificationTask.Result);
         }
 
         /// <summary>
