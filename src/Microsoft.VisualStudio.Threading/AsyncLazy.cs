@@ -152,7 +152,7 @@ namespace Microsoft.VisualStudio.Threading
                             try
                             {
                                 await resumableAwaiter;
-                                return await originalValueFactory().ConfigureAwait(continueOnCapturedContext: false);
+                                return await originalValueFactory().ConfigureAwaitRunInline();
                             }
                             finally
                             {

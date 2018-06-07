@@ -14,6 +14,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
     using System.Threading.Tasks;
     using Xunit;
     using Xunit.Abstractions;
+    using NamedSyncContexts = Microsoft.VisualStudio.Threading.Tests.AwaitExtensionsTests.NamedSyncContexts;
 
     public class AsyncLazyTests : TestBase
     {
@@ -364,6 +365,46 @@ namespace Microsoft.VisualStudio.Threading.Tests
             string result = lazy.ToString();
             Assert.NotNull(result);
             Assert.NotEqual(string.Empty, result);
+        }
+
+        [Theory]
+        [CombinatorialData]
+        public void AsyncLazy_CompletesOnThreadWithValueFactory(NamedSyncContexts invokeOn, NamedSyncContexts completeOn)
+        {
+            // Set up various SynchronizationContexts that we may invoke or complete the async method with.
+            var aSyncContext = SingleThreadedSynchronizationContext.New();
+            var bSyncContext = SingleThreadedSynchronizationContext.New();
+            var invokeOnSyncContext = invokeOn == NamedSyncContexts.None ? null
+                : invokeOn == NamedSyncContexts.A ? aSyncContext
+                : invokeOn == NamedSyncContexts.B ? bSyncContext
+                : throw new ArgumentOutOfRangeException(nameof(invokeOn));
+            var completeOnSyncContext = completeOn == NamedSyncContexts.None ? null
+                : completeOn == NamedSyncContexts.A ? aSyncContext
+                : completeOn == NamedSyncContexts.B ? bSyncContext
+                : throw new ArgumentOutOfRangeException(nameof(completeOn));
+
+            // Set up a single-threaded SynchronizationContext that we'll invoke the async method within.
+            SynchronizationContext.SetSynchronizationContext(invokeOnSyncContext);
+
+            var unblockAsyncMethod = new TaskCompletionSource<bool>();
+            var getValueTask = new AsyncLazy<int>(async delegate
+            {
+                await unblockAsyncMethod.Task.ConfigureAwaitRunInline();
+                return Environment.CurrentManagedThreadId;
+            }).GetValueAsync();
+
+            var verificationTask = getValueTask.ContinueWith(
+                lazyValue => Environment.CurrentManagedThreadId,
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+
+            SynchronizationContext.SetSynchronizationContext(completeOnSyncContext);
+            unblockAsyncMethod.SetResult(true);
+
+            // Confirm that setting the intermediate task allowed the async method to complete immediately, using our thread to do it.
+            Assert.True(verificationTask.IsCompleted);
+            Assert.Equal(Environment.CurrentManagedThreadId, verificationTask.Result);
         }
 
         /// <summary>
