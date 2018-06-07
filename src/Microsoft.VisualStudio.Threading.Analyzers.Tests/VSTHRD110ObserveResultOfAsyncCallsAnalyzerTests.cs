@@ -149,6 +149,49 @@ class Test {
         }
 
         [Fact]
+        public void ReturnStatement_ProducesNoDiagnostic()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task Foo()
+    {
+        return BarAsync();
+    }
+
+    Task BarAsync() => null;
+
+    void OtherMethod(Task t) { }
+}
+";
+
+            this.VerifyCSharpDiagnostic(test);
+        }
+
+        [Fact]
+        public void ContinueWith_ProducesDiagnostic()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    void Foo()
+    {
+        BarAsync().ContinueWith(_ => { }); // ContinueWith returns the dropped task
+    }
+
+    Task BarAsync() => null;
+
+    void OtherMethod(Task t) { }
+}
+";
+
+            this.expect = this.CreateDiagnostic(7, 20, 12);
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
+        [Fact]
         public void AsyncMethod_ProducesNoDiagnostic()
         {
             var test = @"
