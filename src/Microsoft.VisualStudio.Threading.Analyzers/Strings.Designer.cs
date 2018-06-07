@@ -144,6 +144,24 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Calls to JoinableTaskFactory.SwitchToMainThreadAsync() must be awaited..
+        /// </summary>
+        internal static string VSTHRD004_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSTHRD004_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Await SwitchToMainThreadAsync.
+        /// </summary>
+        internal static string VSTHRD004_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD004_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Accessing &quot;{0}&quot; should only be done on the main thread. Await JoinableTaskFactory.SwitchToMainThreadAsync() first..
         /// </summary>
         internal static string VSTHRD010_MessageFormat_Async {
@@ -411,6 +429,24 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         internal static string VSTHRD109_Title {
             get {
                 return ResourceManager.GetString("VSTHRD109_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Observe the awaitable result of this method call by awaiting it, assigning to a variable, or passing it to another method..
+        /// </summary>
+        internal static string VSTHRD110_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSTHRD110_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Observe result of async calls.
+        /// </summary>
+        internal static string VSTHRD110_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD110_Title", resourceCulture);
             }
         }
         

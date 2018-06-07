@@ -8,6 +8,7 @@ ID | Title | Severity | Supports
 [VSTHRD001](VSTHRD001.md) | Use JTF.SwitchToMainThread to switch | Critical | [1st rule](../threading_rules.md#Rule1)
 [VSTHRD002](VSTHRD002.md) | Use JTF.Run to block | Critical | [2nd rule](../threading_rules.md#Rule2)
 [VSTHRD003](VSTHRD003.md) | Use JTF.RunAsync to block later | Critical | [3rd rule](../threading_rules.md#Rule3)
+[VSTHRD004](VSTHRD004.md) | Await SwitchToMainThreadAsync | Critical | [1st rule](../threading_rules.md#Rule1)
 [VSTHRD010](VSTHRD010.md) | Invoke single-threaded types on Main thread | Critical | [1st rule](../threading_rules.md#Rule1)
 [VSTHRD011](VSTHRD011.md) | Avoid using `Lazy<T>` where `T` is `Task<T2>` | Critical | [3rd rule](../threading_rules.md#Rule3)
 [VSTHRD012](VSTHRD012.md) | Provide JoinableTaskFactory where allowed | Critical | [All rules](../threading_rules.md)
@@ -21,6 +22,7 @@ ID | Title | Severity | Supports
 [VSTHRD107](VSTHRD107.md) | Await Task within using expression | Advisory
 [VSTHRD108](VSTHRD108.md) | Assert thread affinity unconditionally | Advisory | [1st rule](../threading_rules.md#Rule1), [VSTHRD010](VSTHRD010.md)
 [VSTHRD109](VSTHRD109.md) | Switch instead of assert in async methods | Advisory | [1st rule](../threading_rules.md#Rule1)
+[VSTHRD110](VSTHRD110.md) | Observe result of async calls | Advisory
 [VSTHRD200](VSTHRD200.md) | Use `Async` naming convention | Guideline | [VSTHRD103](VSTHRD103.md)
 
 ## Severity descriptions

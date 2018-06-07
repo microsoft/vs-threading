@@ -13,6 +13,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Linq;
+    using System.Reflection;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -738,6 +739,33 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         internal static string GetHelpLink(string analyzerId)
         {
             return $"https://github.com/Microsoft/vs-threading/blob/master/doc/analyzers/{analyzerId}.md";
+        }
+
+        internal static T FirstAncestor<T>(this SyntaxNode startingNode, IReadOnlyCollection<Type> doNotPassNodeTypes)
+            where T : SyntaxNode
+        {
+            if (doNotPassNodeTypes == null)
+            {
+                throw new ArgumentNullException(nameof(doNotPassNodeTypes));
+            }
+
+            var syntaxNode = startingNode;
+            while (syntaxNode != null)
+            {
+                if (syntaxNode is T result)
+                {
+                    return result;
+                }
+
+                if (doNotPassNodeTypes.Any(disallowed => disallowed.GetTypeInfo().IsAssignableFrom(syntaxNode.GetType().GetTypeInfo())))
+                {
+                    return default(T);
+                }
+
+                syntaxNode = syntaxNode.Parent;
+            }
+
+            return default(T);
         }
 
         private static CSharpSyntaxNode UpdateStatementsForAsyncMethod(CSharpSyntaxNode body, SemanticModel semanticModel, bool hasResultValue)
