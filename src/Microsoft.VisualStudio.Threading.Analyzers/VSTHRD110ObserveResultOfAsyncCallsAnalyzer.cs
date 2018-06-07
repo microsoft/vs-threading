@@ -45,7 +45,7 @@
 
             // Only consider invocations that are direct statements. Otherwise, we assume their
             // result is awaited, assigned, or otherwise consumed.
-            if (invocation.Parent is StatementSyntax)
+            if (invocation.Parent?.GetType().Equals(typeof(ExpressionStatementSyntax)) ?? false)
             {
                 var methodSymbol = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
                 var returnedSymbol = methodSymbol?.ReturnType;
