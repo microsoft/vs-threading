@@ -165,14 +165,21 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 }
             }
 
-            Assert.True(fixApplied, "No code fix offered.");
-
-            // After applying all of the code fixes, compare the resulting string to the inputted one
-            int j = 0;
-            foreach (var document in project.Documents)
+            if (newSources != null && newSources[0] != null)
             {
-                var actual = GetStringFromDocument(document);
-                Assert.Equal(newSources[j++], actual, ignoreLineEndingDifferences: true);
+                Assert.True(fixApplied, "No code fix offered.");
+
+                // After applying all of the code fixes, compare the resulting string to the inputted one
+                int j = 0;
+                foreach (var document in project.Documents)
+                {
+                    var actual = GetStringFromDocument(document);
+                    Assert.Equal(newSources[j++], actual, ignoreLineEndingDifferences: true);
+                }
+            }
+            else
+            {
+                Assert.False(fixApplied, "No code fix expected, but was offered.");
             }
         }
     }

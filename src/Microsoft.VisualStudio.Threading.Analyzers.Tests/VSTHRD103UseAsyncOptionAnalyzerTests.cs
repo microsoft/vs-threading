@@ -255,6 +255,116 @@ class Test {
         }
 
         [Fact]
+        public void IVsTaskWaitInTaskReturningMethodGeneratesWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using Task = System.Threading.Tasks.Task;
+
+class Test {
+    Task T() {
+        IVsTask t = null;
+        t.Wait();
+        return Task.FromResult(1);
+    }
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using Task = System.Threading.Tasks.Task;
+
+class Test {
+    async Task T() {
+        IVsTask t = null;
+        await t;
+    }
+}
+";
+            this.expect = this.CreateDiagnostic(10, 11, 4);
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
+        public void IVsTaskGetResultInTaskReturningMethodGeneratesWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using Task = System.Threading.Tasks.Task;
+
+class Test {
+    Task T() {
+        IVsTask t = null;
+        object result = t.GetResult();
+        return Task.FromResult(1);
+    }
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using Task = System.Threading.Tasks.Task;
+
+class Test {
+    async Task T() {
+        IVsTask t = null;
+        object result = await t;
+    }
+}
+";
+            this.expect = this.CreateDiagnostic(10, 27, 9);
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        /// <summary>
+        /// Ensures we don't offer a code fix when the required using directive is not already present.
+        /// </summary>
+        [Fact]
+        public void IVsTaskGetResultInTaskReturningMethod_WithoutUsing_OffersNoFix()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    Task T() {
+        IVsTask t = null;
+        object result = t.GetResult();
+        return Task.FromResult(1);
+    }
+}
+";
+
+            string withFix = null;
+////             var withFix = @"
+//// using System.Threading.Tasks;
+//// using Microsoft.VisualStudio.Shell;
+//// using Microsoft.VisualStudio.Shell.Interop;
+//// using Task = System.Threading.Tasks.Task;
+////
+//// class Test {
+////     async Task T() {
+////         IVsTask t = null;
+////         object result = await t;
+////     }
+//// }
+//// ";
+            this.expect = this.CreateDiagnostic(8, 27, 9);
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
         public void TaskOfTResultInTaskReturningMethodGeneratesWarning()
         {
             var test = @"
@@ -319,7 +429,7 @@ class Test {
 }
 ";
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 28, 9, 34) };
+            this.expect = this.CreateDiagnostic(9, 28, 6);
             this.VerifyCSharpDiagnostic(test, this.expect);
             this.VerifyCSharpFix(test, withFix);
         }
@@ -874,7 +984,7 @@ using System.Threading.Tasks;
 
 class Test {
     string Foo => string.Empty;
-    string Bar => string.Join(""a"", string.Empty); 
+    string Bar => string.Join(""a"", string.Empty);
 }
 ";
 
@@ -1078,5 +1188,14 @@ class Test {
 
             this.VerifyCSharpDiagnostic(test);
         }
+
+        private DiagnosticResult CreateDiagnostic(int line, int column, int length, string messagePattern = null) =>
+           new DiagnosticResult
+           {
+               Id = this.expect.Id,
+               MessagePattern = messagePattern ?? this.expect.MessagePattern,
+               Severity = this.expect.Severity,
+               Locations = new[] { new DiagnosticResultLocation("Test0.cs", line, column, line, column + length) },
+           };
     }
 }

@@ -62,5 +62,13 @@
             "VisualStudio",
             "Shell",
         };
+
+        internal static readonly IReadOnlyList<string> MicrosoftVisualStudioShellInterop = new[]
+        {
+            "Microsoft",
+            "VisualStudio",
+            "Shell",
+            "Interop",
+        };
     }
 }
