@@ -66,12 +66,12 @@ namespace Microsoft.VisualStudio.Threading
                     AsyncSemaphore.Releaser releaser = reentrantCountBox.Value == 0 ? await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true) : default;
                     try
                     {
-                        reentrantCountBox.Value++;
+                        Interlocked.Increment(ref reentrantCountBox.Value);
                         await operation().ConfigureAwaitRunInline();
                     }
                     finally
                     {
-                        reentrantCountBox.Value--;
+                        Interlocked.Decrement(ref reentrantCountBox.Value);
                         try
                         {
                             releaser.Dispose();
