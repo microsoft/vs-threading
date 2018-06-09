@@ -176,6 +176,110 @@
         }
 
         [Fact]
+        public void ReentrantAndReleaseOutOfOrder()
+        {
+            this.ExecuteOnDispatcher(async delegate
+            {
+                var releaser1 = new AsyncManualResetEvent();
+                var innerReleaser = new AsyncManualResetEvent();
+                Task innerOperation = null;
+                await this.semaphore.ExecuteAsync(delegate
+                {
+                    innerOperation = EnterAndUseSemaphoreAsync(innerReleaser);
+                    return TplExtensions.CompletedTask;
+                });
+                innerReleaser.Set();
+                await innerOperation;
+                Assert.Equal(1, this.semaphore.CurrentCount);
+            });
+
+            async Task EnterAndUseSemaphoreAsync(AsyncManualResetEvent releaseEvent)
+            {
+                await this.semaphore.ExecuteAsync(async delegate
+                {
+                    await releaseEvent;
+                    Assert.Equal(0, this.semaphore.CurrentCount); // we are still in the semaphore
+                });
+            }
+        }
+
+        [Fact]
+        public void SemaphoreOwnershipDoesNotResurrect()
+        {
+            AsyncManualResetEvent releaseInheritor = new AsyncManualResetEvent();
+            this.ExecuteOnDispatcher(async delegate
+            {
+                Task innerOperation = null;
+                await this.semaphore.ExecuteAsync(delegate
+                {
+                    innerOperation = SemaphoreRecycler();
+                    return TplExtensions.CompletedTask;
+                });
+                await this.semaphore.ExecuteAsync(async delegate
+                {
+                    releaseInheritor.Set();
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => innerOperation);
+                });
+            });
+
+            async Task SemaphoreRecycler()
+            {
+                await releaseInheritor;
+                Assert.Equal(0, this.semaphore.CurrentCount);
+
+                // Try to enter the semaphore. This should timeout because someone else is holding the semaphore, waiting for us to timeout.
+                await this.semaphore.ExecuteAsync(
+                    () => TplExtensions.CompletedTask,
+                    new CancellationTokenSource(ExpectedTimeout).Token);
+            }
+        }
+
+        [Fact]
+        public void SemaphoreOwnershipDoesNotResurrect2()
+        {
+            AsyncManualResetEvent releaseInheritor1 = new AsyncManualResetEvent();
+            AsyncManualResetEvent releaseInheritor2 = new AsyncManualResetEvent();
+            Task innerOperation1 = null;
+            Task innerOperation2 = null;
+            this.ExecuteOnDispatcher(async delegate
+            {
+                await this.semaphore.ExecuteAsync(delegate
+                {
+                    innerOperation1 = SemaphoreRecycler1();
+                    innerOperation2 = SemaphoreRecycler2();
+                    return TplExtensions.CompletedTask;
+                });
+
+                releaseInheritor1.Set();
+                await innerOperation1.WithCancellation(this.TimeoutToken);
+            });
+
+            async Task SemaphoreRecycler1()
+            {
+                await releaseInheritor1;
+                Assert.Equal(1, this.semaphore.CurrentCount);
+                await this.semaphore.ExecuteAsync(
+                    async delegate
+                    {
+                        releaseInheritor2.Set();
+                        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => innerOperation2);
+                    },
+                    this.TimeoutToken);
+            }
+
+            async Task SemaphoreRecycler2()
+            {
+                await releaseInheritor2;
+                Assert.Equal(0, this.semaphore.CurrentCount);
+
+                // Try to enter the semaphore. This should timeout because someone else is holding the semaphore, waiting for us to timeout.
+                await this.semaphore.ExecuteAsync(
+                    () => TplExtensions.CompletedTask,
+                    new CancellationTokenSource(ExpectedTimeout).Token);
+            }
+        }
+
+        [Fact]
         public void SemaphoreWorkThrows_DoesNotAbandonSemaphore()
         {
             this.ExecuteOnDispatcher(async delegate
