@@ -72,7 +72,14 @@ namespace Microsoft.VisualStudio.Threading
                     finally
                     {
                         reentrantCountBox.Value--;
-                        releaser.Dispose();
+                        try
+                        {
+                            releaser.Dispose();
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                            // Swallow this, since in releasing the semaphore if it's already disposed the caller probably doesn't care.
+                        }
                     }
                 }
             };

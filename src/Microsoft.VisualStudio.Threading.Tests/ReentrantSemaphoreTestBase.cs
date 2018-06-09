@@ -221,6 +221,19 @@
             });
         }
 
+        [Fact]
+        public void DisposeWhileHoldingSemaphore()
+        {
+            this.ExecuteOnDispatcher(async delegate
+            {
+                await this.semaphore.ExecuteAsync(delegate
+                {
+                    this.semaphore.Dispose();
+                    return TplExtensions.CompletedTask;
+                });
+            });
+        }
+
         protected void ExecuteOnDispatcher(Func<Task> test)
         {
             using (this.Dispatcher.Apply())
