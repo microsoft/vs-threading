@@ -54,7 +54,7 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(operation, nameof(operation));
 
             StrongBox<int> reentrantCountBox = this.reentrantCount.Value;
-            if (reentrantCountBox == null)
+            if (reentrantCountBox == null || reentrantCountBox.Value == 0)
             {
                 this.reentrantCount.Value = reentrantCountBox = new StrongBox<int>();
             }
