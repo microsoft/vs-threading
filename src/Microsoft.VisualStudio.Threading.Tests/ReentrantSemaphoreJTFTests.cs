@@ -11,17 +11,11 @@
 
     public class ReentrantSemaphoreJTFTests : ReentrantSemaphoreTestBase
     {
-        private readonly JoinableTaskContext joinableTaskContext;
+        private JoinableTaskContext joinableTaskContext;
 
         public ReentrantSemaphoreJTFTests(ITestOutputHelper logger)
             : base(logger)
         {
-            using (this.Dispatcher.Apply())
-            {
-                this.joinableTaskContext = new JoinableTaskContext();
-            }
-
-            this.semaphore = new ReentrantSemaphore(joinableTaskContext: this.joinableTaskContext);
         }
 
         [Fact]
@@ -64,6 +58,19 @@
                 await Task.WhenAll(firstOperation).WithCancellation(this.TimeoutToken);
                 Assert.True(secondEntryComplete);
             });
+        }
+
+        protected override ReentrantSemaphore CreateSemaphore(ReentrantSemaphore.ReentrancyMode mode, int initialCount)
+        {
+            if (this.joinableTaskContext == null)
+            {
+                using (this.Dispatcher.Apply())
+                {
+                    this.joinableTaskContext = new JoinableTaskContext();
+                }
+            }
+
+            return new ReentrantSemaphore(initialCount, this.joinableTaskContext, mode);
         }
     }
 }
