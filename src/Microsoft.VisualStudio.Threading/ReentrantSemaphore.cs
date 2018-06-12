@@ -56,7 +56,10 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="initialCount">The initial number of concurrent operations to allow.</param>
         /// <param name="joinableTaskContext">The <see cref="JoinableTaskContext"/> to use to mitigate deadlocks.</param>
         /// <param name="mode">How to respond to a semaphore request by a caller that has already entered the semaphore.</param>
-        internal ReentrantSemaphore(int initialCount, JoinableTaskContext joinableTaskContext, ReentrancyMode mode)
+        /// <devremarks>
+        /// This is private protected so that others cannot derive from this type but we can within the assembly.
+        /// </devremarks>
+        private protected ReentrantSemaphore(int initialCount, JoinableTaskContext joinableTaskContext, ReentrancyMode mode)
         {
             this.joinableTaskCollection = joinableTaskContext?.CreateCollection();
             this.joinableTaskFactory = joinableTaskContext?.CreateFactory(this.joinableTaskCollection);
