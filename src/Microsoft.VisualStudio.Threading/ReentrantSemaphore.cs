@@ -191,6 +191,20 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Executes the semaphore request.
+        /// </summary>
+        /// <param name="semaphoreUser">The delegate that requests the semaphore and executes code within it.</param>
+        /// <returns>A value for the caller to await on.</returns>
+        private AwaitExtensions.ExecuteContinuationSynchronouslyAwaitable ExecuteCoreAsync(Func<Task> semaphoreUser)
+        {
+            Requires.NotNull(semaphoreUser, nameof(semaphoreUser));
+
+            return this.joinableTaskFactory != null
+                ? this.joinableTaskFactory.RunAsync(semaphoreUser).Task.ConfigureAwaitRunInline()
+                : semaphoreUser().ConfigureAwaitRunInline();
+        }
+
+        /// <summary>
         /// An implementation of <see cref="ReentrantSemaphore"/> supporting the <see cref="ReentrancyMode.NotRecognized"/> mode.
         /// </summary>
         private class NotRecognizedSemaphore : ReentrantSemaphore
@@ -209,9 +223,8 @@ namespace Microsoft.VisualStudio.Threading
             public override async Task ExecuteAsync(Func<Task> operation, CancellationToken cancellationToken = default)
             {
                 Requires.NotNull(operation, nameof(operation));
-                this.ThrowIfFaulted();
 
-                Func<Task> semaphoreUser = async delegate
+                await this.ExecuteCoreAsync(async delegate
                 {
                     using (this.joinableTaskCollection?.Join())
                     {
@@ -225,16 +238,7 @@ namespace Microsoft.VisualStudio.Threading
                             DisposeReleaserNoThrow(releaser);
                         }
                     }
-                };
-
-                if (this.joinableTaskFactory != null)
-                {
-                    await this.joinableTaskFactory.RunAsync(semaphoreUser).Task.ConfigureAwaitRunInline();
-                }
-                else
-                {
-                    await semaphoreUser().ConfigureAwaitRunInline();
-                }
+                });
             }
         }
 
@@ -277,7 +281,7 @@ namespace Microsoft.VisualStudio.Threading
                     throw Verify.FailOperation("Semaphore is already held and reentrancy setting is '{0}'.", ReentrancyMode.NotAllowed);
                 }
 
-                Func<Task> semaphoreUser = async delegate
+                await this.ExecuteCoreAsync(async delegate
                 {
                     using (this.joinableTaskCollection?.Join())
                     {
@@ -294,16 +298,7 @@ namespace Microsoft.VisualStudio.Threading
                             DisposeReleaserNoThrow(releaser);
                         }
                     }
-                };
-
-                if (this.joinableTaskFactory != null)
-                {
-                    await this.joinableTaskFactory.RunAsync(semaphoreUser).Task.ConfigureAwaitRunInline();
-                }
-                else
-                {
-                    await semaphoreUser().ConfigureAwaitRunInline();
-                }
+                });
             }
         }
 
@@ -355,7 +350,7 @@ namespace Microsoft.VisualStudio.Threading
                     this.reentrantCount.Value = reentrantStack = new Stack<StrongBox<AsyncSemaphore.Releaser>>(capacity: 2);
                 }
 
-                Func<Task> semaphoreUser = async delegate
+                await this.ExecuteCoreAsync(async delegate
                 {
                     using (this.joinableTaskCollection?.Join())
                     {
@@ -385,16 +380,7 @@ namespace Microsoft.VisualStudio.Threading
                             DisposeReleaserNoThrow(releaser);
                         }
                     }
-                };
-
-                if (this.joinableTaskFactory != null)
-                {
-                    await this.joinableTaskFactory.RunAsync(semaphoreUser).Task.ConfigureAwaitRunInline();
-                }
-                else
-                {
-                    await semaphoreUser().ConfigureAwaitRunInline();
-                }
+                });
             }
 
             /// <summary>
@@ -440,7 +426,7 @@ namespace Microsoft.VisualStudio.Threading
                     this.reentrantCount.Value = reentrantStack = new Stack<AsyncSemaphore.Releaser>(capacity: 2);
                 }
 
-                Func<Task> semaphoreUser = async delegate
+                await this.ExecuteCoreAsync(async delegate
                 {
                     using (this.joinableTaskCollection?.Join())
                     {
@@ -465,16 +451,7 @@ namespace Microsoft.VisualStudio.Threading
                             DisposeReleaserNoThrow(releaser);
                         }
                     }
-                };
-
-                if (this.joinableTaskFactory != null)
-                {
-                    await this.joinableTaskFactory.RunAsync(semaphoreUser).Task.ConfigureAwaitRunInline();
-                }
-                else
-                {
-                    await semaphoreUser().ConfigureAwaitRunInline();
-                }
+                });
             }
         }
     }
