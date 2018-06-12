@@ -18,7 +18,7 @@ namespace Microsoft.VisualStudio.Threading
     /// A <see cref="JoinableTaskFactory" />-aware semaphore that allows reentrancy without consuming another slot in the semaphore.
     /// </summary>
     [DebuggerDisplay(nameof(CurrentCount) + " = {" + nameof(CurrentCount) + "}")]
-    public class ReentrantSemaphore : IDisposable
+    public abstract class ReentrantSemaphore : IDisposable
     {
         /// <summary>
         /// The factory to wrap all pending and active semaphore requests with to mitigate deadlocks.
@@ -36,40 +36,18 @@ namespace Microsoft.VisualStudio.Threading
         private readonly AsyncSemaphore semaphore;
 
         /// <summary>
-        /// The means to recognize that a caller has already entered the semaphore.
-        /// </summary>
-        private readonly AsyncLocal<Stack<StrongBox<AsyncSemaphore.Releaser>>> reentrantCount;
-
-        /// <summary>
-        /// The behavior to exhibit when reentrancy is encountered.
-        /// </summary>
-        private readonly ReentrancyMode mode;
-
-        /// <summary>
-        /// A flag to indicate this instance was misused and the data it protects should not be touched as it may be corrupted.
-        /// </summary>
-        private bool faulted;
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="ReentrantSemaphore"/> class.
         /// </summary>
         /// <param name="initialCount">The initial number of concurrent operations to allow.</param>
         /// <param name="joinableTaskContext">The <see cref="JoinableTaskContext"/> to use to mitigate deadlocks.</param>
-        /// <param name="mode">How to respond to a semaphore request by a caller that has already entered the semaphore.</param>
         /// <devremarks>
         /// This is private protected so that others cannot derive from this type but we can within the assembly.
         /// </devremarks>
-        private protected ReentrantSemaphore(int initialCount, JoinableTaskContext joinableTaskContext, ReentrancyMode mode)
+        private protected ReentrantSemaphore(int initialCount, JoinableTaskContext joinableTaskContext)
         {
             this.joinableTaskCollection = joinableTaskContext?.CreateCollection();
             this.joinableTaskFactory = joinableTaskContext?.CreateFactory(this.joinableTaskCollection);
             this.semaphore = new AsyncSemaphore(initialCount);
-            this.mode = mode;
-
-            if (mode != ReentrancyMode.NotRecognized)
-            {
-                this.reentrantCount = new AsyncLocal<Stack<StrongBox<AsyncSemaphore.Releaser>>>();
-            }
         }
 
         /// <summary>
@@ -124,7 +102,7 @@ namespace Microsoft.VisualStudio.Threading
             /// Leaked semaphore access is a condition where code is inappropriately considered parented to another semaphore holder,
             /// leading to it being allowed to run code within the semaphore, potentially in parallel with the actual semaphore holder.
             /// </remarks>
-            FreeForm,
+            Freeform,
         }
 
         /// <summary>
@@ -147,7 +125,19 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="mode">How to respond to a semaphore request by a caller that has already entered the semaphore.</param>
         public static ReentrantSemaphore Create(int initialCount = 1, JoinableTaskContext joinableTaskContext = default, ReentrancyMode mode = ReentrancyMode.NotAllowed)
         {
-            return new ReentrantSemaphore(initialCount, joinableTaskContext, mode);
+            switch (mode)
+            {
+                case ReentrancyMode.NotRecognized:
+                    return new NotRecognizedSemaphore(initialCount, joinableTaskContext);
+                case ReentrancyMode.NotAllowed:
+                    return new NotAllowedSemaphore(initialCount, joinableTaskContext);
+                case ReentrancyMode.Stack:
+                    return new StackSemaphore(initialCount, joinableTaskContext);
+                case ReentrancyMode.Freeform:
+                    return new FreeformSemaphore(initialCount, joinableTaskContext);
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(mode));
+            }
         }
 
         /// <summary>
@@ -156,85 +146,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="operation">The delegate to invoke once the semaphore is entered.</param>
         /// <param name="cancellationToken">A cancellation token.</param>
         /// <returns>A task that completes with the result of <paramref name="operation"/>, after the semaphore has been exited.</returns>
-        public virtual async Task ExecuteAsync(Func<Task> operation, CancellationToken cancellationToken = default)
-        {
-            Requires.NotNull(operation, nameof(operation));
-            this.ThrowIfFaulted();
-
-            Stack<StrongBox<AsyncSemaphore.Releaser>> reentrantStack = null;
-            if (this.mode != ReentrancyMode.NotRecognized)
-            {
-                reentrantStack = this.reentrantCount.Value;
-                if (reentrantStack == null || reentrantStack.Count == 0)
-                {
-                    this.reentrantCount.Value = reentrantStack = new Stack<StrongBox<AsyncSemaphore.Releaser>>(capacity: this.mode == ReentrancyMode.NotAllowed ? 1 : 2);
-                }
-                else
-                {
-                    Verify.Operation(this.mode != ReentrancyMode.NotAllowed || reentrantStack.Count == 0, "Semaphore is already held and reentrancy setting is '{0}'.", this.mode);
-                }
-            }
-
-            Func<Task> semaphoreUser = async delegate
-            {
-                using (this.joinableTaskCollection?.Join())
-                {
-                    AsyncSemaphore.Releaser releaser = reentrantStack == null || reentrantStack.Count == 0 ? await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true) : default;
-                    var pushedReleaser = new StrongBox<AsyncSemaphore.Releaser>(releaser);
-                    releaser = default; // we should release whatever we Pop off the stack later on.
-                    try
-                    {
-                        if (reentrantStack != null)
-                        {
-                            lock (reentrantStack)
-                            {
-                                reentrantStack.Push(pushedReleaser);
-                            }
-                        }
-
-                        await operation().ConfigureAwaitRunInline();
-                    }
-                    finally
-                    {
-                        if (reentrantStack != null)
-                        {
-                            lock (reentrantStack)
-                            {
-                                var poppedReleaser = reentrantStack.Pop();
-                                releaser = poppedReleaser.Value;
-                                if (this.mode == ReentrancyMode.Stack && !object.ReferenceEquals(poppedReleaser, pushedReleaser))
-                                {
-                                    this.faulted = true;
-                                    Verify.FailOperation("Nested semaphore requests must be released in LIFO order when the reentrancy setting is: '{0}'", this.mode);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            releaser = pushedReleaser.Value;
-                        }
-
-                        try
-                        {
-                            releaser.Dispose();
-                        }
-                        catch (ObjectDisposedException)
-                        {
-                            // Swallow this, since in releasing the semaphore if it's already disposed the caller probably doesn't care.
-                        }
-                    }
-                }
-            };
-
-            if (this.joinableTaskFactory != null)
-            {
-                await this.joinableTaskFactory.RunAsync(semaphoreUser).Task.ConfigureAwaitRunInline();
-            }
-            else
-            {
-                await semaphoreUser().ConfigureAwaitRunInline();
-            }
-        }
+        public abstract Task ExecuteAsync(Func<Task> operation, CancellationToken cancellationToken = default);
 
         /// <inheritdoc/>
         public void Dispose()
@@ -258,9 +170,292 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Throws an exception if this instance has been faulted.
         /// </summary>
-        private void ThrowIfFaulted()
+        protected virtual void ThrowIfFaulted()
         {
-            Verify.Operation(!this.faulted, "This semaphore has been misused and cannot be used any more.");
+        }
+
+        /// <summary>
+        /// Disposes the specfied release, swallowing certain exceptions.
+        /// </summary>
+        /// <param name="releaser">The releaser to dispose.</param>
+        private static void DisposeReleaserNoThrow(AsyncSemaphore.Releaser releaser)
+        {
+            try
+            {
+                releaser.Dispose();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Swallow this, since in releasing the semaphore if it's already disposed the caller probably doesn't care.
+            }
+        }
+
+        /// <summary>
+        /// An implementation of <see cref="ReentrantSemaphore"/> supporting the <see cref="ReentrancyMode.NotRecognized"/> mode.
+        /// </summary>
+        private class NotRecognizedSemaphore : ReentrantSemaphore
+        {
+            /// <summary>
+            /// Initializes a new instance of the <see cref="NotRecognizedSemaphore"/> class.
+            /// </summary>
+            /// <param name="initialCount">The initial number of concurrent operations to allow.</param>
+            /// <param name="joinableTaskContext">The <see cref="JoinableTaskContext"/> to use to mitigate deadlocks.</param>
+            internal NotRecognizedSemaphore(int initialCount, JoinableTaskContext joinableTaskContext)
+                : base(initialCount, joinableTaskContext)
+            {
+            }
+
+            /// <inheritdoc />
+            public override async Task ExecuteAsync(Func<Task> operation, CancellationToken cancellationToken = default)
+            {
+                Requires.NotNull(operation, nameof(operation));
+                this.ThrowIfFaulted();
+
+                Func<Task> semaphoreUser = async delegate
+                {
+                    using (this.joinableTaskCollection?.Join())
+                    {
+                        var releaser = await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true);
+                        try
+                        {
+                            await operation().ConfigureAwaitRunInline();
+                        }
+                        finally
+                        {
+                            DisposeReleaserNoThrow(releaser);
+                        }
+                    }
+                };
+
+                if (this.joinableTaskFactory != null)
+                {
+                    await this.joinableTaskFactory.RunAsync(semaphoreUser).Task.ConfigureAwaitRunInline();
+                }
+                else
+                {
+                    await semaphoreUser().ConfigureAwaitRunInline();
+                }
+            }
+        }
+
+        /// <summary>
+        /// An implementation of <see cref="ReentrantSemaphore"/> supporting the <see cref="ReentrancyMode.NotAllowed"/> mode.
+        /// </summary>
+        private class NotAllowedSemaphore : ReentrantSemaphore
+        {
+            /// <summary>
+            /// The means to recognize that a caller has already entered the semaphore.
+            /// </summary>
+            private readonly AsyncLocal<StrongBox<bool>> reentrancyDetection = new AsyncLocal<StrongBox<bool>>();
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="NotAllowedSemaphore"/> class.
+            /// </summary>
+            /// <param name="initialCount">The initial number of concurrent operations to allow.</param>
+            /// <param name="joinableTaskContext">The <see cref="JoinableTaskContext"/> to use to mitigate deadlocks.</param>
+            internal NotAllowedSemaphore(int initialCount, JoinableTaskContext joinableTaskContext)
+                : base(initialCount, joinableTaskContext)
+            {
+            }
+
+            /// <inheritdoc />
+            public override async Task ExecuteAsync(Func<Task> operation, CancellationToken cancellationToken = default)
+            {
+                Requires.NotNull(operation, nameof(operation));
+                this.ThrowIfFaulted();
+
+                StrongBox<bool> ownedBox = this.reentrancyDetection.Value;
+                if (ownedBox?.Value ?? false)
+                {
+                    throw Verify.FailOperation("Semaphore is already held and reentrancy setting is '{0}'.", ReentrancyMode.NotAllowed);
+                }
+
+                Func<Task> semaphoreUser = async delegate
+                {
+                    using (this.joinableTaskCollection?.Join())
+                    {
+                        AsyncSemaphore.Releaser releaser = await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true);
+                        try
+                        {
+                            this.reentrancyDetection.Value = ownedBox = new StrongBox<bool>(true);
+                            await operation().ConfigureAwaitRunInline();
+                        }
+                        finally
+                        {
+                            // Make it clear to any forks of our ExecutionContexxt that the semaphore is no longer owned.
+                            ownedBox.Value = false;
+                            DisposeReleaserNoThrow(releaser);
+                        }
+                    }
+                };
+
+                if (this.joinableTaskFactory != null)
+                {
+                    await this.joinableTaskFactory.RunAsync(semaphoreUser).Task.ConfigureAwaitRunInline();
+                }
+                else
+                {
+                    await semaphoreUser().ConfigureAwaitRunInline();
+                }
+            }
+        }
+
+        /// <summary>
+        /// An implementation of <see cref="ReentrantSemaphore"/> supporting the <see cref="ReentrancyMode.Stack"/> mode.
+        /// </summary>
+        private class StackSemaphore : ReentrantSemaphore
+        {
+            /// <summary>
+            /// The means to recognize that a caller has already entered the semaphore.
+            /// </summary>
+            private readonly AsyncLocal<Stack<StrongBox<AsyncSemaphore.Releaser>>> reentrantCount = new AsyncLocal<Stack<StrongBox<AsyncSemaphore.Releaser>>>();
+
+            /// <summary>
+            /// A flag to indicate this instance was misused and the data it protects should not be touched as it may be corrupted.
+            /// </summary>
+            private bool faulted;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="StackSemaphore"/> class.
+            /// </summary>
+            /// <param name="initialCount">The initial number of concurrent operations to allow.</param>
+            /// <param name="joinableTaskContext">The <see cref="JoinableTaskContext"/> to use to mitigate deadlocks.</param>
+            internal StackSemaphore(int initialCount, JoinableTaskContext joinableTaskContext)
+                : base(initialCount, joinableTaskContext)
+            {
+            }
+
+            /// <inheritdoc />
+            public override async Task ExecuteAsync(Func<Task> operation, CancellationToken cancellationToken = default)
+            {
+                Requires.NotNull(operation, nameof(operation));
+                this.ThrowIfFaulted();
+
+                Stack<StrongBox<AsyncSemaphore.Releaser>> reentrantStack = this.reentrantCount.Value;
+                if (reentrantStack == null || reentrantStack.Count == 0)
+                {
+                    this.reentrantCount.Value = reentrantStack = new Stack<StrongBox<AsyncSemaphore.Releaser>>(capacity: 2);
+                }
+
+                Func<Task> semaphoreUser = async delegate
+                {
+                    using (this.joinableTaskCollection?.Join())
+                    {
+                        AsyncSemaphore.Releaser releaser = reentrantStack.Count == 0 ? await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true) : default;
+                        var pushedReleaser = new StrongBox<AsyncSemaphore.Releaser>(releaser);
+                        lock (reentrantStack)
+                        {
+                            reentrantStack.Push(pushedReleaser);
+                        }
+
+                        try
+                        {
+                            await operation().ConfigureAwaitRunInline();
+                        }
+                        finally
+                        {
+                            lock (reentrantStack)
+                            {
+                                var poppedReleaser = reentrantStack.Pop();
+                                if (!object.ReferenceEquals(poppedReleaser, pushedReleaser))
+                                {
+                                    this.faulted = true;
+                                    throw Verify.FailOperation(Strings.SemaphoreStackNestingViolated, ReentrancyMode.Stack);
+                                }
+                            }
+
+                            DisposeReleaserNoThrow(releaser);
+                        }
+                    }
+                };
+
+                if (this.joinableTaskFactory != null)
+                {
+                    await this.joinableTaskFactory.RunAsync(semaphoreUser).Task.ConfigureAwaitRunInline();
+                }
+                else
+                {
+                    await semaphoreUser().ConfigureAwaitRunInline();
+                }
+            }
+
+            /// <summary>
+            /// Throws an exception if this instance has been faulted.
+            /// </summary>
+            protected override void ThrowIfFaulted()
+            {
+                Verify.Operation(!this.faulted, Strings.SemaphoreMisused);
+            }
+        }
+
+        /// <summary>
+        /// An implementation of <see cref="ReentrantSemaphore"/> supporting the <see cref="ReentrancyMode.Freeform"/> mode.
+        /// </summary>
+        private class FreeformSemaphore : ReentrantSemaphore
+        {
+            /// <summary>
+            /// The means to recognize that a caller has already entered the semaphore.
+            /// </summary>
+            private readonly AsyncLocal<Stack<AsyncSemaphore.Releaser>> reentrantCount = new AsyncLocal<Stack<AsyncSemaphore.Releaser>>();
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="FreeformSemaphore"/> class.
+            /// </summary>
+            /// <param name="initialCount">The initial number of concurrent operations to allow.</param>
+            /// <param name="joinableTaskContext">The <see cref="JoinableTaskContext"/> to use to mitigate deadlocks.</param>
+            internal FreeformSemaphore(int initialCount, JoinableTaskContext joinableTaskContext)
+                : base(initialCount, joinableTaskContext)
+            {
+            }
+
+            /// <inheritdoc />
+            public override async Task ExecuteAsync(Func<Task> operation, CancellationToken cancellationToken = default)
+            {
+                Requires.NotNull(operation, nameof(operation));
+                this.ThrowIfFaulted();
+
+                Stack<AsyncSemaphore.Releaser> reentrantStack = this.reentrantCount.Value;
+                if (reentrantStack == null || reentrantStack.Count == 0)
+                {
+                    this.reentrantCount.Value = reentrantStack = new Stack<AsyncSemaphore.Releaser>(capacity: 2);
+                }
+
+                Func<Task> semaphoreUser = async delegate
+                {
+                    using (this.joinableTaskCollection?.Join())
+                    {
+                        AsyncSemaphore.Releaser releaser = reentrantStack.Count == 0 ? await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true) : default;
+                        lock (reentrantStack)
+                        {
+                            reentrantStack.Push(releaser);
+                            releaser = default; // we should release whatever we pop off the stack (which ensures the last surviving nested holder actually releases).
+                        }
+
+                        try
+                        {
+                            await operation().ConfigureAwaitRunInline();
+                        }
+                        finally
+                        {
+                            lock (reentrantStack)
+                            {
+                                releaser = reentrantStack.Pop();
+                            }
+
+                            DisposeReleaserNoThrow(releaser);
+                        }
+                    }
+                };
+
+                if (this.joinableTaskFactory != null)
+                {
+                    await this.joinableTaskFactory.RunAsync(semaphoreUser).Task.ConfigureAwaitRunInline();
+                }
+                else
+                {
+                    await semaphoreUser().ConfigureAwaitRunInline();
+                }
+            }
         }
     }
 }

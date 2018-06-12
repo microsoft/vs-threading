@@ -45,7 +45,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
                     new object[] { ReentrantSemaphore.ReentrancyMode.NotAllowed },
                     new object[] { ReentrantSemaphore.ReentrancyMode.NotRecognized },
                     new object[] { ReentrantSemaphore.ReentrancyMode.Stack },
-                    new object[] { ReentrantSemaphore.ReentrancyMode.FreeForm },
+                    new object[] { ReentrantSemaphore.ReentrancyMode.Freeform },
             };
         }
     }
@@ -57,14 +57,20 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
             return new object[][]
             {
                     new object[] { ReentrantSemaphore.ReentrancyMode.Stack },
-                    new object[] { ReentrantSemaphore.ReentrancyMode.FreeForm },
+                    new object[] { ReentrantSemaphore.ReentrancyMode.Freeform },
             };
         }
     }
 
     protected SynchronizationContext Dispatcher { get; }
 
-    public void Dispose() => this.semaphore.Dispose();
+    public void Dispose() => this.semaphore?.Dispose();
+
+    [Fact]
+    public void InvalidMode()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => this.CreateSemaphore((ReentrantSemaphore.ReentrancyMode)100));
+    }
 
     [Theory]
     [MemberData(nameof(AllModes))]
@@ -217,7 +223,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
     [Fact]
     public void ExitInAnyOrder_ExitInAcquisitionOrder()
     {
-        this.semaphore = this.CreateSemaphore(ReentrantSemaphore.ReentrancyMode.FreeForm);
+        this.semaphore = this.CreateSemaphore(ReentrantSemaphore.ReentrancyMode.Freeform);
         this.ExecuteOnDispatcher(async delegate
         {
             var releaser1 = new AsyncManualResetEvent();
