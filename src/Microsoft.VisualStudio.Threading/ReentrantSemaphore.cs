@@ -156,7 +156,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="operation">The delegate to invoke once the semaphore is entered.</param>
         /// <param name="cancellationToken">A cancellation token.</param>
         /// <returns>A task that completes with the result of <paramref name="operation"/>, after the semaphore has been exited.</returns>
-        public async Task ExecuteAsync(Func<Task> operation, CancellationToken cancellationToken = default)
+        public virtual async Task ExecuteAsync(Func<Task> operation, CancellationToken cancellationToken = default)
         {
             Requires.NotNull(operation, nameof(operation));
             this.ThrowIfFaulted();
