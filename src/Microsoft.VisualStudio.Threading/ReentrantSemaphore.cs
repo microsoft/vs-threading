@@ -246,6 +246,13 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The means to recognize that a caller has already entered the semaphore.
             /// </summary>
+            /// <devremarks>
+            /// We use <see cref="StrongBox{T}"/> instead of just <see cref="bool"/> here for two reasons:
+            /// 1. Our own <see cref="AsyncLocal{T}"/> class requires a ref type for the generic type argument.
+            /// 2. (more importantly) we need all forks of an ExecutionContext to observe updates to the value.
+            ///    But ExecutionContext is copy-on-write so forks don't see changes to it.
+            ///    <see cref="StrongBox{T}"/> lets us store and later update the boxed value of the existing box reference.
+            /// </devremarks>
             private readonly AsyncLocal<StrongBox<bool>> reentrancyDetection = new AsyncLocal<StrongBox<bool>>();
 
             /// <summary>
@@ -308,6 +315,11 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The means to recognize that a caller has already entered the semaphore.
             /// </summary>
+            /// <devremarks>
+            /// We use <see cref="StrongBox{T}"/> instead of just <see cref="AsyncSemaphore.Releaser"/> here
+            /// so that we have a unique identity for each Releaser that we can recognize as a means to verify
+            /// the integrity of the "stack" of semaphore reentrant requests.
+            /// </devremarks>
             private readonly AsyncLocal<Stack<StrongBox<AsyncSemaphore.Releaser>>> reentrantCount = new AsyncLocal<Stack<StrongBox<AsyncSemaphore.Releaser>>>();
 
             /// <summary>
@@ -331,9 +343,15 @@ namespace Microsoft.VisualStudio.Threading
                 Requires.NotNull(operation, nameof(operation));
                 this.ThrowIfFaulted();
 
+                // No race condition here: We're accessing AsyncLocal<T> which we by definition have our own copy of.
+                // Multiple threads or multiple async methods will all have their own storage for this field.
                 Stack<StrongBox<AsyncSemaphore.Releaser>> reentrantStack = this.reentrantCount.Value;
                 if (reentrantStack == null || reentrantStack.Count == 0)
                 {
+                    // When the stack is empty, the semaphore isn't held. But many execution contexts that forked from a common root
+                    // would be sharing this same empty Stack<T> instance. If we pushed to that Stack, all those forks would suddenly
+                    // be seen as having entered this new top-level semaphore. We therefore allocate a new Stack and assign it to our
+                    // AsyncLocal<T> field so that only this particular ExecutionContext is seen as having entered the semaphore.
                     this.reentrantCount.Value = reentrantStack = new Stack<StrongBox<AsyncSemaphore.Releaser>>(capacity: 2);
                 }
 
@@ -414,6 +432,8 @@ namespace Microsoft.VisualStudio.Threading
                 Requires.NotNull(operation, nameof(operation));
                 this.ThrowIfFaulted();
 
+                // No race condition here: We're accessing AsyncLocal<T> which we by definition have our own copy of.
+                // Multiple threads or multiple async methods will all have their own storage for this field.
                 Stack<AsyncSemaphore.Releaser> reentrantStack = this.reentrantCount.Value;
                 if (reentrantStack == null || reentrantStack.Count == 0)
                 {
