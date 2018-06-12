@@ -49,7 +49,7 @@
             {
                 var methodSymbol = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
                 var returnedSymbol = methodSymbol?.ReturnType;
-                if (returnedSymbol.Name == Types.Task.TypeName && returnedSymbol.BelongsToNamespace(Types.Task.Namespace))
+                if (returnedSymbol?.Name == Types.Task.TypeName && returnedSymbol.BelongsToNamespace(Types.Task.Namespace))
                 {
                     if (!Utils.GetContainingFunction(invocation).IsAsync)
                     {
