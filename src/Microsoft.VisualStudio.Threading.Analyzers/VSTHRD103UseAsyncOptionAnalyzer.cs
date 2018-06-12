@@ -182,7 +182,8 @@
                         if (item.Method.IsMatch(memberSymbol))
                         {
                             var location = memberAccessSyntax.Name.GetLocation();
-                            var properties = ImmutableDictionary<string, string>.Empty;
+                            var properties = ImmutableDictionary<string, string>.Empty
+                                .Add(VSTHRD103UseAsyncOptionCodeFix.ExtensionMethodNamespaceKeyName, item.ExtensionMethodNamespace != null ? string.Join(".", item.ExtensionMethodNamespace) : string.Empty);
                             DiagnosticDescriptor descriptor;
                             var messageArgs = new List<object>(2);
                             messageArgs.Add(item.Method.Name);
