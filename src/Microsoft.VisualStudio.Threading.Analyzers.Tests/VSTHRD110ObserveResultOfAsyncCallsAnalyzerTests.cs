@@ -167,6 +167,23 @@ class Test {
             this.VerifyCSharpDiagnostic(test); // CS4014 should already take care of this case.
         }
 
+        [Fact]
+        public void CallToNonExistentMethod()
+        {
+            var test = @"
+using System;
+
+class Test {
+    void Foo() {
+        a(); // this is intentionally a compile error to test analyzer resiliency when there is no method symbol.
+    }
+
+    void Bar() { }
+}
+";
+            this.VerifyCSharpDiagnostic(new[] { test }, hasEntrypoint: false, allowErrors: true);
+        }
+
         private DiagnosticResult CreateDiagnostic(int line, int column, int length, string messagePattern = null) =>
            new DiagnosticResult
            {
