@@ -23,23 +23,23 @@ public class ReentrantSemaphoreJTFTests : ReentrantSemaphoreTestBase
     public void SemaphoreWaiterJoinsSemaphoreHolders(ReentrantSemaphore.ReentrancyMode mode)
     {
         this.semaphore = this.CreateSemaphore(mode);
-        var firstEntered = new AsyncManualResetEvent();
-        bool firstOperationReachedMainThread = false;
-        var firstOperation = Task.Run(async delegate
-        {
-            await this.semaphore.ExecuteAsync(
-                async delegate
-                {
-                    firstEntered.Set();
-                    await this.joinableTaskContext.Factory.SwitchToMainThreadAsync(this.TimeoutToken);
-                    firstOperationReachedMainThread = true;
-                },
-                this.TimeoutToken);
-        });
-
-        bool secondEntryComplete = false;
         this.ExecuteOnDispatcher(async delegate
         {
+            var firstEntered = new AsyncManualResetEvent();
+            bool firstOperationReachedMainThread = false;
+            var firstOperation = Task.Run(async delegate
+            {
+                await this.semaphore.ExecuteAsync(
+                    async delegate
+                    {
+                        firstEntered.Set();
+                        await this.joinableTaskContext.Factory.SwitchToMainThreadAsync(this.TimeoutToken);
+                        firstOperationReachedMainThread = true;
+                    },
+                    this.TimeoutToken);
+            });
+
+            bool secondEntryComplete = false;
             this.joinableTaskContext.Factory.Run(async delegate
             {
                 await firstEntered.WaitAsync().WithCancellation(this.TimeoutToken);
