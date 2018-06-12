@@ -109,7 +109,7 @@ namespace Microsoft.VisualStudio.Threading
             /// When a violation occurs, this semaphore transitions into a faulted state, after which any call
             /// will throw an <see cref="InvalidOperationException"/>.
             /// </remarks>
-            ExitInReverseOrder,
+            Stack,
 
             /// <summary>
             /// A request made by a caller that is already in the semaphore is immediately executed,
@@ -121,7 +121,7 @@ namespace Microsoft.VisualStudio.Threading
             /// Leaked semaphore access is a condition where code is inappropriately considered parented to another semaphore holder,
             /// leading to it being allowed to run code within the semaphore, potentially in parallel with the actual semaphore holder.
             /// </remarks>
-            ExitAnyOrder,
+            FreeForm,
         }
 
         /// <summary>
@@ -188,7 +188,7 @@ namespace Microsoft.VisualStudio.Threading
                             {
                                 var poppedReleaser = reentrantStack.Pop();
                                 releaser = poppedReleaser.Value;
-                                if (this.mode == ReentrancyMode.ExitInReverseOrder && !object.ReferenceEquals(poppedReleaser, pushedReleaser))
+                                if (this.mode == ReentrancyMode.Stack && !object.ReferenceEquals(poppedReleaser, pushedReleaser))
                                 {
                                     this.faulted = true;
                                     Verify.FailOperation("Nested semaphore requests must be released in LIFO order when the reentrancy setting is: '{0}'", this.mode);

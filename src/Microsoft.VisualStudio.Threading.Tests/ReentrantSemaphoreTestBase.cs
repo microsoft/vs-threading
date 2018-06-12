@@ -158,8 +158,8 @@
         }
 
         [Theory]
-        [InlineData(ReentrantSemaphore.ReentrancyMode.ExitAnyOrder)]
-        [InlineData(ReentrantSemaphore.ReentrancyMode.ExitInReverseOrder)]
+        [InlineData(ReentrantSemaphore.ReentrancyMode.FreeForm)]
+        [InlineData(ReentrantSemaphore.ReentrancyMode.Stack)]
         public void Reentrant(ReentrantSemaphore.ReentrancyMode mode)
         {
             this.semaphore = this.CreateSemaphore(mode);
@@ -181,7 +181,7 @@
         [Fact]
         public void ExitInAnyOrder_ExitInAcquisitionOrder()
         {
-            this.semaphore = this.CreateSemaphore(ReentrantSemaphore.ReentrancyMode.ExitAnyOrder);
+            this.semaphore = this.CreateSemaphore(ReentrantSemaphore.ReentrancyMode.FreeForm);
             this.ExecuteOnDispatcher(async delegate
             {
                 var releaser1 = new AsyncManualResetEvent();
@@ -384,7 +384,7 @@
         [Fact]
         public void ExitInReverseOrder_Allowed()
         {
-            this.semaphore = this.CreateSemaphore(ReentrantSemaphore.ReentrancyMode.ExitInReverseOrder);
+            this.semaphore = this.CreateSemaphore(ReentrantSemaphore.ReentrancyMode.Stack);
             this.ExecuteOnDispatcher(async delegate
             {
                 await this.semaphore.ExecuteAsync(async delegate
@@ -400,7 +400,7 @@
         [Fact]
         public void ExitInReverseOrder_ViolationCaughtAtBothSites()
         {
-            this.semaphore = this.CreateSemaphore(ReentrantSemaphore.ReentrancyMode.ExitInReverseOrder);
+            this.semaphore = this.CreateSemaphore(ReentrantSemaphore.ReentrancyMode.Stack);
             this.ExecuteOnDispatcher(async delegate
             {
                 var release1 = new AsyncManualResetEvent();
@@ -438,7 +438,7 @@
         [Fact]
         public void ExitInAnyOrder_Allowed()
         {
-            this.semaphore = this.CreateSemaphore(ReentrantSemaphore.ReentrancyMode.ExitAnyOrder);
+            this.semaphore = this.CreateSemaphore(ReentrantSemaphore.ReentrancyMode.FreeForm);
             this.ExecuteOnDispatcher(async delegate
             {
                 await this.semaphore.ExecuteAsync(async delegate
