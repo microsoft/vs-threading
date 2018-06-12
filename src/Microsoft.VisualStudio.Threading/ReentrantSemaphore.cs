@@ -148,6 +148,18 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns>A task that completes with the result of <paramref name="operation"/>, after the semaphore has been exited.</returns>
         public abstract Task ExecuteAsync(Func<Task> operation, CancellationToken cancellationToken = default);
 
+        /// <summary>
+        /// Conceals evidence that the caller has entered this <see cref="ReentrantSemaphore"/> till its result is disposed.
+        /// </summary>
+        /// <returns>A value to dispose to restore visibility of any presence in this semaphore.</returns>
+        /// <remarks>
+        /// <para>This method is useful when the caller is about to spin off another operation (e.g. scheduling work to the threadpool)
+        /// that it does not consider vital to its own completion, in order to prevent the spun off work from abusing the
+        /// caller's right to the semaphore.</para>
+        /// <para>This is a safe call to make whether or not the semaphore is currently held, or whether reentrancy is allowed on this instance.</para>
+        /// </remarks>
+        public virtual RevertRelevance SuppressRelevance() => default;
+
         /// <inheritdoc/>
         public void Dispose()
         {
@@ -202,6 +214,44 @@ namespace Microsoft.VisualStudio.Threading
             return this.joinableTaskFactory != null
                 ? this.joinableTaskFactory.RunAsync(semaphoreUser).Task.ConfigureAwaitRunInline()
                 : semaphoreUser().ConfigureAwaitRunInline();
+        }
+
+        /// <summary>
+        /// A structure that hides any evidence that the caller has entered a <see cref="ReentrantSemaphore"/> till this value is disposed.
+        /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
+        public struct RevertRelevance : IDisposable
+        {
+            /// <summary>
+            /// The delegate to invoke on disposal.
+            /// </summary>
+            private readonly Action<ReentrantSemaphore, object> disposeAction;
+
+            /// <summary>
+            /// The instance that is suppressing relevance.
+            /// </summary>
+            private readonly ReentrantSemaphore semaphore;
+
+            /// <summary>
+            /// The argument to pass to the delegate.
+            /// </summary>
+            private readonly object state;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="RevertRelevance"/> struct.
+            /// </summary>
+            /// <param name="disposeAction">The delegate to invoke on disposal.</param>
+            /// <param name="semaphore">The instance that is suppressing relevance.</param>
+            /// <param name="state">The argument to pass to the delegate.</param>
+            internal RevertRelevance(Action<ReentrantSemaphore, object> disposeAction, ReentrantSemaphore semaphore, object state)
+            {
+                this.disposeAction = disposeAction;
+                this.semaphore = semaphore;
+                this.state = state;
+            }
+
+            /// <inheritdoc />
+            public void Dispose() => this.disposeAction?.Invoke(this.semaphore, this.state);
         }
 
         /// <summary>
@@ -300,6 +350,14 @@ namespace Microsoft.VisualStudio.Threading
                     }
                 });
             }
+
+            /// <inheritdoc />
+            public override RevertRelevance SuppressRelevance()
+            {
+                var originalValue = this.reentrancyDetection.Value;
+                this.reentrancyDetection.Value = null;
+                return new RevertRelevance((t, s) => ((NotAllowedSemaphore)t).reentrancyDetection.Value = (StrongBox<bool>)s, this, originalValue);
+            }
         }
 
         /// <summary>
@@ -383,6 +441,14 @@ namespace Microsoft.VisualStudio.Threading
                 });
             }
 
+            /// <inheritdoc />
+            public override RevertRelevance SuppressRelevance()
+            {
+                var originalValue = this.reentrantCount.Value;
+                this.reentrantCount.Value = null;
+                return new RevertRelevance((t, s) => ((StackSemaphore)t).reentrantCount.Value = (Stack<StrongBox<AsyncSemaphore.Releaser>>)s, this, originalValue);
+            }
+
             /// <summary>
             /// Throws an exception if this instance has been faulted.
             /// </summary>
@@ -452,6 +518,14 @@ namespace Microsoft.VisualStudio.Threading
                         }
                     }
                 });
+            }
+
+            /// <inheritdoc />
+            public override RevertRelevance SuppressRelevance()
+            {
+                var originalValue = this.reentrantCount.Value;
+                this.reentrantCount.Value = null;
+                return new RevertRelevance((t, s) => ((FreeformSemaphore)t).reentrantCount.Value = (Stack<AsyncSemaphore.Releaser>)s, this, originalValue);
             }
         }
     }

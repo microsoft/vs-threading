@@ -495,6 +495,35 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
         });
     }
 
+    [Theory]
+    [MemberData(nameof(AllModes))]
+    public void SuppressRelevance(ReentrantSemaphore.ReentrancyMode mode)
+    {
+        this.semaphore = this.CreateSemaphore(mode);
+        this.ExecuteOnDispatcher(async delegate
+        {
+            Task unrelatedUser = null;
+            await this.semaphore.ExecuteAsync(async delegate
+            {
+                Assert.Equal(0, this.semaphore.CurrentCount);
+                using (this.semaphore.SuppressRelevance())
+                {
+                    unrelatedUser = this.semaphore.ExecuteAsync(() => TplExtensions.CompletedTask);
+                }
+
+                await Assert.ThrowsAsync<TimeoutException>(() => unrelatedUser.WithTimeout(ExpectedTimeout));
+
+                if (IsReentrantMode(mode))
+                {
+                    await this.semaphore.ExecuteAsync(() => TplExtensions.CompletedTask, this.TimeoutToken);
+                }
+            });
+
+            await unrelatedUser.WithCancellation(this.TimeoutToken);
+            Assert.Equal(1, this.semaphore.CurrentCount);
+        });
+    }
+
 #pragma warning disable VSTHRD012 // Provide JoinableTaskFactory where allowed (we do this in the JTF-aware variant of these tests in a derived class.)
     protected virtual ReentrantSemaphore CreateSemaphore(ReentrantSemaphore.ReentrancyMode mode = ReentrantSemaphore.ReentrancyMode.NotAllowed, int initialCount = 1) => ReentrantSemaphore.Create(initialCount, mode: mode);
 #pragma warning restore VSTHRD012 // Provide JoinableTaskFactory where allowed
@@ -506,4 +535,6 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
             this.ExecuteOnDispatcher(test, staRequired: false);
         }
     }
+
+    private static bool IsReentrantMode(ReentrantSemaphore.ReentrancyMode mode) => mode == ReentrantSemaphore.ReentrancyMode.Freeform || mode == ReentrantSemaphore.ReentrancyMode.Stack;
 }
