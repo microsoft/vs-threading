@@ -70,7 +70,7 @@
                 }
             }
 
-            return new ReentrantSemaphore(initialCount, this.joinableTaskContext, mode);
+            return ReentrantSemaphore.Create(initialCount, this.joinableTaskContext, mode);
         }
     }
 }

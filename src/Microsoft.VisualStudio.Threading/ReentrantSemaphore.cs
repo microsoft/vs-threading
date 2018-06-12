@@ -56,7 +56,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="initialCount">The initial number of concurrent operations to allow.</param>
         /// <param name="joinableTaskContext">The <see cref="JoinableTaskContext"/> to use to mitigate deadlocks.</param>
         /// <param name="mode">How to respond to a semaphore request by a caller that has already entered the semaphore.</param>
-        public ReentrantSemaphore(int initialCount = 1, JoinableTaskContext joinableTaskContext = default, ReentrancyMode mode = ReentrancyMode.NotAllowed)
+        internal ReentrantSemaphore(int initialCount, JoinableTaskContext joinableTaskContext, ReentrancyMode mode)
         {
             this.joinableTaskCollection = joinableTaskContext?.CreateCollection();
             this.joinableTaskFactory = joinableTaskContext?.CreateFactory(this.joinableTaskCollection);
@@ -134,6 +134,17 @@ namespace Microsoft.VisualStudio.Threading
                 this.ThrowIfFaulted();
                 return this.semaphore.CurrentCount;
             }
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ReentrantSemaphore"/> class.
+        /// </summary>
+        /// <param name="initialCount">The initial number of concurrent operations to allow.</param>
+        /// <param name="joinableTaskContext">The <see cref="JoinableTaskContext"/> to use to mitigate deadlocks.</param>
+        /// <param name="mode">How to respond to a semaphore request by a caller that has already entered the semaphore.</param>
+        public static ReentrantSemaphore Create(int initialCount = 1, JoinableTaskContext joinableTaskContext = default, ReentrancyMode mode = ReentrancyMode.NotAllowed)
+        {
+            return new ReentrantSemaphore(initialCount, joinableTaskContext, mode);
         }
 
         /// <summary>

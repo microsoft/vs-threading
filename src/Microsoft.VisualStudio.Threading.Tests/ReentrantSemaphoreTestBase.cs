@@ -457,7 +457,7 @@
         }
 
 #pragma warning disable VSTHRD012 // Provide JoinableTaskFactory where allowed (we do this in the JTF-aware variant of these tests in a derived class.)
-        protected virtual ReentrantSemaphore CreateSemaphore(ReentrantSemaphore.ReentrancyMode mode = ReentrantSemaphore.ReentrancyMode.NotAllowed, int initialCount = 1) => new ReentrantSemaphore(initialCount, mode: mode);
+        protected virtual ReentrantSemaphore CreateSemaphore(ReentrantSemaphore.ReentrancyMode mode = ReentrantSemaphore.ReentrancyMode.NotAllowed, int initialCount = 1) => ReentrantSemaphore.Create(initialCount, mode: mode);
 #pragma warning restore VSTHRD012 // Provide JoinableTaskFactory where allowed
 
         protected void ExecuteOnDispatcher(Func<Task> test)
