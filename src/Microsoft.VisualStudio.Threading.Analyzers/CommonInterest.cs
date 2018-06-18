@@ -34,7 +34,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemRuntimeCompilerServices, nameof(TaskAwaiter)), nameof(TaskAwaiter.GetResult)), null),
         };
 
-        internal static readonly IEnumerable<SyncBlockingMethod> SyncBlockingMethods = JTFSyncBlockers.Concat(ProblematicSyncBlockingMethods);
+        internal static readonly IEnumerable<SyncBlockingMethod> SyncBlockingMethods = JTFSyncBlockers.Concat(ProblematicSyncBlockingMethods).Concat(new[]
+        {
+            new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.MicrosoftVisualStudioShellInterop, "IVsTask"), "Wait"), extensionMethodNamespace: Namespaces.MicrosoftVisualStudioShell),
+            new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.MicrosoftVisualStudioShellInterop, "IVsTask"), "GetResult"), extensionMethodNamespace: Namespaces.MicrosoftVisualStudioShell),
+        });
 
         internal static readonly IEnumerable<QualifiedMember> LegacyThreadSwitchingMethods = new[]
         {
@@ -381,15 +385,18 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         [DebuggerDisplay("{" + nameof(Method) + "} -> {" + nameof(AsyncAlternativeMethodName) + "}")]
         internal struct SyncBlockingMethod
         {
-            public SyncBlockingMethod(QualifiedMember method, string asyncAlternativeMethodName)
+            public SyncBlockingMethod(QualifiedMember method, string asyncAlternativeMethodName = null, IReadOnlyList<string> extensionMethodNamespace = null)
             {
                 this.Method = method;
                 this.AsyncAlternativeMethodName = asyncAlternativeMethodName;
+                this.ExtensionMethodNamespace = extensionMethodNamespace;
             }
 
             public QualifiedMember Method { get; }
 
             public string AsyncAlternativeMethodName { get; }
+
+            public IReadOnlyList<string> ExtensionMethodNamespace { get; }
         }
     }
 }
