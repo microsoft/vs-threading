@@ -71,7 +71,7 @@
 
                         return document.Project.Solution;
                     },
-                    VSTHRD107AwaitTaskWithinUsingExpressionAnalyzer.Id),
+                    "only action"),
                 diagnostic);
 
             return Task.FromResult<object>(null);
