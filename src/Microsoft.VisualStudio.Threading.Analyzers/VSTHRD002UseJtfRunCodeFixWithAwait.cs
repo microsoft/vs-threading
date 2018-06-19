@@ -59,7 +59,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
                             return document.Project.Solution;
                         },
-                        VSTHRD002UseJtfRunAnalyzer.Id),
+                        "only action"),
                     diagnostic);
             }
         }
