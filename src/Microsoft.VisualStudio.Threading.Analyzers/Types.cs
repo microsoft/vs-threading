@@ -131,6 +131,13 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             internal static readonly IReadOnlyList<string> Namespace = Namespaces.SystemThreadingTasks;
         }
 
+        internal static class CoClassAttribute
+        {
+            internal const string TypeName = nameof(System.Runtime.InteropServices.CoClassAttribute);
+
+            internal static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeInteropServices;
+        }
+
         internal static class ComImportAttribute
         {
             internal const string TypeName = nameof(System.Runtime.InteropServices.ComImportAttribute);
