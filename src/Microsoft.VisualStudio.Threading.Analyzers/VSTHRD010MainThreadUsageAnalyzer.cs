@@ -384,6 +384,7 @@
                 }
 
                 return typeSymbol.GetAttributes().Any(ad =>
+                    (ad.AttributeClass.Name == Types.CoClassAttribute.TypeName && ad.AttributeClass.BelongsToNamespace(Types.CoClassAttribute.Namespace)) ||
                     (ad.AttributeClass.Name == Types.ComImportAttribute.TypeName && ad.AttributeClass.BelongsToNamespace(Types.ComImportAttribute.Namespace)) ||
                     (ad.AttributeClass.Name == Types.InterfaceTypeAttribute.TypeName && ad.AttributeClass.BelongsToNamespace(Types.InterfaceTypeAttribute.Namespace)) ||
                     (ad.AttributeClass.Name == Types.TypeLibTypeAttribute.TypeName && ad.AttributeClass.BelongsToNamespace(Types.TypeLibTypeAttribute.Namespace)));
