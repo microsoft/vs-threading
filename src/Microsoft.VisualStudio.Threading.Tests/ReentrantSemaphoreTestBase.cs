@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -521,6 +522,56 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
 
             await unrelatedUser.WithCancellation(this.TimeoutToken);
             Assert.Equal(1, this.semaphore.CurrentCount);
+        });
+    }
+
+    /// <summary>
+    /// Verifies that the semaphore is entered in the order the requests are made.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(AllModes))]
+    public void SemaphoreAwaitersAreQueued(ReentrantSemaphore.ReentrancyMode mode)
+    {
+        this.ExecuteOnDispatcher(async delegate
+        {
+            this.semaphore = this.CreateSemaphore(mode);
+            var releaseFirstHolder = new AsyncManualResetEvent();
+            var holder = this.semaphore.ExecuteAsync(() => releaseFirstHolder.WaitAsync());
+
+            const int waiterCount = 5;
+            var cts = new CancellationTokenSource[waiterCount];
+            var waiters = new Task[waiterCount];
+            var enteredLog = new List<int>();
+            for (int i = 0; i < waiterCount; i++)
+            {
+                cts[i] = new CancellationTokenSource();
+                int j = i;
+                waiters[i] = this.semaphore.ExecuteAsync(
+                    () =>
+                    {
+                        enteredLog.Add(j);
+                        return TplExtensions.CompletedTask;
+                    },
+                    cts[i].Token);
+            }
+
+            Assert.All(waiters, waiter => Assert.False(waiter.IsCompleted));
+            const int canceledWaiterIndex = 2;
+            cts[canceledWaiterIndex].Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiters[canceledWaiterIndex]).WithCancellation(this.TimeoutToken);
+
+            Assert.Empty(enteredLog);
+            for (int i = 0; i < waiterCount; i++)
+            {
+                Assert.Equal(i == canceledWaiterIndex, waiters[i].IsCompleted);
+            }
+
+            // Release the first semaphore.
+            releaseFirstHolder.Set();
+
+            // Confirm that the rest streamed through, in the right order.
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Task.WhenAll(waiters)).WithCancellation(this.TimeoutToken);
+            Assert.Equal(Enumerable.Range(0, waiterCount).Except(new[] { canceledWaiterIndex }), enteredLog);
         });
     }
 
