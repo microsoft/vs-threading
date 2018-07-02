@@ -61,6 +61,87 @@ class Test {
         }
 
         [Fact]
+        public void JTFRunInLazyValueFactory_Delegate()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    JoinableTaskFactory jtf;
+
+    void Foo() {
+        var t4 = new Lazy<int>(delegate {
+            jtf.Run(async delegate {
+                await Task.Yield();
+            });
+
+            return 3;
+        });
+    }
+}
+";
+            var expect = this.CreateDiagnostic(11, 13, 7);
+            this.VerifyCSharpDiagnostic(test, expect);
+        }
+
+        [Fact]
+        public void JTFRunInLazyValueFactory_Lambda()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    JoinableTaskFactory jtf;
+
+    void Foo() {
+        var t4 = new Lazy<int>(() => {
+            jtf.Run(async delegate {
+                await Task.Yield();
+            });
+
+            return 3;
+        });
+    }
+}
+";
+            var expect = this.CreateDiagnostic(11, 13, 7);
+            this.VerifyCSharpDiagnostic(test, expect);
+        }
+
+        [Fact]
+        public void JTFRunInLazyValueFactory_MethodGroup()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    JoinableTaskFactory jtf;
+
+    void Foo() {
+        var t4 = new Lazy<int>(LazyValueFactory);
+    }
+
+    int LazyValueFactory() {
+        jtf.Run(async delegate {
+            await Task.Yield();
+        });
+
+        return 3;
+    }
+}
+";
+
+            // We can change this to verify a diagnostic is reported if we ever implement this.
+            this.VerifyCSharpDiagnostic(test);
+        }
+
+        [Fact]
         public void ReportErrorOnLazyOfTConstructionInLocalVariable()
         {
             var test = @"
@@ -78,5 +159,14 @@ class Test {
             };
             this.VerifyCSharpDiagnostic(test, this.expect);
         }
+
+        private DiagnosticResult CreateDiagnostic(int line, int column, int length, string messagePattern = null) =>
+            new DiagnosticResult
+            {
+                Id = this.expect.Id,
+                MessagePattern = messagePattern ?? this.expect.MessagePattern,
+                Severity = this.expect.Severity,
+                Locations = new[] { new DiagnosticResultLocation("Test0.cs", line, column, line, column + length) },
+            };
     }
 }
