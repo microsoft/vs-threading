@@ -67,7 +67,7 @@
                     && typeArg.BelongsToNamespace(Namespaces.SystemThreadingTasks);
                 if (typeArgIsTask)
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(LazyOfTaskDescriptor, objectCreationSyntax.GetLocation()));
+                    context.ReportDiagnostic(Diagnostic.Create(LazyOfTaskDescriptor, objectCreationSyntax.Type.GetLocation()));
                 }
                 else
                 {

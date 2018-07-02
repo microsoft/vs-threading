@@ -37,10 +37,8 @@ class Test {
     Lazy<int> tInt = new Lazy<int>();
 }
 ";
-            this.expect.Locations = new[] {
-                new DiagnosticResultLocation("Test0.cs", 6, 25),
-            };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expect = this.CreateDiagnostic(6, 29, 15);
+            this.VerifyCSharpDiagnostic(test, expect);
         }
 
         [Fact]
@@ -54,10 +52,23 @@ class Test {
     Lazy<Task<object>> t3 = new Lazy<Task<object>>();
 }
 ";
-            this.expect.Locations = new[] {
-                new DiagnosticResultLocation("Test0.cs", 6, 29),
-            };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expect = this.CreateDiagnostic(6, 33, 18);
+            this.VerifyCSharpDiagnostic(test, expect);
+        }
+
+        [Fact]
+        public void ReportErrorOnLazyOfTConstructionInFieldNoTypeArg()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    Lazy<Task> t3 = new Lazy<Task>();
+}
+";
+            var expect = this.CreateDiagnostic(6, 25, 10);
+            this.VerifyCSharpDiagnostic(test, expect);
         }
 
         [Fact]
@@ -113,6 +124,32 @@ class Test {
         }
 
         [Fact]
+        public void JTFRunAsyncInLazyValueFactory_Lambda()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    JoinableTaskFactory jtf;
+
+    void Foo() {
+        var t4 = new Lazy<Task<int>>(async () => {
+            await jtf.RunAsync(async delegate {
+                await Task.Yield();
+            });
+
+            return 3;
+        });
+    }
+}
+";
+            var expect = this.CreateDiagnostic(10, 22, 15);
+            this.VerifyCSharpDiagnostic(test, expect);
+        }
+
+        [Fact]
         public void JTFRunInLazyValueFactory_MethodGroup()
         {
             var test = @"
@@ -154,10 +191,8 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] {
-                new DiagnosticResultLocation("Test0.cs", 7, 18),
-            };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expect = this.CreateDiagnostic(7, 22, 18);
+            this.VerifyCSharpDiagnostic(test, expect);
         }
 
         private DiagnosticResult CreateDiagnostic(int line, int column, int length, string messagePattern = null) =>
