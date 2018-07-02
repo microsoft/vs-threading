@@ -12,7 +12,7 @@
     using Microsoft.CodeAnalysis.Diagnostics;
 
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class VSTHRD011LazyOfTaskAnalyzer : DiagnosticAnalyzer
+    public class VSTHRD011UseAsyncLazyAnalyzer : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD011";
 

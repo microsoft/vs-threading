@@ -199,11 +199,21 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Avoid using Lazy&lt;T&gt; where T is a Task&lt;T2&gt;.
+        ///   Looks up a localized string similar to Use AsyncLazy&lt;T&gt;.
         /// </summary>
         internal static string VSTHRD011_Title {
             get {
                 return ResourceManager.GetString("VSTHRD011_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invoking or blocking on async code in a Lazy&lt;T&gt; value factory can deadlock.
+        ///Use AsyncLazy&lt;T&gt; instead..
+        /// </summary>
+        internal static string VSTHRD011b_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSTHRD011b_MessageFormat", resourceCulture);
             }
         }
         
