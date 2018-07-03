@@ -58,14 +58,16 @@
           <target state="translated">Utiliser InvokeAsync pour déclencher des événements async</target>
         </trans-unit>
         <trans-unit id="VSTHRD003_MessageFormat" translate="yes" xml:space="preserve">
-          <source>Calling await on a Task inside a JoinableTaskFactory.Run, when the task is initialized outside the delegate can cause potential deadlocks.
-You can avoid this problem by ensuring the task is initialized within the delegate or by using JoinableTask instead of Task.</source>
-          <target state="translated">Le fait d’appeler await sur une tâche dans une méthode JoinableTaskFactory.Run quand la tâche est initialisée en dehors du délégué peut entraîner des blocages.
+          <source>Calling await on a Task when the task is initialized in another context can cause potential deadlocks.
+You can avoid this problem by ensuring the task is initialized within the same method or by using JoinableTask instead of Task.</source>
+          <target state="needs-review-translation">Le fait d’appeler await sur une tâche dans une méthode JoinableTaskFactory.Run quand la tâche est initialisée en dehors du délégué peut entraîner des blocages.
 Vous pouvez éviter ce problème en vérifiant que la tâche est initialisée dans le délégué ou en utilisant JoinableTask à la place de Task.</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD003_Title" translate="yes" xml:space="preserve">
-          <source>Avoid awaiting non-joinable tasks in join contexts</source>
-          <target state="translated">Éviter d’attendre des tâches non joignables dans des contextes de jointure</target>
+          <source>Avoid awaiting foreign Tasks</source>
+          <target state="needs-review-translation">Éviter d’attendre des tâches non joignables dans des contextes de jointure</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD011_MessageFormat" translate="yes" xml:space="preserve">
           <source>Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock.

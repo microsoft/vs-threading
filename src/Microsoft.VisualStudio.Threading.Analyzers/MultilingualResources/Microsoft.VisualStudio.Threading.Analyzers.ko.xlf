@@ -63,14 +63,16 @@
           <target state="translated">비동기 이벤트를 발생하는 InvokeAsync 사용</target>
         </trans-unit>
         <trans-unit id="VSTHRD003_MessageFormat" translate="yes" xml:space="preserve">
-          <source>Calling await on a Task inside a JoinableTaskFactory.Run, when the task is initialized outside the delegate can cause potential deadlocks.
-You can avoid this problem by ensuring the task is initialized within the delegate or by using JoinableTask instead of Task.</source>
-          <target state="translated">작업이 외부에서 초기화되면 대리자가 잠재적인 교착 상태를 일으킬 수 있으므로 JoinableTaskFactory.Run 내 Task에서 호출을 대기합니다.
+          <source>Calling await on a Task when the task is initialized in another context can cause potential deadlocks.
+You can avoid this problem by ensuring the task is initialized within the same method or by using JoinableTask instead of Task.</source>
+          <target state="needs-review-translation">작업이 외부에서 초기화되면 대리자가 잠재적인 교착 상태를 일으킬 수 있으므로 JoinableTaskFactory.Run 내 Task에서 호출을 대기합니다.
 작업이 대리자 내에서 초기화되도록 하거나 Task 대신 JoinableTask를 사용하여 이 문제를 방지할 수 있습니다.</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD003_Title" translate="yes" xml:space="preserve">
-          <source>Avoid awaiting non-joinable tasks in join contexts</source>
-          <target state="translated">조인 컨텍스트에서 조인할 수 없는 작업을 대기하지 않습니다.</target>
+          <source>Avoid awaiting foreign Tasks</source>
+          <target state="needs-review-translation">조인 컨텍스트에서 조인할 수 없는 작업을 대기하지 않습니다.</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD011_MessageFormat" translate="yes" xml:space="preserve">
           <source>Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock.
