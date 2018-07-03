@@ -504,7 +504,10 @@
                     continue;
                 }
 
-                Assert.False(waiters[i].IsCompleted);
+                // Assert that all subsequent waiters have not yet entered the semaphore.
+                Assert.All(waiters.Skip(i + 1), w => Assert.True(w == waiters[canceledWaiterIndex] || !w.IsCompleted));
+
+                // Now accept and exit the semaphore.
                 using (await waiters[i].WithCancellation(this.TimeoutToken))
                 {
                     // We got the semaphore and will release it.
