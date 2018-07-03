@@ -468,5 +468,48 @@
             IDisposable disposable = this.lck;
             disposable.Dispose();
         }
+
+        /// <summary>
+        /// Verifies that the semaphore is entered in the order the requests are made.
+        /// </summary>
+        [Fact]
+        public async Task SemaphoreAwaitersAreQueued()
+        {
+            var holder = await this.lck.EnterAsync();
+
+            const int waiterCount = 5;
+            var cts = new CancellationTokenSource[waiterCount];
+            var waiters = new Task<AsyncSemaphore.Releaser>[waiterCount];
+            for (int i = 0; i < waiterCount; i++)
+            {
+                cts[i] = new CancellationTokenSource();
+                waiters[i] = this.lck.EnterAsync(cts[i].Token);
+            }
+
+            Assert.All(waiters, waiter => Assert.False(waiter.IsCompleted));
+            const int canceledWaiterIndex = 2;
+            cts[canceledWaiterIndex].Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiters[canceledWaiterIndex]).WithCancellation(this.TimeoutToken);
+
+            for (int i = 0; i < waiterCount; i++)
+            {
+                Assert.Equal(i == canceledWaiterIndex, waiters[i].IsCompleted);
+            }
+
+            holder.Dispose();
+            for (int i = 0; i < waiterCount; i++)
+            {
+                if (i == canceledWaiterIndex)
+                {
+                    continue;
+                }
+
+                Assert.False(waiters[i].IsCompleted);
+                using (await waiters[i].WithCancellation(this.TimeoutToken))
+                {
+                    // We got the semaphore and will release it.
+                }
+            }
+        }
     }
 }
