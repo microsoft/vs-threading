@@ -218,14 +218,14 @@
             switch (context.Node)
             {
                 case InvocationExpressionSyntax invocationExpressionSyntax:
-                    targetMethod = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax.Expression).Symbol;
+                    targetMethod = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax.Expression, context.CancellationToken).Symbol;
                     locationToBlame = invocationExpressionSyntax.Expression;
                     break;
                 case MemberAccessExpressionSyntax memberAccessExpressionSyntax:
-                    targetMethod = GetPropertyAccessor(context.SemanticModel.GetSymbolInfo(memberAccessExpressionSyntax.Name).Symbol as IPropertySymbol);
+                    targetMethod = GetPropertyAccessor(context.SemanticModel.GetSymbolInfo(memberAccessExpressionSyntax.Name, context.CancellationToken).Symbol as IPropertySymbol);
                     break;
                 case IdentifierNameSyntax identifierNameSyntax:
-                    targetMethod = GetPropertyAccessor(context.SemanticModel.GetSymbolInfo(identifierNameSyntax).Symbol as IPropertySymbol);
+                    targetMethod = GetPropertyAccessor(context.SemanticModel.GetSymbolInfo(identifierNameSyntax, context.CancellationToken).Symbol as IPropertySymbol);
                     break;
             }
 
@@ -351,7 +351,7 @@
             internal void AnalyzeCast(SyntaxNodeAnalysisContext context)
             {
                 var castSyntax = (CastExpressionSyntax)context.Node;
-                var type = context.SemanticModel.GetSymbolInfo(castSyntax.Type).Symbol as ITypeSymbol;
+                var type = context.SemanticModel.GetSymbolInfo(castSyntax.Type, context.CancellationToken).Symbol as ITypeSymbol;
                 if (type != null && IsObjectLikelyToBeCOMObject(type))
                 {
                     this.AnalyzeMemberWithinContext(type, null, context);
@@ -361,7 +361,7 @@
             internal void AnalyzeAs(SyntaxNodeAnalysisContext context)
             {
                 var asSyntax = (BinaryExpressionSyntax)context.Node;
-                var type = context.SemanticModel.GetSymbolInfo(asSyntax.Right).Symbol as ITypeSymbol;
+                var type = context.SemanticModel.GetSymbolInfo(asSyntax.Right, context.CancellationToken).Symbol as ITypeSymbol;
                 if (type != null && IsObjectLikelyToBeCOMObject(type))
                 {
                     Location asAndRightSide = Location.Create(context.Node.SyntaxTree, TextSpan.FromBounds(asSyntax.OperatorToken.Span.Start, asSyntax.Right.Span.End));
