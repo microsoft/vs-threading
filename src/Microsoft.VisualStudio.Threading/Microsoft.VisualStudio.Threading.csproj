@@ -24,6 +24,9 @@
     <DebugType>full</DebugType>
     <RunCodeAnalysis Condition=" '$(TargetFramework)' != 'portable-net45+win8+wpa81' and '$(TargetFramework)' != 'netstandard2.0' and '$(Configuration)' != 'Debug' ">true</RunCodeAnalysis>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- Reference directly to use 4.3.1 and suppress package restore warnings. See https://github.com/dotnet/corefx/issues/29907 and https://github.com/AArnott/vs-threading/commit/357f279e44d150d2dbc305cf81fd549f2cbaed2d -->
+    <RuntimeIdentifiers Condition="'$(TargetFramework)' == 'portable-net45+win8+wpa81'">;</RuntimeIdentifiers>
   </PropertyGroup>
   <PropertyGroup Label="MultilingualAppToolkit">
     <MultilingualAppToolkitVersion>4.0</MultilingualAppToolkitVersion>
@@ -55,8 +58,6 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <!-- Reference directly to use 4.3.1 and suppress package restore warnings. https://github.com/dotnet/corefx/issues/29907 -->
-    <PackageReference Include="runtime.native.System.IO.Compression" Version="4.3.1" PrivateAssets="all" />
     <PackageReference Include="Microsoft.VisualStudio.Validation" Version="15.3.15" />
     <PackageReference Include="MicroBuild.VisualStudio" Version="$(MicroBuildVersion)" PrivateAssets="all" />
     <PackageReference Include="MSBuild.SDK.Extras" Version="1.0.6" PrivateAssets="all" />
