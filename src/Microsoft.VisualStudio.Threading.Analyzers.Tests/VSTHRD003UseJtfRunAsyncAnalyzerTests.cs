@@ -768,5 +768,85 @@ class Tests
             // We decided not to report warning in this case, because we don't know if our assumptions about the Run implementation are still valid for user's implementation
             this.VerifyCSharpDiagnostic(test);
         }
+
+        [Fact]
+        public void ReportWarningWhenAwaitingTaskInField()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
+using Task = System.Threading.Tasks.Task;
+
+class Tests {
+    Task task;
+
+    public void Test() {
+        ThreadHelper.JoinableTaskFactory.Run(async delegate {
+            await task;
+        });
+    }
+}
+";
+            var expect = this.CreateDiagnostic(12, 19, 4);
+            this.VerifyCSharpDiagnostic(test, expect);
+        }
+
+        [Fact]
+        public void ReportWarningWhenAwaitingTaskInField_WithThisQualifier()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
+using Task = System.Threading.Tasks.Task;
+
+class Tests {
+    Task task;
+
+    public void Test() {
+        ThreadHelper.JoinableTaskFactory.Run(async delegate {
+            await this.task;
+        });
+    }
+}
+";
+            var expect = this.CreateDiagnostic(12, 19, 9);
+            this.VerifyCSharpDiagnostic(test, expect);
+        }
+
+        [Fact]
+        public void DoNotReportWarningWhenAwaitingTaskInFieldThatIsAssignedLocally()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
+using Task = System.Threading.Tasks.Task;
+
+class Tests {
+    Task task;
+
+    public void Test() {
+        ThreadHelper.JoinableTaskFactory.Run(async delegate {
+            task = SomeOperationAsync();
+            await task;
+        });
+    }
+
+    Task SomeOperationAsync() => Task.CompletedTask;
+}
+";
+            this.VerifyCSharpDiagnostic(test);
+        }
+
+        private DiagnosticResult CreateDiagnostic(int line, int column, int length, string messagePattern = null) =>
+           new DiagnosticResult
+           {
+               Id = this.expect.Id,
+               MessagePattern = messagePattern ?? this.expect.MessagePattern,
+               Severity = this.expect.Severity,
+               Locations = new[] { new DiagnosticResultLocation("Test0.cs", line, column, line, column + length) },
+           };
     }
 }
