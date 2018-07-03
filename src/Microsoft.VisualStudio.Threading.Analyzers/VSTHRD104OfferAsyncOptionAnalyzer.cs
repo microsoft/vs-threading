@@ -88,7 +88,7 @@
                     return;
                 }
 
-                var invokedMember = context.SemanticModel.GetSymbolInfo(memberAccessSyntax).Symbol;
+                var invokedMember = context.SemanticModel.GetSymbolInfo(memberAccessSyntax, context.CancellationToken).Symbol;
                 if (invokedMember != null)
                 {
                     foreach (var item in problematicMethods)

@@ -91,7 +91,7 @@
             var containingInvocationSyntax = argument?.FirstAncestorOrSelf<InvocationExpressionSyntax>();
             if (containingInvocationSyntax != null)
             {
-                var symbolOfContainingMethodInvocation = context.SemanticModel.GetSymbolInfo(containingInvocationSyntax.Expression).Symbol;
+                var symbolOfContainingMethodInvocation = context.SemanticModel.GetSymbolInfo(containingInvocationSyntax.Expression, context.CancellationToken).Symbol;
                 return symbolOfContainingMethodInvocation?.GetAttributes().Any(a =>
                     a.AttributeClass.BelongsToNamespace(Namespaces.SystemDiagnostics) &&
                     a.AttributeClass.Name == nameof(System.Diagnostics.ConditionalAttribute)) ?? false;

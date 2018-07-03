@@ -54,7 +54,7 @@
         private void AnalyzeNode(SyntaxNodeAnalysisContext context)
         {
             var objectCreationSyntax = (ObjectCreationExpressionSyntax)context.Node;
-            var methodSymbol = context.SemanticModel.GetSymbolInfo(objectCreationSyntax).Symbol as IMethodSymbol;
+            var methodSymbol = context.SemanticModel.GetSymbolInfo(objectCreationSyntax, context.CancellationToken).Symbol as IMethodSymbol;
             var constructedType = methodSymbol?.ReceiverType as INamedTypeSymbol;
             var isLazyOfT = constructedType?.ContainingNamespace?.Name == nameof(System)
                 && (constructedType?.ContainingNamespace?.ContainingNamespace?.IsGlobalNamespace ?? false)
@@ -75,7 +75,7 @@
                     if (firstArgExpression is AnonymousFunctionExpressionSyntax anonFunc)
                     {
                         var problems = from invocation in anonFunc.DescendantNodes().OfType<InvocationExpressionSyntax>()
-                                       let invokedSymbol = context.SemanticModel.GetSymbolInfo(invocation.Expression).Symbol
+                                       let invokedSymbol = context.SemanticModel.GetSymbolInfo(invocation.Expression, context.CancellationToken).Symbol
                                        where invokedSymbol != null && CommonInterest.SyncBlockingMethods.Any(m => m.Method.IsMatch(invokedSymbol))
                                        select invocation.Expression;
                         var firstProblem = problems.FirstOrDefault();
