@@ -22,7 +22,7 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>Синхронное ожидание задач или объектов awaiter может вызвать взаимоблокировки. Вместо этого используйте await или JoinableTaskFactory.Run.</value>
+    <value>Синхронное ожидание задач или объектов awaiter может приводить к взаимоблокировкам. Используйте вместо этого await или JoinableTaskFactory.Run.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
@@ -53,7 +53,7 @@
     <value>Использование InvokeAsync для вызова асинхронных событий</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>При вызове await в объекте Task в JoinableTaskFactory.Run (и при условии, что задача инициализирована за пределами делегата), могут произойти взаимоблокировки.
+    <value>При вызове await в объекте Task в JoinableTaskFactory.Run (и при условии, что задача инициализирована за пределами делегата) могут произойти взаимоблокировки.
 Вы можете избежать этой проблемы, инициализировав задачу в делегате или использовав JoinableTask вместо Task.</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
@@ -64,7 +64,7 @@
 Вместо этого используйте AsyncLazy&lt;T&gt;.</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
-    <value>Не используйте Lazy&lt;T&gt;, где T — объект Task&lt;T2&gt;</value>
+    <value>Используйте AsyncLazy&lt;T&gt;</value>
   </data>
   <data name="VSTHRD103_MessageFormat" xml:space="preserve">
     <value>{0} синхронно блокирует. Вместо этого используйте Await {1}.</value>
@@ -76,7 +76,7 @@
     <value>Вызов асинхронных методов в методе async</value>
   </data>
   <data name="VSTHRD102_MessageFormat" xml:space="preserve">
-    <value>Разрешите использовать вызовы методов синхронной блокировки, такие как JoinableTaskFactory.Run или Task.Result, только элементам общедоступных точек входа, где требуется синхронизация. Если их будут использовать внутренние элементы, между асинхронным фреймами могут быть добавлены лишние синхронные фреймы, что приведет к нехватке ресурсов в пуле потока.</value>
+    <value>Разрешите использовать вызовы методов синхронной блокировки, такие как JoinableTaskFactory.Run или Task.Result, только элементам общедоступных точек входа, где требуется синхронизация. Если их будут использовать внутренние элементы, между асинхронными фреймами могут быть добавлены лишние синхронные фреймы, что приведет к нехватке ресурсов в пуле потока.</value>
   </data>
   <data name="VSTHRD102_Title" xml:space="preserve">
     <value>Реализация внутренней логики асинхронно</value>
@@ -108,7 +108,7 @@
     <value>Указывайте JoinableTaskFactory, где это возможно</value>
   </data>
   <data name="VSTHRD104_MessageFormat" xml:space="preserve">
-    <value>Предоставьте асинхронную версию этого метода, которая не выполняет блокирование синхронно. Затем упростите этот метод, чтобы вызывать этот асинхронный метод внутри делегата JoinableTaskFactory.Run.</value>
+    <value>Предоставьте асинхронную версию этого метода, которая не использует синхронную блокировку. Затем упростите этот метод, вызывая асинхронную версию внутри делегата JoinableTaskFactory.Run.</value>
   </data>
   <data name="VSTHRD104_Title" xml:space="preserve">
     <value>Предоставляйте асинхронные методы</value>
@@ -141,5 +141,36 @@
   </data>
   <data name="VSTHRD108_Title" xml:space="preserve">
     <value>Утверждайте сходства потоков безусловно</value>
+  </data>
+  <data name="VSTHRD109_MessageFormat" xml:space="preserve">
+    <value>Избегайте возникновения исключений в потоках, кроме основного, в асинхронном методе или методе, возвращающем Task. Вместо этого переключитесь на нужный поток.</value>
+  </data>
+  <data name="VSTHRD109_Title" xml:space="preserve">
+    <value>Параметр вместо оператора assert в асинхронных методах</value>
+  </data>
+  <data name="VSTHRD010_MessageFormat_Sync" xml:space="preserve">
+    <value>Доступ к "{0}" должен осуществляться только в основном потоке. Сначала вызовите {1}().</value>
+    <comment>{0} is a type or member name and {1} is the name of a method that throws if not called from the main thread.</comment>
+  </data>
+  <data name="VSTHRD010_MessageFormat_Async" xml:space="preserve">
+    <value>Доступ к "{0}" должен осуществляться только в основном потоке. Сначала примените await к JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+    <comment>{0} is a type or member name.</comment>
+  </data>
+  <data name="VSTHRD004_MessageFormat" xml:space="preserve">
+    <value>К вызовам JoinableTaskFactory.SwitchToMainThreadAsync() нужно применять оператор await.</value>
+  </data>
+  <data name="VSTHRD004_Title" xml:space="preserve">
+    <value>Применение await к SwitchToMainThreadAsync</value>
+    <comment>Do not translate either of these. The first is a keyword, the second is a method name.</comment>
+  </data>
+  <data name="VSTHRD110_MessageFormat" xml:space="preserve">
+    <value>Чтобы получить результат, поддерживающий await для этого вызова метода, примените к нему оператор await, назначьте его переменной или передайте в другой метод.</value>
+  </data>
+  <data name="VSTHRD110_Title" xml:space="preserve">
+    <value>Просмотр результатов асинхронных вызовов</value>
+  </data>
+  <data name="VSTHRD011b_MessageFormat" xml:space="preserve">
+    <value>Вызов или блокировка в асинхронном коде в методе ValueFactory Lazy&lt;T&gt; может вызвать взаимоблокировку.
+Вместо этого используйте AsyncLazy&lt;T&gt;.</value>
   </data>
 </root>

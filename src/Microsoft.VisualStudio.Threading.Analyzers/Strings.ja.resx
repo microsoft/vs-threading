@@ -22,7 +22,7 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>同期的にタスクまたは待機側を待機すると、デッドロックが引き起こされる可能性があります。代わりに、await または JoinableTaskFactory.Run を使用します。</value>
+    <value>同期的にタスクまたは awaiter を待機すると、デッドロックが引き起こされる可能性があります。代わりに await または JoinableTaskFactory.Run を使用してください。</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
@@ -53,7 +53,7 @@
     <value>InvokeAsync を使用して非同期イベントを発生させる</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>タスクがデリゲート外部で初期化されている場合、JoinableTaskFactory.Run 内の Task で Await を呼び出すと、デッドロックが引き起こされる可能性があります。
+    <value>タスクがデリゲート外部で初期化されている場合、JoinableTaskFactory.Run 内の Task で await を呼び出すと、デッドロックが引き起こされる可能性があります。
 この問題は、タスクが確実にデリゲート内で初期化されるようにするか、Task の代わりに JoinableTask を使用することによって回避できます。</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
@@ -61,22 +61,22 @@
   </data>
   <data name="VSTHRD011_MessageFormat" xml:space="preserve">
     <value>Lazy&lt;Task&lt;T&gt;&gt;.Value はデッドロックを引き起こす可能性があります。
-代わりに AsyncLazy&lt;T&gt; を使用します。</value>
+代わりに AsyncLazy&lt;T&gt; を使用してください。</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
-    <value>T が Task&lt;T2&gt; を表す Lazy&lt;T&gt; を使用しない</value>
+    <value>AsyncLazy&lt;T&gt; を使用する</value>
   </data>
   <data name="VSTHRD103_MessageFormat" xml:space="preserve">
-    <value>{0} は同期的にブロックされます。代わりに {1} を待機します。</value>
+    <value>{0} は同期的にブロックを実行します。代わりに {1} を待機してください。</value>
   </data>
   <data name="VSTHRD103_MessageFormat_UseAwaitInstead" xml:space="preserve">
-    <value>{0} は同期的にブロックされます。代わりに Await を使用します。</value>
+    <value>{0} は同期的にブロックを実行します。代わりに await を使用してください。</value>
   </data>
   <data name="VSTHRD103_Title" xml:space="preserve">
     <value>非同期メソッドの場合に非同期メソッドを呼び出す</value>
   </data>
   <data name="VSTHRD102_MessageFormat" xml:space="preserve">
-    <value>JoinableTaskFactory.Run または Task.Result など、同期的にブロックしているメソッド呼び出しの使用を、同期している必要のある公開エントリポイント メンバーに限定します。内部メンバーに対して使用すると、非同期フレーム間に同期フレームが不必要に追加され、スレッドプールが消費されます。</value>
+    <value>JoinableTaskFactory.Run または Task.Result など、同期的にブロックを行うメソッド呼び出しの使用は、同期が必要な公開エントリポイント メンバーに限定してください。内部メンバーに対して使用すると、非同期フレーム間に同期フレームが不必要に追加され、スレッドプールが消費されます。</value>
   </data>
   <data name="VSTHRD102_Title" xml:space="preserve">
     <value>内部論理を非同期的に実装する</value>
@@ -108,7 +108,7 @@
     <value>許可されている場合は JoinableTaskFactory を提供する</value>
   </data>
   <data name="VSTHRD104_MessageFormat" xml:space="preserve">
-    <value>同期的にブロックしないこのメソッドの非同期バージョンを公開します。その後、このメソッドを単純化して、JoinableTaskFactory.Run デリゲートでその非同期メソッドを呼び出します。</value>
+    <value>このメソッドの、同期的にブロックしない非同期バージョンを公開してください。次に、このメソッドを単純化し、JoinableTaskFactory.Run デリゲート内でその非同期メソッドを呼び出すようにします。</value>
   </data>
   <data name="VSTHRD104_Title" xml:space="preserve">
     <value>非同期メソッドを提供する</value>
@@ -141,5 +141,36 @@
   </data>
   <data name="VSTHRD108_Title" xml:space="preserve">
     <value>スレッド アフィニティを無条件でアサートする</value>
+  </data>
+  <data name="VSTHRD109_MessageFormat" xml:space="preserve">
+    <value>非同期メソッドまたはタスクを返すメソッドでは、メイン スレッド上でない限り、スローしないでください。代わりに、必要なスレッドに切り替えてください。</value>
+  </data>
+  <data name="VSTHRD109_Title" xml:space="preserve">
+    <value>非同期メソッドでアサートの代わりに切り替えを使用する</value>
+  </data>
+  <data name="VSTHRD010_MessageFormat_Sync" xml:space="preserve">
+    <value>"{0}" へのアクセスはメイン スレッドでのみ行う必要があります。まず {1}() を呼び出します。</value>
+    <comment>{0} is a type or member name and {1} is the name of a method that throws if not called from the main thread.</comment>
+  </data>
+  <data name="VSTHRD010_MessageFormat_Async" xml:space="preserve">
+    <value>"{0}" へのアクセスはメイン スレッドでのみ行う必要があります。まず JoinableTaskFactory.SwitchToMainThreadAsync() を待機してください。</value>
+    <comment>{0} is a type or member name.</comment>
+  </data>
+  <data name="VSTHRD004_MessageFormat" xml:space="preserve">
+    <value>JoinableTaskFactory.SwitchToMainThreadAsync() への呼び出しを待機する必要があります。</value>
+  </data>
+  <data name="VSTHRD004_Title" xml:space="preserve">
+    <value>SwitchToMainThreadAsync を待機する</value>
+    <comment>Do not translate either of these. The first is a keyword, the second is a method name.</comment>
+  </data>
+  <data name="VSTHRD110_MessageFormat" xml:space="preserve">
+    <value>このメソッド呼び出しの待機可能な結果を確認するには、それを待機するか、変数に割り当てるか、別のメソッドに渡します。</value>
+  </data>
+  <data name="VSTHRD110_Title" xml:space="preserve">
+    <value>非同期呼び出しの結果を確認する</value>
+  </data>
+  <data name="VSTHRD011b_MessageFormat" xml:space="preserve">
+    <value>Lazy&lt;T&gt; 値ファクトリの非同期コードで呼び出しかブロックを実行すると、デッドロックを引き起こす可能性があります。
+代わりに AsyncLazy&lt;T&gt; をご使用ください。</value>
   </data>
 </root>
