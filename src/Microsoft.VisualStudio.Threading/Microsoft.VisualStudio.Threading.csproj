@@ -19,7 +19,7 @@
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <PackageProjectUrl>https://github.com/Microsoft/vs-threading</PackageProjectUrl>
     <PackageIconUrl>https://aka.ms/VsExtensibilityIcon</PackageIconUrl>
-    <PackageReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=746387</PackageReleaseNotes>
+    <PackageReleaseNotes>The library now uses a 15.6.0.0 assembly version to be compatible with Visual Studio 15.7 and to reflect that no additional API was added since the 15.6 package version. Note that earlier versions of the 15.7 package used an assembly version of 15.7.0.0.</PackageReleaseNotes>
 
     <DebugType>full</DebugType>
     <RunCodeAnalysis Condition=" '$(TargetFramework)' != 'portable-net45+win8+wpa81' and '$(TargetFramework)' != 'netstandard2.0' and '$(Configuration)' != 'Debug' ">true</RunCodeAnalysis>
