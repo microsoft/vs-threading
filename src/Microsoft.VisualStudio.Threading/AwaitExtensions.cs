@@ -49,6 +49,17 @@ namespace Microsoft.VisualStudio.Threading
             return new TaskSchedulerAwaitable(scheduler, alwaysYield);
         }
 
+        /// <summary>
+        /// Gets an awaitable that schedules continuations on the specified synchronization context.
+        /// </summary>
+        /// <param name="context">The synchronization context used to execute continuations.</param>
+        /// <returns>An awaitable.</returns>
+        public static SynchronizationContextAwaiter GetAwaiter(this SynchronizationContext context)
+        {
+            Requires.NotNull(context, nameof(context));
+            return new SynchronizationContextAwaiter(context);
+        }
+
 #if DESKTOP || NETSTANDARD2_0
 
         /// <summary>
@@ -850,6 +861,46 @@ namespace Microsoft.VisualStudio.Threading
                     CancellationToken.None,
                     TaskContinuationOptions.ExecuteSynchronously,
                     TaskScheduler.Default);
+            }
+        }
+
+        /// <summary>
+        /// A task awaiter that executes callbacks on the supplied synchronization context.
+        /// </summary>
+        public struct SynchronizationContextAwaiter : INotifyCompletion
+        {
+            private static readonly SendOrPostCallback PostCallback = state => ((Action)state)();
+            private readonly SynchronizationContext context;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="SynchronizationContextAwaiter"/> struct.
+            /// </summary>
+            /// <param name="context">The synchonization context which the continuation will be posted to.</param>
+            public SynchronizationContextAwaiter(SynchronizationContext context)
+            {
+                Requires.NotNull(context, nameof(context));
+                this.context = context;
+            }
+
+            /// <summary>
+            /// Gets a value indicating whether the current task is completed.
+            /// </summary>
+            public bool IsCompleted => this.context == SynchronizationContext.Current;
+
+            /// <summary>
+            /// Posts the callback to the supplied synchronization context.
+            /// </summary>
+            /// <param name="continuation">The action to continue</param>
+            public void OnCompleted(Action continuation)
+            {
+                this.context.Post(PostCallback, continuation);
+            }
+
+            /// <summary>
+            /// No result to return.
+            /// </summary>
+            public void GetResult()
+            {
             }
         }
     }

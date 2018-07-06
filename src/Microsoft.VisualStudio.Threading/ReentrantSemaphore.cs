@@ -408,35 +408,53 @@ namespace Microsoft.VisualStudio.Threading
                     this.reentrantCount.Value = reentrantStack = new Stack<StrongBox<AsyncSemaphore.Releaser>>(capacity: 2);
                 }
 
-                await this.ExecuteCoreAsync(async delegate
+                // For performance reasons, we want to minimize the number of Joins performed, and also keep the size of the
+                // JoinableCollection to a minimum. This also means awaiting on the semaphore outside of a JTF.RunAsync. This requires
+                // us to not ConfigureAwait(true) on the semaphore. However, that breaks out contract. To fix this, we capture the
+                // synchronization context and then restore it after acquiring the semaphore.
+                AsyncSemaphore.Releaser releaser = default;
+                SynchronizationContext synchronizationContext = null;
+                if (reentrantStack.Count == 0)
                 {
+                    synchronizationContext = SynchronizationContext.Current;
                     using (this.joinableTaskCollection?.Join())
                     {
-                        AsyncSemaphore.Releaser releaser = reentrantStack.Count == 0 ? await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true) : default;
-                        var pushedReleaser = new StrongBox<AsyncSemaphore.Releaser>(releaser);
+                        // Use ConfiguredAwaitRunInline() as ConfigureAwait(true) will deadlock due to not being inside a JTF.RunAsync().
+                        releaser = await this.semaphore.EnterAsync(cancellationToken).ConfigureAwaitRunInline();
+                    }
+                }
+
+                await this.ExecuteCoreAsync(async delegate
+                {
+                    if (synchronizationContext != null)
+                    {
+                        // Restore the synchronization context that was lost acquiring the semaphore.
+                        await synchronizationContext;
+                    }
+                    
+                    var pushedReleaser = new StrongBox<AsyncSemaphore.Releaser>(releaser);
+                    lock (reentrantStack)
+                    {
+                        reentrantStack.Push(pushedReleaser);
+                    }
+
+                    try
+                    {
+                        await operation().ConfigureAwaitRunInline();
+                    }
+                    finally
+                    {
                         lock (reentrantStack)
                         {
-                            reentrantStack.Push(pushedReleaser);
-                        }
-
-                        try
-                        {
-                            await operation().ConfigureAwaitRunInline();
-                        }
-                        finally
-                        {
-                            lock (reentrantStack)
+                            var poppedReleaser = reentrantStack.Pop();
+                            if (!object.ReferenceEquals(poppedReleaser, pushedReleaser))
                             {
-                                var poppedReleaser = reentrantStack.Pop();
-                                if (!object.ReferenceEquals(poppedReleaser, pushedReleaser))
-                                {
-                                    this.faulted = true;
-                                    throw Verify.FailOperation(Strings.SemaphoreStackNestingViolated, ReentrancyMode.Stack);
-                                }
+                                this.faulted = true;
+                                throw Verify.FailOperation(Strings.SemaphoreStackNestingViolated, ReentrancyMode.Stack);
                             }
-
-                            DisposeReleaserNoThrow(releaser);
                         }
+
+                        DisposeReleaserNoThrow(releaser);
                     }
                 });
             }
