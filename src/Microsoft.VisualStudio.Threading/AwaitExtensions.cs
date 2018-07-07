@@ -897,8 +897,9 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
-            /// No result to return.
+            /// Does nothing.
             /// </summary>
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
             public void GetResult()
             {
             }
