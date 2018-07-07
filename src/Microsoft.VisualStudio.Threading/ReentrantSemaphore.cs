@@ -431,7 +431,7 @@ namespace Microsoft.VisualStudio.Threading
                         // Restore the synchronization context that was lost acquiring the semaphore.
                         await synchronizationContext;
                     }
-                    
+
                     var pushedReleaser = new StrongBox<AsyncSemaphore.Releaser>(releaser);
                     lock (reentrantStack)
                     {
