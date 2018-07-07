@@ -867,6 +867,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// A task awaiter that executes callbacks on the supplied synchronization context.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
         public struct SynchronizationContextAwaiter : INotifyCompletion
         {
             private static readonly SendOrPostCallback PostCallback = state => ((Action)state)();
