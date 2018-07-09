@@ -40,7 +40,7 @@ steps:
 - task: MicroBuildIBCMergePlugin@0
   displayName: MicroBuild IBCMerge Plugin
   inputs:
-    branch: lab/d15.8stg
+    branch: master
   condition: and(succeeded(), ne(variables['Hosted'], 'true'))
 
 - task: MicroBuildSigningPlugin@1
