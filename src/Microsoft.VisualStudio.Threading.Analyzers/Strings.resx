@@ -172,12 +172,16 @@ You can avoid this problem by ensuring the task is initialized within the delega
   <data name="VSTHRD003_Title" xml:space="preserve">
     <value>Avoid awaiting non-joinable tasks in join contexts</value>
   </data>
+  <data name="VSTHRD011b_MessageFormat" xml:space="preserve">
+    <value>Invoking or blocking on async code in a Lazy&lt;T&gt; value factory can deadlock.
+Use AsyncLazy&lt;T&gt; instead.</value>
+  </data>
   <data name="VSTHRD011_MessageFormat" xml:space="preserve">
     <value>Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock.
 Use AsyncLazy&lt;T&gt; instead.</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
-    <value>Avoid using Lazy&lt;T&gt; where T is a Task&lt;T2&gt;</value>
+    <value>Use AsyncLazy&lt;T&gt;</value>
   </data>
   <data name="VSTHRD103_MessageFormat" xml:space="preserve">
     <value>{0} synchronously blocks. Await {1} instead.</value>

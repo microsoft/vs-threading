@@ -174,7 +174,7 @@
                     return false;
                 }
 
-                var memberSymbol = context.SemanticModel.GetSymbolInfo(memberAccessSyntax).Symbol;
+                var memberSymbol = context.SemanticModel.GetSymbolInfo(memberAccessSyntax, context.CancellationToken).Symbol;
                 if (memberSymbol != null)
                 {
                     foreach (var item in problematicMethods)

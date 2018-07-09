@@ -22,7 +22,7 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>Synchroniczne oczekiwanie na zadania lub elementy typu awaiter mogą powodować zakleszczenia. Zamiast tego użyj operatora await albo metody JoinableTaskFactory.Run.</value>
+    <value>Synchroniczne oczekiwanie na zadania lub elementy typu awaiter mogą powodować zakleszczenia. Zamiast tego używaj metody await lub JoinableTaskFactory.Run.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
@@ -64,7 +64,7 @@ Tego problemu można uniknąć, zapewniając, że zadanie zostanie zainicjowane 
 Zamiast tego używaj klasy AsyncLazy&lt;T&gt;.</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
-    <value>Unikaj używania klasy Lazy&lt;T&gt;, jeśli T jest obiektem Task&lt;T2&gt;</value>
+    <value>Użyj metody AsyncLazy&lt;T&gt;</value>
   </data>
   <data name="VSTHRD103_MessageFormat" xml:space="preserve">
     <value>Metoda {0} powoduje blokowanie synchroniczne. Zamiast tego oczekuj na {1}.</value>
@@ -108,7 +108,7 @@ Zamiast tego używaj klasy AsyncLazy&lt;T&gt;.</value>
     <value>Podaj element JoinableTaskFactory w miejscach, gdzie jest to dopuszczalne</value>
   </data>
   <data name="VSTHRD104_MessageFormat" xml:space="preserve">
-    <value>Uwidocznij asynchroniczną wersję tej metody, która nie powoduje blokowania synchronicznego. Następnie uprość tę metodę w celu wywoływania tej metody asynchronicznej w ramach delegata JoinableTaskFactory.Run.</value>
+    <value>Uwidocznij asynchroniczną wersję tej metody, która nie powoduje synchronicznego blokowania. Następnie uprość tę metodę, aby wywołać tę metodę asynchroniczną w ramach delegata JoinableTaskFactory.Run.</value>
   </data>
   <data name="VSTHRD104_Title" xml:space="preserve">
     <value>Oferuj metody asynchroniczne</value>
@@ -141,5 +141,36 @@ Zamiast tego używaj klasy AsyncLazy&lt;T&gt;.</value>
   </data>
   <data name="VSTHRD108_Title" xml:space="preserve">
     <value>Bezwarunkowo potwierdź koligację wątku</value>
+  </data>
+  <data name="VSTHRD109_MessageFormat" xml:space="preserve">
+    <value>Unikaj zgłaszania poza wątkiem głównym w metodzie asynchronicznej lub zwracającej element Task. Zamiast tego przełącz się na wymagany wątek.</value>
+  </data>
+  <data name="VSTHRD109_Title" xml:space="preserve">
+    <value>Przełączanie zamiast asercji w metodach asynchronicznych</value>
+  </data>
+  <data name="VSTHRD010_MessageFormat_Sync" xml:space="preserve">
+    <value>Dostęp do metody „{0}” powinien być uzyskiwany tylko z wątku głównego. Najpierw wywołaj metodę {1}().</value>
+    <comment>{0} is a type or member name and {1} is the name of a method that throws if not called from the main thread.</comment>
+  </data>
+  <data name="VSTHRD010_MessageFormat_Async" xml:space="preserve">
+    <value>Dostęp do metody „{0}” powinien być uzyskiwany tylko z wątku głównego. Najpierw zaczekaj na metodę JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+    <comment>{0} is a type or member name.</comment>
+  </data>
+  <data name="VSTHRD004_MessageFormat" xml:space="preserve">
+    <value>Należy zaczekać na wywołania metody JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+  </data>
+  <data name="VSTHRD004_Title" xml:space="preserve">
+    <value>Zaczekaj na metodę SwitchToMainThreadAsync</value>
+    <comment>Do not translate either of these. The first is a keyword, the second is a method name.</comment>
+  </data>
+  <data name="VSTHRD110_MessageFormat" xml:space="preserve">
+    <value>Obserwuj wynik typu awaitable wywołania tej metody, oczekując na niego, przypisując go do zmiennej lub przekazując do innej metody.</value>
+  </data>
+  <data name="VSTHRD110_Title" xml:space="preserve">
+    <value>Obserwuj wynik wywołań asynchronicznych</value>
+  </data>
+  <data name="VSTHRD011b_MessageFormat" xml:space="preserve">
+    <value>Wywołanie kodu asynchronicznego lub zablokowanie na nim w fabryce wartości Lazy&lt;T&gt; może spowodować zakleszczenie.
+Zamiast tego użyj elementu AsyncLazy&lt;T&gt;.</value>
   </data>
 </root>

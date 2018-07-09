@@ -22,7 +22,7 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>Esperar de forma síncrona por tarefas ou awaiters podem causar deadlocks. Em vez disso, use await ou JoinableTaskFactory.Run.</value>
+    <value>Esperar de forma síncrona por tarefas ou awaiters pode causar deadlocks. Em vez disso, use await ou JoinableTaskFactory.Run.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
@@ -64,7 +64,7 @@ Você pode evitar esse problema assegurando que a tarefa seja inicializada no de
 Em vez disso, use AsyncLazy&lt;T&gt;.</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
-    <value>Evite usar Lazy&lt;T&gt;, no qual T é uma Task&lt;T2&gt;</value>
+    <value>Usar AsyncLazy&lt;T&gt;</value>
   </data>
   <data name="VSTHRD103_MessageFormat" xml:space="preserve">
     <value>O {0} é bloqueado de forma síncrona. Em vez disso, espere o {1}.</value>
@@ -108,7 +108,7 @@ Em vez disso, use AsyncLazy&lt;T&gt;.</value>
     <value>Fornecer o JoinableTaskFactory quando permitido</value>
   </data>
   <data name="VSTHRD104_MessageFormat" xml:space="preserve">
-    <value>Exponha uma versão assíncrona deste método que não seja bloqueada de forma síncrona. Em seguida, simplifique este método para chamar o método assíncrono em um delegado JoinableTaskFactory.Run.</value>
+    <value>Exporte uma versão assíncrona desse método que não bloqueia de forma síncrona. Em seguida, simplifique esse método para chamar esse método assíncrono em um delegado JoinableTaskFactory.Run.</value>
   </data>
   <data name="VSTHRD104_Title" xml:space="preserve">
     <value>Oferecer métodos assíncronos</value>
@@ -141,5 +141,36 @@ Em vez disso, use AsyncLazy&lt;T&gt;.</value>
   </data>
   <data name="VSTHRD108_Title" xml:space="preserve">
     <value>Declarar a afinidade de thread de forma incondicional</value>
+  </data>
+  <data name="VSTHRD109_MessageFormat" xml:space="preserve">
+    <value>Evite lançar quando não estiver no thread principal enquanto estiver em um método assíncrono ou de Retorno de tarefa. Mude para o thread necessário em vez disso.</value>
+  </data>
+  <data name="VSTHRD109_Title" xml:space="preserve">
+    <value>Mude em vez de declarar em métodos assíncronos</value>
+  </data>
+  <data name="VSTHRD010_MessageFormat_Sync" xml:space="preserve">
+    <value>O acesso a "{0}" deve ser realizado somente no thread principal. Chame {1}() primeiro.</value>
+    <comment>{0} is a type or member name and {1} is the name of a method that throws if not called from the main thread.</comment>
+  </data>
+  <data name="VSTHRD010_MessageFormat_Async" xml:space="preserve">
+    <value>O acesso a "{0}" deve ser realizado somente no thread principal. Aguarde JoinableTaskFactory.SwitchToMainThreadAsync() primeiro.</value>
+    <comment>{0} is a type or member name.</comment>
+  </data>
+  <data name="VSTHRD004_MessageFormat" xml:space="preserve">
+    <value>Chamadas a JoinableTaskFactory.SwitchToMainThreadAsync() devem ser aguardadas.</value>
+  </data>
+  <data name="VSTHRD004_Title" xml:space="preserve">
+    <value>Aguarde SwitchToMainThreadAsync</value>
+    <comment>Do not translate either of these. The first is a keyword, the second is a method name.</comment>
+  </data>
+  <data name="VSTHRD110_MessageFormat" xml:space="preserve">
+    <value>Observe o resultado esperável dessa chamada de método aguardando-o, atribuindo-o a uma variável ou passando-o a outro método.</value>
+  </data>
+  <data name="VSTHRD110_Title" xml:space="preserve">
+    <value>Observe o resultado das chamadas assíncronas</value>
+  </data>
+  <data name="VSTHRD011b_MessageFormat" xml:space="preserve">
+    <value>A invocação ou bloqueio em código assíncrono em um alocador de valor Lazy&lt;T&gt; pode causar um deadlock.
+Use AsyncLazy&lt;T&gt; em vez disso.</value>
   </data>
 </root>

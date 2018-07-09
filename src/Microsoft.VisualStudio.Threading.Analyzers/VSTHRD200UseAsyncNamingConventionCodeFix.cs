@@ -60,7 +60,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 this.NewName);
 
             /// <inheritdoc />
-            public override string EquivalenceKey => VSTHRD200UseAsyncNamingConventionAnalyzer.Id;
+            public override string EquivalenceKey => null;
 
             private string NewName => this.diagnostic.Properties[NewNameKey];
 

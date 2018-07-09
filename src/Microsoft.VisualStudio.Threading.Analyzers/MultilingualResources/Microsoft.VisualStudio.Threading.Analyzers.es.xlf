@@ -60,7 +60,7 @@
         <trans-unit id="VSTHRD003_MessageFormat" translate="yes" xml:space="preserve">
           <source>Calling await on a Task inside a JoinableTaskFactory.Run, when the task is initialized outside the delegate can cause potential deadlocks.
 You can avoid this problem by ensuring the task is initialized within the delegate or by using JoinableTask instead of Task.</source>
-          <target state="translated">La llamada a await en un elemento Task dentro de JoinableTaskFactory.Run, cuando la tarea se ha iniciado fuera del delegado, puede provocar potenciales interbloqueos.
+          <target state="translated">La llamada a await en un elemento Task dentro de JoinableTaskFactory.Run, cuando la tarea se ha iniciado fuera del delegado, puede provocar posibles interbloqueos.
 Puede evitar este problema asegurándose de que la tarea se ha iniciado dentro del delegado o usando JoinableTask en lugar de Task.</target>
         </trans-unit>
         <trans-unit id="VSTHRD003_Title" translate="yes" xml:space="preserve">
@@ -74,8 +74,8 @@ Use AsyncLazy&lt;T&gt; instead.</source>
 Use AsyncLazy&lt;T&gt; en su lugar.</target>
         </trans-unit>
         <trans-unit id="VSTHRD011_Title" translate="yes" xml:space="preserve">
-          <source>Avoid using Lazy<it id="1" pos="open">&lt;T&gt;</it> where T is a Task<it id="2" pos="open">&lt;T2&gt;</it></source>
-          <target state="translated">Evite el uso de Lazy<it id="1" pos="open">&lt;T&gt;</it> donde T es Task<it id="2" pos="open">&lt;T2&gt;</it></target>
+          <source>Use AsyncLazy<it id="1" pos="open">&lt;T&gt;</it></source>
+          <target state="translated">Uso de AsyncLazy<it id="1" pos="open">&lt;T&gt;</it></target>
         </trans-unit>
         <trans-unit id="VSTHRD103_MessageFormat" translate="yes" xml:space="preserve">
           <source>{0} synchronously blocks. Await {1} instead.</source>
@@ -133,7 +133,7 @@ Use AsyncLazy&lt;T&gt; en su lugar.</target>
         </trans-unit>
         <trans-unit id="VSTHRD104_MessageFormat" translate="yes" xml:space="preserve">
           <source>Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate.</source>
-          <target state="translated">Exponga una versión asincrónica de este método que no bloquee sincrónicamente. Luego simplifique este método para llamar a ese método asincrónico con un delegado JoinableTaskFactory.Run.</target>
+          <target state="translated">Exponga una versión asincrónica de este método que no cause bloqueo de manera sincrónica. A continuación, simplifique este método para llamar a ese método asincrónico dentro de un delegado JoinableTaskFactory.Run.</target>
         </trans-unit>
         <trans-unit id="VSTHRD104_Title" translate="yes" xml:space="preserve">
           <source>Offer async methods</source>
@@ -178,38 +178,44 @@ Use AsyncLazy&lt;T&gt; en su lugar.</target>
         </trans-unit>
         <trans-unit id="VSTHRD109_MessageFormat" translate="yes" xml:space="preserve">
           <source>Avoid throwing when not on the main thread while in an async or Task-returning method. Switch to the thread required instead.</source>
-          <target state="new">Avoid throwing when not on the main thread while in an async or Task-returning method. Switch to the thread required instead.</target>
+          <target state="translated">Evite lanzar cuando no esté en el subproceso principal durante un método asincrónico o que devuelve tareas. Cambie en su lugar al subproceso requerido.</target>
         </trans-unit>
         <trans-unit id="VSTHRD109_Title" translate="yes" xml:space="preserve">
           <source>Switch instead of assert in async methods</source>
-          <target state="new">Switch instead of assert in async methods</target>
+          <target state="translated">Cambiar en lugar de declarar en métodos asincrónicos</target>
         </trans-unit>
         <trans-unit id="VSTHRD010_MessageFormat_Sync" translate="yes" xml:space="preserve">
           <source>Accessing "{0}" should only be done on the main thread. Call {1}() first.</source>
-          <target state="new">Accessing "{0}" should only be done on the main thread. Call {1}() first.</target>
+          <target state="translated">El acceso a "{0}" solo se debe realizar en el subproceso principal. Llame primero a {1}().</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type or member name and {1} is the name of a method that throws if not called from the main thread.</note>
         </trans-unit>
         <trans-unit id="VSTHRD010_MessageFormat_Async" translate="yes" xml:space="preserve">
           <source>Accessing "{0}" should only be done on the main thread. Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
-          <target state="new">Accessing "{0}" should only be done on the main thread. Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</target>
+          <target state="translated">El acceso a "{0}" solo se debe realizar en el subproceso principal. Espere primero a JoinableTaskFactory.SwitchToMainThreadAsync().</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type or member name.</note>
         </trans-unit>
         <trans-unit id="VSTHRD004_MessageFormat" translate="yes" xml:space="preserve">
           <source>Calls to JoinableTaskFactory.SwitchToMainThreadAsync() must be awaited.</source>
-          <target state="new">Calls to JoinableTaskFactory.SwitchToMainThreadAsync() must be awaited.</target>
+          <target state="translated">Se deben esperar las llamadas a JoinableTaskFactory.SwitchToMainThreadAsync().</target>
         </trans-unit>
         <trans-unit id="VSTHRD004_Title" translate="yes" xml:space="preserve">
           <source>Await SwitchToMainThreadAsync</source>
-          <target state="new">Await SwitchToMainThreadAsync</target>
+          <target state="translated">Esperar a SwitchToMainThreadAsync</target>
           <note from="MultilingualBuild" annotates="source" priority="2">Do not translate either of these. The first is a keyword, the second is a method name.</note>
         </trans-unit>
         <trans-unit id="VSTHRD110_MessageFormat" translate="yes" xml:space="preserve">
           <source>Observe the awaitable result of this method call by awaiting it, assigning to a variable, or passing it to another method.</source>
-          <target state="new">Observe the awaitable result of this method call by awaiting it, assigning to a variable, or passing it to another method.</target>
+          <target state="translated">Observe el resultado que se puede esperar de esta llamada a método cuando se espera, se asigna a una variable o se pasa a otro método.</target>
         </trans-unit>
         <trans-unit id="VSTHRD110_Title" translate="yes" xml:space="preserve">
           <source>Observe result of async calls</source>
-          <target state="new">Observe result of async calls</target>
+          <target state="translated">Observar resultado de llamadas asincrónicas</target>
+        </trans-unit>
+        <trans-unit id="VSTHRD011b_MessageFormat" translate="yes" xml:space="preserve">
+          <source>Invoking or blocking on async code in a Lazy<it id="1" pos="open">&lt;T&gt;</it> value factory can deadlock.
+Use AsyncLazy<it id="2" pos="open">&lt;T&gt;</it> instead.</source>
+          <target state="translated">Invocar o bloquear en código asincrónico en un generador de valores Lazy<it id="1" pos="open">&lt;T&gt;</it> puede provocar interbloqueos.
+Use en su lugar AsyncLazy<it id="2" pos="open">&lt;T&gt;</it>.</target>
         </trans-unit>
       </group>
     </body>
