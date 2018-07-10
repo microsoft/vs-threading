@@ -10,7 +10,6 @@ namespace Microsoft.VisualStudio.Threading
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Runtime.CompilerServices;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -142,6 +141,9 @@ namespace Microsoft.VisualStudio.Threading
 
         /// <summary>
         /// Executes a given operation within the semaphore.
+        /// <paramref name="operation"/> is not guaranteed to be executed on the context this was originally called on. If a
+        /// <see cref="JoinableTaskContext"/> was supplied to the ctor, <paramref name="operation"/> will at least be called on
+        /// the main thread if it was originaly on the main thread.
         /// </summary>
         /// <param name="operation">The delegate to invoke once the semaphore is entered.</param>
         /// <param name="cancellationToken">A cancellation token.</param>
@@ -275,35 +277,42 @@ namespace Microsoft.VisualStudio.Threading
                 Requires.NotNull(operation, nameof(operation));
 
                 // Note: this code is duplicated and not extracted to minimize allocating extra async state machines.
-                // For performance reasons, we want to minimize the number of Joins performed, and also keep the size of the
-                // JoinableCollection to a minimum. This also means awaiting on the semaphore outside of a JTF.RunAsync. This requires
-                // us to not ConfigureAwait(true) on the semaphore. However, that breaks our contract of resuming on the sync context
-                // you started on. To partially fix this, we will at least resume you on the main thread or thread pool.
-                AsyncSemaphore.Releaser releaser = default;
-                bool resumeOnMainThread = this.joinableTaskCollection.Context.IsOnMainThread;
+                // For performance reasons in the JTF enabled scenario, we want to minimize the number of Joins performed, and also
+                // keep the size of the JoinableCollection to a minimum. This also means awaiting on the semaphore outside of a
+                // JTF.RunAsync. This requires us to not ConfigureAwait(true) on the semaphore. However, that prevents us from
+                // resuming on the correct sync context. To partially fix this, we will at least resume you on the main thread or
+                // thread pool.
+                AsyncSemaphore.Releaser releaser;
+                bool resumeOnMainThread = this.joinableTaskCollection?.Context?.IsOnMainThread == true;
+                bool usingJtf = this.joinableTaskFactory != null;
                 using (this.joinableTaskCollection?.Join())
                 {
                     // Use ConfiguredAwaitRunInline() as ConfigureAwait(true) will deadlock due to not being inside a JTF.RunAsync().
-                    releaser = await this.semaphore.EnterAsync(cancellationToken).ConfigureAwaitRunInline();
+                    releaser = usingJtf
+                        ? await this.semaphore.EnterAsync(cancellationToken).ConfigureAwaitRunInline()
+                        : await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true);
                 }
 
                 await this.ExecuteCoreAsync(async delegate
                 {
-                    if (resumeOnMainThread)
-                    {
-                        // Return to the main thread if we started there.
-                        await this.joinableTaskFactory.SwitchToMainThreadAsync();
-                    }
-                    else
-                    {
-                        await TaskScheduler.Default;
-                    }
-
-                    // Always yield to prevent running on the stack that released the semaphore.
-                    await Task.Yield();
-
                     try
                     {
+                        if (usingJtf)
+                        {
+                            if (resumeOnMainThread)
+                            {
+                                // Return to the main thread if we started there.
+                                await this.joinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+                            }
+                            else
+                            {
+                                await TaskScheduler.Default;
+                            }
+
+                            // Always yield to prevent running on the stack that released the semaphore.
+                            await Task.Yield();
+                        }
+
                         await operation().ConfigureAwaitRunInline();
                     }
                     finally
@@ -354,35 +363,42 @@ namespace Microsoft.VisualStudio.Threading
                 }
 
                 // Note: this code is duplicated and not extracted to minimize allocating extra async state machines.
-                // For performance reasons, we want to minimize the number of Joins performed, and also keep the size of the
-                // JoinableCollection to a minimum. This also means awaiting on the semaphore outside of a JTF.RunAsync. This requires
-                // us to not ConfigureAwait(true) on the semaphore. However, that breaks our contract of resuming on the sync context
-                // you started on. To partially fix this, we will at least resume you on the main thread or thread pool.
-                AsyncSemaphore.Releaser releaser = default;
-                bool resumeOnMainThread = this.joinableTaskCollection.Context.IsOnMainThread;
+                // For performance reasons in the JTF enabled scenario, we want to minimize the number of Joins performed, and also
+                // keep the size of the JoinableCollection to a minimum. This also means awaiting on the semaphore outside of a
+                // JTF.RunAsync. This requires us to not ConfigureAwait(true) on the semaphore. However, that prevents us from
+                // resuming on the correct sync context. To partially fix this, we will at least resume you on the main thread or
+                // thread pool.
+                AsyncSemaphore.Releaser releaser;
+                bool resumeOnMainThread = this.joinableTaskCollection?.Context?.IsOnMainThread == true;
+                bool usingJtf = this.joinableTaskFactory != null;
                 using (this.joinableTaskCollection?.Join())
                 {
                     // Use ConfiguredAwaitRunInline() as ConfigureAwait(true) will deadlock due to not being inside a JTF.RunAsync().
-                    releaser = await this.semaphore.EnterAsync(cancellationToken).ConfigureAwaitRunInline();
+                    releaser = usingJtf
+                        ? await this.semaphore.EnterAsync(cancellationToken).ConfigureAwaitRunInline()
+                        : await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true);
                 }
 
                 await this.ExecuteCoreAsync(async delegate
                 {
-                    if (resumeOnMainThread)
-                    {
-                        // Return to the main thread if we started there.
-                        await this.joinableTaskFactory.SwitchToMainThreadAsync();
-                    }
-                    else
-                    {
-                        await TaskScheduler.Default;
-                    }
-
-                    // Always yield to prevent running on the stack that released the semaphore.
-                    await Task.Yield();
-
                     try
                     {
+                        if (usingJtf)
+                        {
+                            if (resumeOnMainThread)
+                            {
+                                // Return to the main thread if we started there.
+                                await this.joinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+                            }
+                            else
+                            {
+                                await TaskScheduler.Default;
+                            }
+
+                            // Always yield to prevent running on the stack that released the semaphore.
+                            await Task.Yield();
+                        }
+
                         this.reentrancyDetection.Value = ownedBox = new StrongBox<bool>(true);
                         await operation().ConfigureAwaitRunInline();
                     }
@@ -453,44 +469,55 @@ namespace Microsoft.VisualStudio.Threading
                 }
 
                 // Note: this code is duplicated and not extracted to minimize allocating extra async state machines.
-                // For performance reasons, we want to minimize the number of Joins performed, and also keep the size of the
-                // JoinableCollection to a minimum. This also means awaiting on the semaphore outside of a JTF.RunAsync. This requires
-                // us to not ConfigureAwait(true) on the semaphore. However, that breaks our contract of resuming on the sync context
-                // you started on. To partially fix this, we will at least resume you on the main thread or thread pool.
-                AsyncSemaphore.Releaser releaser = default;
-                bool resumeOnMainThread = this.joinableTaskCollection.Context.IsOnMainThread;
+                // For performance reasons in the JTF enabled scenario, we want to minimize the number of Joins performed, and also
+                // keep the size of the JoinableCollection to a minimum. This also means awaiting on the semaphore outside of a
+                // JTF.RunAsync. This requires us to not ConfigureAwait(true) on the semaphore. However, that prevents us from
+                // resuming on the correct sync context. To partially fix this, we will at least resume you on the main thread or
+                // thread pool.
+                AsyncSemaphore.Releaser releaser;
+                bool resumeOnMainThread = this.joinableTaskCollection?.Context?.IsOnMainThread == true;
+                bool usingJtf = this.joinableTaskFactory != null;
                 if (reentrantStack.Count == 0)
                 {
                     using (this.joinableTaskCollection?.Join())
                     {
                         // Use ConfiguredAwaitRunInline() as ConfigureAwait(true) will deadlock due to not being inside a JTF.RunAsync().
-                        releaser = await this.semaphore.EnterAsync(cancellationToken).ConfigureAwaitRunInline();
+                        releaser = usingJtf
+                            ? await this.semaphore.EnterAsync(cancellationToken).ConfigureAwaitRunInline()
+                            : await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true);
                     }
+                }
+                else
+                {
+                    releaser = default;
                 }
 
                 await this.ExecuteCoreAsync(async delegate
                 {
-                    if (resumeOnMainThread)
-                    {
-                        // Return to the main thread if we started there.
-                        await this.joinableTaskFactory.SwitchToMainThreadAsync();
-                    }
-                    else
-                    {
-                        await TaskScheduler.Default;
-                    }
-
-                    // Always yield to prevent running on the stack that released the semaphore.
-                    await Task.Yield();
-
                     var pushedReleaser = new StrongBox<AsyncSemaphore.Releaser>(releaser);
-                    lock (reentrantStack)
-                    {
-                        reentrantStack.Push(pushedReleaser);
-                    }
-
                     try
                     {
+                        if (usingJtf)
+                        {
+                            if (resumeOnMainThread)
+                            {
+                                // Return to the main thread if we started there.
+                                await this.joinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+                            }
+                            else
+                            {
+                                await TaskScheduler.Default;
+                            }
+
+                            // Always yield to prevent running on the stack that released the semaphore.
+                            await Task.Yield();
+                        }
+
+                        lock (reentrantStack)
+                        {
+                            reentrantStack.Push(pushedReleaser);
+                        }
+
                         await operation().ConfigureAwaitRunInline();
                     }
                     finally
@@ -562,44 +589,55 @@ namespace Microsoft.VisualStudio.Threading
                 }
 
                 // Note: this code is duplicated and not extracted to minimize allocating extra async state machines.
-                // For performance reasons, we want to minimize the number of Joins performed, and also keep the size of the
-                // JoinableCollection to a minimum. This also means awaiting on the semaphore outside of a JTF.RunAsync. This requires
-                // us to not ConfigureAwait(true) on the semaphore. However, that breaks our contract of resuming on the sync context
-                // you started on. To partially fix this, we will at least resume you on the main thread or thread pool.
-                AsyncSemaphore.Releaser releaser = default;
-                bool resumeOnMainThread = this.joinableTaskCollection.Context.IsOnMainThread;
+                // For performance reasons in the JTF enabled scenario, we want to minimize the number of Joins performed, and also
+                // keep the size of the JoinableCollection to a minimum. This also means awaiting on the semaphore outside of a
+                // JTF.RunAsync. This requires us to not ConfigureAwait(true) on the semaphore. However, that prevents us from
+                // resuming on the correct sync context. To partially fix this, we will at least resume you on the main thread or
+                // thread pool.
+                AsyncSemaphore.Releaser releaser;
+                bool resumeOnMainThread = this.joinableTaskCollection?.Context?.IsOnMainThread == true;
+                bool usingJtf = this.joinableTaskFactory != null;
                 if (reentrantStack.Count == 0)
                 {
                     using (this.joinableTaskCollection?.Join())
                     {
                         // Use ConfiguredAwaitRunInline() as ConfigureAwait(true) will deadlock due to not being inside a JTF.RunAsync().
-                        releaser = await this.semaphore.EnterAsync(cancellationToken).ConfigureAwaitRunInline();
+                        releaser = usingJtf
+                            ? await this.semaphore.EnterAsync(cancellationToken).ConfigureAwaitRunInline()
+                            : await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true);
                     }
+                }
+                else
+                {
+                    releaser = default;
                 }
 
                 await this.ExecuteCoreAsync(async delegate
                 {
-                    if (resumeOnMainThread)
-                    {
-                        // Return to the main thread if we started there.
-                        await this.joinableTaskFactory.SwitchToMainThreadAsync();
-                    }
-                    else
-                    {
-                        await TaskScheduler.Default;
-                    }
-
-                    // Always yield to prevent running on the stack that released the semaphore.
-                    await Task.Yield();
-
-                    lock (reentrantStack)
-                    {
-                        reentrantStack.Push(releaser);
-                        releaser = default; // we should release whatever we pop off the stack (which ensures the last surviving nested holder actually releases).
-                    }
-
                     try
                     {
+                        if (usingJtf)
+                        {
+                            if (resumeOnMainThread)
+                            {
+                                // Return to the main thread if we started there.
+                                await this.joinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+                            }
+                            else
+                            {
+                                await TaskScheduler.Default;
+                            }
+
+                            // Always yield to prevent running on the stack that released the semaphore.
+                            await Task.Yield();
+                        }
+
+                        lock (reentrantStack)
+                        {
+                            reentrantStack.Push(releaser);
+                            releaser = default; // we should release whatever we pop off the stack (which ensures the last surviving nested holder actually releases).
+                        }
+
                         await operation().ConfigureAwaitRunInline();
                     }
                     finally

@@ -66,7 +66,7 @@ public class ReentrantSemaphoreJTFTests : ReentrantSemaphoreTestBase
     [MemberData(nameof(AllModes))]
     public void SemaphoreDoesNotDeadlockReturningToMainThread(ReentrantSemaphore.ReentrancyMode mode)
     {
-        var semaphore = this.CreateSemaphore(mode);
+        this.semaphore = this.CreateSemaphore(mode);
         this.ExecuteOnDispatcher(
             async () =>
             {
@@ -77,7 +77,7 @@ public class ReentrantSemaphoreJTFTests : ReentrantSemaphoreTestBase
                 var firstOperation = Task.Run(
                     async () =>
                     {
-                        await semaphore.ExecuteAsync(
+                        await this.semaphore.ExecuteAsync(
                             async () =>
                             {
                                 semaphoreAquired.Set();
@@ -95,12 +95,12 @@ public class ReentrantSemaphoreJTFTests : ReentrantSemaphoreTestBase
                 // The goal is to test that the 3rd, sync request, will release the UI thread
                 // to the two async requests, then it will resume its operations.
                 await this.joinableTaskContext.Factory.SwitchToMainThreadAsync();
-                var secondOperation = this.joinableTaskContext.Factory.RunAsync(() => this.AcquireSemaphoreAsync(semaphore));
-                var thirdOperation = this.AcquireSemaphoreAsync(semaphore);
+                var secondOperation = this.joinableTaskContext.Factory.RunAsync(() => this.AcquireSemaphoreAsync());
+                var thirdOperation = this.AcquireSemaphoreAsync();
                 bool finalSemaphoreAcquired = this.joinableTaskContext.Factory.Run(
                     () =>
                     {
-                        var semaphoreTask = this.AcquireSemaphoreAsync(semaphore);
+                        var semaphoreTask = this.AcquireSemaphoreAsync();
                         continueFirstOperation.Set();
                         return semaphoreTask;
                     });
@@ -126,10 +126,10 @@ public class ReentrantSemaphoreJTFTests : ReentrantSemaphoreTestBase
         return ReentrantSemaphore.Create(initialCount, this.joinableTaskContext, mode);
     }
 
-    private async Task<bool> AcquireSemaphoreAsync(ReentrantSemaphore semaphore)
+    private async Task<bool> AcquireSemaphoreAsync()
     {
         bool acquired = false;
-        await semaphore.ExecuteAsync(
+        await this.semaphore.ExecuteAsync(
             () =>
             {
                 acquired = true;

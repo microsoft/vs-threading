@@ -228,23 +228,24 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
         this.semaphore = this.CreateSemaphore(ReentrantSemaphore.ReentrancyMode.Freeform);
         this.ExecuteOnDispatcher(async delegate
         {
-            var releaser1 = new AsyncManualResetEvent();
+            var outerReleaser = new AsyncManualResetEvent();
             var innerReleaser = new AsyncManualResetEvent();
             Task innerOperation = null;
-            await this.semaphore.ExecuteAsync(delegate
+            await this.semaphore.ExecuteAsync(async delegate
             {
-                innerOperation = EnterAndUseSemaphoreAsync(innerReleaser);
-                return TplExtensions.CompletedTask;
+                innerOperation = EnterAndUseSemaphoreAsync(innerReleaser, outerReleaser);
+                await outerReleaser;
             });
             innerReleaser.Set();
             await innerOperation;
             Assert.Equal(1, this.semaphore.CurrentCount);
         });
 
-        async Task EnterAndUseSemaphoreAsync(AsyncManualResetEvent releaseEvent)
+        async Task EnterAndUseSemaphoreAsync(AsyncManualResetEvent releaseEvent, AsyncManualResetEvent signal)
         {
             await this.semaphore.ExecuteAsync(async delegate
             {
+                signal.Set();
                 await releaseEvent;
                 Assert.Equal(0, this.semaphore.CurrentCount); // we are still in the semaphore
             });
@@ -448,14 +449,16 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
             Task operation1, operation2 = null;
             operation1 = this.semaphore.ExecuteAsync(async delegate
             {
+                var release3 = new AsyncManualResetEvent();
                 operation2 = this.semaphore.ExecuteAsync(async delegate
                 {
+                    release3.Set();
                     await release2;
                 });
 
                 Assert.Equal(0, this.semaphore.CurrentCount);
 
-                await release1;
+                await Task.WhenAll(release1.WaitAsync(), release3.WaitAsync());
             });
 
             // Release the outer one first. This should throw because the inner one hasn't been released yet.
