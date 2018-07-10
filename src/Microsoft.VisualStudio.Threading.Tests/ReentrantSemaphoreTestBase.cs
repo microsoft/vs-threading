@@ -180,7 +180,8 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
                 // Fill the semaphore to its capacity
                 for (int j = 0; j < initialCount; j++)
                 {
-                    operations[j] = this.semaphore.ExecuteAsync(() => releasers[j].WaitAsync(), this.TimeoutToken);
+                    int k = j; // Capture j, as it will increment
+                    operations[j] = this.semaphore.ExecuteAsync(() => releasers[k].WaitAsync(), this.TimeoutToken);
                 }
 
                 var releaseSequence = Enumerable.Range(0, initialCount);
