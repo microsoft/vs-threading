@@ -557,6 +557,13 @@ namespace Microsoft.VisualStudio.Threading
                             }
                         }
 
+                        if (this.faulted)
+                        {
+                            // The semaphore faulted while we were waiting on it.
+                            DisposeReleaserNoThrow(releaser);
+                            this.ThrowIfFaulted();
+                        }
+
                         lock (reentrantStack)
                         {
                             reentrantStack.Push(pushedReleaser);
@@ -567,20 +574,26 @@ namespace Microsoft.VisualStudio.Threading
                     }
                     finally
                     {
-                        if (pushed)
+                        try
                         {
-                            lock (reentrantStack)
+                            if (pushed)
                             {
-                                var poppedReleaser = reentrantStack.Pop();
-                                if (!object.ReferenceEquals(poppedReleaser, pushedReleaser))
+                                lock (reentrantStack)
                                 {
-                                    this.faulted = true;
-                                    throw Verify.FailOperation(Strings.SemaphoreStackNestingViolated, ReentrancyMode.Stack);
+                                    var poppedReleaser = reentrantStack.Pop();
+                                    if (!object.ReferenceEquals(poppedReleaser, pushedReleaser))
+                                    {
+                                        // When the semaphore faults, we will drain and throw for awaiting tasks one by one.
+                                        this.faulted = true;
+                                        throw Verify.FailOperation(Strings.SemaphoreStackNestingViolated, ReentrancyMode.Stack);
+                                    }
                                 }
                             }
                         }
-
-                        DisposeReleaserNoThrow(releaser);
+                        finally
+                        {
+                            DisposeReleaserNoThrow(releaser);
+                        }
                     }
                 });
             }

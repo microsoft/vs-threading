@@ -576,6 +576,57 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
         });
     }
 
+    /// <summary>
+    /// Verifies that when a stack semaphore faults, all queued awaiters are resumed and faulted.
+    /// </summary>
+    [Fact]
+    public void Stack_FaultedSemaphoreDrains()
+    {
+        this.ExecuteOnDispatcher(
+            async () =>
+            {
+                var semaphore = this.CreateSemaphore(ReentrantSemaphore.ReentrancyMode.Stack);
+
+                var releaser1 = new AsyncManualResetEvent();
+                var releaser2 = new AsyncManualResetEvent();
+                var releaser3 = new AsyncManualResetEvent();
+
+                Task innerFaulterSemaphoreTask = null;
+
+                // This task will release its semaphore before the inner semaphore does
+                var outerFaultySemaphoreTask = Task.Run(
+                    async () =>
+                    {
+                        await semaphore.ExecuteAsync(
+                            async () =>
+                            {
+                                releaser3.Set();
+                                await releaser1.WaitAsync();
+                                releaser1.Reset(); // re-use this event
+                                innerFaulterSemaphoreTask = semaphore.ExecuteAsync(
+                                    async () =>
+                                    {
+                                        releaser2.Set();
+                                        await releaser1.WaitAsync();
+                                    });
+
+                                await releaser2.WaitAsync();
+                            });
+                    });
+
+                await releaser3.WaitAsync();
+                var pendingSemaphoreTask = semaphore.ExecuteAsync(() => TplExtensions.CompletedTask);
+
+                releaser1.Set();
+                await Assert.ThrowsAsync<InvalidOperationException>(() => outerFaultySemaphoreTask).WithCancellation(this.TimeoutToken);
+                await Assert.ThrowsAsync<InvalidOperationException>(() => pendingSemaphoreTask).WithCancellation(this.TimeoutToken);
+
+                releaser1.Set();
+                await Assert.ThrowsAsync<InvalidOperationException>(() => innerFaulterSemaphoreTask).WithCancellation(this.TimeoutToken);
+                await Assert.ThrowsAsync<InvalidOperationException>(() => semaphore.ExecuteAsync(() => TplExtensions.CompletedTask)).WithCancellation(this.TimeoutToken);
+            });
+    }
+
 #pragma warning disable VSTHRD012 // Provide JoinableTaskFactory where allowed (we do this in the JTF-aware variant of these tests in a derived class.)
     protected virtual ReentrantSemaphore CreateSemaphore(ReentrantSemaphore.ReentrancyMode mode = ReentrantSemaphore.ReentrancyMode.NotAllowed, int initialCount = 1) => ReentrantSemaphore.Create(initialCount, mode: mode);
 #pragma warning restore VSTHRD012 // Provide JoinableTaskFactory where allowed
