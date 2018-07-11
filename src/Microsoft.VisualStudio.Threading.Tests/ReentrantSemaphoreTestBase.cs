@@ -231,21 +231,20 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
             var outerReleaser = new AsyncManualResetEvent();
             var innerReleaser = new AsyncManualResetEvent();
             Task innerOperation = null;
-            await this.semaphore.ExecuteAsync(async delegate
+            await this.semaphore.ExecuteAsync(delegate
             {
-                innerOperation = EnterAndUseSemaphoreAsync(innerReleaser, outerReleaser);
-                await outerReleaser;
+                innerOperation = EnterAndUseSemaphoreAsync(innerReleaser);
+                return TplExtensions.CompletedTask;
             });
             innerReleaser.Set();
             await innerOperation;
             Assert.Equal(1, this.semaphore.CurrentCount);
         });
 
-        async Task EnterAndUseSemaphoreAsync(AsyncManualResetEvent releaseEvent, AsyncManualResetEvent signal)
+        async Task EnterAndUseSemaphoreAsync(AsyncManualResetEvent releaseEvent)
         {
             await this.semaphore.ExecuteAsync(async delegate
             {
-                signal.Set();
                 await releaseEvent;
                 Assert.Equal(0, this.semaphore.CurrentCount); // we are still in the semaphore
             });
@@ -449,16 +448,14 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
             Task operation1, operation2 = null;
             operation1 = this.semaphore.ExecuteAsync(async delegate
             {
-                var release3 = new AsyncManualResetEvent();
                 operation2 = this.semaphore.ExecuteAsync(async delegate
                 {
-                    release3.Set();
                     await release2;
                 });
 
                 Assert.Equal(0, this.semaphore.CurrentCount);
 
-                await Task.WhenAll(release1.WaitAsync(), release3.WaitAsync());
+                await release1;
             });
 
             // Release the outer one first. This should throw because the inner one hasn't been released yet.

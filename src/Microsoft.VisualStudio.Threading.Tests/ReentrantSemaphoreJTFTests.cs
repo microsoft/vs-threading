@@ -70,7 +70,7 @@ public class ReentrantSemaphoreJTFTests : ReentrantSemaphoreTestBase
         this.ExecuteOnDispatcher(
             async () =>
             {
-                var semaphoreAquired = new AsyncManualResetEvent();
+                var semaphoreAcquired = new AsyncManualResetEvent();
                 var continueFirstOperation = new AsyncManualResetEvent();
 
                 // First operation holds the semaphore while the next operations are enqueued.
@@ -80,13 +80,13 @@ public class ReentrantSemaphoreJTFTests : ReentrantSemaphoreTestBase
                         await this.semaphore.ExecuteAsync(
                             async () =>
                             {
-                                semaphoreAquired.Set();
+                                semaphoreAcquired.Set();
                                 await continueFirstOperation.WaitAsync();
                             },
                             this.TimeoutToken);
                     });
 
-                await semaphoreAquired.WaitAsync().WithCancellation(this.TimeoutToken);
+                await semaphoreAcquired.WaitAsync().WithCancellation(this.TimeoutToken);
 
                 // We have 3 semaphore requests on the main thread here.
                 // 1. Async request within a JTF.RunAsync
@@ -95,12 +95,12 @@ public class ReentrantSemaphoreJTFTests : ReentrantSemaphoreTestBase
                 // The goal is to test that the 3rd, sync request, will release the UI thread
                 // to the two async requests, then it will resume its operations.
                 await this.joinableTaskContext.Factory.SwitchToMainThreadAsync();
-                var secondOperation = this.joinableTaskContext.Factory.RunAsync(() => this.AcquireSemaphoreAsync());
-                var thirdOperation = this.AcquireSemaphoreAsync();
+                var secondOperation = this.joinableTaskContext.Factory.RunAsync(() => this.AcquireSemaphoreAsync(this.TimeoutToken));
+                var thirdOperation = this.AcquireSemaphoreAsync(this.TimeoutToken);
                 bool finalSemaphoreAcquired = this.joinableTaskContext.Factory.Run(
                     () =>
                     {
-                        var semaphoreTask = this.AcquireSemaphoreAsync();
+                        var semaphoreTask = this.AcquireSemaphoreAsync(this.TimeoutToken);
                         continueFirstOperation.Set();
                         return semaphoreTask;
                     });
@@ -110,6 +110,48 @@ public class ReentrantSemaphoreJTFTests : ReentrantSemaphoreTestBase
                 Assert.True(secondOperation.Task.GetAwaiter().GetResult());
                 Assert.True(thirdOperation.GetAwaiter().GetResult());
                 Assert.True(finalSemaphoreAcquired);
+            });
+    }
+
+    [Theory]
+    [MemberData(nameof(AllModes))]
+    public void SwitchBackToMainThreadCancels(ReentrantSemaphore.ReentrancyMode mode)
+    {
+        this.semaphore = this.CreateSemaphore(mode);
+        this.ExecuteOnDispatcher(
+            async () =>
+            {
+                var release1 = new AsyncManualResetEvent();
+                var release2 = new AsyncManualResetEvent();
+
+                var operation1 = Task.Run(
+                    () => this.semaphore.ExecuteAsync(
+                        async () =>
+                        {
+                            release1.Set();
+                            await release2;
+                        }));
+
+                using (var abortSemaphore = new CancellationTokenSource())
+                {
+                    await release1;
+
+                    var operation2 = this.AcquireSemaphoreAsync(abortSemaphore.Token);
+
+                    this.joinableTaskContext.Factory.Run(
+                        async () =>
+                        {
+                            release2.Set();
+                            await operation1;
+
+                            Assert.Equal(0, this.semaphore.CurrentCount);
+                            Assert.False(operation2.IsCompleted);
+                            abortSemaphore.Cancel();
+
+                            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => operation2);
+                            Assert.True(await this.AcquireSemaphoreAsync(this.TimeoutToken));
+                        });
+                }
             });
     }
 
@@ -126,7 +168,7 @@ public class ReentrantSemaphoreJTFTests : ReentrantSemaphoreTestBase
         return ReentrantSemaphore.Create(initialCount, this.joinableTaskContext, mode);
     }
 
-    private async Task<bool> AcquireSemaphoreAsync()
+    private async Task<bool> AcquireSemaphoreAsync(CancellationToken cancellationToken)
     {
         bool acquired = false;
         await this.semaphore.ExecuteAsync(
@@ -135,7 +177,8 @@ public class ReentrantSemaphoreJTFTests : ReentrantSemaphoreTestBase
                 acquired = true;
                 return TplExtensions.CompletedTask;
             },
-            this.TimeoutToken);
+            cancellationToken)
+            .ConfigureAwait(false);
 
         return acquired;
     }
