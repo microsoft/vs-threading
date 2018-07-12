@@ -117,6 +117,11 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Gets a value indicating whether this instance is using Joinable Task aware or not.
+        /// </summary>
+        private bool IsJoinableTaskAware => this.joinableTaskCollection != null;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ReentrantSemaphore"/> class.
         /// </summary>
         /// <param name="initialCount">The initial number of concurrent operations to allow.</param>
@@ -143,10 +148,10 @@ namespace Microsoft.VisualStudio.Threading
         /// Executes a given operation within the semaphore.
         /// </summary>
         /// <param name="operation">
-        /// The delegate to invoke once the semaphore is entered. Not guaranteed to be executed on the context this was originally called on.
-        /// If a <see cref="JoinableTaskContext"/> was supplied to the constructor, this delegate will execute on the main thread if  is
-        /// invoked on the main thread, otherwise it will be invoked on the threadpool. When no <see cref="JoinableTaskContext"/> is supplied
-        /// to the constructor, this delegate will execute on the caller's context or the task scheduler.
+        /// The delegate to invoke once the semaphore is entered. If a <see cref="JoinableTaskContext"/> was supplied to the constructor,
+        /// this delegate will execute on the main thread if this is invoked on the main thread, otherwise it will be invoked on the
+        /// threadpool. When no <see cref="JoinableTaskContext"/> is supplied to the constructor, this delegate will execute on the
+        /// caller's context.
         /// </param>
         /// <param name="cancellationToken">A cancellation token.</param>
         /// <returns>A task that completes with the result of <paramref name="operation"/>, after the semaphore has been exited.</returns>
@@ -285,12 +290,11 @@ namespace Microsoft.VisualStudio.Threading
                 // resuming on the correct sync context. To partially fix this, we will at least resume you on the main thread or
                 // thread pool.
                 AsyncSemaphore.Releaser releaser;
-                bool usingJtf = this.joinableTaskFactory != null;
-                bool resumeOnMainThread = usingJtf ? this.joinableTaskCollection.Context.IsOnMainThread : false;
+                bool resumeOnMainThread = this.IsJoinableTaskAware ? this.joinableTaskCollection.Context.IsOnMainThread : false;
                 bool mustYield = false;
                 using (this.joinableTaskCollection?.Join())
                 {
-                    if (usingJtf)
+                    if (this.IsJoinableTaskAware)
                     {
                         // Use ConfiguredAwaitRunInline() as ConfigureAwait(true) will
                         // deadlock due to not being inside a JTF.RunAsync().
@@ -308,7 +312,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     try
                     {
-                        if (usingJtf)
+                        if (this.IsJoinableTaskAware)
                         {
                             if (resumeOnMainThread)
                             {
@@ -383,12 +387,11 @@ namespace Microsoft.VisualStudio.Threading
                 // resuming on the correct sync context. To partially fix this, we will at least resume you on the main thread or
                 // thread pool.
                 AsyncSemaphore.Releaser releaser;
-                bool usingJtf = this.joinableTaskFactory != null;
-                bool resumeOnMainThread = usingJtf ? this.joinableTaskCollection.Context.IsOnMainThread : false;
+                bool resumeOnMainThread = this.IsJoinableTaskAware ? this.joinableTaskCollection.Context.IsOnMainThread : false;
                 bool mustYield = false;
                 using (this.joinableTaskCollection?.Join())
                 {
-                    if (usingJtf)
+                    if (this.IsJoinableTaskAware)
                     {
                         // Use ConfiguredAwaitRunInline() as ConfigureAwait(true) will
                         // deadlock due to not being inside a JTF.RunAsync().
@@ -406,7 +409,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     try
                     {
-                        if (usingJtf)
+                        if (this.IsJoinableTaskAware)
                         {
                             if (resumeOnMainThread)
                             {
@@ -506,14 +509,13 @@ namespace Microsoft.VisualStudio.Threading
                 // resuming on the correct sync context. To partially fix this, we will at least resume you on the main thread or
                 // thread pool.
                 AsyncSemaphore.Releaser releaser;
-                bool usingJtf = this.joinableTaskFactory != null;
-                bool resumeOnMainThread = usingJtf ? this.joinableTaskCollection.Context.IsOnMainThread : false;
+                bool resumeOnMainThread = this.IsJoinableTaskAware ? this.joinableTaskCollection.Context.IsOnMainThread : false;
                 bool mustYield = false;
                 if (reentrantStack.Count == 0)
                 {
                     using (this.joinableTaskCollection?.Join())
                     {
-                        if (usingJtf)
+                        if (this.IsJoinableTaskAware)
                         {
                             // Use ConfiguredAwaitRunInline() as ConfigureAwait(true) will
                             // deadlock due to not being inside a JTF.RunAsync().
@@ -538,7 +540,7 @@ namespace Microsoft.VisualStudio.Threading
                     var pushedReleaser = new StrongBox<AsyncSemaphore.Releaser>(releaser);
                     try
                     {
-                        if (usingJtf)
+                        if (this.IsJoinableTaskAware)
                         {
                             if (resumeOnMainThread)
                             {
@@ -643,14 +645,13 @@ namespace Microsoft.VisualStudio.Threading
                 // resuming on the correct sync context. To partially fix this, we will at least resume you on the main thread or
                 // thread pool.
                 AsyncSemaphore.Releaser releaser;
-                bool usingJtf = this.joinableTaskFactory != null;
-                bool resumeOnMainThread = usingJtf ? this.joinableTaskCollection.Context.IsOnMainThread : false;
+                bool resumeOnMainThread = this.IsJoinableTaskAware ? this.joinableTaskCollection.Context.IsOnMainThread : false;
                 bool mustYield = false;
                 if (reentrantStack.Count == 0)
                 {
                     using (this.joinableTaskCollection?.Join())
                     {
-                        if (usingJtf)
+                        if (this.IsJoinableTaskAware)
                         {
                             // Use ConfiguredAwaitRunInline() as ConfigureAwait(true) will
                             // deadlock due to not being inside a JTF.RunAsync().
@@ -674,7 +675,7 @@ namespace Microsoft.VisualStudio.Threading
                     bool pushed = false;
                     try
                     {
-                        if (usingJtf)
+                        if (this.IsJoinableTaskAware)
                         {
                             if (resumeOnMainThread)
                             {
