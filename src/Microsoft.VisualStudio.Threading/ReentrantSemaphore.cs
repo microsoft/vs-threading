@@ -559,12 +559,8 @@ namespace Microsoft.VisualStudio.Threading
                             }
                         }
 
-                        if (this.faulted)
-                        {
-                            // The semaphore faulted while we were waiting on it.
-                            DisposeReleaserNoThrow(releaser);
-                            this.ThrowIfFaulted();
-                        }
+                        // The semaphore faulted while we were waiting on it.
+                        this.ThrowIfFaulted();
 
                         lock (reentrantStack)
                         {
