@@ -228,15 +228,14 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
         this.semaphore = this.CreateSemaphore(ReentrantSemaphore.ReentrancyMode.Freeform);
         this.ExecuteOnDispatcher(async delegate
         {
-            var outerReleaser = new AsyncManualResetEvent();
-            var innerReleaser = new AsyncManualResetEvent();
+            var releaser1 = new AsyncManualResetEvent();
             Task innerOperation = null;
             await this.semaphore.ExecuteAsync(delegate
             {
-                innerOperation = EnterAndUseSemaphoreAsync(innerReleaser);
+                innerOperation = EnterAndUseSemaphoreAsync(releaser1);
                 return TplExtensions.CompletedTask;
             });
-            innerReleaser.Set();
+            releaser1.Set();
             await innerOperation;
             Assert.Equal(1, this.semaphore.CurrentCount);
         });
