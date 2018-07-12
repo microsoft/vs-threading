@@ -19,7 +19,7 @@
         </trans-unit>
         <trans-unit id="VSTHRD002_MessageFormat" translate="yes" xml:space="preserve">
           <source>Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or JoinableTaskFactory.Run instead.</source>
-          <target state="translated">Görevlerde veya bekleyen öğelerde zaman uyumlu olarak beklemek kilitlenmelere neden olabilir. Bunun yerine await veya JoinableTaskFactory.Run kullanın.</target>
+          <target state="translated">Görevlerde veya bekleyen öğelerde zaman uyumlu olarak beklemek kilitlenmelere neden olabilir. Bunun yerine bekleyen veya JoinableTaskFactory.Run kullanın.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD002_Title" translate="yes" xml:space="preserve">
@@ -76,8 +76,8 @@ Use AsyncLazy&lt;T&gt; instead.</source>
 Bunun yerine AsyncLazy&lt;T&gt; kullanın.</target>
         </trans-unit>
         <trans-unit id="VSTHRD011_Title" translate="yes" xml:space="preserve">
-          <source>Avoid using Lazy<it id="1" pos="open">&lt;T&gt;</it> where T is a Task<it id="2" pos="open">&lt;T2&gt;</it></source>
-          <target state="translated">T’nin Task<it id="1" pos="open">&lt;T&gt;</it> olduğu durumlarda Lazy<it id="2" pos="open">&lt;T2&gt;</it> kullanmayın.</target>
+          <source>Use AsyncLazy<it id="1" pos="open">&lt;T&gt;</it></source>
+          <target state="translated">AsyncLazy<it id="1" pos="open">&lt;T&gt;</it> kullanın</target>
         </trans-unit>
         <trans-unit id="VSTHRD103_MessageFormat" translate="yes" xml:space="preserve">
           <source>{0} synchronously blocks. Await {1} instead.</source>
@@ -114,7 +114,7 @@ Bunun yerine AsyncLazy&lt;T&gt; kullanın.</target>
         </trans-unit>
         <trans-unit id="VSTHRD105_MessageFormat" translate="yes" xml:space="preserve">
           <source>Avoid method overloads that assume TaskScheduler.Current. Use an overload that accepts a TaskScheduler and specify TaskScheduler.Default (or any other) explicitly.</source>
-          <target state="translated">TaskScheduler.Current varsayan metot aşırı yüklemelerinden kaçının. TaskScheduler kabul eden bir aşırı yükleme kullanın ve TaskScheduler.Default (veya diğer birini) açık olarak belirtin.</target>
+          <target state="translated">TaskScheduler.Current varsayan metot aşırı yüklemelerinden kaçının. TaskScheduler kabul eden bir aşırı yükleme kullanın ve TaskScheduler.Default (veya başka birini) açık olarak belirtin.</target>
         </trans-unit>
         <trans-unit id="VSTHRD105_Title" translate="yes" xml:space="preserve">
           <source>Avoid method overloads that assume TaskScheduler.Current</source>
@@ -135,7 +135,7 @@ Bunun yerine AsyncLazy&lt;T&gt; kullanın.</target>
         </trans-unit>
         <trans-unit id="VSTHRD104_MessageFormat" translate="yes" xml:space="preserve">
           <source>Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate.</source>
-          <target state="translated">Bu metodun, eş zamanlı olarak engellemeyen zaman uyumsuz bir sürümünü kullanıma açın. Sonra, JoinableTaskFactory.Run temsilcisi içinde bu zaman uyumsuz metodu çağırmak için bu metodu basitleştirin.</target>
+          <target state="translated">Bu metodun zaman uyumlu olarak engellemeyen zaman uyumsuz bir sürümünü sunun. Sonra bir JoinableTaskFactory.Run temsilcisi içinde bu zaman uyumsuz metoda çağrı yapmak için bu metodu basitleştirin.</target>
         </trans-unit>
         <trans-unit id="VSTHRD104_Title" translate="yes" xml:space="preserve">
           <source>Offer async methods</source>
@@ -180,38 +180,44 @@ Bunun yerine AsyncLazy&lt;T&gt; kullanın.</target>
         </trans-unit>
         <trans-unit id="VSTHRD109_MessageFormat" translate="yes" xml:space="preserve">
           <source>Avoid throwing when not on the main thread while in an async or Task-returning method. Switch to the thread required instead.</source>
-          <target state="new">Avoid throwing when not on the main thread while in an async or Task-returning method. Switch to the thread required instead.</target>
+          <target state="translated">Ana iş parçacığında değilken, zaman uyumsuz veya Task döndüren metot içinden özel durum oluşturmaktan kaçının. Bunun yerine, gereken iş parçacığına geçin.</target>
         </trans-unit>
         <trans-unit id="VSTHRD109_Title" translate="yes" xml:space="preserve">
           <source>Switch instead of assert in async methods</source>
-          <target state="new">Switch instead of assert in async methods</target>
+          <target state="translated">Zaman uyumsuz metotlarda assert yerine switch</target>
         </trans-unit>
         <trans-unit id="VSTHRD010_MessageFormat_Sync" translate="yes" xml:space="preserve">
           <source>Accessing "{0}" should only be done on the main thread. Call {1}() first.</source>
-          <target state="new">Accessing "{0}" should only be done on the main thread. Call {1}() first.</target>
+          <target state="translated">"{0}" erişimi yalnızca ana iş parçacığı üzerinde gerçekleştirilmelidir. Önce {1}() çağırın.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type or member name and {1} is the name of a method that throws if not called from the main thread.</note>
         </trans-unit>
         <trans-unit id="VSTHRD010_MessageFormat_Async" translate="yes" xml:space="preserve">
           <source>Accessing "{0}" should only be done on the main thread. Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
-          <target state="new">Accessing "{0}" should only be done on the main thread. Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</target>
+          <target state="translated">"{0}" erişimi yalnızca ana iş parçacığı üzerinde gerçekleştirilmelidir. Önce JoinableTaskFactory.SwitchToMainThreadAsync() metodunu bekleyin.</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type or member name.</note>
         </trans-unit>
         <trans-unit id="VSTHRD004_MessageFormat" translate="yes" xml:space="preserve">
           <source>Calls to JoinableTaskFactory.SwitchToMainThreadAsync() must be awaited.</source>
-          <target state="new">Calls to JoinableTaskFactory.SwitchToMainThreadAsync() must be awaited.</target>
+          <target state="translated">JoinableTaskFactory.SwitchToMainThreadAsync() çağrıları beklenmelidir.</target>
         </trans-unit>
         <trans-unit id="VSTHRD004_Title" translate="yes" xml:space="preserve">
           <source>Await SwitchToMainThreadAsync</source>
-          <target state="new">Await SwitchToMainThreadAsync</target>
+          <target state="translated">SwitchToMainThreadAsync bekleyin</target>
           <note from="MultilingualBuild" annotates="source" priority="2">Do not translate either of these. The first is a keyword, the second is a method name.</note>
         </trans-unit>
         <trans-unit id="VSTHRD110_MessageFormat" translate="yes" xml:space="preserve">
           <source>Observe the awaitable result of this method call by awaiting it, assigning to a variable, or passing it to another method.</source>
-          <target state="new">Observe the awaitable result of this method call by awaiting it, assigning to a variable, or passing it to another method.</target>
+          <target state="translated">Bu metot çağrısının beklenebilir sonucunu bekleyerek, bir değişkene atayarak veya bir başka metoda geçirerek gözlemleyin.</target>
         </trans-unit>
         <trans-unit id="VSTHRD110_Title" translate="yes" xml:space="preserve">
           <source>Observe result of async calls</source>
-          <target state="new">Observe result of async calls</target>
+          <target state="translated">Zaman uyumsuz çağrıların sonucunu gözlemleyin</target>
+        </trans-unit>
+        <trans-unit id="VSTHRD011b_MessageFormat" translate="yes" xml:space="preserve">
+          <source>Invoking or blocking on async code in a Lazy<it id="1" pos="open">&lt;T&gt;</it> value factory can deadlock.
+Use AsyncLazy<it id="2" pos="open">&lt;T&gt;</it> instead.</source>
+          <target state="translated">Bir Lazy<it id="1" pos="open">&lt;T&gt;</it> değer fabrikasında zaman uyumsuz kod çağrısı veya engellemesi çıkmaza yol açabilir.
+Bunun yerine AsyncLazy<it id="2" pos="open">&lt;T&gt;</it> kullanın.</target>
         </trans-unit>
       </group>
     </body>

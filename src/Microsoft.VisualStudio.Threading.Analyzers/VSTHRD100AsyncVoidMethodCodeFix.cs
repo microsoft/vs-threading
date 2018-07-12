@@ -75,7 +75,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             public override string Title => Strings.VSTHRD100_CodeFix_Title;
 
             /// <inheritdoc />
-            public override string EquivalenceKey => VSTHRD100AsyncVoidMethodAnalyzer.Descriptor.Id;
+            public override string EquivalenceKey => null;
 
             protected override async Task<Document> GetChangedDocumentAsync(CancellationToken cancellationToken)
             {

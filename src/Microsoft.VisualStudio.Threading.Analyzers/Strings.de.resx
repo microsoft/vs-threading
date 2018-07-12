@@ -22,7 +22,7 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>Das synchrone Warten auf Tasks oder Awaiters führt unter Umständen zu Deadlocks. Verwenden Sie stattdessen "await" oder JoinableTaskFactory.Run.</value>
+    <value>Das synchrone Warten auf Aufgaben oder Awaiters führt unter Umständen zu Deadlocks. Verwenden Sie stattdessen "await" oder "JoinableTaskFactory.Run".</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
@@ -60,11 +60,11 @@ Sie können dies vermeiden, indem Sie sicherstellen, dass der Task innerhalb des
     <value>Warten auf Tasks, für die kein Beitritt möglich ist, in Join-Kontexten vermeiden</value>
   </data>
   <data name="VSTHRD011_MessageFormat" xml:space="preserve">
-    <value>Lazy&lt;Task&lt;T&gt;&gt;.Value führt unter Umständen zu einem Deadlock.
-Verwenden Sie stattdessen AsyncLazy&lt;T&gt;.</value>
+    <value>"Lazy&lt;Task&lt;T&gt;&gt;.Value" führt unter Umständen zu einem Deadlock.
+Verwenden Sie stattdessen "AsyncLazy&lt;T&gt;".</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
-    <value>Die Verwendung von Lazy&lt;T&gt; vermeiden, wenn T ein Task&lt;T2&gt; ist</value>
+    <value>"AsyncLazy&lt;T&gt;" verwenden</value>
   </data>
   <data name="VSTHRD103_MessageFormat" xml:space="preserve">
     <value>{0} synchron blockiert. Warten Sie stattdessen auf {1}.</value>
@@ -76,7 +76,7 @@ Verwenden Sie stattdessen AsyncLazy&lt;T&gt;.</value>
     <value>Asynchrone Methoden in einer asynchronen Methode aufrufen</value>
   </data>
   <data name="VSTHRD102_MessageFormat" xml:space="preserve">
-    <value>Beschränken Sie die Verwendung synchron blockierender Methodenaufrufe wie JoinableTaskFactory.Run oder Task.Result auf öffentliche Einstiegspunktmitglieder, bei denen Sie synchron sein müssen. Wenn Sie sie für interne Mitglieder verwenden, werden asynchronen Frames unter Umständen unnötigerweise synchrone Frames hinzugefügt, was zu einer Auslastung des Threadpools führt.</value>
+    <value>Beschränken Sie die Verwendung synchron blockierender Methodenaufrufe wie "JoinableTaskFactory.Run" oder "Task.Result" auf öffentliche Einstiegspunktmitglieder, bei denen Sie synchron sein müssen. Wenn Sie sie für interne Mitglieder verwenden, werden asynchronen Frames unter Umständen unnötigerweise synchrone Frames hinzugefügt, was zu einer Auslastung des Threadpools führt.</value>
   </data>
   <data name="VSTHRD102_Title" xml:space="preserve">
     <value>Interne Logik asynchron implementieren</value>
@@ -92,7 +92,7 @@ Verwenden Sie stattdessen AsyncLazy&lt;T&gt;.</value>
     <value>Verwenden Sie das Suffix "Async" für asynchrone Methoden</value>
   </data>
   <data name="VSTHRD105_MessageFormat" xml:space="preserve">
-    <value>Vermeiden Sie Methodenüberladungen, die TaskScheduler.Current annehmen. Verwenden Sie eine Überladung, die einen TaskScheduler akzeptiert, und geben Sie explizit TaskScheduler.Default (o. a.) an.</value>
+    <value>Vermeiden Sie Methodenüberladungen, die "TaskScheduler.Current" annehmen. Verwenden Sie eine Überladung, die einen TaskScheduler akzeptiert, und geben Sie explizit "TaskScheduler.Default" (o. a.) an.</value>
   </data>
   <data name="VSTHRD105_Title" xml:space="preserve">
     <value>Methodenüberladungen, die TaskScheduler.Current annehmen, vermeiden</value>
@@ -108,7 +108,7 @@ Verwenden Sie stattdessen AsyncLazy&lt;T&gt;.</value>
     <value>"JoinableTaskFactory" bereitstellen, wenn zulässig</value>
   </data>
   <data name="VSTHRD104_MessageFormat" xml:space="preserve">
-    <value>Machen Sie eine async-Version dieser Methode verfügbar, die nicht synchron blockiert. Vereinfachen Sie dann diese Methode so, dass sie diese asynchrone Methode innerhalb eines JoinableTaskFactory.Run-Delegats aufruft.</value>
+    <value>Machen Sie eine asynchrone Version dieser Methode verfügbar, die nicht synchron blockiert. Vereinfachen Sie diese Methode anschließend, um die asynchrone Methode innerhalb eines Delegaten vom Typ "JoinableTaskFactory.Run" aufzurufen.</value>
   </data>
   <data name="VSTHRD104_Title" xml:space="preserve">
     <value>Asynchrone Methoden bieten</value>
@@ -141,5 +141,36 @@ Verwenden Sie stattdessen AsyncLazy&lt;T&gt;.</value>
   </data>
   <data name="VSTHRD108_Title" xml:space="preserve">
     <value>Threadaffinität ohne Bedingungen bestätigen</value>
+  </data>
+  <data name="VSTHRD109_MessageFormat" xml:space="preserve">
+    <value>Vermeiden Sie eine Auslösung in einer asynchronen Methode oder einer Methode mit Aufgabenrückgabe, sofern Sie sich nicht im Hauptthread befinden. Wechseln Sie stattdessen zum benötigten Thread.</value>
+  </data>
+  <data name="VSTHRD109_Title" xml:space="preserve">
+    <value>"switch" anstelle von "assert" in asynchronen Methoden</value>
+  </data>
+  <data name="VSTHRD010_MessageFormat_Sync" xml:space="preserve">
+    <value>Der Zugriff auf "{0}" sollte nur im Hauptthread erfolgen. Rufen Sie zuerst "{1}()" auf.</value>
+    <comment>{0} is a type or member name and {1} is the name of a method that throws if not called from the main thread.</comment>
+  </data>
+  <data name="VSTHRD010_MessageFormat_Async" xml:space="preserve">
+    <value>Der Zugriff auf "{0}" sollte nur im Hauptthread erfolgen.
+Warten Sie zuerst auf "JoinableTaskFactory.SwitchToMainThreadAsync()".</value>
+    <comment>{0} is a type or member name.</comment>
+  </data>
+  <data name="VSTHRD004_MessageFormat" xml:space="preserve">
+    <value>Aufrufe an "JoinableTaskFactory.SwitchToMainThreadAsync()" müssen mit "await" abgewartet werden.</value>
+  </data>
+  <data name="VSTHRD004_Title" xml:space="preserve">
+    <value>Await SwitchToMainThreadAsync</value>
+    <comment>Do not translate either of these. The first is a keyword, the second is a method name.</comment>
+  </data>
+  <data name="VSTHRD110_MessageFormat" xml:space="preserve">
+    <value>Überwachen Sie das zu erwartende Ergebnis dieses Methodenaufrufs mit "await", weisen Sie es einer Variablen zu, oder übergeben Sie es an eine andere Methode.</value>
+  </data>
+  <data name="VSTHRD110_Title" xml:space="preserve">
+    <value>Ergebnis asynchroner Aufrufe überwachen</value>
+  </data>
+  <data name="VSTHRD011b_MessageFormat" xml:space="preserve">
+    <value>Das Aufrufen oder Blockieren von asynchronem Code in einer Lazy&lt;T&gt;-Wertfactory kann zu einem Deadlock führen. Verwenden Sie stattdessen "AsyncLazy&lt;T&gt;".</value>
   </data>
 </root>

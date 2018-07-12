@@ -33,6 +33,8 @@
     {
         internal const string AsyncMethodKeyName = "AsyncMethodName";
 
+        internal const string ExtensionMethodNamespaceKeyName = "ExtensionMethodNamespace";
+
         private static readonly ImmutableArray<string> ReusableFixableDiagnosticIds = ImmutableArray.Create(
             VSTHRD103UseAsyncOptionAnalyzer.Id);
 
@@ -40,15 +42,41 @@
         public override ImmutableArray<string> FixableDiagnosticIds => ReusableFixableDiagnosticIds;
 
         /// <inheritdoc />
-        public override Task RegisterCodeFixesAsync(CodeFixContext context)
+        public override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             var diagnostic = context.Diagnostics.FirstOrDefault(d => d.Properties.ContainsKey(AsyncMethodKeyName));
             if (diagnostic != null)
             {
-                context.RegisterCodeFix(new ReplaceSyncMethodCallWithAwaitAsync(context.Document, diagnostic), diagnostic);
-            }
+                // Check that the method we're replacing the sync blocking call with actually exists.
+                // This is particularly useful when the method is an extension method, since the using directive
+                // would need to be present (or the namespace imply it) and we don't yet add missing using directives.
+                bool asyncAlternativeExists = false;
+                string asyncMethodName = diagnostic.Properties[AsyncMethodKeyName];
+                if (string.IsNullOrEmpty(asyncMethodName))
+                {
+                    asyncMethodName = "GetAwaiter";
+                }
 
-            return Task.FromResult<object>(null);
+                var semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
+                var syntaxRoot = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
+                var blockingIdentifier = syntaxRoot.FindNode(diagnostic.Location.SourceSpan) as IdentifierNameSyntax;
+                var memberAccessExpression = blockingIdentifier?.Parent as MemberAccessExpressionSyntax;
+
+                // Check whether this code was already calling the awaiter (in a synchronous fashion).
+                asyncAlternativeExists |= memberAccessExpression?.Expression is InvocationExpressionSyntax invoke && invoke.Expression is MemberAccessExpressionSyntax parentMemberAccess && parentMemberAccess.Name.Identifier.Text == nameof(Task.GetAwaiter);
+
+                if (!asyncAlternativeExists)
+                {
+                    // If we fail to recognize the container, assume it exists since the analyzer thought it would.
+                    var container = memberAccessExpression != null ? semanticModel.GetTypeInfo(memberAccessExpression.Expression, context.CancellationToken).ConvertedType : null;
+                    asyncAlternativeExists = container == null || semanticModel.LookupSymbols(diagnostic.Location.SourceSpan.Start, name: asyncMethodName, container: container, includeReducedExtensionMethods: true).Any();
+                }
+
+                if (asyncAlternativeExists)
+                {
+                    context.RegisterCodeFix(new ReplaceSyncMethodCallWithAwaitAsync(context.Document, diagnostic), diagnostic);
+                }
+            }
         }
 
         /// <inheritdoc />
@@ -76,9 +104,11 @@
             }
 
             /// <inheritdoc />
-            public override string EquivalenceKey => VSTHRD103UseAsyncOptionAnalyzer.Id;
+            public override string EquivalenceKey => null;
 
             private string AlternativeAsyncMethod => this.diagnostic.Properties[AsyncMethodKeyName];
+
+            private string ExtensionMethodNamespace => this.diagnostic.Properties[ExtensionMethodNamespaceKeyName];
 
             protected override async Task<Solution> GetChangedSolutionAsync(CancellationToken cancellationToken)
             {

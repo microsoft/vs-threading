@@ -22,7 +22,7 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>同步等候工作或 awaiter 可能會造成鎖死。請改用 await 或 JoinableTaskFactory.Run。</value>
+    <value>同步等候 task 或 awaiter 可能會造成死結。請改用 await 或 JoinableTaskFactory.Run。</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
@@ -60,14 +60,14 @@
     <value>避免在加入內容中等候不可加入的工作</value>
   </data>
   <data name="VSTHRD011_MessageFormat" xml:space="preserve">
-    <value>Lazy&lt;Task&lt;T&gt;&gt;.Value 可能會鎖死。
+    <value>Lazy&lt;Task&lt;T&gt;&gt;.Value 可能會造成死結。
 請改用 AsyncLazy&lt;T&gt;。</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
-    <value>避免在 T 為 Task&lt;T2&gt; 時使用 Lazy&lt;T&gt;</value>
+    <value>使用 AsyncLazy&lt;T&gt;</value>
   </data>
   <data name="VSTHRD103_MessageFormat" xml:space="preserve">
-    <value>{0} 會同步封鎖。請改為 await {1}。</value>
+    <value>{0} 會同步封鎖。請改用 await {1}。</value>
   </data>
   <data name="VSTHRD103_MessageFormat_UseAwaitInstead" xml:space="preserve">
     <value>{0} 會同步封鎖。請改用 await。</value>
@@ -92,7 +92,7 @@
     <value>對非同步方法使用 "Async" 尾碼</value>
   </data>
   <data name="VSTHRD105_MessageFormat" xml:space="preserve">
-    <value>請避免假設 TaskScheduler.Current 的方法多載。請使用接受 TaskScheduler 的多載，並明確指定 TaskScheduler.Default (或其他任一項)。</value>
+    <value>請避免會假設 TaskScheduler.Current 的方法多載。請使用接受 TaskScheduler 的多載，並明確指定 TaskScheduler.Default (或其他任一項)。</value>
   </data>
   <data name="VSTHRD105_Title" xml:space="preserve">
     <value>避免假設 TaskScheduler.Current 的方法多載</value>
@@ -108,7 +108,7 @@
     <value>在允許的情況下提供 JoinableTaskFactory</value>
   </data>
   <data name="VSTHRD104_MessageFormat" xml:space="preserve">
-    <value>公開此方法不會同步封鎖的非同步版本。接著將此方法簡化成在 JoinableTaskFactory.Run delegate 中呼叫該非同步方法。</value>
+    <value>提供此方法不會同步封鎖的非同步版本，讓此方法在 JoinableTaskFactory.Run 委派中只呼叫該非同步方法。</value>
   </data>
   <data name="VSTHRD104_Title" xml:space="preserve">
     <value>提供非同步方法</value>
@@ -141,5 +141,36 @@
   </data>
   <data name="VSTHRD108_Title" xml:space="preserve">
     <value>無條件判斷提示執行緒親和性</value>
+  </data>
+  <data name="VSTHRD109_MessageFormat" xml:space="preserve">
+    <value>使用非同步或 Task-returning 方法時，若不在主執行緒，則請避免擲回。請改為切換到需要的執行緒。</value>
+  </data>
+  <data name="VSTHRD109_Title" xml:space="preserve">
+    <value>使用非同步方法時請切換而非判斷提示</value>
+  </data>
+  <data name="VSTHRD010_MessageFormat_Sync" xml:space="preserve">
+    <value>"{0}" 的存取只應在主執行緒完成。請先呼叫 {1}()。</value>
+    <comment>{0} is a type or member name and {1} is the name of a method that throws if not called from the main thread.</comment>
+  </data>
+  <data name="VSTHRD010_MessageFormat_Async" xml:space="preserve">
+    <value>"{0}" 的存取只應在主執行緒完成。請先等候 JoinableTaskFactory.SwitchToMainThreadAsync()。</value>
+    <comment>{0} is a type or member name.</comment>
+  </data>
+  <data name="VSTHRD004_MessageFormat" xml:space="preserve">
+    <value>必須等候對 JoinableTaskFactory.SwitchToMainThreadAsync() 的呼叫。</value>
+  </data>
+  <data name="VSTHRD004_Title" xml:space="preserve">
+    <value>等候 SwitchToMainThreadAsync</value>
+    <comment>Do not translate either of these. The first is a keyword, the second is a method name.</comment>
+  </data>
+  <data name="VSTHRD110_MessageFormat" xml:space="preserve">
+    <value>觀察此方法呼叫的可等候結果，方法是加以等候、指派至變數，或傳遞至另一個方法。</value>
+  </data>
+  <data name="VSTHRD110_Title" xml:space="preserve">
+    <value>觀察非同步呼叫的結果</value>
+  </data>
+  <data name="VSTHRD011b_MessageFormat" xml:space="preserve">
+    <value>在 Lazy&lt;T&gt; 值 Factory 中叫用或封鎖非同步程式碼可能會鎖死。
+請改用 AsyncLazy&lt;T&gt;。</value>
   </data>
 </root>

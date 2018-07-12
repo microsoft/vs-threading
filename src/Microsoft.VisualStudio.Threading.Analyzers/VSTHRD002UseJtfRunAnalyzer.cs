@@ -133,7 +133,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             if (invokedMemberAccess?.Name != null)
             {
                 // Does the anonymous function appear as the first argument to Task.ContinueWith?
-                var invokedMemberSymbol = context.SemanticModel.GetSymbolInfo(invokedMemberAccess.Name).Symbol as IMethodSymbol;
+                var invokedMemberSymbol = context.SemanticModel.GetSymbolInfo(invokedMemberAccess.Name, context.CancellationToken).Symbol as IMethodSymbol;
                 if (invokedMemberSymbol?.Name == nameof(Task.ContinueWith) &&
                     Utils.IsEqualToOrDerivedFrom(invokedMemberSymbol?.ContainingType, taskSymbol) &&
                     invocationPassingExpression?.ArgumentList?.Arguments.FirstOrDefault() == anonFuncAsArgument)
@@ -143,7 +143,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     if (firstParameter != null)
                     {
                         // Are we accessing a member of the completed task?
-                        ISymbol invokedObjectSymbol = context.SemanticModel.GetSymbolInfo(memberAccessSyntax.Expression).Symbol;
+                        ISymbol invokedObjectSymbol = context.SemanticModel.GetSymbolInfo(memberAccessSyntax.Expression, context.CancellationToken).Symbol;
                         IParameterSymbol completedTask = context.SemanticModel.GetDeclaredSymbol(firstParameter);
                         if (EqualityComparer<ISymbol>.Default.Equals(invokedObjectSymbol, completedTask))
                         {

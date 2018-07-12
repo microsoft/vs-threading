@@ -438,7 +438,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             {
                 updated = simpleLambda
                     .WithAsyncKeyword(SyntaxFactory.Token(SyntaxKind.AsyncKeyword))
-                    .WithBody(UpdateStatementsForAsyncMethod(simpleLambda.Body, semanticModel, hasReturnValue));
+                    .WithBody(UpdateStatementsForAsyncMethod(simpleLambda.Body, semanticModel, hasReturnValue, cancellationToken));
             }
 
             var parentheticalLambda = method as ParenthesizedLambdaExpressionSyntax;
@@ -446,7 +446,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             {
                 updated = parentheticalLambda
                     .WithAsyncKeyword(SyntaxFactory.Token(SyntaxKind.AsyncKeyword))
-                    .WithBody(UpdateStatementsForAsyncMethod(parentheticalLambda.Body, semanticModel, hasReturnValue));
+                    .WithBody(UpdateStatementsForAsyncMethod(parentheticalLambda.Body, semanticModel, hasReturnValue, cancellationToken));
             }
 
             var anonymousMethod = method as AnonymousMethodExpressionSyntax;
@@ -454,7 +454,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             {
                 updated = anonymousMethod
                     .WithAsyncKeyword(SyntaxFactory.Token(SyntaxKind.AsyncKeyword))
-                    .WithBody(UpdateStatementsForAsyncMethod(anonymousMethod.Body, semanticModel, hasReturnValue));
+                    .WithBody(UpdateStatementsForAsyncMethod(anonymousMethod.Body, semanticModel, hasReturnValue, cancellationToken));
             }
 
             if (updated == null)
@@ -537,7 +537,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 method.Body,
                 semanticModel,
                 hasReturnValue,
-                returnTypeChanged);
+                returnTypeChanged,
+                cancellationToken);
 
             // Apply the changes to the document, and null out stale data.
             SyntaxAnnotation methodBookmark;
@@ -822,24 +823,25 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return default(T);
         }
 
-        private static CSharpSyntaxNode UpdateStatementsForAsyncMethod(CSharpSyntaxNode body, SemanticModel semanticModel, bool hasResultValue)
+        private static CSharpSyntaxNode UpdateStatementsForAsyncMethod(CSharpSyntaxNode body, SemanticModel semanticModel, bool hasResultValue, CancellationToken cancellationToken)
         {
             var blockBody = body as BlockSyntax;
             if (blockBody != null)
             {
-                return UpdateStatementsForAsyncMethod(blockBody, semanticModel, hasResultValue, returnTypeChanged: false/*probably not right, but we don't have a failing test yet.*/);
+                bool returnTypeChanged = false; // probably not right, but we don't have a failing test yet.
+                return UpdateStatementsForAsyncMethod(blockBody, semanticModel, hasResultValue, returnTypeChanged, cancellationToken);
             }
 
             var expressionBody = body as ExpressionSyntax;
             if (expressionBody != null)
             {
-                return SyntaxFactory.AwaitExpression(expressionBody).TrySimplify(expressionBody, semanticModel);
+                return SyntaxFactory.AwaitExpression(expressionBody).TrySimplify(expressionBody, semanticModel, cancellationToken);
             }
 
             throw new NotSupportedException();
         }
 
-        private static BlockSyntax UpdateStatementsForAsyncMethod(BlockSyntax body, SemanticModel semanticModel, bool hasResultValue, bool returnTypeChanged)
+        private static BlockSyntax UpdateStatementsForAsyncMethod(BlockSyntax body, SemanticModel semanticModel, bool hasResultValue, bool returnTypeChanged, CancellationToken cancellationToken)
         {
             var fixedUpBlock = body.ReplaceNodes(
                 body.DescendantNodes().OfType<ReturnStatementSyntax>(),
@@ -849,7 +851,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     {
                         return returnTypeChanged
                             ? n
-                            : n.WithExpression(SyntaxFactory.AwaitExpression(n.Expression).TrySimplify(f.Expression, semanticModel));
+                            : n.WithExpression(SyntaxFactory.AwaitExpression(n.Expression).TrySimplify(f.Expression, semanticModel, cancellationToken));
                     }
 
                     if (body.Statements.Last() == f)
@@ -866,7 +868,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return fixedUpBlock;
         }
 
-        private static ExpressionSyntax TrySimplify(this AwaitExpressionSyntax awaitExpression, ExpressionSyntax originalSyntax, SemanticModel semanticModel)
+        private static ExpressionSyntax TrySimplify(this AwaitExpressionSyntax awaitExpression, ExpressionSyntax originalSyntax, SemanticModel semanticModel, CancellationToken cancellationToken)
         {
             if (awaitExpression == null)
             {
@@ -881,7 +883,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 if (awaitedInvocationMemberAccess?.Name.Identifier.Text == nameof(Task.FromResult))
                 {
                     // Is the FromResult method on the Task or Task<T> class?
-                    var memberOwnerSymbol = semanticModel.GetSymbolInfo(originalSyntax).Symbol;
+                    var memberOwnerSymbol = semanticModel.GetSymbolInfo(originalSyntax, cancellationToken).Symbol;
                     if (IsTask(memberOwnerSymbol?.ContainingType))
                     {
                         var simplified = awaitedInvocation.ArgumentList.Arguments.Single().Expression;

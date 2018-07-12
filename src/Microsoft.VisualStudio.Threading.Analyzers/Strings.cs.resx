@@ -64,7 +64,7 @@ Tomuto problému můžete předejít tak, že zajistíte inicializaci úlohy v r
 Použijte raději AsyncLazy&lt;T&gt;.</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
-    <value>Vyhněte se použití Lazy&lt;T&gt;, kde T označuje Task&lt;T2&gt;</value>
+    <value>Použijte AsyncLazy&lt;T&gt;</value>
   </data>
   <data name="VSTHRD103_MessageFormat" xml:space="preserve">
     <value>{0} provádí synchronní blokování. Místo toho použijte await {1}.</value>
@@ -108,7 +108,7 @@ Použijte raději AsyncLazy&lt;T&gt;.</value>
     <value>Zadejte JoinableTaskFactory, kde je to povoleno</value>
   </data>
   <data name="VSTHRD104_MessageFormat" xml:space="preserve">
-    <value>Vystavte asynchronní verzi této metody, která neprovádí synchronní blokování. Potom tuto metodu zjednodušte tak, aby volala danou asynchronní metodu v rámci delegáta JoinableTaskFactory.Run.</value>
+    <value>Nabízejte asynchronní verzi této metody, která se synchronně neblokuje. Pak zjednodušte tuto metodu tak, aby volala tuto asynchronní metodu v delegátovi JoinableTaskFactory.Run.</value>
   </data>
   <data name="VSTHRD104_Title" xml:space="preserve">
     <value>Nabízejte asynchronní metody</value>
@@ -141,5 +141,36 @@ Použijte raději AsyncLazy&lt;T&gt;.</value>
   </data>
   <data name="VSTHRD108_Title" xml:space="preserve">
     <value>Vyhodnotit spřažení vláken bez podmínek</value>
+  </data>
+  <data name="VSTHRD109_MessageFormat" xml:space="preserve">
+    <value>Vyhněte se tomuto volání, pokud nejste v hlavním vláknu a jste v asynchronní metodě nebo metodě, která vrací Task. Místo toho přepněte na požadované vlákno.</value>
+  </data>
+  <data name="VSTHRD109_Title" xml:space="preserve">
+    <value>V asynchronních metodách použijte Switch místo Assert</value>
+  </data>
+  <data name="VSTHRD010_MessageFormat_Sync" xml:space="preserve">
+    <value>Přístup k {0} by se měl provádět jenom v hlavním vláknu. Napřed volejte {1}().</value>
+    <comment>{0} is a type or member name and {1} is the name of a method that throws if not called from the main thread.</comment>
+  </data>
+  <data name="VSTHRD010_MessageFormat_Async" xml:space="preserve">
+    <value>Přístup k {0} by se měl provádět jenom v hlavním vláknu. Napřed počkejte na dokončení volání metody JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+    <comment>{0} is a type or member name.</comment>
+  </data>
+  <data name="VSTHRD004_MessageFormat" xml:space="preserve">
+    <value>U volání JoinableTaskFactory.SwitchToMainThreadAsync() se musí čekat na dokončení.</value>
+  </data>
+  <data name="VSTHRD004_Title" xml:space="preserve">
+    <value>Použijte Await SwitchToMainThreadAsync</value>
+    <comment>Do not translate either of these. The first is a keyword, the second is a method name.</comment>
+  </data>
+  <data name="VSTHRD110_MessageFormat" xml:space="preserve">
+    <value>Přijměte očekávatelný výsledek volání této metody tak, že na něj počkáte, přiřadíte ho do proměnné nebo ho předáte další metodě.</value>
+  </data>
+  <data name="VSTHRD110_Title" xml:space="preserve">
+    <value>Přijměte výsledek asynchronních volání</value>
+  </data>
+  <data name="VSTHRD011b_MessageFormat" xml:space="preserve">
+    <value>Vyvolání nebo zablokování asynchronního kódu v objektu pro vytváření hodnot Lazy&lt;T&gt; může způsobit zablokování.
+Použijte raději AsyncLazy&lt;T&gt;.</value>
   </data>
 </root>

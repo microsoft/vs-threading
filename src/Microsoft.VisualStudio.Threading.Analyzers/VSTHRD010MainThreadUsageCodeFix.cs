@@ -127,7 +127,7 @@
 
                     void OfferFix(string fullyQualifiedMethod)
                     {
-                        context.RegisterCodeFix(CodeAction.Create($"Add call to {fullyQualifiedMethod}", ct => Fix(fullyQualifiedMethod, proposedMethod, cancellationTokenSymbol, ct), $"{container.BlockOrExpression.GetLocation()}-{fullyQualifiedMethod}"), context.Diagnostics);
+                        context.RegisterCodeFix(CodeAction.Create($"Add call to {fullyQualifiedMethod}", ct => Fix(fullyQualifiedMethod, proposedMethod, cancellationTokenSymbol, ct), fullyQualifiedMethod), context.Diagnostics);
                     }
                 }
             }

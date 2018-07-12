@@ -22,7 +22,7 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>Görevlerde veya bekleyen öğelerde zaman uyumlu olarak beklemek kilitlenmelere neden olabilir. Bunun yerine await veya JoinableTaskFactory.Run kullanın.</value>
+    <value>Görevlerde veya bekleyen öğelerde zaman uyumlu olarak beklemek kilitlenmelere neden olabilir. Bunun yerine bekleyen veya JoinableTaskFactory.Run kullanın.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
@@ -64,7 +64,7 @@ Görevin temsilcinin içinde başlatılmasını sağlayarak veya Task yerine Joi
 Bunun yerine AsyncLazy&lt;T&gt; kullanın.</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
-    <value>T’nin Task&lt;T&gt; olduğu durumlarda Lazy&lt;T2&gt; kullanmayın.</value>
+    <value>AsyncLazy&lt;T&gt; kullanın</value>
   </data>
   <data name="VSTHRD103_MessageFormat" xml:space="preserve">
     <value>{0} zaman uyumlu olarak engeller. Bunun yerine {1} bekleyin.</value>
@@ -92,7 +92,7 @@ Bunun yerine AsyncLazy&lt;T&gt; kullanın.</value>
     <value>Async metotları için "Async" sonekini kullanın</value>
   </data>
   <data name="VSTHRD105_MessageFormat" xml:space="preserve">
-    <value>TaskScheduler.Current varsayan metot aşırı yüklemelerinden kaçının. TaskScheduler kabul eden bir aşırı yükleme kullanın ve TaskScheduler.Default (veya diğer birini) açık olarak belirtin.</value>
+    <value>TaskScheduler.Current varsayan metot aşırı yüklemelerinden kaçının. TaskScheduler kabul eden bir aşırı yükleme kullanın ve TaskScheduler.Default (veya başka birini) açık olarak belirtin.</value>
   </data>
   <data name="VSTHRD105_Title" xml:space="preserve">
     <value>TaskScheduler.Current varsayan metot aşırı yüklemelerinden kaçının</value>
@@ -108,7 +108,7 @@ Bunun yerine AsyncLazy&lt;T&gt; kullanın.</value>
     <value>İzin veriliyorsa JoinableTaskFactory sağlayın</value>
   </data>
   <data name="VSTHRD104_MessageFormat" xml:space="preserve">
-    <value>Bu metodun, eş zamanlı olarak engellemeyen zaman uyumsuz bir sürümünü kullanıma açın. Sonra, JoinableTaskFactory.Run temsilcisi içinde bu zaman uyumsuz metodu çağırmak için bu metodu basitleştirin.</value>
+    <value>Bu metodun zaman uyumlu olarak engellemeyen zaman uyumsuz bir sürümünü sunun. Sonra bir JoinableTaskFactory.Run temsilcisi içinde bu zaman uyumsuz metoda çağrı yapmak için bu metodu basitleştirin.</value>
   </data>
   <data name="VSTHRD104_Title" xml:space="preserve">
     <value>Zaman uyumsuz metotlar sunun</value>
@@ -141,5 +141,36 @@ Bunun yerine AsyncLazy&lt;T&gt; kullanın.</value>
   </data>
   <data name="VSTHRD108_Title" xml:space="preserve">
     <value>İş parçacığı benzeşimini koşulsuz olarak onayla</value>
+  </data>
+  <data name="VSTHRD109_MessageFormat" xml:space="preserve">
+    <value>Ana iş parçacığında değilken, zaman uyumsuz veya Task döndüren metot içinden özel durum oluşturmaktan kaçının. Bunun yerine, gereken iş parçacığına geçin.</value>
+  </data>
+  <data name="VSTHRD109_Title" xml:space="preserve">
+    <value>Zaman uyumsuz metotlarda assert yerine switch</value>
+  </data>
+  <data name="VSTHRD010_MessageFormat_Sync" xml:space="preserve">
+    <value>"{0}" erişimi yalnızca ana iş parçacığı üzerinde gerçekleştirilmelidir. Önce {1}() çağırın.</value>
+    <comment>{0} is a type or member name and {1} is the name of a method that throws if not called from the main thread.</comment>
+  </data>
+  <data name="VSTHRD010_MessageFormat_Async" xml:space="preserve">
+    <value>"{0}" erişimi yalnızca ana iş parçacığı üzerinde gerçekleştirilmelidir. Önce JoinableTaskFactory.SwitchToMainThreadAsync() metodunu bekleyin.</value>
+    <comment>{0} is a type or member name.</comment>
+  </data>
+  <data name="VSTHRD004_MessageFormat" xml:space="preserve">
+    <value>JoinableTaskFactory.SwitchToMainThreadAsync() çağrıları beklenmelidir.</value>
+  </data>
+  <data name="VSTHRD004_Title" xml:space="preserve">
+    <value>SwitchToMainThreadAsync bekleyin</value>
+    <comment>Do not translate either of these. The first is a keyword, the second is a method name.</comment>
+  </data>
+  <data name="VSTHRD110_MessageFormat" xml:space="preserve">
+    <value>Bu metot çağrısının beklenebilir sonucunu bekleyerek, bir değişkene atayarak veya bir başka metoda geçirerek gözlemleyin.</value>
+  </data>
+  <data name="VSTHRD110_Title" xml:space="preserve">
+    <value>Zaman uyumsuz çağrıların sonucunu gözlemleyin</value>
+  </data>
+  <data name="VSTHRD011b_MessageFormat" xml:space="preserve">
+    <value>Bir Lazy&lt;T&gt; değer fabrikasında zaman uyumsuz kod çağrısı veya engellemesi çıkmaza yol açabilir.
+Bunun yerine AsyncLazy&lt;T&gt; kullanın.</value>
   </data>
 </root>
