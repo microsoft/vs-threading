@@ -58,14 +58,16 @@
           <target state="translated">使用 InvokeAsync 引發非同步事件</target>
         </trans-unit>
         <trans-unit id="VSTHRD003_MessageFormat" translate="yes" xml:space="preserve">
-          <source>Calling await on a Task inside a JoinableTaskFactory.Run, when the task is initialized outside the delegate can cause potential deadlocks.
-You can avoid this problem by ensuring the task is initialized within the delegate or by using JoinableTask instead of Task.</source>
-          <target state="translated">當工作在委派的外部初始化時，對 JoinableTaskFactory.Run 內的 Task 上呼叫 await 可能會造成潛在的死結。
-您可以讓工作在委派內初始化，或不使用 Task 而改用 JoinableTask 來避免此問題。</target>
+          <source>Calling await on a Task when the task is initialized in another context can cause potential deadlocks.
+You can avoid this problem by ensuring the task is initialized within the same method or by using JoinableTask instead of Task.</source>
+          <target state="needs-review-translation">當工作在委派外部初始化時，在 JoinableTaskFactory.Run 內的 Task 上呼叫 await，可能會造成潛在的鎖死情形。
+您可以藉由確認工作在委派內初始化，或將 Task 改為使用 JoinableTask，來避免此問題。</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD003_Title" translate="yes" xml:space="preserve">
-          <source>Avoid awaiting non-joinable tasks in join contexts</source>
-          <target state="translated">避免在加入內容中等候不可加入的工作</target>
+          <source>Avoid awaiting foreign Tasks</source>
+          <target state="needs-review-translation">避免在加入內容中等候不可加入的工作</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD011_MessageFormat" translate="yes" xml:space="preserve">
           <source>Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock.

@@ -129,6 +129,46 @@ class Tests
         }
 
         [Fact]
+        public void ReportWarningWhenTaskIsReturnedDirectlyFromMethod()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Tests
+{
+    private Task task;
+
+    public Task GetTask()
+    {
+        return task;
+    }
+}
+";
+            var expect = this.CreateDiagnostic(10, 16, 4);
+            this.VerifyCSharpDiagnostic(test, expect);
+        }
+
+        [Fact]
+        public void ReportWarningWhenTaskIsReturnedAwaitedFromMethod()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Tests
+{
+    private Task<int> task;
+
+    public async Task<int> AwaitAndGetResult()
+    {
+        return await task;
+    }
+}
+";
+            var expect = this.CreateDiagnostic(10, 22, 4);
+            this.VerifyCSharpDiagnostic(test, expect);
+        }
+
+        [Fact]
         public void ReportWarningWhenTaskTIsReturnedDirectlyWithCancellation()
         {
             var test = @"
@@ -150,7 +190,30 @@ class Tests
         }
 
         [Fact]
-        public void DoNotReportWarningWhenTaskTIsPassedAsArgument()
+        public void DoNotReportWarningWhenTaskTIsPassedAsArgumentAndNoTaskIsReturned()
+        {
+            var test = @"
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
+using Task = System.Threading.Tasks.Task;
+
+class Tests
+{
+    public static int WaitAndGetResult(Task task)
+    {
+        return DoSomethingWith(task);
+    }
+
+    private static int DoSomethingWith(Task t) => 3;
+}
+";
+            this.VerifyCSharpDiagnostic(test);
+        }
+
+        [Fact]
+        public void ReportWarningWhenTaskTIsPassedAsArgumentAndTaskIsReturned()
         {
             var test = @"
 using System.Threading;
@@ -169,7 +232,8 @@ class Tests
     private static Task DoSomethingWith(Task t) => null;
 }
 ";
-            this.VerifyCSharpDiagnostic(test);
+            var expect = this.CreateDiagnostic(12, 68, 4);
+            this.VerifyCSharpDiagnostic(test, expect);
         }
 
         [Fact]
@@ -265,6 +329,44 @@ class Tests
 
         return 100;
     }
+}
+";
+            this.VerifyCSharpDiagnostic(test);
+        }
+
+        [Fact]
+        public void DoNotReportWarningWhenReturnedTaskIsDirectlyReturnedFromInvocation()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Tests
+{
+    public Task Test()
+    {
+        return SomeOperationAsync();
+    }
+
+    public Task SomeOperationAsync() => Task.CompletedTask;
+}
+";
+            this.VerifyCSharpDiagnostic(test);
+        }
+
+        [Fact]
+        public void DoNotReportWarningWhenReturnedTaskIsAwaitedReturnedFromInvocation()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Tests
+{
+    public async Task<int> Test()
+    {
+        return await SomeOperationAsync();
+    }
+
+    public Task<int> SomeOperationAsync() => Task.FromResult(3);
 }
 ";
             this.VerifyCSharpDiagnostic(test);
@@ -720,53 +822,83 @@ class Tests
         }
 
         [Fact]
-        public void DoNotReportWarningForDerivedJoinableTaskFactoryWhenRunIsOverride()
+        public void ReportWarningWhenAwaitingTaskInField()
         {
             var test = @"
-using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
+using Task = System.Threading.Tasks.Task;
 
-public class MyJoinableTaskFactory : JoinableTaskFactory
-{
-    public MyJoinableTaskFactory(JoinableTaskFactory innerFactory) : base(innerFactory.Context)
-    {
+class Tests {
+    Task task;
 
-    }
-
-    new public void Run(Func<System.Threading.Tasks.Task> asyncMethod)
-    {
-
+    public void Test() {
+        ThreadHelper.JoinableTaskFactory.Run(async delegate {
+            await task;
+        });
     }
 }
+";
+            var expect = this.CreateDiagnostic(12, 19, 4);
+            this.VerifyCSharpDiagnostic(test, expect);
+        }
 
-class Tests
-{
-    public void Test()
-    {
-        MyJoinableTaskFactory myjtf = new MyJoinableTaskFactory(ThreadHelper.JoinableTaskFactory);
-
-        System.Threading.Tasks.Task<int> task = SomeOperationAsync();
-
-        myjtf.Run(async () =>
+        [Fact]
+        public void ReportWarningWhenAwaitingTaskInField_WithThisQualifier()
         {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
+using Task = System.Threading.Tasks.Task;
+
+class Tests {
+    Task task;
+
+    public void Test() {
+        ThreadHelper.JoinableTaskFactory.Run(async delegate {
+            await this.task;
+        });
+    }
+}
+";
+            var expect = this.CreateDiagnostic(12, 19, 9);
+            this.VerifyCSharpDiagnostic(test, expect);
+        }
+
+        [Fact]
+        public void DoNotReportWarningWhenAwaitingTaskInFieldThatIsAssignedLocally()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
+using Task = System.Threading.Tasks.Task;
+
+class Tests {
+    Task task;
+
+    public void Test() {
+        ThreadHelper.JoinableTaskFactory.Run(async delegate {
+            task = SomeOperationAsync();
             await task;
         });
     }
 
-    public async Task<int> SomeOperationAsync()
-    {
-        await System.Threading.Tasks.Task.Delay(1000);
-
-        return 100;
-    }
+    Task SomeOperationAsync() => Task.CompletedTask;
 }
-
 ";
-
-            // We decided not to report warning in this case, because we don't know if our assumptions about the Run implementation are still valid for user's implementation
             this.VerifyCSharpDiagnostic(test);
         }
+
+        private DiagnosticResult CreateDiagnostic(int line, int column, int length, string messagePattern = null) =>
+           new DiagnosticResult
+           {
+               Id = this.expect.Id,
+               MessagePattern = messagePattern ?? this.expect.MessagePattern,
+               Severity = this.expect.Severity,
+               Locations = new[] { new DiagnosticResultLocation("Test0.cs", line, column, line, column + length) },
+           };
     }
 }

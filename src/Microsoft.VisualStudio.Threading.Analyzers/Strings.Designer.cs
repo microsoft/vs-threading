@@ -125,8 +125,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Calling await on a Task inside a JoinableTaskFactory.Run, when the task is initialized outside the delegate can cause potential deadlocks.
-        ///You can avoid this problem by ensuring the task is initialized within the delegate or by using JoinableTask instead of Task..
+        ///   Looks up a localized string similar to Calling await on a Task when the task is initialized in another context can cause potential deadlocks.
+        ///You can avoid this problem by ensuring the task is initialized within the same method or by using JoinableTask instead of Task..
         /// </summary>
         internal static string VSTHRD003_MessageFormat {
             get {
@@ -135,7 +135,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Avoid awaiting non-joinable tasks in join contexts.
+        ///   Looks up a localized string similar to Avoid awaiting foreign Tasks.
         /// </summary>
         internal static string VSTHRD003_Title {
             get {

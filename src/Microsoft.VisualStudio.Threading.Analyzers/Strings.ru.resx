@@ -53,7 +53,7 @@
     <value>Использование InvokeAsync для вызова асинхронных событий</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>При вызове await в объекте Task в JoinableTaskFactory.Run (и при условии, что задача инициализирована за пределами делегата) могут произойти взаимоблокировки.
+    <value>При вызове await в объекте Task в JoinableTaskFactory.Run (и при условии, что задача инициализирована за пределами делегата), могут произойти взаимоблокировки.
 Вы можете избежать этой проблемы, инициализировав задачу в делегате или использовав JoinableTask вместо Task.</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
