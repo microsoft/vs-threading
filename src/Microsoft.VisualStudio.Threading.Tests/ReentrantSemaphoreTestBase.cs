@@ -180,7 +180,8 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
                 // Fill the semaphore to its capacity
                 for (int j = 0; j < initialCount; j++)
                 {
-                    operations[j] = this.semaphore.ExecuteAsync(() => releasers[j].WaitAsync(), this.TimeoutToken);
+                    int k = j; // Capture j, as it will increment
+                    operations[j] = this.semaphore.ExecuteAsync(() => releasers[k].WaitAsync(), this.TimeoutToken);
                 }
 
                 var releaseSequence = Enumerable.Range(0, initialCount);
@@ -228,14 +229,13 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
         this.ExecuteOnDispatcher(async delegate
         {
             var releaser1 = new AsyncManualResetEvent();
-            var innerReleaser = new AsyncManualResetEvent();
             Task innerOperation = null;
             await this.semaphore.ExecuteAsync(delegate
             {
-                innerOperation = EnterAndUseSemaphoreAsync(innerReleaser);
+                innerOperation = EnterAndUseSemaphoreAsync(releaser1);
                 return TplExtensions.CompletedTask;
             });
-            innerReleaser.Set();
+            releaser1.Set();
             await innerOperation;
             Assert.Equal(1, this.semaphore.CurrentCount);
         });
