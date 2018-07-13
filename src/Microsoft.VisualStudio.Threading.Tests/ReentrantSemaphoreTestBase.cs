@@ -180,7 +180,8 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
                 // Fill the semaphore to its capacity
                 for (int j = 0; j < initialCount; j++)
                 {
-                    operations[j] = this.semaphore.ExecuteAsync(() => releasers[j].WaitAsync(), this.TimeoutToken);
+                    int k = j; // Capture j, as it will increment
+                    operations[j] = this.semaphore.ExecuteAsync(() => releasers[k].WaitAsync(), this.TimeoutToken);
                 }
 
                 var releaseSequence = Enumerable.Range(0, initialCount);
@@ -228,14 +229,13 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
         this.ExecuteOnDispatcher(async delegate
         {
             var releaser1 = new AsyncManualResetEvent();
-            var innerReleaser = new AsyncManualResetEvent();
             Task innerOperation = null;
             await this.semaphore.ExecuteAsync(delegate
             {
-                innerOperation = EnterAndUseSemaphoreAsync(innerReleaser);
+                innerOperation = EnterAndUseSemaphoreAsync(releaser1);
                 return TplExtensions.CompletedTask;
             });
-            innerReleaser.Set();
+            releaser1.Set();
             await innerOperation;
             Assert.Equal(1, this.semaphore.CurrentCount);
         });
@@ -573,6 +573,57 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Task.WhenAll(waiters)).WithCancellation(this.TimeoutToken);
             Assert.Equal(Enumerable.Range(0, waiterCount).Except(new[] { canceledWaiterIndex }), enteredLog);
         });
+    }
+
+    /// <summary>
+    /// Verifies that when a stack semaphore faults, all queued awaiters are resumed and faulted.
+    /// </summary>
+    [Fact]
+    public void Stack_FaultedSemaphoreDrains()
+    {
+        this.ExecuteOnDispatcher(
+            async () =>
+            {
+                var semaphore = this.CreateSemaphore(ReentrantSemaphore.ReentrancyMode.Stack);
+
+                var releaser1 = new AsyncManualResetEvent();
+                var releaser2 = new AsyncManualResetEvent();
+                var releaser3 = new AsyncManualResetEvent();
+
+                Task innerFaulterSemaphoreTask = null;
+
+                // This task will release its semaphore before the inner semaphore does
+                var outerFaultySemaphoreTask = Task.Run(
+                    async () =>
+                    {
+                        await semaphore.ExecuteAsync(
+                            async () =>
+                            {
+                                releaser3.Set();
+                                await releaser1.WaitAsync();
+                                releaser1.Reset(); // re-use this event
+                                innerFaulterSemaphoreTask = semaphore.ExecuteAsync(
+                                    async () =>
+                                    {
+                                        releaser2.Set();
+                                        await releaser1.WaitAsync();
+                                    });
+
+                                await releaser2.WaitAsync();
+                            });
+                    });
+
+                await releaser3.WaitAsync();
+                var pendingSemaphoreTask = semaphore.ExecuteAsync(() => TplExtensions.CompletedTask);
+
+                releaser1.Set();
+                await Assert.ThrowsAsync<InvalidOperationException>(() => outerFaultySemaphoreTask).WithCancellation(this.TimeoutToken);
+                await Assert.ThrowsAsync<InvalidOperationException>(() => pendingSemaphoreTask).WithCancellation(this.TimeoutToken);
+
+                releaser1.Set();
+                await Assert.ThrowsAsync<InvalidOperationException>(() => innerFaulterSemaphoreTask).WithCancellation(this.TimeoutToken);
+                await Assert.ThrowsAsync<InvalidOperationException>(() => semaphore.ExecuteAsync(() => TplExtensions.CompletedTask)).WithCancellation(this.TimeoutToken);
+            });
     }
 
 #pragma warning disable VSTHRD012 // Provide JoinableTaskFactory where allowed (we do this in the JTF-aware variant of these tests in a derived class.)
