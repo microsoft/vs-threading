@@ -16,7 +16,10 @@ namespace Microsoft.VisualStudio.Threading
     /// </summary>
     public class AsyncLazyInitializer
     {
-        private AsyncLazy<EmptyStruct> lazy;
+        /// <summary>
+        /// The lazy instance we use internally for the bulk of the behavior we want.
+        /// </summary>
+        private readonly AsyncLazy<EmptyStruct> lazy;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AsyncLazyInitializer"/> class.
