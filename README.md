@@ -17,10 +17,11 @@ Analyzers: [![NuGet package](https://img.shields.io/nuget/v/Microsoft.VisualStud
   * `AsyncSemaphore`
   * `AsyncReaderWriterLock`
 * Async versions of very common types
+  * `AsyncEventHandler`
   * `AsyncLazy<T>`
+  * `AsyncLazyInitializer`
   * `AsyncLocal<T>`
   * `AsyncQueue<T>`
-  * `AsyncEventHandler`
 * Await extension methods
   * Await on a `TaskScheduler` to switch to it.
     Switch to a background thread with `await TaskScheduler.Default;`
