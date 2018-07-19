@@ -2435,6 +2435,7 @@ namespace Microsoft.VisualStudio.Threading
             /// When we don't have a valid nesting lock, we will create a new NonConcurrentSynchronizationContext for an exclusive lock.  For read lock, we don't put it within a NonConcurrentSynchronizationContext,
             /// we set it to DefaultSynchronizationContext to mark we have computed it.  The result is cached.
             /// </summary>
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Justification = "NonConcurrentSynchronizationContext is shared among locks, and cannot be disposed.")]
             private SynchronizationContext GetEffectiveSynchronizationContext()
             {
                 if (this.synchronizationContext == null)
