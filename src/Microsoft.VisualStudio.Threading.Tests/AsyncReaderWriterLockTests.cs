@@ -1814,6 +1814,49 @@
         }
 
         [StaFact]
+        public void WriteLockDisposingShouldNotBlockByOtherWriters()
+        {
+            var firstLockToRelease = new AsyncManualResetEvent();
+            var firstLockAccquired = new AsyncManualResetEvent();
+            var firstLockToDispose = new AsyncManualResetEvent();
+            var firstLockTask = Task.Run(async delegate
+            {
+                using (var firstLock = await this.asyncLock.WriteLockAsync())
+                {
+                    firstLockAccquired.Set();
+                    await firstLockToRelease.WaitAsync();
+                    await firstLock.ReleaseAsync();
+                    await firstLockToDispose.WaitAsync();
+                }
+            });
+
+            var secondLockReleased = new AsyncManualResetEvent();
+
+            var secondLockTask = Task.Run(async delegate
+            {
+                await firstLockAccquired.WaitAsync();
+                var awaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
+                Assert.False(awaiter.IsCompleted);
+                awaiter.OnCompleted(() =>
+                {
+                    firstLockToDispose.Set();
+
+                    // We must block the thread synchorizely, so it won't release the NonConcurrentSynchronizationContext.
+                    firstLockTask.Wait();
+
+                    awaiter.GetResult().Dispose();
+                    secondLockReleased.Set();
+                });
+                firstLockToRelease.Set();
+
+                await firstLockTask;
+                await secondLockReleased.WaitAsync();
+            });
+
+            Assert.True(secondLockTask.Wait(TestTimeout)); // rethrow any exceptions
+        }
+
+        [StaFact]
         public async Task WriteLockAsyncSimple()
         {
             // Get onto an MTA thread so that a lock may be synchronously granted.
