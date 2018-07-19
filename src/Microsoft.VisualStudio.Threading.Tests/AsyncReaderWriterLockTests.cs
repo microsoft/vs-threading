@@ -1813,6 +1813,11 @@
             Assert.True(firstLockTask.Wait(TestTimeout)); // rethrow any exceptions
         }
 
+        /// <summary>
+        /// Test to verify that we don't block the code to dispose a write lock, when it has been released, and a new write lock was issued right between Release and Dispose.
+        /// That happens in the original implementation, because it shares a same NonConcurrentSynchronizationContext, so a new write lock can take over it, and block the original lock task
+        /// to resume back to the context.
+        /// </summary>
         [StaFact]
         public void WriteLockDisposingShouldNotBlockByOtherWriters()
         {
@@ -1826,11 +1831,13 @@
                     firstLockAccquired.Set();
                     await firstLockToRelease.WaitAsync();
                     await firstLock.ReleaseAsync();
+
+                    // Wait for the second lock to be issued
                     await firstLockToDispose.WaitAsync();
                 }
             });
 
-            var secondLockReleased = new AsyncManualResetEvent();
+            var secondLockReleased = new TaskCompletionSource<int>();
 
             var secondLockTask = Task.Run(async delegate
             {
@@ -1839,21 +1846,32 @@
                 Assert.False(awaiter.IsCompleted);
                 awaiter.OnCompleted(() =>
                 {
-                    firstLockToDispose.Set();
+                    try
+                    {
+                        using (var access = awaiter.GetResult())
+                        {
+                            firstLockToDispose.Set();
 
-                    // We must block the thread synchorizely, so it won't release the NonConcurrentSynchronizationContext.
-                    firstLockTask.Wait();
+                            // We must block the thread synchronously, so it won't release the NonConcurrentSynchronizationContext until the first lock is completely disposed.
+                            firstLockTask.Wait(TestTimeout * 2);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        secondLockReleased.TrySetException(ex);
+                    }
 
-                    awaiter.GetResult().Dispose();
-                    secondLockReleased.Set();
+                    secondLockReleased.TrySetResult(0);
                 });
                 firstLockToRelease.Set();
 
+                // clean up logic
                 await firstLockTask;
-                await secondLockReleased.WaitAsync();
+                await secondLockReleased.Task;
             });
 
             Assert.True(secondLockTask.Wait(TestTimeout)); // rethrow any exceptions
+            Assert.False(secondLockReleased.Task.IsFaulted);
         }
 
         [StaFact]

@@ -38,14 +38,14 @@ namespace Microsoft.VisualStudio.Threading
     public partial class AsyncReaderWriterLock : IDisposable
     {
         /// <summary>
+        /// The default SynchronizationContext to schedule work after issuing a lock.
+        /// </summary>
+        private static readonly SynchronizationContext DefaultSynchronizationContext = new SynchronizationContext();
+
+        /// <summary>
         /// The object to acquire a Monitor-style lock on for all field access on this instance.
         /// </summary>
         private readonly object syncObject = new object();
-
-        /// <summary>
-        /// The default SynchronizationContext to schedule work after issuing a lock.
-        /// </summary>
-        private readonly SynchronizationContext defaultSynchronizationContext = new SynchronizationContext();
 
         /// <summary>
         /// A CallContext-local reference to the Awaiter that is on the top of the stack (most recently acquired).
@@ -2404,7 +2404,7 @@ namespace Microsoft.VisualStudio.Threading
                     this.continuationAfterLockIssued = continuation;
 
                     var synchronizationContext = this.GetEffectiveSynchronizationContext();
-                    if (this.continuationTaskScheduler != null && synchronizationContext == this.lck.defaultSynchronizationContext)
+                    if (this.continuationTaskScheduler != null && synchronizationContext == DefaultSynchronizationContext)
                     {
                         Task.Factory.StartNew(continuation, CancellationToken.None, TaskCreationOptions.PreferFairness, this.continuationTaskScheduler);
                     }
@@ -2431,6 +2431,9 @@ namespace Microsoft.VisualStudio.Threading
 
             /// <summary>
             /// Get the correct SynchronizationContext to execute code executing within the lock.
+            /// Note: we need get the NonConcurrentSynchronizationContext from the nesting exclusive lock, because the child lock is essentially under the same context.
+            /// When we don't have a valid nesting lock, we will create a new NonConcurrentSynchronizationContext for an exclusive lock.  For read lock, we don't put it within a NonConcurrentSynchronizationContext,
+            /// we set it to DefaultSynchronizationContext to mark we have computed it.  The result is cached.
             /// </summary>
             private SynchronizationContext GetEffectiveSynchronizationContext()
             {
@@ -2456,7 +2459,8 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         if (this.kind == LockKind.Read)
                         {
-                            synchronizationContext = this.lck.defaultSynchronizationContext;
+                            // We use DefaultSynchronizationContext to indicate that we have already computed the synchronizationContext once, and prevent repeating this logic second time.
+                            synchronizationContext = DefaultSynchronizationContext;
                         }
                         else
                         {
