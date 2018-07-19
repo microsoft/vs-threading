@@ -43,9 +43,9 @@ namespace Microsoft.VisualStudio.Threading
         private readonly object syncObject = new object();
 
         /// <summary>
-        /// The synchronization context applied to folks who hold upgradeable read and write locks.
+        /// The default SynchronizationContext to schedule work after issuing a lock.
         /// </summary>
-        private readonly NonConcurrentSynchronizationContext nonConcurrentSyncContext = new NonConcurrentSynchronizationContext();
+        private readonly SynchronizationContext defaultSynchronizationContext = new SynchronizationContext();
 
         /// <summary>
         /// A CallContext-local reference to the Awaiter that is on the top of the stack (most recently acquired).
@@ -520,10 +520,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="disposing"><c>true</c> if <see cref="Dispose()"/> was called; <c>false</c> if the object is being finalized.</param>
         protected virtual void Dispose(bool disposing)
         {
-            if (disposing)
-            {
-                this.nonConcurrentSyncContext.Dispose();
-            }
         }
 
         /// <summary>
@@ -683,7 +679,7 @@ namespace Microsoft.VisualStudio.Threading
             if (this.IsLockHeld(LockKind.Write, awaiter, allowNonLockSupportingContext: true, checkSyncContextCompatibility: false) ||
                 this.IsLockHeld(LockKind.UpgradeableRead, awaiter, allowNonLockSupportingContext: true, checkSyncContextCompatibility: false))
             {
-                if (SynchronizationContext.Current != this.nonConcurrentSyncContext)
+                if (!(SynchronizationContext.Current is NonConcurrentSynchronizationContext))
                 {
                     // Upgradeable read and write locks *must* have the NonConcurrentSynchronizationContext applied.
                     return false;
@@ -2135,6 +2131,11 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             private Task releaseAsyncTask;
 
+            /// <summary>
+            /// The synchronization context applied to folks who hold the lock.
+            /// </summary>
+            private SynchronizationContext synchronizationContext;
+
 #if DESKTOP || NETSTANDARD2_0
             /// <summary>
             /// The stacktrace of the caller originally requesting the lock.
@@ -2329,7 +2330,7 @@ namespace Microsoft.VisualStudio.Threading
                         this.lck.ThrowIfUnsupportedThreadOrSyncContext();
                         if ((this.Kind & (LockKind.UpgradeableRead | LockKind.Write)) != 0)
                         {
-                            Assumes.True(SynchronizationContext.Current == this.lck.nonConcurrentSyncContext);
+                            Assumes.True(SynchronizationContext.Current is NonConcurrentSynchronizationContext);
                         }
 
                         this.lck.ApplyLockToCallContext(this);
@@ -2402,16 +2403,14 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     this.continuationAfterLockIssued = continuation;
 
-                    // Only read locks can be executed trivially. The locks that have some level of exclusivity (upgradeable read and write)
-                    // must be executed via the NonConcurrentSynchronizationContext.
-                    if (this.lck.LockStackContains(LockKind.UpgradeableRead, this) ||
-                        this.lck.LockStackContains(LockKind.Write, this))
+                    var synchronizationContext = this.GetEffectiveSynchronizationContext();
+                    if (this.continuationTaskScheduler != null && synchronizationContext == this.lck.defaultSynchronizationContext)
                     {
-                        this.lck.nonConcurrentSyncContext.Post(state => ((Action)state)(), continuation);
+                        Task.Factory.StartNew(continuation, CancellationToken.None, TaskCreationOptions.PreferFairness, this.continuationTaskScheduler);
                     }
                     else
                     {
-                        Task.Factory.StartNew(continuation, CancellationToken.None, TaskCreationOptions.PreferFairness, this.continuationTaskScheduler ?? TaskScheduler.Default);
+                        synchronizationContext.Post(state => ((Action)state)(), continuation);
                     }
 
                     return true;
@@ -2428,6 +2427,47 @@ namespace Microsoft.VisualStudio.Threading
             internal void SetFault(Exception ex)
             {
                 this.fault = ex;
+            }
+
+            /// <summary>
+            /// Get the correct SynchronizationContext to execute code executing within the lock.
+            /// </summary>
+            private SynchronizationContext GetEffectiveSynchronizationContext()
+            {
+                if (this.synchronizationContext == null)
+                {
+                    // Only read locks can be executed trivially. The locks that have some level of exclusivity (upgradeable read and write)
+                    // must be executed via the NonConcurrentSynchronizationContext.
+                    SynchronizationContext synchronizationContext = null;
+
+                    Awaiter awaiter = this.NestingLock;
+                    while (awaiter != null)
+                    {
+                        if (this.lck.IsLockActive(awaiter, considerStaActive: true))
+                        {
+                            synchronizationContext = awaiter.GetEffectiveSynchronizationContext();
+                            break;
+                        }
+
+                        awaiter = awaiter.NestingLock;
+                    }
+
+                    if (synchronizationContext == null)
+                    {
+                        if (this.kind == LockKind.Read)
+                        {
+                            synchronizationContext = this.lck.defaultSynchronizationContext;
+                        }
+                        else
+                        {
+                            synchronizationContext = new NonConcurrentSynchronizationContext();
+                        }
+                    }
+
+                    Interlocked.CompareExchange(ref this.synchronizationContext, synchronizationContext, null);
+                }
+
+                return this.synchronizationContext;
             }
 
             /// <summary>
