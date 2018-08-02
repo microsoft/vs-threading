@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en-US" target-language="tr" original="MICROSOFT.VISUALSTUDIO.THREADING/STRINGS.RESX" tool-id="MultilingualAppToolkit" product-name="n/a" product-version="n/a" build-num="n/a">
     <header>
@@ -73,11 +73,11 @@
         </trans-unit>
         <trans-unit id="SemaphoreMisused" translate="yes" xml:space="preserve">
           <source>This semaphore has been misused and can no longer be used.</source>
-          <target state="new">This semaphore has been misused and can no longer be used.</target>
+          <target state="translated">Bu semafor hatalı kullanıldığından artık kullanılamıyor.</target>
         </trans-unit>
         <trans-unit id="SemaphoreStackNestingViolated" translate="yes" xml:space="preserve">
           <source>Nested semaphore requests must be released in LIFO order when the reentrancy setting is: '{0}'</source>
-          <target state="new">Nested semaphore requests must be released in LIFO order when the reentrancy setting is: '{0}'</target>
+          <target state="translated">İç içe geçmiş semafor istekleri, yeniden giriş ayarı şu olduğunda LIFO sırasında yayınlanmalıdır: '{0}'</target>
         </trans-unit>
       </group>
     </body>
