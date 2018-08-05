@@ -66,6 +66,41 @@ class Test {
         }
 
         [Fact]
+        public void UsingTaskOfTReturningMethodInSyncMethod_FixOmitsSynchronouslySuffix()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    void FSynchronously() {
+        AsyncSemaphore lck = null;
+        using (lck.EnterAsync())
+        {
+        }
+    }
+}
+";
+            var withFix = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task FAsync() {
+        AsyncSemaphore lck = null;
+        using (await lck.EnterAsync())
+        {
+        }
+    }
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 16, 8, 32) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
         public void UsingTaskOfTReturningMethodInIntReturningMethod_GeneratesError()
         {
             var test = @"

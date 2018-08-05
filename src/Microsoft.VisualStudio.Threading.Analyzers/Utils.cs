@@ -28,6 +28,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
     internal static class Utils
     {
+        internal const string OptionalSynchronouslySuffix = "Synchronously";
+
         internal static Action<SyntaxNodeAnalysisContext> DebuggableWrapper(Action<SyntaxNodeAnalysisContext> handler)
         {
             return ctxt =>
@@ -245,10 +247,32 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// </remarks>
         internal static bool IsAsyncReady(this IMethodSymbol methodSymbol) => methodSymbol.IsAsync || methodSymbol.HasAsyncCompatibleReturnType();
 
+        internal static string GetAsyncAlternativeName(this SyntaxToken methodNameToken)
+        {
+            string asyncMethodBaseName = methodNameToken.ValueText;
+            if (asyncMethodBaseName.EndsWith(OptionalSynchronouslySuffix))
+            {
+                asyncMethodBaseName = asyncMethodBaseName.Substring(0, asyncMethodBaseName.LastIndexOf(OptionalSynchronouslySuffix));
+            }
+
+            return asyncMethodBaseName + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix;
+        }
+
+        internal static string GetAsyncAlternativeName(this ISymbol methodSymbol)
+        {
+            string asyncMethodBaseName = methodSymbol.Name;
+            if (asyncMethodBaseName.EndsWith(OptionalSynchronouslySuffix))
+            {
+                asyncMethodBaseName = asyncMethodBaseName.Substring(0, asyncMethodBaseName.LastIndexOf(OptionalSynchronouslySuffix));
+            }
+
+            return asyncMethodBaseName + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix;
+        }
+
         internal static bool HasAsyncAlternative(this IMethodSymbol methodSymbol, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return methodSymbol.ContainingType.GetMembers(methodSymbol.Name + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix)
+            return methodSymbol.ContainingType.GetMembers(GetAsyncAlternativeName(methodSymbol))
                 .Any(alt => IsXAtLeastAsPublicAsY(alt, methodSymbol));
         }
 
@@ -557,7 +581,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             // and it doesn't already have that suffix.
             if (returnTypeChanged && !method.Identifier.ValueText.EndsWith(VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix, StringComparison.Ordinal))
             {
-                string newName = method.Identifier.ValueText + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix;
+                string newName = GetAsyncAlternativeName(method.Identifier);
 
                 semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
                 methodSymbol = semanticModel.GetDeclaredSymbol(method, cancellationToken);

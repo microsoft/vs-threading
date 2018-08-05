@@ -55,6 +55,31 @@ class Test {
         }
 
         [Fact]
+        public void TaskReturningMethodWithSynchronouslySuffix_GeneratesWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task FooSynchronously() => null;
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task FooAsync() => null;
+}
+";
+
+            var expected = this.NewExpectedTemplate();
+            expected.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 5, 10, 5, 26) };
+            this.VerifyCSharpDiagnostic(test, expected);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
         public void TaskReturningMainMethodWithoutSuffix_GeneratesNoWarning()
         {
             var test = @"

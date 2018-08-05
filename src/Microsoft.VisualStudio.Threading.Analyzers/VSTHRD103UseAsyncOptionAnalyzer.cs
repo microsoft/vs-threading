@@ -100,7 +100,7 @@
                     if (symbolInfo.Symbol != null && !symbolInfo.Symbol.Name.EndsWith(VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix) &&
                         !(methodSymbol?.ReturnType?.Name == nameof(Task) && methodSymbol.ReturnType.BelongsToNamespace(Namespaces.SystemThreadingTasks)))
                     {
-                        string asyncMethodName = symbolInfo.Symbol.Name + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix;
+                        string asyncMethodName = Utils.GetAsyncAlternativeName(symbolInfo.Symbol);
                         var asyncMethodMatches = context.SemanticModel.LookupSymbols(
                             invocationExpressionSyntax.Expression.GetLocation().SourceSpan.Start,
                             symbolInfo.Symbol.ContainingType,

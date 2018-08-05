@@ -951,6 +951,41 @@ static class PlateUtils {
         }
 
         [Fact]
+        public void SyncInvocationWithSynchronouslySuffixWhereAsyncOptionExistsInSubExpressionGeneratesWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task T() {
+        int r = FooSynchronously().CompareTo(1);
+        return Task.FromResult(1);
+    }
+
+    internal static int FooSynchronously() => 5;
+    internal static Task<int> FooAsync() => null;
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T() {
+        int r = (await FooAsync()).CompareTo(1);
+    }
+
+    internal static int FooSynchronously() => 5;
+    internal static Task<int> FooAsync() => null;
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 6, 17, 6, 33) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
         public void AwaitingAsyncMethodWithoutSuffixProducesNoWarningWhereSuffixVersionExists()
         {
             var test = @"

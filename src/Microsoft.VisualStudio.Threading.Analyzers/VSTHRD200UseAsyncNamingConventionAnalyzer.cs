@@ -72,7 +72,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     }
 
                     var properties = ImmutableDictionary<string, string>.Empty
-                        .Add(VSTHRD200UseAsyncNamingConventionCodeFix.NewNameKey, methodSymbol.Name + MandatoryAsyncSuffix);
+                        .Add(VSTHRD200UseAsyncNamingConventionCodeFix.NewNameKey, Utils.GetAsyncAlternativeName(methodSymbol));
                     context.ReportDiagnostic(Diagnostic.Create(
                         Descriptor,
                         methodSymbol.Locations[0],

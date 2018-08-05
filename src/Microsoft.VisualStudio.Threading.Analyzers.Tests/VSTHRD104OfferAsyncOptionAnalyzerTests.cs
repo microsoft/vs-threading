@@ -48,6 +48,28 @@ public class Test {
         }
 
         [Fact]
+        public void JTFRunFromPublicVoidMethodWithSynchronouslySuffix_GeneratesWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+public class Test {
+    JoinableTaskFactory jtf;
+
+    public void FooSynchronously() {
+        jtf.Run(async delegate {
+            await Task.Yield();
+        });
+    }
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 13, 9, 16) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+        }
+
+        [Fact]
         public void JTFRunFromInternalVoidMethod_GeneratesNoWarning()
         {
             var test = @"
@@ -91,6 +113,57 @@ public class Test {
 ";
 
             this.VerifyCSharpDiagnostic(test);
+        }
+
+        [Fact]
+        public void JTFRunFromPublicVoidMethodWithSynchronouslySuffix_GeneratesNoWarningWhenAsyncMethodPresent()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+public class Test {
+    JoinableTaskFactory jtf;
+
+    public void FooSynchronously() {
+        jtf.Run(async delegate {
+            await FooAsync();
+        });
+    }
+
+    public async Task FooAsync() {
+        await Task.Yield();
+    }
+}
+";
+
+            this.VerifyCSharpDiagnostic(test);
+        }
+
+        [Fact]
+        public void JTFRunFromPublicVoidMethodWithSynchronouslySuffix_GeneratesWarningWhenAsyncMethodIncludedSynchronouslySuffix()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+public class Test {
+    JoinableTaskFactory jtf;
+
+    public void FooSynchronously() {
+        jtf.Run(async delegate {
+            await FooSynchronouslyAsync();
+        });
+    }
+
+    public async Task FooSynchronouslyAsync() {
+        await Task.Yield();
+    }
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 13, 9, 16) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
         }
 
         [Fact]

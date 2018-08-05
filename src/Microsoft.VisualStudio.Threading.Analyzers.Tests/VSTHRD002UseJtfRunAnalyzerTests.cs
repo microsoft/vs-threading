@@ -203,6 +203,36 @@ class Test {
         }
 
         [Fact]
+        public void AwaiterGetResult_FixOmitsSynchronouslySuffix()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void FSynchronously() {
+        var task = Task.Run(() => 1);
+        task.GetAwaiter().GetResult();
+    }
+}
+";
+            var withFix = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    async Task FAsync() {
+        var task = Task.Run(() => 1);
+        await task;
+    }
+}
+";
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 27, 8, 36) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
         public void TaskResult_FixUpdatesCallers()
         {
             var test = new[] {
