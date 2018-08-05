@@ -436,6 +436,36 @@ static class Assert {
         }
 
         [Fact]
+        public void TaskOfTResultInTaskReturningMethodGeneratesWarning_FixRewritesCorrectExpression()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    async Task T() {
+        await Task.Run(() => Console.Error).Result.WriteLineAsync();
+    }
+}
+";
+
+            var withFix = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    async Task T() {
+        await (await Task.Run(() => Console.Error)).WriteLineAsync();
+    }
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 45) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
         public void TaskOfTResultInTaskReturningAnonymousMethodWithinSyncMethod_GeneratesWarning()
         {
             var test = @"

@@ -170,11 +170,6 @@
                     awaitExpression = SyntaxFactory.AwaitExpression(
                         syncExpression.ReplaceNode(syncMethodName, asyncMethodName).WithoutLeadingTrivia())
                         .WithLeadingTrivia(syncExpression.GetLeadingTrivia());
-                    if (!(syncExpression.Parent is ExpressionStatementSyntax))
-                    {
-                        awaitExpression = SyntaxFactory.ParenthesizedExpression(awaitExpression)
-                            .WithAdditionalAnnotations(Simplifier.Annotation);
-                    }
                 }
                 else
                 {
@@ -191,6 +186,12 @@
 
                     awaitExpression = SyntaxFactory.AwaitExpression(syncMemberStrippedExpression.WithoutLeadingTrivia())
                         .WithLeadingTrivia(syncMemberStrippedExpression.GetLeadingTrivia());
+                }
+
+                if (!(syncExpression.Parent is ExpressionStatementSyntax))
+                {
+                    awaitExpression = SyntaxFactory.ParenthesizedExpression(awaitExpression)
+                        .WithAdditionalAnnotations(Simplifier.Annotation);
                 }
 
                 updatedMethod = updatedMethod
