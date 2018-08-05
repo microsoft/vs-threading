@@ -397,6 +397,45 @@ class Test {
         }
 
         [Fact]
+        public void TaskOfTResultInTaskReturningMethodGeneratesWarning_FixPreservesCall()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task T() {
+        Task<int> t = null;
+        Assert.NotNull(t.Result);
+        return Task.CompletedTask;
+    }
+}
+
+static class Assert {
+    internal static void NotNull(object value) => throw null;
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T() {
+        Task<int> t = null;
+        Assert.NotNull(await t);
+    }
+}
+
+static class Assert {
+    internal static void NotNull(object value) => throw null;
+}
+";
+
+            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 26) };
+            this.VerifyCSharpDiagnostic(test, this.expect);
+            this.VerifyCSharpFix(test, withFix);
+        }
+
+        [Fact]
         public void TaskOfTResultInTaskReturningAnonymousMethodWithinSyncMethod_GeneratesWarning()
         {
             var test = @"
