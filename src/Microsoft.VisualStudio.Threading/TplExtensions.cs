@@ -109,6 +109,26 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Gets the <see cref="Task{TResult}.Result"/> of a completed <see cref="Task{TResult}"/>.
+        /// </summary>
+        /// <typeparam name="TResult">The type of the result produced by the <see cref="Task{TResult}"/>.</typeparam>
+        /// <param name="task">The completed task.</param>
+        /// <returns>The result value of the <see cref="Task{TResult}"/>.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="task"/> is <see langword="null"/>.</exception>
+        /// <exception cref="InvalidOperationException">If <paramref name="task"/> is not completed.</exception>
+        public static TResult CompletedResult<TResult>(this Task<TResult> task)
+        {
+            Requires.NotNull(task, nameof(task));
+
+            if (!task.IsCompleted)
+            {
+                throw new InvalidOperationException();
+            }
+
+            return task.Result;
+        }
+
+        /// <summary>
         /// Applies one task's results to another.
         /// </summary>
         /// <typeparam name="T">The type of value returned by a task.</typeparam>

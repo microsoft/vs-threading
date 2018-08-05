@@ -35,6 +35,63 @@
         }
 
         [Fact]
+        public void CompletedResultOfNullTaskTest()
+        {
+            Assert.Throws<ArgumentNullException>(() => TplExtensions.CompletedResult<int>(null));
+        }
+
+        [Fact]
+        public void CompletedResultOfIncompleteTaskTest()
+        {
+            var tcs = new TaskCompletionSource<int>();
+            Assert.Throws<InvalidOperationException>(() => TplExtensions.CompletedResult(tcs.Task));
+        }
+
+        [Fact]
+        public void CompletedResultOfCompleteTaskTest()
+        {
+            var expected = new object();
+            Assert.Same(expected, TplExtensions.CompletedResult(Task.FromResult(expected)));
+        }
+
+        [Fact]
+        public void CompletedResultOfCancelledTaskTest()
+        {
+            var tcs = new TaskCompletionSource<int>();
+            tcs.SetCanceled();
+
+            // The test is run for Task<T>.Result and TplExceptions.CompletedResult to ensure consistent behavior
+            TestBehavior(() => tcs.Task.Result);
+            TestBehavior(() => TplExtensions.CompletedResult(tcs.Task));
+
+            // Local function
+            void TestBehavior(Func<object> testCode)
+            {
+                var exception = Assert.Throws<AggregateException>(testCode);
+                Assert.IsType<TaskCanceledException>(exception.InnerException);
+            }
+        }
+
+        [Fact]
+        public void CompletedResultOfFailedTaskTest()
+        {
+            var tcs = new TaskCompletionSource<int>();
+            var expectedException = new EncoderFallbackException();
+            tcs.SetException(expectedException);
+
+            // The test is run for Task<T>.Result and TplExceptions.CompletedResult to ensure consistent behavior
+            TestBehavior(() => tcs.Task.Result);
+            TestBehavior(() => TplExtensions.CompletedResult(tcs.Task));
+
+            // Local function
+            void TestBehavior(Func<object> testCode)
+            {
+                var exception = Assert.Throws<AggregateException>(testCode);
+                Assert.Same(expectedException, exception.InnerException);
+            }
+        }
+
+        [Fact]
         public void ApplyResultToNullTask()
         {
             Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo(null, new TaskCompletionSource<object>()));
