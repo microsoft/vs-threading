@@ -496,9 +496,7 @@
         {
             await Task.Run(async delegate
             {
-#pragma warning disable SA1501 // Statement must not be on a single line: buggy analyzer misfires
                 Func<Task> yieldingDelegate = async () => { await Task.Yield(); };
-#pragma warning restore SA1501 // Statement must not be on a single line
                 var asyncLock = new LockDerived
                 {
                     OnBeforeExclusiveLockReleasedAsyncDelegate = yieldingDelegate,

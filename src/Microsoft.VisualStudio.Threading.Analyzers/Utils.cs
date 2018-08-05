@@ -4,9 +4,6 @@
 *                                                        *
 *********************************************************/
 
-// https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/2267
-#pragma warning disable SA1009 // Closing parenthesis must be spaced correctly
-
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
