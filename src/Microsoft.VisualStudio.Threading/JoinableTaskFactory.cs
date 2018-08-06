@@ -167,6 +167,39 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Gets an awaitable whose continuations execute on the synchronization context that this instance was initialized with,
+        /// in such a way as to mitigate both deadlocks and reentrancy.
+        /// </summary>
+        /// <param name="alwaysYield">A value indicating whether the caller should yield even if
+        /// already executing on the main thread.</param>
+        /// <param name="cancellationToken">
+        /// A token whose cancellation will immediately schedule the continuation
+        /// on a threadpool thread.
+        /// </param>
+        /// <returns>An awaitable.</returns>
+        /// <remarks>
+        /// <example>
+        /// <code>
+        /// private async Task SomeOperationAsync() {
+        ///     // on the caller's thread.
+        ///     await DoAsync();
+        ///
+        ///     // Now switch to a threadpool thread explicitly.
+        ///     await TaskScheduler.Default;
+        ///
+        ///     // Now switch to the Main thread to talk to some STA object.
+        ///     await this.JobContext.SwitchToMainThreadAsync(alwaysYield: true);
+        ///     STAService.DoSomething();
+        /// }
+        /// </code>
+        /// </example>
+        /// </remarks>
+        public MainThreadAwaitable SwitchToMainThreadAsync(bool alwaysYield, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return new MainThreadAwaitable(this, this.Context.AmbientTask, cancellationToken, alwaysYield);
+        }
+
+        /// <summary>
         /// Responds to calls to <see cref="JoinableTaskFactory.MainThreadAwaiter.OnCompleted(Action)"/>
         /// by scheduling a continuation to execute on the Main thread.
         /// </summary>
