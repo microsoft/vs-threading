@@ -61,4 +61,10 @@
   <data name="ValueFactoryReentrancy" xml:space="preserve">
     <value>값 팩토리가 같은 인스턴스의 값을 호출했습니다.</value>
   </data>
+  <data name="SemaphoreMisused" xml:space="preserve">
+    <value>이 세마포는 잘못 사용되어 더 이상 사용할 수 없습니다.</value>
+  </data>
+  <data name="SemaphoreStackNestingViolated" xml:space="preserve">
+    <value>재입력 설정이 '{0}'이면 중첩된 세마포 요청이 LIFO 순서로 릴리스되어야 합니다.</value>
+  </data>
 </root>

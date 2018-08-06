@@ -61,4 +61,10 @@
   <data name="ValueFactoryReentrancy" xml:space="preserve">
     <value>值工厂已对相同实例调用了值。</value>
   </data>
+  <data name="SemaphoreMisused" xml:space="preserve">
+    <value>此信号量已被误用, 无法再使用。</value>
+  </data>
+  <data name="SemaphoreStackNestingViolated" xml:space="preserve">
+    <value>当可重入设置为: "{0}" 时, 嵌套的信号量请求必须以后进先出顺序释放</value>
+  </data>
 </root>

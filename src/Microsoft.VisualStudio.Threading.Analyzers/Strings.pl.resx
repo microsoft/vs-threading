@@ -91,15 +91,15 @@ Zamiast tego używaj klasy AsyncLazy&lt;T&gt;.</value>
   <data name="VSTHRD200_Title" xml:space="preserve">
     <value>W przypadku metod asynchronicznych używaj sufiksu „Async”</value>
   </data>
+  <data name="VSTHRD100_CodeFix_Title" xml:space="preserve">
+    <value>Zmień zwracany typ na Task</value>
+    <comment>Task is a type name and should not be translated.</comment>
+  </data>
   <data name="VSTHRD105_MessageFormat" xml:space="preserve">
     <value>Unikaj przeciążeń metod zakładających korzystanie z właściwości TaskScheduler.Current. Używaj przeciążenia przyjmującego obiekt TaskScheduler i jawnie określaj właściwość TaskScheduler.Default (lub inną).</value>
   </data>
   <data name="VSTHRD105_Title" xml:space="preserve">
     <value>Unikaj przeciążeń metod zakładających korzystanie z właściwości TaskScheduler.Current</value>
-  </data>
-  <data name="VSTHRD100_CodeFix_Title" xml:space="preserve">
-    <value>Zmień zwracany typ na Task</value>
-    <comment>Task is a type name and should not be translated.</comment>
   </data>
   <data name="VSTHRD012_MessageFormat" xml:space="preserve">
     <value>Podaj wystąpienie elementu JoinableTaskFactory w tym wywołaniu (albo innym przeciążeniu), aby uniknąć zakleszczeń w wątku głównym.</value>

@@ -170,7 +170,6 @@
     <value>观察异步调用的结果</value>
   </data>
   <data name="VSTHRD011b_MessageFormat" xml:space="preserve">
-    <value>在 Lazy&lt;T&gt; 值工厂中调用或阻止异步代码可能死锁。
-请改用 AsyncLazy&lt;T&gt;</value>
+    <value>在 Lazy&lt;T&gt; 值工厂中调用或阻止异步代码可能死锁。 请改用 AsyncLazy&lt;T&gt;</value>
   </data>
 </root>

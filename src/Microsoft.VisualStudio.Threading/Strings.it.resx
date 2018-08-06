@@ -61,4 +61,10 @@
   <data name="ValueFactoryReentrancy" xml:space="preserve">
     <value>La factory del valore ha richiesto il valore nella stessa istanza.</value>
   </data>
+  <data name="SemaphoreMisused" xml:space="preserve">
+    <value>Questo semaforo non è stato usato in modo corretto e non può più essere usato.</value>
+  </data>
+  <data name="SemaphoreStackNestingViolated" xml:space="preserve">
+    <value>Le richieste di semaforo nidificate devono essere rilasciate in base all'ordine LIFO quando l'impostazione di rientranza è: '{0}'</value>
+  </data>
 </root>

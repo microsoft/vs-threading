@@ -91,15 +91,15 @@ Bunun yerine AsyncLazy&lt;T&gt; kullanın.</value>
   <data name="VSTHRD200_Title" xml:space="preserve">
     <value>Async metotları için "Async" sonekini kullanın</value>
   </data>
+  <data name="VSTHRD100_CodeFix_Title" xml:space="preserve">
+    <value>Döndürme türünü Task olarak değiştirin</value>
+    <comment>Task is a type name and should not be translated.</comment>
+  </data>
   <data name="VSTHRD105_MessageFormat" xml:space="preserve">
     <value>TaskScheduler.Current varsayan metot aşırı yüklemelerinden kaçının. TaskScheduler kabul eden bir aşırı yükleme kullanın ve TaskScheduler.Default (veya başka birini) açık olarak belirtin.</value>
   </data>
   <data name="VSTHRD105_Title" xml:space="preserve">
     <value>TaskScheduler.Current varsayan metot aşırı yüklemelerinden kaçının</value>
-  </data>
-  <data name="VSTHRD100_CodeFix_Title" xml:space="preserve">
-    <value>Döndürme türünü Task olarak değiştirin</value>
-    <comment>Task is a type name and should not be translated.</comment>
   </data>
   <data name="VSTHRD012_MessageFormat" xml:space="preserve">
     <value>Ana iş parçacığında kilitlenmeleri önlemek için bu çağrıda (veya başka bir aşırı yüklemede) bir JoinableTaskFactory örneği sağlayın.</value>
