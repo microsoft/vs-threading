@@ -61,4 +61,10 @@
   <data name="ValueFactoryReentrancy" xml:space="preserve">
     <value>Este generador de valores ha llamado al valor en la misma instancia.</value>
   </data>
+  <data name="SemaphoreMisused" xml:space="preserve">
+    <value>Este semáforo se usó de forma incorrecta y ya no se puede utilizar.</value>
+  </data>
+  <data name="SemaphoreStackNestingViolated" xml:space="preserve">
+    <value>Las solicitudes de semáforo anidadas deben liberarse en orden LIFO cuando el valor de reentrada es "{0}"</value>
+  </data>
 </root>

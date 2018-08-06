@@ -61,4 +61,10 @@
   <data name="ValueFactoryReentrancy" xml:space="preserve">
     <value>Die Wertfactory hat den Wert für die gleiche Instanz aufgerufen.</value>
   </data>
+  <data name="SemaphoreMisused" xml:space="preserve">
+    <value>Dieser Semaphor wurde falsch verwendet und kann nicht länger genutzt werden.</value>
+  </data>
+  <data name="SemaphoreStackNestingViolated" xml:space="preserve">
+    <value>Geschachtelte Semaphoranforderungen müssen in LIFO-Reihenfolge angegeben werden, wenn die Einstellung für die Eintrittsinvarianz "{0}" lautet.</value>
+  </data>
 </root>

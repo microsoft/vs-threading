@@ -61,4 +61,10 @@
   <data name="ValueFactoryReentrancy" xml:space="preserve">
     <value>値ファクトリが同じインスタンスの値を呼び出しました。</value>
   </data>
+  <data name="SemaphoreMisused" xml:space="preserve">
+    <value>このセマフォは誤用されたため、使用できなくなりました。</value>
+  </data>
+  <data name="SemaphoreStackNestingViolated" xml:space="preserve">
+    <value>入れ子になったセマフォの要求は、再入の設定が '{0}' である場合、LIFO の順序でリリースする必要があります。</value>
+  </data>
 </root>

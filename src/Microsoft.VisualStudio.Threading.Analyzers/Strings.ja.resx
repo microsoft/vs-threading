@@ -53,7 +53,7 @@
     <value>InvokeAsync を使用して非同期イベントを発生させる</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>タスクがデリゲート外部で初期化されている場合、JoinableTaskFactory.Run 内の Task で await を呼び出すと、デッドロックが引き起こされる可能性があります。
+    <value>タスクがデリゲート外部で初期化されている場合、JoinableTaskFactory.Run 内の Task で Await を呼び出すと、デッドロックが引き起こされる可能性があります。
 この問題は、タスクが確実にデリゲート内で初期化されるようにするか、Task の代わりに JoinableTask を使用することによって回避できます。</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">

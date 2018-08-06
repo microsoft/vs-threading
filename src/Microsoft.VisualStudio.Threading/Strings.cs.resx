@@ -61,4 +61,10 @@
   <data name="ValueFactoryReentrancy" xml:space="preserve">
     <value>Objekt pro vytváření hodnot zavolal hodnotu pro stejnou instanci.</value>
   </data>
+  <data name="SemaphoreMisused" xml:space="preserve">
+    <value>Tento semafor byl zneužit a není možné ho nadále používat.</value>
+  </data>
+  <data name="SemaphoreStackNestingViolated" xml:space="preserve">
+    <value>Vnořené semaforové žádosti se musí být uvolňovat v pořadí LIFO, kdy nastavení vícenásobnému přístupu je: {0}</value>
+  </data>
 </root>
