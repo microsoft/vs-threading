@@ -5,8 +5,8 @@ NuGet package.
 
 ID | Title | Severity | Supports
 ---- | --- | --- | --- |
-[VSTHRD001](VSTHRD001.md) | Use JTF.SwitchToMainThread to switch | Critical | [1st rule](../threading_rules.md#Rule1)
-[VSTHRD002](VSTHRD002.md) | Use JTF.Run to block | Critical | [2nd rule](../threading_rules.md#Rule2)
+[VSTHRD001](VSTHRD001.md) | Avoid legacy thread switching methods | Critical | [1st rule](../threading_rules.md#Rule1)
+[VSTHRD002](VSTHRD002.md) | Avoid problematic synchronous waits | Critical | [2nd rule](../threading_rules.md#Rule2)
 [VSTHRD003](VSTHRD003.md) | Avoid awaiting foreign Tasks | Critical | [3rd rule](../threading_rules.md#Rule3)
 [VSTHRD004](VSTHRD004.md) | Await SwitchToMainThreadAsync | Critical | [1st rule](../threading_rules.md#Rule1)
 [VSTHRD010](VSTHRD010.md) | Invoke single-threaded types on Main thread | Critical | [1st rule](../threading_rules.md#Rule1)
@@ -15,9 +15,9 @@ ID | Title | Severity | Supports
 [VSTHRD100](VSTHRD100.md) | Avoid `async void` methods | Advisory
 [VSTHRD101](VSTHRD101.md) | Avoid unsupported async delegates | Advisory | [VSTHRD100](VSTHRD100.md)
 [VSTHRD102](VSTHRD102.md) | Implement internal logic asynchronously | Advisory | [2nd rule](../threading_rules.md#Rule2)
-[VSTHRD103](VSTHRD103.md) | Use async option | Advisory
+[VSTHRD103](VSTHRD103.md) | Call async methods when in an async method | Advisory
 [VSTHRD104](VSTHRD104.md) | Offer async option | Advisory
-[VSTHRD105](VSTHRD105.md) | Avoid implicit use of TaskScheduler.Current | Advisory
+[VSTHRD105](VSTHRD105.md) | Avoid method overloads that assume `TaskScheduler.Current` | Advisory
 [VSTHRD106](VSTHRD106.md) | Use `InvokeAsync` to raise async events | Advisory
 [VSTHRD107](VSTHRD107.md) | Await Task within using expression | Advisory
 [VSTHRD108](VSTHRD108.md) | Assert thread affinity unconditionally | Advisory | [1st rule](../threading_rules.md#Rule1), [VSTHRD010](VSTHRD010.md)
