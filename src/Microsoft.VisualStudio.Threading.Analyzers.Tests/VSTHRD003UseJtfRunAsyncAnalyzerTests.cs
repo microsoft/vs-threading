@@ -168,6 +168,92 @@ class Tests
             this.VerifyCSharpDiagnostic(test, expect);
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ReportWarningWhenConfiguredTaskIsReturnedAwaitedFromMethod(bool continueOnCapturedContext)
+        {
+            var test = $@"
+using System.Threading.Tasks;
+
+class Tests
+{{
+    private Task task;
+
+    public async Task AwaitAndGetResult()
+    {{
+        await task.ConfigureAwait({(continueOnCapturedContext ? "true" : "false")});
+    }}
+}}
+";
+            var expect = this.CreateDiagnostic(10, 15, 21 + continueOnCapturedContext.ToString().Length);
+            this.VerifyCSharpDiagnostic(test, expect);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ReportWarningWhenConfiguredTaskTIsReturnedAwaitedFromMethod(bool continueOnCapturedContext)
+        {
+            var test = $@"
+using System.Threading.Tasks;
+
+class Tests
+{{
+    private Task<int> task;
+
+    public async Task<int> AwaitAndGetResult()
+    {{
+        return await task.ConfigureAwait({(continueOnCapturedContext ? "true" : "false")});
+    }}
+}}
+";
+            var expect = this.CreateDiagnostic(10, 22, 21 + continueOnCapturedContext.ToString().Length);
+            this.VerifyCSharpDiagnostic(test, expect);
+        }
+
+        [Fact]
+        public void ReportWarningWhenConfiguredInlineTaskReturnedAwaitedFromMethod()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Tests
+{
+    private Task task;
+
+    public async Task AwaitAndGetResult()
+    {
+        await task.ConfigureAwaitRunInline();
+    }
+}
+";
+            var expect = this.CreateDiagnostic(11, 15, 30);
+            this.VerifyCSharpDiagnostic(test, expect);
+        }
+
+        [Fact]
+        public void ReportWarningWhenConfiguredInlineTaskTReturnedAwaitedFromMethod()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Tests
+{
+    private Task<int> task;
+
+    public async Task<int> AwaitAndGetResult()
+    {
+        return await task.ConfigureAwaitRunInline();
+    }
+}
+";
+            var expect = this.CreateDiagnostic(11, 22, 30);
+            this.VerifyCSharpDiagnostic(test, expect);
+        }
+
         [Fact]
         public void ReportWarningWhenTaskTIsReturnedDirectlyWithCancellation()
         {

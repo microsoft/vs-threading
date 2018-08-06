@@ -123,6 +123,14 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
 
             SymbolInfo symbolToConsider = semanticModel.GetSymbolInfo(expressionSyntax, cancellationToken);
+            if (CommonInterest.TaskConfigureAwait.Any(configureAwait => configureAwait.IsMatch(symbolToConsider.Symbol)))
+            {
+                if (((InvocationExpressionSyntax)expressionSyntax).Expression is MemberAccessExpressionSyntax memberAccessExpression)
+                {
+                    symbolToConsider = semanticModel.GetSymbolInfo(memberAccessExpression.Expression, cancellationToken);
+                }
+            }
+
             ITypeSymbol symbolType;
             bool dataflowAnalysisCompatibleVariable = false;
             switch (symbolToConsider.Symbol)

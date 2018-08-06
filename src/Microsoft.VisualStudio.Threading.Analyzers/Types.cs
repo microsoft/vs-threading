@@ -14,6 +14,21 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     /// </summary>
     internal static class Types
     {
+        internal static class AwaitExtensions
+        {
+            /// <summary>
+            /// The full name of the AwaitExtensions type.
+            /// </summary>
+            internal const string TypeName = "AwaitExtensions";
+
+            /// <summary>
+            /// The name of the ConfigureAwaitRunInline method.
+            /// </summary>
+            internal const string ConfigureAwaitRunInline = "ConfigureAwaitRunInline";
+
+            internal static readonly IReadOnlyList<string> Namespace = Namespaces.MicrosoftVisualStudioThreading;
+        }
+
         /// <summary>
         /// Contains the names of types and members within TplExtensions.
         /// </summary>
