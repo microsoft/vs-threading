@@ -40,6 +40,10 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Strings.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <EmbeddedResource Update="Strings.??*.resx">
+      <DependentUpon>Strings.resx</DependentUpon>
+      <Generator />
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <Content Include="build\**" Pack="true" PackagePath="build\" />
