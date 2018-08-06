@@ -169,6 +169,31 @@ class Tests
         }
 
         [Fact]
+        public void ReportWarningWhenTaskFromFieldIsAwaitedInJtfRunDelegate()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Program
+{
+    static Task t;
+    static JoinableTaskFactory jtf;
+
+    static void Main(string[] args)
+    {
+        jtf.Run(async delegate
+        {
+            await t;
+        });
+    }
+}
+";
+            var expect = this.CreateDiagnostic(14, 19, 1);
+            this.VerifyCSharpDiagnostic(test, expect);
+        }
+
+        [Fact]
         public void ReportWarningWhenTaskTIsReturnedDirectlyWithCancellation()
         {
             var test = @"
