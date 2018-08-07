@@ -1,11 +1,6 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers
 {
-    using System;
-    using System.Collections.Generic;
     using System.Collections.Immutable;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
     using CodeAnalysis;
     using CodeAnalysis.CSharp;
     using CodeAnalysis.CSharp.Syntax;
@@ -40,7 +35,7 @@
             });
         }
 
-        private sealed class Analyzer
+        private class Analyzer
         {
             private readonly ImmutableArray<CommonInterest.QualifiedMember> legacyThreadSwitchingMembers;
 
