@@ -1,0 +1,8 @@
+﻿[Microsoft.VisualStudio.Shell.ThreadHelper]::Invoke
+[Microsoft.VisualStudio.Shell.ThreadHelper]::InvokeAsync
+[Microsoft.VisualStudio.Shell.ThreadHelper]::BeginInvoke
+[System.Windows.Threading.Dispatcher]::Invoke
+[System.Windows.Threading.Dispatcher]::InvokeAsync
+[System.Windows.Threading.Dispatcher]::BeginInvoke
+[System.Threading.SynchronizationContext]::Send
+[System.Threading.SynchronizationContext]::Post
