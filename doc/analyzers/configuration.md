@@ -66,3 +66,16 @@ These are identified as described below:
 
 Properties are specified by their name, not the name of their accessors.
 For example, a property should be specified by `PropertyName`, not `get_PropertyName`.
+
+## Legacy thread switching members
+
+Prior to Microsoft.VisualStudio.Threading, libraries provided additional ways to execute
+code on the UI thread. These methods should be avoided, and code should update to using
+`JoinableTaskFactory.SwitchToMainThreadAsync()` as the standard way to switch to the main
+thread.
+
+**Filename:** `vs-threading.LegacyThreadSwitchingMembers.txt`
+
+**Line format:** `[Namespace.TypeName]::MethodName`
+
+**Sample:** `[System.Windows.Threading.Dispatcher]::Invoke`
