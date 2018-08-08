@@ -240,5 +240,40 @@
                 Assert.True(combined.Token.IsCancellationRequested);
             }
         }
+
+        [Fact]
+        public void CombinedCancellationToken_Equality_BetweenEqualInstances_None()
+        {
+            var combined1 = CancellationToken.None.CombineWith(CancellationToken.None);
+            var combined2 = CancellationToken.None.CombineWith(CancellationToken.None);
+            Assert.Equal(combined1.GetHashCode(), combined2.GetHashCode());
+            Assert.True(combined1.Equals(combined2));
+            Assert.True(combined1 == combined2);
+            Assert.False(combined1 != combined2);
+        }
+
+        [Fact]
+        public void CombinedCancellationToken_Equality_WithRealToken()
+        {
+            var cts = new CancellationTokenSource();
+            var combined1 = cts.Token.CombineWith(CancellationToken.None);
+            var combined2 = cts.Token.CombineWith(CancellationToken.None);
+            Assert.Equal(combined1.GetHashCode(), combined2.GetHashCode());
+            Assert.True(combined1.Equals(combined2));
+            Assert.True(combined1 == combined2);
+            Assert.False(combined1 != combined2);
+        }
+
+        [Fact]
+        public void CombinedCancellationToken_Inequality_WithRealToken()
+        {
+            var cts = new CancellationTokenSource();
+            var combined1 = cts.Token.CombineWith(CancellationToken.None);
+            var combined2 = CancellationToken.None.CombineWith(CancellationToken.None);
+            Assert.NotEqual(combined1.GetHashCode(), combined2.GetHashCode());
+            Assert.False(combined1.Equals(combined2));
+            Assert.False(combined1 == combined2);
+            Assert.True(combined1 != combined2);
+        }
     }
 }

@@ -16,6 +16,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="original">The first token.</param>
         /// <param name="other">The second token.</param>
         /// <returns>A struct that contains the combined <see cref="CancellationToken"/> and a means to release memory when you're done using it.</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000", Justification = "The CancellationTokenSource is created and returned in a struct responsible for its disposal.")]
         public static CombinedCancellationToken CombineWith(this CancellationToken original, CancellationToken other)
         {
             if (original.IsCancellationRequested || !other.CanBeCanceled)
@@ -39,6 +40,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="original">The first token.</param>
         /// <param name="others">The additional tokens.</param>
         /// <returns>A struct that contains the combined <see cref="CancellationToken"/> and a means to release memory when you're done using it.</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000", Justification = "The CancellationTokenSource is created and returned in a struct responsible for its disposal.")]
         public static CombinedCancellationToken CombineWith(this CancellationToken original, params CancellationToken[] others)
         {
             Requires.NotNull(others, nameof(others));
@@ -130,7 +132,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Provides access to a <see cref="System.Threading.CancellationToken"/> that combines multiple other tokens,
         /// and allows convenient disposal of any applicable <see cref="CancellationTokenSource"/>.
         /// </summary>
-        public readonly struct CombinedCancellationToken : IDisposable
+        public readonly struct CombinedCancellationToken : IDisposable, IEquatable<CombinedCancellationToken>
         {
             /// <summary>
             /// The object to dispose when this struct is disposed.
@@ -142,6 +144,7 @@ namespace Microsoft.VisualStudio.Threading
             /// that contains an aggregate <see cref="System.Threading.CancellationToken"/> whose source must be disposed.
             /// </summary>
             /// <param name="cancellationTokenSource">The cancellation token source.</param>
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062", Justification = "We are prepared to handle null values for CancellationTokenSource.")]
             public CombinedCancellationToken(CancellationTokenSource cancellationTokenSource)
             {
                 this.cts = cancellationTokenSource;
@@ -160,6 +163,22 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
+            /// Checks whether two instances of <see cref="CombinedCancellationToken"/> are equal.
+            /// </summary>
+            /// <param name="left">The left operand.</param>
+            /// <param name="right">The right operand.</param>
+            /// <returns><c>true</c> if they are equal; <c>false</c> otherwise.</returns>
+            public static bool operator ==(CombinedCancellationToken left, CombinedCancellationToken right) => left.Equals(right);
+
+            /// <summary>
+            /// Checks whether two instances of <see cref="CombinedCancellationToken"/> are not equal.
+            /// </summary>
+            /// <param name="left">The left operand.</param>
+            /// <param name="right">The right operand.</param>
+            /// <returns><c>true</c> if they are not equal; <c>false</c> if they are equal.</returns>
+            public static bool operator !=(CombinedCancellationToken left, CombinedCancellationToken right) => !(left == right);
+
+            /// <summary>
             /// Gets the combined cancellation token.
             /// </summary>
             public CancellationToken Token { get; }
@@ -171,6 +190,15 @@ namespace Microsoft.VisualStudio.Threading
             {
                 this.cts?.Dispose();
             }
+
+            /// <inheritdoc />
+            public override bool Equals(object obj) => obj is CombinedCancellationToken other && this.Equals(other);
+
+            /// <inheritdoc />
+            public bool Equals(CombinedCancellationToken other) => this.cts == other.cts && this.Token.Equals(other.Token);
+
+            /// <inheritdoc />
+            public override int GetHashCode() => (this.cts?.GetHashCode() ?? 0) + this.Token.GetHashCode();
         }
     }
 }
