@@ -51,6 +51,10 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             new QualifiedMember(new QualifiedType(Namespaces.MicrosoftVisualStudioShell, Types.ThreadHelper.TypeName), Types.ThreadHelper.CheckAccess),
         };
 
+        internal static readonly ImmutableArray<QualifiedMember> TaskConfigureAwait = ImmutableArray.Create(
+            new QualifiedMember(new QualifiedType(Types.Task.Namespace, Types.Task.TypeName), nameof(Task.ConfigureAwait)),
+            new QualifiedMember(new QualifiedType(Types.AwaitExtensions.Namespace, Types.AwaitExtensions.TypeName), Types.AwaitExtensions.ConfigureAwaitRunInline));
+
         internal static readonly IImmutableSet<SyntaxKind> MethodSyntaxKinds = ImmutableHashSet.Create(
             SyntaxKind.ConstructorDeclaration,
             SyntaxKind.MethodDeclaration,
