@@ -180,15 +180,15 @@ namespace Microsoft.VisualStudio.Threading
         /// <remarks>
         /// <example>
         /// <code>
-        /// private async Task SomeOperationAsync() {
-        ///     // on the caller's thread.
-        ///     await DoAsync();
-        ///
-        ///     // Now switch to a threadpool thread explicitly.
-        ///     await TaskScheduler.Default;
+        /// private async Task SomeOperationAsync()
+        /// {
+        ///     // This first part can be on the caller's thread, whatever that is.
+        ///     DoSomething();
         ///
         ///     // Now switch to the Main thread to talk to some STA object.
-        ///     await this.JobContext.SwitchToMainThreadAsync(alwaysYield: true);
+        ///     // Supposing it is also important to *not* do this step on our caller's callstack,
+        ///     // be sure we yield even if we're on the UI thread.
+        ///     await this.JoinableTaskFactory.SwitchToMainThreadAsync(alwaysYield: true);
         ///     STAService.DoSomething();
         /// }
         /// </code>
