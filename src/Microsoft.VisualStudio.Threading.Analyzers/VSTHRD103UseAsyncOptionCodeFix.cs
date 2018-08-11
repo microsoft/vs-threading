@@ -159,7 +159,7 @@
                     syncMethodName = (SimpleNameSyntax)updatedMethod.GetAnnotatedNodes(syncAccessBookmark).Single();
                 }
 
-                var syncExpression = (ExpressionSyntax)syncMethodName.FirstAncestorOrSelf<InvocationExpressionSyntax>() ?? syncMethodName.FirstAncestorOrSelf<MemberAccessExpressionSyntax>();
+                var syncExpression = GetSynchronousExpression(syncMethodName);
 
                 ExpressionSyntax awaitExpression;
                 if (this.AlternativeAsyncMethod != string.Empty)
@@ -170,11 +170,6 @@
                     awaitExpression = SyntaxFactory.AwaitExpression(
                         syncExpression.ReplaceNode(syncMethodName, asyncMethodName).WithoutLeadingTrivia())
                         .WithLeadingTrivia(syncExpression.GetLeadingTrivia());
-                    if (!(syncExpression.Parent is ExpressionStatementSyntax))
-                    {
-                        awaitExpression = SyntaxFactory.ParenthesizedExpression(awaitExpression)
-                            .WithAdditionalAnnotations(Simplifier.Annotation);
-                    }
                 }
                 else
                 {
@@ -193,12 +188,45 @@
                         .WithLeadingTrivia(syncMemberStrippedExpression.GetLeadingTrivia());
                 }
 
+                if (!(syncExpression.Parent is ExpressionStatementSyntax))
+                {
+                    awaitExpression = SyntaxFactory.ParenthesizedExpression(awaitExpression)
+                        .WithAdditionalAnnotations(Simplifier.Annotation);
+                }
+
                 updatedMethod = updatedMethod
                     .ReplaceNode(syncExpression, awaitExpression);
 
                 var newRoot = root.ReplaceNode(originalMethodDeclaration, updatedMethod);
                 var newDocument = document.WithSyntaxRoot(newRoot);
                 return newDocument.Project.Solution;
+            }
+
+            private static ExpressionSyntax GetSynchronousExpression(SimpleNameSyntax syncMethodName)
+            {
+                SyntaxNode current = syncMethodName;
+                while (true)
+                {
+                    switch (current.Kind())
+                    {
+                        case SyntaxKind.InvocationExpression:
+                            return (ExpressionSyntax)current;
+
+                        case SyntaxKind.SimpleMemberAccessExpression:
+                            if (current.Parent.IsKind(SyntaxKind.InvocationExpression))
+                            {
+                                return (ExpressionSyntax)current.Parent;
+                            }
+                            else
+                            {
+                                return (ExpressionSyntax)current;
+                            }
+
+                        default:
+                            current = current.Parent;
+                            break;
+                    }
+                }
             }
         }
     }

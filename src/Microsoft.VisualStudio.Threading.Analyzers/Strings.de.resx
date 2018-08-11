@@ -91,15 +91,15 @@ Verwenden Sie stattdessen "AsyncLazy&lt;T&gt;".</value>
   <data name="VSTHRD200_Title" xml:space="preserve">
     <value>Verwenden Sie das Suffix "Async" für asynchrone Methoden</value>
   </data>
+  <data name="VSTHRD100_CodeFix_Title" xml:space="preserve">
+    <value>Rückgabetyp in Task ändern</value>
+    <comment>Task is a type name and should not be translated.</comment>
+  </data>
   <data name="VSTHRD105_MessageFormat" xml:space="preserve">
     <value>Vermeiden Sie Methodenüberladungen, die "TaskScheduler.Current" annehmen. Verwenden Sie eine Überladung, die einen TaskScheduler akzeptiert, und geben Sie explizit "TaskScheduler.Default" (o. a.) an.</value>
   </data>
   <data name="VSTHRD105_Title" xml:space="preserve">
     <value>Methodenüberladungen, die TaskScheduler.Current annehmen, vermeiden</value>
-  </data>
-  <data name="VSTHRD100_CodeFix_Title" xml:space="preserve">
-    <value>Rückgabetyp in Task ändern</value>
-    <comment>Task is a type name and should not be translated.</comment>
   </data>
   <data name="VSTHRD012_MessageFormat" xml:space="preserve">
     <value>Stellen Sie in diesem Aufruf (oder einer anderen Überladung) eine Instanz von "JoinableTaskFactory" bereit, um Deadlocks beim Hauptthread zu vermeiden.</value>
@@ -153,8 +153,7 @@ Verwenden Sie stattdessen "AsyncLazy&lt;T&gt;".</value>
     <comment>{0} is a type or member name and {1} is the name of a method that throws if not called from the main thread.</comment>
   </data>
   <data name="VSTHRD010_MessageFormat_Async" xml:space="preserve">
-    <value>Der Zugriff auf "{0}" sollte nur im Hauptthread erfolgen.
-Warten Sie zuerst auf "JoinableTaskFactory.SwitchToMainThreadAsync()".</value>
+    <value>Der Zugriff auf "{0}" sollte nur im Hauptthread erfolgen. Warten Sie zuerst auf "JoinableTaskFactory.SwitchToMainThreadAsync()".</value>
     <comment>{0} is a type or member name.</comment>
   </data>
   <data name="VSTHRD004_MessageFormat" xml:space="preserve">
@@ -171,6 +170,7 @@ Warten Sie zuerst auf "JoinableTaskFactory.SwitchToMainThreadAsync()".</value>
     <value>Ergebnis asynchroner Aufrufe überwachen</value>
   </data>
   <data name="VSTHRD011b_MessageFormat" xml:space="preserve">
-    <value>Das Aufrufen oder Blockieren von asynchronem Code in einer Lazy&lt;T&gt;-Wertfactory kann zu einem Deadlock führen. Verwenden Sie stattdessen "AsyncLazy&lt;T&gt;".</value>
+    <value>Das Aufrufen oder Blockieren von asynchronem Code in einer Lazy&lt;T&gt;-Wertfactory kann zu einem Deadlock führen.
+Verwenden Sie stattdessen "AsyncLazy&lt;T&gt;".</value>
   </data>
 </root>

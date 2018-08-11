@@ -31,10 +31,6 @@
   <data name="VSTHRD010_Title" xml:space="preserve">
     <value>주 스레드에서 단일 스레드 형식을 호출</value>
   </data>
-  <data name="VSTHRD100_CodeFix_Title" xml:space="preserve">
-    <value>반환 형식을 Task로 변경</value>
-    <comment>Task is a type name and should not be translated.</comment>
-  </data>
   <data name="VSTHRD100_MessageFormat" xml:space="preserve">
     <value>메서드에서 처리하지 않은 예외로 프로세스가 중단될 수 있으므로 "async void" 메서드를 사용하지 마세요.</value>
     <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
@@ -94,6 +90,10 @@
   </data>
   <data name="VSTHRD200_Title" xml:space="preserve">
     <value>비동기 메서드에 "Async" 접미사 사용</value>
+  </data>
+  <data name="VSTHRD100_CodeFix_Title" xml:space="preserve">
+    <value>반환 형식을 Task로 변경</value>
+    <comment>Task is a type name and should not be translated.</comment>
   </data>
   <data name="VSTHRD105_MessageFormat" xml:space="preserve">
     <value>TaskScheduler.Current를 가정하는 메서드 오버로드를 사용하지 않습니다. TaskScheduler를 수용하고 TaskScheduler.Default(또는 기타)를 명시적으로 지정하는 오버로드를 사용합니다.</value>

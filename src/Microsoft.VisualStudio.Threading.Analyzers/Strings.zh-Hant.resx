@@ -91,15 +91,15 @@
   <data name="VSTHRD200_Title" xml:space="preserve">
     <value>對非同步方法使用 "Async" 尾碼</value>
   </data>
+  <data name="VSTHRD100_CodeFix_Title" xml:space="preserve">
+    <value>將傳回類型變更為 Task</value>
+    <comment>Task is a type name and should not be translated.</comment>
+  </data>
   <data name="VSTHRD105_MessageFormat" xml:space="preserve">
     <value>請避免會假設 TaskScheduler.Current 的方法多載。請使用接受 TaskScheduler 的多載，並明確指定 TaskScheduler.Default (或其他任一項)。</value>
   </data>
   <data name="VSTHRD105_Title" xml:space="preserve">
     <value>避免假設 TaskScheduler.Current 的方法多載</value>
-  </data>
-  <data name="VSTHRD100_CodeFix_Title" xml:space="preserve">
-    <value>將傳回類型變更為 Task</value>
-    <comment>Task is a type name and should not be translated.</comment>
   </data>
   <data name="VSTHRD012_MessageFormat" xml:space="preserve">
     <value>在此呼叫 (或其他多載) 中提供 JoinableTaskFactory 執行個體，以避免主執行緒發生死結。</value>

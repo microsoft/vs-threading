@@ -61,4 +61,10 @@
   <data name="ValueFactoryReentrancy" xml:space="preserve">
     <value>值 Factory 需要相同執行個體上的值。</value>
   </data>
+  <data name="SemaphoreMisused" xml:space="preserve">
+    <value>這個旗號曾經誤用，無法再使用。</value>
+  </data>
+  <data name="SemaphoreStackNestingViolated" xml:space="preserve">
+    <value>當重新進入設定是 '{0}' 時，巢狀旗號要求必須以 LIFO 順序發行</value>
+  </data>
 </root>

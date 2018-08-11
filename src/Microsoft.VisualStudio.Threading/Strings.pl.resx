@@ -61,4 +61,10 @@
   <data name="ValueFactoryReentrancy" xml:space="preserve">
     <value>Fabryka wartości zażądała wartości w tym samym wystąpieniu.</value>
   </data>
+  <data name="SemaphoreMisused" xml:space="preserve">
+    <value>Tego semafora nadużyto i nie można go już używać.</value>
+  </data>
+  <data name="SemaphoreStackNestingViolated" xml:space="preserve">
+    <value>Żądania dotyczące zagnieżdżonego semafora muszą być zwalniane w kolejności LIFO, gdy ustawienie wielobieżności to: „{0}”</value>
+  </data>
 </root>

@@ -61,4 +61,10 @@
   <data name="ValueFactoryReentrancy" xml:space="preserve">
     <value>Фабрика значений вызвала значение в том же экземпляре.</value>
   </data>
+  <data name="SemaphoreMisused" xml:space="preserve">
+    <value>Этот семафор был использован ненадлежащим образом и больше не может использоваться.</value>
+  </data>
+  <data name="SemaphoreStackNestingViolated" xml:space="preserve">
+    <value>Вложенные запросы к семафорам должны освобождаться в порядке LIFO, если параметр повторного вхождения имеет значение: '{0}'</value>
+  </data>
 </root>

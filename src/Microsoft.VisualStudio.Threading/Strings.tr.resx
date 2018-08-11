@@ -61,4 +61,10 @@
   <data name="ValueFactoryReentrancy" xml:space="preserve">
     <value>Değer fabrikası aynı örnekteki değeri çağırdı.</value>
   </data>
+  <data name="SemaphoreMisused" xml:space="preserve">
+    <value>Bu semafor hatalı kullanıldığından artık kullanılamıyor.</value>
+  </data>
+  <data name="SemaphoreStackNestingViolated" xml:space="preserve">
+    <value>İç içe geçmiş semafor istekleri, yeniden giriş ayarı şu olduğunda LIFO sırasında yayınlanmalıdır: '{0}'</value>
+  </data>
 </root>

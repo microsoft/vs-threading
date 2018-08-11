@@ -61,4 +61,10 @@
   <data name="ValueFactoryReentrancy" xml:space="preserve">
     <value>O alocador de valor chamou o valor na mesma instância.</value>
   </data>
+  <data name="SemaphoreMisused" xml:space="preserve">
+    <value>Este sinal foi mal empregado e não pode mais ser usado.</value>
+  </data>
+  <data name="SemaphoreStackNestingViolated" xml:space="preserve">
+    <value>Solicitações de semáforo aninhadas devem ser lançadas na ordem LIFO quando a configuração de novas entradas é: '{0}'</value>
+  </data>
 </root>

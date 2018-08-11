@@ -61,4 +61,10 @@
   <data name="ValueFactoryReentrancy" xml:space="preserve">
     <value>La fabrique de valeurs a fait appel à la valeur sur la même instance.</value>
   </data>
+  <data name="SemaphoreMisused" xml:space="preserve">
+    <value>Ce sémaphore a été utilisé à mauvais escient et ne peut plus être utilisé.</value>
+  </data>
+  <data name="SemaphoreStackNestingViolated" xml:space="preserve">
+    <value>Les demandes de sémaphore imbriquées doivent être diffusées dans l'ordre du dernier entré, premier sorti (LIFO) quand le paramètre de réentrance est : '{0}'</value>
+  </data>
 </root>

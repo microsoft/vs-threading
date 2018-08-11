@@ -11,11 +11,12 @@ Analyzers: [![NuGet package](https://img.shields.io/nuget/v/Microsoft.VisualStud
 
 * Async versions of many threading synchronization primitives
   * `AsyncAutoResetEvent`
-  * `AsyncManualResetEvent`
   * `AsyncBarrier`
   * `AsyncCountdownEvent`
-  * `AsyncSemaphore`
+  * `AsyncManualResetEvent`
   * `AsyncReaderWriterLock`
+  * `AsyncSemaphore`
+  * `ReentrantSemaphore`
 * Async versions of very common types
   * `AsyncEventHandler`
   * `AsyncLazy<T>`
