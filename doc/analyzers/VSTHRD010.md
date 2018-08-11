@@ -4,7 +4,7 @@ Acquiring, casting, or invoking single-threaded objects should be done after ens
 that your code is running on the main thread.
 
 This analyzer can be configured to:
-1. Recognize the objects that are single-threaded that are unique to your app or library.   
+1. Recognize the objects that are single-threaded that are unique to your app or library.
 2. Recognize synchronous methods that verify the caller is already on the main thread.
 3. Recognize methods that switch to the main thread when the caller awaits them.
    Calls to `JoinableTaskFactory.SwitchToMainThreadAsync` methods are pre-configured.
@@ -16,6 +16,8 @@ For example, if method `A()` invokes a type that we know from configuration requ
 and `B()` calls `A()`, then the `B` method also needs the UI thread transitively.
 This analyzer flags `B()` as needing to call a method that throws if not already on the main thread
 only when `A()` is written to call such a method.
+
+**NOTE:** This analyzer requires [full solution analysis](fsa.md).
 
 ## Examples of patterns that are flagged by this analyzer
 
@@ -33,7 +35,7 @@ private void CallVS()
 ## Solution
 
 First ensure you are running on the main thread before interacting with single-threaded objects.
-Either throw when you are not on the appropriate thread, or explicitly switch to the 
+Either throw when you are not on the appropriate thread, or explicitly switch to the
 main thread.
 
 This solution example is based on the configuration available from the Visual Studio SDK
