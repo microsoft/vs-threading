@@ -3606,6 +3606,24 @@
             });
         }
 
+        [Fact]
+        public void ExecutionContext_DoesNotLeakJoinableTask()
+        {
+            var longLivedTaskReleaser = new AsyncManualResetEvent();
+            WeakReference weakValue = this.ExecutionContext_DoesNotLeakJoinableTask_Helper(longLivedTaskReleaser);
+            try
+            {
+                // Assert that since no one wants the JoinableTask or its result any more, it has been released.
+                GC.Collect();
+                Assert.False(weakValue.IsAlive);
+            }
+            finally
+            {
+                // Allow completion of our long-lived task.
+                longLivedTaskReleaser.Set();
+            }
+        }
+
         protected override JoinableTaskContext CreateJoinableTaskContext()
         {
             return new DerivedJoinableTaskContext();
@@ -3736,6 +3754,32 @@
             var report = contributor.GetHangReport();
             this.Logger.WriteLine("DGML task graph");
             this.Logger.WriteLine(report.Content);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // must not be inlined so that locals are guaranteed to be freed.
+        private WeakReference ExecutionContext_DoesNotLeakJoinableTask_Helper(AsyncManualResetEvent releaser)
+        {
+            object leakedValue = new object();
+            WeakReference weakValue = new WeakReference(leakedValue);
+            Task longLivedTask = null;
+
+            this.asyncPump.RunAsync(delegate
+            {
+                // Spin off a task that will "capture" the current running JoinableTask
+                longLivedTask = Task.Factory.StartNew(
+                    async r =>
+                    {
+                        await ((AsyncManualResetEvent)r).WaitAsync();
+                    },
+                    releaser,
+                    CancellationToken.None,
+                    TaskCreationOptions.None,
+                    TaskScheduler.Default).Unwrap();
+
+                return Task.FromResult(leakedValue);
+            });
+
+            return weakValue;
         }
 
         /// <summary>
