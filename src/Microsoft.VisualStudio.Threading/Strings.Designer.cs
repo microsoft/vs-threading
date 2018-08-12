@@ -89,6 +89,15 @@ namespace Microsoft.VisualStudio.Threading {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to This instance must be pushed first..
+        /// </summary>
+        internal static string FrameMustBePushedFirst {
+            get {
+                return ResourceManager.GetString("FrameMustBePushedFirst", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Already transitioned to the Completed state..
         /// </summary>
         internal static string InvalidAfterCompleted {
@@ -170,6 +179,15 @@ namespace Microsoft.VisualStudio.Threading {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Message pump can only be run from the original thread..
+        /// </summary>
+        internal static string PushFromWrongThread {
+            get {
+                return ResourceManager.GetString("PushFromWrongThread", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The queue is empty..
         /// </summary>
         internal static string QueueEmpty {
@@ -211,6 +229,15 @@ namespace Microsoft.VisualStudio.Threading {
         internal static string SwitchToMainThreadFailedToReachExpectedThread {
             get {
                 return ResourceManager.GetString("SwitchToMainThreadFailedToReachExpectedThread", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to This frame has already been used with a different instance..
+        /// </summary>
+        internal static string SyncContextFrameMismatchedAffinity {
+            get {
+                return ResourceManager.GetString("SyncContextFrameMismatchedAffinity", resourceCulture);
             }
         }
         

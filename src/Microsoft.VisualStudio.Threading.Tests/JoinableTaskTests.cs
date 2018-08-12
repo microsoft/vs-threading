@@ -3907,7 +3907,7 @@
             {
                 Assert.NotNull(this.UnderlyingSynchronizationContext);
                 Assert.NotNull(callback);
-                Assert.True(SingleThreadedSynchronizationContext.IsSingleThreadedSyncContext(this.UnderlyingSynchronizationContext));
+                Assert.True(SingleThreadedTestSynchronizationContext.IsSingleThreadedSyncContext(this.UnderlyingSynchronizationContext));
                 base.PostToUnderlyingSynchronizationContext(callback, state);
                 this.PostToUnderlyingSynchronizationContextCallback?.Invoke();
             }

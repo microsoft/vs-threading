@@ -69,7 +69,7 @@
         [Fact]
         public void SynchronizationContextCaptured()
         {
-            var syncContext = SingleThreadedSynchronizationContext.New();
+            var syncContext = SingleThreadedTestSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(syncContext);
             Exception callbackError = null;
             var callback = new Action<GenericParameterHelper>(

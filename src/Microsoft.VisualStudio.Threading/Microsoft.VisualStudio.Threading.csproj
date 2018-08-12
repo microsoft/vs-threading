@@ -6,6 +6,7 @@
 
     <TargetsDesktop Condition=" '$(TargetFramework)' == 'net45' or '$(TargetFramework)' == 'net46' ">true</TargetsDesktop>
     <DefineConstants Condition=" '$(TargetsDesktop)' == 'true' ">$(DefineConstants);DESKTOP</DefineConstants>
+    <DefineConstants Condition=" '$(TargetFramework)' != 'netstandard1.1' and '$(TargetFramework)' != 'portable-net45+win8+wpa81' ">$(DefineConstants);EXECUTIONCONTEXT</DefineConstants>
     <DefineConstants Condition=" '$(TargetFramework)' == 'net46' or '$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == 'netstandard2.0' ">$(DefineConstants);ASYNCLOCAL</DefineConstants>
     <DefineConstants Condition=" '$(TargetFramework)' == 'net46' or '$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == 'netstandard2.0' ">$(DefineConstants);TRYSETCANCELEDCT</DefineConstants>
     <DefineConstants Condition=" '$(TargetsDesktop)' == 'true' ">$(DefineConstants);CALLCONTEXT</DefineConstants>

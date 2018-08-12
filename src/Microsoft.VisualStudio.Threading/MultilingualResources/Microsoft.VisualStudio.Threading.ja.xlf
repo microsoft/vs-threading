@@ -79,6 +79,18 @@
           <source>Nested semaphore requests must be released in LIFO order when the reentrancy setting is: '{0}'</source>
           <target state="translated">入れ子になったセマフォの要求は、再入の設定が '{0}' である場合、LIFO の順序でリリースする必要があります。</target>
         </trans-unit>
+        <trans-unit id="SyncContextFrameMismatchedAffinity" translate="yes" xml:space="preserve">
+          <source>This frame has already been used with a different instance.</source>
+          <target state="new">This frame has already been used with a different instance.</target>
+        </trans-unit>
+        <trans-unit id="FrameMustBePushedFirst" translate="yes" xml:space="preserve">
+          <source>This instance must be pushed first.</source>
+          <target state="new">This instance must be pushed first.</target>
+        </trans-unit>
+        <trans-unit id="PushFromWrongThread" translate="yes" xml:space="preserve">
+          <source>Message pump can only be run from the original thread.</source>
+          <target state="new">Message pump can only be run from the original thread.</target>
+        </trans-unit>
       </group>
     </body>
   </file>

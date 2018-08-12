@@ -179,11 +179,11 @@
                     {
                         // If there is a dispatcher sync context, let it run for a bit.
                         // This allows any posted messages that are now obsolete to be released.
-                        if (SingleThreadedSynchronizationContext.IsSingleThreadedSyncContext(SynchronizationContext.Current))
+                        if (SingleThreadedTestSynchronizationContext.IsSingleThreadedSyncContext(SynchronizationContext.Current))
                         {
-                            var frame = SingleThreadedSynchronizationContext.NewFrame();
+                            var frame = SingleThreadedTestSynchronizationContext.NewFrame();
                             SynchronizationContext.Current.Post(state => frame.Continue = false, null);
-                            SingleThreadedSynchronizationContext.PushFrame(SynchronizationContext.Current, frame);
+                            SingleThreadedTestSynchronizationContext.PushFrame(SynchronizationContext.Current, frame);
                         }
                     }
                     else
@@ -276,7 +276,7 @@
         {
             Action worker = delegate
             {
-                var frame = SingleThreadedSynchronizationContext.NewFrame();
+                var frame = SingleThreadedTestSynchronizationContext.NewFrame();
                 Exception failure = null;
                 SynchronizationContext.Current.Post(
                     async _ =>
@@ -296,7 +296,7 @@
                     },
                     null);
 
-                SingleThreadedSynchronizationContext.PushFrame(SynchronizationContext.Current, frame);
+                SingleThreadedTestSynchronizationContext.PushFrame(SynchronizationContext.Current, frame);
                 if (failure != null)
                 {
                     ExceptionDispatchInfo.Capture(failure).Throw();
@@ -305,7 +305,7 @@
 
 #if DESKTOP || NETCOREAPP2_0
             if ((!staRequired || Thread.CurrentThread.GetApartmentState() == ApartmentState.STA) &&
-                SingleThreadedSynchronizationContext.IsSingleThreadedSyncContext(SynchronizationContext.Current))
+                SingleThreadedTestSynchronizationContext.IsSingleThreadedSyncContext(SynchronizationContext.Current))
             {
                 worker();
             }
@@ -313,16 +313,16 @@
             {
                 this.ExecuteOnSTA(() =>
                 {
-                    if (!SingleThreadedSynchronizationContext.IsSingleThreadedSyncContext(SynchronizationContext.Current))
+                    if (!SingleThreadedTestSynchronizationContext.IsSingleThreadedSyncContext(SynchronizationContext.Current))
                     {
-                        SynchronizationContext.SetSynchronizationContext(SingleThreadedSynchronizationContext.New());
+                        SynchronizationContext.SetSynchronizationContext(SingleThreadedTestSynchronizationContext.New());
                     }
 
                     worker();
                 });
             }
 #else
-            if (SingleThreadedSynchronizationContext.IsSingleThreadedSyncContext(SynchronizationContext.Current))
+            if (SingleThreadedTestSynchronizationContext.IsSingleThreadedSyncContext(SynchronizationContext.Current))
             {
                 worker();
             }
@@ -330,7 +330,7 @@
             {
                 Task.Run(delegate
                 {
-                    SynchronizationContext.SetSynchronizationContext(SingleThreadedSynchronizationContext.New());
+                    SynchronizationContext.SetSynchronizationContext(SingleThreadedTestSynchronizationContext.New());
                     worker();
                 }).GetAwaiter().GetResult();
             }

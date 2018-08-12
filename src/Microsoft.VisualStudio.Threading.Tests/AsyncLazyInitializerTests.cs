@@ -264,7 +264,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
 
         private JoinableTaskContext InitializeJTCAndSC()
         {
-            SynchronizationContext.SetSynchronizationContext(SingleThreadedSynchronizationContext.New());
+            SynchronizationContext.SetSynchronizationContext(SingleThreadedTestSynchronizationContext.New());
             return new JoinableTaskContext();
         }
     }
