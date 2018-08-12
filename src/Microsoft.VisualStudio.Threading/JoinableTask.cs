@@ -641,7 +641,7 @@ namespace Microsoft.VisualStudio.Threading
                                 {
                                     if (taskToNotify.pendingEventSource == null || taskToNotify == this)
                                     {
-                                        taskToNotify.pendingEventSource = new WeakReference<JoinableTask>(this);
+                                        taskToNotify.pendingEventSource = this.WeakSelf;
                                     }
 
                                     taskToNotify.pendingEventCount++;
@@ -847,7 +847,7 @@ namespace Microsoft.VisualStudio.Threading
                             this.pendingEventCount = 0;
 
                             // Add the task to the depending tracking list of itself, so it will monitor the event queue.
-                            this.pendingEventSource = new WeakReference<JoinableTask>(this.AddDependingSynchronousTask(this, ref this.pendingEventCount));
+                            this.pendingEventSource = this.AddDependingSynchronousTask(this, ref this.pendingEventCount)?.WeakSelf;
                         }
                     }
 
@@ -1112,7 +1112,7 @@ namespace Microsoft.VisualStudio.Threading
                             {
                                 if (taskToNotify.SynchronousTask.pendingEventSource == null || taskToNotify.TaskHasPendingMessages == taskToNotify.SynchronousTask)
                                 {
-                                    taskToNotify.SynchronousTask.pendingEventSource = new WeakReference<JoinableTask>(taskToNotify.TaskHasPendingMessages);
+                                    taskToNotify.SynchronousTask.pendingEventSource = taskToNotify.TaskHasPendingMessages?.WeakSelf;
                                 }
 
                                 taskToNotify.SynchronousTask.pendingEventCount += taskToNotify.NewPendingMessagesCount;
