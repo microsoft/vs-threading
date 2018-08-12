@@ -121,6 +121,11 @@ namespace Microsoft.VisualStudio.Threading
         private Delegate initialDelegate;
 
         /// <summary>
+        /// Backing field for the <see cref="WeakSelf"/> property.
+        /// </summary>
+        private WeakReference<JoinableTask> weakSelf;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="JoinableTask"/> class.
         /// </summary>
         /// <param name="owner">The instance that began the async operation.</param>
@@ -329,6 +334,22 @@ namespace Microsoft.VisualStudio.Threading
                         }
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Gets a weak reference to this object.
+        /// </summary>
+        internal WeakReference<JoinableTask> WeakSelf
+        {
+            get
+            {
+                if (this.weakSelf == null)
+                {
+                    this.weakSelf = new WeakReference<JoinableTask>(this);
+                }
+
+                return this.weakSelf;
             }
         }
 
