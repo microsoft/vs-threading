@@ -3084,7 +3084,7 @@
                     {
                         return completedTask;
                     });
-                }, maxBytesAllocated: 819);
+                }, maxBytesAllocated: 901);
             }
         }
 
