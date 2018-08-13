@@ -148,17 +148,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public void ExplicitScavenge()
         {
-            object k1 = new object();
-            object v1 = new object();
-
             var dictionary = new WeakKeyDictionary<object, object>();
-            dictionary[k1] = v1;
+            ExplicitScavenge_Helper(dictionary);
 
-            Assert.Equal(1, dictionary.Count);
-
-            k1 = null;
             GC.Collect();
-
             dictionary.Scavenge();
 
             Assert.Equal(0, dictionary.Count);
@@ -202,14 +195,12 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public void Enumerator()
         {
+            var dictionary = new WeakKeyDictionary<object, int>();
             object keepAlive1 = new object();
             object keepAlive2 = new object();
-            object collected = new object();
-            var dictionary = new WeakKeyDictionary<object, int>();
             dictionary[keepAlive1] = 0;
-            dictionary[collected] = 1;
+            Enumerator_Helper(dictionary);
             dictionary[keepAlive2] = 2;
-            collected = null;
             GC.Collect();
 
             var enumeratedContents = dictionary.ToList();
@@ -232,6 +223,24 @@ namespace Microsoft.VisualStudio.Threading.Tests
             {
                 [k1] = v1,
             };
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // must not be inlined so that locals are guaranteed to be freed.
+        private static void ExplicitScavenge_Helper(WeakKeyDictionary<object, object> dictionary)
+        {
+            object k1 = new object();
+            object v1 = new object();
+
+            dictionary[k1] = v1;
+
+            Assert.Equal(1, dictionary.Count);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // must not be inlined so that locals are guaranteed to be freed.
+        private static void Enumerator_Helper(WeakKeyDictionary<object, int> dictionary)
+        {
+            object collected = new object();
+            dictionary[collected] = 1;
         }
     }
 }
