@@ -163,13 +163,32 @@
             for (int attempt = 1; attempt <= allowedAttempts; attempt++)
             {
                 this.Logger?.WriteLine("Iteration {0}", attempt);
+                int[] gcCountBefore = new int[GC.MaxGeneration + 1];
+                int[] gcCountAfter = new int[GC.MaxGeneration + 1];
                 long initialMemory = GC.GetTotalMemory(true);
+#if NET46 || NETCOREAPP2_0
+                GC.TryStartNoGCRegion(8 * 1024 * 1024);
+#endif
+                for (int i = 0; i <= GC.MaxGeneration; i++)
+                {
+                    gcCountBefore[i] = GC.CollectionCount(i);
+                }
+
                 for (int i = 0; i < iterations; i++)
                 {
                     await MaybeShouldBeComplete(scenario(), completeSynchronously);
                 }
 
+                for (int i = 0; i < gcCountAfter.Length; i++)
+                {
+                    gcCountAfter[i] = GC.CollectionCount(i);
+                }
+
                 long allocated = (GC.GetTotalMemory(false) - initialMemory) / iterations;
+#if NET46 || NETCOREAPP2_0
+                GC.EndNoGCRegion();
+#endif
+
                 attemptWithinMemoryLimitsObserved |= maxBytesAllocated == -1 || allocated <= maxBytesAllocated;
                 long leaked = long.MaxValue;
                 for (int leakCheck = 0; leakCheck < 3; leakCheck++)
@@ -203,6 +222,11 @@
 
                 this.Logger?.WriteLine("{0} bytes leaked per iteration.", leaked);
                 this.Logger?.WriteLine("{0} bytes allocated per iteration ({1} allowed).", allocated, maxBytesAllocated);
+
+                for (int i = 0; i <= GC.MaxGeneration; i++)
+                {
+                    Assert.False(gcCountAfter[i] > gcCountBefore[i], $"WARNING: Gen {i} GC occurred {gcCountAfter[i] - gcCountBefore[i]} times during testing. Results are probably totally wrong.");
+                }
 
                 if (attemptWithNoLeakObserved && attemptWithinMemoryLimitsObserved)
                 {
