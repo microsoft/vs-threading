@@ -6,6 +6,7 @@
     using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
+    using System.Runtime.CompilerServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -2655,31 +2656,7 @@
         [SkippableFact]
         public void NestedFactoriesCanBeCollected()
         {
-            var outerFactory = new ModalPumpingJoinableTaskFactory(this.context);
-            var innerFactory = new ModalPumpingJoinableTaskFactory(this.context);
-
-            JoinableTask inner = null;
-            var outer = outerFactory.RunAsync(async delegate
-            {
-                inner = innerFactory.RunAsync(async delegate
-                {
-                    await Task.Yield();
-                });
-                await inner;
-            });
-
-            outerFactory.DoModalLoopTillEmptyAndTaskCompleted(outer.Task, this.TimeoutToken);
-            Skip.IfNot(outer.IsCompleted, "this is a product defect, but this test assumes this works to test something else.");
-
-            // Allow the dispatcher to drain all messages that may be holding references.
-            SynchronizationContext.Current.Post(s => this.testFrame.Continue = false, null);
-            this.PushFrame();
-
-            // Now we verify that while 'inner' is non-null that it doesn't hold outerFactory in memory
-            // once 'inner' has completed.
-            var weakOuterFactory = new WeakReference(outerFactory);
-            outer = null;
-            outerFactory = null;
+            WeakReference weakOuterFactory = this.NestedFactoriesCanBeCollected_Helper();
             GC.Collect();
             Assert.False(weakOuterFactory.IsAlive);
         }
@@ -3692,6 +3669,35 @@
                 await waitTask;
                 Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // must not be inlined so that locals are guaranteed to be freed.
+        private WeakReference NestedFactoriesCanBeCollected_Helper()
+        {
+            var outerFactory = new ModalPumpingJoinableTaskFactory(this.context);
+            var innerFactory = new ModalPumpingJoinableTaskFactory(this.context);
+
+            JoinableTask inner = null;
+            var outer = outerFactory.RunAsync(async delegate
+            {
+                inner = innerFactory.RunAsync(async delegate
+                {
+                    await Task.Yield();
+                });
+                await inner;
+            });
+
+            outerFactory.DoModalLoopTillEmptyAndTaskCompleted(outer.Task, this.TimeoutToken);
+            Skip.IfNot(outer.IsCompleted, "this is a product defect, but this test assumes this works to test something else.");
+
+            // Allow the dispatcher to drain all messages that may be holding references.
+            SynchronizationContext.Current.Post(s => this.testFrame.Continue = false, null);
+            this.PushFrame();
+
+            // Now we verify that while 'inner' is non-null that it doesn't hold outerFactory in memory
+            // once 'inner' has completed.
+            var weakOuterFactory = new WeakReference(outerFactory);
+            return weakOuterFactory;
         }
 
         private void RunFuncOfTaskHelper()
