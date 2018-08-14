@@ -23,12 +23,34 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// The list of posted messages to be executed. Must be locked for all access.
         /// </summary>
-        private readonly Queue<Message> messageQueue = new Queue<Message>();
+        private readonly Queue<Message> messageQueue;
 
         /// <summary>
         /// The managed thread ID of the thread this instance owns.
         /// </summary>
-        private readonly int ownedThreadId = Environment.CurrentManagedThreadId;
+        private readonly int ownedThreadId;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SingleThreadedSynchronizationContext"/> class,
+        /// with the new instance affinitized to the current thread.
+        /// </summary>
+        public SingleThreadedSynchronizationContext()
+        {
+            this.messageQueue = new Queue<Message>();
+            this.ownedThreadId = Environment.CurrentManagedThreadId;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SingleThreadedSynchronizationContext"/> class,
+        /// as an equivalent copy to another instance.
+        /// </summary>
+        private SingleThreadedSynchronizationContext(SingleThreadedSynchronizationContext copyFrom)
+        {
+            Requires.NotNull(copyFrom, nameof(copyFrom));
+
+            this.messageQueue = copyFrom.messageQueue;
+            this.ownedThreadId = copyFrom.ownedThreadId;
+        }
 
         /// <inheritdoc/>
         public override void Post(SendOrPostCallback d, object state)
@@ -95,7 +117,14 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <inheritdoc/>
-        public override SynchronizationContext CreateCopy() => this;
+        public override SynchronizationContext CreateCopy()
+        {
+            // Don't return "this", since that can result in the same instance being "Current"
+            // on another thread, and end up being misinterpreted as permission to skip the SyncContext
+            // and simply inline certain continuations by buggy code.
+            // See https://referencesource.microsoft.com/#WindowsBase/Base/System/Windows/BaseCompatibilityPreferences.cs,39
+            return new SingleThreadedSynchronizationContext(this);
+        }
 
         /// <summary>
         /// Pushes a message pump on the current thread that will execute work scheduled using <see cref="Post(SendOrPostCallback, object)"/>.

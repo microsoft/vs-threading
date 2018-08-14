@@ -30,6 +30,31 @@ public class SingleThreadedSynchronizationContextTests : TestBase
     }
 
     [Fact]
+    public void CreateCopy_ReturnsNewInstance()
+    {
+        var syncContext = new SingleThreadedSynchronizationContext();
+        var other = syncContext.CreateCopy();
+        Assert.NotSame(syncContext, other);
+
+        // Verify that posting to the copy effectively gets the work to run on the original thread.
+        var frame = new SingleThreadedSynchronizationContext.Frame();
+        int? observedThreadId = null;
+        Task.Run(() =>
+        {
+            other.Post(
+                s =>
+                {
+                    observedThreadId = Environment.CurrentManagedThreadId;
+                    frame.Continue = false;
+                },
+                null);
+        });
+
+        syncContext.PushFrame(frame);
+        Assert.Equal(Environment.CurrentManagedThreadId, observedThreadId.Value);
+    }
+
+    [Fact]
     public void Send_ExecutesDelegate_NoThrow()
     {
         var syncContext = new SingleThreadedSynchronizationContext();
