@@ -36,7 +36,7 @@ These methods are identified as described below:
 
 **Line format:** `[Namespace.TypeName]::MethodName`
 
-**Sample:** `Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread`
+**Sample:** `[Microsoft.VisualStudio.Shell.ThreadHelper]::ThrowIfNotOnUIThread`
 
 ## Methods that switch to the main thread
 
@@ -49,7 +49,7 @@ These methods are identified as described below:
 
 **Line format:** `[Namespace.TypeName]::MethodName`
 
-**Sample:** `Microsoft.VisualStudio.Threading.JoinableTaskFactory.SwitchToMainThreadAsync`
+**Sample:** `[Microsoft.VisualStudio.Threading.JoinableTaskFactory]::SwitchToMainThreadAsync`
 
 ## Members that require the main thread
 
@@ -62,7 +62,7 @@ These are identified as described below:
 
 **Line format:** `[Namespace.TypeName]` or `[Namespace.*]` or `[Namespace.TypeName]::MemberName`
 
-**Sample:** `Microsoft.VisualStudio.Shell.Interop.*` or `[Microsoft.VisualStudio.Shell.Package]::GetService`
+**Sample:** `[Microsoft.VisualStudio.Shell.Interop.*]` or `[Microsoft.VisualStudio.Shell.Package]::GetService`
 
 Properties are specified by their name, not the name of their accessors.
 For example, a property should be specified by `PropertyName`, not `get_PropertyName`.
