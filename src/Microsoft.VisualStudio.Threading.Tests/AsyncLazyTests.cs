@@ -452,8 +452,8 @@ namespace Microsoft.VisualStudio.Threading.Tests
         public void AsyncLazy_CompletesOnThreadWithValueFactory(NamedSyncContexts invokeOn, NamedSyncContexts completeOn)
         {
             // Set up various SynchronizationContexts that we may invoke or complete the async method with.
-            var aSyncContext = SingleThreadedSynchronizationContext.New();
-            var bSyncContext = SingleThreadedSynchronizationContext.New();
+            var aSyncContext = SingleThreadedTestSynchronizationContext.New();
+            var bSyncContext = SingleThreadedTestSynchronizationContext.New();
             var invokeOnSyncContext = invokeOn == NamedSyncContexts.None ? null
                 : invokeOn == NamedSyncContexts.A ? aSyncContext
                 : invokeOn == NamedSyncContexts.B ? bSyncContext
@@ -539,7 +539,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [CombinatorialData]
         public void ValueFactoryRequiresMainThreadHeldByOtherSync(bool passJtfToLazyCtor)
         {
-            var ctxt = SingleThreadedSynchronizationContext.New();
+            var ctxt = SingleThreadedTestSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(ctxt);
             var context = new JoinableTaskContext();
             var asyncPump = context.Factory;
@@ -569,10 +569,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Thread.Sleep(AsyncDelay); // Give the background thread time to call GetValueAsync(), but it doesn't yield (when the test was written).
             var foregroundRequest = lazy.GetValueAsync();
 
-            var frame = SingleThreadedSynchronizationContext.NewFrame();
+            var frame = SingleThreadedTestSynchronizationContext.NewFrame();
             var combinedTask = Task.WhenAll(foregroundRequest, backgroundRequest);
             combinedTask.WithTimeout(UnexpectedTimeout).ContinueWith(_ => frame.Continue = false, TaskScheduler.Default);
-            SingleThreadedSynchronizationContext.PushFrame(ctxt, frame);
+            SingleThreadedTestSynchronizationContext.PushFrame(ctxt, frame);
 
             // Ensure that the test didn't simply timeout, and that the individual tasks did not throw.
             Assert.True(foregroundRequest.IsCompleted);
@@ -587,7 +587,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public void ValueFactoryRequiresMainThreadHeldByOtherInJTFRun()
         {
-            var ctxt = SingleThreadedSynchronizationContext.New();
+            var ctxt = SingleThreadedTestSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(ctxt);
             var context = new JoinableTaskContext();
             var asyncPump = context.Factory;
@@ -630,7 +630,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public void ValueFactoryRequiresMainThreadHeldByOtherInGetValue()
         {
-            var ctxt = SingleThreadedSynchronizationContext.New();
+            var ctxt = SingleThreadedTestSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(ctxt);
             var context = new JoinableTaskContext();
             var asyncPump = context.Factory;
@@ -740,7 +740,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
 
         private JoinableTaskContext InitializeJTCAndSC()
         {
-            SynchronizationContext.SetSynchronizationContext(SingleThreadedSynchronizationContext.New());
+            SynchronizationContext.SetSynchronizationContext(SingleThreadedTestSynchronizationContext.New());
             return new JoinableTaskContext();
         }
     }

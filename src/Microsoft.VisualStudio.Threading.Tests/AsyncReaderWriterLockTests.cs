@@ -563,7 +563,7 @@
         [StaFact]
         public async Task IsAnyLockHeldReturnsFalseForIncompatibleSyncContexts()
         {
-            var dispatcher = SingleThreadedSynchronizationContext.New();
+            var dispatcher = SingleThreadedTestSynchronizationContext.New();
             var asyncLock = new LockDerived();
             using (await asyncLock.ReadLockAsync())
             {
@@ -576,7 +576,7 @@
         [StaFact]
         public async Task IsAnyPassiveLockHeldReturnsTrueForIncompatibleSyncContexts()
         {
-            var dispatcher = SingleThreadedSynchronizationContext.New();
+            var dispatcher = SingleThreadedTestSynchronizationContext.New();
             var asyncLock = new LockDerived();
             using (await asyncLock.ReadLockAsync())
             {
@@ -589,7 +589,7 @@
         [StaFact]
         public async Task IsPassiveReadLockHeldReturnsTrueForIncompatibleSyncContexts()
         {
-            var dispatcher = SingleThreadedSynchronizationContext.New();
+            var dispatcher = SingleThreadedTestSynchronizationContext.New();
             using (await this.asyncLock.ReadLockAsync())
             {
                 Assert.True(this.asyncLock.IsPassiveReadLockHeld);
@@ -601,7 +601,7 @@
         [StaFact]
         public async Task IsPassiveUpgradeableReadLockHeldReturnsTrueForIncompatibleSyncContexts()
         {
-            var dispatcher = SingleThreadedSynchronizationContext.New();
+            var dispatcher = SingleThreadedTestSynchronizationContext.New();
             using (await this.asyncLock.UpgradeableReadLockAsync())
             {
                 Assert.True(this.asyncLock.IsPassiveUpgradeableReadLockHeld);
@@ -613,7 +613,7 @@
         [StaFact]
         public async Task IsPassiveWriteLockHeldReturnsTrueForIncompatibleSyncContexts()
         {
-            var dispatcher = SingleThreadedSynchronizationContext.New();
+            var dispatcher = SingleThreadedTestSynchronizationContext.New();
             using (var releaser = await this.asyncLock.WriteLockAsync())
             {
                 Assert.True(this.asyncLock.IsPassiveWriteLockHeld);

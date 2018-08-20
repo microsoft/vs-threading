@@ -230,8 +230,8 @@ namespace Microsoft.VisualStudio.Threading.Tests
         public void ConfigureAwaitRunInline_NoExtraThreadSwitching(NamedSyncContexts invokeOn, NamedSyncContexts completeOn)
         {
             // Set up various SynchronizationContexts that we may invoke or complete the async method with.
-            var aSyncContext = SingleThreadedSynchronizationContext.New();
-            var bSyncContext = SingleThreadedSynchronizationContext.New();
+            var aSyncContext = SingleThreadedTestSynchronizationContext.New();
+            var bSyncContext = SingleThreadedTestSynchronizationContext.New();
             var invokeOnSyncContext = invokeOn == NamedSyncContexts.None ? null
                 : invokeOn == NamedSyncContexts.A ? aSyncContext
                 : invokeOn == NamedSyncContexts.B ? bSyncContext
@@ -266,8 +266,8 @@ namespace Microsoft.VisualStudio.Threading.Tests
         public void ConfigureAwaitRunInlineOfT_NoExtraThreadSwitching(NamedSyncContexts invokeOn, NamedSyncContexts completeOn)
         {
             // Set up various SynchronizationContexts that we may invoke or complete the async method with.
-            var aSyncContext = SingleThreadedSynchronizationContext.New();
-            var bSyncContext = SingleThreadedSynchronizationContext.New();
+            var aSyncContext = SingleThreadedTestSynchronizationContext.New();
+            var bSyncContext = SingleThreadedTestSynchronizationContext.New();
             var invokeOnSyncContext = invokeOn == NamedSyncContexts.None ? null
                 : invokeOn == NamedSyncContexts.A ? aSyncContext
                 : invokeOn == NamedSyncContexts.B ? bSyncContext

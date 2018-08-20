@@ -21,7 +21,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
     public ReentrantSemaphoreTestBase(ITestOutputHelper logger)
         : base(logger)
     {
-        this.Dispatcher = SingleThreadedSynchronizationContext.New();
+        this.Dispatcher = SingleThreadedTestSynchronizationContext.New();
     }
 
     public static object[][] SemaphoreCapacitySizes
