@@ -3,6 +3,7 @@
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CodeFixes;
     using Microsoft.CodeAnalysis.Diagnostics;
+    using Microsoft.VisualStudio.Threading.Analyzers.Tests.Legacy;
     using Xunit;
     using Xunit.Abstractions;
 
