@@ -1,33 +1,13 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
     using System.Threading.Tasks;
-    using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.Diagnostics;
-    using Microsoft.VisualStudio.Threading.Analyzers.Tests.Legacy;
     using Xunit;
-    using Xunit.Abstractions;
+    using Verify = CSharpAnalyzerVerifier<VSTHRD108AssertThreadRequirementUnconditionally>;
 
-    public class VSTHRD108AssertThreadRequirementUnconditionallyTests : DiagnosticVerifier
+    public class VSTHRD108AssertThreadRequirementUnconditionallyTests
     {
-        private DiagnosticResult expect = new DiagnosticResult
-        {
-            Id = VSTHRD108AssertThreadRequirementUnconditionally.Id,
-            Severity = DiagnosticSeverity.Warning,
-        };
-
-        public VSTHRD108AssertThreadRequirementUnconditionallyTests(ITestOutputHelper logger)
-            : base(logger)
-        {
-        }
-
-        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer() => new VSTHRD108AssertThreadRequirementUnconditionally();
-
         [Fact]
-        public void AffinityAssertion_Unconditional_ProducesNoDiagnostic()
+        public async Task AffinityAssertion_Unconditional_ProducesNoDiagnostic()
         {
             var test = @"
 using System;
@@ -39,11 +19,11 @@ class Test {
     }
 }
 ";
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void AffinityAssertion_WithinIfBlock_ProducesDiagnostic()
+        public async Task AffinityAssertion_WithinIfBlock_ProducesDiagnostic()
         {
             var test = @"
 using System;
@@ -60,12 +40,12 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 11, 26, 11, 46) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithSpan(11, 26, 11, 46);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void AffinityAssertion_WithinDelegateHostedWithinIfBlock_ProducesNoDiagnostic()
+        public async Task AffinityAssertion_WithinDelegateHostedWithinIfBlock_ProducesNoDiagnostic()
         {
             var test = @"
 using System;
@@ -82,11 +62,11 @@ class Test {
     }
 }
 ";
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void AffinityAssertion_WithinIfBlockWithinDelegate_ProducesDiagnostic()
+        public async Task AffinityAssertion_WithinIfBlockWithinDelegate_ProducesDiagnostic()
         {
             var test = @"
 using System;
@@ -106,12 +86,12 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 13, 30, 13, 50) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithSpan(13, 30, 13, 50);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void AffinityAssertion_WithinWhileBlock_ProducesDiagnostic()
+        public async Task AffinityAssertion_WithinWhileBlock_ProducesDiagnostic()
         {
             var test = @"
 using System;
@@ -128,12 +108,12 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 11, 26, 11, 46) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithSpan(11, 26, 11, 46);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void AffinityAssertion_WithinForBlock_ProducesDiagnostic()
+        public async Task AffinityAssertion_WithinForBlock_ProducesDiagnostic()
         {
             var test = @"
 using System;
@@ -150,12 +130,12 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 11, 26, 11, 46) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithSpan(11, 26, 11, 46);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void AffinityAssertion_WithinDoWhileBlock_ProducesNoDiagnostic()
+        public async Task AffinityAssertion_WithinDoWhileBlock_ProducesNoDiagnostic()
         {
             var test = @"
 using System;
@@ -171,11 +151,11 @@ class Test {
     }
 }
 ";
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void AffinityAssertion_WithinDebugAssert_ProducesDiagnostic()
+        public async Task AffinityAssertion_WithinDebugAssert_ProducesDiagnostic()
         {
             var test = @"
 using System;
@@ -188,12 +168,12 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 54, 8, 65) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithSpan(8, 54, 8, 65);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void AffinityAssertion_WithinAnyConditionalMethodArg_ProducesDiagnostic()
+        public async Task AffinityAssertion_WithinAnyConditionalMethodArg_ProducesDiagnostic()
         {
             var test = @"
 using System;
@@ -212,12 +192,12 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 33, 8, 44) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithSpan(8, 33, 8, 44);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ThreadCheckWithinIfExpression_ProducesNoDiagnostic()
+        public async Task ThreadCheckWithinIfExpression_ProducesNoDiagnostic()
         {
             var test = @"
 using System;
@@ -233,7 +213,7 @@ class Test {
     }
 }
 ";
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
     }
 }

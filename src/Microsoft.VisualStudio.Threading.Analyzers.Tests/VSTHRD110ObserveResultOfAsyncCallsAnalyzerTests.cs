@@ -1,33 +1,14 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
     using System.Threading.Tasks;
-    using CodeAnalysis.Diagnostics;
-    using Microsoft.CodeAnalysis;
-    using Microsoft.VisualStudio.Threading.Analyzers.Tests.Legacy;
+    using Microsoft.CodeAnalysis.Testing;
     using Xunit;
-    using Xunit.Abstractions;
+    using Verify = CSharpAnalyzerVerifier<VSTHRD110ObserveResultOfAsyncCallsAnalyzer>;
 
-    public class VSTHRD110ObserveResultOfAsyncCallsAnalyzerTests : DiagnosticVerifier
+    public class VSTHRD110ObserveResultOfAsyncCallsAnalyzerTests
     {
-        private DiagnosticResult expect = new DiagnosticResult
-        {
-            Id = VSTHRD110ObserveResultOfAsyncCallsAnalyzer.Id,
-            Severity = DiagnosticSeverity.Warning,
-        };
-
-        public VSTHRD110ObserveResultOfAsyncCallsAnalyzerTests(ITestOutputHelper logger)
-            : base(logger)
-        {
-        }
-
-        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer() => new VSTHRD110ObserveResultOfAsyncCallsAnalyzer();
-
         [Fact]
-        public void SyncMethod_ProducesDiagnostic()
+        public async Task SyncMethod_ProducesDiagnostic()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -42,12 +23,12 @@ class Test {
 }
 ";
 
-            this.expect = this.CreateDiagnostic(7, 9, 8);
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = this.CreateDiagnostic(7, 9, 8);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void SyncDelegateWithinAsyncMethod_ProducesDiagnostic()
+        public async Task SyncDelegateWithinAsyncMethod_ProducesDiagnostic()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -64,12 +45,12 @@ class Test {
 }
 ";
 
-            this.expect = this.CreateDiagnostic(8, 13, 8);
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = this.CreateDiagnostic(8, 13, 8);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void AssignToLocal_ProducesNoDiagnostic()
+        public async Task AssignToLocal_ProducesNoDiagnostic()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -84,11 +65,11 @@ class Test {
 }
 ";
 
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void ForgetExtension_ProducesNoDiagnostic()
+        public async Task ForgetExtension_ProducesNoDiagnostic()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -104,11 +85,11 @@ class Test {
 }
 ";
 
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void AssignToField_ProducesNoDiagnostic()
+        public async Task AssignToField_ProducesNoDiagnostic()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -125,11 +106,11 @@ class Test {
 }
 ";
 
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void PassToOtherMethod_ProducesNoDiagnostic()
+        public async Task PassToOtherMethod_ProducesNoDiagnostic()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -146,11 +127,11 @@ class Test {
 }
 ";
 
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void ReturnStatement_ProducesNoDiagnostic()
+        public async Task ReturnStatement_ProducesNoDiagnostic()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -167,11 +148,11 @@ class Test {
 }
 ";
 
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void ContinueWith_ProducesDiagnostic()
+        public async Task ContinueWith_ProducesDiagnostic()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -188,12 +169,12 @@ class Test {
 }
 ";
 
-            this.expect = this.CreateDiagnostic(7, 20, 12);
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = this.CreateDiagnostic(7, 20, 12);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void AsyncMethod_ProducesNoDiagnostic()
+        public async Task AsyncMethod_ProducesNoDiagnostic()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -208,11 +189,11 @@ class Test {
 }
 ";
 
-            this.VerifyCSharpDiagnostic(test); // CS4014 should already take care of this case.
+            await Verify.VerifyAnalyzerAsync(test); // CS4014 should already take care of this case.
         }
 
         [Fact]
-        public void CallToNonExistentMethod()
+        public async Task CallToNonExistentMethod()
         {
             var test = @"
 using System;
@@ -225,16 +206,12 @@ class Test {
     void Bar() { }
 }
 ";
-            this.VerifyCSharpDiagnostic(new[] { test }, hasEntrypoint: false, allowErrors: true);
+
+            var expected = Verify.CompilerError("CS0103").WithLocation(6, 9).WithMessage("The name 'a' does not exist in the current context");
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
-        private DiagnosticResult CreateDiagnostic(int line, int column, int length, string messagePattern = null) =>
-           new DiagnosticResult
-           {
-               Id = this.expect.Id,
-               MessagePattern = messagePattern ?? this.expect.MessagePattern,
-               Severity = this.expect.Severity,
-               Locations = new[] { new DiagnosticResultLocation("Test0.cs", line, column, line, column + length) },
-           };
+        private DiagnosticResult CreateDiagnostic(int line, int column, int length)
+            => Verify.Diagnostic().WithSpan(line, column, line, column + length);
     }
 }

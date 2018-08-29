@@ -1,32 +1,15 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
+    using System.Threading.Tasks;
     using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CodeFixes;
-    using Microsoft.CodeAnalysis.Diagnostics;
-    using Microsoft.VisualStudio.Threading.Analyzers.Tests.Legacy;
+    using Microsoft.CodeAnalysis.Testing;
     using Xunit;
-    using Xunit.Abstractions;
+    using Verify = CSharpAnalyzerVerifier<VSTHRD011UseAsyncLazyAnalyzer>;
 
-    public class VSTHRD011UseAsyncLazyAnalyzerTests : DiagnosticVerifier
+    public class VSTHRD011UseAsyncLazyAnalyzerTests
     {
-        private DiagnosticResult expect = new DiagnosticResult
-        {
-            Id = VSTHRD011UseAsyncLazyAnalyzer.Id,
-            Severity = DiagnosticSeverity.Error,
-        };
-
-        public VSTHRD011UseAsyncLazyAnalyzerTests(ITestOutputHelper logger)
-            : base(logger)
-        {
-        }
-
-        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
-        {
-            return new VSTHRD011UseAsyncLazyAnalyzer();
-        }
-
         [Fact]
-        public void ReportErrorOnLazyOfTConstructionInFieldValueTypeArg()
+        public async Task ReportErrorOnLazyOfTConstructionInFieldValueTypeArg()
         {
             var test = @"
 using System;
@@ -38,12 +21,12 @@ class Test {
     Lazy<int> tInt = new Lazy<int>();
 }
 ";
-            var expect = this.CreateDiagnostic(6, 29, 15);
-            this.VerifyCSharpDiagnostic(test, expect);
+            var expected = this.CreateDiagnostic(VSTHRD011UseAsyncLazyAnalyzer.LazyOfTaskDescriptor, 6, 29, 15);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ReportErrorOnLazyOfTConstructionInFieldRefTypeArg()
+        public async Task ReportErrorOnLazyOfTConstructionInFieldRefTypeArg()
         {
             var test = @"
 using System;
@@ -53,12 +36,12 @@ class Test {
     Lazy<Task<object>> t3 = new Lazy<Task<object>>();
 }
 ";
-            var expect = this.CreateDiagnostic(6, 33, 18);
-            this.VerifyCSharpDiagnostic(test, expect);
+            var expected = this.CreateDiagnostic(VSTHRD011UseAsyncLazyAnalyzer.LazyOfTaskDescriptor, 6, 33, 18);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ReportErrorOnLazyOfTConstructionInFieldNoTypeArg()
+        public async Task ReportErrorOnLazyOfTConstructionInFieldNoTypeArg()
         {
             var test = @"
 using System;
@@ -68,12 +51,12 @@ class Test {
     Lazy<Task> t3 = new Lazy<Task>();
 }
 ";
-            var expect = this.CreateDiagnostic(6, 25, 10);
-            this.VerifyCSharpDiagnostic(test, expect);
+            var expected = this.CreateDiagnostic(VSTHRD011UseAsyncLazyAnalyzer.LazyOfTaskDescriptor, 6, 25, 10);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void JTFRunInLazyValueFactory_Delegate()
+        public async Task JTFRunInLazyValueFactory_Delegate()
         {
             var test = @"
 using System;
@@ -94,12 +77,12 @@ class Test {
     }
 }
 ";
-            var expect = this.CreateDiagnostic(11, 13, 7);
-            this.VerifyCSharpDiagnostic(test, expect);
+            var expected = this.CreateDiagnostic(VSTHRD011UseAsyncLazyAnalyzer.SyncBlockInValueFactoryDescriptor, 11, 13, 7);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void JTFRunInLazyValueFactory_Lambda()
+        public async Task JTFRunInLazyValueFactory_Lambda()
         {
             var test = @"
 using System;
@@ -120,12 +103,12 @@ class Test {
     }
 }
 ";
-            var expect = this.CreateDiagnostic(11, 13, 7);
-            this.VerifyCSharpDiagnostic(test, expect);
+            var expected = this.CreateDiagnostic(VSTHRD011UseAsyncLazyAnalyzer.SyncBlockInValueFactoryDescriptor, 11, 13, 7);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void JTFRunAsyncInLazyValueFactory_Lambda()
+        public async Task JTFRunAsyncInLazyValueFactory_Lambda()
         {
             var test = @"
 using System;
@@ -146,12 +129,12 @@ class Test {
     }
 }
 ";
-            var expect = this.CreateDiagnostic(10, 22, 15);
-            this.VerifyCSharpDiagnostic(test, expect);
+            var expected = this.CreateDiagnostic(VSTHRD011UseAsyncLazyAnalyzer.LazyOfTaskDescriptor, 10, 22, 15);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void JTFRunInLazyValueFactory_MethodGroup()
+        public async Task JTFRunInLazyValueFactory_MethodGroup()
         {
             var test = @"
 using System;
@@ -176,11 +159,11 @@ class Test {
 ";
 
             // We can change this to verify a diagnostic is reported if we ever implement this.
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void ReportErrorOnLazyOfTConstructionInLocalVariable()
+        public async Task ReportErrorOnLazyOfTConstructionInLocalVariable()
         {
             var test = @"
 using System;
@@ -192,17 +175,11 @@ class Test {
     }
 }
 ";
-            var expect = this.CreateDiagnostic(7, 22, 18);
-            this.VerifyCSharpDiagnostic(test, expect);
+            var expected = this.CreateDiagnostic(VSTHRD011UseAsyncLazyAnalyzer.LazyOfTaskDescriptor, 7, 22, 18);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
-        private DiagnosticResult CreateDiagnostic(int line, int column, int length, string messagePattern = null) =>
-            new DiagnosticResult
-            {
-                Id = this.expect.Id,
-                MessagePattern = messagePattern ?? this.expect.MessagePattern,
-                Severity = this.expect.Severity,
-                Locations = new[] { new DiagnosticResultLocation("Test0.cs", line, column, line, column + length) },
-            };
+        private DiagnosticResult CreateDiagnostic(DiagnosticDescriptor descriptor, int line, int column, int length)
+            => Verify.Diagnostic(descriptor).WithSpan(line, column, line, column + length);
     }
 }

@@ -10,6 +10,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
     using System.Windows.Threading;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CodeFixes;
+    using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Testing;
     using Microsoft.CodeAnalysis.Diagnostics;
     using Microsoft.CodeAnalysis.Testing.Verifiers;
@@ -32,6 +33,15 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         {
             this.SolutionTransforms.Add((solution, projectId) =>
             {
+                var parseOptions = (CSharpParseOptions)solution.GetProject(projectId).ParseOptions;
+                solution = solution.WithProjectParseOptions(projectId, parseOptions.WithLanguageVersion(LanguageVersion.CSharp7_1));
+
+                if (this.HasEntryPoint)
+                {
+                    var compilationOptions = solution.GetProject(projectId).CompilationOptions;
+                    solution = solution.WithProjectCompilationOptions(projectId, compilationOptions.WithOutputKind(OutputKind.ConsoleApplication));
+                }
+
                 if (this.IncludeMicrosoftVisualStudioThreading)
                 {
                     solution = solution.AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(JoinableTaskFactory).Assembly.Location));
@@ -65,6 +75,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                        select (filename: resourceName.Substring(additionalFilePrefix.Length), SourceText.From(content));
             });
         }
+
+        public bool HasEntryPoint { get; set; } = false;
 
         public bool IncludeMicrosoftVisualStudioThreading { get; set; } = true;
 
