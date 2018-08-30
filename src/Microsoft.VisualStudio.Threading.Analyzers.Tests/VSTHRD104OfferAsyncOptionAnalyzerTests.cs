@@ -1,32 +1,13 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
     using System.Threading.Tasks;
-    using CodeAnalysis.Diagnostics;
-    using Microsoft.CodeAnalysis;
     using Xunit;
-    using Xunit.Abstractions;
+    using Verify = CSharpAnalyzerVerifier<VSTHRD104OfferAsyncOptionAnalyzer>;
 
-    public class VSTHRD104OfferAsyncOptionAnalyzerTests : DiagnosticVerifier
+    public class VSTHRD104OfferAsyncOptionAnalyzerTests
     {
-        private DiagnosticResult expect = new DiagnosticResult
-        {
-            Id = VSTHRD104OfferAsyncOptionAnalyzer.Id,
-            Severity = DiagnosticSeverity.Info,
-        };
-
-        public VSTHRD104OfferAsyncOptionAnalyzerTests(ITestOutputHelper logger)
-            : base(logger)
-        {
-        }
-
-        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer() => new VSTHRD104OfferAsyncOptionAnalyzer();
-
         [Fact]
-        public void JTFRunFromPublicVoidMethod_GeneratesWarning()
+        public async Task JTFRunFromPublicVoidMethod_GeneratesWarning()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -43,12 +24,12 @@ public class Test {
 }
 ";
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 13, 9, 16) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithSpan(9, 13, 9, 16);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void JTFRunFromInternalVoidMethod_GeneratesNoWarning()
+        public async Task JTFRunFromInternalVoidMethod_GeneratesNoWarning()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -65,11 +46,11 @@ public class Test {
 }
 ";
 
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void JTFRunFromPublicVoidMethod_GeneratesNoWarningWhenAsyncMethodPresent()
+        public async Task JTFRunFromPublicVoidMethod_GeneratesNoWarningWhenAsyncMethodPresent()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -90,11 +71,11 @@ public class Test {
 }
 ";
 
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void JTFRunFromPublicVoidMethod_GeneratesWarningWhenInternalAsyncMethodPresent()
+        public async Task JTFRunFromPublicVoidMethod_GeneratesWarningWhenInternalAsyncMethodPresent()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -115,8 +96,8 @@ public class Test {
 }
 ";
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 13, 9, 16) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithSpan(9, 13, 9, 16);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
     }
 }

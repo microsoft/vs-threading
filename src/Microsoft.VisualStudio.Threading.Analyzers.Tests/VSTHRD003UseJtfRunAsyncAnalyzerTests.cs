@@ -1,31 +1,14 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
-    using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CodeFixes;
-    using Microsoft.CodeAnalysis.Diagnostics;
+    using System.Threading.Tasks;
+    using Microsoft.CodeAnalysis.Testing;
     using Xunit;
-    using Xunit.Abstractions;
+    using Verify = CSharpAnalyzerVerifier<VSTHRD003UseJtfRunAsyncAnalyzer>;
 
-    public class VSTHRD003UseJtfRunAsyncAnalyzerTests : DiagnosticVerifier
+    public class VSTHRD003UseJtfRunAsyncAnalyzerTests
     {
-        private DiagnosticResult expect = new DiagnosticResult
-        {
-            Id = VSTHRD003UseJtfRunAsyncAnalyzer.Id,
-            Severity = DiagnosticSeverity.Warning,
-        };
-
-        public VSTHRD003UseJtfRunAsyncAnalyzerTests(ITestOutputHelper logger)
-            : base(logger)
-        {
-        }
-
-        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
-        {
-            return new VSTHRD003UseJtfRunAsyncAnalyzer();
-        }
-
         [Fact]
-        public void ReportWarningWhenTaskIsDefinedOutsideDelegate()
+        public async Task ReportWarningWhenTaskIsDefinedOutsideDelegate()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -52,12 +35,12 @@ class Tests
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 19) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithLocation(14, 19);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ReportWarningWhenTaskTIsDefinedOutsideDelegate()
+        public async Task ReportWarningWhenTaskTIsDefinedOutsideDelegate()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -84,12 +67,12 @@ class Tests
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 19) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithLocation(14, 19);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ReportWarningWhenTaskTIsReturnedDirectlyFromLambda()
+        public async Task ReportWarningWhenTaskTIsReturnedDirectlyFromLambda()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -104,12 +87,12 @@ class Tests
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 10, 59) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithLocation(10, 59);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ReportWarningWhenTaskTIsReturnedDirectlyFromDelegate()
+        public async Task ReportWarningWhenTaskTIsReturnedDirectlyFromDelegate()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -124,12 +107,12 @@ class Tests
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 10, 68) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithLocation(10, 68);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ReportWarningWhenTaskTIsReturnedDirectlyWithCancellation()
+        public async Task ReportWarningWhenTaskTIsReturnedDirectlyWithCancellation()
         {
             var test = @"
 using System.Threading;
@@ -145,12 +128,12 @@ class Tests
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 11, 59) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithLocation(11, 59);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void DoNotReportWarningWhenTaskTIsPassedAsArgument()
+        public async Task DoNotReportWarningWhenTaskTIsPassedAsArgument()
         {
             var test = @"
 using System.Threading;
@@ -169,11 +152,11 @@ class Tests
     private static Task DoSomethingWith(Task t) => null;
 }
 ";
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void ReportWarningWhenTaskIsDefinedOutsideDelegateUsingRunAsync()
+        public async Task ReportWarningWhenTaskIsDefinedOutsideDelegateUsingRunAsync()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -200,12 +183,12 @@ class Tests
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 19) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithLocation(14, 19);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ReportWarningWhenTaskIsDefinedOutsideParanthesizedLambdaExpression()
+        public async Task ReportWarningWhenTaskIsDefinedOutsideParanthesizedLambdaExpression()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -233,12 +216,12 @@ class Tests
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 19) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithLocation(14, 19);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void DoNotReportWarningWhenTaskIsDefinedWithinDelegate()
+        public async Task DoNotReportWarningWhenTaskIsDefinedWithinDelegate()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -267,11 +250,11 @@ class Tests
     }
 }
 ";
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void DoNotReportWarningWhenTaskIsDefinedWithinDelegateInSubblock()
+        public async Task DoNotReportWarningWhenTaskIsDefinedWithinDelegateInSubblock()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -303,11 +286,11 @@ class Tests
     }
 }
 ";
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void DoNotReportWarningWhenTaskIsDefinedOutsideButInitializedWithinDelegate()
+        public async Task DoNotReportWarningWhenTaskIsDefinedOutsideButInitializedWithinDelegate()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -335,11 +318,11 @@ class Tests
     }
 }
 ";
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void DoNotReportWarningWhenTaskIsInitializedBothOutsideAndInsideDelegate()
+        public async Task DoNotReportWarningWhenTaskIsInitializedBothOutsideAndInsideDelegate()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -367,11 +350,11 @@ class Tests
     }
 }
 ";
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void DoNotReportWarningWhenTaskIsInitializedInsideDelegateConditionalStatement()
+        public async Task DoNotReportWarningWhenTaskIsInitializedInsideDelegateConditionalStatement()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -403,11 +386,11 @@ class Tests
     }
 }
 ";
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void ReportWarningWhenTaskIsDefinedOutsideAndInitializedAfterAwait()
+        public async Task ReportWarningWhenTaskIsDefinedOutsideAndInitializedAfterAwait()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -435,12 +418,12 @@ class Tests
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 19) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithLocation(14, 19);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ReportWarningWhenTaskIsDefinedOutsideAndInitializationIsCommentedOut()
+        public async Task ReportWarningWhenTaskIsDefinedOutsideAndInitializationIsCommentedOut()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -469,12 +452,12 @@ class Tests
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 16, 19) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithLocation(16, 19);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ReportWarningWhenAwaitIsInsideForLoop()
+        public async Task ReportWarningWhenAwaitIsInsideForLoop()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -504,12 +487,12 @@ class Tests
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 16, 23) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithLocation(16, 23);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ReportWarningsForMultipleAwaits()
+        public async Task ReportWarningsForMultipleAwaits()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -538,23 +521,18 @@ class Tests
     }
 }
 ";
-            DiagnosticResult[] expected = new[]
+            DiagnosticResult[] expected =
             {
-                new DiagnosticResult() { Id = this.expect.Id, MessagePattern = this.expect.MessagePattern, Severity = DiagnosticSeverity.Warning,
-                Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 19) }, },
-
-                new DiagnosticResult() { Id = this.expect.Id, MessagePattern = this.expect.MessagePattern, Severity = DiagnosticSeverity.Warning,
-                Locations = new[] { new DiagnosticResultLocation("Test0.cs", 15, 19) }, },
-
-                new DiagnosticResult() { Id = this.expect.Id, MessagePattern = this.expect.MessagePattern, Severity = DiagnosticSeverity.Warning,
-                Locations = new[] { new DiagnosticResultLocation("Test0.cs", 16, 19) }, },
+                Verify.Diagnostic().WithLocation(14, 19),
+                Verify.Diagnostic().WithLocation(15, 19),
+                Verify.Diagnostic().WithLocation(16, 19),
             };
 
-            this.VerifyCSharpDiagnostic(test, expected);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void DoNotReportWarningWhenAwaitingAsyncMethod()
+        public async Task DoNotReportWarningWhenAwaitingAsyncMethod()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -580,11 +558,11 @@ class Tests
     }
 }
 ";
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void DoNotReportWarningWhenAwaitingJoinableTaskDefinedInsideDelegate()
+        public async Task DoNotReportWarningWhenAwaitingJoinableTaskDefinedInsideDelegate()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -608,11 +586,11 @@ class Tests
     }
 }
 ";
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void DoNotReportWarningWhenAwaitingJoinableTaskDefinedOutsideDelegate()
+        public async Task DoNotReportWarningWhenAwaitingJoinableTaskDefinedOutsideDelegate()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -637,11 +615,11 @@ class Tests
     }
 }
 ";
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void ReportWarningWhenHavingNestedLambdaExpressions()
+        public async Task ReportWarningWhenHavingNestedLambdaExpressions()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -673,12 +651,12 @@ class Tests
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 17, 23) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithLocation(17, 23);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ReportWarningForDerivedJoinableTaskFactory()
+        public async Task ReportWarningForDerivedJoinableTaskFactory()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -715,12 +693,12 @@ class Tests
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 24, 19) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithLocation(24, 19);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void DoNotReportWarningForDerivedJoinableTaskFactoryWhenRunIsOverride()
+        public async Task DoNotReportWarningForDerivedJoinableTaskFactoryWhenRunIsOverride()
         {
             var test = @"
 using System;
@@ -766,7 +744,7 @@ class Tests
 ";
 
             // We decided not to report warning in this case, because we don't know if our assumptions about the Run implementation are still valid for user's implementation
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
     }
 }
