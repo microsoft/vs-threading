@@ -1,30 +1,13 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
-    using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CodeFixes;
-    using Microsoft.CodeAnalysis.Diagnostics;
+    using System.Threading.Tasks;
     using Xunit;
-    using Xunit.Abstractions;
+    using Verify = CSharpCodeFixVerifier<VSTHRD100AsyncVoidMethodAnalyzer, VSTHRD100AsyncVoidMethodCodeFix>;
 
-    public class VSTHRD100AsyncVoidMethodCodeFixTests : CodeFixVerifier
+    public class VSTHRD100AsyncVoidMethodCodeFixTests
     {
-        public VSTHRD100AsyncVoidMethodCodeFixTests(ITestOutputHelper logger)
-            : base(logger)
-        {
-        }
-
-        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
-        {
-            return new VSTHRD100AsyncVoidMethodAnalyzer();
-        }
-
-        protected override CodeFixProvider GetCSharpCodeFixProvider()
-        {
-            return new VSTHRD100AsyncVoidMethodCodeFix();
-        }
-
         [Fact]
-        public void ApplyFixesOnAsyncVoidMethod()
+        public async Task ApplyFixesOnAsyncVoidMethod()
         {
             var test = @"
 using System;
@@ -44,11 +27,12 @@ class Test {
     }
 }
 ";
-            this.VerifyCSharpFix(test, withFix);
+            var expected = Verify.Diagnostic().WithLocation(5, 16);
+            await Verify.VerifyCodeFixAsync(test, expected, withFix);
         }
 
         [Fact]
-        public void ApplyFixesOnAsyncVoidMethod2()
+        public async Task ApplyFixesOnAsyncVoidMethod2()
         {
             var test = @"
 using System;
@@ -70,7 +54,8 @@ class Test {
     }
 }
 ";
-            this.VerifyCSharpFix(test, withFix);
+            var expected = Verify.Diagnostic().WithLocation(6, 16);
+            await Verify.VerifyCodeFixAsync(test, expected, withFix);
         }
     }
 }
