@@ -7,6 +7,7 @@
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.Diagnostics;
+    using Microsoft.VisualStudio.Threading.Analyzers.Tests.Legacy;
     using Xunit;
     using Xunit.Abstractions;
 
