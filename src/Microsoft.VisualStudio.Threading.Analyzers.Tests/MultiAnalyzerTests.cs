@@ -312,7 +312,7 @@ class Foo { }
                 return test.RunAsync();
             }
 
-            public class Test : CSharpAnalyzerTest<VSTHRD002UseJtfRunAnalyzer>
+            public class Test : CSharpCodeFixVerifier<VSTHRD002UseJtfRunAnalyzer, EmptyCodeFixProvider>.Test
             {
                 protected override IEnumerable<DiagnosticAnalyzer> GetDiagnosticAnalyzers()
                 {

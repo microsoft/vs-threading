@@ -3,7 +3,7 @@
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis.Testing;
     using Xunit;
-    using Verify = CSharpAnalyzerVerifier<VSTHRD004AwaitSwitchToMainThreadAsyncAnalyzer>;
+    using Verify = CSharpCodeFixVerifier<VSTHRD004AwaitSwitchToMainThreadAsyncAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
     public class VSTHRD004AwaitSwitchToMainThreadAsyncAnalyzerTests
     {

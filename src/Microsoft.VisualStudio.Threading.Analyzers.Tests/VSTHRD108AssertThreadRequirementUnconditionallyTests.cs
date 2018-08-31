@@ -2,7 +2,7 @@
 {
     using System.Threading.Tasks;
     using Xunit;
-    using Verify = CSharpAnalyzerVerifier<VSTHRD108AssertThreadRequirementUnconditionally>;
+    using Verify = CSharpCodeFixVerifier<VSTHRD108AssertThreadRequirementUnconditionally, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
     public class VSTHRD108AssertThreadRequirementUnconditionallyTests
     {

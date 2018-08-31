@@ -2,7 +2,7 @@
 {
     using System.Threading.Tasks;
     using Xunit;
-    using Verify = CSharpAnalyzerVerifier<VSTHRD102AvoidJtfRunInNonPublicMembersAnalyzer>;
+    using Verify = CSharpCodeFixVerifier<VSTHRD102AvoidJtfRunInNonPublicMembersAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
     public class VSTHRD102AvoidJtfRunInNonPublicMembersAnalyzerTests
     {

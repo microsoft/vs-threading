@@ -2,7 +2,7 @@
 {
     using System.Threading.Tasks;
     using Xunit;
-    using Verify = CSharpAnalyzerVerifier<VSTHRD101AsyncVoidLambdaAnalyzer>;
+    using Verify = CSharpCodeFixVerifier<VSTHRD101AsyncVoidLambdaAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
     public class VSTHRD101AsyncVoidLambdaAnalyzerTests
     {

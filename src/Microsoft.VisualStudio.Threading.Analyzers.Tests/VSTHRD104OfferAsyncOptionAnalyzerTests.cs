@@ -2,7 +2,7 @@
 {
     using System.Threading.Tasks;
     using Xunit;
-    using Verify = CSharpAnalyzerVerifier<VSTHRD104OfferAsyncOptionAnalyzer>;
+    using Verify = CSharpCodeFixVerifier<VSTHRD104OfferAsyncOptionAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
     public class VSTHRD104OfferAsyncOptionAnalyzerTests
     {

@@ -3,7 +3,7 @@
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis.Testing;
     using Xunit;
-    using Verify = CSharpAnalyzerVerifier<VSTHRD110ObserveResultOfAsyncCallsAnalyzer>;
+    using Verify = CSharpCodeFixVerifier<VSTHRD110ObserveResultOfAsyncCallsAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
     public class VSTHRD110ObserveResultOfAsyncCallsAnalyzerTests
     {
@@ -207,7 +207,7 @@ class Test {
 }
 ";
 
-            var expected = Verify.CompilerError("CS0103").WithLocation(6, 9).WithMessage("The name 'a' does not exist in the current context");
+            var expected = DiagnosticResult.CompilerError("CS0103").WithLocation(6, 9).WithMessage("The name 'a' does not exist in the current context");
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 

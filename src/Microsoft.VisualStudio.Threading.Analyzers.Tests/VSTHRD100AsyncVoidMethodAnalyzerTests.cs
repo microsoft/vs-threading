@@ -2,7 +2,7 @@
 {
     using System.Threading.Tasks;
     using Xunit;
-    using Verify = CSharpAnalyzerVerifier<VSTHRD100AsyncVoidMethodAnalyzer>;
+    using Verify = CSharpCodeFixVerifier<VSTHRD100AsyncVoidMethodAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
     public class VSTHRD100AsyncVoidMethodAnalyzerTests
     {

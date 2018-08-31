@@ -4,7 +4,7 @@
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.Testing;
     using Xunit;
-    using Verify = CSharpAnalyzerVerifier<VSTHRD011UseAsyncLazyAnalyzer>;
+    using Verify = CSharpCodeFixVerifier<VSTHRD011UseAsyncLazyAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
     public class VSTHRD011UseAsyncLazyAnalyzerTests
     {
