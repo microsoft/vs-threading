@@ -39,7 +39,7 @@
         {
             private readonly ImmutableArray<CommonInterest.QualifiedMember> legacyThreadSwitchingMembers;
 
-            public Analyzer(ImmutableArray<CommonInterest.QualifiedMember> legacyThreadSwitchingMembers)
+            internal Analyzer(ImmutableArray<CommonInterest.QualifiedMember> legacyThreadSwitchingMembers)
             {
                 this.legacyThreadSwitchingMembers = legacyThreadSwitchingMembers;
             }
