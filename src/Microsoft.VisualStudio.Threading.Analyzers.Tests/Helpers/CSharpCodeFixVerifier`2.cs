@@ -14,7 +14,10 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         where TAnalyzer : DiagnosticAnalyzer, new()
         where TCodeFix : CodeFixProvider, new()
     {
-        public static DiagnosticResult Diagnostic(string diagnosticId = null)
+        public static DiagnosticResult Diagnostic()
+            => CSharpCodeFixVerifier<TAnalyzer, TCodeFix, XUnitVerifier>.Diagnostic();
+
+        public static DiagnosticResult Diagnostic(string diagnosticId)
             => CSharpCodeFixVerifier<TAnalyzer, TCodeFix, XUnitVerifier>.Diagnostic(diagnosticId);
 
         public static DiagnosticResult Diagnostic(DiagnosticDescriptor descriptor)
@@ -40,6 +43,14 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 TestCode = source,
                 FixedCode = fixedSource,
             };
+
+            if (fixedSource == source)
+            {
+                test.FixedState.InheritanceMode = StateInheritanceMode.AutoInheritAll;
+                test.FixedState.MarkupHandling = MarkupMode.Allow;
+                test.BatchFixedState.InheritanceMode = StateInheritanceMode.AutoInheritAll;
+                test.BatchFixedState.MarkupHandling = MarkupMode.Allow;
+            }
 
             test.ExpectedDiagnostics.AddRange(expected);
             return test.RunAsync();

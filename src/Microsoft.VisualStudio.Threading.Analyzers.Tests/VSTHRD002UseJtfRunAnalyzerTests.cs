@@ -247,8 +247,8 @@ class TestClient {
                 HasEntryPoint = true,
             };
 
-            verifyTest.TestSources.AddRange(test);
-            verifyTest.FixedSources.AddRange(withFix);
+            verifyTest.TestState.Sources.AddRange(test);
+            verifyTest.FixedState.Sources.AddRange(withFix);
             await verifyTest.RunAsync();
         }
 

@@ -316,12 +316,6 @@ class Test {
                 FixedCode = fix2,
                 CodeFixIndex = CodeFixIndex.ThrowIfNotOnUIThreadIndex1,
 
-                // Fix introduced new compiler diagnostics:
-                // Test0.cs(14, 9): warning CS1701: Assuming assembly reference 'mscorlib, Version=1.0.3300.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-                // used by 'Microsoft.VisualStudio.Shell.Interop' matches identity 'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-                // of 'mscorlib', you may need to supply runtime policy
-                AllowNewCompilerDiagnostics = true,
-
                 // Expected: SimpleMemberAccessExpression
                 // Actual:   QualifiedName
                 CodeFixValidationMode = CodeFixValidationMode.None,
