@@ -64,7 +64,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                     return solution;
                 });
 
-                this.AdditionalFilesFactories.Add(() =>
+                this.TestState.AdditionalFilesFactories.Add(() =>
                 {
                     const string additionalFilePrefix = "AdditionalFiles.";
                     return from resourceName in Assembly.GetExecutingAssembly().GetManifestResourceNames()

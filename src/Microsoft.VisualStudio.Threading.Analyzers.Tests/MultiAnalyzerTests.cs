@@ -60,7 +60,7 @@ class Test {
             var verifyTest = new Verify.Test
             {
                 TestCode = test,
-                AllowMarkup = false,
+                TestState = { MarkupHandling = MarkupMode.None },
             };
 
             verifyTest.ExpectedDiagnostics.AddRange(expected);
