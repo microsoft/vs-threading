@@ -208,7 +208,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 throw new ArgumentNullException(nameof(fileNamePattern));
             }
 
-            var lines = from file in analyzerOptions.AdditionalFiles
+            var lines = from file in analyzerOptions.AdditionalFiles.OrderBy(x => x.Path, StringComparer.Ordinal)
                         let fileName = Path.GetFileName(file.Path)
                         where fileNamePattern.IsMatch(fileName)
                         let text = file.GetText(cancellationToken)

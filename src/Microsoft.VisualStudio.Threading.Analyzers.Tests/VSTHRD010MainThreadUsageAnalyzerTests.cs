@@ -1678,7 +1678,7 @@ class Test
 }
 ";
             var expect = new DiagnosticResult[] {
-                this.CreateDiagnostic(11, 9, 11, 12, @"Test\.Foo.*VerifyAccess"),
+                this.CreateDiagnostic(11, 9, 11, 12, @"Test\.Foo.*VerifyOnUIThread"),
                 this.CreateDiagnostic(21, 9, 21, 14, @"Test\.Reset.*SwitchToMainThreadAsync"),
             };
             this.VerifyCSharpDiagnostic(test, expect);
@@ -1716,7 +1716,7 @@ class Test
 }
 ";
             var expect = new DiagnosticResult[] {
-                this.CreateDiagnostic(11, 9, 11, 12, @"Test\.Foo.*VerifyAccess"),
+                this.CreateDiagnostic(11, 9, 11, 12, @"Test\.Foo.*VerifyOnUIThread"),
             };
             this.VerifyCSharpDiagnostic(test, expect);
         }

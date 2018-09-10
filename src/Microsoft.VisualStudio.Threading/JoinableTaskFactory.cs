@@ -141,9 +141,15 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="cancellationToken">
         /// A token whose cancellation will immediately schedule the continuation
-        /// on a threadpool thread.
+        /// on a threadpool thread (if the transition to the main thread is not already complete).
+        /// The token is ignored if the caller was already on the main thread.
         /// </param>
         /// <returns>An awaitable.</returns>
+        /// <exception cref="OperationCanceledException">
+        /// Thrown back at the awaiting caller from a background thread
+        /// when <paramref name="cancellationToken" /> is canceled before any required transition to the main thread is complete.
+        /// No exception is thrown if the caller was already on the main thread before calling this method.
+        /// </exception>
         /// <remarks>
         /// <example>
         /// <code>
