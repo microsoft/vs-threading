@@ -85,9 +85,6 @@
     <value>{0}(으)로 이름 바꾸기</value>
     <comment>{0} is a method name.</comment>
   </data>
-  <data name="VSTHRD200_MessageFormat" xml:space="preserve">
-    <value>Task-returning 메서드의 이름에 "Async" 접미사를 사용합니다.</value>
-  </data>
   <data name="VSTHRD200_Title" xml:space="preserve">
     <value>비동기 메서드에 "Async" 접미사 사용</value>
   </data>
