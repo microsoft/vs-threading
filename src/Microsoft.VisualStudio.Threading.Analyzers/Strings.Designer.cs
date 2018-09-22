@@ -461,6 +461,15 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Use &quot;Async&quot; suffix in names of methods that return an awaitable type..
+        /// </summary>
+        internal static string VSTHRD200_AddAsync_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSTHRD200_AddAsync_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Rename to {0}.
         /// </summary>
         internal static string VSTHRD200_CodeFix_Title {
@@ -470,11 +479,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Use &quot;Async&quot; suffix in names of Task-returning methods..
+        ///   Looks up a localized string similar to Avoid &quot;Async&quot; suffix in names of methods that do not return an awaitable type..
         /// </summary>
-        internal static string VSTHRD200_MessageFormat {
+        internal static string VSTHRD200_RemoveAsync_MessageFormat {
             get {
-                return ResourceManager.GetString("VSTHRD200_MessageFormat", resourceCulture);
+                return ResourceManager.GetString("VSTHRD200_RemoveAsync_MessageFormat", resourceCulture);
             }
         }
         
