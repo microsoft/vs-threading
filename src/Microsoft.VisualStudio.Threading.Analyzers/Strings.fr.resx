@@ -85,9 +85,6 @@ Utilisez AsyncLazy&lt;T&gt; à la place</value>
     <value>Renommer en {0}</value>
     <comment>{0} is a method name.</comment>
   </data>
-  <data name="VSTHRD200_MessageFormat" xml:space="preserve">
-    <value>Utilisez le suffixe "Async" dans les noms des méthodes retournant Task.</value>
-  </data>
   <data name="VSTHRD200_Title" xml:space="preserve">
     <value>Utiliser le suffixe "Async" pour les méthodes asynchrones</value>
   </data>

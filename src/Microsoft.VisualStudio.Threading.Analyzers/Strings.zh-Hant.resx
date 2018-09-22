@@ -85,9 +85,6 @@
     <value>重新命名為 {0}</value>
     <comment>{0} is a method name.</comment>
   </data>
-  <data name="VSTHRD200_MessageFormat" xml:space="preserve">
-    <value>請在 Task 傳回方法的名稱中使用 "Async" 尾碼。</value>
-  </data>
   <data name="VSTHRD200_Title" xml:space="preserve">
     <value>對非同步方法使用 "Async" 尾碼</value>
   </data>

@@ -202,8 +202,8 @@ Use AsyncLazy&lt;T&gt; instead.</value>
     <value>Rename to {0}</value>
     <comment>{0} is a method name.</comment>
   </data>
-  <data name="VSTHRD200_MessageFormat" xml:space="preserve">
-    <value>Use "Async" suffix in names of Task-returning methods.</value>
+  <data name="VSTHRD200_AddAsync_MessageFormat" xml:space="preserve">
+    <value>Use "Async" suffix in names of methods that return an awaitable type.</value>
   </data>
   <data name="VSTHRD200_Title" xml:space="preserve">
     <value>Use "Async" suffix for async methods</value>
@@ -277,5 +277,24 @@ Use AsyncLazy&lt;T&gt; instead.</value>
   </data>
   <data name="VSTHRD110_Title" xml:space="preserve">
     <value>Observe result of async calls</value>
+  </data>
+  <data name="VSTHRD200_RemoveAsync_MessageFormat" xml:space="preserve">
+    <value>Avoid "Async" suffix in names of methods that do not return an awaitable type.</value>
+  </data>
+  <data name="VSTHRD111_CodeFix_False_Title" xml:space="preserve">
+    <value>Add .ConfigureAwait(false)</value>
+    <comment>".ConfigureAwait(false)" should not be translated.</comment>
+  </data>
+  <data name="VSTHRD111_CodeFix_True_Title" xml:space="preserve">
+    <value>Add .ConfigureAwait(true)</value>
+    <comment>".ConfigureAwait(true)" should not be translated.</comment>
+  </data>
+  <data name="VSTHRD111_MessageFormat" xml:space="preserve">
+    <value>Add .ConfigureAwait(bool) to your await expression.</value>
+    <comment>".ConfigureAwait(bool)" and "await" should NOT be translated.</comment>
+  </data>
+  <data name="VSTHRD111_Title" xml:space="preserve">
+    <value>Use ConfigureAwait(bool)</value>
+    <comment>"ConfigureAwait(bool)" is a reference and should NOT be translated.</comment>
   </data>
 </root>

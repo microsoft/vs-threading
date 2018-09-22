@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en-US" target-language="ja" original="MICROSOFT.VISUALSTUDIO.THREADING.ANALYZERS/STRINGS.RESX" tool-id="MultilingualAppToolkit" product-name="n/a" product-version="n/a" build-num="n/a">
     <header>
@@ -103,10 +103,6 @@ Use AsyncLazy&lt;T&gt; instead.</source>
           <source>Rename to {0}</source>
           <target state="translated">{0} に名前を変更する</target>
           <note from="MultilingualBuild" annotates="source" priority="2">{0} is a method name.</note>
-        </trans-unit>
-        <trans-unit id="VSTHRD200_MessageFormat" translate="yes" xml:space="preserve">
-          <source>Use "Async" suffix in names of Task-returning methods.</source>
-          <target state="translated">タスクを返すメソッドの名前に "Async" サフィックスを使用します。</target>
         </trans-unit>
         <trans-unit id="VSTHRD200_Title" translate="yes" xml:space="preserve">
           <source>Use "Async" suffix for async methods</source>
@@ -218,6 +214,34 @@ Use AsyncLazy&lt;T&gt; instead.</source>
 Use AsyncLazy<it id="2" pos="open">&lt;T&gt;</it> instead.</source>
           <target state="translated">Lazy&lt;it id="1" pos="open"&gt;&lt;T&gt;&lt;/it&gt; 値ファクトリの非同期コードで呼び出しかブロックを実行すると、デッドロックを引き起こす可能性があります。
 代わりに AsyncLazy&lt;it id="2" pos="open"&gt;&lt;T&gt;&lt;/it&gt; をご使用ください。</target>
+        </trans-unit>
+        <trans-unit id="VSTHRD200_AddAsync_MessageFormat" translate="yes" xml:space="preserve">
+          <source>Use "Async" suffix in names of methods that return an awaitable type.</source>
+          <target state="new">Use "Async" suffix in names of methods that return an awaitable type.</target>
+        </trans-unit>
+        <trans-unit id="VSTHRD200_RemoveAsync_MessageFormat" translate="yes" xml:space="preserve">
+          <source>Avoid "Async" suffix in names of methods that do not return an awaitable type.</source>
+          <target state="new">Avoid "Async" suffix in names of methods that do not return an awaitable type.</target>
+        </trans-unit>
+        <trans-unit id="VSTHRD111_CodeFix_False_Title" translate="yes" xml:space="preserve">
+          <source>Add .ConfigureAwait(false)</source>
+          <target state="new">Add .ConfigureAwait(false)</target>
+          <note from="MultilingualBuild" annotates="source" priority="2">".ConfigureAwait(false)" should not be translated.</note>
+        </trans-unit>
+        <trans-unit id="VSTHRD111_CodeFix_True_Title" translate="yes" xml:space="preserve">
+          <source>Add .ConfigureAwait(true)</source>
+          <target state="new">Add .ConfigureAwait(true)</target>
+          <note from="MultilingualBuild" annotates="source" priority="2">".ConfigureAwait(true)" should not be translated.</note>
+        </trans-unit>
+        <trans-unit id="VSTHRD111_MessageFormat" translate="yes" xml:space="preserve">
+          <source>Add .ConfigureAwait(bool) to your await expression.</source>
+          <target state="new">Add .ConfigureAwait(bool) to your await expression.</target>
+          <note from="MultilingualBuild" annotates="source" priority="2">".ConfigureAwait(bool)" and "await" should NOT be translated.</note>
+        </trans-unit>
+        <trans-unit id="VSTHRD111_Title" translate="yes" xml:space="preserve">
+          <source>Use ConfigureAwait(bool)</source>
+          <target state="new">Use ConfigureAwait(bool)</target>
+          <note from="MultilingualBuild" annotates="source" priority="2">"ConfigureAwait(bool)" is a reference and should NOT be translated.</note>
         </trans-unit>
       </group>
     </body>
