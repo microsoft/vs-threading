@@ -1,32 +1,13 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
     using System.Threading.Tasks;
-    using CodeAnalysis.Diagnostics;
-    using Microsoft.CodeAnalysis;
     using Xunit;
-    using Xunit.Abstractions;
+    using Verify = CSharpCodeFixVerifier<VSTHRD012SpecifyJtfWhereAllowed, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
-    public class VSTHRD012SpecifyJtfWhereAllowedTests : DiagnosticVerifier
+    public class VSTHRD012SpecifyJtfWhereAllowedTests
     {
-        private DiagnosticResult expect = new DiagnosticResult
-        {
-            Id = VSTHRD012SpecifyJtfWhereAllowed.Id,
-            Severity = DiagnosticSeverity.Warning,
-        };
-
-        public VSTHRD012SpecifyJtfWhereAllowedTests(ITestOutputHelper logger)
-            : base(logger)
-        {
-        }
-
-        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer() => new VSTHRD012SpecifyJtfWhereAllowed();
-
         [Fact]
-        public void SiblingMethodOverloads_WithoutJTF_GeneratesWarning()
+        public async Task SiblingMethodOverloads_WithoutJTF_GeneratesWarning()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -42,12 +23,17 @@ class Test {
 }
 ";
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 9, 7, 10) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithSpan(7, 9, 7, 10);
+            await new Verify.Test
+            {
+                TestCode = test,
+                ExpectedDiagnostics = { expected },
+                VerifyExclusions = false,
+            }.RunAsync();
         }
 
         [Fact]
-        public void SiblingMethodOverloads_WithoutJTC_GeneratesWarning()
+        public async Task SiblingMethodOverloads_WithoutJTC_GeneratesWarning()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -63,12 +49,17 @@ class Test {
 }
 ";
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 9, 7, 10) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithSpan(7, 9, 7, 10);
+            await new Verify.Test
+            {
+                TestCode = test,
+                ExpectedDiagnostics = { expected },
+                VerifyExclusions = false,
+            }.RunAsync();
         }
 
         [Fact]
-        public void SiblingMethodOverloadsWithOptionalAttribute_WithoutJTC_GeneratesNoWarning()
+        public async Task SiblingMethodOverloadsWithOptionalAttribute_WithoutJTC_GeneratesNoWarning()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -85,11 +76,11 @@ class Test {
 }
 ";
 
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void SiblingCtorOverloads_WithoutJTF_GeneratesWarning()
+        public async Task SiblingCtorOverloads_WithoutJTF_GeneratesWarning()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -107,12 +98,17 @@ class Apple {
 }
 ";
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 21, 7, 26) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithSpan(7, 21, 7, 26);
+            await new Verify.Test
+            {
+                TestCode = test,
+                ExpectedDiagnostics = { expected },
+                VerifyExclusions = false,
+            }.RunAsync();
         }
 
         [Fact]
-        public void SiblingMethodOverloads_WithJTF_GeneratesNoWarning()
+        public async Task SiblingMethodOverloads_WithJTF_GeneratesNoWarning()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -131,11 +127,11 @@ class Test {
 }
 ";
 
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void AsyncLazy_WithoutJTF_GeneratesWarning()
+        public async Task AsyncLazy_WithoutJTF_GeneratesWarning()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -148,12 +144,17 @@ class Test {
 }
 ";
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 21, 7, 35) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithSpan(7, 21, 7, 35);
+            await new Verify.Test
+            {
+                TestCode = test,
+                ExpectedDiagnostics = { expected },
+                VerifyExclusions = false,
+            }.RunAsync();
         }
 
         [Fact]
-        public void AsyncLazy_WithNullJTF_GeneratesNoWarning()
+        public async Task AsyncLazy_WithNullJTF_GeneratesNoWarning()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -166,11 +167,11 @@ class Test {
 }
 ";
 
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void AsyncLazy_WithJTF_GeneratesNoWarning()
+        public async Task AsyncLazy_WithJTF_GeneratesNoWarning()
         {
             var test = @"
 using Microsoft.VisualStudio.Threading;
@@ -185,11 +186,11 @@ class Test {
 }
 ";
 
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void JTF_RunAsync_GeneratesNoWarning()
+        public async Task JTF_RunAsync_GeneratesNoWarning()
         {
             var test = @"
 using Microsoft.VisualStudio.Shell;
@@ -210,11 +211,11 @@ class Test {
 }
 ";
 
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void JTF_Ctor_GeneratesNoWarning()
+        public async Task JTF_Ctor_GeneratesNoWarning()
         {
             var test = @"
 using Microsoft.VisualStudio.Shell;
@@ -231,7 +232,7 @@ class Test {
 }
 ";
 
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
     }
 }
