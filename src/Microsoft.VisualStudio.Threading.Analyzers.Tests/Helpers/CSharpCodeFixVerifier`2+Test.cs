@@ -20,11 +20,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         public class Test : CSharpCodeFixTest<TAnalyzer, TCodeFix, XUnitVerifier>
         {
             private static readonly ImmutableArray<string> VSSDKPackageReferences = ImmutableArray.Create(new string[] {
-                Path.Combine("Microsoft.VisualStudio.Shell.Interop", "7.10.6071", "lib", "Microsoft.VisualStudio.Shell.Interop.dll"),
-                Path.Combine("Microsoft.VisualStudio.Shell.Interop.11.0", "11.0.61030", "lib", "Microsoft.VisualStudio.Shell.Interop.11.0.dll"),
-                Path.Combine("Microsoft.VisualStudio.Shell.Interop.14.0.DesignTime", "14.3.25407", "lib", "Microsoft.VisualStudio.Shell.Interop.14.0.DesignTime.dll"),
-                Path.Combine("Microsoft.VisualStudio.Shell.Immutable.14.0", "14.3.25407", "lib\\net45", "Microsoft.VisualStudio.Shell.Immutable.14.0.dll"),
-                Path.Combine("Microsoft.VisualStudio.Shell.14.0", "14.3.25407", "lib", "Microsoft.VisualStudio.Shell.14.0.dll"),
+                "Microsoft.VisualStudio.Shell.Interop.dll",
+                "Microsoft.VisualStudio.Shell.Interop.11.0.dll",
+                "Microsoft.VisualStudio.Shell.Interop.14.0.DesignTime.dll",
+                "Microsoft.VisualStudio.Shell.Immutable.14.0.dll",
+                "Microsoft.VisualStudio.Shell.14.0.dll",
+                "System.Threading.Tasks.Extensions.dll",
             });
 
             public Test()
@@ -54,7 +55,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                     {
                         solution = solution.AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(IOleServiceProvider).Assembly.Location));
 
-                        var nugetPackagesFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages");
+                        var nugetPackagesFolder = Environment.CurrentDirectory;
                         foreach (var reference in VSSDKPackageReferences)
                         {
                             solution = solution.AddMetadataReference(projectId, MetadataReference.CreateFromFile(Path.Combine(nugetPackagesFolder, reference)));
