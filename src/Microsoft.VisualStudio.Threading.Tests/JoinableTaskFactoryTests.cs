@@ -46,7 +46,7 @@
                     // throwing in this callback results in JTF calling Environment.FailFast
                     // which crashes the test runner. We'll assert on this local boolean
                     // after we exit this critical section.
-                    noDeadlockDetected = otherThread.Wait(AsyncDelay);
+                    noDeadlockDetected = otherThread.Wait(UnexpectedTimeout);
                 };
                 var jt = jtf.RunAsync(async delegate
                 {

@@ -59,7 +59,7 @@
             this.evt.Set();
             Assert.True(this.evt.IsSet);
             setReturned.Set();
-            Assert.True(inlinedContinuation.Wait(ExpectedTimeout));
+            Assert.True(inlinedContinuation.Wait(UnexpectedTimeout));
         }
 
         [Fact]
