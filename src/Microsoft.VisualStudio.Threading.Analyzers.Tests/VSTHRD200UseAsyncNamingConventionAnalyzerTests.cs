@@ -31,6 +31,52 @@ class Test {
         }
 
         [Fact]
+        public async Task ValueTaskReturningMethodWithoutSuffix_GeneratesWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    ValueTask Foo() => default;
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    ValueTask FooAsync() => default;
+}
+";
+
+            var expected = Verify.Diagnostic().WithSpan(5, 15, 5, 18);
+            await Verify.VerifyCodeFixAsync(test, expected, withFix);
+        }
+
+        [Fact]
+        public async Task ValueTaskOfTReturningMethodWithoutSuffix_GeneratesWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    ValueTask<int> Foo() => default;
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    ValueTask<int> FooAsync() => default;
+}
+";
+
+            var expected = Verify.Diagnostic().WithSpan(5, 20, 5, 23);
+            await Verify.VerifyCodeFixAsync(test, expected, withFix);
+        }
+
+        [Fact]
         public async Task TaskReturningMainMethodWithoutSuffix_GeneratesNoWarning()
         {
             var test = @"

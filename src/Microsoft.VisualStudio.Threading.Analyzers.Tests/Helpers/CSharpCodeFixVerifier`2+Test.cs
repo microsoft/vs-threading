@@ -25,6 +25,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 Path.Combine("Microsoft.VisualStudio.Shell.Interop.14.0.DesignTime", "14.3.25407", "lib", "Microsoft.VisualStudio.Shell.Interop.14.0.DesignTime.dll"),
                 Path.Combine("Microsoft.VisualStudio.Shell.Immutable.14.0", "14.3.25407", "lib\\net45", "Microsoft.VisualStudio.Shell.Immutable.14.0.dll"),
                 Path.Combine("Microsoft.VisualStudio.Shell.14.0", "14.3.25407", "lib", "Microsoft.VisualStudio.Shell.14.0.dll"),
+                Path.Combine("System.Threading.Tasks.Extensions", "4.5.1", "lib\\netstandard1.0", "System.Threading.Tasks.Extensions.dll"),
             });
 
             public Test()
