@@ -28,7 +28,7 @@ class Test {
     Task<int> FooAsync() {
         Task t = Task.FromResult(1);
         t.GetAwaiter().GetResult(); // VSTHRD002, VSTHRD103, VSTHRD102
-        jtf.Run(async delegate { await BarAsync(); }); // VSTHRD103, VSTHRD102
+        jtf.Run(async delegate { await BarAsync().ConfigureAwait(true); }); // VSTHRD103, VSTHRD102
         return Task.FromResult(1);
     }
 
