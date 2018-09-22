@@ -7,6 +7,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using System.Runtime.CompilerServices;
+    using System.Threading.Tasks;
     using System.Windows.Threading;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
@@ -25,7 +27,14 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 "Microsoft.VisualStudio.Shell.Interop.14.0.DesignTime.dll",
                 "Microsoft.VisualStudio.Shell.Immutable.14.0.dll",
                 "Microsoft.VisualStudio.Shell.14.0.dll",
+            });
+
+            private static readonly ImmutableArray<string> AdditionalReferencesFromBinFolder = ImmutableArray.Create(new string[] {
                 "System.Threading.Tasks.Extensions.dll",
+            });
+
+            private static readonly ImmutableArray<string> AdditionalReferencesFromGAC = ImmutableArray.Create(new string[] {
+                "System.Threading.Tasks, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
             });
 
             public Test()
@@ -33,7 +42,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 this.SolutionTransforms.Add((solution, projectId) =>
                 {
                     var parseOptions = (CSharpParseOptions)solution.GetProject(projectId).ParseOptions;
-                    solution = solution.WithProjectParseOptions(projectId, parseOptions.WithLanguageVersion(LanguageVersion.CSharp7_1));
+                    solution = solution.WithProjectParseOptions(projectId, parseOptions.WithLanguageVersion(LanguageVersion.CSharp7_1))
+                        .AddMetadataReferences(projectId, AdditionalReferencesFromBinFolder.Select(f => MetadataReference.CreateFromFile(Path.Combine(Environment.CurrentDirectory, f))))
+                        .AddMetadataReferences(projectId, AdditionalReferencesFromGAC.Select(assemblyName => MetadataReference.CreateFromFile(Assembly.Load(assemblyName).Location)));
 
                     if (this.HasEntryPoint)
                     {

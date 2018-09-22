@@ -461,6 +461,42 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Add .ConfigureAwait(false).
+        /// </summary>
+        internal static string VSTHRD111_CodeFix_False_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD111_CodeFix_False_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Add .ConfigureAwait(true).
+        /// </summary>
+        internal static string VSTHRD111_CodeFix_True_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD111_CodeFix_True_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Add .ConfigureAwait(bool) to your await expression..
+        /// </summary>
+        internal static string VSTHRD111_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSTHRD111_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Use ConfigureAwait(bool).
+        /// </summary>
+        internal static string VSTHRD111_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD111_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Use &quot;Async&quot; suffix in names of methods that return an awaitable type..
         /// </summary>
         internal static string VSTHRD200_AddAsync_MessageFormat {
