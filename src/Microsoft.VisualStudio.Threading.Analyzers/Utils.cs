@@ -682,6 +682,33 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return SyntaxFactory.QualifiedName(result, simpleName);
         }
 
+        internal static MemberAccessExpressionSyntax MemberAccess(IReadOnlyList<string> qualifiers, SimpleNameSyntax simpleName)
+        {
+            if (qualifiers == null)
+            {
+                throw new ArgumentNullException(nameof(qualifiers));
+            }
+
+            if (simpleName == null)
+            {
+                throw new ArgumentNullException(nameof(simpleName));
+            }
+
+            if (qualifiers.Count == 0)
+            {
+                throw new ArgumentException("At least one qualifier required.");
+            }
+
+            ExpressionSyntax result = SyntaxFactory.IdentifierName(qualifiers[0]);
+            for (int i = 1; i < qualifiers.Count; i++)
+            {
+                var rightSide = SyntaxFactory.IdentifierName(qualifiers[i]);
+                result = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, result, rightSide);
+            }
+
+            return SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, result, simpleName);
+        }
+
         internal static string GetFullName(ISymbol symbol)
         {
             if (symbol == null)
