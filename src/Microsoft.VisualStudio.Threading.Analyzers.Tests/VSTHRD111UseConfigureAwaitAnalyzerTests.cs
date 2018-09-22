@@ -3,7 +3,7 @@
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis.Testing;
     using Xunit;
-    using Verify = CSharpCodeFixVerifier<VSTHRD111UseConfigureAwaitAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
+    using Verify = CSharpCodeFixVerifier<VSTHRD111UseConfigureAwaitAnalyzer, VSTHRD111UseConfigureAwaitCodeFix>;
 
     public class VSTHRD111UseConfigureAwaitAnalyzerTests
     {
@@ -47,8 +47,18 @@ class Test {
 }
 ";
 
-            // TODO: verify both fixes
-            await Verify.VerifyAnalyzerAsync(test);
+            await new Verify.Test
+            {
+                TestCode = test,
+                FixedCode = fixFalse,
+                CodeFixEquivalenceKey = false.ToString(),
+            }.RunAsync();
+            await new Verify.Test
+            {
+                TestCode = test,
+                FixedCode = fixTrue,
+                CodeFixEquivalenceKey = true.ToString(),
+            }.RunAsync();
         }
 
         [Fact]
@@ -91,8 +101,18 @@ class Test {
 }
 ";
 
-            // TODO: verify both fixes
-            await Verify.VerifyAnalyzerAsync(test);
+            await new Verify.Test
+            {
+                TestCode = test,
+                FixedCode = fixFalse,
+                CodeFixEquivalenceKey = false.ToString(),
+            }.RunAsync();
+            await new Verify.Test
+            {
+                TestCode = test,
+                FixedCode = fixTrue,
+                CodeFixEquivalenceKey = true.ToString(),
+            }.RunAsync();
         }
 
         [Fact]
@@ -135,8 +155,18 @@ class Test {
 }
 ";
 
-            // TODO: verify both fixes
-            await Verify.VerifyAnalyzerAsync(test);
+            await new Verify.Test
+            {
+                TestCode = test,
+                FixedCode = fixFalse,
+                CodeFixEquivalenceKey = false.ToString(),
+            }.RunAsync();
+            await new Verify.Test
+            {
+                TestCode = test,
+                FixedCode = fixTrue,
+                CodeFixEquivalenceKey = true.ToString(),
+            }.RunAsync();
         }
     }
 }
