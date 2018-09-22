@@ -23,6 +23,7 @@ ID | Title | Severity | Supports
 [VSTHRD108](VSTHRD108.md) | Assert thread affinity unconditionally | Advisory | [1st rule](../threading_rules.md#Rule1), [VSTHRD010](VSTHRD010.md)
 [VSTHRD109](VSTHRD109.md) | Switch instead of assert in async methods | Advisory | [1st rule](../threading_rules.md#Rule1)
 [VSTHRD110](VSTHRD110.md) | Observe result of async calls | Advisory
+[VSTHRD110](VSTHRD111.md) | Use `.ConfigureAwait(bool)` | Advisory
 [VSTHRD200](VSTHRD200.md) | Use `Async` naming convention | Guideline | [VSTHRD103](VSTHRD103.md)
 
 ## Severity descriptions
