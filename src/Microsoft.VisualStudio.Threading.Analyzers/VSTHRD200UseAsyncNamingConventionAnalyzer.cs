@@ -55,7 +55,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             if (!methodSymbol.Name.EndsWith(MandatoryAsyncSuffix))
             {
-                if ((methodSymbol.ReturnType.Name == nameof(Task) || methodSymbol.ReturnType.Name == nameof(ValueTask)) &&
+                if ((methodSymbol.ReturnType.Name == nameof(Task) || methodSymbol.ReturnType.Name == "ValueTask") &&
                     methodSymbol.ReturnType.BelongsToNamespace(Namespaces.SystemThreadingTasks))
                 {
                     // Skip entrypoint methods since they must be called Main.
