@@ -32,6 +32,13 @@ steps:
   displayName: Purge package caches
   condition: and(succeeded(), ne(variables['Hosted'], 'true'))
 
+- task: DotNetCoreInstaller@0
+  displayName: Install .NET Core SDK 2.1.300
+  inputs:
+    packageType: sdk
+    version: 2.1.300
+  condition: and(succeeded(), ne(variables['Hosted'], 'true')) # Hosted agents already have this.
+
 - task: NuGetToolInstaller@0
   displayName: Pin nuget.exe version
   inputs:
