@@ -144,7 +144,10 @@
 
             Task<Document> Fix(string fullyQualifiedMethod, IMethodSymbol methodSymbol, Lazy<ISymbol> cancellationTokenSymbol, CancellationToken cancellationToken)
             {
-                var invocationExpression = SyntaxFactory.InvocationExpression(SyntaxFactory.ParseName(fullyQualifiedMethod));
+                int typeAndMethodDelimiterIndex = fullyQualifiedMethod.LastIndexOf('.');
+                IdentifierNameSyntax methodName = SyntaxFactory.IdentifierName(fullyQualifiedMethod.Substring(typeAndMethodDelimiterIndex + 1));
+                ExpressionSyntax invokedMethod = Utils.MemberAccess(fullyQualifiedMethod.Substring(0, typeAndMethodDelimiterIndex).Split('.'), methodName);
+                var invocationExpression = SyntaxFactory.InvocationExpression(invokedMethod);
                 var cancellationTokenParameter = methodSymbol.Parameters.FirstOrDefault(IsCancellationTokenParameter);
                 if (cancellationTokenParameter != null && cancellationTokenSymbol.Value != null)
                 {

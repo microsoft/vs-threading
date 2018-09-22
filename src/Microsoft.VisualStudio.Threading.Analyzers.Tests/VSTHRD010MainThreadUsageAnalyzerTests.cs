@@ -61,10 +61,6 @@ class Test {
                 TestCode = test,
                 ExpectedDiagnostics = { expected },
                 FixedCode = fix,
-
-                // Expected: SimpleMemberAccessExpression
-                // Actual:   QualifiedName
-                CodeFixValidationMode = CodeFixValidationMode.None,
             }.RunAsync();
         }
 
@@ -100,10 +96,6 @@ class Test {
                 TestCode = test,
                 ExpectedDiagnostics = { expected },
                 FixedCode = fix,
-
-                // Expected: SimpleMemberAccessExpression
-                // Actual:   QualifiedName
-                CodeFixValidationMode = CodeFixValidationMode.None,
             }.RunAsync();
         }
 
@@ -189,10 +181,6 @@ class Test {
                 TestCode = test,
                 ExpectedDiagnostics = { expected },
                 FixedCode = fix,
-
-                // Expected: SimpleMemberAccessExpression
-                // Actual:   QualifiedName
-                CodeFixValidationMode = CodeFixValidationMode.None,
             }.RunAsync();
         }
 
@@ -226,10 +214,6 @@ class Test {
                 TestCode = test,
                 ExpectedDiagnostics = { expected },
                 FixedCode = fix,
-
-                // Expected: SimpleMemberAccessExpression
-                // Actual:   QualifiedName
-                CodeFixValidationMode = CodeFixValidationMode.None,
             }.RunAsync();
         }
 
@@ -261,7 +245,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 
 class Test {
     Test() {
-        Test.VerifyOnUIThread();
+        VerifyOnUIThread();
         Foo();
     }
 
@@ -303,10 +287,6 @@ class Test {
                 ExpectedDiagnostics = { expected },
                 FixedCode = fix1,
                 CodeFixIndex = CodeFixIndex.VerifyOnUIThread,
-
-                // Expected: SimpleMemberAccessExpression
-                // Actual:   QualifiedName
-                CodeFixValidationMode = CodeFixValidationMode.None,
             }.RunAsync();
 
             await new Verify.Test
@@ -315,10 +295,6 @@ class Test {
                 ExpectedDiagnostics = { expected },
                 FixedCode = fix2,
                 CodeFixIndex = CodeFixIndex.ThrowIfNotOnUIThreadIndex1,
-
-                // Expected: SimpleMemberAccessExpression
-                // Actual:   QualifiedName
-                CodeFixValidationMode = CodeFixValidationMode.None,
             }.RunAsync();
         }
 
@@ -384,10 +360,6 @@ class Test {
                 ExpectedDiagnostics = { Verify.Diagnostic(DescriptorSync).WithSpan(8, 13, 8, 24).WithArguments("IVsSolution", "Test.VerifyOnUIThread") },
                 FixedCode = fix,
                 CodeFixIndex = CodeFixIndex.ThrowIfNotOnUIThreadIndex0,
-
-                // Expected: SimpleMemberAccessExpression
-                // Actual:   QualifiedName
-                CodeFixValidationMode = CodeFixValidationMode.None,
             }.RunAsync();
         }
 
@@ -542,7 +514,7 @@ class Test {
     }
 
     void H() {
-        Test.VerifyOnUIThread();
+        VerifyOnUIThread();
         F();
         G();
     }
@@ -561,10 +533,6 @@ class Test {
                 },
                 FixedCode = fix,
                 CodeFixIndex = CodeFixIndex.VerifyOnUIThread,
-
-                // Expected: SimpleMemberAccessExpression
-                // Actual:   QualifiedName
-                CodeFixValidationMode = CodeFixValidationMode.None,
             }.RunAsync();
         }
 
@@ -769,10 +737,6 @@ class Test {
                 ExpectedDiagnostics = { Verify.Diagnostic(DescriptorSync).WithSpan(11, 17, 11, 28).WithArguments("IVsSolution", "Test.VerifyOnUIThread") },
                 FixedCode = fix,
                 CodeFixIndex = CodeFixIndex.VerifyOnUIThread,
-
-                // Expected: SimpleMemberAccessExpression
-                // Actual:   QualifiedName
-                CodeFixValidationMode = CodeFixValidationMode.None,
             }.RunAsync();
         }
 
@@ -824,10 +788,6 @@ class Test {
                 ExpectedDiagnostics = { Verify.Diagnostic(DescriptorSync).WithSpan(12, 17, 12, 28).WithArguments("IVsSolution", "Test.VerifyOnUIThread") },
                 FixedCode = fix,
                 CodeFixIndex = CodeFixIndex.VerifyOnUIThread,
-
-                // Expected: SimpleMemberAccessExpression
-                // Actual:   QualifiedName
-                CodeFixValidationMode = CodeFixValidationMode.None,
             }.RunAsync();
         }
 
@@ -901,10 +861,6 @@ class Test {
                 ExpectedDiagnostics = { Verify.Diagnostic(DescriptorSync).WithSpan(11, 17, 11, 28).WithArguments("IVsSolution", "Test.VerifyOnUIThread") },
                 FixedCode = fix,
                 CodeFixIndex = CodeFixIndex.VerifyOnUIThread,
-
-                // Expected: SimpleMemberAccessExpression
-                // Actual:   QualifiedName
-                CodeFixValidationMode = CodeFixValidationMode.None,
             }.RunAsync();
         }
 
@@ -1298,10 +1254,6 @@ class Test : AsyncPackage {
                 },
                 FixedCode = fix,
                 CodeFixIndex = CodeFixIndex.NotThreadHelper,
-
-                // Expected: SimpleMemberAccessExpression
-                // Actual:   QualifiedName
-                CodeFixValidationMode = CodeFixValidationMode.None,
             }.RunAsync();
         }
 
@@ -1345,10 +1297,6 @@ class Test : AsyncPackage {
                 TestCode = test,
                 ExpectedDiagnostics = { expected },
                 FixedCode = fix,
-
-                // Expected: SimpleMemberAccessExpression
-                // Actual:   QualifiedName
-                CodeFixValidationMode = CodeFixValidationMode.None,
             }.RunAsync();
         }
 
@@ -1439,10 +1387,6 @@ class Test : AsyncPackage {
                 ExpectedDiagnostics = { Verify.Diagnostic(DescriptorAsync).WithSpan(13, 65, 13, 76).WithArguments("IVsShell", "JoinableTaskFactory.SwitchToMainThreadAsync") },
                 FixedCode = fix,
                 CodeFixIndex = CodeFixIndex.NotThreadHelper,
-
-                // Expected: SimpleMemberAccessExpression
-                // Actual:   QualifiedName
-                CodeFixValidationMode = CodeFixValidationMode.None,
             }.RunAsync();
         }
 
@@ -1484,7 +1428,7 @@ class Test : AsyncPackage {
     static Task MySwitchingMethodAsync(bool foo = false, CancellationToken ct = default(CancellationToken)) => TplExtensions.CompletedTask;
 
     protected override async Task InitializeAsync(System.Threading.CancellationToken cancellationToken, IProgress<ServiceProgressData> progress) {
-        await Test.MySwitchingMethodAsync(ct: cancellationToken);
+        await MySwitchingMethodAsync(ct: cancellationToken);
         await base.InitializeAsync(cancellationToken, progress);
         var shell = await asp.GetServiceAsync(typeof(SVsShell)) as IVsShell;
     }
@@ -1496,10 +1440,6 @@ class Test : AsyncPackage {
                 ExpectedDiagnostics = { Verify.Diagnostic(DescriptorAsync).WithSpan(17, 65, 17, 76).WithArguments("IVsShell", "JoinableTaskFactory.SwitchToMainThreadAsync") },
                 FixedCode = fix,
                 CodeFixIndex = CodeFixIndex.MySwitchingMethodAsync,
-
-                // Expected: SimpleMemberAccessExpression
-                // Actual:   QualifiedName
-                CodeFixValidationMode = CodeFixValidationMode.None,
             }.RunAsync();
         }
 
@@ -1681,10 +1621,6 @@ class A
                 TestCode = test,
                 ExpectedDiagnostics = { expected },
                 FixedCode = fix,
-
-                // Expected: SimpleMemberAccessExpression
-                // Actual:   QualifiedName
-                CodeFixValidationMode = CodeFixValidationMode.None,
             }.RunAsync();
         }
 
@@ -1724,10 +1660,6 @@ class A
                 TestCode = test,
                 ExpectedDiagnostics = { expected },
                 FixedCode = fix,
-
-                // Expected: SimpleMemberAccessExpression
-                // Actual:   QualifiedName
-                CodeFixValidationMode = CodeFixValidationMode.None,
             }.RunAsync();
         }
 
