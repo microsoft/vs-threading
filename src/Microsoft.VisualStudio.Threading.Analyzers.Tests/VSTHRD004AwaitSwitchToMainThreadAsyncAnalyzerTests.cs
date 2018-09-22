@@ -1,28 +1,14 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
-    using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CodeFixes;
-    using Microsoft.CodeAnalysis.Diagnostics;
+    using System.Threading.Tasks;
+    using Microsoft.CodeAnalysis.Testing;
     using Xunit;
-    using Xunit.Abstractions;
+    using Verify = CSharpCodeFixVerifier<VSTHRD004AwaitSwitchToMainThreadAsyncAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
-    public class VSTHRD004AwaitSwitchToMainThreadAsyncAnalyzerTests : DiagnosticVerifier
+    public class VSTHRD004AwaitSwitchToMainThreadAsyncAnalyzerTests
     {
-        private DiagnosticResult expect = new DiagnosticResult
-        {
-            Id = VSTHRD004AwaitSwitchToMainThreadAsyncAnalyzer.Id,
-            Severity = DiagnosticSeverity.Error,
-        };
-
-        public VSTHRD004AwaitSwitchToMainThreadAsyncAnalyzerTests(ITestOutputHelper logger)
-            : base(logger)
-        {
-        }
-
-        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer() => new VSTHRD004AwaitSwitchToMainThreadAsyncAnalyzer();
-
         [Fact]
-        public void SyncMethod_ProducesDiagnostic()
+        public async Task SyncMethod_ProducesDiagnostic()
         {
             var test = @"
 class Test
@@ -36,12 +22,12 @@ class Test
 }
 ";
 
-            this.expect = this.CreateDiagnostic(8, 13);
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = this.CreateDiagnostic(8, 13);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void AsyncMethod_ProducesDiagnostic()
+        public async Task AsyncMethod_ProducesDiagnostic()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -58,12 +44,12 @@ class Test
 }
 ";
 
-            this.expect = this.CreateDiagnostic(10, 13);
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = this.CreateDiagnostic(10, 13);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void AsyncMethod_NoAwaitInParenthesizedLambda_ProducesDiagnostic()
+        public async Task AsyncMethod_NoAwaitInParenthesizedLambda_ProducesDiagnostic()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -79,12 +65,12 @@ class Test
 }
 ";
 
-            this.expect = this.CreateDiagnostic(10, 34);
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = this.CreateDiagnostic(10, 34);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void AsyncMethod_NoAwaitInAnonymousDelegate_ProducesDiagnostic()
+        public async Task AsyncMethod_NoAwaitInAnonymousDelegate_ProducesDiagnostic()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -100,12 +86,12 @@ class Test
 }
 ";
 
-            this.expect = this.CreateDiagnostic(10, 39);
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = this.CreateDiagnostic(10, 39);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void AsyncMethodWithAwait_ProducesNoDiagnostic()
+        public async Task AsyncMethodWithAwait_ProducesNoDiagnostic()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -121,11 +107,11 @@ class Test
 }
 ";
 
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void TaskReturningSyncMethod_ProducesDiagnostic()
+        public async Task TaskReturningSyncMethod_ProducesDiagnostic()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -142,17 +128,11 @@ class Test
 }
 ";
 
-            this.expect = this.CreateDiagnostic(10, 13);
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = this.CreateDiagnostic(10, 13);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
-        private DiagnosticResult CreateDiagnostic(int line, int column, int length = 23, string messagePattern = null) =>
-           new DiagnosticResult
-           {
-               Id = this.expect.Id,
-               MessagePattern = messagePattern ?? this.expect.MessagePattern,
-               Severity = this.expect.Severity,
-               Locations = new[] { new DiagnosticResultLocation("Test0.cs", line, column, line, column + length) },
-           };
+        private DiagnosticResult CreateDiagnostic(int line, int column)
+            => Verify.Diagnostic().WithSpan(line, column, line, column + nameof(JoinableTaskFactory.SwitchToMainThreadAsync).Length);
     }
 }

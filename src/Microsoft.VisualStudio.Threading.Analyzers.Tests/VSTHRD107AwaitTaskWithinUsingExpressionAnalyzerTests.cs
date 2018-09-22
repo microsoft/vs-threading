@@ -1,37 +1,13 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
-    using System;
-    using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CodeFixes;
-    using Microsoft.CodeAnalysis.Diagnostics;
+    using System.Threading.Tasks;
     using Xunit;
-    using Xunit.Abstractions;
+    using Verify = CSharpCodeFixVerifier<VSTHRD107AwaitTaskWithinUsingExpressionAnalyzer, VSTHRD107AwaitTaskWithinUsingExpressionCodeFix>;
 
-    public class VSTHRD107AwaitTaskWithinUsingExpressionAnalyzerTests : CodeFixVerifier
+    public class VSTHRD107AwaitTaskWithinUsingExpressionAnalyzerTests
     {
-        private DiagnosticResult expect = new DiagnosticResult
-        {
-            Id = VSTHRD107AwaitTaskWithinUsingExpressionAnalyzer.Id,
-            Severity = DiagnosticSeverity.Error,
-        };
-
-        public VSTHRD107AwaitTaskWithinUsingExpressionAnalyzerTests(ITestOutputHelper logger)
-            : base(logger)
-        {
-        }
-
-        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
-        {
-            return new VSTHRD107AwaitTaskWithinUsingExpressionAnalyzer();
-        }
-
-        protected override CodeFixProvider GetCSharpCodeFixProvider()
-        {
-            return new VSTHRD107AwaitTaskWithinUsingExpressionCodeFix();
-        }
-
         [Fact]
-        public void UsingTaskOfTReturningMethodInSyncMethod_GeneratesError()
+        public async Task UsingTaskOfTReturningMethodInSyncMethod_GeneratesError()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -60,13 +36,12 @@ class Test {
 }
 ";
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 16, 8, 32) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
-            this.VerifyCSharpFix(test, withFix);
+            var expected = Verify.Diagnostic().WithSpan(8, 16, 8, 32);
+            await Verify.VerifyCodeFixAsync(test, expected, withFix);
         }
 
         [Fact]
-        public void UsingTaskOfTReturningMethodInIntReturningMethod_GeneratesError()
+        public async Task UsingTaskOfTReturningMethodInIntReturningMethod_GeneratesError()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -99,13 +74,12 @@ class Test {
 }
 ";
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 16, 8, 32) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
-            this.VerifyCSharpFix(test, withFix);
+            var expected = Verify.Diagnostic().WithSpan(8, 16, 8, 32);
+            await Verify.VerifyCodeFixAsync(test, expected, withFix);
         }
 
         [Fact]
-        public void UsingTaskOfTReturningMethodInTaskReturningMethod_GeneratesError()
+        public async Task UsingTaskOfTReturningMethodInTaskReturningMethod_GeneratesError()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -136,13 +110,12 @@ class Test {
 }
 ";
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 16, 8, 32) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
-            this.VerifyCSharpFix(test, withFix);
+            var expected = Verify.Diagnostic().WithSpan(8, 16, 8, 32);
+            await Verify.VerifyCodeFixAsync(test, expected, withFix);
         }
 
         [Fact]
-        public void UsingTaskOfTReturningMethodInAsyncMethod_GeneratesError()
+        public async Task UsingTaskOfTReturningMethodInAsyncMethod_GeneratesError()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -171,13 +144,12 @@ class Test {
 }
 ";
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 8, 16, 8, 32) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
-            this.VerifyCSharpFix(test, withFix);
+            var expected = Verify.Diagnostic().WithSpan(8, 16, 8, 32);
+            await Verify.VerifyCodeFixAsync(test, expected, withFix);
         }
 
         [Fact]
-        public void UsingTaskOfTCompoundExpressionInAsyncMethod_GeneratesError()
+        public async Task UsingTaskOfTCompoundExpressionInAsyncMethod_GeneratesError()
         {
             var test = @"
 using System;
@@ -208,13 +180,12 @@ class Test {
 }
 ";
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 16, 9, 24) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
-            this.VerifyCSharpFix(test, withFix);
+            var expected = Verify.Diagnostic().WithSpan(9, 16, 9, 24);
+            await Verify.VerifyCodeFixAsync(test, expected, withFix);
         }
 
         [Fact]
-        public void UsingAwaitTaskOfTReturningMethod_GeneratesNoError()
+        public async Task UsingAwaitTaskOfTReturningMethod_GeneratesNoError()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -230,11 +201,11 @@ class Test {
 }
 ";
 
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void UsingAwaitTaskOfTask_GeneratesError()
+        public async Task UsingAwaitTaskOfTask_GeneratesError()
         {
             var test = @"
 using System;
@@ -251,12 +222,12 @@ class Test {
 }
 ";
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 16, 9, 27) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithSpan(9, 16, 9, 27);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void UsingTaskOfTLocal_GeneratesError()
+        public async Task UsingTaskOfTLocal_GeneratesError()
         {
             var test = @"
 using System;
@@ -273,8 +244,8 @@ class Test {
 }
 ";
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 16, 9, 19) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithSpan(9, 16, 9, 19);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
     }
 }
