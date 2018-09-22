@@ -1,178 +1,43 @@
 trigger:
   branches:
-    include: ["master", "v15.7", "v15.8"]
+    include: ["master", "v15.8"]
   paths:
-    exclude: [".github", "doc", "*.md"]
+    exclude: [".github", "doc", "*.md", ".appveyor.yml", ".travis.yml"]
 
-steps:
-- task: PowerShell@2
-  displayName: Set VSTS variables
-  inputs:
-    targetType: inline
-    script: |
-      if ($env:SignType -eq 'Real') {
-        $feedGuid = '09d8d03c-1ac8-456e-9274-4d2364527d99'
-      } else {
-        $feedGuid = 'da484c78-f942-44ef-b197-99e2a1bef53c'
-      }
+variables:
+  TreatWarningsAsErrors: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  BuildConfiguration: Release
+  BuildPlatform: Any CPU
 
-      Write-Host "##vso[task.setvariable variable=feedGuid]$feedGuid"
+resources:
+  containers:
+  - container: xenial
+    image: andrewarnott/linux-buildagent
 
-      if ($env:ComputerName.StartsWith('factoryvm', [StringComparison]::OrdinalIgnoreCase)) {
-        Write-Host "Running on hosted queue"
-        Write-Host "##vso[task.setvariable variable=Hosted]true"
-      }
+jobs:
+- job: Windows
+  pool: Hosted VS2017
+  steps:
+  - template: azure-pipelines/build.yml
 
-- task: CmdLine@2
-  inputs:
-    script: |
-      del /s /q "%userprofile%\.nuget\packages"
-      del /s /q "%LocalAppData%\NuGet\Cache"
-      del /s /q "%AppData%\tsd-cache"
-  displayName: Purge package caches
-  condition: and(succeeded(), ne(variables['Hosted'], 'true'))
+- job: Linux
+  pool:
+    vmImage: Ubuntu 16.04
+  container: xenial
+  variables:
+    GitLinkEnabled: false
+  steps:
+  - template: azure-pipelines/testfx.yml
+    parameters:
+      projectdirectory: src/Microsoft.VisualStudio.Threading.Tests
 
-- task: DotNetCoreInstaller@0
-  displayName: Install .NET Core SDK 2.1.300
-  inputs:
-    packageType: sdk
-    version: 2.1.300
-  condition: and(succeeded(), ne(variables['Hosted'], 'true')) # Hosted agents already have this.
-
-- task: NuGetToolInstaller@0
-  displayName: Pin nuget.exe version
-  inputs:
-    versionSpec: 4.6.1
-
-- task: MicroBuildIBCMergePlugin@0
-  displayName: MicroBuild IBCMerge Plugin
-  inputs:
-    branch: rel/d15.8
-  condition: and(succeeded(), ne(variables['Hosted'], 'true'))
-
-- task: MicroBuildSigningPlugin@1
-  displayName: MicroBuild Signing Plugin
-  inputs:
-    signType: $(SignType)
-    esrpSigning: true
-    zipSources: false
-
-- task: NuGetCommand@2
-  inputs:
-    restoreSolution: '**\*.sln'
-    feedsToUse: config
-  displayName: Nuget restore packages
-
-- task: VSBuild@1
-  inputs:
-    vsVersion: 15.0
-    msbuildArgs: /t:build,pack /m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/msbuild.binlog"
-    platform: Any CPU
-    configuration: $(BuildConfiguration)
-  displayName: Build Visual Studio solution
-
-- task: VSBuild@1
-  inputs:
-    vsVersion: 15.0
-    msbuildArgs: /t:build /m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/msbuild_x86.binlog"
-    platform: x86
-    configuration: $(BuildConfiguration)
-  displayName: Build AsyncDebugTools x86
-
-- task: VSBuild@1
-  inputs:
-    vsVersion: 15.0
-    msbuildArgs: /t:build /m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/msbuild_x64.binlog"
-    platform: x64
-    configuration: $(BuildConfiguration)
-  displayName: Build AsyncDebugTools x64
-
-- task: MicroBuildCleanup@1
-  displayName: MicroBuild Cleanup
-  condition: succeededOrFailed()
-
-## The rest of these steps are for deployment and skipped for PR builds
-
-#- task: PublishBuildArtifacts@1
-#  inputs:
-#    PathtoPublish: $(build.sourcesdirectory)/bin
-#    ArtifactName: bin
-#    ArtifactType: Container
-#  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
-
-- task: PublishBuildArtifacts@1
-  displayName: Publish build_logs
-  inputs:
-    PathtoPublish: $(Build.ArtifactStagingDirectory)/build_logs
-    ArtifactName: build_logs
-    ArtifactType: Container
-  condition: succeededOrFailed()
-
-- task: CopyFiles@1
-  displayName: Collecting symbols artifacts
-  inputs:
-    SourceFolder: bin
-    Contents: |
-      Microsoft.VisualStudio.Threading/$(BuildConfiguration)/**/Microsoft.VisualStudio.Threading.dll
-      Microsoft.VisualStudio.Threading/$(BuildConfiguration)/**/Microsoft.VisualStudio.Threading.pdb
-      Microsoft.VisualStudio.Threading.Analyzers/$(BuildConfiguration)/**/Microsoft.VisualStudio.Threading.Analyzers.dll
-      Microsoft.VisualStudio.Threading.Analyzers/$(BuildConfiguration)/**/Microsoft.VisualStudio.Threading.Analyzers.pdb
-      AsyncDebugTools/x86/$(BuildConfiguration)/AsyncDebugTools.dll
-      AsyncDebugTools/x86/$(BuildConfiguration)/AsyncDebugTools.pdb
-      AsyncDebugTools/x64/$(BuildConfiguration)/AsyncDebugTools.dll
-      AsyncDebugTools/x64/$(BuildConfiguration)/AsyncDebugTools.pdb
-    TargetFolder: $(Build.ArtifactStagingDirectory)/symbols
-  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
-
-- task: PublishBuildArtifacts@1
-  displayName: Publish symbols
-  inputs:
-    PathtoPublish: $(Build.ArtifactStagingDirectory)/symbols
-    ArtifactName: symbols
-    ArtifactType: Container
-  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
-
-- task: CopyFiles@1
-  displayName: Collecting deployable packages
-  inputs:
-    Contents: |
-      bin/**/$(BuildConfiguration)/**/*.nupkg
-    TargetFolder: $(Build.ArtifactStagingDirectory)/deployables
-    flattenFolders: true
-  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
-
-- task: CopyFiles@1
-  displayName: Collecting deployable binaries
-  inputs:
-    Contents: |
-      x86/$(BuildConfiguration)/AsyncDebugTools.dll
-      x64/$(BuildConfiguration)/AsyncDebugTools.dll
-    SourceFolder: bin/AsyncDebugTools
-    TargetFolder: $(Build.ArtifactStagingDirectory)/deployables
-  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
-
-- task: PublishBuildArtifacts@1
-  displayName: Publish deployables
-  inputs:
-    PathtoPublish: $(Build.ArtifactStagingDirectory)/deployables
-    ArtifactName: deployables
-    ArtifactType: Container
-  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
-
-- task: PublishSymbols@2
-  displayName: Archive symbols
-  inputs:
-    SymbolsFolder: $(Build.ArtifactStagingDirectory)/symbols
-    SearchPattern: '**/*.pdb'
-    IndexSources: false
-    SymbolServerType: TeamServices
-  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
-
-- task: NuGetCommand@2
-  displayName: Push NuGet packages
-  inputs:
-    command: push
-    searchPatternPush: '$(Build.SourcesDirectory)\bin\**\$(BuildConfiguration)\**\*.nupkg;!**\*.symbols.nupkg;!**/VS.*.nupkg'
-    publishVstsFeed: $(feedGuid)
-    allowPackageConflicts: true
-  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+- job: macOS
+  pool:
+    vmImage: macOS 10.13
+  variables:
+    GitLinkEnabled: false
+  steps:
+  - template: azure-pipelines/testfx.yml
+    parameters:
+      projectdirectory: src/Microsoft.VisualStudio.Threading.Tests

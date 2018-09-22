@@ -81,7 +81,7 @@
                 TaskContinuationOptions.ExecuteSynchronously);
             this.evt.Set();
             setReturned.Set();
-            Assert.True(inlinedContinuation.Wait(AsyncDelay));
+            Assert.True(inlinedContinuation.Wait(ExpectedTimeout));
         }
 
         /// <summary>

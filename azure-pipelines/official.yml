@@ -1,0 +1,17 @@
+trigger:
+  branches:
+    include: ["master", "v15.8"]
+  paths:
+    exclude: [".github", "doc", "*.md", ".appveyor.yml", ".travis.yml"]
+
+variables:
+  TreatWarningsAsErrors: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  BuildConfiguration: Release
+  BuildPlatform: Any CPU
+
+jobs:
+- job: Windows
+  pool: VSEng-MicroBuildVS2017
+  steps:
+  - template: build.yml

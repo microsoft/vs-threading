@@ -1,0 +1,30 @@
+steps:
+- script: dotnet restore
+  displayName: Restore packages
+  workingDirectory: ${{ parameters.projectdirectory }}
+- script: dotnet build -v n -f netcoreapp1.0 -c $(BuildConfiguration) --no-restore /bl:"$(Build.ArtifactStagingDirectory)/build_logs/netcoreapp1.0.binlog" -p:GitLinkEnabled=false
+  displayName: Build test for netcoreapp1.0
+  workingDirectory: ${{ parameters.projectdirectory }}
+- script: dotnet build -v n -f netcoreapp2.0 -c $(BuildConfiguration) --no-restore /bl:"$(Build.ArtifactStagingDirectory)/build_logs/netcoreapp2.0.binlog" -p:GitLinkEnabled=false
+  displayName: Build test for netcoreapp2.0
+  workingDirectory: ${{ parameters.projectdirectory }}
+
+- script: dotnet test -v n -f netcoreapp1.0 -c $(BuildConfiguration) --no-build --filter "TestCategory!=FailsInCloudTest"
+  displayName: Run tests for netcoreapp1.0 on the .NET Core 1.0.11 runtime
+  workingDirectory: ${{ parameters.projectdirectory }}
+  env:
+    DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX: 0
+    RuntimeFrameworkVersion: 1.0.11
+- script: dotnet test -v n -f netcoreapp1.0 -c $(BuildConfiguration) --no-build --filter "TestCategory!=FailsInCloudTest"
+  displayName: Run tests for netcoreapp1.0 on the .NET Core 1.1.8 runtime
+  workingDirectory: ${{ parameters.projectdirectory }}
+  env:
+    DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX: 0
+    RuntimeFrameworkVersion: 1.1.8
+- script: dotnet test -v n -f netcoreapp2.0 -c $(BuildConfiguration) --no-build --filter "TestCategory!=FailsInCloudTest"
+  displayName: Run tests for netcoreapp2.0 on the .NET Core 2.0.7 runtime
+  workingDirectory: ${{ parameters.projectdirectory }}
+  env:
+    DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX: 0
+    RuntimeFrameworkVersion: 2.0.7
+  enabled: false # TODO: figure out why this step hangs

@@ -1452,7 +1452,7 @@
             }).GetAwaiter().GetResult();
         }
 
-        [StaFact]
+        [StaFact, Trait("TestCategory", "FailsInCloudTest")]
         public void UpgradeableReadLockAsyncSynchronousReleaseAllowsOtherUpgradeableReaders()
         {
             var testComplete = new ManualResetEventSlim(); // deliberately synchronous
