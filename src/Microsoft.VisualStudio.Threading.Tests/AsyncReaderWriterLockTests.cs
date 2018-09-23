@@ -1796,7 +1796,7 @@
 
                 // Synchronously block until the test is complete.
                 firstLockReleased.Set();
-                Assert.True(testComplete.Wait(AsyncDelay));
+                Assert.True(testComplete.Wait(UnexpectedTimeout));
             });
 
             var secondLockTask = Task.Run(async delegate
