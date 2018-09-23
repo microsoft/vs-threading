@@ -61,7 +61,7 @@ class Test {
         }
 
         [Fact]
-        public async Task TaskResultShouldReportWarning()
+        public async Task Task_Result_ShouldReportWarning()
         {
             var test = @"
 using System;
@@ -81,6 +81,35 @@ using System.Threading.Tasks;
 class Test {
     async Task FAsync() {
         var task = Task.Run(() => 1);
+        var result = await task;
+    }
+}
+";
+            var expected = Verify.Diagnostic().WithSpan(8, 27, 8, 33);
+            await Verify.VerifyCodeFixAsync(test, expected, withFix);
+        }
+
+        [Fact]
+        public async Task ValueTask_Result_ShouldReportWarning()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void F() {
+        ValueTask<int> task = default;
+        var result = task.Result;
+    }
+}
+";
+            var withFix = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    async Task FAsync() {
+        ValueTask<int> task = default;
         var result = await task;
     }
 }
@@ -142,7 +171,7 @@ class Test {
         }
 
         [Fact]
-        public async Task AwaiterGetResultShouldReportWarning()
+        public async Task Task_GetAwaiter_GetResult_ShouldReportWarning()
         {
             var test = @"
 using System;
@@ -162,6 +191,35 @@ using System.Threading.Tasks;
 class Test {
     async Task FAsync() {
         var task = Task.Run(() => 1);
+        await task;
+    }
+}
+";
+            var expected = Verify.Diagnostic().WithSpan(8, 27, 8, 36);
+            await Verify.VerifyCodeFixAsync(test, expected, withFix);
+        }
+
+        [Fact]
+        public async Task ValueTask_GetAwaiter_GetResult_ShouldReportWarning()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void F() {
+        ValueTask task = default;
+        task.GetAwaiter().GetResult();
+    }
+}
+";
+            var withFix = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    async Task FAsync() {
+        ValueTask task = default;
         await task;
     }
 }

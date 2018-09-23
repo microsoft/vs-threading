@@ -1794,7 +1794,7 @@
 
                 // Synchronously block until the test is complete.
                 firstLockReleased.Set();
-                Assert.True(testComplete.Wait(AsyncDelay));
+                Assert.True(testComplete.Wait(UnexpectedTimeout));
             });
 
             var secondLockTask = Task.Run(async delegate
@@ -4621,6 +4621,7 @@
             bool hasUpgradeableReadLock = this.asyncLock.IsUpgradeableReadLockHeld;
             bool hasWriteLock = this.asyncLock.IsWriteLockHeld;
             bool concurrencyExpected = !(hasWriteLock || hasUpgradeableReadLock);
+            TimeSpan signalAndWaitDelay = concurrencyExpected ? UnexpectedTimeout : TimeSpan.FromMilliseconds(AsyncDelay / 2);
 
             var barrier = new Barrier(2); // we use a *synchronous* style Barrier since we are deliberately measuring multi-thread concurrency
 
@@ -4630,12 +4631,12 @@
                 Assert.Equal(hasReadLock, this.asyncLock.IsReadLockHeld);
                 Assert.Equal(hasUpgradeableReadLock, this.asyncLock.IsUpgradeableReadLockHeld);
                 Assert.Equal(hasWriteLock, this.asyncLock.IsWriteLockHeld);
-                AssertEx.Equal(concurrencyExpected, barrier.SignalAndWait(AsyncDelay / 2), "Concurrency detected for an exclusive lock.");
+                AssertEx.Equal(concurrencyExpected, barrier.SignalAndWait(signalAndWaitDelay), "Concurrency detected for an exclusive lock.");
                 await Task.Yield(); // this second yield is useful to check that the magic works across multiple continuations.
                 Assert.Equal(hasReadLock, this.asyncLock.IsReadLockHeld);
                 Assert.Equal(hasUpgradeableReadLock, this.asyncLock.IsUpgradeableReadLockHeld);
                 Assert.Equal(hasWriteLock, this.asyncLock.IsWriteLockHeld);
-                AssertEx.Equal(concurrencyExpected, barrier.SignalAndWait(AsyncDelay / 2), "Concurrency detected for an exclusive lock.");
+                AssertEx.Equal(concurrencyExpected, barrier.SignalAndWait(signalAndWaitDelay), "Concurrency detected for an exclusive lock.");
             };
 
             var asyncFuncs = new Func<Task>[] { worker, worker };

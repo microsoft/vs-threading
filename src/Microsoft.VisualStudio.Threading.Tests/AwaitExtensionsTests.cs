@@ -677,7 +677,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 // take up to 10 seconds to terminate (perhaps when a GC finalizer runs?)
                 // while other times it's really fast.
                 // But when the dedicated thread is a background thread, it seems reliably fast.
-                this.TimeoutTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                this.TimeoutTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(8));
                 int exitCode = await testExeProcess.WaitForExitAsync(this.TimeoutToken);
                 Assert.Equal(0, exitCode);
             }

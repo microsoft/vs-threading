@@ -148,7 +148,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static class ValueTask
         {
-            internal const string TypeName = "ValueTask";
+            internal const string TypeName = nameof(ValueTask);
 
             internal const string FullName = "System.Threading.Tasks." + TypeName;
 
