@@ -10,7 +10,7 @@
 
     /// <summary>
     /// Finds await expressions on <see cref="Task"/> that do not use <see cref="Task.ConfigureAwait(bool)"/>.
-    /// Also works on ValueTask.
+    /// Also works on <see cref="ValueTask"/>.
     /// </summary>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class VSTHRD111UseConfigureAwaitAnalyzer : DiagnosticAnalyzer

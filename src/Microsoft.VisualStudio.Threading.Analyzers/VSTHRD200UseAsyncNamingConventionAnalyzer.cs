@@ -63,7 +63,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 return;
             }
 
-            bool shouldEndWithAsync = (methodSymbol.ReturnType.Name == nameof(Task) || methodSymbol.ReturnType.Name == "ValueTask") &&
+            bool shouldEndWithAsync = (methodSymbol.ReturnType.Name == nameof(Task) || methodSymbol.ReturnType.Name == nameof(ValueTask)) &&
                 methodSymbol.ReturnType.BelongsToNamespace(Namespaces.SystemThreadingTasks);
 
             // Skip entrypoint methods since they must be called Main.
