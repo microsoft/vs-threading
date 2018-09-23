@@ -1,6 +1,6 @@
 # VSTHRD002 Avoid problematic synchronous waits
 
-Synchronously waiting on `Task` objects or awaiters is dangerous and may cause dead locks.
+Synchronously waiting on `Task`, `ValueTask`, or awaiters is dangerous and may cause dead locks.
 
 ## Examples of patterns that are flagged by this analyzer
 

@@ -283,6 +283,23 @@ public class Test {
             Assert.False(refAssemblies.Any(a => a.Name.Equals("System.ValueTuple", StringComparison.OrdinalIgnoreCase)));
         }
 
+        /// <summary>
+        /// Verifies that no reference to <see cref="ValueTask"/> exists,
+        /// so we know the analyzers will work on .NET Framework versions that did not include it.
+        /// </summary>
+        /// <remarks>
+        /// We reference the assembly during compilation for convenient use of nameof.
+        /// This unit test guards that we don't accidentally require the assembly
+        /// at runtime.
+        /// </remarks>
+        [Fact]
+        public void NoValueTaskReference()
+        {
+            var refAssemblies = typeof(VSTHRD001UseSwitchToMainThreadAsyncAnalyzer)
+                .Assembly.GetReferencedAssemblies();
+            Assert.False(refAssemblies.Any(a => a.Name.Equals("System.Threading.Tasks.Extensions", StringComparison.OrdinalIgnoreCase)));
+        }
+
         [Fact]
         public async Task NameOfUsedInAttributeArgument()
         {
