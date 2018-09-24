@@ -57,18 +57,29 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             var invokeMethod = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
             if (invokeMethod?.ContainingType.BelongsToNamespace(Namespaces.SystemThreadingTasks) ?? false)
             {
-                bool interestingMethod = invokeMethod.Name == nameof(Task.ContinueWith) && invokeMethod.ContainingType.Name == nameof(Task);
-                interestingMethod |= invokeMethod.Name == nameof(TaskFactory.StartNew) && invokeMethod.ContainingType.Name == nameof(TaskFactory);
-                if (interestingMethod)
+                bool reportDiagnostic = false;
+                bool isContinueWith = invokeMethod.Name == nameof(Task.ContinueWith) && invokeMethod.ContainingType.Name == nameof(Task);
+                bool isTaskFactoryStartNew = invokeMethod.Name == nameof(TaskFactory.StartNew) && invokeMethod.ContainingType.Name == nameof(TaskFactory);
+
+                if (isContinueWith || isTaskFactoryStartNew)
                 {
                     if (!invokeMethod.Parameters.Any(p => p.Type.Name == nameof(TaskScheduler) && p.Type.BelongsToNamespace(Namespaces.SystemThreadingTasks)))
                     {
-                        var memberAccessExpression = (MemberAccessExpressionSyntax)node.Expression;
-                        context.ReportDiagnostic(
-                            Diagnostic.Create(
-                                Descriptor,
-                                memberAccessExpression.Name.GetLocation()));
+                        reportDiagnostic |= isContinueWith;
+
+                        // Only notice uses of TaskFactory on the static instance (since custom instances may have a non-problematic default TaskScheduler set).
+                        reportDiagnostic |= isTaskFactoryStartNew
+                            && node.Expression is MemberAccessExpressionSyntax memberAccess && memberAccess.Expression is MemberAccessExpressionSyntax memberAccessInner
+                                && context.SemanticModel.GetSymbolInfo(memberAccessInner, context.CancellationToken).Symbol is IPropertySymbol factoryProperty
+                                && factoryProperty.ContainingType.Name == Types.Task.TypeName && factoryProperty.ContainingType.BelongsToNamespace(Namespaces.SystemThreadingTasks)
+                                && factoryProperty.Name == nameof(Task.Factory);
                     }
+                }
+
+                if (reportDiagnostic)
+                {
+                    var memberAccessExpression = (MemberAccessExpressionSyntax)node.Expression;
+                    context.ReportDiagnostic(Diagnostic.Create(Descriptor, memberAccessExpression.Name.GetLocation()));
                 }
             }
         }
