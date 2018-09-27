@@ -170,4 +170,26 @@ Verwenden Sie stattdessen "AsyncLazy&lt;T&gt;".</value>
     <value>Das Aufrufen oder Blockieren von asynchronem Code in einer Lazy&lt;T&gt;-Wertfactory kann zu einem Deadlock führen.
 Verwenden Sie stattdessen "AsyncLazy&lt;T&gt;".</value>
   </data>
+  <data name="VSTHRD200_AddAsync_MessageFormat" xml:space="preserve">
+    <value>Verwenden Sie das Suffix "Async" in Namen von Methoden, die einen Typ zurückgeben, der "await" unterstützt.</value>
+  </data>
+  <data name="VSTHRD200_RemoveAsync_MessageFormat" xml:space="preserve">
+    <value>Vermeiden Sie das Suffix "Async" in Namen von Methoden, die keinen Typ zurückgeben, der "await" unterstützt.</value>
+  </data>
+  <data name="VSTHRD111_CodeFix_False_Title" xml:space="preserve">
+    <value>.ConfigureAwait(false) hinzufügen</value>
+    <comment>".ConfigureAwait(false)" should not be translated.</comment>
+  </data>
+  <data name="VSTHRD111_CodeFix_True_Title" xml:space="preserve">
+    <value>.ConfigureAwait(true) hinzufügen</value>
+    <comment>".ConfigureAwait(true)" should not be translated.</comment>
+  </data>
+  <data name="VSTHRD111_MessageFormat" xml:space="preserve">
+    <value>Fügen Sie ".ConfigureAwait(bool)" zu Ihrem await-Ausdruck hinzu.</value>
+    <comment>".ConfigureAwait(bool)" and "await" should NOT be translated.</comment>
+  </data>
+  <data name="VSTHRD111_Title" xml:space="preserve">
+    <value>ConfigureAwait(bool) verwenden</value>
+    <comment>"ConfigureAwait(bool)" is a reference and should NOT be translated.</comment>
+  </data>
 </root>

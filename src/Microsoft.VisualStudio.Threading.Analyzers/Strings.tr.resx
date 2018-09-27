@@ -170,4 +170,26 @@ Bunun yerine AsyncLazy&lt;T&gt; kullanın.</value>
     <value>Bir Lazy&lt;T&gt; değer fabrikasında zaman uyumsuz kod çağrısı veya engellemesi çıkmaza yol açabilir.
 Bunun yerine AsyncLazy&lt;T&gt; kullanın.</value>
   </data>
+  <data name="VSTHRD200_AddAsync_MessageFormat" xml:space="preserve">
+    <value>Beklenebilir bir tür döndüren metotların adlarında “Async” ekini kullanın.</value>
+  </data>
+  <data name="VSTHRD200_RemoveAsync_MessageFormat" xml:space="preserve">
+    <value>Beklenebilir bir tür döndürmeyen metotların adlarında “Async” ekini kullanmaktan kaçının.</value>
+  </data>
+  <data name="VSTHRD111_CodeFix_False_Title" xml:space="preserve">
+    <value>.ConfigureAwait(false) ekleyin</value>
+    <comment>".ConfigureAwait(false)" should not be translated.</comment>
+  </data>
+  <data name="VSTHRD111_CodeFix_True_Title" xml:space="preserve">
+    <value>.ConfigureAwait(true) ekleyin</value>
+    <comment>".ConfigureAwait(true)" should not be translated.</comment>
+  </data>
+  <data name="VSTHRD111_MessageFormat" xml:space="preserve">
+    <value>await ifadenize .ConfigureAwait(bool) ekleyin.</value>
+    <comment>".ConfigureAwait(bool)" and "await" should NOT be translated.</comment>
+  </data>
+  <data name="VSTHRD111_Title" xml:space="preserve">
+    <value>ConfigureAwait(bool) kullanın</value>
+    <comment>"ConfigureAwait(bool)" is a reference and should NOT be translated.</comment>
+  </data>
 </root>

@@ -170,4 +170,26 @@
     <value>Lazy&lt;T&gt; 値ファクトリの非同期コードで呼び出しかブロックを実行すると、デッドロックを引き起こす可能性があります。
 代わりに AsyncLazy&lt;T&gt; をご使用ください。</value>
   </data>
+  <data name="VSTHRD200_AddAsync_MessageFormat" xml:space="preserve">
+    <value>待機可能な型を戻すメソッドの名前に "Async" サフィックスを使用します。</value>
+  </data>
+  <data name="VSTHRD200_RemoveAsync_MessageFormat" xml:space="preserve">
+    <value>待機可能な型を戻さないメソッドの名前に "Async" サフィックスを使用しないでください。</value>
+  </data>
+  <data name="VSTHRD111_CodeFix_False_Title" xml:space="preserve">
+    <value>.ConfigureAwait(false) を追加する</value>
+    <comment>".ConfigureAwait(false)" should not be translated.</comment>
+  </data>
+  <data name="VSTHRD111_CodeFix_True_Title" xml:space="preserve">
+    <value>.ConfigureAwait(true)　を追加する</value>
+    <comment>".ConfigureAwait(true)" should not be translated.</comment>
+  </data>
+  <data name="VSTHRD111_MessageFormat" xml:space="preserve">
+    <value>ConfigureAwait(bool) を Await 式に追加する。</value>
+    <comment>".ConfigureAwait(bool)" and "await" should NOT be translated.</comment>
+  </data>
+  <data name="VSTHRD111_Title" xml:space="preserve">
+    <value>ConfigureAwait(bool) を使用する</value>
+    <comment>"ConfigureAwait(bool)" is a reference and should NOT be translated.</comment>
+  </data>
 </root>

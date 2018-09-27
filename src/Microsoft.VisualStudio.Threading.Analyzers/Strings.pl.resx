@@ -170,4 +170,26 @@ Zamiast tego używaj klasy AsyncLazy&lt;T&gt;.</value>
     <value>Wywołanie kodu asynchronicznego lub zablokowanie na nim w fabryce wartości Lazy&lt;T&gt; może spowodować zakleszczenie.
 Zamiast tego użyj elementu AsyncLazy&lt;T&gt;.</value>
   </data>
+  <data name="VSTHRD200_AddAsync_MessageFormat" xml:space="preserve">
+    <value>Używaj sufiksu „Async” w nazwach metod zwracających typ awaitable.</value>
+  </data>
+  <data name="VSTHRD200_RemoveAsync_MessageFormat" xml:space="preserve">
+    <value>Unikaj sufiksu „Async” w nazwach metod nie zwracających typu awaitable.</value>
+  </data>
+  <data name="VSTHRD111_CodeFix_False_Title" xml:space="preserve">
+    <value>Dodaj ciąg .ConfigureAwait(false)</value>
+    <comment>".ConfigureAwait(false)" should not be translated.</comment>
+  </data>
+  <data name="VSTHRD111_CodeFix_True_Title" xml:space="preserve">
+    <value>Dodaj ciąg .ConfigureAwait(true)</value>
+    <comment>".ConfigureAwait(true)" should not be translated.</comment>
+  </data>
+  <data name="VSTHRD111_MessageFormat" xml:space="preserve">
+    <value>Dodaj ciąg.ConfigureAwait(bool) do swojego wyrażenia await.</value>
+    <comment>".ConfigureAwait(bool)" and "await" should NOT be translated.</comment>
+  </data>
+  <data name="VSTHRD111_Title" xml:space="preserve">
+    <value>Użyj metody ConfigureAwait(bool)</value>
+    <comment>"ConfigureAwait(bool)" is a reference and should NOT be translated.</comment>
+  </data>
 </root>
