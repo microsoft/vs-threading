@@ -13,6 +13,9 @@ namespace Microsoft.VisualStudio.Threading
 
     partial class JoinableTask
     {
+        private static readonly JoinableTask[] EmptyJoinableTaskArray = new JoinableTask[0];
+        private static readonly PendingNotification[] EmptyPendingNotificationArray = new PendingNotification[0];
+
         /// <summary>
         /// The head of a singly linked list of records to track which task may process events of this task.
         /// This list should contain only tasks which need be completed synchronously, and depends on this task.
@@ -87,11 +90,17 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="forMainThread">True if we want to find tasks to process the main thread queue. Otherwise tasks to process the background queue.</param>
         /// <returns>The collection of synchronous tasks we need notify.</returns>
-        private List<JoinableTask> GetDependingSynchronousTasks(bool forMainThread)
+        private IReadOnlyCollection<JoinableTask> GetDependingSynchronousTasks(bool forMainThread)
         {
             Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
-            var tasksNeedNotify = new List<JoinableTask>(this.CountOfDependingSynchronousTasks());
+            int count = this.CountOfDependingSynchronousTasks();
+            if (count == 0)
+            {
+                return EmptyJoinableTaskArray;
+            }
+
+            var tasksNeedNotify = new List<JoinableTask>(count);
             DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
             while (existingTaskTracking != null)
             {
@@ -114,12 +123,18 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="child">The new child task.</param>
         /// <returns>Pairs of synchronous tasks we need notify and the event source triggering it, plus the number of pending events.</returns>
-        private List<PendingNotification> AddDependingSynchronousTaskToChild(JoinableTask child)
+        private IReadOnlyCollection<PendingNotification> AddDependingSynchronousTaskToChild(JoinableTask child)
         {
             Requires.NotNull(child, nameof(child));
             Assumes.True(Monitor.IsEntered(this.owner.Context.SyncContextLock));
 
-            var tasksNeedNotify = new List<PendingNotification>(this.CountOfDependingSynchronousTasks());
+            int count = this.CountOfDependingSynchronousTasks();
+            if (count == 0)
+            {
+                return EmptyPendingNotificationArray;
+            }
+
+            var tasksNeedNotify = new List<PendingNotification>(count);
             DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
             while (existingTaskTracking != null)
             {
