@@ -646,44 +646,31 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         internal struct PendingNotification
         {
-            private readonly JoinableTask synchronousTask;
-            private readonly JoinableTask taskHasPendingMessages;
-            private readonly int newPendingMessagesCount;
-
             public PendingNotification(JoinableTask synchronousTask, JoinableTask taskHasPendingMessages, int newPendingMessagesCount)
             {
                 Requires.NotNull(synchronousTask, nameof(synchronousTask));
                 Requires.NotNull(taskHasPendingMessages, nameof(taskHasPendingMessages));
 
-                this.synchronousTask = synchronousTask;
-                this.taskHasPendingMessages = taskHasPendingMessages;
-                this.newPendingMessagesCount = newPendingMessagesCount;
+                this.SynchronousTask = synchronousTask;
+                this.TaskHasPendingMessages = taskHasPendingMessages;
+                this.NewPendingMessagesCount = newPendingMessagesCount;
             }
 
             /// <summary>
             /// Gets the synchronous task which need process new messages.
             /// </summary>
-            public JoinableTask SynchronousTask
-            {
-                get { return this.synchronousTask; }
-            }
+            public JoinableTask SynchronousTask { get; }
 
             /// <summary>
             /// Gets one JoinableTask which may have pending messages. We may have multiple new JoinableTasks which contains pending messages.
             /// This is just one of them.  It gives the synchronous task a way to start quickly without searching all messages.
             /// </summary>
-            public JoinableTask TaskHasPendingMessages
-            {
-                get { return this.taskHasPendingMessages; }
-            }
+            public JoinableTask TaskHasPendingMessages { get; }
 
             /// <summary>
             /// Gets the total number of new pending messages.  The real number could be less than that, but should not be more than that.
             /// </summary>
-            public int NewPendingMessagesCount
-            {
-                get { return this.newPendingMessagesCount; }
-            }
+            public int NewPendingMessagesCount { get; }
         }
 
         /// <summary>
@@ -706,7 +693,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Gets the synchronous task
             /// </summary>
-            internal JoinableTask SynchronousTask { get; private set; }
+            internal JoinableTask SynchronousTask { get; }
 
             /// <summary>
             /// Gets or sets the reference count.  We remove the item from the list, if it reaches 0.
