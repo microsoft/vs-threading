@@ -460,7 +460,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Remove all synchronous tasks tracked by the this task.
         /// This is called when this task is completed
         /// </summary>
-        internal void CleanupDependingSynchronousTask()
+        internal void OnDependentNodeCompleted()
         {
             Assumes.True(Monitor.IsEntered(this.JoinableTaskContext.SyncContextLock));
             if (this.dependingSynchronousTaskTracking != null)

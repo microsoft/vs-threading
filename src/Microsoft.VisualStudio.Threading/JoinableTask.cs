@@ -711,7 +711,7 @@ namespace Microsoft.VisualStudio.Threading
                         // will likely want to know that the JoinableTask has completed.
                         queueNeedProcessEvent = this.queueNeedProcessEvent;
 
-                        this.CleanupDependingSynchronousTask();
+                        this.OnDependentNodeCompleted();
                     }
                 }
 
