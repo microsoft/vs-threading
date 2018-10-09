@@ -227,5 +227,15 @@
                 Assert.True(presignaledEvent.WaitAsync().IsCompleted);
             }
         }
+
+        [Fact]
+        public async Task WaitAsyncWithCancellationToken()
+        {
+            var cts = new CancellationTokenSource();
+            Task waitTask = this.evt.WaitAsync(cts.Token);
+            cts.Cancel();
+            var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waitTask);
+            Assert.Equal(cts.Token, ex.CancellationToken);
+        }
     }
 }
