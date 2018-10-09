@@ -21,7 +21,7 @@
     public class VSTHRD010MainThreadUsageCodeFix : CodeFixProvider
     {
         private static readonly ImmutableArray<string> ReusableFixableDiagnosticIds = ImmutableArray.Create(
-          VSTHRD010MainThreadUsageAnalyzer.Id);
+            VSTHRD010MainThreadUsageAnalyzer.Id);
 
         public override ImmutableArray<string> FixableDiagnosticIds => ReusableFixableDiagnosticIds;
 
@@ -65,27 +65,14 @@
                 // For any symbol lookups, we want to consider the position of the very first statement in the block.
                 int positionForLookup = container.BlockOrExpression.GetLocation().SourceSpan.Start + 1;
 
-                var cancellationTokenSymbol = new Lazy<ISymbol>(() => semanticModel.LookupSymbols(positionForLookup)
-                    .Where(s => (s.IsStatic || !enclosingSymbol.IsStatic) && s.CanBeReferencedByName && IsSymbolTheRightType(s, nameof(CancellationToken), Namespaces.SystemThreading))
-                    .OrderBy(s => s.ContainingSymbol.Equals(enclosingSymbol) ? 1 : s.ContainingType.Equals(enclosingSymbol.ContainingType) ? 2 : 3) // prefer locality
-                    .FirstOrDefault());
+                Lazy<ISymbol> cancellationTokenSymbol = new Lazy<ISymbol>(() => Utils.FindCancellationToken(semanticModel, positionForLookup, context.CancellationToken).FirstOrDefault());
                 foreach (var option in options)
                 {
-                    var (fullTypeName, methodName) = SplitOffLastElement(option);
-                    var (ns, leafTypeName) = SplitOffLastElement(fullTypeName);
-                    string[] namespaces = ns?.Split('.');
-                    if (fullTypeName == null)
-                    {
-                        continue;
-                    }
-
-                    var proposedType = semanticModel.Compilation.GetTypeByMetadataName(fullTypeName);
-
                     // We're looking for methods that either require no parameters,
                     // or (if we have one to give) that have just one parameter that is a CancellationToken.
-                    var proposedMethod = proposedType?.GetMembers(methodName).OfType<IMethodSymbol>()
+                    var proposedMethod = Utils.FindMethodGroup(semanticModel, option)
                         .FirstOrDefault(m => !m.Parameters.Any(p => !p.HasExplicitDefaultValue) ||
-                            (cancellationTokenSymbol.Value != null && m.Parameters.Length == 1 && IsCancellationTokenParameter(m.Parameters[0])));
+                            (cancellationTokenSymbol.Value != null && m.Parameters.Length == 1 && Utils.IsCancellationTokenParameter(m.Parameters[0])));
                     if (proposedMethod == null)
                     {
                         // We can't find it, so don't offer to use it.
@@ -98,30 +85,16 @@
                     }
                     else
                     {
-                        // Search fields on the declaring type.
-                        // Consider local variables too, if they're captured in a closure from some surrounding code block
-                        // such that they would presumably be initialized by the time the first statement in our own code block runs.
-                        ITypeSymbol enclosingTypeSymbol = enclosingSymbol as ITypeSymbol ?? enclosingSymbol.ContainingType;
-                        if (enclosingTypeSymbol != null)
+                        foreach (var candidate in Utils.FindInstanceOf(proposedMethod.ContainingType, semanticModel, positionForLookup, context.CancellationToken))
                         {
-                            var candidateMembers = from symbol in semanticModel.LookupSymbols(positionForLookup, enclosingTypeSymbol)
-                                                   where symbol.IsStatic || !enclosingSymbol.IsStatic
-                                                   where IsSymbolTheRightType(symbol, leafTypeName, namespaces)
-                                                   select symbol;
-                            foreach (var candidate in candidateMembers)
+                            if (candidate.Item1)
                             {
-                                OfferFix($"{candidate.Name}.{methodName}");
+                                OfferFix($"{candidate.Item2.Name}.{proposedMethod.Name}");
                             }
-                        }
-
-                        // Find static fields/properties that return the matching type from other public, non-generic types.
-                        var candidateStatics = from offering in semanticModel.LookupStaticMembers(positionForLookup).OfType<ITypeSymbol>()
-                                               from symbol in offering.GetMembers()
-                                               where symbol.IsStatic && symbol.CanBeReferencedByName && IsSymbolTheRightType(symbol, leafTypeName, namespaces)
-                                               select symbol;
-                        foreach (var candidate in candidateStatics)
-                        {
-                            OfferFix($"{candidate.ContainingNamespace}.{candidate.ContainingType.Name}.{candidate.Name}.{methodName}");
+                            else
+                            {
+                                OfferFix($"{candidate.Item2.ContainingNamespace}.{candidate.Item2.ContainingType.Name}.{candidate.Item2.Name}.{proposedMethod.Name}");
+                            }
                         }
                     }
 
@@ -132,23 +105,13 @@
                 }
             }
 
-            bool IsSymbolTheRightType(ISymbol symbol, string typeName, IReadOnlyList<string> namespaces)
-            {
-                var fieldSymbol = symbol as IFieldSymbol;
-                var propertySymbol = symbol as IPropertySymbol;
-                var parameterSymbol = symbol as IParameterSymbol;
-                var localSymbol = symbol as ILocalSymbol;
-                var memberType = fieldSymbol?.Type ?? propertySymbol?.Type ?? parameterSymbol?.Type ?? localSymbol?.Type;
-                return memberType?.Name == typeName && memberType.BelongsToNamespace(namespaces);
-            }
-
             Task<Document> Fix(string fullyQualifiedMethod, IMethodSymbol methodSymbol, Lazy<ISymbol> cancellationTokenSymbol, CancellationToken cancellationToken)
             {
                 int typeAndMethodDelimiterIndex = fullyQualifiedMethod.LastIndexOf('.');
                 IdentifierNameSyntax methodName = SyntaxFactory.IdentifierName(fullyQualifiedMethod.Substring(typeAndMethodDelimiterIndex + 1));
                 ExpressionSyntax invokedMethod = Utils.MemberAccess(fullyQualifiedMethod.Substring(0, typeAndMethodDelimiterIndex).Split('.'), methodName);
                 var invocationExpression = SyntaxFactory.InvocationExpression(invokedMethod);
-                var cancellationTokenParameter = methodSymbol.Parameters.FirstOrDefault(IsCancellationTokenParameter);
+                var cancellationTokenParameter = methodSymbol.Parameters.FirstOrDefault(Utils.IsCancellationTokenParameter);
                 if (cancellationTokenParameter != null && cancellationTokenSymbol.Value != null)
                 {
                     var arg = SyntaxFactory.Argument(SyntaxFactory.IdentifierName(cancellationTokenSymbol.Value.Name));
@@ -173,24 +136,6 @@
                 var newBlock = initialBlockSyntax.WithStatements(initialBlockSyntax.Statements.Insert(0, addedStatement));
                 return Task.FromResult(context.Document.WithSyntaxRoot(root.ReplaceNode(container.BlockOrExpression, newBlock)));
             }
-
-            bool IsCancellationTokenParameter(IParameterSymbol parameterSymbol) => parameterSymbol.Type.Name == nameof(CancellationToken) && parameterSymbol.Type.BelongsToNamespace(Namespaces.SystemThreading);
-        }
-
-        private static Tuple<string, string> SplitOffLastElement(string qualifiedName)
-        {
-            if (qualifiedName == null)
-            {
-                return Tuple.Create<string, string>(null, null);
-            }
-
-            int lastPeriod = qualifiedName.LastIndexOf('.');
-            if (lastPeriod < 0)
-            {
-                return Tuple.Create<string, string>(null, qualifiedName);
-            }
-
-            return Tuple.Create(qualifiedName.Substring(0, lastPeriod), qualifiedName.Substring(lastPeriod + 1));
         }
     }
 }
