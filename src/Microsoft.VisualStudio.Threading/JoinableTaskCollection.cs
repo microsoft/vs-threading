@@ -93,10 +93,7 @@ namespace Microsoft.VisualStudio.Threading
                 Requires.Argument(false, "joinableTask", Strings.JoinableTaskContextAndCollectionMismatch);
             }
 
-            if (!joinableTask.IsCompleted)
-            {
-                this.AddDependency(joinableTask);
-            }
+            this.AddDependency(joinableTask);
         }
 
         /// <summary>
@@ -204,15 +201,22 @@ namespace Microsoft.VisualStudio.Threading
             return this.GetEnumerator();
         }
 
-        internal override JoinRelease AddDependency(JoinableTaskDependentNode joinChild)
+        internal sealed override JoinRelease AddDependency(JoinableTaskDependentNode joinChild)
         {
             JoinRelease result;
+
+            var joinableTask = joinChild as JoinableTask;
+            if (joinableTask?.IsCompleted == true)
+            {
+                return default(JoinableTaskCollection.JoinRelease);
+            }
+
             using (this.Context.NoMessagePumpSynchronizationContext.Apply())
             {
                 lock (this.Context.SyncContextLock)
                 {
                     result = base.AddDependency(joinChild);
-                    if (this.emptyEvent != null && joinChild is JoinableTask)
+                    if (this.emptyEvent != null && joinableTask != null)
                     {
                         this.emptyEvent.Reset();
                     }
@@ -222,7 +226,7 @@ namespace Microsoft.VisualStudio.Threading
             return result;
         }
 
-        internal override void RemoveDependency(JoinableTaskDependentNode joinChild)
+        internal sealed override void RemoveDependency(JoinableTaskDependentNode joinChild)
         {
             using (this.Context.NoMessagePumpSynchronizationContext.Apply())
             {

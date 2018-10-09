@@ -519,9 +519,9 @@ namespace Microsoft.VisualStudio.Threading
 
             if (this.childDependentNodes != null)
             {
-                foreach (var item in this.childDependentNodes)
+                foreach (var item in this.childDependentNodes.Keys)
                 {
-                    var childTiggeringTask = item.Key.AddDependingSynchronousTask(synchronousTask, ref totalEventsPending);
+                    var childTiggeringTask = item.AddDependingSynchronousTask(synchronousTask, ref totalEventsPending);
                     if (eventTriggeringTask == null)
                     {
                         eventTriggeringTask = childTiggeringTask;
@@ -613,9 +613,9 @@ namespace Microsoft.VisualStudio.Threading
 
                     if (this.childDependentNodes != null)
                     {
-                        foreach (var item in this.childDependentNodes)
+                        foreach (var item in this.childDependentNodes.Keys)
                         {
-                            item.Key.ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(reachableNodes, remainNodes);
+                            item.ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(reachableNodes, remainNodes);
                         }
                     }
                 }
@@ -695,9 +695,9 @@ namespace Microsoft.VisualStudio.Threading
 
             if (removed && this.childDependentNodes != null)
             {
-                foreach (var item in this.childDependentNodes)
+                foreach (var item in this.childDependentNodes.Keys)
                 {
-                    item.Key.RemoveDependingSynchronousTask(task, reachableNodes, ref remainingDependentNodes);
+                    item.RemoveDependingSynchronousTask(task, reachableNodes, ref remainingDependentNodes);
                 }
             }
         }
