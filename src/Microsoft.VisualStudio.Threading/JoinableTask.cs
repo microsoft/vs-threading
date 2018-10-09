@@ -754,10 +754,10 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         lock (this.JoinableTaskContext.SyncContextLock)
                         {
-                            this.pendingEventCount = 0;
+                            this.OnSynchronousTaskStartToBlockWaiting(out JoinableTask pendingRequestTask, out this.pendingEventCount);
 
                             // Add the task to the depending tracking list of itself, so it will monitor the event queue.
-                            this.pendingEventSource = new WeakReference<JoinableTask>(this.AddDependingSynchronousTask(this, ref this.pendingEventCount));
+                            this.pendingEventSource = new WeakReference<JoinableTask>(pendingRequestTask);
                         }
                     }
 
@@ -789,14 +789,7 @@ namespace Microsoft.VisualStudio.Threading
                     }
                     finally
                     {
-                        using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
-                        {
-                            lock (this.JoinableTaskContext.SyncContextLock)
-                            {
-                                // Remove itself from the tracking list, after the task is completed.
-                                this.RemoveDependingSynchronousTask(this, true);
-                            }
-                        }
+                        this.OnSynchronousTaskEndToBlockWaiting();
                     }
 
                     if (ThreadingEventSource.Instance.IsEnabled())

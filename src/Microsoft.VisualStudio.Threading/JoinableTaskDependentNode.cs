@@ -146,7 +146,31 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Adds a <see cref="JoinableTask"/> instance as one that is relevant to the async operation.
+        /// Remove all synchronous tasks tracked by the this task.
+        /// This is called when this task is completed
+        /// </summary>
+        internal void OnDependentNodeCompleted()
+        {
+            Assumes.True(Monitor.IsEntered(this.JoinableTaskContext.SyncContextLock));
+            if (this.dependingSynchronousTaskTracking != null)
+            {
+                DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
+                this.dependingSynchronousTaskTracking = null;
+
+                if (this.childDependentNodes != null)
+                {
+                    var childrenTasks = this.childDependentNodes.Keys.ToList();
+                    while (existingTaskTracking != null)
+                    {
+                        RemoveDependingSynchronousTaskFrom(childrenTasks, existingTaskTracking.SynchronousTask, false);
+                        existingTaskTracking = existingTaskTracking.Next;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Adds a <see cref="JoinableTaskDependentNode"/> instance as one that is relevant to the async operation.
         /// </summary>
         /// <param name="joinChild">The <see cref="JoinableTaskDependentNode"/> to join as a child.</param>
         internal virtual JoinableTaskCollection.JoinRelease AddDependency(JoinableTaskDependentNode joinChild)
@@ -207,6 +231,10 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
+        /// <summary>
+        /// Removes a <see cref="JoinableTaskDependentNode"/> instance as one that is no longer relevant to the async operation.
+        /// </summary>
+        /// <param name="joinChild">The <see cref="JoinableTaskDependentNode"/> to join as a child.</param>
         internal virtual void RemoveDependency(JoinableTaskDependentNode joinChild)
         {
             Requires.NotNull(joinChild, nameof(joinChild));
@@ -255,22 +283,6 @@ namespace Microsoft.VisualStudio.Threading
                     item.AddSelfAndDescendentOrJoinedJobs(joinables);
                 }
             }
-        }
-
-        /// <summary>
-        /// Get how many number of synchronous tasks in our tracking list.
-        /// </summary>
-        private int CountOfDependingSynchronousTasks()
-        {
-            int count = 0;
-            DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
-            while (existingTaskTracking != null)
-            {
-                count++;
-                existingTaskTracking = existingTaskTracking.Next;
-            }
-
-            return count;
         }
 
         /// <summary>
@@ -323,6 +335,70 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             return tasksNeedNotify;
+        }
+
+        /// <summary>
+        /// When the current dependent node is a synchronous task, this method is called before the thread is blocked to wait it to complete.
+        /// This adds the current task to the <see cref="dependingSynchronousTaskTracking"/> of the task itself (which will propergate through its dependencies.)
+        /// After the task is finished, <see cref="OnSynchronousTaskEndToBlockWaiting"/> is called to revert this change.
+        /// </summary>
+        /// <param name="taskHasPendingRequests">Return the JoinableTask which has already had pending requests to be handled.</param>
+        /// <param name="pendingRequestsCount">The number of pending requests.</param>
+        internal void OnSynchronousTaskStartToBlockWaiting(out JoinableTask taskHasPendingRequests, out int pendingRequestsCount)
+        {
+            Assumes.True(Monitor.IsEntered(this.JoinableTaskContext.SyncContextLock));
+
+            pendingRequestsCount = 0;
+            taskHasPendingRequests = null;
+
+            if (this is JoinableTask joinableTask)
+            {
+                taskHasPendingRequests = this.AddDependingSynchronousTask(joinableTask, ref pendingRequestsCount);
+            }
+            else
+            {
+                Assumes.Fail("OnSynchronousTaskStartToBlockWaiting can only be called for synchronous JoinableTask");
+            }
+        }
+
+        /// <summary>
+        /// When the current dependent node is a synchronous task, this method is called after the synchronous is completed, and the thread is no longer blocked.
+        /// This removes the current task from the <see cref="dependingSynchronousTaskTracking"/> of the task itself (and propergate through its dependencies.)
+        /// It reverts the data structure change done in the <see cref="OnSynchronousTaskStartToBlockWaiting"/>.
+        /// </summary>
+        internal void OnSynchronousTaskEndToBlockWaiting()
+        {
+            if (this is JoinableTask joinableTask)
+            {
+                using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
+                {
+                    lock (this.JoinableTaskContext.SyncContextLock)
+                    {
+                        // Remove itself from the tracking list, after the task is completed.
+                        this.RemoveDependingSynchronousTask(joinableTask, true);
+                    }
+                }
+            }
+            else
+            {
+                Assumes.Fail("OnSynchronousTaskStartToBlockWaiting can only be called for synchronous JoinableTask");
+            }
+        }
+
+        /// <summary>
+        /// Get how many number of synchronous tasks in our tracking list.
+        /// </summary>
+        private int CountOfDependingSynchronousTasks()
+        {
+            int count = 0;
+            DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
+            while (existingTaskTracking != null)
+            {
+                count++;
+                existingTaskTracking = existingTaskTracking.Next;
+            }
+
+            return count;
         }
 
         /// <summary>
@@ -383,7 +459,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="synchronousTask">The synchronous task</param>
         /// <param name="totalEventsPending">The total events need be processed</param>
         /// <returns>The task causes us to trigger the event of the synchronous task, so it can process new events.  Null means we don't need trigger any event</returns>
-        internal JoinableTask AddDependingSynchronousTask(JoinableTask synchronousTask, ref int totalEventsPending)
+        private JoinableTask AddDependingSynchronousTask(JoinableTask synchronousTask, ref int totalEventsPending)
         {
             Requires.NotNull(synchronousTask, nameof(synchronousTask));
             Assumes.True(Monitor.IsEntered(this.JoinableTaskContext.SyncContextLock));
@@ -457,35 +533,11 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Remove all synchronous tasks tracked by the this task.
-        /// This is called when this task is completed
-        /// </summary>
-        internal void OnDependentNodeCompleted()
-        {
-            Assumes.True(Monitor.IsEntered(this.JoinableTaskContext.SyncContextLock));
-            if (this.dependingSynchronousTaskTracking != null)
-            {
-                DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
-                this.dependingSynchronousTaskTracking = null;
-
-                if (this.childDependentNodes != null)
-                {
-                    var childrenTasks = this.childDependentNodes.Keys.ToList();
-                    while (existingTaskTracking != null)
-                    {
-                        RemoveDependingSynchronousTaskFrom(childrenTasks, existingTaskTracking.SynchronousTask, false);
-                        existingTaskTracking = existingTaskTracking.Next;
-                    }
-                }
-            }
-        }
-
-        /// <summary>
         /// Remove a synchronous task from the tracking list.
         /// </summary>
         /// <param name="syncTask">The synchronous task</param>
         /// <param name="force">We always remove it from the tracking list if it is true.  Otherwise, we keep tracking the reference count.</param>
-        internal void RemoveDependingSynchronousTask(JoinableTask syncTask, bool force = false)
+        private void RemoveDependingSynchronousTask(JoinableTask syncTask, bool force = false)
         {
             Requires.NotNull(syncTask, nameof(syncTask));
             Assumes.True(Monitor.IsEntered(this.JoinableTaskContext.SyncContextLock));
@@ -655,7 +707,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         private struct PendingNotification
         {
-            public PendingNotification(JoinableTask synchronousTask, JoinableTask taskHasPendingMessages, int newPendingMessagesCount)
+            internal PendingNotification(JoinableTask synchronousTask, JoinableTask taskHasPendingMessages, int newPendingMessagesCount)
             {
                 Requires.NotNull(synchronousTask, nameof(synchronousTask));
                 Requires.NotNull(taskHasPendingMessages, nameof(taskHasPendingMessages));
@@ -668,18 +720,18 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Gets the synchronous task which need process new messages.
             /// </summary>
-            public JoinableTask SynchronousTask { get; }
+            internal JoinableTask SynchronousTask { get; }
 
             /// <summary>
             /// Gets one JoinableTask which may have pending messages. We may have multiple new JoinableTasks which contains pending messages.
             /// This is just one of them.  It gives the synchronous task a way to start quickly without searching all messages.
             /// </summary>
-            public JoinableTask TaskHasPendingMessages { get; }
+            internal JoinableTask TaskHasPendingMessages { get; }
 
             /// <summary>
             /// Gets the total number of new pending messages.  The real number could be less than that, but should not be more than that.
             /// </summary>
-            public int NewPendingMessagesCount { get; }
+            internal int NewPendingMessagesCount { get; }
         }
 
         /// <summary>
@@ -688,7 +740,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         private class DependentSynchronousTask
         {
-            public DependentSynchronousTask(JoinableTask task)
+            internal DependentSynchronousTask(JoinableTask task)
             {
                 this.SynchronousTask = task;
                 this.ReferenceCount = 1;
