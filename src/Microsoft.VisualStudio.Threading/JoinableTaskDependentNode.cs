@@ -454,6 +454,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         internal void CleanupDependingSynchronousTask()
         {
+            Assumes.True(Monitor.IsEntered(this.JoinableTaskContext.SyncContextLock));
             if (this.dependingSynchronousTaskTracking != null)
             {
                 DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
