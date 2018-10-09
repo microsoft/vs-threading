@@ -888,31 +888,23 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// This is a helper method to parepare notifing all sychronous tasks for pending events.
+        /// This is a helper method to parepare notifing the sychronous task for pending events.
         /// It must be called inside JTF lock, and returns a collection of event to trigger later. (Those events must be triggered out of the JTF lock.)
         /// </summary>
-        internal static List<AsyncManualResetEvent> ProcessPendingNotifications(IReadOnlyCollection<PendingNotification> tasksNeedNotify)
+        internal AsyncManualResetEvent RegisterPendingEventsForSynchrousTask(JoinableTask taskHasPendingMessages, int newPendingMessagesCount)
         {
-            Requires.NotNull(tasksNeedNotify, nameof(tasksNeedNotify));
+            Requires.NotNull(taskHasPendingMessages, nameof(taskHasPendingMessages));
+            Requires.Range(newPendingMessagesCount > 0, nameof(newPendingMessagesCount));
+            Assumes.True(Monitor.IsEntered(this.JoinableTaskContext.SyncContextLock));
+            Assumes.True((this.state & JoinableTaskFlags.CompletingSynchronously) == JoinableTaskFlags.CompletingSynchronously);
 
-            var eventsNeedNotify = new List<AsyncManualResetEvent>(tasksNeedNotify.Count);
-            foreach (var taskToNotify in tasksNeedNotify)
+            if (this.pendingEventSource == null || taskHasPendingMessages == this)
             {
-                if (taskToNotify.SynchronousTask.pendingEventSource == null || taskToNotify.TaskHasPendingMessages == taskToNotify.SynchronousTask)
-                {
-                    taskToNotify.SynchronousTask.pendingEventSource = new WeakReference<JoinableTask>(taskToNotify.TaskHasPendingMessages);
-                }
-
-                taskToNotify.SynchronousTask.pendingEventCount += taskToNotify.NewPendingMessagesCount;
-
-                var notifyEvent = taskToNotify.SynchronousTask.queueNeedProcessEvent;
-                if (notifyEvent != null)
-                {
-                    eventsNeedNotify.Add(notifyEvent);
-                }
+                this.pendingEventSource = new WeakReference<JoinableTask>(taskHasPendingMessages);
             }
 
-            return eventsNeedNotify;
+            this.pendingEventCount += newPendingMessagesCount;
+            return this.queueNeedProcessEvent;
         }
 
         private bool TryDequeueSelfOrDependencies(bool onMainThread, ref HashSet<JoinableTaskDependentNode> visited, out SingleExecuteProtector work, out Task tryAgainAfter)

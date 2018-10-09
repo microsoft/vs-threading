@@ -181,7 +181,15 @@ namespace Microsoft.VisualStudio.Threading
                         var tasksNeedNotify = this.AddDependingSynchronousTaskToChild(joinChild);
                         if (tasksNeedNotify.Count > 0)
                         {
-                            eventsNeedNotify = JoinableTask.ProcessPendingNotifications(tasksNeedNotify);
+                            eventsNeedNotify = new List<AsyncManualResetEvent>(tasksNeedNotify.Count);
+                            foreach (var taskToNotify in tasksNeedNotify)
+                            {
+                                var notifyEvent = taskToNotify.SynchronousTask.RegisterPendingEventsForSynchrousTask(taskToNotify.TaskHasPendingMessages, taskToNotify.NewPendingMessagesCount);
+                                if (notifyEvent != null)
+                                {
+                                    eventsNeedNotify.Add(notifyEvent);
+                                }
+                            }
                         }
                     }
                 }
@@ -645,7 +653,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// The record of a pending notification we need send to the synchronous task that we have some new messages to process.
         /// </summary>
-        internal struct PendingNotification
+        private struct PendingNotification
         {
             public PendingNotification(JoinableTask synchronousTask, JoinableTask taskHasPendingMessages, int newPendingMessagesCount)
             {
