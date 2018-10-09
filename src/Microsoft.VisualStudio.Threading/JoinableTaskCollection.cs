@@ -217,8 +217,17 @@ namespace Microsoft.VisualStudio.Threading
         /// Joins the caller's context to this collection till the collection is empty.
         /// </summary>
         /// <returns>A task that completes when this collection is empty.</returns>
-        public async Task JoinTillEmptyAsync()
+        public Task JoinTillEmptyAsync() => this.JoinTillEmptyAsync(CancellationToken.None);
+
+        /// <summary>
+        /// Joins the caller's context to this collection till the collection is empty.
+        /// </summary>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        /// <returns>A task that completes when this collection is empty, or is canceled when <paramref name="cancellationToken"/> is canceled.</returns>
+        public async Task JoinTillEmptyAsync(CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (this.emptyEvent == null)
             {
                 // We need a read lock to protect against the emptiness of this collection changing
@@ -236,7 +245,7 @@ namespace Microsoft.VisualStudio.Threading
 
             using (this.Join())
             {
-                await this.emptyEvent.WaitAsync().ConfigureAwait(false);
+                await this.emptyEvent.WaitAsync().WithCancellation(cancellationToken).ConfigureAwait(false);
             }
         }
 
