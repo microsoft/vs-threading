@@ -63,19 +63,15 @@ namespace Microsoft.VisualStudio.Threading
         /// Gets all dependent nodes registered in the <see cref="childDependentNodes"/>
         /// This method is expected to be used with the JTF lock.
         /// </summary>
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        internal IEnumerable<JoinableTaskDependentNode> DirectDependentNodes
+        internal IEnumerable<JoinableTaskDependentNode> GetDirectDependentNodes()
         {
-            get
+            Assumes.True(Monitor.IsEntered(this.JoinableTaskContext.SyncContextLock));
+            if (this.childDependentNodes == null)
             {
-                Assumes.True(Monitor.IsEntered(this.JoinableTaskContext.SyncContextLock));
-                if (this.childDependentNodes == null)
-                {
-                    return Enumerable.Empty<JoinableTaskDependentNode>();
-                }
-
-                return this.childDependentNodes.Keys;
+                return Enumerable.Empty<JoinableTaskDependentNode>();
             }
+
+            return this.childDependentNodes.Keys;
         }
 
         /// <summary>
@@ -133,6 +129,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets a snapshot of all joined tasks.
         /// FOR DIAGNOSTICS COLLECTION ONLY.
+        /// This method is expected to be used with the JTF lock.
         /// </summary>
         internal IEnumerable<JoinableTask> GetAllDirectlyDependentJoinableTasks()
         {
@@ -149,7 +146,8 @@ namespace Microsoft.VisualStudio.Threading
 
         /// <summary>
         /// Remove all synchronous tasks tracked by the this task.
-        /// This is called when this task is completed
+        /// This is called when this task is completed.
+        /// This method is expected to be used with the JTF lock.
         /// </summary>
         internal void OnDependentNodeCompleted()
         {
@@ -270,9 +268,9 @@ namespace Microsoft.VisualStudio.Threading
         {
             Requires.NotNull(joinables, nameof(joinables));
 
-            if (this is JoinableTask task)
+            if (this is JoinableTask thisJoinableTask)
             {
-                if (task.IsCompleted || !joinables.Add(task))
+                if (thisJoinableTask.IsCompleted || !joinables.Add(thisJoinableTask))
                 {
                     return;
                 }
@@ -308,6 +306,7 @@ namespace Microsoft.VisualStudio.Threading
 
         /// <summary>
         /// Calculate the collection of events we need trigger after we enqueue a request.
+        /// This method is expected to be used with the JTF lock.
         /// </summary>
         /// <param name="forMainThread">True if we want to find tasks to process the main thread queue. Otherwise tasks to process the background queue.</param>
         /// <returns>The collection of synchronous tasks we need notify.</returns>
@@ -343,6 +342,7 @@ namespace Microsoft.VisualStudio.Threading
         /// When the current dependent node is a synchronous task, this method is called before the thread is blocked to wait it to complete.
         /// This adds the current task to the <see cref="dependingSynchronousTaskTracking"/> of the task itself (which will propergate through its dependencies.)
         /// After the task is finished, <see cref="OnSynchronousTaskEndToBlockWaiting"/> is called to revert this change.
+        /// This method is expected to be used with the JTF lock.
         /// </summary>
         /// <param name="taskHasPendingRequests">Return the JoinableTask which has already had pending requests to be handled.</param>
         /// <param name="pendingRequestsCount">The number of pending requests.</param>
@@ -353,9 +353,9 @@ namespace Microsoft.VisualStudio.Threading
             pendingRequestsCount = 0;
             taskHasPendingRequests = null;
 
-            if (this is JoinableTask joinableTask)
+            if (this is JoinableTask thisJoinableTask)
             {
-                taskHasPendingRequests = this.AddDependingSynchronousTask(joinableTask, ref pendingRequestsCount);
+                taskHasPendingRequests = this.AddDependingSynchronousTask(thisJoinableTask, ref pendingRequestsCount);
             }
             else
             {
@@ -370,14 +370,14 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         internal void OnSynchronousTaskEndToBlockWaiting()
         {
-            if (this is JoinableTask joinableTask)
+            if (this is JoinableTask thisJoinableTask)
             {
                 using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
                 {
                     lock (this.JoinableTaskContext.SyncContextLock)
                     {
                         // Remove itself from the tracking list, after the task is completed.
-                        this.RemoveDependingSynchronousTask(joinableTask, true);
+                        this.RemoveDependingSynchronousTask(thisJoinableTask, true);
                     }
                 }
             }

@@ -986,7 +986,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     if (joinableTask?.IsCompleted != true)
                     {
-                        foreach (var item in currentNode.DirectDependentNodes)
+                        foreach (var item in currentNode.GetDirectDependentNodes())
                         {
                             if (TryDequeueSelfOrDependencies(item, onMainThread, visited, out work))
                             {

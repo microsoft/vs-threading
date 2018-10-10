@@ -180,7 +180,7 @@ namespace Microsoft.VisualStudio.Threading
                 var joinables = new List<JoinableTask>();
                 lock (this.Context.SyncContextLock)
                 {
-                    foreach (var item in this.DirectDependentNodes)
+                    foreach (var item in this.GetDirectDependentNodes())
                     {
                         if (item is JoinableTask joinableTask)
                         {
