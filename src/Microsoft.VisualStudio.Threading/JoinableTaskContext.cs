@@ -337,24 +337,27 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     lock (this.SyncContextLock)
                     {
-                        var allJoinedJobs = new HashSet<JoinableTask>();
                         lock (this.initializingSynchronouslyMainThreadTasks)
                         {
-                            // our read lock doesn't cover this collection
-                            foreach (var initializingTask in this.initializingSynchronouslyMainThreadTasks)
+                            if (this.initializingSynchronouslyMainThreadTasks.Count > 0)
                             {
-                                if (!initializingTask.HasMainThreadSynchronousTaskWaiting)
+                                // our read lock doesn't cover this collection
+                                var allJoinedJobs = new HashSet<JoinableTask>();
+                                foreach (var initializingTask in this.initializingSynchronouslyMainThreadTasks)
                                 {
-                                    // This task blocks the main thread. If it has joined the ambient task
-                                    // directly or indirectly, then our ambient task is considered blocking
-                                    // the main thread.
-                                    initializingTask.AddSelfAndDescendentOrJoinedJobs(allJoinedJobs);
-                                    if (allJoinedJobs.Contains(ambientTask))
+                                    if (!initializingTask.HasMainThreadSynchronousTaskWaiting)
                                     {
-                                        return true;
-                                    }
+                                        // This task blocks the main thread. If it has joined the ambient task
+                                        // directly or indirectly, then our ambient task is considered blocking
+                                        // the main thread.
+                                        initializingTask.AddSelfAndDescendentOrJoinedJobs(allJoinedJobs);
+                                        if (allJoinedJobs.Contains(ambientTask))
+                                        {
+                                            return true;
+                                        }
 
-                                    allJoinedJobs.Clear();
+                                        allJoinedJobs.Clear();
+                                    }
                                 }
                             }
                         }
