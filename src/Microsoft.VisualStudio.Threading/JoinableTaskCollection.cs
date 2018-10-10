@@ -201,44 +201,19 @@ namespace Microsoft.VisualStudio.Threading
             return this.GetEnumerator();
         }
 
-        internal sealed override JoinRelease AddDependency(JoinableTaskDependentNode joinChild)
+        internal override void OnDependencyAdded(JoinableTaskDependentNode joinChild)
         {
-            JoinRelease result;
-
-            var joinableTask = joinChild as JoinableTask;
-            if (joinableTask?.IsCompleted == true)
+            if (this.emptyEvent != null && joinChild is JoinableTask)
             {
-                return default(JoinableTaskCollection.JoinRelease);
+                this.emptyEvent.Reset();
             }
-
-            using (this.Context.NoMessagePumpSynchronizationContext.Apply())
-            {
-                lock (this.Context.SyncContextLock)
-                {
-                    result = base.AddDependency(joinChild);
-                    if (this.emptyEvent != null && joinableTask != null)
-                    {
-                        this.emptyEvent.Reset();
-                    }
-                }
-            }
-
-            return result;
         }
 
-        internal sealed override void RemoveDependency(JoinableTaskDependentNode joinChild)
+        internal override void OnDependencyRemoved(JoinableTaskDependentNode joinChild)
         {
-            using (this.Context.NoMessagePumpSynchronizationContext.Apply())
+            if (this.emptyEvent != null && this.HasNoChildDependentNode)
             {
-                lock (this.JoinableTaskContext.SyncContextLock)
-                {
-                    this.RemoveDependency(joinChild);
-
-                    if (this.emptyEvent != null && this.HasNoChildDependentNode)
-                    {
-                        this.emptyEvent.Set();
-                    }
-                }
+                this.emptyEvent.Set();
             }
         }
 

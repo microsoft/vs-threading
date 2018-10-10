@@ -99,6 +99,20 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// A function is called, when a dependent child is added.
+        /// </summary>
+        internal virtual void OnDependencyAdded(JoinableTaskDependentNode joinChild)
+        {
+        }
+
+        /// <summary>
+        /// A function is called, when a dependent child is removed.
+        /// </summary>
+        internal virtual void OnDependencyRemoved(JoinableTaskDependentNode joinChild)
+        {
+        }
+
+        /// <summary>
         /// Gets a value indicating whether the main thread is waiting for the task's completion
         /// </summary>
         internal bool HasMainThreadSynchronousTaskWaiting
@@ -173,7 +187,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Adds a <see cref="JoinableTaskDependentNode"/> instance as one that is relevant to the async operation.
         /// </summary>
         /// <param name="joinChild">The <see cref="JoinableTaskDependentNode"/> to join as a child.</param>
-        internal virtual JoinableTaskCollection.JoinRelease AddDependency(JoinableTaskDependentNode joinChild)
+        internal JoinableTaskCollection.JoinRelease AddDependency(JoinableTaskDependentNode joinChild)
         {
             Requires.NotNull(joinChild, nameof(joinChild));
             if (this == joinChild)
@@ -187,6 +201,12 @@ namespace Microsoft.VisualStudio.Threading
                 List<AsyncManualResetEvent> eventsNeedNotify = null;
                 lock (this.JoinableTaskContext.SyncContextLock)
                 {
+                    var joinableTask = joinChild as JoinableTask;
+                    if (joinableTask?.IsCompleted == true)
+                    {
+                        return default(JoinableTaskCollection.JoinRelease);
+                    }
+
                     if (this.childDependentNodes == null)
                     {
                         this.childDependentNodes = new WeakKeyDictionary<JoinableTaskDependentNode, int>(capacity: 2);
@@ -215,6 +235,8 @@ namespace Microsoft.VisualStudio.Threading
                                 }
                             }
                         }
+
+                        this.OnDependencyAdded(joinChild);
                     }
                 }
 
@@ -235,7 +257,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Removes a <see cref="JoinableTaskDependentNode"/> instance as one that is no longer relevant to the async operation.
         /// </summary>
         /// <param name="joinChild">The <see cref="JoinableTaskDependentNode"/> to join as a child.</param>
-        internal virtual void RemoveDependency(JoinableTaskDependentNode joinChild)
+        internal void RemoveDependency(JoinableTaskDependentNode joinChild)
         {
             Requires.NotNull(joinChild, nameof(joinChild));
 
@@ -251,6 +273,7 @@ namespace Microsoft.VisualStudio.Threading
 
                             this.childDependentNodes.Remove(joinChild);
                             this.RemoveDependingSynchronousTaskFromChild(joinChild);
+                            this.OnDependencyRemoved(joinChild);
                         }
                         else
                         {
