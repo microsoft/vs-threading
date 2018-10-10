@@ -57,10 +57,11 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets a value indicating whether the <see cref="childDependentNodes"/> is empty.
         /// </summary>
-        internal bool HasNoChildDependentNode => this.childDependentNodes == null || this.childDependentNodes.Count == 0 || !this.childDependentNodes.Keys.Any();
+        internal bool HasNoChildDependentNode => this.childDependentNodes == null || this.childDependentNodes.Count == 0 || !this.childDependentNodes.Any();
 
         /// <summary>
         /// Gets all dependent nodes registered in the <see cref="childDependentNodes"/>
+        /// This method is expected to be used with the JTF lock.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal IEnumerable<JoinableTaskDependentNode> DirectDependentNodes
@@ -79,6 +80,7 @@ namespace Microsoft.VisualStudio.Threading
 
         /// <summary>
         /// Checks whether a dependent node is inside <see cref="childDependentNodes"/>.
+        /// This method is expected to be used with the JTF lock.
         /// </summary>
         internal bool HasDirectDependency(JoinableTaskDependentNode dependency)
         {
@@ -159,7 +161,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 if (this.childDependentNodes != null)
                 {
-                    var childrenTasks = this.childDependentNodes.Keys.ToList();
+                    var childrenTasks = new List<JoinableTaskDependentNode>(this.childDependentNodes.Keys);
                     while (existingTaskTracking != null)
                     {
                         RemoveDependingSynchronousTaskFrom(childrenTasks, existingTaskTracking.SynchronousTask, false);
@@ -278,9 +280,9 @@ namespace Microsoft.VisualStudio.Threading
 
             if (this.childDependentNodes != null)
             {
-                foreach (var item in this.childDependentNodes.Keys)
+                foreach (var item in this.childDependentNodes)
                 {
-                    item.AddSelfAndDescendentOrJoinedJobs(joinables);
+                    item.Key.AddSelfAndDescendentOrJoinedJobs(joinables);
                 }
             }
         }
@@ -519,9 +521,9 @@ namespace Microsoft.VisualStudio.Threading
 
             if (this.childDependentNodes != null)
             {
-                foreach (var item in this.childDependentNodes.Keys)
+                foreach (var item in this.childDependentNodes)
                 {
-                    var childTiggeringTask = item.AddDependingSynchronousTask(synchronousTask, ref totalEventsPending);
+                    var childTiggeringTask = item.Key.AddDependingSynchronousTask(synchronousTask, ref totalEventsPending);
                     if (eventTriggeringTask == null)
                     {
                         eventTriggeringTask = childTiggeringTask;
@@ -613,9 +615,9 @@ namespace Microsoft.VisualStudio.Threading
 
                     if (this.childDependentNodes != null)
                     {
-                        foreach (var item in this.childDependentNodes.Keys)
+                        foreach (var item in this.childDependentNodes)
                         {
-                            item.ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(reachableNodes, remainNodes);
+                            item.Key.ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(reachableNodes, remainNodes);
                         }
                     }
                 }
@@ -695,9 +697,9 @@ namespace Microsoft.VisualStudio.Threading
 
             if (removed && this.childDependentNodes != null)
             {
-                foreach (var item in this.childDependentNodes.Keys)
+                foreach (var item in this.childDependentNodes)
                 {
-                    item.RemoveDependingSynchronousTask(task, reachableNodes, ref remainingDependentNodes);
+                    item.Key.RemoveDependingSynchronousTask(task, reachableNodes, ref remainingDependentNodes);
                 }
             }
         }
