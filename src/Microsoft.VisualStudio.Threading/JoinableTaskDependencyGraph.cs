@@ -214,6 +214,7 @@ namespace Microsoft.VisualStudio.Threading
             /// This method is expected to be used with the JTF lock.
             /// </summary>
             /// <param name="thisDependent">The current joinableTask or collection contains this data.</param>
+            /// <param name="dependency">The <see cref="JoinableTask"/> or <see cref="JoinableTaskCollection"/> which can be a dependent of the current node.</param>
             internal bool HasDirectDependency(IJoinableTaskDependent thisDependent, IJoinableTaskDependent dependency)
             {
                 Requires.NotNull(thisDependent, nameof(thisDependent));
@@ -927,6 +928,5 @@ namespace Microsoft.VisualStudio.Threading
                 internal int ReferenceCount { get; set; }
             }
         }
-
     }
 }
