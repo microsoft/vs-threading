@@ -30,10 +30,10 @@ namespace Microsoft.VisualStudio.Threading
         private string displayName;
 
         /// <summary>
-        /// The <see cref="JoinableTaskDependentNode"/> to track dependencies between tasks.
+        /// The <see cref="JoinableTaskDependentData"/> to track dependencies between tasks.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private JoinableTaskDependentNode dependentData;
+        private JoinableTaskDependentData dependentData;
 
         /// <summary>
         /// An event that is set when the collection is empty. (lazily initialized)
@@ -54,7 +54,7 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(context, nameof(context));
             this.Context = context;
             this.refCountAddedJobs = refCountAddedJobs;
-            this.dependentData = new JoinableTaskDependentNode(this);
+            this.dependentData = new JoinableTaskDependentData(this);
         }
 
         /// <summary>
@@ -77,7 +77,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Gets JoinableTaskContext for <see cref="JoinableTaskDependentNode"/> to access locks.
+        /// Gets JoinableTaskContext for <see cref="JoinableTaskDependentData"/> to access locks.
         /// </summary>
         JoinableTaskContext IJoinableTaskDependent.JoinableTaskContext => this.Context;
 
@@ -86,7 +86,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         bool IJoinableTaskDependent.NeedRefCountChildDependencies => this.refCountAddedJobs;
 
-        ref JoinableTaskDependentNode IJoinableTaskDependent.GetJoinableTaskDependentData()
+        ref JoinableTaskDependentData IJoinableTaskDependent.GetJoinableTaskDependentData()
         {
             return ref this.dependentData;
         }

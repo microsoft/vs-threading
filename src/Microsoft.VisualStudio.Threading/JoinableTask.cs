@@ -53,10 +53,10 @@ namespace Microsoft.VisualStudio.Threading
         private ListOfOftenOne<JoinableTaskFactory> nestingFactories;
 
         /// <summary>
-        /// The <see cref="JoinableTaskDependentNode"/> to track dependencies between tasks.
+        /// The <see cref="JoinableTaskDependentData"/> to track dependencies between tasks.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private JoinableTaskDependentNode dependentData;
+        private JoinableTaskDependentData dependentData;
 
         /// <summary>
         /// The collections that this job is a member of.
@@ -144,7 +144,7 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             this.creationOptions = creationOptions;
-            this.dependentData = new JoinableTaskDependentNode(this);
+            this.dependentData = new JoinableTaskDependentData(this);
             this.owner.Context.OnJoinableTaskStarted(this);
             this.initialDelegate = initialDelegate;
         }
@@ -865,12 +865,12 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
-        internal ref JoinableTaskDependentNode GetJoinableTaskDependentData()
+        internal ref JoinableTaskDependentData GetJoinableTaskDependentData()
         {
             return ref this.dependentData;
         }
 
-        ref JoinableTaskDependentNode IJoinableTaskDependent.GetJoinableTaskDependentData()
+        ref JoinableTaskDependentData IJoinableTaskDependent.GetJoinableTaskDependentData()
         {
             return ref this.dependentData;
         }

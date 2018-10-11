@@ -12,12 +12,9 @@ namespace Microsoft.VisualStudio.Threading
     using System.Threading;
 
     /// <summary>
-    /// Represent a node in the JoinableTask dependency tree. It can be either a <see cref="JoinableTask"/> or a <see cref="JoinableTaskCollection"/>.
+    /// Preserve data for the JoinableTask dependency tree. It is holded inside either a <see cref="JoinableTask"/> or a <see cref="JoinableTaskCollection"/>.
     /// </summary>
-    /// <remarks>
-    /// This class should not expose any public APIs.  Most internal method is only expected to be called by classes inheriting it.
-    /// </remarks>
-    internal struct JoinableTaskDependentNode
+    internal struct JoinableTaskDependentData
     {
         /// <summary>
         /// Shared empty collection to prevent extra allocations.
@@ -49,7 +46,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         private DependentSynchronousTask dependingSynchronousTaskTracking;
 
-        internal JoinableTaskDependentNode(IJoinableTaskDependent thisDependent)
+        internal JoinableTaskDependentData(IJoinableTaskDependent thisDependent)
         {
             Requires.NotNull(thisDependent, nameof(thisDependent));
             this.thisDependent = thisDependent;
@@ -169,7 +166,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Adds a <see cref="JoinableTaskDependentNode"/> instance as one that is relevant to the async operation.
+        /// Adds a <see cref="JoinableTaskDependentData"/> instance as one that is relevant to the async operation.
         /// </summary>
         /// <param name="joinChild">The <see cref="IJoinableTaskDependent"/> to join as a child.</param>
         internal JoinableTaskCollection.JoinRelease AddDependency(IJoinableTaskDependent joinChild)
@@ -239,7 +236,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Removes a <see cref="JoinableTaskDependentNode"/> instance as one that is no longer relevant to the async operation.
+        /// Removes a <see cref="JoinableTaskDependentData"/> instance as one that is no longer relevant to the async operation.
         /// </summary>
         /// <param name="joinChild">The <see cref="IJoinableTaskDependent"/> to join as a child.</param>
         internal void RemoveDependency(IJoinableTaskDependent joinChild)

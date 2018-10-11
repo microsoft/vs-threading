@@ -24,7 +24,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Get the reference of dependent node to record dependencies.
         /// </summary>
-        ref JoinableTaskDependentNode GetJoinableTaskDependentData();
+        ref JoinableTaskDependentData GetJoinableTaskDependentData();
 
         /// <summary>
         /// A function is called, when this dependent node is added to be a dependency of a parent node.
