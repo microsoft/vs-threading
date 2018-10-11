@@ -26,7 +26,7 @@ namespace Microsoft.VisualStudio.Threading
     /// For more complete comments please see the <see cref="Threading.JoinableTaskContext"/>.
     /// </remarks>
     [DebuggerDisplay("IsCompleted: {IsCompleted}, Method = {EntryMethodInfo != null ? EntryMethodInfo.Name : null}")]
-    public partial class JoinableTask : JoinableTaskDependentNode
+    public partial class JoinableTask : IJoinableTaskDependent
     {
         /// <summary>
         /// Stores the top-most JoinableTask that is completing on the current thread, if any.
@@ -53,10 +53,16 @@ namespace Microsoft.VisualStudio.Threading
         private ListOfOftenOne<JoinableTaskFactory> nestingFactories;
 
         /// <summary>
+        /// The <see cref="JoinableTaskDependentNode"/> to track dependencies between tasks.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private JoinableTaskDependentNode dependentData;
+
+        /// <summary>
         /// The collections that this job is a member of.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private ListOfOftenOne<JoinableTaskDependentNode> dependencyParents;
+        private ListOfOftenOne<IJoinableTaskDependent> dependencyParents;
 
         /// <summary>
         /// The Task returned by the async delegate that this JoinableTask originally executed.
@@ -138,6 +144,7 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             this.creationOptions = creationOptions;
+            this.dependentData = new JoinableTaskDependentNode(this);
             this.owner.Context.OnJoinableTaskStarted(this);
             this.initialDelegate = initialDelegate;
         }
@@ -185,7 +192,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets JoinableTaskContext for <see cref="JoinableTaskContextNode"/> to access locks.
         /// </summary>
-        internal sealed override JoinableTaskContext JoinableTaskContext => this.owner.Context;
+        private JoinableTaskContext JoinableTaskContext => this.owner.Context;
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private Task QueueNeedProcessEvent
@@ -271,6 +278,10 @@ namespace Microsoft.VisualStudio.Threading
                 }
             }
         }
+
+        JoinableTaskContext IJoinableTaskDependent.JoinableTaskContext => this.JoinableTaskContext;
+
+        bool IJoinableTaskDependent.NeedRefCountChildDependencies => true;
 
         /// <summary>
         /// Gets the JoinableTask that is completing (i.e. synchronously blocking) on this thread, nearest to the top of the callstack.
@@ -589,7 +600,7 @@ namespace Microsoft.VisualStudio.Threading
 
                         if (mainThreadQueueUpdated || backgroundThreadQueueUpdated)
                         {
-                            var tasksNeedNotify = this.GetDependingSynchronousTasks(mainThreadQueueUpdated);
+                            var tasksNeedNotify = this.dependentData.GetDependingSynchronousTasks(mainThreadQueueUpdated);
                             if (tasksNeedNotify.Count > 0)
                             {
                                 eventsNeedNotify = new List<AsyncManualResetEvent>(tasksNeedNotify.Count);
@@ -711,7 +722,7 @@ namespace Microsoft.VisualStudio.Threading
                         // will likely want to know that the JoinableTask has completed.
                         queueNeedProcessEvent = this.queueNeedProcessEvent;
 
-                        this.OnDependentNodeCompleted();
+                        this.dependentData.OnTaskCompleted();
                     }
                 }
 
@@ -754,7 +765,7 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         lock (this.JoinableTaskContext.SyncContextLock)
                         {
-                            this.OnSynchronousTaskStartToBlockWaiting(out JoinableTask pendingRequestTask, out this.pendingEventCount);
+                            this.dependentData.OnSynchronousTaskStartToBlockWaiting(out JoinableTask pendingRequestTask, out this.pendingEventCount);
 
                             // Add the task to the depending tracking list of itself, so it will monitor the event queue.
                             this.pendingEventSource = new WeakReference<JoinableTask>(pendingRequestTask);
@@ -771,7 +782,7 @@ namespace Microsoft.VisualStudio.Threading
                         // Don't use IsCompleted as the condition because that
                         // includes queues of posted work that don't have to complete for the
                         // JoinableTask to be ready to return from the JTF.Run method.
-                        HashSet<JoinableTaskDependentNode> visited = null;
+                        HashSet<IJoinableTaskDependent> visited = null;
                         while (!this.IsCompleteRequested)
                         {
                             if (this.TryDequeueSelfOrDependencies(onMainThread, ref visited, out SingleExecuteProtector work, out Task tryAgainAfter))
@@ -789,7 +800,7 @@ namespace Microsoft.VisualStudio.Threading
                     }
                     finally
                     {
-                        this.OnSynchronousTaskEndToBlockWaiting();
+                        this.dependentData.OnSynchronousTaskEndToBlockWaiting();
                     }
 
                     if (ThreadingEventSource.Instance.IsEnabled())
@@ -835,7 +846,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 foreach (var collection in this.dependencyParents)
                 {
-                    collection.RemoveDependency(this);
+                    collection.GetJoinableTaskDependentData().RemoveDependency(this);
                 }
 
                 if (this.mainThreadJobSyncContext != null)
@@ -854,16 +865,34 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
-        internal override void OnAddedToDependency(JoinableTaskDependentNode parentNode)
+        internal ref JoinableTaskDependentNode GetJoinableTaskDependentData()
+        {
+            return ref this.dependentData;
+        }
+
+        ref JoinableTaskDependentNode IJoinableTaskDependent.GetJoinableTaskDependentData()
+        {
+            return ref this.dependentData;
+        }
+
+        void IJoinableTaskDependent.OnAddedToDependency(IJoinableTaskDependent parentNode)
         {
             Requires.NotNull(parentNode, nameof(parentNode));
             this.dependencyParents.Add(parentNode);
         }
 
-        internal override void OnRemovedFromDependency(JoinableTaskDependentNode parentNode)
+        void IJoinableTaskDependent.OnRemovedFromDependency(IJoinableTaskDependent parentNode)
         {
             Requires.NotNull(parentNode, nameof(parentNode));
             this.dependencyParents.Remove(parentNode);
+        }
+
+        void IJoinableTaskDependent.OnDependencyAdded(IJoinableTaskDependent joinChild)
+        {
+        }
+
+        void IJoinableTaskDependent.OnDependencyRemoved(IJoinableTaskDependent joinChild)
+        {
         }
 
         /// <summary>
@@ -900,7 +929,7 @@ namespace Microsoft.VisualStudio.Threading
             return this.queueNeedProcessEvent;
         }
 
-        private bool TryDequeueSelfOrDependencies(bool onMainThread, ref HashSet<JoinableTaskDependentNode> visited, out SingleExecuteProtector work, out Task tryAgainAfter)
+        private bool TryDequeueSelfOrDependencies(bool onMainThread, ref HashSet<IJoinableTaskDependent> visited, out SingleExecuteProtector work, out Task tryAgainAfter)
         {
             using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
             {
@@ -919,7 +948,7 @@ namespace Microsoft.VisualStudio.Threading
 
                         if (this.pendingEventSource != null)
                         {
-                            if (this.pendingEventSource.TryGetTarget(out JoinableTask pendingSource) && pendingSource.IsDependingSynchronousTask(this))
+                            if (this.pendingEventSource.TryGetTarget(out JoinableTask pendingSource) && pendingSource.dependentData.IsDependingSynchronousTask(this))
                             {
                                 var queue = onMainThread ? pendingSource.mainThreadQueue : pendingSource.threadPoolQueue;
                                 if (queue != null && !queue.IsCompleted && queue.TryDequeue(out work))
@@ -939,7 +968,7 @@ namespace Microsoft.VisualStudio.Threading
 
                         if (visited == null)
                         {
-                            visited = new HashSet<JoinableTaskDependentNode>();
+                            visited = new HashSet<IJoinableTaskDependent>();
                         }
                         else
                         {
@@ -962,7 +991,7 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
-        private static bool TryDequeueSelfOrDependencies(JoinableTaskDependentNode currentNode, bool onMainThread, HashSet<JoinableTaskDependentNode> visited, out SingleExecuteProtector work)
+        private static bool TryDequeueSelfOrDependencies(IJoinableTaskDependent currentNode, bool onMainThread, HashSet<IJoinableTaskDependent> visited, out SingleExecuteProtector work)
         {
             Requires.NotNull(currentNode, nameof(currentNode));
             Requires.NotNull(visited, nameof(visited));
@@ -986,7 +1015,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     if (joinableTask?.IsCompleted != true)
                     {
-                        foreach (var item in currentNode.GetDirectDependentNodes())
+                        foreach (var item in currentNode.GetJoinableTaskDependentData().GetDirectDependentNodes())
                         {
                             if (TryDequeueSelfOrDependencies(item, onMainThread, visited, out work))
                             {
@@ -1025,7 +1054,7 @@ namespace Microsoft.VisualStudio.Threading
                 var ambientJob = this.JoinableTaskContext.AmbientTask;
                 if (ambientJob != null && ambientJob != this)
                 {
-                    return ambientJob.AddDependency(this);
+                    return ambientJob.dependentData.AddDependency(this);
                 }
             }
 

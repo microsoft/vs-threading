@@ -9,8 +9,6 @@ namespace Microsoft.VisualStudio.Threading
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Linq;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -18,7 +16,7 @@ namespace Microsoft.VisualStudio.Threading
     /// A collection of joinable tasks.
     /// </summary>
     [DebuggerDisplay("JoinableTaskCollection: {displayName ?? \"(anonymous)\"}")]
-    public class JoinableTaskCollection : JoinableTaskDependentNode, IEnumerable<JoinableTask>
+    public class JoinableTaskCollection : IJoinableTaskDependent, IEnumerable<JoinableTask>
     {
         /// <summary>
         /// A value indicating whether joinable tasks are only removed when completed or removed as many times as they were added.
@@ -30,6 +28,12 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private string displayName;
+
+        /// <summary>
+        /// The <see cref="JoinableTaskDependentNode"/> to track dependencies between tasks.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private JoinableTaskDependentNode dependentData;
 
         /// <summary>
         /// An event that is set when the collection is empty. (lazily initialized)
@@ -50,6 +54,7 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(context, nameof(context));
             this.Context = context;
             this.refCountAddedJobs = refCountAddedJobs;
+            this.dependentData = new JoinableTaskDependentNode(this);
         }
 
         /// <summary>
@@ -74,12 +79,17 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets JoinableTaskContext for <see cref="JoinableTaskDependentNode"/> to access locks.
         /// </summary>
-        internal sealed override JoinableTaskContext JoinableTaskContext => this.Context;
+        JoinableTaskContext IJoinableTaskDependent.JoinableTaskContext => this.Context;
 
         /// <summary>
         /// Gets a value indicating whether we need count reference for child dependent nodes.
         /// </summary>
-        internal sealed override bool NeedRefCountChildDependencies => this.refCountAddedJobs;
+        bool IJoinableTaskDependent.NeedRefCountChildDependencies => this.refCountAddedJobs;
+
+        ref JoinableTaskDependentNode IJoinableTaskDependent.GetJoinableTaskDependentData()
+        {
+            return ref this.dependentData;
+        }
 
         /// <summary>
         /// Adds the specified joinable task to this collection.
@@ -93,7 +103,7 @@ namespace Microsoft.VisualStudio.Threading
                 Requires.Argument(false, "joinableTask", Strings.JoinableTaskContextAndCollectionMismatch);
             }
 
-            this.AddDependency(joinableTask);
+            this.dependentData.AddDependency(joinableTask);
         }
 
         /// <summary>
@@ -104,7 +114,7 @@ namespace Microsoft.VisualStudio.Threading
         public void Remove(JoinableTask joinableTask)
         {
             Requires.NotNull(joinableTask, nameof(joinableTask));
-            this.RemoveDependency(joinableTask);
+            this.dependentData.RemoveDependency(joinableTask);
         }
 
         /// <summary>
@@ -124,7 +134,7 @@ namespace Microsoft.VisualStudio.Threading
                 return default(JoinRelease);
             }
 
-            return ambientJob.AddDependency(this);
+            return ambientJob.GetJoinableTaskDependentData().AddDependency(this);
         }
 
         /// <summary>
@@ -143,7 +153,7 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         // We use interlocked here to mitigate race conditions in lazily initializing this field.
                         // We *could* take a write lock above, but that would needlessly increase lock contention.
-                        var nowait = Interlocked.CompareExchange(ref this.emptyEvent, new AsyncManualResetEvent(this.HasNoChildDependentNode), null);
+                        var nowait = Interlocked.CompareExchange(ref this.emptyEvent, new AsyncManualResetEvent(this.dependentData.HasNoChildDependentNode), null);
                     }
                 }
             }
@@ -165,7 +175,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 lock (this.Context.SyncContextLock)
                 {
-                    return this.HasDirectDependency(joinableTask);
+                    return this.dependentData.HasDirectDependency(joinableTask);
                 }
             }
         }
@@ -180,7 +190,7 @@ namespace Microsoft.VisualStudio.Threading
                 var joinables = new List<JoinableTask>();
                 lock (this.Context.SyncContextLock)
                 {
-                    foreach (var item in this.GetDirectDependentNodes())
+                    foreach (var item in this.dependentData.GetDirectDependentNodes())
                     {
                         if (item is JoinableTask joinableTask)
                         {
@@ -201,7 +211,15 @@ namespace Microsoft.VisualStudio.Threading
             return this.GetEnumerator();
         }
 
-        internal override void OnDependencyAdded(JoinableTaskDependentNode joinChild)
+        void IJoinableTaskDependent.OnAddedToDependency(IJoinableTaskDependent parent)
+        {
+        }
+
+        void IJoinableTaskDependent.OnRemovedFromDependency(IJoinableTaskDependent parentNode)
+        {
+        }
+
+        void IJoinableTaskDependent.OnDependencyAdded(IJoinableTaskDependent joinChild)
         {
             if (this.emptyEvent != null && joinChild is JoinableTask)
             {
@@ -209,9 +227,9 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
-        internal override void OnDependencyRemoved(JoinableTaskDependentNode joinChild)
+        void IJoinableTaskDependent.OnDependencyRemoved(IJoinableTaskDependent joinChild)
         {
-            if (this.emptyEvent != null && this.HasNoChildDependentNode)
+            if (this.emptyEvent != null && this.dependentData.HasNoChildDependentNode)
             {
                 this.emptyEvent.Set();
             }
@@ -223,15 +241,15 @@ namespace Microsoft.VisualStudio.Threading
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
         public struct JoinRelease : IDisposable
         {
-            private JoinableTaskDependentNode parentDependencyNode;
-            private JoinableTaskDependentNode childDependencyNode;
+            private IJoinableTaskDependent parentDependencyNode;
+            private IJoinableTaskDependent childDependencyNode;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="JoinRelease"/> struct.
             /// </summary>
             /// <param name="parentDependencyNode">The Main thread controlling SingleThreadSynchronizationContext to use to accelerate execution of Main thread bound work.</param>
             /// <param name="childDependencyNode">The instance that created this value.</param>
-            internal JoinRelease(JoinableTaskDependentNode parentDependencyNode, JoinableTaskDependentNode childDependencyNode)
+            internal JoinRelease(IJoinableTaskDependent parentDependencyNode, IJoinableTaskDependent childDependencyNode)
             {
                 Requires.NotNull(parentDependencyNode, nameof(parentDependencyNode));
                 Requires.NotNull(childDependencyNode, nameof(childDependencyNode));
@@ -247,7 +265,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 if (this.parentDependencyNode != null)
                 {
-                    this.parentDependencyNode.RemoveDependency(this.childDependencyNode);
+                    this.parentDependencyNode.GetJoinableTaskDependentData().RemoveDependency(this.childDependencyNode);
                     this.parentDependencyNode = null;
                 }
 

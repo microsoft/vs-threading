@@ -71,7 +71,7 @@ namespace Microsoft.VisualStudio.Threading
             var links = new List<XElement>();
             foreach (var joinableTaskAndElement in pendingTasksElements)
             {
-                foreach (var joinedTask in joinableTaskAndElement.Key.GetAllDirectlyDependentJoinableTasks())
+                foreach (var joinedTask in joinableTaskAndElement.Key.GetJoinableTaskDependentData().GetAllDirectlyDependentJoinableTasks())
                 {
                     if (pendingTasksElements.TryGetValue(joinedTask, out XElement joinedTaskElement))
                     {
