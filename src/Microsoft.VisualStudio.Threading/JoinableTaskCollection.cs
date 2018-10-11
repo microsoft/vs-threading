@@ -54,7 +54,6 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(context, nameof(context));
             this.Context = context;
             this.refCountAddedJobs = refCountAddedJobs;
-            this.dependentData = new JoinableTaskDependencyGraph.JoinableTaskDependentData(this);
         }
 
         /// <summary>

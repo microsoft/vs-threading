@@ -33,7 +33,7 @@ namespace Microsoft.VisualStudio.Threading
         internal static bool HasDirectDependency(IJoinableTaskDependent taskItem, IJoinableTaskDependent dependency)
         {
             Requires.NotNull(taskItem, nameof(taskItem));
-            return taskItem.GetJoinableTaskDependentData().HasDirectDependency(dependency);
+            return taskItem.GetJoinableTaskDependentData().HasDirectDependency(taskItem, dependency);
         }
 
         /// <summary>
@@ -42,7 +42,7 @@ namespace Microsoft.VisualStudio.Threading
         internal static bool HasMainThreadSynchronousTaskWaiting(IJoinableTaskDependent taskItem)
         {
             Requires.NotNull(taskItem, nameof(taskItem));
-            return taskItem.GetJoinableTaskDependentData().HasMainThreadSynchronousTaskWaiting();
+            return taskItem.GetJoinableTaskDependentData().HasMainThreadSynchronousTaskWaiting(taskItem);
         }
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace Microsoft.VisualStudio.Threading
         internal static JoinableTaskCollection.JoinRelease AddDependency(IJoinableTaskDependent taskItem, IJoinableTaskDependent joinChild)
         {
             Requires.NotNull(taskItem, nameof(taskItem));
-            return taskItem.GetJoinableTaskDependentData().AddDependency(joinChild);
+            return taskItem.GetJoinableTaskDependentData().AddDependency(taskItem, joinChild);
         }
 
         /// <summary>
@@ -64,7 +64,7 @@ namespace Microsoft.VisualStudio.Threading
         internal static void RemoveDependency(IJoinableTaskDependent taskItem, IJoinableTaskDependent child)
         {
             Requires.NotNull(taskItem, nameof(taskItem));
-            taskItem.GetJoinableTaskDependentData().RemoveDependency(child);
+            taskItem.GetJoinableTaskDependentData().RemoveDependency(taskItem, child);
         }
 
         /// <summary>
@@ -74,7 +74,7 @@ namespace Microsoft.VisualStudio.Threading
         internal static IEnumerable<IJoinableTaskDependent> GetDirectDependentNodes(IJoinableTaskDependent taskItem)
         {
             Requires.NotNull(taskItem, nameof(taskItem));
-            return taskItem.GetJoinableTaskDependentData().GetDirectDependentNodes();
+            return taskItem.GetJoinableTaskDependentData().GetDirectDependentNodes(taskItem);
         }
 
         /// <summary>
@@ -96,7 +96,7 @@ namespace Microsoft.VisualStudio.Threading
         internal static IReadOnlyCollection<JoinableTask> GetDependingSynchronousTasks(IJoinableTaskDependent taskItem, bool forMainThread)
         {
             Requires.NotNull(taskItem, nameof(taskItem));
-            return taskItem.GetJoinableTaskDependentData().GetDependingSynchronousTasks(forMainThread);
+            return taskItem.GetJoinableTaskDependentData().GetDependingSynchronousTasks(taskItem, forMainThread);
         }
 
         /// <summary>
@@ -107,7 +107,7 @@ namespace Microsoft.VisualStudio.Threading
         internal static IEnumerable<JoinableTask> GetAllDirectlyDependentJoinableTasks(IJoinableTaskDependent taskItem)
         {
             Requires.NotNull(taskItem, nameof(taskItem));
-            return taskItem.GetJoinableTaskDependentData().GetAllDirectlyDependentJoinableTasks();
+            return taskItem.GetJoinableTaskDependentData().GetAllDirectlyDependentJoinableTasks(taskItem);
         }
 
         /// <summary>
@@ -116,7 +116,7 @@ namespace Microsoft.VisualStudio.Threading
         internal static void AddSelfAndDescendentOrJoinedJobs(IJoinableTaskDependent taskItem, HashSet<JoinableTask> joinables)
         {
             Requires.NotNull(taskItem, nameof(taskItem));
-            taskItem.GetJoinableTaskDependentData().AddSelfAndDescendentOrJoinedJobs(joinables);
+            taskItem.GetJoinableTaskDependentData().AddSelfAndDescendentOrJoinedJobs(taskItem, joinables);
         }
 
         /// <summary>
@@ -131,7 +131,7 @@ namespace Microsoft.VisualStudio.Threading
         internal static void OnSynchronousTaskStartToBlockWaiting(IJoinableTaskDependent taskItem, out JoinableTask taskHasPendingRequests, out int pendingRequestsCount)
         {
             Requires.NotNull(taskItem, nameof(taskItem));
-            taskItem.GetJoinableTaskDependentData().OnSynchronousTaskStartToBlockWaiting(out taskHasPendingRequests, out pendingRequestsCount);
+            taskItem.GetJoinableTaskDependentData().OnSynchronousTaskStartToBlockWaiting(taskItem, out taskHasPendingRequests, out pendingRequestsCount);
         }
 
         /// <summary>
@@ -142,7 +142,7 @@ namespace Microsoft.VisualStudio.Threading
         internal static void OnSynchronousTaskEndToBlockWaiting(IJoinableTaskDependent taskItem)
         {
             Requires.NotNull(taskItem, nameof(taskItem));
-            taskItem.GetJoinableTaskDependentData().OnSynchronousTaskEndToBlockWaiting();
+            taskItem.GetJoinableTaskDependentData().OnSynchronousTaskEndToBlockWaiting(taskItem);
         }
 
         /// <summary>
@@ -153,7 +153,7 @@ namespace Microsoft.VisualStudio.Threading
         internal static void OnTaskCompleted(IJoinableTaskDependent taskItem)
         {
             Requires.NotNull(taskItem, nameof(taskItem));
-            taskItem.GetJoinableTaskDependentData().OnTaskCompleted();
+            taskItem.GetJoinableTaskDependentData().OnTaskCompleted(taskItem);
         }
 
         /// <summary>
@@ -173,11 +173,6 @@ namespace Microsoft.VisualStudio.Threading
             private static readonly PendingNotification[] EmptyPendingNotificationArray = new PendingNotification[0];
 
             /// <summary>
-            /// The dependent item contains the node.
-            /// </summary>
-            private readonly IJoinableTaskDependent thisDependent;
-
-            /// <summary>
             /// A map of jobs that we should be willing to dequeue from when we control the UI thread, and a ref count. Lazily constructed.
             /// </summary>
             /// <remarks>
@@ -192,14 +187,6 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             private DependentSynchronousTask dependingSynchronousTaskTracking;
 
-            internal JoinableTaskDependentData(IJoinableTaskDependent thisDependent)
-            {
-                Requires.NotNull(thisDependent, nameof(thisDependent));
-                this.thisDependent = thisDependent;
-                this.childDependentNodes = null;
-                this.dependingSynchronousTaskTracking = null;
-            }
-
             /// <summary>
             /// Gets a value indicating whether the <see cref="childDependentNodes"/> is empty.
             /// </summary>
@@ -209,9 +196,11 @@ namespace Microsoft.VisualStudio.Threading
             /// Gets all dependent nodes registered in the <see cref="childDependentNodes"/>
             /// This method is expected to be used with the JTF lock.
             /// </summary>
-            internal IEnumerable<IJoinableTaskDependent> GetDirectDependentNodes()
+            /// <param name="thisDependent">The current joinableTask or collection contains this data.</param>
+            internal IEnumerable<IJoinableTaskDependent> GetDirectDependentNodes(IJoinableTaskDependent thisDependent)
             {
-                Assumes.True(Monitor.IsEntered(this.thisDependent.JoinableTaskContext.SyncContextLock));
+                Requires.NotNull(thisDependent, nameof(thisDependent));
+                Assumes.True(Monitor.IsEntered(thisDependent.JoinableTaskContext.SyncContextLock));
                 if (this.childDependentNodes == null)
                 {
                     return Enumerable.Empty<IJoinableTaskDependent>();
@@ -224,20 +213,24 @@ namespace Microsoft.VisualStudio.Threading
             /// Checks whether a dependent node is inside <see cref="childDependentNodes"/>.
             /// This method is expected to be used with the JTF lock.
             /// </summary>
-            internal bool HasDirectDependency(IJoinableTaskDependent dependency)
+            /// <param name="thisDependent">The current joinableTask or collection contains this data.</param>
+            internal bool HasDirectDependency(IJoinableTaskDependent thisDependent, IJoinableTaskDependent dependency)
             {
-                Assumes.True(Monitor.IsEntered(this.thisDependent.JoinableTaskContext.SyncContextLock));
+                Requires.NotNull(thisDependent, nameof(thisDependent));
+                Assumes.True(Monitor.IsEntered(thisDependent.JoinableTaskContext.SyncContextLock));
                 return this.childDependentNodes.ContainsKey(dependency);
             }
 
             /// <summary>
             /// Gets a value indicating whether the main thread is waiting for the task's completion
             /// </summary>
-            internal bool HasMainThreadSynchronousTaskWaiting()
+            /// <param name="thisDependent">The current joinableTask or collection contains this data.</param>
+            internal bool HasMainThreadSynchronousTaskWaiting(IJoinableTaskDependent thisDependent)
             {
-                using (this.thisDependent.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
+                Requires.NotNull(thisDependent, nameof(thisDependent));
+                using (thisDependent.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
                 {
-                    lock (this.thisDependent.JoinableTaskContext.SyncContextLock)
+                    lock (thisDependent.JoinableTaskContext.SyncContextLock)
                     {
                         DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
                         while (existingTaskTracking != null)
@@ -260,16 +253,18 @@ namespace Microsoft.VisualStudio.Threading
             /// FOR DIAGNOSTICS COLLECTION ONLY.
             /// This method is expected to be used with the JTF lock.
             /// </summary>
-            internal IEnumerable<JoinableTask> GetAllDirectlyDependentJoinableTasks()
+            /// <param name="thisDependent">The current joinableTask or collection contains this data.</param>
+            internal IEnumerable<JoinableTask> GetAllDirectlyDependentJoinableTasks(IJoinableTaskDependent thisDependent)
             {
-                Assumes.True(Monitor.IsEntered(this.thisDependent.JoinableTaskContext.SyncContextLock));
+                Requires.NotNull(thisDependent, nameof(thisDependent));
+                Assumes.True(Monitor.IsEntered(thisDependent.JoinableTaskContext.SyncContextLock));
                 if (this.childDependentNodes == null)
                 {
                     return Enumerable.Empty<JoinableTask>();
                 }
 
                 var allTasks = new HashSet<JoinableTask>();
-                this.AddSelfAndDescendentOrJoinedJobs(allTasks);
+                this.AddSelfAndDescendentOrJoinedJobs(thisDependent, allTasks);
                 return allTasks;
             }
 
@@ -278,9 +273,11 @@ namespace Microsoft.VisualStudio.Threading
             /// This is called when this task is completed.
             /// This method is expected to be used with the JTF lock.
             /// </summary>
-            internal void OnTaskCompleted()
+            /// <param name="thisDependent">The current joinableTask or collection contains this data.</param>
+            internal void OnTaskCompleted(IJoinableTaskDependent thisDependent)
             {
-                Assumes.True(Monitor.IsEntered(this.thisDependent.JoinableTaskContext.SyncContextLock));
+                Requires.NotNull(thisDependent, nameof(thisDependent));
+                Assumes.True(Monitor.IsEntered(thisDependent.JoinableTaskContext.SyncContextLock));
                 if (this.dependingSynchronousTaskTracking != null)
                 {
                     DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
@@ -291,7 +288,7 @@ namespace Microsoft.VisualStudio.Threading
                         var childrenTasks = new List<IJoinableTaskDependent>(this.childDependentNodes.Keys);
                         while (existingTaskTracking != null)
                         {
-                            RemoveDependingSynchronousTaskFrom(childrenTasks, existingTaskTracking.SynchronousTask, false);
+                            RemoveDependingSynchronousTaskFrom(thisDependent, childrenTasks, existingTaskTracking.SynchronousTask, false);
                             existingTaskTracking = existingTaskTracking.Next;
                         }
                     }
@@ -301,20 +298,22 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Adds a <see cref="JoinableTaskDependentData"/> instance as one that is relevant to the async operation.
             /// </summary>
+            /// <param name="thisDependent">The current joinableTask or collection contains this data.</param>
             /// <param name="joinChild">The <see cref="IJoinableTaskDependent"/> to join as a child.</param>
-            internal JoinableTaskCollection.JoinRelease AddDependency(IJoinableTaskDependent joinChild)
+            internal JoinableTaskCollection.JoinRelease AddDependency(IJoinableTaskDependent thisDependent, IJoinableTaskDependent joinChild)
             {
+                Requires.NotNull(thisDependent, nameof(thisDependent));
                 Requires.NotNull(joinChild, nameof(joinChild));
-                if (this.thisDependent == joinChild)
+                if (thisDependent == joinChild)
                 {
                     // Joining oneself would be pointless.
                     return default(JoinableTaskCollection.JoinRelease);
                 }
 
-                using (this.thisDependent.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
+                using (thisDependent.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
                 {
                     List<AsyncManualResetEvent> eventsNeedNotify = null;
-                    lock (this.thisDependent.JoinableTaskContext.SyncContextLock)
+                    lock (thisDependent.JoinableTaskContext.SyncContextLock)
                     {
                         var joinableTask = joinChild as JoinableTask;
                         if (joinableTask?.IsCompleted == true)
@@ -327,7 +326,7 @@ namespace Microsoft.VisualStudio.Threading
                             this.childDependentNodes = new WeakKeyDictionary<IJoinableTaskDependent, int>(capacity: 2);
                         }
 
-                        if (this.childDependentNodes.TryGetValue(joinChild, out int refCount) && !this.thisDependent.NeedRefCountChildDependencies)
+                        if (this.childDependentNodes.TryGetValue(joinChild, out int refCount) && !thisDependent.NeedRefCountChildDependencies)
                         {
                             return default(JoinableTaskCollection.JoinRelease);
                         }
@@ -336,8 +335,8 @@ namespace Microsoft.VisualStudio.Threading
                         if (refCount == 1)
                         {
                             // This constitutes a significant change, so we should apply synchronous task tracking to the new child.
-                            joinChild.OnAddedToDependency(this.thisDependent);
-                            var tasksNeedNotify = this.AddDependingSynchronousTaskToChild(joinChild);
+                            joinChild.OnAddedToDependency(thisDependent);
+                            var tasksNeedNotify = this.AddDependingSynchronousTaskToChild(thisDependent, joinChild);
                             if (tasksNeedNotify.Count > 0)
                             {
                                 eventsNeedNotify = new List<AsyncManualResetEvent>(tasksNeedNotify.Count);
@@ -351,7 +350,7 @@ namespace Microsoft.VisualStudio.Threading
                                 }
                             }
 
-                            this.thisDependent.OnDependencyAdded(joinChild);
+                            thisDependent.OnDependencyAdded(joinChild);
                         }
                     }
 
@@ -364,31 +363,33 @@ namespace Microsoft.VisualStudio.Threading
                         }
                     }
 
-                    return new JoinableTaskCollection.JoinRelease(this.thisDependent, joinChild);
+                    return new JoinableTaskCollection.JoinRelease(thisDependent, joinChild);
                 }
             }
 
             /// <summary>
             /// Removes a <see cref="IJoinableTaskDependent"/> instance as one that is no longer relevant to the async operation.
             /// </summary>
+            /// <param name="thisDependent">The current joinableTask or collection contains this data.</param>
             /// <param name="joinChild">The <see cref="IJoinableTaskDependent"/> to join as a child.</param>
-            internal void RemoveDependency(IJoinableTaskDependent joinChild)
+            internal void RemoveDependency(IJoinableTaskDependent thisDependent, IJoinableTaskDependent joinChild)
             {
+                Requires.NotNull(thisDependent, nameof(thisDependent));
                 Requires.NotNull(joinChild, nameof(joinChild));
 
-                using (this.thisDependent.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
+                using (thisDependent.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
                 {
-                    lock (this.thisDependent.JoinableTaskContext.SyncContextLock)
+                    lock (thisDependent.JoinableTaskContext.SyncContextLock)
                     {
                         if (this.childDependentNodes != null && this.childDependentNodes.TryGetValue(joinChild, out int refCount))
                         {
                             if (refCount == 1)
                             {
-                                joinChild.OnRemovedFromDependency(this.thisDependent);
+                                joinChild.OnRemovedFromDependency(thisDependent);
 
                                 this.childDependentNodes.Remove(joinChild);
-                                this.RemoveDependingSynchronousTaskFromChild(joinChild);
-                                this.thisDependent.OnDependencyRemoved(joinChild);
+                                this.RemoveDependingSynchronousTaskFromChild(thisDependent, joinChild);
+                                thisDependent.OnDependencyRemoved(joinChild);
                             }
                             else
                             {
@@ -402,11 +403,14 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Recursively adds this joinable and all its dependencies to the specified set, that are not yet completed.
             /// </summary>
-            internal void AddSelfAndDescendentOrJoinedJobs(HashSet<JoinableTask> joinables)
+            /// <param name="thisDependent">The current joinableTask or collection contains this data.</param>
+            /// <param name="joinables">A collection to hold <see cref="JoinableTask"/> found.</param>
+            internal void AddSelfAndDescendentOrJoinedJobs(IJoinableTaskDependent thisDependent, HashSet<JoinableTask> joinables)
             {
+                Requires.NotNull(thisDependent, nameof(thisDependent));
                 Requires.NotNull(joinables, nameof(joinables));
 
-                if (this.thisDependent is JoinableTask thisJoinableTask)
+                if (thisDependent is JoinableTask thisJoinableTask)
                 {
                     if (thisJoinableTask.IsCompleted || !joinables.Add(thisJoinableTask))
                     {
@@ -418,7 +422,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     foreach (var item in this.childDependentNodes)
                     {
-                        item.Key.GetJoinableTaskDependentData().AddSelfAndDescendentOrJoinedJobs(joinables);
+                        item.Key.GetJoinableTaskDependentData().AddSelfAndDescendentOrJoinedJobs(thisDependent, joinables);
                     }
                 }
             }
@@ -446,11 +450,13 @@ namespace Microsoft.VisualStudio.Threading
             /// Calculate the collection of events we need trigger after we enqueue a request.
             /// This method is expected to be used with the JTF lock.
             /// </summary>
+            /// <param name="thisDependent">The current joinableTask or collection contains this data.</param>
             /// <param name="forMainThread">True if we want to find tasks to process the main thread queue. Otherwise tasks to process the background queue.</param>
             /// <returns>The collection of synchronous tasks we need notify.</returns>
-            internal IReadOnlyCollection<JoinableTask> GetDependingSynchronousTasks(bool forMainThread)
+            internal IReadOnlyCollection<JoinableTask> GetDependingSynchronousTasks(IJoinableTaskDependent thisDependent, bool forMainThread)
             {
-                Assumes.True(Monitor.IsEntered(this.thisDependent.JoinableTaskContext.SyncContextLock));
+                Requires.NotNull(thisDependent, nameof(thisDependent));
+                Assumes.True(Monitor.IsEntered(thisDependent.JoinableTaskContext.SyncContextLock));
 
                 int count = this.CountOfDependingSynchronousTasks();
                 if (count == 0)
@@ -482,18 +488,20 @@ namespace Microsoft.VisualStudio.Threading
             /// After the task is finished, <see cref="OnSynchronousTaskEndToBlockWaiting"/> is called to revert this change.
             /// This method is expected to be used with the JTF lock.
             /// </summary>
+            /// <param name="thisDependent">The current joinableTask or collection contains this data.</param>
             /// <param name="taskHasPendingRequests">Return the JoinableTask which has already had pending requests to be handled.</param>
             /// <param name="pendingRequestsCount">The number of pending requests.</param>
-            internal void OnSynchronousTaskStartToBlockWaiting(out JoinableTask taskHasPendingRequests, out int pendingRequestsCount)
+            internal void OnSynchronousTaskStartToBlockWaiting(IJoinableTaskDependent thisDependent, out JoinableTask taskHasPendingRequests, out int pendingRequestsCount)
             {
-                Assumes.True(Monitor.IsEntered(this.thisDependent.JoinableTaskContext.SyncContextLock));
+                Requires.NotNull(thisDependent, nameof(thisDependent));
+                Assumes.True(Monitor.IsEntered(thisDependent.JoinableTaskContext.SyncContextLock));
 
                 pendingRequestsCount = 0;
                 taskHasPendingRequests = null;
 
-                if (this.thisDependent is JoinableTask thisJoinableTask)
+                if (thisDependent is JoinableTask thisJoinableTask)
                 {
-                    taskHasPendingRequests = this.AddDependingSynchronousTask(thisJoinableTask, ref pendingRequestsCount);
+                    taskHasPendingRequests = this.AddDependingSynchronousTask(thisJoinableTask, thisJoinableTask, ref pendingRequestsCount);
                 }
                 else
                 {
@@ -506,16 +514,18 @@ namespace Microsoft.VisualStudio.Threading
             /// This removes the current task from the <see cref="dependingSynchronousTaskTracking"/> of the task itself (and propergate through its dependencies.)
             /// It reverts the data structure change done in the <see cref="OnSynchronousTaskStartToBlockWaiting"/>.
             /// </summary>
-            internal void OnSynchronousTaskEndToBlockWaiting()
+            /// <param name="thisDependent">The current joinableTask or collection contains this data.</param>
+            internal void OnSynchronousTaskEndToBlockWaiting(IJoinableTaskDependent thisDependent)
             {
-                if (this.thisDependent is JoinableTask thisJoinableTask)
+                Requires.NotNull(thisDependent, nameof(thisDependent));
+                if (thisDependent is JoinableTask thisJoinableTask)
                 {
-                    using (this.thisDependent.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
+                    using (thisDependent.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
                     {
-                        lock (this.thisDependent.JoinableTaskContext.SyncContextLock)
+                        lock (thisDependent.JoinableTaskContext.SyncContextLock)
                         {
                             // Remove itself from the tracking list, after the task is completed.
-                            this.RemoveDependingSynchronousTask(thisJoinableTask, true);
+                            this.RemoveDependingSynchronousTask(thisJoinableTask, thisJoinableTask, true);
                         }
                     }
                 }
@@ -544,12 +554,14 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Applies all synchronous tasks tracked by this task to a new child/dependent task.
             /// </summary>
+            /// <param name="thisDependent">The current joinableTask or collection owns the data.</param>
             /// <param name="child">The new child task.</param>
             /// <returns>Pairs of synchronous tasks we need notify and the event source triggering it, plus the number of pending events.</returns>
-            private IReadOnlyCollection<PendingNotification> AddDependingSynchronousTaskToChild(IJoinableTaskDependent child)
+            private IReadOnlyCollection<PendingNotification> AddDependingSynchronousTaskToChild(IJoinableTaskDependent thisDependent, IJoinableTaskDependent child)
             {
+                Requires.NotNull(thisDependent, nameof(thisDependent));
                 Requires.NotNull(child, nameof(child));
-                Assumes.True(Monitor.IsEntered(this.thisDependent.JoinableTaskContext.SyncContextLock));
+                Assumes.True(Monitor.IsEntered(thisDependent.JoinableTaskContext.SyncContextLock));
 
                 int count = this.CountOfDependingSynchronousTasks();
                 if (count == 0)
@@ -562,7 +574,7 @@ namespace Microsoft.VisualStudio.Threading
                 while (existingTaskTracking != null)
                 {
                     int totalEventNumber = 0;
-                    var eventTriggeringTask = child.GetJoinableTaskDependentData().AddDependingSynchronousTask(existingTaskTracking.SynchronousTask, ref totalEventNumber);
+                    var eventTriggeringTask = child.GetJoinableTaskDependentData().AddDependingSynchronousTask(thisDependent, existingTaskTracking.SynchronousTask, ref totalEventNumber);
                     if (eventTriggeringTask != null)
                     {
                         tasksNeedNotify.Add(new PendingNotification(existingTaskTracking.SynchronousTask, eventTriggeringTask, totalEventNumber));
@@ -577,16 +589,17 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Removes all synchronous tasks we applies to a dependent task, after the relationship is removed.
             /// </summary>
+            /// <param name="thisDependent">The current joinableTask or collection owns the data.</param>
             /// <param name="child">The original dependent task</param>
-            private void RemoveDependingSynchronousTaskFromChild(IJoinableTaskDependent child)
+            private void RemoveDependingSynchronousTaskFromChild(IJoinableTaskDependent thisDependent, IJoinableTaskDependent child)
             {
+                Requires.NotNull(thisDependent, nameof(thisDependent));
                 Requires.NotNull(child, nameof(child));
-                Assumes.True(Monitor.IsEntered(this.thisDependent.JoinableTaskContext.SyncContextLock));
 
                 DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
                 while (existingTaskTracking != null)
                 {
-                    child.GetJoinableTaskDependentData().RemoveDependingSynchronousTask(existingTaskTracking.SynchronousTask);
+                    child.GetJoinableTaskDependentData().RemoveDependingSynchronousTask(thisDependent, existingTaskTracking.SynchronousTask);
                     existingTaskTracking = existingTaskTracking.Next;
                 }
             }
@@ -596,15 +609,17 @@ namespace Microsoft.VisualStudio.Threading
             /// A synchronous task is a task blocking a thread and waits it to be completed.  We may want the blocking thread
             /// to process events from this task.
             /// </summary>
+            /// <param name="thisDependent">The current joinableTask or collection owns the data.</param>
             /// <param name="synchronousTask">The synchronous task</param>
             /// <param name="totalEventsPending">The total events need be processed</param>
             /// <returns>The task causes us to trigger the event of the synchronous task, so it can process new events.  Null means we don't need trigger any event</returns>
-            private JoinableTask AddDependingSynchronousTask(JoinableTask synchronousTask, ref int totalEventsPending)
+            private JoinableTask AddDependingSynchronousTask(IJoinableTaskDependent thisDependent, JoinableTask synchronousTask, ref int totalEventsPending)
             {
+                Requires.NotNull(thisDependent, nameof(thisDependent));
                 Requires.NotNull(synchronousTask, nameof(synchronousTask));
-                Assumes.True(Monitor.IsEntered(this.thisDependent.JoinableTaskContext.SyncContextLock));
+                Assumes.True(Monitor.IsEntered(thisDependent.JoinableTaskContext.SyncContextLock));
 
-                JoinableTask thisJoinableTask = this.thisDependent as JoinableTask;
+                JoinableTask thisJoinableTask = thisDependent as JoinableTask;
                 if (thisJoinableTask != null)
                 {
                     if (thisJoinableTask.IsCompleted)
@@ -661,7 +676,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     foreach (var item in this.childDependentNodes)
                     {
-                        var childTiggeringTask = item.Key.GetJoinableTaskDependentData().AddDependingSynchronousTask(synchronousTask, ref totalEventsPending);
+                        var childTiggeringTask = item.Key.GetJoinableTaskDependentData().AddDependingSynchronousTask(thisDependent, synchronousTask, ref totalEventsPending);
                         if (eventTriggeringTask == null)
                         {
                             eventTriggeringTask = childTiggeringTask;
@@ -675,28 +690,32 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Remove a synchronous task from the tracking list.
             /// </summary>
+            /// <param name="thisDependent">The current joinableTask or collection owns the data.</param>
             /// <param name="syncTask">The synchronous task</param>
             /// <param name="force">We always remove it from the tracking list if it is true.  Otherwise, we keep tracking the reference count.</param>
-            private void RemoveDependingSynchronousTask(JoinableTask syncTask, bool force = false)
+            private void RemoveDependingSynchronousTask(IJoinableTaskDependent thisDependent, JoinableTask syncTask, bool force = false)
             {
+                Requires.NotNull(thisDependent, nameof(thisDependent));
                 Requires.NotNull(syncTask, nameof(syncTask));
-                Assumes.True(Monitor.IsEntered(this.thisDependent.JoinableTaskContext.SyncContextLock));
+                Assumes.True(Monitor.IsEntered(thisDependent.JoinableTaskContext.SyncContextLock));
 
                 var syncTaskItem = (IJoinableTaskDependent)syncTask;
                 if (syncTaskItem.GetJoinableTaskDependentData().dependingSynchronousTaskTracking != null)
                 {
-                    RemoveDependingSynchronousTaskFrom(new IJoinableTaskDependent[] { this.thisDependent }, syncTask, force);
+                    RemoveDependingSynchronousTaskFrom(thisDependent, new IJoinableTaskDependent[] { thisDependent }, syncTask, force);
                 }
             }
 
             /// <summary>
             /// Remove a synchronous task from the tracking list of a list of tasks.
             /// </summary>
+            /// <param name="thisDependent">The current joinableTask or collection owns the data.</param>
             /// <param name="tasks">A list of tasks we need update the tracking list.</param>
             /// <param name="syncTask">The synchronous task we want to remove</param>
             /// <param name="force">We always remove it from the tracking list if it is true.  Otherwise, we keep tracking the reference count.</param>
-            private static void RemoveDependingSynchronousTaskFrom(IReadOnlyList<IJoinableTaskDependent> tasks, JoinableTask syncTask, bool force)
+            private static void RemoveDependingSynchronousTaskFrom(IJoinableTaskDependent thisDependent, IReadOnlyList<IJoinableTaskDependent> tasks, JoinableTask syncTask, bool force)
             {
+                Requires.NotNull(thisDependent, nameof(thisDependent));
                 Requires.NotNull(tasks, nameof(tasks));
                 Requires.NotNull(syncTask, nameof(syncTask));
 
@@ -710,7 +729,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 foreach (var task in tasks)
                 {
-                    task.GetJoinableTaskDependentData().RemoveDependingSynchronousTask(syncTask, reachableNodes, ref remainNodes);
+                    task.GetJoinableTaskDependentData().RemoveDependingSynchronousTask(thisDependent, syncTask, reachableNodes, ref remainNodes);
                 }
 
                 if (!force && remainNodes != null && remainNodes.Count > 0)
@@ -722,13 +741,13 @@ namespace Microsoft.VisualStudio.Threading
                     // tell us the exactly tasks which need track the synchronous task, and we will clean up the rest.
                     reachableNodes = new HashSet<IJoinableTaskDependent>();
                     var syncTaskItem = (IJoinableTaskDependent)syncTask;
-                    syncTaskItem.GetJoinableTaskDependentData().ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(reachableNodes, remainNodes);
+                    syncTaskItem.GetJoinableTaskDependentData().ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(thisDependent, reachableNodes, remainNodes);
 
                     // force to remove all invalid items
                     HashSet<IJoinableTaskDependent> remainPlaceHold = null;
                     foreach (var remainTask in remainNodes)
                     {
-                        remainTask.GetJoinableTaskDependentData().RemoveDependingSynchronousTask(syncTask, reachableNodes, ref remainPlaceHold);
+                        remainTask.GetJoinableTaskDependentData().RemoveDependingSynchronousTask(thisDependent, syncTask, reachableNodes, ref remainPlaceHold);
                     }
                 }
             }
@@ -737,17 +756,19 @@ namespace Microsoft.VisualStudio.Threading
             /// Compute all reachable nodes from a synchronous task. Because we use the result to clean up invalid
             /// items from the remain task, we will remove valid task from the collection, and stop immediately if nothing is left.
             /// </summary>
+            /// <param name="thisDependent">The current joinableTask or collection owns the data.</param>
             /// <param name="reachableNodes">All reachable dependency nodes. This is not a completed list, if there is no remain node.</param>
             /// <param name="remainNodes">Remain dependency nodes we want to check. After the execution, it will retain non-reachable nodes.</param>
-            private void ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(HashSet<IJoinableTaskDependent> reachableNodes, HashSet<IJoinableTaskDependent> remainNodes)
+            private void ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(IJoinableTaskDependent thisDependent, HashSet<IJoinableTaskDependent> reachableNodes, HashSet<IJoinableTaskDependent> remainNodes)
             {
+                Requires.NotNull(thisDependent, nameof(thisDependent));
                 Requires.NotNull(remainNodes, nameof(remainNodes));
                 Requires.NotNull(reachableNodes, nameof(reachableNodes));
-                if ((this.thisDependent as JoinableTask)?.IsCompleted != true)
+                if ((thisDependent as JoinableTask)?.IsCompleted != true)
                 {
-                    if (reachableNodes.Add(this.thisDependent))
+                    if (reachableNodes.Add(thisDependent))
                     {
-                        if (remainNodes.Remove(this.thisDependent) && reachableNodes.Count == 0)
+                        if (remainNodes.Remove(thisDependent) && reachableNodes.Count == 0)
                         {
                             // no remain task left, quit the loop earlier
                             return;
@@ -757,7 +778,7 @@ namespace Microsoft.VisualStudio.Threading
                         {
                             foreach (var item in this.childDependentNodes)
                             {
-                                item.Key.GetJoinableTaskDependentData().ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(reachableNodes, remainNodes);
+                                item.Key.GetJoinableTaskDependentData().ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(thisDependent, reachableNodes, remainNodes);
                             }
                         }
                     }
@@ -767,13 +788,15 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Remove a synchronous task from the tracking list of this task.
             /// </summary>
-            /// <param name="task">The synchronous task need be removed</param>
+            /// <param name="thisDependent">The current joinableTask or collection owns the data.</param>
+            /// <param name="task">The synchronous task</param>
             /// <param name="reachableNodes">
             /// If it is not null, it will contain all dependency nodes which can track the synchronous task. We will ignore reference count in that case.
             /// </param>
             /// <param name="remainingDependentNodes">This will retain the tasks which still tracks the synchronous task.</param>
-            private void RemoveDependingSynchronousTask(JoinableTask task, HashSet<IJoinableTaskDependent> reachableNodes, ref HashSet<IJoinableTaskDependent> remainingDependentNodes)
+            private void RemoveDependingSynchronousTask(IJoinableTaskDependent thisDependent, JoinableTask task, HashSet<IJoinableTaskDependent> reachableNodes, ref HashSet<IJoinableTaskDependent> remainingDependentNodes)
             {
+                Requires.NotNull(thisDependent, nameof(thisDependent));
                 Requires.NotNull(task, nameof(task));
 
                 DependentSynchronousTask previousTaskTracking = null;
@@ -788,7 +811,7 @@ namespace Microsoft.VisualStudio.Threading
                         {
                             if (reachableNodes != null)
                             {
-                                if (!reachableNodes.Contains(this.thisDependent))
+                                if (!reachableNodes.Contains(thisDependent))
                                 {
                                     currentTaskTracking.ReferenceCount = 0;
                                 }
@@ -814,7 +837,7 @@ namespace Microsoft.VisualStudio.Threading
                             {
                                 if (remainingDependentNodes != null)
                                 {
-                                    remainingDependentNodes.Remove(this.thisDependent);
+                                    remainingDependentNodes.Remove(thisDependent);
                                 }
                             }
                             else
@@ -824,7 +847,7 @@ namespace Microsoft.VisualStudio.Threading
                                     remainingDependentNodes = new HashSet<IJoinableTaskDependent>();
                                 }
 
-                                remainingDependentNodes.Add(this.thisDependent);
+                                remainingDependentNodes.Add(thisDependent);
                             }
                         }
 
@@ -839,7 +862,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     foreach (var item in this.childDependentNodes)
                     {
-                        item.Key.GetJoinableTaskDependentData().RemoveDependingSynchronousTask(task, reachableNodes, ref remainingDependentNodes);
+                        item.Key.GetJoinableTaskDependentData().RemoveDependingSynchronousTask(thisDependent, task, reachableNodes, ref remainingDependentNodes);
                     }
                 }
             }

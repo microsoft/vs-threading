@@ -144,7 +144,6 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             this.creationOptions = creationOptions;
-            this.dependentData = new JoinableTaskDependencyGraph.JoinableTaskDependentData(this);
             this.owner.Context.OnJoinableTaskStarted(this);
             this.initialDelegate = initialDelegate;
         }
