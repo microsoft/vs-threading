@@ -53,10 +53,10 @@ namespace Microsoft.VisualStudio.Threading
         private ListOfOftenOne<JoinableTaskFactory> nestingFactories;
 
         /// <summary>
-        /// The <see cref="JoinableTaskDependentData"/> to track dependencies between tasks.
+        /// The <see cref="JoinableTaskDependencyGraph.JoinableTaskDependentData"/> to track dependencies between tasks.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private JoinableTaskDependentData dependentData;
+        private JoinableTaskDependencyGraph.JoinableTaskDependentData dependentData;
 
         /// <summary>
         /// The collections that this job is a member of.
@@ -144,7 +144,7 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             this.creationOptions = creationOptions;
-            this.dependentData = new JoinableTaskDependentData(this);
+            this.dependentData = new JoinableTaskDependencyGraph.JoinableTaskDependentData(this);
             this.owner.Context.OnJoinableTaskStarted(this);
             this.initialDelegate = initialDelegate;
         }
@@ -600,7 +600,7 @@ namespace Microsoft.VisualStudio.Threading
 
                         if (mainThreadQueueUpdated || backgroundThreadQueueUpdated)
                         {
-                            var tasksNeedNotify = this.dependentData.GetDependingSynchronousTasks(mainThreadQueueUpdated);
+                            var tasksNeedNotify = JoinableTaskDependencyGraph.GetDependingSynchronousTasks(this, mainThreadQueueUpdated);
                             if (tasksNeedNotify.Count > 0)
                             {
                                 eventsNeedNotify = new List<AsyncManualResetEvent>(tasksNeedNotify.Count);
@@ -722,7 +722,7 @@ namespace Microsoft.VisualStudio.Threading
                         // will likely want to know that the JoinableTask has completed.
                         queueNeedProcessEvent = this.queueNeedProcessEvent;
 
-                        this.dependentData.OnTaskCompleted();
+                        JoinableTaskDependencyGraph.OnTaskCompleted(this);
                     }
                 }
 
@@ -765,7 +765,7 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         lock (this.JoinableTaskContext.SyncContextLock)
                         {
-                            this.dependentData.OnSynchronousTaskStartToBlockWaiting(out JoinableTask pendingRequestTask, out this.pendingEventCount);
+                            JoinableTaskDependencyGraph.OnSynchronousTaskStartToBlockWaiting(this, out JoinableTask pendingRequestTask, out this.pendingEventCount);
 
                             // Add the task to the depending tracking list of itself, so it will monitor the event queue.
                             this.pendingEventSource = new WeakReference<JoinableTask>(pendingRequestTask);
@@ -800,7 +800,7 @@ namespace Microsoft.VisualStudio.Threading
                     }
                     finally
                     {
-                        this.dependentData.OnSynchronousTaskEndToBlockWaiting();
+                        JoinableTaskDependencyGraph.OnSynchronousTaskEndToBlockWaiting(this);
                     }
 
                     if (ThreadingEventSource.Instance.IsEnabled())
@@ -846,7 +846,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 foreach (var collection in this.dependencyParents)
                 {
-                    collection.GetJoinableTaskDependentData().RemoveDependency(this);
+                    JoinableTaskDependencyGraph.RemoveDependency(collection, this);
                 }
 
                 if (this.mainThreadJobSyncContext != null)
@@ -865,12 +865,7 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
-        internal ref JoinableTaskDependentData GetJoinableTaskDependentData()
-        {
-            return ref this.dependentData;
-        }
-
-        ref JoinableTaskDependentData IJoinableTaskDependent.GetJoinableTaskDependentData()
+        ref JoinableTaskDependencyGraph.JoinableTaskDependentData IJoinableTaskDependent.GetJoinableTaskDependentData()
         {
             return ref this.dependentData;
         }
@@ -948,7 +943,7 @@ namespace Microsoft.VisualStudio.Threading
 
                         if (this.pendingEventSource != null)
                         {
-                            if (this.pendingEventSource.TryGetTarget(out JoinableTask pendingSource) && pendingSource.dependentData.IsDependingSynchronousTask(this))
+                            if (this.pendingEventSource.TryGetTarget(out JoinableTask pendingSource) && JoinableTaskDependencyGraph.IsDependingSynchronousTask(pendingSource, this))
                             {
                                 var queue = onMainThread ? pendingSource.mainThreadQueue : pendingSource.threadPoolQueue;
                                 if (queue != null && !queue.IsCompleted && queue.TryDequeue(out work))
@@ -1015,7 +1010,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     if (joinableTask?.IsCompleted != true)
                     {
-                        foreach (var item in currentNode.GetJoinableTaskDependentData().GetDirectDependentNodes())
+                        foreach (var item in JoinableTaskDependencyGraph.GetDirectDependentNodes(currentNode))
                         {
                             if (TryDequeueSelfOrDependencies(item, onMainThread, visited, out work))
                             {
@@ -1054,7 +1049,7 @@ namespace Microsoft.VisualStudio.Threading
                 var ambientJob = this.JoinableTaskContext.AmbientTask;
                 if (ambientJob != null && ambientJob != this)
                 {
-                    return ambientJob.dependentData.AddDependency(this);
+                    return JoinableTaskDependencyGraph.AddDependency(ambientJob, this);
                 }
             }
 

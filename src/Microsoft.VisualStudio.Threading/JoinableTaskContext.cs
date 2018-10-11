@@ -323,7 +323,7 @@ namespace Microsoft.VisualStudio.Threading
             var ambientTask = this.AmbientTask;
             if (ambientTask != null)
             {
-                if (ambientTask.GetJoinableTaskDependentData().HasMainThreadSynchronousTaskWaiting)
+                if (JoinableTaskDependencyGraph.HasMainThreadSynchronousTaskWaiting(ambientTask))
                 {
                     return true;
                 }
@@ -345,12 +345,12 @@ namespace Microsoft.VisualStudio.Threading
                                 var allJoinedJobs = new HashSet<JoinableTask>();
                                 foreach (var initializingTask in this.initializingSynchronouslyMainThreadTasks)
                                 {
-                                    if (!initializingTask.GetJoinableTaskDependentData().HasMainThreadSynchronousTaskWaiting)
+                                    if (!JoinableTaskDependencyGraph.HasMainThreadSynchronousTaskWaiting(initializingTask))
                                     {
                                         // This task blocks the main thread. If it has joined the ambient task
                                         // directly or indirectly, then our ambient task is considered blocking
                                         // the main thread.
-                                        initializingTask.GetJoinableTaskDependentData().AddSelfAndDescendentOrJoinedJobs(allJoinedJobs);
+                                        JoinableTaskDependencyGraph.AddSelfAndDescendentOrJoinedJobs(initializingTask, allJoinedJobs);
                                         if (allJoinedJobs.Contains(ambientTask))
                                         {
                                             return true;

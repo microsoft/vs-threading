@@ -30,10 +30,10 @@ namespace Microsoft.VisualStudio.Threading
         private string displayName;
 
         /// <summary>
-        /// The <see cref="JoinableTaskDependentData"/> to track dependencies between tasks.
+        /// The <see cref="JoinableTaskDependencyGraph.JoinableTaskDependentData"/> to track dependencies between tasks.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private JoinableTaskDependentData dependentData;
+        private JoinableTaskDependencyGraph.JoinableTaskDependentData dependentData;
 
         /// <summary>
         /// An event that is set when the collection is empty. (lazily initialized)
@@ -54,7 +54,7 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(context, nameof(context));
             this.Context = context;
             this.refCountAddedJobs = refCountAddedJobs;
-            this.dependentData = new JoinableTaskDependentData(this);
+            this.dependentData = new JoinableTaskDependencyGraph.JoinableTaskDependentData(this);
         }
 
         /// <summary>
@@ -77,7 +77,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Gets JoinableTaskContext for <see cref="JoinableTaskDependentData"/> to access locks.
+        /// Gets JoinableTaskContext for <see cref="JoinableTaskDependencyGraph.JoinableTaskDependentData"/> to access locks.
         /// </summary>
         JoinableTaskContext IJoinableTaskDependent.JoinableTaskContext => this.Context;
 
@@ -86,7 +86,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         bool IJoinableTaskDependent.NeedRefCountChildDependencies => this.refCountAddedJobs;
 
-        ref JoinableTaskDependentData IJoinableTaskDependent.GetJoinableTaskDependentData()
+        ref JoinableTaskDependencyGraph.JoinableTaskDependentData IJoinableTaskDependent.GetJoinableTaskDependentData()
         {
             return ref this.dependentData;
         }
@@ -103,7 +103,7 @@ namespace Microsoft.VisualStudio.Threading
                 Requires.Argument(false, "joinableTask", Strings.JoinableTaskContextAndCollectionMismatch);
             }
 
-            this.dependentData.AddDependency(joinableTask);
+            JoinableTaskDependencyGraph.AddDependency(this, joinableTask);
         }
 
         /// <summary>
@@ -114,7 +114,7 @@ namespace Microsoft.VisualStudio.Threading
         public void Remove(JoinableTask joinableTask)
         {
             Requires.NotNull(joinableTask, nameof(joinableTask));
-            this.dependentData.RemoveDependency(joinableTask);
+            JoinableTaskDependencyGraph.RemoveDependency(this, joinableTask);
         }
 
         /// <summary>
@@ -134,7 +134,7 @@ namespace Microsoft.VisualStudio.Threading
                 return default(JoinRelease);
             }
 
-            return ambientJob.GetJoinableTaskDependentData().AddDependency(this);
+            return JoinableTaskDependencyGraph.AddDependency(ambientJob, this);
         }
 
         /// <summary>
@@ -153,7 +153,7 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         // We use interlocked here to mitigate race conditions in lazily initializing this field.
                         // We *could* take a write lock above, but that would needlessly increase lock contention.
-                        var nowait = Interlocked.CompareExchange(ref this.emptyEvent, new AsyncManualResetEvent(this.dependentData.HasNoChildDependentNode), null);
+                        var nowait = Interlocked.CompareExchange(ref this.emptyEvent, new AsyncManualResetEvent(JoinableTaskDependencyGraph.HasNoChildDependentNode(this)), null);
                     }
                 }
             }
@@ -175,7 +175,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 lock (this.Context.SyncContextLock)
                 {
-                    return this.dependentData.HasDirectDependency(joinableTask);
+                    return JoinableTaskDependencyGraph.HasDirectDependency(this, joinableTask);
                 }
             }
         }
@@ -190,7 +190,7 @@ namespace Microsoft.VisualStudio.Threading
                 var joinables = new List<JoinableTask>();
                 lock (this.Context.SyncContextLock)
                 {
-                    foreach (var item in this.dependentData.GetDirectDependentNodes())
+                    foreach (var item in JoinableTaskDependencyGraph.GetDirectDependentNodes(this))
                     {
                         if (item is JoinableTask joinableTask)
                         {
@@ -229,7 +229,7 @@ namespace Microsoft.VisualStudio.Threading
 
         void IJoinableTaskDependent.OnDependencyRemoved(IJoinableTaskDependent joinChild)
         {
-            if (this.emptyEvent != null && this.dependentData.HasNoChildDependentNode)
+            if (this.emptyEvent != null && JoinableTaskDependencyGraph.HasNoChildDependentNode(this))
             {
                 this.emptyEvent.Set();
             }
@@ -265,7 +265,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 if (this.parentDependencyNode != null)
                 {
-                    this.parentDependencyNode.GetJoinableTaskDependentData().RemoveDependency(this.childDependencyNode);
+                    JoinableTaskDependencyGraph.RemoveDependency(this.parentDependencyNode, this.childDependencyNode);
                     this.parentDependencyNode = null;
                 }
 
