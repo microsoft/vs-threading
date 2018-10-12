@@ -19,10 +19,12 @@ namespace Microsoft.VisualStudio.Threading
     {
         /// <summary>
         /// Gets a value indicating whether there is no child depenent item.
+        /// This method is expected to be used with the JTF lock.
         /// </summary>
         internal static bool HasNoChildDependentNode(IJoinableTaskDependent taskItem)
         {
             Requires.NotNull(taskItem, nameof(taskItem));
+            Assumes.True(Monitor.IsEntered(taskItem.JoinableTaskContext.SyncContextLock));
             return taskItem.GetJoinableTaskDependentData().HasNoChildDependentNode;
         }
 
@@ -223,6 +225,11 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             internal bool HasDirectDependency(IJoinableTaskDependent dependency)
             {
+                if (this.childDependentNodes == null)
+                {
+                    return false;
+                }
+
                 return this.childDependentNodes.ContainsKey(dependency);
             }
 

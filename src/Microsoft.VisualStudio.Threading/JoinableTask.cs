@@ -101,7 +101,7 @@ namespace Microsoft.VisualStudio.Threading
         private ExecutionQueue threadPoolQueue;
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private JoinableTaskFlags state;
+        private volatile JoinableTaskFlags state;
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private JoinableTaskSynchronizationContext mainThreadJobSyncContext;
