@@ -85,10 +85,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         bool IJoinableTaskDependent.NeedRefCountChildDependencies => this.refCountAddedJobs;
 
-        ref JoinableTaskDependencyGraph.JoinableTaskDependentData IJoinableTaskDependent.GetJoinableTaskDependentData()
-        {
-            return ref this.dependentData;
-        }
+        ref JoinableTaskDependencyGraph.JoinableTaskDependentData IJoinableTaskDependent.GetJoinableTaskDependentData() => ref this.dependentData;
 
         /// <summary>
         /// Adds the specified joinable task to this collection.
