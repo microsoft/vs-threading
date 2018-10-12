@@ -33,7 +33,8 @@ namespace Microsoft.VisualStudio.Threading
         internal static bool HasDirectDependency(IJoinableTaskDependent taskItem, IJoinableTaskDependent dependency)
         {
             Requires.NotNull(taskItem, nameof(taskItem));
-            return taskItem.GetJoinableTaskDependentData().HasDirectDependency(taskItem, dependency);
+            Assumes.True(Monitor.IsEntered(taskItem.JoinableTaskContext.SyncContextLock));
+            return taskItem.GetJoinableTaskDependentData().HasDirectDependency(dependency);
         }
 
         /// <summary>
@@ -42,7 +43,13 @@ namespace Microsoft.VisualStudio.Threading
         internal static bool HasMainThreadSynchronousTaskWaiting(IJoinableTaskDependent taskItem)
         {
             Requires.NotNull(taskItem, nameof(taskItem));
-            return taskItem.GetJoinableTaskDependentData().HasMainThreadSynchronousTaskWaiting(taskItem);
+            using (taskItem.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
+            {
+                lock (taskItem.JoinableTaskContext.SyncContextLock)
+                {
+                    return taskItem.GetJoinableTaskDependentData().HasMainThreadSynchronousTaskWaiting();
+                }
+            }
         }
 
         /// <summary>
@@ -74,7 +81,8 @@ namespace Microsoft.VisualStudio.Threading
         internal static IEnumerable<IJoinableTaskDependent> GetDirectDependentNodes(IJoinableTaskDependent taskItem)
         {
             Requires.NotNull(taskItem, nameof(taskItem));
-            return taskItem.GetJoinableTaskDependentData().GetDirectDependentNodes(taskItem);
+            Assumes.True(Monitor.IsEntered(taskItem.JoinableTaskContext.SyncContextLock));
+            return taskItem.GetJoinableTaskDependentData().GetDirectDependentNodes();
         }
 
         /// <summary>
@@ -153,7 +161,8 @@ namespace Microsoft.VisualStudio.Threading
         internal static void OnTaskCompleted(IJoinableTaskDependent taskItem)
         {
             Requires.NotNull(taskItem, nameof(taskItem));
-            taskItem.GetJoinableTaskDependentData().OnTaskCompleted(taskItem);
+            Assumes.True(Monitor.IsEntered(taskItem.JoinableTaskContext.SyncContextLock));
+            taskItem.GetJoinableTaskDependentData().OnTaskCompleted();
         }
 
         /// <summary>
@@ -196,11 +205,8 @@ namespace Microsoft.VisualStudio.Threading
             /// Gets all dependent nodes registered in the <see cref="childDependentNodes"/>
             /// This method is expected to be used with the JTF lock.
             /// </summary>
-            /// <param name="thisDependent">The current joinableTask or collection contains this data.</param>
-            internal IEnumerable<IJoinableTaskDependent> GetDirectDependentNodes(IJoinableTaskDependent thisDependent)
+            internal IEnumerable<IJoinableTaskDependent> GetDirectDependentNodes()
             {
-                Requires.NotNull(thisDependent, nameof(thisDependent));
-                Assumes.True(Monitor.IsEntered(thisDependent.JoinableTaskContext.SyncContextLock));
                 if (this.childDependentNodes == null)
                 {
                     return Enumerable.Empty<IJoinableTaskDependent>();
@@ -213,40 +219,29 @@ namespace Microsoft.VisualStudio.Threading
             /// Checks whether a dependent node is inside <see cref="childDependentNodes"/>.
             /// This method is expected to be used with the JTF lock.
             /// </summary>
-            /// <param name="thisDependent">The current joinableTask or collection contains this data.</param>
-            /// <param name="dependency">The <see cref="JoinableTask"/> or <see cref="JoinableTaskCollection"/> which can be a dependent of the current node.</param>
-            internal bool HasDirectDependency(IJoinableTaskDependent thisDependent, IJoinableTaskDependent dependency)
+            internal bool HasDirectDependency(IJoinableTaskDependent dependency)
             {
-                Requires.NotNull(thisDependent, nameof(thisDependent));
-                Assumes.True(Monitor.IsEntered(thisDependent.JoinableTaskContext.SyncContextLock));
                 return this.childDependentNodes.ContainsKey(dependency);
             }
 
             /// <summary>
             /// Gets a value indicating whether the main thread is waiting for the task's completion
+            /// This method is expected to be used with the JTF lock.
             /// </summary>
-            /// <param name="thisDependent">The current joinableTask or collection contains this data.</param>
-            internal bool HasMainThreadSynchronousTaskWaiting(IJoinableTaskDependent thisDependent)
+            internal bool HasMainThreadSynchronousTaskWaiting()
             {
-                Requires.NotNull(thisDependent, nameof(thisDependent));
-                using (thisDependent.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
+                DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
+                while (existingTaskTracking != null)
                 {
-                    lock (thisDependent.JoinableTaskContext.SyncContextLock)
+                    if ((existingTaskTracking.SynchronousTask.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)
                     {
-                        DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
-                        while (existingTaskTracking != null)
-                        {
-                            if ((existingTaskTracking.SynchronousTask.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)
-                            {
-                                return true;
-                            }
-
-                            existingTaskTracking = existingTaskTracking.Next;
-                        }
-
-                        return false;
+                        return true;
                     }
+
+                    existingTaskTracking = existingTaskTracking.Next;
                 }
+
+                return false;
             }
 
             /// <summary>
@@ -274,11 +269,8 @@ namespace Microsoft.VisualStudio.Threading
             /// This is called when this task is completed.
             /// This method is expected to be used with the JTF lock.
             /// </summary>
-            /// <param name="thisDependent">The current joinableTask or collection contains this data.</param>
-            internal void OnTaskCompleted(IJoinableTaskDependent thisDependent)
+            internal void OnTaskCompleted()
             {
-                Requires.NotNull(thisDependent, nameof(thisDependent));
-                Assumes.True(Monitor.IsEntered(thisDependent.JoinableTaskContext.SyncContextLock));
                 if (this.dependingSynchronousTaskTracking != null)
                 {
                     DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
