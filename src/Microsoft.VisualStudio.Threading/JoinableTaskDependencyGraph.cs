@@ -192,7 +192,7 @@ namespace Microsoft.VisualStudio.Threading
             /// When the value in an entry is decremented to 0, the entry is removed from the map.
             /// </remarks>
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-            private WeakKeyDictionary<IJoinableTaskDependent, int> childDependentNodes;
+            private Dictionary<IJoinableTaskDependent, int> childDependentNodes;
 
             /// <summary>
             /// The head of a singly linked list of records to track which task may process events of this task.
@@ -203,7 +203,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Gets a value indicating whether the <see cref="childDependentNodes"/> is empty.
             /// </summary>
-            internal bool HasNoChildDependentNode => this.childDependentNodes == null || this.childDependentNodes.Count == 0 || !this.childDependentNodes.Any();
+            internal bool HasNoChildDependentNode => this.childDependentNodes == null || this.childDependentNodes.Count == 0;
 
             /// <summary>
             /// Gets all dependent nodes registered in the <see cref="childDependentNodes"/>
@@ -326,7 +326,7 @@ namespace Microsoft.VisualStudio.Threading
                         ref JoinableTaskDependentData data = ref parentTaskOrCollection.GetJoinableTaskDependentData();
                         if (data.childDependentNodes == null)
                         {
-                            data.childDependentNodes = new WeakKeyDictionary<IJoinableTaskDependent, int>(capacity: 2);
+                            data.childDependentNodes = new Dictionary<IJoinableTaskDependent, int>(capacity: 2);
                         }
 
                         if (data.childDependentNodes.TryGetValue(joinChild, out int refCount) && !parentTaskOrCollection.NeedRefCountChildDependencies)
@@ -425,9 +425,9 @@ namespace Microsoft.VisualStudio.Threading
                 var childDependentNodes = taskOrCollection.GetJoinableTaskDependentData().childDependentNodes;
                 if (childDependentNodes != null)
                 {
-                    foreach (var item in childDependentNodes)
+                    foreach (var item in childDependentNodes.Keys)
                     {
-                        AddSelfAndDescendentOrJoinedJobs(item.Key, joinables);
+                        AddSelfAndDescendentOrJoinedJobs(item, joinables);
                     }
                 }
             }
@@ -660,9 +660,9 @@ namespace Microsoft.VisualStudio.Threading
 
                 if (data.childDependentNodes != null)
                 {
-                    foreach (var item in data.childDependentNodes)
+                    foreach (var item in data.childDependentNodes.Keys)
                     {
-                        var childTiggeringTask = AddDependingSynchronousTask(item.Key, synchronousTask, ref totalEventsPending);
+                        var childTiggeringTask = AddDependingSynchronousTask(item, synchronousTask, ref totalEventsPending);
                         if (eventTriggeringTask == null)
                         {
                             eventTriggeringTask = childTiggeringTask;
@@ -761,9 +761,9 @@ namespace Microsoft.VisualStudio.Threading
                         var dependencies = taskOrCollection.GetJoinableTaskDependentData().childDependentNodes;
                         if (dependencies != null)
                         {
-                            foreach (var item in dependencies)
+                            foreach (var item in dependencies.Keys)
                             {
-                                ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(item.Key, reachableNodes, remainNodes);
+                                ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(item, reachableNodes, remainNodes);
                             }
                         }
                     }
@@ -846,9 +846,9 @@ namespace Microsoft.VisualStudio.Threading
 
                 if (removed && data.childDependentNodes != null)
                 {
-                    foreach (var item in data.childDependentNodes)
+                    foreach (var item in data.childDependentNodes.Keys)
                     {
-                        RemoveDependingSynchronousTask(item.Key, task, reachableNodes, ref remainingDependentNodes);
+                        RemoveDependingSynchronousTask(item, task, reachableNodes, ref remainingDependentNodes);
                     }
                 }
             }
