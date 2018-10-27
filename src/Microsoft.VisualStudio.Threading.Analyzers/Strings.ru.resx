@@ -170,4 +170,26 @@
     <value>Вызов или блокировка в асинхронном коде в методе ValueFactory Lazy&lt;T&gt; может вызвать взаимоблокировку.
 Вместо этого используйте AsyncLazy&lt;T&gt;.</value>
   </data>
+  <data name="VSTHRD200_AddAsync_MessageFormat" xml:space="preserve">
+    <value>Используйте суффикс "Async" в именах методов, которые возвращают тип, поддерживающий ожидание.</value>
+  </data>
+  <data name="VSTHRD200_RemoveAsync_MessageFormat" xml:space="preserve">
+    <value>Старайтесь не использовать суффикс "Async" в именах методов, которые не возвращают тип, поддерживающий ожидание.</value>
+  </data>
+  <data name="VSTHRD111_CodeFix_False_Title" xml:space="preserve">
+    <value>Добавьте .ConfigureAwait(false)</value>
+    <comment>".ConfigureAwait(false)" should not be translated.</comment>
+  </data>
+  <data name="VSTHRD111_CodeFix_True_Title" xml:space="preserve">
+    <value>Добавьте .ConfigureAwait(true)</value>
+    <comment>".ConfigureAwait(true)" should not be translated.</comment>
+  </data>
+  <data name="VSTHRD111_MessageFormat" xml:space="preserve">
+    <value>Добавьте .ConfigureAwait(bool) в свое выражение await.</value>
+    <comment>".ConfigureAwait(bool)" and "await" should NOT be translated.</comment>
+  </data>
+  <data name="VSTHRD111_Title" xml:space="preserve">
+    <value>Используйте ConfigureAwait(bool)</value>
+    <comment>"ConfigureAwait(bool)" is a reference and should NOT be translated.</comment>
+  </data>
 </root>

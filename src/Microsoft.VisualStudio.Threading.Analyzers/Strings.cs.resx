@@ -170,4 +170,26 @@ Použijte raději AsyncLazy&lt;T&gt;.</value>
     <value>Vyvolání nebo zablokování asynchronního kódu v objektu pro vytváření hodnot Lazy&lt;T&gt; může způsobit zablokování.
 Použijte raději AsyncLazy&lt;T&gt;.</value>
   </data>
+  <data name="VSTHRD200_AddAsync_MessageFormat" xml:space="preserve">
+    <value>V názvech metod, které vrací typ awaitable, používejte příponu „Async“.</value>
+  </data>
+  <data name="VSTHRD200_RemoveAsync_MessageFormat" xml:space="preserve">
+    <value>V názvech metod, které nevrací typ awaitable, se vyhněte používání přípony „Async“.</value>
+  </data>
+  <data name="VSTHRD111_CodeFix_False_Title" xml:space="preserve">
+    <value>Přidat .ConfigureAwait(false)</value>
+    <comment>".ConfigureAwait(false)" should not be translated.</comment>
+  </data>
+  <data name="VSTHRD111_CodeFix_True_Title" xml:space="preserve">
+    <value>Přidat .ConfigureAwait(true)</value>
+    <comment>".ConfigureAwait(true)" should not be translated.</comment>
+  </data>
+  <data name="VSTHRD111_MessageFormat" xml:space="preserve">
+    <value>Přidejte .ConfigureAwait(bool) ke svému výrazu await.</value>
+    <comment>".ConfigureAwait(bool)" and "await" should NOT be translated.</comment>
+  </data>
+  <data name="VSTHRD111_Title" xml:space="preserve">
+    <value>Používat ConfigureAwait(bool)</value>
+    <comment>"ConfigureAwait(bool)" is a reference and should NOT be translated.</comment>
+  </data>
 </root>

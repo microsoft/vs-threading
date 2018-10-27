@@ -52,6 +52,24 @@ class Test {
         }
 
         [Fact]
+        public async Task StartNew_NoTaskScheduler_GeneratesNoWarningOnCustomTaskFactory()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    TaskFactory factory; // the analyzer doesn't know statically whether this has a safe default TaskScheduler set.
+
+    void F() {
+        factory.StartNew(() => { });
+    }
+}
+";
+
+            await Verify.VerifyAnalyzerAsync(test);
+        }
+
+        [Fact]
         public async Task ContinueWith_WithTaskScheduler_GeneratesNoWarning()
         {
             var test = @"
