@@ -18,6 +18,9 @@ Such a circumstance often leads to deadlocks or responsiveness issues in the app
 Always explicitly specifying `TaskScheduler.Default` (or other if appropriate) ensures your code will schedule
 tasks in a predictable, consistent way.
 
+No diagnostic is produced by this analyzer when `TaskFactory.StartNew` is invoked on a private instance
+of `TaskFactory`, since it may in fact have a safe default for `TaskScheduler`.
+
 ## Examples of patterns that are flagged by this analyzer
 
 ```csharp

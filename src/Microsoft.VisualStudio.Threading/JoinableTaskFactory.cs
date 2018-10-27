@@ -409,7 +409,7 @@ namespace Microsoft.VisualStudio.Threading
                     var allJoinedJobs = new HashSet<JoinableTask>();
                     lock (this.Context.SyncContextLock)
                     {
-                        currentBlockingTask.AddSelfAndDescendentOrJoinedJobs(allJoinedJobs);
+                        JoinableTaskDependencyGraph.AddSelfAndDescendentOrJoinedJobs(currentBlockingTask, allJoinedJobs);
                         return allJoinedJobs.Any(t => (t.CreationOptions & JoinableTaskCreationOptions.LongRunning) == JoinableTaskCreationOptions.LongRunning);
                     }
                 }
@@ -1005,7 +1005,7 @@ namespace Microsoft.VisualStudio.Threading
                 // Join the ambient parent job, so the parent can dequeue this job's work.
                 if (this.previousJoinable != null && !this.previousJoinable.IsCompleted)
                 {
-                    this.previousJoinable.AddDependency(joinable);
+                    JoinableTaskDependencyGraph.AddDependency(this.previousJoinable, joinable);
 
                     // By definition we inherit the nesting factories of our immediate nesting task.
                     var nestingFactories = this.previousJoinable.NestingFactories;

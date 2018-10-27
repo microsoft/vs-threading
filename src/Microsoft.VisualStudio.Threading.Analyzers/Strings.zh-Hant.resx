@@ -170,4 +170,26 @@
     <value>在 Lazy&lt;T&gt; 值 Factory 中叫用或封鎖非同步程式碼可能會鎖死。
 請改用 AsyncLazy&lt;T&gt;。</value>
   </data>
+  <data name="VSTHRD200_AddAsync_MessageFormat" xml:space="preserve">
+    <value>請在傳回可等候類型的方法名稱中使用 "Async" 後置詞。</value>
+  </data>
+  <data name="VSTHRD200_RemoveAsync_MessageFormat" xml:space="preserve">
+    <value>請避免在不傳回可等候類型的方法名稱中使用 "Async" 後置詞。</value>
+  </data>
+  <data name="VSTHRD111_CodeFix_False_Title" xml:space="preserve">
+    <value>新增 .ConfigureAwait(false)</value>
+    <comment>".ConfigureAwait(false)" should not be translated.</comment>
+  </data>
+  <data name="VSTHRD111_CodeFix_True_Title" xml:space="preserve">
+    <value>新增 .ConfigureAwait(true)</value>
+    <comment>".ConfigureAwait(true)" should not be translated.</comment>
+  </data>
+  <data name="VSTHRD111_MessageFormat" xml:space="preserve">
+    <value>將 .ConfigureAwait(bool) 新增至您的 await 運算式。</value>
+    <comment>".ConfigureAwait(bool)" and "await" should NOT be translated.</comment>
+  </data>
+  <data name="VSTHRD111_Title" xml:space="preserve">
+    <value>使用 ConfigureAwait(bool)</value>
+    <comment>"ConfigureAwait(bool)" is a reference and should NOT be translated.</comment>
+  </data>
 </root>

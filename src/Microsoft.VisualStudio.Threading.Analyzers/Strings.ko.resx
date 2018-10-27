@@ -170,4 +170,26 @@
     <value>Lazy&lt;T&gt; 값 팩터리의 비동기 코드를 호출하거나 차단하면 교착 상태가 될 수 있습니다.
 대신 AsyncLazy&lt;T&gt;를 사용합니다.</value>
   </data>
+  <data name="VSTHRD200_AddAsync_MessageFormat" xml:space="preserve">
+    <value>대기할 수 있는 형식을 반환하는 메서드의 이름에 "Async" 접미사를 사용합니다.</value>
+  </data>
+  <data name="VSTHRD200_RemoveAsync_MessageFormat" xml:space="preserve">
+    <value>대기할 수 있는 형식을 반환하지 않는 메서드의 이름에 "Async" 접미사를 사용하지 않습니다.</value>
+  </data>
+  <data name="VSTHRD111_CodeFix_False_Title" xml:space="preserve">
+    <value>.ConfigureAwait(false)를 추가합니다.</value>
+    <comment>".ConfigureAwait(false)" should not be translated.</comment>
+  </data>
+  <data name="VSTHRD111_CodeFix_True_Title" xml:space="preserve">
+    <value>.ConfigureAwait(true)를 추가합니다.</value>
+    <comment>".ConfigureAwait(true)" should not be translated.</comment>
+  </data>
+  <data name="VSTHRD111_MessageFormat" xml:space="preserve">
+    <value>.ConfigureAwait(bool)를 await 식에 추가합니다.</value>
+    <comment>".ConfigureAwait(bool)" and "await" should NOT be translated.</comment>
+  </data>
+  <data name="VSTHRD111_Title" xml:space="preserve">
+    <value>ConfigureAwait(bool)를 사용합니다.</value>
+    <comment>"ConfigureAwait(bool)" is a reference and should NOT be translated.</comment>
+  </data>
 </root>
