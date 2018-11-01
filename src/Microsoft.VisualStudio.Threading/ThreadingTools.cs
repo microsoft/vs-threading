@@ -52,6 +52,49 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Optimistically performs some value transformation based on some field and tries to apply it back to the field,
+        /// retrying as many times as necessary until no other thread is manipulating the same field.
+        /// </summary>
+        /// <remarks>
+        /// Use this overload when <paramref name="applyChange"/> requires a single item, as is common when updating immutable
+        /// collection types. By passing the item as a method operand, the caller may be able to avoid allocating a closure
+        /// object for every call.
+        /// </remarks>
+        /// <typeparam name="TData">The type of data.</typeparam>
+        /// <typeparam name="TItem">The type of item.</typeparam>
+        /// <param name="hotLocation">The field that may be manipulated by multiple threads.</param>
+        /// <param name="item">A data value to pass to <paramref name="applyChange"/>.</param>
+        /// <param name="applyChange">A function that receives both the unchanged value and <paramref name="item"/>, then returns the changed value.</param>
+        /// <returns>
+        /// <c>true</c> if the location's value is changed by applying the result of the <paramref name="applyChange"/> function;
+        /// <c>false</c> if the location's value remained the same because the last invocation of <paramref name="applyChange"/> returned the existing value.
+        /// </returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference", MessageId = "0#")]
+        public static bool ApplyChangeOptimistically<TData, TItem>(ref TData hotLocation, TItem item, Func<TData, TItem, TData> applyChange)
+            where TData : class
+        {
+            Requires.NotNull(applyChange, nameof(applyChange));
+
+            bool successful;
+            do
+            {
+                TData oldValue = Volatile.Read(ref hotLocation);
+                TData newValue = applyChange(oldValue, item);
+                if (object.ReferenceEquals(oldValue, newValue))
+                {
+                    // No change was actually required.
+                    return false;
+                }
+
+                TData actualOldValue = Interlocked.CompareExchange<TData>(ref hotLocation, newValue, oldValue);
+                successful = object.ReferenceEquals(oldValue, actualOldValue);
+            }
+            while (!successful);
+
+            return true;
+        }
+
+        /// <summary>
         /// Wraps a task with one that will complete as cancelled based on a cancellation token,
         /// allowing someone to await a task but be able to break out early by cancelling the token.
         /// </summary>
