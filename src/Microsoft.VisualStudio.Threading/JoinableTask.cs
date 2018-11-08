@@ -297,20 +297,29 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                using (this.Factory.Context.NoMessagePumpSynchronizationContext.Apply())
+                if (this.Factory.Context.IsOnMainThread)
                 {
-                    lock (this.owner.Context.SyncContextLock)
+                    if (this.mainThreadJobSyncContext == null)
                     {
-                        if (this.Factory.Context.IsOnMainThread)
+                        using (this.Factory.Context.NoMessagePumpSynchronizationContext.Apply())
                         {
-                            if (this.mainThreadJobSyncContext == null)
+                            lock (this.owner.Context.SyncContextLock)
                             {
-                                this.mainThreadJobSyncContext = new JoinableTaskSynchronizationContext(this, true);
+                                if (this.mainThreadJobSyncContext == null)
+                                {
+                                    this.mainThreadJobSyncContext = new JoinableTaskSynchronizationContext(this, true);
+                                }
                             }
-
-                            return this.mainThreadJobSyncContext;
                         }
-                        else
+                    }
+
+                    return this.mainThreadJobSyncContext;
+                }
+                else
+                {
+                    using (this.Factory.Context.NoMessagePumpSynchronizationContext.Apply())
+                    {
+                        lock (this.owner.Context.SyncContextLock)
                         {
                             if (this.SynchronouslyBlockingThreadPool)
                             {
