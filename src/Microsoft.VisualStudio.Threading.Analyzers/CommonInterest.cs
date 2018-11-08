@@ -11,6 +11,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis;
+    using Microsoft.CodeAnalysis.CodeFixes;
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Diagnostics;
@@ -18,6 +19,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
     internal static class CommonInterest
     {
+        internal static readonly Regex FileNamePatternForLegacyThreadSwitchingMembers = new Regex(@"^vs-threading\.LegacyThreadSwitchingMembers(\..*)?.txt$", FileNamePatternRegexOptions);
         internal static readonly Regex FileNamePatternForMembersRequiringMainThread = new Regex(@"^vs-threading\.MembersRequiringMainThread(\..*)?.txt$", FileNamePatternRegexOptions);
         internal static readonly Regex FileNamePatternForMethodsThatAssertMainThread = new Regex(@"^vs-threading\.MainThreadAssertingMethods(\..*)?.txt$", FileNamePatternRegexOptions);
         internal static readonly Regex FileNamePatternForMethodsThatSwitchToMainThread = new Regex(@"^vs-threading\.MainThreadSwitchingMethods(\..*)?.txt$", FileNamePatternRegexOptions);
@@ -41,18 +43,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.MicrosoftVisualStudioShellInterop, "IVsTask"), "GetResult"), extensionMethodNamespace: Namespaces.MicrosoftVisualStudioShell),
         });
 
-        internal static readonly IEnumerable<QualifiedMember> LegacyThreadSwitchingMethods = new[]
-        {
-            new QualifiedMember(new QualifiedType(Namespaces.MicrosoftVisualStudioShell, Types.ThreadHelper.TypeName), Types.ThreadHelper.Invoke),
-            new QualifiedMember(new QualifiedType(Namespaces.MicrosoftVisualStudioShell, Types.ThreadHelper.TypeName), Types.ThreadHelper.InvokeAsync),
-            new QualifiedMember(new QualifiedType(Namespaces.MicrosoftVisualStudioShell, Types.ThreadHelper.TypeName), Types.ThreadHelper.BeginInvoke),
-            new QualifiedMember(new QualifiedType(Namespaces.SystemWindowsThreading, Types.Dispatcher.TypeName), Types.Dispatcher.Invoke),
-            new QualifiedMember(new QualifiedType(Namespaces.SystemWindowsThreading, Types.Dispatcher.TypeName), Types.Dispatcher.BeginInvoke),
-            new QualifiedMember(new QualifiedType(Namespaces.SystemWindowsThreading, Types.Dispatcher.TypeName), Types.Dispatcher.InvokeAsync),
-            new QualifiedMember(new QualifiedType(Namespaces.SystemThreading, Types.SynchronizationContext.TypeName), Types.SynchronizationContext.Send),
-            new QualifiedMember(new QualifiedType(Namespaces.SystemThreading, Types.SynchronizationContext.TypeName), Types.SynchronizationContext.Post),
-        };
-
         internal static readonly IReadOnlyList<SyncBlockingMethod> SyncBlockingProperties = new[]
         {
             new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemThreadingTasks, nameof(Task)), nameof(Task<int>.Result)), null),
@@ -63,6 +53,10 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         {
             new QualifiedMember(new QualifiedType(Namespaces.MicrosoftVisualStudioShell, Types.ThreadHelper.TypeName), Types.ThreadHelper.CheckAccess),
         };
+
+        internal static readonly ImmutableArray<QualifiedMember> TaskConfigureAwait = ImmutableArray.Create(
+            new QualifiedMember(new QualifiedType(Types.Task.Namespace, Types.Task.TypeName), nameof(Task.ConfigureAwait)),
+            new QualifiedMember(new QualifiedType(Types.AwaitExtensions.Namespace, Types.AwaitExtensions.TypeName), Types.AwaitExtensions.ConfigureAwaitRunInline));
 
         internal static readonly IImmutableSet<SyntaxKind> MethodSyntaxKinds = ImmutableHashSet.Create(
             SyntaxKind.ConstructorDeclaration,
@@ -171,18 +165,19 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         {
             foreach (string line in ReadAdditionalFiles(analyzerOptions, fileNamePattern, cancellationToken))
             {
-                Match match = MemberReferenceRegex.Match(line);
-                if (!match.Success)
-                {
-                    throw new InvalidOperationException($"Parsing error on line: {line}");
-                }
-
-                string methodName = match.Groups["memberName"].Value;
-                string[] typeNameElements = match.Groups["typeName"].Value.Split(QualifiedIdentifierSeparators);
-                string typeName = typeNameElements[typeNameElements.Length - 1];
-                var containingType = new QualifiedType(typeNameElements.Take(typeNameElements.Length - 1).ToImmutableArray(), typeName);
-                yield return new QualifiedMember(containingType, methodName);
+                yield return ParseAdditionalFileMethodLine(line);
             }
+        }
+
+        internal static async Task<ImmutableArray<QualifiedMember>> ReadMethodsAsync(CodeFixContext codeFixContext, Regex fileNamePattern, CancellationToken cancellationToken)
+        {
+            var result = ImmutableArray.CreateBuilder<QualifiedMember>();
+            foreach (string line in await ReadAdditionalFilesAsync(codeFixContext.Document.Project.AdditionalDocuments, fileNamePattern, cancellationToken))
+            {
+                result.Add(ParseAdditionalFileMethodLine(line));
+            }
+
+            return result.ToImmutable();
         }
 
         internal static IEnumerable<TypeMatchSpec> ReadTypesAndMembers(AnalyzerOptions analyzerOptions, Regex fileNamePattern, CancellationToken cancellationToken)
@@ -205,6 +200,32 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
         }
 
+        internal static async Task<ImmutableArray<string>> ReadAdditionalFilesAsync(IEnumerable<TextDocument> additionalFiles, Regex fileNamePattern, CancellationToken cancellationToken)
+        {
+            if (additionalFiles == null)
+            {
+                throw new ArgumentNullException(nameof(additionalFiles));
+            }
+
+            if (fileNamePattern == null)
+            {
+                throw new ArgumentNullException(nameof(fileNamePattern));
+            }
+
+            var docs = from doc in additionalFiles.OrderBy(x => x.FilePath, StringComparer.Ordinal)
+                       let fileName = Path.GetFileName(doc.Name)
+                       where fileNamePattern.IsMatch(fileName)
+                       select doc;
+            var result = ImmutableArray.CreateBuilder<string>();
+            foreach (var doc in docs)
+            {
+                var text = await doc.GetTextAsync(cancellationToken);
+                result.AddRange(ReadLinesFromAdditionalFile(text));
+            }
+
+            return result.ToImmutable();
+        }
+
         internal static IEnumerable<string> ReadAdditionalFiles(AnalyzerOptions analyzerOptions, Regex fileNamePattern, CancellationToken cancellationToken)
         {
             if (analyzerOptions == null)
@@ -217,21 +238,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 throw new ArgumentNullException(nameof(fileNamePattern));
             }
 
-            var lines = from file in analyzerOptions.AdditionalFiles.OrderBy(x => x.Path, StringComparer.Ordinal)
+            var docs = from file in analyzerOptions.AdditionalFiles.OrderBy(x => x.Path, StringComparer.Ordinal)
                         let fileName = Path.GetFileName(file.Path)
                         where fileNamePattern.IsMatch(fileName)
                         let text = file.GetText(cancellationToken)
-                        from line in text.Lines
-                        select line;
-            foreach (TextLine line in lines)
-            {
-                string lineText = line.ToString();
-
-                if (!string.IsNullOrWhiteSpace(lineText) && !lineText.StartsWith("#"))
-                {
-                    yield return lineText;
-                }
-            }
+                        select text;
+            return docs.SelectMany(ReadLinesFromAdditionalFile);
         }
 
         internal static bool Contains(this ImmutableArray<QualifiedMember> methods, ISymbol symbol)
@@ -267,6 +279,39 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
 
             return !matching.IsEmpty && !matching.InvertedLogic;
+        }
+
+        private static IEnumerable<string> ReadLinesFromAdditionalFile(SourceText text)
+        {
+            if (text == null)
+            {
+                throw new ArgumentNullException(nameof(text));
+            }
+
+            foreach (TextLine line in text.Lines)
+            {
+                string lineText = line.ToString();
+
+                if (!string.IsNullOrWhiteSpace(lineText) && !lineText.StartsWith("#"))
+                {
+                    yield return lineText;
+                }
+            }
+        }
+
+        private static QualifiedMember ParseAdditionalFileMethodLine(string line)
+        {
+            Match match = MemberReferenceRegex.Match(line);
+            if (!match.Success)
+            {
+                throw new InvalidOperationException($"Parsing error on line: {line}");
+            }
+
+            string methodName = match.Groups["memberName"].Value;
+            string[] typeNameElements = match.Groups["typeName"].Value.Split(QualifiedIdentifierSeparators);
+            string typeName = typeNameElements[typeNameElements.Length - 1];
+            var containingType = new QualifiedType(typeNameElements.Take(typeNameElements.Length - 1).ToImmutableArray(), typeName);
+            return new QualifiedMember(containingType, methodName);
         }
 
         internal struct TypeMatchSpec

@@ -166,11 +166,11 @@
     <value>Use InvokeAsync to raise async events</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>Calling await on a Task inside a JoinableTaskFactory.Run, when the task is initialized outside the delegate can cause potential deadlocks.
-You can avoid this problem by ensuring the task is initialized within the delegate or by using JoinableTask instead of Task.</value>
+    <value>Calling await on a Task when the task is initialized in another context can cause potential deadlocks.
+You can avoid this problem by ensuring the task is initialized within the same method or by using JoinableTask instead of Task.</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
-    <value>Avoid awaiting non-joinable tasks in join contexts</value>
+    <value>Avoid awaiting foreign Tasks</value>
   </data>
   <data name="VSTHRD011b_MessageFormat" xml:space="preserve">
     <value>Invoking or blocking on async code in a Lazy&lt;T&gt; value factory can deadlock.

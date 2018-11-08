@@ -45,7 +45,7 @@
             var prevCtx = SynchronizationContext.Current;
             try
             {
-                var syncCtx = SingleThreadedSynchronizationContext.New();
+                var syncCtx = SingleThreadedTestSynchronizationContext.New();
                 SynchronizationContext.SetSynchronizationContext(syncCtx);
 
                 var t = func();
@@ -54,9 +54,9 @@
                     throw new InvalidOperationException();
                 }
 
-                var frame = SingleThreadedSynchronizationContext.NewFrame();
+                var frame = SingleThreadedTestSynchronizationContext.NewFrame();
                 t.ContinueWith(_ => { frame.Continue = false; }, TaskScheduler.Default);
-                SingleThreadedSynchronizationContext.PushFrame(syncCtx, frame);
+                SingleThreadedTestSynchronizationContext.PushFrame(syncCtx, frame);
 
                 t.GetAwaiter().GetResult();
             }
