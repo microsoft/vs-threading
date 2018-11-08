@@ -11,6 +11,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis;
+    using Microsoft.CodeAnalysis.CodeFixes;
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Diagnostics;
@@ -164,18 +165,19 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         {
             foreach (string line in ReadAdditionalFiles(analyzerOptions, fileNamePattern, cancellationToken))
             {
-                Match match = MemberReferenceRegex.Match(line);
-                if (!match.Success)
-                {
-                    throw new InvalidOperationException($"Parsing error on line: {line}");
-                }
-
-                string methodName = match.Groups["memberName"].Value;
-                string[] typeNameElements = match.Groups["typeName"].Value.Split(QualifiedIdentifierSeparators);
-                string typeName = typeNameElements[typeNameElements.Length - 1];
-                var containingType = new QualifiedType(typeNameElements.Take(typeNameElements.Length - 1).ToImmutableArray(), typeName);
-                yield return new QualifiedMember(containingType, methodName);
+                yield return ParseAdditionalFileMethodLine(line);
             }
+        }
+
+        internal static async Task<ImmutableArray<QualifiedMember>> ReadMethodsAsync(CodeFixContext codeFixContext, Regex fileNamePattern, CancellationToken cancellationToken)
+        {
+            var result = ImmutableArray.CreateBuilder<QualifiedMember>();
+            foreach (string line in await ReadAdditionalFilesAsync(codeFixContext.Document.Project.AdditionalDocuments, fileNamePattern, cancellationToken))
+            {
+                result.Add(ParseAdditionalFileMethodLine(line));
+            }
+
+            return result.ToImmutable();
         }
 
         internal static IEnumerable<TypeMatchSpec> ReadTypesAndMembers(AnalyzerOptions analyzerOptions, Regex fileNamePattern, CancellationToken cancellationToken)
@@ -198,6 +200,32 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
         }
 
+        internal static async Task<ImmutableArray<string>> ReadAdditionalFilesAsync(IEnumerable<TextDocument> additionalFiles, Regex fileNamePattern, CancellationToken cancellationToken)
+        {
+            if (additionalFiles == null)
+            {
+                throw new ArgumentNullException(nameof(additionalFiles));
+            }
+
+            if (fileNamePattern == null)
+            {
+                throw new ArgumentNullException(nameof(fileNamePattern));
+            }
+
+            var docs = from doc in additionalFiles.OrderBy(x => x.FilePath, StringComparer.Ordinal)
+                       let fileName = Path.GetFileName(doc.Name)
+                       where fileNamePattern.IsMatch(fileName)
+                       select doc;
+            var result = ImmutableArray.CreateBuilder<string>();
+            foreach (var doc in docs)
+            {
+                var text = await doc.GetTextAsync(cancellationToken);
+                result.AddRange(ReadLinesFromAdditionalFile(text));
+            }
+
+            return result.ToImmutable();
+        }
+
         internal static IEnumerable<string> ReadAdditionalFiles(AnalyzerOptions analyzerOptions, Regex fileNamePattern, CancellationToken cancellationToken)
         {
             if (analyzerOptions == null)
@@ -210,21 +238,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 throw new ArgumentNullException(nameof(fileNamePattern));
             }
 
-            var lines = from file in analyzerOptions.AdditionalFiles.OrderBy(x => x.Path, StringComparer.Ordinal)
+            var docs = from file in analyzerOptions.AdditionalFiles.OrderBy(x => x.Path, StringComparer.Ordinal)
                         let fileName = Path.GetFileName(file.Path)
                         where fileNamePattern.IsMatch(fileName)
                         let text = file.GetText(cancellationToken)
-                        from line in text.Lines
-                        select line;
-            foreach (TextLine line in lines)
-            {
-                string lineText = line.ToString();
-
-                if (!string.IsNullOrWhiteSpace(lineText) && !lineText.StartsWith("#"))
-                {
-                    yield return lineText;
-                }
-            }
+                        select text;
+            return docs.SelectMany(ReadLinesFromAdditionalFile);
         }
 
         internal static bool Contains(this ImmutableArray<QualifiedMember> methods, ISymbol symbol)
@@ -260,6 +279,39 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
 
             return !matching.IsEmpty && !matching.InvertedLogic;
+        }
+
+        private static IEnumerable<string> ReadLinesFromAdditionalFile(SourceText text)
+        {
+            if (text == null)
+            {
+                throw new ArgumentNullException(nameof(text));
+            }
+
+            foreach (TextLine line in text.Lines)
+            {
+                string lineText = line.ToString();
+
+                if (!string.IsNullOrWhiteSpace(lineText) && !lineText.StartsWith("#"))
+                {
+                    yield return lineText;
+                }
+            }
+        }
+
+        private static QualifiedMember ParseAdditionalFileMethodLine(string line)
+        {
+            Match match = MemberReferenceRegex.Match(line);
+            if (!match.Success)
+            {
+                throw new InvalidOperationException($"Parsing error on line: {line}");
+            }
+
+            string methodName = match.Groups["memberName"].Value;
+            string[] typeNameElements = match.Groups["typeName"].Value.Split(QualifiedIdentifierSeparators);
+            string typeName = typeNameElements[typeNameElements.Length - 1];
+            var containingType = new QualifiedType(typeNameElements.Take(typeNameElements.Length - 1).ToImmutableArray(), typeName);
+            return new QualifiedMember(containingType, methodName);
         }
 
         internal struct TypeMatchSpec
