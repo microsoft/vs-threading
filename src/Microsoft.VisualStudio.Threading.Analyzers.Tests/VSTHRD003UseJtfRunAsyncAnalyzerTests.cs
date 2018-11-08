@@ -112,6 +112,157 @@ class Tests
         }
 
         [Fact]
+        public async Task ReportWarningWhenTaskIsReturnedDirectlyFromMethod()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Tests
+{
+    private Task task;
+
+    public Task GetTask()
+    {
+        return task;
+    }
+}
+";
+            var expected = this.CreateDiagnostic(10, 16, 4);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
+        public async Task ReportWarningWhenTaskIsReturnedAwaitedFromMethod()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Tests
+{
+    private Task<int> task;
+
+    public async Task<int> AwaitAndGetResult()
+    {
+        return await task;
+    }
+}
+";
+            var expected = this.CreateDiagnostic(10, 22, 4);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReportWarningWhenConfiguredTaskIsReturnedAwaitedFromMethod(bool continueOnCapturedContext)
+        {
+            var test = $@"
+using System.Threading.Tasks;
+
+class Tests
+{{
+    private Task task;
+
+    public async Task AwaitAndGetResult()
+    {{
+        await task.ConfigureAwait({(continueOnCapturedContext ? "true" : "false")});
+    }}
+}}
+";
+            var expected = this.CreateDiagnostic(10, 15, 21 + continueOnCapturedContext.ToString().Length);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReportWarningWhenConfiguredTaskTIsReturnedAwaitedFromMethod(bool continueOnCapturedContext)
+        {
+            var test = $@"
+using System.Threading.Tasks;
+
+class Tests
+{{
+    private Task<int> task;
+
+    public async Task<int> AwaitAndGetResult()
+    {{
+        return await task.ConfigureAwait({(continueOnCapturedContext ? "true" : "false")});
+    }}
+}}
+";
+            var expected = this.CreateDiagnostic(10, 22, 21 + continueOnCapturedContext.ToString().Length);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
+        public async Task ReportWarningWhenConfiguredInlineTaskReturnedAwaitedFromMethod()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Tests
+{
+    private Task task;
+
+    public async Task AwaitAndGetResult()
+    {
+        await task.ConfigureAwaitRunInline();
+    }
+}
+";
+            var expected = this.CreateDiagnostic(11, 15, 30);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
+        public async Task ReportWarningWhenConfiguredInlineTaskTReturnedAwaitedFromMethod()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Tests
+{
+    private Task<int> task;
+
+    public async Task<int> AwaitAndGetResult()
+    {
+        return await task.ConfigureAwaitRunInline();
+    }
+}
+";
+            var expected = this.CreateDiagnostic(11, 22, 30);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
+        public async Task ReportWarningWhenTaskFromFieldIsAwaitedInJtfRunDelegate()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Program
+{
+    static Task t;
+    static JoinableTaskFactory jtf;
+
+    static void Main(string[] args)
+    {
+        jtf.Run(async delegate
+        {
+            await t;
+        });
+    }
+}
+";
+            var expected = this.CreateDiagnostic(14, 19, 1);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
         public async Task ReportWarningWhenTaskTIsReturnedDirectlyWithCancellation()
         {
             var test = @"
@@ -133,7 +284,30 @@ class Tests
         }
 
         [Fact]
-        public async Task DoNotReportWarningWhenTaskTIsPassedAsArgument()
+        public async Task DoNotReportWarningWhenTaskTIsPassedAsArgumentAndNoTaskIsReturned()
+        {
+            var test = @"
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
+using Task = System.Threading.Tasks.Task;
+
+class Tests
+{
+    public static int WaitAndGetResult(Task task)
+    {
+        return DoSomethingWith(task);
+    }
+
+    private static int DoSomethingWith(Task t) => 3;
+}
+";
+            await Verify.VerifyAnalyzerAsync(test);
+        }
+
+        [Fact]
+        public async Task ReportWarningWhenTaskTIsPassedAsArgumentAndTaskIsReturned()
         {
             var test = @"
 using System.Threading;
@@ -152,7 +326,8 @@ class Tests
     private static Task DoSomethingWith(Task t) => null;
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
+            var expected = this.CreateDiagnostic(12, 68, 4);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
@@ -248,6 +423,44 @@ class Tests
 
         return 100;
     }
+}
+";
+            await Verify.VerifyAnalyzerAsync(test);
+        }
+
+        [Fact]
+        public async Task DoNotReportWarningWhenReturnedTaskIsDirectlyReturnedFromInvocation()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Tests
+{
+    public Task Test()
+    {
+        return SomeOperationAsync();
+    }
+
+    public Task SomeOperationAsync() => Task.CompletedTask;
+}
+";
+            await Verify.VerifyAnalyzerAsync(test);
+        }
+
+        [Fact]
+        public async Task DoNotReportWarningWhenReturnedTaskIsAwaitedReturnedFromInvocation()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Tests
+{
+    public async Task<int> Test()
+    {
+        return await SomeOperationAsync();
+    }
+
+    public Task<int> SomeOperationAsync() => Task.FromResult(3);
 }
 ";
             await Verify.VerifyAnalyzerAsync(test);
@@ -698,53 +911,77 @@ class Tests
         }
 
         [Fact]
-        public async Task DoNotReportWarningForDerivedJoinableTaskFactoryWhenRunIsOverride()
+        public async Task ReportWarningWhenAwaitingTaskInField()
         {
             var test = @"
-using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
+using Task = System.Threading.Tasks.Task;
 
-public class MyJoinableTaskFactory : JoinableTaskFactory
-{
-    public MyJoinableTaskFactory(JoinableTaskFactory innerFactory) : base(innerFactory.Context)
-    {
+class Tests {
+    Task task;
 
-    }
-
-    new public void Run(Func<System.Threading.Tasks.Task> asyncMethod)
-    {
-
+    public void Test() {
+        ThreadHelper.JoinableTaskFactory.Run(async delegate {
+            await task;
+        });
     }
 }
+";
+            var expected = this.CreateDiagnostic(12, 19, 4);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
 
-class Tests
-{
-    public void Test()
-    {
-        MyJoinableTaskFactory myjtf = new MyJoinableTaskFactory(ThreadHelper.JoinableTaskFactory);
-
-        System.Threading.Tasks.Task<int> task = SomeOperationAsync();
-
-        myjtf.Run(async () =>
+        [Fact]
+        public async Task ReportWarningWhenAwaitingTaskInField_WithThisQualifier()
         {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
+using Task = System.Threading.Tasks.Task;
+
+class Tests {
+    Task task;
+
+    public void Test() {
+        ThreadHelper.JoinableTaskFactory.Run(async delegate {
+            await this.task;
+        });
+    }
+}
+";
+            var expected = this.CreateDiagnostic(12, 19, 9);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
+        public async Task DoNotReportWarningWhenAwaitingTaskInFieldThatIsAssignedLocally()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
+using Task = System.Threading.Tasks.Task;
+
+class Tests {
+    Task task;
+
+    public void Test() {
+        ThreadHelper.JoinableTaskFactory.Run(async delegate {
+            task = SomeOperationAsync();
             await task;
         });
     }
 
-    public async Task<int> SomeOperationAsync()
-    {
-        await System.Threading.Tasks.Task.Delay(1000);
-
-        return 100;
-    }
+    Task SomeOperationAsync() => Task.CompletedTask;
 }
-
 ";
-
-            // We decided not to report warning in this case, because we don't know if our assumptions about the Run implementation are still valid for user's implementation
             await Verify.VerifyAnalyzerAsync(test);
         }
+
+        private DiagnosticResult CreateDiagnostic(int line, int column, int length) =>
+            Verify.Diagnostic().WithSpan(line, column, line, column + length);
     }
 }

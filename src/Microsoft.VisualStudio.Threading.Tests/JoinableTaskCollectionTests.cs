@@ -112,6 +112,25 @@
         }
 
         [StaFact]
+        public void JoinTillEmptyAsync_CancellationToken()
+        {
+            var tcs = new TaskCompletionSource<object>();
+            var joinable = this.JoinableFactory.RunAsync(async delegate
+            {
+                await tcs.Task;
+            });
+
+            this.context.Factory.Run(async delegate
+            {
+                var cts = new CancellationTokenSource();
+                Task joinTask = this.joinableCollection.JoinTillEmptyAsync(cts.Token);
+                cts.Cancel();
+                var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => joinTask);
+                Assert.Equal(cts.Token, ex.CancellationToken);
+            });
+        }
+
+        [StaFact]
         public void AddTwiceRemoveOnceRemovesWhenNotRefCounting()
         {
             var finishTaskEvent = new AsyncManualResetEvent();

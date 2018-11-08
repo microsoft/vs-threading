@@ -86,7 +86,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// An AsyncLocal value that carries the joinable instance associated with an async operation.
         /// </summary>
-        private readonly AsyncLocal<JoinableTask> joinableOperation = new AsyncLocal<JoinableTask>();
+        private readonly AsyncLocal<WeakReference<JoinableTask>> joinableOperation = new AsyncLocal<WeakReference<JoinableTask>>();
 
         /// <summary>
         /// The set of tasks that have started but have not yet completed.
@@ -251,8 +251,14 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         internal JoinableTask AmbientTask
         {
-            get { return this.joinableOperation.Value; }
-            set { this.joinableOperation.Value = value; }
+            get
+            {
+                JoinableTask result = null;
+                this.joinableOperation.Value?.TryGetTarget(out result);
+                return result;
+            }
+
+            set => this.joinableOperation.Value = value?.WeakSelf;
         }
 
         /// <summary>
@@ -323,7 +329,7 @@ namespace Microsoft.VisualStudio.Threading
             var ambientTask = this.AmbientTask;
             if (ambientTask != null)
             {
-                if (ambientTask.HasMainThreadSynchronousTaskWaiting)
+                if (JoinableTaskDependencyGraph.HasMainThreadSynchronousTaskWaiting(ambientTask))
                 {
                     return true;
                 }
@@ -337,24 +343,27 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     lock (this.SyncContextLock)
                     {
-                        var allJoinedJobs = new HashSet<JoinableTask>();
                         lock (this.initializingSynchronouslyMainThreadTasks)
                         {
-                            // our read lock doesn't cover this collection
-                            foreach (var initializingTask in this.initializingSynchronouslyMainThreadTasks)
+                            if (this.initializingSynchronouslyMainThreadTasks.Count > 0)
                             {
-                                if (!initializingTask.HasMainThreadSynchronousTaskWaiting)
+                                // our read lock doesn't cover this collection
+                                var allJoinedJobs = new HashSet<JoinableTask>();
+                                foreach (var initializingTask in this.initializingSynchronouslyMainThreadTasks)
                                 {
-                                    // This task blocks the main thread. If it has joined the ambient task
-                                    // directly or indirectly, then our ambient task is considered blocking
-                                    // the main thread.
-                                    initializingTask.AddSelfAndDescendentOrJoinedJobs(allJoinedJobs);
-                                    if (allJoinedJobs.Contains(ambientTask))
+                                    if (!JoinableTaskDependencyGraph.HasMainThreadSynchronousTaskWaiting(initializingTask))
                                     {
-                                        return true;
-                                    }
+                                        // This task blocks the main thread. If it has joined the ambient task
+                                        // directly or indirectly, then our ambient task is considered blocking
+                                        // the main thread.
+                                        JoinableTaskDependencyGraph.AddSelfAndDescendentOrJoinedJobs(initializingTask, allJoinedJobs);
+                                        if (allJoinedJobs.Contains(ambientTask))
+                                        {
+                                            return true;
+                                        }
 
-                                    allJoinedJobs.Clear();
+                                        allJoinedJobs.Clear();
+                                    }
                                 }
                             }
                         }

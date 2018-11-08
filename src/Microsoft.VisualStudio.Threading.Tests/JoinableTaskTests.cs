@@ -3084,7 +3084,7 @@
                     {
                         return completedTask;
                     });
-                }, maxBytesAllocated: 819);
+                }, maxBytesAllocated: 901);
             }
         }
 
@@ -3607,6 +3607,24 @@
         }
 
         [Fact]
+        public void ExecutionContext_DoesNotLeakJoinableTask()
+        {
+            var longLivedTaskReleaser = new AsyncManualResetEvent();
+            WeakReference weakValue = this.ExecutionContext_DoesNotLeakJoinableTask_Helper(longLivedTaskReleaser);
+            try
+            {
+                // Assert that since no one wants the JoinableTask or its result any more, it has been released.
+                GC.Collect();
+                Assert.False(weakValue.IsAlive);
+            }
+            finally
+            {
+                // Allow completion of our long-lived task.
+                longLivedTaskReleaser.Set();
+            }
+        }
+
+        [Fact]
         public void JoinableTask_TaskPropertyBeforeReturning()
         {
             this.SimulateUIThread(async delegate
@@ -3816,6 +3834,32 @@
             this.Logger.WriteLine(report.Content);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)] // must not be inlined so that locals are guaranteed to be freed.
+        private WeakReference ExecutionContext_DoesNotLeakJoinableTask_Helper(AsyncManualResetEvent releaser)
+        {
+            object leakedValue = new object();
+            WeakReference weakValue = new WeakReference(leakedValue);
+            Task longLivedTask = null;
+
+            this.asyncPump.RunAsync(delegate
+            {
+                // Spin off a task that will "capture" the current running JoinableTask
+                longLivedTask = Task.Factory.StartNew(
+                    async r =>
+                    {
+                        await ((AsyncManualResetEvent)r).WaitAsync();
+                    },
+                    releaser,
+                    CancellationToken.None,
+                    TaskCreationOptions.None,
+                    TaskScheduler.Default).Unwrap();
+
+                return Task.FromResult(leakedValue);
+            });
+
+            return weakValue;
+        }
+
         /// <summary>
         /// Simulates COM message pump reentrancy causing some unrelated work to "pump in" on top of a synchronously blocking wait.
         /// </summary>
@@ -3991,7 +4035,7 @@
             {
                 Assert.NotNull(this.UnderlyingSynchronizationContext);
                 Assert.NotNull(callback);
-                Assert.True(SingleThreadedSynchronizationContext.IsSingleThreadedSyncContext(this.UnderlyingSynchronizationContext));
+                Assert.True(SingleThreadedTestSynchronizationContext.IsSingleThreadedSyncContext(this.UnderlyingSynchronizationContext));
                 base.PostToUnderlyingSynchronizationContext(callback, state);
                 this.PostToUnderlyingSynchronizationContextCallback?.Invoke();
             }
