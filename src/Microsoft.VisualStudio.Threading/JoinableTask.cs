@@ -466,9 +466,10 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                return (this.state & JoinableTaskFlags.StartedSynchronously) == JoinableTaskFlags.StartedSynchronously
-                    && (this.state & JoinableTaskFlags.StartedOnMainThread) != JoinableTaskFlags.StartedOnMainThread
-                    && (this.state & JoinableTaskFlags.CompleteRequested) != JoinableTaskFlags.CompleteRequested;
+                JoinableTaskFlags state = this.state;
+                return (state & JoinableTaskFlags.StartedSynchronously) == JoinableTaskFlags.StartedSynchronously
+                    && (state & JoinableTaskFlags.StartedOnMainThread) != JoinableTaskFlags.StartedOnMainThread
+                    && (state & JoinableTaskFlags.CompleteRequested) != JoinableTaskFlags.CompleteRequested;
             }
         }
 
@@ -477,9 +478,10 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                return (this.state & JoinableTaskFlags.StartedSynchronously) == JoinableTaskFlags.StartedSynchronously
-                    && (this.state & JoinableTaskFlags.StartedOnMainThread) == JoinableTaskFlags.StartedOnMainThread
-                    && (this.state & JoinableTaskFlags.CompleteRequested) != JoinableTaskFlags.CompleteRequested;
+                JoinableTaskFlags state = this.state;
+                return (state & JoinableTaskFlags.StartedSynchronously) == JoinableTaskFlags.StartedSynchronously
+                    && (state & JoinableTaskFlags.StartedOnMainThread) == JoinableTaskFlags.StartedOnMainThread
+                    && (state & JoinableTaskFlags.CompleteRequested) != JoinableTaskFlags.CompleteRequested;
             }
         }
 
