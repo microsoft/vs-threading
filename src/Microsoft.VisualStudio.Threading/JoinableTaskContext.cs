@@ -192,18 +192,21 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                using (this.NoMessagePumpSynchronizationContext.Apply())
+                if (this.nonJoinableFactory == null)
                 {
-                    lock (this.SyncContextLock)
+                    using (this.NoMessagePumpSynchronizationContext.Apply())
                     {
-                        if (this.nonJoinableFactory == null)
+                        lock (this.SyncContextLock)
                         {
-                            this.nonJoinableFactory = this.CreateDefaultFactory();
+                            if (this.nonJoinableFactory == null)
+                            {
+                                this.nonJoinableFactory = this.CreateDefaultFactory();
+                            }
                         }
-
-                        return this.nonJoinableFactory;
                     }
                 }
+
+                return this.nonJoinableFactory;
             }
         }
 
