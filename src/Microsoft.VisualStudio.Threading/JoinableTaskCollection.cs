@@ -98,11 +98,11 @@ namespace Microsoft.VisualStudio.Threading
                 Requires.Argument(false, "joinableTask", Strings.JoinableTaskContextAndCollectionMismatch);
             }
 
-            if (!joinableTask.IsCompleted)
+            using (this.Context.NoMessagePumpSynchronizationContext.Apply())
             {
-                using (this.Context.NoMessagePumpSynchronizationContext.Apply())
+                lock (this.Context.SyncContextLock)
                 {
-                    lock (this.Context.SyncContextLock)
+                    if (!joinableTask.IsCompleted)
                     {
                         if (!this.joinables.TryGetValue(joinableTask, out int refCount) || this.refCountAddedJobs)
                         {
