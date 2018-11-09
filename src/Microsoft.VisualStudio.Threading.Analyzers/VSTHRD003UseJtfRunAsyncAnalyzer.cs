@@ -145,6 +145,31 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     break;
                 case IFieldSymbol fieldSymbol:
                     symbolType = fieldSymbol.Type;
+
+                    // If the field is readonly and initialized with Task.FromResult, it's OK.
+                    if (fieldSymbol.IsReadOnly)
+                    {
+                        // Whitelist the TplExtensions.CompletedTask field.
+                        if (fieldSymbol.Name == Types.TplExtensions.CompletedTask && fieldSymbol.ContainingType.Name == Types.TplExtensions.TypeName && fieldSymbol.BelongsToNamespace(Types.TplExtensions.Namespace))
+                        {
+                            return null;
+                        }
+
+                        // If we can find the source code for the field, we can check whether it has a field initializer
+                        // that stores the result of a Task.FromResult invocation.
+                        foreach (var syntaxReference in fieldSymbol.DeclaringSyntaxReferences)
+                        {
+                            if (syntaxReference.GetSyntax(cancellationToken) is VariableDeclaratorSyntax declarationSyntax &&
+                                declarationSyntax.Initializer?.Value is InvocationExpressionSyntax invocationSyntax &&
+                                invocationSyntax.Expression != null &&
+                                semanticModel.GetSymbolInfo(invocationSyntax.Expression, cancellationToken).Symbol is IMethodSymbol invokedMethod &&
+                                invokedMethod.Name == nameof(Task.FromResult) && invokedMethod.ContainingType.Name == nameof(Task) && invokedMethod.ContainingType.BelongsToNamespace(Types.Task.Namespace))
+                            {
+                                return null;
+                            }
+                        }
+                    }
+
                     break;
                 case IMethodSymbol methodSymbol:
                     if (Utils.IsTask(methodSymbol.ReturnType) && expressionSyntax is InvocationExpressionSyntax invocationExpressionSyntax)

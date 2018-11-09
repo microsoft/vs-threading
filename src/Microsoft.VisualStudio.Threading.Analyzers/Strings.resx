@@ -166,8 +166,8 @@
     <value>Use InvokeAsync to raise async events</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>Calling await on a Task when the task is initialized in another context can cause potential deadlocks.
-You can avoid this problem by ensuring the task is initialized within the same method or by using JoinableTask instead of Task.</value>
+    <value>Avoid awaiting or returning a Task representing work that was not started within your context as that can lead to deadlocks.
+Start the work within this context, or use JoinableTaskFactory.RunAsync and await the returned JoinableTask instead.</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
     <value>Avoid awaiting foreign Tasks</value>

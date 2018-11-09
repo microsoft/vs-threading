@@ -44,6 +44,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             /// </summary>
             internal const string InvokeAsync = "InvokeAsync";
 
+            /// <summary>
+            /// The name of the CompletedTask field.
+            /// </summary>
+            internal const string CompletedTask = "CompletedTask";
+
             internal static readonly IReadOnlyList<string> Namespace = Namespaces.MicrosoftVisualStudioThreading;
         }
 
