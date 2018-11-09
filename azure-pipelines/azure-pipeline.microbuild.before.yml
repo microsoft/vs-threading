@@ -1,14 +1,5 @@
 steps:
 
-- task: CmdLine@2
-  inputs:
-    script: |
-      del /s /q "%userprofile%\.nuget\packages"
-      del /s /q "%LocalAppData%\NuGet\Cache"
-      del /s /q "%AppData%\tsd-cache"
-  displayName: Purge package caches
-  condition: and(succeeded(), ne(variables['Hosted'], 'true'))
-
 - task: MicroBuildIBCMergePlugin@0
   inputs:
     branch: rel/d15.8
