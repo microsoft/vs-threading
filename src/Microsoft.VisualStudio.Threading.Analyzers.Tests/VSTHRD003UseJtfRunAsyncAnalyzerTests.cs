@@ -981,6 +981,105 @@ class Tests {
             await Verify.VerifyAnalyzerAsync(test);
         }
 
+        [Fact]
+        public async Task DoNotReportWarningWhenCompletedTaskIsReturnedDirectlyFromMethod()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Tests
+{
+    public Task GetTask()
+    {
+        return Task.CompletedTask;
+    }
+
+    public Task GetTask2()
+    {
+        return TplExtensions.CompletedTask;
+    }
+}
+";
+            await Verify.VerifyAnalyzerAsync(test);
+        }
+
+        [Fact]
+        public async Task DoNotReportWarningWhenTaskFromResultIsReturnedDirectlyFromMethod()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Tests
+{
+    public Task<bool> GetTask()
+    {
+        return Task.FromResult(true);
+    }
+}
+";
+            await Verify.VerifyAnalyzerAsync(test);
+        }
+
+        [Fact]
+        public async Task DoNotReportWarningWhenTaskFromResultIsReturnedDirectlyFromMethod_FromField()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Tests
+{
+    private static readonly Task CompletedTask = Task.FromResult(true);
+
+    public Task GetTask()
+    {
+        return CompletedTask;
+    }
+}
+";
+            await Verify.VerifyAnalyzerAsync(test);
+        }
+
+        [Fact]
+        public async Task ReportWarningWhenTaskFromResultIsReturnedDirectlyFromMethod_FromField_NotReadOnly()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Tests
+{
+    private static Task CompletedTask = Task.FromResult(true); // this *could* be reassigned, and thus isn't safe
+
+    public Task GetTask()
+    {
+        return CompletedTask;
+    }
+}
+";
+            var expected = this.CreateDiagnostic(10, 16, 13);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
+        public async Task ReportWarningWhenTaskRunIsReturnedDirectlyFromMethod_FromField()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Tests
+{
+    private static readonly Task SomeTask = Task.Run(() => true); // We're don't try to analyze the delegate
+
+    public Task GetTask()
+    {
+        return SomeTask;
+    }
+}
+";
+            var expected = this.CreateDiagnostic(10, 16, 8);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
         private DiagnosticResult CreateDiagnostic(int line, int column, int length) =>
             Verify.Diagnostic().WithSpan(line, column, line, column + length);
     }

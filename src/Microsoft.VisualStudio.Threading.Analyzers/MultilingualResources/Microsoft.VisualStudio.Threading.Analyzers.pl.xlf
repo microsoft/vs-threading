@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en-US" target-language="pl" original="MICROSOFT.VISUALSTUDIO.THREADING.ANALYZERS/STRINGS.RESX" tool-id="MultilingualAppToolkit" product-name="n/a" product-version="n/a" build-num="n/a">
     <header>
@@ -58,8 +58,8 @@
           <target state="translated">Zdarzenia asynchroniczne wywołuj za pomocą metody InvokeAsync</target>
         </trans-unit>
         <trans-unit id="VSTHRD003_MessageFormat" translate="yes" xml:space="preserve">
-          <source>Calling await on a Task when the task is initialized in another context can cause potential deadlocks.
-You can avoid this problem by ensuring the task is initialized within the same method or by using JoinableTask instead of Task.</source>
+          <source>Avoid awaiting or returning a Task representing work that was not started within your context as that can lead to deadlocks.
+Start the work within this context, or use JoinableTaskFactory.RunAsync and await the returned JoinableTask instead.</source>
           <target state="needs-review-translation">Wywołanie oczekiwania dla obiektu Task wewnątrz metody JoinableTaskFactory.Run, gdy dane zadanie zainicjowano poza delegatem, może spowodować zakleszczenia.
 Tego problemu można uniknąć, zapewniając, że zadanie zostanie zainicjowane wewnątrz delegata lub za pomocą klasy JoinableTask (a nie klasy Task).</target>
           <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>

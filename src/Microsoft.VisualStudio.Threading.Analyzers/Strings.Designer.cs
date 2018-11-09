@@ -125,8 +125,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Calling await on a Task when the task is initialized in another context can cause potential deadlocks.
-        ///You can avoid this problem by ensuring the task is initialized within the same method or by using JoinableTask instead of Task..
+        ///   Looks up a localized string similar to Avoid awaiting or returning a Task representing work that was not started within your context as that can lead to deadlocks.
+        ///Start the work within this context, or use JoinableTaskFactory.RunAsync and await the returned JoinableTask instead..
         /// </summary>
         internal static string VSTHRD003_MessageFormat {
             get {
