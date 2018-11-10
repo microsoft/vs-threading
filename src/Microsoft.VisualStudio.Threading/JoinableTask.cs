@@ -65,14 +65,16 @@ namespace Microsoft.VisualStudio.Threading
         private ListOfOftenOne<IJoinableTaskDependent> dependencyParents;
 
         /// <summary>
-        /// The Task returned by the async delegate that this JoinableTask originally executed.
+        /// The <see cref="System.Threading.Tasks.Task"/> returned by the async delegate that this JoinableTask originally executed,
+        /// or a <see cref="TaskCompletionSource{TResult}"/> if the <see cref="Task"/> property was observed before <see cref="initialDelegate"/>
+        /// had given us a Task.
         /// </summary>
         /// <value>
-        /// This is <c>null</c> until after the async delegate returns a Task,
+        /// This is <c>null</c> until after <see cref="initialDelegate"/> returns a <see cref="Task"/> (or the <see cref="Task"/> property is observed),
         /// and retains its value even after this JoinableTask completes.
         /// </value>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private Task wrappedTask;
+        private object wrappedTask;
 
         /// <summary>
         /// An event that is signaled when any queue in the dependent has item to process.  Lazily constructed.
@@ -270,16 +272,23 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
+                if (this.wrappedTask == null)
                 {
-                    lock (this.JoinableTaskContext.SyncContextLock)
+                    using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
                     {
-                        // If this assumes ever fails, we need to add the ability to synthesize a task
-                        // that we'll complete when the wrapped task that we eventually are assigned completes.
-                        Assumes.NotNull(this.wrappedTask);
-                        return this.wrappedTask;
+                        lock (this.JoinableTaskContext.SyncContextLock)
+                        {
+                            if (this.wrappedTask == null)
+                            {
+                                // We'd rather not do this. The field is assigned elsewhere later on if we haven't hit this first.
+                                // But some caller needs a Task that we don't yet have, so we have to spin one up.
+                                this.wrappedTask = this.CreateTaskCompletionSource();
+                            }
+                        }
                     }
                 }
+
+                return this.wrappedTask as Task ?? this.GetTaskFromCompletionSource(this.wrappedTask);
             }
         }
 
@@ -702,6 +711,30 @@ namespace Microsoft.VisualStudio.Threading
             return this.JoinAsync().GetAwaiter();
         }
 
+        /// <summary>
+        /// Instantiate a <see cref="TaskCompletionSourceWithoutInlining{T}"/> that can track the ultimate result of <see cref="initialDelegate" />.
+        /// </summary>
+        /// <returns>The new task completion source.</returns>
+        /// <remarks>
+        /// The implementation should be sure to instantiate a <see cref="TaskCompletionSource{TResult}"/> that will
+        /// NOT inline continuations, since we'll be completing this ourselves, potentially while holding a private lock.
+        /// </remarks>
+        internal virtual object CreateTaskCompletionSource() => new TaskCompletionSourceWithoutInlining<EmptyStruct>(allowInliningContinuations: false);
+
+        /// <summary>
+        /// Retrieves the <see cref="TaskCompletionSourceWithoutInlining{T}.Task"/> from a <see cref="TaskCompletionSourceWithoutInlining{T}"/>.
+        /// </summary>
+        /// <param name="taskCompletionSource">The task completion source.</param>
+        /// <returns>The <see cref="System.Threading.Tasks.Task"/> that will complete with this <see cref="TaskCompletionSourceWithoutInlining{T}"/>.</returns>
+        internal virtual Task GetTaskFromCompletionSource(object taskCompletionSource) => ((TaskCompletionSourceWithoutInlining<EmptyStruct>)taskCompletionSource).Task;
+
+        /// <summary>
+        /// Completes a <see cref="TaskCompletionSourceWithoutInlining{T}"/>
+        /// </summary>
+        /// <param name="wrappedTask">The task to read a result from.</param>
+        /// <param name="taskCompletionSource">The <see cref="TaskCompletionSourceWithoutInlining{T}"/> created earlier with <see cref="CreateTaskCompletionSource()"/> to apply the result to.</param>
+        internal virtual void CompleteTaskSourceFromWrappedTask(Task wrappedTask, object taskCompletionSource) => wrappedTask.ApplyResultTo((TaskCompletionSourceWithoutInlining<EmptyStruct>)taskCompletionSource);
+
         internal void SetWrappedTask(Task wrappedTask)
         {
             Requires.NotNull(wrappedTask, nameof(wrappedTask));
@@ -710,18 +743,20 @@ namespace Microsoft.VisualStudio.Threading
             {
                 lock (this.JoinableTaskContext.SyncContextLock)
                 {
-                    Assumes.Null(this.wrappedTask);
-                    this.wrappedTask = wrappedTask;
+                    if (this.wrappedTask == null)
+                    {
+                        this.wrappedTask = wrappedTask;
+                    }
 
                     if (wrappedTask.IsCompleted)
                     {
-                        this.Complete();
+                        this.Complete(wrappedTask);
                     }
                     else
                     {
                         // Arrange for the wrapped task to complete this job when the task completes.
-                        this.wrappedTask.ContinueWith(
-                            (t, s) => ((JoinableTask)s).Complete(),
+                        wrappedTask.ContinueWith(
+                            (t, s) => ((JoinableTask)s).Complete(t),
                             this,
                             CancellationToken.None,
                             TaskContinuationOptions.ExecuteSynchronously,
@@ -734,8 +769,16 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Fires when the underlying Task is completed.
         /// </summary>
-        internal void Complete()
+        /// <param name="wrappedTask">The actual result from <see cref="initialDelegate"/>.</param>
+        internal void Complete(Task wrappedTask)
         {
+            // If we had to synthesize a Task earlier, then wrappedTask is a TaskCompletionSource,
+            // which we should now complete.
+            if (!(this.wrappedTask is Task))
+            {
+                this.CompleteTaskSourceFromWrappedTask(wrappedTask, this.wrappedTask);
+            }
+
             using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
             {
                 AsyncManualResetEvent queueNeedProcessEvent = null;

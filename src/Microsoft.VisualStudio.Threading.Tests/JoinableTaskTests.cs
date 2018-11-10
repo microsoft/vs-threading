@@ -3624,6 +3624,84 @@
             }
         }
 
+        [Fact]
+        public void JoinableTask_TaskPropertyBeforeReturning()
+        {
+            this.SimulateUIThread(async delegate
+            {
+                var unblockJoinableTask = new ManualResetEventSlim();
+                var joinableTaskStarted = new AsyncManualResetEvent(allowInliningAwaiters: false);
+                JoinableTask observedJoinableTask = null;
+                Task observedWrappedTask = null;
+                var assertingTask = Task.Run(async delegate
+                {
+                    try
+                    {
+                        await joinableTaskStarted.WaitAsync();
+                        observedJoinableTask = this.joinableCollection.Single();
+                        observedWrappedTask = observedJoinableTask.Task;
+                    }
+                    finally
+                    {
+                        unblockJoinableTask.Set();
+                    }
+                });
+                var joinableTask = this.asyncPump.RunAsync(delegate
+                {
+                    joinableTaskStarted.Set();
+
+                    // Synchronously block *BEFORE* yielding.
+                    unblockJoinableTask.Wait();
+                    return TplExtensions.CompletedTask;
+                });
+
+                await assertingTask; // observe failures.
+                await joinableTask;
+                Assert.Same(observedJoinableTask, joinableTask);
+                await joinableTask.Task;
+                await observedWrappedTask;
+            });
+        }
+
+        [Fact]
+        public void JoinableTaskOfT_TaskPropertyBeforeReturning()
+        {
+            this.SimulateUIThread(async delegate
+            {
+                var unblockJoinableTask = new ManualResetEventSlim();
+                var joinableTaskStarted = new AsyncManualResetEvent(allowInliningAwaiters: false);
+                JoinableTask<int> observedJoinableTask = null;
+                Task<int> observedWrappedTask = null;
+                var assertingTask = Task.Run(async delegate
+                {
+                    try
+                    {
+                        await joinableTaskStarted.WaitAsync();
+                        observedJoinableTask = (JoinableTask<int>)this.joinableCollection.Single();
+                        observedWrappedTask = observedJoinableTask.Task;
+                    }
+                    finally
+                    {
+                        unblockJoinableTask.Set();
+                    }
+                });
+                var joinableTask = this.asyncPump.RunAsync(delegate
+                {
+                    joinableTaskStarted.Set();
+
+                    // Synchronously block *BEFORE* yielding.
+                    unblockJoinableTask.Wait();
+                    return Task.FromResult(3);
+                });
+
+                await assertingTask; // observe failures.
+                await joinableTask;
+                Assert.Same(observedJoinableTask, joinableTask);
+                Assert.Equal(3, await joinableTask.Task);
+                Assert.Equal(3, await observedWrappedTask);
+            });
+        }
+
         protected override JoinableTaskContext CreateJoinableTaskContext()
         {
             return new DerivedJoinableTaskContext();
