@@ -172,7 +172,7 @@ namespace Microsoft.VisualStudio.Threading
             StartedOnMainThread = 0x2,
 
             /// <summary>
-            /// This task has had its Complete method called, but has lingering continuations to execute.
+            /// This task has had its Complete method called, but may have lingering continuations to execute.
             /// </summary>
             CompleteRequested = 0x4,
 
@@ -308,36 +308,53 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
+                if (this.JoinableTaskContext.IsOnMainThread)
                 {
-                    lock (this.JoinableTaskContext.SyncContextLock)
+                    if (this.mainThreadJobSyncContext == null)
                     {
-                        if (this.JoinableTaskContext.IsOnMainThread)
+                        using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
                         {
-                            if (this.mainThreadJobSyncContext == null)
+                            lock (this.JoinableTaskContext.SyncContextLock)
                             {
-                                this.mainThreadJobSyncContext = new JoinableTaskSynchronizationContext(this, true);
-                            }
-
-                            return this.mainThreadJobSyncContext;
-                        }
-                        else
-                        {
-                            if (this.SynchronouslyBlockingThreadPool)
-                            {
-                                if (this.threadPoolJobSyncContext == null)
+                                if (this.mainThreadJobSyncContext == null)
                                 {
-                                    this.threadPoolJobSyncContext = new JoinableTaskSynchronizationContext(this, false);
+                                    this.mainThreadJobSyncContext = new JoinableTaskSynchronizationContext(this, true);
                                 }
-
-                                return this.threadPoolJobSyncContext;
-                            }
-                            else
-                            {
-                                // If we're not blocking the threadpool, there is no reason to use a thread pool sync context.
-                                return null;
                             }
                         }
+                    }
+
+                    return this.mainThreadJobSyncContext;
+                }
+                else
+                {
+                    // This property only changes from true to false, and it reads a volatile field.
+                    // To avoid (measured) lock contention, we skip the lock, risking that we could potentially
+                    // enter the true block a little more than if we took a lock. But returning a synccontext
+                    // for task whose completion was requested is a safe operation, since every sync context we return
+                    // must be operable after that point anyway.
+                    if (this.SynchronouslyBlockingThreadPool)
+                    {
+                        if (this.threadPoolJobSyncContext == null)
+                        {
+                            using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
+                            {
+                                lock (this.JoinableTaskContext.SyncContextLock)
+                                {
+                                    if (this.threadPoolJobSyncContext == null)
+                                    {
+                                        this.threadPoolJobSyncContext = new JoinableTaskSynchronizationContext(this, false);
+                                    }
+                                }
+                            }
+                        }
+
+                        return this.threadPoolJobSyncContext;
+                    }
+                    else
+                    {
+                        // If we're not blocking the threadpool, there is no reason to use a thread pool sync context.
+                        return null;
                     }
                 }
             }
@@ -474,9 +491,10 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                return (this.state & JoinableTaskFlags.StartedSynchronously) == JoinableTaskFlags.StartedSynchronously
-                    && (this.state & JoinableTaskFlags.StartedOnMainThread) != JoinableTaskFlags.StartedOnMainThread
-                    && (this.state & JoinableTaskFlags.CompleteRequested) != JoinableTaskFlags.CompleteRequested;
+                JoinableTaskFlags state = this.state;
+                return (state & JoinableTaskFlags.StartedSynchronously) == JoinableTaskFlags.StartedSynchronously
+                    && (state & JoinableTaskFlags.StartedOnMainThread) != JoinableTaskFlags.StartedOnMainThread
+                    && (state & JoinableTaskFlags.CompleteRequested) != JoinableTaskFlags.CompleteRequested;
             }
         }
 
@@ -485,9 +503,10 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                return (this.state & JoinableTaskFlags.StartedSynchronously) == JoinableTaskFlags.StartedSynchronously
-                    && (this.state & JoinableTaskFlags.StartedOnMainThread) == JoinableTaskFlags.StartedOnMainThread
-                    && (this.state & JoinableTaskFlags.CompleteRequested) != JoinableTaskFlags.CompleteRequested;
+                JoinableTaskFlags state = this.state;
+                return (state & JoinableTaskFlags.StartedSynchronously) == JoinableTaskFlags.StartedSynchronously
+                    && (state & JoinableTaskFlags.StartedOnMainThread) == JoinableTaskFlags.StartedOnMainThread
+                    && (state & JoinableTaskFlags.CompleteRequested) != JoinableTaskFlags.CompleteRequested;
             }
         }
 
