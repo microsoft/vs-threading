@@ -35,6 +35,95 @@ class Test {
             await Verify.VerifyCodeFixAsync(test, expected, withFix);
         }
 
+        /// <summary>
+        /// Verifies that methods that return awaitable types (but without associated async method builders)
+        /// are allowed to include or omit the Async suffix.
+        /// </summary>
+        [Fact]
+        public async Task IVsTaskReturningMethod_WithGetAwaiter_GeneratesNoWarning()
+        {
+            var test = @"
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    IVsTask T() => null;
+    IVsTask TAsync() => null;
+}
+";
+
+            await Verify.VerifyAnalyzerAsync(test);
+        }
+
+        [Fact]
+        public async Task IVsTaskReturningMethodWithSuffix_NoGetAwaiter_GeneratesNoWarning()
+        {
+            var test = @"
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    IVsTask T() => null;
+    IVsTask T2Async() => null;
+}
+";
+
+            await Verify.VerifyAnalyzerAsync(test);
+        }
+
+        [Fact]
+        public async Task HomemadeAwaitableReturningMethodWithSuffix_GeneratesNoWarning()
+        {
+            var test = @"
+using System;
+
+class Test {
+    string T() => null;
+    string T2Async() => null;
+}
+
+static class AwaitExtensions {
+    internal static MyAwaiter GetAwaiter(this string v) => default;
+}
+
+struct MyAwaiter {
+    public void GetResult() { }
+    public bool IsCompleted => false;
+    public void OnCompleted(Action a) { }
+}
+";
+
+            await Verify.VerifyAnalyzerAsync(test);
+        }
+
+        [Fact]
+        public async Task BadAwaitableReturningMethodWithSuffix_GeneratesWarning()
+        {
+            var test = @"
+class Test {
+    string T() => null;
+    string T2Async() => null;
+}
+
+static class AwaitExtensions {
+    internal static int GetAwaiter(this string v) => default;
+}
+";
+
+            var withFix = @"
+class Test {
+    string T() => null;
+    string T2() => null;
+}
+
+static class AwaitExtensions {
+    internal static int GetAwaiter(this string v) => default;
+}
+";
+
+            var expected = Verify.Diagnostic(RemoveSuffixDescriptor).WithSpan(4, 12, 4, 19);
+            await Verify.VerifyCodeFixAsync(test, expected, withFix);
+        }
+
         [Fact]
         public async Task ValueTaskReturningMethodWithoutSuffix_GeneratesWarning()
         {
