@@ -82,7 +82,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             var lambdaExpression = (LambdaExpressionSyntax)context.Node;
             if (lambdaExpression.Body is ExpressionSyntax expression)
             {
-                var diagnostic = this.AnalyzeAwaitedOrReturnedExpression(expression, context.SemanticModel, context.CancellationToken);
+                var diagnostic = this.AnalyzeAwaitedOrReturnedExpression(expression, context, context.CancellationToken);
                 if (diagnostic != null)
                 {
                     context.ReportDiagnostic(diagnostic);
@@ -93,7 +93,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         private void AnalyzeReturnStatement(SyntaxNodeAnalysisContext context)
         {
             var returnStatement = (ReturnStatementSyntax)context.Node;
-            var diagnostic = this.AnalyzeAwaitedOrReturnedExpression(returnStatement.Expression, context.SemanticModel, context.CancellationToken);
+            var diagnostic = this.AnalyzeAwaitedOrReturnedExpression(returnStatement.Expression, context, context.CancellationToken);
             if (diagnostic != null)
             {
                 context.ReportDiagnostic(diagnostic);
@@ -103,25 +103,23 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         private void AnalyzeAwaitExpression(SyntaxNodeAnalysisContext context)
         {
             AwaitExpressionSyntax awaitExpressionSyntax = (AwaitExpressionSyntax)context.Node;
-            var diagnostic = this.AnalyzeAwaitedOrReturnedExpression(awaitExpressionSyntax.Expression, context.SemanticModel, context.CancellationToken);
+            var diagnostic = this.AnalyzeAwaitedOrReturnedExpression(awaitExpressionSyntax.Expression, context, context.CancellationToken);
             if (diagnostic != null)
             {
                 context.ReportDiagnostic(diagnostic);
             }
         }
 
-        private Diagnostic AnalyzeAwaitedOrReturnedExpression(ExpressionSyntax expressionSyntax, SemanticModel semanticModel, CancellationToken cancellationToken)
+        private Diagnostic AnalyzeAwaitedOrReturnedExpression(ExpressionSyntax expressionSyntax, SyntaxNodeAnalysisContext context, CancellationToken cancellationToken)
         {
             if (expressionSyntax == null)
             {
                 return null;
             }
 
-            if (semanticModel == null)
-            {
-                throw new ArgumentNullException(nameof(semanticModel));
-            }
-
+            // Get the semantic model for the SyntaxTree for the given ExpressionSyntax, since it *may* not be in the same syntax tree
+            // as the original context.Node.
+            var semanticModel = context.Compilation.GetSemanticModel(expressionSyntax.SyntaxTree);
             SymbolInfo symbolToConsider = semanticModel.GetSymbolInfo(expressionSyntax, cancellationToken);
             if (CommonInterest.TaskConfigureAwait.Any(configureAwait => configureAwait.IsMatch(symbolToConsider.Symbol)))
             {
@@ -161,11 +159,16 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                         {
                             if (syntaxReference.GetSyntax(cancellationToken) is VariableDeclaratorSyntax declarationSyntax &&
                                 declarationSyntax.Initializer?.Value is InvocationExpressionSyntax invocationSyntax &&
-                                invocationSyntax.Expression != null &&
-                                semanticModel.GetSymbolInfo(invocationSyntax.Expression, cancellationToken).Symbol is IMethodSymbol invokedMethod &&
-                                invokedMethod.Name == nameof(Task.FromResult) && invokedMethod.ContainingType.Name == nameof(Task) && invokedMethod.ContainingType.BelongsToNamespace(Types.Task.Namespace))
+                                invocationSyntax.Expression != null)
                             {
-                                return null;
+                                var declarationSemanticModel = context.Compilation.GetSemanticModel(invocationSyntax.SyntaxTree);
+                                if (declarationSemanticModel.GetSymbolInfo(invocationSyntax.Expression, cancellationToken).Symbol is IMethodSymbol invokedMethod &&
+                                    invokedMethod.Name == nameof(Task.FromResult) &&
+                                    invokedMethod.ContainingType.Name == nameof(Task) &&
+                                    invokedMethod.ContainingType.BelongsToNamespace(Types.Task.Namespace))
+                                {
+                                    return null;
+                                }
                             }
                         }
                     }
@@ -186,7 +189,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                             }
                         }
 
-                        return expressionsToConsider.Select(e => this.AnalyzeAwaitedOrReturnedExpression(e, semanticModel, cancellationToken)).FirstOrDefault(r => r != null);
+                        return expressionsToConsider.Select(e => this.AnalyzeAwaitedOrReturnedExpression(e, context, cancellationToken)).FirstOrDefault(r => r != null);
                     }
 
                     return null;

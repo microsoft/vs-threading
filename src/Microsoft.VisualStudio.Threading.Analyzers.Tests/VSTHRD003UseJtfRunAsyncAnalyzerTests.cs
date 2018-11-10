@@ -1080,6 +1080,42 @@ class Tests
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
+        [Fact(Skip = "Test is not yet implemented since it needs TWO source files.")]
+        public async Task TaskReturningMethodIncludeArgumentFromOtherSyntaxTree()
+        {
+            // This is a regression test for a bug that only repro'd when the field was defined in a different document from where it was used
+            // as input to a return value from a Task-returning method.
+            var source1 = @"
+using System.Collections.Immutable;
+using System.Threading.Tasks;
+
+internal class Test
+{
+    private Task<ImmutableHashSet<string>> SomethingAsync()
+    {
+        return Task.FromResult(OtherClass.ProjectSystem);
+    }
+}
+";
+            var source2 = @"
+using System.Collections.Immutable;
+
+class OtherClass
+{
+    internal static readonly ImmutableHashSet<string> ProjectSystem =
+        ImmutableHashSet<string>.Empty.Union(new[]
+        {
+            ""a""
+        });
+}
+";
+
+            // TODO: add source2 to this test.
+            var test = new Verify.Test { TestCode = source1 };
+            test.TestCode = source2; // also
+            await test.RunAsync();
+        }
+
         private DiagnosticResult CreateDiagnostic(int line, int column, int length) =>
             Verify.Diagnostic().WithSpan(line, column, line, column + length);
     }
