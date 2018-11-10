@@ -14,6 +14,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System.Collections.Immutable;
     using System.Linq;
     using System.Reflection;
+    using System.Runtime.CompilerServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;

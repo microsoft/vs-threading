@@ -16,7 +16,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using CodeAnalysis.Diagnostics;
 
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class VSTHRD200UseAsyncNamingConventionAnalyzer : DiagnosticAnalyzer
+    public class VSTHRD200UseAsyncNamingConventionAnalyzer : DiagnosticAnalyzerBase
     {
         public const string Id = "VSTHRD200";
 
@@ -63,15 +63,17 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 return;
             }
 
-            bool shouldEndWithAsync = (methodSymbol.ReturnType.Name == nameof(Task) || methodSymbol.ReturnType.Name == nameof(ValueTask)) &&
-                methodSymbol.ReturnType.BelongsToNamespace(Namespaces.SystemThreadingTasks);
+            // Skip entrypoint methods since their name is non-negotiable.
+            if (Utils.IsEntrypointMethod(methodSymbol, context.Compilation, context.CancellationToken))
+            {
+                return;
+            }
 
-            // Skip entrypoint methods since they must be called Main.
-            shouldEndWithAsync &= !Utils.IsEntrypointMethod(methodSymbol, context.Compilation, context.CancellationToken);
+            bool hasAsyncFocusedReturnType = Utils.HasAsyncCompatibleReturnType(methodSymbol);
 
             bool actuallyEndsWithAsync = methodSymbol.Name.EndsWith(MandatoryAsyncSuffix);
 
-            if (shouldEndWithAsync != actuallyEndsWithAsync)
+            if (hasAsyncFocusedReturnType != actuallyEndsWithAsync)
             {
                 // Now that we have done the cheap checks to find that this method may deserve a diagnostic,
                 // Do deeper checks to skip over methods that implement API contracts that are controlled elsewhere.
@@ -80,8 +82,10 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     return;
                 }
 
-                if (shouldEndWithAsync)
+                if (hasAsyncFocusedReturnType)
                 {
+                    // We actively encourage folks to use the Async keyword only for clearly async-focused types.
+                    // Not just any awaitable, since some stray extension method shouldn't change the world for everyone.
                     var properties = ImmutableDictionary<string, string>.Empty
                         .Add(VSTHRD200UseAsyncNamingConventionCodeFix.NewNameKey, methodSymbol.Name + MandatoryAsyncSuffix);
                     context.ReportDiagnostic(Diagnostic.Create(
@@ -89,8 +93,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                         methodSymbol.Locations[0],
                         properties));
                 }
-                else
+                else if (!this.IsAwaitableType(methodSymbol.ReturnType, context.Compilation, context.CancellationToken))
                 {
+                    // Only warn about abusing the Async suffix if the return type is not awaitable.
                     var properties = ImmutableDictionary<string, string>.Empty
                         .Add(VSTHRD200UseAsyncNamingConventionCodeFix.NewNameKey, methodSymbol.Name.Substring(0, methodSymbol.Name.Length - MandatoryAsyncSuffix.Length));
                     context.ReportDiagnostic(Diagnostic.Create(
