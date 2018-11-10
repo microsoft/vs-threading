@@ -213,9 +213,26 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static bool HasAsyncCompatibleReturnType(this IMethodSymbol methodSymbol) => IsAsyncCompatibleReturnType(methodSymbol?.ReturnType);
 
+        /// <summary>
+        /// Determines whether a type could be used with the async modifier as a method return type.
+        /// </summary>
+        /// <param name="typeSymbol">The type returned from a method.</param>
+        /// <returns><c>true</c> if the type can be returned from an async method.</returns>
+        /// <remarks>
+        /// This is not the same thing as being an *awaitable* type, which is a much lower bar. Any type can be made awaitable by offering a GetAwaiter method
+        /// that follows the proper pattern. But being an async-compatible type in this sense is a type that can be returned from a method carrying the async keyword modifier,
+        /// in that the type is either the special Task type, or offers an async method builder of its own.
+        /// </remarks>
         internal static bool IsAsyncCompatibleReturnType(this ITypeSymbol typeSymbol)
         {
-            return typeSymbol?.Name == nameof(Task) && typeSymbol.BelongsToNamespace(Namespaces.SystemThreadingTasks);
+            if (typeSymbol == null)
+            {
+                return false;
+            }
+
+            // ValueTask and ValueTask<T> have the AsyncMethodBuilderAttribute.
+            return (typeSymbol.Name == nameof(Task) && typeSymbol.BelongsToNamespace(Namespaces.SystemThreadingTasks))
+                || typeSymbol.GetAttributes().Any(ad => ad.AttributeClass?.Name == Types.AsyncMethodBuilderAttribute.TypeName && ad.AttributeClass.BelongsToNamespace(Types.AsyncMethodBuilderAttribute.Namespace));
         }
 
         /// <summary>

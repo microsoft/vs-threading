@@ -45,6 +45,13 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             internal static readonly IReadOnlyList<string> Namespace = Namespaces.MicrosoftVisualStudioThreading;
         }
 
+        internal static class AsyncMethodBuilderAttribute
+        {
+            internal const string TypeName = nameof(System.Runtime.CompilerServices.AsyncMethodBuilderAttribute);
+
+            internal static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeCompilerServices;
+        }
+
         /// <summary>
         /// Contains descriptors for the JoinableTaskFactory type.
         /// </summary>
