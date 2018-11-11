@@ -1080,7 +1080,7 @@ class Tests
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
-        [Fact(Skip = "Test is not yet implemented since it needs TWO source files.")]
+        [Fact]
         public async Task TaskReturningMethodIncludeArgumentFromOtherSyntaxTree()
         {
             // This is a regression test for a bug that only repro'd when the field was defined in a different document from where it was used
@@ -1110,9 +1110,7 @@ class OtherClass
 }
 ";
 
-            // TODO: add source2 to this test.
-            var test = new Verify.Test { TestCode = source1 };
-            test.TestCode = source2; // also
+            var test = new Verify.Test { TestState = { Sources = { source1, source2 } } };
             await test.RunAsync();
         }
 
