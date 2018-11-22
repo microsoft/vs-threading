@@ -1,8 +1,14 @@
 <Project>
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)..\obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
-    <BaseOutputPath Condition=" '$(BaseOutputPath)' == '' ">$(MSBuildThisFileDirectory)..\bin\$(MSBuildProjectName)\</BaseOutputPath>
+
+    <RepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\'))</RepoRoot>
+    <RepoBinPath>$(RepoRoot)bin\</RepoBinPath>
+    <RepoObjPath>$(RepoRoot)obj\</RepoObjPath>
+    <BaseIntermediateOutputPath>$(RepoObjPath)\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <BaseOutputPath Condition=" '$(BaseOutputPath)' == '' ">$(RepoBinPath)\$(MSBuildProjectName)\</BaseOutputPath>
+    <PackageOutputPath>$(RepoBinPath)Packages\$(Configuration)\NuGet\</PackageOutputPath>
+
     <LangVersion>7.3</LangVersion>
 
     <MicroBuildVersion>2.0.54</MicroBuildVersion>
