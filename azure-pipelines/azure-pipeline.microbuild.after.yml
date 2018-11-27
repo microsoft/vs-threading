@@ -3,6 +3,10 @@ steps:
   condition: and(succeededOrFailed(), ne(variables['Hosted'], 'true'))
   displayName: MicroBuild Cleanup
 
+- task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
+  displayName: Component Detection
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+
 - task: NuGetCommand@2
   inputs:
     command: push
