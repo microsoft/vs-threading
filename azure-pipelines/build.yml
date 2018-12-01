@@ -130,15 +130,16 @@ steps:
 - ${{ if eq(variables['system.collectionId'], '011b8bdf-6d56-4f87-be0d-0092136884d9') }}:
   - template: azure-pipeline.microbuild.after.yml
 
-- task: CopyFiles@1
-  inputs:
-    Contents: |
-      bin/**/$(BuildConfiguration)/**/*.nupkg
-      bin/AsyncDebugTools/x86/$(BuildConfiguration)/AsyncDebugTools.dll
-      bin/AsyncDebugTools/x64/$(BuildConfiguration)/AsyncDebugTools.dll
-    TargetFolder: $(Build.ArtifactStagingDirectory)/deployables
-    flattenFolders: true
+- task: PowerShell@2
   displayName: Collecting deployables
+  inputs:
+    targetType: inline
+    script: |
+      md $(Build.ArtifactStagingDirectory)/deployables\x86
+      md $(Build.ArtifactStagingDirectory)/deployables\x64
+      Get-ChildItem bin\*.nupkg -rec |% { copy $_  $(Build.ArtifactStagingDirectory)\deployables }
+      copy bin\AsyncDebugTools/x86/$(BuildConfiguration)/AsyncDebugTools.dll $(Build.ArtifactStagingDirectory)\deployables\x86
+      copy bin\AsyncDebugTools/x64/$(BuildConfiguration)/AsyncDebugTools.dll $(Build.ArtifactStagingDirectory)\deployables\x64
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
 - task: PublishBuildArtifacts@1
