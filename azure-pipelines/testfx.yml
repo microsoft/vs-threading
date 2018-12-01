@@ -27,4 +27,3 @@ steps:
   env:
     DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX: 0
     RuntimeFrameworkVersion: 2.0.7
-  enabled: false # TODO: figure out why this step hangs
