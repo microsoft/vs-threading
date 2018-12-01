@@ -57,7 +57,7 @@
                     return;
                 }
 
-                var options = await CommonInterest.ReadMethodsAsync(context, CommonInterest.FileNamePatternForMethodsThatSwitchToMainThread, context.CancellationToken);
+                var options = await CommonFixes.ReadMethodsAsync(context, CommonInterest.FileNamePatternForMethodsThatSwitchToMainThread, context.CancellationToken);
                 int positionForLookup = diagnostic.Location.SourceSpan.Start;
                 ISymbol cancellationTokenSymbol = Utils.FindCancellationToken(semanticModel, positionForLookup, context.CancellationToken).FirstOrDefault();
                 foreach (var option in options)
@@ -135,11 +135,11 @@
                         {
                             case AnonymousFunctionExpressionSyntax anonFunc:
                                 semanticModel = await newDocument.GetSemanticModelAsync(cancellationToken);
-                                methodSyntax = Utils.MakeMethodAsync(anonFunc, semanticModel, cancellationToken);
+                                methodSyntax = FixUtils.MakeMethodAsync(anonFunc, semanticModel, cancellationToken);
                                 newDocument = newDocument.WithSyntaxRoot(newSyntaxRoot.ReplaceNode(anonFunc, methodSyntax));
                                 break;
                             case MethodDeclarationSyntax methodDecl:
-                                (newDocument, methodSyntax) = await Utils.MakeMethodAsync(methodDecl, newDocument, cancellationToken);
+                                (newDocument, methodSyntax) = await FixUtils.MakeMethodAsync(methodDecl, newDocument, cancellationToken);
                                 break;
                         }
                     }
