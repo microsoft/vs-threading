@@ -31,6 +31,10 @@
     {
         public const string Id = "VSTHRD103";
 
+        internal const string AsyncMethodKeyName = "AsyncMethodName";
+
+        internal const string ExtensionMethodNamespaceKeyName = "ExtensionMethodNamespace";
+
         internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
             id: Id,
             title: Strings.VSTHRD103_Title,
@@ -115,7 +119,7 @@
                         {
                             // An async alternative exists.
                             var properties = ImmutableDictionary<string, string>.Empty
-                                .Add(VSTHRD103UseAsyncOptionCodeFix.AsyncMethodKeyName, asyncMethodName);
+                                .Add(AsyncMethodKeyName, asyncMethodName);
 
                             Diagnostic diagnostic = Diagnostic.Create(
                                 Descriptor,
@@ -183,19 +187,19 @@
                         {
                             var location = memberAccessSyntax.Name.GetLocation();
                             var properties = ImmutableDictionary<string, string>.Empty
-                                .Add(VSTHRD103UseAsyncOptionCodeFix.ExtensionMethodNamespaceKeyName, item.ExtensionMethodNamespace != null ? string.Join(".", item.ExtensionMethodNamespace) : string.Empty);
+                                .Add(ExtensionMethodNamespaceKeyName, item.ExtensionMethodNamespace != null ? string.Join(".", item.ExtensionMethodNamespace) : string.Empty);
                             DiagnosticDescriptor descriptor;
                             var messageArgs = new List<object>(2);
                             messageArgs.Add(item.Method.Name);
                             if (item.AsyncAlternativeMethodName != null)
                             {
-                                properties = properties.Add(VSTHRD103UseAsyncOptionCodeFix.AsyncMethodKeyName, item.AsyncAlternativeMethodName);
+                                properties = properties.Add(AsyncMethodKeyName, item.AsyncAlternativeMethodName);
                                 descriptor = Descriptor;
                                 messageArgs.Add(item.AsyncAlternativeMethodName);
                             }
                             else
                             {
-                                properties = properties.Add(VSTHRD103UseAsyncOptionCodeFix.AsyncMethodKeyName, string.Empty);
+                                properties = properties.Add(AsyncMethodKeyName, string.Empty);
                                 descriptor = DescriptorNoAlternativeMethod;
                             }
 

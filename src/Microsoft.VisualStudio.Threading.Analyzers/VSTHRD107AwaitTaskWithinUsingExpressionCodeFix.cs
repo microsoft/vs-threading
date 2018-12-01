@@ -53,7 +53,7 @@
                         var root = await document.GetSyntaxRootAsync(ct).ConfigureAwait(false);
                         var method = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<MethodDeclarationSyntax>();
 
-                        (document, method, _) = await Utils.UpdateDocumentAsync(
+                        (document, method, _) = await FixUtils.UpdateDocumentAsync(
                             document,
                             method,
                             m =>

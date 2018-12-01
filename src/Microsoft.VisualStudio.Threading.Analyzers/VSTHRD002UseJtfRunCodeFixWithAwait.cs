@@ -45,7 +45,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                             var document = context.Document;
                             if (TryFindNodeAtSource(diagnostic, root, out var node, out var transform))
                             {
-                                (document, node, _) = await Utils.UpdateDocumentAsync(
+                                (document, node, _) = await FixUtils.UpdateDocumentAsync(
                                     document,
                                     node,
                                     n => SyntaxFactory.AwaitExpression(transform(n, ct)),
@@ -53,7 +53,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                                 var method = node.FirstAncestorOrSelf<MethodDeclarationSyntax>();
                                 if (method != null)
                                 {
-                                    (document, method) = await Utils.MakeMethodAsync(method, document, ct).ConfigureAwait(false);
+                                    (document, method) = await FixUtils.MakeMethodAsync(method, document, ct).ConfigureAwait(false);
                                 }
                             }
 

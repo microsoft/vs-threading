@@ -31,10 +31,6 @@
     [ExportCodeFixProvider(LanguageNames.CSharp)]
     public class VSTHRD103UseAsyncOptionCodeFix : CodeFixProvider
     {
-        internal const string AsyncMethodKeyName = "AsyncMethodName";
-
-        internal const string ExtensionMethodNamespaceKeyName = "ExtensionMethodNamespace";
-
         private static readonly ImmutableArray<string> ReusableFixableDiagnosticIds = ImmutableArray.Create(
             VSTHRD103UseAsyncOptionAnalyzer.Id);
 
@@ -44,14 +40,14 @@
         /// <inheritdoc />
         public override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
-            var diagnostic = context.Diagnostics.FirstOrDefault(d => d.Properties.ContainsKey(AsyncMethodKeyName));
+            var diagnostic = context.Diagnostics.FirstOrDefault(d => d.Properties.ContainsKey(VSTHRD103UseAsyncOptionAnalyzer.AsyncMethodKeyName));
             if (diagnostic != null)
             {
                 // Check that the method we're replacing the sync blocking call with actually exists.
                 // This is particularly useful when the method is an extension method, since the using directive
                 // would need to be present (or the namespace imply it) and we don't yet add missing using directives.
                 bool asyncAlternativeExists = false;
-                string asyncMethodName = diagnostic.Properties[AsyncMethodKeyName];
+                string asyncMethodName = diagnostic.Properties[VSTHRD103UseAsyncOptionAnalyzer.AsyncMethodKeyName];
                 if (string.IsNullOrEmpty(asyncMethodName))
                 {
                     asyncMethodName = "GetAwaiter";
@@ -106,9 +102,9 @@
             /// <inheritdoc />
             public override string EquivalenceKey => null;
 
-            private string AlternativeAsyncMethod => this.diagnostic.Properties[AsyncMethodKeyName];
+            private string AlternativeAsyncMethod => this.diagnostic.Properties[VSTHRD103UseAsyncOptionAnalyzer.AsyncMethodKeyName];
 
-            private string ExtensionMethodNamespace => this.diagnostic.Properties[ExtensionMethodNamespaceKeyName];
+            private string ExtensionMethodNamespace => this.diagnostic.Properties[VSTHRD103UseAsyncOptionAnalyzer.ExtensionMethodNamespaceKeyName];
 
             protected override async Task<Solution> GetChangedSolutionAsync(CancellationToken cancellationToken)
             {
@@ -166,7 +162,7 @@
                 {
                     // Replace the member being called and await the invocation expression.
                     // While doing so, move leading trivia to the surrounding await expression.
-                    var asyncMethodName = syncMethodName.WithIdentifier(SyntaxFactory.Identifier(this.diagnostic.Properties[AsyncMethodKeyName]));
+                    var asyncMethodName = syncMethodName.WithIdentifier(SyntaxFactory.Identifier(this.diagnostic.Properties[VSTHRD103UseAsyncOptionAnalyzer.AsyncMethodKeyName]));
                     awaitExpression = SyntaxFactory.AwaitExpression(
                         syncExpression.ReplaceNode(syncMethodName, asyncMethodName).WithoutLeadingTrivia())
                         .WithLeadingTrivia(syncExpression.GetLeadingTrivia());

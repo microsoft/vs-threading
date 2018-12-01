@@ -20,6 +20,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     {
         public const string Id = "VSTHRD200";
 
+        internal const string NewNameKey = "NewName";
+
         internal const string MandatoryAsyncSuffix = "Async";
 
         internal static readonly DiagnosticDescriptor AddAsyncDescriptor = new DiagnosticDescriptor(
@@ -87,7 +89,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     // We actively encourage folks to use the Async keyword only for clearly async-focused types.
                     // Not just any awaitable, since some stray extension method shouldn't change the world for everyone.
                     var properties = ImmutableDictionary<string, string>.Empty
-                        .Add(VSTHRD200UseAsyncNamingConventionCodeFix.NewNameKey, methodSymbol.Name + MandatoryAsyncSuffix);
+                        .Add(NewNameKey, methodSymbol.Name + MandatoryAsyncSuffix);
                     context.ReportDiagnostic(Diagnostic.Create(
                         AddAsyncDescriptor,
                         methodSymbol.Locations[0],
@@ -97,7 +99,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 {
                     // Only warn about abusing the Async suffix if the return type is not awaitable.
                     var properties = ImmutableDictionary<string, string>.Empty
-                        .Add(VSTHRD200UseAsyncNamingConventionCodeFix.NewNameKey, methodSymbol.Name.Substring(0, methodSymbol.Name.Length - MandatoryAsyncSuffix.Length));
+                        .Add(NewNameKey, methodSymbol.Name.Substring(0, methodSymbol.Name.Length - MandatoryAsyncSuffix.Length));
                     context.ReportDiagnostic(Diagnostic.Create(
                         RemoveAsyncDescriptor,
                         methodSymbol.Locations[0],

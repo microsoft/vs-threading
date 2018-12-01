@@ -11,7 +11,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CodeFixes;
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Diagnostics;
@@ -176,17 +175,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
         }
 
-        internal static async Task<ImmutableArray<QualifiedMember>> ReadMethodsAsync(CodeFixContext codeFixContext, Regex fileNamePattern, CancellationToken cancellationToken)
-        {
-            var result = ImmutableArray.CreateBuilder<QualifiedMember>();
-            foreach (string line in await ReadAdditionalFilesAsync(codeFixContext.Document.Project.AdditionalDocuments, fileNamePattern, cancellationToken))
-            {
-                result.Add(ParseAdditionalFileMethodLine(line));
-            }
-
-            return result.ToImmutable();
-        }
-
         internal static IEnumerable<TypeMatchSpec> ReadTypesAndMembers(AnalyzerOptions analyzerOptions, Regex fileNamePattern, CancellationToken cancellationToken)
         {
             foreach (string line in ReadAdditionalFiles(analyzerOptions, fileNamePattern, cancellationToken))
@@ -205,32 +193,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 var member = match.Groups["memberName"].Success ? new QualifiedMember(type, match.Groups["memberName"].Value) : default(QualifiedMember);
                 yield return new TypeMatchSpec(type, member, inverted);
             }
-        }
-
-        internal static async Task<ImmutableArray<string>> ReadAdditionalFilesAsync(IEnumerable<TextDocument> additionalFiles, Regex fileNamePattern, CancellationToken cancellationToken)
-        {
-            if (additionalFiles == null)
-            {
-                throw new ArgumentNullException(nameof(additionalFiles));
-            }
-
-            if (fileNamePattern == null)
-            {
-                throw new ArgumentNullException(nameof(fileNamePattern));
-            }
-
-            var docs = from doc in additionalFiles.OrderBy(x => x.FilePath, StringComparer.Ordinal)
-                       let fileName = Path.GetFileName(doc.Name)
-                       where fileNamePattern.IsMatch(fileName)
-                       select doc;
-            var result = ImmutableArray.CreateBuilder<string>();
-            foreach (var doc in docs)
-            {
-                var text = await doc.GetTextAsync(cancellationToken);
-                result.AddRange(ReadLinesFromAdditionalFile(text));
-            }
-
-            return result.ToImmutable();
         }
 
         internal static IEnumerable<string> ReadAdditionalFiles(AnalyzerOptions analyzerOptions, Regex fileNamePattern, CancellationToken cancellationToken)
@@ -288,7 +250,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return !matching.IsEmpty && !matching.InvertedLogic;
         }
 
-        private static IEnumerable<string> ReadLinesFromAdditionalFile(SourceText text)
+        internal static IEnumerable<string> ReadLinesFromAdditionalFile(SourceText text)
         {
             if (text == null)
             {
@@ -306,7 +268,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
         }
 
-        private static QualifiedMember ParseAdditionalFileMethodLine(string line)
+        internal static QualifiedMember ParseAdditionalFileMethodLine(string line)
         {
             Match match = MemberReferenceRegex.Match(line);
             if (!match.Success)
