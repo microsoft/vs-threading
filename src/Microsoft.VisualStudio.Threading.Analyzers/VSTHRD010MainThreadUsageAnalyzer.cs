@@ -9,7 +9,6 @@
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Diagnostics;
-    using Microsoft.CodeAnalysis.Semantics;
     using Microsoft.CodeAnalysis.Text;
 
     /// <summary>
