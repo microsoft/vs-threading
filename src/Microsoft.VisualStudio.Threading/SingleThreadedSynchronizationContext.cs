@@ -162,14 +162,10 @@ namespace Microsoft.VisualStudio.Threading
 
                     if (message.Context != null)
                     {
-#if EXECUTIONCONTEXT
                         ExecutionContext.Run(
                             message.Context,
                             new ContextCallback(message.Callback),
                             message.State);
-#else
-                        throw Assumes.NotReachable();
-#endif
                     }
                     else
                     {
@@ -195,17 +191,6 @@ namespace Microsoft.VisualStudio.Threading
                 this.Context = ctxt;
             }
         }
-
-#if !EXECUTIONCONTEXT
-        private class ExecutionContext
-        {
-            private ExecutionContext()
-            {
-            }
-
-            internal static ExecutionContext Capture() => null;
-        }
-#endif
 
         /// <summary>
         /// A message pumping frame that may be pushed with <see cref="PushFrame(Frame)"/> to pump messages
