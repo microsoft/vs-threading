@@ -132,6 +132,7 @@
                     codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeCast), SyntaxKind.CastExpression);
                     codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeAs), SyntaxKind.AsExpression);
                     codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeAs), SyntaxKind.IsExpression);
+                    codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeIsPattern), SyntaxKind.IsPatternExpression);
                 });
 
                 compilationStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => AddToCallerCalleeMap(c, callerToCalleeMap)), SyntaxKind.InvocationExpression);
@@ -365,6 +366,23 @@
                 {
                     Location asAndRightSide = Location.Create(context.Node.SyntaxTree, TextSpan.FromBounds(asSyntax.OperatorToken.Span.Start, asSyntax.Right.Span.End));
                     this.AnalyzeMemberWithinContext(type, null, context, asAndRightSide);
+                }
+            }
+
+            internal void AnalyzeIsPattern(SyntaxNodeAnalysisContext context)
+            {
+                var patternSyntax = (IsPatternExpressionSyntax)context.Node;
+                if (patternSyntax.Pattern is DeclarationPatternSyntax declarationPatternSyntax && declarationPatternSyntax.Type != null)
+                {
+                    var type = context.SemanticModel.GetSymbolInfo(declarationPatternSyntax.Type, context.CancellationToken).Symbol as ITypeSymbol;
+                    if (type != null && IsObjectLikelyToBeCOMObject(type))
+                    {
+                        Location isAndTypeSide = Location.Create(
+                            context.Node.SyntaxTree,
+                            TextSpan.FromBounds(patternSyntax.IsKeyword.SpanStart,
+                            declarationPatternSyntax.Type.Span.End));
+                        this.AnalyzeMemberWithinContext(type, null, context, isAndTypeSide);
+                    }
                 }
             }
 
