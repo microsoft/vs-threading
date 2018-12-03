@@ -60,33 +60,33 @@ namespace Microsoft.VisualStudio.Threading
         /// collection types. By passing the item as a method operand, the caller may be able to avoid allocating a closure
         /// object for every call.
         /// </remarks>
-        /// <typeparam name="TData">The type of data.</typeparam>
-        /// <typeparam name="TItem">The type of item.</typeparam>
+        /// <typeparam name="T">The type of data to apply the change to.</typeparam>
+        /// <typeparam name="TArg">The type of argument passed to the <paramref name="applyChange" />.</typeparam>
         /// <param name="hotLocation">The field that may be manipulated by multiple threads.</param>
-        /// <param name="item">A data value to pass to <paramref name="applyChange"/>.</param>
-        /// <param name="applyChange">A function that receives both the unchanged value and <paramref name="item"/>, then returns the changed value.</param>
+        /// <param name="applyChangeArgument">An argument to pass to <paramref name="applyChange"/>.</param>
+        /// <param name="applyChange">A function that receives both the unchanged value and <paramref name="applyChangeArgument"/>, then returns the changed value.</param>
         /// <returns>
         /// <c>true</c> if the location's value is changed by applying the result of the <paramref name="applyChange"/> function;
         /// <c>false</c> if the location's value remained the same because the last invocation of <paramref name="applyChange"/> returned the existing value.
         /// </returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference", MessageId = "0#")]
-        public static bool ApplyChangeOptimistically<TData, TItem>(ref TData hotLocation, in TItem item, Func<TData, TItem, TData> applyChange)
-            where TData : class
+        public static bool ApplyChangeOptimistically<T, TArg>(ref T hotLocation, in TArg applyChangeArgument, Func<T, TArg, T> applyChange)
+            where T : class
         {
             Requires.NotNull(applyChange, nameof(applyChange));
 
             bool successful;
             do
             {
-                TData oldValue = Volatile.Read(ref hotLocation);
-                TData newValue = applyChange(oldValue, item);
+                T oldValue = Volatile.Read(ref hotLocation);
+                T newValue = applyChange(oldValue, applyChangeArgument);
                 if (object.ReferenceEquals(oldValue, newValue))
                 {
                     // No change was actually required.
                     return false;
                 }
 
-                TData actualOldValue = Interlocked.CompareExchange<TData>(ref hotLocation, newValue, oldValue);
+                T actualOldValue = Interlocked.CompareExchange<T>(ref hotLocation, newValue, oldValue);
                 successful = object.ReferenceEquals(oldValue, actualOldValue);
             }
             while (!successful);
