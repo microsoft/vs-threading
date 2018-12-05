@@ -16,14 +16,28 @@ steps:
   displayName: Push packages to VSTS feed
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
+- powershell: |
+    $DllPaths = @(
+        ,"bin\Microsoft.VisualStudio.Threading\$(BuildConfiguration)\Microsoft.VisualStudio.Threading.dll"
+        ,"bin\Microsoft.VisualStudio.Threading.Analyzers\$(BuildConfiguration)\Microsoft.VisualStudio.Threading.Analyzers.dll"
+    )
+    Get-ChildItem $DllPaths -rec |% {
+        $OutputDir = "$($_.Directory.FullName)\symstore"
+        if (!(Test-Path $OutputDir)) { mkdir $OutputDir | Out-Null }
+        Write-Host "Converting PDB for $_"
+        azure-pipelines\Convert-PDB.ps1 -DllPath $_ -OutputPath "$OutputDir\$($_.BaseName).pdb"
+    }
+  displayName: Converting portable PDBs to Windows PDBs
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+
 - task: CopyFiles@1
   inputs:
     SourceFolder: bin
     Contents: |
       Microsoft.VisualStudio.Threading/$(BuildConfiguration)/**/Microsoft.VisualStudio.Threading.dll
-      Microsoft.VisualStudio.Threading/$(BuildConfiguration)/**/Microsoft.VisualStudio.Threading.pdb
+      Microsoft.VisualStudio.Threading/$(BuildConfiguration)/**/symstore/Microsoft.VisualStudio.Threading.pdb
       Microsoft.VisualStudio.Threading.Analyzers/$(BuildConfiguration)/**/Microsoft.VisualStudio.Threading.Analyzers.dll
-      Microsoft.VisualStudio.Threading.Analyzers/$(BuildConfiguration)/**/Microsoft.VisualStudio.Threading.Analyzers.pdb
+      Microsoft.VisualStudio.Threading.Analyzers/$(BuildConfiguration)/**/symstore/Microsoft.VisualStudio.Threading.Analyzers.pdb
       AsyncDebugTools/x86/$(BuildConfiguration)/AsyncDebugTools.dll
       AsyncDebugTools/x86/$(BuildConfiguration)/AsyncDebugTools.pdb
       AsyncDebugTools/x64/$(BuildConfiguration)/AsyncDebugTools.dll

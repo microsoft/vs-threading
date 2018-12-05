@@ -7,9 +7,6 @@
     <IsPackable>false</IsPackable>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
-
-    <!-- VS2017 Test Explorer test navigation and callstack links don't work with portable PDBs yet. -->
-    <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="WindowsBase" />
