@@ -28,6 +28,14 @@
         }
 
         [Fact]
+        public void ApplyChangeOptimisticallyWithItem()
+        {
+            var n = new GenericParameterHelper(1);
+            Assert.True(ThreadingTools.ApplyChangeOptimistically(ref n, 2, (i, j) => new GenericParameterHelper(i.Data + j)));
+            Assert.Equal(3, n.Data);
+        }
+
+        [Fact]
         public void WithCancellationNull()
         {
             Assert.Throws<ArgumentNullException>(new Action(() =>
