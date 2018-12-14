@@ -184,6 +184,12 @@ namespace Microsoft.VisualStudio.Threading
         /// on a threadpool thread.
         /// </param>
         /// <returns>An awaitable.</returns>
+        /// <exception cref="OperationCanceledException">
+        /// Thrown back at the awaiting caller from a background thread
+        /// when <paramref name="cancellationToken" /> is canceled before any required transition to the main thread is complete.
+        /// No exception is thrown if <paramref name="alwaysYield" /> is <c>false</c> and the caller was already on the main thread before calling this method,
+        /// or if the main thread transition completes before the thread pool responds to cancellation.
+        /// </exception>
         /// <remarks>
         /// <example>
         /// <code>
