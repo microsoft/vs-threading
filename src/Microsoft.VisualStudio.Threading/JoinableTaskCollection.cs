@@ -9,8 +9,6 @@ namespace Microsoft.VisualStudio.Threading
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Linq;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -18,23 +16,8 @@ namespace Microsoft.VisualStudio.Threading
     /// A collection of joinable tasks.
     /// </summary>
     [DebuggerDisplay("JoinableTaskCollection: {displayName ?? \"(anonymous)\"}")]
-    public class JoinableTaskCollection : IEnumerable<JoinableTask>
+    public class JoinableTaskCollection : IJoinableTaskDependent, IEnumerable<JoinableTask>
     {
-        /// <summary>
-        /// The set of joinable tasks that belong to this collection -- that is, the set of joinable tasks that are implicitly Joined
-        /// when folks Join this collection.
-        /// The value is the number of times the joinable was added to this collection (and not yet removed)
-        /// if this collection is ref counted; otherwise the value is always 1.
-        /// </summary>
-        private readonly WeakKeyDictionary<JoinableTask, int> joinables = new WeakKeyDictionary<JoinableTask, int>(capacity: 2);
-
-        /// <summary>
-        /// The set of joinable tasks that have Joined this collection -- that is, the set of joinable tasks that are interested
-        /// in the completion of any and all joinable tasks that belong to this collection.
-        /// The value is the number of times a particular joinable task has Joined this collection.
-        /// </summary>
-        private readonly WeakKeyDictionary<JoinableTask, int> joiners = new WeakKeyDictionary<JoinableTask, int>(capacity: 2);
-
         /// <summary>
         /// A value indicating whether joinable tasks are only removed when completed or removed as many times as they were added.
         /// </summary>
@@ -45,6 +28,12 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private string displayName;
+
+        /// <summary>
+        /// The <see cref="JoinableTaskDependencyGraph.JoinableTaskDependentData"/> to track dependencies between tasks.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private JoinableTaskDependencyGraph.JoinableTaskDependentData dependentData;
 
         /// <summary>
         /// An event that is set when the collection is empty. (lazily initialized)
@@ -70,7 +59,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets the <see cref="JoinableTaskContext"/> to which this collection belongs.
         /// </summary>
-        public JoinableTaskContext Context { get; private set; }
+        public JoinableTaskContext Context { get; }
 
         /// <summary>
         /// Gets or sets a human-readable name that may appear in hang reports.
@@ -87,6 +76,18 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Gets JoinableTaskContext for <see cref="JoinableTaskDependencyGraph.JoinableTaskDependentData"/> to access locks.
+        /// </summary>
+        JoinableTaskContext IJoinableTaskDependent.JoinableTaskContext => this.Context;
+
+        /// <summary>
+        /// Gets a value indicating whether we need count reference for child dependent nodes.
+        /// </summary>
+        bool IJoinableTaskDependent.NeedRefCountChildDependencies => this.refCountAddedJobs;
+
+        ref JoinableTaskDependencyGraph.JoinableTaskDependentData IJoinableTaskDependent.GetJoinableTaskDependentData() => ref this.dependentData;
+
+        /// <summary>
         /// Adds the specified joinable task to this collection.
         /// </summary>
         /// <param name="joinableTask">The joinable task to add to the collection.</param>
@@ -98,37 +99,7 @@ namespace Microsoft.VisualStudio.Threading
                 Requires.Argument(false, "joinableTask", Strings.JoinableTaskContextAndCollectionMismatch);
             }
 
-            if (!joinableTask.IsCompleted)
-            {
-                using (this.Context.NoMessagePumpSynchronizationContext.Apply())
-                {
-                    lock (this.Context.SyncContextLock)
-                    {
-                        if (!this.joinables.TryGetValue(joinableTask, out int refCount) || this.refCountAddedJobs)
-                        {
-                            this.joinables[joinableTask] = refCount + 1;
-                            if (refCount == 0)
-                            {
-                                joinableTask.OnAddedToCollection(this);
-
-                                // Now that we've added a joinable task to our collection, any folks who
-                                // have already joined this collection should be joined to this joinable task.
-                                foreach (var joiner in this.joiners)
-                                {
-                                    // We can discard the JoinRelease result of AddDependency
-                                    // because we directly disjoin without that helper struct.
-                                    joiner.Key.AddDependency(joinableTask);
-                                }
-                            }
-                        }
-
-                        if (this.emptyEvent != null)
-                        {
-                            this.emptyEvent.Reset();
-                        }
-                    }
-                }
-            }
+            JoinableTaskDependencyGraph.AddDependency(this, joinableTask);
         }
 
         /// <summary>
@@ -139,40 +110,7 @@ namespace Microsoft.VisualStudio.Threading
         public void Remove(JoinableTask joinableTask)
         {
             Requires.NotNull(joinableTask, nameof(joinableTask));
-
-            using (this.Context.NoMessagePumpSynchronizationContext.Apply())
-            {
-                lock (this.Context.SyncContextLock)
-                {
-                    if (this.joinables.TryGetValue(joinableTask, out int refCount))
-                    {
-                        if (refCount == 1 || joinableTask.IsCompleted)
-                        { // remove regardless of ref count if job is completed
-                            this.joinables.Remove(joinableTask);
-                            joinableTask.OnRemovedFromCollection(this);
-
-                            // Now that we've removed a joinable task from our collection, any folks who
-                            // have already joined this collection should be disjoined to this joinable task
-                            // as an efficiency improvement so we don't grow our weak collections unnecessarily.
-                            foreach (var joiner in this.joiners)
-                            {
-                                // We can discard the JoinRelease result of AddDependency
-                                // because we directly disjoin without that helper struct.
-                                joiner.Key.RemoveDependency(joinableTask);
-                            }
-
-                            if (this.emptyEvent != null && this.joinables.Count == 0)
-                            {
-                                this.emptyEvent.Set();
-                            }
-                        }
-                        else
-                        {
-                            this.joinables[joinableTask] = refCount - 1;
-                        }
-                    }
-                }
-            }
+            JoinableTaskDependencyGraph.RemoveDependency(this, joinableTask);
         }
 
         /// <summary>
@@ -192,33 +130,24 @@ namespace Microsoft.VisualStudio.Threading
                 return default(JoinRelease);
             }
 
-            using (this.Context.NoMessagePumpSynchronizationContext.Apply())
-            {
-                lock (this.Context.SyncContextLock)
-                {
-                    this.joiners.TryGetValue(ambientJob, out int count);
-                    this.joiners[ambientJob] = count + 1;
-                    if (count == 0)
-                    {
-                        // The joining job was not previously joined to this collection,
-                        // so we need to join each individual job within the collection now.
-                        foreach (var joinable in this.joinables)
-                        {
-                            ambientJob.AddDependency(joinable.Key);
-                        }
-                    }
-
-                    return new JoinRelease(this, ambientJob);
-                }
-            }
+            return JoinableTaskDependencyGraph.AddDependency(ambientJob, this);
         }
 
         /// <summary>
         /// Joins the caller's context to this collection till the collection is empty.
         /// </summary>
         /// <returns>A task that completes when this collection is empty.</returns>
-        public async Task JoinTillEmptyAsync()
+        public Task JoinTillEmptyAsync() => this.JoinTillEmptyAsync(CancellationToken.None);
+
+        /// <summary>
+        /// Joins the caller's context to this collection till the collection is empty.
+        /// </summary>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        /// <returns>A task that completes when this collection is empty, or is canceled when <paramref name="cancellationToken"/> is canceled.</returns>
+        public async Task JoinTillEmptyAsync(CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (this.emptyEvent == null)
             {
                 // We need a read lock to protect against the emptiness of this collection changing
@@ -229,14 +158,14 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         // We use interlocked here to mitigate race conditions in lazily initializing this field.
                         // We *could* take a write lock above, but that would needlessly increase lock contention.
-                        var nowait = Interlocked.CompareExchange(ref this.emptyEvent, new AsyncManualResetEvent(this.joinables.Count == 0), null);
+                        var nowait = Interlocked.CompareExchange(ref this.emptyEvent, new AsyncManualResetEvent(JoinableTaskDependencyGraph.HasNoChildDependentNode(this)), null);
                     }
                 }
             }
 
             using (this.Join())
             {
-                await this.emptyEvent.WaitAsync().ConfigureAwait(false);
+                await this.emptyEvent.WaitAsync().WithCancellation(cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -251,7 +180,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 lock (this.Context.SyncContextLock)
                 {
-                    return this.joinables.ContainsKey(joinableTask);
+                    return JoinableTaskDependencyGraph.HasDirectDependency(this, joinableTask);
                 }
             }
         }
@@ -266,9 +195,12 @@ namespace Microsoft.VisualStudio.Threading
                 var joinables = new List<JoinableTask>();
                 lock (this.Context.SyncContextLock)
                 {
-                    foreach (var item in this.joinables)
+                    foreach (var item in JoinableTaskDependencyGraph.GetDirectDependentNodes(this))
                     {
-                        joinables.Add(item.Key);
+                        if (item is JoinableTask joinableTask)
+                        {
+                            joinables.Add(joinableTask);
+                        }
                     }
                 }
 
@@ -284,34 +216,27 @@ namespace Microsoft.VisualStudio.Threading
             return this.GetEnumerator();
         }
 
-        /// <summary>
-        /// Breaks a join formed between the specified joinable task and this collection.
-        /// </summary>
-        /// <param name="joinableTask">The joinable task that had previously joined this collection, and that now intends to revert it.</param>
-        internal void Disjoin(JoinableTask joinableTask)
+        void IJoinableTaskDependent.OnAddedToDependency(IJoinableTaskDependent parent)
         {
-            Requires.NotNull(joinableTask, nameof(joinableTask));
+        }
 
-            using (this.Context.NoMessagePumpSynchronizationContext.Apply())
+        void IJoinableTaskDependent.OnRemovedFromDependency(IJoinableTaskDependent parentNode)
+        {
+        }
+
+        void IJoinableTaskDependent.OnDependencyAdded(IJoinableTaskDependent joinChild)
+        {
+            if (this.emptyEvent != null && joinChild is JoinableTask)
             {
-                lock (this.Context.SyncContextLock)
-                {
-                    this.joiners.TryGetValue(joinableTask, out int count);
-                    if (count == 1)
-                    {
-                        this.joiners.Remove(joinableTask);
+                this.emptyEvent.Reset();
+            }
+        }
 
-                        // We also need to disjoin this joinable task from all joinable tasks in this collection.
-                        foreach (var joinable in this.joinables)
-                        {
-                            joinableTask.RemoveDependency(joinable.Key);
-                        }
-                    }
-                    else
-                    {
-                        this.joiners[joinableTask] = count - 1;
-                    }
-                }
+        void IJoinableTaskDependent.OnDependencyRemoved(IJoinableTaskDependent joinChild)
+        {
+            if (this.emptyEvent != null && JoinableTaskDependencyGraph.HasNoChildDependentNode(this))
+            {
+                this.emptyEvent.Set();
             }
         }
 
@@ -321,38 +246,21 @@ namespace Microsoft.VisualStudio.Threading
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
         public struct JoinRelease : IDisposable
         {
-            private JoinableTask joinedJob;
-            private JoinableTask joiner;
-            private JoinableTaskCollection joinedJobCollection;
+            private IJoinableTaskDependent parentDependencyNode;
+            private IJoinableTaskDependent childDependencyNode;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="JoinRelease"/> struct.
             /// </summary>
-            /// <param name="joined">The Main thread controlling SingleThreadSynchronizationContext to use to accelerate execution of Main thread bound work.</param>
-            /// <param name="joiner">The instance that created this value.</param>
-            internal JoinRelease(JoinableTask joined, JoinableTask joiner)
+            /// <param name="parentDependencyNode">The Main thread controlling SingleThreadSynchronizationContext to use to accelerate execution of Main thread bound work.</param>
+            /// <param name="childDependencyNode">The instance that created this value.</param>
+            internal JoinRelease(IJoinableTaskDependent parentDependencyNode, IJoinableTaskDependent childDependencyNode)
             {
-                Requires.NotNull(joined, nameof(joined));
-                Requires.NotNull(joiner, nameof(joiner));
+                Requires.NotNull(parentDependencyNode, nameof(parentDependencyNode));
+                Requires.NotNull(childDependencyNode, nameof(childDependencyNode));
 
-                this.joinedJobCollection = null;
-                this.joinedJob = joined;
-                this.joiner = joiner;
-            }
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="JoinRelease"/> struct.
-            /// </summary>
-            /// <param name="jobCollection">The collection of joinable tasks that has been joined.</param>
-            /// <param name="joiner">The instance that created this value.</param>
-            internal JoinRelease(JoinableTaskCollection jobCollection, JoinableTask joiner)
-            {
-                Requires.NotNull(jobCollection, nameof(jobCollection));
-                Requires.NotNull(joiner, nameof(joiner));
-
-                this.joinedJobCollection = jobCollection;
-                this.joinedJob = null;
-                this.joiner = joiner;
+                this.parentDependencyNode = parentDependencyNode;
+                this.childDependencyNode = childDependencyNode;
             }
 
             /// <summary>
@@ -360,19 +268,13 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             public void Dispose()
             {
-                if (this.joinedJob != null)
+                if (this.parentDependencyNode != null)
                 {
-                    this.joinedJob.RemoveDependency(this.joiner);
-                    this.joinedJob = null;
+                    JoinableTaskDependencyGraph.RemoveDependency(this.parentDependencyNode, this.childDependencyNode);
+                    this.parentDependencyNode = null;
                 }
 
-                if (this.joinedJobCollection != null)
-                {
-                    this.joinedJobCollection.Disjoin(this.joiner);
-                    this.joinedJobCollection = null;
-                }
-
-                this.joiner = null;
+                this.childDependencyNode = null;
             }
         }
     }

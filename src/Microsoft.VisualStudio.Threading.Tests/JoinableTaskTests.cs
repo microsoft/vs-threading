@@ -3084,7 +3084,7 @@
                     {
                         return completedTask;
                     });
-                }, maxBytesAllocated: 819);
+                }, maxBytesAllocated: 901);
             }
         }
 
@@ -3606,6 +3606,102 @@
             });
         }
 
+        [Fact]
+        public void ExecutionContext_DoesNotLeakJoinableTask()
+        {
+            var longLivedTaskReleaser = new AsyncManualResetEvent();
+            WeakReference weakValue = this.ExecutionContext_DoesNotLeakJoinableTask_Helper(longLivedTaskReleaser);
+            try
+            {
+                // Assert that since no one wants the JoinableTask or its result any more, it has been released.
+                GC.Collect();
+                Assert.False(weakValue.IsAlive);
+            }
+            finally
+            {
+                // Allow completion of our long-lived task.
+                longLivedTaskReleaser.Set();
+            }
+        }
+
+        [Fact]
+        public void JoinableTask_TaskPropertyBeforeReturning()
+        {
+            this.SimulateUIThread(async delegate
+            {
+                var unblockJoinableTask = new ManualResetEventSlim();
+                var joinableTaskStarted = new AsyncManualResetEvent(allowInliningAwaiters: false);
+                JoinableTask observedJoinableTask = null;
+                Task observedWrappedTask = null;
+                var assertingTask = Task.Run(async delegate
+                {
+                    try
+                    {
+                        await joinableTaskStarted.WaitAsync();
+                        observedJoinableTask = this.joinableCollection.Single();
+                        observedWrappedTask = observedJoinableTask.Task;
+                    }
+                    finally
+                    {
+                        unblockJoinableTask.Set();
+                    }
+                });
+                var joinableTask = this.asyncPump.RunAsync(delegate
+                {
+                    joinableTaskStarted.Set();
+
+                    // Synchronously block *BEFORE* yielding.
+                    unblockJoinableTask.Wait();
+                    return TplExtensions.CompletedTask;
+                });
+
+                await assertingTask; // observe failures.
+                await joinableTask;
+                Assert.Same(observedJoinableTask, joinableTask);
+                await joinableTask.Task;
+                await observedWrappedTask;
+            });
+        }
+
+        [Fact]
+        public void JoinableTaskOfT_TaskPropertyBeforeReturning()
+        {
+            this.SimulateUIThread(async delegate
+            {
+                var unblockJoinableTask = new ManualResetEventSlim();
+                var joinableTaskStarted = new AsyncManualResetEvent(allowInliningAwaiters: false);
+                JoinableTask<int> observedJoinableTask = null;
+                Task<int> observedWrappedTask = null;
+                var assertingTask = Task.Run(async delegate
+                {
+                    try
+                    {
+                        await joinableTaskStarted.WaitAsync();
+                        observedJoinableTask = (JoinableTask<int>)this.joinableCollection.Single();
+                        observedWrappedTask = observedJoinableTask.Task;
+                    }
+                    finally
+                    {
+                        unblockJoinableTask.Set();
+                    }
+                });
+                var joinableTask = this.asyncPump.RunAsync(delegate
+                {
+                    joinableTaskStarted.Set();
+
+                    // Synchronously block *BEFORE* yielding.
+                    unblockJoinableTask.Wait();
+                    return Task.FromResult(3);
+                });
+
+                await assertingTask; // observe failures.
+                await joinableTask;
+                Assert.Same(observedJoinableTask, joinableTask);
+                Assert.Equal(3, await joinableTask.Task);
+                Assert.Equal(3, await observedWrappedTask);
+            });
+        }
+
         protected override JoinableTaskContext CreateJoinableTaskContext()
         {
             return new DerivedJoinableTaskContext();
@@ -3736,6 +3832,32 @@
             var report = contributor.GetHangReport();
             this.Logger.WriteLine("DGML task graph");
             this.Logger.WriteLine(report.Content);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // must not be inlined so that locals are guaranteed to be freed.
+        private WeakReference ExecutionContext_DoesNotLeakJoinableTask_Helper(AsyncManualResetEvent releaser)
+        {
+            object leakedValue = new object();
+            WeakReference weakValue = new WeakReference(leakedValue);
+            Task longLivedTask = null;
+
+            this.asyncPump.RunAsync(delegate
+            {
+                // Spin off a task that will "capture" the current running JoinableTask
+                longLivedTask = Task.Factory.StartNew(
+                    async r =>
+                    {
+                        await ((AsyncManualResetEvent)r).WaitAsync();
+                    },
+                    releaser,
+                    CancellationToken.None,
+                    TaskCreationOptions.None,
+                    TaskScheduler.Default).Unwrap();
+
+                return Task.FromResult(leakedValue);
+            });
+
+            return weakValue;
         }
 
         /// <summary>
@@ -3913,7 +4035,7 @@
             {
                 Assert.NotNull(this.UnderlyingSynchronizationContext);
                 Assert.NotNull(callback);
-                Assert.True(SingleThreadedSynchronizationContext.IsSingleThreadedSyncContext(this.UnderlyingSynchronizationContext));
+                Assert.True(SingleThreadedTestSynchronizationContext.IsSingleThreadedSyncContext(this.UnderlyingSynchronizationContext));
                 base.PostToUnderlyingSynchronizationContext(callback, state);
                 this.PostToUnderlyingSynchronizationContextCallback?.Invoke();
             }

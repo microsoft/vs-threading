@@ -169,7 +169,7 @@
         [Fact]
         public void WithCancellationOfTNoDeadlockFromSyncContext()
         {
-            var dispatcher = SingleThreadedSynchronizationContext.New();
+            var dispatcher = SingleThreadedTestSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(dispatcher);
             var tcs = new TaskCompletionSource<object>();
             var cts = new CancellationTokenSource(AsyncDelay / 4);
@@ -187,7 +187,7 @@
         [Fact]
         public void WithCancellationOfTNoncancelableNoDeadlockFromSyncContext()
         {
-            var dispatcher = SingleThreadedSynchronizationContext.New();
+            var dispatcher = SingleThreadedTestSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(dispatcher);
             var tcs = new TaskCompletionSource<object>();
             Task.Run(async delegate
@@ -223,7 +223,7 @@
         [Fact]
         public void WithCancellationNoDeadlockFromSyncContext_Canceled()
         {
-            var dispatcher = SingleThreadedSynchronizationContext.New();
+            var dispatcher = SingleThreadedTestSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(dispatcher);
             WithCancellationSyncBlock(simulateCancellation: true);
         }
@@ -231,7 +231,7 @@
         [Fact]
         public void WithCancellationNoDeadlockFromSyncContext_Completed()
         {
-            var dispatcher = SingleThreadedSynchronizationContext.New();
+            var dispatcher = SingleThreadedTestSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(dispatcher);
             WithCancellationSyncBlock(simulateCancellation: false);
         }
@@ -239,7 +239,7 @@
         [Fact]
         public void WithCancellationNoncancelableNoDeadlockFromSyncContext()
         {
-            var dispatcher = SingleThreadedSynchronizationContext.New();
+            var dispatcher = SingleThreadedTestSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(dispatcher);
             WithCancellationSyncBlockOnNoncancelableToken();
         }
@@ -247,7 +247,7 @@
         [StaFact]
         public void WithCancellationNoDeadlockFromSyncContextWithinJTFRun_Canceled()
         {
-            var dispatcher = SingleThreadedSynchronizationContext.New();
+            var dispatcher = SingleThreadedTestSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(dispatcher);
             var jtc = new JoinableTaskContext();
             jtc.Factory.Run(delegate
@@ -260,7 +260,7 @@
         [StaFact]
         public void WithCancellationNoDeadlockFromSyncContextWithinJTFRun_Completed()
         {
-            var dispatcher = SingleThreadedSynchronizationContext.New();
+            var dispatcher = SingleThreadedTestSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(dispatcher);
             var jtc = new JoinableTaskContext();
             jtc.Factory.Run(delegate
@@ -273,7 +273,7 @@
         [StaFact]
         public void WithCancellationNoncancelableNoDeadlockFromSyncContextWithinJTFRun()
         {
-            var dispatcher = SingleThreadedSynchronizationContext.New();
+            var dispatcher = SingleThreadedTestSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(dispatcher);
             var jtc = new JoinableTaskContext();
             jtc.Factory.Run(delegate

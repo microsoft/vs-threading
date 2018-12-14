@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en-US" target-language="de" original="MICROSOFT.VISUALSTUDIO.THREADING.ANALYZERS/STRINGS.RESX" tool-id="MultilingualAppToolkit" product-name="n/a" product-version="n/a" build-num="n/a">
     <header>
@@ -58,14 +58,16 @@
           <target state="translated">InvokeAsync zum Auslösen asynchroner Ereignisse verwenden</target>
         </trans-unit>
         <trans-unit id="VSTHRD003_MessageFormat" translate="yes" xml:space="preserve">
-          <source>Calling await on a Task inside a JoinableTaskFactory.Run, when the task is initialized outside the delegate can cause potential deadlocks.
-You can avoid this problem by ensuring the task is initialized within the delegate or by using JoinableTask instead of Task.</source>
-          <target state="translated">Das Aufrufen von "await" für eine Aufgabe innerhalb von "JoinableTaskFactory.Run" führt unter Umständen zu Deadlocks, wenn die Aufgabe außerhalb des Delegaten initialisiert wird.
-Sie können dies vermeiden, indem Sie sicherstellen, dass die Aufgabe innerhalb des Delegaten initialisiert wird, oder "JoinableTask" anstelle der Aufgabe verwenden.</target>
+          <source>Avoid awaiting or returning a Task representing work that was not started within your context as that can lead to deadlocks.
+Start the work within this context, or use JoinableTaskFactory.RunAsync and await the returned JoinableTask instead.</source>
+          <target state="needs-review-translation">Das Aufrufen von "await" für einen Task innerhalb von JoinableTaskFactory.Run führt unter Umständen zu Deadlocks, wenn der Task außerhalb des Delegaten initialisiert wird.
+Sie können dies vermeiden, indem Sie sicherstellen, dass der Task innerhalb des Delegaten initialisiert wird, oder JoinableTask anstelle von Task verwenden.</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD003_Title" translate="yes" xml:space="preserve">
-          <source>Avoid awaiting non-joinable tasks in join contexts</source>
-          <target state="translated">Warten auf Tasks, für die kein Beitritt möglich ist, in Join-Kontexten vermeiden</target>
+          <source>Avoid awaiting foreign Tasks</source>
+          <target state="needs-review-translation">Warten auf Tasks, für die kein Beitritt möglich ist, in Join-Kontexten vermeiden</target>
+          <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD011_MessageFormat" translate="yes" xml:space="preserve">
           <source>Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock.

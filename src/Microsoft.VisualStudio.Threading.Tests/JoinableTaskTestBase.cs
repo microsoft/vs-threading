@@ -22,18 +22,18 @@
 
         protected int originalThreadManagedId;
         protected SynchronizationContext dispatcherContext;
-        protected SingleThreadedSynchronizationContext.IFrame testFrame;
+        protected SingleThreadedTestSynchronizationContext.IFrame testFrame;
 
         protected JoinableTaskTestBase(ITestOutputHelper logger)
             : base(logger)
         {
-            this.dispatcherContext = SingleThreadedSynchronizationContext.New();
+            this.dispatcherContext = SingleThreadedTestSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(this.dispatcherContext);
             this.context = this.CreateJoinableTaskContext();
             this.joinableCollection = this.context.CreateCollection();
             this.asyncPump = this.context.CreateFactory(this.joinableCollection);
             this.originalThreadManagedId = Environment.CurrentManagedThreadId;
-            this.testFrame = SingleThreadedSynchronizationContext.NewFrame();
+            this.testFrame = SingleThreadedTestSynchronizationContext.NewFrame();
 
 #if DESKTOP || NETCOREAPP2_0
             // Suppress the assert dialog that appears and causes test runs to hang.
@@ -75,7 +75,7 @@
                 }
             }, null);
 
-            SingleThreadedSynchronizationContext.PushFrame(this.dispatcherContext, this.testFrame);
+            SingleThreadedTestSynchronizationContext.PushFrame(this.dispatcherContext, this.testFrame);
             if (failure != null)
             {
                 // Rethrow original exception without rewriting the callstack.
@@ -85,7 +85,7 @@
 
         protected void PushFrame()
         {
-            SingleThreadedSynchronizationContext.PushFrame(this.dispatcherContext, this.testFrame);
+            SingleThreadedTestSynchronizationContext.PushFrame(this.dispatcherContext, this.testFrame);
         }
 
         protected void PushFrameTillQueueIsEmpty()
