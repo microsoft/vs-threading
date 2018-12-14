@@ -36,13 +36,13 @@ await TaskScheduler.Default;
 
 ## How to switch to the UI thread
 
-In an async method
+### In an async method
 
 ```csharp
 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 ```
 
-In a regular synchronous method
+### In a regular synchronous method
 
 First, consider carefully whether you can make your method async first
 and then follow the above pattern. If you must remain synchronous, you
@@ -55,6 +55,19 @@ ThreadHelper.JoinableTaskFactory.Run(async delegate
     // You're now on the UI thread.
 });
 ```
+
+### Canceling requests for the main thread
+
+The `SwitchToMainThreadAsync` method has an overload that takes a `CancellationToken`.
+It is generally recommended to supply a token to this method to avoid the main thread transition when the operation is no longer necessary.
+
+When a request for the main thread is canceled, a new continuation is scheduled on the threadpool to execute the remainder of the calling async method. When the thread pool continuation executes, an `OperationCanceledException` will be thrown at the caller.
+Note that in some cases, the original request for the main thread may be fulfilled after the token has been canceled but before the threadpool continuation has run. In that case, your async method will continue on the main thread and no exception will be thrown.
+
+The method never throws or yields when the caller is already on the main thread,
+unless you specify the optional `alwaysYield: true` argument to the method.
+
+When you definitely do not want the code following the transition to the main thread to execute if the token has been canceled, you should follow up the request for the main thread with a call to `cancellationToken.ThrowIfCancellationRequested();`
 
 ## How to switch to or use the UI thread with background priority
 
