@@ -2,10 +2,10 @@ steps:
 - script: dotnet restore
   displayName: Restore packages
   workingDirectory: ${{ parameters.projectdirectory }}
-- script: dotnet build -v n -f netcoreapp1.0 -c $(BuildConfiguration) --no-restore /bl:"$(Build.ArtifactStagingDirectory)/build_logs/netcoreapp1.0.binlog" -p:GitLinkEnabled=false
+- script: dotnet build -v n -f netcoreapp1.0 -c $(BuildConfiguration) --no-restore /bl:"$(Build.ArtifactStagingDirectory)/build_logs/netcoreapp1.0.binlog"
   displayName: Build test for netcoreapp1.0
   workingDirectory: ${{ parameters.projectdirectory }}
-- script: dotnet build -v n -f netcoreapp2.0 -c $(BuildConfiguration) --no-restore /bl:"$(Build.ArtifactStagingDirectory)/build_logs/netcoreapp2.0.binlog" -p:GitLinkEnabled=false
+- script: dotnet build -v n -f netcoreapp2.0 -c $(BuildConfiguration) --no-restore /bl:"$(Build.ArtifactStagingDirectory)/build_logs/netcoreapp2.0.binlog"
   displayName: Build test for netcoreapp2.0
   workingDirectory: ${{ parameters.projectdirectory }}
 
