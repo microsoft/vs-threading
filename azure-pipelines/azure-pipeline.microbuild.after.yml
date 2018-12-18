@@ -7,6 +7,16 @@ steps:
   displayName: Component Detection
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
+- task: ms-vscs-artifact.build-tasks.artifactDropTask-1.artifactDropTask@0
+  inputs:
+    dropServiceURI: https://devdiv.artifacts.visualstudio.com
+    buildNumber: $(ProfilingInputsDropName)
+    sourcePath: $(Build.ArtifactStagingDirectory)\OptProf\ProfilingInputs
+    toLowerCase: false
+    usePat: false
+  displayName: Publish to Artifact Services - ProfilingInputs
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+
 - task: NuGetCommand@2
   inputs:
     command: push
@@ -43,6 +53,14 @@ steps:
       AsyncDebugTools/x64/$(BuildConfiguration)/AsyncDebugTools.pdb
     TargetFolder: $(Build.ArtifactStagingDirectory)/symbols
   displayName: Collecting symbols artifacts
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: $(Build.ArtifactStagingDirectory)/InsertionOutputs
+    ArtifactName: InsertionOutputs
+    ArtifactType: Container
+  displayName: Publish InsertionOutputs as Azure DevOps artifacts
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
 - task: PublishBuildArtifacts@1
   inputs:

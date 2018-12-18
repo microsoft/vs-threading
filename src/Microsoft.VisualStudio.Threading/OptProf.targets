@@ -1,0 +1,18 @@
+<Project>
+  <ItemGroup>
+    <OptProf Include="$(TargetPath)">
+      <Technology>IBC</Technology>
+      <InstallationPath>Common7\IDE\PublicAssemblies\Microsoft.VisualStudio.Threading.16.0\$(TargetFileName)</InstallationPath>
+      <InstrumentationArguments>/ExeConfig:"%VisualStudio.InstallationUnderTest.Path%\Common7\IDE\vsn.exe"</InstrumentationArguments>
+      <OptimizationArguments>-PartialNGEN</OptimizationArguments>
+      <Scenarios>
+        <TestContainer Name="VSPE" Repository="VS">
+          <TestCase FullyQualifiedName="VSPE.OptProfTests.vs_env_startup_devenv" />
+        </TestContainer>
+        <TestContainer Name="Microsoft.VisualStudio.Web.DDRIT" Repository="VS">
+          <TestCase FullyQualifiedName="Microsoft.VisualStudio.Web.DDRIT.CSharpWapTest.CSharpWebApplicationTests" />
+        </TestContainer>
+      </Scenarios>
+    </OptProf>
+  </ItemGroup>
+</Project>
