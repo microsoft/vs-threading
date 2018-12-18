@@ -79,7 +79,7 @@ steps:
     ArtifactName: projectAssetsJson
     ArtifactType: Container
   displayName: Publish projectAssetsJson artifacts
-  condition: and(succeededOrFailed(), ne(variables['system.pullrequest.isfork'], true))
+  condition: succeededOrFailed()
 
 - task: PublishBuildArtifacts@1
   inputs:
@@ -87,7 +87,7 @@ steps:
     ArtifactName: build_logs
     ArtifactType: Container
   displayName: Publish build_logs artifacts
-  condition: and(succeededOrFailed(), ne(variables['system.pullrequest.isfork'], true))
+  condition: succeededOrFailed()
 
 ## The rest of these steps are for deployment and skipped for PR builds
 
@@ -96,13 +96,11 @@ steps:
     filePath: azure-pipelines\variables\_pipelines.ps1
     failOnStderr: true
   displayName: Update pipeline variables based on build outputs
-  condition: and(succeeded(), ne(variables['system.pullrequest.isfork'], true))
 
 - task: PowerShell@2
   inputs:
     filePath: azure-pipelines\artifacts\_pipelines.ps1
   displayName: Publish artifacts
-  condition: and(succeeded(), ne(variables['system.pullrequest.isfork'], true))
 
 - task: VSTest@2
   displayName: Run tests on .NET Framework (with code coverage)
@@ -129,7 +127,6 @@ steps:
       Get-ChildItem bin\Packages\$(BuildConfiguration)\NuGet\*.nupkg -rec |% { copy $_  $(Build.ArtifactStagingDirectory)\deployables }
       copy bin\AsyncDebugTools/x86/$(BuildConfiguration)/AsyncDebugTools.dll $(Build.ArtifactStagingDirectory)\deployables\x86
       copy bin\AsyncDebugTools/x64/$(BuildConfiguration)/AsyncDebugTools.dll $(Build.ArtifactStagingDirectory)\deployables\x64
-  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
 - task: PublishBuildArtifacts@1
   inputs:
@@ -137,4 +134,3 @@ steps:
     ArtifactName: deployables
     ArtifactType: Container
   displayName: Publish deployables artifacts
-  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), ne(variables['system.pullrequest.isfork'], true))
