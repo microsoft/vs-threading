@@ -2,7 +2,7 @@ steps:
 
 - task: MicroBuildIBCMergePlugin@0
   inputs:
-    branch: rel/d15.8
+    branch: $(IBCMergeBranch)
   displayName: Install MicroBuild IBCMerge Plugin
   condition: and(succeeded(), ne(variables['Hosted'], 'true'))
 

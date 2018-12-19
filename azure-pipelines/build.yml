@@ -2,31 +2,14 @@ steps:
 - script: |
     dotnet tool install --tool-path . nbgv
     .\nbgv cloud -p src
+    echo ##vso[task.setvariable variable=PATH]%Path%;$(Build.SourcesDirectory)
   displayName: Set build number
-  condition: ne(variables['system.pullrequest.isfork'], true)
+
 - task: PowerShell@2
-  displayName: Set VSTS variables
   inputs:
-    targetType: inline
-    script: |
-      if ($env:SignType -eq 'Real') {
-        $feedGuid = '09d8d03c-1ac8-456e-9274-4d2364527d99'
-      } else {
-        $feedGuid = 'da484c78-f942-44ef-b197-99e2a1bef53c'
-      }
-
-      Write-Host "##vso[task.setvariable variable=feedGuid]$feedGuid"
-
-      if ($env:ComputerName.StartsWith('factoryvm', [StringComparison]::OrdinalIgnoreCase)) {
-        Write-Host "Running on hosted queue"
-        Write-Host "##vso[task.setvariable variable=Hosted]true"
-      }
-
-      if ($env:SYSTEM_COLLECTIONID -eq '011b8bdf-6d56-4f87-be0d-0092136884d9') {
-        Write-Host "Running on official devdiv account: $env:System_TeamFoundationCollectionUri"
-      } else {
-        Write-Host "Running under OSS account: $env:System_TeamFoundationCollectionUri"
-      }
+    filePath: azure-pipelines\variables\_pipelines.ps1
+    failOnStderr: true
+  displayName: Set pipeline variables based on source
 
 - ${{ if eq(variables['system.collectionId'], '011b8bdf-6d56-4f87-be0d-0092136884d9') }}:
   - template: azure-pipeline.microbuild.before.yml
@@ -96,7 +79,7 @@ steps:
     ArtifactName: projectAssetsJson
     ArtifactType: Container
   displayName: Publish projectAssetsJson artifacts
-  condition: and(succeededOrFailed(), ne(variables['system.pullrequest.isfork'], true))
+  condition: succeededOrFailed()
 
 - task: PublishBuildArtifacts@1
   inputs:
@@ -104,16 +87,20 @@ steps:
     ArtifactName: build_logs
     ArtifactType: Container
   displayName: Publish build_logs artifacts
-  condition: and(succeededOrFailed(), ne(variables['system.pullrequest.isfork'], true))
+  condition: succeededOrFailed()
 
 ## The rest of these steps are for deployment and skipped for PR builds
 
-#- task: PublishBuildArtifacts@1
-#  inputs:
-#    PathtoPublish: $(build.sourcesdirectory)/bin
-#    ArtifactName: bin
-#    ArtifactType: Container
-#  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), ne(variables['system.pullrequest.isfork'], true))
+- task: PowerShell@2
+  inputs:
+    filePath: azure-pipelines\variables\_pipelines.ps1
+    failOnStderr: true
+  displayName: Update pipeline variables based on build outputs
+
+- task: PowerShell@2
+  inputs:
+    filePath: azure-pipelines\artifacts\_pipelines.ps1
+  displayName: Publish artifacts
 
 - task: VSTest@2
   displayName: Run tests on .NET Framework (with code coverage)
@@ -137,10 +124,9 @@ steps:
     script: |
       md $(Build.ArtifactStagingDirectory)/deployables\x86
       md $(Build.ArtifactStagingDirectory)/deployables\x64
-      Get-ChildItem bin\*.nupkg -rec |% { copy $_  $(Build.ArtifactStagingDirectory)\deployables }
+      Get-ChildItem bin\Packages\$(BuildConfiguration)\NuGet\*.nupkg -rec |% { copy $_  $(Build.ArtifactStagingDirectory)\deployables }
       copy bin\AsyncDebugTools/x86/$(BuildConfiguration)/AsyncDebugTools.dll $(Build.ArtifactStagingDirectory)\deployables\x86
       copy bin\AsyncDebugTools/x64/$(BuildConfiguration)/AsyncDebugTools.dll $(Build.ArtifactStagingDirectory)\deployables\x64
-  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
 - task: PublishBuildArtifacts@1
   inputs:
@@ -148,4 +134,3 @@ steps:
     ArtifactName: deployables
     ArtifactType: Container
   displayName: Publish deployables artifacts
-  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), ne(variables['system.pullrequest.isfork'], true))
