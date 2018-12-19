@@ -1,0 +1,61 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard1.1</TargetFramework>
+    <PackageTargetFallback>$(PackageTargetFallback);portable-net45+win8</PackageTargetFallback>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <CodeAnalysisRuleSet>..\Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.ruleset</CodeAnalysisRuleSet>
+    <RootNamespace>Microsoft.VisualStudio.Threading.Analyzers</RootNamespace>
+
+    <Description>Static code analyzer to detect common mistakes or potential issues on the C# code that uses Visual Studio SDK APIs.</Description>
+    <PackageId>Microsoft.VisualStudio.Threading.Analyzers</PackageId>
+    <PackageTags>analyzers visualstudio vssdk sdk threading</PackageTags>
+    <Authors>Microsoft</Authors>
+    <Owners>Microsoft, VisualStudioExtensibility</Owners>
+    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+    <PackageProjectUrl>https://github.com/Microsoft/vs-threading</PackageProjectUrl>
+    <PackageIconUrl>https://aka.ms/VsExtensibilityIcon</PackageIconUrl>
+    <PackageReleaseNotes>In the v15.8 release, analyzers are incomplete in the context of Visual Studio without the Microsoft.VisualStudio.Sdk.Analyzers 15.8 package also installed.</PackageReleaseNotes>
+
+    <!-- Analyzers should not be added to the lib folder. -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);PackBuildOutputs</TargetsForTfmSpecificContentInPackage>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup>
+    <PackageReference>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <ProjectReference>
+      <PrivateAssets>all</PrivateAssets>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="1.2.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="2.6.2" PrivateAssets="all" />
+    <PackageReference Include="MicroBuild.VisualStudio" Version="$(MicroBuildVersion)" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.1" />
+    <PackageReference Include="System.ValueTuple" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.csproj" />
+  </ItemGroup>
+  <Target Name="PackBuildOutputs" DependsOnTargets="ResolveProjectReferences;SatelliteDllsProjectOutputGroup;DebugSymbolsProjectOutputGroup;SatelliteDllsProjectOutputGroupDependencies">
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="$(TargetPath)" PackagePath="analyzers\cs\" />
+      <!--<TfmSpecificPackageFile Include="@(DebugSymbolsProjectOutputGroupOutput)" PackagePath="analyzers\cs\" />-->
+      <TfmSpecificPackageFile Include="@(SatelliteDllsProjectOutputGroupDependency)" PackagePath="analyzers\cs\%(SatelliteDllsProjectOutputGroupDependency.DestinationSubDirectory)" />
+      <TfmSpecificPackageFile Include="@(SatelliteDllsProjectOutputGroupOutput->'%(FinalOutputPath)')" PackagePath="analyzers\cs\%(SatelliteDllsProjectOutputGroupOutput.Culture)\" />
+      <TfmSpecificPackageFile Include="%(_ResolvedProjectReferencePaths.Identity)" PackagePath="analyzers\cs\" />
+    </ItemGroup>
+  </Target>
+  <Target Name="SetNuSpecProperties" BeforeTargets="GenerateNuspec" DependsOnTargets="GetBuildVersion">
+    <PropertyGroup>
+      <PackageLicenseUrl>https://raw.githubusercontent.com/Microsoft/vs-threading/$(GitCommitIdShort)/LICENSE</PackageLicenseUrl>
+    </PropertyGroup>
+  </Target>
+
+</Project>
