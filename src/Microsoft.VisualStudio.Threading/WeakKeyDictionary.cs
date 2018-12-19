@@ -287,7 +287,7 @@ namespace Microsoft.VisualStudio.Threading
         /// the target's hash code so that it can be used in a hashtable.
         /// </summary>
         /// <typeparam name="T">Type of the target of the weak reference</typeparam>
-        private struct WeakReference<T>
+        private struct WeakReference<T> : IEquatable<WeakReference<T>>
             where T : class
         {
             /// <summary>
@@ -352,13 +352,11 @@ namespace Microsoft.VisualStudio.Threading
                 // We can't implement equals in the same terms as GetHashCode() because
                 // our target object may have been collected.  Instead just go based on
                 // equality of our weak references.
-                if (obj is WeakReference<T> other)
-                {
-                    return this.weakReference.Equals(other.weakReference);
-                }
-
-                return false;
+                return obj is WeakReference<T> other && this.Equals(other);
             }
+
+            /// <inheritdoc />
+            public bool Equals(WeakReference<T> other) => this.weakReference.Equals(other.weakReference);
         }
 
         /// <summary>

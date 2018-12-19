@@ -21,7 +21,6 @@
     <PackageIconUrl>https://aka.ms/VsExtensibilityIcon</PackageIconUrl>
     <PackageReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=746387</PackageReleaseNotes>
 
-    <RunCodeAnalysis Condition=" '$(TargetFramework)' != 'netstandard2.0' and '$(Configuration)' != 'Debug' ">true</RunCodeAnalysis>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Label="MultilingualAppToolkit">
@@ -61,6 +60,7 @@
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.3.0" />
     <PackageReference Include="Microsoft.VisualStudio.Validation" Version="15.3.15" />
     <PackageReference Include="MicroBuild.VisualStudio" Version="$(MicroBuildVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.6.2" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
     <!-- Don't consume the analyzers in this library itself,

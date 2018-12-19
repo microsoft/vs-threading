@@ -98,7 +98,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
                 else
                 {
-                    var waiter = new WaiterCompletionSource(this, cancellationToken, this.allowInliningAwaiters);
+                    var waiter = new WaiterCompletionSource(this, this.allowInliningAwaiters, cancellationToken);
                     if (cancellationToken.IsCancellationRequested)
                     {
                         waiter.TrySetCanceled(cancellationToken);
@@ -171,9 +171,9 @@ namespace Microsoft.VisualStudio.Threading
             /// Initializes a new instance of the <see cref="WaiterCompletionSource"/> class.
             /// </summary>
             /// <param name="owner">The event that is initializing this value.</param>
-            /// <param name="cancellationToken">The cancellation token associated with the waiter.</param>
             /// <param name="allowInliningContinuations"><c>true</c> to allow continuations to be inlined upon the completer's callstack.</param>
-            public WaiterCompletionSource(AsyncAutoResetEvent owner, CancellationToken cancellationToken, bool allowInliningContinuations)
+            /// <param name="cancellationToken">The cancellation token associated with the waiter.</param>
+            public WaiterCompletionSource(AsyncAutoResetEvent owner, bool allowInliningContinuations, CancellationToken cancellationToken)
                 : base(allowInliningContinuations)
             {
                 this.CancellationToken = cancellationToken;

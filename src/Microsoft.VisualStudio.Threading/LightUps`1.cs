@@ -13,6 +13,8 @@ namespace Microsoft.VisualStudio.Threading
     using System.Threading;
     using System.Threading.Tasks;
 
+#pragma warning disable CA1812 // unused code is common, based on target framework
+
     /// <summary>
     /// Light-up functionality that requires a generic type argument.
     /// </summary>

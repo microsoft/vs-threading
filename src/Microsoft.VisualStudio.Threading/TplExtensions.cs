@@ -277,7 +277,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     try
                     {
-                        await handler(sender, args);
+                        await handler(sender, args).ConfigureAwait(true);
                     }
                     catch (Exception ex)
                     {
@@ -318,7 +318,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     try
                     {
-                        await handler(sender, args);
+                        await handler(sender, args).ConfigureAwait(true);
                     }
                     catch (Exception ex)
                     {

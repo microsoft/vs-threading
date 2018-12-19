@@ -17,11 +17,6 @@ namespace Microsoft.VisualStudio.Threading
 
     partial class AsyncReaderWriterLock : IHangReportContributor
     {
-        /// <summary>
-        /// The namespace that all DGML nodes appear in.
-        /// </summary>
-        private const string DgmlNamespace = "http://schemas.microsoft.com/vs/2009/dgml";
-
         [Flags]
         private enum AwaiterCollection
         {

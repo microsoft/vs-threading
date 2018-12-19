@@ -1376,14 +1376,7 @@ namespace Microsoft.VisualStudio.Threading
             Exception prereqException = null;
             try
             {
-                if (SynchronizationContext.Current is NonConcurrentSynchronizationContext)
-                {
-                    await beginAfterPrerequisite;
-                }
-                else
-                {
-                    await beginAfterPrerequisite.ConfigureAwait(false);
-                }
+                await beginAfterPrerequisite.ConfigureAwait(SynchronizationContext.Current is NonConcurrentSynchronizationContext);
             }
             catch (Exception ex)
             {
@@ -1527,7 +1520,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     try
                     {
-                        await callback();
+                        await callback().ConfigureAwait(true);
                     }
                     catch (Exception ex)
                     {
