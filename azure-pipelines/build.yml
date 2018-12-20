@@ -41,6 +41,12 @@ steps:
     configuration: $(BuildConfiguration)
   displayName: Build Visual Studio solution
 
+- task: PowerShell@2
+  inputs:
+    filePath: azure-pipelines\artifacts\VSInsertion.ps1
+    failOnStderr: true
+  displayName: Build VSInsertion CoreXT nupkg
+
 - task: VSBuild@1
   inputs:
     vsVersion: 15.0
@@ -88,8 +94,6 @@ steps:
     ArtifactType: Container
   displayName: Publish build_logs artifacts
   condition: succeededOrFailed()
-
-## The rest of these steps are for deployment and skipped for PR builds
 
 - task: PowerShell@2
   inputs:
