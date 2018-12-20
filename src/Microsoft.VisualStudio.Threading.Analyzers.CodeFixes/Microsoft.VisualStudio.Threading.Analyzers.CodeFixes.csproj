@@ -23,6 +23,11 @@
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);PackBuildOutputs</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Content Include="build\**" Pack="true" PackagePath="build\" />
+    <Content Include="tools\*.ps1" Pack="true" PackagePath="tools\" />
+  </ItemGroup>
+
   <ItemDefinitionGroup>
     <PackageReference>
       <PrivateAssets>all</PrivateAssets>

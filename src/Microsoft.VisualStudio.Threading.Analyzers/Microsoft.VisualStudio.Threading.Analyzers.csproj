@@ -33,10 +33,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="build\**" Pack="true" PackagePath="build\" />
-    <Content Include="tools\*.ps1" Pack="true" PackagePath="tools\" />
-  </ItemGroup>
-  <ItemGroup>
      <XliffResource Include="MultilingualResources\*.xlf" />
   </ItemGroup>
   <ItemGroup>
