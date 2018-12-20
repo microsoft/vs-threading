@@ -197,7 +197,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 var context = new JoinableTaskContext(); // we need our own collectible context.
                 collectible = new WeakReference(context.Factory);
                 var valueFactory = throwInValueFactory
-                    ? new Func<Task<object>>(delegate { throw new ApplicationException(); })
+                    ? new Func<Task<object>>(() => throw new ApplicationException())
                     : async delegate
                     {
                         await Task.Yield();
@@ -334,6 +334,86 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Assert.True(lazy.IsValueFactoryCompleted);
         }
 
+        [Theory, CombinatorialData]
+        public void GetValue(bool specifyJtf)
+        {
+            var jtf = specifyJtf ? new JoinableTaskContext().Factory : null; // use our own so we don't get main thread deadlocks, which isn't the point of this test.
+            var lazy = new AsyncLazy<GenericParameterHelper>(() => Task.FromResult(new GenericParameterHelper(5)), jtf);
+            Assert.Equal(5, lazy.GetValue().Data);
+        }
+
+        [Theory, CombinatorialData]
+        public void GetValue_Precanceled(bool specifyJtf)
+        {
+            var jtf = specifyJtf ? new JoinableTaskContext().Factory : null; // use our own so we don't get main thread deadlocks, which isn't the point of this test.
+            var lazy = new AsyncLazy<GenericParameterHelper>(() => Task.FromResult(new GenericParameterHelper(5)), jtf);
+            Assert.Throws<OperationCanceledException>(() => lazy.GetValue(new CancellationToken(canceled: true)));
+        }
+
+        [Theory, CombinatorialData]
+        public async Task GetValue_CalledAfterGetValueAsyncHasCompleted(bool specifyJtf)
+        {
+            var jtf = specifyJtf ? new JoinableTaskContext().Factory : null; // use our own so we don't get main thread deadlocks, which isn't the point of this test.
+            var lazy = new AsyncLazy<GenericParameterHelper>(() => Task.FromResult(new GenericParameterHelper(5)), jtf);
+            var result = await lazy.GetValueAsync();
+            Assert.Same(result, lazy.GetValue());
+        }
+
+        [Theory, CombinatorialData]
+        public async Task GetValue_CalledAfterGetValueAsync_InProgress(bool specifyJtf)
+        {
+            var completeValueFactory = new AsyncManualResetEvent();
+            var jtf = specifyJtf ? new JoinableTaskContext().Factory : null; // use our own so we don't get main thread deadlocks, which isn't the point of this test.
+            var lazy = new AsyncLazy<GenericParameterHelper>(
+                async delegate
+                {
+                    await completeValueFactory;
+                    return new GenericParameterHelper(5);
+                },
+                jtf);
+            Task<GenericParameterHelper> getValueAsyncTask = lazy.GetValueAsync();
+            Task<GenericParameterHelper> getValueTask = Task.Run(() => lazy.GetValue());
+            Assert.False(getValueAsyncTask.IsCompleted);
+            Assert.False(getValueTask.IsCompleted);
+            completeValueFactory.Set();
+            GenericParameterHelper[] results = await Task.WhenAll(getValueAsyncTask, getValueTask);
+            Assert.Same(results[0], results[1]);
+        }
+
+        [Theory, CombinatorialData]
+        public async Task GetValue_ThenCanceled(bool specifyJtf)
+        {
+            var completeValueFactory = new AsyncManualResetEvent();
+            var jtf = specifyJtf ? new JoinableTaskContext().Factory : null; // use our own so we don't get main thread deadlocks, which isn't the point of this test.
+            var lazy = new AsyncLazy<GenericParameterHelper>(
+                async delegate
+                {
+                    await completeValueFactory;
+                    return new GenericParameterHelper(5);
+                },
+                jtf);
+            var cts = new CancellationTokenSource();
+            Task<GenericParameterHelper> getValueTask = Task.Run(() => lazy.GetValue(cts.Token));
+            Assert.False(getValueTask.IsCompleted);
+            cts.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => getValueTask);
+        }
+
+        [Theory, CombinatorialData]
+        public void GetValue_ValueFactoryThrows(bool specifyJtf)
+        {
+            var exception = new InvalidOperationException();
+            var completeValueFactory = new AsyncManualResetEvent();
+            var jtf = specifyJtf ? new JoinableTaskContext().Factory : null; // use our own so we don't get main thread deadlocks, which isn't the point of this test.
+            var lazy = new AsyncLazy<GenericParameterHelper>(() => throw exception, jtf);
+
+            // Verify that we throw the right exception the first time.
+            Assert.Same(exception, Assert.Throws(exception.GetType(), () => lazy.GetValue()));
+
+            // Assert that we rethrow the exception the second time.
+            Assert.Same(exception, Assert.Throws(exception.GetType(), () => lazy.GetValue()));
+        }
+
         [Fact]
         public void ToStringForUncreatedValue()
         {
@@ -372,8 +452,8 @@ namespace Microsoft.VisualStudio.Threading.Tests
         public void AsyncLazy_CompletesOnThreadWithValueFactory(NamedSyncContexts invokeOn, NamedSyncContexts completeOn)
         {
             // Set up various SynchronizationContexts that we may invoke or complete the async method with.
-            var aSyncContext = SingleThreadedSynchronizationContext.New();
-            var bSyncContext = SingleThreadedSynchronizationContext.New();
+            var aSyncContext = SingleThreadedTestSynchronizationContext.New();
+            var bSyncContext = SingleThreadedTestSynchronizationContext.New();
             var invokeOnSyncContext = invokeOn == NamedSyncContexts.None ? null
                 : invokeOn == NamedSyncContexts.A ? aSyncContext
                 : invokeOn == NamedSyncContexts.B ? bSyncContext
@@ -459,7 +539,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [CombinatorialData]
         public void ValueFactoryRequiresMainThreadHeldByOtherSync(bool passJtfToLazyCtor)
         {
-            var ctxt = SingleThreadedSynchronizationContext.New();
+            var ctxt = SingleThreadedTestSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(ctxt);
             var context = new JoinableTaskContext();
             var asyncPump = context.Factory;
@@ -489,10 +569,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Thread.Sleep(AsyncDelay); // Give the background thread time to call GetValueAsync(), but it doesn't yield (when the test was written).
             var foregroundRequest = lazy.GetValueAsync();
 
-            var frame = SingleThreadedSynchronizationContext.NewFrame();
+            var frame = SingleThreadedTestSynchronizationContext.NewFrame();
             var combinedTask = Task.WhenAll(foregroundRequest, backgroundRequest);
             combinedTask.WithTimeout(UnexpectedTimeout).ContinueWith(_ => frame.Continue = false, TaskScheduler.Default);
-            SingleThreadedSynchronizationContext.PushFrame(ctxt, frame);
+            SingleThreadedTestSynchronizationContext.PushFrame(ctxt, frame);
 
             // Ensure that the test didn't simply timeout, and that the individual tasks did not throw.
             Assert.True(foregroundRequest.IsCompleted);
@@ -507,7 +587,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public void ValueFactoryRequiresMainThreadHeldByOtherInJTFRun()
         {
-            var ctxt = SingleThreadedSynchronizationContext.New();
+            var ctxt = SingleThreadedTestSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(ctxt);
             var context = new JoinableTaskContext();
             var asyncPump = context.Factory;
@@ -541,6 +621,46 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 var backgroundValue = await backgroundRequest;
                 Assert.Same(foregroundValue, backgroundValue);
             });
+        }
+
+        /// <summary>
+        /// Verifies that no deadlock occurs if the value factory synchronously blocks while switching to the UI thread
+        /// and the UI thread then uses <see cref="AsyncLazy{T}.GetValue()"/>.
+        /// </summary>
+        [Fact]
+        public void ValueFactoryRequiresMainThreadHeldByOtherInGetValue()
+        {
+            var ctxt = SingleThreadedTestSynchronizationContext.New();
+            SynchronizationContext.SetSynchronizationContext(ctxt);
+            var context = new JoinableTaskContext();
+            var asyncPump = context.Factory;
+            var originalThread = Thread.CurrentThread;
+
+            var evt = new AsyncManualResetEvent();
+            var lazy = new AsyncLazy<object>(
+                async delegate
+                {
+                    // It is important that no await appear before this JTF.Run call, since
+                    // we're testing that the value factory is not invoked while the AsyncLazy
+                    // holds a private lock that would deadlock when called from another thread.
+                    asyncPump.Run(async delegate
+                    {
+                        await asyncPump.SwitchToMainThreadAsync(this.TimeoutToken);
+                    });
+                    await Task.Yield();
+                    return new object();
+                },
+                asyncPump);
+
+            var backgroundRequest = Task.Run(async delegate
+            {
+                return await lazy.GetValueAsync();
+            });
+
+            Thread.Sleep(AsyncDelay); // Give the background thread time to call GetValueAsync(), but it doesn't yield (when the test was written).
+            var foregroundValue = lazy.GetValue(this.TimeoutToken);
+            var backgroundValue = asyncPump.Run(() => backgroundRequest);
+            Assert.Same(foregroundValue, backgroundValue);
         }
 
         [Fact]
@@ -620,7 +740,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
 
         private JoinableTaskContext InitializeJTCAndSC()
         {
-            SynchronizationContext.SetSynchronizationContext(SingleThreadedSynchronizationContext.New());
+            SynchronizationContext.SetSynchronizationContext(SingleThreadedTestSynchronizationContext.New());
             return new JoinableTaskContext();
         }
     }

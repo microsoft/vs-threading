@@ -148,7 +148,8 @@ namespace Microsoft.VisualStudio.Threading
         /// <exception cref="OperationCanceledException">
         /// Thrown back at the awaiting caller from a background thread
         /// when <paramref name="cancellationToken" /> is canceled before any required transition to the main thread is complete.
-        /// No exception is thrown if the caller was already on the main thread before calling this method.
+        /// No exception is thrown if the caller was already on the main thread before calling this method,
+        /// or if the main thread transition completes before the thread pool responds to cancellation.
         /// </exception>
         /// <remarks>
         /// <example>
@@ -170,6 +171,45 @@ namespace Microsoft.VisualStudio.Threading
         public MainThreadAwaitable SwitchToMainThreadAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             return new MainThreadAwaitable(this, this.Context.AmbientTask, cancellationToken);
+        }
+
+        /// <summary>
+        /// Gets an awaitable whose continuations execute on the synchronization context that this instance was initialized with,
+        /// in such a way as to mitigate both deadlocks and reentrancy.
+        /// </summary>
+        /// <param name="alwaysYield">A value indicating whether the caller should yield even if
+        /// already executing on the main thread.</param>
+        /// <param name="cancellationToken">
+        /// A token whose cancellation will immediately schedule the continuation
+        /// on a threadpool thread.
+        /// </param>
+        /// <returns>An awaitable.</returns>
+        /// <exception cref="OperationCanceledException">
+        /// Thrown back at the awaiting caller from a background thread
+        /// when <paramref name="cancellationToken" /> is canceled before any required transition to the main thread is complete.
+        /// No exception is thrown if <paramref name="alwaysYield" /> is <see langword="false"/> and the caller was already on the main thread before calling this method,
+        /// or if the main thread transition completes before the thread pool responds to cancellation.
+        /// </exception>
+        /// <remarks>
+        /// <example>
+        /// <code>
+        /// private async Task SomeOperationAsync()
+        /// {
+        ///     // This first part can be on the caller's thread, whatever that is.
+        ///     DoSomething();
+        ///
+        ///     // Now switch to the Main thread to talk to some STA object.
+        ///     // Supposing it is also important to *not* do this step on our caller's callstack,
+        ///     // be sure we yield even if we're on the UI thread.
+        ///     await this.JoinableTaskFactory.SwitchToMainThreadAsync(alwaysYield: true);
+        ///     STAService.DoSomething();
+        /// }
+        /// </code>
+        /// </example>
+        /// </remarks>
+        public MainThreadAwaitable SwitchToMainThreadAsync(bool alwaysYield, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return new MainThreadAwaitable(this, this.Context.AmbientTask, cancellationToken, alwaysYield);
         }
 
         /// <summary>
@@ -376,7 +416,7 @@ namespace Microsoft.VisualStudio.Threading
                     var allJoinedJobs = new HashSet<JoinableTask>();
                     lock (this.Context.SyncContextLock)
                     {
-                        currentBlockingTask.AddSelfAndDescendentOrJoinedJobs(allJoinedJobs);
+                        JoinableTaskDependencyGraph.AddSelfAndDescendentOrJoinedJobs(currentBlockingTask, allJoinedJobs);
                         return allJoinedJobs.Any(t => (t.CreationOptions & JoinableTaskCreationOptions.LongRunning) == JoinableTaskCreationOptions.LongRunning);
                     }
                 }
@@ -972,7 +1012,7 @@ namespace Microsoft.VisualStudio.Threading
                 // Join the ambient parent job, so the parent can dequeue this job's work.
                 if (this.previousJoinable != null && !this.previousJoinable.IsCompleted)
                 {
-                    this.previousJoinable.AddDependency(joinable);
+                    JoinableTaskDependencyGraph.AddDependency(this.previousJoinable, joinable);
 
                     // By definition we inherit the nesting factories of our immediate nesting task.
                     var nestingFactories = this.previousJoinable.NestingFactories;

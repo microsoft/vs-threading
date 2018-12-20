@@ -36,13 +36,13 @@ await TaskScheduler.Default;
 
 ## How to switch to the UI thread
 
-In an async method
+### In an async method
 
 ```csharp
 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 ```
 
-In a regular synchronous method
+### In a regular synchronous method
 
 First, consider carefully whether you can make your method async first
 and then follow the above pattern. If you must remain synchronous, you
@@ -56,7 +56,20 @@ ThreadHelper.JoinableTaskFactory.Run(async delegate
 });
 ```
 
-## How to switch to or use the UI thread with background priority
+### Canceling requests for the main thread
+
+The `SwitchToMainThreadAsync` method has an overload that takes a `CancellationToken`.
+It is generally recommended to supply a token to this method to avoid the main thread transition when the operation is no longer necessary.
+
+When a request for the main thread is canceled, a new continuation is scheduled on the threadpool to execute the remainder of the calling async method. When the thread pool continuation executes, an `OperationCanceledException` will be thrown at the caller.
+Note that in some cases, the original request for the main thread may be fulfilled after the token has been canceled but before the threadpool continuation has run. In that case, your async method will continue on the main thread and no exception will be thrown.
+
+The method never throws or yields when the caller is already on the main thread,
+unless you specify the optional `alwaysYield: true` argument to the method.
+
+When you definitely do not want the code following the transition to the main thread to execute if the token has been canceled, you should follow up the request for the main thread with a call to `cancellationToken.ThrowIfCancellationRequested();`
+
+## How to switch to or use the UI thread with a specific priority
 
 For those times when you need the UI thread but you don't want to introduce UI delays for the user,
 you can use the `StartOnIdle` extension method which will run your code on the UI thread when it is otherwise idle.
@@ -74,6 +87,24 @@ await ThreadHelper.JoinableTaskFactory.StartOnIdle(
         }
     });
 ```
+
+If you have a requirement for a specific priority (which may be higher or lower than background), you can use the `WithPriority` extension method, like this:
+
+```csharp
+var databindPriorityJTF = ThreadHelper.JoinableTaskFactory.WithPriority(someDispatcher, DispatcherPriority.DataBind);
+await databindPriorityJTF.RunAsync(
+  async delegate
+  {
+    // The JTF instance you use to actually make the switch is irrelevant here.
+    // The priority is dictated by the scenario owner, which is the one
+    // running JTF.RunAsync at the bottom of the stack (or just above us in this sample).
+    await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+  });
+```
+
+The way the priority is dictated by the `JoinableTaskFactory` instance that `RunAsync` is called on rather than the one on which `SwitchToMainThreadAsync` is invoked allows you to set the priority for the scenario and then call arbitrary code in VS and expect all of the switches to the main thread that code might require to honor that priority that you set as the scenario owner.
+
+There are several `WithPriority` extension method overloads, allowing you to typically match exactly the priority your code was accustomed to before switching to use `JoinableTaskFactory` for switching to the main thread.
 
 ## Call async code from a synchronous method (and block on the result)
 

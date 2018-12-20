@@ -402,7 +402,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 {
                     // Is the FromResult method on the Task or Task<T> class?
                     var memberOwnerSymbol = semanticModel.GetSymbolInfo(originalSyntax, cancellationToken).Symbol;
-                    if (memberOwnerSymbol?.ContainingType?.Name == nameof(Task) && memberOwnerSymbol.ContainingType.BelongsToNamespace(Namespaces.SystemThreadingTasks))
+                    if (Utils.IsTask(memberOwnerSymbol?.ContainingType))
                     {
                         var simplified = awaitedInvocation.ArgumentList.Arguments.Single().Expression;
                         return simplified;

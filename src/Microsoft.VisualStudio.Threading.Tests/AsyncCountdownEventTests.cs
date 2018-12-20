@@ -69,7 +69,7 @@
         [Fact]
         public void SignalAndWaitSynchronousBlockDoesNotHang()
         {
-            SynchronizationContext.SetSynchronizationContext(SingleThreadedSynchronizationContext.New());
+            SynchronizationContext.SetSynchronizationContext(SingleThreadedTestSynchronizationContext.New());
             var evt = new AsyncCountdownEvent(1);
             Assert.True(evt.SignalAndWaitAsync().Wait(AsyncDelay), "Hang");
         }

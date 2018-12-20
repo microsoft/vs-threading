@@ -4,9 +4,6 @@
 *                                                        *
 *********************************************************/
 
-// https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/2267
-#pragma warning disable SA1009 // Closing parenthesis must be spaced correctly
-
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
@@ -60,6 +57,25 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 catch (Exception ex) when (LaunchDebuggerExceptionFilter())
                 {
                     throw new Exception($"Analyzer failure while processing symbol {ctxt.Symbol} at {ctxt.Symbol.Locations.FirstOrDefault()?.SourceTree?.FilePath}({ctxt.Symbol.Locations.FirstOrDefault()?.GetLineSpan().StartLinePosition.Line},{ctxt.Symbol.Locations.FirstOrDefault()?.GetLineSpan().StartLinePosition.Character}): {ex.GetType()} {ex.Message}", ex);
+                }
+            };
+        }
+
+        internal static Action<CodeBlockAnalysisContext> DebuggableWrapper(Action<CodeBlockAnalysisContext> handler)
+        {
+            return ctxt =>
+            {
+                try
+                {
+                    handler(ctxt);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex) when (LaunchDebuggerExceptionFilter())
+                {
+                    throw new Exception($"Analyzer failure while processing syntax at {ctxt.CodeBlock.SyntaxTree.FilePath}({ctxt.CodeBlock.GetLocation()?.GetLineSpan().StartLinePosition.Line + 1},{ctxt.CodeBlock.GetLocation()?.GetLineSpan().StartLinePosition.Character + 1}): {ex.GetType()} {ex.Message}. Syntax: {ctxt.CodeBlock}", ex);
                 }
             };
         }
@@ -233,6 +249,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 || typeSymbol.GetAttributes().Any(ad => ad.AttributeClass?.Name == Types.AsyncMethodBuilderAttribute.TypeName && ad.AttributeClass.BelongsToNamespace(Types.AsyncMethodBuilderAttribute.Namespace));
         }
 
+        internal static bool IsTask(ITypeSymbol typeSymbol) => typeSymbol?.Name == nameof(Task) && typeSymbol.BelongsToNamespace(Namespaces.SystemThreadingTasks);
+
         /// <summary>
         /// Gets a value indicating whether a method is async or is ready to be async by having an async-compatible return type.
         /// </summary>
@@ -363,6 +381,38 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 }
 
                 syntaxNode = parent;
+            }
+
+            return false;
+        }
+
+        internal static bool IsAssignedWithin(SyntaxNode container, SemanticModel semanticModel, ISymbol variable, CancellationToken cancellationToken)
+        {
+            if (semanticModel == null)
+            {
+                throw new ArgumentNullException(nameof(semanticModel));
+            }
+
+            if (variable == null)
+            {
+                throw new ArgumentNullException(nameof(variable));
+            }
+
+            if (container == null)
+            {
+                return false;
+            }
+
+            foreach (var node in container.DescendantNodesAndSelf(n => !(n is AnonymousFunctionExpressionSyntax)))
+            {
+                if (node is AssignmentExpressionSyntax assignment)
+                {
+                    var assignedSymbol = semanticModel.GetSymbolInfo(assignment.Left, cancellationToken).Symbol;
+                    if (variable.Equals(assignedSymbol))
+                    {
+                        return true;
+                    }
+                }
             }
 
             return false;

@@ -21,7 +21,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
     public ReentrantSemaphoreTestBase(ITestOutputHelper logger)
         : base(logger)
     {
-        this.Dispatcher = SingleThreadedSynchronizationContext.New();
+        this.Dispatcher = SingleThreadedTestSynchronizationContext.New();
     }
 
     public static object[][] SemaphoreCapacitySizes
@@ -121,12 +121,71 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
 
     [Theory]
     [MemberData(nameof(AllModes))]
+    public void ExecuteAsync_OfT_InvokesDelegateInOriginalContext_NoContention(ReentrantSemaphore.ReentrancyMode mode)
+    {
+        this.semaphore = this.CreateSemaphore(mode);
+        int originalThreadId = Environment.CurrentManagedThreadId;
+        this.ExecuteOnDispatcher(async delegate
+        {
+            bool executed = false;
+            int result = await this.semaphore.ExecuteAsync(
+                delegate
+                {
+                    Assert.Equal(originalThreadId, Environment.CurrentManagedThreadId);
+                    executed = true;
+                    return new ValueTask<int>(5);
+                }, this.TimeoutToken);
+            Assert.Equal(5, result);
+            Assert.True(executed);
+        });
+    }
+
+    [Theory]
+    [MemberData(nameof(AllModes))]
+    public void ExecuteAsync_OfT_InvokesDelegateInOriginalContext_WithContention(ReentrantSemaphore.ReentrancyMode mode)
+    {
+        this.semaphore = this.CreateSemaphore(mode);
+        int originalThreadId = Environment.CurrentManagedThreadId;
+        this.ExecuteOnDispatcher(async delegate
+        {
+            var releaseHolder = new AsyncManualResetEvent();
+            var holder = this.semaphore.ExecuteAsync(() => releaseHolder.WaitAsync());
+
+            bool executed = false;
+            var waiter = this.semaphore.ExecuteAsync(
+                delegate
+                {
+                    Assert.Equal(originalThreadId, Environment.CurrentManagedThreadId);
+                    executed = true;
+                    return new ValueTask<int>(5);
+                }, this.TimeoutToken);
+
+            releaseHolder.Set();
+            int result = await waiter.AsTask().WithCancellation(this.TimeoutToken);
+            Assert.Equal(5, result);
+            Assert.True(executed);
+        });
+    }
+
+    [Theory]
+    [MemberData(nameof(AllModes))]
     public void ExecuteAsync_NullDelegate(ReentrantSemaphore.ReentrancyMode mode)
     {
         this.semaphore = this.CreateSemaphore(mode);
         this.ExecuteOnDispatcher(async delegate
         {
             await Assert.ThrowsAsync<ArgumentNullException>(() => this.semaphore.ExecuteAsync(null, this.TimeoutToken));
+        });
+    }
+
+    [Theory]
+    [MemberData(nameof(AllModes))]
+    public void ExecuteAsync_OfT_NullDelegate(ReentrantSemaphore.ReentrancyMode mode)
+    {
+        this.semaphore = this.CreateSemaphore(mode);
+        this.ExecuteOnDispatcher(async delegate
+        {
+            await Assert.ThrowsAsync<ArgumentNullException>(() => this.semaphore.ExecuteAsync<int>(null, this.TimeoutToken).AsTask());
         });
     }
 

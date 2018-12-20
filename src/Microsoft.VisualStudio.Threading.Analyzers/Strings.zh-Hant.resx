@@ -53,8 +53,8 @@
     <value>使用 InvokeAsync 引發非同步事件</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>當工作在委派的外部初始化時，對 JoinableTaskFactory.Run 內的 Task 上呼叫 await 可能會造成潛在的死結。
-您可以讓工作在委派內初始化，或不使用 Task 而改用 JoinableTask 來避免此問題。</value>
+    <value>當工作在委派外部初始化時，在 JoinableTaskFactory.Run 內的 Task 上呼叫 await，可能會造成潛在的鎖死情形。
+您可以藉由確認工作在委派內初始化，或將 Task 改為使用 JoinableTask，來避免此問題。</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
     <value>避免在加入內容中等候不可加入的工作</value>

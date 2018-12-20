@@ -964,6 +964,25 @@ class Test {
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
+        [Fact]
+        public async Task CastToVsSolutionViaIsWithPatternMatching()
+        {
+            var test = @"
+using System;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    void F() {
+        object obj1 = null;
+        if (obj1 is IVsSolution solution) {
+        }
+    }
+}
+";
+            var expected = Verify.Diagnostic(DescriptorSync).WithSpan(8, 18, 8, 32).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
         /// <summary>
         /// Verifies that the as cast operator does not produce a diagnostic when the type is to a managed type.
         /// </summary>

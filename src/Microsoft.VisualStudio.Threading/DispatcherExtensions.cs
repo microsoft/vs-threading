@@ -26,7 +26,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="dispatcher">The <see cref="Dispatcher"/> that schedules work on the main thread.</param>
         /// <param name="priority">
         /// The priority with which to schedule any work on the UI thread,
-        /// when and if <see cref="JoinableTaskFactory.SwitchToMainThreadAsync"/> is called
+        /// when and if <see cref="JoinableTaskFactory.SwitchToMainThreadAsync(CancellationToken)"/> is called
         /// and for each asynchronous return to the main thread after an <c>await</c>.
         /// </param>
         /// <returns>A <see cref="JoinableTaskFactory"/> that may be used for scheduling async work with the specified priority.</returns>

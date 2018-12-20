@@ -127,6 +127,22 @@
             }
         }
 
+        [StaFact]
+        public void SwitchToMainThreadAlwaysYield()
+        {
+            this.SimulateUIThread(async () =>
+            {
+                Assert.True(this.asyncPump.Context.IsOnMainThread);
+                Assert.False(this.asyncPump.SwitchToMainThreadAsync(alwaysYield: true).GetAwaiter().IsCompleted);
+                Assert.True(this.asyncPump.SwitchToMainThreadAsync(alwaysYield: false).GetAwaiter().IsCompleted);
+
+                await TaskScheduler.Default;
+                Assert.False(this.asyncPump.Context.IsOnMainThread);
+                Assert.False(this.asyncPump.SwitchToMainThreadAsync(alwaysYield: true).GetAwaiter().IsCompleted);
+                Assert.False(this.asyncPump.SwitchToMainThreadAsync(alwaysYield: false).GetAwaiter().IsCompleted);
+            });
+        }
+
         /// <summary>
         /// A <see cref="JoinableTaskFactory"/> that allows a test to inject code
         /// in the main thread transition events.

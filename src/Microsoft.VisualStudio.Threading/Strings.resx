@@ -172,4 +172,13 @@
   <data name="ValueFactoryReentrancy" xml:space="preserve">
     <value>The value factory has called for the value on the same instance.</value>
   </data>
+  <data name="FrameMustBePushedFirst" xml:space="preserve">
+    <value>This instance must be pushed first.</value>
+  </data>
+  <data name="PushFromWrongThread" xml:space="preserve">
+    <value>Message pump can only be run from the original thread.</value>
+  </data>
+  <data name="SyncContextFrameMismatchedAffinity" xml:space="preserve">
+    <value>This frame has already been used with a different instance.</value>
+  </data>
 </root>

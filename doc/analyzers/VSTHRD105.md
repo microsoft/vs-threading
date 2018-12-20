@@ -21,6 +21,8 @@ tasks in a predictable, consistent way.
 No diagnostic is produced by this analyzer when `TaskFactory.StartNew` is invoked on a private instance
 of `TaskFactory`, since it may in fact have a safe default for `TaskScheduler`.
 
+Similar rules: [CA2008 (DoNotCreateTasksWithoutPassingATaskSchedulerAnalyzer)](https://github.com/dotnet/roslyn-analyzers/blob/32d8f1e397439035f0ecb5f61a9e672225f0ecdb/src/Microsoft.NetCore.Analyzers/Core/Tasks/DoNotCreateTasksWithoutPassingATaskScheduler.cs)
+
 ## Examples of patterns that are flagged by this analyzer
 
 ```csharp
