@@ -741,7 +741,7 @@ namespace Microsoft.VisualStudio.Threading
             [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
             public MainThreadAwaiter GetAwaiter()
             {
-                return new MainThreadAwaiter(this.jobFactory, this.job, this.cancellationToken, this.alwaysYield);
+                return new MainThreadAwaiter(this.jobFactory, this.job, this.alwaysYield, this.cancellationToken);
             }
         }
 
@@ -787,7 +787,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Initializes a new instance of the <see cref="MainThreadAwaiter"/> struct.
             /// </summary>
-            internal MainThreadAwaiter(JoinableTaskFactory jobFactory, JoinableTask job, CancellationToken cancellationToken, bool alwaysYield)
+            internal MainThreadAwaiter(JoinableTaskFactory jobFactory, JoinableTask job, bool alwaysYield, CancellationToken cancellationToken)
             {
                 this.jobFactory = jobFactory;
                 this.job = job;

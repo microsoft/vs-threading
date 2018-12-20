@@ -238,7 +238,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
                 else
                 {
-                    var tuple = new CancelableTaskCompletionSource<T>(taskCompletionSource, cancellationToken, cancellationCallback);
+                    var tuple = new CancelableTaskCompletionSource<T>(taskCompletionSource, cancellationCallback, cancellationToken);
                     tuple.CancellationTokenRegistration = cancellationToken.Register(
                         s =>
                         {
@@ -337,9 +337,9 @@ namespace Microsoft.VisualStudio.Threading
             /// Initializes a new instance of the <see cref="CancelableTaskCompletionSource{T}"/> class.
             /// </summary>
             /// <param name="taskCompletionSource">The task completion source.</param>
-            /// <param name="cancellationToken">The cancellation token.</param>
             /// <param name="cancellationCallback">A callback to invoke when cancellation occurs.</param>
-            internal CancelableTaskCompletionSource(TaskCompletionSource<T> taskCompletionSource, CancellationToken cancellationToken, ICancellationNotification cancellationCallback)
+            /// <param name="cancellationToken">The cancellation token.</param>
+            internal CancelableTaskCompletionSource(TaskCompletionSource<T> taskCompletionSource, ICancellationNotification cancellationCallback, CancellationToken cancellationToken)
             {
                 this.TaskCompletionSource = taskCompletionSource ?? throw new ArgumentNullException(nameof(taskCompletionSource));
                 this.CancellationToken = cancellationToken;

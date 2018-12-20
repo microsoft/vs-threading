@@ -81,7 +81,9 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="value">The value representing the updated progress.</param>
         protected virtual void Report(T value)
         {
+#pragma warning disable CA2008 // Do not create tasks without passing a TaskScheduler
             var reported = this.taskFactory.StartNew(() => this.handler(value)).Unwrap();
+#pragma warning restore CA2008 // Do not create tasks without passing a TaskScheduler
             lock (this.syncObject)
             {
                 this.outstandingTasks.Add(reported);
