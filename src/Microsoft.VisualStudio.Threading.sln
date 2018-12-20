@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26718.0
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28413.118
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.VisualStudio.Threading.Analyzers", "Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.csproj", "{536F3F9A-B457-43B8-BC93-CE1C16959037}"
 EndProject
@@ -26,6 +26,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IsolatedTestHost", "IsolatedTestHost\IsolatedTestHost.csproj", "{BA4643D8-E6B2-4DED-882F-4827F3AB6AB0}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AsyncDebugTools", "AsyncDebugTools\AsyncDebugTools.vcxproj", "{CF348EC1-1E7D-47DE-8431-8C61D5CAF924}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.VisualStudio.Threading.Analyzers.CodeFixes", "Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.csproj", "{3BDB8F46-A39C-422B-8B0E-89E98B83073F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -95,6 +97,14 @@ Global
 		{CF348EC1-1E7D-47DE-8431-8C61D5CAF924}.Release|x64.Build.0 = Release|x64
 		{CF348EC1-1E7D-47DE-8431-8C61D5CAF924}.Release|x86.ActiveCfg = Release|Win32
 		{CF348EC1-1E7D-47DE-8431-8C61D5CAF924}.Release|x86.Build.0 = Release|Win32
+		{3BDB8F46-A39C-422B-8B0E-89E98B83073F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3BDB8F46-A39C-422B-8B0E-89E98B83073F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3BDB8F46-A39C-422B-8B0E-89E98B83073F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3BDB8F46-A39C-422B-8B0E-89E98B83073F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3BDB8F46-A39C-422B-8B0E-89E98B83073F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3BDB8F46-A39C-422B-8B0E-89E98B83073F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3BDB8F46-A39C-422B-8B0E-89E98B83073F}.Release|x64.ActiveCfg = Release|Any CPU
+		{3BDB8F46-A39C-422B-8B0E-89E98B83073F}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

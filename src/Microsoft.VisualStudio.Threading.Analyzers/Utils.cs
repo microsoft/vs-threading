@@ -20,9 +20,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using CodeAnalysis.Diagnostics;
     using Microsoft;
     using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.FindSymbols;
-    using Microsoft.CodeAnalysis.Rename;
-    using Microsoft.CodeAnalysis.Simplification;
 
     internal static class Utils
     {

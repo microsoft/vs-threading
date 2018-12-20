@@ -67,7 +67,7 @@
          but have a package dependency so users of this library will automatically get the analyzers.
          This requires an MSBuild workaround as documented here: https://github.com/Microsoft/msbuild/issues/2661#issuecomment-338808137
          -->
-    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.csproj">
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.csproj">
       <PrivateAssets>none</PrivateAssets>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
