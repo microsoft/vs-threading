@@ -68,7 +68,7 @@
   <ItemGroup>
     <!-- Don't consume the analyzers in this library itself,
          but have a package dependency so users of this library will automatically get the analyzers. -->
-    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.csproj"
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.csproj"
       PrivateAssets="none" />
   </ItemGroup>
   <Import Project="$(MSBuildSDKExtrasTargets)" Condition="Exists('$(MSBuildSDKExtrasTargets)')" />
