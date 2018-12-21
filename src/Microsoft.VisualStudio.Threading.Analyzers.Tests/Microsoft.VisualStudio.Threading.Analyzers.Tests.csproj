@@ -31,7 +31,7 @@
     <PackageReference Include="MicroBuild.Nonshipping" Version="$(MicroBuildVersion)" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="..\Microsoft.VisualStudio.Threading.Analyzers\build\AdditionalFiles\**" LinkBase="BuiltIn.AdditionalFiles">
+    <EmbeddedResource Include="..\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\build\AdditionalFiles\**" LinkBase="BuiltIn.AdditionalFiles">
       <LogicalName>AdditionalFiles.%(FileName)%(Extension)</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="AdditionalFiles\**">
@@ -45,7 +45,7 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Update="..\Microsoft.VisualStudio.Threading.Analyzers\build\AdditionalFiles\VSTHRD010.MainThreadSwitchingMethods.txt">
+    <EmbeddedResource Update="..\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\build\AdditionalFiles\VSTHRD010.MainThreadSwitchingMethods.txt">
       <CustomToolNamespace>AdditionalFiles</CustomToolNamespace>
     </EmbeddedResource>
   </ItemGroup>
