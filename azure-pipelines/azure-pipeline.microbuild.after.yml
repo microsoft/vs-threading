@@ -19,7 +19,8 @@ steps:
 - powershell: |
     $DllPaths = @(
         ,"bin\Microsoft.VisualStudio.Threading\$(BuildConfiguration)\Microsoft.VisualStudio.Threading.dll"
-        ,"bin\Microsoft.VisualStudio.Threading.Analyzers\$(BuildConfiguration)\Microsoft.VisualStudio.Threading.Analyzers.dll"
+        ,"bin\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\$(BuildConfiguration)\Microsoft.VisualStudio.Threading.Analyzers.dll"
+        ,"bin\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\$(BuildConfiguration)\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.dll"
     )
     Get-ChildItem $DllPaths -rec |% {
         $OutputDir = "$($_.Directory.FullName)\symstore"
@@ -35,8 +36,10 @@ steps:
     Contents: |
       Microsoft.VisualStudio.Threading/$(BuildConfiguration)/**/Microsoft.VisualStudio.Threading.dll
       Microsoft.VisualStudio.Threading/$(BuildConfiguration)/**/symstore/Microsoft.VisualStudio.Threading.pdb
-      Microsoft.VisualStudio.Threading.Analyzers/$(BuildConfiguration)/**/Microsoft.VisualStudio.Threading.Analyzers.dll
-      Microsoft.VisualStudio.Threading.Analyzers/$(BuildConfiguration)/**/symstore/Microsoft.VisualStudio.Threading.Analyzers.pdb
+      Microsoft.VisualStudio.Threading.Analyzers.CodeFixes/$(BuildConfiguration)/**/Microsoft.VisualStudio.Threading.Analyzers.dll
+      Microsoft.VisualStudio.Threading.Analyzers.CodeFixes/$(BuildConfiguration)/**/symstore/Microsoft.VisualStudio.Threading.Analyzers.pdb
+      Microsoft.VisualStudio.Threading.Analyzers.CodeFixes/$(BuildConfiguration)/**/Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.dll
+      Microsoft.VisualStudio.Threading.Analyzers.CodeFixes/$(BuildConfiguration)/**/symstore/Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.pdb
       AsyncDebugTools/x86/$(BuildConfiguration)/AsyncDebugTools.dll
       AsyncDebugTools/x86/$(BuildConfiguration)/AsyncDebugTools.pdb
       AsyncDebugTools/x64/$(BuildConfiguration)/AsyncDebugTools.dll
