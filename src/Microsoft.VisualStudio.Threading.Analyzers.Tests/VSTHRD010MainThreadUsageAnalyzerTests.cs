@@ -1625,6 +1625,51 @@ class A
         }
 
         [Fact]
+        public async Task OperatorOverload()
+        {
+            var test = @"
+using System;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class A
+{
+    public static bool operator ==(A item1, A item2)
+    {
+        var s = Package.GetGlobalService(typeof(SVsSolution)) as IVsSolution;
+        return item2.Equals(item1);
+    }
+
+    public static bool operator !=(A item1, A item2) => !(item1 == item2);
+}
+";
+            var fix = @"
+using System;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class A
+{
+    public static bool operator ==(A item1, A item2)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        var s = Package.GetGlobalService(typeof(SVsSolution)) as IVsSolution;
+        return item2.Equals(item1);
+    }
+
+    public static bool operator !=(A item1, A item2) => !(item1 == item2);
+}
+";
+            var expected = Verify.Diagnostic(DescriptorSync).WithSpan(10, 63, 10, 77).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
+            await new Verify.Test
+            {
+                TestCode = test,
+                ExpectedDiagnostics = { expected },
+                FixedCode = fix,
+            }.RunAsync();
+        }
+
+        [Fact]
         public async Task ArgumentExpressionEntirelyMadeOfViolatingCast()
         {
             var test = @"

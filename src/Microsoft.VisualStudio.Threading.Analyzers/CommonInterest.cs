@@ -67,6 +67,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         internal static readonly IImmutableSet<SyntaxKind> MethodSyntaxKinds = ImmutableHashSet.Create(
             SyntaxKind.ConstructorDeclaration,
             SyntaxKind.MethodDeclaration,
+            SyntaxKind.OperatorDeclaration,
             SyntaxKind.AnonymousMethodExpression,
             SyntaxKind.SimpleLambdaExpression,
             SyntaxKind.ParenthesizedLambdaExpression,
