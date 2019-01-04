@@ -125,6 +125,7 @@ steps:
       md $(Build.ArtifactStagingDirectory)/deployables\x86
       md $(Build.ArtifactStagingDirectory)/deployables\x64
       Get-ChildItem bin\Packages\$(BuildConfiguration)\NuGet\*.nupkg -rec |% { copy $_  $(Build.ArtifactStagingDirectory)\deployables }
+      Get-ChildItem bin\Packages\$(BuildConfiguration)\VSIX\*.vsix -rec |% { copy $_  $(Build.ArtifactStagingDirectory)\deployables }
       copy bin\AsyncDebugTools/x86/$(BuildConfiguration)/AsyncDebugTools.dll $(Build.ArtifactStagingDirectory)\deployables\x86
       copy bin\AsyncDebugTools/x64/$(BuildConfiguration)/AsyncDebugTools.dll $(Build.ArtifactStagingDirectory)\deployables\x64
 

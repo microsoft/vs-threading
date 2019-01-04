@@ -8,6 +8,7 @@
     <BaseIntermediateOutputPath>$(RepoObjPath)\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
     <BaseOutputPath Condition=" '$(BaseOutputPath)' == '' ">$(RepoBinPath)\$(MSBuildProjectName)\</BaseOutputPath>
     <PackageOutputPath>$(RepoBinPath)Packages\$(Configuration)\NuGet\</PackageOutputPath>
+    <VSIXOutputPath>$(RepoBinPath)Packages\$(Configuration)\VSIX\</VSIXOutputPath>
 
     <LangVersion>7.3</LangVersion>
 

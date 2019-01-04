@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
+  <Metadata>
+    <Identity Id="Microsoft.VisualStudio.Threading.Analyzers" Version="|%CurrentProject%;GetBuildVersion|" Language="en-US" Publisher="Microsoft Corporation" />
+    <DisplayName>Threading and async analyzers</DisplayName>
+    <Description>Static code analyzer to detect common mistakes or potential issues regarding threading and async coding. Equivalent to the Microsoft.VisualStudio.Threading.Analyzers NuGet package, except the VSIX applies to all projects opened in Visual Studio.</Description>
+  </Metadata>
+  <Installation>
+    <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[15.0, 17.0)" />
+  </Installation>
+  <Assets>
+    <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="Microsoft.VisualStudio.Threading.Analyzers" Path="|Microsoft.VisualStudio.Threading.Analyzers|"/>
+    <Asset Type="Microsoft.VisualStudio.Analyzer" d:Source="Project" d:ProjectName="Microsoft.VisualStudio.Threading.Analyzers" Path="|Microsoft.VisualStudio.Threading.Analyzers|"/>
+    <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="Microsoft.VisualStudio.Threading.Analyzers.CodeFixes" Path="|Microsoft.VisualStudio.Threading.Analyzers.CodeFixes|"/>
+    <Asset Type="Microsoft.VisualStudio.Analyzer" d:Source="Project" d:ProjectName="Microsoft.VisualStudio.Threading.Analyzers.CodeFixes" Path="|Microsoft.VisualStudio.Threading.Analyzers.CodeFixes|"/>
+  </Assets>
+  <Prerequisites>
+    <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[15.0,17.0)" DisplayName="Visual Studio core editor" />
+    <Prerequisite Id="Microsoft.VisualStudio.Component.Roslyn.LanguageServices" Version="[15.0,17.0)" DisplayName="Roslyn Language Services" />
+  </Prerequisites>
+</PackageManifest>
