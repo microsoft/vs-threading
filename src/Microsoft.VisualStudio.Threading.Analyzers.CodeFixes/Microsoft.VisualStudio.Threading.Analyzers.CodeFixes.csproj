@@ -7,7 +7,7 @@
     <CodeAnalysisRuleSet>..\Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.ruleset</CodeAnalysisRuleSet>
     <RootNamespace>Microsoft.VisualStudio.Threading.Analyzers</RootNamespace>
 
-    <Description>Static code analyzer to detect common mistakes or potential issues on the C# code that uses Visual Studio SDK APIs.</Description>
+    <Description>Static code analyzer to detect common mistakes or potential issues regarding threading and async coding.</Description>
     <PackageId>Microsoft.VisualStudio.Threading.Analyzers</PackageId>
     <PackageTags>analyzers visualstudio vssdk sdk threading</PackageTags>
     <Authors>Microsoft</Authors>
