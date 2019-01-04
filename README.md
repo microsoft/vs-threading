@@ -40,7 +40,8 @@ Analyzers: [![NuGet package](https://img.shields.io/nuget/v/Microsoft.VisualStud
 ## Supported platforms
 
 * .NET 4.5
-* .NET Standard 1.1
-* .NET Portable (Profile111)
+* .NET 4.6
+* .NET Standard 1.3
+* .NET Standard 2.0
 
 [1]: https://nuget.org/packages/Microsoft.VisualStudio.Threading "Microsoft.VisualStudio.Threading NuGet package"
