@@ -1,9 +1,10 @@
 steps:
 
-- task: ms-vseng.MicroBuildTasks.965C8DC6-1483-45C9-B384-5AC75DA1F1A4.MicroBuildOptProfPlugin@3
+- task: ms-vseng.MicroBuildTasks.965C8DC6-1483-45C9-B384-5AC75DA1F1A4.MicroBuildOptProfPlugin@4
   inputs:
-    skipRunOptimize: false
-    optimizationDataDropName: OptimizationData/DevDiv/vs-threading/2c64705bb429034a382c83455d058573b341a4fa/218221/907965/1
+    optimizationInputsDropNamePrefix: OptimizationData/DevDiv/vs-threading
+    version: 1.1.85-ge381a1be51
+    feedSource: https://devdiv-test.pkgs.visualstudio.com/DefaultCollection/_packaging/MicroBuildToolset/nuget/v3/index.json
   displayName: Install OptProf Plugin
 
 - task: MicroBuildSigningPlugin@1
