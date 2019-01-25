@@ -15,10 +15,10 @@ steps:
   - template: azure-pipeline.microbuild.before.yml
 
 - task: DotNetCoreInstaller@0
-  displayName: Install .NET Core SDK 2.1.300
+  displayName: Install .NET Core SDK 2.1.503
   inputs:
     packageType: sdk
-    version: 2.1.300
+    version: 2.1.503
   condition: and(succeeded(), ne(variables['Hosted'], 'true')) # Hosted agents already have this.
 
 - script: dotnet --info
