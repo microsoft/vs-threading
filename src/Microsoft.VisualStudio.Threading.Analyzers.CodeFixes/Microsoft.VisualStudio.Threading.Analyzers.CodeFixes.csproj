@@ -57,10 +57,4 @@
       <TfmSpecificPackageFile Include="%(_ResolvedProjectReferencePaths.Identity)" PackagePath="analyzers\cs\" />
     </ItemGroup>
   </Target>
-  <Target Name="SetNuSpecProperties" BeforeTargets="GenerateNuspec" DependsOnTargets="GetBuildVersion">
-    <PropertyGroup>
-      <PackageLicenseUrl>https://raw.githubusercontent.com/Microsoft/vs-threading/$(GitCommitIdShort)/LICENSE</PackageLicenseUrl>
-    </PropertyGroup>
-  </Target>
-
 </Project>
