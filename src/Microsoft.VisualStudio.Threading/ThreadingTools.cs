@@ -187,7 +187,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             Requires.NotNull(taskCompletionSource, nameof(taskCompletionSource));
 
-            if (cancellationToken.CanBeCanceled)
+            if (cancellationToken.CanBeCanceled && !taskCompletionSource.Task.IsCompleted)
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
@@ -200,21 +200,54 @@ namespace Microsoft.VisualStudio.Threading
                         s =>
                         {
                             var t = (CancelableTaskCompletionSource<T>)s;
-                            t.TaskCompletionSource.TrySetCanceled(t.CancellationToken);
-                            t.CancellationCallback?.OnCanceled();
+                            if (t.TaskCompletionSource.TrySetCanceled(t.CancellationToken))
+                            {
+                                t.CancellationCallback?.OnCanceled();
+                            }
                         },
                         tuple,
                         useSynchronizationContext: false);
+
+                    // In certain race conditions, our continuation could execute inline. We could force it to always run
+                    // asynchronously, but then in the common case it becomes less efficient.
+                    // Instead, we will optimize for the common (no-race) case and detect if we were inlined, and if so, defer the work
+                    // to avoid making our caller block for arbitrary code since CTR.Dispose blocks for in-progress cancellation notification to complete.
                     taskCompletionSource.Task.ContinueWith(
                         (_, s) =>
                         {
                             var t = (CancelableTaskCompletionSource<T>)s;
-                            t.CancellationTokenRegistration.Dispose();
+                            if (t.ContinuationScheduled || !t.OnOwnerThread)
+                            {
+                                // We're not executing inline... Go ahead and do the work.
+                                t.CancellationTokenRegistration.Dispose();
+                            }
+                            else if (!t.CancellationToken.IsCancellationRequested) // If the CT is canceled, the CTR is implicitly disposed.
+                            {
+                                // We hit the race where the task is already completed another way,
+                                // and our continuation is executing inline with our caller.
+                                // Dispose our CTR from the threadpool to avoid blocking on 3rd party code.
+                                ThreadPool.QueueUserWorkItem(
+                                    s2 =>
+                                    {
+                                        try
+                                        {
+                                            var t2 = (CancelableTaskCompletionSource<T>)s2;
+                                            t2.CancellationTokenRegistration.Dispose();
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            // Swallow any exception.
+                                            Report.Fail(ex.Message);
+                                        }
+                                    },
+                                    s);
+                            }
                         },
                         tuple,
                         CancellationToken.None,
                         TaskContinuationOptions.ExecuteSynchronously,
                         TaskScheduler.Default);
+                    tuple.ContinuationScheduled = true;
                 }
             }
         }
@@ -291,6 +324,11 @@ namespace Microsoft.VisualStudio.Threading
         private class CancelableTaskCompletionSource<T>
         {
             /// <summary>
+            /// The ID of the thread on which this instance was created.
+            /// </summary>
+            private readonly int ownerThreadId = Environment.CurrentManagedThreadId;
+
+            /// <summary>
             /// Initializes a new instance of the <see cref="CancelableTaskCompletionSource{T}"/> class.
             /// </summary>
             /// <param name="taskCompletionSource">The task completion source.</param>
@@ -319,6 +357,16 @@ namespace Microsoft.VisualStudio.Threading
             /// Gets or sets the cancellation token registration.
             /// </summary>
             internal CancellationTokenRegistration CancellationTokenRegistration { get; set; }
+
+            /// <summary>
+            /// Gets or sets a value indicating whether the continuation has been scheduled (and not run inline).
+            /// </summary>
+            internal bool ContinuationScheduled { get; set; }
+
+            /// <summary>
+            /// Gets a value indicating whether the caller is on the same thread as the one that created this instance.
+            /// </summary>
+            internal bool OnOwnerThread => Environment.CurrentManagedThreadId == this.ownerThreadId;
         }
     }
 }
