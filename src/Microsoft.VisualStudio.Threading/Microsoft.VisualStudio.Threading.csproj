@@ -76,9 +76,4 @@
   <Target Name="MATPrerequisite" BeforeTargets="PrepareForBuild" Condition="!Exists('$(MSBuildExtensionsPath)\Microsoft\Multilingual App Toolkit\Microsoft.Multilingual.ResxResources.targets')" Label="MultilingualAppToolkit">
     <Warning Text="$(MSBuildProjectFile) is Multilingual build enabled, but the Multilingual App Toolkit is unavailable during the build. If building with Visual Studio, please check to ensure that toolkit is properly installed." />
   </Target>
-  <Target Name="SetNuSpecProperties" BeforeTargets="GenerateNuspec" DependsOnTargets="GetBuildVersion">
-    <PropertyGroup>
-      <PackageLicenseUrl>https://raw.githubusercontent.com/Microsoft/vs-threading/$(GitCommitIdShort)/LICENSE</PackageLicenseUrl>
-    </PropertyGroup>
-  </Target>
 </Project>
