@@ -250,6 +250,29 @@
             Assert.Same(enqueuedValue, dequeuedValue);
         }
 
+        /// <summary>
+        /// This test attempts to exercise the race condition where the token is canceled *after*
+        /// the CancellationToken.Register method completes, but before the task continuation that
+        /// disposes that CancellationTokenRegistration is scheduled, leading to an inline execution
+        /// of that task continuation.
+        /// </summary>
+        /// <remarks>
+        /// The race is very unlikely to be hit. But with this code, and a debugger to freeze/thaw threads
+        /// at marked positions, it demonstrated the hang repro'd without the fix, and couldn't repro after the fix.
+        /// </remarks>
+        /// <seealso href="https://github.com/Microsoft/vs-threading/issues/458"/>
+        [Fact]
+        public async Task DequeueAsyncCancellationRace()
+        {
+            var cts = new CancellationTokenSource();
+            var cancelTask = Task.Run(delegate
+            {
+                cts.Cancel();
+            });
+            var dequeueTask = this.queue.DequeueAsync(cts.Token);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => dequeueTask);
+        }
+
         [Fact]
         public async Task MultipleDequeuers()
         {
