@@ -2,7 +2,8 @@ steps:
 
 - task: ms-vseng.MicroBuildTasks.965C8DC6-1483-45C9-B384-5AC75DA1F1A4.MicroBuildOptProfPlugin@4
   inputs:
-    optimizationInputsDropNamePrefix: OptimizationData/DevDiv/vs-threading
+    optimizationInputsDropNamePrefix: OptimizationInputs/DevDiv/vs-threading
+    getDropNameByDrop: true
   displayName: Install OptProf Plugin
 
 - task: MicroBuildSigningPlugin@1
