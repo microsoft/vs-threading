@@ -1,6 +1,6 @@
 trigger:
   branches:
-    include: ["master", "v15.8"]
+    include: ["master", "v15.8", "v16.0"]
   paths:
     exclude: [".github", "doc", "*.md", ".appveyor.yml", ".travis.yml"]
 
