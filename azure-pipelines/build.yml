@@ -1,8 +1,9 @@
 steps:
 - script: |
-    dotnet tool install --tool-path . nbgv
-    .\nbgv cloud -p src
+    dotnet tool install --tool-path .. nbgv
+    ..\nbgv cloud
     echo ##vso[task.setvariable variable=PATH]%Path%;$(Build.SourcesDirectory)
+  workingDirectory: src
   displayName: Set build number
 
 - task: PowerShell@2
@@ -67,8 +68,9 @@ steps:
   displayName: Run tests
   inputs:
     command: test
-    projects: src/**/*.Tests.csproj
+    projects: '**/*.Tests.csproj'
     arguments: --configuration $(BuildConfiguration) --no-build --filter "TestCategory!=FailsInCloudTest" -v n
+    workingDirectory: src
   condition: and(succeeded(), ne(variables['SignType'], 'real'))
 
 - task: CopyFiles@1
