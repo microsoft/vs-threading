@@ -25,6 +25,7 @@ ID | Title | Severity | Supports
 [VSTHRD110](VSTHRD110.md) | Observe result of async calls | Advisory
 [VSTHRD111](VSTHRD111.md) | Use `.ConfigureAwait(bool)` | Advisory
 [VSTHRD200](VSTHRD200.md) | Use `Async` naming convention | Guideline | [VSTHRD103](VSTHRD103.md)
+[VSTHRD201](VSTHRD201.md) | Check cancellation after `SwitchToMainThreadAsync` | Guideline
 
 ## Severity descriptions
 

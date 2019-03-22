@@ -297,4 +297,14 @@ Use AsyncLazy&lt;T&gt; instead.</value>
     <value>Use ConfigureAwait(bool)</value>
     <comment>"ConfigureAwait(bool)" is a reference and should NOT be translated.</comment>
   </data>
+  <data name="VSTHRD201_MessageFormat" xml:space="preserve">
+    <value>Check for cancellation after calling SwitchToMainThreadAsync(CancellationToken).</value>
+  </data>
+  <data name="VSTHRD201_Title" xml:space="preserve">
+    <value>Check cancellation after SwitchToMainThreadAsync</value>
+  </data>
+  <data name="VSTHRD201_CodeFix_Title" xml:space="preserve">
+    <value>Call ThrowIfCancellationRequested()</value>
+    <comment>"ThrowIfCancellationRequested" is a method name and should not be translated.</comment>
+  </data>
 </root>

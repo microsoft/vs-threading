@@ -79,6 +79,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         {
             internal const string TypeName = "JoinableTaskFactory";
 
+            internal const string FullName = "Microsoft.VisualStudio.Threading." + TypeName;
+
             /// <summary>
             /// The name of the SwitchToMainThreadAsync method.
             /// </summary>
