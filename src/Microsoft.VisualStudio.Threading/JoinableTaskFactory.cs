@@ -712,7 +712,7 @@ namespace Microsoft.VisualStudio.Threading
         /// An awaitable struct that facilitates an asynchronous transition to the Main thread.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible"), SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct MainThreadAwaitable
+        public readonly struct MainThreadAwaitable
         {
             private readonly JoinableTaskFactory jobFactory;
 
@@ -985,7 +985,7 @@ namespace Microsoft.VisualStudio.Threading
         /// A value to construct with a C# using block in all the Run method overloads
         /// to setup and teardown the boilerplate stuff.
         /// </summary>
-        private struct RunFramework : IDisposable
+        private readonly struct RunFramework : IDisposable
         {
             private readonly JoinableTaskFactory factory;
             private readonly SpecializedSyncContext syncContextRevert;

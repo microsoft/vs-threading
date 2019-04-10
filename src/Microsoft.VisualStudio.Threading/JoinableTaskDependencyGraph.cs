@@ -856,7 +856,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The record of a pending notification we need send to the synchronous task that we have some new messages to process.
             /// </summary>
-            private struct PendingNotification
+            private readonly struct PendingNotification
             {
                 internal PendingNotification(JoinableTask synchronousTask, JoinableTask taskHasPendingMessages, int newPendingMessagesCount)
                 {

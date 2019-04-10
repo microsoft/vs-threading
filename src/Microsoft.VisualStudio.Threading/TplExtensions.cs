@@ -660,7 +660,7 @@ namespace Microsoft.VisualStudio.Threading
         /// An awaitable that wraps a task and never throws an exception when waited on.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct NoThrowTaskAwaitable
+        public readonly struct NoThrowTaskAwaitable
         {
             /// <summary>
             /// The task.
@@ -699,7 +699,7 @@ namespace Microsoft.VisualStudio.Threading
         /// An awaiter that wraps a task and never throws an exception when waited on.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct NoThrowTaskAwaiter : ICriticalNotifyCompletion
+        public readonly struct NoThrowTaskAwaiter : ICriticalNotifyCompletion
         {
             /// <summary>
             /// The task

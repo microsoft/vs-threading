@@ -178,7 +178,7 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
-        private struct Message
+        private readonly struct Message
         {
             internal readonly SendOrPostCallback Callback;
             internal readonly object State;

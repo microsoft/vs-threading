@@ -260,7 +260,7 @@ namespace Microsoft.VisualStudio.Threading
         /// An awaitable that is returned from asynchronous lock requests.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct ResourceAwaitable
+        public readonly struct ResourceAwaitable
         {
             /// <summary>
             /// The underlying lock awaitable.
@@ -298,7 +298,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
         [DebuggerDisplay("{awaiter.kind}")]
-        public struct ResourceAwaiter : ICriticalNotifyCompletion
+        public readonly struct ResourceAwaiter : ICriticalNotifyCompletion
         {
             /// <summary>
             /// The underlying lock awaiter.
@@ -389,7 +389,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
         [DebuggerDisplay("{releaser.awaiter.kind}")]
-        public struct ResourceReleaser : IDisposable
+        public readonly struct ResourceReleaser : IDisposable
         {
             /// <summary>
             /// The underlying lock releaser.

@@ -450,7 +450,7 @@ namespace Microsoft.VisualStudio.Threading
         /// An awaitable that executes continuations on the specified task scheduler.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct TaskSchedulerAwaitable
+        public readonly struct TaskSchedulerAwaitable
         {
             /// <summary>
             /// The scheduler for continuations.
@@ -490,7 +490,7 @@ namespace Microsoft.VisualStudio.Threading
         /// An awaiter returned from <see cref="GetAwaiter(TaskScheduler)"/>.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct TaskSchedulerAwaiter : ICriticalNotifyCompletion
+        public readonly struct TaskSchedulerAwaiter : ICriticalNotifyCompletion
         {
             /// <summary>
             /// The scheduler for continuations.
@@ -598,7 +598,7 @@ namespace Microsoft.VisualStudio.Threading
         /// then immediately resume, possibly on the original <see cref="SynchronizationContext"/>.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct ConfiguredTaskYieldAwaitable
+        public readonly struct ConfiguredTaskYieldAwaitable
         {
             /// <summary>
             /// A value indicating whether the continuation should run on the captured <see cref="SynchronizationContext"/>, if any.
@@ -627,7 +627,7 @@ namespace Microsoft.VisualStudio.Threading
         /// then immediately resume, possibly on the original <see cref="SynchronizationContext"/>.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct ConfiguredTaskYieldAwaiter : ICriticalNotifyCompletion
+        public readonly struct ConfiguredTaskYieldAwaiter : ICriticalNotifyCompletion
         {
             /// <summary>
             /// A value indicating whether the continuation should run on the captured <see cref="SynchronizationContext"/>, if any.
@@ -700,7 +700,7 @@ namespace Microsoft.VisualStudio.Threading
         /// A Task awaitable that has affinity to executing callbacks synchronously on the completing callstack.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct ExecuteContinuationSynchronouslyAwaitable
+        public readonly struct ExecuteContinuationSynchronouslyAwaitable
         {
             /// <summary>
             /// The task whose completion will execute the continuation.
@@ -729,7 +729,7 @@ namespace Microsoft.VisualStudio.Threading
         /// A Task awaiter that has affinity to executing callbacks synchronously on the completing callstack.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct ExecuteContinuationSynchronouslyAwaiter : INotifyCompletion
+        public readonly struct ExecuteContinuationSynchronouslyAwaiter : INotifyCompletion
         {
             /// <summary>
             /// The task whose completion will execute the continuation.
@@ -778,7 +778,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <typeparam name="T">The type of value returned by the awaited <see cref="Task"/>.</typeparam>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct ExecuteContinuationSynchronouslyAwaitable<T>
+        public readonly struct ExecuteContinuationSynchronouslyAwaitable<T>
         {
             /// <summary>
             /// The task whose completion will execute the continuation.
@@ -808,7 +808,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <typeparam name="T">The type of value returned by the awaited <see cref="Task"/>.</typeparam>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct ExecuteContinuationSynchronouslyAwaiter<T> : INotifyCompletion
+        public readonly struct ExecuteContinuationSynchronouslyAwaiter<T> : INotifyCompletion
         {
             /// <summary>
             /// The task whose completion will execute the continuation.
