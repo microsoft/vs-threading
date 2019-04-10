@@ -749,7 +749,7 @@ namespace Microsoft.VisualStudio.Threading
         /// An awaiter struct that facilitates an asynchronous transition to the Main thread.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct MainThreadAwaiter : ICriticalNotifyCompletion
+        public readonly struct MainThreadAwaiter : ICriticalNotifyCompletion
         {
             private static readonly Action<object> SafeCancellationAction = state => ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, state);
 
@@ -782,7 +782,7 @@ namespace Microsoft.VisualStudio.Threading
             /// then this will hold a default value of <see cref="CancellationTokenRegistration"/>, and <see cref="OnCompleted(Action)"/>
             /// would not touch it.
             /// </remarks>
-            private StrongBox<CancellationTokenRegistration?> cancellationRegistrationPtr;
+            private readonly StrongBox<CancellationTokenRegistration?> cancellationRegistrationPtr;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="MainThreadAwaiter"/> struct.

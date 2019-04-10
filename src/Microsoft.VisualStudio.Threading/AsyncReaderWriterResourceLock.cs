@@ -792,7 +792,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Tracks a task that prepares a resource for either concurrent or exclusive use.
             /// </summary>
-            private struct ResourcePreparationTaskAndValidity
+            private readonly struct ResourcePreparationTaskAndValidity
             {
                 /// <summary>
                 /// Initializes a new instance of the <see cref="ResourcePreparationTaskAndValidity"/> struct.
@@ -808,12 +808,12 @@ namespace Microsoft.VisualStudio.Threading
                 /// <summary>
                 /// Gets the task that is preparing the resource.
                 /// </summary>
-                internal Task PreparationTask { get; private set; }
+                internal Task PreparationTask { get; }
 
                 /// <summary>
                 /// Gets the state the resource will be in when <see cref="PreparationTask"/> has completed.
                 /// </summary>
-                internal ResourceState State { get; private set; }
+                internal ResourceState State { get; }
             }
         }
     }

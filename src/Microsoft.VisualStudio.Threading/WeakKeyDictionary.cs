@@ -287,25 +287,25 @@ namespace Microsoft.VisualStudio.Threading
         /// the target's hash code so that it can be used in a hashtable.
         /// </summary>
         /// <typeparam name="T">Type of the target of the weak reference</typeparam>
-        private struct WeakReference<T> : IEquatable<WeakReference<T>>
+        private readonly struct WeakReference<T> : IEquatable<WeakReference<T>>
             where T : class
         {
             /// <summary>
             /// Cache the hashcode so that it is still available even if the target has been
             /// collected. This allows this object to be still found in a table so it can be removed.
             /// </summary>
-            private int hashcode;
+            private readonly int hashcode;
 
             /// <summary>
             /// Backing weak reference
             /// </summary>
-            private WeakReference weakReference;
+            private readonly WeakReference weakReference;
 
             /// <summary>
             /// Some of the instances are around just to do existence checks, and don't want
             /// to allocate WeakReference objects as they are short-lived.
             /// </summary>
-            private T notSoWeakTarget;
+            private readonly T notSoWeakTarget;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="WeakReference{T}"/> struct.

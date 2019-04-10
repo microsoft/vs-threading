@@ -5013,18 +5013,17 @@
                 throw new CriticalErrorException(ex);
             }
 
-            internal struct InternalLockHandle
+            internal readonly struct InternalLockHandle
             {
                 internal InternalLockHandle(bool upgradeableRead, bool write)
-                    : this()
                 {
                     this.IsUpgradeableReadLock = upgradeableRead;
                     this.IsWriteLock = write;
                 }
 
-                internal bool IsUpgradeableReadLock { get; private set; }
+                internal bool IsUpgradeableReadLock { get; }
 
-                internal bool IsWriteLock { get; private set; }
+                internal bool IsWriteLock { get; }
             }
         }
 

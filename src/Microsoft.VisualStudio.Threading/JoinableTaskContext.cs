@@ -584,11 +584,11 @@ namespace Microsoft.VisualStudio.Threading
         /// A structure that clears CallContext and SynchronizationContext async/thread statics and
         /// restores those values when this structure is disposed.
         /// </summary>
-        public struct RevertRelevance : IDisposable
+        public readonly struct RevertRelevance : IDisposable
         {
             private readonly JoinableTaskContext pump;
-            private SpecializedSyncContext temporarySyncContext;
-            private JoinableTask oldJoinable;
+            private readonly SpecializedSyncContext temporarySyncContext;
+            private readonly JoinableTask oldJoinable;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="RevertRelevance"/> struct.
