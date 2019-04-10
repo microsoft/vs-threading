@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
     using System.Threading.Tasks;
+    using Microsoft.CodeAnalysis.Testing;
     using Xunit;
     using Verify = CSharpCodeFixVerifier<VSTHRD012SpecifyJtfWhereAllowed, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
@@ -28,7 +29,7 @@ class Test {
             {
                 TestCode = test,
                 ExpectedDiagnostics = { expected },
-                VerifyExclusions = false,
+                TestBehaviors = TestBehaviors.SkipGeneratedCodeCheck,
             }.RunAsync();
         }
 
@@ -54,7 +55,7 @@ class Test {
             {
                 TestCode = test,
                 ExpectedDiagnostics = { expected },
-                VerifyExclusions = false,
+                TestBehaviors = TestBehaviors.SkipGeneratedCodeCheck,
             }.RunAsync();
         }
 
@@ -103,7 +104,7 @@ class Apple {
             {
                 TestCode = test,
                 ExpectedDiagnostics = { expected },
-                VerifyExclusions = false,
+                TestBehaviors = TestBehaviors.SkipGeneratedCodeCheck,
             }.RunAsync();
         }
 
@@ -149,7 +150,7 @@ class Test {
             {
                 TestCode = test,
                 ExpectedDiagnostics = { expected },
-                VerifyExclusions = false,
+                TestBehaviors = TestBehaviors.SkipGeneratedCodeCheck,
             }.RunAsync();
         }
 
