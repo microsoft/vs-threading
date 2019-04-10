@@ -30,7 +30,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     internal static class FixUtils
     {
         internal static AnonymousFunctionExpressionSyntax MakeMethodAsync(this AnonymousFunctionExpressionSyntax method, SemanticModel semanticModel, CancellationToken cancellationToken)
-#pragma warning restore AvoidAsyncSuffix // Avoid Async suffix
         {
             if (method.AsyncKeyword.Kind() == SyntaxKind.AsyncKeyword)
             {

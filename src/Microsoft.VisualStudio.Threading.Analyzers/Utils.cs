@@ -434,7 +434,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return interfaceImplementations;
         }
 
-#pragma warning disable AvoidAsyncSuffix // Avoid Async suffix
         internal static MemberAccessExpressionSyntax MemberAccess(IReadOnlyList<string> qualifiers, SimpleNameSyntax simpleName)
         {
             if (qualifiers == null)
@@ -741,9 +740,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             internal CSharpSyntaxNode Function { get; set; }
 
-#pragma warning disable AvoidAsyncSuffix // Avoid Async suffix
             internal bool IsAsync { get; set; }
-#pragma warning restore AvoidAsyncSuffix // Avoid Async suffix
 
             internal ParameterListSyntax ParameterList { get; set; }
 
