@@ -280,7 +280,7 @@ public class Test {
         {
             var refAssemblies = typeof(VSTHRD001UseSwitchToMainThreadAsyncAnalyzer)
                 .Assembly.GetReferencedAssemblies();
-            Assert.False(refAssemblies.Any(a => a.Name.Equals("System.ValueTuple", StringComparison.OrdinalIgnoreCase)));
+            Assert.DoesNotContain(refAssemblies, a => a.Name.Equals("System.ValueTuple", StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>
@@ -297,7 +297,7 @@ public class Test {
         {
             var refAssemblies = typeof(VSTHRD001UseSwitchToMainThreadAsyncAnalyzer)
                 .Assembly.GetReferencedAssemblies();
-            Assert.False(refAssemblies.Any(a => a.Name.Equals("System.Threading.Tasks.Extensions", StringComparison.OrdinalIgnoreCase)));
+            Assert.DoesNotContain(refAssemblies, a => a.Name.Equals("System.Threading.Tasks.Extensions", StringComparison.OrdinalIgnoreCase));
         }
 
         [Fact]
