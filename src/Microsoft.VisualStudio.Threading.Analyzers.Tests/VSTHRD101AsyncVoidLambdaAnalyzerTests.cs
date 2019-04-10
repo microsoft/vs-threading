@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
     using System.Threading.Tasks;
+    using Microsoft.CodeAnalysis.Testing;
     using Xunit;
     using Verify = CSharpCodeFixVerifier<VSTHRD101AsyncVoidLambdaAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
@@ -119,7 +120,7 @@ class Test {
         }
 
         [Fact]
-        public async Task DoNotReportWarningOnAsyncVoidLambdaBeingUsedAsEventHandler()
+        public async Task ReportWarningOnAsyncVoidLambdaBeingUsedAsEventHandler()
         {
             var test = @"
 using System;
@@ -133,7 +134,12 @@ class Test {
     class MyEventArgs : EventArgs {}
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
+            DiagnosticResult[] expected =
+            {
+                Verify.Diagnostic().WithLocation(6, 32),
+                Verify.Diagnostic().WithLocation(7, 45),
+            };
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
     }
 }

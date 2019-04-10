@@ -292,23 +292,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         }
 
         /// <summary>
-        /// Check if the given method symbol is used as an event handler.
-        /// </summary>
-        /// <remarks>
-        /// Basically it needs to match this pattern:
-        ///   void method(object sender, EventArgs e);
-        /// </remarks>
-        internal static bool IsEventHandler(IMethodSymbol methodSymbol, Compilation compilation)
-        {
-            var objectType = compilation.GetTypeByMetadataName(typeof(object).FullName);
-            var eventArgsType = compilation.GetTypeByMetadataName(typeof(EventArgs).FullName);
-            return methodSymbol.Parameters.Length == 2
-                && methodSymbol.Parameters[0].Type.OriginalDefinition == objectType
-                && methodSymbol.Parameters[0].Name == "sender"
-                && Utils.IsEqualToOrDerivedFrom(methodSymbol.Parameters[1].Type, eventArgsType);
-        }
-
-        /// <summary>
         /// Determines whether a given symbol's declaration is visible outside the assembly
         /// (and thus refactoring it may introduce breaking changes.)
         /// </summary>
