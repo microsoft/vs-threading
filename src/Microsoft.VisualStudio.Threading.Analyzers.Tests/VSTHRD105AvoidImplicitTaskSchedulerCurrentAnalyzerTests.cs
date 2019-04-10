@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
     using System.Threading.Tasks;
+    using Microsoft.CodeAnalysis.Testing;
     using Xunit;
     using Verify = CSharpCodeFixVerifier<VSTHRD105AvoidImplicitTaskSchedulerCurrentAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
@@ -25,7 +26,7 @@ class Test {
             {
                 TestCode = test,
                 ExpectedDiagnostics = { expected },
-                VerifyExclusions = false,
+                TestBehaviors = TestBehaviors.SkipGeneratedCodeCheck,
             }.RunAsync();
         }
 
@@ -47,7 +48,7 @@ class Test {
             {
                 TestCode = test,
                 ExpectedDiagnostics = { expected },
-                VerifyExclusions = false,
+                TestBehaviors = TestBehaviors.SkipGeneratedCodeCheck,
             }.RunAsync();
         }
 
