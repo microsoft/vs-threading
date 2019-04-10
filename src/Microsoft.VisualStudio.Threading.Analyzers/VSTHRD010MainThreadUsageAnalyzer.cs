@@ -238,7 +238,7 @@
                         callerToCalleeMap[caller] = callees = new List<CallInfo>();
                     }
 
-                    callees.Add(new CallInfo { MethodSymbol = callee, InvocationSyntax = locationToBlame });
+                    callees.Add(new CallInfo(methodSymbol: callee, invocationSyntax: locationToBlame));
                 }
             }
         }
@@ -257,18 +257,24 @@
                         result[callee.MethodSymbol] = callers = new List<CallInfo>();
                     }
 
-                    callers.Add(new CallInfo { MethodSymbol = caller, InvocationSyntax = callee.InvocationSyntax });
+                    callers.Add(new CallInfo(methodSymbol: caller, callee.InvocationSyntax));
                 }
             }
 
             return result;
         }
 
-        private struct CallInfo
+        private readonly struct CallInfo
         {
-            public IMethodSymbol MethodSymbol { get; set; }
+            public CallInfo(IMethodSymbol methodSymbol, SyntaxNode invocationSyntax)
+            {
+                this.MethodSymbol = methodSymbol;
+                this.InvocationSyntax = invocationSyntax;
+            }
 
-            public SyntaxNode InvocationSyntax { get; set; }
+            public IMethodSymbol MethodSymbol { get; }
+
+            public SyntaxNode InvocationSyntax { get; }
         }
 
         private class MethodAnalyzer
