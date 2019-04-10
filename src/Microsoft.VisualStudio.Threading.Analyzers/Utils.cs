@@ -94,7 +94,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static bool IsEqualToOrDerivedFrom(ITypeSymbol type, ITypeSymbol expectedType)
         {
-            return type?.OriginalDefinition == expectedType || IsDerivedFrom(type, expectedType);
+            return EqualityComparer<ITypeSymbol>.Default.Equals(type?.OriginalDefinition, expectedType) || IsDerivedFrom(type, expectedType);
         }
 
         internal static bool IsDerivedFrom(ITypeSymbol type, ITypeSymbol expectedType)
@@ -102,7 +102,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             type = type?.BaseType;
             while (type != null)
             {
-                if (type.OriginalDefinition == expectedType)
+                if (EqualityComparer<ITypeSymbol>.Default.Equals(type.OriginalDefinition, expectedType))
                 {
                     return true;
                 }
@@ -303,7 +303,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             var objectType = compilation.GetTypeByMetadataName(typeof(object).FullName);
             var eventArgsType = compilation.GetTypeByMetadataName(typeof(EventArgs).FullName);
             return methodSymbol.Parameters.Length == 2
-                && methodSymbol.Parameters[0].Type.OriginalDefinition == objectType
+                && EqualityComparer<ITypeSymbol>.Default.Equals(methodSymbol.Parameters[0].Type.OriginalDefinition, objectType)
                 && methodSymbol.Parameters[0].Name == "sender"
                 && Utils.IsEqualToOrDerivedFrom(methodSymbol.Parameters[1].Type, eventArgsType);
         }
