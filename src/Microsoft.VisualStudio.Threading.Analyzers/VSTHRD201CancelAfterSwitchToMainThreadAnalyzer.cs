@@ -70,7 +70,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     return;
                 }
 
-                // It this *actually* a CancellationToken?
+                // Is this *actually* a CancellationToken?
                 if (!context.SemanticModel.GetTypeInfo(tokenSyntax).Type?.Equals(cancellationTokenTypeSymbol) ?? false)
                 {
                     return;
