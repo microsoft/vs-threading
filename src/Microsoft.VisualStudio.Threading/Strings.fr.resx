@@ -67,4 +67,13 @@
   <data name="SemaphoreStackNestingViolated" xml:space="preserve">
     <value>Les demandes de sémaphore imbriquées doivent être diffusées dans l'ordre du dernier entré, premier sorti (LIFO) quand le paramètre de réentrance est : '{0}'</value>
   </data>
+  <data name="SyncContextFrameMismatchedAffinity" xml:space="preserve">
+    <value>Ce frame a déjà été utilisé avec une autre instance.</value>
+  </data>
+  <data name="FrameMustBePushedFirst" xml:space="preserve">
+    <value>Cette instance doit d'abord faire l'objet d'un envoi (push).</value>
+  </data>
+  <data name="PushFromWrongThread" xml:space="preserve">
+    <value>La pompe de messages peut uniquement être exécutée à partir du thread d'origine.</value>
+  </data>
 </root>
