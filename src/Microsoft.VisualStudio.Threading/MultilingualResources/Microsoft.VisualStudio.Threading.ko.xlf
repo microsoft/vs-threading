@@ -81,15 +81,15 @@
         </trans-unit>
         <trans-unit id="SyncContextFrameMismatchedAffinity" translate="yes" xml:space="preserve">
           <source>This frame has already been used with a different instance.</source>
-          <target state="new">This frame has already been used with a different instance.</target>
+          <target state="translated">이 프레임은 다른 인스턴스에 이미 사용되었습니다.</target>
         </trans-unit>
         <trans-unit id="FrameMustBePushedFirst" translate="yes" xml:space="preserve">
           <source>This instance must be pushed first.</source>
-          <target state="new">This instance must be pushed first.</target>
+          <target state="translated">이 인스턴스를 먼저 푸시해야 합니다.</target>
         </trans-unit>
         <trans-unit id="PushFromWrongThread" translate="yes" xml:space="preserve">
           <source>Message pump can only be run from the original thread.</source>
-          <target state="new">Message pump can only be run from the original thread.</target>
+          <target state="translated">메시지 펌프는 원래 스레드에서만 실행할 수 있습니다.</target>
         </trans-unit>
       </group>
     </body>
