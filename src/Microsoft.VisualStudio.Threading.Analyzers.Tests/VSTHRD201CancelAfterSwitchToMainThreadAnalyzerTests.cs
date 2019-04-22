@@ -19,7 +19,7 @@ using Microsoft.VisualStudio.Threading;
 class Test {
     JoinableTaskFactory jtf;
     async Task Foo(CancellationToken cancellationToken) {
-        await jtf.SwitchToMainThreadAsync(cancellationToken);
+        await [|jtf.SwitchToMainThreadAsync(cancellationToken)|];
         jtf.ToString();
     }
 }
@@ -40,8 +40,7 @@ class Test {
 }
 ";
 
-            var expected = Verify.Diagnostic().WithSpan(9, 15, 9, 61);
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
+            await Verify.VerifyCodeFixAsync(test, withFix);
         }
 
         [Fact]
@@ -55,7 +54,7 @@ using Microsoft.VisualStudio.Threading;
 class Test {
     JoinableTaskFactory jtf;
     async Task Foo(CancellationToken cancellationToken) {
-        await jtf.SwitchToMainThreadAsync(true, cancellationToken);
+        await [|jtf.SwitchToMainThreadAsync(true, cancellationToken)|];
         jtf.ToString();
     }
 }
@@ -76,8 +75,7 @@ class Test {
 }
 ";
 
-            var expected = Verify.Diagnostic().WithSpan(9, 15, 9, 67);
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
+            await Verify.VerifyCodeFixAsync(test, withFix);
         }
 
         [Fact]
@@ -91,7 +89,7 @@ using Microsoft.VisualStudio.Threading;
 class Test {
     JoinableTaskFactory jtf;
     async Task Foo(CancellationToken cancellationToken) {
-        await jtf.SwitchToMainThreadAsync(cancellationToken: cancellationToken, alwaysYield: true);
+        await [|jtf.SwitchToMainThreadAsync(cancellationToken: cancellationToken, alwaysYield: true)|];
         jtf.ToString();
     }
 }
@@ -112,8 +110,7 @@ class Test {
 }
 ";
 
-            var expected = Verify.Diagnostic().WithSpan(9, 15, 9, 99);
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
+            await Verify.VerifyCodeFixAsync(test, withFix);
         }
 
         [Fact]
