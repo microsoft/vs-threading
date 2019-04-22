@@ -44,6 +44,45 @@ class Test {
         }
 
         [Fact]
+        public async Task SwitchWithoutCheck_OtherCTIsChecked_ProducesDiagnostic()
+        {
+            var test = @"
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    CancellationToken disposalToken;
+    JoinableTaskFactory jtf;
+    async Task Foo(CancellationToken cancellationToken) {
+        await [|jtf.SwitchToMainThreadAsync(cancellationToken)|];
+        disposalToken.ThrowIfCancellationRequested();
+        jtf.ToString();
+    }
+}
+";
+
+            var withFix = @"
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    CancellationToken disposalToken;
+    JoinableTaskFactory jtf;
+    async Task Foo(CancellationToken cancellationToken) {
+        await jtf.SwitchToMainThreadAsync(cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        disposalToken.ThrowIfCancellationRequested();
+        jtf.ToString();
+    }
+}
+";
+
+            await Verify.VerifyCodeFixAsync(test, withFix);
+        }
+
+        [Fact]
         public async Task SwitchWithoutCheck_WithYieldArg_ProducesDiagnostic()
         {
             var test = @"
