@@ -44,6 +44,46 @@ class Test {
         }
 
         [Fact]
+        public async Task SwitchWithoutCheck_InBlocklessCondition_ProducesDiagnostic()
+        {
+            var test = @"
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    JoinableTaskFactory jtf;
+    async Task Foo(CancellationToken cancellationToken) {
+        if (jtf != null)
+            await [|jtf.SwitchToMainThreadAsync(cancellationToken)|];
+        jtf.ToString();
+    }
+}
+";
+
+            var withFix = @"
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    JoinableTaskFactory jtf;
+    async Task Foo(CancellationToken cancellationToken) {
+        if (jtf != null)
+        {
+            await jtf.SwitchToMainThreadAsync(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+        }
+
+        jtf.ToString();
+    }
+}
+";
+
+            await Verify.VerifyCodeFixAsync(test, withFix);
+        }
+
+        [Fact]
         public async Task SwitchWithoutCheck_OtherCTIsChecked_ProducesDiagnostic()
         {
             var test = @"

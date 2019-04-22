@@ -95,14 +95,15 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 if (containingBlock != null)
                 {
                     int statementIndex = containingBlock.Statements.IndexOf(statement);
-                    if (statementIndex >= 0)
+                    var nextStatement = statementIndex + 1 < containingBlock.Statements.Count ? containingBlock.Statements[statementIndex + 1] : null;
+                    if (!IsTokenCheck(nextStatement))
                     {
-                        var nextStatement = statementIndex + 1 < containingBlock.Statements.Count ? containingBlock.Statements[statementIndex + 1] : null;
-                        if (!IsTokenCheck(nextStatement))
-                        {
-                            context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationSyntax.GetLocation()));
-                        }
+                        context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationSyntax.GetLocation()));
                     }
+                }
+                else
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationSyntax.GetLocation()));
                 }
 
                 bool IsTokenCheck(StatementSyntax consideredStatement)

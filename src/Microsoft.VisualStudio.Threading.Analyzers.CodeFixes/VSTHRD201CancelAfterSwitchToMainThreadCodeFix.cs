@@ -35,12 +35,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         {
             var diagnostic = context.Diagnostics.First();
 
-            // Our fix only works if we're within a block statement (no simple lambdas),
+            // Our fix only works if we're within a block or if statement (no simple lambdas),
             // so check applicability before offering.
             var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
             var statementSyntax = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<StatementSyntax>();
-            var containingBlock = statementSyntax?.Parent as BlockSyntax;
-            if (containingBlock != null)
+            if (statementSyntax?.Parent is BlockSyntax || statementSyntax?.Parent is IfStatementSyntax)
             {
                 context.RegisterCodeFix(
                     CodeAction.Create(
@@ -59,7 +58,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             var cancellationTokenTypeSymbol = semanticModel.Compilation.GetTypeByMetadataName(typeof(CancellationToken).FullName);
             var tokenExpressionSyntax = VSTHRD201CancelAfterSwitchToMainThreadAnalyzer.GetCancellationTokenInInvocation(invocationSyntax, semanticModel, cancellationTokenTypeSymbol);
             var statementSyntax = invocationSyntax.FirstAncestorOrSelf<StatementSyntax>();
-            var containingBlock = statementSyntax?.Parent as BlockSyntax;
 
             var checkTokenStatement = SyntaxFactory.ExpressionStatement(
                 SyntaxFactory.InvocationExpression(
@@ -68,9 +66,27 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                         tokenExpressionSyntax,
                         SyntaxFactory.IdentifierName(nameof(CancellationToken.ThrowIfCancellationRequested)))))
                 .WithAdditionalAnnotations(Formatter.Annotation);
-            var updatedRoot = root.ReplaceNode(
-                containingBlock,
-                containingBlock.InsertNodesAfter(statementSyntax, new[] { checkTokenStatement }));
+
+            SyntaxNode updatedRoot;
+            if (statementSyntax?.Parent is BlockSyntax containingBlock)
+            {
+                updatedRoot = root.ReplaceNode(
+                    containingBlock,
+                    containingBlock.InsertNodesAfter(statementSyntax, new[] { checkTokenStatement }));
+            }
+            else if (statementSyntax?.Parent is IfStatementSyntax ifStatement)
+            {
+                updatedRoot = root.ReplaceNode(
+                    ifStatement,
+                    ifStatement.WithStatement(
+                        SyntaxFactory.Block(
+                            statementSyntax,
+                            checkTokenStatement)));
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
 
             return context.Document.WithSyntaxRoot(updatedRoot);
         }
