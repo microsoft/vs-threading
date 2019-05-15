@@ -484,11 +484,6 @@ namespace Microsoft.VisualStudio.Threading
             private readonly HashSet<TResource> resourcesAcquiredWithinUpgradeableRead = new HashSet<TResource>();
 
             /// <summary>
-            /// A collection of all the resources requested within the outermost write lock.
-            /// </summary>
-            private readonly HashSet<TResource> resourcesAcquiredWithinWriteLock = new HashSet<TResource>();
-
-            /// <summary>
             /// A map of resources to the tasks that most recently began evaluating them.
             /// </summary>
             private WeakKeyDictionary<TResource, ResourcePreparationTaskAndValidity> resourcePreparationTasks = new WeakKeyDictionary<TResource, ResourcePreparationTaskAndValidity>(capacity: 2);
@@ -552,11 +547,7 @@ namespace Microsoft.VisualStudio.Threading
                 var ambientLock = this.service.AmbientLock;
                 lock (this.service.SyncObject)
                 {
-                    if (ambientLock.HasWriteLock)
-                    {
-                        this.resourcesAcquiredWithinWriteLock.Add(resource);
-                    }
-                    else if (ambientLock.HasUpgradeableReadLock)
+                    if (!ambientLock.HasWriteLock && ambientLock.HasUpgradeableReadLock)
                     {
                         this.resourcesAcquiredWithinUpgradeableRead.Add(resource);
                     }
@@ -583,7 +574,7 @@ namespace Microsoft.VisualStudio.Threading
                 bool match = false;
                 lock (this.service.SyncObject)
                 {
-                    if (ambientLock.HasWriteLock || ambientLock.HasUpgradeableReadLock)
+                    if (!ambientLock.HasWriteLock && ambientLock.HasUpgradeableReadLock)
                     {
                         foreach (var resource in this.resourcePreparationTasks)
                         {
@@ -610,7 +601,6 @@ namespace Microsoft.VisualStudio.Threading
                     // because backdoors can and legitimately do (as in CPS) exist for tampering
                     // with a resource without going through our access methods.
                     this.SetAllResourcesToUnknownState();
-                    this.resourcesAcquiredWithinWriteLock.Clear(); // the write lock is gone now.
 
                     if (this.service.IsUpgradeableReadLockHeld && this.resourcesAcquiredWithinUpgradeableRead.Count > 0)
                     {
