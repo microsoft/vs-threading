@@ -13,7 +13,7 @@ Finding the cause for an asynchronous hang can be challenging, but it can be don
 
    **Resolution:** Modify the code running on the background thread to switch to the UI thread before making the call to the STA COM object, by using `await JoinableTaskFactory.SwitchToMainThreadAsync();` per [rule #1][ThreadingRules].
 
-1. Use the [`!dumpasync` WinDbg extension](dumpasync.md) to reveal the async methods that do not appear on thread callstacks to identify why an async method did not complete.
+1. Use [WinDbg](https://docs.microsoft.com/en-us/windows-hardware/drivers/debugger/debugger-download-tools) with the [`!dumpasync` extension](dumpasync.md) to reveal the async methods that do not appear on thread callstacks to identify why an async method did not complete.
 
 ## Visual Studio specific considerations
 

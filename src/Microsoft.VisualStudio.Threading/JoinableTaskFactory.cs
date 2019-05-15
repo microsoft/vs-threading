@@ -964,7 +964,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
                 catch (Exception ex)
                 {
-                    // This is bad. It would cause a hang without a trace as to why, since we if can't
+                    // This is bad. It would cause a hang without a trace as to why, since if we can't
                     // schedule the continuation, stuff would just never happen.
                     // Crash now, so that a Watson report would capture the original error.
                     Environment.FailFast("Failed to schedule time on the UI thread. A continuation would never execute.", ex);

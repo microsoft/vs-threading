@@ -82,12 +82,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             var methodSymbol = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
             if (methodSymbol != null && methodSymbol.IsAsync && methodSymbol.ReturnsVoid)
             {
-                // Async Void methods/lambdas are designed to be used as asynchronous event handlers,
-                // report warnings only if they are not used like that way.
-                if (!Utils.IsEventHandler(methodSymbol, context.SemanticModel.Compilation))
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(Descriptor, context.Node.GetLocation()));
-                }
+                context.ReportDiagnostic(Diagnostic.Create(Descriptor, context.Node.GetLocation()));
             }
         }
     }

@@ -15,4 +15,4 @@ That way your product code can run inside or outside VS for testability, and you
 
 Note the above technique has the limitation that calling other code that relies on `ThreadHelper.JoinableTaskFactory` (like the `VsTaskLibraryHelper.FileAndForget` extension method) may still fail.
 
-Documentation for how to mock up `ThreadHelper` so that it works within unit tests is coming soon.
+Documentation for how to mock up `ThreadHelper` so that it works within unit tests is coming soon ([Microsoft-internal solution](https://aka.ms/vssdktestfx) available now).

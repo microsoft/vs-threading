@@ -2,7 +2,7 @@
 {
     using System.Threading.Tasks;
     using Xunit;
-    using Verify = CSharpCodeFixVerifier<VSTHRD100AsyncVoidMethodAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
+    using Verify = CSharpCodeFixVerifier<VSTHRD100AsyncVoidMethodAnalyzer, VSTHRD100AsyncVoidMethodCodeFix>;
 
     public class VSTHRD100AsyncVoidMethodAnalyzerTests
     {
@@ -52,7 +52,7 @@ class Test {
         }
 
         [Fact]
-        public async Task DoNotReportWarningOnAsyncVoidEventHandler()
+        public async Task ReportWarningOnAsyncVoidEventHandler()
         {
             var test = @"
 using System;
@@ -62,11 +62,20 @@ class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
+            var withFix = @"
+using System;
+
+class Test {
+    async System.Threading.Tasks.Task F(object sender, EventArgs e) {
+    }
+}
+";
+            var expected = Verify.Diagnostic().WithLocation(5, 16);
+            await Verify.VerifyCodeFixAsync(test, expected, withFix);
         }
 
         [Fact]
-        public async Task DoNotReportWarningOnAsyncVoidEventHandlerWithMyEventArgs()
+        public async Task ReportWarningOnAsyncVoidEventHandlerWithMyEventArgs()
         {
             var test = @"
 using System;
@@ -78,7 +87,18 @@ class Test {
 
 class MyEventArgs : EventArgs {}
 ";
-            await Verify.VerifyAnalyzerAsync(test);
+            var withFix = @"
+using System;
+
+class Test {
+    async System.Threading.Tasks.Task F(object sender, MyEventArgs e) {
+    }
+}
+
+class MyEventArgs : EventArgs {}
+";
+            var expected = Verify.Diagnostic().WithLocation(5, 16);
+            await Verify.VerifyCodeFixAsync(test, expected, withFix);
         }
     }
 }

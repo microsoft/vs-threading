@@ -86,7 +86,7 @@ If your library doesn't target any application specifically, the library can ind
 ```cs
 public static class LibrarySettings
 {
-    private JoinableTaskContext joinableTaskContext;
+    private static JoinableTaskContext joinableTaskContext;
 
     /// <summary>
     /// Gets or sets the JoinableTaskContext created on the main thread of the application hosting this library.
@@ -95,21 +95,21 @@ public static class LibrarySettings
     {
         get
         {
-            if (this.joinableTaskContext == null)
+            if (joinableTaskContext == null)
             {
                 // This self-initializer is for when an app does not have a `JoinableTaskContext` to pass to the library.
                 // Our private instance will only work if this property getter first runs on the main thread of the application
                 // since creating a JoinableTaskContext captures the thread and SynchronizationContext.
-                this.joinableTaskContext = new JoinableTaskContext();
+                joinableTaskContext = new JoinableTaskContext();
             }
 
-            return this.joinableTaskContext;
+            return joinableTaskContext;
         }
 
         set
         {
-            Assumes.True(this.joinableTaskContext == null || this.joinableTaskContext == value, "This property has already been set to another value or is set after its value has been retrieved with a self-created value. Set this property once, before it is used elsewhere.");
-            this.joinableTaskContext = value;
+            Assumes.True(joinableTaskContext == null || joinableTaskContext == value, "This property has already been set to another value or is set after its value has been retrieved with a self-created value. Set this property once, before it is used elsewhere.");
+            joinableTaskContext = value;
         }
     }
 }
