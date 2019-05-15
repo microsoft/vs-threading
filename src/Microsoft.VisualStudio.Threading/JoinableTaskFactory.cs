@@ -712,7 +712,7 @@ namespace Microsoft.VisualStudio.Threading
         /// An awaitable struct that facilitates an asynchronous transition to the Main thread.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible"), SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct MainThreadAwaitable
+        public readonly struct MainThreadAwaitable
         {
             private readonly JoinableTaskFactory jobFactory;
 
@@ -749,7 +749,7 @@ namespace Microsoft.VisualStudio.Threading
         /// An awaiter struct that facilitates an asynchronous transition to the Main thread.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct MainThreadAwaiter : ICriticalNotifyCompletion
+        public readonly struct MainThreadAwaiter : ICriticalNotifyCompletion
         {
             private static readonly Action<object> SafeCancellationAction = state => ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, state);
 
@@ -782,7 +782,7 @@ namespace Microsoft.VisualStudio.Threading
             /// then this will hold a default value of <see cref="CancellationTokenRegistration"/>, and <see cref="OnCompleted(Action)"/>
             /// would not touch it.
             /// </remarks>
-            private StrongBox<CancellationTokenRegistration?> cancellationRegistrationPtr;
+            private readonly StrongBox<CancellationTokenRegistration?> cancellationRegistrationPtr;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="MainThreadAwaiter"/> struct.
@@ -985,7 +985,7 @@ namespace Microsoft.VisualStudio.Threading
         /// A value to construct with a C# using block in all the Run method overloads
         /// to setup and teardown the boilerplate stuff.
         /// </summary>
-        private struct RunFramework : IDisposable
+        private readonly struct RunFramework : IDisposable
         {
             private readonly JoinableTaskFactory factory;
             private readonly SpecializedSyncContext syncContextRevert;

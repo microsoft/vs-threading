@@ -711,7 +711,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return true;
         }
 
-        internal struct ContainingFunctionData
+        internal readonly struct ContainingFunctionData
         {
             internal ContainingFunctionData(CSharpSyntaxNode function, bool isAsync, ParameterListSyntax parameterList, CSharpSyntaxNode blockOrExpression)
             {
@@ -721,13 +721,13 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 this.BlockOrExpression = blockOrExpression;
             }
 
-            internal CSharpSyntaxNode Function { get; set; }
+            internal CSharpSyntaxNode Function { get; }
 
-            internal bool IsAsync { get; set; }
+            internal bool IsAsync { get; }
 
-            internal ParameterListSyntax ParameterList { get; set; }
+            internal ParameterListSyntax ParameterList { get; }
 
-            internal CSharpSyntaxNode BlockOrExpression { get; set; }
+            internal CSharpSyntaxNode BlockOrExpression { get; }
         }
     }
 }

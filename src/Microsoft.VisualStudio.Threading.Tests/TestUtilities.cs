@@ -276,7 +276,7 @@
 
         private static string AssemblyCommandLineArguments(params string[] args) => string.Join(" ", args.Select(a => $"\"{a}\""));
 
-        internal struct YieldAndNotifyAwaitable
+        internal readonly struct YieldAndNotifyAwaitable
         {
             private readonly INotifyCompletion baseAwaiter;
             private readonly AsyncManualResetEvent yieldingSignal;
@@ -297,7 +297,7 @@
             }
         }
 
-        internal struct YieldAndNotifyAwaiter : INotifyCompletion
+        internal readonly struct YieldAndNotifyAwaiter : INotifyCompletion
         {
             private readonly INotifyCompletion baseAwaiter;
             private readonly AsyncManualResetEvent yieldingSignal;
@@ -340,7 +340,7 @@
             }
         }
 
-        internal struct DebugAssertionRevert : IDisposable
+        internal readonly struct DebugAssertionRevert : IDisposable
         {
             public void Dispose()
             {

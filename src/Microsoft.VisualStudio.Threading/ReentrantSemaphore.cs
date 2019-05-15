@@ -257,7 +257,7 @@ namespace Microsoft.VisualStudio.Threading
         /// A structure that hides any evidence that the caller has entered a <see cref="ReentrantSemaphore"/> till this value is disposed.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct RevertRelevance : IDisposable
+        public readonly struct RevertRelevance : IDisposable
         {
             /// <summary>
             /// The delegate to invoke on disposal.

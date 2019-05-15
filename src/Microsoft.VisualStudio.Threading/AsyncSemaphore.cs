@@ -167,7 +167,7 @@ namespace Microsoft.VisualStudio.Threading
         /// A value whose disposal triggers the release of a lock.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct Releaser : IDisposable
+        public readonly struct Releaser : IDisposable
         {
             /// <summary>
             /// The lock instance to release.

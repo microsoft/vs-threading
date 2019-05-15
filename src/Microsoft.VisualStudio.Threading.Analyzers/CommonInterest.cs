@@ -277,7 +277,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return new QualifiedMember(containingType, methodName);
         }
 
-        internal struct TypeMatchSpec
+        internal readonly struct TypeMatchSpec
         {
             internal TypeMatchSpec(QualifiedType type, QualifiedMember member, bool inverted)
             {
@@ -350,7 +350,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
         }
 
-        internal struct QualifiedType
+        internal readonly struct QualifiedType
         {
             public QualifiedType(IReadOnlyList<string> containingTypeNamespace, string typeName)
             {
@@ -371,7 +371,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             public override string ToString() => string.Join(".", this.Namespace.Concat(new[] { this.Name }));
         }
 
-        internal struct QualifiedMember
+        internal readonly struct QualifiedMember
         {
             public QualifiedMember(QualifiedType containingType, string methodName)
             {
@@ -393,7 +393,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         }
 
         [DebuggerDisplay("{" + nameof(Method) + "} -> {" + nameof(AsyncAlternativeMethodName) + "}")]
-        internal struct SyncBlockingMethod
+        internal readonly struct SyncBlockingMethod
         {
             public SyncBlockingMethod(QualifiedMember method, string asyncAlternativeMethodName = null, IReadOnlyList<string> extensionMethodNamespace = null)
             {

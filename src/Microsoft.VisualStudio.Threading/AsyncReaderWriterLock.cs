@@ -1757,7 +1757,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// An awaitable that is returned from asynchronous lock requests.
         /// </summary>
-        public struct Awaitable
+        public readonly struct Awaitable
         {
             /// <summary>
             /// The awaiter to return from the <see cref="GetAwaiter"/> method.
@@ -1804,7 +1804,7 @@ namespace Microsoft.VisualStudio.Threading
         /// A value whose disposal releases a held lock.
         /// </summary>
         [DebuggerDisplay("{awaiter.kind}")]
-        public struct Releaser : IDisposable
+        public readonly struct Releaser : IDisposable
         {
             /// <summary>
             /// The awaiter who manages the lifetime of a lock.
@@ -1891,7 +1891,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// A value whose disposal restores visibility of any locks held by the caller.
         /// </summary>
-        public struct Suppression : IDisposable
+        public readonly struct Suppression : IDisposable
         {
             /// <summary>
             /// The locking class.
@@ -1932,7 +1932,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// A "public" representation of a specific lock.
         /// </summary>
-        protected struct LockHandle
+        protected readonly struct LockHandle
         {
             /// <summary>
             /// The awaiter this lock handle wraps.
@@ -2697,7 +2697,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
             }
 
-            internal struct LoanBack : IDisposable
+            internal readonly struct LoanBack : IDisposable
             {
                 private readonly NonConcurrentSynchronizationContext syncContext;
                 private readonly AsyncReaderWriterLock asyncLock;
