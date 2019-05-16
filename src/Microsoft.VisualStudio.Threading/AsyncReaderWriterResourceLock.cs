@@ -574,7 +574,7 @@ namespace Microsoft.VisualStudio.Threading
                 bool match = false;
                 lock (this.service.SyncObject)
                 {
-                    if (!ambientLock.HasWriteLock && ambientLock.HasUpgradeableReadLock)
+                    if (ambientLock.HasWriteLock || ambientLock.HasUpgradeableReadLock)
                     {
                         foreach (var resource in this.resourcePreparationTasks)
                         {
