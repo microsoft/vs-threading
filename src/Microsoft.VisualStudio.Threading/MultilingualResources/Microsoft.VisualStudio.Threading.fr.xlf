@@ -81,15 +81,15 @@
         </trans-unit>
         <trans-unit id="SyncContextFrameMismatchedAffinity" translate="yes" xml:space="preserve">
           <source>This frame has already been used with a different instance.</source>
-          <target state="new">This frame has already been used with a different instance.</target>
+          <target state="translated">Ce frame a déjà été utilisé avec une autre instance.</target>
         </trans-unit>
         <trans-unit id="FrameMustBePushedFirst" translate="yes" xml:space="preserve">
           <source>This instance must be pushed first.</source>
-          <target state="new">This instance must be pushed first.</target>
+          <target state="translated">Cette instance doit d'abord faire l'objet d'un envoi (push).</target>
         </trans-unit>
         <trans-unit id="PushFromWrongThread" translate="yes" xml:space="preserve">
           <source>Message pump can only be run from the original thread.</source>
-          <target state="new">Message pump can only be run from the original thread.</target>
+          <target state="translated">La pompe de messages peut uniquement être exécutée à partir du thread d'origine.</target>
         </trans-unit>
       </group>
     </body>

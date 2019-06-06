@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
-  <file datatype="xml" source-language="en-US" target-language="zh-Hant" original="MICROSOFT.VISUALSTUDIO.THREADING/STRINGS.RESX" tool-id="MultilingualAppToolkit" product-name="n/a" product-version="n/a" build-num="n/a">
+  <file datatype="xml" source-language="en-US" target-language="zh-HANT" original="MICROSOFT.VISUALSTUDIO.THREADING/STRINGS.RESX" tool-id="MultilingualAppToolkit" product-name="n/a" product-version="n/a" build-num="n/a">
     <header>
       <tool tool-id="MultilingualAppToolkit" tool-name="Multilingual App Toolkit" tool-version="4.0.1605.0" tool-company="Microsoft" />
     </header>
@@ -81,15 +81,15 @@
         </trans-unit>
         <trans-unit id="SyncContextFrameMismatchedAffinity" translate="yes" xml:space="preserve">
           <source>This frame has already been used with a different instance.</source>
-          <target state="new">This frame has already been used with a different instance.</target>
+          <target state="translated">其他執行個體已在使用此框架。</target>
         </trans-unit>
         <trans-unit id="FrameMustBePushedFirst" translate="yes" xml:space="preserve">
           <source>This instance must be pushed first.</source>
-          <target state="new">This instance must be pushed first.</target>
+          <target state="translated">必須先推送此執行個體。</target>
         </trans-unit>
         <trans-unit id="PushFromWrongThread" translate="yes" xml:space="preserve">
           <source>Message pump can only be run from the original thread.</source>
-          <target state="new">Message pump can only be run from the original thread.</target>
+          <target state="translated">訊息提示只可從原始的執行緒執行。</target>
         </trans-unit>
       </group>
     </body>
