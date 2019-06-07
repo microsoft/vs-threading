@@ -67,4 +67,13 @@
   <data name="SemaphoreStackNestingViolated" xml:space="preserve">
     <value>入れ子になったセマフォの要求は、再入の設定が '{0}' である場合、LIFO の順序でリリースする必要があります。</value>
   </data>
+  <data name="SyncContextFrameMismatchedAffinity" xml:space="preserve">
+    <value>このフレームは、別のインスタンスで既に使用されています。</value>
+  </data>
+  <data name="FrameMustBePushedFirst" xml:space="preserve">
+    <value>このインスタンスを最初にプッシュする必要があります。</value>
+  </data>
+  <data name="PushFromWrongThread" xml:space="preserve">
+    <value>メッセージ ポンプは、元のスレッドからのみ実行できます。</value>
+  </data>
 </root>

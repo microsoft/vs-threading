@@ -53,18 +53,18 @@
     <value>Use InvokeAsync para desencadenar eventos asincrónicos</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>La llamada a await en un elemento Task dentro de JoinableTaskFactory.Run, cuando la tarea se ha iniciado fuera del delegado, puede provocar potenciales interbloqueos.
-Puede evitar este problema asegurándose de que la tarea se ha iniciado dentro del delegado o usando JoinableTask en lugar de Task.</value>
+    <value>Evite la espera o devolución de una tarea representativa de un trabajo no iniciado en su contexto, lo cual puede causar bloqueos.
+Inicie el trabajo en este contexto o use JoinableTaskFactory.RunAsync y espere el objeto JoinableTask que se devuelve.</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
-    <value>Evite usar await para tareas que no sean de unión en contextos de unión</value>
+    <value>Evitar la espera de tareas externas</value>
   </data>
   <data name="VSTHRD011_MessageFormat" xml:space="preserve">
-    <value>Lazy&lt;Task&lt;T&gt;&gt;.Value puede provocar interbloqueos.
+    <value>Lazy&lt;Task&lt;T&gt;&gt;. Posible interbloqueo del valor.
 Use AsyncLazy&lt;T&gt; en su lugar.</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
-    <value>Uso de AsyncLazy&lt;T&gt;</value>
+    <value>Usar AsyncLazy&lt;T&gt;</value>
   </data>
   <data name="VSTHRD103_MessageFormat" xml:space="preserve">
     <value>{0} bloquea sincrónicamente. Use await {1} en su lugar.</value>
@@ -167,8 +167,8 @@ Use AsyncLazy&lt;T&gt; en su lugar.</value>
     <value>Observar resultado de llamadas asincrónicas</value>
   </data>
   <data name="VSTHRD011b_MessageFormat" xml:space="preserve">
-    <value>Invocar o bloquear en código asincrónico en un generador de valores Lazy&lt;T&gt; puede provocar interbloqueos.
-Use en su lugar AsyncLazy&lt;T&gt;.</value>
+    <value>La invocación o el bloqueo del código asincrónico en un valor Lazy&lt;T&gt; predeterminado de fábrica puede generar un interbloqueo.
+Use AsyncLazy&lt;T&gt; en su lugar.</value>
   </data>
   <data name="VSTHRD200_AddAsync_MessageFormat" xml:space="preserve">
     <value>Use el sufijo "Async" en nombres de métodos que devuelven un tipo que admite await.</value>

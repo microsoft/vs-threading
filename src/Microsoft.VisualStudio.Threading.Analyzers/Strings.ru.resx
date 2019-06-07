@@ -53,18 +53,18 @@
     <value>Использование InvokeAsync для вызова асинхронных событий</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>При вызове await в объекте Task в JoinableTaskFactory.Run (и при условии, что задача инициализирована за пределами делегата), могут произойти взаимоблокировки.
-Вы можете избежать этой проблемы, инициализировав задачу в делегате или использовав JoinableTask вместо Task.</value>
+    <value>Не рекомендуется ожидать или возвращать задачу, представляющую работу, которая не была запущена в вашем контексте, так как это может привести к взаимоблокировке.
+Запустите работу в этом контексте или используйте JoinableTaskFactory.RunAsync и ожидайте возвращаемую задачу JoinableTask.</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
-    <value>Избегание await в неприсоединяемых задачах в контекстах соединения</value>
+    <value>Не рекомендуется ожидать внешние задачи</value>
   </data>
   <data name="VSTHRD011_MessageFormat" xml:space="preserve">
-    <value>Lazy&lt;Task&lt;T&gt;&gt;.Value может вызвать взаимоблокировку.
-Вместо этого используйте AsyncLazy&lt;T&gt;.</value>
+    <value>Lazy&lt;Task&lt;T&gt;&gt;.Value может попадать во взаимоблокировку.
+Используйте вместо этого AsyncLazy&lt;T&gt;.</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
-    <value>Используйте AsyncLazy&lt;T&gt;</value>
+    <value>Использовать AsyncLazy&lt;T&gt;</value>
   </data>
   <data name="VSTHRD103_MessageFormat" xml:space="preserve">
     <value>{0} синхронно блокирует. Вместо этого используйте Await {1}.</value>
@@ -167,8 +167,8 @@
     <value>Просмотр результатов асинхронных вызовов</value>
   </data>
   <data name="VSTHRD011b_MessageFormat" xml:space="preserve">
-    <value>Вызов или блокировка в асинхронном коде в методе ValueFactory Lazy&lt;T&gt; может вызвать взаимоблокировку.
-Вместо этого используйте AsyncLazy&lt;T&gt;.</value>
+    <value>Вызов и блокировка асинхронного кода в фабрике значений Lazy&lt;T&gt; могут попадать во взаимоблокировку.
+Используйте вместо этого AsyncLazy&lt;T&gt;.</value>
   </data>
   <data name="VSTHRD200_AddAsync_MessageFormat" xml:space="preserve">
     <value>Используйте суффикс "Async" в именах методов, которые возвращают тип, поддерживающий ожидание.</value>

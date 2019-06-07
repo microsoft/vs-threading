@@ -67,4 +67,13 @@
   <data name="SemaphoreStackNestingViolated" xml:space="preserve">
     <value>İç içe geçmiş semafor istekleri, yeniden giriş ayarı şu olduğunda LIFO sırasında yayınlanmalıdır: '{0}'</value>
   </data>
+  <data name="SyncContextFrameMismatchedAffinity" xml:space="preserve">
+    <value>Bu çerçeve zaten farklı bir örnekle kullanıldı.</value>
+  </data>
+  <data name="FrameMustBePushedFirst" xml:space="preserve">
+    <value>Önce bu örnek gönderilmelidir.</value>
+  </data>
+  <data name="PushFromWrongThread" xml:space="preserve">
+    <value>İleti göndericisi yalnızca özgün iş parçacığından çalıştırılabilir.</value>
+  </data>
 </root>

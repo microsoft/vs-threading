@@ -67,4 +67,13 @@
   <data name="SemaphoreStackNestingViolated" xml:space="preserve">
     <value>Solicitações de semáforo aninhadas devem ser lançadas na ordem LIFO quando a configuração de novas entradas é: '{0}'</value>
   </data>
+  <data name="SyncContextFrameMismatchedAffinity" xml:space="preserve">
+    <value>Este quadro já foi usado com uma instância diferente.</value>
+  </data>
+  <data name="FrameMustBePushedFirst" xml:space="preserve">
+    <value>O push dessa instância deve ser efetuado primeiro.</value>
+  </data>
+  <data name="PushFromWrongThread" xml:space="preserve">
+    <value>O aumento de mensagens só pode ser executado do thread original.</value>
+  </data>
 </root>
