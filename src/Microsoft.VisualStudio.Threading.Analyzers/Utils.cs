@@ -94,7 +94,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static bool IsEqualToOrDerivedFrom(ITypeSymbol type, ITypeSymbol expectedType)
         {
-            return type?.OriginalDefinition == expectedType || IsDerivedFrom(type, expectedType);
+            return EqualityComparer<ITypeSymbol>.Default.Equals(type?.OriginalDefinition, expectedType) || IsDerivedFrom(type, expectedType);
         }
 
         internal static bool IsDerivedFrom(ITypeSymbol type, ITypeSymbol expectedType)
@@ -102,7 +102,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             type = type?.BaseType;
             while (type != null)
             {
-                if (type.OriginalDefinition == expectedType)
+                if (EqualityComparer<ITypeSymbol>.Default.Equals(type.OriginalDefinition, expectedType))
                 {
                     return true;
                 }

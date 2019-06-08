@@ -67,4 +67,13 @@
   <data name="SemaphoreStackNestingViolated" xml:space="preserve">
     <value>Вложенные запросы к семафорам должны освобождаться в порядке LIFO, если параметр повторного вхождения имеет значение: '{0}'</value>
   </data>
+  <data name="SyncContextFrameMismatchedAffinity" xml:space="preserve">
+    <value>Этот кадр уже используется с другим экземпляром.</value>
+  </data>
+  <data name="FrameMustBePushedFirst" xml:space="preserve">
+    <value>Этот экземпляр необходимо отправить первым.</value>
+  </data>
+  <data name="PushFromWrongThread" xml:space="preserve">
+    <value>Генератор сообщений может быть запущен только из исходного потока.</value>
+  </data>
 </root>

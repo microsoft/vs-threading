@@ -53,14 +53,14 @@
     <value>비동기 이벤트를 발생하는 InvokeAsync 사용</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>작업이 외부에서 초기화되면 대리자가 잠재적인 교착 상태를 일으킬 수 있으므로 JoinableTaskFactory.Run 내 Task에서 호출을 대기합니다.
-작업이 대리자 내에서 초기화되도록 하거나 Task 대신 JoinableTask를 사용하여 이 문제를 방지할 수 있습니다.</value>
+    <value>교착 상태가 발생할 수 있기 때문에 컨텍스트 내에서 시작되지 않은 작업을 나타내는 작업을 대기하거나 반환하지 않습니다.
+대신 이 컨텍스트 내에서 작업을 시작하거나 JoinableTaskFactory.RunAsync를 사용하고 반환된 JoinableTask를 대기하세요.</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
-    <value>조인 컨텍스트에서 조인할 수 없는 작업을 대기하지 않습니다.</value>
+    <value>외부 작업을 대기하지 않음</value>
   </data>
   <data name="VSTHRD011_MessageFormat" xml:space="preserve">
-    <value>Lazy&lt;Task&lt;T&gt;&gt;.Value가 교착 상태가 될 수 있습니다.
+    <value>Lazy&lt;Task&lt;T&gt;&gt;.Value는 교착 상태를 초래할 수 있습니다.
 대신 AsyncLazy&lt;T&gt;를 사용하세요.</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
@@ -167,8 +167,8 @@
     <value>비동기 호출의 결과 확인</value>
   </data>
   <data name="VSTHRD011b_MessageFormat" xml:space="preserve">
-    <value>Lazy&lt;T&gt; 값 팩터리의 비동기 코드를 호출하거나 차단하면 교착 상태가 될 수 있습니다.
-대신 AsyncLazy&lt;T&gt;를 사용합니다.</value>
+    <value>Lazy&lt;T&gt; 값 팩터리에서 비동기 코드를 호출하거나 차단하면 교착 상태가 발생할 수 있습니다.
+대신 AsyncLazy&lt;T&gt;를 사용하세요.</value>
   </data>
   <data name="VSTHRD200_AddAsync_MessageFormat" xml:space="preserve">
     <value>대기할 수 있는 형식을 반환하는 메서드의 이름에 "Async" 접미사를 사용합니다.</value>

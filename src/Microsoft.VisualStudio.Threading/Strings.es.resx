@@ -67,4 +67,13 @@
   <data name="SemaphoreStackNestingViolated" xml:space="preserve">
     <value>Las solicitudes de semáforo anidadas deben liberarse en orden LIFO cuando el valor de reentrada es "{0}"</value>
   </data>
+  <data name="SyncContextFrameMismatchedAffinity" xml:space="preserve">
+    <value>Este marco ya se ha usado con otra instancia.</value>
+  </data>
+  <data name="FrameMustBePushedFirst" xml:space="preserve">
+    <value>Esta instancia se debe insertar primero.</value>
+  </data>
+  <data name="PushFromWrongThread" xml:space="preserve">
+    <value>El suministro de mensajes solo puede ejecutarse desde el subproceso original.</value>
+  </data>
 </root>

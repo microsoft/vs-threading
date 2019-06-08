@@ -60,24 +60,24 @@
         <trans-unit id="VSTHRD003_MessageFormat" translate="yes" xml:space="preserve">
           <source>Avoid awaiting or returning a Task representing work that was not started within your context as that can lead to deadlocks.
 Start the work within this context, or use JoinableTaskFactory.RunAsync and await the returned JoinableTask instead.</source>
-          <target state="needs-review-translation">При вызове await в объекте Task в JoinableTaskFactory.Run (и при условии, что задача инициализирована за пределами делегата), могут произойти взаимоблокировки.
-Вы можете избежать этой проблемы, инициализировав задачу в делегате или использовав JoinableTask вместо Task.</target>
+          <target state="translated">Не рекомендуется ожидать или возвращать задачу, представляющую работу, которая не была запущена в вашем контексте, так как это может привести к взаимоблокировке.
+Запустите работу в этом контексте или используйте JoinableTaskFactory.RunAsync и ожидайте возвращаемую задачу JoinableTask.</target>
           <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD003_Title" translate="yes" xml:space="preserve">
           <source>Avoid awaiting foreign Tasks</source>
-          <target state="needs-review-translation">Избегание await в неприсоединяемых задачах в контекстах соединения</target>
+          <target state="translated">Не рекомендуется ожидать внешние задачи</target>
           <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD011_MessageFormat" translate="yes" xml:space="preserve">
           <source>Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock.
 Use AsyncLazy&lt;T&gt; instead.</source>
-          <target state="translated">Lazy&lt;Task&lt;T&gt;&gt;.Value может вызвать взаимоблокировку.
-Вместо этого используйте AsyncLazy&lt;T&gt;.</target>
+          <target state="translated">Lazy&lt;Task&lt;T&gt;&gt;.Value может попадать во взаимоблокировку.
+Используйте вместо этого AsyncLazy&lt;T&gt;.</target>
         </trans-unit>
         <trans-unit id="VSTHRD011_Title" translate="yes" xml:space="preserve">
           <source>Use AsyncLazy<it id="1" pos="open">&lt;T&gt;</it></source>
-          <target state="translated">Используйте AsyncLazy&lt;it id="1" pos="open"&gt;&lt;T&gt;&lt;/it&gt;</target>
+          <target state="translated">Использовать AsyncLazy&lt;T&gt;</target>
         </trans-unit>
         <trans-unit id="VSTHRD103_MessageFormat" translate="yes" xml:space="preserve">
           <source>{0} synchronously blocks. Await {1} instead.</source>
@@ -212,8 +212,8 @@ Use AsyncLazy&lt;T&gt; instead.</source>
         <trans-unit id="VSTHRD011b_MessageFormat" translate="yes" xml:space="preserve">
           <source>Invoking or blocking on async code in a Lazy<it id="1" pos="open">&lt;T&gt;</it> value factory can deadlock.
 Use AsyncLazy<it id="2" pos="open">&lt;T&gt;</it> instead.</source>
-          <target state="translated">Вызов или блокировка в асинхронном коде в методе ValueFactory Lazy&lt;it id="1" pos="open"&gt;&lt;T&gt;&lt;/it&gt; может вызвать взаимоблокировку.
-Вместо этого используйте AsyncLazy&lt;it id="2" pos="open"&gt;&lt;T&gt;&lt;/it&gt;.</target>
+          <target state="translated">Вызов и блокировка асинхронного кода в фабрике значений Lazy&lt;T&gt; могут попадать во взаимоблокировку.
+Используйте вместо этого AsyncLazy&lt;T&gt;.</target>
         </trans-unit>
         <trans-unit id="VSTHRD200_AddAsync_MessageFormat" translate="yes" xml:space="preserve">
           <source>Use "Async" suffix in names of methods that return an awaitable type.</source>

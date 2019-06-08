@@ -53,15 +53,15 @@
     <value>Utiliser InvokeAsync pour déclencher des événements async</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>Le fait d’appeler await sur une tâche dans une méthode JoinableTaskFactory.Run quand la tâche est initialisée en dehors du délégué peut entraîner des blocages.
-Vous pouvez éviter ce problème en vérifiant que la tâche est initialisée dans le délégué ou en utilisant JoinableTask à la place de Task.</value>
+    <value>Évitez d'attendre ou de retourner une tâche représentant un travail non démarré dans votre contexte, car cela peut provoquer des interblocages.
+Démarrez le travail dans ce contexte, ou utilisez JoinableTaskFactory.RunAsync, et attendez plutôt le JoinableTask retourné.</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
-    <value>Éviter d’attendre des tâches non joignables dans des contextes de jointure</value>
+    <value>Éviter d'attendre des tâches étrangères</value>
   </data>
   <data name="VSTHRD011_MessageFormat" xml:space="preserve">
-    <value>Lazy&lt;Task&lt;T&gt;&gt;.Value peut entraîner un blocage.
-Utilisez AsyncLazy&lt;T&gt; à la place</value>
+    <value>Lazy&lt;Task&lt;T&gt;&gt;.Value peut entraîner un interblocage.
+Utilisez AsyncLazy&lt;T&gt; à la place.</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
     <value>Utiliser AsyncLazy&lt;T&gt;</value>
@@ -167,8 +167,8 @@ Utilisez AsyncLazy&lt;T&gt; à la place</value>
     <value>Observer le résultat des appels async</value>
   </data>
   <data name="VSTHRD011b_MessageFormat" xml:space="preserve">
-    <value>Les appels ou blocages sur le code async dans une fabrique de valeurs Lazy&lt;T&gt; peuvent faire l'objet d'un interblocage.
-Utilisez plutôt AsyncLazy&lt;T&gt;.</value>
+    <value>L'appel ou le blocage de code asynchrone dans une fabrique de valeurs Lazy&lt;T&gt; peut entraîner un interblocage.
+Utilisez AsyncLazy&lt;T&gt; à la place.</value>
   </data>
   <data name="VSTHRD200_AddAsync_MessageFormat" xml:space="preserve">
     <value>Utilisez le suffixe "Async" dans les noms des méthodes qui retournent un type awaitable.</value>

@@ -53,18 +53,18 @@
     <value>Zdarzenia asynchroniczne wywołuj za pomocą metody InvokeAsync</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>Wywołanie oczekiwania dla obiektu Task wewnątrz metody JoinableTaskFactory.Run, gdy dane zadanie zainicjowano poza delegatem, może spowodować zakleszczenia.
-Tego problemu można uniknąć, zapewniając, że zadanie zostanie zainicjowane wewnątrz delegata lub za pomocą klasy JoinableTask (a nie klasy Task).</value>
+    <value>Unikaj oczekiwania na obiekt Task lub zwracania obiektu Task reprezentującego pracę, która nie została uruchomiona w danym kontekście, ponieważ może to prowadzić do zakleszczeń.
+Uruchom pracę w tym kontekście lub zamiast tego użyj metody JoinableTaskFactory.RunAsync i oczekuj na zwrócony obiekt JoinableTask.</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
-    <value>Unikaj oczekiwania na zadania bez możliwości dołączenia w kontekstach dołączania</value>
+    <value>Unikaj oczekiwania na obce obiekty Task</value>
   </data>
   <data name="VSTHRD011_MessageFormat" xml:space="preserve">
     <value>Element Lazy&lt;Task&lt;T&gt;&gt;.Value może ulec zakleszczeniu.
 Zamiast tego używaj klasy AsyncLazy&lt;T&gt;.</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
-    <value>Użyj metody AsyncLazy&lt;T&gt;</value>
+    <value>Użyj klasy AsyncLazy&lt;T&gt;</value>
   </data>
   <data name="VSTHRD103_MessageFormat" xml:space="preserve">
     <value>Metoda {0} powoduje blokowanie synchroniczne. Zamiast tego oczekuj na {1}.</value>

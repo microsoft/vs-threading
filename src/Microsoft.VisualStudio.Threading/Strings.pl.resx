@@ -67,4 +67,13 @@
   <data name="SemaphoreStackNestingViolated" xml:space="preserve">
     <value>Żądania dotyczące zagnieżdżonego semafora muszą być zwalniane w kolejności LIFO, gdy ustawienie wielobieżności to: „{0}”</value>
   </data>
+  <data name="SyncContextFrameMismatchedAffinity" xml:space="preserve">
+    <value>Ta ramka została już użyta z innym wystąpieniem.</value>
+  </data>
+  <data name="FrameMustBePushedFirst" xml:space="preserve">
+    <value>To wystąpienie musi zostać wypchnięte jako pierwsze.</value>
+  </data>
+  <data name="PushFromWrongThread" xml:space="preserve">
+    <value>Pompę komunikatów można uruchomić tylko z oryginalnego wątku.</value>
+  </data>
 </root>

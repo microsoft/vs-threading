@@ -53,15 +53,15 @@
     <value>使用 InvokeAsync 引发异步事件</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>在委托外初始化任务时，对 JoinableTaskFactory.Run 内部 Task 调用 await 可能导致死锁。
-通过确保在委托内部初始化任务或使用 JoinableTask 取代 Task，可以避免此问题。</value>
+    <value>避免等待或返回表示在上下文内未启动的工作的任务，因为可能导致死锁。
+在此上下文内启动工作，或使用 JoinableTaskFactory.RunAsync 并等待返回的 JoinableTask。</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
-    <value>避免等待联接上下文中的非可加入任务</value>
+    <value>避免等待外部任务</value>
   </data>
   <data name="VSTHRD011_MessageFormat" xml:space="preserve">
-    <value>Lazy&lt;Task&lt;T&gt;&gt;.Value 可能死锁。
-改用 AsyncLazy&lt;T&gt;。</value>
+    <value>Lazy&lt;Task&lt;T&gt;&gt;。值会死锁。
+请改为使用 AsyncLazy&lt;T&gt;。</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
     <value>使用 AsyncLazy&lt;T&gt;</value>
@@ -167,7 +167,8 @@
     <value>观察异步调用的结果</value>
   </data>
   <data name="VSTHRD011b_MessageFormat" xml:space="preserve">
-    <value>在 Lazy&lt;T&gt; 值工厂中调用或阻止异步代码可能死锁。 请改用 AsyncLazy&lt;T&gt;</value>
+    <value>在 Lazy&lt;T&gt; 值工厂中调用或阻止异步代码会出现死锁。
+请改为使用 AsyncLazy&lt;T&gt;。</value>
   </data>
   <data name="VSTHRD200_AddAsync_MessageFormat" xml:space="preserve">
     <value>如果方法返回可等待的类型，则在其名称中使用 “Async” 语法。</value>

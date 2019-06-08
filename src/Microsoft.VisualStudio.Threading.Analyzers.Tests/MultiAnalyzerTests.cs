@@ -52,10 +52,10 @@ class Test {
             Assert.All(expected, item => Assert.True(item.HasLocation));
 
             // All diagnostics should fit on one line
-            Assert.All(expected, item => Assert.Equal(item.Spans[0].EndLinePosition.Line, item.Spans[0].StartLinePosition.Line));
+            Assert.All(expected, item => Assert.Equal(item.Spans[0].Span.EndLinePosition.Line, item.Spans[0].Span.StartLinePosition.Line));
 
             // At most one diagnostic appears on any given line
-            Assert.Equal(expected.Length, expected.Select(d => d.Spans[0].StartLinePosition.Line).Distinct().Count());
+            Assert.Equal(expected.Length, expected.Select(d => d.Spans[0].Span.StartLinePosition.Line).Distinct().Count());
 
             var verifyTest = new Verify.Test
             {
@@ -280,7 +280,7 @@ public class Test {
         {
             var refAssemblies = typeof(VSTHRD001UseSwitchToMainThreadAsyncAnalyzer)
                 .Assembly.GetReferencedAssemblies();
-            Assert.False(refAssemblies.Any(a => a.Name.Equals("System.ValueTuple", StringComparison.OrdinalIgnoreCase)));
+            Assert.DoesNotContain(refAssemblies, a => a.Name.Equals("System.ValueTuple", StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>
@@ -297,7 +297,7 @@ public class Test {
         {
             var refAssemblies = typeof(VSTHRD001UseSwitchToMainThreadAsyncAnalyzer)
                 .Assembly.GetReferencedAssemblies();
-            Assert.False(refAssemblies.Any(a => a.Name.Equals("System.Threading.Tasks.Extensions", StringComparison.OrdinalIgnoreCase)));
+            Assert.DoesNotContain(refAssemblies, a => a.Name.Equals("System.Threading.Tasks.Extensions", StringComparison.OrdinalIgnoreCase));
         }
 
         [Fact]

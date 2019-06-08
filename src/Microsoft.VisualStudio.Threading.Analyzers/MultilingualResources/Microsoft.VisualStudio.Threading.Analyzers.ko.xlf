@@ -60,24 +60,24 @@
         <trans-unit id="VSTHRD003_MessageFormat" translate="yes" xml:space="preserve">
           <source>Avoid awaiting or returning a Task representing work that was not started within your context as that can lead to deadlocks.
 Start the work within this context, or use JoinableTaskFactory.RunAsync and await the returned JoinableTask instead.</source>
-          <target state="needs-review-translation">작업이 외부에서 초기화되면 대리자가 잠재적인 교착 상태를 일으킬 수 있으므로 JoinableTaskFactory.Run 내 Task에서 호출을 대기합니다.
-작업이 대리자 내에서 초기화되도록 하거나 Task 대신 JoinableTask를 사용하여 이 문제를 방지할 수 있습니다.</target>
+          <target state="translated">교착 상태가 발생할 수 있기 때문에 컨텍스트 내에서 시작되지 않은 작업을 나타내는 작업을 대기하거나 반환하지 않습니다.
+대신 이 컨텍스트 내에서 작업을 시작하거나 JoinableTaskFactory.RunAsync를 사용하고 반환된 JoinableTask를 대기하세요.</target>
           <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD003_Title" translate="yes" xml:space="preserve">
           <source>Avoid awaiting foreign Tasks</source>
-          <target state="needs-review-translation">조인 컨텍스트에서 조인할 수 없는 작업을 대기하지 않습니다.</target>
+          <target state="translated">외부 작업을 대기하지 않음</target>
           <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD011_MessageFormat" translate="yes" xml:space="preserve">
           <source>Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock.
 Use AsyncLazy&lt;T&gt; instead.</source>
-          <target state="translated">Lazy&lt;Task&lt;T&gt;&gt;.Value가 교착 상태가 될 수 있습니다.
+          <target state="translated">Lazy&lt;Task&lt;T&gt;&gt;.Value는 교착 상태를 초래할 수 있습니다.
 대신 AsyncLazy&lt;T&gt;를 사용하세요.</target>
         </trans-unit>
         <trans-unit id="VSTHRD011_Title" translate="yes" xml:space="preserve">
           <source>Use AsyncLazy<it id="1" pos="open">&lt;T&gt;</it></source>
-          <target state="translated">AsyncLazy&lt;it id="1" pos="open"&gt;&lt;T&gt;&lt;/it&gt; 사용</target>
+          <target state="translated">AsyncLazy&lt;T&gt; 사용</target>
         </trans-unit>
         <trans-unit id="VSTHRD103_MessageFormat" translate="yes" xml:space="preserve">
           <source>{0} synchronously blocks. Await {1} instead.</source>
@@ -212,8 +212,8 @@ Use AsyncLazy&lt;T&gt; instead.</source>
         <trans-unit id="VSTHRD011b_MessageFormat" translate="yes" xml:space="preserve">
           <source>Invoking or blocking on async code in a Lazy<it id="1" pos="open">&lt;T&gt;</it> value factory can deadlock.
 Use AsyncLazy<it id="2" pos="open">&lt;T&gt;</it> instead.</source>
-          <target state="translated">Lazy&lt;it id="1" pos="open"&gt;&lt;T&gt;&lt;/it&gt; 값 팩터리의 비동기 코드를 호출하거나 차단하면 교착 상태가 될 수 있습니다.
-대신 AsyncLazy&lt;it id="2" pos="open"&gt;&lt;T&gt;&lt;/it&gt;를 사용합니다.</target>
+          <target state="translated">Lazy&lt;T&gt; 값 팩터리에서 비동기 코드를 호출하거나 차단하면 교착 상태가 발생할 수 있습니다.
+대신 AsyncLazy&lt;T&gt;를 사용하세요.</target>
         </trans-unit>
         <trans-unit id="VSTHRD200_AddAsync_MessageFormat" translate="yes" xml:space="preserve">
           <source>Use "Async" suffix in names of methods that return an awaitable type.</source>
