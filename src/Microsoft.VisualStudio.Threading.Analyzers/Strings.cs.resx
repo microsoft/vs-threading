@@ -53,18 +53,18 @@
     <value>Použití InvokeAsync k vyvolání asynchronních událostí</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>Volání operátoru await u položky typu Task uvnitř JoinableTaskFactory.Run v případě, že je úloha inicializovaná mimo delegáta, může způsobit potenciální vzájemná blokování.
-Tomuto problému můžete předejít tak, že zajistíte inicializaci úlohy v rámci delegáta nebo místo položky typu Task použijete JoinableTask.</value>
+    <value>Vyhněte se čekání na úlohu (nebo vracení úlohy) představující práci, která nebyla zahájena ve vašem kontextu, protože to může vést k zablokování.
+Zahajte danou práci v tomto kontextu, nebo místo toho použijte JoinableTaskFactory.RunAsync a očekávejte vrácený JoinableTask.</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
-    <value>Vyhněte se použití operátoru await u nespojitelných úloh v kontextech spojení</value>
+    <value>Vyhněte se čekání na cizí úlohy.</value>
   </data>
   <data name="VSTHRD011_MessageFormat" xml:space="preserve">
-    <value>Lazy&lt;Task&lt;T&gt;&gt;.Value může způsobit vzájemné blokování.
-Použijte raději AsyncLazy&lt;T&gt;.</value>
+    <value>Lazy&lt;Task&lt;T&gt;&gt;.Value může způsobit zablokování.
+Použijte místo toho AsyncLazy&lt;T&gt;.</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
-    <value>Použijte AsyncLazy&lt;T&gt;</value>
+    <value>Použít AsyncLazy&lt;T&gt;</value>
   </data>
   <data name="VSTHRD103_MessageFormat" xml:space="preserve">
     <value>{0} provádí synchronní blokování. Místo toho použijte await {1}.</value>
@@ -167,8 +167,8 @@ Použijte raději AsyncLazy&lt;T&gt;.</value>
     <value>Přijměte výsledek asynchronních volání</value>
   </data>
   <data name="VSTHRD011b_MessageFormat" xml:space="preserve">
-    <value>Vyvolání nebo zablokování asynchronního kódu v objektu pro vytváření hodnot Lazy&lt;T&gt; může způsobit zablokování.
-Použijte raději AsyncLazy&lt;T&gt;.</value>
+    <value>Volání nebo blokování asynchronního kódu v objektu pro vytváření hodnot Lazy&lt;T&gt; může způsobit zablokování.
+Použijte místo toho AsyncLazy&lt;T&gt;.</value>
   </data>
   <data name="VSTHRD200_AddAsync_MessageFormat" xml:space="preserve">
     <value>V názvech metod, které vrací typ awaitable, používejte příponu „Async“.</value>

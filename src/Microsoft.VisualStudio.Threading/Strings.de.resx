@@ -67,4 +67,13 @@
   <data name="SemaphoreStackNestingViolated" xml:space="preserve">
     <value>Geschachtelte Semaphoranforderungen müssen in LIFO-Reihenfolge angegeben werden, wenn die Einstellung für die Eintrittsinvarianz "{0}" lautet.</value>
   </data>
+  <data name="SyncContextFrameMismatchedAffinity" xml:space="preserve">
+    <value>Dieser Frame wurde bereits mit einer anderen Instanz verwendet.</value>
+  </data>
+  <data name="FrameMustBePushedFirst" xml:space="preserve">
+    <value>Diese Instanz muss zuerst gepusht werden.</value>
+  </data>
+  <data name="PushFromWrongThread" xml:space="preserve">
+    <value>Die Ereignisschleife kann nur über den ursprünglichen Thread ausgeführt werden.</value>
+  </data>
 </root>

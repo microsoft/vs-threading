@@ -67,4 +67,13 @@
   <data name="SemaphoreStackNestingViolated" xml:space="preserve">
     <value>Le richieste di semaforo nidificate devono essere rilasciate in base all'ordine LIFO quando l'impostazione di rientranza è: '{0}'</value>
   </data>
+  <data name="SyncContextFrameMismatchedAffinity" xml:space="preserve">
+    <value>Questo frame è già stato usato con un'istanza diversa.</value>
+  </data>
+  <data name="FrameMustBePushedFirst" xml:space="preserve">
+    <value>Il push di questa istanza deve essere effettuato per primo.</value>
+  </data>
+  <data name="PushFromWrongThread" xml:space="preserve">
+    <value>Il message pump può essere eseguito solo dal thread originale.</value>
+  </data>
 </root>

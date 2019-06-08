@@ -53,14 +53,14 @@
     <value>使用 InvokeAsync 引發非同步事件</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>當工作在委派外部初始化時，在 JoinableTaskFactory.Run 內的 Task 上呼叫 await，可能會造成潛在的鎖死情形。
-您可以藉由確認工作在委派內初始化，或將 Task 改為使用 JoinableTask，來避免此問題。</value>
+    <value>避免等待或傳回代表未在您內容中啟動的工作，因為其可能會造成死結。
+您可以在此內容中啟動該工作，或使用 JoinableTaskFactory.RunAsync，改為等待傳回 JoinableTask。</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
-    <value>避免在加入內容中等候不可加入的工作</value>
+    <value>避免等待外部工作</value>
   </data>
   <data name="VSTHRD011_MessageFormat" xml:space="preserve">
-    <value>Lazy&lt;Task&lt;T&gt;&gt;.Value 可能會造成死結。
+    <value>Lazy&lt;Task&lt;T&gt;&gt;.Value 可能會出現死結。
 請改用 AsyncLazy&lt;T&gt;。</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
@@ -167,7 +167,7 @@
     <value>觀察非同步呼叫的結果</value>
   </data>
   <data name="VSTHRD011b_MessageFormat" xml:space="preserve">
-    <value>在 Lazy&lt;T&gt; 值 Factory 中叫用或封鎖非同步程式碼可能會鎖死。
+    <value>在非同步程式碼上叫用或封鎖 Lazy&lt;T&gt; 值，Factory 可能會出現死結。
 請改用 AsyncLazy&lt;T&gt;。</value>
   </data>
   <data name="VSTHRD200_AddAsync_MessageFormat" xml:space="preserve">

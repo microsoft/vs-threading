@@ -67,4 +67,13 @@
   <data name="SemaphoreStackNestingViolated" xml:space="preserve">
     <value>當重新進入設定是 '{0}' 時，巢狀旗號要求必須以 LIFO 順序發行</value>
   </data>
+  <data name="SyncContextFrameMismatchedAffinity" xml:space="preserve">
+    <value>其他執行個體已在使用此框架。</value>
+  </data>
+  <data name="FrameMustBePushedFirst" xml:space="preserve">
+    <value>必須先推送此執行個體。</value>
+  </data>
+  <data name="PushFromWrongThread" xml:space="preserve">
+    <value>訊息提示只可從原始的執行緒執行。</value>
+  </data>
 </root>

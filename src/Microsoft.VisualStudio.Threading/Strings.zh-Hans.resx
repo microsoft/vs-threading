@@ -67,4 +67,13 @@
   <data name="SemaphoreStackNestingViolated" xml:space="preserve">
     <value>当可重入设置为: "{0}" 时, 嵌套的信号量请求必须以后进先出顺序释放</value>
   </data>
+  <data name="SyncContextFrameMismatchedAffinity" xml:space="preserve">
+    <value>此框架已与其他实例一起使用。</value>
+  </data>
+  <data name="FrameMustBePushedFirst" xml:space="preserve">
+    <value>必须先推送此实例。</value>
+  </data>
+  <data name="PushFromWrongThread" xml:space="preserve">
+    <value>消息泵只能从原始线程中运行。</value>
+  </data>
 </root>

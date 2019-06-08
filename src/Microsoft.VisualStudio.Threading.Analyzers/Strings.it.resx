@@ -53,18 +53,18 @@
     <value>Usa InvokeAsync per generare eventi asincroni</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>La chiamata di await su un elemento Task all'interno di un elemento JoinableTaskFactory.Run quando Task è inizializzato all'esterno del delegato può causare possibili deadlock.
-Per evitare il problema, assicurarsi che Task venga inizializzato all'interno del delegato oppure usare JoinableTask invece di Task.</value>
+    <value>Evitare di attendere o restituire un oggetto Task che rappresenta un'operazione non avviata nel contesto perché potrebbe causare deadlock.
+Avviare l'operazione in questo contesto oppure usare JoinableTaskFactory.RunAsync e attendere l'oggetto restituito JoinableTask.</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
-    <value>Evita attesa di Task non joinable in contesti di join</value>
+    <value>Evitare di attendere oggetti Task esterni</value>
   </data>
   <data name="VSTHRD011_MessageFormat" xml:space="preserve">
     <value>Lazy&lt;Task&lt;T&gt;&gt;.Value può causare deadlock.
 In alternativa, usare AsyncLazy&lt;T&gt;.</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
-    <value>Usa AsyncLazy&lt;T&gt;</value>
+    <value>Usare AsyncLazy&lt;T&gt;</value>
   </data>
   <data name="VSTHRD103_MessageFormat" xml:space="preserve">
     <value>{0} si blocca in modalità sincrona. In alternativa, usare await {1}.</value>

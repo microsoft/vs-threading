@@ -60,24 +60,24 @@
         <trans-unit id="VSTHRD003_MessageFormat" translate="yes" xml:space="preserve">
           <source>Avoid awaiting or returning a Task representing work that was not started within your context as that can lead to deadlocks.
 Start the work within this context, or use JoinableTaskFactory.RunAsync and await the returned JoinableTask instead.</source>
-          <target state="needs-review-translation">タスクがデリゲート外部で初期化されている場合、JoinableTaskFactory.Run 内の Task で Await を呼び出すと、デッドロックが引き起こされる可能性があります。
-この問題は、タスクが確実にデリゲート内で初期化されるようにするか、Task の代わりに JoinableTask を使用することによって回避できます。</target>
+          <target state="translated">コンテキスト内で開始されなかった作業を表すタスクを待機したり返したりしないでください。これは、デッドロックを生じさせる可能性があります。
+このコンテキスト内で作業を開始するか、代わりに JoinableTaskFactory.RunAsync を使用して返される JoinableTask を待機してください。</target>
           <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD003_Title" translate="yes" xml:space="preserve">
           <source>Avoid awaiting foreign Tasks</source>
-          <target state="needs-review-translation">結合コンテキストで結合できないタスクを待機しない</target>
+          <target state="translated">外部タスクを待機しない</target>
           <note from="MultilingualUpdate" annotates="source" priority="2">Please verify the translation’s accuracy as the source string was updated after it was translated.</note>
         </trans-unit>
         <trans-unit id="VSTHRD011_MessageFormat" translate="yes" xml:space="preserve">
           <source>Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock.
 Use AsyncLazy&lt;T&gt; instead.</source>
-          <target state="translated">Lazy&lt;Task&lt;T&gt;&gt;.Value はデッドロックを引き起こす可能性があります。
-代わりに AsyncLazy&lt;T&gt; を使用してください。</target>
+          <target state="translated">Lazy&lt;Task&lt;T&gt;&gt;.Value はデッドロックすることがあります。
+代わりに AsyncLazy&lt;T&gt; を使用してしてください。</target>
         </trans-unit>
         <trans-unit id="VSTHRD011_Title" translate="yes" xml:space="preserve">
           <source>Use AsyncLazy<it id="1" pos="open">&lt;T&gt;</it></source>
-          <target state="translated">AsyncLazy&lt;it id="1" pos="open"&gt;&lt;T&gt;&lt;/it&gt; を使用する</target>
+          <target state="translated">AsyncLazy&lt;T&gt; を使用する</target>
         </trans-unit>
         <trans-unit id="VSTHRD103_MessageFormat" translate="yes" xml:space="preserve">
           <source>{0} synchronously blocks. Await {1} instead.</source>
@@ -212,8 +212,8 @@ Use AsyncLazy&lt;T&gt; instead.</source>
         <trans-unit id="VSTHRD011b_MessageFormat" translate="yes" xml:space="preserve">
           <source>Invoking or blocking on async code in a Lazy<it id="1" pos="open">&lt;T&gt;</it> value factory can deadlock.
 Use AsyncLazy<it id="2" pos="open">&lt;T&gt;</it> instead.</source>
-          <target state="translated">Lazy&lt;it id="1" pos="open"&gt;&lt;T&gt;&lt;/it&gt; 値ファクトリの非同期コードで呼び出しかブロックを実行すると、デッドロックを引き起こす可能性があります。
-代わりに AsyncLazy&lt;it id="2" pos="open"&gt;&lt;T&gt;&lt;/it&gt; をご使用ください。</target>
+          <target state="translated">Lazy&lt;T&gt; 値ファクトリ内の非同期コード上での呼び出しまたはブロックは、デッドロックすることがあります。
+代わりにAsyncLazy&lt;T&gt; を使用してください。</target>
         </trans-unit>
         <trans-unit id="VSTHRD200_AddAsync_MessageFormat" translate="yes" xml:space="preserve">
           <source>Use "Async" suffix in names of methods that return an awaitable type.</source>

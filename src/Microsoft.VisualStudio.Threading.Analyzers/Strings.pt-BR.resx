@@ -53,15 +53,15 @@
     <value>Use InvokeAsync para acionar eventos assíncronos</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>Chamar await em uma Task em JoinableTaskFactory.Run, quando a tarefa for inicializada fora do delegado pode causar deadlocks em potencial.
-Você pode evitar esse problema assegurando que a tarefa seja inicializada no delegado ou usando JoinableTask em vez de Task.</value>
+    <value>Evite aguardar ou retornar uma Tarefa que representa o trabalho que não foi iniciado em seu contexto, pois isso pode levar a deadlocks.
+Inice o trabalho neste contexto ou use JoinableTaskFactory.RunAsync e aguarde o JoinableTask retornado em seu lugar.</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
-    <value>Evite aguardar tarefas não unidas em contextos de junção</value>
+    <value>Evite aguardar Tarefas estrangeiras</value>
   </data>
   <data name="VSTHRD011_MessageFormat" xml:space="preserve">
-    <value>Lazy&lt;Task&lt;T&gt;&gt;. O valor pode apresentar deadlock.
-Em vez disso, use AsyncLazy&lt;T&gt;.</value>
+    <value>O valor Lazy&lt;Task&lt;T&gt;&gt;. pode causar deadlock.
+Nesse caso, use AsyncLazy&lt;T&gt;.</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
     <value>Usar AsyncLazy&lt;T&gt;</value>
@@ -167,8 +167,8 @@ Em vez disso, use AsyncLazy&lt;T&gt;.</value>
     <value>Observe o resultado das chamadas assíncronas</value>
   </data>
   <data name="VSTHRD011b_MessageFormat" xml:space="preserve">
-    <value>A invocação ou bloqueio em código assíncrono em um alocador de valor Lazy&lt;T&gt; pode causar um deadlock.
-Use AsyncLazy&lt;T&gt; em vez disso.</value>
+    <value>A invocação ou o bloqueio no código assíncrono em um alocador de valor Lazy&lt;T&gt; pode causar deadlock.
+Nesse caso, use AsyncLazy&lt;T&gt;.</value>
   </data>
   <data name="VSTHRD200_AddAsync_MessageFormat" xml:space="preserve">
     <value>Use o sufixo "Async" em nomes de métodos que retornam um tipo esperável.</value>

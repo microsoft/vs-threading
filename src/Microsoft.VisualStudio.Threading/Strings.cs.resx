@@ -67,4 +67,13 @@
   <data name="SemaphoreStackNestingViolated" xml:space="preserve">
     <value>Vnořené semaforové žádosti se musí být uvolňovat v pořadí LIFO, kdy nastavení vícenásobnému přístupu je: {0}</value>
   </data>
+  <data name="SyncContextFrameMismatchedAffinity" xml:space="preserve">
+    <value>Tento rámec byl použit už u jiné instance.</value>
+  </data>
+  <data name="FrameMustBePushedFirst" xml:space="preserve">
+    <value>Tato instance se napřed musí nasdílet.</value>
+  </data>
+  <data name="PushFromWrongThread" xml:space="preserve">
+    <value>Pumpu zpráv lze spustit jenom z původního vlákna.</value>
+  </data>
 </root>
