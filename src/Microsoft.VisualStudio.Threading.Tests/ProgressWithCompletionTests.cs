@@ -71,18 +71,22 @@
         {
             var syncContext = SingleThreadedTestSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(syncContext);
-            Exception callbackError = null;
+            TaskCompletionSource<object> callbackResult = new TaskCompletionSource<object>();
+            var frame = SingleThreadedTestSynchronizationContext.NewFrame();
             var callback = new Action<GenericParameterHelper>(
                 p =>
                 {
                     try
                     {
-                        Assert.Same(syncContext, SynchronizationContext.Current);
+                        Assert.NotNull(SynchronizationContext.Current);
+                        callbackResult.SetResult(null);
                     }
                     catch (Exception e)
                     {
-                        callbackError = e;
+                        callbackResult.SetException(e);
                     }
+
+                    frame.Continue = false;
                 });
             var progress = new ProgressWithCompletion<GenericParameterHelper>(callback);
             IProgress<GenericParameterHelper> reporter = progress;
@@ -92,7 +96,8 @@
                 reporter.Report(new GenericParameterHelper(1));
             });
 
-            if (callbackError != null)
+            SingleThreadedTestSynchronizationContext.PushFrame(syncContext, frame);
+            callbackResult.Task.GetAwaiter().GetResult();
             {
                 throw callbackError;
             }
