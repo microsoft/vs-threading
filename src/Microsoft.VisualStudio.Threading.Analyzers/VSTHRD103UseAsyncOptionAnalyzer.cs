@@ -105,29 +105,34 @@
                         !(methodSymbol?.ReturnType?.Name == nameof(Task) && methodSymbol.ReturnType.BelongsToNamespace(Namespaces.SystemThreadingTasks)))
                     {
                         string asyncMethodName = symbolInfo.Symbol.Name + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix;
-                        var asyncMethodMatches = context.SemanticModel.LookupSymbols(
+                        var symbols = context.SemanticModel.LookupSymbols(
                             invocationExpressionSyntax.Expression.GetLocation().SourceSpan.Start,
                             symbolInfo.Symbol.ContainingType,
                             asyncMethodName,
-                            includeReducedExtensionMethods: true).OfType<IMethodSymbol>()
-                            .Where(m => !m.IsObsolete())
-                            .Where(m => HasSupersetOfParameterTypes(m, methodSymbol))
-                            .Where(m => m.Name != invocationDeclaringMethod?.Identifier.Text)
-                            .Where(Utils.HasAsyncCompatibleReturnType);
+                            includeReducedExtensionMethods: true);
 
-                        if (asyncMethodMatches.Any())
+                        foreach (var s in symbols)
                         {
-                            // An async alternative exists.
-                            var properties = ImmutableDictionary<string, string>.Empty
-                                .Add(AsyncMethodKeyName, asyncMethodName);
+                            if (s is IMethodSymbol m
+                                && !m.IsObsolete()
+                                && HasSupersetOfParameterTypes(m, methodSymbol)
+                                && m.Name != invocationDeclaringMethod?.Identifier.Text
+                                && Utils.HasAsyncCompatibleReturnType(m))
+                            {
+                                // An async alternative exists.
+                                var properties = ImmutableDictionary<string, string>.Empty
+                                    .Add(AsyncMethodKeyName, asyncMethodName);
 
-                            Diagnostic diagnostic = Diagnostic.Create(
-                                Descriptor,
-                                invokedMethodName.GetLocation(),
-                                properties,
-                                invokedMethodName.ToString(),
-                                asyncMethodName);
-                            context.ReportDiagnostic(diagnostic);
+                                Diagnostic diagnostic = Diagnostic.Create(
+                                    Descriptor,
+                                    invokedMethodName.GetLocation(),
+                                    properties,
+                                    invokedMethodName.ToString(),
+                                    asyncMethodName);
+                                context.ReportDiagnostic(diagnostic);
+
+                                return;
+                            }
                         }
                     }
                 }
