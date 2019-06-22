@@ -554,6 +554,23 @@ namespace Microsoft.VisualStudio.Threading
         internal static Task<T> CanceledTaskOfT<T>() => CanceledTaskOfTCache<T>.CanceledTask;
 
         /// <summary>
+        /// Returns a <see cref="Task{TResult}"/> that has been faulted with the specified exception.
+        /// </summary>
+        /// <typeparam name="T">The type of value that might have been returned from the <see cref="Task{TResult}"/></typeparam>
+        /// <param name="ex">The exception used to fault the <see cref="Task{TResult}"/>.</param>
+        /// <returns>The faulted task.</returns>
+        internal static Task<T> FaultedTask<T>(Exception ex)
+        {
+#if NET45
+            var tcs = new TaskCompletionSource<T>();
+            tcs.SetException(ex);
+            return tcs.Task;
+#else
+            return Task.FromException<T>(ex);
+#endif
+        }
+
+        /// <summary>
         /// Applies a completed task's results to another.
         /// </summary>
         /// <typeparam name="T">The type of value returned by a task.</typeparam>

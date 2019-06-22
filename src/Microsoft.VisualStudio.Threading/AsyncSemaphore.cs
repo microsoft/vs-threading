@@ -19,6 +19,11 @@ namespace Microsoft.VisualStudio.Threading
     public class AsyncSemaphore : IDisposable
     {
         /// <summary>
+        /// A task that is faulted with an <see cref="ObjectDisposedException"/>.
+        /// </summary>
+        private static readonly Task<Releaser> DisposedReleaserTask = TplExtensions.FaultedTask<Releaser>(new ObjectDisposedException(typeof(AsyncSemaphore).FullName));
+
+        /// <summary>
         /// The semaphore used to keep concurrent access to this lock to just 1.
         /// </summary>
         private readonly SemaphoreSlim semaphore;
@@ -32,6 +37,11 @@ namespace Microsoft.VisualStudio.Threading
         /// A task that is cancelled.
         /// </summary>
         private readonly Task<Releaser> canceledReleaser;
+
+        /// <summary>
+        /// A value indicating whether this instance has been disposed.
+        /// </summary>
+        private bool disposed;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AsyncSemaphore"/> class.
@@ -62,6 +72,11 @@ namespace Microsoft.VisualStudio.Threading
                 return ThreadingTools.TaskFromCanceled<Releaser>(cancellationToken);
             }
 
+            if (this.disposed)
+            {
+                return DisposedReleaserTask;
+            }
+
             return this.LockWaitingHelper(this.semaphore.WaitAsync(cancellationToken));
         }
 
@@ -73,6 +88,11 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns>A task whose result is a releaser that should be disposed to release the lock.</returns>
         public Task<Releaser> EnterAsync(TimeSpan timeout, CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (this.disposed)
+            {
+                return DisposedReleaserTask;
+            }
+
             return this.LockWaitingHelper(this.semaphore.WaitAsync(timeout, cancellationToken));
         }
 
@@ -84,6 +104,11 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns>A task whose result is a releaser that should be disposed to release the lock.</returns>
         public Task<Releaser> EnterAsync(int timeout, CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (this.disposed)
+            {
+                return DisposedReleaserTask;
+            }
+
             return this.LockWaitingHelper(this.semaphore.WaitAsync(timeout, cancellationToken));
         }
 
@@ -102,6 +127,8 @@ namespace Microsoft.VisualStudio.Threading
         {
             if (disposing)
             {
+                this.disposed = true;
+
                 // !!DO NOT!! dispose the semaphore, for the following reasons:
                 // 1. SemaphoreSlim.Dispose is not safe for concurrent use while something is waiting. Calling Dispose
                 //    requires tracking of all outstanding requests for enter/release.
@@ -129,6 +156,11 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         // Re-throw any cancellation or fault exceptions.
                         waiter.GetAwaiter().GetResult();
+
+                        if (this.disposed)
+                        {
+                            throw new ObjectDisposedException(this.GetType().FullName);
+                        }
 
                         return new Releaser((AsyncSemaphore)state);
                     },
@@ -160,6 +192,11 @@ namespace Microsoft.VisualStudio.Threading
                         if (!waiter.Result)
                         {
                             throw new OperationCanceledException();
+                        }
+
+                        if (this.disposed)
+                        {
+                            throw new ObjectDisposedException(this.GetType().FullName);
                         }
 
                         return new Releaser((AsyncSemaphore)state);
