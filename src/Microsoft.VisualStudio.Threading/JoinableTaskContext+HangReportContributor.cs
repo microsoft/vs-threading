@@ -36,9 +36,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 lock (this.SyncContextLock)
                 {
-                    XElement nodes;
-                    XElement links;
-                    var dgml = CreateTemplateDgml(out nodes, out links);
+                    var dgml = CreateTemplateDgml(out XElement nodes, out XElement links);
 
                     var pendingTasksElements = this.CreateNodesForPendingTasks();
                     var taskLabels = CreateNodeLabels(pendingTasksElements);
@@ -73,10 +71,9 @@ namespace Microsoft.VisualStudio.Threading
             var links = new List<XElement>();
             foreach (var joinableTaskAndElement in pendingTasksElements)
             {
-                foreach (var joinedTask in joinableTaskAndElement.Key.ChildOrJoinedJobs)
+                foreach (var joinedTask in JoinableTaskDependencyGraph.GetAllDirectlyDependentJoinableTasks(joinableTaskAndElement.Key))
                 {
-                    XElement joinedTaskElement;
-                    if (pendingTasksElements.TryGetValue(joinedTask, out joinedTaskElement))
+                    if (pendingTasksElements.TryGetValue(joinedTask, out XElement joinedTaskElement))
                     {
                         links.Add(Dgml.Link(joinableTaskAndElement.Value, joinedTaskElement));
                     }

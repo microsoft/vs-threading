@@ -155,7 +155,7 @@ namespace Microsoft.VisualStudio.Threading
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "value", Justification = "We no-op on one platform.")]
         private static IntPtr GetAddress(object value)
         {
-#if NET45
+#if DESKTOP || NETSTANDARD2_0
             unsafe
             {
                 TypedReference tr = __makeref(value);
@@ -179,8 +179,7 @@ namespace Microsoft.VisualStudio.Threading
                 // In testing, this m_continuation field jump is only required when the debugger is attached -- weird.
                 // I suspect however that it's a natural behavior of the async state machine (when there are >1 continuations perhaps).
                 // So we check for the case in all cases.
-                var continuation = GetFieldValue(invokeDelegate.Target, "m_continuation") as Action;
-                if (continuation != null)
+                if (GetFieldValue(invokeDelegate.Target, "m_continuation") is Action continuation)
                 {
                     invokeDelegate = continuation;
                 }
@@ -241,8 +240,7 @@ namespace Microsoft.VisualStudio.Threading
                 yield break;
             }
 
-            var items = continuationObject as IEnumerable;
-            if (items != null)
+            if (continuationObject is IEnumerable items)
             {
                 foreach (var item in items)
                 {

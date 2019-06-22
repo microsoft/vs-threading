@@ -58,7 +58,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [StaFact]
         public void MainThread()
         {
-#if NET452
+#if DESKTOP || NETCOREAPP2_0
             Assert.Same(this.context.MainThread, this.defaultNode.MainThread);
             Assert.Same(this.context.MainThread, this.derivedNode.MainThread);
 #endif
@@ -203,18 +203,19 @@ namespace Microsoft.VisualStudio.Threading.Tests
 
             var jt = factory.RunAsync(async delegate
             {
-                var timeout = Task.Delay(AsyncDelay);
+                var timeout = Task.Delay(UnexpectedTimeout);
                 var result = await Task.WhenAny(timeout, this.derivedNode.HangDetected.WaitAsync());
                 Assert.NotSame(timeout, result); //, "Timed out waiting for hang detection.");
             });
             OnHangDetected_BlockingMethodHelper(jt);
             Assert.True(this.derivedNode.HangDetected.IsSet);
-            Assert.NotNull(this.derivedNode.HangDetails);
-            Assert.NotNull(this.derivedNode.HangDetails.EntryMethod);
+            var hangDetails = this.derivedNode.FirstHangDetails;
+            Assert.NotNull(hangDetails);
+            Assert.NotNull(hangDetails.EntryMethod);
 
             // Verify that the original method that spawned the JoinableTask is the one identified as the entrypoint method.
-            Assert.Same(this.GetType(), this.derivedNode.HangDetails.EntryMethod.DeclaringType);
-            Assert.True(this.derivedNode.HangDetails.EntryMethod.Name.Contains(nameof(this.OnHangDetected_RunAsync_OnMainThread_BlamedMethodIsEntrypointNotBlockingMethod)));
+            Assert.Same(this.GetType(), hangDetails.EntryMethod.DeclaringType);
+            Assert.True(hangDetails.EntryMethod.Name.Contains(nameof(this.OnHangDetected_RunAsync_OnMainThread_BlamedMethodIsEntrypointNotBlockingMethod)));
         }
 
         [StaFact]
@@ -253,7 +254,11 @@ namespace Microsoft.VisualStudio.Threading.Tests
 
             internal AsyncManualResetEvent FalseHangReportDetected { get; private set; }
 
-            internal JoinableTaskContext.HangDetails HangDetails { get; private set; }
+            internal List<JoinableTaskContext.HangDetails> AllHangDetails { get; } = new List<JoinableTaskContext.HangDetails>();
+
+            internal JoinableTaskContext.HangDetails HangDetails => this.AllHangDetails.LastOrDefault();
+
+            internal JoinableTaskContext.HangDetails FirstHangDetails => this.AllHangDetails.FirstOrDefault();
 
             internal Guid FalseHangReportId { get; private set; }
 
@@ -280,7 +285,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
 
             protected override void OnHangDetected(JoinableTaskContext.HangDetails details)
             {
-                this.HangDetails = details;
+                this.AllHangDetails.Add(details);
                 this.HangDetected.Set();
                 this.HangReportCount++;
                 base.OnHangDetected(details);

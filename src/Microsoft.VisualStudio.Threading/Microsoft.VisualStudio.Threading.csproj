@@ -1,8 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.1;portable-net45+win8+wpa81;net45</TargetFrameworks>
+    <TargetFrameworks>netstandard1.3;netstandard2.0;net45;net46</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <CodeAnalysisRuleSet>FxCopRules.ruleset</CodeAnalysisRuleSet>
+
+    <TargetsDesktop Condition=" '$(TargetFramework)' == 'net45' or '$(TargetFramework)' == 'net46' ">true</TargetsDesktop>
+    <DefineConstants Condition=" '$(TargetsDesktop)' == 'true' ">$(DefineConstants);DESKTOP</DefineConstants>
+    <DefineConstants Condition=" '$(TargetFramework)' == 'net46' or '$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == 'netstandard2.0' ">$(DefineConstants);ASYNCLOCAL</DefineConstants>
+    <DefineConstants Condition=" '$(TargetFramework)' == 'net46' or '$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == 'netstandard2.0' ">$(DefineConstants);TRYSETCANCELEDCT</DefineConstants>
+    <DefineConstants Condition=" '$(TargetsDesktop)' == 'true' ">$(DefineConstants);CALLCONTEXT</DefineConstants>
+    <DefineConstants Condition=" '$(TargetsDesktop)' == 'true'  or '$(TargetFramework)' == 'netstandard2.0' ">$(DefineConstants);THREADPOOL</DefineConstants>
 
     <Summary>Async synchronization primitives, async collections, TPL and dataflow extensions.</Summary>
     <Description>Async synchronization primitives, async collections, TPL and dataflow extensions. The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This package is applicable to any .NET application (not just Visual Studio).</Description>
@@ -12,11 +19,8 @@
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <PackageProjectUrl>https://github.com/Microsoft/vs-threading</PackageProjectUrl>
     <PackageIconUrl>https://aka.ms/VsExtensibilityIcon</PackageIconUrl>
-    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=746387</PackageReleaseNotes>
 
-    <DebugType>full</DebugType>
-    <RunCodeAnalysis Condition=" '$(TargetFramework)' != 'portable-net45+win8+wpa81' ">true</RunCodeAnalysis>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Label="MultilingualAppToolkit">
@@ -26,13 +30,13 @@
     <SuppressPseudoWarning Condition="'$(Configuration)' == 'Debug'">true</SuppressPseudoWarning>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="net45\**" Condition=" '$(TargetFramework)' != 'net45' " />
-    <Compile Remove="netstandard1.1\**" Condition=" '$(TargetFramework)' != 'netstandard1.1' and '$(TargetFramework)' != 'portable-net45+win8+wpa81' " />
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Update="Strings.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Strings.??*.resx">
+      <DependentUpon>Strings.resx</DependentUpon>
+      <Generator />
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
@@ -48,21 +52,31 @@
   <ItemGroup>
      <XliffResource Include="MultilingualResources\*.xlf" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition=" '$(TargetsDesktop)' == 'true'  ">
     <Reference Include="System.Configuration" Condition=" '$(TargetFramework)' == 'net45' " />
-    <PackageReference Include="Microsoft.VisualStudio.Validation" Version="15.3.6" />
-    <PackageReference Include="MicroBuild.VisualStudio" Version="2.0.40" PrivateAssets="all" />
-    <PackageReference Include="MSBuild.SDK.Extras" Version="1.0.0-rc4.23" PrivateAssets="all" />
-    <PackageReference Include="PdbGit" Version="3.0.41" PrivateAssets="all" />
+    <Reference Include="WindowsBase" />
   </ItemGroup>
-  <Import Project="$(MSBuildSDKExtrasTargets)" Condition="Exists('$(MSBuildSDKExtrasTargets)')" />
+  <ItemGroup>
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.2" />
+    <PackageReference Include="Microsoft.VisualStudio.Validation" Version="15.3.15" />
+    <PackageReference Include="MicroBuild.VisualStudio" Version="$(MicroBuildVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.6.2" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Don't consume the analyzers in this library itself,
+         but have a package dependency so users of this library will automatically get the analyzers.
+         This requires an MSBuild workaround as documented here: https://github.com/Microsoft/msbuild/issues/2661#issuecomment-338808137
+         -->
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.csproj">
+      <PrivateAssets>none</PrivateAssets>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
+      <UndefineProperties>TargetFramework</UndefineProperties>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="OptProf.targets" Condition=" '$(TargetFramework)' == 'net46' " />
   <Import Project="$(MSBuildExtensionsPath)\Microsoft\Multilingual App Toolkit\Microsoft.Multilingual.ResxResources.targets" Label="MultilingualAppToolkit" Condition="Exists('$(MSBuildExtensionsPath)\Microsoft\Multilingual App Toolkit\v$(MultilingualAppToolkitVersion)\Microsoft.Multilingual.ResxResources.targets')" />
   <Target Name="MATPrerequisite" BeforeTargets="PrepareForBuild" Condition="!Exists('$(MSBuildExtensionsPath)\Microsoft\Multilingual App Toolkit\Microsoft.Multilingual.ResxResources.targets')" Label="MultilingualAppToolkit">
     <Warning Text="$(MSBuildProjectFile) is Multilingual build enabled, but the Multilingual App Toolkit is unavailable during the build. If building with Visual Studio, please check to ensure that toolkit is properly installed." />
-  </Target>
-  <Target Name="SetNuSpecProperties" BeforeTargets="GenerateNuspec" DependsOnTargets="GetBuildVersion">
-    <PropertyGroup>
-      <PackageLicenseUrl>https://raw.githubusercontent.com/Microsoft/vs-threading/$(GitCommitIdShort)/LICENSE</PackageLicenseUrl>
-    </PropertyGroup>
   </Target>
 </Project>

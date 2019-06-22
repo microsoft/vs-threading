@@ -96,10 +96,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Thrown when the value factory calls <see cref="GetValueAsync()"/> on this instance.
         /// </exception>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
-        public Task<T> GetValueAsync()
-        {
-            return this.GetValueAsync(CancellationToken.None);
-        }
+        public Task<T> GetValueAsync() => this.GetValueAsync(CancellationToken.None);
 
         /// <summary>
         /// Gets the task that produces or has produced the value.
@@ -152,7 +149,7 @@ namespace Microsoft.VisualStudio.Threading
                             try
                             {
                                 await resumableAwaiter;
-                                return await originalValueFactory().ConfigureAwait(continueOnCapturedContext: false);
+                                return await originalValueFactory().ConfigureAwaitRunInline();
                             }
                             finally
                             {
@@ -194,6 +191,47 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             return this.value.WithCancellation(cancellationToken);
+        }
+
+        /// <summary>
+        /// Gets the lazily computed value.
+        /// </summary>
+        /// <returns>The lazily constructed value.</returns>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when the value factory calls <see cref="GetValueAsync()"/> on this instance.
+        /// </exception>
+        public T GetValue() => this.GetValue(CancellationToken.None);
+
+        /// <summary>
+        /// Gets the lazily computed value.
+        /// </summary>
+        /// <param name="cancellationToken">
+        /// A token whose cancellation indicates that the caller no longer is interested in the result.
+        /// Note that this will not cancel the value factory (since other callers may exist).
+        /// But when this token is canceled, the caller will experience an <see cref="OperationCanceledException"/>
+        /// immediately and a dis-joining of any <see cref="JoinableTask"/> that may have occurred as a result of this call.
+        /// </param>
+        /// <returns>The lazily constructed value.</returns>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when the value factory calls <see cref="GetValueAsync()"/> on this instance.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">Thrown when <paramref name="cancellationToken"/> is canceled before the value is computed.</exception>
+        public T GetValue(CancellationToken cancellationToken)
+        {
+            // As a perf optimization, avoid calling JTF or GetValueAsync if the value factory has already completed.
+            if (this.IsValueFactoryCompleted)
+            {
+                return this.value.GetAwaiter().GetResult();
+            }
+            else
+            {
+                // Capture the factory as a local before comparing and dereferencing it since
+                // the field can transition to null and we want to gracefully handle that race condition.
+                JoinableTaskFactory factory = this.jobFactory;
+                return factory != null
+                    ? factory.Run(() => this.GetValueAsync(cancellationToken))
+                    : this.GetValueAsync(cancellationToken).GetAwaiter().GetResult();
+            }
         }
 
         /// <summary>

@@ -1,36 +1,40 @@
 3 Threading Rules
 =================
 
-In Dev12, we consolidated all our lessons learned from writing a complex,
+## Background
+
+In Visual Studio 2013, we consolidated all our lessons learned from writing a complex,
 multi-threaded component of Visual Studio into a small and simple set of
 rules to avoid deadlocks, unwanted reentrancy, and keep an easier to maintain
 codebase.  We do this by comprehensively applying just three rules, as outlined
 below. In each case, the instance of `JoinableTaskFactory` used in the samples
 comes from `ThreadHelper.JoinableTaskFactory` ([except for code in CPS and its
-extensions](cookbook.md)).
+extensions](cookbook_vs.md)).
 
-### 1. If a method has certain thread apartment requirements (STA or MTA) it must either:
-   - Have an asynchronous signature, and asynchronously marshal to the appropriate
-     thread if it isn't originally invoked on a compatible thread. The recommended 
-     means of switching to the main thread is:
+## The Rules
 
-```csharp
-await joinableTaskFactoryInstance.SwitchToMainThreadAsync();
-```
+The rules are listed below with minimal examples. For a more thorough explanation with more examples, check out [this slideshow](https://www.slideshare.net/aarnott/the-3-vs-threading-rules).
 
-OR
+### Rule #1. If a method has certain thread apartment requirements (STA or MTA) it must either:
+   1. Have an asynchronous signature, and asynchronously marshal to the appropriate
+   thread if it isn't originally invoked on a compatible thread. The recommended 
+   means of switching to the main thread is:
+
+      ```csharp
+      await joinableTaskFactoryInstance.SwitchToMainThreadAsync();
+      ```
+
+      OR
     
-   - Have a synchronous signature, and throw an exception when called on the wrong thread.
+   2. Have a synchronous signature, and throw an exception when called on the wrong thread.
      This can be done in Visual Studio with `ThreadHelper.ThrowIfNotOnUIThread()` or
      `ThreadHelper.ThrowIfOnUIThread()`.
-   
-   In particular, no method is allowed to synchronously marshal work to
-   another thread (blocking while that work is done) except by using the second rule (below).
-   Synchronous blocks in general are to be avoided whenever possible.
+
+        In particular, no method is allowed to synchronously marshal work to
+        another thread (blocking while that work is done) except by using the second rule (below).
+        Synchronous blocks in general are to be avoided whenever possible.
     
-### 2. When an implementation of an already-shipped public API must call 
-   asynchronous code and block for its completion, it must do so by 
-   following this simple pattern:
+### Rule #2. When an implementation of an already-shipped public API must call asynchronous code and block for its completion, it must do so by following this simple pattern:
 
 ```csharp
 joinableTaskFactoryInstance.Run(async delegate
@@ -39,9 +43,9 @@ joinableTaskFactoryInstance.Run(async delegate
 });
 ```
         
-### 3. If ever awaiting work that was started earlier, that work must be *joined*. 
-   For example, one service kicks off some asynchronous work that may later 
-   become synchronously blocking:
+### Rule #3. If ever awaiting work that was started earlier, that work must be *joined*.
+
+For example, one service kicks off some asynchronous work that may later become synchronously blocking:
 
 ```csharp
 JoinableTask longRunningAsyncWork = joinableTaskFactoryInstance.RunAsync(
@@ -63,15 +67,15 @@ or perhaps
 await longRunningAsyncWork;
 ```
 
-    Note however that this extra step is not necessary when awaiting is
-    done immediately after kicking off an asynchronous operation.
+Note however that this extra step is not necessary when awaiting is
+done immediately after kicking off an asynchronous operation.
     
 In particular, no method should call `Task.Wait()` or `Task.Result` on 
 an incomplete `Task`.
     
 ### Additional "honorable mention" rules: (Not JTF related)
 
-4. Never define `async void` methods. Make the methods return `Task` instead.
+### Rule #4. Never define `async void` methods. Make the methods return `Task` instead.
    - Exceptions thrown from `async void` methods always crash the process.
    - Callers don't even have the option to `await` the result.
    - Exceptions can't be reported to telemetry by the caller.
@@ -85,15 +89,15 @@ an incomplete `Task`.
 Frequently Asked Questions
 ---------------
 
-##### I don't write code in CPS itself. Do I need to follow these rules?
+##### Do I need to follow these rules?
 
-If you're writing a CPS extension (one that implements an interface defined
-in the `Microsoft.VisualStudio.ProjectSystem` namespace and/or exports
-into the MEF catalog for CPS to find), then it is absolutely required
-yes. Otherwise, it's still strongly recommended but not always required.
+All code that runs in Visual Studio itself should follow these rules.
 These rules have been reviewed by several senior and principal developers
-including VS architects, who have reviewed these rules and feel that VS
+and VS architects, who have reviewed these rules and feel that VS
 would do well to follow them in managed code where possible.
+
+Any other GUI app that invokes asynchronous code that it must occasionally
+block the UI thread on is also recommended to follow these rules.
 
 ##### Why should a method that has a dependency on a specific (kind of) thread be async?
 
@@ -140,7 +144,7 @@ There are several reasons for this:
    block until it handles the message. If you're on a threadpool thread, 
    this ties up a precious resource and if your code may execute on 
    multiple threadpool threads at once, there is a very real possibility 
-   of threadpool exhaustion.
+   of [threadpool starvation](threadpool_starvation.md).
 2. Deadlock: if the main thread is blocked waiting for the background 
    thread, and the main thread happens to be on top of some call stack 
    (like WPF measure-layout) that suppresses the message pump, the code 
@@ -244,55 +248,13 @@ almost nothing to do but fix the code bug.
 In the meantime, the most useful technique for analyzing async hangs is to
 attach WinDBG to the process and dump out incomplete async methods' states.
 This can be tedious, but we have a script in this file that you can use
-to make it much easier: [Async hang debugging](../scenario/analyze_hangs.md)
+to make it much easier: [Async hang debugging][AsyncHangDebugging]
 
 ##### What is threadpool exhaustion, and why is it bad?
 
-The threadpool only has so many threads (usually equal to the number of
-CPU cores) with which to execute work in the threadpool queue. Tying up a
-threadpool thread with nothing but waiting for something to happen means
-reduced opportunity for concurrent execution of other work. But when all
-threadpool threads are blocked waiting for an event, you have threadpool
-exhaustion. In this state, the threadpool can't execute any more work.
-Sometimes, the event the threads are waiting to be set will only be set
-by another work item that is still in the threadpool's own queue. This
-would deadlock, except that the CLR recognizes that after a full second
-of no dequeuing from the threadpool queue something may be wrong, and the
-CLR reluctantly adds another thread to the threadpool in order to dequeue
-just one more item from the queue and try to break the deadlock. 
+See our [threadpool starvation](threadpool_starvation.md) doc.
 
-If the unblocking work item isn't at the head of the queue, the newly
-added thread will either block again (like the others) or keep dequeing
-work items and executing them until the queue is depleted (and hopefully
-unleashing the rest of the threads in the threadpool). Eventually, the
-extra threads that were added to the threadpool exit.
-
-Threadpool exhaustion is bad because it can cause severe responsiveness
-issues in the application. As a real case study, during development of
-Dev11 we had a case where about 81 items were queued to the threadpool,
-and the first 80 would block until some event was set. The 81st item would
-set that event. The main thread was blocked waiting for these background
-tasks to complete. This wasn't in source code so obviously broken of course,
-but it was how execution happened to go at times. The first 4 items were
-dequeued and filled the threadpool, and VS now entered a hang state. 1
-second later, a fifth thread was added to the threadpool and dequeued one
-more item. Each second, another thread was added and the queue got closer
-to that 81st item. With each added thread, VS added 1MB of committed memory
-for the newly created thread's stack. *76 seconds later*, the threadpool
-now with 81 threads broke through the deadlock and VS resumed, and a few
-seconds later 76 threads exited that were no longer needed.
-
-This problem occurred in several places in CPS, and at least a couple places
-in other VS components. One often straightforward fix is to asynchronously
-wait for what you need rather than synchronously wait. If that had happened
-above, all 80 items on the queue would have very quickly started, and
-then suspended themselves allowing the 81st item to quickly run, set the
-event, and cause those 80 items to reschedule themselves on the queue and
-get their work done promptly without ever causing VS to hang or add 76MB
-of working set memory.
-
-##### I'm writing an async method that isn't in a `JoinableTask`. Should I use
-`JTF.SwitchToMainThreadAsync()` to get to the UI thread?
+##### I'm writing an async method that isn't in a `JoinableTask`. Should I use `JTF.SwitchToMainThreadAsync()` to get to the UI thread?
 
 Yes. `JoinableTaskFactory.SwitchToMainThreadAsync()` works great outside
 a `JoinableTask`. It simply posts the continuation to the main thread for
@@ -321,10 +283,11 @@ priority via the `JoinableTask` it may call your code within.
 
 ##### What message priority is used to switch to (or resume on) the main thread, and can this be changed?
 
-`JoinableTaskFactory`’s default behavior is to post to the main thread,
+`JoinableTaskFactory`’s default behavior is to switch to the main thread using
+`SynchronizationContext.Post`, which typically posts a message to the main thread,
 which puts it below RPC and above user input in priority.
 
-How to use a different priority for switching to the main thread in VS.
+[How to use a different priority for switching to the main thread in VS](cookbook_vs.md#how-to-switch-to-or-use-the-ui-thread-with-background-priority)
 
 The following describes how to replace the mechanism for getting to the
 UI thread in a host-independent way:
@@ -342,4 +305,7 @@ type by passing in either a `JoinableTaskContext` or a `JoinableTaskCollection`.
 
 For more information on this topic, see Andrew Arnott's blog post 
 [Asynchronous and multithreaded programming within VS using the 
-`JoinableTaskFactory`](https://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx)
+`JoinableTaskFactory`][JTFBlog].
+
+[AsyncHangDebugging]: https://github.com/Microsoft/VSProjectSystem/blob/master/doc/scenario/analyze_hangs.md
+[JTFBlog]: https://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx

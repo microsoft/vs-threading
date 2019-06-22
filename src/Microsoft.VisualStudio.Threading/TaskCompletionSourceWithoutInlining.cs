@@ -19,11 +19,9 @@ namespace Microsoft.VisualStudio.Threading
     internal class TaskCompletionSourceWithoutInlining<T> : TaskCompletionSource<T>
     {
         /// <summary>
-        /// A value indicating whether the owner wants to allow continuations
-        /// of the Task produced by this instance to execute inline with
-        /// its completion.
+        /// The Task that we expose to others that may not inline continuations.
         /// </summary>
-        private readonly bool allowInliningContinuations;
+        private readonly Task<T> exposedTask;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TaskCompletionSourceWithoutInlining{T}"/> class.
@@ -34,101 +32,32 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="options">
         /// TaskCreationOptions to pass on to the base constructor.
         /// </param>
-        internal TaskCompletionSourceWithoutInlining(bool allowInliningContinuations, TaskCreationOptions options = TaskCreationOptions.None)
-            : base(AdjustFlags(options, allowInliningContinuations))
+        /// <param name="state">The state to set on the Task.</param>
+        internal TaskCompletionSourceWithoutInlining(bool allowInliningContinuations, TaskCreationOptions options = TaskCreationOptions.None, object state = null)
+            : base(state, AdjustFlags(options, allowInliningContinuations))
         {
-            this.allowInliningContinuations = allowInliningContinuations;
+            if (!allowInliningContinuations && !LightUps.IsRunContinuationsAsynchronouslySupported)
+            {
+                var innerTcs = new TaskCompletionSource<T>(state, options);
+                base.Task.ApplyResultTo(innerTcs, inlineSubsequentCompletion: false);
+                this.exposedTask = innerTcs.Task;
+            }
+            else
+            {
+                this.exposedTask = base.Task;
+            }
         }
 
         /// <summary>
-        /// Gets a value indicating whether we can call the completing methods
-        /// on the base class on our caller's callstack.
+        /// Gets the <see cref="Task"/> that may never complete inline with completion of this <see cref="TaskCompletionSource{TResult}"/>.
         /// </summary>
-        /// <value>
-        /// <c>true</c> if our owner allows inlining continuations or .NET 4.6 will ensure they don't inline automatically;
-        /// <c>false</c> if our owner does not allow inlining *and* we're on a downlevel version of the .NET Framework.
-        /// </value>
-        private bool CanCompleteInline
-        {
-            get { return this.allowInliningContinuations || LightUps.IsRunContinuationsAsynchronouslySupported; }
-        }
-
-        //// NOTE: We do NOT define the non-Try completion methods:
-        //// SetResult, SetCanceled, and SetException
-        //// Because their semantic requires that exceptions are thrown
-        //// synchronously, but we cannot guarantee synchronous completion.
-        //// What's more, if an exception were thrown on the threadpool
-        //// it would crash the process.
-
-#if UNUSED
-		new internal void TrySetResult(T value) {
-			if (!this.Task.IsCompleted) {
-				if (this.CanCompleteInline) {
-					base.TrySetResult(value);
-				} else {
-					ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<T>)state).TrySetResult(value), this);
-				}
-			}
-		}
-
-		new internal void TrySetCanceled() {
-			if (!this.Task.IsCompleted) {
-				if (this.CanCompleteInline) {
-					base.TrySetCanceled();
-				} else {
-					ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<T>)state).TrySetCanceled(), this);
-				}
-			}
-		}
-
-		new internal void TrySetException(Exception exception) {
-			if (!this.Task.IsCompleted) {
-				if (this.CanCompleteInline) {
-					base.TrySetException(exception);
-				} else {
-					ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<T>)state).TrySetException(exception), this);
-				}
-			}
-		}
-#endif
-
-        internal void TrySetCanceled(CancellationToken cancellationToken)
-        {
-            if (!this.Task.IsCompleted)
-            {
-                if (this.CanCompleteInline)
-                {
-                    ThreadingTools.TrySetCanceled(this, cancellationToken);
-                }
-                else
-                {
-                    Tuple<TaskCompletionSourceWithoutInlining<T>, CancellationToken> tuple =
-                        Tuple.Create(this, cancellationToken);
-                    ThreadPool.QueueUserWorkItem(
-                        state =>
-                        {
-                            var s = (Tuple<TaskCompletionSourceWithoutInlining<T>, CancellationToken>)state;
-                            ThreadingTools.TrySetCanceled(s.Item1, s.Item2);
-                        },
-                        tuple);
-                }
-            }
-        }
-
-        internal void TrySetResultToDefault()
-        {
-            if (!this.Task.IsCompleted)
-            {
-                if (this.CanCompleteInline)
-                {
-                    this.TrySetResult(default(T));
-                }
-                else
-                {
-                    ThreadPool.QueueUserWorkItem(state => ((TaskCompletionSource<T>)state).TrySetResult(default(T)), this);
-                }
-            }
-        }
+        /// <devremarks>
+        /// Return the base.Task if it is already completed since inlining continuations
+        /// on the completer is no longer a concern. Also, when we are not inlining continuations,
+        /// this.exposedTask completes slightly later than base.Task, and callers expect
+        /// the Task we return to be complete as soon as they call TrySetResult.
+        /// </devremarks>
+        internal new Task<T> Task => base.Task.IsCompleted ? base.Task : this.exposedTask;
 
         /// <summary>
         /// Modifies the specified flags to include RunContinuationsAsynchronously

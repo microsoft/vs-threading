@@ -1,32 +1,13 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
-    using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CodeFixes;
-    using Microsoft.CodeAnalysis.Diagnostics;
+    using System.Threading.Tasks;
     using Xunit;
-    using Xunit.Abstractions;
+    using Verify = CSharpCodeFixVerifier<VSTHRD100AsyncVoidMethodAnalyzer, VSTHRD100AsyncVoidMethodCodeFix>;
 
-    public class VSTHRD100AsyncVoidMethodAnalyzerTests : DiagnosticVerifier
+    public class VSTHRD100AsyncVoidMethodAnalyzerTests
     {
-        private DiagnosticResult expect = new DiagnosticResult
-        {
-            Id = VSTHRD100AsyncVoidMethodAnalyzer.Id,
-            SkipVerifyMessage = true,
-            Severity = DiagnosticSeverity.Warning,
-        };
-
-        public VSTHRD100AsyncVoidMethodAnalyzerTests(ITestOutputHelper logger)
-            : base(logger)
-        {
-        }
-
-        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
-        {
-            return new VSTHRD100AsyncVoidMethodAnalyzer();
-        }
-
         [Fact]
-        public void ReportWarningOnAsyncVoidMethod()
+        public async Task ReportWarningOnAsyncVoidMethod()
         {
             var test = @"
 using System;
@@ -36,12 +17,12 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 5, 16) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithLocation(5, 16);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ReportWarningOnAsyncVoidMethodSimilarToAsyncEventHandler()
+        public async Task ReportWarningOnAsyncVoidMethodSimilarToAsyncEventHandler()
         {
             var test = @"
 using System;
@@ -51,12 +32,12 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 5, 16) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithLocation(5, 16);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ReportWarningOnAsyncVoidEventHandlerSimilarToAsyncEventHandler2()
+        public async Task ReportWarningOnAsyncVoidEventHandlerSimilarToAsyncEventHandler2()
         {
             var test = @"
 using System;
@@ -66,12 +47,12 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 5, 16) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithLocation(5, 16);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void DoNotReportWarningOnAsyncVoidEventHandler()
+        public async Task ReportWarningOnAsyncVoidEventHandler()
         {
             var test = @"
 using System;
@@ -81,11 +62,20 @@ class Test {
     }
 }
 ";
-            this.VerifyCSharpDiagnostic(test);
+            var withFix = @"
+using System;
+
+class Test {
+    async System.Threading.Tasks.Task F(object sender, EventArgs e) {
+    }
+}
+";
+            var expected = Verify.Diagnostic().WithLocation(5, 16);
+            await Verify.VerifyCodeFixAsync(test, expected, withFix);
         }
 
         [Fact]
-        public void DoNotReportWarningOnAsyncVoidEventHandlerWithMyEventArgs()
+        public async Task ReportWarningOnAsyncVoidEventHandlerWithMyEventArgs()
         {
             var test = @"
 using System;
@@ -97,7 +87,18 @@ class Test {
 
 class MyEventArgs : EventArgs {}
 ";
-            this.VerifyCSharpDiagnostic(test);
+            var withFix = @"
+using System;
+
+class Test {
+    async System.Threading.Tasks.Task F(object sender, MyEventArgs e) {
+    }
+}
+
+class MyEventArgs : EventArgs {}
+";
+            var expected = Verify.Diagnostic().WithLocation(5, 16);
+            await Verify.VerifyCodeFixAsync(test, expected, withFix);
         }
     }
 }

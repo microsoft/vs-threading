@@ -1,0 +1,12 @@
+﻿[TestNS.*]
+![TestNS.FreeThreadedType]
+![TestNS2.FreeThreadedType]
+[TestNS2.*]
+[Microsoft.VisualStudio.Shell.Interop.*]
+[Microsoft.VisualStudio.OLE.Interop.*]
+[Microsoft.Internal.VisualStudio.Shell.Interop.*]
+![Microsoft.VisualStudio.Shell.Interop.IAsyncServiceProvider]
+[Microsoft.VisualStudio.Shell.Package]::GetService
+[Microsoft.VisualStudio.Shell.ServiceProvider]
+![TestNS2.A]::FreeThreadedMethod
+[A]::UIPropertyName

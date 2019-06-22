@@ -1,16 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net452;netcoreapp1.0</TargetFrameworks>
-    <PackageTargetFallback>portable-net45+win8+wp8+wpa81</PackageTargetFallback>
+    <!-- We target net451 to test library code to support NET45 -->
+    <!-- We target net452 to test library code to support NET46 light-up from a net45 assembly -->
+    <!-- We target net46 to test library code that supports net46 natively. -->
+    <TargetFrameworks>net451;net452;net46;netcoreapp1.0;netcoreapp2.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Tests.ruleset</CodeAnalysisRuleSet>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+
+    <TargetsDesktop Condition=" '$(TargetFramework)' == 'net451' or '$(TargetFramework)' == 'net452' or '$(TargetFramework)' == 'net46' ">true</TargetsDesktop>
+    <DefineConstants Condition=" '$(TargetsDesktop)' == 'true' ">$(DefineConstants);DESKTOP;ISOLATED_TEST_SUPPORT</DefineConstants>
+    <AppConfig Condition=" '$(TargetFramework)' == 'net451' ">App.net45.config</AppConfig>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Remove="net452\**" Condition=" '$(TargetFramework)' != 'net452' " />
-    <Compile Remove="netstandard1.5\**" Condition=" '$(TargetFramework)' != 'netstandard1.5' and '$(TargetFramework)' != 'netcoreapp1.0' " />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="..\Microsoft.VisualStudio.Threading\InternalUtilities.cs">
       <Link>InternalUtilities.cs</Link>
@@ -23,21 +30,25 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="xunit" Version="2.2.0" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.2.0" />
-    <PackageReference Include="Xunit.Combinatorial" Version="1.2.1" />
-    <PackageReference Include="Xunit.SkippableFact" Version="1.3.1" />
-    <PackageReference Include="Xunit.StaFact" Version="0.2.3-beta" />
+    <PackageReference Include="xunit" Version="2.1.0" Condition=" '$(TargetFramework)' == 'net451' " />
+    <PackageReference Include="xunit" Version="2.2.0" Condition=" '$(TargetFramework)' != 'net451' " />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
+    <PackageReference Include="Xunit.Combinatorial" Version="1.2.7" />
+    <PackageReference Include="Xunit.SkippableFact" Version="1.3.3" />
+    <PackageReference Include="Xunit.StaFact" Version="0.2.9" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.0.0" />
     <PackageReference Include="OpenCover" Version="4.6.519" />
-    <PackageReference Include="MicroBuild.Nonshipping" Version="2.0.40" />
+    <PackageReference Include="MicroBuild.Nonshipping" Version="$(MicroBuildVersion)" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net452' ">
+  <ItemGroup Condition=" '$(TargetsDesktop)' == 'true' ">
     <Reference Include="System.Configuration" />
     <Reference Include="WindowsBase" />
+    <ProjectReference Include="..\IsolatedTestHost\IsolatedTestHost.csproj">
+      <Private>true</Private>
+    </ProjectReference>
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher\Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <Private>true</Private>

@@ -26,3 +26,8 @@ void Foo() {
     });
 }
 ```
+
+## Configuration
+
+This analyzer is configurable via the `vs-threading.LegacyThreadSwitchingMembers.txt` file.
+See our [configuration](configuration.md) topic for more information.

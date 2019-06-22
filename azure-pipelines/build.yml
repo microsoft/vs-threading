@@ -1,0 +1,142 @@
+steps:
+- script: |
+    dotnet tool install --tool-path .. nbgv
+    ..\nbgv cloud
+    echo ##vso[task.setvariable variable=PATH]%Path%;$(Build.SourcesDirectory)
+  workingDirectory: src
+  displayName: Set build number
+
+- task: PowerShell@2
+  inputs:
+    filePath: azure-pipelines\variables\_pipelines.ps1
+    failOnStderr: true
+  displayName: Set pipeline variables based on source
+
+- ${{ if eq(variables['system.collectionId'], '011b8bdf-6d56-4f87-be0d-0092136884d9') }}:
+  - template: azure-pipeline.microbuild.before.yml
+
+- task: DotNetCoreInstaller@0
+  displayName: Install .NET Core SDK 2.1.503
+  inputs:
+    packageType: sdk
+    version: 2.1.503
+  condition: and(succeeded(), ne(variables['Hosted'], 'true')) # Hosted agents already have this.
+
+- script: dotnet --info
+  displayName: Show dotnet SDK info
+
+# We have to use the traditional nuget.exe for restoring since we have vcxproj projects too.
+- task: NuGetToolInstaller@0
+  displayName: Pin nuget.exe version
+  inputs:
+    versionSpec: 4.6.1
+
+- powershell: nuget restore src\Microsoft.VisualStudio.Threading.sln
+  displayName: Nuget restore packages
+
+- task: VSBuild@1
+  inputs:
+    vsVersion: 15.0
+    msbuildArgs: /t:build,pack /m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/msbuild.binlog"
+    platform: Any CPU
+    configuration: $(BuildConfiguration)
+  displayName: Build Visual Studio solution
+
+- task: PowerShell@2
+  inputs:
+    filePath: azure-pipelines\artifacts\VSInsertion.ps1
+    failOnStderr: true
+  displayName: Build VSInsertion CoreXT nupkg
+
+- task: VSBuild@1
+  inputs:
+    vsVersion: 15.0
+    msbuildArgs: /t:build /m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/msbuild_x86.binlog"
+    platform: x86
+    configuration: $(BuildConfiguration)
+  displayName: Build AsyncDebugTools x86
+
+- task: VSBuild@1
+  inputs:
+    vsVersion: 15.0
+    msbuildArgs: /t:build /m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/msbuild_x64.binlog"
+    platform: x64
+    configuration: $(BuildConfiguration)
+  displayName: Build AsyncDebugTools x64
+
+- task: DotNetCoreCLI@2
+  displayName: Run tests
+  inputs:
+    command: test
+    projects: '**/*.Tests.csproj'
+    arguments: --configuration $(BuildConfiguration) --no-build --filter "TestCategory!=FailsInCloudTest" -v n
+    workingDirectory: src
+  condition: and(succeeded(), ne(variables['SignType'], 'real'))
+
+- task: CopyFiles@1
+  inputs:
+    Contents: |
+      obj/**/project.assets.json
+    TargetFolder: $(Build.ArtifactStagingDirectory)/projectAssetsJson
+  displayName: Collecting project.assets.json artifacts
+  condition: succeededOrFailed()
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: $(Build.ArtifactStagingDirectory)/projectAssetsJson
+    ArtifactName: projectAssetsJson
+    ArtifactType: Container
+  displayName: Publish projectAssetsJson artifacts
+  condition: succeededOrFailed()
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: $(Build.ArtifactStagingDirectory)/build_logs
+    ArtifactName: build_logs
+    ArtifactType: Container
+  displayName: Publish build_logs artifacts
+  condition: succeededOrFailed()
+
+- task: PowerShell@2
+  inputs:
+    filePath: azure-pipelines\variables\_pipelines.ps1
+    failOnStderr: true
+  displayName: Update pipeline variables based on build outputs
+
+- task: PowerShell@2
+  inputs:
+    filePath: azure-pipelines\artifacts\_pipelines.ps1
+  displayName: Publish artifacts
+
+- task: VSTest@2
+  displayName: Run tests on .NET Framework (with code coverage)
+  inputs:
+    testFiltercriteria: TestCategory!=FailsInCloudTest
+    searchFolder: $(System.DefaultWorkingDirectory)\bin
+    testAssemblyVer2: |
+      **\*tests*.dll
+    platform: $(BuildPlatform)
+    configuration: $(BuildConfiguration)
+    codeCoverageEnabled: true
+  condition: and(succeeded(), ne(variables['SignType'], 'real'))
+
+- ${{ if eq(variables['system.collectionId'], '011b8bdf-6d56-4f87-be0d-0092136884d9') }}:
+  - template: azure-pipeline.microbuild.after.yml
+
+- task: PowerShell@2
+  displayName: Collecting deployables
+  inputs:
+    targetType: inline
+    script: |
+      md $(Build.ArtifactStagingDirectory)/deployables\x86
+      md $(Build.ArtifactStagingDirectory)/deployables\x64
+      Get-ChildItem bin\Packages\$(BuildConfiguration)\NuGet\*.nupkg -rec |% { copy $_  $(Build.ArtifactStagingDirectory)\deployables }
+      copy bin\AsyncDebugTools/x86/$(BuildConfiguration)/AsyncDebugTools.dll $(Build.ArtifactStagingDirectory)\deployables\x86
+      copy bin\AsyncDebugTools/x64/$(BuildConfiguration)/AsyncDebugTools.dll $(Build.ArtifactStagingDirectory)\deployables\x64
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: $(Build.ArtifactStagingDirectory)/deployables
+    ArtifactName: deployables
+    ArtifactType: Container
+  displayName: Publish deployables artifacts

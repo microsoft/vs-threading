@@ -98,8 +98,16 @@ namespace Microsoft.VisualStudio.Threading
                 }
                 else
                 {
-                    var waiter = new WaiterCompletionSource(this, cancellationToken, this.allowInliningAwaiters);
-                    this.signalAwaiters.Enqueue(waiter);
+                    var waiter = new WaiterCompletionSource(this, this.allowInliningAwaiters, cancellationToken);
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        waiter.TrySetCanceled(cancellationToken);
+                    }
+                    else
+                    {
+                        this.signalAwaiters.Enqueue(waiter);
+                    }
+
                     return waiter.Task;
                 }
             }
@@ -126,7 +134,7 @@ namespace Microsoft.VisualStudio.Threading
             if (toRelease != null)
             {
                 toRelease.Registration.Dispose();
-                toRelease.TrySetResultToDefault();
+                toRelease.TrySetResult(default(EmptyStruct));
             }
         }
 
@@ -144,7 +152,10 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             // We only cancel the task if we removed it from the queue.
-            // If it wasn't in the queue, it has already been signaled.
+            // If it wasn't in the queue, either it has already been signaled
+            // or it hasn't even been added to the queue yet. If the latter,
+            // the Task will be canceled later so long as the signal hasn't been awarded
+            // to this Task yet.
             if (removed)
             {
                 tcs.TrySetCanceled(tcs.CancellationToken);
@@ -160,9 +171,9 @@ namespace Microsoft.VisualStudio.Threading
             /// Initializes a new instance of the <see cref="WaiterCompletionSource"/> class.
             /// </summary>
             /// <param name="owner">The event that is initializing this value.</param>
-            /// <param name="cancellationToken">The cancellation token associated with the waiter.</param>
             /// <param name="allowInliningContinuations"><c>true</c> to allow continuations to be inlined upon the completer's callstack.</param>
-            public WaiterCompletionSource(AsyncAutoResetEvent owner, CancellationToken cancellationToken, bool allowInliningContinuations)
+            /// <param name="cancellationToken">The cancellation token associated with the waiter.</param>
+            public WaiterCompletionSource(AsyncAutoResetEvent owner, bool allowInliningContinuations, CancellationToken cancellationToken)
                 : base(allowInliningContinuations)
             {
                 this.CancellationToken = cancellationToken;

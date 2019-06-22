@@ -260,7 +260,7 @@ namespace Microsoft.VisualStudio.Threading
         /// An awaitable that is returned from asynchronous lock requests.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct ResourceAwaitable
+        public readonly struct ResourceAwaitable
         {
             /// <summary>
             /// The underlying lock awaitable.
@@ -298,7 +298,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
         [DebuggerDisplay("{awaiter.kind}")]
-        public struct ResourceAwaiter : INotifyCompletion
+        public readonly struct ResourceAwaiter : ICriticalNotifyCompletion
         {
             /// <summary>
             /// The underlying lock awaiter.
@@ -355,6 +355,20 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
+            /// Sets the delegate to execute when the lock is available.
+            /// </summary>
+            /// <param name="continuation">The delegate.</param>
+            public void UnsafeOnCompleted(Action continuation)
+            {
+                if (this.awaiter == null)
+                {
+                    throw new InvalidOperationException();
+                }
+
+                this.awaiter.UnsafeOnCompleted(continuation);
+            }
+
+            /// <summary>
             /// Applies the issued lock to the caller and returns the value used to release the lock.
             /// </summary>
             /// <returns>The value to dispose of to release the lock.</returns>
@@ -375,7 +389,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
         [DebuggerDisplay("{releaser.awaiter.kind}")]
-        public struct ResourceReleaser : IDisposable
+        public readonly struct ResourceReleaser : IDisposable
         {
             /// <summary>
             /// The underlying lock releaser.
@@ -477,7 +491,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// A map of resources to the tasks that most recently began evaluating them.
             /// </summary>
-            private WeakKeyDictionary<TResource, ResourcePreparationTaskAndValidity> resourcePreparationTasks = new WeakKeyDictionary<TResource, ResourcePreparationTaskAndValidity>();
+            private WeakKeyDictionary<TResource, ResourcePreparationTaskAndValidity> resourcePreparationTasks = new WeakKeyDictionary<TResource, ResourcePreparationTaskAndValidity>(capacity: 2);
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Helper"/> class.
@@ -676,8 +690,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 lock (this.service.SyncObject)
                 {
-                    ResourcePreparationTaskAndValidity previousState;
-                    this.resourcePreparationTasks.TryGetValue(resource, out previousState);
+                    this.resourcePreparationTasks.TryGetValue(resource, out ResourcePreparationTaskAndValidity previousState);
                     this.resourcePreparationTasks[resource] = new ResourcePreparationTaskAndValidity(
                         previousState.PreparationTask ?? TplExtensions.CompletedTask, // preserve the original task if it exists in case it's not finished
                         ResourceState.Unknown);
@@ -707,7 +720,6 @@ namespace Microsoft.VisualStudio.Threading
             {
                 Requires.NotNull(resource, nameof(resource));
                 Assumes.True(Monitor.IsEntered(this.service.SyncObject));
-                ResourcePreparationTaskAndValidity preparationTask;
 
                 // We deliberately ignore the cancellation token in the tasks we create and save because the tasks can be shared
                 // across requests and we can't have task continuation chains where tasks within the chain get canceled
@@ -718,7 +730,7 @@ namespace Microsoft.VisualStudio.Threading
                     ? (object)resource
                     : Tuple.Create(resource, this.service.GetAggregateLockFlags());
 
-                if (!this.resourcePreparationTasks.TryGetValue(resource, out preparationTask))
+                if (!this.resourcePreparationTasks.TryGetValue(resource, out ResourcePreparationTaskAndValidity preparationTask))
                 {
                     var preparationDelegate = forConcurrentUse
                         ? this.prepareResourceConcurrentDelegate
@@ -780,7 +792,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Tracks a task that prepares a resource for either concurrent or exclusive use.
             /// </summary>
-            private struct ResourcePreparationTaskAndValidity
+            private readonly struct ResourcePreparationTaskAndValidity
             {
                 /// <summary>
                 /// Initializes a new instance of the <see cref="ResourcePreparationTaskAndValidity"/> struct.
@@ -796,12 +808,12 @@ namespace Microsoft.VisualStudio.Threading
                 /// <summary>
                 /// Gets the task that is preparing the resource.
                 /// </summary>
-                internal Task PreparationTask { get; private set; }
+                internal Task PreparationTask { get; }
 
                 /// <summary>
                 /// Gets the state the resource will be in when <see cref="PreparationTask"/> has completed.
                 /// </summary>
-                internal ResourceState State { get; private set; }
+                internal ResourceState State { get; }
             }
         }
     }

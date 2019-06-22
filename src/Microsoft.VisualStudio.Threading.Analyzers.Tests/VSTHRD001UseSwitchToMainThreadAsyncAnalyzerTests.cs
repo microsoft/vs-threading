@@ -1,33 +1,13 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
     using System.Threading.Tasks;
-    using CodeAnalysis.Diagnostics;
-    using Microsoft.CodeAnalysis;
     using Xunit;
-    using Xunit.Abstractions;
+    using Verify = CSharpCodeFixVerifier<VSTHRD001UseSwitchToMainThreadAsyncAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
-    public class VSTHRD001UseSwitchToMainThreadAsyncAnalyzerTests : DiagnosticVerifier
+    public class VSTHRD001UseSwitchToMainThreadAsyncAnalyzerTests
     {
-        private DiagnosticResult expect = new DiagnosticResult
-        {
-            Id = VSTHRD001UseSwitchToMainThreadAsyncAnalyzer.Id,
-            SkipVerifyMessage = true,
-            Severity = DiagnosticSeverity.Warning,
-        };
-
-        public VSTHRD001UseSwitchToMainThreadAsyncAnalyzerTests(ITestOutputHelper logger)
-            : base(logger)
-        {
-        }
-
-        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer() => new VSTHRD001UseSwitchToMainThreadAsyncAnalyzer();
-
         [Fact]
-        public void ThreadHelperInvoke_ProducesDiagnostic()
+        public async Task ThreadHelperInvoke_ProducesDiagnostic()
         {
             var test = @"
 using Microsoft.VisualStudio.Shell;
@@ -39,12 +19,11 @@ class Test {
 }
 ";
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 6, 9, 6, 36) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithSpan(6, 9, 6, 36));
         }
 
         [Fact]
-        public void ThreadHelperBeginInvoke_ProducesDiagnostic()
+        public async Task ThreadHelperBeginInvoke_ProducesDiagnostic()
         {
             var test = @"
 using Microsoft.VisualStudio.Shell;
@@ -56,12 +35,11 @@ class Test {
 }
 ";
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 6, 9, 6, 41) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithSpan(6, 9, 6, 41));
         }
 
         [Fact]
-        public void ThreadHelperInvokeAsync_ProducesDiagnostic()
+        public async Task ThreadHelperInvokeAsync_ProducesDiagnostic()
         {
             var test = @"
 using Microsoft.VisualStudio.Shell;
@@ -73,12 +51,11 @@ class Test {
 }
 ";
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 6, 9, 6, 41) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithSpan(6, 9, 6, 41));
         }
 
         [Fact]
-        public void DispatcherInvoke_ProducesDiagnostic()
+        public async Task DispatcherInvoke_ProducesDiagnostic()
         {
             var test = @"
 using System.Windows.Threading;
@@ -90,12 +67,11 @@ class Test {
 }
 ";
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 6, 9, 6, 44) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithSpan(6, 9, 6, 44));
         }
 
         [Fact]
-        public void DispatcherBeginInvoke_ProducesDiagnostic()
+        public async Task DispatcherBeginInvoke_ProducesDiagnostic()
         {
             var test = @"
 using System;
@@ -108,12 +84,11 @@ class Test {
 }
 ";
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 9, 7, 49) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithSpan(7, 9, 7, 49));
         }
 
         [Fact]
-        public void DispatcherInvokeAsync_ProducesDiagnostic()
+        public async Task DispatcherInvokeAsync_ProducesDiagnostic()
         {
             var test = @"
 using System.Windows.Threading;
@@ -125,12 +100,11 @@ class Test {
 }
 ";
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 6, 9, 6, 49) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithSpan(6, 9, 6, 49));
         }
 
         [Fact]
-        public void SynchronizationContextSend_ProducesDiagnostic()
+        public async Task SynchronizationContextSend_ProducesDiagnostic()
         {
             var test = @"
 using System.Threading;
@@ -142,12 +116,11 @@ class Test {
 }
 ";
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 6, 9, 6, 44) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithSpan(6, 9, 6, 44));
         }
 
         [Fact]
-        public void SynchronizationContextPost_ProducesDiagnostic()
+        public async Task SynchronizationContextPost_ProducesDiagnostic()
         {
             var test = @"
 using System.Threading;
@@ -159,8 +132,7 @@ class Test {
 }
 ";
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 6, 9, 6, 44) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithSpan(6, 9, 6, 44));
         }
     }
 }

@@ -16,23 +16,36 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using CodeAnalysis.Diagnostics;
 
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class VSTHRD200UseAsyncNamingConventionAnalyzer : DiagnosticAnalyzer
+    public class VSTHRD200UseAsyncNamingConventionAnalyzer : DiagnosticAnalyzerBase
     {
         public const string Id = "VSTHRD200";
 
+        internal const string NewNameKey = "NewName";
+
         internal const string MandatoryAsyncSuffix = "Async";
 
-        internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
+        internal static readonly DiagnosticDescriptor AddAsyncDescriptor = new DiagnosticDescriptor(
             id: Id,
             title: Strings.VSTHRD200_Title,
-            messageFormat: Strings.VSTHRD200_MessageFormat,
+            messageFormat: Strings.VSTHRD200_AddAsync_MessageFormat,
+            helpLinkUri: Utils.GetHelpLink(Id),
+            category: "Style",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+        internal static readonly DiagnosticDescriptor RemoveAsyncDescriptor = new DiagnosticDescriptor(
+            id: Id,
+            title: Strings.VSTHRD200_Title,
+            messageFormat: Strings.VSTHRD200_RemoveAsync_MessageFormat,
+            helpLinkUri: Utils.GetHelpLink(Id),
             category: "Style",
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(
-            Descriptor);
+            AddAsyncDescriptor,
+            RemoveAsyncDescriptor);
 
         /// <inheritdoc />
         public override void Initialize(AnalysisContext context)
@@ -52,22 +65,43 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 return;
             }
 
-            if (!methodSymbol.Name.EndsWith(MandatoryAsyncSuffix))
+            // Skip entrypoint methods since their name is non-negotiable.
+            if (Utils.IsEntrypointMethod(methodSymbol, context.Compilation, context.CancellationToken))
             {
-                if (methodSymbol.ReturnType.Name == nameof(Task) &&
-                    methodSymbol.ReturnType.BelongsToNamespace(Namespaces.SystemThreadingTasks))
-                {
-                    // Now that we have done the cheap checks to find that this method may deserve a diagnostic,
-                    // Do deeper checks to skip over methods that implement API contracts that are controlled elsewhere.
-                    if (methodSymbol.FindInterfacesImplemented().Any() || methodSymbol.IsOverride)
-                    {
-                        return;
-                    }
+                return;
+            }
 
+            bool hasAsyncFocusedReturnType = Utils.HasAsyncCompatibleReturnType(methodSymbol);
+
+            bool actuallyEndsWithAsync = methodSymbol.Name.EndsWith(MandatoryAsyncSuffix);
+
+            if (hasAsyncFocusedReturnType != actuallyEndsWithAsync)
+            {
+                // Now that we have done the cheap checks to find that this method may deserve a diagnostic,
+                // Do deeper checks to skip over methods that implement API contracts that are controlled elsewhere.
+                if (methodSymbol.FindInterfacesImplemented().Any() || methodSymbol.IsOverride)
+                {
+                    return;
+                }
+
+                if (hasAsyncFocusedReturnType)
+                {
+                    // We actively encourage folks to use the Async keyword only for clearly async-focused types.
+                    // Not just any awaitable, since some stray extension method shouldn't change the world for everyone.
                     var properties = ImmutableDictionary<string, string>.Empty
-                        .Add(VSTHRD200UseAsyncNamingConventionCodeFix.NewNameKey, methodSymbol.Name + MandatoryAsyncSuffix);
+                        .Add(NewNameKey, methodSymbol.Name + MandatoryAsyncSuffix);
                     context.ReportDiagnostic(Diagnostic.Create(
-                        Descriptor,
+                        AddAsyncDescriptor,
+                        methodSymbol.Locations[0],
+                        properties));
+                }
+                else if (!this.IsAwaitableType(methodSymbol.ReturnType, context.Compilation, context.CancellationToken))
+                {
+                    // Only warn about abusing the Async suffix if the return type is not awaitable.
+                    var properties = ImmutableDictionary<string, string>.Empty
+                        .Add(NewNameKey, methodSymbol.Name.Substring(0, methodSymbol.Name.Length - MandatoryAsyncSuffix.Length));
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        RemoveAsyncDescriptor,
                         methodSymbol.Locations[0],
                         properties));
                 }

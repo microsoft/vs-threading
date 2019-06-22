@@ -9,7 +9,7 @@ namespace Microsoft.VisualStudio.Threading
     using System;
     using System.Threading;
 
-#if NET45
+#if DESKTOP
     /// <summary>
     /// A SynchronizationContext whose synchronously blocking Wait method does not allow
     /// any reentrancy via the message pump.
@@ -35,7 +35,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         public NoMessagePumpSyncContext()
         {
-#if NET45
+#if DESKTOP
             // This is required so that our override of Wait is invoked.
             this.SetWaitNotificationRequired();
 #endif
@@ -49,13 +49,13 @@ namespace Microsoft.VisualStudio.Threading
             get { return DefaultInstance; }
         }
 
-#if NET45
+#if DESKTOP
         /// <summary>
         /// Synchronously blocks without a message pump.
         /// </summary>
-        /// <param name="waitHandles">An array of type <see cref="T:System.IntPtr" /> that contains the native operating system handles.</param>
+        /// <param name="waitHandles">An array of type <see cref="IntPtr" /> that contains the native operating system handles.</param>
         /// <param name="waitAll">true to wait for all handles; false to wait for any handle.</param>
-        /// <param name="millisecondsTimeout">The number of milliseconds to wait, or <see cref="F:System.Threading.Timeout.Infinite" /> (-1) to wait indefinitely.</param>
+        /// <param name="millisecondsTimeout">The number of milliseconds to wait, or <see cref="Timeout.Infinite" /> (-1) to wait indefinitely.</param>
         /// <returns>
         /// The array index of the object that satisfied the wait.
         /// </returns>

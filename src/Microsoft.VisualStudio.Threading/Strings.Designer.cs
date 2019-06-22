@@ -11,8 +11,8 @@
 namespace Microsoft.VisualStudio.Threading {
     using System;
     using System.Reflection;
-
-
+    
+    
     /// <summary>
     ///   A strongly-typed resource class, for looking up localized strings, etc.
     /// </summary>
@@ -20,19 +20,19 @@ namespace Microsoft.VisualStudio.Threading {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Strings {
-
+        
         private static global::System.Resources.ResourceManager resourceMan;
-
+        
         private static global::System.Globalization.CultureInfo resourceCulture;
-
+        
         [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal Strings() {
         }
-
+        
         /// <summary>
         ///   Returns the cached ResourceManager instance used by this class.
         /// </summary>
@@ -46,7 +46,7 @@ namespace Microsoft.VisualStudio.Threading {
                 return resourceMan;
             }
         }
-
+        
         /// <summary>
         ///   Overrides the current thread's CurrentUICulture property for all
         ///   resource lookups using this strongly typed resource class.
@@ -60,7 +60,7 @@ namespace Microsoft.VisualStudio.Threading {
                 resourceCulture = value;
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Acquiring locks on threads with a SynchronizationContext applied is not allowed..
         /// </summary>
@@ -69,7 +69,7 @@ namespace Microsoft.VisualStudio.Threading {
                 return ResourceManager.GetString("AppliedSynchronizationContextNotAllowed", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to A non-upgradeable read lock is held by the caller and cannot be upgraded..
         /// </summary>
@@ -78,7 +78,7 @@ namespace Microsoft.VisualStudio.Threading {
                 return ResourceManager.GetString("CannotUpgradeNonUpgradeableLock", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Dangerous request for read lock from fork of write lock..
         /// </summary>
@@ -87,7 +87,16 @@ namespace Microsoft.VisualStudio.Threading {
                 return ResourceManager.GetString("DangerousReadLockRequestFromWriteLockFork", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   Looks up a localized string similar to This instance must be pushed first..
+        /// </summary>
+        internal static string FrameMustBePushedFirst {
+            get {
+                return ResourceManager.GetString("FrameMustBePushedFirst", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   Looks up a localized string similar to Already transitioned to the Completed state..
         /// </summary>
@@ -96,7 +105,7 @@ namespace Microsoft.VisualStudio.Threading {
                 return ResourceManager.GetString("InvalidAfterCompleted", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to This operation can only be executed against a valid lock..
         /// </summary>
@@ -105,7 +114,7 @@ namespace Microsoft.VisualStudio.Threading {
                 return ResourceManager.GetString("InvalidLock", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to A lock is required..
         /// </summary>
@@ -114,7 +123,7 @@ namespace Microsoft.VisualStudio.Threading {
                 return ResourceManager.GetString("InvalidWithoutLock", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to JoinableTask does not belong to the context this collection was instantiated with..
         /// </summary>
@@ -123,7 +132,7 @@ namespace Microsoft.VisualStudio.Threading {
                 return ResourceManager.GetString("JoinableTaskContextAndCollectionMismatch", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to This node already registered..
         /// </summary>
@@ -132,7 +141,7 @@ namespace Microsoft.VisualStudio.Threading {
                 return ResourceManager.GetString("JoinableTaskContextNodeAlreadyRegistered", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Lazily created value faulted during construction..
         /// </summary>
@@ -141,7 +150,7 @@ namespace Microsoft.VisualStudio.Threading {
                 return ResourceManager.GetString("LazyValueFaulted", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Lazily created value not yet constructed..
         /// </summary>
@@ -150,7 +159,7 @@ namespace Microsoft.VisualStudio.Threading {
                 return ResourceManager.GetString("LazyValueNotCreated", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to This lock has already been marked for completion.  No new top-level locks can be serviced..
         /// </summary>
@@ -159,7 +168,7 @@ namespace Microsoft.VisualStudio.Threading {
                 return ResourceManager.GetString("LockCompletionAlreadyRequested", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to This operation is not allowed while holding an active upgradeable read or write lock from an AsyncReaderWriterLock..
         /// </summary>
@@ -168,7 +177,16 @@ namespace Microsoft.VisualStudio.Threading {
                 return ResourceManager.GetString("NotAllowedUnderURorWLock", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Message pump can only be run from the original thread..
+        /// </summary>
+        internal static string PushFromWrongThread {
+            get {
+                return ResourceManager.GetString("PushFromWrongThread", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   Looks up a localized string similar to The queue is empty..
         /// </summary>
@@ -177,7 +195,25 @@ namespace Microsoft.VisualStudio.Threading {
                 return ResourceManager.GetString("QueueEmpty", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   Looks up a localized string similar to This semaphore has been misused and can no longer be used..
+        /// </summary>
+        internal static string SemaphoreMisused {
+            get {
+                return ResourceManager.GetString("SemaphoreMisused", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Nested semaphore requests must be released in LIFO order when the reentrancy setting is: &apos;{0}&apos;.
+        /// </summary>
+        internal static string SemaphoreStackNestingViolated {
+            get {
+                return ResourceManager.GetString("SemaphoreStackNestingViolated", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   Looks up a localized string similar to This operation cannot be completed on an STA thread..
         /// </summary>
@@ -186,7 +222,7 @@ namespace Microsoft.VisualStudio.Threading {
                 return ResourceManager.GetString("STAThreadCallerNotAllowed", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to An attempt to switch to the main thread failed to reach the expected thread. Was the JoinableTaskContext initialized on the wrong thread or with a SynchronizationContext whose Post method does not execute its delegate on the main thread?.
         /// </summary>
@@ -195,7 +231,16 @@ namespace Microsoft.VisualStudio.Threading {
                 return ResourceManager.GetString("SwitchToMainThreadFailedToReachExpectedThread", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   Looks up a localized string similar to This frame has already been used with a different instance..
+        /// </summary>
+        internal static string SyncContextFrameMismatchedAffinity {
+            get {
+                return ResourceManager.GetString("SyncContextFrameMismatchedAffinity", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   Looks up a localized string similar to The value factory has called for the value on the same instance..
         /// </summary>

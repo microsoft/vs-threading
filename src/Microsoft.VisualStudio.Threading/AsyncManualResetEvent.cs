@@ -33,7 +33,7 @@ namespace Microsoft.VisualStudio.Threading
         private readonly object syncObject = new object();
 
         /// <summary>
-        /// The source of the task to return from <see cref="WaitAsync"/>.
+        /// The source of the task to return from <see cref="WaitAsync()"/>.
         /// </summary>
         /// <devremarks>
         /// This should not need the volatile modifier because it is
@@ -60,10 +60,10 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="initialState">A value indicating whether the event should be initially signaled.</param>
         /// <param name="allowInliningAwaiters">
-        /// A value indicating whether to allow <see cref="WaitAsync"/> callers' continuations to execute
+        /// A value indicating whether to allow <see cref="WaitAsync()"/> callers' continuations to execute
         /// on the thread that calls <see cref="SetAsync()"/> before the call returns.
         /// <see cref="SetAsync()"/> callers should not hold private locks if this value is <c>true</c> to avoid deadlocks.
-        /// When <c>false</c>, the task returned from <see cref="WaitAsync"/> may not have fully transitioned to
+        /// When <c>false</c>, the task returned from <see cref="WaitAsync()"/> may not have fully transitioned to
         /// its completed state by the time <see cref="SetAsync()"/> returns to its caller.
         /// </param>
         public AsyncManualResetEvent(bool initialState = false, bool allowInliningAwaiters = false)
@@ -74,12 +74,7 @@ namespace Microsoft.VisualStudio.Threading
             this.isSet = initialState;
             if (initialState)
             {
-                // Complete the task immediately. We upcast first so that
-                // the task always completes immediately rather than sometimes
-                // being pushed to another thread and completed asynchronously
-                // on .NET 4.5.
-                TaskCompletionSource<EmptyStruct> tcs = this.taskCompletionSource;
-                tcs.SetResult(EmptyStruct.Instance);
+                this.taskCompletionSource.SetResult(EmptyStruct.Instance);
             }
         }
 
@@ -109,7 +104,14 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Sets this event to unblock callers of <see cref="WaitAsync"/>.
+        /// Returns a task that will be completed when this event is set.
+        /// </summary>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        /// <returns>A task that completes when the event is set, or cancels with the <paramref name="cancellationToken"/>.</returns>
+        public Task WaitAsync(CancellationToken cancellationToken) => this.WaitAsync().WithCancellation(cancellationToken);
+
+        /// <summary>
+        /// Sets this event to unblock callers of <see cref="WaitAsync()"/>.
         /// </summary>
         /// <returns>A task that completes when the signal has been set.</returns>
         /// <remarks>
@@ -135,16 +137,22 @@ namespace Microsoft.VisualStudio.Threading
                 this.isSet = true;
             }
 
+            // Snap the Task that is exposed to the outside so we return that one.
+            // Once we complete the TaskCompletionSourceWithoutInlinining's task,
+            // the Task property will return the inner Task.
+            // SetAsync should return the same Task that WaitAsync callers would have observed previously.
+            Task result = tcs.Task;
+
             if (transitionRequired)
             {
-                tcs.TrySetResultToDefault();
+                tcs.TrySetResult(default(EmptyStruct));
             }
 
-            return tcs.Task;
+            return result;
         }
 
         /// <summary>
-        /// Sets this event to unblock callers of <see cref="WaitAsync"/>.
+        /// Sets this event to unblock callers of <see cref="WaitAsync()"/>.
         /// </summary>
         public void Set()
         {
@@ -154,7 +162,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Resets this event to a state that will block callers of <see cref="WaitAsync"/>.
+        /// Resets this event to a state that will block callers of <see cref="WaitAsync()"/>.
         /// </summary>
         public void Reset()
         {
@@ -199,8 +207,13 @@ namespace Microsoft.VisualStudio.Threading
                 this.isSet = false;
             }
 
-            tcs.TrySetResultToDefault();
-            return tcs.Task;
+            // Snap the Task that is exposed to the outside so we return that one.
+            // Once we complete the TaskCompletionSourceWithoutInlinining's task,
+            // the Task property will return the inner Task.
+            // PulseAllAsync should return the same Task that WaitAsync callers would have observed previously.
+            Task result = tcs.Task;
+            tcs.TrySetResult(default(EmptyStruct));
+            return result;
         }
 
         /// <summary>

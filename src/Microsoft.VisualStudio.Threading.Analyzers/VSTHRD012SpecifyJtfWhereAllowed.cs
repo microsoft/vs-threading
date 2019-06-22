@@ -1,11 +1,8 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers
 {
-    using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
     using CodeAnalysis;
     using CodeAnalysis.CSharp;
     using CodeAnalysis.CSharp.Syntax;
@@ -20,6 +17,7 @@
             id: Id,
             title: Strings.VSTHRD012_Title,
             messageFormat: Strings.VSTHRD012_MessageFormat,
+            helpLinkUri: Utils.GetHelpLink(Id),
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
@@ -28,16 +26,20 @@
 
         public override void Initialize(AnalysisContext context)
         {
+            context.EnableConcurrentExecution();
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
+
             context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeInvocation), SyntaxKind.InvocationExpression);
             context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzerObjectCreation), SyntaxKind.ObjectCreationExpression);
         }
 
-        private static bool IsJtfParameter(IParameterSymbol ps)
+        private static bool IsImportantJtfParameter(IParameterSymbol ps)
         {
             return (ps.Type.Name == Types.JoinableTaskContext.TypeName
                 || ps.Type.Name == Types.JoinableTaskFactory.TypeName
                 || ps.Type.Name == Types.JoinableTaskCollection.TypeName)
-                && ps.Type.BelongsToNamespace(Namespaces.MicrosoftVisualStudioThreading);
+                && ps.Type.BelongsToNamespace(Namespaces.MicrosoftVisualStudioThreading)
+                && !ps.GetAttributes().Any(a => a.AttributeClass.Name == "OptionalAttribute");
         }
 
         private static ArgumentSyntax GetArgumentForParameter(ArgumentListSyntax arguments, IMethodSymbol method, IParameterSymbol parameter)
@@ -55,7 +57,7 @@
 
         private static void AnalyzeCall(SyntaxNodeAnalysisContext context, Location location, ArgumentListSyntax argList, IMethodSymbol methodSymbol, IEnumerable<IMethodSymbol> otherOverloads)
         {
-            var firstJtfParameter = methodSymbol.Parameters.FirstOrDefault(IsJtfParameter);
+            var firstJtfParameter = methodSymbol.Parameters.FirstOrDefault(IsImportantJtfParameter);
             if (firstJtfParameter != null)
             {
                 // Verify that if the JTF/JTC parameter is optional, it is actually specified in the caller's syntax.
@@ -75,7 +77,7 @@
                 // The method being invoked doesn't take any JTC/JTF parameters.
                 // Look for an overload that does.
                 bool preferableAlternativesExist = otherOverloads
-                    .Any(m => m.Parameters.Skip(m.IsExtensionMethod ? 1 : 0).Any(IsJtfParameter));
+                    .Any(m => m.Parameters.Skip(m.IsExtensionMethod ? 1 : 0).Any(IsImportantJtfParameter));
                 if (preferableAlternativesExist)
                 {
                     Diagnostic diagnostic = Diagnostic.Create(

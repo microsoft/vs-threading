@@ -190,7 +190,7 @@
             this.Logger.WriteLine("Reading {0} values took {1} ms", values.Length, reads.ElapsedMilliseconds);
         }
 
-#if NET452
+#if DESKTOP
         [Fact]
         public void CallAcrossAppDomainBoundariesWithNonSerializableData()
         {
@@ -255,7 +255,7 @@
             Assert.Null(asyncLocal.Value);
         }
 
-#if NET452
+#if DESKTOP
         private class OtherDomainProxy : MarshalByRefObject
         {
             internal void SomeMethod(int callingAppDomainId)

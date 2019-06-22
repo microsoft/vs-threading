@@ -2,23 +2,26 @@
 {
     using System;
     using System.Collections.Generic;
-#if NET452
+#if DESKTOP || NETCOREAPP2_0
     using System.Configuration;
 #endif
     using System.Diagnostics;
+    using System.IO;
     using System.Linq;
+    using System.Reflection;
     using System.Runtime.CompilerServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Xunit;
+    using Xunit.Abstractions;
 
     internal static class TestUtilities
     {
         /// <summary>
         /// A value indicating whether the library is operating in .NET 4.5 mode.
         /// </summary>
-#if NET452
+#if NET451 || NET452
         internal static readonly bool IsNet45Mode = ConfigurationManager.AppSettings["Microsoft.VisualStudio.Threading.NET45Mode"] == "true";
 #else
         internal static readonly bool IsNet45Mode = false;
@@ -42,7 +45,7 @@
             var prevCtx = SynchronizationContext.Current;
             try
             {
-                var syncCtx = SingleThreadedSynchronizationContext.New();
+                var syncCtx = SingleThreadedTestSynchronizationContext.New();
                 SynchronizationContext.SetSynchronizationContext(syncCtx);
 
                 var t = func();
@@ -51,9 +54,9 @@
                     throw new InvalidOperationException();
                 }
 
-                var frame = SingleThreadedSynchronizationContext.NewFrame();
+                var frame = SingleThreadedTestSynchronizationContext.NewFrame();
                 t.ContinueWith(_ => { frame.Continue = false; }, TaskScheduler.Default);
-                SingleThreadedSynchronizationContext.PushFrame(syncCtx, frame);
+                SingleThreadedTestSynchronizationContext.PushFrame(syncCtx, frame);
 
                 t.GetAwaiter().GetResult();
             }
@@ -101,7 +104,7 @@
 
         internal static DebugAssertionRevert DisableAssertionDialog()
         {
-#if NET452
+#if DESKTOP
             var listener = Debug.Listeners.OfType<DefaultTraceListener>().FirstOrDefault();
             if (listener != null)
             {
@@ -152,27 +155,128 @@
         /// </remarks>
         internal static IDisposable StarveThreadpool()
         {
-            var evt = new ManualResetEventSlim();
-
-            // Flood the threadpool with work items that will just block
-            // any threads assigned to them.
-            int workerThreads;
-#if NET452
-            ThreadPool.GetMinThreads(out workerThreads, out int completionPortThreads);
+#if DESKTOP || NETCOREAPP2_0
+            ThreadPool.GetMaxThreads(out int workerThreads, out int completionPortThreads);
 #else
-            workerThreads = Environment.ProcessorCount;
+            int workerThreads = 1023;
 #endif
-            for (int i = 0; i < workerThreads * 10; i++)
+            var disposalTokenSource = new CancellationTokenSource();
+            var unblockThreadpool = new ManualResetEventSlim();
+            for (int i = 0; i < workerThreads; i++)
             {
-                ThreadPool.QueueUserWorkItem(
-                    s => ((ManualResetEventSlim)s).Wait(),
-                    evt);
+                Task.Run(
+                    () => unblockThreadpool.Wait(disposalTokenSource.Token),
+                    disposalTokenSource.Token);
             }
 
-            return new ThreadpoolStarvation(evt);
+            return new DisposalAction(disposalTokenSource.Cancel);
         }
 
-        internal struct YieldAndNotifyAwaitable
+        /// <summary>
+        /// Executes the specified test method in its own process, offering maximum isolation from ambient noise from other threads
+        /// and GC.
+        /// </summary>
+        /// <param name="testClass">The instance of the test class containing the method to be run in isolation.</param>
+        /// <param name="testMethodName">The name of the test method.</param>
+        /// <param name="logger">An optional logger to forward any <see cref="ITestOutputHelper"/> output to from the isolated test runner.</param>
+        /// <returns>
+        /// A task whose result is <c>true</c> if test execution is already isolated and should therefore proceed with the body of the test,
+        /// or <c>false</c> after the isolated instance of the test has completed execution.
+        /// </returns>
+        /// <exception cref="Xunit.Sdk.XunitException">Thrown if the isolated test result is a Failure.</exception>
+        /// <exception cref="SkipException">Thrown if on a platform that we do not yet support test isolation on.</exception>
+        internal static Task<bool> ExecuteInIsolationAsync(object testClass, string testMethodName, ITestOutputHelper logger)
+        {
+            Requires.NotNull(testClass, nameof(testClass));
+            return ExecuteInIsolationAsync(testClass.GetType().FullName, testMethodName, logger);
+        }
+
+        /// <summary>
+        /// Executes the specified test method in its own process, offering maximum isolation from ambient noise from other threads
+        /// and GC.
+        /// </summary>
+        /// <param name="testClassName">The full name of the test class.</param>
+        /// <param name="testMethodName">The name of the test method.</param>
+        /// <param name="logger">An optional logger to forward any <see cref="ITestOutputHelper"/> output to from the isolated test runner.</param>
+        /// <returns>
+        /// A task whose result is <c>true</c> if test execution is already isolated and should therefore proceed with the body of the test,
+        /// or <c>false</c> after the isolated instance of the test has completed execution.
+        /// </returns>
+        /// <exception cref="Xunit.Sdk.XunitException">Thrown if the isolated test result is a Failure.</exception>
+        /// <exception cref="SkipException">Thrown if on a platform that we do not yet support test isolation on.</exception>
+        internal static Task<bool> ExecuteInIsolationAsync(string testClassName, string testMethodName, ITestOutputHelper logger)
+        {
+            Requires.NotNullOrEmpty(testClassName, nameof(testClassName));
+            Requires.NotNullOrEmpty(testMethodName, nameof(testMethodName));
+
+#if DESKTOP
+            const string testHostProcessName = "IsolatedTestHost.exe";
+            if (Process.GetCurrentProcess().ProcessName == Path.GetFileNameWithoutExtension(testHostProcessName))
+            {
+                return TplExtensions.TrueTask;
+            }
+
+            var startInfo = new ProcessStartInfo(
+                testHostProcessName,
+                AssemblyCommandLineArguments(
+                    Assembly.GetExecutingAssembly().Location,
+                    testClassName,
+                    testMethodName))
+            {
+                RedirectStandardError = logger != null,
+                RedirectStandardOutput = logger != null,
+                CreateNoWindow = true,
+                UseShellExecute = false,
+            };
+
+            Process isolatedTestProcess = new Process
+            {
+                StartInfo = startInfo,
+                EnableRaisingEvents = true,
+            };
+            var processExitCode = new TaskCompletionSource<IsolatedTestHost.ExitCodes>();
+            isolatedTestProcess.Exited += (s, e) =>
+            {
+                processExitCode.SetResult((IsolatedTestHost.ExitCodes)isolatedTestProcess.ExitCode);
+            };
+            if (logger != null)
+            {
+                isolatedTestProcess.OutputDataReceived += (s, e) => logger.WriteLine(e.Data ?? string.Empty);
+                isolatedTestProcess.ErrorDataReceived += (s, e) => logger.WriteLine(e.Data ?? string.Empty);
+            }
+
+            Assert.True(isolatedTestProcess.Start());
+
+            if (logger != null)
+            {
+                isolatedTestProcess.BeginOutputReadLine();
+                isolatedTestProcess.BeginErrorReadLine();
+            }
+
+            return processExitCode.Task.ContinueWith(
+                t =>
+                {
+                    switch (t.Result)
+                    {
+                        case IsolatedTestHost.ExitCodes.TestSkipped:
+                            throw new SkipException("Test skipped. See output of isolated task for details.");
+                        case IsolatedTestHost.ExitCodes.TestPassed:
+                        default:
+                            Assert.Equal(IsolatedTestHost.ExitCodes.TestPassed, t.Result);
+                            break;
+                    }
+
+                    return false;
+                },
+                TaskScheduler.Default);
+#else
+            return Task.FromException<bool>(new SkipException("Test isolation is not yet supported on this platform."));
+#endif
+        }
+
+        private static string AssemblyCommandLineArguments(params string[] args) => string.Join(" ", args.Select(a => $"\"{a}\""));
+
+        internal readonly struct YieldAndNotifyAwaitable
         {
             private readonly INotifyCompletion baseAwaiter;
             private readonly AsyncManualResetEvent yieldingSignal;
@@ -193,7 +297,7 @@
             }
         }
 
-        internal struct YieldAndNotifyAwaiter : INotifyCompletion
+        internal readonly struct YieldAndNotifyAwaiter : INotifyCompletion
         {
             private readonly INotifyCompletion baseAwaiter;
             private readonly AsyncManualResetEvent yieldingSignal;
@@ -236,11 +340,11 @@
             }
         }
 
-        internal struct DebugAssertionRevert : IDisposable
+        internal readonly struct DebugAssertionRevert : IDisposable
         {
             public void Dispose()
             {
-#if NET452
+#if DESKTOP
                 var listener = Debug.Listeners.OfType<DefaultTraceListener>().FirstOrDefault();
                 if (listener != null)
                 {
@@ -250,20 +354,16 @@
             }
         }
 
-        private class ThreadpoolStarvation : IDisposable
+        private class DisposalAction : IDisposable
         {
-            private readonly ManualResetEventSlim releaser;
+            private readonly Action disposeAction;
 
-            internal ThreadpoolStarvation(ManualResetEventSlim releaser)
+            internal DisposalAction(Action disposeAction)
             {
-                Requires.NotNull(releaser, nameof(releaser));
-                this.releaser = releaser;
+                this.disposeAction = disposeAction;
             }
 
-            public void Dispose()
-            {
-                this.releaser.Set();
-            }
+            public void Dispose() => this.disposeAction();
         }
     }
 }

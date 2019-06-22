@@ -42,10 +42,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets the asynchronous task that completes when the async operation completes.
         /// </summary>
-        public new Task<T> Task
-        {
-            get { return (Task<T>)base.Task; }
-        }
+        public new Task<T> Task => (Task<T>)base.Task;
 
         /// <summary>
         /// Joins any main thread affinity of the caller with the asynchronous operation to avoid deadlocks
@@ -55,8 +52,8 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns>A task that completes after the asynchronous operation completes and the join is reverted, with the result of the operation.</returns>
         public new async Task<T> JoinAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            await base.JoinAsync(cancellationToken).ConfigureAwait(false);
-            return await this.Task.ConfigureAwait(false);
+            await base.JoinAsync(cancellationToken).ConfigureAwait(AwaitShouldCaptureSyncContext);
+            return await this.Task.ConfigureAwait(AwaitShouldCaptureSyncContext);
         }
 
         /// <summary>
@@ -87,5 +84,14 @@ namespace Microsoft.VisualStudio.Threading
             base.CompleteOnCurrentThread();
             return this.Task.GetAwaiter().GetResult();
         }
+
+        /// <inheritdoc/>
+        internal override object CreateTaskCompletionSource() => new TaskCompletionSourceWithoutInlining<T>(allowInliningContinuations: false);
+
+        /// <inheritdoc/>
+        internal override Task GetTaskFromCompletionSource(object taskCompletionSource) => ((TaskCompletionSourceWithoutInlining<T>)taskCompletionSource).Task;
+
+        /// <inheritdoc/>
+        internal override void CompleteTaskSourceFromWrappedTask(Task wrappedTask, object taskCompletionSource) => ((Task<T>)wrappedTask).ApplyResultTo((TaskCompletionSource<T>)taskCompletionSource);
     }
 }

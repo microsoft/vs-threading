@@ -13,7 +13,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="AwaitXInstead" xml:space="preserve">
-    <value>In alternativa, attendere {0}</value>
+    <value>In alternativa, usare await {0}</value>
     <comment>"await" is a C# keyword and should not be translated.
 {0} is a method name.</comment>
   </data>
@@ -22,18 +22,14 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>L'attesa in modalità sincrona di attività o awaiter può causare deadlock. In alternativa, usare JoinableTaskFactory.Run.</value>
+    <value>L'attesa in modalità sincrona di attività o awaiter può causare deadlock. In alternativa, usare await o JoinableTaskFactory.Run.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
     <value>Evita attese sincrone problematiche</value>
   </data>
-  <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>Il servizio "{0}" di Visual Studio non deve essere usato sul thread principale in modo esplicito. 
-Chiamare ThreadHelper.ThrowIfNotOnUIThread() o attendere prima JoinableTaskFactory.SwitchToMainThreadAsync().</value>
-  </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
-    <value>Usa i servizi di Visual Studio dal thread dell'interfaccia utente</value>
+    <value>Richiamare tipi a thread singolo sul thread principale</value>
   </data>
   <data name="VSTHRD100_MessageFormat" xml:space="preserve">
     <value>Evitare metodi "async void" perché tutte le eccezioni non gestite dal metodo causeranno l'arresto anomalo del processo.</value>
@@ -57,21 +53,21 @@ Chiamare ThreadHelper.ThrowIfNotOnUIThread() o attendere prima JoinableTaskFacto
     <value>Usa InvokeAsync per generare eventi asincroni</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>La chiamata di await su un elemento Task all'interno di un elemento JoinableTaskFactory.Run quando Task è inizializzato all'esterno del delegato può causare possibili deadlock.
-Per evitare il problema, assicurarsi che Task venga inizializzato all'interno del delegato oppure usare JoinableTask invece di Task.</value>
+    <value>Evitare di attendere o restituire un oggetto Task che rappresenta un'operazione non avviata nel contesto perché potrebbe causare deadlock.
+Avviare l'operazione in questo contesto oppure usare JoinableTaskFactory.RunAsync e attendere l'oggetto restituito JoinableTask.</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
-    <value>Evita attesa di Task non joinable in contesti di join</value>
+    <value>Evitare di attendere oggetti Task esterni</value>
   </data>
   <data name="VSTHRD011_MessageFormat" xml:space="preserve">
     <value>Lazy&lt;Task&lt;T&gt;&gt;.Value può causare deadlock.
 In alternativa, usare AsyncLazy&lt;T&gt;.</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
-    <value>Evitare di usare Lazy&lt;T&gt; in cui T è un elemento Task&lt;T2&gt;</value>
+    <value>Usare AsyncLazy&lt;T&gt;</value>
   </data>
   <data name="VSTHRD103_MessageFormat" xml:space="preserve">
-    <value>{0} si blocca in modalità sincrona. In alternativa, attendere {1}.</value>
+    <value>{0} si blocca in modalità sincrona. In alternativa, usare await {1}.</value>
   </data>
   <data name="VSTHRD103_MessageFormat_UseAwaitInstead" xml:space="preserve">
     <value>{0} si blocca in modalità sincrona. In alternativa, usare await.</value>
@@ -89,9 +85,6 @@ In alternativa, usare AsyncLazy&lt;T&gt;.</value>
     <value>Rinomina in {0}</value>
     <comment>{0} is a method name.</comment>
   </data>
-  <data name="VSTHRD200_MessageFormat" xml:space="preserve">
-    <value>Usare il suffisso "Async" in nomi di metodi che restituiscono Task.</value>
-  </data>
   <data name="VSTHRD200_Title" xml:space="preserve">
     <value>Usa suffisso "Async" per metodi asincroni</value>
   </data>
@@ -104,5 +97,99 @@ In alternativa, usare AsyncLazy&lt;T&gt;.</value>
   </data>
   <data name="VSTHRD105_Title" xml:space="preserve">
     <value>Evita overload di metodo che presuppongono TaskScheduler.Current</value>
+  </data>
+  <data name="VSTHRD012_MessageFormat" xml:space="preserve">
+    <value>Specificare in questa chiamata un'istanza di JoinableTaskFactory o di un altro overload per evitare deadlock con il thread principale.</value>
+  </data>
+  <data name="VSTHRD012_Title" xml:space="preserve">
+    <value>Specifica JoinableTaskFactory quando consentito</value>
+  </data>
+  <data name="VSTHRD104_MessageFormat" xml:space="preserve">
+    <value>Esporre una versione asincrona di questo metodo che non applica il blocco asincrono. Semplificare quindi questo metodo in modo da chiamare il metodo asincrono in un delegato di JoinableTaskFactory.Run.</value>
+  </data>
+  <data name="VSTHRD104_Title" xml:space="preserve">
+    <value>Offri metodi asincroni</value>
+  </data>
+  <data name="VSTHRD001_MessageFormat" xml:space="preserve">
+    <value>Usare await JoinableTaskFactory.SwitchToMainThreadAsync() per passare al thread dell'interfaccia utente invece di usare API che possono causare deadlock o per le quali è necessario specificare una priorità.</value>
+  </data>
+  <data name="VSTHRD001_Title" xml:space="preserve">
+    <value>Evita API legacy per il passaggio a thread</value>
+    <comment>thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.</comment>
+  </data>
+  <data name="VSTHRD107_MessageFormat" xml:space="preserve">
+    <value>Manca l'operatore await per l'espressione "using".</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_Title" xml:space="preserve">
+    <value>await Task in espressione using</value>
+    <comment>"await Task" is a C# compound term, and "using" is a C# keyword. These should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_CodeFix_Title" xml:space="preserve">
+    <value>Espressione using await</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD002_CodeFix_Await_Title" xml:space="preserve">
+    <value>In alternativa, usare await</value>
+    <comment>"await" is a C# keyword and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD108_MessageFormat" xml:space="preserve">
+    <value>I controlli di affinità dei thread non devono essere condizionali.</value>
+  </data>
+  <data name="VSTHRD108_Title" xml:space="preserve">
+    <value>Asserisci l'affinità dei thread in modo non condizionale</value>
+  </data>
+  <data name="VSTHRD109_MessageFormat" xml:space="preserve">
+    <value>Evitare la generazione quando non si è in un thread principale durante un metodo asincrono o che restituisce elementi Task. In alternativa, passare al thread richiesto.</value>
+  </data>
+  <data name="VSTHRD109_Title" xml:space="preserve">
+    <value>Usa switch invece di assert in metodi asincroni</value>
+  </data>
+  <data name="VSTHRD010_MessageFormat_Sync" xml:space="preserve">
+    <value>L'accesso a "{0}" deve essere effettuato solo nel thread principale. Chiamare prima {1}().</value>
+    <comment>{0} is a type or member name and {1} is the name of a method that throws if not called from the main thread.</comment>
+  </data>
+  <data name="VSTHRD010_MessageFormat_Async" xml:space="preserve">
+    <value>L'accesso a "{0}" deve essere effettuato solo nel thread principale. Usare prima await JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+    <comment>{0} is a type or member name.</comment>
+  </data>
+  <data name="VSTHRD004_MessageFormat" xml:space="preserve">
+    <value>Con le chiamate a JoinableTaskFactory.SwitchToMainThreadAsync() è necessario usare await.</value>
+  </data>
+  <data name="VSTHRD004_Title" xml:space="preserve">
+    <value>Usa await SwitchToMainThreadAsync</value>
+    <comment>Do not translate either of these. The first is a keyword, the second is a method name.</comment>
+  </data>
+  <data name="VSTHRD110_MessageFormat" xml:space="preserve">
+    <value>Per osservare il risultato awaitable di questa chiamata al metodo, usare await per la chiamata, assegnarla a una variabile o passarla a un altro metodo.</value>
+  </data>
+  <data name="VSTHRD110_Title" xml:space="preserve">
+    <value>Osserva il risultato di chiamate asincrone</value>
+  </data>
+  <data name="VSTHRD011b_MessageFormat" xml:space="preserve">
+    <value>La chiamata o il blocco su codice asincrono in una factory di valori Lazy&lt;T&gt; può causare un deadlock.
+In alternativa, usare AsyncLazy&lt;T&gt;.</value>
+  </data>
+  <data name="VSTHRD200_AddAsync_MessageFormat" xml:space="preserve">
+    <value>Usare il suffisso "Async" in nomi di metodi che restituiscono un tipo awaitable.</value>
+  </data>
+  <data name="VSTHRD200_RemoveAsync_MessageFormat" xml:space="preserve">
+    <value>Evitare il suffisso "Async" in nomi di metodi che non restituiscono un tipo awaitable.</value>
+  </data>
+  <data name="VSTHRD111_CodeFix_False_Title" xml:space="preserve">
+    <value>Aggiungi .ConfigureAwait(false)</value>
+    <comment>".ConfigureAwait(false)" should not be translated.</comment>
+  </data>
+  <data name="VSTHRD111_CodeFix_True_Title" xml:space="preserve">
+    <value>Aggiungi .ConfigureAwait(true)</value>
+    <comment>".ConfigureAwait(true)" should not be translated.</comment>
+  </data>
+  <data name="VSTHRD111_MessageFormat" xml:space="preserve">
+    <value>Aggiungere .ConfigureAwait(bool) all'espressione await.</value>
+    <comment>".ConfigureAwait(bool)" and "await" should NOT be translated.</comment>
+  </data>
+  <data name="VSTHRD111_Title" xml:space="preserve">
+    <value>Usa ConfigureAwait(bool)</value>
+    <comment>"ConfigureAwait(bool)" is a reference and should NOT be translated.</comment>
   </data>
 </root>

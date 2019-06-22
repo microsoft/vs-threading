@@ -68,6 +68,17 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Gets all key values in the dictionary.
+        /// </summary>
+        internal IEnumerable<TKey> Keys
+        {
+            get
+            {
+                return new KeyEnumerable(this);
+            }
+        }
+
+        /// <summary>
         /// Obtains the value for a given key.
         /// </summary>
         public TValue this[TKey key]
@@ -113,8 +124,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </remarks>
         public bool ContainsKey(TKey key)
         {
-            TValue value;
-            bool contained = this.TryGetValue(key, out value);
+            bool contained = this.TryGetValue(key, out TValue value);
             return contained;
         }
 
@@ -199,6 +209,22 @@ namespace Microsoft.VisualStudio.Threading
             return this.GetEnumerator();
         }
 
+        /// <summary>
+        /// Whether the collection contains any item
+        /// </summary>
+        internal bool Any()
+        {
+            foreach (var item in this.dictionary)
+            {
+                if (item.Key.IsAlive)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>
         {
             private Dictionary<WeakReference<TKey>, TValue>.Enumerator enumerator;
@@ -261,25 +287,25 @@ namespace Microsoft.VisualStudio.Threading
         /// the target's hash code so that it can be used in a hashtable.
         /// </summary>
         /// <typeparam name="T">Type of the target of the weak reference</typeparam>
-        private struct WeakReference<T>
+        private readonly struct WeakReference<T> : IEquatable<WeakReference<T>>
             where T : class
         {
             /// <summary>
             /// Cache the hashcode so that it is still available even if the target has been
             /// collected. This allows this object to be still found in a table so it can be removed.
             /// </summary>
-            private int hashcode;
+            private readonly int hashcode;
 
             /// <summary>
             /// Backing weak reference
             /// </summary>
-            private WeakReference weakReference;
+            private readonly WeakReference weakReference;
 
             /// <summary>
             /// Some of the instances are around just to do existence checks, and don't want
             /// to allocate WeakReference objects as they are short-lived.
             /// </summary>
-            private T notSoWeakTarget;
+            private readonly T notSoWeakTarget;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="WeakReference{T}"/> struct.
@@ -326,13 +352,104 @@ namespace Microsoft.VisualStudio.Threading
                 // We can't implement equals in the same terms as GetHashCode() because
                 // our target object may have been collected.  Instead just go based on
                 // equality of our weak references.
-                if (obj is WeakReference<T>)
+                return obj is WeakReference<T> other && this.Equals(other);
+            }
+
+            /// <inheritdoc />
+            public bool Equals(WeakReference<T> other) => this.weakReference.Equals(other.weakReference);
+        }
+
+        /// <summary>
+        /// A helper structure to implement <see cref="IEnumerator{T}"/>
+        /// </summary>
+        private class KeyEnumerator : IEnumerator<TKey>
+        {
+            private Dictionary<WeakReference<TKey>, TValue>.Enumerator enumerator;
+
+            internal KeyEnumerator(WeakKeyDictionary<TKey, TValue> dictionary)
+            {
+                Requires.NotNull(dictionary, nameof(dictionary));
+
+                this.enumerator = dictionary.dictionary.GetEnumerator();
+            }
+
+            /// <summary>
+            /// Gets the current item of the enumerator.
+            /// </summary>
+            public TKey Current { get; private set; }
+
+            object System.Collections.IEnumerator.Current => this.Current;
+
+            /// <summary>
+            /// Implements <see cref="System.Collections.IEnumerator.MoveNext"/>
+            /// </summary>
+            public bool MoveNext()
+            {
+                while (this.enumerator.MoveNext())
                 {
-                    var other = (WeakReference<T>)obj;
-                    return this.weakReference.Equals(other.weakReference);
+                    TKey key = this.enumerator.Current.Key.Target;
+                    if (key != null)
+                    {
+                        this.Current = key;
+                        return true;
+                    }
                 }
 
                 return false;
+            }
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                // Calling reset on the dictionary enumerator would require boxing it in the cast to the explicit interface method.
+                // But boxing a valuetype means that any changes you make will not be brought back to the value type field
+                // so the Reset() will probably have no effect.
+                // If we ever have to support this, we'll probably have to do box the enumerator and then retain the boxed
+                // version and use that in this enumerator for the rest of its lifetime.
+                throw new NotSupportedException();
+            }
+
+            public void Dispose()
+            {
+                this.enumerator.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// A helper structure to enumerate keys in the dictionary.
+        /// </summary>
+        private class KeyEnumerable : IEnumerable<TKey>
+        {
+            private readonly WeakKeyDictionary<TKey, TValue> dictionary;
+
+            internal KeyEnumerable(WeakKeyDictionary<TKey, TValue> dictionary)
+            {
+                Requires.NotNull(dictionary, nameof(dictionary));
+                this.dictionary = dictionary;
+            }
+
+            /// <summary>
+            /// Implements <see cref="IEnumerable{T}.GetEnumerator"/>
+            /// </summary>
+            IEnumerator<TKey> IEnumerable<TKey>.GetEnumerator()
+            {
+                return this.GetEnumerator();
+            }
+
+            /// <summary>
+            /// Implements <see cref="System.Collections.IEnumerable.GetEnumerator"/>
+            /// </summary>
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+            {
+                return this.GetEnumerator();
+            }
+
+            /// <summary>
+            /// Gets the Enumerator
+            /// </summary>
+            /// <returns>A new KeyEnumerator.</returns>
+            private KeyEnumerator GetEnumerator()
+            {
+                return new KeyEnumerator(this.dictionary);
             }
         }
 

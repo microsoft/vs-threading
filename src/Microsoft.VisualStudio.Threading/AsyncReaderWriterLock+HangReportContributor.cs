@@ -17,11 +17,6 @@ namespace Microsoft.VisualStudio.Threading
 
     partial class AsyncReaderWriterLock : IHangReportContributor
     {
-        /// <summary>
-        /// The namespace that all DGML nodes appear in.
-        /// </summary>
-        private const string DgmlNamespace = "http://schemas.microsoft.com/vs/2009/dgml";
-
         [Flags]
         private enum AwaiterCollection
         {
@@ -75,8 +70,7 @@ namespace Microsoft.VisualStudio.Threading
                 try
                 {
                     Monitor.TryEnter(this.syncObject, 1000, ref lockAcquired);
-                    XElement nodes, links;
-                    var dgml = CreateDgml(out nodes, out links);
+                    var dgml = CreateDgml(out XElement nodes, out XElement links);
 
                     if (!lockAcquired)
                     {
@@ -147,7 +141,7 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             Delegate lockWaitingContinuation;
-#if NET45
+#if DESKTOP || NETSTANDARD2_0
             if (awaiter.RequestingStackTrace != null)
             {
                 label.AppendLine(awaiter.RequestingStackTrace.ToString());

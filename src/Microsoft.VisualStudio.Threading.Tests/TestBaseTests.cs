@@ -8,6 +8,7 @@
     using System.Threading.Tasks;
     using Xunit;
     using Xunit.Abstractions;
+    using Xunit.Sdk;
 
     public class TestBaseTests : TestBase
     {
@@ -16,7 +17,7 @@
         {
         }
 
-#if NET452
+#if DESKTOP || NETCOREAPP2_0
         [Fact]
         public void ExecuteOnSTA_ExecutesDelegateOnSTA()
         {
@@ -61,5 +62,63 @@
                 throw new ApplicationException();
             }));
         }
+
+        [SkippableFact]
+        public async Task ExecuteInIsolation_PassingTest()
+        {
+            if (await this.ExecuteInIsolationAsync())
+            {
+                this.Logger.WriteLine("Some output from isolated process.");
+            }
+        }
+
+        [SkippableFact]
+        public async Task ExecuteInIsolation_FailingTest()
+        {
+            bool executeHere;
+            try
+            {
+                executeHere = await this.ExecuteInIsolationAsync();
+            }
+            catch (XunitException ex)
+            {
+                // This is the outer invocation and it failed as expected.
+                this.Logger.WriteLine(ex.ToString());
+                return;
+            }
+
+            Assumes.True(executeHere);
+            throw new Exception("Intentional test failure");
+        }
+
+#if DESKTOP
+        [StaFact]
+        public async Task ExecuteInIsolation_PassingOnSTA()
+        {
+            if (await this.ExecuteInIsolationAsync())
+            {
+                Assert.Equal(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
+            }
+        }
+
+        [StaFact]
+        public async Task ExecuteInIsolation_FailingOnSTA()
+        {
+            bool executeHere;
+            try
+            {
+                executeHere = await this.ExecuteInIsolationAsync();
+            }
+            catch (XunitException ex)
+            {
+                // This is the outer invocation and it failed as expected.
+                this.Logger.WriteLine(ex.ToString());
+                return;
+            }
+
+            Assumes.True(executeHere);
+            throw new Exception("Intentional test failure");
+        }
+#endif
     }
 }

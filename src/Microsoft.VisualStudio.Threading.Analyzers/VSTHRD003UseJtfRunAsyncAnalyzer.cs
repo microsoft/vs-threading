@@ -46,9 +46,15 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             id: Id,
             title: Strings.VSTHRD003_Title,
             messageFormat: Strings.VSTHRD003_MessageFormat,
+            helpLinkUri: Utils.GetHelpLink(Id),
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
+
+        private static readonly IReadOnlyCollection<Type> DoNotPassTypesInSearchForAnonFuncInvocation = new[]
+        {
+            typeof(MethodDeclarationSyntax),
+        };
 
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
@@ -65,169 +71,179 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
 
-            context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeNode), SyntaxKind.AwaitExpression);
+            context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeAwaitExpression), SyntaxKind.AwaitExpression);
+            context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeReturnStatement), SyntaxKind.ReturnStatement);
+            context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeLambdaExpression), SyntaxKind.SimpleLambdaExpression);
+            context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeLambdaExpression), SyntaxKind.ParenthesizedLambdaExpression);
         }
 
-        private void AnalyzeNode(SyntaxNodeAnalysisContext context)
+        private void AnalyzeLambdaExpression(SyntaxNodeAnalysisContext context)
+        {
+            var lambdaExpression = (LambdaExpressionSyntax)context.Node;
+            if (lambdaExpression.Body is ExpressionSyntax expression)
+            {
+                var diagnostic = this.AnalyzeAwaitedOrReturnedExpression(expression, context, context.CancellationToken);
+                if (diagnostic != null)
+                {
+                    context.ReportDiagnostic(diagnostic);
+                }
+            }
+        }
+
+        private void AnalyzeReturnStatement(SyntaxNodeAnalysisContext context)
+        {
+            var returnStatement = (ReturnStatementSyntax)context.Node;
+            var diagnostic = this.AnalyzeAwaitedOrReturnedExpression(returnStatement.Expression, context, context.CancellationToken);
+            if (diagnostic != null)
+            {
+                context.ReportDiagnostic(diagnostic);
+            }
+        }
+
+        private void AnalyzeAwaitExpression(SyntaxNodeAnalysisContext context)
         {
             AwaitExpressionSyntax awaitExpressionSyntax = (AwaitExpressionSyntax)context.Node;
-            IdentifierNameSyntax identifierNameSyntaxAwaitingOn = awaitExpressionSyntax.Expression as IdentifierNameSyntax;
-            if (identifierNameSyntaxAwaitingOn == null)
+            var diagnostic = this.AnalyzeAwaitedOrReturnedExpression(awaitExpressionSyntax.Expression, context, context.CancellationToken);
+            if (diagnostic != null)
             {
-                return;
-            }
-
-            SyntaxNode currentNode = identifierNameSyntaxAwaitingOn;
-
-            // Step 1: Find the async delegate or lambda expression that matches the await
-            SyntaxNode delegateOrLambdaNode = this.FindAsyncDelegateOrLambdaExpressiomMatchingAwait(awaitExpressionSyntax);
-            if (delegateOrLambdaNode == null)
-            {
-                return;
-            }
-
-            // Step 2: Check whether it is called by Jtf.Run
-            InvocationExpressionSyntax invocationExpressionSyntax = this.FindInvocationOfDelegateOrLambdaExpression(delegateOrLambdaNode);
-            if (invocationExpressionSyntax == null || !this.IsInvocationExpressionACallToJtfRun(context, invocationExpressionSyntax))
-            {
-                return;
-            }
-
-            // Step 3: Is the symbol we are waiting on a System.Threading.Tasks.Task
-            SymbolInfo symbolAwaitingOn = context.SemanticModel.GetSymbolInfo(identifierNameSyntaxAwaitingOn);
-            ILocalSymbol localSymbol = symbolAwaitingOn.Symbol as ILocalSymbol;
-            if (localSymbol?.Type == null || localSymbol.Type.Name != nameof(Task) || !localSymbol.Type.BelongsToNamespace(Namespaces.SystemThreadingTasks))
-            {
-                return;
-            }
-
-            // Step 4: Report warning if the task was not initialized within the current delegate or lambda expression
-            BlockSyntax delegateBlock = this.GetBlockOfDelegateOrLambdaExpression(delegateOrLambdaNode);
-
-            // Run data flow analysis to understand where the task was defined
-            DataFlowAnalysis dataFlowAnalysis;
-
-            // When possible (await is direct child of the block), execute data flow analysis by passing first and last statement to capture only what happens before the await
-            // Check if the await is direct child of the code block (first parent is ExpressionStantement, second parent is the block itself)
-            if (awaitExpressionSyntax.Parent.Parent.Equals(delegateBlock))
-            {
-                dataFlowAnalysis = context.SemanticModel.AnalyzeDataFlow(delegateBlock.ChildNodes().First(), awaitExpressionSyntax.Parent);
-            }
-            else
-            {
-                // Otherwise analyze the data flow for the entire block. One caveat: it doesn't distinguish if the initalization happens after the await.
-                dataFlowAnalysis = context.SemanticModel.AnalyzeDataFlow(delegateBlock);
-            }
-
-            if (!dataFlowAnalysis.WrittenInside.Contains(symbolAwaitingOn.Symbol))
-            {
-                context.ReportDiagnostic(Diagnostic.Create(Descriptor, awaitExpressionSyntax.Expression.GetLocation()));
+                context.ReportDiagnostic(diagnostic);
             }
         }
 
-        /// <summary>
-        /// Finds the async delegate or lambda expression that matches the await by walking up the syntax tree until we encounter an async delegate or lambda expression.
-        /// </summary>
-        /// <param name="awaitExpressionSyntax">The await expression syntax.</param>
-        /// <returns>Node representing the delegate or lambda expression if found. Null if not found.</returns>
-        private SyntaxNode FindAsyncDelegateOrLambdaExpressiomMatchingAwait(AwaitExpressionSyntax awaitExpressionSyntax)
+        private Diagnostic AnalyzeAwaitedOrReturnedExpression(ExpressionSyntax expressionSyntax, SyntaxNodeAnalysisContext context, CancellationToken cancellationToken)
         {
-            SyntaxNode currentNode = awaitExpressionSyntax;
-
-            while (currentNode != null && !(currentNode is MethodDeclarationSyntax))
+            if (expressionSyntax == null)
             {
-                AnonymousMethodExpressionSyntax anonymousMethod = currentNode as AnonymousMethodExpressionSyntax;
-                if (anonymousMethod != null && anonymousMethod.AsyncKeyword != null)
+                return null;
+            }
+
+            // Get the semantic model for the SyntaxTree for the given ExpressionSyntax, since it *may* not be in the same syntax tree
+            // as the original context.Node.
+            var semanticModel = context.Compilation.GetSemanticModel(expressionSyntax.SyntaxTree);
+            SymbolInfo symbolToConsider = semanticModel.GetSymbolInfo(expressionSyntax, cancellationToken);
+            if (CommonInterest.TaskConfigureAwait.Any(configureAwait => configureAwait.IsMatch(symbolToConsider.Symbol)))
+            {
+                if (((InvocationExpressionSyntax)expressionSyntax).Expression is MemberAccessExpressionSyntax memberAccessExpression)
                 {
-                    return currentNode;
+                    symbolToConsider = semanticModel.GetSymbolInfo(memberAccessExpression.Expression, cancellationToken);
                 }
-
-                ParenthesizedLambdaExpressionSyntax lambdaExpression = currentNode as ParenthesizedLambdaExpressionSyntax;
-                if (lambdaExpression != null && lambdaExpression.AsyncKeyword != null)
-                {
-                    return currentNode;
-                }
-
-                // Advance to the next parent
-                currentNode = currentNode.Parent;
             }
 
-            return null;
-        }
-
-        /// <summary>
-        /// Helper method to get the code Block of a delegate or lambda expression.
-        /// </summary>
-        /// <param name="delegateOrLambdaExpression">The delegate or lambda expression.</param>
-        /// <returns>The code block.</returns>
-        private BlockSyntax GetBlockOfDelegateOrLambdaExpression(SyntaxNode delegateOrLambdaExpression)
-        {
-            AnonymousMethodExpressionSyntax anonymousMethod = delegateOrLambdaExpression as AnonymousMethodExpressionSyntax;
-            if (anonymousMethod != null)
+            ITypeSymbol symbolType;
+            bool dataflowAnalysisCompatibleVariable = false;
+            switch (symbolToConsider.Symbol)
             {
-                return anonymousMethod.Block;
-            }
+                case ILocalSymbol localSymbol:
+                    symbolType = localSymbol.Type;
+                    dataflowAnalysisCompatibleVariable = true;
+                    break;
+                case IParameterSymbol parameterSymbol:
+                    symbolType = parameterSymbol.Type;
+                    dataflowAnalysisCompatibleVariable = true;
+                    break;
+                case IFieldSymbol fieldSymbol:
+                    symbolType = fieldSymbol.Type;
 
-            ParenthesizedLambdaExpressionSyntax lambdaExpression = delegateOrLambdaExpression as ParenthesizedLambdaExpressionSyntax;
-            if (lambdaExpression != null)
-            {
-                return lambdaExpression.Body as BlockSyntax;
-            }
-
-            throw new ArgumentException("Must be of type AnonymousMethodExpressionSyntax or ParenthesizedLambdaExpressionSyntax", nameof(delegateOrLambdaExpression));
-        }
-
-        /// <summary>
-        /// Walks up the syntax tree to find out where the specified delegate or lambda expression is being invoked.
-        /// </summary>
-        /// <param name="delegateOrLambdaExpression">Node representing a delegate or lambda expression.</param>
-        /// <returns>The invocation expression. Null if not found.</returns>
-        private InvocationExpressionSyntax FindInvocationOfDelegateOrLambdaExpression(SyntaxNode delegateOrLambdaExpression)
-        {
-            SyntaxNode currentNode = delegateOrLambdaExpression;
-
-            while (currentNode != null && !(currentNode is MethodDeclarationSyntax))
-            {
-                InvocationExpressionSyntax invocationExpressionSyntax = currentNode as InvocationExpressionSyntax;
-                if (invocationExpressionSyntax != null)
-                {
-                    return invocationExpressionSyntax;
-                }
-
-                // Advance to the next parent
-                currentNode = currentNode.Parent;
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Checks whether the specified invocation is a call to JoinableTaskFactory.Run or RunAsync
-        /// </summary>
-        /// <param name="context">The analysis context.</param>
-        /// <param name="invocationExpressionSyntax">The invocation to check for.</param>
-        /// <returns>True if the specified invocation is a call to JoinableTaskFactory.Run or RunAsyn</returns>
-        private bool IsInvocationExpressionACallToJtfRun(SyntaxNodeAnalysisContext context, InvocationExpressionSyntax invocationExpressionSyntax)
-        {
-            MemberAccessExpressionSyntax memberAccessExpressionSyntax = invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax;
-            if (memberAccessExpressionSyntax != null)
-            {
-                // Check if we encountered a call to Run and had already encountered a delegate (so Run is a parent of the delegate)
-                string methodName = memberAccessExpressionSyntax.Name.Identifier.Text;
-                if (methodName == Types.JoinableTaskFactory.Run || methodName == Types.JoinableTaskFactory.RunAsync)
-                {
-                    // Check whether the Run method belongs to JTF
-                    IMethodSymbol methodSymbol = context.SemanticModel.GetSymbolInfo(memberAccessExpressionSyntax).Symbol as IMethodSymbol;
-                    if (methodSymbol?.ContainingType != null &&
-                        methodSymbol.ContainingType.Name == Types.JoinableTaskFactory.TypeName &&
-                        methodSymbol.ContainingType.BelongsToNamespace(Types.JoinableTaskFactory.Namespace))
+                    // If the field is readonly and initialized with Task.FromResult, it's OK.
+                    if (fieldSymbol.IsReadOnly)
                     {
-                        return true;
+                        // Whitelist the TplExtensions.CompletedTask field.
+                        if (fieldSymbol.Name == Types.TplExtensions.CompletedTask && fieldSymbol.ContainingType.Name == Types.TplExtensions.TypeName && fieldSymbol.BelongsToNamespace(Types.TplExtensions.Namespace))
+                        {
+                            return null;
+                        }
+
+                        // If we can find the source code for the field, we can check whether it has a field initializer
+                        // that stores the result of a Task.FromResult invocation.
+                        foreach (var syntaxReference in fieldSymbol.DeclaringSyntaxReferences)
+                        {
+                            if (syntaxReference.GetSyntax(cancellationToken) is VariableDeclaratorSyntax declarationSyntax &&
+                                declarationSyntax.Initializer?.Value is InvocationExpressionSyntax invocationSyntax &&
+                                invocationSyntax.Expression != null)
+                            {
+                                var declarationSemanticModel = context.Compilation.GetSemanticModel(invocationSyntax.SyntaxTree);
+                                if (declarationSemanticModel.GetSymbolInfo(invocationSyntax.Expression, cancellationToken).Symbol is IMethodSymbol invokedMethod &&
+                                    invokedMethod.Name == nameof(Task.FromResult) &&
+                                    invokedMethod.ContainingType.Name == nameof(Task) &&
+                                    invokedMethod.ContainingType.BelongsToNamespace(Types.Task.Namespace))
+                                {
+                                    return null;
+                                }
+                            }
+                        }
+                    }
+
+                    break;
+                case IMethodSymbol methodSymbol:
+                    if (Utils.IsTask(methodSymbol.ReturnType) && expressionSyntax is InvocationExpressionSyntax invocationExpressionSyntax)
+                    {
+                        // Consider all arguments
+                        var expressionsToConsider = invocationExpressionSyntax.ArgumentList.Arguments.Select(a => a.Expression);
+
+                        // Consider the implicit first argument when this method is invoked as an extension method.
+                        if (methodSymbol.IsExtensionMethod && invocationExpressionSyntax.Expression is MemberAccessExpressionSyntax invokedMember)
+                        {
+                            if (!methodSymbol.ContainingType.Equals(semanticModel.GetSymbolInfo(invokedMember.Expression, cancellationToken).Symbol))
+                            {
+                                expressionsToConsider = new ExpressionSyntax[] { invokedMember.Expression }.Concat(expressionsToConsider);
+                            }
+                        }
+
+                        return expressionsToConsider.Select(e => this.AnalyzeAwaitedOrReturnedExpression(e, context, cancellationToken)).FirstOrDefault(r => r != null);
+                    }
+
+                    return null;
+                default:
+                    return null;
+            }
+
+            if (symbolType?.Name != nameof(Task) || !symbolType.BelongsToNamespace(Namespaces.SystemThreadingTasks))
+            {
+                return null;
+            }
+
+            // Report warning if the task was not initialized within the current delegate or lambda expression
+            var containingFunc = Utils.GetContainingFunction(expressionSyntax);
+            if (containingFunc.BlockOrExpression is BlockSyntax delegateBlock)
+            {
+                if (dataflowAnalysisCompatibleVariable)
+                {
+                    // Run data flow analysis to understand where the task was defined
+                    DataFlowAnalysis dataFlowAnalysis;
+
+                    // When possible (await is direct child of the block and not a field), execute data flow analysis by passing first and last statement to capture only what happens before the await
+                    // Check if the await is direct child of the code block (first parent is ExpressionStantement, second parent is the block itself)
+                    if (delegateBlock.Equals(expressionSyntax.Parent.Parent?.Parent))
+                    {
+                        dataFlowAnalysis = semanticModel.AnalyzeDataFlow(delegateBlock.ChildNodes().First(), expressionSyntax.Parent.Parent);
+                    }
+                    else
+                    {
+                        // Otherwise analyze the data flow for the entire block. One caveat: it doesn't distinguish if the initalization happens after the await.
+                        dataFlowAnalysis = semanticModel.AnalyzeDataFlow(delegateBlock);
+                    }
+
+                    if (!dataFlowAnalysis.WrittenInside.Contains(symbolToConsider.Symbol))
+                    {
+                        return Diagnostic.Create(Descriptor, expressionSyntax.GetLocation());
+                    }
+                }
+                else
+                {
+                    // Do the best we can searching for assignment statements.
+                    if (!Utils.IsAssignedWithin(containingFunc.BlockOrExpression, semanticModel, symbolToConsider.Symbol, cancellationToken))
+                    {
+                        return Diagnostic.Create(Descriptor, expressionSyntax.GetLocation());
                     }
                 }
             }
+            else
+            {
+                // It's not a block, it's just a lambda expression, so the variable must be external.
+                return Diagnostic.Create(Descriptor, expressionSyntax.GetLocation());
+            }
 
-            return false;
+            return null;
         }
     }
 }

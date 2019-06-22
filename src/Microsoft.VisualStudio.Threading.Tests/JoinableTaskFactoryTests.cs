@@ -46,7 +46,7 @@
                     // throwing in this callback results in JTF calling Environment.FailFast
                     // which crashes the test runner. We'll assert on this local boolean
                     // after we exit this critical section.
-                    noDeadlockDetected = otherThread.Wait(AsyncDelay);
+                    noDeadlockDetected = otherThread.Wait(UnexpectedTimeout);
                 };
                 var jt = jtf.RunAsync(async delegate
                 {
@@ -99,6 +99,47 @@
                 // If a deadlock is detected, that means the JTF called out to our code
                 // while holding a private lock. Bad thing.
                 Assert.True(noDeadlockDetected);
+            });
+        }
+
+        [StaFact]
+        public void RunShouldCompleteWithStarvedThreadPool()
+        {
+            using (TestUtilities.StarveThreadpool())
+            {
+                this.asyncPump.Run(async delegate
+                {
+                    await Task.Yield();
+                });
+            }
+        }
+
+        [StaFact]
+        public void RunOfTShouldCompleteWithStarvedThreadPool()
+        {
+            using (TestUtilities.StarveThreadpool())
+            {
+                int result = this.asyncPump.Run(async delegate
+                {
+                    await Task.Yield();
+                    return 1;
+                });
+            }
+        }
+
+        [StaFact]
+        public void SwitchToMainThreadAlwaysYield()
+        {
+            this.SimulateUIThread(async () =>
+            {
+                Assert.True(this.asyncPump.Context.IsOnMainThread);
+                Assert.False(this.asyncPump.SwitchToMainThreadAsync(alwaysYield: true).GetAwaiter().IsCompleted);
+                Assert.True(this.asyncPump.SwitchToMainThreadAsync(alwaysYield: false).GetAwaiter().IsCompleted);
+
+                await TaskScheduler.Default;
+                Assert.False(this.asyncPump.Context.IsOnMainThread);
+                Assert.False(this.asyncPump.SwitchToMainThreadAsync(alwaysYield: true).GetAwaiter().IsCompleted);
+                Assert.False(this.asyncPump.SwitchToMainThreadAsync(alwaysYield: false).GetAwaiter().IsCompleted);
             });
         }
 

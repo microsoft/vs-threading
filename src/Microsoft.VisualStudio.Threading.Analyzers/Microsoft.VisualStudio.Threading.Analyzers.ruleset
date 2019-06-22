@@ -91,4 +91,10 @@
     <Rule Id="SA1640" Action="Hidden" />
     <Rule Id="SA1641" Action="Hidden" />
   </Rules>
+  <Rules AnalyzerId="AsyncUsageAnalyzers" RuleNamespace="AsyncUsageAnalyzers">
+    <Rule Id="UseConfigureAwait" Action="Error" />
+  </Rules>
+  <Rules AnalyzerId="Microsoft.CodeAnalysis.CSharp.Analyzers" RuleNamespace="Microsoft.CodeAnalysis.CSharp.Analyzers">
+    <Rule Id="RS1022" Action="Error" />
+  </Rules>
 </RuleSet>

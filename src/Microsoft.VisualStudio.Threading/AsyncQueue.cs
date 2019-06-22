@@ -20,18 +20,8 @@ namespace Microsoft.VisualStudio.Threading
     /// <typeparam name="T">The type of values kept by the queue.</typeparam>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
     [DebuggerDisplay("Count = {Count}, Completed = {completeSignaled}")]
-    public class AsyncQueue<T>
+    public class AsyncQueue<T> : ThreadingTools.ICancellationNotification
     {
-        /// <summary>
-        /// The object to lock when reading/writing the internal data structures.
-        /// </summary>
-        private readonly object syncObject;
-
-        /// <summary>
-        /// The tasks wanting to dequeue elements from the stack, grouped by their cancellation tokens. Lazily constructed.
-        /// </summary>
-        private Dictionary<CancellationToken, CancellableDequeuers> dequeuingTasks;
-
         /// <summary>
         /// The source of the task returned by <see cref="Completion"/>. Lazily constructed.
         /// </summary>
@@ -51,6 +41,11 @@ namespace Microsoft.VisualStudio.Threading
         private Queue<T> queueElements;
 
         /// <summary>
+        /// The internal queue of <see cref="DequeueAsync(CancellationToken)"/> waiters. Lazily constructed.
+        /// </summary>
+        private Queue<TaskCompletionSource<T>> dequeuingWaiters;
+
+        /// <summary>
         /// A value indicating whether <see cref="Complete"/> has been called.
         /// </summary>
         private bool completeSignaled;
@@ -65,7 +60,6 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         public AsyncQueue()
         {
-            this.syncObject = this; // save allocations by using this instead of a new object.
         }
 
         /// <summary>
@@ -83,9 +77,9 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                lock (this.syncObject)
+                lock (this.SyncRoot)
                 {
-                    return this.queueElements != null ? this.queueElements.Count : 0;
+                    return this.queueElements?.Count ?? 0;
                 }
             }
         }
@@ -102,7 +96,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                lock (this.syncObject)
+                lock (this.SyncRoot)
                 {
                     return this.completeSignaled && this.IsEmpty;
                 }
@@ -118,7 +112,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 if (this.completedSource == null)
                 {
-                    lock (this.syncObject)
+                    lock (this.SyncRoot)
                     {
                         if (this.completedSource == null)
                         {
@@ -141,25 +135,19 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets the synchronization object used by this queue.
         /// </summary>
-        protected object SyncRoot
-        {
-            get { return this.syncObject; }
-        }
+        protected object SyncRoot => this; // save allocations by using this instead of a new object.
 
         /// <summary>
         /// Gets the initial capacity for the queue.
         /// </summary>
-        protected virtual int InitialCapacity
-        {
-            get { return 4; }
-        }
+        protected virtual int InitialCapacity => 4;
 
         /// <summary>
         /// Signals that no further elements will be enqueued.
         /// </summary>
         public void Complete()
         {
-            lock (this.syncObject)
+            lock (this.SyncRoot)
             {
                 this.completeSignaled = true;
             }
@@ -186,44 +174,29 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns><c>true</c> if the value was added to the queue; <c>false</c> if the queue is already completed.</returns>
         public bool TryEnqueue(T value)
         {
-            TaskCompletionSource<T> dequeuer = null;
-            List<CancellableDequeuers> valuesToDispose = null;
-            lock (this.syncObject)
+            bool alreadyDispatched = false;
+            lock (this.SyncRoot)
             {
                 if (this.completeSignaled)
                 {
                     return false;
                 }
 
-                if (this.dequeuingTasks != null)
+                // Is a dequeuer waiting for this?
+                while (this.dequeuingWaiters?.Count > 0)
                 {
-                    foreach (var entry in this.dequeuingTasks)
+                    TaskCompletionSource<T> waitingDequeuer = this.dequeuingWaiters.Dequeue();
+                    if (waitingDequeuer.TrySetResult(value))
                     {
-                        CancellationToken cancellationToken = entry.Key;
-                        CancellableDequeuers dequeurs = entry.Value;
-
-                        // Remove the last dequeuer from the list.
-                        dequeuer = dequeurs.PopDequeuer();
-
-                        if (dequeurs.IsEmpty)
-                        {
-                            this.dequeuingTasks.Remove(cancellationToken);
-
-                            if (valuesToDispose == null)
-                            {
-                                valuesToDispose = new List<CancellableDequeuers>();
-                            }
-
-                            valuesToDispose.Add(dequeurs);
-                        }
-
+                        alreadyDispatched = true;
                         break;
                     }
                 }
 
-                if (dequeuer == null)
+                this.FreeCanceledDequeuers();
+
+                if (!alreadyDispatched)
                 {
-                    // There were no waiting dequeuers, so actually add this element to our queue.
                     if (this.queueElements == null)
                     {
                         this.queueElements = new Queue<T>(this.InitialCapacity);
@@ -233,27 +206,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
             }
 
-            Assumes.False(Monitor.IsEntered(this.syncObject)); // important because we'll transition a task to complete.
-
-            // It's important we dispose of these values outside the lock.
-            if (valuesToDispose != null)
-            {
-                foreach (var item in valuesToDispose)
-                {
-                    item.Dispose();
-                }
-            }
-
-            // We only transition this task to complete outside of our lock so
-            // we don't accidentally inline continuations inside our lock.
-            if (dequeuer != null)
-            {
-                // There was already someone waiting for an element to process, so
-                // immediately allow them to begin work and skip our internal queue.
-                dequeuer.SetResult(value);
-            }
-
-            this.OnEnqueued(value, dequeuer != null);
+            this.OnEnqueued(value, alreadyDispatched);
 
             return true;
         }
@@ -265,7 +218,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns><c>true</c> if the queue was non-empty; <c>false</c> otherwise.</returns>
         public bool TryPeek(out T value)
         {
-            lock (this.syncObject)
+            lock (this.SyncRoot)
             {
                 if (this.queueElements != null && this.queueElements.Count > 0)
                 {
@@ -286,8 +239,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <exception cref="InvalidOperationException">Thrown if the queue is empty.</exception>
         public T Peek()
         {
-            T value;
-            if (!this.TryPeek(out value))
+            if (!this.TryPeek(out T value))
             {
                 Verify.FailOperation(Strings.QueueEmpty);
             }
@@ -310,56 +262,43 @@ namespace Microsoft.VisualStudio.Threading
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         public Task<T> DequeueAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            var tcs = new TaskCompletionSource<T>();
-            CancellableDequeuers existingAwaiters = null;
-            bool newDequeuerObjectAllocated = false;
-            lock (this.syncObject)
+            if (cancellationToken.IsCancellationRequested)
             {
-                if (cancellationToken.IsCancellationRequested)
+                return ThreadingTools.TaskFromCanceled<T>(cancellationToken);
+            }
+
+            T result;
+            lock (this.SyncRoot)
+            {
+                if (this.IsCompleted)
                 {
-                    // It's OK to transition this task within the lock,
-                    // since we only just created the task in this method so
-                    // it couldn't possibly have any continuations that would inline
-                    // inside our lock.
-                    tcs.TrySetCanceled(cancellationToken);
+                    return TplExtensions.CanceledTaskOfT<T>();
+                }
+
+                if (this.queueElements?.Count > 0)
+                {
+                    result = this.queueElements.Dequeue();
                 }
                 else
                 {
-                    T value;
-                    if (this.TryDequeueInternal(null, out value))
+                    if (this.dequeuingWaiters == null)
                     {
-                        tcs.SetResult(value);
+                        this.dequeuingWaiters = new Queue<TaskCompletionSource<T>>(capacity: 2);
                     }
                     else
                     {
-                        if (this.dequeuingTasks == null)
-                        {
-                            this.dequeuingTasks = new Dictionary<CancellationToken, CancellableDequeuers>();
-                        }
-
-                        if (!this.dequeuingTasks.TryGetValue(cancellationToken, out existingAwaiters))
-                        {
-                            existingAwaiters = new CancellableDequeuers(this);
-                            newDequeuerObjectAllocated = true;
-                            this.dequeuingTasks[cancellationToken] = existingAwaiters;
-                        }
-
-                        existingAwaiters.AddCompletionSource(tcs);
+                        this.FreeCanceledDequeuers();
                     }
+
+                    var waiterTcs = new TaskCompletionSourceWithoutInlining<T>(allowInliningContinuations: false);
+                    waiterTcs.AttachCancellation(cancellationToken, this);
+                    this.dequeuingWaiters.Enqueue(waiterTcs);
+                    return waiterTcs.Task;
                 }
             }
 
-            if (newDequeuerObjectAllocated)
-            {
-                Assumes.NotNull(existingAwaiters);
-                var cancellationRegistration = cancellationToken.Register(
-                    state => CancelDequeuers(state),
-                    Tuple.Create(this, cancellationToken));
-                existingAwaiters.SetCancellationRegistration(cancellationRegistration);
-            }
-
             this.CompleteIfNecessary();
-            return tcs.Task;
+            return Task.FromResult(result);
         }
 
         /// <summary>
@@ -374,6 +313,9 @@ namespace Microsoft.VisualStudio.Threading
             this.CompleteIfNecessary();
             return result;
         }
+
+        /// <inheritdoc />
+        void ThreadingTools.ICancellationNotification.OnCanceled() => this.FreeCanceledDequeuers();
 
         /// <summary>
         /// Returns a copy of this queue as an array.
@@ -440,7 +382,7 @@ namespace Microsoft.VisualStudio.Threading
         private bool TryDequeueInternal(Predicate<T> valueCheck, out T value)
         {
             bool dequeued;
-            lock (this.syncObject)
+            lock (this.SyncRoot)
             {
                 if (this.queueElements != null && this.queueElements.Count > 0 && (valueCheck == null || valueCheck(this.queueElements.Peek())))
                 {
@@ -463,254 +405,47 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Cancels all outstanding dequeue tasks for the specified CancellationToken.
-        /// </summary>
-        /// <param name="state">A <see cref="Tuple{AsyncQueue, CancellationToken}"/> instance.</param>
-        private static void CancelDequeuers(object state)
-        {
-            var tuple = (Tuple<AsyncQueue<T>, CancellationToken>)state;
-            AsyncQueue<T> that = tuple.Item1;
-            CancellationToken ct = tuple.Item2;
-            CancellableDequeuers cancelledAwaiters = null;
-            lock (that.syncObject)
-            {
-                if (that.dequeuingTasks != null && that.dequeuingTasks.TryGetValue(ct, out cancelledAwaiters))
-                {
-                    that.dequeuingTasks.Remove(ct);
-                }
-            }
-
-            // This work can invoke external code and mustn't happen within our private lock.
-            Assumes.False(Monitor.IsEntered(that.syncObject)); // important because we'll transition a task to complete.
-            if (cancelledAwaiters != null)
-            {
-                foreach (var awaiter in cancelledAwaiters)
-                {
-                    awaiter.SetCanceled();
-                }
-
-                cancelledAwaiters.Dispose();
-            }
-        }
-
-        /// <summary>
         /// Transitions this queue to a completed state if signaled and the queue is empty.
         /// </summary>
         private void CompleteIfNecessary()
         {
-            Assumes.False(Monitor.IsEntered(this.syncObject)); // important because we'll transition a task to complete.
+            Assumes.False(Monitor.IsEntered(this.SyncRoot)); // important because we'll transition a task to complete.
 
             bool transitionTaskSource, invokeOnCompleted = false;
-            List<TaskCompletionSource<T>> tasksToCancel = null;
-            List<CancellableDequeuers> objectsToDispose = null;
-            lock (this.syncObject)
+            lock (this.SyncRoot)
             {
                 transitionTaskSource = this.completeSignaled && (this.queueElements == null || this.queueElements.Count == 0);
                 if (transitionTaskSource)
                 {
                     invokeOnCompleted = !this.onCompletedInvoked;
                     this.onCompletedInvoked = true;
-                    if (objectsToDispose == null && this.dequeuingTasks != null && this.dequeuingTasks.Count > 0)
+                    while (this.dequeuingWaiters?.Count > 0)
                     {
-                        objectsToDispose = new List<CancellableDequeuers>();
-                    }
-
-                    if (this.dequeuingTasks != null)
-                    {
-                        foreach (var entry in this.dequeuingTasks)
-                        {
-                            if (tasksToCancel == null && !entry.Value.IsEmpty)
-                            {
-                                tasksToCancel = new List<TaskCompletionSource<T>>();
-                            }
-
-                            foreach (var tcs in entry.Value)
-                            {
-                                tasksToCancel.Add(tcs);
-                            }
-
-                            objectsToDispose.Add(entry.Value);
-                        }
-
-                        this.dequeuingTasks.Clear();
+                        this.dequeuingWaiters.Dequeue().TrySetCanceled();
                     }
                 }
             }
 
             if (transitionTaskSource)
             {
-                if (this.completedSource != null)
-                {
-                    this.completedSource.TrySetResult(null);
-                }
-
+                this.completedSource?.TrySetResult(null);
                 if (invokeOnCompleted)
                 {
                     this.OnCompleted();
-                }
-
-                if (tasksToCancel != null)
-                {
-                    foreach (var tcs in tasksToCancel)
-                    {
-                        tcs.TrySetCanceled();
-                    }
-                }
-
-                if (objectsToDispose != null)
-                {
-                    foreach (var item in objectsToDispose)
-                    {
-                        item.Dispose();
-                    }
                 }
             }
         }
 
         /// <summary>
-        /// Tracks cancellation registration and a list of dequeuers
+        /// Clears as many canceled dequeuers as we can from the head of the waiting queue.
         /// </summary>
-        private class CancellableDequeuers : IDisposable
+        private void FreeCanceledDequeuers()
         {
-            /// <summary>
-            /// The queue that owns this instance.
-            /// </summary>
-            private readonly AsyncQueue<T> owningQueue;
-
-            private bool disposed;
-
-            /// <summary>
-            /// Gets the cancellation registration.
-            /// </summary>
-            private CancellationTokenRegistration cancellationRegistration;
-
-            /// <summary>
-            /// Gets the list of dequeuers.
-            /// </summary>
-            private object completionSources;
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="CancellableDequeuers"/> class.
-            /// </summary>
-            /// <param name="owningQueue">The queue that created this instance.</param>
-            internal CancellableDequeuers(AsyncQueue<T> owningQueue)
+            lock (this.SyncRoot)
             {
-                Requires.NotNull(owningQueue, nameof(owningQueue));
-
-                this.owningQueue = owningQueue;
-                this.completionSources = null;
-            }
-
-            /// <summary>
-            /// Gets a value indicating whether this instance is empty.
-            /// </summary>
-            internal bool IsEmpty
-            {
-                get
+                while (this.dequeuingWaiters?.Count > 0 && this.dequeuingWaiters.Peek().Task.IsCompleted)
                 {
-                    if (this.completionSources == null)
-                    {
-                        return true;
-                    }
-
-                    var list = this.completionSources as List<TaskCompletionSource<T>>;
-                    if (list != null && list.Count == 0)
-                    {
-                        return true;
-                    }
-
-                    return false;
-                }
-            }
-
-            /// <summary>
-            /// Disposes of the cancellation registration.
-            /// </summary>
-            public void Dispose()
-            {
-                Assumes.False(Monitor.IsEntered(this.owningQueue.syncObject), "Disposing CancellationTokenRegistration values while holding locks is unsafe.");
-                this.cancellationRegistration.Dispose();
-                this.disposed = true;
-            }
-
-            /// <summary>
-            /// Enumerates all the dequeurs in this instance.
-            /// </summary>
-            public EnumerateOneOrMany<TaskCompletionSource<T>> GetEnumerator()
-            {
-                if (this.completionSources is List<TaskCompletionSource<T>>)
-                {
-                    var list = (List<TaskCompletionSource<T>>)this.completionSources;
-                    return new EnumerateOneOrMany<TaskCompletionSource<T>>(list);
-                }
-                else
-                {
-                    return new EnumerateOneOrMany<TaskCompletionSource<T>>((TaskCompletionSource<T>)this.completionSources);
-                }
-            }
-
-            /// <summary>
-            /// Sets the cancellation token registration associated with this instance.
-            /// </summary>
-            /// <param name="cancellationRegistration">The cancellation registration to dispose of when this value is disposed.</param>
-            internal void SetCancellationRegistration(CancellationTokenRegistration cancellationRegistration)
-            {
-                // It's possible that between the time this instance was created
-                // and this invocation, that another thread with a private lock
-                // already disposed of this object, in which case we'll immediately dispose
-                // of the registration to avoid memory leaks.
-                if (this.disposed)
-                {
-                    this.cancellationRegistration.Dispose();
-                }
-                else
-                {
-                    this.cancellationRegistration = cancellationRegistration;
-                }
-            }
-
-            /// <summary>
-            /// Adds a dequeuer to this instance.
-            /// </summary>
-            internal void AddCompletionSource(TaskCompletionSource<T> dequeuer)
-            {
-                Requires.NotNull(dequeuer, nameof(dequeuer));
-                if (this.completionSources == null)
-                {
-                    this.completionSources = dequeuer;
-                }
-                else if (this.completionSources is List<TaskCompletionSource<T>>)
-                {
-                    var list = (List<TaskCompletionSource<T>>)this.completionSources;
-                    list.Add(dequeuer);
-                }
-                else
-                {
-                    var list = new List<TaskCompletionSource<T>>();
-                    list.Add((TaskCompletionSource<T>)this.completionSources);
-                    list.Add(dequeuer);
-                    this.completionSources = list;
-                }
-            }
-
-            /// <summary>
-            /// Pops off one dequeuer from this instance.
-            /// </summary>
-            internal TaskCompletionSource<T> PopDequeuer()
-            {
-                Assumes.NotNull(this.completionSources);
-                if (this.completionSources is List<TaskCompletionSource<T>>)
-                {
-                    var list = (List<TaskCompletionSource<T>>)this.completionSources;
-                    var dequeuer = list[list.Count - 1];
-                    list.RemoveAt(list.Count - 1);
-                    return dequeuer;
-                }
-                else
-                {
-                    var dequeuer = (TaskCompletionSource<T>)this.completionSources;
-                    this.completionSources = null;
-                    return dequeuer;
+                    this.dequeuingWaiters.Dequeue();
                 }
             }
         }

@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net452</TargetFramework>
+    <TargetFramework>net45</TargetFramework>
     <OutputType>Exe</OutputType>
     <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.ruleset</CodeAnalysisRuleSet>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -9,6 +9,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj" />
-    <PackageReference Include="MicroBuild.Nonshipping" Version="2.0.40" />
+    <PackageReference Include="MicroBuild.Nonshipping" Version="$(MicroBuildVersion)" />
   </ItemGroup>
 </Project>

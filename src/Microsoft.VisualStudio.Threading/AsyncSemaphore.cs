@@ -46,6 +46,11 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Gets the number of openings that remain in the semaphore.
+        /// </summary>
+        public int CurrentCount => this.semaphore.CurrentCount;
+
+        /// <summary>
         /// Requests access to the lock.
         /// </summary>
         /// <param name="cancellationToken">A token whose cancellation signals lost interest in the lock.</param>
@@ -169,7 +174,7 @@ namespace Microsoft.VisualStudio.Threading
         /// A value whose disposal triggers the release of a lock.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct Releaser : IDisposable
+        public readonly struct Releaser : IDisposable
         {
             /// <summary>
             /// The lock instance to release.

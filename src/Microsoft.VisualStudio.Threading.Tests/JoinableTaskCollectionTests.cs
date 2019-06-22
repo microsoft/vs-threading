@@ -80,9 +80,6 @@
         [StaFact]
         public void EmptyThenMore()
         {
-            var awaiter = this.joinableCollection.JoinTillEmptyAsync().GetAwaiter();
-            Assert.True(awaiter.IsCompleted);
-
             var evt = new AsyncManualResetEvent();
             var joinable = this.JoinableFactory.RunAsync(async delegate
             {
@@ -111,6 +108,25 @@
             this.context.Factory.Run(async delegate
             {
                 await this.joinableCollection.JoinTillEmptyAsync();
+            });
+        }
+
+        [StaFact]
+        public void JoinTillEmptyAsync_CancellationToken()
+        {
+            var tcs = new TaskCompletionSource<object>();
+            var joinable = this.JoinableFactory.RunAsync(async delegate
+            {
+                await tcs.Task;
+            });
+
+            this.context.Factory.Run(async delegate
+            {
+                var cts = new CancellationTokenSource();
+                Task joinTask = this.joinableCollection.JoinTillEmptyAsync(cts.Token);
+                cts.Cancel();
+                var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => joinTask);
+                Assert.Equal(cts.Token, ex.CancellationToken);
             });
         }
 

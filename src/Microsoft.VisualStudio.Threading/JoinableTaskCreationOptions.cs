@@ -12,7 +12,7 @@ namespace Microsoft.VisualStudio.Threading
     /// Specifies flags that control optional behavior for the creation and execution of tasks.
     /// </summary>
     [Flags]
-#if NET45
+#if DESKTOP || NETSTANDARD2_0
     [Serializable]
 #endif
     public enum JoinableTaskCreationOptions

@@ -1,0 +1,1 @@
+﻿[System.Windows.Threading.Dispatcher]::VerifyAccess

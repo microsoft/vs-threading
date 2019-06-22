@@ -39,6 +39,7 @@
             id: Id,
             title: Strings.VSTHRD100_Title,
             messageFormat: Strings.VSTHRD100_MessageFormat,
+            helpLinkUri: Utils.GetHelpLink(Id),
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
@@ -66,12 +67,7 @@
             var methodSymbol = (IMethodSymbol)context.Symbol;
             if (methodSymbol.IsAsync && methodSymbol.ReturnsVoid)
             {
-                // Async Void methods are designed to be used as asynchronous event handlers,
-                // report warnings only if they are not used like that way.
-                if (!Utils.IsEventHandler(methodSymbol, context.Compilation))
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(Descriptor, methodSymbol.Locations[0]));
-                }
+                context.ReportDiagnostic(Diagnostic.Create(Descriptor, methodSymbol.Locations[0]));
             }
         }
     }

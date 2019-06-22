@@ -13,7 +13,7 @@ namespace Microsoft.VisualStudio.Threading
     /// A structure that applies and reverts changes to the <see cref="SynchronizationContext"/>.
     /// </summary>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-    public struct SpecializedSyncContext : IDisposable
+    public readonly struct SpecializedSyncContext : IDisposable
     {
         /// <summary>
         /// A flag indicating whether the non-default constructor was invoked.

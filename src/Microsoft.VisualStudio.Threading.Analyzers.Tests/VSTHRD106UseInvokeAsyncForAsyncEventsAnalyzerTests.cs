@@ -1,43 +1,13 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
-    using System;
-    using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CodeFixes;
-    using Microsoft.CodeAnalysis.Diagnostics;
+    using System.Threading.Tasks;
     using Xunit;
-    using Xunit.Abstractions;
+    using Verify = CSharpCodeFixVerifier<VSTHRD106UseInvokeAsyncForAsyncEventsAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
-    public class VSTHRD106UseInvokeAsyncForAsyncEventsAnalyzerTests : DiagnosticVerifier
+    public class VSTHRD106UseInvokeAsyncForAsyncEventsAnalyzerTests
     {
-        public VSTHRD106UseInvokeAsyncForAsyncEventsAnalyzerTests(ITestOutputHelper logger)
-            : base(logger)
-        {
-        }
-
-        private DiagnosticResult[] CreateExpects(DiagnosticResultLocation[] locations)
-        {
-            var results = new DiagnosticResult[locations.Length];
-            for (int i = 0; i < locations.Length; ++i)
-            {
-                results[i] = new DiagnosticResult
-                {
-                    Id = VSTHRD106UseInvokeAsyncForAsyncEventsAnalyzer.Id,
-                    SkipVerifyMessage = true,
-                    Severity = DiagnosticSeverity.Warning,
-                    Locations = new[] { locations[i] }
-                };
-            }
-
-            return results;
-        }
-
-        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
-        {
-            return new VSTHRD106UseInvokeAsyncForAsyncEventsAnalyzer();
-        }
-
         [Fact]
-        public void ReportWarningIfInvokeAsyncEventHandlerDirectly()
+        public async Task ReportWarningIfInvokeAsyncEventHandlerDirectly()
         {
             var test = @"
 using System;
@@ -56,17 +26,17 @@ class Test<T> where T : EventArgs {
     }
 }
 ";
-            var locations = new[]
+            var expected = new[]
             {
-                new DiagnosticResultLocation("Test0.cs", 12, 9),
-                new DiagnosticResultLocation("Test0.cs", 13, 9),
-                new DiagnosticResultLocation("Test0.cs", 14, 9),
+                Verify.Diagnostic().WithLocation(12, 9),
+                Verify.Diagnostic().WithLocation(13, 9),
+                Verify.Diagnostic().WithLocation(14, 9),
             };
-            this.VerifyCSharpDiagnostic(test, this.CreateExpects(locations));
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void DoNotReportWarningIfAsyncEventHandlerIsInvokedByInvokeAsync()
+        public async Task DoNotReportWarningIfAsyncEventHandlerIsInvokedByInvokeAsync()
         {
             var test = @"
 using System;
@@ -81,11 +51,11 @@ class TplExtensions {
     }
 }}
 ";
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void ReportWarningIfInvokeAsyncEventHandlerDirectlyViaInvoke()
+        public async Task ReportWarningIfInvokeAsyncEventHandlerDirectlyViaInvoke()
         {
             var test = @"
 using System;
@@ -104,17 +74,17 @@ class Test<T> where T : EventArgs {
     }
 }
 ";
-            var locations = new[]
+            var expected = new[]
             {
-                new DiagnosticResultLocation("Test0.cs", 12, 9),
-                new DiagnosticResultLocation("Test0.cs", 13, 9),
-                new DiagnosticResultLocation("Test0.cs", 14, 9),
+                Verify.Diagnostic().WithLocation(12, 9),
+                Verify.Diagnostic().WithLocation(13, 9),
+                Verify.Diagnostic().WithLocation(14, 9),
             };
-            this.VerifyCSharpDiagnostic(test, this.CreateExpects(locations));
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ReportWarningIfInvokeAsyncEventHandlerDirectlyAsDelegateViaInvoke()
+        public async Task ReportWarningIfInvokeAsyncEventHandlerDirectlyAsDelegateViaInvoke()
         {
             var test = @"
 using System;
@@ -133,17 +103,17 @@ class Test<T> where T : EventArgs {
     }
 }
 ";
-            var locations = new[]
+            var expected = new[]
             {
-                new DiagnosticResultLocation("Test0.cs", 12, 9),
-                new DiagnosticResultLocation("Test0.cs", 13, 9),
-                new DiagnosticResultLocation("Test0.cs", 14, 9),
+                Verify.Diagnostic().WithLocation(12, 9),
+                Verify.Diagnostic().WithLocation(13, 9),
+                Verify.Diagnostic().WithLocation(14, 9),
             };
-            this.VerifyCSharpDiagnostic(test, this.CreateExpects(locations));
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ReportWarningIfInvokeAsyncEventHandlerDirectlyAndTheyAreLocalVariables()
+        public async Task ReportWarningIfInvokeAsyncEventHandlerDirectlyAndTheyAreLocalVariables()
         {
             var test = @"
 using System;
@@ -162,17 +132,17 @@ class Test<T> where T : EventArgs {
     }
 }
 ";
-            var locations = new[]
+            var expected = new[]
             {
-                new DiagnosticResultLocation("Test0.cs", 12, 9),
-                new DiagnosticResultLocation("Test0.cs", 13, 9),
-                new DiagnosticResultLocation("Test0.cs", 14, 9),
+                Verify.Diagnostic().WithLocation(12, 9),
+                Verify.Diagnostic().WithLocation(13, 9),
+                Verify.Diagnostic().WithLocation(14, 9),
             };
-            this.VerifyCSharpDiagnostic(test, this.CreateExpects(locations));
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ReportWarningIfInvokeAsyncEventHandlerDirectlyAndTheyAreProperties()
+        public async Task ReportWarningIfInvokeAsyncEventHandlerDirectlyAndTheyAreProperties()
         {
             var test = @"
 using System;
@@ -191,17 +161,17 @@ class Test<T> where T : EventArgs {
     }
 }
 ";
-            var locations = new[]
+            var expected = new[]
             {
-                new DiagnosticResultLocation("Test0.cs", 12, 9),
-                new DiagnosticResultLocation("Test0.cs", 13, 9),
-                new DiagnosticResultLocation("Test0.cs", 14, 9),
+                Verify.Diagnostic().WithLocation(12, 9),
+                Verify.Diagnostic().WithLocation(13, 9),
+                Verify.Diagnostic().WithLocation(14, 9),
             };
-            this.VerifyCSharpDiagnostic(test, this.CreateExpects(locations));
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ReportWarningIfInvokeAsyncEventHandlerViaInvocationList()
+        public async Task ReportWarningIfInvokeAsyncEventHandlerViaInvocationList()
         {
             var test = @"
 using System;
@@ -220,17 +190,17 @@ class Test<T> where T : EventArgs {
     }
 }
 ";
-            var locations = new[]
+            var expected = new[]
             {
-                new DiagnosticResultLocation("Test0.cs", 12, 79),
-                new DiagnosticResultLocation("Test0.cs", 13, 87),
-                new DiagnosticResultLocation("Test0.cs", 14, 76),
+                Verify.Diagnostic().WithLocation(12, 79),
+                Verify.Diagnostic().WithLocation(13, 87),
+                Verify.Diagnostic().WithLocation(14, 76),
             };
-            this.VerifyCSharpDiagnostic(test, this.CreateExpects(locations));
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ReportWarningIfInvokeAsyncEventHandlerAsDelegate()
+        public async Task ReportWarningIfInvokeAsyncEventHandlerAsDelegate()
         {
             var test = @"
 using System;
@@ -249,17 +219,17 @@ class Test<T> where T : EventArgs {
     }
 }
 ";
-            var locations = new[]
+            var expected = new[]
             {
-                new DiagnosticResultLocation("Test0.cs", 12, 9),
-                new DiagnosticResultLocation("Test0.cs", 13, 9),
-                new DiagnosticResultLocation("Test0.cs", 14, 9),
+                Verify.Diagnostic().WithLocation(12, 9),
+                Verify.Diagnostic().WithLocation(13, 9),
+                Verify.Diagnostic().WithLocation(14, 9),
             };
-            this.VerifyCSharpDiagnostic(test, this.CreateExpects(locations));
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ReportWarningIfInvokeLazyAsyncEventHandlerAsDelegate()
+        public async Task ReportWarningIfInvokeLazyAsyncEventHandlerAsDelegate()
         {
             var test = @"
 using System;
@@ -278,17 +248,17 @@ class Test<T> where T : EventArgs {
     }
 }
 ";
-            var locations = new[]
+            var expected = new[]
             {
-                new DiagnosticResultLocation("Test0.cs", 12, 9),
-                new DiagnosticResultLocation("Test0.cs", 13, 9),
-                new DiagnosticResultLocation("Test0.cs", 14, 9),
+                Verify.Diagnostic().WithLocation(12, 9),
+                Verify.Diagnostic().WithLocation(13, 9),
+                Verify.Diagnostic().WithLocation(14, 9),
             };
-            this.VerifyCSharpDiagnostic(test, this.CreateExpects(locations));
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ReportWarningIfInvokeAsyncEventHandlerDirectlyAndTheyArePassedAsParameters()
+        public async Task ReportWarningIfInvokeAsyncEventHandlerDirectlyAndTheyArePassedAsParameters()
         {
             var test = @"
 using System;
@@ -303,17 +273,17 @@ class Test<T> where T : EventArgs {
     }
 }
 ";
-            var locations = new[]
+            var expected = new[]
             {
-                new DiagnosticResultLocation("Test0.cs", 8, 9),
-                new DiagnosticResultLocation("Test0.cs", 9, 9),
-                new DiagnosticResultLocation("Test0.cs", 10, 9),
+                Verify.Diagnostic().WithLocation(8, 9),
+                Verify.Diagnostic().WithLocation(9, 9),
+                Verify.Diagnostic().WithLocation(10, 9),
             };
-            this.VerifyCSharpDiagnostic(test, this.CreateExpects(locations));
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ReportWarningIfInvokeAsyncEventHandlerDirectlyAndTheyArePassedAsArray()
+        public async Task ReportWarningIfInvokeAsyncEventHandlerDirectlyAndTheyArePassedAsArray()
         {
             var test = @"
 using System;
@@ -328,17 +298,17 @@ class Test<T> where T : EventArgs {
     }
 }
 ";
-            var locations = new[]
+            var expected = new[]
             {
-                new DiagnosticResultLocation("Test0.cs", 8, 31),
-                new DiagnosticResultLocation("Test0.cs", 9, 31),
-                new DiagnosticResultLocation("Test0.cs", 10, 31),
+                Verify.Diagnostic().WithLocation(8, 31),
+                Verify.Diagnostic().WithLocation(9, 31),
+                Verify.Diagnostic().WithLocation(10, 31),
             };
-            this.VerifyCSharpDiagnostic(test, this.CreateExpects(locations));
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void DoNotReportWarningIfInvokeAsyncEventHandlerUsingInvokeAsync()
+        public async Task DoNotReportWarningIfInvokeAsyncEventHandlerUsingInvokeAsync()
         {
             var test = @"
 using System;
@@ -357,11 +327,11 @@ class Test<T> where T : EventArgs {
     }
 }
 ";
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void DoNotReportWarningIfInvokeAsyncEventHandlerUsingInvokeAsyncAndTheyArePassedAsParameters()
+        public async Task DoNotReportWarningIfInvokeAsyncEventHandlerUsingInvokeAsyncAndTheyArePassedAsParameters()
         {
             var test = @"
 using System;
@@ -376,11 +346,11 @@ class Test<T> where T : EventArgs {
     }
 }
 ";
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void DoNotReportWarningIfInvokeAsyncEventHandlerUsingInvokeAsyncAndTheyArePassedAsArray()
+        public async Task DoNotReportWarningIfInvokeAsyncEventHandlerUsingInvokeAsyncAndTheyArePassedAsArray()
         {
             var test = @"
 using System;
@@ -395,7 +365,7 @@ class Test<T> where T : EventArgs {
     }
 }
 ";
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
     }
 }

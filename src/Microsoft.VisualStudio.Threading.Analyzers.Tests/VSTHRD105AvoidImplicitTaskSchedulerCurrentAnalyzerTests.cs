@@ -1,29 +1,14 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
-    using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CodeFixes;
-    using Microsoft.CodeAnalysis.Diagnostics;
+    using System.Threading.Tasks;
+    using Microsoft.CodeAnalysis.Testing;
     using Xunit;
-    using Xunit.Abstractions;
+    using Verify = CSharpCodeFixVerifier<VSTHRD105AvoidImplicitTaskSchedulerCurrentAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
-    public class VSTHRD105AvoidImplicitTaskSchedulerCurrentAnalyzerTests : DiagnosticVerifier
+    public class VSTHRD105AvoidImplicitTaskSchedulerCurrentAnalyzerTests
     {
-        private DiagnosticResult expect = new DiagnosticResult
-        {
-            Id = VSTHRD105AvoidImplicitTaskSchedulerCurrentAnalyzer.Id,
-            SkipVerifyMessage = true,
-            Severity = DiagnosticSeverity.Warning,
-        };
-
-        public VSTHRD105AvoidImplicitTaskSchedulerCurrentAnalyzerTests(ITestOutputHelper logger)
-            : base(logger)
-        {
-        }
-
-        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer() => new VSTHRD105AvoidImplicitTaskSchedulerCurrentAnalyzer();
-
         [Fact]
-        public void ContinueWith_NoTaskScheduler_GeneratesWarning()
+        public async Task ContinueWith_NoTaskScheduler_GeneratesWarning()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -36,12 +21,17 @@ class Test {
 }
 ";
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 7, 11, 7, 23) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithSpan(7, 11, 7, 23);
+            await new Verify.Test
+            {
+                TestCode = test,
+                ExpectedDiagnostics = { expected },
+                TestBehaviors = TestBehaviors.SkipGeneratedCodeCheck,
+            }.RunAsync();
         }
 
         [Fact]
-        public void StartNew_NoTaskScheduler_GeneratesWarning()
+        public async Task StartNew_NoTaskScheduler_GeneratesWarning()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -53,12 +43,35 @@ class Test {
 }
 ";
 
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 6, 22, 6, 30) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithSpan(6, 22, 6, 30);
+            await new Verify.Test
+            {
+                TestCode = test,
+                ExpectedDiagnostics = { expected },
+                TestBehaviors = TestBehaviors.SkipGeneratedCodeCheck,
+            }.RunAsync();
         }
 
         [Fact]
-        public void ContinueWith_WithTaskScheduler_GeneratesNoWarning()
+        public async Task StartNew_NoTaskScheduler_GeneratesNoWarningOnCustomTaskFactory()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    TaskFactory factory; // the analyzer doesn't know statically whether this has a safe default TaskScheduler set.
+
+    void F() {
+        factory.StartNew(() => { });
+    }
+}
+";
+
+            await Verify.VerifyAnalyzerAsync(test);
+        }
+
+        [Fact]
+        public async Task ContinueWith_WithTaskScheduler_GeneratesNoWarning()
         {
             var test = @"
 using System.Threading.Tasks;
@@ -72,11 +85,11 @@ class Test {
 }
 ";
 
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
-        public void StartNew_WithTaskScheduler_GeneratesNoWarning()
+        public async Task StartNew_WithTaskScheduler_GeneratesNoWarning()
         {
             var test = @"
 using System.Threading;
@@ -90,7 +103,7 @@ class Test {
 }
 ";
 
-            this.VerifyCSharpDiagnostic(test);
+            await Verify.VerifyAnalyzerAsync(test);
         }
     }
 }

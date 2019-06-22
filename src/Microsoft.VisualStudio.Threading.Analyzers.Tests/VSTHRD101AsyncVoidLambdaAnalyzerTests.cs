@@ -1,32 +1,14 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
-    using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CodeFixes;
-    using Microsoft.CodeAnalysis.Diagnostics;
+    using System.Threading.Tasks;
+    using Microsoft.CodeAnalysis.Testing;
     using Xunit;
-    using Xunit.Abstractions;
+    using Verify = CSharpCodeFixVerifier<VSTHRD101AsyncVoidLambdaAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
-    public class VSTHRD101AsyncVoidLambdaAnalyzerTests : DiagnosticVerifier
+    public class VSTHRD101AsyncVoidLambdaAnalyzerTests
     {
-        private DiagnosticResult expect = new DiagnosticResult
-        {
-            Id = VSTHRD101AsyncVoidLambdaAnalyzer.Id,
-            SkipVerifyMessage = true,
-            Severity = DiagnosticSeverity.Warning,
-        };
-
-        public VSTHRD101AsyncVoidLambdaAnalyzerTests(ITestOutputHelper logger)
-            : base(logger)
-        {
-        }
-
-        protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
-        {
-            return new VSTHRD101AsyncVoidLambdaAnalyzer();
-        }
-
         [Fact]
-        public void ReportWarningOnAsyncVoidLambda()
+        public async Task ReportWarningOnAsyncVoidLambda()
         {
             var test = @"
 using System;
@@ -41,12 +23,12 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 11) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithLocation(9, 11);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ReportWarningOnAsyncVoidLambdaWithOneParameter()
+        public async Task ReportWarningOnAsyncVoidLambdaWithOneParameter()
         {
             var test = @"
 using System;
@@ -61,12 +43,12 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 11) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithLocation(9, 11);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ReportWarningOnAsyncVoidLambdaWithOneParameter2()
+        public async Task ReportWarningOnAsyncVoidLambdaWithOneParameter2()
         {
             var test = @"
 using System;
@@ -81,12 +63,12 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 11) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithLocation(9, 11);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ReportWarningOnAsyncVoidAnonymousDelegateWithOneParameter()
+        public async Task ReportWarningOnAsyncVoidAnonymousDelegateWithOneParameter()
         {
             var test = @"
 using System;
@@ -101,12 +83,12 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 9, 11) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithLocation(9, 11);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ReportWarningOnAsyncVoidLambdaSetToVariable()
+        public async Task ReportWarningOnAsyncVoidLambdaSetToVariable()
         {
             var test = @"
 using System;
@@ -117,12 +99,12 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 6, 25) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithLocation(6, 25);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void ReportWarningOnAsyncVoidLambdaWithOneParameterSetToVariable()
+        public async Task ReportWarningOnAsyncVoidLambdaWithOneParameterSetToVariable()
         {
             var test = @"
 using System;
@@ -133,12 +115,12 @@ class Test {
     }
 }
 ";
-            this.expect.Locations = new[] { new DiagnosticResultLocation("Test0.cs", 6, 33) };
-            this.VerifyCSharpDiagnostic(test, this.expect);
+            var expected = Verify.Diagnostic().WithLocation(6, 33);
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
         [Fact]
-        public void DoNotReportWarningOnAsyncVoidLambdaBeingUsedAsEventHandler()
+        public async Task ReportWarningOnAsyncVoidLambdaBeingUsedAsEventHandler()
         {
             var test = @"
 using System;
@@ -152,7 +134,12 @@ class Test {
     class MyEventArgs : EventArgs {}
 }
 ";
-            this.VerifyCSharpDiagnostic(test);
+            DiagnosticResult[] expected =
+            {
+                Verify.Diagnostic().WithLocation(6, 32),
+                Verify.Diagnostic().WithLocation(7, 45),
+            };
+            await Verify.VerifyAnalyzerAsync(test, expected);
         }
     }
 }

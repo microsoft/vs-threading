@@ -232,56 +232,68 @@
         public void HangReportNotSuppressedOnUnrelatedLongRunningTask()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
-            bool hangReported = false;
-            this.Context.OnReportHang = (hangDuration, iterations, id) => hangReported = true;
+            var hangReported = new AsyncManualResetEvent();
+            var releaseUnrelatedTask = new AsyncManualResetEvent();
+            this.Context.OnReportHang = (hangDuration, iterations, id) => hangReported.Set();
 
             var task = this.Factory.RunAsync(
                 async () =>
                 {
-                    await Task.Delay(40);
+                    await releaseUnrelatedTask;
                 },
                 JoinableTaskCreationOptions.LongRunning);
 
-            this.Factory.Run(
-                async () =>
-                {
-                    await Task.Delay(20);
-                });
-
-            Assert.True(hangReported);
-            task.Join();
+            try
+            {
+                this.Factory.Run(
+                    async () =>
+                    {
+                        await hangReported.WaitAsync().WithTimeout(UnexpectedTimeout);
+                    });
+            }
+            finally
+            {
+                releaseUnrelatedTask.Set();
+                task.Join();
+            }
         }
 
         [StaFact]
         public void HangReportNotSuppressedOnLongRunningTaskNoLongerJoined()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
-            bool hangReported = false;
-            this.Context.OnReportHang = (hangDuration, iterations, id) => hangReported = true;
+            var hangReported = new AsyncManualResetEvent();
+            var releaseUnrelatedTask = new AsyncManualResetEvent();
+            this.Context.OnReportHang = (hangDuration, iterations, id) => hangReported.Set();
 
             var task = this.Factory.RunAsync(
                 async () =>
                 {
-                    await Task.Delay(40);
+                    await releaseUnrelatedTask;
                 },
                 JoinableTaskCreationOptions.LongRunning);
 
             var taskCollection = new JoinableTaskCollection(this.Factory.Context);
             taskCollection.Add(task);
 
-            this.Factory.Run(
-                async () =>
-                {
-                    using (var tempJoin = taskCollection.Join())
+            try
+            {
+                this.Factory.Run(
+                    async () =>
                     {
-                        await Task.Yield();
-                    }
+                        using (var tempJoin = taskCollection.Join())
+                        {
+                            await Task.Yield();
+                        }
 
-                    await Task.Delay(20);
-                });
-
-            Assert.True(hangReported);
-            task.Join();
+                        await hangReported.WaitAsync().WithTimeout(UnexpectedTimeout);
+                    });
+            }
+            finally
+            {
+                releaseUnrelatedTask.Set();
+                task.Join();
+            }
         }
 
         [StaFact]
@@ -469,7 +481,7 @@
             };
 
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
-            try
+            Assert.Throws<OperationCanceledException>(delegate
             {
                 this.Factory.Run(delegate
                 {
@@ -484,11 +496,7 @@
                         });
                     }
                 });
-            }
-            catch (OperationCanceledException)
-            {
-                // we expect this.
-            }
+            });
         }
 
         [StaFact]
@@ -592,7 +600,7 @@
         [StaFact]
         public void IsMainThreadBlockedFalseWhenSyncBlockingOtherThread()
         {
-            var task = Task.Run(delegate
+            Task.Run(delegate
             {
                 this.Factory.Run(async delegate
                 {
@@ -600,7 +608,7 @@
                     await Task.Yield();
                     Assert.False(this.Context.IsMainThreadBlocked());
                 });
-            });
+            }).GetAwaiter().GetResult();
         }
 
         [StaFact]
@@ -672,10 +680,7 @@
 
             protected override void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId)
             {
-                if (this.OnReportHang != null)
-                {
-                    this.OnReportHang(hangDuration, notificationCount, hangId);
-                }
+                this.OnReportHang?.Invoke(hangDuration, notificationCount, hangId);
             }
         }
 

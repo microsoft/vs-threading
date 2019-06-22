@@ -24,6 +24,7 @@
             id: Id,
             title: Strings.VSTHRD102_Title,
             messageFormat: Strings.VSTHRD102_MessageFormat,
+            helpLinkUri: Utils.GetHelpLink(Id),
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Info,
             isEnabledByDefault: true);
@@ -49,59 +50,21 @@
                 {
                     var methodAnalyzer = new MethodAnalyzer();
                     ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeInvocation), SyntaxKind.InvocationExpression);
-                    ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzePropertyGetter), SyntaxKind.SimpleMemberAccessExpression);
                 }
             });
         }
 
         private class MethodAnalyzer
         {
-            internal void AnalyzePropertyGetter(SyntaxNodeAnalysisContext context)
-            {
-                var memberAccessSyntax = (MemberAccessExpressionSyntax)context.Node;
-                InspectMemberAccess(context, memberAccessSyntax, CommonInterest.SyncBlockingProperties);
-            }
-
             internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
             {
                 var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
-                InspectMemberAccess(context, invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax, CommonInterest.SyncBlockingMethods);
-            }
-
-            private static void InspectMemberAccess(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax, IReadOnlyList<CommonInterest.SyncBlockingMethod> problematicMethods)
-            {
-                if (memberAccessSyntax == null)
-                {
-                    return;
-                }
-
-                if (context.Node.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>() != null)
-                {
-                    // We do not analyze JTF.Run inside anonymous functions because
-                    // they are so often used as callbacks where the signature is constrained.
-                    return;
-                }
-
-                if (Utils.IsWithinNameOf(context.Node as ExpressionSyntax))
-                {
-                    // We do not consider arguments to nameof( ) because they do not represent invocations of code.
-                    return;
-                }
-
-                var typeReceiver = context.SemanticModel.GetTypeInfo(memberAccessSyntax.Expression).Type;
-                if (typeReceiver != null)
-                {
-                    foreach (var item in problematicMethods)
-                    {
-                        if (memberAccessSyntax.Name.Identifier.Text == item.MethodName &&
-                            typeReceiver.Name == item.ContainingTypeName &&
-                            typeReceiver.BelongsToNamespace(item.ContainingTypeNamespace))
-                        {
-                            var location = memberAccessSyntax.Name.GetLocation();
-                            context.ReportDiagnostic(Diagnostic.Create(Descriptor, location));
-                        }
-                    }
-                }
+                CommonInterest.InspectMemberAccess(
+                    context,
+                    invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax,
+                    Descriptor,
+                    CommonInterest.JTFSyncBlockers,
+                    ignoreIfInsideAnonymousDelegate: true);
             }
         }
     }

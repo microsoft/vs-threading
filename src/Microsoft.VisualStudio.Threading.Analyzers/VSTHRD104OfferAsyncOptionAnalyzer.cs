@@ -20,6 +20,7 @@
             id: Id,
             title: Strings.VSTHRD104_Title,
             messageFormat: Strings.VSTHRD104_MessageFormat,
+            helpLinkUri: Utils.GetHelpLink(Id),
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Info,
             isEnabledByDefault: true);
@@ -61,7 +62,7 @@
                 this.InspectMemberAccess(context, invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax, CommonInterest.JTFSyncBlockers);
             }
 
-            private void InspectMemberAccess(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax, IReadOnlyList<CommonInterest.SyncBlockingMethod> problematicMethods)
+            private void InspectMemberAccess(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax, IEnumerable<CommonInterest.SyncBlockingMethod> problematicMethods)
             {
                 if (memberAccessSyntax == null)
                 {
@@ -87,14 +88,12 @@
                     return;
                 }
 
-                var typeReceiver = context.SemanticModel.GetTypeInfo(memberAccessSyntax.Expression).Type;
-                if (typeReceiver != null)
+                var invokedMember = context.SemanticModel.GetSymbolInfo(memberAccessSyntax, context.CancellationToken).Symbol;
+                if (invokedMember != null)
                 {
                     foreach (var item in problematicMethods)
                     {
-                        if (memberAccessSyntax.Name.Identifier.Text == item.MethodName &&
-                            typeReceiver.Name == item.ContainingTypeName &&
-                            typeReceiver.BelongsToNamespace(item.ContainingTypeNamespace))
+                        if (item.Method.IsMatch(invokedMember))
                         {
                             var location = memberAccessSyntax.Name.GetLocation();
                             context.ReportDiagnostic(Diagnostic.Create(Descriptor, location));

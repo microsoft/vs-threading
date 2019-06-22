@@ -1,25 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard1.1</TargetFramework>
-    <PackageTargetFallback>$(PackageTargetFallback);portable-net45+win8</PackageTargetFallback>
+    <TargetFramework>netstandard1.3</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Analyzers.ruleset</CodeAnalysisRuleSet>
 
-    <Description>Static code analyzer to detect common mistakes or potential issues on the C# code that uses Visual Studio SDK APIs.</Description>
-    <PackageTags>analyzers visualstudio vssdk sdk threading</PackageTags>
-    <Authors>Microsoft</Authors>
-    <Owners>Microsoft, VisualStudioExtensibility</Owners>
-    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
-    <PackageProjectUrl>https://github.com/Microsoft/vs-threading</PackageProjectUrl>
-    <PackageIconUrl>https://aka.ms/VsExtensibilityIcon</PackageIconUrl>
-    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <PackageReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=746387</PackageReleaseNotes>
-
-    <DebugType>full</DebugType>
-
-    <!-- Analyzers should not be added to the lib folder. -->
-    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <PackageId>Microsoft.VisualStudio.Threading.Analyzers.Only</PackageId>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
   <PropertyGroup Label="MultilingualAppToolkit">
     <MultilingualAppToolkitVersion>4.0</MultilingualAppToolkitVersion>
@@ -39,39 +26,26 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Strings.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="tools\*.ps1" Pack="true" PackagePath="tools\" />
+    <EmbeddedResource Update="Strings.??*.resx">
+      <DependentUpon>Strings.resx</DependentUpon>
+      <Generator />
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
      <XliffResource Include="MultilingualResources\*.xlf" />
   </ItemGroup>
-  <ItemDefinitionGroup>
-    <PackageReference>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-  </ItemDefinitionGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="1.2.0" />
-    <PackageReference Include="MicroBuild.VisualStudio" Version="2.0.40" />
-    <PackageReference Include="PdbGit" Version="3.0.41" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="2.8.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="2.6.2" PrivateAssets="all" />
+    <PackageReference Include="MicroBuild.VisualStudio" Version="$(MicroBuildVersion)" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.2" />
+    <PackageReference Include="System.ValueTuple" Version="4.3.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Properties\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Microsoft\Multilingual App Toolkit\Microsoft.Multilingual.ResxResources.targets" Label="MultilingualAppToolkit" Condition="Exists('$(MSBuildExtensionsPath)\Microsoft\Multilingual App Toolkit\v$(MultilingualAppToolkitVersion)\Microsoft.Multilingual.ResxResources.targets')" />
   <Target Name="MATPrerequisite" BeforeTargets="PrepareForBuild" Condition="!Exists('$(MSBuildExtensionsPath)\Microsoft\Multilingual App Toolkit\Microsoft.Multilingual.ResxResources.targets')" Label="MultilingualAppToolkit">
     <Warning Text="$(MSBuildProjectFile) is Multilingual build enabled, but the Multilingual App Toolkit is unavailable during the build. If building with Visual Studio, please check to ensure that toolkit is properly installed." />
-  </Target>
-  <Target Name="PackBuildOutputs"
-          BeforeTargets="_GetPackageFiles"
-          DependsOnTargets="SatelliteDllsProjectOutputGroup;DebugSymbolsProjectOutputGroup">
-    <ItemGroup>
-      <Content Include="$(TargetPath)" Pack="true" PackagePath="analyzers\cs\" />
-      <!--<Content Include="@(DebugSymbolsProjectOutputGroupOutput)" Pack="true" PackagePath="analyzers\cs\" />-->
-      <Content Include="@(SatelliteDllsProjectOutputGroupOutput)" Pack="true" PackagePath="analyzers\cs\%(SatelliteDllsProjectOutputGroupOutput.Culture)\" />
-    </ItemGroup>
-  </Target>
-  <Target Name="SetNuSpecProperties" BeforeTargets="GenerateNuspec" DependsOnTargets="GetBuildVersion">
-    <PropertyGroup>
-      <PackageLicenseUrl>https://raw.githubusercontent.com/Microsoft/vs-threading/$(GitCommitIdShort)/LICENSE</PackageLicenseUrl>
-    </PropertyGroup>
   </Target>
 </Project>

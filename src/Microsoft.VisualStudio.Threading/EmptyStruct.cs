@@ -12,7 +12,7 @@ namespace Microsoft.VisualStudio.Threading
     /// <remarks>
     /// This can save 4 bytes over System.Object when a type argument is required for a generic type, but entirely unused.
     /// </remarks>
-    internal struct EmptyStruct
+    internal readonly struct EmptyStruct
     {
         /// <summary>
         /// Gets an instance of the empty struct.

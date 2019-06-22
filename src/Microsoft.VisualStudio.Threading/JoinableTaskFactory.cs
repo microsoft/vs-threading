@@ -15,11 +15,12 @@ namespace Microsoft.VisualStudio.Threading
     using System.Linq;
     using System.Reflection;
     using System.Runtime.CompilerServices;
+    using System.Security;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using JoinableTaskSynchronizationContext = Microsoft.VisualStudio.Threading.JoinableTask.JoinableTaskSynchronizationContext;
-#if !NET45
+#if !(DESKTOP || NETSTANDARD2_0)
     using WaitCallback = System.Action<object>;
 #endif
 
@@ -140,9 +141,16 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="cancellationToken">
         /// A token whose cancellation will immediately schedule the continuation
-        /// on a threadpool thread.
+        /// on a threadpool thread (if the transition to the main thread is not already complete).
+        /// The token is ignored if the caller was already on the main thread.
         /// </param>
         /// <returns>An awaitable.</returns>
+        /// <exception cref="OperationCanceledException">
+        /// Thrown back at the awaiting caller from a background thread
+        /// when <paramref name="cancellationToken" /> is canceled before any required transition to the main thread is complete.
+        /// No exception is thrown if the caller was already on the main thread before calling this method,
+        /// or if the main thread transition completes before the thread pool responds to cancellation.
+        /// </exception>
         /// <remarks>
         /// <example>
         /// <code>
@@ -166,7 +174,46 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Responds to calls to <see cref="JoinableTaskFactory.MainThreadAwaiter.OnCompleted"/>
+        /// Gets an awaitable whose continuations execute on the synchronization context that this instance was initialized with,
+        /// in such a way as to mitigate both deadlocks and reentrancy.
+        /// </summary>
+        /// <param name="alwaysYield">A value indicating whether the caller should yield even if
+        /// already executing on the main thread.</param>
+        /// <param name="cancellationToken">
+        /// A token whose cancellation will immediately schedule the continuation
+        /// on a threadpool thread.
+        /// </param>
+        /// <returns>An awaitable.</returns>
+        /// <exception cref="OperationCanceledException">
+        /// Thrown back at the awaiting caller from a background thread
+        /// when <paramref name="cancellationToken" /> is canceled before any required transition to the main thread is complete.
+        /// No exception is thrown if <paramref name="alwaysYield" /> is <see langword="false"/> and the caller was already on the main thread before calling this method,
+        /// or if the main thread transition completes before the thread pool responds to cancellation.
+        /// </exception>
+        /// <remarks>
+        /// <example>
+        /// <code>
+        /// private async Task SomeOperationAsync()
+        /// {
+        ///     // This first part can be on the caller's thread, whatever that is.
+        ///     DoSomething();
+        ///
+        ///     // Now switch to the Main thread to talk to some STA object.
+        ///     // Supposing it is also important to *not* do this step on our caller's callstack,
+        ///     // be sure we yield even if we're on the UI thread.
+        ///     await this.JoinableTaskFactory.SwitchToMainThreadAsync(alwaysYield: true);
+        ///     STAService.DoSomething();
+        /// }
+        /// </code>
+        /// </example>
+        /// </remarks>
+        public MainThreadAwaitable SwitchToMainThreadAsync(bool alwaysYield, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return new MainThreadAwaitable(this, this.Context.AmbientTask, cancellationToken, alwaysYield);
+        }
+
+        /// <summary>
+        /// Responds to calls to <see cref="JoinableTaskFactory.MainThreadAwaiter.OnCompleted(Action)"/>
         /// by scheduling a continuation to execute on the Main thread.
         /// </summary>
         /// <param name="callback">The callback to invoke.</param>
@@ -364,12 +411,12 @@ namespace Microsoft.VisualStudio.Threading
                     return true;
                 }
 
-                using (NoMessagePumpSyncContext.Default.Apply())
+                using (this.Context.NoMessagePumpSynchronizationContext.Apply())
                 {
                     var allJoinedJobs = new HashSet<JoinableTask>();
                     lock (this.Context.SyncContextLock)
                     {
-                        currentBlockingTask.AddSelfAndDescendentOrJoinedJobs(allJoinedJobs);
+                        JoinableTaskDependencyGraph.AddSelfAndDescendentOrJoinedJobs(currentBlockingTask, allJoinedJobs);
                         return allJoinedJobs.Any(t => (t.CreationOptions & JoinableTaskCreationOptions.LongRunning) == JoinableTaskCreationOptions.LongRunning);
                     }
                 }
@@ -665,7 +712,7 @@ namespace Microsoft.VisualStudio.Threading
         /// An awaitable struct that facilitates an asynchronous transition to the Main thread.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible"), SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct MainThreadAwaitable
+        public readonly struct MainThreadAwaitable
         {
             private readonly JoinableTaskFactory jobFactory;
 
@@ -694,7 +741,7 @@ namespace Microsoft.VisualStudio.Threading
             [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
             public MainThreadAwaiter GetAwaiter()
             {
-                return new MainThreadAwaiter(this.jobFactory, this.job, this.cancellationToken, this.alwaysYield);
+                return new MainThreadAwaiter(this.jobFactory, this.job, this.alwaysYield, this.cancellationToken);
             }
         }
 
@@ -702,8 +749,16 @@ namespace Microsoft.VisualStudio.Threading
         /// An awaiter struct that facilitates an asynchronous transition to the Main thread.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct MainThreadAwaiter : INotifyCompletion
+        public readonly struct MainThreadAwaiter : ICriticalNotifyCompletion
         {
+            private static readonly Action<object> SafeCancellationAction = state => ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, state);
+
+#if THREADPOOL
+            private static readonly Action<object> UnsafeCancellationAction = state => ThreadPool.UnsafeQueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, state);
+#else
+            private static readonly Action<object> UnsafeCancellationAction = SafeCancellationAction; // unsafe option not available
+#endif
+
             private readonly JoinableTaskFactory jobFactory;
 
             private readonly CancellationToken cancellationToken;
@@ -727,12 +782,12 @@ namespace Microsoft.VisualStudio.Threading
             /// then this will hold a default value of <see cref="CancellationTokenRegistration"/>, and <see cref="OnCompleted(Action)"/>
             /// would not touch it.
             /// </remarks>
-            private StrongBox<CancellationTokenRegistration?> cancellationRegistrationPtr;
+            private readonly StrongBox<CancellationTokenRegistration?> cancellationRegistrationPtr;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="MainThreadAwaiter"/> struct.
             /// </summary>
-            internal MainThreadAwaiter(JoinableTaskFactory jobFactory, JoinableTask job, CancellationToken cancellationToken, bool alwaysYield)
+            internal MainThreadAwaiter(JoinableTaskFactory jobFactory, JoinableTask job, bool alwaysYield, CancellationToken cancellationToken)
             {
                 this.jobFactory = jobFactory;
                 this.job = job;
@@ -764,65 +819,22 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
+            /// Schedules a continuation for execution on the Main thread
+            /// without capturing the ExecutionContext.
+            /// </summary>
+            /// <param name="continuation">The action to invoke when the operation completes.</param>
+            public void UnsafeOnCompleted(Action continuation)
+            {
+                this.OnCompleted(continuation, flowExecutionContext: false);
+            }
+
+            /// <summary>
             /// Schedules a continuation for execution on the Main thread.
             /// </summary>
             /// <param name="continuation">The action to invoke when the operation completes.</param>
-            [SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters", MessageId = "System.Environment.FailFast(System.String,System.Exception)"), SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Justification = "Failing here is worth crashing the process for.")]
             public void OnCompleted(Action continuation)
             {
-                Assumes.True(this.jobFactory != null);
-
-                try
-                {
-                    // In the event of a cancellation request, it becomes a race as to whether the threadpool
-                    // or the main thread will execute the continuation first. So we must wrap the continuation
-                    // in a SingleExecuteProtector so that it can't be executed twice by accident.
-                    // Success case of the main thread.
-                    var wrapper = this.jobFactory.RequestSwitchToMainThread(continuation);
-
-                    // Cancellation case of a threadpool thread.
-                    if (this.cancellationRegistrationPtr != null)
-                    {
-                        // Store the cancellation token registration in the struct pointer. This way,
-                        // if the awaiter has been copied (since it's a struct), each copy of the awaiter
-                        // points to the same registration. Without this we can have a memory leak.
-                        var registration = this.cancellationToken.Register(
-                            state => ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, state),
-                            wrapper,
-                            useSynchronizationContext: false);
-
-                        // Needs a lock to avoid a race condition between this method and GetResult().
-                        // This method is called on a background thread. After "this.jobFactory.RequestSwitchToMainThread()" returns,
-                        // the continuation is scheduled and GetResult() will be called whenver it is ready on main thread.
-                        // We have observed sometimes GetResult() was called right after "this.jobFactory.RequestSwitchToMainThread()"
-                        // and before "this.cancellationToken.Register()". If that happens, that means we lose the interest on the cancellation
-                        // and should not register the cancellation here. Without protecting that, "this.cancellationRegistrationPtr" will be leaked.
-                        bool disposeThisRegistration = false;
-                        lock (this.cancellationRegistrationPtr)
-                        {
-                            if (!this.cancellationRegistrationPtr.Value.HasValue)
-                            {
-                                this.cancellationRegistrationPtr.Value = registration;
-                            }
-                            else
-                            {
-                                disposeThisRegistration = true;
-                            }
-                        }
-
-                        if (disposeThisRegistration)
-                        {
-                            registration.Dispose();
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    // This is bad. It would cause a hang without a trace as to why, since we if can't
-                    // schedule the continuation, stuff would just never happen.
-                    // Crash now, so that a Watson report would capture the original error.
-                    Environment.FailFast("Failed to schedule time on the UI thread. A continuation would never execute.", ex);
-                }
+                this.OnCompleted(continuation, flowExecutionContext: true);
             }
 
             /// <summary>
@@ -840,25 +852,28 @@ namespace Microsoft.VisualStudio.Threading
                 if (this.cancellationRegistrationPtr != null)
                 {
                     CancellationTokenRegistration registration = default(CancellationTokenRegistration);
-                    lock (this.cancellationRegistrationPtr)
+                    using (this.jobFactory.Context.NoMessagePumpSynchronizationContext.Apply())
                     {
-                        if (this.cancellationRegistrationPtr.Value.HasValue)
+                        lock (this.cancellationRegistrationPtr)
                         {
-                            registration = this.cancellationRegistrationPtr.Value.Value;
-                        }
+                            if (this.cancellationRegistrationPtr.Value.HasValue)
+                            {
+                                registration = this.cancellationRegistrationPtr.Value.Value;
+                            }
 
-                        // The reason we set this is to effectively null the struct that
-                        // the strong box points to. Dispose does not seem to do this. If we
-                        // have two copies of MainThreadAwaiter pointing to the same strongbox,
-                        // then if one copy executes but the other does not, we could end
-                        // up holding onto the memory pointed to through this pointer. By
-                        // resetting the value here we make sure it gets cleaned.
-                        //
-                        // In addition, assigning default(CancellationTokenRegistration) to a field that
-                        // stores a Nullable<CancellationTokenRegistration> effectively gives it a HasValue status,
-                        // which will let OnCompleted know it lost the interest on the cancellation. That is an
-                        // important hint for OnCompleted() in order NOT to leak the cancellation registration.
-                        this.cancellationRegistrationPtr.Value = default(CancellationTokenRegistration);
+                            // The reason we set this is to effectively null the struct that
+                            // the strong box points to. Dispose does not seem to do this. If we
+                            // have two copies of MainThreadAwaiter pointing to the same strongbox,
+                            // then if one copy executes but the other does not, we could end
+                            // up holding onto the memory pointed to through this pointer. By
+                            // resetting the value here we make sure it gets cleaned.
+                            //
+                            // In addition, assigning default(CancellationTokenRegistration) to a field that
+                            // stores a Nullable<CancellationTokenRegistration> effectively gives it a HasValue status,
+                            // which will let OnCompleted know it lost the interest on the cancellation. That is an
+                            // important hint for OnCompleted() in order NOT to leak the cancellation registration.
+                            this.cancellationRegistrationPtr.Value = default(CancellationTokenRegistration);
+                        }
                     }
 
                     // Intentionally deferring disposal till we exit the lock to avoid executing outside code within the lock.
@@ -881,13 +896,96 @@ namespace Microsoft.VisualStudio.Threading
                 var syncContext = this.job != null ? this.job.ApplicableJobSyncContext : this.jobFactory.ApplicableJobSyncContext;
                 syncContext.Apply();
             }
+
+            /// <summary>
+            /// Schedules a continuation for execution on the Main thread.
+            /// </summary>
+            /// <param name="continuation">The action to invoke when the operation completes.</param>
+            /// <param name="flowExecutionContext">A value indicating whether to capture and reapply the current ExecutionContext for the continuation.</param>
+            [SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters", MessageId = "System.Environment.FailFast(System.String,System.Exception)"), SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Justification = "Failing here is worth crashing the process for.")]
+            private void OnCompleted(Action continuation, bool flowExecutionContext)
+            {
+                Assumes.True(this.jobFactory != null);
+
+#if THREADPOOL
+                bool restoreFlow = !flowExecutionContext && !ExecutionContext.IsFlowSuppressed();
+                if (restoreFlow)
+                {
+                    ExecutionContext.SuppressFlow();
+                }
+#endif
+
+                try
+                {
+                    // In the event of a cancellation request, it becomes a race as to whether the threadpool
+                    // or the main thread will execute the continuation first. So we must wrap the continuation
+                    // in a SingleExecuteProtector so that it can't be executed twice by accident.
+                    // Success case of the main thread.
+                    var wrapper = this.jobFactory.RequestSwitchToMainThread(continuation);
+
+                    // Cancellation case of a threadpool thread.
+                    if (this.cancellationRegistrationPtr != null)
+                    {
+                        // Store the cancellation token registration in the struct pointer. This way,
+                        // if the awaiter has been copied (since it's a struct), each copy of the awaiter
+                        // points to the same registration. Without this we can have a memory leak.
+                        var registration = this.cancellationToken.Register(
+                            flowExecutionContext ? SafeCancellationAction : UnsafeCancellationAction,
+                            wrapper,
+                            useSynchronizationContext: false);
+
+                        // Needs a lock to avoid a race condition between this method and GetResult().
+                        // This method is called on a background thread. After "this.jobFactory.RequestSwitchToMainThread()" returns,
+                        // the continuation is scheduled and GetResult() will be called whenever it is ready on main thread.
+                        // We have observed sometimes GetResult() was called right after "this.jobFactory.RequestSwitchToMainThread()"
+                        // and before "this.cancellationToken.Register()". If that happens, that means we lose the interest on the cancellation
+                        // and should not register the cancellation here. Without protecting that, "this.cancellationRegistrationPtr" will be leaked.
+                        bool disposeThisRegistration = false;
+                        using (this.jobFactory.Context.NoMessagePumpSynchronizationContext.Apply())
+                        {
+                            lock (this.cancellationRegistrationPtr)
+                            {
+                                if (!this.cancellationRegistrationPtr.Value.HasValue)
+                                {
+                                    this.cancellationRegistrationPtr.Value = registration;
+                                }
+                                else
+                                {
+                                    disposeThisRegistration = true;
+                                }
+                            }
+                        }
+
+                        if (disposeThisRegistration)
+                        {
+                            registration.Dispose();
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // This is bad. It would cause a hang without a trace as to why, since if we can't
+                    // schedule the continuation, stuff would just never happen.
+                    // Crash now, so that a Watson report would capture the original error.
+                    Environment.FailFast("Failed to schedule time on the UI thread. A continuation would never execute.", ex);
+                }
+#if THREADPOOL
+                finally
+                {
+                    if (restoreFlow)
+                    {
+                        ExecutionContext.RestoreFlow();
+                    }
+                }
+#endif
+            }
         }
 
         /// <summary>
         /// A value to construct with a C# using block in all the Run method overloads
         /// to setup and teardown the boilerplate stuff.
         /// </summary>
-        private struct RunFramework : IDisposable
+        private readonly struct RunFramework : IDisposable
         {
             private readonly JoinableTaskFactory factory;
             private readonly SpecializedSyncContext syncContextRevert;
@@ -914,7 +1012,7 @@ namespace Microsoft.VisualStudio.Threading
                 // Join the ambient parent job, so the parent can dequeue this job's work.
                 if (this.previousJoinable != null && !this.previousJoinable.IsCompleted)
                 {
-                    this.previousJoinable.AddDependency(joinable);
+                    JoinableTaskDependencyGraph.AddDependency(this.previousJoinable, joinable);
 
                     // By definition we inherit the nesting factories of our immediate nesting task.
                     var nestingFactories = this.previousJoinable.NestingFactories;
@@ -1122,8 +1220,7 @@ namespace Microsoft.VisualStudio.Threading
                     var syncContext = this.job != null ? this.job.ApplicableJobSyncContext : this.job.Factory.ApplicableJobSyncContext;
                     using (syncContext.Apply(checkForChangesOnRevert: false))
                     {
-                        var action = invokeDelegate as Action;
-                        if (action != null)
+                        if (invokeDelegate is Action action)
                         {
                             action();
                         }

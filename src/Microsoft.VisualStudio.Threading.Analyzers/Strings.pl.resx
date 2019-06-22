@@ -22,18 +22,14 @@
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_MessageFormat" xml:space="preserve">
-    <value>Synchroniczne oczekiwanie na zadania lub elementy typu awaiter mogą powodować zakleszczenia. Zamiast tego używaj metody JoinableTaskFactory.Run.</value>
+    <value>Synchroniczne oczekiwanie na zadania lub elementy typu awaiter mogą powodować zakleszczenia. Zamiast tego używaj metody await lub JoinableTaskFactory.Run.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD002_Title" xml:space="preserve">
     <value>Unikaj problematycznych oczekiwań synchronicznych</value>
   </data>
-  <data name="VSTHRD010_MessageFormat" xml:space="preserve">
-    <value>Usługa programu Visual Studio „{0}” powinna być używana w wątku głównym w sposób jawny. 
-Najpierw oczekuj na metodę JoinableTaskFactory.SwitchToMainThreadAsync() lub wywołaj metodę ThreadHelper.ThrowIfNotOnUIThread().</value>
-  </data>
   <data name="VSTHRD010_Title" xml:space="preserve">
-    <value>Używaj usług programu VS z wątku interfejsu użytkownika</value>
+    <value>Wywołuj typy jednowątkowe w wątku głównym</value>
   </data>
   <data name="VSTHRD100_MessageFormat" xml:space="preserve">
     <value>Unikaj metod „async void”, ponieważ wszelkie wyjątki, które nie zostaną przez nie obsłużone, spowodują awarię procesu.</value>
@@ -57,18 +53,18 @@ Najpierw oczekuj na metodę JoinableTaskFactory.SwitchToMainThreadAsync() lub wy
     <value>Zdarzenia asynchroniczne wywołuj za pomocą metody InvokeAsync</value>
   </data>
   <data name="VSTHRD003_MessageFormat" xml:space="preserve">
-    <value>Wywołanie oczekiwania dla obiektu Task wewnątrz metody JoinableTaskFactory.Run, gdy dane zadanie zainicjowano poza delegatem, może spowodować zakleszczenia.
-Tego problemu można uniknąć, zapewniając, że zadanie zostanie zainicjowane wewnątrz delegata lub za pomocą klasy JoinableTask (a nie klasy Task).</value>
+    <value>Unikaj oczekiwania na obiekt Task lub zwracania obiektu Task reprezentującego pracę, która nie została uruchomiona w danym kontekście, ponieważ może to prowadzić do zakleszczeń.
+Uruchom pracę w tym kontekście lub zamiast tego użyj metody JoinableTaskFactory.RunAsync i oczekuj na zwrócony obiekt JoinableTask.</value>
   </data>
   <data name="VSTHRD003_Title" xml:space="preserve">
-    <value>Unikaj oczekiwania na zadania bez możliwości dołączenia w kontekstach dołączania</value>
+    <value>Unikaj oczekiwania na obce obiekty Task</value>
   </data>
   <data name="VSTHRD011_MessageFormat" xml:space="preserve">
     <value>Element Lazy&lt;Task&lt;T&gt;&gt;.Value może ulec zakleszczeniu.
 Zamiast tego używaj klasy AsyncLazy&lt;T&gt;.</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
-    <value>Unikaj używania klasy Lazy&lt;T&gt;, jeśli T jest obiektem Task&lt;T2&gt;</value>
+    <value>Użyj klasy AsyncLazy&lt;T&gt;</value>
   </data>
   <data name="VSTHRD103_MessageFormat" xml:space="preserve">
     <value>Metoda {0} powoduje blokowanie synchroniczne. Zamiast tego oczekuj na {1}.</value>
@@ -89,11 +85,12 @@ Zamiast tego używaj klasy AsyncLazy&lt;T&gt;.</value>
     <value>Zmień nazwę na: {0}</value>
     <comment>{0} is a method name.</comment>
   </data>
-  <data name="VSTHRD200_MessageFormat" xml:space="preserve">
-    <value>W nazwach metod zwracających obiekty Task używaj sufiksu „Async”.</value>
-  </data>
   <data name="VSTHRD200_Title" xml:space="preserve">
     <value>W przypadku metod asynchronicznych używaj sufiksu „Async”</value>
+  </data>
+  <data name="VSTHRD100_CodeFix_Title" xml:space="preserve">
+    <value>Zmień zwracany typ na Task</value>
+    <comment>Task is a type name and should not be translated.</comment>
   </data>
   <data name="VSTHRD105_MessageFormat" xml:space="preserve">
     <value>Unikaj przeciążeń metod zakładających korzystanie z właściwości TaskScheduler.Current. Używaj przeciążenia przyjmującego obiekt TaskScheduler i jawnie określaj właściwość TaskScheduler.Default (lub inną).</value>
@@ -101,8 +98,98 @@ Zamiast tego używaj klasy AsyncLazy&lt;T&gt;.</value>
   <data name="VSTHRD105_Title" xml:space="preserve">
     <value>Unikaj przeciążeń metod zakładających korzystanie z właściwości TaskScheduler.Current</value>
   </data>
-  <data name="VSTHRD100_CodeFix_Title" xml:space="preserve">
-    <value>Zmień zwracany typ na Task</value>
-    <comment>Task is a type name and should not be translated.</comment>
+  <data name="VSTHRD012_MessageFormat" xml:space="preserve">
+    <value>Podaj wystąpienie elementu JoinableTaskFactory w tym wywołaniu (albo innym przeciążeniu), aby uniknąć zakleszczeń w wątku głównym.</value>
+  </data>
+  <data name="VSTHRD012_Title" xml:space="preserve">
+    <value>Podaj element JoinableTaskFactory w miejscach, gdzie jest to dopuszczalne</value>
+  </data>
+  <data name="VSTHRD104_MessageFormat" xml:space="preserve">
+    <value>Uwidocznij asynchroniczną wersję tej metody, która nie powoduje synchronicznego blokowania. Następnie uprość tę metodę, aby wywołać tę metodę asynchroniczną w ramach delegata JoinableTaskFactory.Run.</value>
+  </data>
+  <data name="VSTHRD104_Title" xml:space="preserve">
+    <value>Oferuj metody asynchroniczne</value>
+  </data>
+  <data name="VSTHRD001_MessageFormat" xml:space="preserve">
+    <value>Zaczekaj, aż metoda JoinableTaskFactory.SwitchToMainThreadAsync() przełączy się do wątku interfejsu użytkownika zamiast interfejsów API, które mogą ulec zakleszczeniu lub wymagać określenia priorytetu.</value>
+  </data>
+  <data name="VSTHRD001_Title" xml:space="preserve">
+    <value>Unikaj starszych interfejsów API przełączających wątki</value>
+    <comment>thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.</comment>
+  </data>
+  <data name="VSTHRD107_MessageFormat" xml:space="preserve">
+    <value>Brak operatora await dla wyrażenia „using”.</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_Title" xml:space="preserve">
+    <value>Oczekuj na zadanie wewnątrz wyrażenia using</value>
+    <comment>"await Task" is a C# compound term, and "using" is a C# keyword. These should not be translated.</comment>
+  </data>
+  <data name="VSTHRD107_CodeFix_Title" xml:space="preserve">
+    <value>Oczekuj w wyrażeniu using</value>
+    <comment>"await" and "using" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD002_CodeFix_Await_Title" xml:space="preserve">
+    <value>Zamiast tego używaj oczekiwania</value>
+    <comment>"await" is a C# keyword and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD108_MessageFormat" xml:space="preserve">
+    <value>Testy koligacji wątku powinny być bezwarunkowe.</value>
+  </data>
+  <data name="VSTHRD108_Title" xml:space="preserve">
+    <value>Bezwarunkowo potwierdź koligację wątku</value>
+  </data>
+  <data name="VSTHRD109_MessageFormat" xml:space="preserve">
+    <value>Unikaj zgłaszania poza wątkiem głównym w metodzie asynchronicznej lub zwracającej element Task. Zamiast tego przełącz się na wymagany wątek.</value>
+  </data>
+  <data name="VSTHRD109_Title" xml:space="preserve">
+    <value>Przełączanie zamiast asercji w metodach asynchronicznych</value>
+  </data>
+  <data name="VSTHRD010_MessageFormat_Sync" xml:space="preserve">
+    <value>Dostęp do metody „{0}” powinien być uzyskiwany tylko z wątku głównego. Najpierw wywołaj metodę {1}().</value>
+    <comment>{0} is a type or member name and {1} is the name of a method that throws if not called from the main thread.</comment>
+  </data>
+  <data name="VSTHRD010_MessageFormat_Async" xml:space="preserve">
+    <value>Dostęp do metody „{0}” powinien być uzyskiwany tylko z wątku głównego. Najpierw zaczekaj na metodę JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+    <comment>{0} is a type or member name.</comment>
+  </data>
+  <data name="VSTHRD004_MessageFormat" xml:space="preserve">
+    <value>Należy zaczekać na wywołania metody JoinableTaskFactory.SwitchToMainThreadAsync().</value>
+  </data>
+  <data name="VSTHRD004_Title" xml:space="preserve">
+    <value>Zaczekaj na metodę SwitchToMainThreadAsync</value>
+    <comment>Do not translate either of these. The first is a keyword, the second is a method name.</comment>
+  </data>
+  <data name="VSTHRD110_MessageFormat" xml:space="preserve">
+    <value>Obserwuj wynik typu awaitable wywołania tej metody, oczekując na niego, przypisując go do zmiennej lub przekazując do innej metody.</value>
+  </data>
+  <data name="VSTHRD110_Title" xml:space="preserve">
+    <value>Obserwuj wynik wywołań asynchronicznych</value>
+  </data>
+  <data name="VSTHRD011b_MessageFormat" xml:space="preserve">
+    <value>Wywołanie kodu asynchronicznego lub zablokowanie na nim w fabryce wartości Lazy&lt;T&gt; może spowodować zakleszczenie.
+Zamiast tego użyj elementu AsyncLazy&lt;T&gt;.</value>
+  </data>
+  <data name="VSTHRD200_AddAsync_MessageFormat" xml:space="preserve">
+    <value>Używaj sufiksu „Async” w nazwach metod zwracających typ awaitable.</value>
+  </data>
+  <data name="VSTHRD200_RemoveAsync_MessageFormat" xml:space="preserve">
+    <value>Unikaj sufiksu „Async” w nazwach metod nie zwracających typu awaitable.</value>
+  </data>
+  <data name="VSTHRD111_CodeFix_False_Title" xml:space="preserve">
+    <value>Dodaj ciąg .ConfigureAwait(false)</value>
+    <comment>".ConfigureAwait(false)" should not be translated.</comment>
+  </data>
+  <data name="VSTHRD111_CodeFix_True_Title" xml:space="preserve">
+    <value>Dodaj ciąg .ConfigureAwait(true)</value>
+    <comment>".ConfigureAwait(true)" should not be translated.</comment>
+  </data>
+  <data name="VSTHRD111_MessageFormat" xml:space="preserve">
+    <value>Dodaj ciąg.ConfigureAwait(bool) do swojego wyrażenia await.</value>
+    <comment>".ConfigureAwait(bool)" and "await" should NOT be translated.</comment>
+  </data>
+  <data name="VSTHRD111_Title" xml:space="preserve">
+    <value>Użyj metody ConfigureAwait(bool)</value>
+    <comment>"ConfigureAwait(bool)" is a reference and should NOT be translated.</comment>
   </data>
 </root>

@@ -10,6 +10,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Linq;
+    using System.Reflection;
+    using System.Runtime.CompilerServices;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using CodeAnalysis.CSharp;
@@ -28,9 +31,13 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 {
                     handler(ctxt);
                 }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
                 catch (Exception ex) when (LaunchDebuggerExceptionFilter())
                 {
-                    throw new Exception($"Analyzer failure while processing syntax {ctxt.Node} at {ctxt.Node.SyntaxTree.FilePath}({ctxt.Node.GetLocation()?.GetLineSpan().StartLinePosition.Line},{ctxt.Node.GetLocation()?.GetLineSpan().StartLinePosition.Character}): {ex.GetType()} {ex.Message}", ex);
+                    throw new Exception($"Analyzer failure while processing syntax at {ctxt.Node.SyntaxTree.FilePath}({ctxt.Node.GetLocation()?.GetLineSpan().StartLinePosition.Line + 1},{ctxt.Node.GetLocation()?.GetLineSpan().StartLinePosition.Character + 1}): {ex.GetType()} {ex.Message}. Syntax: {ctxt.Node}", ex);
                 }
             };
         }
@@ -43,9 +50,32 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 {
                     handler(ctxt);
                 }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
                 catch (Exception ex) when (LaunchDebuggerExceptionFilter())
                 {
                     throw new Exception($"Analyzer failure while processing symbol {ctxt.Symbol} at {ctxt.Symbol.Locations.FirstOrDefault()?.SourceTree?.FilePath}({ctxt.Symbol.Locations.FirstOrDefault()?.GetLineSpan().StartLinePosition.Line},{ctxt.Symbol.Locations.FirstOrDefault()?.GetLineSpan().StartLinePosition.Character}): {ex.GetType()} {ex.Message}", ex);
+                }
+            };
+        }
+
+        internal static Action<CodeBlockAnalysisContext> DebuggableWrapper(Action<CodeBlockAnalysisContext> handler)
+        {
+            return ctxt =>
+            {
+                try
+                {
+                    handler(ctxt);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex) when (LaunchDebuggerExceptionFilter())
+                {
+                    throw new Exception($"Analyzer failure while processing syntax at {ctxt.CodeBlock.SyntaxTree.FilePath}({ctxt.CodeBlock.GetLocation()?.GetLineSpan().StartLinePosition.Line + 1},{ctxt.CodeBlock.GetLocation()?.GetLineSpan().StartLinePosition.Character + 1}): {ex.GetType()} {ex.Message}. Syntax: {ctxt.CodeBlock}", ex);
                 }
             };
         }
@@ -64,7 +94,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static bool IsEqualToOrDerivedFrom(ITypeSymbol type, ITypeSymbol expectedType)
         {
-            return type?.OriginalDefinition == expectedType || IsDerivedFrom(type, expectedType);
+            return EqualityComparer<ITypeSymbol>.Default.Equals(type?.OriginalDefinition, expectedType) || IsDerivedFrom(type, expectedType);
         }
 
         internal static bool IsDerivedFrom(ITypeSymbol type, ITypeSymbol expectedType)
@@ -72,7 +102,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             type = type?.BaseType;
             while (type != null)
             {
-                if (type.OriginalDefinition == expectedType)
+                if (EqualityComparer<ITypeSymbol>.Default.Equals(type.OriginalDefinition, expectedType))
                 {
                     return true;
                 }
@@ -92,7 +122,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         internal static ITypeSymbol ResolveTypeFromSymbol(ISymbol symbol)
         {
             ITypeSymbol type = null;
-            switch (symbol.Kind)
+            switch (symbol?.Kind)
             {
                 case SymbolKind.Local:
                     type = ((ILocalSymbol)symbol).Type;
@@ -155,10 +185,80 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return currentNamespace?.IsGlobalNamespace ?? false;
         }
 
-        internal static bool HasAsyncCompatibleReturnType(this IMethodSymbol methodSymbol)
+        /// <summary>
+        /// Finds the local function, anonymous function, method, accessor, or ctor that most directly owns a given syntax node.
+        /// </summary>
+        /// <param name="syntaxNode">The syntax node to begin the search from.</param>
+        /// <returns>The containing function, and metadata for it.</returns>
+        internal static ContainingFunctionData GetContainingFunction(CSharpSyntaxNode syntaxNode)
         {
-            return methodSymbol?.ReturnType?.Name == nameof(Task) && methodSymbol.ReturnType.BelongsToNamespace(Namespaces.SystemThreadingTasks);
+            while (syntaxNode != null)
+            {
+                if (syntaxNode is SimpleLambdaExpressionSyntax simpleLambda)
+                {
+                    return new ContainingFunctionData(simpleLambda, simpleLambda.AsyncKeyword != default(SyntaxToken), SyntaxFactory.ParameterList().AddParameters(simpleLambda.Parameter), simpleLambda.Body);
+                }
+
+                if (syntaxNode is AnonymousMethodExpressionSyntax anonymousMethod)
+                {
+                    return new ContainingFunctionData(anonymousMethod, anonymousMethod.AsyncKeyword != default(SyntaxToken), anonymousMethod.ParameterList, anonymousMethod.Body);
+                }
+
+                if (syntaxNode is ParenthesizedLambdaExpressionSyntax lambda)
+                {
+                    return new ContainingFunctionData(lambda, lambda.AsyncKeyword != default(SyntaxToken), lambda.ParameterList, lambda.Body);
+                }
+
+                if (syntaxNode is AccessorDeclarationSyntax accessor)
+                {
+                    return new ContainingFunctionData(accessor, false, SyntaxFactory.ParameterList(), accessor.Body);
+                }
+
+                if (syntaxNode is BaseMethodDeclarationSyntax method)
+                {
+                    return new ContainingFunctionData(method, method.Modifiers.Any(SyntaxKind.AsyncKeyword), method.ParameterList, method.Body);
+                }
+
+                syntaxNode = (CSharpSyntaxNode)syntaxNode.Parent;
+            }
+
+            return default(ContainingFunctionData);
         }
+
+        internal static bool HasAsyncCompatibleReturnType(this IMethodSymbol methodSymbol) => IsAsyncCompatibleReturnType(methodSymbol?.ReturnType);
+
+        /// <summary>
+        /// Determines whether a type could be used with the async modifier as a method return type.
+        /// </summary>
+        /// <param name="typeSymbol">The type returned from a method.</param>
+        /// <returns><c>true</c> if the type can be returned from an async method.</returns>
+        /// <remarks>
+        /// This is not the same thing as being an *awaitable* type, which is a much lower bar. Any type can be made awaitable by offering a GetAwaiter method
+        /// that follows the proper pattern. But being an async-compatible type in this sense is a type that can be returned from a method carrying the async keyword modifier,
+        /// in that the type is either the special Task type, or offers an async method builder of its own.
+        /// </remarks>
+        internal static bool IsAsyncCompatibleReturnType(this ITypeSymbol typeSymbol)
+        {
+            if (typeSymbol == null)
+            {
+                return false;
+            }
+
+            // ValueTask and ValueTask<T> have the AsyncMethodBuilderAttribute.
+            return (typeSymbol.Name == nameof(Task) && typeSymbol.BelongsToNamespace(Namespaces.SystemThreadingTasks))
+                || typeSymbol.GetAttributes().Any(ad => ad.AttributeClass?.Name == Types.AsyncMethodBuilderAttribute.TypeName && ad.AttributeClass.BelongsToNamespace(Types.AsyncMethodBuilderAttribute.Namespace));
+        }
+
+        internal static bool IsTask(ITypeSymbol typeSymbol) => typeSymbol?.Name == nameof(Task) && typeSymbol.BelongsToNamespace(Namespaces.SystemThreadingTasks);
+
+        /// <summary>
+        /// Gets a value indicating whether a method is async or is ready to be async by having an async-compatible return type.
+        /// </summary>
+        /// <remarks>
+        /// A method might be async but not have an async compatible return type if it returns void and is an "async void" method.
+        /// However, a non-async void method is *not* considered async ready and gets a false value returned from this method.
+        /// </remarks>
+        internal static bool IsAsyncReady(this IMethodSymbol methodSymbol) => methodSymbol.IsAsync || methodSymbol.HasAsyncCompatibleReturnType();
 
         internal static bool HasAsyncAlternative(this IMethodSymbol methodSymbol, CancellationToken cancellationToken)
         {
@@ -189,23 +289,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 default:
                     return false;
             }
-        }
-
-        /// <summary>
-        /// Check if the given method symbol is used as an event handler.
-        /// </summary>
-        /// <remarks>
-        /// Basically it needs to match this pattern:
-        ///   void method(object sender, EventArgs e);
-        /// </remarks>
-        internal static bool IsEventHandler(IMethodSymbol methodSymbol, Compilation compilation)
-        {
-            var objectType = compilation.GetTypeByMetadataName(typeof(object).FullName);
-            var eventArgsType = compilation.GetTypeByMetadataName(typeof(EventArgs).FullName);
-            return methodSymbol.Parameters.Length == 2
-                && methodSymbol.Parameters[0].Type.OriginalDefinition == objectType
-                && methodSymbol.Parameters[0].Name == "sender"
-                && Utils.IsEqualToOrDerivedFrom(methodSymbol.Parameters[1].Type, eventArgsType);
         }
 
         /// <summary>
@@ -257,12 +340,65 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static bool IsEntrypointMethod(ISymbol symbol, SemanticModel semanticModel, CancellationToken cancellationToken)
         {
-            return semanticModel.Compilation?.GetEntryPoint(cancellationToken)?.Equals(symbol) ?? false;
+            return semanticModel.Compilation != null && IsEntrypointMethod(symbol, semanticModel.Compilation, cancellationToken);
+        }
+
+        internal static bool IsEntrypointMethod(ISymbol symbol, Compilation compilation, CancellationToken cancellationToken)
+        {
+            return compilation.GetEntryPoint(cancellationToken)?.Equals(symbol) ?? false;
         }
 
         internal static bool IsObsolete(this ISymbol symbol)
         {
             return symbol.GetAttributes().Any(a => a.AttributeClass.Name == nameof(ObsoleteAttribute) && a.AttributeClass.BelongsToNamespace(Namespaces.System));
+        }
+
+        internal static bool IsOnLeftHandOfAssignment(SyntaxNode syntaxNode)
+        {
+            SyntaxNode parent = null;
+            while ((parent = syntaxNode.Parent) != null)
+            {
+                if (parent is AssignmentExpressionSyntax assignment)
+                {
+                    return assignment.Left == syntaxNode;
+                }
+
+                syntaxNode = parent;
+            }
+
+            return false;
+        }
+
+        internal static bool IsAssignedWithin(SyntaxNode container, SemanticModel semanticModel, ISymbol variable, CancellationToken cancellationToken)
+        {
+            if (semanticModel == null)
+            {
+                throw new ArgumentNullException(nameof(semanticModel));
+            }
+
+            if (variable == null)
+            {
+                throw new ArgumentNullException(nameof(variable));
+            }
+
+            if (container == null)
+            {
+                return false;
+            }
+
+            foreach (var node in container.DescendantNodesAndSelf(n => !(n is AnonymousFunctionExpressionSyntax)))
+            {
+                if (node is AssignmentExpressionSyntax assignment)
+                {
+                    var assignedSymbol = semanticModel.GetSymbolInfo(assignment.Left, cancellationToken).Symbol;
+                    if (variable.Equals(assignedSymbol))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         internal static IEnumerable<ITypeSymbol> FindInterfacesImplemented(this ISymbol symbol)
@@ -281,154 +417,290 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return interfaceImplementations;
         }
 
-        internal static AnonymousFunctionExpressionSyntax MakeMethodAsync(this AnonymousFunctionExpressionSyntax method, SemanticModel semanticModel, CancellationToken cancellationToken)
+        internal static MemberAccessExpressionSyntax MemberAccess(IReadOnlyList<string> qualifiers, SimpleNameSyntax simpleName)
         {
-            if (method.AsyncKeyword.Kind() == SyntaxKind.AsyncKeyword)
+            if (qualifiers == null)
             {
-                // already async
-                return method;
+                throw new ArgumentNullException(nameof(qualifiers));
             }
 
-            var methodSymbol = (IMethodSymbol)semanticModel.GetSymbolInfo(method, cancellationToken).Symbol;
-            bool hasReturnValue = (methodSymbol?.ReturnType as INamedTypeSymbol)?.IsGenericType ?? false;
-            AnonymousFunctionExpressionSyntax updated = null;
-
-            var simpleLambda = method as SimpleLambdaExpressionSyntax;
-            if (simpleLambda != null)
+            if (simpleName == null)
             {
-                updated = simpleLambda
-                    .WithAsyncKeyword(SyntaxFactory.Token(SyntaxKind.AsyncKeyword))
-                    .WithBody(UpdateStatementsForAsyncMethod(simpleLambda.Body, semanticModel, hasReturnValue));
+                throw new ArgumentNullException(nameof(simpleName));
             }
 
-            var parentheticalLambda = method as ParenthesizedLambdaExpressionSyntax;
-            if (parentheticalLambda != null)
+            if (qualifiers.Count == 0)
             {
-                updated = parentheticalLambda
-                    .WithAsyncKeyword(SyntaxFactory.Token(SyntaxKind.AsyncKeyword))
-                    .WithBody(UpdateStatementsForAsyncMethod(parentheticalLambda.Body, semanticModel, hasReturnValue));
+                throw new ArgumentException("At least one qualifier required.");
             }
 
-            var anonymousMethod = method as AnonymousMethodExpressionSyntax;
-            if (anonymousMethod != null)
+            ExpressionSyntax result = SyntaxFactory.IdentifierName(qualifiers[0]);
+            for (int i = 1; i < qualifiers.Count; i++)
             {
-                updated = anonymousMethod
-                    .WithAsyncKeyword(SyntaxFactory.Token(SyntaxKind.AsyncKeyword))
-                    .WithBody(UpdateStatementsForAsyncMethod(anonymousMethod.Body, semanticModel, hasReturnValue));
+                var rightSide = SyntaxFactory.IdentifierName(qualifiers[i]);
+                result = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, result, rightSide);
             }
 
-            if (updated == null)
-            {
-                throw new NotSupportedException();
-            }
-
-            return updated;
+            return SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, result, simpleName);
         }
 
-        /// <summary>
-        /// Converts a synchronous method to be asynchronous, if it is not already async.
-        /// </summary>
-        /// <param name="method">The method to convert.</param>
-        /// <param name="semanticModel">The semantic model for the document.</param>
-        /// <returns>The converted method, or the original if it was already async.</returns>
-        internal static MethodDeclarationSyntax MakeMethodAsync(this MethodDeclarationSyntax method, SemanticModel semanticModel)
+        internal static string GetFullName(ISymbol symbol)
         {
-            if (method == null)
+            if (symbol == null)
             {
-                throw new ArgumentNullException(nameof(method));
+                throw new ArgumentNullException(nameof(symbol));
             }
 
-            if (method.Modifiers.Any(SyntaxKind.AsyncKeyword))
+            var sb = new StringBuilder();
+            sb.Append(symbol.Name);
+            while (symbol.ContainingType != null)
             {
-                // Already asynchronous.
-                return method;
+                sb.Insert(0, symbol.ContainingType.Name + ".");
+                symbol = symbol.ContainingType;
             }
 
-            // Fix up any return statements to await on the Task it would have returned.
-            MethodDeclarationSyntax fixedUpAsyncMethod = method
-                .WithBody(UpdateStatementsForAsyncMethod(method.Body, semanticModel, method.ReturnType is GenericNameSyntax))
-                .AddModifiers(SyntaxFactory.Token(SyntaxKind.AsyncKeyword));
+            while (symbol.ContainingNamespace != null)
+            {
+                if (!string.IsNullOrEmpty(symbol.ContainingNamespace.Name))
+                {
+                    sb.Insert(0, symbol.ContainingNamespace.Name + ".");
+                }
 
-            return fixedUpAsyncMethod;
+                symbol = symbol.ContainingNamespace;
+            }
+
+            return sb.ToString();
         }
 
         /// <summary>
         /// Determines whether an expression appears inside a C# "nameof" pseudo-method.
         /// </summary>
-        internal static bool IsWithinNameOf(ExpressionSyntax memberAccess)
+        internal static bool IsWithinNameOf(SyntaxNode syntaxNode)
         {
-            var invocation = memberAccess?.FirstAncestorOrSelf<InvocationExpressionSyntax>();
+            var invocation = syntaxNode?.FirstAncestorOrSelf<InvocationExpressionSyntax>();
             return (invocation?.Expression as IdentifierNameSyntax)?.Identifier.Text == "nameof"
                 && invocation.ArgumentList.Arguments.Count == 1;
         }
 
-        private static CSharpSyntaxNode UpdateStatementsForAsyncMethod(CSharpSyntaxNode body, SemanticModel semanticModel, bool hasResultValue)
+        internal static void Deconstruct<T1, T2>(this Tuple<T1, T2> tuple, out T1 item1, out T2 item2)
         {
-            var blockBody = body as BlockSyntax;
-            if (blockBody != null)
-            {
-                return UpdateStatementsForAsyncMethod(blockBody, semanticModel, hasResultValue);
-            }
-
-            var expressionBody = body as ExpressionSyntax;
-            if (expressionBody != null)
-            {
-                return SyntaxFactory.AwaitExpression(expressionBody).TrySimplify(expressionBody, semanticModel);
-            }
-
-            throw new NotSupportedException();
+            item1 = tuple.Item1;
+            item2 = tuple.Item2;
         }
 
-        private static BlockSyntax UpdateStatementsForAsyncMethod(BlockSyntax body, SemanticModel semanticModel, bool hasResultValue)
+        internal static void Deconstruct<T1, T2, T3>(this Tuple<T1, T2, T3> tuple, out T1 item1, out T2 item2, out T3 item3)
         {
-            var fixedUpBlock = body.ReplaceNodes(
-                body.DescendantNodes().OfType<ReturnStatementSyntax>(),
-                (f, n) =>
-                {
-                    if (hasResultValue)
-                    {
-                        return n.WithExpression(SyntaxFactory.AwaitExpression(n.Expression).TrySimplify(f.Expression, semanticModel));
-                    }
-
-                    if (body.Statements.Last() == f)
-                    {
-                        // If it is the last statement in the method, we can remove it since a return is implied.
-                        return null;
-                    }
-
-                    return n
-                        .WithExpression(null) // don't return any value
-                        .WithReturnKeyword(n.ReturnKeyword.WithTrailingTrivia(SyntaxFactory.TriviaList())); // remove the trailing space after the keyword
-                });
-
-            return fixedUpBlock;
+            item1 = tuple.Item1;
+            item2 = tuple.Item2;
+            item3 = tuple.Item3;
         }
 
-        private static ExpressionSyntax TrySimplify(this AwaitExpressionSyntax awaitExpression, ExpressionSyntax originalSyntax, SemanticModel semanticModel)
+        internal static void Deconstruct<T1, T2, T3, T4>(this Tuple<T1, T2, T3, T4> tuple, out T1 item1, out T2 item2, out T3 item3, out T4 item4)
         {
-            if (awaitExpression == null)
+            item1 = tuple.Item1;
+            item2 = tuple.Item2;
+            item3 = tuple.Item3;
+            item4 = tuple.Item4;
+        }
+
+        internal static string GetHelpLink(string analyzerId)
+        {
+            return $"https://github.com/Microsoft/vs-threading/blob/master/doc/analyzers/{analyzerId}.md";
+        }
+
+        /// <summary>
+        /// Looks for a symbol that represents a <see cref="CancellationToken"/> near
+        /// some document location that might be consumed in some generated invocation.
+        /// </summary>
+        /// <param name="semanticModel">The semantic model of the document.</param>
+        /// <param name="positionForLookup">The position in the document that must have access to any candidate <see cref="CancellationToken"/>.</param>
+        /// <param name="cancellationToken">A token that represents lost interest in this inquiry.</param>
+        /// <returns>Candidate <see cref="CancellationToken"/> symbols.</returns>
+        internal static IEnumerable<ISymbol> FindCancellationToken(SemanticModel semanticModel, int positionForLookup, CancellationToken cancellationToken)
+        {
+            if (semanticModel == null)
             {
-                throw new ArgumentNullException(nameof(awaitExpression));
+                throw new ArgumentNullException(nameof(semanticModel));
             }
 
-            // await Task.FromResult(x) => x.
-            if (semanticModel != null)
+            var enclosingSymbol = semanticModel.GetEnclosingSymbol(positionForLookup, cancellationToken);
+            if (enclosingSymbol == null)
             {
-                var awaitedInvocation = awaitExpression.Expression as InvocationExpressionSyntax;
-                var awaitedInvocationMemberAccess = awaitedInvocation?.Expression as MemberAccessExpressionSyntax;
-                if (awaitedInvocationMemberAccess?.Name.Identifier.Text == nameof(Task.FromResult))
+                return null;
+            }
+
+            var cancellationTokenSymbols = semanticModel.LookupSymbols(positionForLookup)
+                .Where(s => (s.IsStatic || !enclosingSymbol.IsStatic) && s.CanBeReferencedByName && IsSymbolTheRightType(s, nameof(CancellationToken), Namespaces.SystemThreading))
+                .OrderBy(s => s.ContainingSymbol.Equals(enclosingSymbol) ? 1 : s.ContainingType.Equals(enclosingSymbol.ContainingType) ? 2 : 3); // prefer locality
+            return cancellationTokenSymbols;
+        }
+
+        /// <summary>
+        /// Find a set of methods that match a given method's fully qualified name.
+        /// </summary>
+        /// <param name="semanticModel">The semantic model of the document that must be able to access the methods.</param>
+        /// <param name="methodAsString">The fully-qualified name of the method.</param>
+        /// <returns>An enumeration of method symbols with a matching name.</returns>
+        internal static IEnumerable<IMethodSymbol> FindMethodGroup(SemanticModel semanticModel, string methodAsString)
+        {
+            if (semanticModel == null)
+            {
+                throw new ArgumentNullException(nameof(semanticModel));
+            }
+
+            if (string.IsNullOrEmpty(methodAsString))
+            {
+                throw new ArgumentException("A non-empty value is required.", nameof(methodAsString));
+            }
+
+            var (fullTypeName, methodName) = SplitOffLastElement(methodAsString);
+            var (ns, leafTypeName) = SplitOffLastElement(fullTypeName);
+            string[] namespaces = ns?.Split('.');
+            if (fullTypeName == null)
+            {
+                return Enumerable.Empty<IMethodSymbol>();
+            }
+
+            var proposedType = semanticModel.Compilation.GetTypeByMetadataName(fullTypeName);
+
+            return proposedType?.GetMembers(methodName).OfType<IMethodSymbol>() ?? Enumerable.Empty<IMethodSymbol>();
+        }
+
+        /// <summary>
+        /// Find a set of methods that match a given method's fully qualified name.
+        /// </summary>
+        /// <param name="semanticModel">The semantic model of the document that must be able to access the methods.</param>
+        /// <param name="method">The fully-qualified name of the method.</param>
+        /// <returns>An enumeration of method symbols with a matching name.</returns>
+        internal static IEnumerable<IMethodSymbol> FindMethodGroup(SemanticModel semanticModel, CommonInterest.QualifiedMember method)
+        {
+            if (semanticModel == null)
+            {
+                throw new ArgumentNullException(nameof(semanticModel));
+            }
+
+            var proposedType = semanticModel.Compilation.GetTypeByMetadataName(method.ContainingType.ToString());
+            return proposedType?.GetMembers(method.Name).OfType<IMethodSymbol>() ?? Enumerable.Empty<IMethodSymbol>();
+        }
+
+        /// <summary>
+        /// Finds a local variable, field, property, or static member on another type
+        /// that is typed to return a value of a given type.
+        /// </summary>
+        /// <param name="typeSymbol">The type of value required.</param>
+        /// <param name="semanticModel">The semantic model of the document that must be able to access the value.</param>
+        /// <param name="positionForLookup">The position in the document where the value must be accessible.</param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        /// <returns>An enumeration of symbols that can provide a value of the required type, together with a flag indicating whether they are accessible using "local" syntax (i.e. the symbol is a local variable or a field on the enclosing type).</returns>
+        internal static IEnumerable<Tuple<bool, ISymbol>> FindInstanceOf(INamedTypeSymbol typeSymbol, SemanticModel semanticModel, int positionForLookup, CancellationToken cancellationToken)
+        {
+            if (typeSymbol == null)
+            {
+                throw new ArgumentNullException(nameof(typeSymbol));
+            }
+
+            if (semanticModel == null)
+            {
+                throw new ArgumentNullException(nameof(semanticModel));
+            }
+
+            var enclosingSymbol = semanticModel.GetEnclosingSymbol(positionForLookup, cancellationToken);
+
+            // Search fields on the declaring type.
+            // Consider local variables too, if they're captured in a closure from some surrounding code block
+            // such that they would presumably be initialized by the time the first statement in our own code block runs.
+            ITypeSymbol enclosingTypeSymbol = enclosingSymbol as ITypeSymbol ?? enclosingSymbol.ContainingType;
+            if (enclosingTypeSymbol != null)
+            {
+                var candidateMembers = from symbol in semanticModel.LookupSymbols(positionForLookup, enclosingTypeSymbol)
+                                       where symbol.IsStatic || !enclosingSymbol.IsStatic
+                                       where IsSymbolTheRightType(symbol, typeSymbol.Name, typeSymbol.ContainingNamespace)
+                                       select symbol;
+                foreach (var candidate in candidateMembers)
                 {
-                    // Is the FromResult method on the Task or Task<T> class?
-                    var memberOwnerSymbol = semanticModel.GetSymbolInfo(originalSyntax).Symbol;
-                    if (memberOwnerSymbol?.ContainingType?.Name == nameof(Task) && memberOwnerSymbol.ContainingType.BelongsToNamespace(Namespaces.SystemThreadingTasks))
-                    {
-                        var simplified = awaitedInvocation.ArgumentList.Arguments.Single().Expression;
-                        return simplified;
-                    }
+                    yield return Tuple.Create(true, candidate);
                 }
             }
 
-            return awaitExpression;
+            // Find static fields/properties that return the matching type from other public, non-generic types.
+            var candidateStatics = from offering in semanticModel.LookupStaticMembers(positionForLookup).OfType<ITypeSymbol>()
+                                   from symbol in offering.GetMembers()
+                                   where symbol.IsStatic && symbol.CanBeReferencedByName && IsSymbolTheRightType(symbol, typeSymbol.Name, typeSymbol.ContainingNamespace)
+                                   select symbol;
+            foreach (var candidate in candidateStatics)
+            {
+                yield return Tuple.Create(false, candidate);
+            }
+        }
+
+        internal static T FirstAncestor<T>(this SyntaxNode startingNode, IReadOnlyCollection<Type> doNotPassNodeTypes)
+            where T : SyntaxNode
+        {
+            if (doNotPassNodeTypes == null)
+            {
+                throw new ArgumentNullException(nameof(doNotPassNodeTypes));
+            }
+
+            var syntaxNode = startingNode;
+            while (syntaxNode != null)
+            {
+                if (syntaxNode is T result)
+                {
+                    return result;
+                }
+
+                if (doNotPassNodeTypes.Any(disallowed => disallowed.GetTypeInfo().IsAssignableFrom(syntaxNode.GetType().GetTypeInfo())))
+                {
+                    return default(T);
+                }
+
+                syntaxNode = syntaxNode.Parent;
+            }
+
+            return default(T);
+        }
+
+        internal static Tuple<string, string> SplitOffLastElement(string qualifiedName)
+        {
+            if (qualifiedName == null)
+            {
+                return Tuple.Create<string, string>(null, null);
+            }
+
+            int lastPeriod = qualifiedName.LastIndexOf('.');
+            if (lastPeriod < 0)
+            {
+                return Tuple.Create<string, string>(null, qualifiedName);
+            }
+
+            return Tuple.Create(qualifiedName.Substring(0, lastPeriod), qualifiedName.Substring(lastPeriod + 1));
+        }
+
+        /// <summary>
+        /// Determines whether a given parameter accepts a <see cref="CancellationToken"/>.
+        /// </summary>
+        /// <param name="parameterSymbol">The parameter.</param>
+        /// <returns><c>true</c> if the parameter takes a <see cref="CancellationToken"/>; <c>false</c> otherwise.</returns>
+        internal static bool IsCancellationTokenParameter(IParameterSymbol parameterSymbol) => parameterSymbol?.Type.Name == nameof(CancellationToken) && parameterSymbol.Type.BelongsToNamespace(Namespaces.SystemThreading);
+
+        private static bool IsSymbolTheRightType(ISymbol symbol, string typeName, IReadOnlyList<string> namespaces)
+        {
+            var fieldSymbol = symbol as IFieldSymbol;
+            var propertySymbol = symbol as IPropertySymbol;
+            var parameterSymbol = symbol as IParameterSymbol;
+            var localSymbol = symbol as ILocalSymbol;
+            var memberType = fieldSymbol?.Type ?? propertySymbol?.Type ?? parameterSymbol?.Type ?? localSymbol?.Type;
+            return memberType?.Name == typeName && memberType.BelongsToNamespace(namespaces);
+        }
+
+        private static bool IsSymbolTheRightType(ISymbol symbol, string typeName, INamespaceSymbol namespaces)
+        {
+            var fieldSymbol = symbol as IFieldSymbol;
+            var propertySymbol = symbol as IPropertySymbol;
+            var parameterSymbol = symbol as IParameterSymbol;
+            var localSymbol = symbol as ILocalSymbol;
+            var memberType = fieldSymbol?.Type ?? propertySymbol?.Type ?? parameterSymbol?.Type ?? localSymbol?.Type;
+            return memberType?.Name == typeName && memberType.ContainingNamespace.Equals(namespaces);
         }
 
         private static bool LaunchDebuggerExceptionFilter()
@@ -437,6 +709,25 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             System.Diagnostics.Debugger.Launch();
 #endif
             return true;
+        }
+
+        internal readonly struct ContainingFunctionData
+        {
+            internal ContainingFunctionData(CSharpSyntaxNode function, bool isAsync, ParameterListSyntax parameterList, CSharpSyntaxNode blockOrExpression)
+            {
+                this.Function = function;
+                this.IsAsync = isAsync;
+                this.ParameterList = parameterList;
+                this.BlockOrExpression = blockOrExpression;
+            }
+
+            internal CSharpSyntaxNode Function { get; }
+
+            internal bool IsAsync { get; }
+
+            internal ParameterListSyntax ParameterList { get; }
+
+            internal CSharpSyntaxNode BlockOrExpression { get; }
         }
     }
 }

@@ -59,7 +59,7 @@
             this.evt.Set();
             Assert.True(this.evt.IsSet);
             setReturned.Set();
-            Assert.True(inlinedContinuation.Wait(AsyncDelay));
+            Assert.True(inlinedContinuation.Wait(UnexpectedTimeout));
         }
 
         [Fact]
@@ -209,8 +209,33 @@
                 // actually propagated to the Task returned by WaitAsync earlier.
                 // In fact we'll go so far as to assert the Task itself should be the same.
                 Assert.Same(waitTask, setTask1);
+#if !NET452 && !NET451 // The same Task can only be guaranteed where .NET supports completing TCS without inlining continuations.
                 Assert.Same(waitTask, setTask2);
+#endif
             }
+        }
+
+        [Fact]
+        public void WaitIsCompleteOnSignaledEvent()
+        {
+            using (TestUtilities.StarveThreadpool())
+            {
+                var presignaledEvent = new AsyncManualResetEvent(initialState: true, allowInliningAwaiters: false);
+
+                // We must assert that the exposed Task is complete as quickly as possible
+                // after creation of the AMRE, since we're testing for possible asynchronously completing Tasks.
+                Assert.True(presignaledEvent.WaitAsync().IsCompleted);
+            }
+        }
+
+        [Fact]
+        public async Task WaitAsyncWithCancellationToken()
+        {
+            var cts = new CancellationTokenSource();
+            Task waitTask = this.evt.WaitAsync(cts.Token);
+            cts.Cancel();
+            var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waitTask);
+            Assert.Equal(cts.Token, ex.CancellationToken);
         }
     }
 }

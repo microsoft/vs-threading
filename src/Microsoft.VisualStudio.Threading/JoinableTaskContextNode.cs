@@ -59,7 +59,7 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
-#if NET45
+#if DESKTOP || NETSTANDARD2_0
         /// <summary>
         /// Gets the main thread that can be shared by tasks created by this context.
         /// </summary>

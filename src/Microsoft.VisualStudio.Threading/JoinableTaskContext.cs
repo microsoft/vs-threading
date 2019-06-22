@@ -86,7 +86,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// An AsyncLocal value that carries the joinable instance associated with an async operation.
         /// </summary>
-        private readonly AsyncLocal<JoinableTask> joinableOperation = new AsyncLocal<JoinableTask>();
+        private readonly AsyncLocal<WeakReference<JoinableTask>> joinableOperation = new AsyncLocal<WeakReference<JoinableTask>>();
 
         /// <summary>
         /// The set of tasks that have started but have not yet completed.
@@ -132,7 +132,7 @@ namespace Microsoft.VisualStudio.Threading
         /// to the main thread from another thread.
         /// </summary>
         public JoinableTaskContext()
-#if NET45
+#if DESKTOP || NETSTANDARD2_0
             : this(Thread.CurrentThread, SynchronizationContext.Current)
         {
 #else
@@ -141,7 +141,7 @@ namespace Microsoft.VisualStudio.Threading
 #endif
         }
 
-#if NET45
+#if DESKTOP || NETSTANDARD2_0
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JoinableTaskContext"/> class.
@@ -192,22 +192,25 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                using (this.NoMessagePumpSynchronizationContext.Apply())
+                if (this.nonJoinableFactory == null)
                 {
-                    lock (this.SyncContextLock)
+                    using (this.NoMessagePumpSynchronizationContext.Apply())
                     {
-                        if (this.nonJoinableFactory == null)
+                        lock (this.SyncContextLock)
                         {
-                            this.nonJoinableFactory = this.CreateDefaultFactory();
+                            if (this.nonJoinableFactory == null)
+                            {
+                                this.nonJoinableFactory = this.CreateDefaultFactory();
+                            }
                         }
-
-                        return this.nonJoinableFactory;
                     }
                 }
+
+                return this.nonJoinableFactory;
             }
         }
 
-#if NET45
+#if DESKTOP || NETSTANDARD2_0
         /// <summary>
         /// Gets the main thread that can be shared by tasks created by this context.
         /// </summary>
@@ -251,8 +254,14 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         internal JoinableTask AmbientTask
         {
-            get { return this.joinableOperation.Value; }
-            set { this.joinableOperation.Value = value; }
+            get
+            {
+                JoinableTask result = null;
+                this.joinableOperation.Value?.TryGetTarget(out result);
+                return result;
+            }
+
+            set => this.joinableOperation.Value = value?.WeakSelf;
         }
 
         /// <summary>
@@ -270,7 +279,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-#if NET45
+#if DESKTOP || NETSTANDARD2_0
                 // Callers of this method are about to take a private lock, which tends
                 // to cause a deadlock while debugging because of lock contention with the
                 // debugger's expression evaluator. So prevent that.
@@ -323,7 +332,7 @@ namespace Microsoft.VisualStudio.Threading
             var ambientTask = this.AmbientTask;
             if (ambientTask != null)
             {
-                if (ambientTask.HasMainThreadSynchronousTaskWaiting)
+                if (JoinableTaskDependencyGraph.HasMainThreadSynchronousTaskWaiting(ambientTask))
                 {
                     return true;
                 }
@@ -337,24 +346,27 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     lock (this.SyncContextLock)
                     {
-                        var allJoinedJobs = new HashSet<JoinableTask>();
                         lock (this.initializingSynchronouslyMainThreadTasks)
                         {
-                            // our read lock doesn't cover this collection
-                            foreach (var initializingTask in this.initializingSynchronouslyMainThreadTasks)
+                            if (this.initializingSynchronouslyMainThreadTasks.Count > 0)
                             {
-                                if (!initializingTask.HasMainThreadSynchronousTaskWaiting)
+                                // our read lock doesn't cover this collection
+                                var allJoinedJobs = new HashSet<JoinableTask>();
+                                foreach (var initializingTask in this.initializingSynchronouslyMainThreadTasks)
                                 {
-                                    // This task blocks the main thread. If it has joined the ambient task
-                                    // directly or indirectly, then our ambient task is considered blocking
-                                    // the main thread.
-                                    initializingTask.AddSelfAndDescendentOrJoinedJobs(allJoinedJobs);
-                                    if (allJoinedJobs.Contains(ambientTask))
+                                    if (!JoinableTaskDependencyGraph.HasMainThreadSynchronousTaskWaiting(initializingTask))
                                     {
-                                        return true;
-                                    }
+                                        // This task blocks the main thread. If it has joined the ambient task
+                                        // directly or indirectly, then our ambient task is considered blocking
+                                        // the main thread.
+                                        JoinableTaskDependencyGraph.AddSelfAndDescendentOrJoinedJobs(initializingTask, allJoinedJobs);
+                                        if (allJoinedJobs.Contains(ambientTask))
+                                        {
+                                            return true;
+                                        }
 
-                                    allJoinedJobs.Clear();
+                                        allJoinedJobs.Clear();
+                                    }
                                 }
                             }
                         }
@@ -414,9 +426,12 @@ namespace Microsoft.VisualStudio.Threading
         protected internal virtual void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId)
         {
             List<JoinableTaskContextNode> listeners;
-            lock (this.hangNotifications)
+            using (this.NoMessagePumpSynchronizationContext.Apply())
             {
-                listeners = this.hangNotifications.ToList();
+                lock (this.hangNotifications)
+                {
+                    listeners = this.hangNotifications.ToList();
+                }
             }
 
             var blockingTask = JoinableTask.TaskCompletingOnThisThread;
@@ -424,7 +439,7 @@ namespace Microsoft.VisualStudio.Threading
                 hangDuration,
                 notificationCount,
                 hangId,
-                blockingTask != null ? blockingTask.EntryMethodInfo : null);
+                blockingTask?.EntryMethodInfo);
             foreach (var listener in listeners)
             {
                 try
@@ -447,9 +462,12 @@ namespace Microsoft.VisualStudio.Threading
         protected internal virtual void OnFalseHangDetected(TimeSpan hangDuration, Guid hangId)
         {
             List<JoinableTaskContextNode> listeners;
-            lock (this.hangNotifications)
+            using (this.NoMessagePumpSynchronizationContext.Apply())
             {
-                listeners = this.hangNotifications.ToList();
+                lock (this.hangNotifications)
+                {
+                    listeners = this.hangNotifications.ToList();
+                }
             }
 
             foreach (var listener in listeners)
@@ -486,16 +504,19 @@ namespace Microsoft.VisualStudio.Threading
         {
             Requires.NotNull(task, nameof(task));
 
-            lock (this.pendingTasks)
+            using (this.NoMessagePumpSynchronizationContext.Apply())
             {
-                Assumes.True(this.pendingTasks.Add(task));
-            }
-
-            if ((task.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)
-            {
-                lock (this.initializingSynchronouslyMainThreadTasks)
+                lock (this.pendingTasks)
                 {
-                    this.initializingSynchronouslyMainThreadTasks.Push(task);
+                    Assumes.True(this.pendingTasks.Add(task));
+                }
+
+                if ((task.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)
+                {
+                    lock (this.initializingSynchronouslyMainThreadTasks)
+                    {
+                        this.initializingSynchronouslyMainThreadTasks.Push(task);
+                    }
                 }
             }
         }
@@ -508,9 +529,12 @@ namespace Microsoft.VisualStudio.Threading
         {
             Requires.NotNull(task, nameof(task));
 
-            lock (this.pendingTasks)
+            using (this.NoMessagePumpSynchronizationContext.Apply())
             {
-                this.pendingTasks.Remove(task);
+                lock (this.pendingTasks)
+                {
+                    this.pendingTasks.Remove(task);
+                }
             }
         }
 
@@ -522,11 +546,14 @@ namespace Microsoft.VisualStudio.Threading
         {
             Requires.NotNull(task, nameof(task));
 
-            lock (this.initializingSynchronouslyMainThreadTasks)
+            using (this.NoMessagePumpSynchronizationContext.Apply())
             {
-                Assumes.True(this.initializingSynchronouslyMainThreadTasks.Count > 0);
-                Assumes.True(this.initializingSynchronouslyMainThreadTasks.Peek() == task);
-                this.initializingSynchronouslyMainThreadTasks.Pop();
+                lock (this.initializingSynchronouslyMainThreadTasks)
+                {
+                    Assumes.True(this.initializingSynchronouslyMainThreadTasks.Count > 0);
+                    Assumes.True(this.initializingSynchronouslyMainThreadTasks.Peek() == task);
+                    this.initializingSynchronouslyMainThreadTasks.Pop();
+                }
             }
         }
 
@@ -538,11 +565,15 @@ namespace Microsoft.VisualStudio.Threading
         internal IDisposable RegisterHangNotifications(JoinableTaskContextNode node)
         {
             Requires.NotNull(node, nameof(node));
-            lock (this.hangNotifications)
+
+            using (this.NoMessagePumpSynchronizationContext.Apply())
             {
-                if (!this.hangNotifications.Add(node))
+                lock (this.hangNotifications)
                 {
-                    Verify.FailOperation(Strings.JoinableTaskContextNodeAlreadyRegistered);
+                    if (!this.hangNotifications.Add(node))
+                    {
+                        Verify.FailOperation(Strings.JoinableTaskContextNodeAlreadyRegistered);
+                    }
                 }
             }
 
@@ -553,11 +584,11 @@ namespace Microsoft.VisualStudio.Threading
         /// A structure that clears CallContext and SynchronizationContext async/thread statics and
         /// restores those values when this structure is disposed.
         /// </summary>
-        public struct RevertRelevance : IDisposable
+        public readonly struct RevertRelevance : IDisposable
         {
             private readonly JoinableTaskContext pump;
-            private SpecializedSyncContext temporarySyncContext;
-            private JoinableTask oldJoinable;
+            private readonly SpecializedSyncContext temporarySyncContext;
+            private readonly JoinableTask oldJoinable;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="RevertRelevance"/> struct.
@@ -571,8 +602,7 @@ namespace Microsoft.VisualStudio.Threading
                 this.oldJoinable = pump.AmbientTask;
                 pump.AmbientTask = null;
 
-                var jobSyncContext = SynchronizationContext.Current as JoinableTaskSynchronizationContext;
-                if (jobSyncContext != null)
+                if (SynchronizationContext.Current is JoinableTaskSynchronizationContext jobSyncContext)
                 {
                     SynchronizationContext appliedSyncContext = null;
                     if (jobSyncContext.MainThreadAffinitized)
@@ -629,9 +659,12 @@ namespace Microsoft.VisualStudio.Threading
                 var node = this.node;
                 if (node != null)
                 {
-                    lock (node.Context.hangNotifications)
+                    using (node.Context.NoMessagePumpSynchronizationContext.Apply())
                     {
-                        Assumes.True(node.Context.hangNotifications.Remove(node));
+                        lock (node.Context.hangNotifications)
+                        {
+                            Assumes.True(node.Context.hangNotifications.Remove(node));
+                        }
                     }
 
                     this.node = null;

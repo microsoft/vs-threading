@@ -45,6 +45,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             id: Id,
             title: Strings.VSTHRD106_Title,
             messageFormat: Strings.VSTHRD106_MessageFormat,
+            helpLinkUri: Utils.GetHelpLink(Id),
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
@@ -83,7 +84,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         private void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
         {
             var invocation = (InvocationExpressionSyntax)context.Node;
-            var symbol = context.SemanticModel.GetSymbolInfo(invocation.Expression).Symbol;
+            var symbol = context.SemanticModel.GetSymbolInfo(invocation.Expression, context.CancellationToken).Symbol;
             if (symbol != null)
             {
                 ISymbol type = null;

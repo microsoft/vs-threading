@@ -17,15 +17,17 @@
         }
 
         [Fact]
-        public void CtorNullAction()
+        public void Ctor_Nulls()
         {
             Assert.Throws<ArgumentNullException>(() => new ProgressWithCompletion<GenericParameterHelper>((Action<GenericParameterHelper>)null));
+            Assert.Throws<ArgumentNullException>(() => new ProgressWithCompletion<GenericParameterHelper>((Func<GenericParameterHelper, Task>)null));
         }
 
         [Fact]
-        public void CtorNullFuncOfTask()
+        public void Ctor_NullJtf()
         {
-            Assert.Throws<ArgumentNullException>(() => new ProgressWithCompletion<GenericParameterHelper>((Func<GenericParameterHelper, Task>)null));
+            var progress = new ProgressWithCompletion<GenericParameterHelper>(v => { }, joinableTaskFactory: null);
+            progress = new ProgressWithCompletion<GenericParameterHelper>(v => TplExtensions.CompletedTask, joinableTaskFactory: null);
         }
 
         [Fact]
@@ -67,22 +69,51 @@
         }
 
         [Fact]
+        public async Task WaitAsync_CancellationToken()
+        {
+            var handlerMayComplete = new AsyncManualResetEvent();
+            var callback = new Func<GenericParameterHelper, Task>(
+                async p =>
+                {
+                    Assert.Equal(1, p.Data);
+                    await handlerMayComplete;
+                });
+            var progress = new ProgressWithCompletion<GenericParameterHelper>(callback);
+            IProgress<GenericParameterHelper> reporter = progress;
+            reporter.Report(new GenericParameterHelper(1));
+
+            var cts = new CancellationTokenSource();
+            var progressAwaitable = progress.WaitAsync(cts.Token);
+            await Task.Delay(AsyncDelay);
+            Assert.False(progressAwaitable.GetAwaiter().IsCompleted);
+            cts.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => progressAwaitable).WithCancellation(this.TimeoutToken);
+
+            // clean up
+            handlerMayComplete.Set();
+        }
+
+        [Fact]
         public void SynchronizationContextCaptured()
         {
-            var syncContext = SingleThreadedSynchronizationContext.New();
+            var syncContext = SingleThreadedTestSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(syncContext);
-            Exception callbackError = null;
+            TaskCompletionSource<object> callbackResult = new TaskCompletionSource<object>();
+            var frame = SingleThreadedTestSynchronizationContext.NewFrame();
             var callback = new Action<GenericParameterHelper>(
                 p =>
                 {
                     try
                     {
-                        Assert.Same(syncContext, SynchronizationContext.Current);
+                        Assert.NotNull(SynchronizationContext.Current);
+                        callbackResult.SetResult(null);
                     }
                     catch (Exception e)
                     {
-                        callbackError = e;
+                        callbackResult.SetException(e);
                     }
+
+                    frame.Continue = false;
                 });
             var progress = new ProgressWithCompletion<GenericParameterHelper>(callback);
             IProgress<GenericParameterHelper> reporter = progress;
@@ -92,10 +123,61 @@
                 reporter.Report(new GenericParameterHelper(1));
             });
 
-            if (callbackError != null)
+            SingleThreadedTestSynchronizationContext.PushFrame(syncContext, frame);
+            callbackResult.Task.GetAwaiter().GetResult();
+        }
+
+        [Theory]
+        [PairwiseData]
+        public void DoesNotDeadlockWhenCallbackCapturesSyncContext(bool captureMainThreadContext)
+        {
+            var syncContext = SingleThreadedTestSynchronizationContext.New();
+            SynchronizationContext.SetSynchronizationContext(syncContext);
+            var jtc = new JoinableTaskContext();
+
+            const int expectedCallbackValue = 1;
+            var actualCallbackValue = new TaskCompletionSource<int>();
+            Func<ProgressWithCompletion<GenericParameterHelper>> progressFactory = () => new ProgressWithCompletion<GenericParameterHelper>(async arg =>
             {
-                throw callbackError;
+                try
+                {
+                    Assert.Equal(captureMainThreadContext, jtc.IsOnMainThread);
+
+                    // Ensure we have a main thread dependency even if we started on a threadpool thread.
+                    await jtc.Factory.SwitchToMainThreadAsync(this.TimeoutToken);
+                    actualCallbackValue.SetResult(arg.Data);
+                }
+                catch (Exception ex)
+                {
+                    actualCallbackValue.SetException(ex);
+                }
+            }, jtc.Factory);
+
+            ProgressWithCompletion<GenericParameterHelper> progress;
+            if (captureMainThreadContext)
+            {
+                progress = progressFactory();
             }
+            else
+            {
+                var progressTask = Task.Run(progressFactory);
+                progressTask.WaitWithoutInlining();
+                progress = progressTask.Result;
+            }
+
+            IProgress<GenericParameterHelper> progressReporter = progress;
+            progressReporter.Report(new GenericParameterHelper(expectedCallbackValue));
+            Assert.False(actualCallbackValue.Task.IsCompleted);
+
+            // Block the "main thread" while waiting for the reported progress to be executed.
+            // Since the callback must execute on the main thread, this will deadlock unless
+            // the underlying code is JTF aware, which is the whole point of this test to confirm.
+            jtc.Factory.Run(async delegate
+            {
+                await progress.WaitAsync(this.TimeoutToken);
+                Assert.True(actualCallbackValue.Task.IsCompleted);
+                Assert.Equal(expectedCallbackValue, await actualCallbackValue.Task);
+            });
         }
     }
 }

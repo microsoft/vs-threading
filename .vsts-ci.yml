@@ -1,0 +1,39 @@
+trigger:
+  branches:
+    include: ["master", "v15.8", "v16.0"]
+  paths:
+    exclude: [".github", "doc", "*.md", ".appveyor.yml", ".travis.yml"]
+
+variables:
+  TreatWarningsAsErrors: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  BuildConfiguration: Release
+  BuildPlatform: Any CPU
+
+resources:
+  containers:
+  - container: xenial
+    image: andrewarnott/linux-buildagent
+
+jobs:
+- job: Windows
+  pool: Hosted VS2017
+  steps:
+  - template: azure-pipelines/build.yml
+
+- job: Linux
+  pool:
+    vmImage: Ubuntu 16.04
+  container: xenial
+  steps:
+  - template: azure-pipelines/testfx.yml
+    parameters:
+      projectdirectory: src/Microsoft.VisualStudio.Threading.Tests
+
+- job: macOS
+  pool:
+    vmImage: macOS 10.13
+  steps:
+  - template: azure-pipelines/testfx.yml
+    parameters:
+      projectdirectory: src/Microsoft.VisualStudio.Threading.Tests
