@@ -76,7 +76,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 hasOnCompletedMethod |= member.Name == nameof(TaskAwaiter.OnCompleted) && member is IMethodSymbol;
                 hasIsCompletedProperty |= member.Name == nameof(TaskAwaiter.IsCompleted) && member is IPropertySymbol;
 
-                if (hasGetResultMethod || hasOnCompletedMethod || hasIsCompletedProperty)
+                if (hasGetResultMethod && hasOnCompletedMethod && hasIsCompletedProperty)
                 {
                     return true;
                 }
