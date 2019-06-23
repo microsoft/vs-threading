@@ -66,9 +66,23 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 return false;
             }
 
-            return typeSymbol.GetMembers(nameof(TaskAwaiter.GetResult)).OfType<IMethodSymbol>().Any(m => m.Parameters.IsEmpty)
-                && typeSymbol.GetMembers(nameof(TaskAwaiter.OnCompleted)).OfType<IMethodSymbol>().Any()
-                && typeSymbol.GetMembers(nameof(TaskAwaiter.IsCompleted)).OfType<IPropertySymbol>().Any();
+            var hasGetResultMethod = false;
+            var hasOnCompletedMethod = false;
+            var hasIsCompletedProperty = false;
+
+            foreach (var member in typeSymbol.GetMembers())
+            {
+                hasGetResultMethod |= member.Name == nameof(TaskAwaiter.GetResult) && member is IMethodSymbol m && m.Parameters.IsEmpty;
+                hasOnCompletedMethod |= member.Name == nameof(TaskAwaiter.OnCompleted) && member is IMethodSymbol;
+                hasIsCompletedProperty |= member.Name == nameof(TaskAwaiter.IsCompleted) && member is IPropertySymbol;
+
+                if (hasGetResultMethod || hasOnCompletedMethod || hasIsCompletedProperty)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static IEnumerable<ITypeSymbol> GetAwaitableTypes(IAssemblySymbol assembly)
