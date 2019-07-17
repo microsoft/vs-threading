@@ -637,7 +637,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
 #else
                 "Release",
 #endif
-                "net45",
+                "net472",
                 "Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.exe");
             this.Logger.WriteLine("Using testexe path: {0}", testExePath);
             var psi = new ProcessStartInfo(testExePath)
