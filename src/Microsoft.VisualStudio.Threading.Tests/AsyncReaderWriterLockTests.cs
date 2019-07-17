@@ -38,11 +38,7 @@
         public AsyncReaderWriterLockTests(ITestOutputHelper logger)
             : base(logger)
         {
-#if DESKTOP || NETCOREAPP2_0
             this.asyncLock = new StaAverseLock();
-#else
-            this.asyncLock = new AsyncReaderWriterLock();
-#endif
             doNotWaitForLockCompletionAtTestCleanup = false;
         }
 
@@ -864,7 +860,6 @@
         }
 #endif
 
-#if DESKTOP || NETCOREAPP2_0
         [StaFact]
         public void LockAsyncThrowsOnGetResultBySta()
         {
@@ -873,7 +868,6 @@
             var awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
             Assert.Throws<InvalidOperationException>(() => awaiter.GetResult()); // throws on an STA thread
         }
-#endif
 
         [StaFact]
         public void LockAsyncNotIssuedTillGetResultOnSta()
@@ -1358,7 +1352,6 @@
             });
         }
 
-#if DESKTOP || NETCOREAPP2_0
         /// <summary>
         /// Tests that a common way to accidentally fork an exclusive lock for
         /// concurrent access gets called out as an error.
@@ -1374,7 +1367,6 @@
             await this.MitigationAgainstAccidentalLockForkingHelper(
                 () => this.asyncLock.UpgradeableReadLockAsync());
         }
-#endif
 
         [StaFact]
         public async Task UpgradeableReadLockAsyncSimple()
@@ -1717,7 +1709,6 @@
             }).GetAwaiter().GetResult();
         }
 
-#if DESKTOP || NETCOREAPP2_0
         /// <summary>
         /// Tests that a common way to accidentally fork an exclusive lock for
         /// concurrent access gets called out as an error.
@@ -1733,7 +1724,6 @@
             await this.MitigationAgainstAccidentalLockForkingHelper(
                 () => this.asyncLock.WriteLockAsync());
         }
-#endif
 
         [StaFact]
         public async Task WriteLockAsyncYieldsIfSyncContextSet()
@@ -2591,10 +2581,7 @@
                     try
                     {
                         awaiter.GetResult().Dispose();
-#if DESKTOP || NETCOREAPP2_0
-
                         Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
-#endif
                     }
                     catch (OperationCanceledException)
                     {
@@ -2609,9 +2596,7 @@
             // No lock is leaked
             using (await this.asyncLock.UpgradeableReadLockAsync())
             {
-#if DESKTOP || NETCOREAPP2_0
                 Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
-#endif
             }
         }
 
@@ -2802,7 +2787,6 @@
 
         #region Completion tests
 
-#if DESKTOP || NETCOREAPP2_0
         [StaFact]
         public void CompleteBlocksNewTopLevelLocksSTA()
         {
@@ -2823,7 +2807,6 @@
             {
             }
         }
-#endif
 
         [StaFact]
         public async Task CompleteBlocksNewTopLevelLocksMTA()
@@ -3482,7 +3465,6 @@
                 }));
         }
 
-#if DESKTOP || NETCOREAPP2_0
         [StaFact]
         public void OnBeforeWriteLockReleasedCallbackNeverInvokedOnSTA()
         {
@@ -3521,7 +3503,6 @@
                 await callbackCompleted.Task;
             });
         }
-#endif
 
         /// <summary>
         /// Test for when the write queue is NOT empty when a write lock is released on an STA to a (non-sticky)
@@ -3613,7 +3594,6 @@
 #endregion
 
 #region Thread apartment rules
-#if DESKTOP || NETCOREAPP2_0
 
         /// <summary>Verifies that locks requested on STA threads will marshal to an MTA.</summary>
         [StaFact]
@@ -3818,7 +3798,6 @@
             }
         }
 
-#endif
 #endregion
 
 #region Lock nesting tests
@@ -4198,9 +4177,7 @@
             await testResultSource.Task;
         }
 
-#if !NETCOREAPP1_0
         [Fact]
-#endif
         public async Task ReadLockAsync_UnsafeOnCompleted_DoesNotCaptureExecutionContext()
         {
             var asyncLocal = new Microsoft.VisualStudio.Threading.AsyncLocal<string>();
@@ -4325,9 +4302,7 @@
                             {
                                 try
                                 {
-#if DESKTOP || NETCOREAPP2_0
                                     Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
-#endif
                                     secondLockObtained.SetAsync();
                                 }
                                 catch (Exception ex)
@@ -4912,7 +4887,6 @@
         }
 #endif
 
-#if DESKTOP || NETCOREAPP2_0
         private class StaAverseLock : AsyncReaderWriterLock
         {
             protected override bool CanCurrentThreadHoldActiveLock
@@ -4924,7 +4898,6 @@
                 }
             }
         }
-#endif
 
         private class LockDerived : AsyncReaderWriterLock
         {

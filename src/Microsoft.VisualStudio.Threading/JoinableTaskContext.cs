@@ -132,16 +132,9 @@ namespace Microsoft.VisualStudio.Threading
         /// to the main thread from another thread.
         /// </summary>
         public JoinableTaskContext()
-#if DESKTOP || NETSTANDARD2_0
             : this(Thread.CurrentThread, SynchronizationContext.Current)
         {
-#else
-            : this(Environment.CurrentManagedThreadId, SynchronizationContext.Current)
-        {
-#endif
         }
-
-#if DESKTOP || NETSTANDARD2_0
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JoinableTaskContext"/> class.
@@ -159,30 +152,6 @@ namespace Microsoft.VisualStudio.Threading
             this.mainThreadManagedThreadId = this.MainThread.ManagedThreadId;
             this.UnderlyingSynchronizationContext = synchronizationContext ?? SynchronizationContext.Current; // may still be null after this.
         }
-
-#else // Do not expose the threadID constructor on desktop because it gives us no opportunity to initialize the MainThread property.
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="JoinableTaskContext"/> class.
-        /// </summary>
-        /// <param name="mainThreadManagedThreadId">
-        /// The managed thread ID of the thread to switch to in <see cref="JoinableTaskFactory.SwitchToMainThreadAsync(CancellationToken)"/>.
-        /// </param>
-        /// <param name="synchronizationContext">
-        /// The synchronization context to use to switch to the main thread.
-        /// </param>
-        /// <devremarks>
-        /// We MUST NOT expose this constructor in our public API because
-        /// Desktop must be a superset of portable, and this constructor cannot
-        /// appear in Desktop.
-        /// </devremarks>
-        private JoinableTaskContext(int mainThreadManagedThreadId, SynchronizationContext synchronizationContext)
-        {
-            this.mainThreadManagedThreadId = mainThreadManagedThreadId;
-            this.UnderlyingSynchronizationContext = synchronizationContext;
-        }
-
-#endif
 
         /// <summary>
         /// Gets the factory which creates joinable tasks
@@ -210,12 +179,10 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
-#if DESKTOP || NETSTANDARD2_0
         /// <summary>
         /// Gets the main thread that can be shared by tasks created by this context.
         /// </summary>
         public Thread MainThread { get; private set; }
-#endif
 
         /// <summary>
         /// Gets a value indicating whether the caller is executing on the main thread.
@@ -279,12 +246,10 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-#if DESKTOP || NETSTANDARD2_0
                 // Callers of this method are about to take a private lock, which tends
                 // to cause a deadlock while debugging because of lock contention with the
                 // debugger's expression evaluator. So prevent that.
                 Debugger.NotifyOfCrossThreadDependency();
-#endif
 
                 return NoMessagePumpSyncContext.Default;
             }

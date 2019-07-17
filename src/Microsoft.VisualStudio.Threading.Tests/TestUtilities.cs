@@ -2,9 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
-#if DESKTOP || NETCOREAPP2_0
     using System.Configuration;
-#endif
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
@@ -18,15 +16,6 @@
 
     internal static class TestUtilities
     {
-        /// <summary>
-        /// A value indicating whether the library is operating in .NET 4.5 mode.
-        /// </summary>
-#if NET451 || NET452
-        internal static readonly bool IsNet45Mode = ConfigurationManager.AppSettings["Microsoft.VisualStudio.Threading.NET45Mode"] == "true";
-#else
-        internal static readonly bool IsNet45Mode = false;
-#endif
-
         internal static Task SetAsync(this TaskCompletionSource<object> tcs)
         {
             return Task.Run(() => tcs.TrySetResult(null));
@@ -155,11 +144,7 @@
         /// </remarks>
         internal static IDisposable StarveThreadpool()
         {
-#if DESKTOP || NETCOREAPP2_0
             ThreadPool.GetMaxThreads(out int workerThreads, out int completionPortThreads);
-#else
-            int workerThreads = 1023;
-#endif
             var disposalTokenSource = new CancellationTokenSource();
             var unblockThreadpool = new ManualResetEventSlim();
             for (int i = 0; i < workerThreads; i++)

@@ -17,7 +17,6 @@
         {
         }
 
-#if DESKTOP || NETCOREAPP2_0
         [Fact]
         public void ExecuteOnSTA_ExecutesDelegateOnSTA()
         {
@@ -52,7 +51,6 @@
             });
             Assert.True(executed);
         }
-#endif
 
         [Fact]
         public void ExecuteOnDispatcher_PropagatesExceptions()
@@ -91,7 +89,6 @@
             throw new Exception("Intentional test failure");
         }
 
-#if DESKTOP
         [StaFact]
         public async Task ExecuteInIsolation_PassingOnSTA()
         {
@@ -119,6 +116,5 @@
             Assumes.True(executeHere);
             throw new Exception("Intentional test failure");
         }
-#endif
     }
 }

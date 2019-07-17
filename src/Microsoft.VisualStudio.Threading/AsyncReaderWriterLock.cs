@@ -354,11 +354,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </remarks>
         protected virtual bool CanCurrentThreadHoldActiveLock
         {
-#if DESKTOP || NETSTANDARD2_0
             get { return Thread.CurrentThread.GetApartmentState() != ApartmentState.STA; }
-#else
-            get { return true; }
-#endif
         }
 
         /// <summary>
@@ -1032,11 +1028,9 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     this.etw.WaitStart(awaiter);
 
-#if DESKTOP || NETSTANDARD2_0
                     // If the lock is immediately available, we don't need to coordinate with other threads.
                     // But if it is NOT available, we'd have to wait potentially for other threads to do more work.
                     Debugger.NotifyOfCrossThreadDependency();
-#endif
                 }
 
                 return issued;
@@ -2129,7 +2123,6 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             private SynchronizationContext synchronizationContext;
 
-#if DESKTOP || NETSTANDARD2_0
             /// <summary>
             /// The stacktrace of the caller originally requesting the lock.
             /// </summary>
@@ -2138,7 +2131,6 @@ namespace Microsoft.VisualStudio.Threading
             /// the captureDiagnostics parameter set to <c>true</c>.
             /// </remarks>
             private StackTrace requestingStackTrace;
-#endif
 
             /// <summary>
             /// An arbitrary object that may be set by a derived type of the containing lock class.
@@ -2163,9 +2155,7 @@ namespace Microsoft.VisualStudio.Threading
                 this.options = options;
                 this.cancellationToken = cancellationToken;
                 this.nestingLock = lck.GetFirstActiveSelfOrAncestor(lck.topAwaiter.Value);
-#if DESKTOP || NETSTANDARD2_0
                 this.requestingStackTrace = lck.captureDiagnostics ? new StackTrace(2, true) : null;
-#endif
             }
 
             /// <summary>
@@ -2198,7 +2188,6 @@ namespace Microsoft.VisualStudio.Threading
                 get { return this.lck; }
             }
 
-#if DESKTOP || NETSTANDARD2_0
             /// <summary>
             /// Gets the stack trace of the requestor of this lock.
             /// </summary>
@@ -2209,7 +2198,6 @@ namespace Microsoft.VisualStudio.Threading
             {
                 get { return this.requestingStackTrace; }
             }
-#endif
 
             /// <summary>
             /// Gets the delegate to invoke (or that was invoked) when the lock is/was issued, if available.
@@ -2500,7 +2488,6 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             /// <param name="continuation">The delegate.</param>
             /// <param name="flowExecutionContext">A value indicating whether to flow ExecutionContext.</param>
-            [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "flowExecutionContext", Justification = "Parameter is used in #if for some compilations.")]
             private void OnCompleted(Action continuation, bool flowExecutionContext)
             {
                 if (this.LockIssued)
@@ -2513,13 +2500,11 @@ namespace Microsoft.VisualStudio.Threading
                     throw new NotSupportedException("Multiple continuations are not supported.");
                 }
 
-#if THREADPOOL
                 bool restoreFlow = !flowExecutionContext && !ExecutionContext.IsFlowSuppressed();
                 if (restoreFlow)
                 {
                     ExecutionContext.SuppressFlow();
                 }
-#endif
 
                 try
                 {
@@ -2538,12 +2523,10 @@ namespace Microsoft.VisualStudio.Threading
                 }
                 finally
                 {
-#if THREADPOOL
                     if (restoreFlow)
                     {
                         ExecutionContext.RestoreFlow();
                     }
-#endif
                 }
             }
         }

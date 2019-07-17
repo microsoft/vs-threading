@@ -33,9 +33,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 if (doNotBlockBefore.HasValue && current < doNotBlockBefore.Value)
                 {
-#if NET45
                     Debug.WriteLine($"Allowing step {step} through because the current step {current} is less than {doNotBlockBefore}.");
-#endif
                     return;
                 }
 
@@ -46,24 +44,19 @@ namespace Microsoft.VisualStudio.Threading
 
                 if (current + 1 == step)
                 {
-#if NET45
                     Debug.WriteLine($"Allowing step {step} through in sequence." + GetStackTrace());
-#endif
                     current = step;
                     Monitor.PulseAll(SyncObject);
                 }
                 else
                 {
-#if NET45
                     Debug.WriteLine($"Allowing step {step} through because its time in the sequence has already passed.");
-#endif
                 }
             }
         }
 
         private static string GetStackTrace()
         {
-#if NET45
             const string indent = "    ";
             var stackTrace = new StackTrace(2, fNeedFileInfo: true);
             var sb = new StringBuilder();
@@ -100,9 +93,6 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             return sb.ToString();
-#else
-            return string.Empty;
-#endif
         }
     }
 }

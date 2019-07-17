@@ -422,8 +422,6 @@ namespace Microsoft.VisualStudio.Threading
             return tcs.Task;
         }
 
-#if DESKTOP || NETSTANDARD2_0
-
         /// <summary>
         /// Creates a TPL Task that returns <c>true</c> when a <see cref="WaitHandle"/> is signaled or returns <c>false</c> if a timeout occurs first.
         /// </summary>
@@ -513,8 +511,6 @@ namespace Microsoft.VisualStudio.Threading
             return tcs.Task;
         }
 
-#endif
-
         /// <summary>
         /// Applies one task's results to another.
         /// </summary>
@@ -561,13 +557,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns>The faulted task.</returns>
         internal static Task<T> FaultedTask<T>(Exception ex)
         {
-#if NET45
-            var tcs = new TaskCompletionSource<T>();
-            tcs.SetException(ex);
-            return tcs.Task;
-#else
             return Task.FromException<T>(ex);
-#endif
         }
 
         /// <summary>

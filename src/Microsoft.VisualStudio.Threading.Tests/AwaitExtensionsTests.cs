@@ -188,7 +188,6 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public void AwaitThreadPoolSchedulerYieldsOnNonThreadPoolThreads()
         {
-#if DESKTOP || NETCOREAPP2_0
             // In some test runs (including VSTS cloud test), this test runs on a threadpool thread.
             if (Thread.CurrentThread.IsThreadPoolThread)
             {
@@ -203,10 +202,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 testResult.GetAwaiter().GetResult(); // rethrow any test failure.
                 return; // skip the test that runs on this thread.
             }
-#else
-            // Set this, which makes it appear our thread is not a threadpool thread.
-            SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
-#endif
+
             Assert.False(TaskScheduler.Default.GetAwaiter().IsCompleted);
         }
 
@@ -215,12 +211,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         {
             Task.Run(delegate
             {
-#if DESKTOP || NETCOREAPP2_0
                 Assert.True(Thread.CurrentThread.IsThreadPoolThread, "Test depends on thread looking like threadpool thread.");
-#else
-                // Erase AsyncTestSyncContext, which somehow still is set in VSTS cloud tests.
-                SynchronizationContext.SetSynchronizationContext(null);
-#endif
                 Assert.True(TaskScheduler.Default.GetAwaiter().IsCompleted);
             }).GetAwaiter().GetResult();
         }
@@ -327,9 +318,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
         }
 
-#if !NETCOREAPP1_0 // .NET Core 1.0 doesn't offer a way to avoid flowing ExecutionContext
         [Fact]
-#endif
         public async Task AwaitTaskScheduler_UnsafeOnCompleted_DoesNotCaptureExecutionContext()
         {
             var taskResultSource = new TaskCompletionSource<object>();
@@ -373,8 +362,6 @@ namespace Microsoft.VisualStudio.Threading.Tests
             asyncLocal.Value = null;
             await taskResultSource.Task;
         }
-
-#if DESKTOP || NETCOREAPP2_0
 
         [Fact]
         public void AwaitWaitHandle()
@@ -469,10 +456,6 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 p.Kill();
             }
         }
-
-#endif
-
-#if DESKTOP
 
         [Fact]
         public async Task AwaitRegKeyChange()
@@ -576,10 +559,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 }
                 catch (OperationCanceledException ex)
                 {
-                    if (!TestUtilities.IsNet45Mode)
-                    {
-                        Assert.Equal(cts.Token, ex.CancellationToken);
-                    }
+                    Assert.Equal(cts.Token, ex.CancellationToken);
                 }
             }
         }
@@ -615,10 +595,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
             catch (OperationCanceledException ex)
             {
-                if (!TestUtilities.IsNet45Mode)
-                {
-                    Assert.Equal(expectedCancellationToken, ex.CancellationToken);
-                }
+                Assert.Equal(expectedCancellationToken, ex.CancellationToken);
             }
         }
 
@@ -718,7 +695,6 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 Registry.CurrentUser.DeleteSubKeyTree(this.keyName);
             }
         }
-#endif
 
         private class MockTaskScheduler : TaskScheduler
         {

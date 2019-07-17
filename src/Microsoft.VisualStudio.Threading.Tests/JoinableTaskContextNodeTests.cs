@@ -58,10 +58,8 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [StaFact]
         public void MainThread()
         {
-#if DESKTOP || NETCOREAPP2_0
             Assert.Same(this.context.MainThread, this.defaultNode.MainThread);
             Assert.Same(this.context.MainThread, this.derivedNode.MainThread);
-#endif
             Assert.True(this.context.IsOnMainThread);
             Assert.True(this.derivedNode.IsOnMainThread);
         }

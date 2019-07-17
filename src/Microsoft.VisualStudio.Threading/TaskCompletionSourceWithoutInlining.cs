@@ -36,16 +36,7 @@ namespace Microsoft.VisualStudio.Threading
         internal TaskCompletionSourceWithoutInlining(bool allowInliningContinuations, TaskCreationOptions options = TaskCreationOptions.None, object state = null)
             : base(state, AdjustFlags(options, allowInliningContinuations))
         {
-            if (!allowInliningContinuations && !LightUps.IsRunContinuationsAsynchronouslySupported)
-            {
-                var innerTcs = new TaskCompletionSource<T>(state, options);
-                base.Task.ApplyResultTo(innerTcs, inlineSubsequentCompletion: false);
-                this.exposedTask = innerTcs.Task;
-            }
-            else
-            {
-                this.exposedTask = base.Task;
-            }
+            this.exposedTask = base.Task;
         }
 
         /// <summary>
@@ -68,9 +59,9 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns>The possibly modified flags.</returns>
         private static TaskCreationOptions AdjustFlags(TaskCreationOptions options, bool allowInliningContinuations)
         {
-            return (!allowInliningContinuations && LightUps.IsRunContinuationsAsynchronouslySupported)
-                ? (options | LightUps.RunContinuationsAsynchronously)
-                : options;
+            return allowInliningContinuations
+                ? (options & ~TaskCreationOptions.RunContinuationsAsynchronously)
+                : (options | TaskCreationOptions.RunContinuationsAsynchronously);
         }
     }
 }

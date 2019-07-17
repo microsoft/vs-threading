@@ -15,10 +15,8 @@ namespace Microsoft.VisualStudio.Threading
     using System.Security;
     using System.Threading;
     using System.Threading.Tasks;
-#if DESKTOP
     using Microsoft.Win32;
     using Microsoft.Win32.SafeHandles;
-#endif
 
     /// <summary>
     /// Extension methods and awaitables for .NET 4.5.
@@ -48,8 +46,6 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(scheduler, nameof(scheduler));
             return new TaskSchedulerAwaitable(scheduler, alwaysYield);
         }
-
-#if DESKTOP || NETSTANDARD2_0
 
         /// <summary>
         /// Provides await functionality for ordinary <see cref="WaitHandle"/>s.
@@ -103,9 +99,6 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
-#endif
-
-#if DESKTOP
         /// <summary>
         /// Returns a Task that completes when the specified registry key changes.
         /// </summary>
@@ -397,8 +390,6 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
-#endif
-
         /// <summary>
         /// Converts a <see cref="YieldAwaitable"/> to a <see cref="ConfiguredTaskYieldAwaitable"/>.
         /// </summary>
@@ -533,14 +524,7 @@ namespace Microsoft.VisualStudio.Threading
                     // TaskScheduler.Current is never null.  Even if no scheduler is really active and the current
                     // thread is not a threadpool thread, TaskScheduler.Current == TaskScheduler.Default, so we have
                     // to protect against that case too.
-#if DESKTOP || NETSTANDARD2_0
                     bool isThreadPoolThread = Thread.CurrentThread.IsThreadPoolThread;
-#else
-                    // An approximation of whether we're on a threadpool thread is whether
-                    // there is a SynchronizationContext applied. So use that, since it's
-                    // available to portable libraries.
-                    bool isThreadPoolThread = SynchronizationContext.Current == null;
-#endif
                     return (this.scheduler == TaskScheduler.Default && isThreadPoolThread)
                         || (this.scheduler == TaskScheduler.Current && TaskScheduler.Current != TaskScheduler.Default);
                 }
@@ -571,11 +555,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 if (this.scheduler == TaskScheduler.Default)
                 {
-#if THREADPOOL
                     ThreadPool.UnsafeQueueUserWorkItem(state => ((Action)state)(), continuation);
-#else
-                    ThreadPool.QueueUserWorkItem(state => ((Action)state)(), continuation);
-#endif
                 }
                 else
                 {
@@ -679,11 +659,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
                 else
                 {
-#if THREADPOOL
                     ThreadPool.UnsafeQueueUserWorkItem(state => ((Action)state)(), continuation);
-#else
-                    ThreadPool.QueueUserWorkItem(state => ((Action)state)(), continuation);
-#endif
                 }
             }
 

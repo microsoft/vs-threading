@@ -668,8 +668,6 @@
             await callbackResult.Task;
         }
 
-#if DESKTOP || NETCOREAPP2_0
-
         [Fact]
         public void ToTaskReturnsCompletedTaskPreSignaled()
         {
@@ -734,8 +732,6 @@
             handle.Dispose();
             await Assert.ThrowsAsync<ObjectDisposedException>(() => TplExtensions.ToTask(handle));
         }
-
-#endif
 
         [Theory]
         [InlineData(false)]
