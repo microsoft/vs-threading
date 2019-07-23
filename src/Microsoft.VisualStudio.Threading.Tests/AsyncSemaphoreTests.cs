@@ -185,10 +185,7 @@
             }
             catch (OperationCanceledException ex)
             {
-                if (!TestUtilities.IsNet45Mode)
-                {
-                    Assert.Equal(cts.Token, ex.CancellationToken);
-                }
+                Assert.Equal(cts.Token, ex.CancellationToken);
             }
         }
 

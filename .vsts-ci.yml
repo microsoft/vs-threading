@@ -2,7 +2,7 @@ trigger:
   branches:
     include: ["master", "v15.8", "v16.0"]
   paths:
-    exclude: [".github", "doc", "*.md", ".appveyor.yml", ".travis.yml"]
+    exclude: [".github", "doc", "*.md"]
 
 variables:
   TreatWarningsAsErrors: true
@@ -10,21 +10,15 @@ variables:
   BuildConfiguration: Release
   BuildPlatform: Any CPU
 
-resources:
-  containers:
-  - container: xenial
-    image: andrewarnott/linux-buildagent
-
 jobs:
 - job: Windows
-  pool: Hosted VS2017
+  pool: Hosted Windows 2019 with VS2019
   steps:
   - template: azure-pipelines/build.yml
 
 - job: Linux
   pool:
     vmImage: Ubuntu 16.04
-  container: xenial
   steps:
   - template: azure-pipelines/testfx.yml
     parameters:

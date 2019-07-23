@@ -4,8 +4,6 @@
 *                                                        *
 *********************************************************/
 
-#if DESKTOP
-
 namespace Microsoft.VisualStudio.Threading
 {
     using System;
@@ -53,5 +51,3 @@ namespace Microsoft.VisualStudio.Threading
             [MarshalAs(UnmanagedType.Bool)] bool asynchronous);
     }
 }
-
-#endif

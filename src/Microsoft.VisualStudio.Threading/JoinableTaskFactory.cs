@@ -20,9 +20,6 @@ namespace Microsoft.VisualStudio.Threading
     using System.Threading;
     using System.Threading.Tasks;
     using JoinableTaskSynchronizationContext = Microsoft.VisualStudio.Threading.JoinableTask.JoinableTaskSynchronizationContext;
-#if !(DESKTOP || NETSTANDARD2_0)
-    using WaitCallback = System.Action<object>;
-#endif
 
     /// <summary>
     /// A factory for starting asynchronous tasks that can mitigate deadlocks
@@ -753,11 +750,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             private static readonly Action<object> SafeCancellationAction = state => ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, state);
 
-#if THREADPOOL
             private static readonly Action<object> UnsafeCancellationAction = state => ThreadPool.UnsafeQueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, state);
-#else
-            private static readonly Action<object> UnsafeCancellationAction = SafeCancellationAction; // unsafe option not available
-#endif
 
             private readonly JoinableTaskFactory jobFactory;
 
@@ -907,13 +900,11 @@ namespace Microsoft.VisualStudio.Threading
             {
                 Assumes.True(this.jobFactory != null);
 
-#if THREADPOOL
                 bool restoreFlow = !flowExecutionContext && !ExecutionContext.IsFlowSuppressed();
                 if (restoreFlow)
                 {
                     ExecutionContext.SuppressFlow();
                 }
-#endif
 
                 try
                 {
@@ -969,7 +960,6 @@ namespace Microsoft.VisualStudio.Threading
                     // Crash now, so that a Watson report would capture the original error.
                     Environment.FailFast("Failed to schedule time on the UI thread. A continuation would never execute.", ex);
                 }
-#if THREADPOOL
                 finally
                 {
                     if (restoreFlow)
@@ -977,7 +967,6 @@ namespace Microsoft.VisualStudio.Threading
                         ExecutionContext.RestoreFlow();
                     }
                 }
-#endif
             }
         }
 

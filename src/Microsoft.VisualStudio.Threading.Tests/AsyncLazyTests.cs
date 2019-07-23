@@ -9,6 +9,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -150,67 +151,23 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public async Task ValueFactoryReleasedAfterExecution()
         {
-            for (int i = 0; i < 10; i++)
+            WeakReference collectible = await this.ValueFactoryReleasedAfterExecution_Helper();
+
+            for (int i = 0; i < 3; i++)
             {
-                this.Logger.WriteLine("Iteration {0}", i);
-                WeakReference collectible = null;
-                AsyncLazy<object> lazy = null;
-                ((Action)(() =>
-                {
-                    var closure = new { value = new object() };
-                    collectible = new WeakReference(closure);
-                    lazy = new AsyncLazy<object>(async delegate
-                    {
-                        await Task.Yield();
-                        return closure.value;
-                    });
-                }))();
-
-                Assert.True(collectible.IsAlive);
-                var result = await lazy.GetValueAsync();
-
-                for (int j = 0; j < 3 && collectible.IsAlive; j++)
-                {
-                    GC.Collect(2, GCCollectionMode.Forced, true);
-                    await Task.Yield();
-                }
-
-                // It turns out that the GC isn't predictable.  But as long as
-                // we can get an iteration where the value has been GC'd, we can
-                // be confident that the product is releasing the reference.
-                if (!collectible.IsAlive)
-                {
-                    return; // PASS.
-                }
+                await Task.Yield();
+                GC.Collect();
             }
 
-            Assert.True(false, "The reference was never released");
+            Assert.False(collectible.IsAlive);
         }
 
         [Theory, CombinatorialData]
         public async Task AsyncPumpReleasedAfterExecution(bool throwInValueFactory)
         {
-            WeakReference collectible = null;
-            AsyncLazy<object> lazy = null;
-            ((Action)(() =>
-            {
-                var context = new JoinableTaskContext(); // we need our own collectible context.
-                collectible = new WeakReference(context.Factory);
-                var valueFactory = throwInValueFactory
-                    ? new Func<Task<object>>(() => throw new ApplicationException())
-                    : async delegate
-                    {
-                        await Task.Yield();
-                        return new object();
-                    };
-                lazy = new AsyncLazy<object>(valueFactory, context.Factory);
-            }))();
+            WeakReference collectible = await this.AsyncPumpReleasedAfterExecution_Helper(throwInValueFactory);
 
-            Assert.True(collectible.IsAlive);
-            await lazy.GetValueAsync().NoThrowAwaitable();
-
-            var cts = new CancellationTokenSource(UnexpectedTimeout);
-            while (!cts.IsCancellationRequested && collectible.IsAlive)
+            for (int i = 0; i < 3; i++)
             {
                 await Task.Yield();
                 GC.Collect();
@@ -742,6 +699,39 @@ namespace Microsoft.VisualStudio.Threading.Tests
         {
             SynchronizationContext.SetSynchronizationContext(SingleThreadedTestSynchronizationContext.New());
             return new JoinableTaskContext();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private async Task<WeakReference> ValueFactoryReleasedAfterExecution_Helper()
+        {
+            var closure = new { value = new object() };
+            var collectible = new WeakReference(closure);
+            var lazy = new AsyncLazy<object>(async delegate
+            {
+                await Task.Yield();
+                return closure.value;
+            });
+
+            await lazy.GetValueAsync();
+            return collectible;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private async Task<WeakReference> AsyncPumpReleasedAfterExecution_Helper(bool throwInValueFactory)
+        {
+            var context = new JoinableTaskContext(); // we need our own collectible context.
+            var collectible = new WeakReference(context.Factory);
+            var valueFactory = throwInValueFactory
+                ? new Func<Task<object>>(() => throw new ApplicationException())
+                : async delegate
+                {
+                    await Task.Yield();
+                    return new object();
+                };
+            var lazy = new AsyncLazy<object>(valueFactory, context.Factory);
+
+            await lazy.GetValueAsync().NoThrowAwaitable();
+            return collectible;
         }
     }
 }

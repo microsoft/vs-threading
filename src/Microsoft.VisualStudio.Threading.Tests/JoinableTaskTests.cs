@@ -363,9 +363,7 @@
             task.Wait(this.TimeoutToken);
         }
 
-#if !NETCOREAPP1_0
         [Fact]
-#endif
         public void SwitchToMainThreadAsync_UnsafeOnCompleted_DoesNotCaptureExecutionContext()
         {
             this.SimulateUIThread(async delegate
@@ -391,9 +389,7 @@
             });
         }
 
-#if !NETCOREAPP1_0
         [Fact]
-#endif
         public void SwitchToMainThreadAsync_UnsafeOnCompleted_DoesNotCaptureExecutionContext_WhenCanceled()
         {
             this.SimulateUIThread(delegate
@@ -3998,16 +3994,12 @@
 
                 if (canceled)
                 {
-#if DESKTOP || NETCOREAPP2_0
                     Assert.NotSame(this.Context.MainThread, Thread.CurrentThread); // A canceled transition should not complete on the main thread.
-#endif
                     Assert.False(this.Context.IsOnMainThread);
                 }
                 else
                 {
-#if DESKTOP || NETCOREAPP2_0
                     Assert.Same(this.Context.MainThread, Thread.CurrentThread); // We should be on the main thread if we've just transitioned.
-#endif
                     Assert.True(this.Context.IsOnMainThread);
                 }
 

@@ -4,8 +4,6 @@
 *                                                        *
 *********************************************************/
 
-#if DESKTOP
-
 namespace Microsoft.VisualStudio.Threading
 {
     using System;
@@ -47,5 +45,3 @@ namespace Microsoft.VisualStudio.Threading
         Security = 0x8,
     }
 }
-
-#endif

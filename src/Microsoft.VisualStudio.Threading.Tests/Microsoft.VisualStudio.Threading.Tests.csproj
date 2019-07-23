@@ -3,7 +3,7 @@
     <!-- We target net451 to test library code to support NET45 -->
     <!-- We target net452 to test library code to support NET46 light-up from a net45 assembly -->
     <!-- We target net46 to test library code that supports net46 natively. -->
-    <TargetFrameworks>net451;net452;net46;netcoreapp1.0;netcoreapp2.0</TargetFrameworks>
+    <TargetFrameworks>net472;netcoreapp2.1</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Tests.ruleset</CodeAnalysisRuleSet>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
@@ -14,9 +14,8 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
 
-    <TargetsDesktop Condition=" '$(TargetFramework)' == 'net451' or '$(TargetFramework)' == 'net452' or '$(TargetFramework)' == 'net46' ">true</TargetsDesktop>
+    <TargetsDesktop Condition=" '$(TargetFramework)' == 'net472' ">true</TargetsDesktop>
     <DefineConstants Condition=" '$(TargetsDesktop)' == 'true' ">$(DefineConstants);DESKTOP;ISOLATED_TEST_SUPPORT</DefineConstants>
-    <AppConfig Condition=" '$(TargetFramework)' == 'net451' ">App.net45.config</AppConfig>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\Microsoft.VisualStudio.Threading\InternalUtilities.cs">
@@ -30,13 +29,12 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="xunit" Version="2.1.0" Condition=" '$(TargetFramework)' == 'net451' " />
-    <PackageReference Include="xunit" Version="2.2.0" Condition=" '$(TargetFramework)' != 'net451' " />
+    <PackageReference Include="xunit" Version="2.2.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
     <PackageReference Include="Xunit.Combinatorial" Version="1.2.7" />
     <PackageReference Include="Xunit.SkippableFact" Version="1.3.3" />
     <PackageReference Include="Xunit.StaFact" Version="0.2.9" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
     <PackageReference Include="OpenCover" Version="4.6.519" />
     <PackageReference Include="MicroBuild.Nonshipping" Version="$(MicroBuildVersion)" />
   </ItemGroup>
@@ -53,8 +51,5 @@
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <Private>true</Private>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
 </Project>

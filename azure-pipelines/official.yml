@@ -12,6 +12,6 @@ variables:
 
 jobs:
 - job: Windows
-  pool: VSEng-MicroBuildVS2017
+  pool: VSEng-MicroBuildVS2019
   steps:
   - template: build.yml

@@ -166,9 +166,7 @@
                 int[] gcCountBefore = new int[GC.MaxGeneration + 1];
                 int[] gcCountAfter = new int[GC.MaxGeneration + 1];
                 long initialMemory = GC.GetTotalMemory(true);
-#if NET46 || NETCOREAPP2_0
                 GC.TryStartNoGCRegion(8 * 1024 * 1024);
-#endif
                 for (int i = 0; i <= GC.MaxGeneration; i++)
                 {
                     gcCountBefore[i] = GC.CollectionCount(i);
@@ -185,9 +183,7 @@
                 }
 
                 long allocated = (GC.GetTotalMemory(false) - initialMemory) / iterations;
-#if NET46 || NETCOREAPP2_0
                 GC.EndNoGCRegion();
-#endif
 
                 attemptWithinMemoryLimitsObserved |= maxBytesAllocated == -1 || allocated <= maxBytesAllocated;
                 long leaked = long.MaxValue;
@@ -248,7 +244,6 @@
             this.ExecuteOnDispatcher(() => this.CheckGCPressureAsync(scenario, maxBytesAllocated, iterations, allowedAttempts));
         }
 
-#if DESKTOP || NETCOREAPP2_0
         /// <summary>
         /// Executes the delegate on a thread with <see cref="ApartmentState.STA"/>
         /// and without a current <see cref="SynchronizationContext"/>.
@@ -285,7 +280,6 @@
                 ExceptionDispatchInfo.Capture(staFailure).Throw(); // rethrow preserving callstack.
             }
         }
-#endif
 
         protected void ExecuteOnDispatcher(Action action)
         {
@@ -327,7 +321,6 @@
                 }
             };
 
-#if DESKTOP || NETCOREAPP2_0
             if ((!staRequired || Thread.CurrentThread.GetApartmentState() == ApartmentState.STA) &&
                 SingleThreadedTestSynchronizationContext.IsSingleThreadedSyncContext(SynchronizationContext.Current))
             {
@@ -345,20 +338,6 @@
                     worker();
                 });
             }
-#else
-            if (SingleThreadedTestSynchronizationContext.IsSingleThreadedSyncContext(SynchronizationContext.Current))
-            {
-                worker();
-            }
-            else
-            {
-                Task.Run(delegate
-                {
-                    SynchronizationContext.SetSynchronizationContext(SingleThreadedTestSynchronizationContext.New());
-                    worker();
-                }).GetAwaiter().GetResult();
-            }
-#endif
         }
 
         /// <summary>

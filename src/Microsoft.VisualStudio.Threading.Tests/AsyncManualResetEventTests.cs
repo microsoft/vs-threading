@@ -95,39 +95,23 @@
         }
 
         [Fact]
-        public async Task PulseAllAsync()
+        public void PulseAllAsync()
         {
             var waitTask = this.evt.WaitAsync();
 #pragma warning disable CS0618 // Type or member is obsolete
             var pulseTask = this.evt.PulseAllAsync();
 #pragma warning restore CS0618 // Type or member is obsolete
-            if (TestUtilities.IsNet45Mode)
-            {
-                await pulseTask;
-            }
-            else
-            {
-                Assert.Equal(TaskStatus.RanToCompletion, pulseTask.Status);
-            }
-
+            Assert.Equal(TaskStatus.RanToCompletion, pulseTask.Status);
             Assert.True(waitTask.IsCompleted);
             Assert.False(this.evt.WaitAsync().IsCompleted);
         }
 
         [Fact]
-        public async Task PulseAll()
+        public void PulseAll()
         {
             var task = this.evt.WaitAsync();
             this.evt.PulseAll();
-            if (TestUtilities.IsNet45Mode)
-            {
-                await task;
-            }
-            else
-            {
-                Assert.True(task.IsCompleted);
-            }
-
+            Assert.True(task.IsCompleted);
             Assert.False(this.evt.WaitAsync().IsCompleted);
         }
 
@@ -209,9 +193,7 @@
                 // actually propagated to the Task returned by WaitAsync earlier.
                 // In fact we'll go so far as to assert the Task itself should be the same.
                 Assert.Same(waitTask, setTask1);
-#if !NET452 && !NET451 // The same Task can only be guaranteed where .NET supports completing TCS without inlining continuations.
                 Assert.Same(waitTask, setTask2);
-#endif
             }
         }
 

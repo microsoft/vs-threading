@@ -2,9 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
-#if DESKTOP || NETCOREAPP2_0
     using System.Configuration;
-#endif
     using System.Linq;
     using System.Text;
     using System.Threading;
@@ -124,8 +122,6 @@
         [SkippableFact]
         public void WithCancellationAndPrecancelledToken()
         {
-            Skip.If(TestUtilities.IsNet45Mode, "This test verifies behavior that is only available on .NET 4.6.");
-
             var tcs = new TaskCompletionSource<object>();
             var cts = new CancellationTokenSource();
             cts.Cancel();

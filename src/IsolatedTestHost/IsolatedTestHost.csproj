@@ -1,8 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>net45</TargetFrameworks>
+    <TargetFrameworks>net472</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <CodeAnalysisRuleSet>..\Microsoft.VisualStudio.Threading.Tests\Microsoft.VisualStudio.Threading.Tests.ruleset</CodeAnalysisRuleSet>
