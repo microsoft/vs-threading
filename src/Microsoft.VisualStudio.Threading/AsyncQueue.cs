@@ -259,6 +259,10 @@ namespace Microsoft.VisualStudio.Threading
         /// for then handling.
         /// </param>
         /// <returns>A task whose result is the head element.</returns>
+        /// <exception cref="OperationCanceledException">
+        /// Thrown when this instance has an empty queue and <see cref="Complete()"/> has been called.
+        /// Also thrown when <paramref name="cancellationToken"/> is canceled before a work item can be dequeued.
+        /// </exception>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         public Task<T> DequeueAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
