@@ -80,3 +80,16 @@ steps:
     SymbolServerType: TeamServices
   displayName: Publish symbols to symbol server
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+
+- task: Ref12.ref12-analyze-task.ref12-analyze-task.Ref12Analyze@0
+  displayName: Ref12 (Codex) Analyze
+  inputs:
+    codexoutputroot: $(Build.ArtifactStagingDirectory)\Codex
+    workflowArguments: |
+      /sourcesDirectory:$(Build.SourcesDirectory)
+      /codexRepoUrl:$(Build.Repository.Uri)
+      /repoName:$(Build.Repository.Name)
+      /additionalCodexArguments:-bld
+      /additionalCodexArguments:$(Build.ArtifactStagingDirectory)/build_logs
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+  continueOnError: true
