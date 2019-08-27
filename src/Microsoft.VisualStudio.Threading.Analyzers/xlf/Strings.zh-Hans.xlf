@@ -1,0 +1,274 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en-US" target-language="zh-Hans" original="../Strings.resx">
+    <body>
+      <trans-unit id="AwaitXInstead" translate="yes" xml:space="preserve">
+        <source>Await {0} instead</source>
+        <target state="translated">改为 await {0}</target>
+        <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.
+{0} is a method name.</note>
+      </trans-unit>
+      <trans-unit id="UseAwaitInstead" translate="yes" xml:space="preserve">
+        <source>Use await instead</source>
+        <target state="translated">改用 await</target>
+        <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
+      </trans-unit>
+      <trans-unit id="VSTHRD001_MessageFormat" translate="yes" xml:space="preserve">
+        <source>Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority.</source>
+        <target state="translated">等待 JoinableTaskFactory.SwitchToMainThreadAsync() 切换到 UI 线程，而非切换到可死锁或要求指定优先级的 API。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD001_Title" translate="yes" xml:space="preserve">
+        <source>Avoid legacy thread switching APIs</source>
+        <target state="translated">避免旧线程切换 API</target>
+        <note from="MultilingualBuild" annotates="source" priority="2">thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.</note>
+      </trans-unit>
+      <trans-unit id="VSTHRD002_CodeFix_Await_Title" translate="yes" xml:space="preserve">
+        <source>Use await instead</source>
+        <target state="translated">改用 await</target>
+        <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
+      </trans-unit>
+      <trans-unit id="VSTHRD002_MessageFormat" translate="yes" xml:space="preserve">
+        <source>Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or JoinableTaskFactory.Run instead.</source>
+        <target state="translated">同步等待任务或 awaiter 可能导致死锁。请等待或改用 JoinableTaskFactory.Run。</target>
+        <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.</note>
+      </trans-unit>
+      <trans-unit id="VSTHRD002_Title" translate="yes" xml:space="preserve">
+        <source>Avoid problematic synchronous waits</source>
+        <target state="translated">避免有问题的同步等待</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD003_MessageFormat" translate="yes" xml:space="preserve">
+        <source>Avoid awaiting or returning a Task representing work that was not started within your context as that can lead to deadlocks.
+Start the work within this context, or use JoinableTaskFactory.RunAsync and await the returned JoinableTask instead.</source>
+        <target state="translated">避免等待或返回表示在上下文内未启动的工作的任务，因为可能导致死锁。
+在此上下文内启动工作，或使用 JoinableTaskFactory.RunAsync 并等待返回的 JoinableTask。</target>
+        <note from="MultilingualUpdate" annotates="source" priority="2" />
+      </trans-unit>
+      <trans-unit id="VSTHRD003_Title" translate="yes" xml:space="preserve">
+        <source>Avoid awaiting foreign Tasks</source>
+        <target state="translated">避免等待外部任务</target>
+        <note from="MultilingualUpdate" annotates="source" priority="2" />
+      </trans-unit>
+      <trans-unit id="VSTHRD004_MessageFormat" translate="yes" xml:space="preserve">
+        <source>Calls to JoinableTaskFactory.SwitchToMainThreadAsync() must be awaited.</source>
+        <target state="translated">对 JoinableTaskFactory.SwitchToMainThreadAsync() 的调用必须等待。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD004_Title" translate="yes" xml:space="preserve">
+        <source>Await SwitchToMainThreadAsync</source>
+        <target state="translated">等待 SwitchToMainThreadAsync</target>
+        <note from="MultilingualBuild" annotates="source" priority="2">Do not translate either of these. The first is a keyword, the second is a method name.</note>
+      </trans-unit>
+      <trans-unit id="VSTHRD010_MessageFormat_Async" translate="yes" xml:space="preserve">
+        <source>Accessing "{0}" should only be done on the main thread. Await JoinableTaskFactory.SwitchToMainThreadAsync() first.</source>
+        <target state="translated">只应在主线程中访问“{0}”。请先等待 JoinableTaskFactory.SwitchToMainThreadAsync()。</target>
+        <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type or member name.</note>
+      </trans-unit>
+      <trans-unit id="VSTHRD010_MessageFormat_Sync" translate="yes" xml:space="preserve">
+        <source>Accessing "{0}" should only be done on the main thread. Call {1}() first.</source>
+        <target state="translated">只应在主线程中访问“{0}”。请先调用 {1}()。</target>
+        <note from="MultilingualBuild" annotates="source" priority="2">{0} is a type or member name and {1} is the name of a method that throws if not called from the main thread.</note>
+      </trans-unit>
+      <trans-unit id="VSTHRD010_Title" translate="yes" xml:space="preserve">
+        <source>Invoke single-threaded types on Main thread</source>
+        <target state="translated">在主线程上调用单线程类型</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD011_MessageFormat" translate="yes" xml:space="preserve">
+        <source>Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock.
+Use AsyncLazy&lt;T&gt; instead.</source>
+        <target state="translated">Lazy&lt;Task&lt;T&gt;&gt;。值会死锁。
+请改为使用 AsyncLazy&lt;T&gt;。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD011_Title" translate="yes" xml:space="preserve">
+        <source>Use AsyncLazy&lt;T&gt;</source>
+        <target state="translated">使用 AsyncLazy&lt;T&gt;</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD011b_MessageFormat" translate="yes" xml:space="preserve">
+        <source>Invoking or blocking on async code in a Lazy&lt;T&gt; value factory can deadlock.
+Use AsyncLazy&lt;T&gt; instead.</source>
+        <target state="translated">在 Lazy&lt;T&gt; 值工厂中调用或阻止异步代码会出现死锁。
+请改为使用 AsyncLazy&lt;T&gt;。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD012_MessageFormat" translate="yes" xml:space="preserve">
+        <source>Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.</source>
+        <target state="translated">在此调用中提供 JoinableTaskFactory 的实例（或其他重载）以避免主线程死锁。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD012_Title" translate="yes" xml:space="preserve">
+        <source>Provide JoinableTaskFactory where allowed</source>
+        <target state="translated">在允许的地方提供 JoinableTaskFactory</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD100_CodeFix_Title" translate="yes" xml:space="preserve">
+        <source>Change return type to Task</source>
+        <target state="translated">将返回类型更改为 Task</target>
+        <note from="MultilingualBuild" annotates="source" priority="2">Task is a type name and should not be translated.</note>
+      </trans-unit>
+      <trans-unit id="VSTHRD100_MessageFormat" translate="yes" xml:space="preserve">
+        <source>Avoid "async void" methods, because any exceptions not handled by the method will crash the process.</source>
+        <target state="translated">避免使用“Async Void”方法，因为此方法未处理的任何异常都将导致进程故障。</target>
+        <note from="MultilingualBuild" annotates="source" priority="2">"async void" is a pair of C# keywords. Do not translate them.</note>
+      </trans-unit>
+      <trans-unit id="VSTHRD100_Title" translate="yes" xml:space="preserve">
+        <source>Avoid async void methods</source>
+        <target state="translated">避免使用 Async Void 方法</target>
+        <note from="MultilingualBuild" annotates="source" priority="2">"async void" is a pair of C# keywords. Do not translate them.</note>
+      </trans-unit>
+      <trans-unit id="VSTHRD101_MessageFormat" translate="yes" xml:space="preserve">
+        <source>Avoid using async lambda for a void returning delegate type, because any exceptions not handled by the delegate will crash the process.</source>
+        <target state="translated">避免对返回委托类型的 void 使用异步 lambda，因为此委托未处理的任何异常都将导致进程故障。</target>
+        <note from="MultilingualBuild" annotates="source" priority="2">"void" is a C# keyword and should not be translated.</note>
+      </trans-unit>
+      <trans-unit id="VSTHRD101_Title" translate="yes" xml:space="preserve">
+        <source>Avoid unsupported async delegates</source>
+        <target state="translated">避免不支持的异步委托</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD102_MessageFormat" translate="yes" xml:space="preserve">
+        <source>Limit use of synchronously blocking method calls such as JoinableTaskFactory.Run or Task.Result to public entrypoint members where you must be synchronous. Using it for internal members can needlessly add synchronous frames between asynchronous frames, leading to threadpool exhaustion.</source>
+        <target state="translated">当必须为同步时，仅限公共入口点成员使用同步阻止方法调用，如 JoinableTaskFactory.Run 或 Task.Result。将其用于内部成员会在异步框架间添加多余同步框架，进而导致线程池枯竭。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD102_Title" translate="yes" xml:space="preserve">
+        <source>Implement internal logic asynchronously</source>
+        <target state="translated">异步实现内部逻辑</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD103_MessageFormat" translate="yes" xml:space="preserve">
+        <source>{0} synchronously blocks. Await {1} instead.</source>
+        <target state="translated">{0} 同步阻止。改为 await {1}。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD103_MessageFormat_UseAwaitInstead" translate="yes" xml:space="preserve">
+        <source>{0} synchronously blocks. Use await instead.</source>
+        <target state="translated">{0} 同步阻止。改用 await。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD103_Title" translate="yes" xml:space="preserve">
+        <source>Call async methods when in an async method</source>
+        <target state="translated">当在异步方法中时，调用异步方法</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD104_MessageFormat" translate="yes" xml:space="preserve">
+        <source>Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate.</source>
+        <target state="translated">公开此方法的异步版（不同步阻止）。然后简化此方法以在 JoinableTaskFactory.Run 委托内调用该异步方法。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD104_Title" translate="yes" xml:space="preserve">
+        <source>Offer async methods</source>
+        <target state="translated">提供异步方法</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD105_MessageFormat" translate="yes" xml:space="preserve">
+        <source>Avoid method overloads that assume TaskScheduler.Current. Use an overload that accepts a TaskScheduler and specify TaskScheduler.Default (or any other) explicitly.</source>
+        <target state="translated">避免假定 TaskScheduler.Current 的方法重载。使用接受 TaskScheduler 的重载并显式指定 TaskScheduler.Default（或其他方法）。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD105_Title" translate="yes" xml:space="preserve">
+        <source>Avoid method overloads that assume TaskScheduler.Current</source>
+        <target state="translated">避免假定 TaskScheduler.Current 的方法重载</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD106_MessageFormat" translate="yes" xml:space="preserve">
+        <source>AsyncEventHandler delegates should be invoked via the extension method "TplExtensions.InvokeAsync()" defined in Microsoft.VisualStudio.Threading assembly.</source>
+        <target state="translated">应通过 Microsoft.VisualStudio.Threading 程序集中定义的扩展方法“TplExtensions.InvokeAsync()”调用 AsyncEventHandler 委托。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD106_Title" translate="yes" xml:space="preserve">
+        <source>Use InvokeAsync to raise async events</source>
+        <target state="translated">使用 InvokeAsync 引发异步事件</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD107_CodeFix_Title" translate="yes" xml:space="preserve">
+        <source>Await using expression</source>
+        <target state="translated">等待 using 表达式</target>
+        <note from="MultilingualBuild" annotates="source" priority="2">"await" and "using" are C# keywords and should not be translated.</note>
+      </trans-unit>
+      <trans-unit id="VSTHRD107_MessageFormat" translate="yes" xml:space="preserve">
+        <source>Missing await operator for "using" expression.</source>
+        <target state="translated">"using" 表达式缺少 await 运算符。</target>
+        <note from="MultilingualBuild" annotates="source" priority="2">"await" and "using" are C# keywords and should not be translated.</note>
+      </trans-unit>
+      <trans-unit id="VSTHRD107_Title" translate="yes" xml:space="preserve">
+        <source>Await Task within using expression</source>
+        <target state="translated">using 表达式中的 Await Task</target>
+        <note from="MultilingualBuild" annotates="source" priority="2">"await Task" is a C# compound term, and "using" is a C# keyword. These should not be translated.</note>
+      </trans-unit>
+      <trans-unit id="VSTHRD108_MessageFormat" translate="yes" xml:space="preserve">
+        <source>Thread affinity checks should be unconditional.</source>
+        <target state="translated">应无条件检查线程关联。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD108_Title" translate="yes" xml:space="preserve">
+        <source>Assert thread affinity unconditionally</source>
+        <target state="translated">无条件断言线程关联</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD109_MessageFormat" translate="yes" xml:space="preserve">
+        <source>Avoid throwing when not on the main thread while in an async or Task-returning method. Switch to the thread required instead.</source>
+        <target state="translated">在异步方法或返回任务的方法中，不在主线程上时，避免引发。请切换到要求的线程。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD109_Title" translate="yes" xml:space="preserve">
+        <source>Switch instead of assert in async methods</source>
+        <target state="translated">在异步方法中切换而不是断言</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD110_MessageFormat" translate="yes" xml:space="preserve">
+        <source>Observe the awaitable result of this method call by awaiting it, assigning to a variable, or passing it to another method.</source>
+        <target state="translated">等待以观察此方法调用的可等待结果、将其分配给变量或传递给其他方法。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD110_Title" translate="yes" xml:space="preserve">
+        <source>Observe result of async calls</source>
+        <target state="translated">观察异步调用的结果</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD111_CodeFix_False_Title" translate="yes" xml:space="preserve">
+        <source>Add .ConfigureAwait(false)</source>
+        <target state="translated">添加 .ConfigureAwait(false)</target>
+        <note from="MultilingualBuild" annotates="source" priority="2">".ConfigureAwait(false)" should not be translated.</note>
+      </trans-unit>
+      <trans-unit id="VSTHRD111_CodeFix_True_Title" translate="yes" xml:space="preserve">
+        <source>Add .ConfigureAwait(true)</source>
+        <target state="translated">添加 .ConfigureAwait(true)</target>
+        <note from="MultilingualBuild" annotates="source" priority="2">".ConfigureAwait(true)" should not be translated.</note>
+      </trans-unit>
+      <trans-unit id="VSTHRD111_MessageFormat" translate="yes" xml:space="preserve">
+        <source>Add .ConfigureAwait(bool) to your await expression.</source>
+        <target state="translated">向 await 表达式添加 .ConfigureAwait(bool)。</target>
+        <note from="MultilingualBuild" annotates="source" priority="2">".ConfigureAwait(bool)" and "await" should NOT be translated.</note>
+      </trans-unit>
+      <trans-unit id="VSTHRD111_Title" translate="yes" xml:space="preserve">
+        <source>Use ConfigureAwait(bool)</source>
+        <target state="translated">使用 ConfigureAwait(bool)</target>
+        <note from="MultilingualBuild" annotates="source" priority="2">"ConfigureAwait(bool)" is a reference and should NOT be translated.</note>
+      </trans-unit>
+      <trans-unit id="VSTHRD200_AddAsync_MessageFormat" translate="yes" xml:space="preserve">
+        <source>Use "Async" suffix in names of methods that return an awaitable type.</source>
+        <target state="translated">如果方法返回可等待的类型，则在其名称中使用 “Async” 语法。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD200_CodeFix_Title" translate="yes" xml:space="preserve">
+        <source>Rename to {0}</source>
+        <target state="translated">重命名为 {0}</target>
+        <note from="MultilingualBuild" annotates="source" priority="2">{0} is a method name.</note>
+      </trans-unit>
+      <trans-unit id="VSTHRD200_RemoveAsync_MessageFormat" translate="yes" xml:space="preserve">
+        <source>Avoid "Async" suffix in names of methods that do not return an awaitable type.</source>
+        <target state="translated">如果方法不返回可等待的类型，则不要在其名称中使用 “Async” 语法。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD200_Title" translate="yes" xml:space="preserve">
+        <source>Use "Async" suffix for async methods</source>
+        <target state="translated">对异步方法使用“Async”后缀</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>
