@@ -1,4 +1,6 @@
 steps:
+- checkout: self
+  clean: true
 
 - task: DotNetCoreInstaller@0
   displayName: Install .NET Core SDK 2.2.300
