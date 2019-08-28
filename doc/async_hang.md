@@ -9,7 +9,8 @@ Finding the cause for an asynchronous hang can be challenging, but it can be don
 
       **Resolution:** Replace uses of `Task.Wait()`, `Task.Result`, `WaitHandle.WaitOne()` or other sync blocking primitives with `JoinableTask.Join()` or `JoinableTaskFactory.Run(Func<Task>)`.
 
-1. Check background threads for any that are blocked on an STA COM call that's waiting to marshal to the UI thread. If you find any, and they are performing an operation that the UI thread is blocked waiting to complete, the STA switch is probably failing.
+1. Check background threads for any that are blocked on an STA COM call that's waiting to marshal to the UI thread. If you find any, and they are performing an operation that the UI thread is blocked waiting to complete, the STA switch is probably failing. 
+The Microsoft internal vsdbg extension allows you to search for such pending RPC calls using the `!ftw -rpc` command in WinDBG.
 
    **Resolution:** Modify the code running on the background thread to switch to the UI thread before making the call to the STA COM object, by using `await JoinableTaskFactory.SwitchToMainThreadAsync();` per [rule #1][ThreadingRules].
 
