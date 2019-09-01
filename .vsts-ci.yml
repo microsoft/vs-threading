@@ -1,6 +1,7 @@
 trigger:
   branches:
-    include: ["master", "v15.8", "v16.0"]
+    include:
+    - master
   paths:
     exclude: [".github", "doc", "*.md"]
 
