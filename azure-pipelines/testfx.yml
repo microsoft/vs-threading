@@ -1,10 +1,10 @@
 steps:
 
 - task: UseDotNet@2
-  displayName: Install .NET Core SDK 2.2.300
+  displayName: Install .NET Core SDK 2.2.401
   inputs:
     packageType: sdk
-    version: 2.2.300
+    version: 2.2.401
 
 - task: UseDotNet@2
   displayName: Install .NET Core 2.1 runtime
