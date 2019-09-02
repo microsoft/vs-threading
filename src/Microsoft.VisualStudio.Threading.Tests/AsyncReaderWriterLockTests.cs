@@ -1361,7 +1361,7 @@
         /// <see cref="UpgradeableReadLockTraversesAcrossSta"/> and <see cref="WriteLockTraversesAcrossSta"/> tests,
         /// which are deemed more important.
         /// </remarks>
-        ////[StaFact, Ignore]
+        [StaFact(Skip = "Ignored")]
         public async Task MitigationAgainstAccidentalUpgradeableReadLockForking()
         {
             await this.MitigationAgainstAccidentalLockForkingHelper(
@@ -1718,7 +1718,7 @@
         /// <see cref="UpgradeableReadLockTraversesAcrossSta"/> and <see cref="WriteLockTraversesAcrossSta"/> tests,
         /// which are deemed more important.
         /// </remarks>
-        ////[StaFact, Ignore]
+        [StaFact(Skip = "Ignored")]
         public async Task MitigationAgainstAccidentalWriteLockForking()
         {
             await this.MitigationAgainstAccidentalLockForkingHelper(
@@ -3987,7 +3987,7 @@
                 catch (CriticalErrorException ex)
                 {
                     Assert.True(asyncLock.CriticalErrorDetected, "The lock should have raised a critical error.");
-                    Assert.IsType(typeof(InvalidOperationException), ex.InnerException);
+                    Assert.IsType<InvalidOperationException>(ex.InnerException);
                     return; // the test is over
                 }
 
@@ -4027,7 +4027,7 @@
             using (await lck.WriteLockAsync())
             {
                 lck.SetLockData(null);
-                Assert.Equal(null, lck.GetLockData());
+                Assert.Null(lck.GetLockData());
 
                 var value1 = new object();
                 lck.SetLockData(value1);
@@ -4035,7 +4035,7 @@
 
                 using (await lck.WriteLockAsync())
                 {
-                    Assert.Equal(null, lck.GetLockData());
+                    Assert.Null(lck.GetLockData());
 
                     var value2 = new object();
                     lck.SetLockData(value2);

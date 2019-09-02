@@ -70,9 +70,9 @@
         public void RemoveFromEmpty()
         {
             this.list.Remove(null);
-            Assert.Equal(0, this.list.ToArray().Length);
+            Assert.Empty(this.list.ToArray());
             this.list.Remove(new GenericParameterHelper(5));
-            Assert.Equal(0, this.list.ToArray().Length);
+            Assert.Empty(this.list.ToArray());
         }
 
         [Fact]
@@ -82,11 +82,11 @@
             this.list.Add(value);
 
             this.list.Remove(null);
-            Assert.Equal(1, this.list.ToArray().Length);
+            Assert.Single(this.list.ToArray());
             this.list.Remove(new GenericParameterHelper(5));
-            Assert.Equal(1, this.list.ToArray().Length);
+            Assert.Single(this.list.ToArray());
             this.list.Remove(value);
-            Assert.Equal(0, this.list.ToArray().Length);
+            Assert.Empty(this.list.ToArray());
         }
 
         [Fact]
@@ -102,10 +102,10 @@
             this.list.Remove(new GenericParameterHelper(5));
             Assert.Equal(2, this.list.ToArray().Length);
             this.list.Remove(value2);
-            Assert.Equal(1, this.list.ToArray().Length);
+            Assert.Single(this.list.ToArray());
             Assert.Equal(1, this.list.ToArray()[0].Data);
             this.list.Remove(value1);
-            Assert.Equal(0, this.list.ToArray().Length);
+            Assert.Empty(this.list.ToArray());
         }
 
         [Fact]
@@ -121,10 +121,10 @@
             this.list.Remove(new GenericParameterHelper(5));
             Assert.Equal(2, this.list.ToArray().Length);
             this.list.Remove(value1);
-            Assert.Equal(1, this.list.ToArray().Length);
+            Assert.Single(this.list.ToArray());
             Assert.Equal(2, this.list.ToArray()[0].Data);
             this.list.Remove(value2);
-            Assert.Equal(0, this.list.ToArray().Length);
+            Assert.Empty(this.list.ToArray());
         }
 
         [Fact]
@@ -134,7 +134,7 @@
 
             using (var enumerator = this.list.EnumerateAndClear())
             {
-                Assert.Equal(0, this.list.ToArray().Length); // The collection should have been cleared.
+                Assert.Empty(this.list.ToArray()); // The collection should have been cleared.
                 Assert.True(enumerator.MoveNext());
                 Assert.Equal(1, enumerator.Current.Data);
                 Assert.False(enumerator.MoveNext());

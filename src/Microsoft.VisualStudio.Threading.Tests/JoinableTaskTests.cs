@@ -108,13 +108,13 @@
 
             // Verify here that pendingTasks includes one task.
             Assert.Equal(1, this.GetPendingTasksCount());
-            Assert.Equal(1, this.joinableCollection.Count());
+            Assert.Single(this.joinableCollection);
 
             // Now let the request proceed through.
             this.PushFrame();
 
             Assert.Equal(0, this.GetPendingTasksCount());
-            Assert.Equal(0, this.joinableCollection.Count());
+            Assert.Empty(this.joinableCollection);
 
             if (delegateFailure != null)
             {
@@ -2490,7 +2490,7 @@
             });
 
             // Verify that the loPriFactory received the message.
-            Assert.Equal(1, loPriFactory.JoinableTasksPendingMainthread.Count());
+            Assert.Single(loPriFactory.JoinableTasksPendingMainthread);
 
             // Simulate a modal dialog, with a message pump that is willing
             // to execute hiPriFactory messages but not loPriFactory messages.
@@ -2534,8 +2534,8 @@
             loPriSwitchPosted.WaitAsync().Wait();
 
             // Verify that the loPriFactory received the message and hiPriFactory did not.
-            Assert.Equal(1, loPriFactory.JoinableTasksPendingMainthread.Count());
-            Assert.Equal(0, hiPriFactory.JoinableTasksPendingMainthread.Count());
+            Assert.Single(loPriFactory.JoinableTasksPendingMainthread);
+            Assert.Empty(hiPriFactory.JoinableTasksPendingMainthread);
         }
 
         /// <summary>
@@ -2576,8 +2576,8 @@
             outerFinished.Set();
 
             // Verify that the loPriFactory received the message and hiPriFactory did not.
-            Assert.Equal(1, loPriFactory.JoinableTasksPendingMainthread.Count());
-            Assert.Equal(0, hiPriFactory.JoinableTasksPendingMainthread.Count());
+            Assert.Single(loPriFactory.JoinableTasksPendingMainthread);
+            Assert.Empty(hiPriFactory.JoinableTasksPendingMainthread);
         }
 
         /// <summary>
@@ -2607,8 +2607,8 @@
             });
 
             // Verify that each factory received the message exactly once.
-            Assert.Equal(1, loPriFactory.JoinableTasksPendingMainthread.Count());
-            Assert.Equal(1, hiPriFactory.JoinableTasksPendingMainthread.Count());
+            Assert.Single(loPriFactory.JoinableTasksPendingMainthread);
+            Assert.Single(hiPriFactory.JoinableTasksPendingMainthread);
 
             // Simulate a modal dialog, with a message pump that is willing
             // to execute hiPriFactory messages but not loPriFactory messages.
@@ -2641,8 +2641,8 @@
             });
 
             // Verify that each factory received the message exactly once.
-            Assert.Equal(1, loPriFactory.JoinableTasksPendingMainthread.Count());
-            Assert.Equal(1, hiPriFactory.JoinableTasksPendingMainthread.Count());
+            Assert.Single(loPriFactory.JoinableTasksPendingMainthread);
+            Assert.Single(hiPriFactory.JoinableTasksPendingMainthread);
 
             // Simulate a modal dialog, with a message pump that is willing
             // to execute hiPriFactory messages but not loPriFactory messages.

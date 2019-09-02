@@ -557,7 +557,7 @@
             }
 
             currentTCS.SetException(new InvalidOperationException());
-            Assert.IsType(typeof(InvalidOperationException), followingTask.Exception.InnerException);
+            Assert.IsType<InvalidOperationException>(followingTask.Exception.InnerException);
         }
 
         [Fact]
