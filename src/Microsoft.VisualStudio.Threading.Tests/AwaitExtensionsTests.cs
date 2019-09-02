@@ -424,18 +424,27 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public async Task WaitForExitAsync_DoesNotCompleteTillKilled()
         {
-            Process p = Process.Start(new ProcessStartInfo("cmd.exe") { CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden });
+            string processName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "cmd.exe" : "/bin/bash";
+            int expectedExitCode = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? -1 : 128 + 9; // https://stackoverflow.com/a/1041309
+            Process p = Process.Start(new ProcessStartInfo(processName) { CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden });
             try
             {
                 Task<int> t = p.WaitForExitAsync();
                 Assert.False(t.IsCompleted);
                 p.Kill();
                 int exitCode = await t;
-                Assert.Equal(-1, exitCode);
+                Assert.Equal(expectedExitCode, exitCode);
             }
             catch
             {
-                p.Kill();
+                try
+                {
+                    p.Kill();
+                }
+                catch
+                {
+                }
+
                 throw;
             }
         }
