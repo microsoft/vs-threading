@@ -11,6 +11,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
+    using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Win32;
@@ -457,9 +458,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task AwaitRegKeyChange()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             using (var test = new RegKeyTest())
             {
                 Task changeWatcherTask = test.Key.WaitForChangeAsync();
@@ -469,9 +471,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task AwaitRegKeyChange_TwoAtOnce_SameKeyHandle()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             using (var test = new RegKeyTest())
             {
                 Task changeWatcherTask1 = test.Key.WaitForChangeAsync();
@@ -483,9 +486,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task AwaitRegKeyChange_NoChange()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             using (var test = new RegKeyTest())
             {
                 Task changeWatcherTask = test.Key.WaitForChangeAsync(cancellationToken: test.FinishedToken);
@@ -497,9 +501,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task AwaitRegKeyChange_WatchSubtree()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             using (var test = new RegKeyTest())
             {
                 using (var subKey = test.CreateSubKey())
@@ -511,9 +516,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task AwaitRegKeyChange_KeyDeleted()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             using (var test = new RegKeyTest())
             {
                 using (var subKey = test.CreateSubKey())
@@ -525,9 +531,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task AwaitRegKeyChange_NoWatchSubtree()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             using (var test = new RegKeyTest())
             {
                 using (var subKey = test.CreateSubKey())
@@ -543,9 +550,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task AwaitRegKeyChange_Canceled()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             using (var test = new RegKeyTest())
             {
                 var cts = new CancellationTokenSource();
@@ -564,9 +572,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task AwaitRegKeyChange_KeyDisposedWhileWatching()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             Task watchingTask;
             using (var test = new RegKeyTest())
             {
@@ -577,9 +586,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
             await watchingTask;
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task AwaitRegKeyChange_CanceledAndImmediatelyDisposed()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             Task watchingTask;
             CancellationToken expectedCancellationToken;
             using (var test = new RegKeyTest())
@@ -599,9 +609,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task AwaitRegKeyChange_CallingThreadDestroyed()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             using (var test = new RegKeyTest())
             {
                 // Start watching and be certain the thread that started watching is destroyed.
@@ -623,9 +634,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task AwaitRegKeyChange_DoesNotPreventAppTerminationOnWin7()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             string testExePath = Path.Combine(
                 AppDomain.CurrentDomain.BaseDirectory,
                 "..",
