@@ -22,7 +22,7 @@
             this.SimulateUIThread(async delegate
             {
                 // Get off the UI thread first so that we can transition (back) to it.
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
 
                 var jtf = new JTFWithTransitioningBlock(this.context);
                 bool noDeadlockDetected = true;
@@ -65,7 +65,7 @@
             this.SimulateUIThread(async delegate
             {
                 // Get off the UI thread first so that we can transition (back) to it.
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
 
                 var jtf = new JTFWithTransitioningBlock(this.context);
                 bool noDeadlockDetected = true;
@@ -136,7 +136,7 @@
                 Assert.False(this.asyncPump.SwitchToMainThreadAsync(alwaysYield: true).GetAwaiter().IsCompleted);
                 Assert.True(this.asyncPump.SwitchToMainThreadAsync(alwaysYield: false).GetAwaiter().IsCompleted);
 
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 Assert.False(this.asyncPump.Context.IsOnMainThread);
                 Assert.False(this.asyncPump.SwitchToMainThreadAsync(alwaysYield: true).GetAwaiter().IsCompleted);
                 Assert.False(this.asyncPump.SwitchToMainThreadAsync(alwaysYield: false).GetAwaiter().IsCompleted);

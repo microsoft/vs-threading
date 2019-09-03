@@ -53,7 +53,7 @@
             {
                 Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
 
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 Assert.NotEqual(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
 
                 await this.asyncPump.SwitchToMainThreadAsync();
@@ -333,7 +333,7 @@
         {
             this.SimulateUIThread(async delegate
             {
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 Assert.NotEqual(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
                 AsyncLocal<object> asyncLocal = new AsyncLocal<object>();
                 asyncLocal.Value = "expected";
@@ -368,7 +368,7 @@
         {
             this.SimulateUIThread(async delegate
             {
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 var testResultSource = new TaskCompletionSource<object>();
                 AsyncLocal<object> asyncLocal = new AsyncLocal<object>();
                 asyncLocal.Value = "expected";
@@ -422,7 +422,7 @@
         {
             this.SimulateUIThread(async delegate
             {
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 var testResultSource = new TaskCompletionSource<object>();
                 AsyncLocal<object> asyncLocal = new AsyncLocal<object>();
                 asyncLocal.Value = "expected";
@@ -486,7 +486,7 @@
             using (new SynchronizationContext().Apply(checkForChangesOnRevert: false))
             {
                 var jtc = new JoinableTaskContext();
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 await Assert.ThrowsAsync<JoinableTaskContextException>(async () => await jtc.Factory.SwitchToMainThreadAsync(this.TimeoutToken));
             }
         }
@@ -511,7 +511,7 @@
                 uiThreadNowBusy.SetResult(null);
                 Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
 
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 Assert.NotEqual(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
                 await Task.Delay(AsyncDelay); // allow ample time for the background contender to re-enter the STA thread if it's possible (we don't want it to be).
 
@@ -539,7 +539,7 @@
 
                 Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
 
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 Assert.NotEqual(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
 
                 // We can't complete until this seemingly unrelated work completes.
@@ -594,7 +594,7 @@
                 uiThreadNowBusy.SetResult(null);
                 Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
 
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 Assert.NotEqual(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
 
                 using (this.joinableCollection.Join())
@@ -638,7 +638,7 @@
                 Assert.Equal(0, factory.TransitionedToMainThreadHitCount); //, "No transition expected since the main thread was ultimately blocked for this job.");
 
                 // Now switch explicitly to a threadpool thread.
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 Assert.Equal(0, factory.TransitioningToMainThreadHitCount); //, "No transition expected when moving off the main thread.");
                 Assert.Equal(0, factory.TransitionedToMainThreadHitCount); //, "No transition expected when moving off the main thread.");
 
@@ -673,7 +673,7 @@
                 Assert.Equal(1, factory.TransitionedToMainThreadHitCount); //, "Reacquisition of main thread should have raised transition events.");
 
                 // Now switch explicitly to a threadpool thread.
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 Assert.Equal(1, factory.TransitioningToMainThreadHitCount); // No transition expected when moving off the main thread.
                 Assert.Equal(1, factory.TransitionedToMainThreadHitCount); // No transition expected when moving off the main thread.
 
@@ -1113,7 +1113,7 @@
                 task1 = this.asyncPump.RunAsync(async delegate
                 {
                     await this.asyncPump.SwitchToMainThreadAsync();
-                    await TaskScheduler.Default;
+                    await TaskScheduler.Default.SwitchTo(alwaysYield: true);
 
                     dependentFirstWorkCompleted.Set();
                     await dependentSecondWorkAllowed;
@@ -1180,7 +1180,7 @@
                 task1 = this.asyncPump.RunAsync(async delegate
                 {
                     await this.asyncPump.SwitchToMainThreadAsync();
-                    await TaskScheduler.Default;
+                    await TaskScheduler.Default.SwitchTo(alwaysYield: true);
 
                     dependentFirstWorkCompleted.Set();
                     await dependentSecondWorkAllowed;
@@ -1287,13 +1287,13 @@
 
                         await this.asyncPump.SwitchToMainThreadAsync()
                             .GetAwaiter().YieldAndNotify(mainThreadDependentFirstWorkQueued);
-                        await TaskScheduler.Default;
+                        await TaskScheduler.Default.SwitchTo(alwaysYield: true);
 
                         dependentFirstWorkCompleted.Set();
 
                         await dependentSecondWorkAllowed;
                         await this.asyncPump.SwitchToMainThreadAsync();
-                        await TaskScheduler.Default;
+                        await TaskScheduler.Default.SwitchTo(alwaysYield: true);
 
                         dependentSecondWorkCompleted.Set();
 
@@ -1396,7 +1396,7 @@
                     using (collection.Join())
                     {
                         await this.asyncPump.SwitchToMainThreadAsync();
-                        await TaskScheduler.Default;
+                        await TaskScheduler.Default.SwitchTo(alwaysYield: true);
 
                         dependentFirstWorkCompleted.Set();
                         await dependentSecondWorkAllowed;
@@ -2109,7 +2109,7 @@
                     syncContext.Send(s => { Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId); Assert.Same(state, s); executed1 = true; }, state);
                     Assert.True(executed1);
 
-                    await TaskScheduler.Default;
+                    await TaskScheduler.Default.SwitchTo(alwaysYield: true);
 
                     bool executed2 = false;
                     syncContext.Send(s => { Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId); Assert.Same(state, s); executed2 = true; }, state);
@@ -2834,7 +2834,7 @@
                 await this.asyncPump.SwitchToMainThreadAsync();
                 await Task.Yield();
 
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 await Task.Yield();
 
                 await this.asyncPump.SwitchToMainThreadAsync();
@@ -2852,7 +2852,7 @@
                 await this.asyncPump.SwitchToMainThreadAsync();
                 await Task.Yield();
 
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 await Task.Yield();
 
                 await this.asyncPump.SwitchToMainThreadAsync();
@@ -2952,7 +2952,7 @@
                 this.CheckGCPressure(
                     async delegate
                     {
-                        await TaskScheduler.Default;
+                        await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                         await this.asyncPump.SwitchToMainThreadAsync(CancellationToken.None);
                     },
                     3585);
@@ -2969,7 +2969,7 @@
                 this.CheckGCPressure(
                     async delegate
                     {
-                        await TaskScheduler.Default;
+                        await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                         await this.asyncPump.SwitchToMainThreadAsync(tokenSource.Token);
                     },
                     3800);
@@ -3189,7 +3189,7 @@
             var waitCountingJTF = new WaitCountingJoinableTaskFactory(this.asyncPump.Context);
             waitCountingJTF.Run(async delegate
             {
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
 
                 // Be sure the main thread sleeps at *least* once.
                 await waitCountingJTF.WaitedOnce.WaitAsync().WithCancellation(this.TimeoutToken);
@@ -3216,7 +3216,7 @@
             var waitCountingJTF = new WaitCountingJoinableTaskFactory(this.asyncPump.Context);
             waitCountingJTF.Run(async delegate
             {
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
 
                 // Be sure the main thread sleeps at *least* once.
                 await waitCountingJTF.WaitedOnce.WaitAsync().WithCancellation(this.TimeoutToken);
@@ -3255,7 +3255,7 @@
             this.asyncPump.Run(async () =>
             {
                 // Needs to switch to background thread at first in order to test the code that requests switch to main thread.
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
 
                 // This nested run starts on background thread and then requests to switch to main thread.
                 // The remaining parts in the async delegate would be executed on main thread. This nested run
@@ -3301,7 +3301,7 @@
             this.asyncPump.Run(async () =>
             {
                 // Needs to switch to background thread at first in order to test the code that requests switch to main thread.
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
 
                 // This nested async run starts on background thread and then requests to switch to main thread.
                 // It will complete only when the background thread works (aka. MainThreadAWaiter.OnCompleted()) are done,
@@ -3441,7 +3441,7 @@
             };
             this.asyncPump.Run(async delegate
             {
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 await this.asyncPump.SwitchToMainThreadAsync();
                 transitionedToMainThread.Set();
             });

@@ -130,7 +130,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
 
             var dectionTask = factory.RunAsync(async delegate
             {
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 for (int i = 0; i < 2; i++)
                 {
                     await this.derivedNode.HangDetected.WaitAsync();
