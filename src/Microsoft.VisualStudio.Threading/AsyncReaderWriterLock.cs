@@ -961,7 +961,9 @@ namespace Microsoft.VisualStudio.Threading
                                     // an accidental execution fork that is exposing concurrency inappropriately.
                                     if (this.CanCurrentThreadHoldActiveLock && !(SynchronizationContext.Current is NonConcurrentSynchronizationContext))
                                     {
+#if NETFRAMEWORK // Assertion failures crash on .NET Core
                                         Report.Fail("Dangerous request for read lock from fork of write lock.");
+#endif
                                         Verify.FailOperation(Strings.DangerousReadLockRequestFromWriteLockFork);
                                     }
 

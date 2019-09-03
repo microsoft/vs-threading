@@ -670,7 +670,9 @@ namespace Microsoft.VisualStudio.Threading
             // Don't use Verify.Operation here to avoid loading a string resource in success cases.
             if (SynchronizationContext.Current is AsyncReaderWriterLock.NonConcurrentSynchronizationContext)
             {
+#if NETFRAMEWORK // Assertion failures crash on .NET Core
                 Report.Fail(Strings.NotAllowedUnderURorWLock); // pops a CHK assert dialog, but doesn't throw.
+#endif
                 Verify.FailOperation(Strings.NotAllowedUnderURorWLock); // actually throws, even in RET.
             }
         }
