@@ -1549,7 +1549,7 @@
                 // STEP 5
                 joinReverted.Set();
                 var releasingTask = await Task.WhenAny(unrelatedTask, postJoinRevertedWorkQueued.WaitAsync());
-                if (releasingTask == unrelatedTask & unrelatedTask.IsFaulted)
+                if (releasingTask == unrelatedTask && unrelatedTask.IsFaulted)
                 {
                     unrelatedTask.GetAwaiter().GetResult(); // rethrow an error that has already occurred.
                 }
