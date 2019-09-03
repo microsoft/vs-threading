@@ -39,7 +39,7 @@
             }));
         }
 
-        [Fact]
+        [StaFact]
         public void ExecuteOnDispatcher_ExecutesDelegateOnSTA()
         {
             bool executed = false;
@@ -50,6 +50,24 @@
                 executed = true;
             });
             Assert.True(executed);
+        }
+
+        [Fact]
+        public void ExecuteOnDispatcher_ExecutesDelegateOnMTA()
+        {
+            // Wrap the whole thing in Task.Run to force it to an MTA thread,
+            // since xunit uses STA when tests run in batches.
+            Task.Run(delegate
+            {
+                bool executed = false;
+                this.ExecuteOnDispatcher(delegate
+                {
+                    Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
+                    Assert.NotNull(SynchronizationContext.Current);
+                    executed = true;
+                });
+                Assert.True(executed);
+            }).WaitWithoutInlining(throwOriginalException: true);
         }
 
         [Fact]
@@ -89,7 +107,11 @@
             throw new Exception("Intentional test failure");
         }
 
+#if NETFRAMEWORK
         [StaFact]
+#else
+        [StaFact(Skip = "Isolation host not yet ported to .NET Core")]
+#endif
         public async Task ExecuteInIsolation_PassingOnSTA()
         {
             if (await this.ExecuteInIsolationAsync())
@@ -98,7 +120,11 @@
             }
         }
 
+#if NETFRAMEWORK
         [StaFact]
+#else
+        [StaFact(Skip = "Isolation host not yet ported to .NET Core")]
+#endif
         public async Task ExecuteInIsolation_FailingOnSTA()
         {
             bool executeHere;

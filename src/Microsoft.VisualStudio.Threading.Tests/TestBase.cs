@@ -249,6 +249,7 @@
         /// and without a current <see cref="SynchronizationContext"/>.
         /// </summary>
         /// <param name="action">The delegate to execute.</param>
+        /// <exception cref="PlatformNotSupportedException">Thrown on non-Windows OS.</exception>
         protected void ExecuteOnSTA(Action action)
         {
             Requires.NotNull(action, nameof(action));
@@ -290,53 +291,37 @@
             });
         }
 
-        protected void ExecuteOnDispatcher(Func<Task> action, bool staRequired = true)
+        protected void ExecuteOnDispatcher(Func<Task> action)
         {
-            Action worker = delegate
+            if (!SingleThreadedTestSynchronizationContext.IsSingleThreadedSyncContext(SynchronizationContext.Current))
             {
-                var frame = SingleThreadedTestSynchronizationContext.NewFrame();
-                Exception failure = null;
-                SynchronizationContext.Current.Post(
-                    async _ =>
-                    {
-                        try
-                        {
-                            await action();
-                        }
-                        catch (Exception ex)
-                        {
-                            failure = ex;
-                        }
-                        finally
-                        {
-                            frame.Continue = false;
-                        }
-                    },
-                    null);
-
-                SingleThreadedTestSynchronizationContext.PushFrame(SynchronizationContext.Current, frame);
-                if (failure != null)
-                {
-                    ExceptionDispatchInfo.Capture(failure).Throw();
-                }
-            };
-
-            if ((!staRequired || Thread.CurrentThread.GetApartmentState() == ApartmentState.STA) &&
-                SingleThreadedTestSynchronizationContext.IsSingleThreadedSyncContext(SynchronizationContext.Current))
-            {
-                worker();
+                SynchronizationContext.SetSynchronizationContext(SingleThreadedTestSynchronizationContext.New());
             }
-            else
-            {
-                this.ExecuteOnSTA(() =>
-                {
-                    if (!SingleThreadedTestSynchronizationContext.IsSingleThreadedSyncContext(SynchronizationContext.Current))
-                    {
-                        SynchronizationContext.SetSynchronizationContext(SingleThreadedTestSynchronizationContext.New());
-                    }
 
-                    worker();
-                });
+            var frame = SingleThreadedTestSynchronizationContext.NewFrame();
+            Exception failure = null;
+            SynchronizationContext.Current.Post(
+                async _ =>
+                {
+                    try
+                    {
+                        await action();
+                    }
+                    catch (Exception ex)
+                    {
+                        failure = ex;
+                    }
+                    finally
+                    {
+                        frame.Continue = false;
+                    }
+                },
+                null);
+
+            SingleThreadedTestSynchronizationContext.PushFrame(SynchronizationContext.Current, frame);
+            if (failure != null)
+            {
+                ExceptionDispatchInfo.Capture(failure).Throw();
             }
         }
 
