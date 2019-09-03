@@ -483,15 +483,11 @@
         [StaFact]
         public async Task SwitchToMainThreadThrowsUsefulExceptionIfJTCIsMisconfigured()
         {
-            SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
-            var jtc = new JoinableTaskContext();
-            await TaskScheduler.Default;
-            try
+            using (new SynchronizationContext().Apply(checkForChangesOnRevert: false))
             {
-                await jtc.Factory.SwitchToMainThreadAsync();
-            }
-            catch (JoinableTaskContextException)
-            {
+                var jtc = new JoinableTaskContext();
+                await TaskScheduler.Default;
+                await Assert.ThrowsAsync<JoinableTaskContextException>(async () => await jtc.Factory.SwitchToMainThreadAsync(this.TimeoutToken));
             }
         }
 
