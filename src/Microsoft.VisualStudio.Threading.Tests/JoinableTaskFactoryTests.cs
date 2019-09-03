@@ -16,7 +16,7 @@
         {
         }
 
-        [StaFact]
+        [Fact]
         public void OnTransitioningToMainThread_DoesNotHoldPrivateLock()
         {
             this.SimulateUIThread(async delegate
@@ -59,7 +59,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void OnTransitionedToMainThread_DoesNotHoldPrivateLock()
         {
             this.SimulateUIThread(async delegate
@@ -102,7 +102,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void RunShouldCompleteWithStarvedThreadPool()
         {
             using (TestUtilities.StarveThreadpool())
@@ -114,7 +114,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public void RunOfTShouldCompleteWithStarvedThreadPool()
         {
             using (TestUtilities.StarveThreadpool())
@@ -127,7 +127,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public void SwitchToMainThreadAlwaysYield()
         {
             this.SimulateUIThread(async () =>

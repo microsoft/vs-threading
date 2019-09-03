@@ -28,7 +28,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             this.derivedNode = new DerivedNode(this.context);
         }
 
-        [StaFact]
+        [Fact]
         public void CreateCollection()
         {
             var collection = this.defaultNode.CreateCollection();
@@ -38,7 +38,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Assert.NotNull(collection);
         }
 
-        [StaFact]
+        [Fact]
         public void CreateFactory()
         {
             var factory = this.defaultNode.CreateFactory(this.joinableCollection);
@@ -48,14 +48,14 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Assert.IsType<DerivedFactory>(factory);
         }
 
-        [StaFact]
+        [Fact]
         public void Factory()
         {
             Assert.IsType<JoinableTaskFactory>(this.defaultNode.Factory);
             Assert.IsType<DerivedFactory>(this.derivedNode.Factory);
         }
 
-        [StaFact]
+        [Fact]
         public void MainThread()
         {
             Assert.Same(this.context.MainThread, this.defaultNode.MainThread);
@@ -64,14 +64,14 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Assert.True(this.derivedNode.IsOnMainThread);
         }
 
-        [StaFact]
+        [Fact]
         public void IsMainThreadBlocked()
         {
             Assert.False(this.defaultNode.IsMainThreadBlocked());
             Assert.False(this.derivedNode.IsMainThreadBlocked());
         }
 
-        [StaFact]
+        [Fact]
         public void SuppressRelevance()
         {
             using (this.defaultNode.SuppressRelevance())
@@ -83,7 +83,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
         }
 
-        [StaFact, Trait("TestCategory", "FailsInCloudTest")]
+        [Fact, Trait("TestCategory", "FailsInCloudTest")]
         public void OnHangDetected_Registration()
         {
             var factory = (DerivedFactory)this.derivedNode.Factory;
@@ -121,7 +121,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Assert.False(this.derivedNode.FalseHangReportDetected.IsSet);
         }
 
-        [StaFact, Trait("TestCategory", "FailsInCloudTest")]
+        [Fact, Trait("TestCategory", "FailsInCloudTest")]
         public void OnFalseHangReportDetected_OnlyOnce()
         {
             var factory = (DerivedFactory)this.derivedNode.Factory;
@@ -157,7 +157,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Assert.Equal(1, this.derivedNode.FalseHangReportCount);
         }
 
-        [StaFact, Trait("TestCategory", "FailsInCloudTest")]
+        [Fact, Trait("TestCategory", "FailsInCloudTest")]
         public void OnHangDetected_Run_OnMainThread()
         {
             var factory = (DerivedFactory)this.derivedNode.Factory;
@@ -182,7 +182,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Assert.True(this.derivedNode.FalseHangReportTimeSpan >= this.derivedNode.HangDetails.HangDuration);
         }
 
-        [StaFact, Trait("TestCategory", "FailsInCloudTest")]
+        [Fact, Trait("TestCategory", "FailsInCloudTest")]
         public void OnHangDetected_Run_OffMainThread()
         {
             Task.Run(delegate
@@ -192,7 +192,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }).GetAwaiter().GetResult();
         }
 
-        [StaFact]
+        [Fact]
         public void OnHangDetected_RunAsync_OnMainThread_BlamedMethodIsEntrypointNotBlockingMethod()
         {
             var factory = (DerivedFactory)this.derivedNode.Factory;
@@ -216,7 +216,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Assert.Contains(nameof(this.OnHangDetected_RunAsync_OnMainThread_BlamedMethodIsEntrypointNotBlockingMethod), hangDetails.EntryMethod.Name);
         }
 
-        [StaFact]
+        [Fact]
         public void OnHangDetected_RunAsync_OffMainThread_BlamedMethodIsEntrypointNotBlockingMethod()
         {
             Task.Run(delegate
