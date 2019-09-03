@@ -3002,12 +3002,7 @@
         [StaFact, Trait("GC", "true")]
         public void JoinableTaskReleasedBySyncContextAfterCompletion()
         {
-            SynchronizationContext syncContext = null;
-            var job = new WeakReference(this.asyncPump.RunAsync(() =>
-            {
-                syncContext = SynchronizationContext.Current; // simulate someone who has captured the sync context.
-                return TplExtensions.CompletedTask;
-            }));
+            WeakReference job = this.JoinableTaskReleasedBySyncContextAfterCompletion_Helper(out SynchronizationContext syncContext);
 
             // We intentionally still have a reference to the SyncContext that represents the task.
             // We want to make sure that even with that, the JoinableTask itself can be collected.
@@ -3240,43 +3235,7 @@
         [StaFact]
         public void SwitchToMainThreadShouldNotLeakJoinableTaskWhenGetResultRunsFirst()
         {
-            var cts = new CancellationTokenSource();
-            var factory = (DerivedJoinableTaskFactory)this.asyncPump;
-            var transitionedToMainThread = new ManualResetEventSlim(false);
-            factory.PostToUnderlyingSynchronizationContextCallback = () =>
-            {
-                // Pause the background thread after posted the continuation to JoinableTask.
-                transitionedToMainThread.Wait();
-            };
-
-            object result = new object();
-            WeakReference<object> weakResult = new WeakReference<object>(result);
-
-            this.asyncPump.Run(async () =>
-            {
-                // Needs to switch to background thread at first in order to test the code that requests switch to main thread.
-                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
-
-                // This nested run starts on background thread and then requests to switch to main thread.
-                // The remaining parts in the async delegate would be executed on main thread. This nested run
-                // will complete only when both the background thread works (aka. MainThreadAWaiter.OnCompleted())
-                // and the main thread works are done, and then we could start verification.
-                this.asyncPump.Run(async () =>
-            {
-                await this.asyncPump.SwitchToMainThreadAsync(cts.Token);
-
-                // Resume the background thread after transitioned to main thread.
-                // This is to ensure the timing that GetResult() must be called before OnCompleted() registers the cancellation.
-                transitionedToMainThread.Set();
-                return result;
-            });
-            });
-
-            // Needs to give the dispatcher a chance to run the posted action in order to release
-            // the last reference to the JoinableTask.
-            this.PushFrameTillQueueIsEmpty();
-
-            result = null;
+            WeakReference<object> weakResult = this.SwitchToMainThreadShouldNotLeakJoinableTaskWhenGetResultRunsFirst_Helper();
             GC.Collect();
 
             weakResult.TryGetTarget(out object target);
@@ -3759,6 +3718,49 @@
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)] // We need locals to surely be popped off the stack for a reliable test
+        private WeakReference<object> SwitchToMainThreadShouldNotLeakJoinableTaskWhenGetResultRunsFirst_Helper()
+        {
+            var cts = new CancellationTokenSource();
+            var factory = (DerivedJoinableTaskFactory)this.asyncPump;
+            var transitionedToMainThread = new ManualResetEventSlim(false);
+            factory.PostToUnderlyingSynchronizationContextCallback = () =>
+            {
+                // Pause the background thread after posted the continuation to JoinableTask.
+                transitionedToMainThread.Wait();
+            };
+
+            object result = new object();
+            WeakReference<object> weakResult = new WeakReference<object>(result);
+
+            this.asyncPump.Run(async () =>
+            {
+                // Needs to switch to background thread at first in order to test the code that requests switch to main thread.
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
+
+                // This nested run starts on background thread and then requests to switch to main thread.
+                // The remaining parts in the async delegate would be executed on main thread. This nested run
+                // will complete only when both the background thread works (aka. MainThreadAWaiter.OnCompleted())
+                // and the main thread works are done, and then we could start verification.
+                this.asyncPump.Run(async () =>
+                {
+                    await this.asyncPump.SwitchToMainThreadAsync(cts.Token);
+
+                    // Resume the background thread after transitioned to main thread.
+                    // This is to ensure the timing that GetResult() must be called before OnCompleted() registers the cancellation.
+                    transitionedToMainThread.Set();
+                    return result;
+                });
+            });
+
+            // Needs to give the dispatcher a chance to run the posted action in order to release
+            // the last reference to the JoinableTask.
+            this.PushFrameTillQueueIsEmpty();
+
+            result = null; // TODO: THIS is modifying the closure that we allege to be testing. We should remove this line and get the test to pass.
+            return weakResult;
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)] // must not be inlined so that locals are guaranteed to be freed.
         private WeakReference NestedFactoriesCanBeCollected_Helper()
         {
@@ -3786,6 +3788,21 @@
             // once 'inner' has completed.
             var weakOuterFactory = new WeakReference(outerFactory);
             return weakOuterFactory;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // mem leak detection requires literally popping locals with strong refs off the stack
+        private WeakReference JoinableTaskReleasedBySyncContextAfterCompletion_Helper(out SynchronizationContext syncContext)
+        {
+            SynchronizationContext sc = null;
+            var job = this.asyncPump.RunAsync(() =>
+            {
+                sc = SynchronizationContext.Current; // simulate someone who has captured the sync context.
+                return TplExtensions.CompletedTask;
+            });
+
+            job.Join(); // it never yielded, so this isn't strictly necessary.
+            syncContext = sc;
+            return new WeakReference(job);
         }
 
         private void RunFuncOfTaskHelper()
