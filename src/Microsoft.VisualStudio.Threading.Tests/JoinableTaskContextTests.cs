@@ -608,7 +608,7 @@
                     await Task.Yield();
                     Assert.False(this.Context.IsMainThreadBlocked());
                 });
-            }).GetAwaiter().GetResult();
+            }).WaitWithoutInlining(throwOriginalException: true);
         }
 
         [StaFact]

@@ -30,7 +30,7 @@
         [StaFact]
         public void RunFuncOfTaskMTA()
         {
-            Task.Run(() => this.RunFuncOfTaskHelper()).Wait();
+            Task.Run(() => this.RunFuncOfTaskHelper()).WaitWithoutInlining(throwOriginalException: true);
         }
 
         [StaFact]
@@ -42,7 +42,7 @@
         [StaFact]
         public void RunFuncOfTaskOfTMTA()
         {
-            Task.Run(() => this.RunFuncOfTaskOfTHelper()).GetAwaiter().GetResult();
+            Task.Run(() => this.RunFuncOfTaskOfTHelper()).WaitWithoutInlining(throwOriginalException: true);
         }
 
         [StaFact]
@@ -74,7 +74,7 @@
         {
             Task.Run(
                 () => Assert.False(this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().IsCompleted, "Yield did not occur when off Main thread."))
-                .GetAwaiter().GetResult();
+                .WaitWithoutInlining(throwOriginalException: true);
         }
 
         [StaFact]
@@ -1862,7 +1862,7 @@
                     await Task.Yield();
                     Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
                 }).Task;
-            }).Result;
+            }).GetResultWithoutInlining();
 
             this.asyncPump.CompleteSynchronously(this.joinableCollection, backgroundWork);
         }
@@ -1919,7 +1919,7 @@
                     switchPended.Set();
                     await continuationFinished;
                 });
-            }).Result;
+            }).GetResultWithoutInlining();
 
             Assert.False(joinable.Task.IsCompleted);
             switchPended.Wait();
@@ -2799,11 +2799,11 @@
                         });
                         return TplExtensions.CompletedTask;
                     });
-                }).Wait();
+                }).WaitWithoutInlining(throwOriginalException: true);
 
                 try
                 {
-                    innerTask.GetAwaiter().GetResult();
+                    innerTask.WaitWithoutInlining(throwOriginalException: true);
                     Assert.True(postDelegateInvoked.Wait(AsyncDelay), "Timed out waiting for posted delegate to execute. Posted: " + posted);
                 }
                 catch
@@ -2924,7 +2924,7 @@
                     });
                 });
                 joinable.Join();
-            }).Wait();
+            }).WaitWithoutInlining(throwOriginalException: true);
         }
 
         [StaFact]
@@ -3400,7 +3400,7 @@
                     return TplExtensions.CompletedTask;
                 });
             });
-            bkgrndThread.GetAwaiter().GetResult();
+            bkgrndThread.WaitWithoutInlining(throwOriginalException: true);
             Assert.True(unawaitedWorkCompleted.Wait(ExpectedTimeout));
         }
 
