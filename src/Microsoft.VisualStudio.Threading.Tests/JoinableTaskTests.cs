@@ -481,14 +481,16 @@
         /// throws an informative exception.
         /// </summary>
         [Fact]
-        public async Task SwitchToMainThreadThrowsUsefulExceptionIfJTCIsMisconfigured()
+        public void SwitchToMainThreadThrowsUsefulExceptionIfJTCIsMisconfigured()
         {
-            using (new SynchronizationContext().Apply(checkForChangesOnRevert: false))
+            Task.Run(async delegate
             {
-                var jtc = new JoinableTaskContext();
-                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
+                // Create the JoinableTaskContext on a dedicated thread which no SynchronizationContext can ever switch back to.
+                var jtc = await Task.Factory.StartNew(() => new JoinableTaskContext(Thread.CurrentThread, new SynchronizationContext()), this.TimeoutToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+                // Now ask the JTC to switch to that main thread. It should throw when it fails to do so.
                 await Assert.ThrowsAsync<JoinableTaskContextException>(async () => await jtc.Factory.SwitchToMainThreadAsync(this.TimeoutToken));
-            }
+            }).WaitWithoutInlining(throwOriginalException: true);
         }
 
         [Fact]
@@ -3196,7 +3198,7 @@
                     // of the iterations, showing that doing real work exercerbates the problem.
                     ////for (int j = 0; j < 5000; j++) { }
 
-                    await this.asyncPump.RunAsync(delegate { return TplExtensions.CompletedTask; });
+                    await this.asyncPump.RunAsync(() => TplExtensions.CompletedTask);
                 }
             });
 
