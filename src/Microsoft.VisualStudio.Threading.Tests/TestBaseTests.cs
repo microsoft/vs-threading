@@ -118,6 +118,7 @@
             throw new Exception("Intentional test failure");
         }
 
+#if NETFRAMEWORK
         [StaFact]
         public async Task ExecuteInIsolation_PassingOnSTA()
         {
@@ -145,5 +146,6 @@
             Assumes.True(executeHere);
             throw new Exception("Intentional test failure");
         }
+#endif
     }
 }
