@@ -5,6 +5,7 @@
     using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
+    using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.Threading;
@@ -38,7 +39,7 @@
         public AsyncReaderWriterLockTests(ITestOutputHelper logger)
             : base(logger)
         {
-            this.asyncLock = new StaAverseLock();
+            this.asyncLock = new AsyncReaderWriterLock();
             doNotWaitForLockCompletionAtTestCleanup = false;
         }
 
@@ -833,7 +834,7 @@
                 writeLockHeld.Task);
         }
 
-        [Fact]
+        [StaFact]
         public void ReadLockReleaseOnSta()
         {
             this.LockReleaseTestHelper(this.asyncLock.ReadLockAsync());
@@ -1124,7 +1125,7 @@
             Assert.False(this.asyncLock.IsWriteLockHeld);
         }
 
-        [Fact]
+        [StaFact]
         public void UpgradeableReadLockAsyncReleaseOnSta()
         {
             this.LockReleaseTestHelper(this.asyncLock.UpgradeableReadLockAsync());
@@ -1496,7 +1497,7 @@
             Assert.False(this.asyncLock.IsWriteLockHeld);
         }
 
-        [Fact]
+        [StaFact]
         public void WriteLockAsyncReleaseOnSta()
         {
             this.LockReleaseTestHelper(this.asyncLock.WriteLockAsync());
@@ -2431,7 +2432,7 @@
             });
         }
 
-        [Fact]
+        [StaFact]
         public void PrecancelledWriteLockAsyncRequestOnSTA()
         {
             var cts = new CancellationTokenSource();
@@ -3633,29 +3634,15 @@
         {
             using (await this.asyncLock.ReadLockAsync())
             {
-                var testComplete = new TaskCompletionSource<object>();
-                Thread mtaThread = new Thread((ThreadStart)delegate
-                {
-                    try
-                    {
-                        Assert.True(this.asyncLock.IsReadLockHeld, "MTA should be told it holds a read lock.");
-                        testComplete.SetAsync();
-                    }
-                    catch (Exception ex)
-                    {
-                        testComplete.TrySetException(ex);
-                    }
-                });
-                mtaThread.SetApartmentState(ApartmentState.MTA);
-                mtaThread.Start();
-                await testComplete.Task;
+                await Task.Run(() => Assert.True(this.asyncLock.IsReadLockHeld, "MTA should be told it holds a read lock."));
             }
         }
 
         /// <summary>Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA does not appear to hold a lock.</summary>
-        [Fact]
+        [SkippableFact]
         public async Task MtaLockNotSharedWithSta()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             using (await this.asyncLock.ReadLockAsync())
             {
                 var testComplete = new TaskCompletionSource<object>();
@@ -3678,9 +3665,10 @@
         }
 
         /// <summary>Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by marshaling back to an MTA.</summary>
-        [Fact]
+        [SkippableFact]
         public async Task ReadLockTraversesAcrossSta()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             using (await this.asyncLock.ReadLockAsync())
             {
                 var testComplete = new TaskCompletionSource<object>();
@@ -3717,9 +3705,11 @@
         }
 
         /// <summary>Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by requesting it and moving back to an MTA.</summary>
-        [Fact]
+        [SkippableFact]
         public async Task UpgradeableReadLockTraversesAcrossSta()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+
             using (await this.asyncLock.UpgradeableReadLockAsync())
             {
                 var testComplete = new TaskCompletionSource<object>();
@@ -3758,9 +3748,10 @@
         }
 
         /// <summary>Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by requesting it and moving back to an MTA.</summary>
-        [Fact]
+        [SkippableFact]
         public async Task WriteLockTraversesAcrossSta()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             using (await this.asyncLock.WriteLockAsync())
             {
                 var testComplete = new TaskCompletionSource<object>();
@@ -4886,18 +4877,6 @@
             }
         }
 #endif
-
-        private class StaAverseLock : AsyncReaderWriterLock
-        {
-            protected override bool CanCurrentThreadHoldActiveLock
-            {
-                get
-                {
-                    return base.CanCurrentThreadHoldActiveLock
-                        && Thread.CurrentThread.GetApartmentState() == ApartmentState.MTA;
-                }
-            }
-        }
 
         private class LockDerived : AsyncReaderWriterLock
         {

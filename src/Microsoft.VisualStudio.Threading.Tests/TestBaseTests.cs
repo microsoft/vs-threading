@@ -32,9 +32,10 @@
             Assert.True(executed);
         }
 
-        [Fact]
+        [SkippableFact]
         public void ExecuteOnSTA_PropagatesExceptions()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             Assert.Throws<ApplicationException>(() => this.ExecuteOnSTA(() =>
             {
                 throw new ApplicationException();
@@ -47,7 +48,11 @@
             bool executed = false;
             this.ExecuteOnDispatcher(delegate
             {
-                Assert.Equal(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    Assert.Equal(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
+                }
+
                 Assert.NotNull(SynchronizationContext.Current);
                 executed = true;
             });
@@ -64,7 +69,11 @@
                 bool executed = false;
                 this.ExecuteOnDispatcher(delegate
                 {
-                    Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
+                    }
+
                     Assert.NotNull(SynchronizationContext.Current);
                     executed = true;
                 });
@@ -109,11 +118,7 @@
             throw new Exception("Intentional test failure");
         }
 
-#if NETFRAMEWORK
         [StaFact]
-#else
-        [StaFact(Skip = "Isolation host not yet ported to .NET Core")]
-#endif
         public async Task ExecuteInIsolation_PassingOnSTA()
         {
             if (await this.ExecuteInIsolationAsync())
@@ -122,11 +127,7 @@
             }
         }
 
-#if NETFRAMEWORK
         [StaFact]
-#else
-        [StaFact(Skip = "Isolation host not yet ported to .NET Core")]
-#endif
         public async Task ExecuteInIsolation_FailingOnSTA()
         {
             bool executeHere;

@@ -384,9 +384,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
             await Assert.ThrowsAsync<ArgumentNullException>(() => AwaitExtensions.WaitForExitAsync(null));
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task WaitForExitAsync_ExitCode()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             Process p = Process.Start(
                 new ProcessStartInfo("cmd.exe", "/c exit /b 55")
                 {
@@ -397,9 +398,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Assert.Equal(55, exitCode);
         }
 
-        [Fact]
+        [SkippableFact]
         public void WaitForExitAsync_AlreadyExited()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             Process p = Process.Start(
                 new ProcessStartInfo("cmd.exe", "/c exit /b 55")
                 {
@@ -415,8 +417,9 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public async Task WaitForExitAsync_UnstartedProcess()
         {
+            string processName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "cmd.exe" : "/bin/bash";
             var process = new Process();
-            process.StartInfo.FileName = "cmd.exe";
+            process.StartInfo.FileName = processName;
             process.StartInfo.CreateNoWindow = true;
             await Assert.ThrowsAsync<InvalidOperationException>(() => process.WaitForExitAsync());
         }
@@ -452,7 +455,8 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public async Task WaitForExitAsync_Canceled()
         {
-            Process p = Process.Start(new ProcessStartInfo("cmd.exe") { CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden });
+            string processName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "cmd.exe" : "/bin/bash";
+            Process p = Process.Start(new ProcessStartInfo(processName) { CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden });
             try
             {
                 var cts = new CancellationTokenSource();
