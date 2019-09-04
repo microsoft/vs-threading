@@ -126,12 +126,12 @@ namespace Microsoft.VisualStudio.Threading
 
                 return string.Format(
                     CultureInfo.CurrentCulture,
-                    "{3}{0}.{1}{2} (target address: 0x{4:X8})",
+                    "{3}{0}.{1}{2} (target address: 0x{4:X" + (IntPtr.Size * 2) + "})",
                     method.DeclaringType.FullName,
                     method.Name,
                     instanceType,
                     AsyncReturnStackPrefix,
-                    (int)GetAddress(invokeDelegate.Target)); // the int cast allows hex formatting
+                    GetAddress(invokeDelegate.Target).ToInt64()); // the cast allows hex formatting
             }
 
             return string.Format(

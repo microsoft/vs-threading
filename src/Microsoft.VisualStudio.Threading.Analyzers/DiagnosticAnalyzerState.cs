@@ -15,19 +15,18 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System.Threading;
     using System.Threading.Tasks;
     using CodeAnalysis;
-    using CodeAnalysis.Diagnostics;
 
     /// <summary>
-    /// A base class for our analyzers that provide per-compilation caching by way of its private fields
+    /// A class for our analyzers that provide per-compilation caching by way of its private fields
     /// to support common utility methods.
     /// </summary>
-    public abstract class DiagnosticAnalyzerBase : DiagnosticAnalyzer
+    internal abstract class DiagnosticAnalyzerState
     {
         private const string GetAwaiterMethodName = nameof(Task.GetAwaiter);
 
         private readonly ConcurrentDictionary<ITypeSymbol, bool> customAwaitableTypes = new ConcurrentDictionary<ITypeSymbol, bool>();
 
-        protected bool IsAwaitableType(ITypeSymbol typeSymbol, Compilation compilation, CancellationToken cancellationToken)
+        internal bool IsAwaitableType(ITypeSymbol typeSymbol, Compilation compilation, CancellationToken cancellationToken)
         {
             if (typeSymbol == null)
             {

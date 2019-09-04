@@ -35,7 +35,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void LockWithinRunMTA()
         {
             Task.Run(delegate
@@ -44,10 +44,10 @@
                 {
                     await this.VerifyReadLockAsync();
                 });
-            }).GetAwaiter().GetResult();
+            }).WaitWithoutInlining(throwOriginalException: true);
         }
 
-        [StaFact]
+        [Fact]
         public void LockWithinRunMTAContended()
         {
             Task.Run(delegate
@@ -57,7 +57,7 @@
                     this.ArrangeLockContentionAsync();
                     await this.VerifyReadLockAsync();
                 });
-            }).GetAwaiter().GetResult();
+            }).WaitWithoutInlining(throwOriginalException: true);
         }
 
         [StaFact]
@@ -70,7 +70,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void LockWithinRunAfterYieldMTA()
         {
             Task.Run(delegate
@@ -80,7 +80,7 @@
                     await Task.Yield();
                     await this.VerifyReadLockAsync();
                 });
-            }).GetAwaiter().GetResult();
+            }).WaitWithoutInlining(throwOriginalException: true);
         }
 
         [StaFact]
@@ -89,13 +89,13 @@
             this.LockWithinRunAsyncAfterYieldHelper();
         }
 
-        [StaFact]
+        [Fact]
         public void LockWithinRunAsyncAfterYieldMTA()
         {
-            Task.Run(() => this.LockWithinRunAsyncAfterYieldHelper()).GetAwaiter().GetResult();
+            Task.Run(() => this.LockWithinRunAsyncAfterYieldHelper()).WaitWithoutInlining(throwOriginalException: true);
         }
 
-        [StaFact]
+        [Fact]
         public async Task RunWithinExclusiveLock()
         {
             using (TestUtilities.DisableAssertionDialog())
@@ -115,7 +115,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task RunWithinExclusiveLockWithYields()
         {
             using (TestUtilities.DisableAssertionDialog())
@@ -140,7 +140,7 @@
         /// <summary>
         /// Verifies that synchronously blocking works within read locks.
         /// </summary>
-        [StaFact]
+        [Fact]
         public async Task RunWithinReadLock()
         {
             using (await this.asyncLock.ReadLockAsync())
@@ -155,7 +155,7 @@
         /// this test verifies that anyone using that pattern will be quickly disallowed to avoid hangs
         /// whenever the async code happens to yield.
         /// </summary>
-        [StaFact]
+        [Fact]
         public async Task RunWithinUpgradeableReadLockThrows()
         {
             using (TestUtilities.DisableAssertionDialog())
@@ -182,7 +182,7 @@
         /// this test verifies that anyone using that pattern will be quickly disallowed to avoid hangs
         /// whenever the async code happens to yield.
         /// </summary>
-        [StaFact]
+        [Fact]
         public async Task RunWithinWriteLockThrows()
         {
             using (TestUtilities.DisableAssertionDialog())
@@ -206,7 +206,7 @@
         /// <summary>
         /// Verifies that an important scenario of write lock + main thread switch + synchronous callback into the write lock works.
         /// </summary>
-        [StaFact]
+        [Fact]
         public void RunWithinExclusiveLockWithYieldsOntoMainThread()
         {
             this.ExecuteOnDispatcher(

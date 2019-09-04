@@ -689,11 +689,11 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
     protected virtual ReentrantSemaphore CreateSemaphore(ReentrantSemaphore.ReentrancyMode mode = ReentrantSemaphore.ReentrancyMode.NotAllowed, int initialCount = 1) => ReentrantSemaphore.Create(initialCount, mode: mode);
 #pragma warning restore VSTHRD012 // Provide JoinableTaskFactory where allowed
 
-    protected void ExecuteOnDispatcher(Func<Task> test)
+    protected new void ExecuteOnDispatcher(Func<Task> test)
     {
         using (this.Dispatcher.Apply())
         {
-            this.ExecuteOnDispatcher(test, staRequired: false);
+            base.ExecuteOnDispatcher(test);
         }
     }
 

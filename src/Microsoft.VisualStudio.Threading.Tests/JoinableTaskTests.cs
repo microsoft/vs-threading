@@ -27,33 +27,33 @@
             this.RunFuncOfTaskHelper();
         }
 
-        [StaFact]
+        [Fact]
         public void RunFuncOfTaskMTA()
         {
-            Task.Run(() => this.RunFuncOfTaskHelper()).Wait();
+            Task.Run(() => this.RunFuncOfTaskHelper()).WaitWithoutInlining(throwOriginalException: true);
         }
 
-        [StaFact]
+        [Fact]
         public void RunFuncOfTaskOfTSTA()
         {
             this.RunFuncOfTaskOfTHelper();
         }
 
-        [StaFact]
+        [Fact]
         public void RunFuncOfTaskOfTMTA()
         {
-            Task.Run(() => this.RunFuncOfTaskOfTHelper()).GetAwaiter().GetResult();
+            Task.Run(() => this.RunFuncOfTaskOfTHelper()).WaitWithoutInlining(throwOriginalException: true);
         }
 
-        [StaFact]
-        public void LeaveAndReturnToSTA()
+        [Fact]
+        public void LeaveAndReturnToMainThread()
         {
             var fullyCompleted = false;
             this.asyncPump.Run(async delegate
             {
                 Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
 
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 Assert.NotEqual(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
 
                 await this.asyncPump.SwitchToMainThreadAsync();
@@ -63,21 +63,21 @@
             Assert.True(fullyCompleted);
         }
 
-        [StaFact]
+        [Fact]
         public void SwitchToMainThreadDoesNotYieldWhenAlreadyOnMainThread()
         {
             Assert.True(this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().IsCompleted, "Yield occurred even when already on UI thread.");
         }
 
-        [StaFact]
+        [Fact]
         public void SwitchToMainThreadYieldsWhenOffMainThread()
         {
             Task.Run(
                 () => Assert.False(this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().IsCompleted, "Yield did not occur when off Main thread."))
-                .GetAwaiter().GetResult();
+                .WaitWithoutInlining(throwOriginalException: true);
         }
 
-        [StaFact]
+        [Fact]
         public void SwitchToMainThreadAsyncContributesToHangReportsAndCollections()
         {
             var mainThreadRequestPended = new ManualResetEventSlim();
@@ -108,13 +108,13 @@
 
             // Verify here that pendingTasks includes one task.
             Assert.Equal(1, this.GetPendingTasksCount());
-            Assert.Equal(1, this.joinableCollection.Count());
+            Assert.Single(this.joinableCollection);
 
             // Now let the request proceed through.
             this.PushFrame();
 
             Assert.Equal(0, this.GetPendingTasksCount());
-            Assert.Equal(0, this.joinableCollection.Count());
+            Assert.Empty(this.joinableCollection);
 
             if (delegateFailure != null)
             {
@@ -122,7 +122,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public void SwitchToMainThreadAsyncWithinCompleteTaskGetsNewTask()
         {
             // For this test, the JoinableTaskFactory we use shouldn't have its own collection.
@@ -158,7 +158,7 @@
             innerTask.Wait(); // rethrow exceptions
         }
 
-        [StaFact]
+        [Fact]
         public void SwitchToMainThreadAsyncTwiceRemainsInJoinableCollection()
         {
             ((DerivedJoinableTaskFactory)this.asyncPump).AssumeConcurrentUse = true;
@@ -231,7 +231,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public void SwitchToMainThreadAsyncTransitionsCanSeeAsyncLocals()
         {
             var mainThreadRequestPended = new ManualResetEventSlim();
@@ -284,7 +284,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public void SwitchToMainThreadCancellable()
         {
             var task = Task.Run(async delegate
@@ -305,7 +305,7 @@
             Assert.True(task.Wait(TestTimeout * 3), "Test timed out.");
         }
 
-        [StaFact]
+        [Fact]
         public void SwitchToMainThreadCancellableWithinRun()
         {
             var endTestTokenSource = new CancellationTokenSource(AsyncDelay);
@@ -328,12 +328,12 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public void SwitchToMainThreadAsync_Await_CapturesExecutionContext()
         {
             this.SimulateUIThread(async delegate
             {
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 Assert.NotEqual(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
                 AsyncLocal<object> asyncLocal = new AsyncLocal<object>();
                 asyncLocal.Value = "expected";
@@ -368,7 +368,7 @@
         {
             this.SimulateUIThread(async delegate
             {
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 var testResultSource = new TaskCompletionSource<object>();
                 AsyncLocal<object> asyncLocal = new AsyncLocal<object>();
                 asyncLocal.Value = "expected";
@@ -422,7 +422,7 @@
         {
             this.SimulateUIThread(async delegate
             {
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 var testResultSource = new TaskCompletionSource<object>();
                 AsyncLocal<object> asyncLocal = new AsyncLocal<object>();
                 asyncLocal.Value = "expected";
@@ -480,23 +480,21 @@
         /// constructor, that an attempt to switch to the main thread using JTF
         /// throws an informative exception.
         /// </summary>
-        [StaFact]
-        public async Task SwitchToMainThreadThrowsUsefulExceptionIfJTCIsMisconfigured()
+        [Fact]
+        public void SwitchToMainThreadThrowsUsefulExceptionIfJTCIsMisconfigured()
         {
-            SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
-            var jtc = new JoinableTaskContext();
-            await TaskScheduler.Default;
-            try
+            Task.Run(async delegate
             {
-                await jtc.Factory.SwitchToMainThreadAsync();
-            }
-            catch (JoinableTaskContextException)
-            {
-            }
+                // Create the JoinableTaskContext on a dedicated thread which no SynchronizationContext can ever switch back to.
+                var jtc = await Task.Factory.StartNew(() => new JoinableTaskContext(Thread.CurrentThread, new SynchronizationContext()), this.TimeoutToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+                // Now ask the JTC to switch to that main thread. It should throw when it fails to do so.
+                await Assert.ThrowsAsync<JoinableTaskContextException>(async () => await jtc.Factory.SwitchToMainThreadAsync(this.TimeoutToken));
+            }).WaitWithoutInlining(throwOriginalException: true);
         }
 
-        [StaFact]
-        public void SwitchToSTADoesNotCauseUnrelatedReentrancy()
+        [Fact]
+        public void SwitchToMainThreadDoesNotCauseUnrelatedReentrancy()
         {
             var uiThreadNowBusy = new TaskCompletionSource<object>();
             bool contenderHasReachedUIThread = false;
@@ -515,13 +513,13 @@
                 uiThreadNowBusy.SetResult(null);
                 Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
 
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 Assert.NotEqual(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
-                await Task.Delay(AsyncDelay); // allow ample time for the background contender to re-enter the STA thread if it's possible (we don't want it to be).
+                await Task.Delay(AsyncDelay); // allow ample time for the background contender to re-enter the main thread thread if it's possible (we don't want it to be).
 
                 await this.asyncPump.SwitchToMainThreadAsync();
                 Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
-                Assert.False(contenderHasReachedUIThread, "The contender managed to get to the STA thread while other work was on it.");
+                Assert.False(contenderHasReachedUIThread, "The contender managed to get to the main thread thread while other work was on it.");
             });
 
             // Pump messages until everything's done.
@@ -530,8 +528,8 @@
             Assert.True(backgroundContender.Wait(AsyncDelay), "Background contender never reached the UI thread.");
         }
 
-        [StaFact]
-        public void SwitchToSTASucceedsForRelevantWork()
+        [Fact]
+        public void SwitchToMainThreadSucceedsForRelevantWork()
         {
             this.asyncPump.Run(async delegate
             {
@@ -543,7 +541,7 @@
 
                 Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
 
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 Assert.NotEqual(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
 
                 // We can't complete until this seemingly unrelated work completes.
@@ -556,8 +554,8 @@
             });
         }
 
-        [StaFact]
-        public void SwitchToSTASucceedsForDependentWork()
+        [Fact]
+        public void SwitchToMainThreadSucceedsForDependentWork()
         {
             var uiThreadNowBusy = new TaskCompletionSource<object>();
             var backgroundContenderCompletedRelevantUIWork = new TaskCompletionSource<object>();
@@ -570,9 +568,9 @@
                 await this.asyncPump.SwitchToMainThreadAsync();
                 Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
 
-                // Release, then reacquire the STA a couple of different ways
+                // Release, then reacquire the main thread a couple of different ways
                 // to verify that even after the invitation has been extended
-                // to join the STA thread we can leave and revisit.
+                // to join the main thread thread we can leave and revisit.
                 await this.asyncPump.SwitchToMainThreadAsync();
                 Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
                 await Task.Yield();
@@ -598,11 +596,11 @@
                 uiThreadNowBusy.SetResult(null);
                 Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
 
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 Assert.NotEqual(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
 
                 using (this.joinableCollection.Join())
-                { // invite the work to re-enter our synchronous work on the STA thread.
+                { // invite the work to re-enter our synchronous work on the main thread thread.
                     await backgroundContenderCompletedRelevantUIWork.Task; // we can't complete until this seemingly unrelated work completes.
                 } // stop inviting more work from background thread.
 
@@ -620,7 +618,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void TransitionToMainThreadNotRaisedWhenAlreadyOnMainThread()
         {
             var factory = (DerivedJoinableTaskFactory)this.asyncPump;
@@ -634,15 +632,15 @@
 
                 // While on the main thread, await something that executes on a background thread.
                 await Task.Run(delegate
-            {
-                Assert.Equal(0, factory.TransitioningToMainThreadHitCount); //, "No transition expected when moving off the main thread.");
-                Assert.Equal(0, factory.TransitionedToMainThreadHitCount); //, "No transition expected when moving off the main thread.");
-            });
+                {
+                    Assert.Equal(0, factory.TransitioningToMainThreadHitCount); //, "No transition expected when moving off the main thread.");
+                    Assert.Equal(0, factory.TransitionedToMainThreadHitCount); //, "No transition expected when moving off the main thread.");
+                });
                 Assert.Equal(0, factory.TransitioningToMainThreadHitCount); //, "No transition expected since the main thread was ultimately blocked for this job.");
                 Assert.Equal(0, factory.TransitionedToMainThreadHitCount); //, "No transition expected since the main thread was ultimately blocked for this job.");
 
                 // Now switch explicitly to a threadpool thread.
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 Assert.Equal(0, factory.TransitioningToMainThreadHitCount); //, "No transition expected when moving off the main thread.");
                 Assert.Equal(0, factory.TransitionedToMainThreadHitCount); //, "No transition expected when moving off the main thread.");
 
@@ -653,7 +651,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void TransitionToMainThreadRaisedWhenSwitchingToMainThread()
         {
             var factory = (DerivedJoinableTaskFactory)this.asyncPump;
@@ -677,7 +675,7 @@
                 Assert.Equal(1, factory.TransitionedToMainThreadHitCount); //, "Reacquisition of main thread should have raised transition events.");
 
                 // Now switch explicitly to a threadpool thread.
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 Assert.Equal(1, factory.TransitioningToMainThreadHitCount); // No transition expected when moving off the main thread.
                 Assert.Equal(1, factory.TransitionedToMainThreadHitCount); // No transition expected when moving off the main thread.
 
@@ -693,7 +691,7 @@
             joinableTask.Join(); // Throw exceptions thrown by the async task.
         }
 
-        [StaFact]
+        [Fact]
         public void RunSynchronouslyNestedNoJoins()
         {
             bool outerCompleted = false, innerCompleted = false;
@@ -734,7 +732,7 @@
             Assert.True(outerCompleted, "Outer Run did not complete.");
         }
 
-        [StaFact]
+        [Fact]
         public void RunSynchronouslyNestedWithJoins()
         {
             bool outerCompleted = false, innerCompleted = false;
@@ -788,7 +786,7 @@
             Assert.True(outerCompleted, "Outer Run did not complete.");
         }
 
-        [StaFact]
+        [Fact]
         public void RunSynchronouslyOffMainThreadRequiresJoinToReenterMainThreadForSameAsyncPumpInstance()
         {
             var task = Task.Run(delegate
@@ -814,7 +812,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void RunSynchronouslyOffMainThreadRequiresJoinToReenterMainThreadForDifferentAsyncPumpInstance()
         {
             var otherCollection = this.context.CreateCollection();
@@ -844,7 +842,7 @@
         /// <remarks>
         /// DevDiv bug 874540 represents a hang that this test repros.
         /// </remarks>
-        [StaFact]
+        [Fact]
         public void RunSwitchesToMainThreadAndPosts()
         {
             var task = Task.Run(delegate
@@ -871,7 +869,7 @@
         /// <summary>
         /// Checks that posting to the SynchronizationContext.Current doesn't cause a hang.
         /// </summary>
-        [StaFact]
+        [Fact]
         public void RunSwitchesToMainThreadAndPostsTwice()
         {
             ((DerivedJoinableTaskFactory)this.asyncPump).AssumeConcurrentUse = true;
@@ -900,7 +898,7 @@
         /// <summary>
         /// Checks that posting to the SynchronizationContext.Current doesn't cause a hang.
         /// </summary>
-        [StaFact]
+        [Fact]
         public void RunSwitchesToMainThreadAndPostsTwiceDoesNotImpactJoinableTaskCompletion()
         {
             ((DerivedJoinableTaskFactory)this.asyncPump).AssumeConcurrentUse = true;
@@ -938,7 +936,7 @@
             task.Wait(); // rethrow exceptions.
         }
 
-        [StaFact]
+        [Fact]
         public void SwitchToMainThreadImmediatelyShouldNotHang()
         {
             ((DerivedJoinableTaskFactory)this.asyncPump).AssumeConcurrentUse = true;
@@ -966,7 +964,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void MultipleSwitchToMainThreadShouldNotHang()
         {
             ((DerivedJoinableTaskFactory)this.asyncPump).AssumeConcurrentUse = true;
@@ -1033,7 +1031,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void SwitchToMainThreadWithDelayedDependencyShouldNotHang()
         {
             JoinableTask task1 = null, task2 = null;
@@ -1102,7 +1100,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void DoubleJoinedTaskDisjoinCorrectly()
         {
             JoinableTask task1 = null;
@@ -1117,7 +1115,7 @@
                 task1 = this.asyncPump.RunAsync(async delegate
                 {
                     await this.asyncPump.SwitchToMainThreadAsync();
-                    await TaskScheduler.Default;
+                    await TaskScheduler.Default.SwitchTo(alwaysYield: true);
 
                     dependentFirstWorkCompleted.Set();
                     await dependentSecondWorkAllowed;
@@ -1169,7 +1167,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void DoubleIndirectJoinedTaskDisjoinCorrectly()
         {
             JoinableTask task1 = null, task2 = null, task3 = null;
@@ -1184,7 +1182,7 @@
                 task1 = this.asyncPump.RunAsync(async delegate
                 {
                     await this.asyncPump.SwitchToMainThreadAsync();
-                    await TaskScheduler.Default;
+                    await TaskScheduler.Default.SwitchTo(alwaysYield: true);
 
                     dependentFirstWorkCompleted.Set();
                     await dependentSecondWorkAllowed;
@@ -1261,7 +1259,7 @@
         /// <summary>
         /// Main -> Task1, Main -> Task2, Task1 &lt;-&gt; Task2 (loop dependency between Task1 and Task2.
         /// </summary>
-        [StaFact]
+        [Fact]
         public void JoinWithLoopDependentTasks()
         {
             JoinableTask task1 = null, task2 = null;
@@ -1291,13 +1289,13 @@
 
                         await this.asyncPump.SwitchToMainThreadAsync()
                             .GetAwaiter().YieldAndNotify(mainThreadDependentFirstWorkQueued);
-                        await TaskScheduler.Default;
+                        await TaskScheduler.Default.SwitchTo(alwaysYield: true);
 
                         dependentFirstWorkCompleted.Set();
 
                         await dependentSecondWorkAllowed;
                         await this.asyncPump.SwitchToMainThreadAsync();
-                        await TaskScheduler.Default;
+                        await TaskScheduler.Default.SwitchTo(alwaysYield: true);
 
                         dependentSecondWorkCompleted.Set();
 
@@ -1376,7 +1374,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void DeepLoopedJoinedTaskDisjoinCorrectly()
         {
             JoinableTask task1 = null, task2 = null, task3 = null, task4 = null, task5 = null;
@@ -1400,7 +1398,7 @@
                     using (collection.Join())
                     {
                         await this.asyncPump.SwitchToMainThreadAsync();
-                        await TaskScheduler.Default;
+                        await TaskScheduler.Default.SwitchTo(alwaysYield: true);
 
                         dependentFirstWorkCompleted.Set();
                         await dependentSecondWorkAllowed;
@@ -1507,7 +1505,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void JoinRejectsSubsequentWork()
         {
             bool outerCompleted = false;
@@ -1553,7 +1551,7 @@
                 // STEP 5
                 joinReverted.Set();
                 var releasingTask = await Task.WhenAny(unrelatedTask, postJoinRevertedWorkQueued.WaitAsync());
-                if (releasingTask == unrelatedTask & unrelatedTask.IsFaulted)
+                if (releasingTask == unrelatedTask && unrelatedTask.IsFaulted)
                 {
                     unrelatedTask.GetAwaiter().GetResult(); // rethrow an error that has already occurred.
                 }
@@ -1580,7 +1578,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void SyncContextRestoredAfterRun()
         {
             var syncContext = SynchronizationContext.Current;
@@ -1594,7 +1592,7 @@
             Assert.Same(syncContext, SynchronizationContext.Current);
         }
 
-        [StaFact]
+        [Fact]
         public void BackgroundSynchronousTransitionsToUIThreadSynchronous()
         {
             var task = Task.Run(delegate
@@ -1623,7 +1621,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void SwitchToMainThreadAwaiterReappliesAsyncLocalSyncContextOnContinuation()
         {
             var task = Task.Run(delegate
@@ -1658,7 +1656,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void NestedJoinsDistinctAsyncPumps()
         {
             const int nestLevels = 3;
@@ -1678,7 +1676,7 @@
             Assert.True(operationTask.IsCompleted);
         }
 
-        [StaFact]
+        [Fact]
         public void SynchronousTaskStackMaintainedCorrectly()
         {
             this.asyncPump.Run(async delegate
@@ -1688,7 +1686,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void SynchronousTaskStackMaintainedCorrectlyWithForkedTask()
         {
             var innerTaskWaitingSwitching = new AsyncManualResetEvent();
@@ -1717,7 +1715,7 @@
             });
         }
 
-        [StaFact(Skip = "ignored")]
+        [Fact(Skip = "ignored")]
         public void SynchronousTaskStackMaintainedCorrectlyWithForkedTask2()
         {
             var innerTaskWaiting = new AsyncManualResetEvent();
@@ -1746,7 +1744,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void RunSynchronouslyKicksOffReturnsThenSyncBlocksStillRequiresJoin()
         {
             var mainThreadNowBlocking = new AsyncManualResetEvent();
@@ -1773,7 +1771,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void KickOffAsyncWorkFromMainThreadThenBlockOnIt()
         {
             var joinable = this.asyncPump.RunAsync(async delegate
@@ -1790,7 +1788,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void KickOffDeepAsyncWorkFromMainThreadThenBlockOnIt()
         {
             var joinable = this.asyncPump.RunAsync(async delegate
@@ -1807,7 +1805,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void BeginAsyncCompleteSync()
         {
             Task task = this.asyncPump.RunAsync(
@@ -1816,7 +1814,7 @@
             this.asyncPump.CompleteSynchronously(this.joinableCollection, task);
         }
 
-        [StaFact]
+        [Fact]
         public void BeginAsyncYieldsWhenDelegateYieldsOnUIThread()
         {
             bool afterYieldReached = false;
@@ -1831,7 +1829,7 @@
             Assert.True(afterYieldReached);
         }
 
-        [StaFact]
+        [Fact]
         public void BeginAsyncYieldsWhenDelegateYieldsOffUIThread()
         {
             bool afterYieldReached = false;
@@ -1848,7 +1846,7 @@
             Assert.True(afterYieldReached);
         }
 
-        [StaFact]
+        [Fact]
         public void BeginAsyncYieldsToAppropriateContext()
         {
             var backgroundWork = Task.Run<Task>(delegate
@@ -1866,12 +1864,12 @@
                     await Task.Yield();
                     Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
                 }).Task;
-            }).Result;
+            }).GetResultWithoutInlining();
 
             this.asyncPump.CompleteSynchronously(this.joinableCollection, backgroundWork);
         }
 
-        [StaFact]
+        [Fact]
         public void RunSynchronouslyYieldsToAppropriateContext()
         {
             for (int i = 0; i < 100; i++)
@@ -1897,7 +1895,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public void BeginAsyncOnMTAKicksOffOtherAsyncPumpWorkCanCompleteSynchronouslySwitchFirst()
         {
             var otherCollection = this.asyncPump.Context.CreateCollection();
@@ -1923,7 +1921,7 @@
                     switchPended.Set();
                     await continuationFinished;
                 });
-            }).Result;
+            }).GetResultWithoutInlining();
 
             Assert.False(joinable.Task.IsCompleted);
             switchPended.Wait();
@@ -1932,7 +1930,7 @@
             Assert.True(joinable.Task.IsCompleted);
         }
 
-        [StaFact]
+        [Fact]
         public void BeginAsyncOnMTAKicksOffOtherAsyncPumpWorkCanCompleteSynchronouslyJoinFirst()
         {
             var otherCollection = this.asyncPump.Context.CreateCollection();
@@ -1963,7 +1961,7 @@
             Assert.True(joinable.Task.IsCompleted);
         }
 
-        [StaFact]
+        [Fact]
         public void BeginAsyncWithResultOnMTAKicksOffOtherAsyncPumpWorkCanCompleteSynchronously()
         {
             var otherCollection = this.asyncPump.Context.CreateCollection();
@@ -1990,7 +1988,7 @@
             Assert.True(joinable.Task.IsCompleted);
         }
 
-        [StaFact]
+        [Fact]
         public void JoinCancellation()
         {
             // Kick off the BeginAsync work from a background thread that has no special
@@ -2007,7 +2005,7 @@
             Assert.Throws<OperationCanceledException>(() => joinable.Join(cts.Token));
         }
 
-        [StaFact]
+        [Fact]
         public void RunSynchronouslyTaskOfTWithFireAndForgetMethod()
         {
             this.asyncPump.Run(async delegate
@@ -2019,7 +2017,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void SendToSyncContextCapturedFromWithinRunSynchronously()
         {
             var countdownEvent = new AsyncCountdownEvent(2);
@@ -2096,7 +2094,7 @@
             sendFromWithinRunSync.Wait();
         }
 
-        [StaFact]
+        [Fact]
         public void SendToSyncContextCapturedAfterSwitchingToMainThread()
         {
             var state = new GenericParameterHelper(3);
@@ -2113,7 +2111,7 @@
                     syncContext.Send(s => { Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId); Assert.Same(state, s); executed1 = true; }, state);
                     Assert.True(executed1);
 
-                    await TaskScheduler.Default;
+                    await TaskScheduler.Default.SwitchTo(alwaysYield: true);
 
                     bool executed2 = false;
                     syncContext.Send(s => { Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId); Assert.Same(state, s); executed2 = true; }, state);
@@ -2137,7 +2135,7 @@
         /// invokes modal UI, where the WPF dispatcher would normally process Posted messages, that our
         /// applied SynchronizationContext will facilitate the same expedited message delivery.
         /// </summary>
-        [StaFact]
+        [Fact]
         public void PostedMessagesAlsoSentToDispatcher()
         {
             this.asyncPump.Run(delegate
@@ -2182,7 +2180,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void StackOverflowAvoidance()
         {
             Task backgroundTask = null;
@@ -2216,7 +2214,7 @@
             this.PushFrame();
         }
 
-        [StaFact]
+        [Fact]
         public void MainThreadTaskSchedulerDoesNotInlineWhileQueuingTasks()
         {
             var uiBoundWork = Task.Run(
@@ -2230,7 +2228,7 @@
             this.PushFrame();
         }
 
-        [StaFact]
+        [Fact]
         public void JoinControllingSelf()
         {
             var runSynchronouslyExited = new AsyncManualResetEvent();
@@ -2271,7 +2269,7 @@
             backgroundTask.GetAwaiter().GetResult(); // rethrow any exceptions
         }
 
-        [StaFact]
+        [Fact]
         public void JoinWorkStealingRetainsThreadAffinityUI()
         {
             bool synchronousCompletionStarting = false;
@@ -2302,7 +2300,7 @@
             asyncTask.Wait(); // realize any exceptions
         }
 
-        [StaFact]
+        [Fact]
         public void JoinWorkStealingRetainsThreadAffinityBackground()
         {
             bool synchronousCompletionStarting = false;
@@ -2341,7 +2339,7 @@
         /// Verifies that yields in a BeginAsynchronously delegate still retain their
         /// ability to execute continuations on-demand when executed within a Join.
         /// </summary>
-        [StaFact]
+        [Fact]
         public void BeginAsyncThenJoinOnMainThread()
         {
             var joinable = this.asyncPump.RunAsync(async delegate
@@ -2364,7 +2362,7 @@
         /// This test verifies that continuations retain an appropriate SynchronizationContext
         /// that will avoid deadlocks when async operations are synchronously blocked on.
         /// </remarks>
-        [StaFact]
+        [Fact]
         public void BeginAsyncThenJoinOnMainThreadLater()
         {
             var firstYield = new AsyncManualResetEvent();
@@ -2390,7 +2388,7 @@
             this.PushFrame();
         }
 
-        [StaFact]
+        [Fact]
         public void RunSynchronouslyWithoutSyncContext()
         {
             SynchronizationContext.SetSynchronizationContext(null);
@@ -2406,7 +2404,7 @@
         /// <summary>
         /// Verifies the fix for a bug found in actual Visual Studio use of the AsyncPump.
         /// </summary>
-        [StaFact]
+        [Fact]
         public void AsyncPumpEnumeratingModifiedCollection()
         {
             // Arrange for a pending action on this.asyncPump.
@@ -2437,7 +2435,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void NoPostedMessageLost()
         {
             Assert.True(Task.Run(async delegate
@@ -2459,7 +2457,7 @@
             }).Wait(TestTimeout), "Timed out waiting for completion.");
         }
 
-        [StaFact]
+        [Fact]
         public void NestedSyncContextsAvoidDeadlocks()
         {
             this.asyncPump.Run(async delegate
@@ -2475,7 +2473,7 @@
         /// Verifies when JoinableTasks are nested that all factories' policies are involved
         /// in trying to get to the UI thread.
         /// </summary>
-        [StaFact]
+        [Fact]
         public void NestedFactoriesCombinedMainThreadPolicies()
         {
             var loPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
@@ -2490,7 +2488,7 @@
             });
 
             // Verify that the loPriFactory received the message.
-            Assert.Equal(1, loPriFactory.JoinableTasksPendingMainthread.Count());
+            Assert.Single(loPriFactory.JoinableTasksPendingMainthread);
 
             // Simulate a modal dialog, with a message pump that is willing
             // to execute hiPriFactory messages but not loPriFactory messages.
@@ -2509,7 +2507,7 @@
         /// brief time when the child JoinableTask was created, it could forever defeat the
         /// intended lower priority of the child.
         /// </remarks>
-        [StaFact]
+        [Fact]
         public void NestedFactoriesDoNotAssistChildrenOfTaskThatCompletedBeforeStart()
         {
             var loPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
@@ -2534,8 +2532,8 @@
             loPriSwitchPosted.WaitAsync().Wait();
 
             // Verify that the loPriFactory received the message and hiPriFactory did not.
-            Assert.Equal(1, loPriFactory.JoinableTasksPendingMainthread.Count());
-            Assert.Equal(0, hiPriFactory.JoinableTasksPendingMainthread.Count());
+            Assert.Single(loPriFactory.JoinableTasksPendingMainthread);
+            Assert.Empty(hiPriFactory.JoinableTasksPendingMainthread);
         }
 
         /// <summary>
@@ -2557,7 +2555,7 @@
         /// do through the JoinableTask.childOrJoinedJobs field, and we may wire it up through
         /// there in the future.
         /// </remarks>
-        [StaFact(Skip = "Ignored")]
+        [Fact(Skip = "Ignored")]
         public void NestedFactoriesDoNotAssistChildrenOfTaskThatCompletedAfterStart()
         {
             var loPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
@@ -2576,15 +2574,15 @@
             outerFinished.Set();
 
             // Verify that the loPriFactory received the message and hiPriFactory did not.
-            Assert.Equal(1, loPriFactory.JoinableTasksPendingMainthread.Count());
-            Assert.Equal(0, hiPriFactory.JoinableTasksPendingMainthread.Count());
+            Assert.Single(loPriFactory.JoinableTasksPendingMainthread);
+            Assert.Empty(hiPriFactory.JoinableTasksPendingMainthread);
         }
 
         /// <summary>
         /// Verifes that each instance of JTF is only notified once of
         /// a nested JoinableTask's attempt to get to the UI thread.
         /// </summary>
-        [StaFact]
+        [Fact]
         public void NestedFactoriesDoNotDuplicateEffort()
         {
             var loPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
@@ -2607,8 +2605,8 @@
             });
 
             // Verify that each factory received the message exactly once.
-            Assert.Equal(1, loPriFactory.JoinableTasksPendingMainthread.Count());
-            Assert.Equal(1, hiPriFactory.JoinableTasksPendingMainthread.Count());
+            Assert.Single(loPriFactory.JoinableTasksPendingMainthread);
+            Assert.Single(hiPriFactory.JoinableTasksPendingMainthread);
 
             // Simulate a modal dialog, with a message pump that is willing
             // to execute hiPriFactory messages but not loPriFactory messages.
@@ -2619,7 +2617,7 @@
         /// Verifes that each instance of JTF is only notified once of
         /// a nested JoinableTask's attempt to get to the UI thread.
         /// </summary>
-        [StaFact]
+        [Fact]
         public void NestedFactoriesDoNotDuplicateEffortMixed()
         {
             var loPriFactory = new ModalPumpingJoinableTaskFactory(this.context);
@@ -2641,8 +2639,8 @@
             });
 
             // Verify that each factory received the message exactly once.
-            Assert.Equal(1, loPriFactory.JoinableTasksPendingMainthread.Count());
-            Assert.Equal(1, hiPriFactory.JoinableTasksPendingMainthread.Count());
+            Assert.Single(loPriFactory.JoinableTasksPendingMainthread);
+            Assert.Single(hiPriFactory.JoinableTasksPendingMainthread);
 
             // Simulate a modal dialog, with a message pump that is willing
             // to execute hiPriFactory messages but not loPriFactory messages.
@@ -2658,7 +2656,7 @@
         }
 
         // This is a known issue and we haven't a fix yet
-        [StaFact(Skip = "Ignored")]
+        [Fact(Skip = "Ignored")]
         public void CallContextWasOverwrittenByReentrance()
         {
             var asyncLock = new AsyncReaderWriterLock();
@@ -2710,7 +2708,7 @@
         /// Rapidly posts messages to several interlinked AsyncPumps
         /// to check for thread-safety and deadlocks.
         /// </summary>
-        [StaFact]
+        [Fact]
         public void PostStress()
         {
             int outstandingMessages = 0;
@@ -2773,7 +2771,7 @@
             this.PushFrame();
         }
 
-        [StaFact]
+        [Fact]
         public void StressFireAndForgetWorkFromCapturedSynchronizationContext()
         {
             for (int count = 0; count < 5000; count++)
@@ -2783,7 +2781,7 @@
                 SynchronizationContext capturedContext = null;
                 bool posted = false;
 
-                // Do the scheduling off the simulated STA thread so we can conveniently block later.
+                // Do the scheduling off the simulated main thread thread so we can conveniently block later.
                 Task.Run(delegate
                 {
                     this.asyncPump.Run(delegate
@@ -2803,11 +2801,11 @@
                         });
                         return TplExtensions.CompletedTask;
                     });
-                }).Wait();
+                }).WaitWithoutInlining(throwOriginalException: true);
 
                 try
                 {
-                    innerTask.GetAwaiter().GetResult();
+                    innerTask.WaitWithoutInlining(throwOriginalException: true);
                     Assert.True(postDelegateInvoked.Wait(AsyncDelay), "Timed out waiting for posted delegate to execute. Posted: " + posted);
                 }
                 catch
@@ -2822,7 +2820,7 @@
         /// Verifies that in the scenario when the initializing thread doesn't have a sync context at all (vcupgrade.exe)
         /// that reasonable behavior still occurs.
         /// </summary>
-        [StaFact]
+        [Fact]
         public void NoMainThreadSyncContextAndKickedOffFromOriginalThread()
         {
             SynchronizationContext.SetSynchronizationContext(null);
@@ -2838,7 +2836,7 @@
                 await this.asyncPump.SwitchToMainThreadAsync();
                 await Task.Yield();
 
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 await Task.Yield();
 
                 await this.asyncPump.SwitchToMainThreadAsync();
@@ -2856,7 +2854,7 @@
                 await this.asyncPump.SwitchToMainThreadAsync();
                 await Task.Yield();
 
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 await Task.Yield();
 
                 await this.asyncPump.SwitchToMainThreadAsync();
@@ -2869,7 +2867,7 @@
         /// Verifies that in the scenario when the initializing thread doesn't have a sync context at all (vcupgrade.exe)
         /// that reasonable behavior still occurs.
         /// </summary>
-        [StaFact]
+        [Fact]
         public void NoMainThreadSyncContextAndKickedOffFromOtherThread()
         {
             SynchronizationContext.SetSynchronizationContext(null);
@@ -2928,10 +2926,10 @@
                     });
                 });
                 joinable.Join();
-            }).Wait();
+            }).WaitWithoutInlining(throwOriginalException: true);
         }
 
-        [StaFact]
+        [Fact]
         public void MitigationAgainstBadSyncContextOnMainThread()
         {
             var ordinarySyncContext = new SynchronizationContext();
@@ -2947,7 +2945,7 @@
         }
 
 #if ISOLATED_TEST_SUPPORT
-        [StaFact, Trait("Stress", "true")]
+        [Fact, Trait("Stress", "true")]
         [Trait("GC", "true")]
         public void SwitchToMainThreadMemoryLeak()
         {
@@ -2956,14 +2954,14 @@
                 this.CheckGCPressure(
                     async delegate
                     {
-                        await TaskScheduler.Default;
+                        await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                         await this.asyncPump.SwitchToMainThreadAsync(CancellationToken.None);
                     },
                     3585);
             }
         }
 
-        [StaFact, Trait("Stress", "true")]
+        [Fact, Trait("Stress", "true")]
         [Trait("GC", "true")]
         public void SwitchToMainThreadMemoryLeakWithCancellationToken()
         {
@@ -2973,7 +2971,7 @@
                 this.CheckGCPressure(
                     async delegate
                     {
-                        await TaskScheduler.Default;
+                        await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                         await this.asyncPump.SwitchToMainThreadAsync(tokenSource.Token);
                     },
                     3800);
@@ -2981,7 +2979,7 @@
         }
 #endif
 
-        [StaFact]
+        [Fact]
         public void SwitchToMainThreadSucceedsWhenConstructedUnderMTAOperation()
         {
             var task = Task.Run(async delegate
@@ -3003,15 +3001,10 @@
             task.GetAwaiter().GetResult(); // rethrow any failures
         }
 
-        [StaFact, Trait("GC", "true")]
+        [Fact, Trait("GC", "true")]
         public void JoinableTaskReleasedBySyncContextAfterCompletion()
         {
-            SynchronizationContext syncContext = null;
-            var job = new WeakReference(this.asyncPump.RunAsync(() =>
-            {
-                syncContext = SynchronizationContext.Current; // simulate someone who has captured the sync context.
-                return TplExtensions.CompletedTask;
-            }));
+            WeakReference job = this.JoinableTaskReleasedBySyncContextAfterCompletion_Helper(out SynchronizationContext syncContext);
 
             // We intentionally still have a reference to the SyncContext that represents the task.
             // We want to make sure that even with that, the JoinableTask itself can be collected.
@@ -3019,7 +3012,7 @@
             Assert.False(job.IsAlive);
         }
 
-        [StaFact]
+        [Fact]
         public void JoinTwice()
         {
             var joinable = this.asyncPump.RunAsync(async delegate
@@ -3035,7 +3028,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void GrandparentJoins()
         {
             var innerJoinable = this.asyncPump.RunAsync(async delegate
@@ -3052,7 +3045,7 @@
         }
 
 #if ISOLATED_TEST_SUPPORT
-        [StaFact, Trait("GC", "true")]
+        [Fact, Trait("GC", "true")]
         public void RunSynchronouslyTaskNoYieldGCPressure()
         {
             if (this.ExecuteInIsolation())
@@ -3067,7 +3060,7 @@
             }
         }
 
-        [StaFact, Trait("GC", "true")]
+        [Fact, Trait("GC", "true")]
         public void RunSynchronouslyTaskOfTNoYieldGCPressure()
         {
             Task<object> completedTask = Task.FromResult<object>(null);
@@ -3084,7 +3077,7 @@
             }
         }
 
-        [StaFact, Trait("GC", "true")]
+        [Fact, Trait("GC", "true")]
         public void RunSynchronouslyTaskWithYieldGCPressure()
         {
             if (this.ExecuteInIsolation())
@@ -3099,7 +3092,7 @@
             }
         }
 
-        [StaFact, Trait("GC", "true")]
+        [Fact, Trait("GC", "true")]
         public void RunSynchronouslyTaskOfTWithYieldGCPressure()
         {
             if (this.ExecuteInIsolation())
@@ -3121,7 +3114,7 @@
         /// isn't on the top of the stack and therefore can't execute it anyway, thereby precluding the
         /// inner one from executing it either and leading to deadlock.
         /// </summary>
-        [StaFact]
+        [Fact]
         public void NestedRunSynchronouslyOuterDoesNotStealWorkFromNested()
         {
             var collection = this.context.CreateCollection();
@@ -3143,7 +3136,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void RunAsyncExceptionsCapturedInResult()
         {
             var exception = new InvalidOperationException();
@@ -3165,7 +3158,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public void RunAsyncOfTExceptionsCapturedInResult()
         {
             var exception = new InvalidOperationException();
@@ -3187,13 +3180,13 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public void RunAsyncWithNonYieldingDelegateNestedInRunOverhead()
         {
             var waitCountingJTF = new WaitCountingJoinableTaskFactory(this.asyncPump.Context);
             waitCountingJTF.Run(async delegate
             {
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
 
                 // Be sure the main thread sleeps at *least* once.
                 await waitCountingJTF.WaitedOnce.WaitAsync().WithCancellation(this.TimeoutToken);
@@ -3205,7 +3198,7 @@
                     // of the iterations, showing that doing real work exercerbates the problem.
                     ////for (int j = 0; j < 5000; j++) { }
 
-                    await this.asyncPump.RunAsync(delegate { return TplExtensions.CompletedTask; });
+                    await this.asyncPump.RunAsync(() => TplExtensions.CompletedTask);
                 }
             });
 
@@ -3214,13 +3207,13 @@
             Assert.Equal(1, waitCountingJTF.WaitCount);
         }
 
-        [StaFact]
+        [Fact]
         public void RunAsyncWithYieldingDelegateNestedInRunOverhead()
         {
             var waitCountingJTF = new WaitCountingJoinableTaskFactory(this.asyncPump.Context);
             waitCountingJTF.Run(async delegate
             {
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
 
                 // Be sure the main thread sleeps at *least* once.
                 await waitCountingJTF.WaitedOnce.WaitAsync().WithCancellation(this.TimeoutToken);
@@ -3241,53 +3234,17 @@
             Assert.Equal(1, waitCountingJTF.WaitCount);
         }
 
-        [StaFact]
+        [Fact]
         public void SwitchToMainThreadShouldNotLeakJoinableTaskWhenGetResultRunsFirst()
         {
-            var cts = new CancellationTokenSource();
-            var factory = (DerivedJoinableTaskFactory)this.asyncPump;
-            var transitionedToMainThread = new ManualResetEventSlim(false);
-            factory.PostToUnderlyingSynchronizationContextCallback = () =>
-            {
-                // Pause the background thread after posted the continuation to JoinableTask.
-                transitionedToMainThread.Wait();
-            };
-
-            object result = new object();
-            WeakReference<object> weakResult = new WeakReference<object>(result);
-
-            this.asyncPump.Run(async () =>
-            {
-                // Needs to switch to background thread at first in order to test the code that requests switch to main thread.
-                await TaskScheduler.Default;
-
-                // This nested run starts on background thread and then requests to switch to main thread.
-                // The remaining parts in the async delegate would be executed on main thread. This nested run
-                // will complete only when both the background thread works (aka. MainThreadAWaiter.OnCompleted())
-                // and the main thread works are done, and then we could start verification.
-                this.asyncPump.Run(async () =>
-            {
-                await this.asyncPump.SwitchToMainThreadAsync(cts.Token);
-
-                // Resume the background thread after transitioned to main thread.
-                // This is to ensure the timing that GetResult() must be called before OnCompleted() registers the cancellation.
-                transitionedToMainThread.Set();
-                return result;
-            });
-            });
-
-            // Needs to give the dispatcher a chance to run the posted action in order to release
-            // the last reference to the JoinableTask.
-            this.PushFrameTillQueueIsEmpty();
-
-            result = null;
+            WeakReference<object> weakResult = this.SwitchToMainThreadShouldNotLeakJoinableTaskWhenGetResultRunsFirst_Helper();
             GC.Collect();
 
             weakResult.TryGetTarget(out object target);
             Assert.Null(target); //, "The task's result should be collected unless the JoinableTask is leaked");
         }
 
-        [StaFact]
+        [Fact]
         public void SwitchToMainThreadShouldNotLeakJoinableTaskWhenGetResultRunsLater()
         {
             var cts = new CancellationTokenSource();
@@ -3305,7 +3262,7 @@
             this.asyncPump.Run(async () =>
             {
                 // Needs to switch to background thread at first in order to test the code that requests switch to main thread.
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
 
                 // This nested async run starts on background thread and then requests to switch to main thread.
                 // It will complete only when the background thread works (aka. MainThreadAWaiter.OnCompleted()) are done,
@@ -3354,7 +3311,7 @@
         /// <remarks>
         /// Repro for bug 245563: <![CDATA[ https://devdiv.visualstudio.com/web/wi.aspx?pcguid=011b8bdf-6d56-4f87-be0d-0092136884d9&id=245563 ]]>
         /// </remarks>
-        [StaFact]
+        [Fact]
         public void UnawaitedBackgroundWorkShouldComplete()
         {
             bool unawaitedWorkCompleted = false;
@@ -3386,7 +3343,7 @@
             Assert.True(unawaitedWorkCompleted);
         }
 
-        [StaFact]
+        [Fact]
         public void UnawaitedBackgroundWorkShouldCompleteWithoutSyncBlock()
         {
             ManualResetEventSlim unawaitedWorkCompleted = new ManualResetEventSlim();
@@ -3404,11 +3361,11 @@
                     return TplExtensions.CompletedTask;
                 });
             });
-            bkgrndThread.GetAwaiter().GetResult();
+            bkgrndThread.WaitWithoutInlining(throwOriginalException: true);
             Assert.True(unawaitedWorkCompleted.Wait(ExpectedTimeout));
         }
 
-        [StaFact]
+        [Fact]
         public void UnawaitedBackgroundWorkShouldCompleteAndNotCrashWhenThrown()
         {
             Func<Task> otherAsyncMethod = async delegate
@@ -3432,7 +3389,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void PostToUnderlyingSynchronizationContextShouldBeAfterSignalJoinableTasks()
         {
             var factory = (DerivedJoinableTaskFactory)this.asyncPump;
@@ -3445,16 +3402,17 @@
             };
             this.asyncPump.Run(async delegate
             {
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 await this.asyncPump.SwitchToMainThreadAsync();
                 transitionedToMainThread.Set();
             });
         }
 
-        [StaFact]
+        [Fact]
         public void JoinAsyncShouldCompleteWithoutUIThreadAfterCancellation()
         {
-            var jt = this.asyncPump.RunAsync(async delegate {
+            var jt = this.asyncPump.RunAsync(async delegate
+            {
                 await Task.Yield();
             });
             var cts = new CancellationTokenSource();
@@ -3467,11 +3425,12 @@
             Assert.Throws<AggregateException>(() => joinTask.Wait(AsyncDelay));
         }
 
-        [StaFact]
+        [Fact]
         public void JoinAsyncShouldCompleteWithoutUIThreadAfterTaskCompletes()
         {
             var mre = new AsyncManualResetEvent();
-            var jt = this.asyncPump.RunAsync(async delegate {
+            var jt = this.asyncPump.RunAsync(async delegate
+            {
                 await mre.WaitAsync().ConfigureAwait(false);
             });
             var joinTask = jt.JoinAsync();
@@ -3479,10 +3438,11 @@
             Assert.True(joinTask.Wait(AsyncDelay));
         }
 
-        [StaFact]
+        [Fact]
         public void JoinAsyncOfTShouldCompleteWithoutUIThreadAfterCancellation()
         {
-            var jt = this.asyncPump.RunAsync(async delegate {
+            var jt = this.asyncPump.RunAsync(async delegate
+            {
                 await Task.Yield();
                 return 2;
             });
@@ -3496,11 +3456,12 @@
             Assert.Throws<AggregateException>(() => joinTask.Wait(AsyncDelay));
         }
 
-        [StaFact]
+        [Fact]
         public void JoinAsyncOfTShouldCompleteWithoutUIThreadAfterTaskCompletes()
         {
             var mre = new AsyncManualResetEvent();
-            var jt = this.asyncPump.RunAsync(async delegate {
+            var jt = this.asyncPump.RunAsync(async delegate
+            {
                 await mre.WaitAsync().ConfigureAwait(false);
                 return 2;
             });
@@ -3509,7 +3470,7 @@
             Assert.True(joinTask.Wait(AsyncDelay));
         }
 
-        [StaFact]
+        [Fact]
         public void JoinShouldCompleteWithStarvedThreadPool()
         {
             using (TestUtilities.StarveThreadpool())
@@ -3522,7 +3483,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public void JoinOfTShouldCompleteWithStarvedThreadPool()
         {
             using (TestUtilities.StarveThreadpool())
@@ -3536,7 +3497,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public void JoinAsyncShouldCompleteWithStarvedThreadPool()
         {
             using (TestUtilities.StarveThreadpool())
@@ -3552,7 +3513,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public void JoinAsyncOfTShouldCompleteWithStarvedThreadPool()
         {
             using (TestUtilities.StarveThreadpool())
@@ -3763,6 +3724,49 @@
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)] // We need locals to surely be popped off the stack for a reliable test
+        private WeakReference<object> SwitchToMainThreadShouldNotLeakJoinableTaskWhenGetResultRunsFirst_Helper()
+        {
+            var cts = new CancellationTokenSource();
+            var factory = (DerivedJoinableTaskFactory)this.asyncPump;
+            var transitionedToMainThread = new ManualResetEventSlim(false);
+            factory.PostToUnderlyingSynchronizationContextCallback = () =>
+            {
+                // Pause the background thread after posted the continuation to JoinableTask.
+                transitionedToMainThread.Wait();
+            };
+
+            object result = new object();
+            WeakReference<object> weakResult = new WeakReference<object>(result);
+
+            this.asyncPump.Run(async () =>
+            {
+                // Needs to switch to background thread at first in order to test the code that requests switch to main thread.
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
+
+                // This nested run starts on background thread and then requests to switch to main thread.
+                // The remaining parts in the async delegate would be executed on main thread. This nested run
+                // will complete only when both the background thread works (aka. MainThreadAWaiter.OnCompleted())
+                // and the main thread works are done, and then we could start verification.
+                this.asyncPump.Run(async () =>
+                {
+                    await this.asyncPump.SwitchToMainThreadAsync(cts.Token);
+
+                    // Resume the background thread after transitioned to main thread.
+                    // This is to ensure the timing that GetResult() must be called before OnCompleted() registers the cancellation.
+                    transitionedToMainThread.Set();
+                    return result;
+                });
+            });
+
+            // Needs to give the dispatcher a chance to run the posted action in order to release
+            // the last reference to the JoinableTask.
+            this.PushFrameTillQueueIsEmpty();
+
+            result = null; // TODO: THIS is modifying the closure that we allege to be testing. We should remove this line and get the test to pass.
+            return weakResult;
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)] // must not be inlined so that locals are guaranteed to be freed.
         private WeakReference NestedFactoriesCanBeCollected_Helper()
         {
@@ -3790,6 +3794,21 @@
             // once 'inner' has completed.
             var weakOuterFactory = new WeakReference(outerFactory);
             return weakOuterFactory;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // mem leak detection requires literally popping locals with strong refs off the stack
+        private WeakReference JoinableTaskReleasedBySyncContextAfterCompletion_Helper(out SynchronizationContext syncContext)
+        {
+            SynchronizationContext sc = null;
+            var job = this.asyncPump.RunAsync(() =>
+            {
+                sc = SynchronizationContext.Current; // simulate someone who has captured the sync context.
+                return TplExtensions.CompletedTask;
+            });
+
+            job.Join(); // it never yielded, so this isn't strictly necessary.
+            syncContext = sc;
+            return new WeakReference(job);
         }
 
         private void RunFuncOfTaskHelper()

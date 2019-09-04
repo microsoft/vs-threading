@@ -259,6 +259,47 @@
 #endif
         }
 
+        /// <summary>
+        /// Wait on a task without possibly inlining it to the current thread.
+        /// </summary>
+        /// <param name="task">The task to wait on.</param>
+        /// <param name="throwOriginalException"><c>true</c> to throw the original (inner) exception when the <paramref name="task"/> faults; <c>false</c> to throw <see cref="AggregateException"/>.</param>
+        /// <exception cref="AggregateException">Thrown if <paramref name="task"/> completes in a faulted state if <paramref name="throwOriginalException"/> is <c>false</c>.</exception>
+        internal static void WaitWithoutInlining(this Task task, bool throwOriginalException)
+        {
+            Requires.NotNull(task, nameof(task));
+            if (!task.IsCompleted)
+            {
+                // Waiting on a continuation of a task won't ever inline the predecessor (in .NET 4.x anyway).
+                var continuation = task.ContinueWith(t => { }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+                continuation.Wait();
+            }
+
+            // Rethrow the exception if the task faulted.
+            if (throwOriginalException)
+            {
+                task.GetAwaiter().GetResult();
+            }
+            else
+            {
+                task.Wait();
+            }
+        }
+
+        /// <summary>
+        /// Wait on a task without possibly inlining it to the current thread and returns its result.
+        /// </summary>
+        /// <typeparam name="T">The type of result returned from the <paramref name="task"/>.</typeparam>
+        /// <param name="task">The task to wait on.</param>
+        /// <param name="throwOriginalException"><c>true</c> to throw the original (inner) exception when the <paramref name="task"/> faults; <c>false</c> to throw <see cref="AggregateException"/>.</param>
+        /// <returns>The result of the <see cref="Task{T}"/>.</returns>
+        /// <exception cref="AggregateException">Thrown if <paramref name="task"/> completes in a faulted state if <paramref name="throwOriginalException"/> is <c>false</c>.</exception>
+        internal static T GetResultWithoutInlining<T>(this Task<T> task, bool throwOriginalException = true)
+        {
+            WaitWithoutInlining(task, throwOriginalException);
+            return task.Result;
+        }
+
         private static string AssemblyCommandLineArguments(params string[] args) => string.Join(" ", args.Select(a => $"\"{a}\""));
 
         internal readonly struct YieldAndNotifyAwaitable

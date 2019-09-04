@@ -205,8 +205,8 @@ namespace Microsoft.VisualStudio.Threading.Tests
 
             var enumeratedContents = dictionary.ToList();
             Assert.Equal(2, enumeratedContents.Count);
-            Assert.True(enumeratedContents.Contains(new KeyValuePair<object, int>(keepAlive1, 0)));
-            Assert.True(enumeratedContents.Contains(new KeyValuePair<object, int>(keepAlive2, 2)));
+            Assert.Contains(new KeyValuePair<object, int>(keepAlive1, 0), enumeratedContents);
+            Assert.Contains(new KeyValuePair<object, int>(keepAlive2, 2), enumeratedContents);
         }
 
         /// <summary>
