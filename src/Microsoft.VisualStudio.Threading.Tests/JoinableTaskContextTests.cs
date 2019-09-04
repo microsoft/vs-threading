@@ -300,8 +300,8 @@
         public void HangReportNotSuppressedOnLongRunningTaskJoinCancelled()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
-            bool hangReported = false;
-            this.Context.OnReportHang = (hangDuration, iterations, id) => hangReported = true;
+            var hangReported = new AsyncManualResetEvent();
+            this.Context.OnReportHang = (hangDuration, iterations, id) => hangReported.Set();
 
             var task = this.Factory.RunAsync(
                 async () =>
@@ -318,10 +318,9 @@
                     cancellationSource.Cancel();
                     await joinTask.NoThrowAwaitable();
 
-                    await Task.Delay(20);
+                    await hangReported.WaitAsync().WithTimeout(UnexpectedTimeout);
                 });
 
-            Assert.True(hangReported);
             task.Join();
         }
 
@@ -329,8 +328,8 @@
         public void HangReportNotSuppressedOnLongRunningTaskCompleted()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
-            bool hangReported = false;
-            this.Context.OnReportHang = (hangDuration, iterations, id) => hangReported = true;
+            var hangReported = new AsyncManualResetEvent();
+            this.Context.OnReportHang = (hangDuration, iterations, id) => hangReported.Set();
 
             var task = this.Factory.RunAsync(
                 async () =>
@@ -340,7 +339,7 @@
                 JoinableTaskCreationOptions.LongRunning);
 
             task.Join();
-            Assert.False(hangReported);
+            Assert.False(hangReported.IsSet);
 
             var taskCollection = new JoinableTaskCollection(this.Factory.Context);
             taskCollection.Add(task);
@@ -350,19 +349,17 @@
                 {
                     using (var tempJoin = taskCollection.Join())
                     {
-                        await Task.Delay(20);
+                        await hangReported.WaitAsync().WithTimeout(UnexpectedTimeout);
                     }
                 });
-
-            Assert.True(hangReported);
         }
 
         [Fact]
         public void HangReportNotSuppressedOnLongRunningTaskCancelled()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
-            bool hangReported = false;
-            this.Context.OnReportHang = (hangDuration, iterations, id) => hangReported = true;
+            var hangReported = new AsyncManualResetEvent();
+            this.Context.OnReportHang = (hangDuration, iterations, id) => hangReported.Set();
             var cancellationSource = new CancellationTokenSource();
 
             var task = this.Factory.RunAsync(
@@ -382,11 +379,9 @@
                     {
                         cancellationSource.Cancel();
                         await task.JoinAsync().NoThrowAwaitable();
-                        await Task.Delay(40);
+                        await hangReported.WaitAsync().WithTimeout(UnexpectedTimeout);
                     }
                 });
-
-            Assert.True(hangReported);
         }
 
         [Fact]
