@@ -5,6 +5,7 @@
     using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
+    using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.Threading;
@@ -38,7 +39,7 @@
         public AsyncReaderWriterLockTests(ITestOutputHelper logger)
             : base(logger)
         {
-            this.asyncLock = new StaAverseLock();
+            this.asyncLock = new AsyncReaderWriterLock();
             doNotWaitForLockCompletionAtTestCleanup = false;
         }
 
@@ -51,7 +52,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public void NoLocksHeld()
         {
             Assert.False(this.asyncLock.IsReadLockHeld);
@@ -60,7 +61,7 @@
             Assert.False(this.asyncLock.IsAnyLockHeld);
         }
 
-        [StaFact]
+        [Fact]
         public async Task OnCompletedHasNoSideEffects()
         {
             await Task.Run(delegate
@@ -79,7 +80,7 @@
         }
 
         /// <summary>Verifies that folks who hold locks and do not wish to expose those locks when calling outside code may do so.</summary>
-        [StaFact]
+        [Fact]
         public async Task HideLocks()
         {
             var writeLockHeld = new TaskCompletionSource<object>();
@@ -121,7 +122,7 @@
             await writeLockHeld.Task;
         }
 
-        [StaFact]
+        [Fact]
         public async Task HideLocksRevertedOutOfOrder()
         {
             AsyncReaderWriterLock.Suppression suppression;
@@ -137,26 +138,26 @@
             Assert.False(this.asyncLock.IsReadLockHeld);
         }
 
-        [StaFact]
+        [Fact]
         public void ReleaseDefaultCtorDispose()
         {
             default(AsyncReaderWriterLock.Releaser).Dispose();
         }
 
-        [StaFact]
+        [Fact]
         public void SuppressionDefaultCtorDispose()
         {
             default(AsyncReaderWriterLock.Suppression).Dispose();
         }
 
-        [StaFact]
+        [Fact]
         public void AwaitableDefaultCtorDispose()
         {
             Assert.Throws<InvalidOperationException>(() => default(AsyncReaderWriterLock.Awaitable).GetAwaiter());
         }
 
         /// <summary>Verifies that continuations of the Completion property's task do not execute in the context of the private lock.</summary>
-        [StaFact]
+        [Fact]
         public async Task CompletionContinuationsDoNotDeadlockWithLockClass()
         {
             var continuationFired = new TaskCompletionSource<object>();
@@ -188,7 +189,7 @@
         }
 
         /// <summary>Verifies that continuations of the Completion property's task do not execute synchronously with the last lock holder's Release.</summary>
-        [StaFact]
+        [Fact]
         public async Task CompletionContinuationsExecuteAsynchronously()
         {
             var releaseContinuation = new TaskCompletionSource<object>();
@@ -208,7 +209,7 @@
             await continuation;
         }
 
-        [StaFact]
+        [Fact]
         public async Task CompleteMethodExecutesContinuationsAsynchronously()
         {
             var releaseContinuation = new TaskCompletionSource<object>();
@@ -261,7 +262,7 @@
         }
 
 #if DESKTOP
-        [StaFact, Trait("TestCategory", "FailsInCloudTest")]
+        [Fact, Trait("TestCategory", "FailsInCloudTest")]
         public async Task CallAcrossAppDomainBoundariesWithLock()
         {
             var otherDomain = AppDomain.CreateDomain("test domain", AppDomain.CurrentDomain.Evidence, AppDomain.CurrentDomain.SetupInformation);
@@ -284,7 +285,7 @@
         }
 #endif
 
-        [StaFact]
+        [Fact]
         public async Task LockStackContainsFlags()
         {
             var asyncLock = new LockDerived();
@@ -309,7 +310,7 @@
             Assert.False(asyncLock.LockStackContains(customFlag));
         }
 
-        [StaFact]
+        [Fact]
         public async Task OnLockReleaseCallbacksWithOuterWriteLock()
         {
             var stub = new LockDerived();
@@ -351,7 +352,7 @@
             Assert.Equal(1, onExclusiveLockReleasedAsyncInvocationCount);
         }
 
-        [StaFact]
+        [Fact]
         public async Task OnLockReleaseCallbacksWithOuterUpgradeableReadLock()
         {
             var stub = new LockDerived();
@@ -392,7 +393,7 @@
             Assert.Equal(1, onExclusiveLockReleasedAsyncInvocationCount);
         }
 
-        [StaFact]
+        [Fact]
         public async Task AwaiterInCallContextGetsRecycled()
         {
             await Task.Run(async delegate
@@ -420,7 +421,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public async Task AwaiterInCallContextGetsRecycledTwoDeep()
         {
             await Task.Run(async delegate
@@ -462,7 +463,7 @@
             });
         }
 
-        [StaFact, Trait("Stress", "true")]
+        [Fact, Trait("Stress", "true")]
         public async Task LockStress()
         {
             const int MaxLockAcquisitions = -1;
@@ -474,7 +475,7 @@
             await this.StressHelper(MaxLockAcquisitions, MaxLockHeldDelay, overallTimeout, iterationTimeout, maxWorkers, testCancellation);
         }
 
-        [StaFact, Trait("Stress", "true"), Trait("TestCategory", "FailsInCloudTest")]
+        [Fact, Trait("Stress", "true"), Trait("TestCategory", "FailsInCloudTest")]
         public async Task CancellationStress()
         {
             const int MaxLockAcquisitions = -1;
@@ -487,7 +488,7 @@
         }
 
         /// <summary>Tests that deadlocks don't occur when acquiring and releasing locks synchronously while async callbacks are defined.</summary>
-        [StaFact]
+        [Fact]
         public async Task SynchronousLockReleaseWithCallbacks()
         {
             await Task.Run(async delegate
@@ -526,7 +527,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public async Task IsAnyLockHeldTest()
         {
             var asyncLock = new LockDerived();
@@ -556,7 +557,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public async Task IsAnyLockHeldReturnsFalseForIncompatibleSyncContexts()
         {
             var dispatcher = SingleThreadedTestSynchronizationContext.New();
@@ -569,7 +570,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task IsAnyPassiveLockHeldReturnsTrueForIncompatibleSyncContexts()
         {
             var dispatcher = SingleThreadedTestSynchronizationContext.New();
@@ -582,7 +583,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task IsPassiveReadLockHeldReturnsTrueForIncompatibleSyncContexts()
         {
             var dispatcher = SingleThreadedTestSynchronizationContext.New();
@@ -594,7 +595,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task IsPassiveUpgradeableReadLockHeldReturnsTrueForIncompatibleSyncContexts()
         {
             var dispatcher = SingleThreadedTestSynchronizationContext.New();
@@ -606,7 +607,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task IsPassiveWriteLockHeldReturnsTrueForIncompatibleSyncContexts()
         {
             var dispatcher = SingleThreadedTestSynchronizationContext.New();
@@ -621,7 +622,7 @@
 
 #region ReadLockAsync tests
 
-        [StaFact]
+        [Fact]
         public async Task ReadLockAsyncSimple()
         {
             Assert.False(this.asyncLock.IsReadLockHeld);
@@ -643,7 +644,7 @@
             Assert.False(this.asyncLock.IsWriteLockHeld);
         }
 
-        [StaFact]
+        [Fact]
         public async Task ReadLockNotIssuedToAllThreads()
         {
             var evt = new ManualResetEventSlim(false);
@@ -661,7 +662,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task ReadLockImplicitSharing()
         {
             using (await this.asyncLock.ReadLockAsync())
@@ -677,7 +678,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task ReadLockImplicitSharingCutOffByParent()
         {
             Task subTask;
@@ -704,7 +705,7 @@
         }
 
         /// <summary>Verifies that when a thread that already has inherited an implicit lock explicitly requests a lock, that that lock can outlast the parents lock.</summary>
-        [StaFact]
+        [Fact]
         public async Task ReadLockImplicitSharingNotCutOffByParentWhenExplicitlyRetained()
         {
             Task subTask;
@@ -735,7 +736,7 @@
             await subTask;
         }
 
-        [StaFact]
+        [Fact]
         public async Task ConcurrentReaders()
         {
             var reader1HasLock = new ManualResetEventSlim();
@@ -759,7 +760,7 @@
                 }));
         }
 
-        [StaFact]
+        [Fact]
         public async Task NestedReaders()
         {
             using (await this.asyncLock.ReadLockAsync())
@@ -794,7 +795,7 @@
             Assert.False(this.asyncLock.IsWriteLockHeld);
         }
 
-        [StaFact]
+        [Fact]
         public async Task DoubleLockReleaseDoesNotReleaseOtherLocks()
         {
             var readLockHeld = new TaskCompletionSource<object>();
@@ -840,7 +841,7 @@
         }
 
 #if ISOLATED_TEST_SUPPORT
-        [StaFact, Trait("GC", "true")]
+        [Fact, Trait("GC", "true")]
         public async Task UncontestedTopLevelReadLockAsyncGarbageCheck()
         {
             if (await this.ExecuteInIsolationAsync())
@@ -850,7 +851,7 @@
             }
         }
 
-        [StaFact, Trait("GC", "true")]
+        [Fact, Trait("GC", "true")]
         public async Task NestedReadLockAsyncGarbageCheck()
         {
             if (await this.ExecuteInIsolationAsync())
@@ -886,7 +887,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task LockAsyncNotIssuedTillGetResultOnMta()
         {
             await Task.Run(delegate
@@ -903,7 +904,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public async Task AllowImplicitReadLockConcurrency()
         {
             using (await this.asyncLock.ReadLockAsync())
@@ -912,7 +913,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task ReadLockAsyncYieldsIfSyncContextSet()
         {
             await Task.Run(async delegate
@@ -944,7 +945,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public async Task ReadLockAsyncConcurrent()
         {
             var firstReadLockObtained = new TaskCompletionSource<object>();
@@ -977,7 +978,7 @@
                 }));
         }
 
-        [StaFact]
+        [Fact]
         public async Task ReadLockAsyncContention()
         {
             var firstLockObtained = new TaskCompletionSource<object>();
@@ -1012,7 +1013,7 @@
 
 #region UpgradeableReadLockAsync tests
 
-        [StaFact]
+        [Fact]
         public async Task UpgradeableReadLockAsyncNoUpgrade()
         {
             Assert.False(this.asyncLock.IsReadLockHeld);
@@ -1033,7 +1034,7 @@
             Assert.False(this.asyncLock.IsWriteLockHeld);
         }
 
-        [StaFact]
+        [Fact]
         public async Task UpgradeReadLockAsync()
         {
             using (await this.asyncLock.UpgradeableReadLockAsync())
@@ -1052,7 +1053,7 @@
         }
 
         /// <summary>Verifies that only one upgradeable read lock can be held at once.</summary>
-        [StaFact]
+        [Fact]
         public async Task UpgradeReadLockAsyncMutuallyExclusive()
         {
             var firstUpgradeableReadHeld = new TaskCompletionSource<object>();
@@ -1084,7 +1085,7 @@
                 secondUpgradeableReadHeld.Task);
         }
 
-        [StaFact]
+        [Fact]
         public async Task UpgradeableReadLockAsyncWithStickyWrite()
         {
             using (await this.asyncLock.UpgradeableReadLockAsync(AsyncReaderWriterLock.LockFlags.StickyWrite))
@@ -1131,7 +1132,7 @@
         }
 
 #if ISOLATED_TEST_SUPPORT
-        [StaFact, Trait("GC", "true")]
+        [Fact, Trait("GC", "true")]
         public async Task UncontestedTopLevelUpgradeableReadLockAsyncGarbageCheck()
         {
             if (await this.ExecuteInIsolationAsync())
@@ -1141,7 +1142,7 @@
             }
         }
 
-        [StaFact, Trait("GC", "true")]
+        [Fact, Trait("GC", "true")]
         public async Task NestedUpgradeableReadLockAsyncGarbageCheck()
         {
             if (await this.ExecuteInIsolationAsync())
@@ -1151,7 +1152,7 @@
         }
 #endif
 
-        [StaFact]
+        [Fact]
         public async Task ExclusiveLockReleasedEventsFireOnlyWhenWriteLockReleased()
         {
             var asyncLock = new LockDerived();
@@ -1189,7 +1190,7 @@
             Assert.Equal(1, onReleaseInvocations);
         }
 
-        [StaFact]
+        [Fact]
         public async Task ExclusiveLockReleasedEventsFireOnlyWhenWriteLockReleasedWithinUpgradeableRead()
         {
             var asyncLock = new LockDerived();
@@ -1227,7 +1228,7 @@
             Assert.Equal(1, onReleaseInvocations);
         }
 
-        [StaFact]
+        [Fact]
         public async Task ExclusiveLockReleasedEventsFireOnlyWhenStickyUpgradedLockReleased()
         {
             var asyncLock = new LockDerived();
@@ -1265,7 +1266,7 @@
             Assert.Equal(1, onReleaseInvocations);
         }
 
-        [StaFact]
+        [Fact]
         public async Task OnExclusiveLockReleasedAsyncAcquiresProjectLock()
         {
             var innerLockReleased = new AsyncManualResetEvent();
@@ -1291,7 +1292,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task MitigationAgainstAccidentalUpgradeableReadLockConcurrency()
         {
             using (await this.asyncLock.UpgradeableReadLockAsync())
@@ -1300,7 +1301,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task MitigationAgainstAccidentalUpgradeableReadLockConcurrencyBeforeFirstYieldSTA()
         {
             using (await this.asyncLock.UpgradeableReadLockAsync())
@@ -1309,7 +1310,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public void MitigationAgainstAccidentalUpgradeableReadLockConcurrencyBeforeFirstYieldMTA()
         {
             Task.Run(async delegate
@@ -1321,7 +1322,7 @@
             }).GetAwaiter().GetResult();
         }
 
-        [StaFact]
+        [Fact]
         public async Task UpgradeableReadLockAsyncYieldsIfSyncContextSet()
         {
             await Task.Run(async delegate
@@ -1361,14 +1362,14 @@
         /// <see cref="UpgradeableReadLockTraversesAcrossSta"/> and <see cref="WriteLockTraversesAcrossSta"/> tests,
         /// which are deemed more important.
         /// </remarks>
-        ////[StaFact, Ignore]
+        [Fact(Skip = "Ignored")]
         public async Task MitigationAgainstAccidentalUpgradeableReadLockForking()
         {
             await this.MitigationAgainstAccidentalLockForkingHelper(
                 () => this.asyncLock.UpgradeableReadLockAsync());
         }
 
-        [StaFact]
+        [Fact]
         public async Task UpgradeableReadLockAsyncSimple()
         {
             // Get onto an MTA thread so that a lock may be synchronously granted.
@@ -1396,7 +1397,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public async Task UpgradeableReadLockAsyncContention()
         {
             var firstLockObtained = new TaskCompletionSource<object>();
@@ -1427,7 +1428,7 @@
                 }));
         }
 
-        [StaFact]
+        [Fact]
         public void ReleasingUpgradeableReadLockAsyncSynchronouslyClearsSyncContext()
         {
             Task.Run(async delegate
@@ -1442,7 +1443,7 @@
             }).GetAwaiter().GetResult();
         }
 
-        [StaFact, Trait("TestCategory", "FailsInCloudTest")]
+        [Fact, Trait("TestCategory", "FailsInCloudTest")]
         public void UpgradeableReadLockAsyncSynchronousReleaseAllowsOtherUpgradeableReaders()
         {
             var testComplete = new ManualResetEventSlim(); // deliberately synchronous
@@ -1476,7 +1477,7 @@
 
 #region WriteLockAsync tests
 
-        [StaFact]
+        [Fact]
         public async Task WriteLockAsync()
         {
             Assert.False(this.asyncLock.IsWriteLockHeld);
@@ -1502,7 +1503,7 @@
             this.LockReleaseTestHelper(this.asyncLock.WriteLockAsync());
         }
 
-        [StaFact]
+        [Fact]
         public async Task WriteLockAsyncWhileHoldingUpgradeableReadLockContestedByActiveReader()
         {
             var upgradeableLockAcquired = new TaskCompletionSource<object>();
@@ -1542,7 +1543,7 @@
                 }));
         }
 
-        [StaFact]
+        [Fact]
         public async Task WriteLockAsyncWhileHoldingUpgradeableReadLockContestedByWaitingWriter()
         {
             var upgradeableLockAcquired = new TaskCompletionSource<object>();
@@ -1578,7 +1579,7 @@
                 }));
         }
 
-        [StaFact]
+        [Fact]
         public async Task WriteLockAsyncWhileHoldingUpgradeableReadLockContestedByActiveReaderAndWaitingWriter()
         {
             var upgradeableLockAcquired = new TaskCompletionSource<object>();
@@ -1659,7 +1660,7 @@
         }
 
 #if ISOLATED_TEST_SUPPORT
-        [StaFact, Trait("GC", "true")]
+        [Fact, Trait("GC", "true")]
         public async Task UncontestedTopLevelWriteLockAsyncGarbageCheck()
         {
             if (await this.ExecuteInIsolationAsync())
@@ -1669,7 +1670,7 @@
             }
         }
 
-        [StaFact, Trait("GC", "true")]
+        [Fact, Trait("GC", "true")]
         public async Task NestedWriteLockAsyncGarbageCheck()
         {
             if (await this.ExecuteInIsolationAsync())
@@ -1679,7 +1680,7 @@
         }
 #endif
 
-        [StaFact]
+        [Fact]
         public async Task MitigationAgainstAccidentalWriteLockConcurrency()
         {
             using (await this.asyncLock.WriteLockAsync())
@@ -1688,7 +1689,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task MitigationAgainstAccidentalWriteLockConcurrencyBeforeFirstYieldSTA()
         {
             using (await this.asyncLock.WriteLockAsync())
@@ -1697,7 +1698,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public void MitigationAgainstAccidentalWriteLockConcurrencyBeforeFirstYieldMTA()
         {
             Task.Run(async delegate
@@ -1718,14 +1719,14 @@
         /// <see cref="UpgradeableReadLockTraversesAcrossSta"/> and <see cref="WriteLockTraversesAcrossSta"/> tests,
         /// which are deemed more important.
         /// </remarks>
-        ////[StaFact, Ignore]
+        [Fact(Skip = "Ignored")]
         public async Task MitigationAgainstAccidentalWriteLockForking()
         {
             await this.MitigationAgainstAccidentalLockForkingHelper(
                 () => this.asyncLock.WriteLockAsync());
         }
 
-        [StaFact]
+        [Fact]
         public async Task WriteLockAsyncYieldsIfSyncContextSet()
         {
             await Task.Run(async delegate
@@ -1756,7 +1757,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void ReleasingWriteLockAsyncSynchronouslyClearsSyncContext()
         {
             Task.Run(async delegate
@@ -1771,7 +1772,7 @@
             }).GetAwaiter().GetResult();
         }
 
-        [StaFact]
+        [Fact]
         public void WriteLockAsyncSynchronousReleaseAllowsOtherWriters()
         {
             var testComplete = new ManualResetEventSlim(); // deliberately synchronous
@@ -1806,7 +1807,7 @@
         /// That happens in the original implementation, because it shares a same NonConcurrentSynchronizationContext, so a new write lock can take over it, and block the original lock task
         /// to resume back to the context.
         /// </summary>
-        [StaFact]
+        [Fact]
         public void WriteLockDisposingShouldNotBlockByOtherWriters()
         {
             var firstLockToRelease = new AsyncManualResetEvent();
@@ -1862,7 +1863,7 @@
             Assert.False(secondLockReleased.Task.IsFaulted);
         }
 
-        [StaFact]
+        [Fact]
         public async Task WriteLockAsyncSimple()
         {
             // Get onto an MTA thread so that a lock may be synchronously granted.
@@ -1890,7 +1891,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public async Task WriteLockAsyncContention()
         {
             var firstLockObtained = new TaskCompletionSource<object>();
@@ -1926,7 +1927,7 @@
 #region Read/write lock interactions
 
         /// <summary>Verifies that reads and upgradeable reads can run concurrently.</summary>
-        [StaFact]
+        [Fact]
         public async Task UpgradeableReadAvailableWithExistingReaders()
         {
             var readerHasLock = new TaskCompletionSource<object>();
@@ -1951,7 +1952,7 @@
         }
 
         /// <summary>Verifies that reads and upgradeable reads can run concurrently.</summary>
-        [StaFact]
+        [Fact]
         public async Task ReadAvailableWithExistingUpgradeableReader()
         {
             var readerHasLock = new TaskCompletionSource<object>();
@@ -1976,7 +1977,7 @@
         }
 
         /// <summary>Verifies that an upgradeable reader can obtain write access even while a writer is waiting for a lock.</summary>
-        [StaFact]
+        [Fact]
         public async Task UpgradeableReaderCanUpgradeWhileWriteRequestWaiting()
         {
             var upgradeableReadHeld = new TaskCompletionSource<object>();
@@ -2016,7 +2017,7 @@
         }
 
         /// <summary>Verifies that an upgradeable reader blocks for upgrade while other readers release their locks.</summary>
-        [StaFact]
+        [Fact]
         public async Task UpgradeableReaderWaitsForExistingReadersToExit()
         {
             var readerHasLock = new TaskCompletionSource<object>();
@@ -2053,7 +2054,7 @@
         }
 
         /// <summary>Verifies that read lock requests are not serviced until any writers have released their locks.</summary>
-        [StaFact]
+        [Fact]
         public async Task ReadersWaitForWriter()
         {
             var readerHasLock = new TaskCompletionSource<object>();
@@ -2079,7 +2080,7 @@
         }
 
         /// <summary>Verifies that write lock requests are not serviced until all existing readers have released their locks.</summary>
-        [StaFact]
+        [Fact]
         public async Task WriterWaitsForReaders()
         {
             var readerHasLock = new TaskCompletionSource<object>();
@@ -2106,7 +2107,7 @@
         }
 
         /// <summary>Verifies that if a read lock is open, and a writer is waiting for a lock, that no new top-level read locks will be issued.</summary>
-        [StaFact]
+        [Fact]
         public async Task NewReadersWaitForWaitingWriters()
         {
             var readLockHeld = new TaskCompletionSource<object>();
@@ -2184,7 +2185,7 @@
         }
 
         /// <summary>Verifies proper behavior when multiple read locks are held, and both read and write locks are in the queue, and a read lock is released.</summary>
-        [StaFact]
+        [Fact]
         public async Task ManyReadersBlockWriteAndSubsequentReadRequest()
         {
             var firstReaderAcquired = new TaskCompletionSource<object>();
@@ -2255,7 +2256,7 @@
         }
 
         /// <summary>Verifies that if a read lock is open, and a writer is waiting for a lock, that nested read locks will still be issued.</summary>
-        [StaFact]
+        [Fact]
         public async Task NestedReadersStillIssuedLocksWhileWaitingWriters()
         {
             var readerLockHeld = new TaskCompletionSource<object>();
@@ -2296,7 +2297,7 @@
         }
 
         /// <summary>Verifies that an upgradeable reader can 'downgrade' to a standard read lock without releasing the overall lock.</summary>
-        [StaFact]
+        [Fact]
         public async Task DowngradeUpgradeableReadToNormalRead()
         {
             var firstUpgradeableReadHeld = new TaskCompletionSource<object>();
@@ -2336,7 +2337,7 @@
                 }));
         }
 
-        [StaFact]
+        [Fact]
         public async Task MitigationAgainstAccidentalExclusiveLockConcurrency()
         {
             using (await this.asyncLock.UpgradeableReadLockAsync())
@@ -2369,7 +2370,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task UpgradedReadWithSyncContext()
         {
             var contestingReadLockAcquired = new TaskCompletionSource<object>();
@@ -2411,7 +2412,7 @@
 
 #region Cancellation tests
 
-        [StaFact]
+        [Fact]
         public async Task PrecancelledReadLockAsyncRequest()
         {
             await Task.Run(delegate
@@ -2448,7 +2449,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task CancelPendingLock()
         {
             var firstWriteHeld = new TaskCompletionSource<object>();
@@ -2484,7 +2485,7 @@
                 }));
         }
 
-        [StaFact]
+        [Fact]
         public async Task CancelPendingLockFollowedByAnotherLock()
         {
             var firstWriteHeld = new TaskCompletionSource<object>();
@@ -2544,7 +2545,7 @@
                 }));
         }
 
-        [StaFact]
+        [Fact]
         public async Task CancelNonImpactfulToIssuedLocks()
         {
             var cts = new CancellationTokenSource();
@@ -2600,7 +2601,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task CancelJustAfterIsCompleted()
         {
             var lockAwaitFinished = new TaskCompletionSource<object>();
@@ -2808,7 +2809,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task CompleteBlocksNewTopLevelLocksMTA()
         {
             this.asyncLock.Complete();
@@ -2830,7 +2831,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public async Task CompleteDoesNotBlockNestedLockRequests()
         {
             using (await this.asyncLock.ReadLockAsync())
@@ -2848,7 +2849,7 @@
             await this.asyncLock.Completion; // ensure that Completion transitions to completed as a result of releasing all locks.
         }
 
-        [StaFact]
+        [Fact]
         public async Task CompleteAllowsPreviouslyQueuedLockRequests()
         {
             var firstLockAcquired = new TaskCompletionSource<object>();
@@ -2907,7 +2908,7 @@
 
 #region Lock callback tests
 
-        [StaFact]
+        [Fact]
         public async Task OnBeforeExclusiveLockReleasedAsyncSimpleSyncHandler()
         {
             var asyncLock = new LockDerived();
@@ -2925,7 +2926,7 @@
             Assert.Equal(1, callbackInvoked);
         }
 
-        [StaFact]
+        [Fact]
         public async Task OnBeforeExclusiveLockReleasedAsyncNestedLockSyncHandler()
         {
             var asyncLock = new LockDerived();
@@ -2951,7 +2952,7 @@
             Assert.Equal(1, callbackInvoked);
         }
 
-        [StaFact]
+        [Fact]
         public async Task OnBeforeExclusiveLockReleasedAsyncSimpleAsyncHandler()
         {
             var asyncLock = new LockDerived();
@@ -2977,7 +2978,7 @@
             await callbackCompleted.Task;
         }
 
-        [StaFact]
+        [Fact]
         public async Task OnBeforeExclusiveLockReleasedAsyncReadLockAcquiringAsyncHandler()
         {
             var asyncLock = new LockDerived();
@@ -3010,7 +3011,7 @@
             await callbackCompleted.Task;
         }
 
-        [StaFact]
+        [Fact]
         public async Task OnBeforeExclusiveLockReleasedAsyncNestedWriteLockAsyncHandler()
         {
             var asyncLock = new LockDerived();
@@ -3055,7 +3056,7 @@
             await callbackCompleted.Task;
         }
 
-        [StaFact]
+        [Fact]
         public async Task OnBeforeExclusiveLockReleasedAsyncWriteLockWrapsBaseMethod()
         {
             var callbackCompleted = new AsyncManualResetEvent();
@@ -3071,7 +3072,7 @@
             await asyncLock.OnBeforeExclusiveLockReleasedAsyncInvoked.WaitAsync();
         }
 
-        [StaFact]
+        [Fact]
         public async Task OnBeforeExclusiveLockReleasedAsyncWriteLockReleaseAsync()
         {
             var asyncLock = new LockDerivedWriteLockAroundOnBeforeExclusiveLockReleased();
@@ -3081,7 +3082,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task OnBeforeExclusiveLockReleasedAsyncReadLockReleaseAsync()
         {
             var asyncLock = new LockDerivedReadLockAroundOnBeforeExclusiveLockReleased();
@@ -3091,7 +3092,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task OnBeforeWriteLockReleasedNullArgument()
         {
             using (await this.asyncLock.WriteLockAsync())
@@ -3100,7 +3101,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task OnBeforeWriteLockReleasedSingle()
         {
             var afterWriteLock = new TaskCompletionSource<object>();
@@ -3131,7 +3132,7 @@
             await this.asyncLock.Completion;
         }
 
-        [StaFact]
+        [Fact]
         public async Task OnBeforeWriteLockReleasedMultiple()
         {
             var afterWriteLock1 = new TaskCompletionSource<object>();
@@ -3178,7 +3179,7 @@
             await this.asyncLock.Completion;
         }
 
-        [StaFact]
+        [Fact]
         public async Task OnBeforeWriteLockReleasedNestedCallbacks()
         {
             var callback1 = new TaskCompletionSource<object>();
@@ -3210,7 +3211,7 @@
             await this.asyncLock.Completion;
         }
 
-        [StaFact]
+        [Fact]
         public async Task OnBeforeWriteLockReleasedDelegateThrows()
         {
             var afterWriteLock = new TaskCompletionSource<object>();
@@ -3241,7 +3242,7 @@
             await this.asyncLock.Completion;
         }
 
-        [StaFact]
+        [Fact]
         public async Task OnBeforeWriteLockReleasedWithUpgradedWrite()
         {
             var callbackFired = new TaskCompletionSource<object>();
@@ -3262,7 +3263,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task OnBeforeWriteLockReleasedWithNestedStickyUpgradedWrite()
         {
             var callbackFired = new TaskCompletionSource<object>();
@@ -3288,7 +3289,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task OnBeforeWriteLockReleasedWithStickyUpgradedWrite()
         {
             var callbackBegin = new TaskCompletionSource<object>();
@@ -3332,7 +3333,7 @@
             Assert.True(callbackEnding.Task.IsCompleted, "The completion task should not have completed until the callbacks had completed.");
         }
 
-        [StaFact]
+        [Fact]
         public async Task OnBeforeWriteLockReleasedWithStickyUpgradedWriteWithNestedLocks()
         {
             var asyncLock = new LockDerived
@@ -3389,7 +3390,7 @@
             await asyncLock.Completion;
         }
 
-        [StaFact]
+        [Fact]
         public void OnBeforeWriteLockReleasedWithoutAnyLock()
         {
             Assert.Throws<InvalidOperationException>(() =>
@@ -3401,7 +3402,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public async Task OnBeforeWriteLockReleasedInReadlock()
         {
             using (await this.asyncLock.ReadLockAsync())
@@ -3416,7 +3417,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task OnBeforeWriteLockReleasedCallbackFiresSynchronouslyWithoutPrivateLockHeld()
         {
             var callbackFired = new TaskCompletionSource<object>();
@@ -3570,7 +3571,7 @@
             await this.asyncLock.Completion;
         }
 
-        [StaFact]
+        [Fact]
         public async Task OnBeforeWriteLockReleasedAndReenterConcurrency()
         {
             var stub = new LockDerived();
@@ -3627,35 +3628,21 @@
             await testComplete.Task;
         }
 
-        /// <summary>Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA does not appear to hold a lock.</summary>
-        [StaFact]
+        /// <summary>Verifies that when an MTA holding a lock traverses (via CallContext) to an MTA that the MTA DOES appear to hold a lock.</summary>
+        [Fact]
         public async Task MtaLockSharedWithMta()
         {
             using (await this.asyncLock.ReadLockAsync())
             {
-                var testComplete = new TaskCompletionSource<object>();
-                Thread staThread = new Thread((ThreadStart)delegate
-                {
-                    try
-                    {
-                        Assert.True(this.asyncLock.IsReadLockHeld, "MTA should be told it holds a read lock.");
-                        testComplete.SetAsync();
-                    }
-                    catch (Exception ex)
-                    {
-                        testComplete.TrySetException(ex);
-                    }
-                });
-                staThread.SetApartmentState(ApartmentState.MTA);
-                staThread.Start();
-                await testComplete.Task;
+                await Task.Run(() => Assert.True(this.asyncLock.IsReadLockHeld, "MTA should be told it holds a read lock."));
             }
         }
 
         /// <summary>Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA does not appear to hold a lock.</summary>
-        [StaFact]
+        [SkippableFact]
         public async Task MtaLockNotSharedWithSta()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             using (await this.asyncLock.ReadLockAsync())
             {
                 var testComplete = new TaskCompletionSource<object>();
@@ -3678,9 +3665,10 @@
         }
 
         /// <summary>Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by marshaling back to an MTA.</summary>
-        [StaFact]
+        [SkippableFact]
         public async Task ReadLockTraversesAcrossSta()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             using (await this.asyncLock.ReadLockAsync())
             {
                 var testComplete = new TaskCompletionSource<object>();
@@ -3717,9 +3705,11 @@
         }
 
         /// <summary>Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by requesting it and moving back to an MTA.</summary>
-        [StaFact]
+        [SkippableFact]
         public async Task UpgradeableReadLockTraversesAcrossSta()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+
             using (await this.asyncLock.UpgradeableReadLockAsync())
             {
                 var testComplete = new TaskCompletionSource<object>();
@@ -3758,9 +3748,10 @@
         }
 
         /// <summary>Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by requesting it and moving back to an MTA.</summary>
-        [StaFact]
+        [SkippableFact]
         public async Task WriteLockTraversesAcrossSta()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             using (await this.asyncLock.WriteLockAsync())
             {
                 var testComplete = new TaskCompletionSource<object>();
@@ -3802,7 +3793,7 @@
 
 #region Lock nesting tests
 
-        [StaFact]
+        [Fact]
         public async Task NestedLocksScenarios()
         {
             // R = Reader, U = non-sticky Upgradeable reader, S = Sticky upgradeable reader, W = Writer
@@ -3841,7 +3832,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task AmbientLockReflectsCurrentLock()
         {
             var asyncLock = new LockDerived();
@@ -3857,7 +3848,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task WriteLockForksAndAsksForReadLock()
         {
             using (TestUtilities.DisableAssertionDialog())
@@ -3884,7 +3875,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task WriteNestsReadWithWriteReleasedFirst()
         {
             await Assert.ThrowsAsync<InvalidOperationException>(async delegate
@@ -3947,7 +3938,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public async Task WriteNestsReadWithWriteReleasedFirstWithoutTaskRun()
         {
             using (TestUtilities.DisableAssertionDialog())
@@ -3987,7 +3978,7 @@
                 catch (CriticalErrorException ex)
                 {
                     Assert.True(asyncLock.CriticalErrorDetected, "The lock should have raised a critical error.");
-                    Assert.IsType(typeof(InvalidOperationException), ex.InnerException);
+                    Assert.IsType<InvalidOperationException>(ex.InnerException);
                     return; // the test is over
                 }
 
@@ -4006,28 +3997,28 @@
 
 #region Lock data tests
 
-        [StaFact]
+        [Fact]
         public void SetLockDataWithoutLock()
         {
             var lck = new LockDerived();
             Assert.Throws<InvalidOperationException>(() => lck.SetLockData(null));
         }
 
-        [StaFact]
+        [Fact]
         public void GetLockDataWithoutLock()
         {
             var lck = new LockDerived();
             Assert.Null(lck.GetLockData());
         }
 
-        [StaFact]
+        [Fact]
         public async Task SetLockDataNoLock()
         {
             var lck = new LockDerived();
             using (await lck.WriteLockAsync())
             {
                 lck.SetLockData(null);
-                Assert.Equal(null, lck.GetLockData());
+                Assert.Null(lck.GetLockData());
 
                 var value1 = new object();
                 lck.SetLockData(value1);
@@ -4035,7 +4026,7 @@
 
                 using (await lck.WriteLockAsync())
                 {
-                    Assert.Equal(null, lck.GetLockData());
+                    Assert.Null(lck.GetLockData());
 
                     var value2 = new object();
                     lck.SetLockData(value2);
@@ -4048,7 +4039,7 @@
 
 #endregion
 
-        [StaFact]
+        [Fact]
         public async Task DisposeWhileExclusiveLockContextCaptured()
         {
             var signal = new AsyncManualResetEvent();
@@ -4063,7 +4054,7 @@
             await helperTask;
         }
 
-        [StaFact]
+        [Fact]
         public void GetHangReportSimple()
         {
             IHangReportContributor reportContributor = this.asyncLock;
@@ -4075,7 +4066,7 @@
             this.Logger.WriteLine(report.Content);
         }
 
-        [StaFact]
+        [Fact]
         public async Task GetHangReportWithReleasedNestingOuterLock()
         {
             using (var lock1 = await this.asyncLock.ReadLockAsync())
@@ -4091,7 +4082,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task GetHangReportWithReleasedNestingMiddleLock()
         {
             using (var lock1 = await this.asyncLock.ReadLockAsync())
@@ -4107,7 +4098,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task GetHangReportWithWriteLockUpgradeWaiting()
         {
             var readLockObtained = new AsyncManualResetEvent();
@@ -4252,7 +4243,7 @@
             Assumes.Equals(1, asyncLock.StartedTaskCount);
         }
 
-        [StaFact]
+        [Fact]
         public void Disposable()
         {
             IDisposable disposable = this.asyncLock;
@@ -4886,18 +4877,6 @@
             }
         }
 #endif
-
-        private class StaAverseLock : AsyncReaderWriterLock
-        {
-            protected override bool CanCurrentThreadHoldActiveLock
-            {
-                get
-                {
-                    return base.CanCurrentThreadHoldActiveLock
-                        && Thread.CurrentThread.GetApartmentState() == ApartmentState.MTA;
-                }
-            }
-        }
 
         private class LockDerived : AsyncReaderWriterLock
         {

@@ -248,11 +248,9 @@
             WithCancellationSyncBlockOnNoncancelableToken();
         }
 
-        [StaFact]
+        [UIFact]
         public void WithCancellationNoDeadlockFromSyncContextWithinJTFRun_Canceled()
         {
-            var dispatcher = SingleThreadedTestSynchronizationContext.New();
-            SynchronizationContext.SetSynchronizationContext(dispatcher);
             var jtc = new JoinableTaskContext();
             jtc.Factory.Run(delegate
             {
@@ -261,11 +259,9 @@
             });
         }
 
-        [StaFact]
+        [UIFact]
         public void WithCancellationNoDeadlockFromSyncContextWithinJTFRun_Completed()
         {
-            var dispatcher = SingleThreadedTestSynchronizationContext.New();
-            SynchronizationContext.SetSynchronizationContext(dispatcher);
             var jtc = new JoinableTaskContext();
             jtc.Factory.Run(delegate
             {
@@ -274,11 +270,9 @@
             });
         }
 
-        [StaFact]
+        [UIFact]
         public void WithCancellationNoncancelableNoDeadlockFromSyncContextWithinJTFRun()
         {
-            var dispatcher = SingleThreadedTestSynchronizationContext.New();
-            SynchronizationContext.SetSynchronizationContext(dispatcher);
             var jtc = new JoinableTaskContext();
             jtc.Factory.Run(delegate
             {

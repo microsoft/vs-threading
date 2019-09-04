@@ -170,6 +170,28 @@
         }
 
         [Fact]
+        public void GetResultWithoutInlining()
+        {
+            var sluggishScheduler = new SluggishInliningTaskScheduler();
+            var originalThread = Thread.CurrentThread;
+            var task = Task<int>.Factory.StartNew(
+                delegate
+                {
+                    Assert.NotSame(originalThread, Thread.CurrentThread);
+                    return 3;
+                },
+                CancellationToken.None,
+                TaskCreationOptions.None,
+                sluggishScheduler);
+
+            // Schedule the task such that we'll be very likely to call GetResultWithoutInlining
+            // *before* the task is scheduled to run on its own.
+            sluggishScheduler.ScheduleTasksLater();
+
+            Assert.Equal(3, task.GetResultWithoutInlining());
+        }
+
+        [Fact]
         public void WaitWithoutInlining_DoesNotWaitForOtherInlinedContinuations()
         {
             while (true)
@@ -205,15 +227,33 @@
         {
             var tcs = new TaskCompletionSource<int>();
             tcs.SetException(new InvalidOperationException());
-            try
-            {
-                tcs.Task.WaitWithoutInlining();
-                Assert.False(true, "Expected exception not thrown.");
-            }
-            catch (AggregateException ex)
-            {
-                ex.Handle(x => x is InvalidOperationException);
-            }
+            var ex = Assert.Throws<AggregateException>(() => tcs.Task.WaitWithoutInlining());
+            ex.Handle(x => x is InvalidOperationException);
+        }
+
+        [Fact]
+        public void WaitWithoutInlining_Faulted_OriginalException()
+        {
+            var tcs = new TaskCompletionSource<int>();
+            tcs.SetException(new InvalidOperationException());
+            Assert.Throws<InvalidOperationException>(() => tcs.Task.WaitWithoutInlining(throwOriginalException: true));
+        }
+
+        [Fact]
+        public void GetResultWithoutInlining_Faulted()
+        {
+            var tcs = new TaskCompletionSource<int>();
+            tcs.SetException(new InvalidOperationException());
+            var ex = Assert.Throws<AggregateException>(() => tcs.Task.GetResultWithoutInlining(throwOriginalException: false));
+            ex.Handle(x => x is InvalidOperationException);
+        }
+
+        [Fact]
+        public void GetResultWithoutInlining_Faulted_OriginalException()
+        {
+            var tcs = new TaskCompletionSource<int>();
+            tcs.SetException(new InvalidOperationException());
+            Assert.Throws<InvalidOperationException>(() => tcs.Task.GetResultWithoutInlining(throwOriginalException: true));
         }
 
         [Fact]
@@ -557,7 +597,7 @@
             }
 
             currentTCS.SetException(new InvalidOperationException());
-            Assert.IsType(typeof(InvalidOperationException), followingTask.Exception.InnerException);
+            Assert.IsType<InvalidOperationException>(followingTask.Exception.InnerException);
         }
 
         [Fact]

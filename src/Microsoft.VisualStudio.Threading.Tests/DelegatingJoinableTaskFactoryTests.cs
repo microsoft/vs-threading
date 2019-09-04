@@ -40,7 +40,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             InnerPostToUnderlyingSynchronizationContext,
         }
 
-        [StaFact]
+        [Fact]
         public void DelegationBehaviors()
         {
             var innerFactory = new CustomizedFactory(this.context, this.AddToLog);
@@ -72,7 +72,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         /// <summary>
         /// Verifies that delegating factories add their tasks to the inner factory's collection.
         /// </summary>
-        [StaFact]
+        [Fact]
         public void DelegationSharesCollection()
         {
             var log = new List<FactoryLogEntry>();

@@ -345,11 +345,9 @@ namespace Microsoft.VisualStudio.Threading
         /// hold an active lock.
         /// </summary>
         /// <remarks>
-        /// The default implementation of this property in builds of this
-        /// assembly that target the .NET Framework is to return <c>true</c>
-        /// when the calling thread is an MTA thread.
-        /// On builds that target the portable profile, this property always
-        /// returns <c>true</c> and should be overridden return <c>false</c>
+        /// The default implementation of this property returns <c>true</c>
+        /// when the calling thread is NOT an STA thread.
+        /// This property may be overridden to return <c>false</c>
         /// on threads that may compromise the integrity of the lock.
         /// </remarks>
         protected virtual bool CanCurrentThreadHoldActiveLock
@@ -961,7 +959,9 @@ namespace Microsoft.VisualStudio.Threading
                                     // an accidental execution fork that is exposing concurrency inappropriately.
                                     if (this.CanCurrentThreadHoldActiveLock && !(SynchronizationContext.Current is NonConcurrentSynchronizationContext))
                                     {
+#if NETFRAMEWORK // Assertion failures crash on .NET Core
                                         Report.Fail("Dangerous request for read lock from fork of write lock.");
+#endif
                                         Verify.FailOperation(Strings.DangerousReadLockRequestFromWriteLockFork);
                                     }
 

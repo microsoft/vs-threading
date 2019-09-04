@@ -22,7 +22,7 @@
             get { return this.asyncPump; }
         }
 
-        [StaFact]
+        [Fact]
         public void DisplayName()
         {
             var jtc = new JoinableTaskCollection(this.context);
@@ -35,14 +35,14 @@
             Assert.Equal("My Name", jtc.DisplayName);
         }
 
-        [StaFact]
+        [Fact]
         public void JoinTillEmptyAlreadyCompleted()
         {
             var awaiter = this.joinableCollection.JoinTillEmptyAsync().GetAwaiter();
             Assert.True(awaiter.IsCompleted);
         }
 
-        [StaFact]
+        [Fact]
         public void JoinTillEmptyWithOne()
         {
             var evt = new AsyncManualResetEvent();
@@ -62,7 +62,7 @@
             this.PushFrame();
         }
 
-        [StaFact]
+        [Fact]
         public void JoinTillEmptyUsesConfigureAwaitFalse()
         {
             var evt = new AsyncManualResetEvent();
@@ -77,7 +77,7 @@
             Assert.True(waiter.Wait(UnexpectedTimeout));
         }
 
-        [StaFact]
+        [Fact]
         public void EmptyThenMore()
         {
             var evt = new AsyncManualResetEvent();
@@ -97,7 +97,7 @@
             this.PushFrame();
         }
 
-        [StaFact]
+        [Fact]
         public void JoinTillEmptyAsyncJoinsCollection()
         {
             var joinable = this.JoinableFactory.RunAsync(async delegate
@@ -111,7 +111,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void JoinTillEmptyAsync_CancellationToken()
         {
             var tcs = new TaskCompletionSource<object>();
@@ -130,7 +130,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void AddTwiceRemoveOnceRemovesWhenNotRefCounting()
         {
             var finishTaskEvent = new AsyncManualResetEvent();
@@ -147,7 +147,7 @@
             finishTaskEvent.Set();
         }
 
-        [StaFact]
+        [Fact]
         public void AddTwiceRemoveTwiceRemovesWhenRefCounting()
         {
             var finishTaskEvent = new AsyncManualResetEvent();
@@ -166,7 +166,7 @@
             finishTaskEvent.Set();
         }
 
-        [StaFact]
+        [Fact]
         public void AddTwiceRemoveOnceRemovesCompletedTaskWhenRefCounting()
         {
             var finishTaskEvent = new AsyncManualResetEvent();
@@ -185,7 +185,7 @@
             Assert.False(collection.Contains(task));
         }
 
-        [StaFact]
+        [Fact]
         public void JoinDisposedTwice()
         {
             this.JoinableFactory.Run(delegate
