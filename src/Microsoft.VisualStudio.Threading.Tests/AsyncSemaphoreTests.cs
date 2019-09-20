@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Text;
     using System.Threading;
@@ -186,6 +187,39 @@
             catch (OperationCanceledException ex)
             {
                 Assert.Equal(cts.Token, ex.CancellationToken);
+            }
+        }
+
+        [Fact]
+        public async Task UncontestedAndCanceled_Stress()
+        {
+            var stressTime = TimeSpan.FromSeconds(2);
+            var timer = Stopwatch.StartNew();
+            while (stressTime - timer.Elapsed > TimeSpan.Zero)
+            {
+                var barrier = new Barrier(2);
+                var cts = new CancellationTokenSource();
+                var task1 = Task.Run(delegate
+                {
+                    barrier.SignalAndWait();
+                    cts.Cancel();
+                });
+                var task2 = Task.Run(async delegate
+                {
+                    barrier.SignalAndWait();
+                    try
+                    {
+                        using (await this.lck.EnterAsync(cts.Token))
+                        {
+                        }
+
+                        Assert.Equal(1, this.lck.CurrentCount);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
+                });
+                await Task.WhenAll(task1, task2);
             }
         }
 
