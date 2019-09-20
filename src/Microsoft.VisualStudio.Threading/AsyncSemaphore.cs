@@ -157,12 +157,14 @@ namespace Microsoft.VisualStudio.Threading
                         // Re-throw any cancellation or fault exceptions.
                         waiter.GetAwaiter().GetResult();
 
-                        if (this.disposed)
+                        var semaphore = (AsyncSemaphore)state;
+
+                        if (semaphore.disposed)
                         {
-                            throw new ObjectDisposedException(this.GetType().FullName);
+                            throw new ObjectDisposedException(semaphore.GetType().FullName);
                         }
 
-                        return new Releaser((AsyncSemaphore)state);
+                        return new Releaser(semaphore);
                     },
                     this,
                     CancellationToken.None,
@@ -194,12 +196,14 @@ namespace Microsoft.VisualStudio.Threading
                             throw new OperationCanceledException();
                         }
 
-                        if (this.disposed)
+                        var semaphore = (AsyncSemaphore)state;
+
+                        if (semaphore.disposed)
                         {
-                            throw new ObjectDisposedException(this.GetType().FullName);
+                            throw new ObjectDisposedException(semaphore.GetType().FullName);
                         }
 
-                        return new Releaser((AsyncSemaphore)state);
+                        return new Releaser(semaphore);
                     },
                     this,
                     CancellationToken.None,
