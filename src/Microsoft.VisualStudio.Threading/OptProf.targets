@@ -7,10 +7,9 @@
       <OptimizationArguments>-PartialNGEN</OptimizationArguments>
       <Scenarios>
         <TestContainer Name="VSPE" Repository="VS">
-          <TestCase FullyQualifiedName="VSPE.OptProfTests.vs_env_startup_devenv" />
-        </TestContainer>
-        <TestContainer Name="Microsoft.VisualStudio.Web.DDRIT" Repository="VS">
-          <TestCase FullyQualifiedName="Microsoft.VisualStudio.Web.DDRIT.CSharpWapTest.CSharpWebApplicationTests" />
+          <!-- When adding to this list, be sure to also add to VS repo too (e.g. https://dev.azure.com/devdiv/DevDiv/_git/VS/pullrequest/203770) -->
+          <TestCase FullyQualifiedName="VSPE.OptProfTests.vs_perf_DesignTime_solution_loadclose_cs_picasso" />
+          <TestCase FullyQualifiedName="VSPE.OptProfTests.vs_ddbvtqa_vbwin" />
         </TestContainer>
       </Scenarios>
     </OptProf>
