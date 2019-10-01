@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <Platforms>x86;x64</Platforms>
+    <CodeAnalysisRuleSet>SosThreadingTools.ruleset</CodeAnalysisRuleSet>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <DebugType>full</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <DllExportOurILAsm>false</DllExportOurILAsm>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="1.0.2" />
+    <PackageReference Include="DllExport" Version="1.5.2" />
+  </ItemGroup>
+  <Import Project="$(NuGetPackageRoot)\dllexport\1.5.2\tools\net.r_eg.DllExport.targets" Condition="Exists('$(NuGetPackageRoot)\dllexport\1.5.2\tools\net.r_eg.DllExport.targets')" />
+</Project>
