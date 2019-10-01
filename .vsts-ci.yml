@@ -2,7 +2,7 @@ trigger:
   branches:
     include:
     - master
-    - v16.*
+    - 'v16.*'
   paths:
     exclude: [".github", "doc", "*.md"]
 
