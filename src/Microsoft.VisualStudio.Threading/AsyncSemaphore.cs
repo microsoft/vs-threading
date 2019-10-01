@@ -149,7 +149,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             Requires.NotNull(waitTask, nameof(waitTask));
 
-            return waitTask.IsCompleted
+            return waitTask.Status == TaskStatus.RanToCompletion
                 ? this.uncontestedReleaser // uncontested lock
                 : waitTask.ContinueWith(
                     (waiter, state) =>
