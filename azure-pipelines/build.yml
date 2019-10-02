@@ -55,14 +55,14 @@ steps:
     msbuildArgs: /t:build /m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/msbuild_x86.binlog"
     platform: x86
     configuration: $(BuildConfiguration)
-  displayName: Build AsyncDebugTools x86
+  displayName: Build SosThreadingTools x86
 
 - task: VSBuild@1
   inputs:
     msbuildArgs: /t:build /m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/msbuild_x64.binlog"
     platform: x64
     configuration: $(BuildConfiguration)
-  displayName: Build AsyncDebugTools x64
+  displayName: Build SosThreadingTools x64
 
 - task: DotNetCoreCLI@2
   displayName: Run tests
@@ -131,8 +131,8 @@ steps:
       md $(Build.ArtifactStagingDirectory)/deployables\x86
       md $(Build.ArtifactStagingDirectory)/deployables\x64
       Get-ChildItem bin\Packages\$(BuildConfiguration)\NuGet\*.nupkg -rec |% { copy $_  $(Build.ArtifactStagingDirectory)\deployables }
-      copy bin\AsyncDebugTools/x86/$(BuildConfiguration)/AsyncDebugTools.dll $(Build.ArtifactStagingDirectory)\deployables\x86
-      copy bin\AsyncDebugTools/x64/$(BuildConfiguration)/AsyncDebugTools.dll $(Build.ArtifactStagingDirectory)\deployables\x64
+      copy bin\SosThreadingTools/x86/$(BuildConfiguration)/net472/SosThreadingTools.dll $(Build.ArtifactStagingDirectory)\deployables\x86
+      copy bin\SosThreadingTools/x64/$(BuildConfiguration)/net472/SosThreadingTools.dll $(Build.ArtifactStagingDirectory)\deployables\x64
 
 - task: PublishBuildArtifacts@1
   inputs:
