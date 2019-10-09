@@ -132,7 +132,9 @@ steps:
       md $(Build.ArtifactStagingDirectory)/deployables\x64
       Get-ChildItem bin\Packages\$(BuildConfiguration)\NuGet\*.nupkg -rec |% { copy $_  $(Build.ArtifactStagingDirectory)\deployables }
       copy bin\SosThreadingTools/x86/$(BuildConfiguration)/net472/SosThreadingTools.dll $(Build.ArtifactStagingDirectory)\deployables\x86
+      copy bin\SosThreadingTools/x86/$(BuildConfiguration)/net472/Microsoft.Diagnostics.Runtime.dll $(Build.ArtifactStagingDirectory)\deployables\x86
       copy bin\SosThreadingTools/x64/$(BuildConfiguration)/net472/SosThreadingTools.dll $(Build.ArtifactStagingDirectory)\deployables\x64
+      copy bin\SosThreadingTools/x64/$(BuildConfiguration)/net472/Microsoft.Diagnostics.Runtime.dll $(Build.ArtifactStagingDirectory)\deployables\x64
 
 - task: PublishBuildArtifacts@1
   inputs:
