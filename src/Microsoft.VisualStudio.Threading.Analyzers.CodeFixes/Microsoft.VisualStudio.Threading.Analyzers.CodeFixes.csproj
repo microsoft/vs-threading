@@ -13,7 +13,6 @@
     <Owners>Microsoft, VisualStudioExtensibility</Owners>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <PackageProjectUrl>https://github.com/Microsoft/vs-threading</PackageProjectUrl>
-    <PackageIconUrl>https://aka.ms/VsExtensibilityIcon</PackageIconUrl>
     <PackageReleaseNotes>In the v16.0 release, analyzers require at least C# 7.3 (Visual Studio 2017 Update 7).</PackageReleaseNotes>
 
     <!-- Analyzers should not be added to the lib folder. -->
