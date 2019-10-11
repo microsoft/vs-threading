@@ -18,10 +18,13 @@
         [string]$OutputPath
     )
 
-    $version = '1.1.0-beta1-63314-01'
-    $pdb2pdbpath = "$env:temp\pdb2pdb.$version\tools\Pdb2Pdb.exe"
+    $version = '1.1.0-beta1-64128-01'
+    $baseDir = "$PSScriptRoot\..\obj\tools"
+    $pdb2pdbpath = "$baseDir\pdb2pdb.$version\tools\Pdb2Pdb.exe"
     if (-not (Test-Path $pdb2pdbpath)) {
-        nuget install pdb2pdb -version $version -PackageSaveMode nuspec -OutputDirectory $env:temp -Source https://dotnet.myget.org/F/symreader-converter/api/v3/index.json
+        if (-not (Test-Path $baseDir)) { New-Item -Type Directory -Path $baseDir | Out-Null }
+        $baseDir = (Resolve-Path $baseDir).Path # Normalize it
+        & (& $PSScriptRoot\Get-NuGetTool.ps1) install pdb2pdb -version $version -PackageSaveMode nuspec -OutputDirectory $baseDir -Source https://dotnet.myget.org/F/symreader-converter/api/v3/index.json | Out-Null
     }
 
     $args = $DllPath,'/out',$OutputPath,'/nowarn','0021'
@@ -29,5 +32,6 @@
         $args += '/pdb',$PdbPath
     }
 
-    & "$env:temp\pdb2pdb.$version\tools\Pdb2Pdb.exe" $args
+    Write-Verbose "$pdb2pdbpath $args"
+    & $pdb2pdbpath $args
 #}

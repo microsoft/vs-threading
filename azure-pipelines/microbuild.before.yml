@@ -2,8 +2,9 @@ steps:
 
 - task: ms-vseng.MicroBuildTasks.965C8DC6-1483-45C9-B384-5AC75DA1F1A4.MicroBuildOptProfPlugin@4
   inputs:
-    optimizationInputsDropNamePrefix: OptimizationInputs/DevDiv/vs-threading
+    optimizationInputsDropNamePrefix: OptimizationInputs/DevDiv/vs-streamjsonrpc
     getDropNameByDrop: true
+    ShouldSkipOptimize: $(ShouldSkipOptimize)
   displayName: Install OptProf Plugin
 
 - task: MicroBuildSigningPlugin@1
@@ -11,4 +12,3 @@ steps:
     signType: $(SignType)
     zipSources: false
   displayName: Install MicroBuild Signing Plugin
-  condition: and(succeeded(), ne(variables['Hosted'], 'true'))
