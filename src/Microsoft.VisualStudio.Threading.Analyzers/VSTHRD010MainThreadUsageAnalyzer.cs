@@ -207,7 +207,7 @@
                 return;
             }
 
-            IMethodSymbol GetPropertyAccessor(IPropertySymbol propertySymbol)
+            IMethodSymbol? GetPropertyAccessor(IPropertySymbol propertySymbol)
             {
                 if (propertySymbol != null)
                 {

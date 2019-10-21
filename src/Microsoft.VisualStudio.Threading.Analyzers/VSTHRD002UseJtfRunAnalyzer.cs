@@ -81,7 +81,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             });
         }
 
-        private static ParameterSyntax GetFirstParameter(AnonymousFunctionExpressionSyntax anonymousFunctionSyntax)
+        private static ParameterSyntax? GetFirstParameter(AnonymousFunctionExpressionSyntax anonymousFunctionSyntax)
         {
             switch (anonymousFunctionSyntax)
             {

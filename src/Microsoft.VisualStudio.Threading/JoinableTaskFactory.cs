@@ -93,7 +93,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets the synchronization context to apply before executing work associated with this factory.
         /// </summary>
-        internal SynchronizationContext ApplicableJobSyncContext
+        internal SynchronizationContext? ApplicableJobSyncContext
         {
             get { return this.Context.IsOnMainThread ? this.mainThreadJobSyncContext : null; }
         }

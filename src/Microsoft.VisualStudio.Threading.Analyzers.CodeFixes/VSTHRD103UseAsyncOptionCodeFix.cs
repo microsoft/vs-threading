@@ -100,7 +100,7 @@
             }
 
             /// <inheritdoc />
-            public override string EquivalenceKey => null;
+            public override string? EquivalenceKey => null;
 
             private string AlternativeAsyncMethod => this.diagnostic.Properties[VSTHRD103UseAsyncOptionAnalyzer.AsyncMethodKeyName];
 

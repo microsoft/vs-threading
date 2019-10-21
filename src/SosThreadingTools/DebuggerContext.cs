@@ -100,7 +100,7 @@ namespace CpsDbg
             return instance;
         }
 
-        private static Assembly ResolveAssembly(object sender, ResolveEventArgs args)
+        private static Assembly? ResolveAssembly(object sender, ResolveEventArgs args)
         {
             if (args.Name.Contains(ClrMD))
             {

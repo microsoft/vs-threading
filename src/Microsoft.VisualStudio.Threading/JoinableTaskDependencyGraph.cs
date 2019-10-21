@@ -598,7 +598,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <param name="synchronousTask">The synchronous task.</param>
             /// <param name="totalEventsPending">The total events need be processed.</param>
             /// <returns>The task causes us to trigger the event of the synchronous task, so it can process new events.  Null means we don't need trigger any event.</returns>
-            private static JoinableTask AddDependingSynchronousTask(IJoinableTaskDependent taskOrCollection, JoinableTask synchronousTask, ref int totalEventsPending)
+            private static JoinableTask? AddDependingSynchronousTask(IJoinableTaskDependent taskOrCollection, JoinableTask synchronousTask, ref int totalEventsPending)
             {
                 Requires.NotNull(taskOrCollection, nameof(taskOrCollection));
                 Requires.NotNull(synchronousTask, nameof(synchronousTask));

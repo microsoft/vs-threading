@@ -314,7 +314,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        internal SynchronizationContext ApplicableJobSyncContext
+        internal SynchronizationContext? ApplicableJobSyncContext
         {
             get
             {
@@ -407,7 +407,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets the entry method's info so we could show its full name in hang report.
         /// </summary>
-        internal MethodInfo EntryMethodInfo => this.initialDelegate?.GetMethodInfo();
+        internal MethodInfo? EntryMethodInfo => this.initialDelegate?.GetMethodInfo();
 
         /// <summary>
         /// Gets a value indicating whether this task has a non-empty queue.

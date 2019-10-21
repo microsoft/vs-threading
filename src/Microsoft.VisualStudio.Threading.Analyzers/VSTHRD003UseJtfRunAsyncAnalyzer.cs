@@ -110,7 +110,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
         }
 
-        private Diagnostic AnalyzeAwaitedOrReturnedExpression(ExpressionSyntax expressionSyntax, SyntaxNodeAnalysisContext context, CancellationToken cancellationToken)
+        private Diagnostic? AnalyzeAwaitedOrReturnedExpression(ExpressionSyntax expressionSyntax, SyntaxNodeAnalysisContext context, CancellationToken cancellationToken)
         {
             if (expressionSyntax == null)
             {

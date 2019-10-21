@@ -516,7 +516,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// <param name="positionForLookup">The position in the document that must have access to any candidate <see cref="CancellationToken"/>.</param>
         /// <param name="cancellationToken">A token that represents lost interest in this inquiry.</param>
         /// <returns>Candidate <see cref="CancellationToken"/> symbols.</returns>
-        internal static IEnumerable<ISymbol> FindCancellationToken(SemanticModel semanticModel, int positionForLookup, CancellationToken cancellationToken)
+        internal static IEnumerable<ISymbol>? FindCancellationToken(SemanticModel semanticModel, int positionForLookup, CancellationToken cancellationToken)
         {
             if (semanticModel == null)
             {
@@ -633,7 +633,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
         }
 
-        internal static T FirstAncestor<T>(this SyntaxNode startingNode, IReadOnlyCollection<Type> doNotPassNodeTypes)
+        internal static T? FirstAncestor<T>(this SyntaxNode startingNode, IReadOnlyCollection<Type> doNotPassNodeTypes)
             where T : SyntaxNode
         {
             if (doNotPassNodeTypes == null)

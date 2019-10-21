@@ -1045,7 +1045,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="headAwaiter">The awaiter to start the search down the stack from.</param>
         /// <returns>The least nested upgradeable reader lock with sticky write flag; or <c>null</c> if none was found.</returns>
-        private Awaiter FindRootUpgradeableReadWithStickyWrite(Awaiter headAwaiter)
+        private Awaiter? FindRootUpgradeableReadWithStickyWrite(Awaiter headAwaiter)
         {
             if (headAwaiter == null)
             {
@@ -2018,7 +2018,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Gets or sets some object associated to this specific lock.
             /// </summary>
-            public object Data
+            public object? Data
             {
                 get
                 {

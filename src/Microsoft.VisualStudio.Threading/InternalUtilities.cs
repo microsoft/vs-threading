@@ -165,7 +165,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// A helper method to find the async state machine from the given delegate.
         /// </summary>
-        private static IAsyncStateMachine FindAsyncStateMachine(Delegate invokeDelegate)
+        private static IAsyncStateMachine? FindAsyncStateMachine(Delegate invokeDelegate)
         {
             Requires.NotNull(invokeDelegate, nameof(invokeDelegate));
 
@@ -260,7 +260,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// A helper method to get field's value given the object and the field name.
         /// </summary>
-        private static object GetFieldValue(object obj, string fieldName)
+        private static object? GetFieldValue(object obj, string fieldName)
         {
             Requires.NotNull(obj, nameof(obj));
             Requires.NotNullOrEmpty(fieldName, nameof(fieldName));
@@ -277,7 +277,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// The field names of "async state machine" are not fixed; the workaround is to find the field based on the suffix.
         /// </summary>
-        private static object GetStateMachineFieldValueOnSuffix(IAsyncStateMachine stateMachine, string suffix)
+        private static object? GetStateMachineFieldValueOnSuffix(IAsyncStateMachine stateMachine, string suffix)
         {
             Requires.NotNull(stateMachine, nameof(stateMachine));
             Requires.NotNullOrEmpty(suffix, nameof(suffix));
