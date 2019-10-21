@@ -15,7 +15,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
     using Xunit.Abstractions;
 
     /// <summary>
-    /// Tests for the weak dictionary class
+    /// Tests for the weak dictionary class.
     /// </summary>
     public class WeakKeyDictionaryTests
     {
@@ -35,7 +35,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         }
 
         /// <summary>
-        /// Find with the same key inserted using the indexer
+        /// Find with the same key inserted using the indexer.
         /// </summary>
         [Fact]
         public void Indexer_ReferenceFound()
@@ -54,7 +54,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         }
 
         /// <summary>
-        /// Find something not present with the indexer
+        /// Find something not present with the indexer.
         /// </summary>
         [Fact]
         public void Indexer_NotFound()
@@ -64,7 +64,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         }
 
         /// <summary>
-        /// Find with the same key inserted using TryGetValue
+        /// Find with the same key inserted using TryGetValue.
         /// </summary>
         [Fact]
         public void TryGetValue_ReferenceFound()
@@ -83,7 +83,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         }
 
         /// <summary>
-        /// Find something not present with TryGetValue
+        /// Find something not present with TryGetValue.
         /// </summary>
         [Fact]
         public void TryGetValue_ReferenceNotFound()
@@ -98,7 +98,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         }
 
         /// <summary>
-        /// Find a key that wasn't inserted but is equal
+        /// Find a key that wasn't inserted but is equal.
         /// </summary>
         [Fact]
         public void EqualityComparer()
@@ -121,7 +121,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         }
 
         /// <summary>
-        /// Verify dictionary doesn't hold onto keys
+        /// Verify dictionary doesn't hold onto keys.
         /// </summary>
         [Fact]
         public void KeysCollectable()
@@ -143,7 +143,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         }
 
         /// <summary>
-        /// Call Scavenge explicitly
+        /// Call Scavenge explicitly.
         /// </summary>
         [Fact]
         public void ExplicitScavenge()
@@ -158,7 +158,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         }
 
         /// <summary>
-        /// Growing should invoke Scavenge
+        /// Growing should invoke Scavenge.
         /// </summary>
         [Fact]
         public void ScavengeOnGrow()

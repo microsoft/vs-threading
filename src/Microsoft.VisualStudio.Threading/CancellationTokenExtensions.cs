@@ -155,7 +155,7 @@ namespace Microsoft.VisualStudio.Threading
             /// Initializes a new instance of the <see cref="CombinedCancellationToken"/> struct
             /// that represents just a single, non-disposable <see cref="System.Threading.CancellationToken"/>.
             /// </summary>
-            /// <param name="cancellationToken">The cancellation token</param>
+            /// <param name="cancellationToken">The cancellation token.</param>
             public CombinedCancellationToken(CancellationToken cancellationToken)
             {
                 this.cts = null;

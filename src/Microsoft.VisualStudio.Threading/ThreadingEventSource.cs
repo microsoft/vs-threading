@@ -35,32 +35,32 @@ namespace Microsoft.VisualStudio.Threading
         private const int WaitReaderWriterLockStopEvent = 3;
 
         /// <summary>
-        /// The event ID for the <see cref="CompleteOnCurrentThreadStart(int, bool)"/>
+        /// The event ID for the <see cref="CompleteOnCurrentThreadStart(int, bool)"/>.
         /// </summary>
         private const int CompleteOnCurrentThreadStartEvent = 11;
 
         /// <summary>
-        /// The event ID for the <see cref="CompleteOnCurrentThreadStop(int)"/>
+        /// The event ID for the <see cref="CompleteOnCurrentThreadStop(int)"/>.
         /// </summary>
         private const int CompleteOnCurrentThreadStopEvent = 12;
 
         /// <summary>
-        /// The event ID for the <see cref="WaitSynchronouslyStart()"/>
+        /// The event ID for the <see cref="WaitSynchronouslyStart()"/>.
         /// </summary>
         private const int WaitSynchronouslyStartEvent = 13;
 
         /// <summary>
-        /// The event ID for the <see cref="WaitSynchronouslyStop()"/>
+        /// The event ID for the <see cref="WaitSynchronouslyStop()"/>.
         /// </summary>
         private const int WaitSynchronouslyStopEvent = 14;
 
         /// <summary>
-        /// The event ID for the <see cref="PostExecutionStart(int, bool)"/>
+        /// The event ID for the <see cref="PostExecutionStart(int, bool)"/>.
         /// </summary>
         private const int PostExecutionStartEvent = 15;
 
         /// <summary>
-        /// The event ID for the <see cref="PostExecutionStop(int)"/>
+        /// The event ID for the <see cref="PostExecutionStop(int)"/>.
         /// </summary>
         private const int PostExecutionStopEvent = 16;
 
@@ -103,7 +103,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Enters a synchronously task.
         /// </summary>
-        /// <param name="taskId">Hash code of the task</param>
+        /// <param name="taskId">Hash code of the task.</param>
         /// <param name="isOnMainThread">Whether the task is on the main thread.</param>
         [Event(CompleteOnCurrentThreadStartEvent)]
         public void CompleteOnCurrentThreadStart(int taskId, bool isOnMainThread)
@@ -112,9 +112,9 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Exits a synchronously task
+        /// Exits a synchronously task.
         /// </summary>
-        /// <param name="taskId">Hash code of the task</param>
+        /// <param name="taskId">Hash code of the task.</param>
         [Event(CompleteOnCurrentThreadStopEvent)]
         public void CompleteOnCurrentThreadStop(int taskId)
         {
@@ -122,7 +122,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// The current thread starts to wait on execution requests
+        /// The current thread starts to wait on execution requests.
         /// </summary>
         [Event(WaitSynchronouslyStartEvent, Level = EventLevel.Verbose)]
         public void WaitSynchronouslyStart()
@@ -131,7 +131,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// The current thread gets an execution request
+        /// The current thread gets an execution request.
         /// </summary>
         [Event(WaitSynchronouslyStopEvent, Level = EventLevel.Verbose)]
         public void WaitSynchronouslyStop()

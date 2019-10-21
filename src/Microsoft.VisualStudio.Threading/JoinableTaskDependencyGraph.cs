@@ -40,7 +40,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Gets a value indicating whether the main thread is waiting for the task's completion
+        /// Gets a value indicating whether the main thread is waiting for the task's completion.
         /// </summary>
         internal static bool HasMainThreadSynchronousTaskWaiting(IJoinableTaskDependent taskItem)
         {
@@ -576,7 +576,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Removes all synchronous tasks we applies to a dependent task, after the relationship is removed.
             /// </summary>
-            /// <param name="child">The original dependent task</param>
+            /// <param name="child">The original dependent task.</param>
             private void RemoveDependingSynchronousTaskFromChild(IJoinableTaskDependent child)
             {
                 Requires.NotNull(child, nameof(child));
@@ -595,9 +595,9 @@ namespace Microsoft.VisualStudio.Threading
             /// to process events from this task.
             /// </summary>
             /// <param name="taskOrCollection">The current joinableTask or collection.</param>
-            /// <param name="synchronousTask">The synchronous task</param>
-            /// <param name="totalEventsPending">The total events need be processed</param>
-            /// <returns>The task causes us to trigger the event of the synchronous task, so it can process new events.  Null means we don't need trigger any event</returns>
+            /// <param name="synchronousTask">The synchronous task.</param>
+            /// <param name="totalEventsPending">The total events need be processed.</param>
+            /// <returns>The task causes us to trigger the event of the synchronous task, so it can process new events.  Null means we don't need trigger any event.</returns>
             private static JoinableTask AddDependingSynchronousTask(IJoinableTaskDependent taskOrCollection, JoinableTask synchronousTask, ref int totalEventsPending)
             {
                 Requires.NotNull(taskOrCollection, nameof(taskOrCollection));
@@ -677,7 +677,7 @@ namespace Microsoft.VisualStudio.Threading
             /// Remove a synchronous task from the tracking list.
             /// </summary>
             /// <param name="taskOrCollection">The current joinableTask or collection.</param>
-            /// <param name="syncTask">The synchronous task</param>
+            /// <param name="syncTask">The synchronous task.</param>
             /// <param name="force">We always remove it from the tracking list if it is true.  Otherwise, we keep tracking the reference count.</param>
             private static void RemoveDependingSynchronousTask(IJoinableTaskDependent taskOrCollection, JoinableTask syncTask, bool force = false)
             {
@@ -696,7 +696,7 @@ namespace Microsoft.VisualStudio.Threading
             /// Remove a synchronous task from the tracking list of a list of tasks.
             /// </summary>
             /// <param name="tasks">A list of tasks we need update the tracking list.</param>
-            /// <param name="syncTask">The synchronous task we want to remove</param>
+            /// <param name="syncTask">The synchronous task we want to remove.</param>
             /// <param name="force">We always remove it from the tracking list if it is true.  Otherwise, we keep tracking the reference count.</param>
             private static void RemoveDependingSynchronousTaskFrom(IReadOnlyList<IJoinableTaskDependent> tasks, JoinableTask syncTask, bool force)
             {
@@ -774,7 +774,7 @@ namespace Microsoft.VisualStudio.Threading
             /// Remove a synchronous task from the tracking list of this task.
             /// </summary>
             /// <param name="taskOrCollection">The current joinableTask or collection.</param>
-            /// <param name="task">The synchronous task</param>
+            /// <param name="task">The synchronous task.</param>
             /// <param name="reachableNodes">
             /// If it is not null, it will contain all dependency nodes which can track the synchronous task. We will ignore reference count in that case.
             /// </param>
@@ -898,12 +898,12 @@ namespace Microsoft.VisualStudio.Threading
                 }
 
                 /// <summary>
-                /// Gets or sets the chain of the single linked list
+                /// Gets or sets the chain of the single linked list.
                 /// </summary>
                 internal DependentSynchronousTask Next { get; set; }
 
                 /// <summary>
-                /// Gets the synchronous task
+                /// Gets the synchronous task.
                 /// </summary>
                 internal JoinableTask SynchronousTask { get; }
 

@@ -25,7 +25,7 @@ namespace Microsoft.VisualStudio.Threading
     /// <devremarks>
     /// Lots of documentation and FAQ on Joinable Tasks is available on OneNote: <![CDATA[
     /// http://devdiv/sites/vspe/prjbld/_layouts/OneNote.aspx?id=%2fsites%2fvspe%2fprjbld%2fOneNote%2fTeamInfo&wd=target%28VS%20Threading.one%7c46FEAAD0-0131-45EE-8C52-C9893F1FD331%2fThreading%20Rules%7cD0EEFAB9-99C0-4B8F-AA5F-4287DD69A38F%2f%29
-    /// ]]>
+    /// ]]>.
     /// </devremarks>
     /// <remarks>
     /// There are three rules that should be strictly followed when using or interacting
@@ -506,7 +506,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Raised when it starts to wait a joinable task to complete in the main thread.
         /// </summary>
-        /// <param name="task">The task requires to be completed</param>
+        /// <param name="task">The task requires to be completed.</param>
         internal void OnSynchronousJoinableTaskToCompleteOnMainThread(JoinableTask task)
         {
             Requires.NotNull(task, nameof(task));

@@ -23,6 +23,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     /// </summary>
     /// <remarks>
     /// An example of a flagged issue:
+    /// <code>
     /// <![CDATA[
     /// AsyncSemaphore lck;
     /// using (lck.EnterAsync())
@@ -30,6 +31,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     ///     // ...
     /// }
     /// ]]>
+    /// </code>
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class VSTHRD107AwaitTaskWithinUsingExpressionAnalyzer : DiagnosticAnalyzer

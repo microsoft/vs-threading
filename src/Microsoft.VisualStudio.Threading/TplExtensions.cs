@@ -261,7 +261,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Invokes asynchronous event handlers, returning a task that completes when all event handlers have been invoked.
         /// Each handler is fully executed (including continuations) before the next handler in the list is invoked.
         /// </summary>
-        /// <param name="handlers">The event handlers.  May be <c>null</c></param>
+        /// <param name="handlers">The event handlers.  May be <c>null</c>.</param>
         /// <param name="sender">The event source.</param>
         /// <param name="args">The event argument.</param>
         /// <returns>The task that completes when all handlers have completed.</returns>
@@ -301,7 +301,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Each handler is fully executed (including continuations) before the next handler in the list is invoked.
         /// </summary>
         /// <typeparam name="TEventArgs">The type of argument passed to each handler.</typeparam>
-        /// <param name="handlers">The event handlers.  May be <c>null</c></param>
+        /// <param name="handlers">The event handlers.  May be <c>null</c>.</param>
         /// <param name="sender">The event source.</param>
         /// <param name="args">The event argument.</param>
         /// <returns>The task that completes when all handlers have completed.  The task is faulted if any handlers throw an exception.</returns>
@@ -552,7 +552,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Returns a <see cref="Task{TResult}"/> that has been faulted with the specified exception.
         /// </summary>
-        /// <typeparam name="T">The type of value that might have been returned from the <see cref="Task{TResult}"/></typeparam>
+        /// <typeparam name="T">The type of value that might have been returned from the <see cref="Task{TResult}"/>.</typeparam>
         /// <param name="ex">The exception used to fault the <see cref="Task{TResult}"/>.</param>
         /// <returns>The faulted task.</returns>
         internal static Task<T> FaultedTask<T>(Exception ex)
@@ -709,7 +709,7 @@ namespace Microsoft.VisualStudio.Threading
         public readonly struct NoThrowTaskAwaiter : ICriticalNotifyCompletion
         {
             /// <summary>
-            /// The task
+            /// The task.
             /// </summary>
             private readonly Task task;
 

@@ -3309,7 +3309,7 @@
         /// the parent JoinableTask lasts.
         /// </summary>
         /// <remarks>
-        /// Repro for bug 245563: <![CDATA[ https://devdiv.visualstudio.com/web/wi.aspx?pcguid=011b8bdf-6d56-4f87-be0d-0092136884d9&id=245563 ]]>
+        /// Repro for bug 245563: <![CDATA[ https://devdiv.visualstudio.com/web/wi.aspx?pcguid=011b8bdf-6d56-4f87-be0d-0092136884d9&id=245563 ]]>.
         /// </remarks>
         [Fact]
         public void UnawaitedBackgroundWorkShouldComplete()
@@ -3839,7 +3839,7 @@
         /// <summary>
         /// Writes out a DGML graph of pending tasks and collections to the test context.
         /// </summary>
-        /// <param name="context">A specific context to collect data from; <c>null</c> will use this.context</param>
+        /// <param name="context">A specific context to collect data from; <c>null</c> will use this.context.</param>
         private void PrintActiveTasksReport(JoinableTaskContext context = null)
         {
             context = context ?? this.context;

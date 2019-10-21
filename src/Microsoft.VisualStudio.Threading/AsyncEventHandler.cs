@@ -23,7 +23,7 @@ namespace Microsoft.VisualStudio.Threading
     /// <summary>
     /// An asynchronous event handler.
     /// </summary>
-    /// <typeparam name="T">The type of <see cref="EventArgs"/></typeparam>
+    /// <typeparam name="T">The type of <see cref="EventArgs"/>.</typeparam>
     /// <param name="sender">The sender of the event.</param>
     /// <param name="args">Event arguments.</param>
     /// <returns>A task whose completion signals handling is finished.</returns>

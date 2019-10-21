@@ -80,11 +80,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// The new Document and method syntax, or the original if it was already async.
         /// </returns>
         /// <exception cref="System.ArgumentNullException">
-        /// method
-        /// or
-        /// document
-        /// or
-        /// originalMethodSymbol
+        /// <para>If <paramref name="method"/> is null.</para>
+        /// <para>-or-</para>
+        /// <para>If <paramref name="document"/> is null.</para>
         /// </exception>
         internal static async Task<Tuple<Document, MethodDeclarationSyntax>> MakeMethodAsync(this MethodDeclarationSyntax method, Document document, CancellationToken cancellationToken = default(CancellationToken))
         {

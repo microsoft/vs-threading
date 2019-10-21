@@ -175,7 +175,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Invoked when an earlier hang report is false alarm.
         /// </summary>
-        /// <param name="hangDuration">The duration of the total waiting time</param>
+        /// <param name="hangDuration">The duration of the total waiting time.</param>
         /// <param name="hangId">A GUID that uniquely identifies the earlier hang report.</param>
         protected internal virtual void OnFalseHangDetected(TimeSpan hangDuration, Guid hangId)
         {
