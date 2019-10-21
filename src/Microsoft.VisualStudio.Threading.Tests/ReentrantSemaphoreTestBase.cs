@@ -16,7 +16,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
     /// </summary>
     protected static new readonly TimeSpan ExpectedTimeout = TimeSpan.FromMilliseconds(250); // faster than the base class since we use this a lot
 
-    protected ReentrantSemaphore semaphore;
+    protected ReentrantSemaphore? semaphore;
 
     public ReentrantSemaphoreTestBase(ITestOutputHelper logger)
         : base(logger)

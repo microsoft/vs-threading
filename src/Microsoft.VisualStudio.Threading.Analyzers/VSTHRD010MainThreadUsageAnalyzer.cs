@@ -293,11 +293,11 @@
 
             internal ImmutableArray<CommonInterest.TypeMatchSpec> MembersRequiringMainThread { get; set; }
 
-            internal HashSet<IMethodSymbol> MethodsDeclaringUIThreadRequirement { get; set; }
+            internal HashSet<IMethodSymbol>? MethodsDeclaringUIThreadRequirement { get; set; }
 
-            internal HashSet<IMethodSymbol> MethodsAssertingUIThreadRequirement { get; set; }
+            internal HashSet<IMethodSymbol>? MethodsAssertingUIThreadRequirement { get; set; }
 
-            internal ImmutableDictionary<string, string> DiagnosticProperties { get; set; }
+            internal ImmutableDictionary<string, string>? DiagnosticProperties { get; set; }
 
             internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
             {

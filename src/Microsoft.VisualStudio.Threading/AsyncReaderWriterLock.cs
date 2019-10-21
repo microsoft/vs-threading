@@ -2095,7 +2095,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Any exception to throw back to the lock requestor.
             /// </summary>
-            private Exception fault;
+            private Exception? fault;
 
             /// <summary>
             /// The continuation to execute when the lock is available.
@@ -2113,12 +2113,12 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The TaskScheduler to invoke the continuation.
             /// </summary>
-            private TaskScheduler continuationTaskScheduler;
+            private TaskScheduler? continuationTaskScheduler;
 
             /// <summary>
             /// The task from a prior call to <see cref="ReleaseAsync"/>, if any.
             /// </summary>
-            private Task releaseAsyncTask;
+            private Task? releaseAsyncTask;
 
             /// <summary>
             /// The synchronization context applied to folks who hold the lock.
@@ -2137,7 +2137,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// An arbitrary object that may be set by a derived type of the containing lock class.
             /// </summary>
-            private object data;
+            private object? data;
 
 #endregion
 
@@ -2221,7 +2221,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Gets or sets an arbitrary object that may be set by a derived type of the containing lock class.
             /// </summary>
-            internal object Data
+            internal object? Data
             {
                 get { return this.data; }
                 set { this.data = value; }

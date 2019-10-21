@@ -34,17 +34,17 @@ namespace Microsoft.VisualStudio.Threading
         /// before it is actually initialized. Volatile prevents CPU reordering of commands around
         /// the assignment (or read) of this field.
         /// </remarks>
-        private volatile TaskCompletionSource<object?> completedSource;
+        private volatile TaskCompletionSource<object?>? completedSource;
 
         /// <summary>
         /// The internal queue of elements. Lazily constructed.
         /// </summary>
-        private Queue<T> queueElements;
+        private Queue<T>? queueElements;
 
         /// <summary>
         /// The internal queue of <see cref="DequeueAsync(CancellationToken)"/> waiters. Lazily constructed.
         /// </summary>
-        private Queue<TaskCompletionSource<T>> dequeuingWaiters;
+        private Queue<TaskCompletionSource<T>>? dequeuingWaiters;
 
         /// <summary>
         /// A value indicating whether <see cref="Complete"/> has been called.

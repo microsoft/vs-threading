@@ -23,7 +23,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// The current <see cref="SynchronizationContext"/> as of when the continuation was scheduled.
         /// </summary>
-        private SynchronizationContext capturedSynchronizationContext;
+        private SynchronizationContext? capturedSynchronizationContext;
 
         /// <summary>
         /// Whether <see cref="Resume"/> has been called already.

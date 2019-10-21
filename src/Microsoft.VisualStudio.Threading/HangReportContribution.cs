@@ -64,6 +64,6 @@ namespace Microsoft.VisualStudio.Threading
         /// Gets the nested hang reports, if any.
         /// </summary>
         /// <value>A read only collection, or <c>null</c>.</value>
-        public IReadOnlyCollection<HangReportContribution> NestedReports { get; private set; }
+        public IReadOnlyCollection<HangReportContribution>? NestedReports { get; private set; }
     }
 }

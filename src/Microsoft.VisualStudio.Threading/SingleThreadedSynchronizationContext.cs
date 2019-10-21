@@ -203,7 +203,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The owning sync context.
             /// </summary>
-            private SingleThreadedSynchronizationContext owner;
+            private SingleThreadedSynchronizationContext? owner;
 
             /// <summary>
             /// Backing field for the <see cref="Continue" /> property.

@@ -22,7 +22,7 @@ namespace Microsoft.VisualStudio.Threading
         /// The synchronization object.
         /// Applicable only when <see cref="joinableTaskFactory"/> is null.
         /// </summary>
-        private readonly object syncObject;
+        private readonly object? syncObject;
 
         /// <summary>
         /// The handler to invoke for each progress update.
@@ -33,13 +33,13 @@ namespace Microsoft.VisualStudio.Threading
         /// The set of progress reports that have started (but may not have finished yet).
         /// Applicable only when <see cref="joinableTaskFactory"/> is null.
         /// </summary>
-        private readonly HashSet<Task> outstandingTasks;
+        private readonly HashSet<Task>? outstandingTasks;
 
         /// <summary>
         /// The factory to use for invoking the <see cref="handler"/>.
         /// Applicable only when <see cref="joinableTaskFactory"/> is null.
         /// </summary>
-        private readonly TaskFactory taskFactory;
+        private readonly TaskFactory? taskFactory;
 
         /// <summary>
         /// A value indicating whether this instance was constructed on the main thread.
@@ -51,13 +51,13 @@ namespace Microsoft.VisualStudio.Threading
         /// The <see cref="JoinableTaskFactory"/> to use when invoking the <see cref="handler"/> to mitigate deadlocks.
         /// May be null.
         /// </summary>
-        private readonly JoinableTaskFactory joinableTaskFactory;
+        private readonly JoinableTaskFactory? joinableTaskFactory;
 
         /// <summary>
         /// A collection of outstanding progress updates that have not completed execution.
         /// Applicable only when <see cref="joinableTaskFactory"/> is not null.
         /// </summary>
-        private readonly JoinableTaskCollection outstandingJoinableTasks;
+        private readonly JoinableTaskCollection? outstandingJoinableTasks;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ProgressWithCompletion{T}" /> class.

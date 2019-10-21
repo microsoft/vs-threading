@@ -282,7 +282,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 if (this.dependingSynchronousTaskTracking != null)
                 {
-                    DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
+                    DependentSynchronousTask? existingTaskTracking = this.dependingSynchronousTaskTracking;
                     this.dependingSynchronousTaskTracking = null;
 
                     if (this.childDependentNodes != null)
@@ -900,7 +900,7 @@ namespace Microsoft.VisualStudio.Threading
                 /// <summary>
                 /// Gets or sets the chain of the single linked list.
                 /// </summary>
-                internal DependentSynchronousTask Next { get; set; }
+                internal DependentSynchronousTask? Next { get; set; }
 
                 /// <summary>
                 /// Gets the synchronous task.

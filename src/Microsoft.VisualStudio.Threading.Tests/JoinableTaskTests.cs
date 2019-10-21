@@ -3976,11 +3976,11 @@
                 get { return this.transitioningTasksCollection.Count(); }
             }
 
-            internal Action<JoinableTask> TransitioningToMainThreadCallback { get; set; }
+            internal Action<JoinableTask>? TransitioningToMainThreadCallback { get; set; }
 
-            internal Action<JoinableTask> TransitionedToMainThreadCallback { get; set; }
+            internal Action<JoinableTask>? TransitionedToMainThreadCallback { get; set; }
 
-            internal Action PostToUnderlyingSynchronizationContextCallback { get; set; }
+            internal Action? PostToUnderlyingSynchronizationContextCallback { get; set; }
 
             protected override void OnTransitioningToMainThread(JoinableTask joinableTask)
             {
@@ -4111,7 +4111,7 @@
             private JoinableTaskFactory pump;
             private AsyncManualResetEvent stopRequested = new AsyncManualResetEvent();
             private int originalThreadManagedId = Environment.CurrentManagedThreadId;
-            private Task dependentTask;
+            private Task? dependentTask;
             private MockAsyncService dependentService;
 
             internal MockAsyncService(JoinableTaskContext context, MockAsyncService? dependentService = null)

@@ -4882,13 +4882,13 @@
         {
             internal bool CriticalErrorDetected { get; set; }
 
-            internal Func<Task> OnBeforeExclusiveLockReleasedAsyncDelegate { get; set; }
+            internal Func<Task>? OnBeforeExclusiveLockReleasedAsyncDelegate { get; set; }
 
-            internal Func<Task> OnExclusiveLockReleasedAsyncDelegate { get; set; }
+            internal Func<Task>? OnExclusiveLockReleasedAsyncDelegate { get; set; }
 
-            internal Func<Task> OnBeforeLockReleasedAsyncDelegate { get; set; }
+            internal Func<Task>? OnBeforeLockReleasedAsyncDelegate { get; set; }
 
-            internal Action OnUpgradeableReadLockReleasedDelegate { get; set; }
+            internal Action? OnUpgradeableReadLockReleasedDelegate { get; set; }
 
             internal new bool IsAnyLockHeld
             {

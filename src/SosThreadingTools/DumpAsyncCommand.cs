@@ -317,7 +317,7 @@ namespace CpsDbg
                 int depth = 0;
                 if (stateMachine.Previous == null)
                 {
-                    var p = stateMachine;
+                    AsyncStateMachine? p = stateMachine;
                     while (p != null)
                     {
                         depth++;
@@ -470,7 +470,7 @@ namespace CpsDbg
 
             public AsyncStateMachine? Previous { get; set; }
 
-            public AsyncStateMachine Next { get; set; }
+            public AsyncStateMachine? Next { get; set; }
 
             public int DependentCount { get; set; }
 
@@ -482,7 +482,7 @@ namespace CpsDbg
 
             public ClrObject SwitchToMainThreadTask { get; set; }
 
-            public AsyncStateMachine AlterPrevious { get; set; }
+            public AsyncStateMachine? AlterPrevious { get; set; }
 
             public ulong CodeAddress { get; set; }
 

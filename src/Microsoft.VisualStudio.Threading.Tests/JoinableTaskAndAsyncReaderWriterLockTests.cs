@@ -17,7 +17,7 @@
 
         private AsyncReaderWriterLock asyncLock;
 
-        private AsyncManualResetEvent lockRequested;
+        private AsyncManualResetEvent? lockRequested;
 
         public JoinableTaskAndAsyncReaderWriterLockTests(ITestOutputHelper logger)
             : base(logger)

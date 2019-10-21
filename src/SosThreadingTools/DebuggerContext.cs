@@ -18,7 +18,7 @@ namespace CpsDbg
         /// <summary>
         /// The singleton instance used in a debug session.
         /// </summary>
-        private static DebuggerContext instance;
+        private static DebuggerContext? instance;
 
         static DebuggerContext()
         {

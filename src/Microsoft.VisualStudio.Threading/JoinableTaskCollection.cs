@@ -27,7 +27,7 @@ namespace Microsoft.VisualStudio.Threading
         /// A human-readable name that may appear in hang reports.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string displayName;
+        private string? displayName;
 
         /// <summary>
         /// The <see cref="JoinableTaskDependencyGraph.JoinableTaskDependentData"/> to track dependencies between tasks.

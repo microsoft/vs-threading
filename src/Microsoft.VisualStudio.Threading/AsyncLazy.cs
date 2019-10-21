@@ -45,7 +45,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// The result of the value factory.
         /// </summary>
-        private Task<T> value;
+        private Task<T>? value;
 
         /// <summary>
         /// A joinable task whose result is the value to be cached.

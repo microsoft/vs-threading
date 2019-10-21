@@ -576,11 +576,11 @@
 
         private class DerivedQueue<T> : AsyncQueue<T>
         {
-            internal Action<T, bool> OnEnqueuedDelegate { get; set; }
+            internal Action<T, bool>? OnEnqueuedDelegate { get; set; }
 
-            internal Action OnCompletedDelegate { get; set; }
+            internal Action? OnCompletedDelegate { get; set; }
 
-            internal Action<T> OnDequeuedDelegate { get; set; }
+            internal Action<T>? OnDequeuedDelegate { get; set; }
 
             protected override void OnEnqueued(T value, bool alreadyDispatched)
             {

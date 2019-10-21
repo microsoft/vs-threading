@@ -1059,7 +1059,7 @@ namespace Microsoft.VisualStudio.Threading
             /// The delegate to invoke.  <c>null</c> if it has already been invoked.
             /// </summary>
             /// <value>May be of type <see cref="Action"/> or <see cref="SendOrPostCallback"/>.</value>
-            private object invokeDelegate;
+            private object? invokeDelegate;
 
             /// <summary>
             /// The value to pass to the delegate if it is a <see cref="SendOrPostCallback"/>.

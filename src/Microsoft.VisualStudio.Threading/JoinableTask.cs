@@ -75,13 +75,13 @@ namespace Microsoft.VisualStudio.Threading
         /// and retains its value even after this JoinableTask completes.
         /// </value>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private object wrappedTask;
+        private object? wrappedTask;
 
         /// <summary>
         /// An event that is signaled when any queue in the dependent has item to process.  Lazily constructed.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private AsyncManualResetEvent queueNeedProcessEvent;
+        private AsyncManualResetEvent? queueNeedProcessEvent;
 
         /// <summary>
         /// The <see cref="queueNeedProcessEvent"/> is triggered by this JoinableTask, this allows a quick access to the event.
@@ -98,19 +98,19 @@ namespace Microsoft.VisualStudio.Threading
 
         /// <summary>The queue of work items. Lazily constructed.</summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private ExecutionQueue mainThreadQueue;
+        private ExecutionQueue? mainThreadQueue;
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private ExecutionQueue threadPoolQueue;
+        private ExecutionQueue? threadPoolQueue;
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private volatile JoinableTaskFlags state;
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private JoinableTaskSynchronizationContext mainThreadJobSyncContext;
+        private JoinableTaskSynchronizationContext? mainThreadJobSyncContext;
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private JoinableTaskSynchronizationContext threadPoolJobSyncContext;
+        private JoinableTaskSynchronizationContext? threadPoolJobSyncContext;
 
         /// <summary>
         /// Stores the task's initial delegate so we could show its full name in hang report.
@@ -123,7 +123,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Backing field for the <see cref="WeakSelf"/> property.
         /// </summary>
-        private WeakReference<JoinableTask> weakSelf;
+        private WeakReference<JoinableTask>? weakSelf;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JoinableTask"/> class.
@@ -991,7 +991,7 @@ namespace Microsoft.VisualStudio.Threading
         /// This is a helper method to parepare notifing the sychronous task for pending events.
         /// It must be called inside JTF lock, and returns a collection of event to trigger later. (Those events must be triggered out of the JTF lock.)
         /// </summary>
-        internal AsyncManualResetEvent RegisterPendingEventsForSynchrousTask(JoinableTask taskHasPendingMessages, int newPendingMessagesCount)
+        internal AsyncManualResetEvent? RegisterPendingEventsForSynchrousTask(JoinableTask taskHasPendingMessages, int newPendingMessagesCount)
         {
             Requires.NotNull(taskHasPendingMessages, nameof(taskHasPendingMessages));
             Requires.Range(newPendingMessagesCount > 0, nameof(newPendingMessagesCount));

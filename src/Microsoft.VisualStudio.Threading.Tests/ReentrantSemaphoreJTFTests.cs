@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 
 public class ReentrantSemaphoreJTFTests : ReentrantSemaphoreTestBase
 {
-    private JoinableTaskContext joinableTaskContext;
+    private JoinableTaskContext? joinableTaskContext;
 
     public ReentrantSemaphoreJTFTests(ITestOutputHelper logger)
         : base(logger)
