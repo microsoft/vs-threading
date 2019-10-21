@@ -81,7 +81,7 @@
         public void SwitchToMainThreadAsyncContributesToHangReportsAndCollections()
         {
             var mainThreadRequestPended = new ManualResetEventSlim();
-            Exception delegateFailure = null;
+            Exception? delegateFailure = null;
 
             Task.Run(delegate
             {
@@ -131,7 +131,7 @@
             this.asyncPump = new DerivedJoinableTaskFactory(this.context);
 
             var outerTaskCompleted = new AsyncManualResetEvent();
-            Task innerTask = null;
+            Task? innerTask = null;
             this.asyncPump.RunAsync(delegate
             {
                 innerTask = Task.Run(async delegate
@@ -163,7 +163,7 @@
         {
             ((DerivedJoinableTaskFactory)this.asyncPump).AssumeConcurrentUse = true;
             var mainThreadRequestPended = new ManualResetEventSlim();
-            Exception delegateFailure = null;
+            Exception? delegateFailure = null;
 
             Task.Run(delegate
             {
@@ -235,7 +235,7 @@
         public void SwitchToMainThreadAsyncTransitionsCanSeeAsyncLocals()
         {
             var mainThreadRequestPended = new ManualResetEventSlim();
-            Exception delegateFailure = null;
+            Exception? delegateFailure = null;
 
             var asyncLocal = new AsyncLocal<object>();
             var asyncLocalValue = new object();
@@ -902,7 +902,7 @@
         public void RunSwitchesToMainThreadAndPostsTwiceDoesNotImpactJoinableTaskCompletion()
         {
             ((DerivedJoinableTaskFactory)this.asyncPump).AssumeConcurrentUse = true;
-            Task task = null;
+            Task? task = null;
             task = Task.Run(delegate
             {
                 try
@@ -969,7 +969,7 @@
         {
             ((DerivedJoinableTaskFactory)this.asyncPump).AssumeConcurrentUse = true;
 
-            JoinableTask task1 = null, task2 = null;
+            JoinableTask? task1 = null, task2 = null;
             var taskStarted = new AsyncManualResetEvent();
             var testEnded = new AsyncManualResetEvent();
             var dependentWork1Queued = new AsyncManualResetEvent();
@@ -1034,7 +1034,7 @@
         [Fact]
         public void SwitchToMainThreadWithDelayedDependencyShouldNotHang()
         {
-            JoinableTask task1 = null, task2 = null;
+            JoinableTask? task1 = null, task2 = null;
             var taskStarted = new AsyncManualResetEvent();
             var testEnded = new AsyncManualResetEvent();
             var dependentWorkAllowed = new AsyncManualResetEvent();
@@ -1103,7 +1103,7 @@
         [Fact]
         public void DoubleJoinedTaskDisjoinCorrectly()
         {
-            JoinableTask task1 = null;
+            JoinableTask? task1 = null;
             var taskStarted = new AsyncManualResetEvent();
             var dependentFirstWorkCompleted = new AsyncManualResetEvent();
             var dependentSecondWorkAllowed = new AsyncManualResetEvent();
@@ -1170,7 +1170,7 @@
         [Fact]
         public void DoubleIndirectJoinedTaskDisjoinCorrectly()
         {
-            JoinableTask task1 = null, task2 = null, task3 = null;
+            JoinableTask? task1 = null, task2 = null, task3 = null;
             var taskStarted = new AsyncManualResetEvent();
             var dependentFirstWorkCompleted = new AsyncManualResetEvent();
             var dependentSecondWorkAllowed = new AsyncManualResetEvent();
@@ -1262,7 +1262,7 @@
         [Fact]
         public void JoinWithLoopDependentTasks()
         {
-            JoinableTask task1 = null, task2 = null;
+            JoinableTask? task1 = null, task2 = null;
             var taskStarted = new AsyncManualResetEvent();
             var testStarted = new AsyncManualResetEvent();
             var task1Prepared = new AsyncManualResetEvent();
@@ -1377,7 +1377,7 @@
         [Fact]
         public void DeepLoopedJoinedTaskDisjoinCorrectly()
         {
-            JoinableTask task1 = null, task2 = null, task3 = null, task4 = null, task5 = null;
+            JoinableTask? task1 = null, task2 = null, task3 = null, task4 = null, task5 = null;
             var taskStarted = new AsyncManualResetEvent();
             var task2Prepared = new AsyncManualResetEvent();
             var task3Prepared = new AsyncManualResetEvent();
@@ -1660,7 +1660,7 @@
         public void NestedJoinsDistinctAsyncPumps()
         {
             const int nestLevels = 3;
-            MockAsyncService outerService = null;
+            MockAsyncService? outerService = null;
             for (int level = 0; level < nestLevels; level++)
             {
                 outerService = new MockAsyncService(this.asyncPump.Context, outerService);
@@ -1693,7 +1693,7 @@
 
             this.asyncPump.Run(async delegate
             {
-                Task innerTask = null;
+                Task? innerTask = null;
                 this.asyncPump.Run(delegate
                 {
                     // We need simulate a scenario that the task is completed without any yielding,
@@ -1724,7 +1724,7 @@
             // Because completed task won't be tracked in the dependent chain, waiting it causes a deadlock.  This could be a potential problem.
             this.asyncPump.Run(async delegate
             {
-                Task innerTask = null;
+                Task? innerTask = null;
                 this.asyncPump.Run(delegate
                 {
                     innerTask = Task.Run(async delegate
@@ -1748,7 +1748,7 @@
         public void RunSynchronouslyKicksOffReturnsThenSyncBlocksStillRequiresJoin()
         {
             var mainThreadNowBlocking = new AsyncManualResetEvent();
-            Task task = null;
+            Task? task = null;
             this.asyncPump.Run(delegate
             {
                 task = Task.Run(async delegate
@@ -2022,8 +2022,8 @@
         {
             var countdownEvent = new AsyncCountdownEvent(2);
             var state = new GenericParameterHelper(3);
-            SynchronizationContext syncContext = null;
-            Task sendFromWithinRunSync = null;
+            SynchronizationContext? syncContext = null;
+            Task? sendFromWithinRunSync = null;
             this.asyncPump.Run(delegate
             {
                 syncContext = SynchronizationContext.Current;
@@ -2098,7 +2098,7 @@
         public void SendToSyncContextCapturedAfterSwitchingToMainThread()
         {
             var state = new GenericParameterHelper(3);
-            SynchronizationContext syncContext = null;
+            SynchronizationContext? syncContext = null;
             var task = Task.Run(async delegate
             {
                 try
@@ -2141,7 +2141,7 @@
             this.asyncPump.Run(delegate
             {
                 var syncContext = SynchronizationContext.Current; // simulate someone who has captured our own sync context.
-                Exception ex = null;
+                Exception? ex = null;
                 using (this.context.SuppressRelevance())
                 { // simulate some kind of sync context hand-off that doesn't flow execution context.
                     Task.Run(delegate
@@ -2183,7 +2183,7 @@
         [Fact]
         public void StackOverflowAvoidance()
         {
-            Task backgroundTask = null;
+            Task? backgroundTask = null;
             var mainThreadUnblocked = new AsyncManualResetEvent();
             var otherCollection = this.context.CreateCollection();
             var otherPump = this.context.CreateFactory(otherCollection);
@@ -2233,7 +2233,7 @@
         {
             var runSynchronouslyExited = new AsyncManualResetEvent();
             var unblockMainThread = new ManualResetEventSlim();
-            Task backgroundTask = null, uiBoundWork;
+            Task? backgroundTask = null, uiBoundWork;
             this.asyncPump.Run(delegate
             {
                 backgroundTask = Task.Run(async delegate
@@ -2441,7 +2441,7 @@
             Assert.True(Task.Run(async delegate
             {
                 var delegateExecuted = new AsyncManualResetEvent();
-                SynchronizationContext syncContext = null;
+                SynchronizationContext? syncContext = null;
                 this.asyncPump.Run(delegate
                 {
                     syncContext = SynchronizationContext.Current;
@@ -2715,7 +2715,7 @@
             var cts = new CancellationTokenSource(1000);
             var collection2 = this.asyncPump.Context.CreateCollection();
             var pump2 = this.asyncPump.Context.CreateFactory(collection2);
-            Task t1 = null, t2 = null;
+            Task? t1 = null, t2 = null;
 
             ((DerivedJoinableTaskFactory)this.asyncPump).AssumeConcurrentUse = true;
             ((DerivedJoinableTaskFactory)pump2).AssumeConcurrentUse = true;
@@ -2777,8 +2777,8 @@
             for (int count = 0; count < 5000; count++)
             {
                 var postDelegateInvoked = new ManualResetEventSlim();
-                Task innerTask = null;
-                SynchronizationContext capturedContext = null;
+                Task? innerTask = null;
+                SynchronizationContext? capturedContext = null;
                 bool posted = false;
 
                 // Do the scheduling off the simulated main thread thread so we can conveniently block later.
@@ -3256,7 +3256,7 @@
                 waitForOnCompletedIsFinished.Wait();
             };
 
-            object result = new object();
+            object? result = new object();
             WeakReference<object> weakResult = new WeakReference<object>(result);
 
             this.asyncPump.Run(async () =>
@@ -3280,7 +3280,7 @@
                 await joinable;
             });
 
-            object target;
+            object? target;
             do
             {
                 // Needs to give the dispatcher a chance to run the posted action in order to release
@@ -3322,7 +3322,7 @@
                 unawaitedWorkCompleted = true;
             };
             var jtStarted = new AsyncManualResetEvent();
-            Task unawaitedWork = null;
+            Task? unawaitedWork = null;
             var bkgrndThread = Task.Run(delegate
             {
                 this.asyncPump.Run(delegate
@@ -3588,8 +3588,8 @@
             {
                 var unblockJoinableTask = new ManualResetEventSlim();
                 var joinableTaskStarted = new AsyncManualResetEvent(allowInliningAwaiters: false);
-                JoinableTask observedJoinableTask = null;
-                Task observedWrappedTask = null;
+                JoinableTask? observedJoinableTask = null;
+                Task? observedWrappedTask = null;
                 var assertingTask = Task.Run(async delegate
                 {
                     try
@@ -3627,8 +3627,8 @@
             {
                 var unblockJoinableTask = new ManualResetEventSlim();
                 var joinableTaskStarted = new AsyncManualResetEvent(allowInliningAwaiters: false);
-                JoinableTask<int> observedJoinableTask = null;
-                Task<int> observedWrappedTask = null;
+                JoinableTask<int>? observedJoinableTask = null;
+                Task<int>? observedWrappedTask = null;
                 var assertingTask = Task.Run(async delegate
                 {
                     try
@@ -3736,7 +3736,7 @@
                 transitionedToMainThread.Wait();
             };
 
-            object result = new object();
+            object? result = new object();
             WeakReference<object> weakResult = new WeakReference<object>(result);
 
             this.asyncPump.Run(async () =>
@@ -3773,7 +3773,7 @@
             var outerFactory = new ModalPumpingJoinableTaskFactory(this.context);
             var innerFactory = new ModalPumpingJoinableTaskFactory(this.context);
 
-            JoinableTask inner = null;
+            JoinableTask? inner = null;
             var outer = outerFactory.RunAsync(async delegate
             {
                 inner = innerFactory.RunAsync(async delegate
@@ -3799,7 +3799,7 @@
         [MethodImpl(MethodImplOptions.NoInlining)] // mem leak detection requires literally popping locals with strong refs off the stack
         private WeakReference JoinableTaskReleasedBySyncContextAfterCompletion_Helper(out SynchronizationContext syncContext)
         {
-            SynchronizationContext sc = null;
+            SynchronizationContext? sc = null;
             var job = this.asyncPump.RunAsync(() =>
             {
                 sc = SynchronizationContext.Current; // simulate someone who has captured the sync context.
@@ -3854,7 +3854,7 @@
         {
             object leakedValue = new object();
             WeakReference weakValue = new WeakReference(leakedValue);
-            Task longLivedTask = null;
+            Task? longLivedTask = null;
 
             this.asyncPump.RunAsync(delegate
             {

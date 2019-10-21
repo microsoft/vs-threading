@@ -314,7 +314,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 using (parentTaskOrCollection.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
                 {
-                    List<AsyncManualResetEvent> eventsNeedNotify = null;
+                    List<AsyncManualResetEvent>? eventsNeedNotify = null;
                     lock (parentTaskOrCollection.JoinableTaskContext.SyncContextLock)
                     {
                         var joinableTask = joinChild as JoinableTask;
@@ -604,7 +604,7 @@ namespace Microsoft.VisualStudio.Threading
                 Requires.NotNull(synchronousTask, nameof(synchronousTask));
                 Assumes.True(Monitor.IsEntered(taskOrCollection.JoinableTaskContext.SyncContextLock));
 
-                JoinableTask thisJoinableTask = taskOrCollection as JoinableTask;
+                JoinableTask? thisJoinableTask = taskOrCollection as JoinableTask;
                 if (thisJoinableTask != null)
                 {
                     if (thisJoinableTask.IsCompleted)
@@ -639,7 +639,7 @@ namespace Microsoft.VisualStudio.Threading
                     existingTaskTracking = existingTaskTracking.Next;
                 }
 
-                JoinableTask eventTriggeringTask = null;
+                JoinableTask? eventTriggeringTask = null;
 
                 if (thisJoinableTask != null)
                 {
@@ -703,8 +703,8 @@ namespace Microsoft.VisualStudio.Threading
                 Requires.NotNull(tasks, nameof(tasks));
                 Requires.NotNull(syncTask, nameof(syncTask));
 
-                HashSet<IJoinableTaskDependent> reachableNodes = null;
-                HashSet<IJoinableTaskDependent> remainNodes = null;
+                HashSet<IJoinableTaskDependent>? reachableNodes = null;
+                HashSet<IJoinableTaskDependent>? remainNodes = null;
 
                 if (force)
                 {
@@ -728,7 +728,7 @@ namespace Microsoft.VisualStudio.Threading
                     ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(syncTaskItem, reachableNodes, remainNodes);
 
                     // force to remove all invalid items
-                    HashSet<IJoinableTaskDependent> remainPlaceHold = null;
+                    HashSet<IJoinableTaskDependent>? remainPlaceHold = null;
                     foreach (var remainTask in remainNodes)
                     {
                         RemoveDependingSynchronousTask(remainTask, syncTask, reachableNodes, ref remainPlaceHold);
@@ -785,7 +785,7 @@ namespace Microsoft.VisualStudio.Threading
                 Requires.NotNull(task, nameof(task));
 
                 ref JoinableTaskDependentData data = ref taskOrCollection.GetJoinableTaskDependentData();
-                DependentSynchronousTask previousTaskTracking = null;
+                DependentSynchronousTask? previousTaskTracking = null;
                 DependentSynchronousTask currentTaskTracking = data.dependingSynchronousTaskTracking;
                 bool removed = false;
 

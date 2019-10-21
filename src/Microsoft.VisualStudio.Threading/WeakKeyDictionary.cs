@@ -153,7 +153,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns>The number of entries removed.</returns>
         public int Scavenge()
         {
-            List<WeakReference<TKey>> remove = null;
+            List<WeakReference<TKey>>? remove = null;
 
             foreach (WeakReference<TKey> weakKey in this.dictionary.Keys)
             {
@@ -251,7 +251,7 @@ namespace Microsoft.VisualStudio.Threading
 
             public bool MoveNext()
             {
-                TKey key = null;
+                TKey? key = null;
 
                 while (this.enumerator.MoveNext())
                 {

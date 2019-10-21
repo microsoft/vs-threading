@@ -631,7 +631,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 // Start watching and be certain the thread that started watching is destroyed.
                 // This simulates a more common case of someone on a threadpool thread watching
                 // a key asynchronously and then the .NET Threadpool deciding to reduce the number of threads in the pool.
-                Task watchingTask = null;
+                Task? watchingTask = null;
                 var thread = new Thread(() =>
                 {
                     watchingTask = test.Key.WaitForChangeAsync(cancellationToken: test.FinishedToken);

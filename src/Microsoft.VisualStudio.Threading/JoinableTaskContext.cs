@@ -223,7 +223,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                JoinableTask result = null;
+                JoinableTask? result = null;
                 this.joinableOperation.Value?.TryGetTarget(out result);
                 return result;
             }
@@ -569,7 +569,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 if (SynchronizationContext.Current is JoinableTaskSynchronizationContext jobSyncContext)
                 {
-                    SynchronizationContext appliedSyncContext = null;
+                    SynchronizationContext? appliedSyncContext = null;
                     if (jobSyncContext.MainThreadAffinitized)
                     {
                         appliedSyncContext = pump.UnderlyingSynchronizationContext;

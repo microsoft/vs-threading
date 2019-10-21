@@ -123,7 +123,7 @@
                     invocationExpression = invocationExpression.AddArgumentListArguments(arg);
                 }
 
-                ExpressionSyntax awaitExpression = container.IsAsync ? SyntaxFactory.AwaitExpression(invocationExpression) : null;
+                ExpressionSyntax? awaitExpression = container.IsAsync ? SyntaxFactory.AwaitExpression(invocationExpression) : null;
                 var addedStatement = SyntaxFactory.ExpressionStatement(awaitExpression ?? invocationExpression)
                     .WithAdditionalAnnotations(Simplifier.Annotation, Formatter.Annotation);
                 var initialBlockSyntax = container.BlockOrExpression as BlockSyntax;

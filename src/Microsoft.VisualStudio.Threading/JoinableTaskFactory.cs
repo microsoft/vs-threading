@@ -225,7 +225,7 @@ namespace Microsoft.VisualStudio.Threading
             // a (child) job and add that to this job factory's collection so that folks joining that factory
             // can help this switch to complete.
             var ambientJob = this.Context.AmbientTask;
-            SingleExecuteProtector wrapper = null;
+            SingleExecuteProtector? wrapper = null;
             if (ambientJob == null || (this.jobCollection != null && !this.jobCollection.Contains(ambientJob)))
             {
                 var transient = this.RunAsync(
@@ -354,7 +354,7 @@ namespace Microsoft.VisualStudio.Threading
             int hangTimeoutsCount = 0; // useful for debugging dump files to see how many times we looped.
             int hangNotificationCount = 0;
             Guid hangId = Guid.Empty;
-            Stopwatch stopWatch = null;
+            Stopwatch? stopWatch = null;
             try
             {
                 while (!task.Wait(this.HangDetectionTimeout))
@@ -1138,7 +1138,7 @@ namespace Microsoft.VisualStudio.Threading
                 var stateDelegate = singleExecuteProtector.state as Delegate;
 
                 // We are in favor of "state" when "invokeDelegate" is a static method and "state" is the actual delegate.
-                Delegate actualDelegate = (stateDelegate != null && stateDelegate.Target != null) ? stateDelegate : invokeDelegate;
+                Delegate? actualDelegate = (stateDelegate != null && stateDelegate.Target != null) ? stateDelegate : invokeDelegate;
                 if (actualDelegate == null)
                 {
                     yield return "<COMPLETED>";

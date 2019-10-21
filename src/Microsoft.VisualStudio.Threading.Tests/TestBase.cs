@@ -261,7 +261,7 @@
                 return;
             }
 
-            Exception staFailure = null;
+            Exception? staFailure = null;
             var staThread = new Thread(state =>
             {
                 try
@@ -299,7 +299,7 @@
             }
 
             var frame = SingleThreadedTestSynchronizationContext.NewFrame();
-            Exception failure = null;
+            Exception? failure = null;
             SynchronizationContext.Current.Post(
                 async _ =>
                 {

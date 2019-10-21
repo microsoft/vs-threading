@@ -1272,10 +1272,10 @@ namespace Microsoft.VisualStudio.Threading
                 return TplExtensions.CompletedTask;
             }
 
-            Task reenterConcurrentOutsideCode = null;
-            Task synchronousCallbackExecution = null;
+            Task? reenterConcurrentOutsideCode = null;
+            Task? synchronousCallbackExecution = null;
             bool synchronousRequired = false;
-            Awaiter remainingAwaiter = null;
+            Awaiter? remainingAwaiter = null;
             Awaiter topAwaiterAtStart = this.topAwaiter.Value; // do this outside the lock because it's fairly expensive and doesn't require the lock.
 
             lock (this.syncObject)
@@ -1369,7 +1369,7 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(awaiter, nameof(awaiter));
             Requires.NotNull(beginAfterPrerequisite, nameof(beginAfterPrerequisite));
 
-            Exception prereqException = null;
+            Exception? prereqException = null;
             try
             {
                 await beginAfterPrerequisite.ConfigureAwait(SynchronizationContext.Current is NonConcurrentSynchronizationContext);
@@ -1404,7 +1404,7 @@ namespace Microsoft.VisualStudio.Threading
                 onExclusiveLockReleasedTask = this.OnExclusiveLockReleasedAsync();
             }
 
-            Exception onExclusiveLockReleasedTaskException = null;
+            Exception? onExclusiveLockReleasedTaskException = null;
             try
             {
                 await onExclusiveLockReleasedTask.ConfigureAwait(false);
@@ -1511,7 +1511,7 @@ namespace Microsoft.VisualStudio.Threading
                 // gets visibility into the write lock, which of course provides exclusivity and concurrency would violate that.
                 // We also avoid executing the synchronous portions all in a row and awaiting them all
                 // because that too would violate an individual callback's sense of isolation in a write lock.
-                List<Exception> exceptions = null;
+                List<Exception>? exceptions = null;
                 while (this.TryDequeueBeforeWriteReleasedCallback(out Func<Task> callback))
                 {
                     try
@@ -2425,7 +2425,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     // Only read locks can be executed trivially. The locks that have some level of exclusivity (upgradeable read and write)
                     // must be executed via the NonConcurrentSynchronizationContext.
-                    SynchronizationContext synchronizationContext = null;
+                    SynchronizationContext? synchronizationContext = null;
 
                     Awaiter awaiter = this.NestingLock;
                     while (awaiter != null)

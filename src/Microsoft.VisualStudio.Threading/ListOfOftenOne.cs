@@ -239,7 +239,7 @@ namespace Microsoft.VisualStudio.Threading
                     return true;
                 }
 
-                var array = (T[])this.enumeratedValue;
+                var array = (T[]?)this.enumeratedValue;
                 if (this.currentIndex >= 0 && this.currentIndex < array.Length)
                 {
                     this.currentIndex++;

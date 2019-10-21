@@ -107,7 +107,7 @@
         [Fact, Trait("GC", "true")]
         public void SurvivesGC()
         {
-            var value = new GenericParameterHelper(5);
+            GenericParameterHelper? value = new GenericParameterHelper(5);
             this.asyncLocal.Value = value;
             Assert.Same(value, this.asyncLocal.Value);
 

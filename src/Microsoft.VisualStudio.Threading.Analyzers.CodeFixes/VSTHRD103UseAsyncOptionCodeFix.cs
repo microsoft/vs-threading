@@ -131,7 +131,7 @@
                 // We'll need the semantic model later. But because we've annotated a node, that changes the SyntaxRoot
                 // and that renders the default semantic model broken (even though we've already updated the document's SyntaxRoot?!).
                 // So after acquiring the semantic model, update it with the new method body.
-                var semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
+                SemanticModel? semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
                 var originalAnonymousMethodContainerIfApplicable = syncMethodName.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>();
                 var originalMethodDeclaration = syncMethodName.FirstAncestorOrSelf<MethodDeclarationSyntax>();
 

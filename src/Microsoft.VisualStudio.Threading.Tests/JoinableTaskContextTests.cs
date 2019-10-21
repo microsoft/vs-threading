@@ -611,7 +611,7 @@
         {
             var nonBlockingStateObserved = new AsyncManualResetEvent();
             var nowBlocking = new AsyncManualResetEvent();
-            JoinableTask joinableTask = null;
+            JoinableTask? joinableTask = null;
             Task.Run(delegate
             {
                 joinableTask = this.Factory.RunAsync(async delegate

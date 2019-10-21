@@ -19,8 +19,8 @@
         [Fact]
         public void Ctor_Nulls()
         {
-            Assert.Throws<ArgumentNullException>(() => new ProgressWithCompletion<GenericParameterHelper>((Action<GenericParameterHelper>)null));
-            Assert.Throws<ArgumentNullException>(() => new ProgressWithCompletion<GenericParameterHelper>((Func<GenericParameterHelper, Task>)null));
+            Assert.Throws<ArgumentNullException>(() => new ProgressWithCompletion<GenericParameterHelper>((Action<GenericParameterHelper>?)null));
+            Assert.Throws<ArgumentNullException>(() => new ProgressWithCompletion<GenericParameterHelper>((Func<GenericParameterHelper, Task>?)null));
         }
 
         [Fact]

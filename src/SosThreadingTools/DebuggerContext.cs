@@ -58,7 +58,7 @@ namespace CpsDbg
 
                 var dataTarget = DataTarget.CreateFromDebuggerInterface(debugClient);
 
-                ClrRuntime runtime = null;
+                ClrRuntime? runtime = null;
 
                 // If our ClrRuntime instance is null, it means that this is our first call, or
                 // that the dac wasn't loaded on any previous call.  Find the dac loaded in the

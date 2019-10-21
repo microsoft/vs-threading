@@ -271,7 +271,7 @@ namespace Microsoft.VisualStudio.Threading
             if (handlers != null)
             {
                 var individualHandlers = handlers.GetInvocationList();
-                List<Exception> exceptions = null;
+                List<Exception>? exceptions = null;
                 foreach (AsyncEventHandler handler in individualHandlers)
                 {
                     try
@@ -312,7 +312,7 @@ namespace Microsoft.VisualStudio.Threading
             if (handlers != null)
             {
                 var individualHandlers = handlers.GetInvocationList();
-                List<Exception> exceptions = null;
+                List<Exception>? exceptions = null;
                 foreach (AsyncEventHandler<TEventArgs> handler in individualHandlers)
                 {
                     try

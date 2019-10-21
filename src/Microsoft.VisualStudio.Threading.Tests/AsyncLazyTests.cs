@@ -201,7 +201,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         public async Task ValueFactoryReentersValueFactorySynchronously(bool specifyJtf)
         {
             var jtf = specifyJtf ? new JoinableTaskContext().Factory : null; // use our own so we don't get main thread deadlocks, which isn't the point of this test.
-            AsyncLazy<object> lazy = null;
+            AsyncLazy<object>? lazy = null;
             bool executed = false;
             lazy = new AsyncLazy<object>(
                 delegate
@@ -223,7 +223,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         public async Task ValueFactoryReentersValueFactoryAsynchronously(bool specifyJtf)
         {
             var jtf = specifyJtf ? new JoinableTaskContext().Factory : null; // use our own so we don't get main thread deadlocks, which isn't the point of this test.
-            AsyncLazy<object> lazy = null;
+            AsyncLazy<object>? lazy = null;
             bool executed = false;
             lazy = new AsyncLazy<object>(
                 async delegate

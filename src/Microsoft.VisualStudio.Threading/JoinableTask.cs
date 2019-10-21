@@ -576,8 +576,8 @@ namespace Microsoft.VisualStudio.Threading
         {
             using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
             {
-                SingleExecuteProtector wrapper = null;
-                List<AsyncManualResetEvent> eventsNeedNotify = null; // initialized if we should pulse it at the end of the method
+                SingleExecuteProtector? wrapper = null;
+                List<AsyncManualResetEvent>? eventsNeedNotify = null; // initialized if we should pulse it at the end of the method
                 bool postToFactory = false;
 
                 bool isCompleteRequested;
@@ -781,7 +781,7 @@ namespace Microsoft.VisualStudio.Threading
 
             using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
             {
-                AsyncManualResetEvent queueNeedProcessEvent = null;
+                AsyncManualResetEvent? queueNeedProcessEvent = null;
                 lock (this.JoinableTaskContext.SyncContextLock)
                 {
                     if (!this.IsCompleteRequested)
@@ -864,7 +864,7 @@ namespace Microsoft.VisualStudio.Threading
                         // Don't use IsCompleted as the condition because that
                         // includes queues of posted work that don't have to complete for the
                         // JoinableTask to be ready to return from the JTF.Run method.
-                        HashSet<IJoinableTaskDependent> visited = null;
+                        HashSet<IJoinableTaskDependent>? visited = null;
                         while (!this.IsCompleteRequested)
                         {
                             if (this.TryDequeueSelfOrDependencies(onMainThread, ref visited, out SingleExecuteProtector work, out Task tryAgainAfter))
@@ -1078,7 +1078,7 @@ namespace Microsoft.VisualStudio.Threading
             work = null;
             if (visited.Add(currentNode))
             {
-                JoinableTask joinableTask = currentNode as JoinableTask;
+                JoinableTask? joinableTask = currentNode as JoinableTask;
                 if (joinableTask != null)
                 {
                     var queue = onMainThread ? joinableTask.mainThreadQueue : joinableTask.threadPoolQueue;

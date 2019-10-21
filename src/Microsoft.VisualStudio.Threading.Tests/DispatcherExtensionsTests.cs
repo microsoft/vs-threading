@@ -55,7 +55,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             {
                 var idlePriorityJtf = this.asyncPump.WithPriority(Dispatcher.CurrentDispatcher, DispatcherPriority.ApplicationIdle);
                 var normalPriorityJtf = this.asyncPump.WithPriority(Dispatcher.CurrentDispatcher, DispatcherPriority.Normal);
-                JoinableTask normalTask = null;
+                JoinableTask? normalTask = null;
                 var unblockNormalPriorityWork = new AsyncManualResetEvent();
                 var idleTask = idlePriorityJtf.RunAsync(async delegate
                 {

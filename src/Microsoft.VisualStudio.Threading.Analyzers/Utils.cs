@@ -97,7 +97,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return EqualityComparer<ITypeSymbol>.Default.Equals(type?.OriginalDefinition, expectedType) || IsDerivedFrom(type, expectedType);
         }
 
-        internal static bool IsDerivedFrom(ITypeSymbol type, ITypeSymbol expectedType)
+        internal static bool IsDerivedFrom(ITypeSymbol? type, ITypeSymbol expectedType)
         {
             type = type?.BaseType;
             while (type != null)
@@ -121,7 +121,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// <returns>The type represented by the input symbol; or <c>null</c> if could not figure out the type.</returns>
         internal static ITypeSymbol ResolveTypeFromSymbol(ISymbol symbol)
         {
-            ITypeSymbol type = null;
+            ITypeSymbol? type = null;
             switch (symbol?.Kind)
             {
                 case SymbolKind.Local:
@@ -355,7 +355,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static bool IsOnLeftHandOfAssignment(SyntaxNode syntaxNode)
         {
-            SyntaxNode parent = null;
+            SyntaxNode? parent = null;
             while ((parent = syntaxNode.Parent) != null)
             {
                 if (parent is AssignmentExpressionSyntax assignment)
@@ -555,7 +555,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             var (fullTypeName, methodName) = SplitOffLastElement(methodAsString);
             var (ns, leafTypeName) = SplitOffLastElement(fullTypeName);
-            string[] namespaces = ns?.Split('.');
+            string[]? namespaces = ns?.Split('.');
             if (fullTypeName == null)
             {
                 return Enumerable.Empty<IMethodSymbol>();

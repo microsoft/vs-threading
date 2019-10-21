@@ -155,7 +155,7 @@
             {
                 // We want to scan invocations that occur inside Task and Task<T>-returning delegates or methods.
                 // That is: methods that either are or could be made async.
-                IMethodSymbol methodSymbol = null;
+                IMethodSymbol? methodSymbol = null;
                 var anonymousFunc = context.Node.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>();
                 if (anonymousFunc != null)
                 {

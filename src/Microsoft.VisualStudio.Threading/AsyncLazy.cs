@@ -130,7 +130,7 @@ namespace Microsoft.VisualStudio.Threading
                     Verify.FailOperation(Strings.ValueFactoryReentrancy);
                 }
 
-                InlineResumable resumableAwaiter = null;
+                InlineResumable? resumableAwaiter = null;
                 lock (this.syncObject)
                 {
                     // Note that if multiple threads hit GetValueAsync() before

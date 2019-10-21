@@ -376,7 +376,7 @@ namespace CpsDbg
             bool multipleLineBlock = false;
 
             var loopDetection = new HashSet<AsyncStateMachine>();
-            for (var p = node; p != null; p = p.Next)
+            for (AsyncStateMachine? p = node; p != null; p = p.Next)
             {
                 printedMachines.Add(p);
 

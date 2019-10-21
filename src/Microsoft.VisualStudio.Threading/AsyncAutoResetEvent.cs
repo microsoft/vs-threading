@@ -118,7 +118,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         public void Set()
         {
-            WaiterCompletionSource toRelease = null;
+            WaiterCompletionSource? toRelease = null;
             lock (this.signalAwaiters)
             {
                 if (this.signalAwaiters.Count > 0)

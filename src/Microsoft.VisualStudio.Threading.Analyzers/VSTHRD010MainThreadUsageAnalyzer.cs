@@ -219,7 +219,7 @@
                 return null;
             }
 
-            ISymbol targetMethod = null;
+            ISymbol? targetMethod = null;
             SyntaxNode locationToBlame = context.Node;
             switch (context.Node)
             {

@@ -94,14 +94,14 @@
         [Fact]
         public void ApplyResultToNullTaskNonGeneric()
         {
-            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo((Task)null, new TaskCompletionSource<object>()));
+            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo((Task?)null, new TaskCompletionSource<object>()));
         }
 
         [Fact]
         public void ApplyResultToNullTaskSourceNonGeneric()
         {
             var tcs = new TaskCompletionSource<object>();
-            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo((Task)tcs.Task, (TaskCompletionSource<object>)null));
+            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo((Task)tcs.Task, (TaskCompletionSource<object>?)null));
         }
 
         [Fact]
@@ -275,7 +275,7 @@
         [Fact]
         public void WaitWithoutInlining_AttachToParent()
         {
-            Task attachedTask = null;
+            Task? attachedTask = null;
             int originalThreadId = Environment.CurrentManagedThreadId;
             var task = Task.Factory.StartNew(
                 delegate
@@ -398,7 +398,7 @@
         [Fact]
         public void InvokeAsyncNullEverything()
         {
-            AsyncEventHandler handler = null;
+            AsyncEventHandler? handler = null;
             var task = handler.InvokeAsync(null, null);
             Assert.True(task.IsCompleted);
         }
@@ -413,7 +413,7 @@
         [Fact]
         public void InvokeAsyncOfTNullEverything()
         {
-            AsyncEventHandler<EventArgs> handler = null;
+            AsyncEventHandler<EventArgs>? handler = null;
             var task = handler.InvokeAsync(null, null);
             Assert.True(task.IsCompleted);
         }
@@ -428,7 +428,7 @@
         [Fact]
         public void InvokeAsyncExecutesEachHandlerSequentially()
         {
-            AsyncEventHandler handlers = null;
+            AsyncEventHandler? handlers = null;
             int counter = 0;
             handlers += async (sender, args) =>
             {
@@ -449,7 +449,7 @@
         [Fact]
         public void InvokeAsyncOfTExecutesEachHandlerSequentially()
         {
-            AsyncEventHandler<EventArgs> handlers = null;
+            AsyncEventHandler<EventArgs>? handlers = null;
             int counter = 0;
             handlers += async (sender, args) =>
             {
@@ -470,7 +470,7 @@
         [Fact]
         public void InvokeAsyncAggregatesExceptions()
         {
-            AsyncEventHandler handlers = null;
+            AsyncEventHandler? handlers = null;
             handlers += (sender, args) =>
             {
                 throw new ApplicationException("a");
@@ -497,7 +497,7 @@
         [Fact]
         public void InvokeAsyncOfTAggregatesExceptions()
         {
-            AsyncEventHandler<EventArgs> handlers = null;
+            AsyncEventHandler<EventArgs>? handlers = null;
             handlers += (sender, args) =>
             {
                 throw new ApplicationException("a");
@@ -605,7 +605,7 @@
         {
             var state = new object();
             var tcs = new TaskCompletionSource<int>();
-            IAsyncResult beginResult = null;
+            IAsyncResult? beginResult = null;
 
             var callbackResult = new TaskCompletionSource<object>();
             AsyncCallback callback = ar =>
@@ -632,7 +632,7 @@
         {
             var state = new object();
             var tcs = new TaskCompletionSource<int>(state);
-            IAsyncResult beginResult = null;
+            IAsyncResult? beginResult = null;
 
             var callbackResult = new TaskCompletionSource<object>();
             AsyncCallback callback = ar =>
@@ -659,7 +659,7 @@
         {
             var state = new object();
             var tcs = new TaskCompletionSource<object>();
-            IAsyncResult beginResult = null;
+            IAsyncResult? beginResult = null;
 
             var callbackResult = new TaskCompletionSource<object>();
             AsyncCallback callback = ar =>
@@ -686,7 +686,7 @@
         {
             var state = new object();
             var tcs = new TaskCompletionSource<object>(state);
-            IAsyncResult beginResult = null;
+            IAsyncResult? beginResult = null;
 
             var callbackResult = new TaskCompletionSource<object>();
             AsyncCallback callback = ar =>
