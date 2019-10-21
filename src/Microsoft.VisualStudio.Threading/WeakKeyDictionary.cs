@@ -370,6 +370,11 @@ namespace Microsoft.VisualStudio.Threading
             {
                 Requires.NotNull(dictionary, nameof(dictionary));
 
+                // Assign a value to Current to suppress CS8618. The Current property may have a null value at times,
+                // but the value will never be exposed to external code provided the code only accesses Current after a
+                // call to MoveNext returns true.
+                this.Current = default!;
+
                 this.enumerator = dictionary.dictionary.GetEnumerator();
             }
 
