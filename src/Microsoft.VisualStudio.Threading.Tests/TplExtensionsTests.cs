@@ -794,7 +794,7 @@
             {
                 var tcs = new TaskCompletionSource<object?>();
                 var timeoutTask = generic
-                    ? TplExtensions.WithTimeout<object>(tcs.Task, TimeSpan.FromMilliseconds(-1))
+                    ? TplExtensions.WithTimeout<object?>(tcs.Task, TimeSpan.FromMilliseconds(-1))
                     : TplExtensions.WithTimeout((Task)tcs.Task, TimeSpan.FromMilliseconds(-1));
                 Assert.False(timeoutTask.IsCompleted);
                 await Task.Delay(AsyncDelay / 2);

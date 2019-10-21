@@ -559,7 +559,7 @@
         {
             var uiThreadNowBusy = new TaskCompletionSource<object?>();
             var backgroundContenderCompletedRelevantUIWork = new TaskCompletionSource<object?>();
-            var backgroundInvitationReverted = new TaskCompletionSource<object>();
+            var backgroundInvitationReverted = new TaskCompletionSource<object?>();
             bool syncUIOperationCompleted = false;
 
             var backgroundContender = Task.Run(async delegate

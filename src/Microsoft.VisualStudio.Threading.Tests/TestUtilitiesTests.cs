@@ -24,7 +24,7 @@
         {
             var task1Awaiting = new AsyncManualResetEvent();
             var task1Resuming = new AsyncManualResetEvent();
-            var task2ReceivedNotification = new TaskCompletionSource<object>();
+            var task2ReceivedNotification = new TaskCompletionSource<object?>();
             await Task.WhenAll(
                 Task.Run(async delegate
                 {
