@@ -106,7 +106,7 @@ namespace Microsoft.VisualStudio.Threading
         /// The source of the <see cref="Completion"/> task, which transitions to completed after
         /// the <see cref="Complete"/> method is called and all issued locks have been released.
         /// </summary>
-        private readonly TaskCompletionSource<object?> completionSource = new TaskCompletionSource<object>();
+        private readonly TaskCompletionSource<object?> completionSource = new TaskCompletionSource<object?>();
 
         /// <summary>
         /// The queue of callbacks to invoke when the currently held write lock is totally released.

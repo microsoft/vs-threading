@@ -113,14 +113,14 @@
             tcs1.SetResult(null);
             Assert.Equal(TaskStatus.RanToCompletion, tcs2.Task.Status);
 
-            tcs1 = new TaskCompletionSource<GenericParameterHelper>();
-            tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+            tcs1 = new TaskCompletionSource<GenericParameterHelper?>();
+            tcs2 = new TaskCompletionSource<GenericParameterHelper?>();
             ((Task)tcs1.Task).ApplyResultTo(tcs2);
             tcs1.SetCanceled();
             Assert.True(tcs2.Task.IsCanceled);
 
-            tcs1 = new TaskCompletionSource<GenericParameterHelper>();
-            tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+            tcs1 = new TaskCompletionSource<GenericParameterHelper?>();
+            tcs2 = new TaskCompletionSource<GenericParameterHelper?>();
             ((Task)tcs1.Task).ApplyResultTo(tcs2);
             tcs1.SetException(new ApplicationException());
             Assert.Same(tcs1.Task.Exception.InnerException, tcs2.Task.Exception.InnerException);
@@ -135,14 +135,14 @@
             ((Task)tcs1.Task).ApplyResultTo(tcs2);
             Assert.Equal(TaskStatus.RanToCompletion, tcs2.Task.Status);
 
-            tcs1 = new TaskCompletionSource<GenericParameterHelper>();
-            tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+            tcs1 = new TaskCompletionSource<GenericParameterHelper?>();
+            tcs2 = new TaskCompletionSource<GenericParameterHelper?>();
             tcs1.SetCanceled();
             ((Task)tcs1.Task).ApplyResultTo(tcs2);
             Assert.True(tcs2.Task.IsCanceled);
 
-            tcs1 = new TaskCompletionSource<GenericParameterHelper>();
-            tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+            tcs1 = new TaskCompletionSource<GenericParameterHelper?>();
+            tcs2 = new TaskCompletionSource<GenericParameterHelper?>();
             tcs1.SetException(new ApplicationException());
             ((Task)tcs1.Task).ApplyResultTo(tcs2);
             Assert.Same(tcs1.Task.Exception.InnerException, tcs2.Task.Exception.InnerException);

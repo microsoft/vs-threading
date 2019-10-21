@@ -374,7 +374,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public void ToStringForUncreatedValue()
         {
-            var lazy = new AsyncLazy<object>(() => Task.FromResult<object?>(null));
+            var lazy = new AsyncLazy<object?>(() => Task.FromResult<object?>(null));
             string result = lazy.ToString();
             Assert.NotNull(result);
             Assert.NotEqual(string.Empty, result);

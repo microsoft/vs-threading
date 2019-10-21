@@ -449,7 +449,7 @@
             this.SimulateUIThread(delegate
             {
                 var testResultSource = new TaskCompletionSource<object?>();
-                AsyncLocal<object?> asyncLocal = new AsyncLocal<object>();
+                AsyncLocal<object?> asyncLocal = new AsyncLocal<object?>();
                 asyncLocal.Value = "expected";
                 var cts = new CancellationTokenSource();
                 this.asyncPump.SwitchToMainThreadAsync(cts.Token).GetAwaiter().OnCompleted(delegate
@@ -3063,7 +3063,7 @@
         [Fact, Trait("GC", "true")]
         public void RunSynchronouslyTaskOfTNoYieldGCPressure()
         {
-            Task<object> completedTask = Task.FromResult<object?>(null);
+            Task<object?> completedTask = Task.FromResult<object?>(null);
 
             if (this.ExecuteInIsolation())
             {

@@ -145,7 +145,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         public async Task TaskYield_ConfigureAwait_OnCompleted_CapturesExecutionContext(bool captureContext)
         {
             var taskResultSource = new TaskCompletionSource<object?>();
-            AsyncLocal<object?> asyncLocal = new AsyncLocal<object>();
+            AsyncLocal<object?> asyncLocal = new AsyncLocal<object?>();
             asyncLocal.Value = "expected";
             Task.Yield().ConfigureAwait(captureContext).GetAwaiter().OnCompleted(delegate
             {
@@ -323,7 +323,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         public async Task AwaitTaskScheduler_UnsafeOnCompleted_DoesNotCaptureExecutionContext()
         {
             var taskResultSource = new TaskCompletionSource<object?>();
-            AsyncLocal<object?> asyncLocal = new AsyncLocal<object>();
+            AsyncLocal<object?> asyncLocal = new AsyncLocal<object?>();
             asyncLocal.Value = "expected";
             TaskScheduler.Default.GetAwaiter().UnsafeOnCompleted(delegate
             {
@@ -345,7 +345,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         public async Task AwaitTaskScheduler_OnCompleted_CapturesExecutionContext(bool defaultTaskScheduler)
         {
             var taskResultSource = new TaskCompletionSource<object?>();
-            AsyncLocal<object?> asyncLocal = new AsyncLocal<object>();
+            AsyncLocal<object?> asyncLocal = new AsyncLocal<object?>();
             asyncLocal.Value = "expected";
             TaskScheduler scheduler = defaultTaskScheduler ? TaskScheduler.Default : new MockTaskScheduler();
             scheduler.GetAwaiter().OnCompleted(delegate

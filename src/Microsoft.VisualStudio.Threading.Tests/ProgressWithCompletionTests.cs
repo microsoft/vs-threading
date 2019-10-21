@@ -98,7 +98,7 @@
         {
             var syncContext = SingleThreadedTestSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(syncContext);
-            TaskCompletionSource<object?> callbackResult = new TaskCompletionSource<object>();
+            TaskCompletionSource<object?> callbackResult = new TaskCompletionSource<object?>();
             var frame = SingleThreadedTestSynchronizationContext.NewFrame();
             var callback = new Action<GenericParameterHelper>(
                 p =>

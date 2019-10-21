@@ -123,7 +123,7 @@ namespace Microsoft.VisualStudio.Threading
                             }
                             else
                             {
-                                this.completedSource = new TaskCompletionSource<object>();
+                                this.completedSource = new TaskCompletionSource<object?>();
                             }
                         }
                     }

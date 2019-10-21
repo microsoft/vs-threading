@@ -660,7 +660,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return default(T);
         }
 
-        internal static Tuple<string, string> SplitOffLastElement(string qualifiedName)
+        internal static Tuple<string?, string?> SplitOffLastElement(string qualifiedName)
         {
             if (qualifiedName == null)
             {
@@ -673,7 +673,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 return Tuple.Create<string?, string?>(null, qualifiedName);
             }
 
-            return Tuple.Create(qualifiedName.Substring(0, lastPeriod), qualifiedName.Substring(lastPeriod + 1));
+            return Tuple.Create<string?, string?>(qualifiedName.Substring(0, lastPeriod), qualifiedName.Substring(lastPeriod + 1));
         }
 
         /// <summary>
