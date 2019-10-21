@@ -9,6 +9,9 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\Microsoft.VisualStudio.Threading\NullabilityAttributes.cs" Link="NullabilityAttributes.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Update="Strings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
