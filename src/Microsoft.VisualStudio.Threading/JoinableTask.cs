@@ -904,7 +904,7 @@ namespace Microsoft.VisualStudio.Threading
                 // back to the threadpool so it still gets done.
                 if (this.threadPoolQueue?.Count > 0)
                 {
-                    while (this.threadPoolQueue.TryDequeue(out SingleExecuteProtector executor))
+                    while (this.threadPoolQueue.TryDequeue(out SingleExecuteProtector? executor))
                     {
                         ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, executor);
                     }

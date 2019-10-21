@@ -139,12 +139,12 @@
         [Fact]
         public void TryPeek()
         {
-            Assert.False(this.queue.TryPeek(out GenericParameterHelper value));
+            Assert.False(this.queue.TryPeek(out GenericParameterHelper? value));
             Assert.Null(value);
 
             var enqueuedValue = new GenericParameterHelper(1);
             this.queue.Enqueue(enqueuedValue);
-            Assert.True(this.queue.TryPeek(out GenericParameterHelper peekedValue));
+            Assert.True(this.queue.TryPeek(out GenericParameterHelper? peekedValue));
             Assert.Same(enqueuedValue, peekedValue);
         }
 
@@ -166,7 +166,7 @@
             peekedValue = this.queue.Peek();
             Assert.Same(enqueuedValue, peekedValue);
 
-            Assert.True(this.queue.TryDequeue(out GenericParameterHelper dequeuedValue));
+            Assert.True(this.queue.TryDequeue(out GenericParameterHelper? dequeuedValue));
             Assert.Same(enqueuedValue, dequeuedValue);
 
             peekedValue = this.queue.Peek();
@@ -345,7 +345,7 @@
         {
             var enqueuedValue = new GenericParameterHelper(1);
             this.queue.Enqueue(enqueuedValue);
-            bool result = this.queue.TryDequeue(out GenericParameterHelper dequeuedValue);
+            bool result = this.queue.TryDequeue(out GenericParameterHelper? dequeuedValue);
             Assert.True(result);
             Assert.Same(enqueuedValue, dequeuedValue);
             Assert.Equal(0, this.queue.Count);
@@ -385,7 +385,7 @@
             this.queue.Complete();
             Assert.False(this.queue.Completion.IsCompleted);
 
-            Assert.True(this.queue.TryDequeue(out GenericParameterHelper dequeuedValue));
+            Assert.True(this.queue.TryDequeue(out GenericParameterHelper? dequeuedValue));
             Assert.Same(enqueuedValue, dequeuedValue);
             Assert.True(this.queue.Completion.IsCompleted);
         }

@@ -9,6 +9,7 @@ namespace Microsoft.VisualStudio.Threading
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Text;
     using System.Threading;
@@ -216,7 +217,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="value">Receives the value at the head of the queue; or the default value for the element type if the queue is empty.</param>
         /// <returns><c>true</c> if the queue was non-empty; <c>false</c> otherwise.</returns>
-        public bool TryPeek(out T value)
+        public bool TryPeek([MaybeNullWhen(false)] out T value)
         {
             lock (this.SyncRoot)
             {
@@ -227,7 +228,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
                 else
                 {
-                    value = default(T);
+                    value = default(T)!;
                     return false;
                 }
             }
@@ -311,7 +312,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="value">Receives the element from the head of the queue; or <c>default(T)</c> if the queue is empty.</param>
         /// <returns><c>true</c> if an element was dequeued; <c>false</c> if the queue was empty.</returns>
-        public bool TryDequeue(out T value)
+        public bool TryDequeue([MaybeNullWhen(false)] out T value)
         {
             bool result = this.TryDequeueInternal(null, out value);
             this.CompleteIfNecessary();
@@ -383,7 +384,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="valueCheck">The test on the head element that must succeed to dequeue.</param>
         /// <param name="value">Receives the element from the head of the queue; or <c>default(T)</c> if the queue is empty.</param>
         /// <returns><c>true</c> if an element was dequeued; <c>false</c> if the queue was empty.</returns>
-        private bool TryDequeueInternal(Predicate<T>? valueCheck, out T value)
+        private bool TryDequeueInternal(Predicate<T>? valueCheck, [MaybeNullWhen(false)] out T value)
         {
             bool dequeued;
             lock (this.SyncRoot)
@@ -395,7 +396,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
                 else
                 {
-                    value = default(T);
+                    value = default(T)!;
                     dequeued = false;
                 }
             }

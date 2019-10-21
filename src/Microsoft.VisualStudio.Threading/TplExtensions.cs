@@ -128,19 +128,20 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="tcs">The task that should receive the completion status.</param>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "tcs")]
         public static void ApplyResultTo<T>(this Task task, TaskCompletionSource<T> tcs)
+            //// where T : defaultable
         {
             Requires.NotNull(task, nameof(task));
             Requires.NotNull(tcs, nameof(tcs));
 
             if (task.IsCompleted)
             {
-                ApplyCompletedTaskResultTo<T>(task, tcs, default(T));
+                ApplyCompletedTaskResultTo<T>(task, tcs, default(T)!);
             }
             else
             {
                 // Using a minimum of allocations (just one task, and no closure) ensure that one task's completion sets equivalent completion on another task.
                 task.ContinueWith(
-                    (t, s) => ApplyCompletedTaskResultTo(t, (TaskCompletionSource<T>)s, default(T)),
+                    (t, s) => ApplyCompletedTaskResultTo(t, (TaskCompletionSource<T>)s, default(T)!),
                     tcs,
                     CancellationToken.None,
                     TaskContinuationOptions.ExecuteSynchronously,

@@ -8,6 +8,7 @@ namespace Microsoft.VisualStudio.Threading
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
@@ -21,6 +22,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// The single element to enumerate, when applicable.
         /// </summary>
+        [AllowNull, MaybeNull]
         private T value;
 
         /// <summary>
@@ -56,7 +58,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="values">The list of values to enumerate.</param>
         internal EnumerateOneOrMany(List<T> values)
         {
-            this.value = default(T);
+            this.value = default(T)!;
             this.enumerator = values.GetEnumerator();
             this.justOne = false;
             this.position = 0; // N/A
@@ -73,7 +75,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     if (this.position == 0)
                     {
-                        return this.value;
+                        return this.value!;
                     }
                     else
                     {
