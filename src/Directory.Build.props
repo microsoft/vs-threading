@@ -11,6 +11,7 @@
     <UpdateXlfOnBuild Condition=" '$(UpdateXlfOnBuild)' == '' ">true</UpdateXlfOnBuild>
 
     <LangVersion>8</LangVersion>
+    <Nullable>enable</Nullable>
 
     <MicroBuildVersion>2.0.58</MicroBuildVersion>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>

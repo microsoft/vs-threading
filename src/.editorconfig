@@ -60,3 +60,32 @@ csharp_space_between_method_declaration_name_and_open_parenthesis = false
 csharp_space_between_method_declaration_parameter_list_parentheses = false
 csharp_space_between_parentheses = false
 csharp_space_between_square_brackets = false
+
+# CS8600: Converting null literal or possible null value to non-nullable type.
+dotnet_diagnostic.CS8600.severity = suggestion
+# CS8601: Possible null reference assignment.
+dotnet_diagnostic.CS8601.severity = suggestion
+# CS8602: Dereference of a possibly null reference.
+dotnet_diagnostic.CS8602.severity = suggestion
+# CS8603: Possible null reference return.
+dotnet_diagnostic.CS8603.severity = suggestion
+# CS8604: Possible null reference argument.
+dotnet_diagnostic.CS8604.severity = suggestion
+# CS8717: A member returning a [MaybeNull] value introduces a null value for a type parameter.
+dotnet_diagnostic.CS8717.severity = suggestion
+# CS8618: Non-nullable field is uninitialized. Consider declaring as nullable.
+dotnet_diagnostic.CS8618.severity = suggestion
+# CS8619: Nullability of reference types in value doesn't match target type.
+dotnet_diagnostic.CS8619.severity = suggestion
+# CS8620: Argument cannot be used for parameter due to differences in the nullability of reference types.
+dotnet_diagnostic.CS8620.severity = suggestion
+# CS8624: Argument cannot be used as an output for parameter due to differences in the nullability of reference types.
+dotnet_diagnostic.CS8624.severity = suggestion
+# CS8625: Cannot convert null literal to non-nullable reference type.
+dotnet_diagnostic.CS8625.severity = suggestion
+# CS8629: Nullable value type may be null.
+dotnet_diagnostic.CS8629.severity = suggestion
+# CS8631: The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match constraint type.
+dotnet_diagnostic.CS8631.severity = suggestion
+# CS8653: A default expression introduces a null value for a type parameter.
+dotnet_diagnostic.CS8653.severity = suggestion
