@@ -4910,7 +4910,7 @@
                 lck.Data = data;
             }
 
-            internal object GetLockData()
+            internal object? GetLockData()
             {
                 return this.AmbientLock.Data;
             }

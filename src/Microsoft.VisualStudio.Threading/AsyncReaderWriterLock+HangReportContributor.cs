@@ -140,7 +140,7 @@ namespace Microsoft.VisualStudio.Threading
                 label.AppendLine("Options: " + awaiter.Options);
             }
 
-            Delegate lockWaitingContinuation;
+            Delegate? lockWaitingContinuation;
             if (awaiter.RequestingStackTrace != null)
             {
                 label.AppendLine(awaiter.RequestingStackTrace.ToString());

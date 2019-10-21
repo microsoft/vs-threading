@@ -119,7 +119,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// </summary>
         /// <param name="symbol">The input symbol.</param>
         /// <returns>The type represented by the input symbol; or <c>null</c> if could not figure out the type.</returns>
-        internal static ITypeSymbol ResolveTypeFromSymbol(ISymbol symbol)
+        internal static ITypeSymbol? ResolveTypeFromSymbol(ISymbol symbol)
         {
             ITypeSymbol? type = null;
             switch (symbol?.Kind)

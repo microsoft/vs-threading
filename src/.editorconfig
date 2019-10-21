@@ -65,8 +65,6 @@ csharp_space_between_square_brackets = false
 dotnet_diagnostic.CS8601.severity = suggestion
 # CS8602: Dereference of a possibly null reference.
 dotnet_diagnostic.CS8602.severity = suggestion
-# CS8603: Possible null reference return.
-dotnet_diagnostic.CS8603.severity = suggestion
 # CS8604: Possible null reference argument.
 dotnet_diagnostic.CS8604.severity = suggestion
 # CS8717: A member returning a [MaybeNull] value introduces a null value for a type parameter.

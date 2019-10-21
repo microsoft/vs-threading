@@ -1117,7 +1117,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="awaiter">The most nested lock to consider.  May be null.</param>
         /// <returns>The first active lock encountered, or <c>null</c> if none.</returns>
-        private Awaiter GetFirstActiveSelfOrAncestor(Awaiter awaiter)
+        private Awaiter? GetFirstActiveSelfOrAncestor(Awaiter awaiter)
         {
             while (awaiter != null)
             {
@@ -2205,7 +2205,7 @@ namespace Microsoft.VisualStudio.Threading
             /// Gets the delegate to invoke (or that was invoked) when the lock is/was issued, if available.
             /// FOR DIAGNOSTIC PURPOSES ONLY.
             /// </summary>
-            internal Delegate LockRequestingContinuation
+            internal Delegate? LockRequestingContinuation
             {
                 get { return this.continuation ?? this.continuationAfterLockIssued; }
             }

@@ -90,7 +90,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets the current value.
         /// </summary>
-        object System.Collections.IEnumerator.Current
+        object? System.Collections.IEnumerator.Current
         {
             get { return this.Current; }
         }

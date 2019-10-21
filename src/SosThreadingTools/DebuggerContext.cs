@@ -43,7 +43,7 @@ namespace CpsDbg
 
         private DataTarget DataTarget { get; }
 
-        internal static DebuggerContext GetDebuggerContext(IntPtr ptrClient)
+        internal static DebuggerContext? GetDebuggerContext(IntPtr ptrClient)
         {
             // On our first call to the API:
             //   1. Store a copy of IDebugClient in DebugClient.
