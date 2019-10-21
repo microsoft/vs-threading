@@ -174,7 +174,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
         this.semaphore = this.CreateSemaphore(mode);
         this.ExecuteOnDispatcher(async delegate
         {
-            await Assert.ThrowsAsync<ArgumentNullException>(() => this.semaphore.ExecuteAsync(null, this.TimeoutToken));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => this.semaphore.ExecuteAsync(null!, this.TimeoutToken));
         });
     }
 
@@ -185,7 +185,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
         this.semaphore = this.CreateSemaphore(mode);
         this.ExecuteOnDispatcher(async delegate
         {
-            await Assert.ThrowsAsync<ArgumentNullException>(() => this.semaphore.ExecuteAsync<int>(null, this.TimeoutToken).AsTask());
+            await Assert.ThrowsAsync<ArgumentNullException>(() => this.semaphore.ExecuteAsync<int>(null!, this.TimeoutToken).AsTask());
         });
     }
 

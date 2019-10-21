@@ -37,14 +37,14 @@
         [Fact]
         public void ApplyResultToNullTask()
         {
-            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo(null, new TaskCompletionSource<object>()));
+            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo(null!, new TaskCompletionSource<object>()));
         }
 
         [Fact]
         public void ApplyResultToNullTaskSource()
         {
             var tcs = new TaskCompletionSource<object>();
-            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo(tcs.Task, null));
+            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo(tcs.Task, null!));
         }
 
         [Fact]
@@ -94,14 +94,14 @@
         [Fact]
         public void ApplyResultToNullTaskNonGeneric()
         {
-            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo((Task?)null, new TaskCompletionSource<object>()));
+            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo((Task)null!, new TaskCompletionSource<object>()));
         }
 
         [Fact]
         public void ApplyResultToNullTaskSourceNonGeneric()
         {
             var tcs = new TaskCompletionSource<object>();
-            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo((Task)tcs.Task, (TaskCompletionSource<object>?)null));
+            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo((Task)tcs.Task, (TaskCompletionSource<object>)null!));
         }
 
         [Fact]
@@ -399,7 +399,7 @@
         public void InvokeAsyncNullEverything()
         {
             AsyncEventHandler? handler = null;
-            var task = handler.InvokeAsync(null, null);
+            var task = handler.InvokeAsync(null!, null!);
             Assert.True(task.IsCompleted);
         }
 
@@ -414,7 +414,7 @@
         public void InvokeAsyncOfTNullEverything()
         {
             AsyncEventHandler<EventArgs>? handler = null;
-            var task = handler.InvokeAsync(null, null);
+            var task = handler.InvokeAsync(null!, null!);
             Assert.True(task.IsCompleted);
         }
 
@@ -442,7 +442,7 @@
                 await Task.Yield();
                 Assert.Equal(4, ++counter);
             };
-            var task = handlers.InvokeAsync(null, null);
+            var task = handlers.InvokeAsync(null!, null!);
             task.GetAwaiter().GetResult();
         }
 
@@ -463,7 +463,7 @@
                 await Task.Yield();
                 Assert.Equal(4, ++counter);
             };
-            var task = handlers.InvokeAsync(null, null);
+            var task = handlers.InvokeAsync(null!, null!);
             task.GetAwaiter().GetResult();
         }
 
@@ -480,7 +480,7 @@
                 await Task.Yield();
                 throw new ApplicationException("b");
             };
-            var task = handlers.InvokeAsync(null, null);
+            var task = handlers.InvokeAsync(null!, null!);
             try
             {
                 task.GetAwaiter().GetResult();
@@ -507,7 +507,7 @@
                 await Task.Yield();
                 throw new ApplicationException("b");
             };
-            var task = handlers.InvokeAsync(null, null);
+            var task = handlers.InvokeAsync(null!, null!);
             try
             {
                 task.GetAwaiter().GetResult();
@@ -780,8 +780,8 @@
         {
             // Verify that a faulted task is returned instead of throwing.
             Task timeoutTask = generic
-                ? TplExtensions.WithTimeout<int>(null, TimeSpan.FromSeconds(1))
-                : TplExtensions.WithTimeout(null, TimeSpan.FromSeconds(1));
+                ? TplExtensions.WithTimeout<int>(null!, TimeSpan.FromSeconds(1))
+                : TplExtensions.WithTimeout(null!, TimeSpan.FromSeconds(1));
             Assert.Throws<ArgumentNullException>(() => timeoutTask.GetAwaiter().GetResult());
         }
 
@@ -871,7 +871,7 @@
             });
         }
 
-        private static void InvokeAsyncHelper(object sender, EventArgs args)
+        private static void InvokeAsyncHelper(object? sender, EventArgs? args)
         {
             int invoked = 0;
             AsyncEventHandler handler = (s, a) =>
@@ -886,7 +886,7 @@
             Assert.Equal(1, invoked);
         }
 
-        private static void InvokeAsyncOfTHelper(object sender, EventArgs args)
+        private static void InvokeAsyncOfTHelper(object? sender, EventArgs? args)
         {
             int invoked = 0;
             AsyncEventHandler<EventArgs> handler = (s, a) =>

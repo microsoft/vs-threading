@@ -381,7 +381,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public async Task WaitForExit_NullArgument()
         {
-            await Assert.ThrowsAsync<ArgumentNullException>(() => AwaitExtensions.WaitForExitAsync(null));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => AwaitExtensions.WaitForExitAsync(null!));
         }
 
         [SkippableFact]

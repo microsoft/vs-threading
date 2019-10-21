@@ -26,7 +26,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         public void Ctor_NullAction(bool specifyJtf)
         {
             var jtf = specifyJtf ? new JoinableTaskContext().Factory : null; // use our own so we don't get main thread deadlocks, which isn't the point of this test.
-            Assert.Throws<ArgumentNullException>(() => new AsyncLazyInitializer(null, jtf));
+            Assert.Throws<ArgumentNullException>(() => new AsyncLazyInitializer(null!, jtf));
         }
 
         [Fact]

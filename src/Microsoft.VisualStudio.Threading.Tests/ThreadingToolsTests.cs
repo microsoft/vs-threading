@@ -37,14 +37,14 @@
         public void WithCancellationNull()
         {
             Assert.Throws<ArgumentNullException>(new Action(() =>
-                ThreadingTools.WithCancellation(null, CancellationToken.None)));
+                ThreadingTools.WithCancellation(null!, CancellationToken.None)));
         }
 
         [Fact]
         public void WithCancellationOfTNull()
         {
             Assert.Throws<ArgumentNullException>(new Action(() =>
-                ThreadingTools.WithCancellation<object>(null, CancellationToken.None)));
+                ThreadingTools.WithCancellation<object>(null!, CancellationToken.None)));
         }
 
         /// <summary>

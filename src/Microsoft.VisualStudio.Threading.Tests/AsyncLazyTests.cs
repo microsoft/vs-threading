@@ -79,7 +79,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public void CtorNullArgs()
         {
-            Assert.Throws<ArgumentNullException>(() => new AsyncLazy<object>(null));
+            Assert.Throws<ArgumentNullException>(() => new AsyncLazy<object>(null!));
         }
 
         /// <summary>

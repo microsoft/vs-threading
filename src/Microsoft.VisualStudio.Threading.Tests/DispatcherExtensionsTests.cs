@@ -25,7 +25,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public void WithPriority_ThrowsOnInvalidInputs()
         {
-            Assert.Throws<ArgumentNullException>(() => this.asyncPump.WithPriority(null, DispatcherPriority.Normal));
+            Assert.Throws<ArgumentNullException>(() => this.asyncPump.WithPriority(null!, DispatcherPriority.Normal));
         }
 
         [Fact]

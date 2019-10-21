@@ -3097,7 +3097,7 @@
         {
             using (await this.asyncLock.WriteLockAsync())
             {
-                Assert.Throws<ArgumentNullException>(() => this.asyncLock.OnBeforeWriteLockReleased(null));
+                Assert.Throws<ArgumentNullException>(() => this.asyncLock.OnBeforeWriteLockReleased(null!));
             }
         }
 
