@@ -94,21 +94,21 @@
         [Fact]
         public void ApplyResultToNullTaskNonGeneric()
         {
-            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo((Task)null!, new TaskCompletionSource<object>()));
+            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo((Task)null!, new TaskCompletionSource<object?>()));
         }
 
         [Fact]
         public void ApplyResultToNullTaskSourceNonGeneric()
         {
             var tcs = new TaskCompletionSource<object>();
-            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo((Task)tcs.Task, (TaskCompletionSource<object>)null!));
+            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo((Task)tcs.Task, (TaskCompletionSource<object?>)null!));
         }
 
         [Fact]
         public void ApplyResultToNonGeneric()
         {
             var tcs1 = new TaskCompletionSource<GenericParameterHelper?>();
-            var tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+            var tcs2 = new TaskCompletionSource<GenericParameterHelper?>();
             ((Task)tcs1.Task).ApplyResultTo(tcs2);
             tcs1.SetResult(null);
             Assert.Equal(TaskStatus.RanToCompletion, tcs2.Task.Status);
@@ -130,7 +130,7 @@
         public void ApplyResultToPreCompletedNonGeneric()
         {
             var tcs1 = new TaskCompletionSource<GenericParameterHelper?>();
-            var tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+            var tcs2 = new TaskCompletionSource<GenericParameterHelper?>();
             tcs1.SetResult(null);
             ((Task)tcs1.Task).ApplyResultTo(tcs2);
             Assert.Equal(TaskStatus.RanToCompletion, tcs2.Task.Status);
