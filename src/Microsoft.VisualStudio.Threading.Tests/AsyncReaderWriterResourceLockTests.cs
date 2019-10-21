@@ -1188,7 +1188,7 @@
         {
             private readonly List<Resource> resources;
 
-            private readonly Dictionary<Resource, Tuple<TaskCompletionSource<object>, Task>> preparationTasks = new Dictionary<Resource, Tuple<TaskCompletionSource<object>, Task>>();
+            private readonly Dictionary<Resource, Tuple<TaskCompletionSource<object?>, Task>> preparationTasks = new Dictionary<Resource, Tuple<TaskCompletionSource<object>, Task>>();
 
             private readonly AsyncAutoResetEvent preparationTaskBegun = new AsyncAutoResetEvent();
 
