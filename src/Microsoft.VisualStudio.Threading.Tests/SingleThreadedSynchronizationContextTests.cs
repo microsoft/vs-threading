@@ -51,7 +51,7 @@ public class SingleThreadedSynchronizationContextTests : TestBase
         });
 
         syncContext.PushFrame(frame);
-        Assert.Equal(Environment.CurrentManagedThreadId, observedThreadId.Value);
+        Assert.Equal(Environment.CurrentManagedThreadId, observedThreadId);
     }
 
     [Fact]
