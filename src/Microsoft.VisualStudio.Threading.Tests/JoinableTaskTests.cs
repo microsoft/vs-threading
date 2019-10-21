@@ -369,7 +369,7 @@
             this.SimulateUIThread(async delegate
             {
                 await TaskScheduler.Default.SwitchTo(alwaysYield: true);
-                var testResultSource = new TaskCompletionSource<object>();
+                var testResultSource = new TaskCompletionSource<object?>();
                 AsyncLocal<object> asyncLocal = new AsyncLocal<object>();
                 asyncLocal.Value = "expected";
                 this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().UnsafeOnCompleted(delegate
@@ -394,7 +394,7 @@
         {
             this.SimulateUIThread(delegate
             {
-                var testResultSource = new TaskCompletionSource<object>();
+                var testResultSource = new TaskCompletionSource<object?>();
                 AsyncLocal<object> asyncLocal = new AsyncLocal<object>();
                 asyncLocal.Value = "expected";
                 var cts = new CancellationTokenSource();
@@ -423,7 +423,7 @@
             this.SimulateUIThread(async delegate
             {
                 await TaskScheduler.Default.SwitchTo(alwaysYield: true);
-                var testResultSource = new TaskCompletionSource<object>();
+                var testResultSource = new TaskCompletionSource<object?>();
                 AsyncLocal<object> asyncLocal = new AsyncLocal<object>();
                 asyncLocal.Value = "expected";
                 this.asyncPump.SwitchToMainThreadAsync().GetAwaiter().OnCompleted(delegate
@@ -448,8 +448,8 @@
         {
             this.SimulateUIThread(delegate
             {
-                var testResultSource = new TaskCompletionSource<object>();
-                AsyncLocal<object> asyncLocal = new AsyncLocal<object>();
+                var testResultSource = new TaskCompletionSource<object?>();
+                AsyncLocal<object?> asyncLocal = new AsyncLocal<object>();
                 asyncLocal.Value = "expected";
                 var cts = new CancellationTokenSource();
                 this.asyncPump.SwitchToMainThreadAsync(cts.Token).GetAwaiter().OnCompleted(delegate
@@ -496,7 +496,7 @@
         [Fact]
         public void SwitchToMainThreadDoesNotCauseUnrelatedReentrancy()
         {
-            var uiThreadNowBusy = new TaskCompletionSource<object>();
+            var uiThreadNowBusy = new TaskCompletionSource<object?>();
             bool contenderHasReachedUIThread = false;
 
             var backgroundContender = Task.Run(async delegate
@@ -557,8 +557,8 @@
         [Fact]
         public void SwitchToMainThreadSucceedsForDependentWork()
         {
-            var uiThreadNowBusy = new TaskCompletionSource<object>();
-            var backgroundContenderCompletedRelevantUIWork = new TaskCompletionSource<object>();
+            var uiThreadNowBusy = new TaskCompletionSource<object?>();
+            var backgroundContenderCompletedRelevantUIWork = new TaskCompletionSource<object?>();
             var backgroundInvitationReverted = new TaskCompletionSource<object>();
             bool syncUIOperationCompleted = false;
 

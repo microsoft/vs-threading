@@ -49,7 +49,7 @@
         public void ReportHangOnRun()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
-            var releaseTaskSource = new TaskCompletionSource<object>();
+            var releaseTaskSource = new TaskCompletionSource<object?>();
             var hangQueue = new AsyncQueue<Tuple<TimeSpan, int, Guid>>();
             this.Context.OnReportHang = (hangDuration, iterations, id) =>
             {
@@ -111,7 +111,7 @@
         public void ReportHangOnRunAsyncThenJoin()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
-            var releaseTaskSource = new TaskCompletionSource<object>();
+            var releaseTaskSource = new TaskCompletionSource<object?>();
             var hangQueue = new AsyncQueue<TimeSpan>();
             this.Context.OnReportHang = (hangDuration, iterations, id) =>
             {

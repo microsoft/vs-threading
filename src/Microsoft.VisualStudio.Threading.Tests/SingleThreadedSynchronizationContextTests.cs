@@ -138,7 +138,7 @@ public class SingleThreadedSynchronizationContextTests : TestBase
         var syncContext = new SingleThreadedSynchronizationContext();
         var frame = new SingleThreadedSynchronizationContext.Frame();
 
-        var postedMessageCompletionSource = new TaskCompletionSource<object>();
+        var postedMessageCompletionSource = new TaskCompletionSource<object?>();
         syncContext.Post(
             async state =>
             {

@@ -107,7 +107,7 @@
         [Fact]
         public void ApplyResultToNonGeneric()
         {
-            var tcs1 = new TaskCompletionSource<GenericParameterHelper>();
+            var tcs1 = new TaskCompletionSource<GenericParameterHelper?>();
             var tcs2 = new TaskCompletionSource<GenericParameterHelper>();
             ((Task)tcs1.Task).ApplyResultTo(tcs2);
             tcs1.SetResult(null);
@@ -129,7 +129,7 @@
         [Fact]
         public void ApplyResultToPreCompletedNonGeneric()
         {
-            var tcs1 = new TaskCompletionSource<GenericParameterHelper>();
+            var tcs1 = new TaskCompletionSource<GenericParameterHelper?>();
             var tcs2 = new TaskCompletionSource<GenericParameterHelper>();
             tcs1.SetResult(null);
             ((Task)tcs1.Task).ApplyResultTo(tcs2);
@@ -320,8 +320,8 @@
         [CombinatorialData]
         public async Task NoThrowAwaitable_Await_CapturesExecutionContext(bool captureContext)
         {
-            var awaitableTcs = new TaskCompletionSource<object>();
-            var asyncLocal = new AsyncLocal<object>();
+            var awaitableTcs = new TaskCompletionSource<object?>();
+            var asyncLocal = new AsyncLocal<object?>();
             asyncLocal.Value = "expected";
             var testResult = Task.Run(async delegate
             {
@@ -343,9 +343,9 @@
         [CombinatorialData]
         public async Task NoThrowAwaitable_OnCompleted_CapturesExecutionContext(bool captureContext)
         {
-            var testResultTcs = new TaskCompletionSource<object>();
-            var awaitableTcs = new TaskCompletionSource<object>();
-            var asyncLocal = new AsyncLocal<object>();
+            var testResultTcs = new TaskCompletionSource<object?>();
+            var awaitableTcs = new TaskCompletionSource<object?>();
+            var asyncLocal = new AsyncLocal<object?>();
             asyncLocal.Value = "expected";
             var awaiter = awaitableTcs.Task.NoThrowAwaitable(captureContext).GetAwaiter();
             awaiter.OnCompleted(delegate
@@ -371,9 +371,9 @@
         [CombinatorialData]
         public async Task NoThrowAwaitable_UnsafeOnCompleted_DoesNotCaptureExecutionContext(bool captureContext)
         {
-            var testResultTcs = new TaskCompletionSource<object>();
-            var awaitableTcs = new TaskCompletionSource<object>();
-            var asyncLocal = new AsyncLocal<object>();
+            var testResultTcs = new TaskCompletionSource<object?>();
+            var awaitableTcs = new TaskCompletionSource<object?>();
+            var asyncLocal = new AsyncLocal<object?>();
             asyncLocal.Value = "expected";
             var awaiter = awaitableTcs.Task.NoThrowAwaitable(captureContext).GetAwaiter();
             awaiter.UnsafeOnCompleted(delegate
@@ -607,7 +607,7 @@
             var tcs = new TaskCompletionSource<int>();
             IAsyncResult? beginResult = null;
 
-            var callbackResult = new TaskCompletionSource<object>();
+            var callbackResult = new TaskCompletionSource<object?>();
             AsyncCallback callback = ar =>
             {
                 try
@@ -634,7 +634,7 @@
             var tcs = new TaskCompletionSource<int>(state);
             IAsyncResult? beginResult = null;
 
-            var callbackResult = new TaskCompletionSource<object>();
+            var callbackResult = new TaskCompletionSource<object?>();
             AsyncCallback callback = ar =>
             {
                 try
@@ -658,10 +658,10 @@
         public async Task ToApmWithNoTaskState()
         {
             var state = new object();
-            var tcs = new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSource<object?>();
             IAsyncResult? beginResult = null;
 
-            var callbackResult = new TaskCompletionSource<object>();
+            var callbackResult = new TaskCompletionSource<object?>();
             AsyncCallback callback = ar =>
             {
                 try
@@ -685,10 +685,10 @@
         public async Task ToApmWithMatchingTaskState()
         {
             var state = new object();
-            var tcs = new TaskCompletionSource<object>(state);
+            var tcs = new TaskCompletionSource<object?>(state);
             IAsyncResult? beginResult = null;
 
-            var callbackResult = new TaskCompletionSource<object>();
+            var callbackResult = new TaskCompletionSource<object?>();
             AsyncCallback callback = ar =>
             {
                 try
@@ -792,7 +792,7 @@
         {
             this.ExecuteOnDispatcher(async delegate
             {
-                var tcs = new TaskCompletionSource<object>();
+                var tcs = new TaskCompletionSource<object?>();
                 var timeoutTask = generic
                     ? TplExtensions.WithTimeout<object>(tcs.Task, TimeSpan.FromMilliseconds(-1))
                     : TplExtensions.WithTimeout((Task)tcs.Task, TimeSpan.FromMilliseconds(-1));
@@ -828,7 +828,7 @@
             // Use a SynchronizationContext to ensure that we never deadlock even when synchronously blocking.
             this.ExecuteOnDispatcher(delegate
             {
-                var tcs = new TaskCompletionSource<object>();
+                var tcs = new TaskCompletionSource<object?>();
                 Task timeoutTask = generic
                     ? tcs.Task.WithTimeout(TimeSpan.FromDays(1))
                     : ((Task)tcs.Task).WithTimeout(TimeSpan.FromDays(1));

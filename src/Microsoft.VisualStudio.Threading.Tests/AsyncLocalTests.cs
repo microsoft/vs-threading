@@ -227,7 +227,7 @@
         private static async Task IndependentValuesBetweenContextsHelper<T>()
             where T : class, new()
         {
-            var asyncLocal = new AsyncLocal<T>();
+            var asyncLocal = new AsyncLocal<T?>();
             var player1 = new AsyncAutoResetEvent();
             var player2 = new AsyncAutoResetEvent();
             await Task.WhenAll(

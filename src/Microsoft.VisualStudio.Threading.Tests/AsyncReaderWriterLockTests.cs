@@ -161,7 +161,7 @@
         public async Task CompletionContinuationsDoNotDeadlockWithLockClass()
         {
             var continuationFired = new TaskCompletionSource<object>();
-            var releaseContinuation = new TaskCompletionSource<object>();
+            var releaseContinuation = new TaskCompletionSource<object?>();
             var continuation = this.asyncLock.Completion.ContinueWith(
                 delegate
                 {
@@ -192,7 +192,7 @@
         [Fact]
         public async Task CompletionContinuationsExecuteAsynchronously()
         {
-            var releaseContinuation = new TaskCompletionSource<object>();
+            var releaseContinuation = new TaskCompletionSource<object?>();
             var continuation = this.asyncLock.Completion.ContinueWith(
                 delegate
                 {
@@ -212,7 +212,7 @@
         [Fact]
         public async Task CompleteMethodExecutesContinuationsAsynchronously()
         {
-            var releaseContinuation = new TaskCompletionSource<object>();
+            var releaseContinuation = new TaskCompletionSource<object?>();
             Task continuation = this.asyncLock.Completion.ContinueWith(
                 delegate
                 {
@@ -2113,7 +2113,7 @@
             var readLockHeld = new TaskCompletionSource<object>();
             var writerWaitingForLock = new TaskCompletionSource<object>();
             var newReaderWaiting = new TaskCompletionSource<object>();
-            var writerLockHeld = new TaskCompletionSource<object>();
+            var writerLockHeld = new TaskCompletionSource<object?>();
             var newReaderLockHeld = new TaskCompletionSource<object>();
             await Task.WhenAll(
                 Task.Run(async delegate
@@ -2956,7 +2956,7 @@
         public async Task OnBeforeExclusiveLockReleasedAsyncSimpleAsyncHandler()
         {
             var asyncLock = new LockDerived();
-            var callbackCompleted = new TaskCompletionSource<object>();
+            var callbackCompleted = new TaskCompletionSource<object?>();
             asyncLock.OnBeforeExclusiveLockReleasedAsyncDelegate = async delegate
             {
                 try
@@ -2982,7 +2982,7 @@
         public async Task OnBeforeExclusiveLockReleasedAsyncReadLockAcquiringAsyncHandler()
         {
             var asyncLock = new LockDerived();
-            var callbackCompleted = new TaskCompletionSource<object>();
+            var callbackCompleted = new TaskCompletionSource<object?>();
             asyncLock.OnBeforeExclusiveLockReleasedAsyncDelegate = async delegate
             {
                 try
@@ -3015,7 +3015,7 @@
         public async Task OnBeforeExclusiveLockReleasedAsyncNestedWriteLockAsyncHandler()
         {
             var asyncLock = new LockDerived();
-            var callbackCompleted = new TaskCompletionSource<object>();
+            var callbackCompleted = new TaskCompletionSource<object?>();
             bool outermostExecuted = false;
             asyncLock.OnBeforeExclusiveLockReleasedAsyncDelegate = async delegate
             {
@@ -3104,7 +3104,7 @@
         [Fact]
         public async Task OnBeforeWriteLockReleasedSingle()
         {
-            var afterWriteLock = new TaskCompletionSource<object>();
+            var afterWriteLock = new TaskCompletionSource<object?>();
             using (await this.asyncLock.WriteLockAsync())
             {
                 this.asyncLock.OnBeforeWriteLockReleased(async delegate
@@ -3135,8 +3135,8 @@
         [Fact]
         public async Task OnBeforeWriteLockReleasedMultiple()
         {
-            var afterWriteLock1 = new TaskCompletionSource<object>();
-            var afterWriteLock2 = new TaskCompletionSource<object>();
+            var afterWriteLock1 = new TaskCompletionSource<object?>();
+            var afterWriteLock2 = new TaskCompletionSource<object?>();
             using (await this.asyncLock.WriteLockAsync())
             {
                 this.asyncLock.OnBeforeWriteLockReleased(async delegate
@@ -3214,7 +3214,7 @@
         [Fact]
         public async Task OnBeforeWriteLockReleasedDelegateThrows()
         {
-            var afterWriteLock = new TaskCompletionSource<object>();
+            var afterWriteLock = new TaskCompletionSource<object?>();
             var exceptionToThrow = new ApplicationException();
             try
             {
@@ -3293,7 +3293,7 @@
         public async Task OnBeforeWriteLockReleasedWithStickyUpgradedWrite()
         {
             var callbackBegin = new TaskCompletionSource<object>();
-            var callbackEnding = new TaskCompletionSource<object>();
+            var callbackEnding = new TaskCompletionSource<object?>();
             var releaseCallback = new TaskCompletionSource<object>();
             using (await this.asyncLock.UpgradeableReadLockAsync(AsyncReaderWriterLock.LockFlags.StickyWrite))
             {
@@ -3576,8 +3576,8 @@
         {
             var stub = new LockDerived();
 
-            var beforeWriteLockReleasedTaskSource = new TaskCompletionSource<object>();
-            var exclusiveLockReleasedTaskSource = new TaskCompletionSource<object>();
+            var beforeWriteLockReleasedTaskSource = new TaskCompletionSource<object?>();
+            var exclusiveLockReleasedTaskSource = new TaskCompletionSource<object?>();
 
             stub.OnExclusiveLockReleasedAsyncDelegate = () => exclusiveLockReleasedTaskSource.Task;
 
@@ -4146,7 +4146,7 @@
             asyncLocal.Value = "expected";
             var awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
             Assumes.False(awaiter.IsCompleted);
-            var testResultSource = new TaskCompletionSource<object>();
+            var testResultSource = new TaskCompletionSource<object?>();
             awaiter.OnCompleted(delegate
             {
                 try
@@ -4175,7 +4175,7 @@
             asyncLocal.Value = "expected";
             var awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
             Assumes.False(awaiter.IsCompleted);
-            var testResultSource = new TaskCompletionSource<object>();
+            var testResultSource = new TaskCompletionSource<object?>();
             awaiter.UnsafeOnCompleted(delegate
             {
                 try
