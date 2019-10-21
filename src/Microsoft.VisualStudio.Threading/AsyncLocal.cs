@@ -17,20 +17,20 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// The framework version specific instance of AsyncLocal to use.
         /// </summary>
-        private readonly System.Threading.AsyncLocal<T> asyncLocal;
+        private readonly System.Threading.AsyncLocal<T?> asyncLocal;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AsyncLocal{T}"/> class.
         /// </summary>
         public AsyncLocal()
         {
-            this.asyncLocal = new System.Threading.AsyncLocal<T>();
+            this.asyncLocal = new System.Threading.AsyncLocal<T?>();
         }
 
         /// <summary>
         /// Gets or sets the value to associate with the current CallContext.
         /// </summary>
-        public T Value
+        public T? Value
         {
             get { return this.asyncLocal.Value; }
             set { this.asyncLocal.Value = value; }

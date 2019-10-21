@@ -468,7 +468,7 @@ namespace CpsDbg
 
             public ClrObject Task { get; }
 
-            public AsyncStateMachine Previous { get; set; }
+            public AsyncStateMachine? Previous { get; set; }
 
             public AsyncStateMachine Next { get; set; }
 

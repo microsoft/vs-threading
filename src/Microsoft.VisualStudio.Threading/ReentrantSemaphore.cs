@@ -464,7 +464,7 @@ namespace Microsoft.VisualStudio.Threading
                 Requires.NotNull(operation, nameof(operation));
                 this.ThrowIfFaulted();
 
-                StrongBox<bool> ownedBox = this.reentrancyDetection.Value;
+                StrongBox<bool>? ownedBox = this.reentrancyDetection.Value;
                 if (ownedBox?.Value ?? false)
                 {
                     throw Verify.FailOperation(Strings.SemaphoreAlreadyHeld, ReentrancyMode.NotAllowed);
@@ -541,7 +541,7 @@ namespace Microsoft.VisualStudio.Threading
                 Requires.NotNull(operation, nameof(operation));
                 this.ThrowIfFaulted();
 
-                StrongBox<bool> ownedBox = this.reentrancyDetection.Value;
+                StrongBox<bool>? ownedBox = this.reentrancyDetection.Value;
                 if (ownedBox?.Value ?? false)
                 {
                     throw Verify.FailOperation(Strings.SemaphoreAlreadyHeld, ReentrancyMode.NotAllowed);
@@ -659,7 +659,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 // No race condition here: We're accessing AsyncLocal<T> which we by definition have our own copy of.
                 // Multiple threads or multiple async methods will all have their own storage for this field.
-                Stack<StrongBox<AsyncSemaphore.Releaser>> reentrantStack = this.reentrantCount.Value;
+                Stack<StrongBox<AsyncSemaphore.Releaser>>? reentrantStack = this.reentrantCount.Value;
                 if (reentrantStack == null || reentrantStack.Count == 0)
                 {
                     // When the stack is empty, the semaphore isn't held. But many execution contexts that forked from a common root
@@ -773,7 +773,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 // No race condition here: We're accessing AsyncLocal<T> which we by definition have our own copy of.
                 // Multiple threads or multiple async methods will all have their own storage for this field.
-                Stack<StrongBox<AsyncSemaphore.Releaser>> reentrantStack = this.reentrantCount.Value;
+                Stack<StrongBox<AsyncSemaphore.Releaser>>? reentrantStack = this.reentrantCount.Value;
                 if (reentrantStack == null || reentrantStack.Count == 0)
                 {
                     // When the stack is empty, the semaphore isn't held. But many execution contexts that forked from a common root
@@ -924,7 +924,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 // No race condition here: We're accessing AsyncLocal<T> which we by definition have our own copy of.
                 // Multiple threads or multiple async methods will all have their own storage for this field.
-                Stack<AsyncSemaphore.Releaser> reentrantStack = this.reentrantCount.Value;
+                Stack<AsyncSemaphore.Releaser>? reentrantStack = this.reentrantCount.Value;
                 if (reentrantStack == null || reentrantStack.Count == 0)
                 {
                     this.reentrantCount.Value = reentrantStack = new Stack<AsyncSemaphore.Releaser>(capacity: 2);
@@ -1018,7 +1018,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 // No race condition here: We're accessing AsyncLocal<T> which we by definition have our own copy of.
                 // Multiple threads or multiple async methods will all have their own storage for this field.
-                Stack<AsyncSemaphore.Releaser> reentrantStack = this.reentrantCount.Value;
+                Stack<AsyncSemaphore.Releaser>? reentrantStack = this.reentrantCount.Value;
                 if (reentrantStack == null || reentrantStack.Count == 0)
                 {
                     this.reentrantCount.Value = reentrantStack = new Stack<AsyncSemaphore.Releaser>(capacity: 2);

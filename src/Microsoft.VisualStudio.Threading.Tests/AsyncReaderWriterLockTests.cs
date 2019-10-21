@@ -4904,7 +4904,7 @@
                 }
             }
 
-            internal void SetLockData(object data)
+            internal void SetLockData(object? data)
             {
                 var lck = this.AmbientLock;
                 lck.Data = data;

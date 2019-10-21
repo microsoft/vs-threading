@@ -38,7 +38,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// An event that is set when the collection is empty (lazily initialized).
         /// </summary>
-        private AsyncManualResetEvent emptyEvent;
+        private AsyncManualResetEvent? emptyEvent;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JoinableTaskCollection"/> class.
@@ -69,7 +69,7 @@ namespace Microsoft.VisualStudio.Threading
         /// personally identifiable information or other confidential data
         /// since this value may be included in hang reports sent to a third party.
         /// </remarks>
-        public string DisplayName
+        public string? DisplayName
         {
             get { return this.displayName; }
             set { this.displayName = value; }
@@ -246,8 +246,8 @@ namespace Microsoft.VisualStudio.Threading
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
         public struct JoinRelease : IDisposable
         {
-            private IJoinableTaskDependent parentDependencyNode;
-            private IJoinableTaskDependent childDependencyNode;
+            private IJoinableTaskDependent? parentDependencyNode;
+            private IJoinableTaskDependent? childDependencyNode;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="JoinRelease"/> struct.

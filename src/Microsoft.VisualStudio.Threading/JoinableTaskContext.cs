@@ -219,7 +219,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets or sets the caller's ambient joinable task.
         /// </summary>
-        internal JoinableTask AmbientTask
+        internal JoinableTask? AmbientTask
         {
             get
             {
@@ -605,7 +605,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The node to receive notifications. May be <c>null</c> if <see cref="Dispose"/> has already been called.
             /// </summary>
-            private JoinableTaskContextNode node;
+            private JoinableTaskContextNode? node;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="HangNotificationRegistration"/> class.

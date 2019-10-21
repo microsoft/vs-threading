@@ -9,6 +9,7 @@ namespace Microsoft.VisualStudio.Threading
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Reflection;
     using System.Runtime.CompilerServices;
@@ -86,7 +87,7 @@ namespace Microsoft.VisualStudio.Threading
         /// The <see cref="queueNeedProcessEvent"/> is triggered by this JoinableTask, this allows a quick access to the event.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private WeakReference<JoinableTask> pendingEventSource;
+        private WeakReference<JoinableTask>? pendingEventSource;
 
         /// <summary>
         /// The uplimit of the number pending events. The real number can be less because dependency can be removed, or a pending event can be processed.
@@ -117,7 +118,7 @@ namespace Microsoft.VisualStudio.Threading
         /// it's the meaningful one that should be shown in hang reports.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private Delegate initialDelegate;
+        private Delegate? initialDelegate;
 
         /// <summary>
         /// Backing field for the <see cref="WeakSelf"/> property.
@@ -867,7 +868,7 @@ namespace Microsoft.VisualStudio.Threading
                         HashSet<IJoinableTaskDependent>? visited = null;
                         while (!this.IsCompleteRequested)
                         {
-                            if (this.TryDequeueSelfOrDependencies(onMainThread, ref visited, out SingleExecuteProtector work, out Task tryAgainAfter))
+                            if (this.TryDequeueSelfOrDependencies(onMainThread, ref visited, out SingleExecuteProtector? work, out Task? tryAgainAfter))
                             {
                                 work.TryExecute();
                             }
@@ -1006,7 +1007,7 @@ namespace Microsoft.VisualStudio.Threading
             return this.queueNeedProcessEvent;
         }
 
-        private bool TryDequeueSelfOrDependencies(bool onMainThread, ref HashSet<IJoinableTaskDependent> visited, out SingleExecuteProtector work, out Task tryAgainAfter)
+        private bool TryDequeueSelfOrDependencies(bool onMainThread, ref HashSet<IJoinableTaskDependent> visited, [NotNullWhen(true)] out SingleExecuteProtector? work, out Task? tryAgainAfter)
         {
             using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
             {
@@ -1068,7 +1069,7 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
-        private static bool TryDequeueSelfOrDependencies(IJoinableTaskDependent currentNode, bool onMainThread, HashSet<IJoinableTaskDependent> visited, out SingleExecuteProtector work)
+        private static bool TryDequeueSelfOrDependencies(IJoinableTaskDependent currentNode, bool onMainThread, HashSet<IJoinableTaskDependent> visited, [NotNullWhen(true)] out SingleExecuteProtector? work)
         {
             Requires.NotNull(currentNode, nameof(currentNode));
             Requires.NotNull(visited, nameof(visited));

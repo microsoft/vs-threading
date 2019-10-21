@@ -72,7 +72,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="owner">The context for the tasks created by this factory.</param>
         /// <param name="collection">The collection that all tasks created by this factory will belong to till they complete. May be null.</param>
-        internal JoinableTaskFactory(JoinableTaskContext owner, JoinableTaskCollection collection)
+        internal JoinableTaskFactory(JoinableTaskContext owner, JoinableTaskCollection? collection)
         {
             Requires.NotNull(owner, nameof(owner));
             Assumes.True(collection == null || collection.Context == owner);
@@ -546,7 +546,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="asyncMethod">The asynchronous method to execute.</param>
         /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior.</param>
         /// <param name="entrypointOverride">The delegate to record as the entrypoint for this JoinableTask.</param>
-        internal void Run(Func<Task> asyncMethod, JoinableTaskCreationOptions creationOptions, Delegate entrypointOverride)
+        internal void Run(Func<Task> asyncMethod, JoinableTaskCreationOptions creationOptions, Delegate? entrypointOverride)
         {
             VerifyNoNonConcurrentSyncContext();
             var joinable = this.RunAsync(asyncMethod, synchronouslyBlocking: true, creationOptions: creationOptions, entrypointOverride: entrypointOverride);
@@ -1051,7 +1051,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The job that created this wrapper.
             /// </summary>
-            private JoinableTask job;
+            private JoinableTask? job;
 
             private bool raiseTransitionComplete;
 
@@ -1064,7 +1064,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The value to pass to the delegate if it is a <see cref="SendOrPostCallback"/>.
             /// </summary>
-            private object state;
+            private object? state;
 
             /// <summary>
             /// Stores execution callbacks for <see cref="AddExecutingCallback"/>.

@@ -661,7 +661,7 @@
 
         private class JoinableTaskContextDerived : JoinableTaskContext
         {
-            internal Action<TimeSpan, int, Guid> OnReportHang { get; set; }
+            internal Action<TimeSpan, int, Guid>? OnReportHang { get; set; }
 
             public override JoinableTaskFactory CreateFactory(JoinableTaskCollection collection)
             {

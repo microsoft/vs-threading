@@ -106,7 +106,7 @@ namespace Microsoft.VisualStudio.Threading
         /// The source of the <see cref="Completion"/> task, which transitions to completed after
         /// the <see cref="Complete"/> method is called and all issued locks have been released.
         /// </summary>
-        private readonly TaskCompletionSource<object> completionSource = new TaskCompletionSource<object>();
+        private readonly TaskCompletionSource<object?> completionSource = new TaskCompletionSource<object>();
 
         /// <summary>
         /// The queue of callbacks to invoke when the currently held write lock is totally released.
@@ -128,7 +128,7 @@ namespace Microsoft.VisualStudio.Threading
         /// A flag indicating whether we're currently running code to prepare for re-entering concurrency mode
         /// after releasing an exclusive lock. The Awaiter being released is the non-null value.
         /// </summary>
-        private volatile Awaiter reenterConcurrencyPrepRunning;
+        private volatile Awaiter? reenterConcurrencyPrepRunning;
 
         /// <summary>
         /// A flag indicating that the <see cref="Complete"/> method has been called, indicating that no
@@ -1254,7 +1254,7 @@ namespace Microsoft.VisualStudio.Threading
             // lock suddenly became a "concurrent" lock, but we can't transition all the resources from exclusive
             // access to concurrent access while someone is actually holding a lock (as such transition requires
             // the lock class itself to have the exclusive lock to protect the resources going through the transition).
-            Awaiter illegalConcurrentLock = this.reenterConcurrencyPrepRunning; // capture to local to preserve evidence in a concurrently reset field.
+            Awaiter? illegalConcurrentLock = this.reenterConcurrencyPrepRunning; // capture to local to preserve evidence in a concurrently reset field.
             if (illegalConcurrentLock != null)
             {
                 try
@@ -1276,7 +1276,7 @@ namespace Microsoft.VisualStudio.Threading
             Task? synchronousCallbackExecution = null;
             bool synchronousRequired = false;
             Awaiter? remainingAwaiter = null;
-            Awaiter topAwaiterAtStart = this.topAwaiter.Value; // do this outside the lock because it's fairly expensive and doesn't require the lock.
+            Awaiter? topAwaiterAtStart = this.topAwaiter.Value; // do this outside the lock because it's fairly expensive and doesn't require the lock.
 
             lock (this.syncObject)
             {
@@ -1512,7 +1512,7 @@ namespace Microsoft.VisualStudio.Threading
                 // We also avoid executing the synchronous portions all in a row and awaiting them all
                 // because that too would violate an individual callback's sense of isolation in a write lock.
                 List<Exception>? exceptions = null;
-                while (this.TryDequeueBeforeWriteReleasedCallback(out Func<Task> callback))
+                while (this.TryDequeueBeforeWriteReleasedCallback(out Func<Task>? callback))
                 {
                     try
                     {
@@ -1543,7 +1543,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="callback">Receives the callback to invoke, if any.</param>
         /// <returns>A value indicating whether a callback was available to invoke.</returns>
-        private bool TryDequeueBeforeWriteReleasedCallback(out Func<Task> callback)
+        private bool TryDequeueBeforeWriteReleasedCallback([NotNullWhen(true)] out Func<Task>? callback)
         {
             lock (this.syncObject)
             {
@@ -2100,7 +2100,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The continuation to execute when the lock is available.
             /// </summary>
-            private Action continuation;
+            private Action? continuation;
 
             /// <summary>
             /// The continuation we invoked to an issued lock.
@@ -2108,7 +2108,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <remarks>
             /// We retain this value simply so that in hang reports we can identify the method we issued the lock to.
             /// </remarks>
-            private Action continuationAfterLockIssued;
+            private Action? continuationAfterLockIssued;
 
             /// <summary>
             /// The TaskScheduler to invoke the continuation.
@@ -2123,7 +2123,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The synchronization context applied to folks who hold the lock.
             /// </summary>
-            private SynchronizationContext synchronizationContext;
+            private SynchronizationContext? synchronizationContext;
 
             /// <summary>
             /// The stacktrace of the caller originally requesting the lock.

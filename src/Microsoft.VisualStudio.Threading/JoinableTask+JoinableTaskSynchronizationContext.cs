@@ -34,7 +34,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The owning job. May be null from the beginning, or cleared after task completion.
             /// </summary>
-            private JoinableTask job;
+            private JoinableTask? job;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="JoinableTaskSynchronizationContext"/> class
@@ -75,7 +75,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             public override void Post(SendOrPostCallback d, object state)
             {
-                JoinableTask job = this.job; // capture as local in case field becomes null later.
+                JoinableTask? job = this.job; // capture as local in case field becomes null later.
                 if (job != null)
                 {
                     job.Post(d, state, this.mainThreadAffinitized);

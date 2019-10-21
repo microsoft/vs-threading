@@ -419,7 +419,7 @@
                     (ad.AttributeClass.Name == Types.TypeLibTypeAttribute.TypeName && ad.AttributeClass.BelongsToNamespace(Types.TypeLibTypeAttribute.Namespace)));
             }
 
-            private bool AnalyzeMemberWithinContext(ITypeSymbol type, ISymbol symbol, SyntaxNodeAnalysisContext context, Location? focusDiagnosticOn = null)
+            private bool AnalyzeMemberWithinContext(ITypeSymbol type, ISymbol? symbol, SyntaxNodeAnalysisContext context, Location? focusDiagnosticOn = null)
             {
                 if (type == null)
                 {

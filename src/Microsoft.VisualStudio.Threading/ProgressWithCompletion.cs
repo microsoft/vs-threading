@@ -93,7 +93,7 @@ namespace Microsoft.VisualStudio.Threading
         /// It is possible that this handler instance could be invoked concurrently with itself.
         /// </param>
         /// <param name="joinableTaskFactory">A <see cref="JoinableTaskFactory"/> instance that can be used to mitigate deadlocks when <see cref="WaitAsync(CancellationToken)"/> is called and the <paramref name="handler"/> requires the main thread.</param>
-        public ProgressWithCompletion(Action<T> handler, JoinableTaskFactory joinableTaskFactory)
+        public ProgressWithCompletion(Action<T> handler, JoinableTaskFactory? joinableTaskFactory)
             : this(WrapSyncHandler(handler), joinableTaskFactory)
         {
         }
@@ -106,7 +106,7 @@ namespace Microsoft.VisualStudio.Threading
         /// It is possible that this handler instance could be invoked concurrently with itself.
         /// </param>
         /// <param name="joinableTaskFactory">A <see cref="JoinableTaskFactory"/> instance that can be used to mitigate deadlocks when <see cref="WaitAsync(CancellationToken)"/> is called and the <paramref name="handler"/> requires the main thread.</param>
-        public ProgressWithCompletion(Func<T, Task> handler, JoinableTaskFactory joinableTaskFactory)
+        public ProgressWithCompletion(Func<T, Task> handler, JoinableTaskFactory? joinableTaskFactory)
         {
             Requires.NotNull(handler, nameof(handler));
             this.handler = handler;

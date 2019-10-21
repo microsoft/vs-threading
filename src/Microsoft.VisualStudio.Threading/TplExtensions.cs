@@ -407,7 +407,7 @@ namespace Microsoft.VisualStudio.Threading
                 return task;
             }
 
-            var tcs = new TaskCompletionSource<object>(state);
+            var tcs = new TaskCompletionSource<object?>(state);
             task.ContinueWith(
                 t =>
                 {

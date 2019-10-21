@@ -9,6 +9,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Text;
     using System.Threading;
@@ -67,7 +68,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// <inheritdoc />
         public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
 
-        private static bool TryFindNodeAtSource(Diagnostic diagnostic, SyntaxNode root, out ExpressionSyntax target, out Func<ExpressionSyntax, CancellationToken, ExpressionSyntax> transform)
+        private static bool TryFindNodeAtSource(Diagnostic diagnostic, SyntaxNode root, [NotNullWhen(true)] out ExpressionSyntax? target, [NotNullWhen(true)] out Func<ExpressionSyntax, CancellationToken, ExpressionSyntax>? transform)
         {
             transform = null;
             target = null;

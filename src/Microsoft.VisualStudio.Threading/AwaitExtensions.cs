@@ -216,7 +216,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The thread that should stay alive and be dequeuing <see cref="PendingWork"/>.
             /// </summary>
-            private static Thread liveThread;
+            private static Thread? liveThread;
 
             /// <summary>
             /// Executes some action on a long-lived thread.

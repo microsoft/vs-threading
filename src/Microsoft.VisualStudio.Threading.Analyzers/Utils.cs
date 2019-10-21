@@ -664,13 +664,13 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         {
             if (qualifiedName == null)
             {
-                return Tuple.Create<string, string>(null, null);
+                return Tuple.Create<string?, string?>(null, null);
             }
 
             int lastPeriod = qualifiedName.LastIndexOf('.');
             if (lastPeriod < 0)
             {
-                return Tuple.Create<string, string>(null, qualifiedName);
+                return Tuple.Create<string?, string?>(null, qualifiedName);
             }
 
             return Tuple.Create(qualifiedName.Substring(0, lastPeriod), qualifiedName.Substring(lastPeriod + 1));

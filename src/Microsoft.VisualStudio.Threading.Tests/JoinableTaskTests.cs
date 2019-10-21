@@ -3880,7 +3880,7 @@
         /// </summary>
         private class COMReentrantJoinableTaskFactory : JoinableTaskFactory
         {
-            private Action action;
+            private Action? action;
 
             internal COMReentrantJoinableTaskFactory(JoinableTaskContext context)
                 : base(context)

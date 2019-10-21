@@ -33,7 +33,7 @@ namespace Microsoft.VisualStudio.Threading
         /// before it is actually initialized. Volatile prevents CPU reordering of commands around
         /// the assignment (or read) of this field.
         /// </remarks>
-        private volatile TaskCompletionSource<object> completedSource;
+        private volatile TaskCompletionSource<object?> completedSource;
 
         /// <summary>
         /// The internal queue of elements. Lazily constructed.
@@ -383,7 +383,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="valueCheck">The test on the head element that must succeed to dequeue.</param>
         /// <param name="value">Receives the element from the head of the queue; or <c>default(T)</c> if the queue is empty.</param>
         /// <returns><c>true</c> if an element was dequeued; <c>false</c> if the queue was empty.</returns>
-        private bool TryDequeueInternal(Predicate<T> valueCheck, out T value)
+        private bool TryDequeueInternal(Predicate<T>? valueCheck, out T value)
         {
             bool dequeued;
             lock (this.SyncRoot)

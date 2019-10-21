@@ -20,7 +20,7 @@
 
         private ResourceLockWrapper resourceLock;
 
-        private List<Resource> resources;
+        private List<Resource?> resources;
 
         public AsyncReaderWriterResourceLockTests(ITestOutputHelper logger)
             : base(logger)
@@ -1233,7 +1233,7 @@
                 base.SetResourceAsAccessed(resource);
             }
 
-            internal new void SetResourceAsAccessed(Func<Resource, object, bool> resourceCheck, object state)
+            internal new void SetResourceAsAccessed(Func<Resource, object, bool> resourceCheck, object? state)
             {
                 base.SetResourceAsAccessed(resourceCheck, state);
             }

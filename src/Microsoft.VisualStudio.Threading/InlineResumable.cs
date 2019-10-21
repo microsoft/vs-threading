@@ -18,7 +18,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// The continuation that has been scheduled.
         /// </summary>
-        private Action continuation;
+        private Action? continuation;
 
         /// <summary>
         /// The current <see cref="SynchronizationContext"/> as of when the continuation was scheduled.

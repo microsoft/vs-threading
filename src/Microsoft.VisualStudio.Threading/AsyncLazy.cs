@@ -35,12 +35,12 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// The function to invoke to produce the task.
         /// </summary>
-        private Func<Task<T>> valueFactory;
+        private Func<Task<T>>? valueFactory;
 
         /// <summary>
         /// The async pump to Join on calls to <see cref="GetValueAsync(CancellationToken)"/>.
         /// </summary>
-        private JoinableTaskFactory jobFactory;
+        private JoinableTaskFactory? jobFactory;
 
         /// <summary>
         /// The result of the value factory.
@@ -50,7 +50,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// A joinable task whose result is the value to be cached.
         /// </summary>
-        private JoinableTask<T> joinableTask;
+        private JoinableTask<T>? joinableTask;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AsyncLazy{T}"/> class.
@@ -142,7 +142,7 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         resumableAwaiter = new InlineResumable();
-                        Func<Task<T>> originalValueFactory = this.valueFactory;
+                        Func<Task<T>>? originalValueFactory = this.valueFactory;
                         this.valueFactory = null;
                         Func<Task<T>> valueFactory = async delegate
                         {
@@ -227,7 +227,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 // Capture the factory as a local before comparing and dereferencing it since
                 // the field can transition to null and we want to gracefully handle that race condition.
-                JoinableTaskFactory factory = this.jobFactory;
+                JoinableTaskFactory? factory = this.jobFactory;
                 return factory != null
                     ? factory.Run(() => this.GetValueAsync(cancellationToken))
                     : this.GetValueAsync(cancellationToken).GetAwaiter().GetResult();

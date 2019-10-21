@@ -198,7 +198,7 @@ namespace Microsoft.VisualStudio.Threading
             /// The head of a singly linked list of records to track which task may process events of this task.
             /// This list should contain only tasks which need be completed synchronously, and depends on this task.
             /// </summary>
-            private DependentSynchronousTask dependingSynchronousTaskTracking;
+            private DependentSynchronousTask? dependingSynchronousTaskTracking;
 
             /// <summary>
             /// Gets a value indicating whether the <see cref="childDependentNodes"/> is empty.
@@ -239,7 +239,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             internal bool HasMainThreadSynchronousTaskWaiting()
             {
-                DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
+                DependentSynchronousTask? existingTaskTracking = this.dependingSynchronousTaskTracking;
                 while (existingTaskTracking != null)
                 {
                     if ((existingTaskTracking.SynchronousTask.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)
@@ -437,7 +437,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             internal bool IsDependingSynchronousTask(JoinableTask syncTask)
             {
-                DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
+                DependentSynchronousTask? existingTaskTracking = this.dependingSynchronousTaskTracking;
                 while (existingTaskTracking != null)
                 {
                     if (existingTaskTracking.SynchronousTask == syncTask)
@@ -466,7 +466,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
 
                 var tasksNeedNotify = new List<JoinableTask>(count);
-                DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
+                DependentSynchronousTask? existingTaskTracking = this.dependingSynchronousTaskTracking;
                 while (existingTaskTracking != null)
                 {
                     var syncTask = existingTaskTracking.SynchronousTask;
@@ -492,7 +492,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <param name="syncTask">The synchronized joinableTask.</param>
             /// <param name="taskHasPendingRequests">Return the JoinableTask which has already had pending requests to be handled.</param>
             /// <param name="pendingRequestsCount">The number of pending requests.</param>
-            internal static void OnSynchronousTaskStartToBlockWaiting(JoinableTask syncTask, out JoinableTask taskHasPendingRequests, out int pendingRequestsCount)
+            internal static void OnSynchronousTaskStartToBlockWaiting(JoinableTask syncTask, out JoinableTask? taskHasPendingRequests, out int pendingRequestsCount)
             {
                 Requires.NotNull(syncTask, nameof(syncTask));
 
@@ -527,7 +527,7 @@ namespace Microsoft.VisualStudio.Threading
             private int CountOfDependingSynchronousTasks()
             {
                 int count = 0;
-                DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
+                DependentSynchronousTask? existingTaskTracking = this.dependingSynchronousTaskTracking;
                 while (existingTaskTracking != null)
                 {
                     count++;
@@ -557,7 +557,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
 
                 var tasksNeedNotify = new List<PendingNotification>(count);
-                DependentSynchronousTask existingTaskTracking = data.dependingSynchronousTaskTracking;
+                DependentSynchronousTask? existingTaskTracking = data.dependingSynchronousTaskTracking;
                 while (existingTaskTracking != null)
                 {
                     int totalEventNumber = 0;
@@ -581,7 +581,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 Requires.NotNull(child, nameof(child));
 
-                DependentSynchronousTask existingTaskTracking = this.dependingSynchronousTaskTracking;
+                DependentSynchronousTask? existingTaskTracking = this.dependingSynchronousTaskTracking;
                 while (existingTaskTracking != null)
                 {
                     RemoveDependingSynchronousTask(child, existingTaskTracking.SynchronousTask);
@@ -627,7 +627,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
 
                 ref JoinableTaskDependentData data = ref taskOrCollection.GetJoinableTaskDependentData();
-                DependentSynchronousTask existingTaskTracking = data.dependingSynchronousTaskTracking;
+                DependentSynchronousTask? existingTaskTracking = data.dependingSynchronousTaskTracking;
                 while (existingTaskTracking != null)
                 {
                     if (existingTaskTracking.SynchronousTask == synchronousTask)
@@ -786,7 +786,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 ref JoinableTaskDependentData data = ref taskOrCollection.GetJoinableTaskDependentData();
                 DependentSynchronousTask? previousTaskTracking = null;
-                DependentSynchronousTask currentTaskTracking = data.dependingSynchronousTaskTracking;
+                DependentSynchronousTask? currentTaskTracking = data.dependingSynchronousTaskTracking;
                 bool removed = false;
 
                 while (currentTaskTracking != null)

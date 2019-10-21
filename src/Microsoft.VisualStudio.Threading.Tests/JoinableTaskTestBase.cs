@@ -18,7 +18,7 @@
 
         protected JoinableTaskContext context;
         protected JoinableTaskFactory asyncPump;
-        protected JoinableTaskCollection joinableCollection;
+        protected JoinableTaskCollection? joinableCollection;
 
         protected int originalThreadManagedId;
         protected SynchronizationContext dispatcherContext;
