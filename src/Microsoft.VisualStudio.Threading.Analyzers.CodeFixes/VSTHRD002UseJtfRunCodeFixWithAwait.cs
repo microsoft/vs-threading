@@ -80,28 +80,31 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 return false;
             }
 
-            ExpressionSyntax FindTwoLevelDeepIdentifierInvocation(ExpressionSyntax from, CancellationToken cancellationToken = default(CancellationToken)) =>
+            ExpressionSyntax? FindTwoLevelDeepIdentifierInvocation(ExpressionSyntax from, CancellationToken cancellationToken = default(CancellationToken)) =>
                 ((((from as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax)?.Expression as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax)?.Expression;
-            ExpressionSyntax FindOneLevelDeepIdentifierInvocation(ExpressionSyntax from, CancellationToken cancellationToken = default(CancellationToken)) =>
+            ExpressionSyntax? FindOneLevelDeepIdentifierInvocation(ExpressionSyntax from, CancellationToken cancellationToken = default(CancellationToken)) =>
                 ((from as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax)?.Expression;
-            ExpressionSyntax FindParentMemberAccess(ExpressionSyntax from, CancellationToken cancellationToken = default(CancellationToken)) =>
+            ExpressionSyntax? FindParentMemberAccess(ExpressionSyntax from, CancellationToken cancellationToken = default(CancellationToken)) =>
                 (from as MemberAccessExpressionSyntax)?.Expression;
 
             var parentInvocation = syntaxNode.FirstAncestorOrSelf<InvocationExpressionSyntax>();
             var parentMemberAccess = syntaxNode.FirstAncestorOrSelf<MemberAccessExpressionSyntax>();
             if (FindTwoLevelDeepIdentifierInvocation(parentInvocation) != null)
             {
-                transform = FindTwoLevelDeepIdentifierInvocation;
+                // This method will not return null for the provided 'target' argument
+                transform = NullableHelpers.AsNonNullReturnUnchecked<ExpressionSyntax, CancellationToken, ExpressionSyntax>(FindTwoLevelDeepIdentifierInvocation);
                 target = parentInvocation;
             }
             else if (FindOneLevelDeepIdentifierInvocation(parentInvocation) != null)
             {
-                transform = FindOneLevelDeepIdentifierInvocation;
+                // This method will not return null for the provided 'target' argument
+                transform = NullableHelpers.AsNonNullReturnUnchecked<ExpressionSyntax, CancellationToken, ExpressionSyntax>(FindOneLevelDeepIdentifierInvocation);
                 target = parentInvocation;
             }
             else if (FindParentMemberAccess(parentMemberAccess) != null)
             {
-                transform = FindParentMemberAccess;
+                // This method will not return null for the provided 'target' argument
+                transform = NullableHelpers.AsNonNullReturnUnchecked<ExpressionSyntax, CancellationToken, ExpressionSyntax>(FindParentMemberAccess);
                 target = parentMemberAccess;
             }
             else
