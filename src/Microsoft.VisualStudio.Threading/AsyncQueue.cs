@@ -240,7 +240,9 @@ namespace Microsoft.VisualStudio.Threading
         /// <exception cref="InvalidOperationException">Thrown if the queue is empty.</exception>
         public T Peek()
         {
+#pragma warning disable CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
             if (!this.TryPeek(out T value))
+#pragma warning restore CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
             {
                 Verify.FailOperation(Strings.QueueEmpty);
             }
@@ -314,7 +316,9 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns><c>true</c> if an element was dequeued; <c>false</c> if the queue was empty.</returns>
         public bool TryDequeue([MaybeNullWhen(false)] out T value)
         {
+#pragma warning disable CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
             bool result = this.TryDequeueInternal(null, out value);
+#pragma warning restore CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
             this.CompleteIfNecessary();
             return result;
         }
@@ -345,7 +349,9 @@ namespace Microsoft.VisualStudio.Threading
         {
             Requires.NotNull(valueCheck, nameof(valueCheck));
 
+#pragma warning disable CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
             bool result = this.TryDequeueInternal(valueCheck, out value);
+#pragma warning restore CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
             this.CompleteIfNecessary();
             return result;
         }
