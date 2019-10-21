@@ -696,7 +696,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Gets the awaiter.
             /// </summary>
-            /// <returns>The awaiter</returns>
+            /// <returns>The awaiter.</returns>
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
             public ExecuteContinuationSynchronouslyAwaiter GetAwaiter() => new ExecuteContinuationSynchronouslyAwaiter(this.antecedent);
         }
@@ -774,7 +774,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Gets the awaiter.
             /// </summary>
-            /// <returns>The awaiter</returns>
+            /// <returns>The awaiter.</returns>
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
             public ExecuteContinuationSynchronouslyAwaiter<T> GetAwaiter() => new ExecuteContinuationSynchronouslyAwaiter<T>(this.antecedent);
         }

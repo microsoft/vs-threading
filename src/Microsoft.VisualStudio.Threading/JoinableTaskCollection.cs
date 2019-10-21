@@ -36,7 +36,7 @@ namespace Microsoft.VisualStudio.Threading
         private JoinableTaskDependencyGraph.JoinableTaskDependentData dependentData;
 
         /// <summary>
-        /// An event that is set when the collection is empty. (lazily initialized)
+        /// An event that is set when the collection is empty (lazily initialized).
         /// </summary>
         private AsyncManualResetEvent emptyEvent;
 

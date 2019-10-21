@@ -26,18 +26,24 @@
     /// current thread is main thread, or switch to main thread prior invocation explicitly.
     ///
     /// i.e.
+    /// <code>
     ///     IVsSolution sln = GetIVsSolution();
     ///     sln.SetProperty(); /* This analyzer will report warning on this invocation. */
+    /// </code>
     ///
     /// i.e.
+    /// <code>
     ///     ThreadHelper.ThrowIfNotOnUIThread();
     ///     IVsSolution sln = GetIVsSolution();
     ///     sln.SetProperty(); /* Good */
+    /// </code>
     ///
     /// i.e.
+    /// <code>
     ///     await joinableTaskFactory.SwitchToMainThreadAsync();
     ///     IVsSolution sln = GetIVsSolution();
     ///     sln.SetProperty(); /* Good */
+    /// </code>
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer

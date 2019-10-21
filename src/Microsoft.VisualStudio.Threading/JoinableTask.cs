@@ -729,7 +729,7 @@ namespace Microsoft.VisualStudio.Threading
         internal virtual Task GetTaskFromCompletionSource(object taskCompletionSource) => ((TaskCompletionSourceWithoutInlining<EmptyStruct>)taskCompletionSource).Task;
 
         /// <summary>
-        /// Completes a <see cref="TaskCompletionSourceWithoutInlining{T}"/>
+        /// Completes a <see cref="TaskCompletionSourceWithoutInlining{T}"/>.
         /// </summary>
         /// <param name="wrappedTask">The task to read a result from.</param>
         /// <param name="taskCompletionSource">The <see cref="TaskCompletionSourceWithoutInlining{T}"/> created earlier with <see cref="CreateTaskCompletionSource()"/> to apply the result to.</param>
@@ -975,7 +975,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Get the number of pending messages to be process for the synchronous task.
         /// </summary>
-        /// <param name="synchronousTask">The synchronous task</param>
+        /// <param name="synchronousTask">The synchronous task.</param>
         /// <returns>The number of events need be processed by the synchronous task in the current JoinableTask.</returns>
         internal int GetPendingEventCountForSynchronousTask(JoinableTask synchronousTask)
         {

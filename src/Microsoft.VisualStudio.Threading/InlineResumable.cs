@@ -33,7 +33,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets a value indicating whether an awaiting expression should yield.
         /// </summary>
-        /// <value>Always <c>false</c></value>
+        /// <value>Always <c>false</c>.</value>
         public bool IsCompleted => this.resumed;
 
         /// <summary>

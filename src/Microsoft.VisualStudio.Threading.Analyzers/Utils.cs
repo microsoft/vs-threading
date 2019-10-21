@@ -15,11 +15,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using CodeAnalysis.CSharp;
-    using CodeAnalysis.CSharp.Syntax;
-    using CodeAnalysis.Diagnostics;
     using Microsoft;
     using Microsoft.CodeAnalysis;
+    using Microsoft.CodeAnalysis.CSharp;
+    using Microsoft.CodeAnalysis.CSharp.Syntax;
+    using Microsoft.CodeAnalysis.Diagnostics;
 
     internal static class Utils
     {
@@ -157,7 +157,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// Tests whether a symbol belongs to a given namespace.
         /// </summary>
         /// <param name="symbol">The symbol whose namespace membership is being tested.</param>
-        /// <param name="namespaces">A sequence of namespaces from global to most precise. For example: [System, Threading, Tasks]</param>
+        /// <param name="namespaces">A sequence of namespaces from global to most precise. For example: [System, Threading, Tasks].</param>
         /// <returns><c>true</c> if the symbol belongs to the given namespace; otherwise <c>false</c>.</returns>
         internal static bool BelongsToNamespace(this ISymbol symbol, IReadOnlyList<string> namespaces)
         {

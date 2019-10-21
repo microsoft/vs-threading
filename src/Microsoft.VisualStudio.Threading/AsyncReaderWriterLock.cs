@@ -25,6 +25,7 @@ namespace Microsoft.VisualStudio.Threading
     /// </remarks>
     /// <devnotes>
     /// Considering this class to be a state machine, the states are:
+    /// <code>
     /// <![CDATA[
     ///    -------------
     ///    |           | <-----> READERS
@@ -34,6 +35,7 @@ namespace Microsoft.VisualStudio.Threading
     ///    |           | <-----> WRITER
     ///    -------------
     /// ]]>
+    /// </code>
     /// </devnotes>
     public partial class AsyncReaderWriterLock : IDisposable
     {
@@ -2403,7 +2405,7 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
-            /// Specifies the exception to throw from <see cref="GetResult"/>
+            /// Specifies the exception to throw from <see cref="GetResult"/>.
             /// </summary>
             internal void SetFault(Exception ex)
             {

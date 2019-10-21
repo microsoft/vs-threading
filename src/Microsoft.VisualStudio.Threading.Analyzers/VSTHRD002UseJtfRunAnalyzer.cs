@@ -27,8 +27,10 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     /// thread, it is occupying a threadpool thread to do nothing but block, which is not good either.
     ///
     /// i.e.
+    /// <code>
     ///   var task = Task.Run(DoSomethingOnBackground);
     ///   task.Wait();  /* This analyzer will report warning on this synchronous wait. */
+    /// </code>
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer

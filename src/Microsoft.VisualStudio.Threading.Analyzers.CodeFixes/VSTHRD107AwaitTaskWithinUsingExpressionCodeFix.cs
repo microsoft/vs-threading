@@ -22,6 +22,7 @@
     /// </summary>
     /// <remarks>
     /// The code fix changes code like this as described:
+    /// <code>
     /// <![CDATA[
     ///   AsyncSemaphore semaphore;
     ///   async Task FooAsync()
@@ -31,6 +32,7 @@
     ///     }
     ///   }
     /// ]]>
+    /// </code>
     /// </remarks>
     [ExportCodeFixProvider(LanguageNames.CSharp)]
     public class VSTHRD107AwaitTaskWithinUsingExpressionCodeFix : CodeFixProvider

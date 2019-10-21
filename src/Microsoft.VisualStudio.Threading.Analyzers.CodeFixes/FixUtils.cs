@@ -15,11 +15,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using CodeAnalysis.CSharp;
-    using CodeAnalysis.CSharp.Syntax;
-    using CodeAnalysis.Diagnostics;
     using Microsoft;
     using Microsoft.CodeAnalysis;
+    using Microsoft.CodeAnalysis.CSharp;
+    using Microsoft.CodeAnalysis.CSharp.Syntax;
+    using Microsoft.CodeAnalysis.Diagnostics;
     using Microsoft.CodeAnalysis.FindSymbols;
     using Microsoft.CodeAnalysis.Rename;
     using Microsoft.CodeAnalysis.Simplification;
@@ -80,11 +80,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// The new Document and method syntax, or the original if it was already async.
         /// </returns>
         /// <exception cref="System.ArgumentNullException">
-        /// method
-        /// or
-        /// document
-        /// or
-        /// originalMethodSymbol
+        /// <para>If <paramref name="method"/> is null.</para>
+        /// <para>-or-</para>
+        /// <para>If <paramref name="document"/> is null.</para>
         /// </exception>
         internal static async Task<Tuple<Document, MethodDeclarationSyntax>> MakeMethodAsync(this MethodDeclarationSyntax method, Document document, CancellationToken cancellationToken = default(CancellationToken))
         {

@@ -15,7 +15,7 @@ namespace Microsoft.VisualStudio.Threading
     /// Dictionary that does not prevent keys from being garbage collected.
     /// </summary>
     /// <typeparam name="TKey">Type of key, without the WeakReference wrapper.</typeparam>
-    /// <typeparam name="TValue">Type of value</typeparam>
+    /// <typeparam name="TValue">Type of value.</typeparam>
     /// <remarks>
     /// See also Microsoft.Build.Collections.WeakDictionary.
     /// </remarks>
@@ -117,7 +117,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Whether there is a key present with the specified key
+        /// Whether there is a key present with the specified key.
         /// </summary>
         /// <remarks>
         /// As usual, don't just call Contained as the wrapped value may be null.
@@ -178,7 +178,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Empty the collection
+        /// Empty the collection.
         /// </summary>
         public void Clear()
         {
@@ -186,7 +186,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// See IEnumerable&lt;T&gt;
+        /// See IEnumerable&lt;T&gt;.
         /// </summary>
         public Enumerator GetEnumerator()
         {
@@ -194,7 +194,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// See IEnumerable&lt;T&gt;
+        /// See IEnumerable&lt;T&gt;.
         /// </summary>
         IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
         {
@@ -202,7 +202,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// See IEnumerable
+        /// See IEnumerable.
         /// </summary>
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
@@ -210,7 +210,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Whether the collection contains any item
+        /// Whether the collection contains any item.
         /// </summary>
         internal bool Any()
         {
@@ -286,7 +286,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Strongly typed wrapper around a weak reference that caches
         /// the target's hash code so that it can be used in a hashtable.
         /// </summary>
-        /// <typeparam name="T">Type of the target of the weak reference</typeparam>
+        /// <typeparam name="T">Type of the target of the weak reference.</typeparam>
         private readonly struct WeakReference<T> : IEquatable<WeakReference<T>>
             where T : class
         {
@@ -297,7 +297,7 @@ namespace Microsoft.VisualStudio.Threading
             private readonly int hashcode;
 
             /// <summary>
-            /// Backing weak reference
+            /// Backing weak reference.
             /// </summary>
             private readonly WeakReference weakReference;
 
@@ -337,7 +337,7 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
-            /// Returns the hashcode of the wrapped target
+            /// Returns the hashcode of the wrapped target.
             /// </summary>
             public override int GetHashCode()
             {
@@ -360,7 +360,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// A helper structure to implement <see cref="IEnumerator{T}"/>
+        /// A helper structure to implement <see cref="IEnumerator{T}"/>.
         /// </summary>
         private class KeyEnumerator : IEnumerator<TKey>
         {
@@ -381,7 +381,7 @@ namespace Microsoft.VisualStudio.Threading
             object System.Collections.IEnumerator.Current => this.Current;
 
             /// <summary>
-            /// Implements <see cref="System.Collections.IEnumerator.MoveNext"/>
+            /// Implements <see cref="System.Collections.IEnumerator.MoveNext"/>.
             /// </summary>
             public bool MoveNext()
             {
@@ -428,7 +428,7 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
-            /// Implements <see cref="IEnumerable{T}.GetEnumerator"/>
+            /// Implements <see cref="IEnumerable{T}.GetEnumerator"/>.
             /// </summary>
             IEnumerator<TKey> IEnumerable<TKey>.GetEnumerator()
             {
@@ -436,7 +436,7 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
-            /// Implements <see cref="System.Collections.IEnumerable.GetEnumerator"/>
+            /// Implements <see cref="System.Collections.IEnumerable.GetEnumerator"/>.
             /// </summary>
             System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
             {
@@ -444,7 +444,7 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
-            /// Gets the Enumerator
+            /// Gets the Enumerator.
             /// </summary>
             /// <returns>A new KeyEnumerator.</returns>
             private KeyEnumerator GetEnumerator()
@@ -455,14 +455,14 @@ namespace Microsoft.VisualStudio.Threading
 
         /// <summary>
         /// Equality comparer for weak references that actually compares the
-        /// targets of the weak references
+        /// targets of the weak references.
         /// </summary>
-        /// <typeparam name="T">Type of the targets of the weak references to be compared</typeparam>
+        /// <typeparam name="T">Type of the targets of the weak references to be compared.</typeparam>
         private class WeakReferenceEqualityComparer<T> : IEqualityComparer<WeakReference<T>>
             where T : class
         {
             /// <summary>
-            /// Comparer to use if specified, otherwise null
+            /// Comparer to use if specified, otherwise null.
             /// </summary>
             private readonly IEqualityComparer<T> underlyingComparer;
 
@@ -481,7 +481,7 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
-            /// Gets the hashcode
+            /// Gets the hashcode.
             /// </summary>
             public int GetHashCode(WeakReference<T> item)
             {
@@ -491,7 +491,7 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
-            /// Compares the weak references for equality
+            /// Compares the weak references for equality.
             /// </summary>
             public bool Equals(WeakReference<T> left, WeakReference<T> right)
             {
