@@ -664,7 +664,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Gets a value indicating whether the caller's thread apartment model and SynchronizationContext
         /// is compatible with a lock.
         /// </summary>
-        private bool IsLockSupportingContext(Awaiter awaiter = null)
+        private bool IsLockSupportingContext(Awaiter? awaiter = null)
         {
             if (!this.CanCurrentThreadHoldActiveLock || this.IsUnsupportedSynchronizationContext)
             {
@@ -847,7 +847,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="checkSyncContextCompatibility"><c>true</c> to throw an exception if the caller has an exclusive lock but not an associated SynchronizationContext.</param>
         /// <param name="allowNonLockSupportingContext"><c>true</c> to return true when a lock is held but unusable because of the context of the caller.</param>
         /// <returns><c>true</c> if the caller holds active locks of the given type; <c>false</c> otherwise.</returns>
-        private bool IsLockHeld(LockKind kind, Awaiter awaiter = null, bool checkSyncContextCompatibility = true, bool allowNonLockSupportingContext = false)
+        private bool IsLockHeld(LockKind kind, Awaiter? awaiter = null, bool checkSyncContextCompatibility = true, bool allowNonLockSupportingContext = false)
         {
             if (allowNonLockSupportingContext || this.IsLockSupportingContext(awaiter))
             {

@@ -127,7 +127,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="initialCount">The initial number of concurrent operations to allow.</param>
         /// <param name="joinableTaskContext">The <see cref="JoinableTaskContext"/> to use to mitigate deadlocks.</param>
         /// <param name="mode">How to respond to a semaphore request by a caller that has already entered the semaphore.</param>
-        public static ReentrantSemaphore Create(int initialCount = 1, JoinableTaskContext joinableTaskContext = default, ReentrancyMode mode = ReentrancyMode.NotAllowed)
+        public static ReentrantSemaphore Create(int initialCount = 1, JoinableTaskContext? joinableTaskContext = default, ReentrancyMode mode = ReentrancyMode.NotAllowed)
         {
             switch (mode)
             {

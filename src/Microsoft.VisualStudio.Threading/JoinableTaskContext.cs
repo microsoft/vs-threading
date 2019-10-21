@@ -146,7 +146,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="synchronizationContext">
         /// The synchronization context to use to switch to the main thread.
         /// </param>
-        public JoinableTaskContext(Thread mainThread = null, SynchronizationContext synchronizationContext = null)
+        public JoinableTaskContext(Thread? mainThread = null, SynchronizationContext? synchronizationContext = null)
         {
             this.MainThread = mainThread ?? Thread.CurrentThread;
             this.mainThreadManagedThreadId = this.MainThread.ManagedThreadId;

@@ -204,7 +204,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="ultimateCancellation">A token whose cancellation signals that the following task should be cancelled.</param>
         /// <param name="taskThatFollows">The TaskCompletionSource whose task is to follow.  Leave at <c>null</c> for a new task to be created.</param>
         /// <returns>The following task.</returns>
-        public static Task<T> FollowCancelableTaskToCompletion<T>(Func<Task<T>> taskToFollow, CancellationToken ultimateCancellation, TaskCompletionSource<T> taskThatFollows = null)
+        public static Task<T> FollowCancelableTaskToCompletion<T>(Func<Task<T>> taskToFollow, CancellationToken ultimateCancellation, TaskCompletionSource<T>? taskThatFollows = null)
         {
             Requires.NotNull(taskToFollow, nameof(taskToFollow));
 
@@ -843,7 +843,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <param name="sourceState">The state to store in the <see cref="SourceState" /> property.</param>
             /// <param name="taskState">State of the task.</param>
             /// <param name="options">The options.</param>
-            internal TaskCompletionSource(TState sourceState, object taskState = null, TaskCreationOptions options = TaskCreationOptions.None)
+            internal TaskCompletionSource(TState sourceState, object? taskState = null, TaskCreationOptions options = TaskCreationOptions.None)
                 : base(taskState, options)
             {
                 this.SourceState = sourceState;

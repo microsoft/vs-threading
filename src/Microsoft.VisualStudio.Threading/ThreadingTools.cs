@@ -205,7 +205,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="taskCompletionSource">The <see cref="TaskCompletionSource{TResult}"/> to cancel.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <param name="cancellationCallback">A callback to invoke when cancellation occurs.</param>
-        internal static void AttachCancellation<T>(this TaskCompletionSource<T> taskCompletionSource, CancellationToken cancellationToken, ICancellationNotification cancellationCallback = null)
+        internal static void AttachCancellation<T>(this TaskCompletionSource<T> taskCompletionSource, CancellationToken cancellationToken, ICancellationNotification? cancellationCallback = null)
         {
             Requires.NotNull(taskCompletionSource, nameof(taskCompletionSource));
 

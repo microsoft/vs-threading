@@ -3840,7 +3840,7 @@
         /// Writes out a DGML graph of pending tasks and collections to the test context.
         /// </summary>
         /// <param name="context">A specific context to collect data from; <c>null</c> will use this.context.</param>
-        private void PrintActiveTasksReport(JoinableTaskContext context = null)
+        private void PrintActiveTasksReport(JoinableTaskContext? context = null)
         {
             context = context ?? this.context;
             IHangReportContributor contributor = context;
@@ -4114,7 +4114,7 @@
             private Task dependentTask;
             private MockAsyncService dependentService;
 
-            internal MockAsyncService(JoinableTaskContext context, MockAsyncService dependentService = null)
+            internal MockAsyncService(JoinableTaskContext context, MockAsyncService? dependentService = null)
             {
                 this.joinableCollection = context.CreateCollection();
                 this.pump = context.CreateFactory(this.joinableCollection);

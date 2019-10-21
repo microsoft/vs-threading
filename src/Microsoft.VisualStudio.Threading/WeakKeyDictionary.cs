@@ -46,7 +46,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="keyComparer">The key comparer to use. A <c>null</c> value indicates the default comparer will be used.</param>
         /// <param name="capacity">The initial capacity of the dictionary. Growth beyond this capacity will first induce a scavenge operation.</param>
-        public WeakKeyDictionary(IEqualityComparer<TKey> keyComparer = null, int capacity = 10)
+        public WeakKeyDictionary(IEqualityComparer<TKey>? keyComparer = null, int capacity = 10)
         {
             Requires.Range(capacity > 0, "capacity");
 

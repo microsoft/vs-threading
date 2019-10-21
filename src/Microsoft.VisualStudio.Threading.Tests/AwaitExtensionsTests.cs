@@ -708,7 +708,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
 
             public CancellationToken FinishedToken => this.testFinished.Token;
 
-            public RegistryKey CreateSubKey(string name = null)
+            public RegistryKey CreateSubKey(string? name = null)
             {
                 return this.key.CreateSubKey(name ?? Path.GetRandomFileName(), RegistryKeyPermissionCheck.Default, RegistryOptions.Volatile);
             }

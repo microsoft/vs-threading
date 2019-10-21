@@ -395,7 +395,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         [DebuggerDisplay("{" + nameof(Method) + "} -> {" + nameof(AsyncAlternativeMethodName) + "}")]
         internal readonly struct SyncBlockingMethod
         {
-            public SyncBlockingMethod(QualifiedMember method, string asyncAlternativeMethodName = null, IReadOnlyList<string> extensionMethodNamespace = null)
+            public SyncBlockingMethod(QualifiedMember method, string? asyncAlternativeMethodName = null, IReadOnlyList<string>? extensionMethodNamespace = null)
             {
                 this.Method = method;
                 this.AsyncAlternativeMethodName = asyncAlternativeMethodName;
