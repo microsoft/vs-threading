@@ -20,14 +20,14 @@
 
         private ResourceLockWrapper resourceLock;
 
-        private List<Resource?> resources;
+        private List<Resource> resources;
 
         public AsyncReaderWriterResourceLockTests(ITestOutputHelper logger)
             : base(logger)
         {
-            this.resources = new List<Resource?>();
+            this.resources = new List<Resource>();
             this.resourceLock = new ResourceLockWrapper(this.resources, logger);
-            this.resources.Add(null); // something so that if default(T) were ever used in the product, it would likely throw.
+            this.resources.Add(null!); // something so that if default(T) were ever used in the product, it would likely throw.
             this.resources.Add(new Resource());
             this.resources.Add(new Resource());
         }
