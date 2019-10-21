@@ -54,7 +54,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         {
             var diagnostic = context.Diagnostics.First();
             context.RegisterCodeFix(new VoidToTaskCodeAction(context.Document, diagnostic), diagnostic);
-            return Task.FromResult<object>(null);
+            return Task.FromResult<object?>(null);
         }
 
         /// <inheritdoc />

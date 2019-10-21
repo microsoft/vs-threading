@@ -76,7 +76,7 @@
                     "only action"),
                 diagnostic);
 
-            return Task.FromResult<object>(null);
+            return Task.FromResult<object?>(null);
         }
 
         /// <inheritdoc />

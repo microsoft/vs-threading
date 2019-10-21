@@ -319,7 +319,7 @@
             stub.OnExclusiveLockReleasedAsyncDelegate = delegate
             {
                 onExclusiveLockReleasedAsyncInvocationCount++;
-                return Task.FromResult<object>(null);
+                return Task.FromResult<object?>(null);
             };
 
             int onUpgradeableReadLockReleasedInvocationCount = 0;
@@ -361,7 +361,7 @@
             stub.OnExclusiveLockReleasedAsyncDelegate = delegate
             {
                 onExclusiveLockReleasedAsyncInvocationCount++;
-                return Task.FromResult<object>(null);
+                return Task.FromResult<object?>(null);
             };
 
             int onUpgradeableReadLockReleasedInvocationCount = 0;
@@ -1161,12 +1161,12 @@
             asyncLock.OnBeforeExclusiveLockReleasedAsyncDelegate = delegate
             {
                 onBeforeReleaseInvocations++;
-                return Task.FromResult<object>(null);
+                return Task.FromResult<object?>(null);
             };
             asyncLock.OnExclusiveLockReleasedAsyncDelegate = delegate
             {
                 onReleaseInvocations++;
-                return Task.FromResult<object>(null);
+                return Task.FromResult<object?>(null);
             };
 
             using (await asyncLock.WriteLockAsync())
@@ -1199,12 +1199,12 @@
             asyncLock.OnBeforeExclusiveLockReleasedAsyncDelegate = delegate
             {
                 onBeforeReleaseInvocations++;
-                return Task.FromResult<object>(null);
+                return Task.FromResult<object?>(null);
             };
             asyncLock.OnExclusiveLockReleasedAsyncDelegate = delegate
             {
                 onReleaseInvocations++;
-                return Task.FromResult<object>(null);
+                return Task.FromResult<object?>(null);
             };
 
             using (await asyncLock.UpgradeableReadLockAsync())
@@ -1237,12 +1237,12 @@
             asyncLock.OnBeforeExclusiveLockReleasedAsyncDelegate = delegate
             {
                 onBeforeReleaseInvocations++;
-                return Task.FromResult<object>(null);
+                return Task.FromResult<object?>(null);
             };
             asyncLock.OnExclusiveLockReleasedAsyncDelegate = delegate
             {
                 onReleaseInvocations++;
-                return Task.FromResult<object>(null);
+                return Task.FromResult<object?>(null);
             };
 
             using (await asyncLock.UpgradeableReadLockAsync(AsyncReaderWriterLock.LockFlags.StickyWrite))
@@ -3397,7 +3397,7 @@
             {
                 this.asyncLock.OnBeforeWriteLockReleased(delegate
                 {
-                    return Task.FromResult<object>(null);
+                    return Task.FromResult<object?>(null);
                 });
             });
         }
@@ -3411,7 +3411,7 @@
                 {
                     this.asyncLock.OnBeforeWriteLockReleased(delegate
                     {
-                        return Task.FromResult<object>(null);
+                        return Task.FromResult<object?>(null);
                     });
                 });
             }

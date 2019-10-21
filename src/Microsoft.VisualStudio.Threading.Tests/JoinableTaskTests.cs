@@ -3063,7 +3063,7 @@
         [Fact, Trait("GC", "true")]
         public void RunSynchronouslyTaskOfTNoYieldGCPressure()
         {
-            Task<object> completedTask = Task.FromResult<object>(null);
+            Task<object> completedTask = Task.FromResult<object?>(null);
 
             if (this.ExecuteInIsolation())
             {
