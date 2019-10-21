@@ -79,7 +79,5 @@ dotnet_diagnostic.CS8619.severity = suggestion
 dotnet_diagnostic.CS8620.severity = suggestion
 # CS8624: Argument cannot be used as an output for parameter due to differences in the nullability of reference types.
 dotnet_diagnostic.CS8624.severity = suggestion
-# CS8631: The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match constraint type.
-dotnet_diagnostic.CS8631.severity = suggestion
 # CS8653: A default expression introduces a null value for a type parameter.
 dotnet_diagnostic.CS8653.severity = suggestion
