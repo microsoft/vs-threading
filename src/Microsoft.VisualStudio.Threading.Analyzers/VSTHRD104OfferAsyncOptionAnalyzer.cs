@@ -6,10 +6,10 @@
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
-    using CodeAnalysis;
-    using CodeAnalysis.CSharp;
-    using CodeAnalysis.CSharp.Syntax;
-    using CodeAnalysis.Diagnostics;
+    using Microsoft.CodeAnalysis;
+    using Microsoft.CodeAnalysis.CSharp;
+    using Microsoft.CodeAnalysis.CSharp.Syntax;
+    using Microsoft.CodeAnalysis.Diagnostics;
 
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class VSTHRD104OfferAsyncOptionAnalyzer : DiagnosticAnalyzer

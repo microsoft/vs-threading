@@ -8,8 +8,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System.Collections.Immutable;
     using System.Linq;
-    using CodeAnalysis;
-    using CodeAnalysis.Diagnostics;
+    using Microsoft.CodeAnalysis;
+    using Microsoft.CodeAnalysis.Diagnostics;
 
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class VSTHRD200UseAsyncNamingConventionAnalyzer : DiagnosticAnalyzer

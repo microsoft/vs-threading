@@ -3,10 +3,10 @@
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Linq;
-    using CodeAnalysis;
-    using CodeAnalysis.CSharp;
-    using CodeAnalysis.CSharp.Syntax;
-    using CodeAnalysis.Diagnostics;
+    using Microsoft.CodeAnalysis;
+    using Microsoft.CodeAnalysis.CSharp;
+    using Microsoft.CodeAnalysis.CSharp.Syntax;
+    using Microsoft.CodeAnalysis.Diagnostics;
 
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class VSTHRD012SpecifyJtfWhereAllowed : DiagnosticAnalyzer

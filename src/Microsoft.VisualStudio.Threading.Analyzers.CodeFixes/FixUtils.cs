@@ -15,11 +15,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using CodeAnalysis.CSharp;
-    using CodeAnalysis.CSharp.Syntax;
-    using CodeAnalysis.Diagnostics;
     using Microsoft;
     using Microsoft.CodeAnalysis;
+    using Microsoft.CodeAnalysis.CSharp;
+    using Microsoft.CodeAnalysis.CSharp.Syntax;
+    using Microsoft.CodeAnalysis.Diagnostics;
     using Microsoft.CodeAnalysis.FindSymbols;
     using Microsoft.CodeAnalysis.Rename;
     using Microsoft.CodeAnalysis.Simplification;

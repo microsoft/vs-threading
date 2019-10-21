@@ -14,7 +14,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
-    using CodeAnalysis;
+    using Microsoft.CodeAnalysis;
 
     /// <summary>
     /// A class for our analyzers that provide per-compilation caching by way of its private fields
