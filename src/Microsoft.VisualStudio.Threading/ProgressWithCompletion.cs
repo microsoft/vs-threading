@@ -8,6 +8,7 @@ namespace Microsoft.VisualStudio.Threading
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -124,6 +125,23 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
+        private bool IsJoinableTaskAware(
+            [NotNullWhen(true)] out JoinableTaskFactory? joinableTaskFactory,
+            [NotNullWhen(true)] out JoinableTaskCollection? outstandingJoinableTasks,
+            [NotNullWhen(false)] out object? syncObject,
+            [NotNullWhen(false)] out HashSet<Task>? outstandingTasks,
+            [NotNullWhen(false)] out TaskFactory? taskFactory)
+        {
+            joinableTaskFactory = this.joinableTaskFactory;
+            outstandingJoinableTasks = this.outstandingJoinableTasks;
+
+            syncObject = this.syncObject;
+            outstandingTasks = this.outstandingTasks;
+            taskFactory = this.taskFactory;
+
+            return joinableTaskFactory is object;
+        }
+
         /// <summary>
         /// Receives a progress update.
         /// </summary>
@@ -139,9 +157,9 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="value">The value representing the updated progress.</param>
         protected virtual void Report(T value)
         {
-            if (this.joinableTaskFactory != null)
+            if (this.IsJoinableTaskAware(out var joinableTaskFactory, out var outstandingJoinableTasks, out var syncObject, out var outstandingTasks, out var taskFactory))
             {
-                JoinableTask joinableTask = this.joinableTaskFactory.RunAsync(
+                JoinableTask joinableTask = joinableTaskFactory.RunAsync(
                     async delegate
                     {
                         // Emulate the behavior of having captured a SynchronizationContext by invoking the handler on the main thread
@@ -149,7 +167,7 @@ namespace Microsoft.VisualStudio.Threading
                         // inline with our caller, per the behavior folks expect from this and .NET's Progress<T> class.
                         if (this.createdOnMainThread)
                         {
-                            await this.joinableTaskFactory.SwitchToMainThreadAsync(alwaysYield: true);
+                            await joinableTaskFactory.SwitchToMainThreadAsync(alwaysYield: true);
                         }
                         else
                         {
@@ -158,24 +176,24 @@ namespace Microsoft.VisualStudio.Threading
 
                         await this.handler(value).ConfigureAwaitRunInline();
                     });
-                this.outstandingJoinableTasks.Add(joinableTask);
+                outstandingJoinableTasks.Add(joinableTask);
             }
             else
             {
 #pragma warning disable CA2008 // Do not create tasks without passing a TaskScheduler
-                var reported = this.taskFactory.StartNew(() => this.handler(value)).Unwrap();
+                var reported = taskFactory.StartNew(() => this.handler(value)).Unwrap();
 #pragma warning restore CA2008 // Do not create tasks without passing a TaskScheduler
-                lock (this.syncObject)
+                lock (syncObject)
                 {
-                    this.outstandingTasks.Add(reported);
+                    outstandingTasks.Add(reported);
                 }
 
                 reported.ContinueWith(
                     t =>
                     {
-                        lock (this.syncObject)
+                        lock (syncObject)
                         {
-                            this.outstandingTasks.Remove(t);
+                            outstandingTasks.Remove(t);
                         }
                     },
                     CancellationToken.None,
@@ -197,13 +215,13 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns>A task that completes when all progress is complete.</returns>
         public Task WaitAsync(CancellationToken cancellationToken)
         {
-            if (this.outstandingJoinableTasks != null)
+            if (this.IsJoinableTaskAware(out _, out var outstandingJoinableTasks, out var syncObject, out _, out _))
             {
-                return this.outstandingJoinableTasks.JoinTillEmptyAsync(cancellationToken);
+                return outstandingJoinableTasks.JoinTillEmptyAsync(cancellationToken);
             }
             else
             {
-                lock (this.syncObject)
+                lock (syncObject)
                 {
                     return Task.WhenAll(this.outstandingTasks).WithCancellation(cancellationToken);
                 }
