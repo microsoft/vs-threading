@@ -181,4 +181,13 @@
   <data name="SyncContextFrameMismatchedAffinity" xml:space="preserve">
     <value>This frame has already been used with a different instance.</value>
   </data>
+  <data name="SemaphoreAlreadyHeld" xml:space="preserve">
+    <value>Semaphore is already held and reentrancy setting is '{0}'.</value>
+  </data>
+  <data name="WriteLockOutlived" xml:space="preserve">
+    <value>Write lock out-lived by a nested read lock, which is not allowed.</value>
+  </data>
+  <data name="MultipleContinuationsNotSupported" xml:space="preserve">
+    <value>Multiple continuations are not supported.</value>
+  </data>
 </root>

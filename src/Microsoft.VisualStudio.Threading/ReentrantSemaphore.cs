@@ -467,7 +467,7 @@ namespace Microsoft.VisualStudio.Threading
                 StrongBox<bool> ownedBox = this.reentrancyDetection.Value;
                 if (ownedBox?.Value ?? false)
                 {
-                    throw Verify.FailOperation("Semaphore is already held and reentrancy setting is '{0}'.", ReentrancyMode.NotAllowed);
+                    throw Verify.FailOperation(Strings.SemaphoreAlreadyHeld, ReentrancyMode.NotAllowed);
                 }
 
                 // Note: this code is duplicated and not extracted to minimize allocating extra async state machines.
@@ -544,7 +544,7 @@ namespace Microsoft.VisualStudio.Threading
                 StrongBox<bool> ownedBox = this.reentrancyDetection.Value;
                 if (ownedBox?.Value ?? false)
                 {
-                    throw Verify.FailOperation("Semaphore is already held and reentrancy setting is '{0}'.", ReentrancyMode.NotAllowed);
+                    throw Verify.FailOperation(Strings.SemaphoreAlreadyHeld, ReentrancyMode.NotAllowed);
                 }
 
                 // Note: this code is duplicated and not extracted to minimize allocating extra async state machines.

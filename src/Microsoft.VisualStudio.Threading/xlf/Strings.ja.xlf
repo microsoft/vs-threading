@@ -62,6 +62,11 @@
         <target state="translated">このロックは既に完了対象に設定されています。新しいトップレベルのロックは提供できません。</target>
         <note />
       </trans-unit>
+      <trans-unit id="MultipleContinuationsNotSupported">
+        <source>Multiple continuations are not supported.</source>
+        <target state="new">Multiple continuations are not supported.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="NotAllowedUnderURorWLock" translate="yes" xml:space="preserve">
         <source>This operation is not allowed while holding an active upgradeable read or write lock from an AsyncReaderWriterLock.</source>
         <target state="translated">AsyncReaderWriterLock から、アクティブでアップグレード可能な読み取りロックまたは書き込みロックを保持している間は、この操作を行うことができません。</target>
@@ -80,6 +85,11 @@
       <trans-unit id="STAThreadCallerNotAllowed" translate="yes" xml:space="preserve">
         <source>This operation cannot be completed on an STA thread.</source>
         <target state="translated">この操作は STA スレッドでは完了できません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="SemaphoreAlreadyHeld">
+        <source>Semaphore is already held and reentrancy setting is '{0}'.</source>
+        <target state="new">Semaphore is already held and reentrancy setting is '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="SemaphoreMisused" translate="yes" xml:space="preserve">
@@ -105,6 +115,11 @@
       <trans-unit id="ValueFactoryReentrancy" translate="yes" xml:space="preserve">
         <source>The value factory has called for the value on the same instance.</source>
         <target state="translated">値ファクトリが同じインスタンスの値を呼び出しました。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="WriteLockOutlived">
+        <source>Write lock out-lived by a nested read lock, which is not allowed.</source>
+        <target state="new">Write lock out-lived by a nested read lock, which is not allowed.</target>
         <note />
       </trans-unit>
     </body>
