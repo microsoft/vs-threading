@@ -232,8 +232,9 @@ namespace CpsDbg
             foreach (var thread in context.Runtime.Threads)
             {
                 var stackFrame = thread.EnumerateStackTrace().Take(50).FirstOrDefault(
-                    f => string.Equals(f.Method?.Name, "CompleteOnCurrentThread", StringComparison.Ordinal) &&
-                        string.Equals(f.Method.Type?.Name, "Microsoft.VisualStudio.Threading.JoinableTask", StringComparison.Ordinal));
+                    f => f.Method is { } method
+                        && string.Equals(f.Method.Name, "CompleteOnCurrentThread", StringComparison.Ordinal)
+                        && string.Equals(f.Method.Type?.Name, "Microsoft.VisualStudio.Threading.JoinableTask", StringComparison.Ordinal));
 
                 if (stackFrame != null)
                 {

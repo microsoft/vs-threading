@@ -478,7 +478,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         internal static bool IsWithinNameOf(SyntaxNode syntaxNode)
         {
             var invocation = syntaxNode?.FirstAncestorOrSelf<InvocationExpressionSyntax>();
-            return (invocation?.Expression as IdentifierNameSyntax)?.Identifier.Text == "nameof"
+            return invocation is object
+                && (invocation.Expression as IdentifierNameSyntax)?.Identifier.Text == "nameof"
                 && invocation.ArgumentList.Arguments.Count == 1;
         }
 
