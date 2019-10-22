@@ -9,6 +9,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Reflection;
     using System.Runtime.CompilerServices;
@@ -247,6 +248,15 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             // ValueTask and ValueTask<T> have the AsyncMethodBuilderAttribute.
             return (typeSymbol.Name == nameof(Task) && typeSymbol.BelongsToNamespace(Namespaces.SystemThreadingTasks))
                 || typeSymbol.GetAttributes().Any(ad => ad.AttributeClass?.Name == Types.AsyncMethodBuilderAttribute.TypeName && ad.AttributeClass.BelongsToNamespace(Types.AsyncMethodBuilderAttribute.Namespace));
+        }
+
+        internal static bool IsLazyOfT([NotNullWhen(true)] INamedTypeSymbol? constructedType)
+        {
+            return constructedType is object
+                && constructedType.ContainingNamespace?.Name == nameof(System)
+                && (constructedType.ContainingNamespace.ContainingNamespace?.IsGlobalNamespace ?? false)
+                && constructedType.Name == nameof(Lazy<object>)
+                && constructedType.Arity > 0; // could be Lazy<T> or Lazy<T, TMetadata>
         }
 
         internal static bool IsTask(ITypeSymbol typeSymbol) => typeSymbol?.Name == nameof(Task) && typeSymbol.BelongsToNamespace(Namespaces.SystemThreadingTasks);
