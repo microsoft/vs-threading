@@ -231,6 +231,8 @@ namespace Microsoft.VisualStudio.Threading
                 var transient = this.RunAsync(
                     delegate
                     {
+                        RoslynDebug.Assert(this.Context.AmbientTask is object, $"{nameof(this.Context.AmbientTask)} is always set for {nameof(this.RunAsync)} callbacks.");
+
                         ambientJob = this.Context.AmbientTask;
                         wrapper = SingleExecuteProtector.Create(ambientJob, callback);
                         ambientJob.Post(SingleExecuteProtector.ExecuteOnce, wrapper, true);
@@ -380,6 +382,8 @@ namespace Microsoft.VisualStudio.Threading
 
                 if (hangNotificationCount > 0)
                 {
+                    RoslynDebug.Assert(stopWatch is object);
+
                     // We detect a false alarm. The stop watch was started after the first timeout, so we add intial timeout to the total delay.
                     this.Context.OnFalseHangDetected(
                         stopWatch.Elapsed + this.HangDetectionTimeout,
@@ -622,6 +626,8 @@ namespace Microsoft.VisualStudio.Threading
             {
                 var transient = this.RunAsync(delegate
                 {
+                    RoslynDebug.Assert(this.Context.AmbientTask is object, $"{nameof(this.Context.AmbientTask)} is always set for {nameof(this.RunAsync)} callbacks.");
+
                     this.Context.AmbientTask.Post(callback, state, true);
                     return TplExtensions.CompletedTask;
                 });
@@ -1154,6 +1160,8 @@ namespace Microsoft.VisualStudio.Threading
             internal void RaiseTransitioningEvents()
             {
                 Assumes.False(this.raiseTransitionComplete); // if this method is called twice, that's the sign of a problem.
+                RoslynDebug.Assert(this.job is object);
+
                 this.raiseTransitionComplete = true;
                 this.job.Factory.OnTransitioningToMainThread(this.job);
             }
@@ -1257,6 +1265,8 @@ namespace Microsoft.VisualStudio.Threading
 
                 if (this.raiseTransitionComplete)
                 {
+                    RoslynDebug.Assert(this.job is object);
+
                     this.job.Factory.OnTransitionedToMainThread(this.job, !this.job.Factory.Context.IsOnMainThread);
                 }
             }

@@ -8,6 +8,7 @@ namespace Microsoft.VisualStudio.Threading
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Text;
     using System.Threading;
@@ -239,7 +240,8 @@ namespace Microsoft.VisualStudio.Threading
                     return true;
                 }
 
-                var array = (T[]?)this.enumeratedValue;
+                RoslynDebug.Assert(this.enumeratedValue is object);
+                var array = (T[])this.enumeratedValue;
                 if (this.currentIndex >= 0 && this.currentIndex < array.Length)
                 {
                     this.currentIndex++;

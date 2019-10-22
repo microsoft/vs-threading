@@ -7,6 +7,7 @@
 namespace Microsoft.VisualStudio.Threading
 {
     using System;
+    using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -140,6 +141,8 @@ namespace Microsoft.VisualStudio.Threading
                     // has completed.
                     if (this.value == null)
                     {
+                        RoslynDebug.Assert(this.valueFactory is object);
+
                         cancellationToken.ThrowIfCancellationRequested();
                         resumableAwaiter = new InlineResumable();
                         Func<Task<T>>? originalValueFactory = this.valueFactory;
@@ -221,6 +224,8 @@ namespace Microsoft.VisualStudio.Threading
             // As a perf optimization, avoid calling JTF or GetValueAsync if the value factory has already completed.
             if (this.IsValueFactoryCompleted)
             {
+                RoslynDebug.Assert(this.value is object);
+
                 return this.value.GetAwaiter().GetResult();
             }
             else
