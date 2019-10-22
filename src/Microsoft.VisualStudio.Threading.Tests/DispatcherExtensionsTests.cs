@@ -61,7 +61,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 {
                     await Task.Yield();
                     unblockNormalPriorityWork.Set();
-                    normalTask.Join();
+                    normalTask!.Join();
                 });
                 normalTask = normalPriorityJtf.RunAsync(async delegate
                 {

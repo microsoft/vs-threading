@@ -38,7 +38,7 @@
         [Fact]
         public void JoinTillEmptyAlreadyCompleted()
         {
-            var awaiter = this.joinableCollection.JoinTillEmptyAsync().GetAwaiter();
+            var awaiter = this.joinableCollection!.JoinTillEmptyAsync().GetAwaiter();
             Assert.True(awaiter.IsCompleted);
         }
 
@@ -51,7 +51,7 @@
                 await evt;
             });
 
-            var waiter = this.joinableCollection.JoinTillEmptyAsync();
+            var waiter = this.joinableCollection!.JoinTillEmptyAsync();
             Assert.False(waiter.GetAwaiter().IsCompleted);
             Task.Run(async delegate
             {
@@ -71,7 +71,7 @@
                 await evt.WaitAsync().ConfigureAwait(false);
             });
 
-            var waiter = this.joinableCollection.JoinTillEmptyAsync();
+            var waiter = this.joinableCollection!.JoinTillEmptyAsync();
             Assert.False(waiter.GetAwaiter().IsCompleted);
             evt.Set();
             Assert.True(waiter.Wait(UnexpectedTimeout));
@@ -86,7 +86,7 @@
                 await evt;
             });
 
-            var waiter = this.joinableCollection.JoinTillEmptyAsync();
+            var waiter = this.joinableCollection!.JoinTillEmptyAsync();
             Assert.False(waiter.GetAwaiter().IsCompleted);
             Task.Run(async delegate
             {
@@ -107,7 +107,7 @@
 
             this.context.Factory.Run(async delegate
             {
-                await this.joinableCollection.JoinTillEmptyAsync();
+                await this.joinableCollection!.JoinTillEmptyAsync();
             });
         }
 
@@ -123,7 +123,7 @@
             this.context.Factory.Run(async delegate
             {
                 var cts = new CancellationTokenSource();
-                Task joinTask = this.joinableCollection.JoinTillEmptyAsync(cts.Token);
+                Task joinTask = this.joinableCollection!.JoinTillEmptyAsync(cts.Token);
                 cts.Cancel();
                 var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => joinTask);
                 Assert.Equal(cts.Token, ex.CancellationToken);
@@ -190,7 +190,7 @@
         {
             this.JoinableFactory.Run(delegate
             {
-                var releaser = this.joinableCollection.Join();
+                var releaser = this.joinableCollection!.Join();
                 releaser.Dispose();
                 releaser.Dispose();
 

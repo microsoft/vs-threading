@@ -208,7 +208,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 {
                     Assert.False(executed);
                     executed = true;
-                    lazy.GetValueAsync();
+                    lazy!.GetValueAsync();
                     return Task.FromResult<object>(new object());
                 },
                 jtf);
@@ -231,7 +231,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                     Assert.False(executed);
                     executed = true;
                     await Task.Yield();
-                    await lazy.GetValueAsync();
+                    await lazy!.GetValueAsync();
                     return new object();
                 },
                 jtf);

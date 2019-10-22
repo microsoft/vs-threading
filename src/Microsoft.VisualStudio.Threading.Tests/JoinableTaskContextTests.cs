@@ -402,7 +402,7 @@
         {
             const string jtcName = "My Collection";
 
-            this.joinableCollection.DisplayName = jtcName;
+            this.joinableCollection!.DisplayName = jtcName;
             this.Factory.RunAsync(delegate
             {
                 IHangReportContributor contributor = this.Context;
@@ -627,7 +627,7 @@
             this.Factory.Run(async delegate
             {
                 await nonBlockingStateObserved;
-                joinableTask.JoinAsync().Forget();
+                joinableTask!.JoinAsync().Forget();
                 nowBlocking.Set();
             });
         }

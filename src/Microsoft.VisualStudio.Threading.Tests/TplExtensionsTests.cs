@@ -293,7 +293,7 @@
                 TaskCreationOptions.None,
                 TaskScheduler.Default);
             task.WaitWithoutInlining();
-            attachedTask.GetAwaiter().GetResult(); // rethrow any exceptions
+            attachedTask!.GetAwaiter().GetResult(); // rethrow any exceptions
         }
 
         [Fact]

@@ -295,13 +295,13 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
                 return TplExtensions.CompletedTask;
             });
             releaser1.Set();
-            await innerOperation;
+            await innerOperation!;
             Assert.Equal(1, this.semaphore.CurrentCount);
         });
 
         async Task EnterAndUseSemaphoreAsync(AsyncManualResetEvent releaseEvent)
         {
-            await this.semaphore.ExecuteAsync(async delegate
+            await this.semaphore!.ExecuteAsync(async delegate
             {
                 await releaseEvent;
                 Assert.Equal(0, this.semaphore.CurrentCount); // we are still in the semaphore
@@ -333,7 +333,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
         async Task SemaphoreRecycler()
         {
             await releaseInheritor;
-            Assert.Equal(0, this.semaphore.CurrentCount);
+            Assert.Equal(0, this.semaphore!.CurrentCount);
 
             // Try to enter the semaphore. This should timeout because someone else is holding the semaphore, waiting for us to timeout.
             await this.semaphore.ExecuteAsync(
@@ -367,7 +367,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
         async Task SemaphoreRecycler1()
         {
             await releaseInheritor1;
-            Assert.Equal(1, this.semaphore.CurrentCount);
+            Assert.Equal(1, this.semaphore!.CurrentCount);
             await this.semaphore.ExecuteAsync(
                 async delegate
                 {
@@ -380,7 +380,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
         async Task SemaphoreRecycler2()
         {
             await releaseInheritor2;
-            Assert.Equal(0, this.semaphore.CurrentCount);
+            Assert.Equal(0, this.semaphore!.CurrentCount);
 
             // Try to enter the semaphore. This should timeout because someone else is holding the semaphore, waiting for us to timeout.
             await this.semaphore.ExecuteAsync(

@@ -33,14 +33,14 @@ public class ReentrantSemaphoreJTFTests : ReentrantSemaphoreTestBase
                     async delegate
                     {
                         firstEntered.Set();
-                        await this.joinableTaskContext.Factory.SwitchToMainThreadAsync(this.TimeoutToken);
+                        await this.joinableTaskContext!.Factory.SwitchToMainThreadAsync(this.TimeoutToken);
                         firstOperationReachedMainThread = true;
                     },
                     this.TimeoutToken);
             });
 
             bool secondEntryComplete = false;
-            this.joinableTaskContext.Factory.Run(async delegate
+            this.joinableTaskContext!.Factory.Run(async delegate
             {
                 await firstEntered.WaitAsync().WithCancellation(this.TimeoutToken);
                 Assumes.False(firstOperationReachedMainThread);
@@ -94,7 +94,7 @@ public class ReentrantSemaphoreJTFTests : ReentrantSemaphoreTestBase
                 // 3. Sync request.
                 // The goal is to test that the 3rd, sync request, will release the UI thread
                 // to the two async requests, then it will resume its operations.
-                await this.joinableTaskContext.Factory.SwitchToMainThreadAsync();
+                await this.joinableTaskContext!.Factory.SwitchToMainThreadAsync();
                 var secondOperation = this.joinableTaskContext.Factory.RunAsync(() => this.AcquireSemaphoreAsync(this.TimeoutToken));
                 var thirdOperation = this.AcquireSemaphoreAsync(this.TimeoutToken);
                 bool finalSemaphoreAcquired = this.joinableTaskContext.Factory.Run(
@@ -138,7 +138,7 @@ public class ReentrantSemaphoreJTFTests : ReentrantSemaphoreTestBase
 
                     var operation2 = this.AcquireSemaphoreAsync(abortSemaphore.Token);
 
-                    this.joinableTaskContext.Factory.Run(
+                    this.joinableTaskContext!.Factory.Run(
                         async () =>
                         {
                             release2.Set();
@@ -171,7 +171,7 @@ public class ReentrantSemaphoreJTFTests : ReentrantSemaphoreTestBase
     private async Task<bool> AcquireSemaphoreAsync(CancellationToken cancellationToken)
     {
         bool acquired = false;
-        await this.semaphore.ExecuteAsync(
+        await this.semaphore!.ExecuteAsync(
             () =>
             {
                 acquired = true;

@@ -643,7 +643,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 Task completedTask = await Task.WhenAny(watchingTask, Task.Delay(AsyncDelay));
                 Assert.NotSame(watchingTask, completedTask);
                 test.CreateSubKey().Dispose();
-                await watchingTask;
+                await watchingTask!;
             }
         }
 

@@ -81,7 +81,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             jt = delegatingFactory.RunAsync(async delegate
             {
                 await Task.Yield();
-                Assert.True(this.joinableCollection.Contains(jt));
+                Assert.True(this.joinableCollection!.Contains(jt));
             });
 
             jt.Join();

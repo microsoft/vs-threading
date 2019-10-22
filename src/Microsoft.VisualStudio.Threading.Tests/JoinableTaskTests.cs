@@ -150,7 +150,7 @@
             });
             outerTaskCompleted.Set();
 
-            innerTask.ContinueWith(_ => this.testFrame.Continue = false);
+            innerTask!.ContinueWith(_ => this.testFrame.Continue = false);
 
             // Now let the request proceed through.
             this.PushFrame();
@@ -599,7 +599,7 @@
                 await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 Assert.NotEqual(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
 
-                using (this.joinableCollection.Join())
+                using (this.joinableCollection!.Join())
                 { // invite the work to re-enter our synchronous work on the main thread thread.
                     await backgroundContenderCompletedRelevantUIWork.Task; // we can't complete until this seemingly unrelated work completes.
                 } // stop inviting more work from background thread.
@@ -804,7 +804,7 @@
                 // unrelated work (work not spun off from this block) must still be
                 // Joined in order to execute here.
                 Assert.NotSame(task, await Task.WhenAny(task, Task.Delay(AsyncDelay / 2))); //, "The unrelated main thread work completed before the Main thread was joined.");
-                using (this.joinableCollection.Join())
+                using (this.joinableCollection!.Join())
                 {
                     this.PrintActiveTasksReport();
                     await task;
@@ -917,7 +917,7 @@
                         // the JoinableTask is done, which would deadlock if the
                         // JoinableTask were inappropriately blocking on the completion
                         // of the posted message.
-                        SynchronizationContext.Current.Post(s => { task.Wait(); }, null);
+                        SynchronizationContext.Current.Post(s => { task!.Wait(); }, null);
 
                         // Post one more time, since an implementation detail may unblock
                         // the JoinableTask for the very last posted message for reasons that
@@ -989,7 +989,7 @@
 
                 task2 = this.asyncPump.RunAsync(async delegate
                 {
-                    var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+                    var collection = new JoinableTaskCollection(this.joinableCollection!.Context);
                     collection.Add(task1);
                     collection.Join();
 
@@ -1010,7 +1010,7 @@
                 await dependentWork1Queued;
                 await dependentWork2Queued;
 
-                var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+                var collection = new JoinableTaskCollection(this.joinableCollection!.Context);
                 collection.Add(task2);
                 collection.Join();
 
@@ -1022,10 +1022,10 @@
 
             this.asyncPump.Run(async delegate
             {
-                using (this.joinableCollection.Join())
+                using (this.joinableCollection!.Join())
                 {
-                    await task1;
-                    await task2;
+                    await task1!;
+                    await task2!;
                     await separatedTask;
                 }
             });
@@ -1059,7 +1059,7 @@
                 {
                     await indirectDependencyAllowed;
 
-                    var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+                    var collection = new JoinableTaskCollection(this.joinableCollection!.Context);
                     collection.Add(task1);
 
                     await Task.Delay(AsyncDelay);
@@ -1078,7 +1078,7 @@
                 dependentWorkAllowed.Set();
                 await dependentWorkQueued;
 
-                var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+                var collection = new JoinableTaskCollection(this.joinableCollection!.Context);
                 collection.Add(task2);
 
                 collection.Join();
@@ -1091,10 +1091,10 @@
 
             this.asyncPump.Run(async delegate
             {
-                using (this.joinableCollection.Join())
+                using (this.joinableCollection!.Join())
                 {
-                    await task1;
-                    await task2;
+                    await task1!;
+                    await task2!;
                     await separatedTask;
                 }
             });
@@ -1132,7 +1132,7 @@
             {
                 await taskStarted;
 
-                var collection1 = new JoinableTaskCollection(this.joinableCollection.Context);
+                var collection1 = new JoinableTaskCollection(this.joinableCollection!.Context);
                 collection1.Add(task1);
                 var collection2 = new JoinableTaskCollection(this.joinableCollection.Context);
                 collection2.Add(task1);
@@ -1152,16 +1152,16 @@
                 await Task.Delay(AsyncDelay);
                 await Task.Yield();
 
-                Assert.False(task1.IsCompleted);
+                Assert.False(task1!.IsCompleted);
 
                 testEnded.Set();
             });
 
             this.asyncPump.Run(async delegate
             {
-                using (this.joinableCollection.Join())
+                using (this.joinableCollection!.Join())
                 {
-                    await task1;
+                    await task1!;
                     await separatedTask;
                 }
             });
@@ -1193,7 +1193,7 @@
 
                 task2 = this.asyncPump.RunAsync(async delegate
                 {
-                    var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+                    var collection = new JoinableTaskCollection(this.joinableCollection!.Context);
                     collection.Add(task1);
                     using (collection.Join())
                     {
@@ -1203,7 +1203,7 @@
 
                 task3 = this.asyncPump.RunAsync(async delegate
                 {
-                    var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+                    var collection = new JoinableTaskCollection(this.joinableCollection!.Context);
                     collection.Add(task1);
                     using (collection.Join())
                     {
@@ -1220,7 +1220,7 @@
             {
                 await taskStarted;
 
-                var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+                var collection = new JoinableTaskCollection(this.joinableCollection!.Context);
                 collection.Add(task2);
                 collection.Add(task3);
 
@@ -1239,18 +1239,18 @@
 
                 // we expect 3 switching from two delay one yield call.  We don't want one triggered by Task1.
                 Assert.True(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
-                Assert.False(task1.IsCompleted);
+                Assert.False(task1!.IsCompleted);
 
                 testEnded.Set();
             });
 
             this.asyncPump.Run(async delegate
             {
-                using (this.joinableCollection.Join())
+                using (this.joinableCollection!.Join())
                 {
-                    await task1;
-                    await task2;
-                    await task3;
+                    await task1!;
+                    await task2!;
+                    await task3!;
                     await separatedTask;
                 }
             });
@@ -1281,7 +1281,7 @@
                 {
                     await taskStarted;
                     await testStarted;
-                    var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+                    var collection = new JoinableTaskCollection(this.joinableCollection!.Context);
                     collection.Add(task2);
                     using (collection.Join())
                     {
@@ -1309,7 +1309,7 @@
                 {
                     await taskStarted;
                     await testStarted;
-                    var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+                    var collection = new JoinableTaskCollection(this.joinableCollection!.Context);
                     collection.Add(task1);
                     using (collection.Join())
                     {
@@ -1330,7 +1330,7 @@
                 await task1Prepared;
                 await task2Prepared;
 
-                var collection1 = new JoinableTaskCollection(this.joinableCollection.Context);
+                var collection1 = new JoinableTaskCollection(this.joinableCollection!.Context);
                 collection1.Add(task1);
                 var collection2 = new JoinableTaskCollection(this.joinableCollection.Context);
                 collection2.Add(task2);
@@ -1358,17 +1358,17 @@
 
                 // we expect 3 switching from two delay one yield call.  We don't want one triggered by Task1.
                 Assert.True(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
-                Assert.False(task1.IsCompleted);
+                Assert.False(task1!.IsCompleted);
 
                 testEnded.Set();
             });
 
             this.asyncPump.Run(async delegate
             {
-                using (this.joinableCollection.Join())
+                using (this.joinableCollection!.Join())
                 {
-                    await task1;
-                    await task2;
+                    await task1!;
+                    await task2!;
                     await separatedTask;
                 }
             });
@@ -1393,7 +1393,7 @@
                 {
                     await taskStarted;
 
-                    var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+                    var collection = new JoinableTaskCollection(this.joinableCollection!.Context);
                     collection.Add(task1);
                     using (collection.Join())
                     {
@@ -1410,7 +1410,7 @@
 
                 task2 = this.asyncPump.RunAsync(async delegate
                 {
-                    var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+                    var collection = new JoinableTaskCollection(this.joinableCollection!.Context);
                     collection.Add(task1);
                     using (collection.Join())
                     {
@@ -1423,7 +1423,7 @@
                 {
                     await taskStarted;
 
-                    var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+                    var collection = new JoinableTaskCollection(this.joinableCollection!.Context);
                     collection.Add(task2);
                     collection.Add(task4);
                     using (collection.Join())
@@ -1435,7 +1435,7 @@
 
                 task4 = this.asyncPump.RunAsync(async delegate
                 {
-                    var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+                    var collection = new JoinableTaskCollection(this.joinableCollection!.Context);
                     collection.Add(task2);
                     collection.Add(task3);
                     using (collection.Join())
@@ -1447,7 +1447,7 @@
 
                 task5 = this.asyncPump.RunAsync(async delegate
                 {
-                    var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+                    var collection = new JoinableTaskCollection(this.joinableCollection!.Context);
                     collection.Add(task3);
                     using (collection.Join())
                     {
@@ -1467,7 +1467,7 @@
                 await task3Prepared;
                 await task4Prepared;
 
-                var collection = new JoinableTaskCollection(this.joinableCollection.Context);
+                var collection = new JoinableTaskCollection(this.joinableCollection!.Context);
                 collection.Add(task5);
 
                 using (collection.Join())
@@ -1486,20 +1486,20 @@
 
                 // we expect 3 switching from two delay one yield call.  We don't want one triggered by Task1.
                 Assert.True(waitCountingJTF.WaitCount - waitCountBeforeSecondWork <= 3);
-                Assert.False(task1.IsCompleted);
+                Assert.False(task1!.IsCompleted);
 
                 testEnded.Set();
             });
 
             this.asyncPump.Run(async delegate
             {
-                using (this.joinableCollection.Join())
+                using (this.joinableCollection!.Join())
                 {
-                    await task1;
-                    await task2;
-                    await task3;
-                    await task4;
-                    await task5;
+                    await task1!;
+                    await task2!;
+                    await task3!;
+                    await task4!;
+                    await task5!;
                     await separatedTask;
                 }
             });
@@ -1543,7 +1543,7 @@
                 await mainThreadDependentWorkQueued.WaitAsync();
 
                 // STEP 3
-                using (this.joinableCollection.Join())
+                using (this.joinableCollection!.Join())
                 {
                     await dependentWorkCompleted.WaitAsync();
                 }
@@ -1571,7 +1571,7 @@
             Assert.False(unrelatedTask.IsCompleted);
             this.asyncPump.Run(async delegate
             {
-                using (this.joinableCollection.Join())
+                using (this.joinableCollection!.Join())
                 {
                     await unrelatedTask;
                 }
@@ -1614,7 +1614,7 @@
             // Avoid a deadlock while waiting for test to complete.
             this.asyncPump.Run(async delegate
             {
-                using (this.joinableCollection.Join())
+                using (this.joinableCollection!.Join())
                 {
                     await task;
                 }
@@ -1649,7 +1649,7 @@
             // Avoid a deadlock while waiting for test to complete.
             this.asyncPump.Run(async delegate
             {
-                using (this.joinableCollection.Join())
+                using (this.joinableCollection!.Join())
                 {
                     await task;
                 }
@@ -1666,7 +1666,7 @@
                 outerService = new MockAsyncService(this.asyncPump.Context, outerService);
             }
 
-            var operationTask = outerService.OperationAsync();
+            var operationTask = outerService!.OperationAsync();
 
             this.asyncPump.Run(async delegate
             {
@@ -1711,7 +1711,7 @@
                 await Task.Yield();
 
                 // Now, get rid of the innerTask
-                await innerTask;
+                await innerTask!;
             });
         }
 
@@ -1740,7 +1740,7 @@
                 await Task.Yield();
 
                 // Now, get rid of the innerTask
-                await innerTask;
+                await innerTask!;
             });
         }
 
@@ -1764,9 +1764,9 @@
             {
                 mainThreadNowBlocking.Set();
                 Assert.NotSame(task, await Task.WhenAny(task, Task.Delay(AsyncDelay / 2)));
-                using (this.joinableCollection.Join())
+                using (this.joinableCollection!.Join())
                 {
-                    await task;
+                    await task!;
                 }
             });
         }
@@ -1781,7 +1781,7 @@
 
             this.asyncPump.Run(async delegate
             {
-                using (this.joinableCollection.Join())
+                using (this.joinableCollection!.Join())
                 {
                     await joinable.Task;
                 }
@@ -1798,7 +1798,7 @@
 
             this.asyncPump.Run(async delegate
             {
-                using (this.joinableCollection.Join())
+                using (this.joinableCollection!.Join())
                 {
                     await joinable.Task;
                 }
@@ -2061,7 +2061,7 @@
 
             // From the Main thread.
             bool executed3 = false;
-            syncContext.Send(s => { Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId); Assert.Same(state, s); executed3 = true; }, state);
+            syncContext!.Send(s => { Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId); Assert.Same(state, s); executed3 = true; }, state);
             Assert.True(executed3);
 
             // And from another thread.
@@ -2091,7 +2091,7 @@
 
             // throw exceptions for any failures.
             task.Wait();
-            sendFromWithinRunSync.Wait();
+            sendFromWithinRunSync!.Wait();
         }
 
         [Fact]
@@ -2193,7 +2193,7 @@
                 {
                     backgroundTask = Task.Run(async delegate
                     {
-                        using (this.joinableCollection.Join())
+                        using (this.joinableCollection!.Join())
                         {
                             await mainThreadUnblocked;
                             await this.asyncPump.SwitchToMainThreadAsync();
@@ -2241,7 +2241,7 @@
                     await runSynchronouslyExited;
                     try
                     {
-                        using (this.joinableCollection.Join())
+                        using (this.joinableCollection!.Join())
                         {
                             unblockMainThread.Set();
                         }
@@ -2266,7 +2266,7 @@
             runSynchronouslyExited.Set();
             unblockMainThread.Wait();
             this.PushFrame();
-            backgroundTask.GetAwaiter().GetResult(); // rethrow any exceptions
+            backgroundTask!.GetAwaiter().GetResult(); // rethrow any exceptions
         }
 
         [Fact]
@@ -2426,7 +2426,7 @@
                     return Task.Run(async delegate
                     {
                         await messagePosted; // wait for this.asyncPump.pendingActions to be non empty
-                        using (var j = this.joinableCollection.Join())
+                        using (var j = this.joinableCollection!.Join())
                         {
                             await uiThreadReachedTask;
                         }
@@ -2447,7 +2447,7 @@
                     syncContext = SynchronizationContext.Current;
                     return TplExtensions.CompletedTask;
                 });
-                syncContext.Post(
+                syncContext!.Post(
                     delegate
                     {
                         delegateExecuted.Set();
@@ -2696,7 +2696,7 @@
                     // 3. Join and wait for another BG task.
                     //    That's to simulate the scenario when the IVs* service also calls into CPS,
                     //    and CPS join and wait for another task.
-                    using (this.joinableCollection.Join())
+                    using (this.joinableCollection!.Join())
                     {
                         await task;
                     }
@@ -2724,7 +2724,7 @@
             {
                 t1 = Task.Run(delegate
                 {
-                    using (this.joinableCollection.Join())
+                    using (this.joinableCollection!.Join())
                     {
                         while (!cts.IsCancellationRequested)
                         {
@@ -3335,10 +3335,10 @@
             this.context.Factory.Run(async delegate
             {
                 await jtStarted;
-                var joinTask = this.joinableCollection.JoinTillEmptyAsync();
+                var joinTask = this.joinableCollection!.JoinTillEmptyAsync();
                 await joinTask.WithTimeout(UnexpectedTimeout);
                 Assert.True(joinTask.IsCompleted);
-                await unawaitedWork;
+                await unawaitedWork!;
             });
             Assert.True(unawaitedWorkCompleted);
         }
@@ -3383,7 +3383,7 @@
             });
             this.context.Factory.Run(async delegate
             {
-                var joinTask = this.joinableCollection.JoinTillEmptyAsync();
+                var joinTask = this.joinableCollection!.JoinTillEmptyAsync();
                 await joinTask.WithTimeout(UnexpectedTimeout);
                 Assert.True(joinTask.IsCompleted);
             });
@@ -3616,7 +3616,7 @@
                 await joinableTask;
                 Assert.Same(observedJoinableTask, joinableTask);
                 await joinableTask.Task;
-                await observedWrappedTask;
+                await observedWrappedTask!;
             });
         }
 
@@ -3655,7 +3655,7 @@
                 await joinableTask;
                 Assert.Same(observedJoinableTask, joinableTask);
                 Assert.Equal(3, await joinableTask.Task);
-                Assert.Equal(3, await observedWrappedTask);
+                Assert.Equal(3, await observedWrappedTask!);
             });
         }
 
