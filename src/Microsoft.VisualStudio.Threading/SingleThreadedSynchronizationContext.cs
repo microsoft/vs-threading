@@ -83,7 +83,9 @@ namespace Microsoft.VisualStudio.Threading
             else
             {
                 Exception caughtException = null;
+#pragma warning disable CA2000 // Dispose objects before losing scope
                 var evt = new ManualResetEventSlim();
+#pragma warning restore CA2000 // Dispose objects before losing scope
                 var ctxt = ExecutionContext.Capture();
                 lock (this.messageQueue)
                 {
