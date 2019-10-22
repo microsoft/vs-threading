@@ -160,7 +160,9 @@ namespace Microsoft.VisualStudio.Threading
                         // subscription to have begun before we return: for the async part to simply be notification.
                         // This async method we're calling uses .ConfigureAwait(false) internally so this won't
                         // deadlock if we're called on a thread with a single-thread SynchronizationContext.
+#pragma warning disable CA2000 // Dispose objects before losing scope
                         dedicatedThreadReleaser = DownlevelRegistryWatcherSupport.ExecuteOnDedicatedThreadAsync(registerAction).GetAwaiter().GetResult();
+#pragma warning restore CA2000 // Dispose objects before losing scope
                     }
 
                     await evt.WaitHandle.ToTask(cancellationToken: cancellationToken).ConfigureAwait(false);
