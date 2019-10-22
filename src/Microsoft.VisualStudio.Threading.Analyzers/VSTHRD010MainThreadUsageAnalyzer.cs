@@ -124,15 +124,13 @@
 
                 compilationStartContext.RegisterCodeBlockStartAction<SyntaxKind>(codeBlockStartContext =>
                 {
-                    var methodAnalyzer = new MethodAnalyzer
-                    {
-                        MainThreadAssertingMethods = mainThreadAssertingMethods,
-                        MainThreadSwitchingMethods = mainThreadSwitchingMethods,
-                        MembersRequiringMainThread = membersRequiringMainThread,
-                        MethodsDeclaringUIThreadRequirement = methodsDeclaringUIThreadRequirement,
-                        MethodsAssertingUIThreadRequirement = methodsAssertingUIThreadRequirement,
-                        DiagnosticProperties = diagnosticProperties,
-                    };
+                    var methodAnalyzer = new MethodAnalyzer(
+                        mainThreadAssertingMethods: mainThreadAssertingMethods,
+                        mainThreadSwitchingMethods: mainThreadSwitchingMethods,
+                        membersRequiringMainThread: membersRequiringMainThread,
+                        methodsDeclaringUIThreadRequirement: methodsDeclaringUIThreadRequirement,
+                        methodsAssertingUIThreadRequirement: methodsAssertingUIThreadRequirement,
+                        diagnosticProperties: diagnosticProperties);
                     codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeInvocation), SyntaxKind.InvocationExpression);
                     codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeMemberAccess), SyntaxKind.SimpleMemberAccessExpression);
                     codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeCast), SyntaxKind.CastExpression);
@@ -287,17 +285,33 @@
         {
             private ImmutableDictionary<SyntaxNode, ThreadingContext> methodDeclarationNodes = ImmutableDictionary<SyntaxNode, ThreadingContext>.Empty;
 
-            internal ImmutableArray<CommonInterest.QualifiedMember> MainThreadAssertingMethods { get; set; }
+            public MethodAnalyzer(
+                ImmutableArray<CommonInterest.QualifiedMember> mainThreadAssertingMethods,
+                ImmutableArray<CommonInterest.QualifiedMember> mainThreadSwitchingMethods,
+                ImmutableArray<CommonInterest.TypeMatchSpec> membersRequiringMainThread,
+                HashSet<IMethodSymbol> methodsDeclaringUIThreadRequirement,
+                HashSet<IMethodSymbol> methodsAssertingUIThreadRequirement,
+                ImmutableDictionary<string, string> diagnosticProperties)
+            {
+                this.MainThreadAssertingMethods = mainThreadAssertingMethods;
+                this.MainThreadSwitchingMethods = mainThreadSwitchingMethods;
+                this.MembersRequiringMainThread = membersRequiringMainThread;
+                this.MethodsDeclaringUIThreadRequirement = methodsDeclaringUIThreadRequirement;
+                this.MethodsAssertingUIThreadRequirement = methodsAssertingUIThreadRequirement;
+                this.DiagnosticProperties = diagnosticProperties;
+            }
 
-            internal ImmutableArray<CommonInterest.QualifiedMember> MainThreadSwitchingMethods { get; set; }
+            internal ImmutableArray<CommonInterest.QualifiedMember> MainThreadAssertingMethods { get; }
 
-            internal ImmutableArray<CommonInterest.TypeMatchSpec> MembersRequiringMainThread { get; set; }
+            internal ImmutableArray<CommonInterest.QualifiedMember> MainThreadSwitchingMethods { get; }
 
-            internal HashSet<IMethodSymbol>? MethodsDeclaringUIThreadRequirement { get; set; }
+            internal ImmutableArray<CommonInterest.TypeMatchSpec> MembersRequiringMainThread { get; }
 
-            internal HashSet<IMethodSymbol>? MethodsAssertingUIThreadRequirement { get; set; }
+            internal HashSet<IMethodSymbol> MethodsDeclaringUIThreadRequirement { get; }
 
-            internal ImmutableDictionary<string, string>? DiagnosticProperties { get; set; }
+            internal HashSet<IMethodSymbol> MethodsAssertingUIThreadRequirement { get; }
+
+            internal ImmutableDictionary<string, string> DiagnosticProperties { get; }
 
             internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
             {
