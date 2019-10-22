@@ -333,7 +333,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             lock (this.SyncRoot)
             {
-                return this.queueElements.ToArray();
+                return this.queueElements?.ToArray() ?? Array.Empty<T>();
             }
         }
 

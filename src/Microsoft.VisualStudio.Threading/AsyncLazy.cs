@@ -245,7 +245,7 @@ namespace Microsoft.VisualStudio.Threading
         public override string ToString()
         {
             return (this.value != null && this.value.IsCompleted)
-                ? (this.value.Status == TaskStatus.RanToCompletion ? this.value.Result.ToString() : Strings.LazyValueFaulted)
+                ? (this.value.Status == TaskStatus.RanToCompletion ? $"{this.value.Result}" : Strings.LazyValueFaulted)
                 : Strings.LazyValueNotCreated;
         }
     }

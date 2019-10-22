@@ -323,9 +323,9 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Gets the target wrapped by this weak reference.  Null if the target has already been garbage collected.
             /// </summary>
-            internal T Target
+            internal T? Target
             {
-                get { return this.notSoWeakTarget ?? (T)this.weakReference.Target; }
+                get { return this.notSoWeakTarget ?? (T?)this.weakReference?.Target; }
             }
 
             /// <summary>
@@ -333,7 +333,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             internal bool IsAlive
             {
-                get { return this.notSoWeakTarget != null || this.weakReference.IsAlive; }
+                get { return this.notSoWeakTarget != null || (this.weakReference?.IsAlive ?? false); }
             }
 
             /// <summary>
@@ -356,7 +356,7 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <inheritdoc />
-            public bool Equals(WeakReference<T> other) => this.weakReference.Equals(other.weakReference);
+            public bool Equals(WeakReference<T> other) => Equals(this.weakReference, other.weakReference);
         }
 
         /// <summary>
@@ -392,7 +392,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 while (this.enumerator.MoveNext())
                 {
-                    TKey key = this.enumerator.Current.Key.Target;
+                    TKey? key = this.enumerator.Current.Key.Target;
                     if (key != null)
                     {
                         this.Current = key;
