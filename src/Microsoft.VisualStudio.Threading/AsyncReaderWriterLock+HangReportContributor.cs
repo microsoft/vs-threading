@@ -191,10 +191,9 @@ namespace Microsoft.VisualStudio.Threading
         private static IEnumerable<Awaiter> GetLockStack(Awaiter awaiter)
         {
             Requires.NotNull(awaiter, nameof(awaiter));
-            while (awaiter != null)
+            for (Awaiter? current = awaiter; current != null; current = current.NestingLock)
             {
                 yield return awaiter;
-                awaiter = awaiter.NestingLock;
             }
         }
 

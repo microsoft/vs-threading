@@ -61,8 +61,6 @@ csharp_space_between_method_declaration_parameter_list_parentheses = false
 csharp_space_between_parentheses = false
 csharp_space_between_square_brackets = false
 
-# CS8601: Possible null reference assignment.
-dotnet_diagnostic.CS8601.severity = suggestion
 # CS8602: Dereference of a possibly null reference.
 dotnet_diagnostic.CS8602.severity = suggestion
 # CS8604: Possible null reference argument.

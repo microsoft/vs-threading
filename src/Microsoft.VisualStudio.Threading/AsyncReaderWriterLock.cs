@@ -2075,7 +2075,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The "parent" lock (i.e. the lock within which this lock is nested) if any.
             /// </summary>
-            private Awaiter nestingLock;
+            private Awaiter? nestingLock;
 
             /// <summary>
             /// The cancellation token that would terminate waiting for a lock that is not yet available.
@@ -2213,7 +2213,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Gets the lock that the caller held before requesting this lock.
             /// </summary>
-            internal Awaiter NestingLock
+            internal Awaiter? NestingLock
             {
                 get { return this.nestingLock; }
             }
