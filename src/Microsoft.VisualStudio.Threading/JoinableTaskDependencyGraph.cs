@@ -139,7 +139,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="taskItem">The current joinableTask or collection.</param>
         /// <param name="taskHasPendingRequests">Return the JoinableTask which has already had pending requests to be handled.</param>
         /// <param name="pendingRequestsCount">The number of pending requests.</param>
-        internal static void OnSynchronousTaskStartToBlockWaiting(JoinableTask taskItem, out JoinableTask taskHasPendingRequests, out int pendingRequestsCount)
+        internal static void OnSynchronousTaskStartToBlockWaiting(JoinableTask taskItem, out JoinableTask? taskHasPendingRequests, out int pendingRequestsCount)
         {
             Requires.NotNull(taskItem, nameof(taskItem));
             Assumes.True(Monitor.IsEntered(taskItem.Factory.Context.SyncContextLock));
@@ -779,7 +779,7 @@ namespace Microsoft.VisualStudio.Threading
             /// If it is not null, it will contain all dependency nodes which can track the synchronous task. We will ignore reference count in that case.
             /// </param>
             /// <param name="remainingDependentNodes">This will retain the tasks which still tracks the synchronous task.</param>
-            private static void RemoveDependingSynchronousTask(IJoinableTaskDependent taskOrCollection, JoinableTask task, HashSet<IJoinableTaskDependent> reachableNodes, ref HashSet<IJoinableTaskDependent> remainingDependentNodes)
+            private static void RemoveDependingSynchronousTask(IJoinableTaskDependent taskOrCollection, JoinableTask task, HashSet<IJoinableTaskDependent> reachableNodes, ref HashSet<IJoinableTaskDependent>? remainingDependentNodes)
             {
                 Requires.NotNull(taskOrCollection, nameof(taskOrCollection));
                 Requires.NotNull(task, nameof(task));

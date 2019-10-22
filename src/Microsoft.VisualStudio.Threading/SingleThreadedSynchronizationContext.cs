@@ -183,7 +183,7 @@ namespace Microsoft.VisualStudio.Threading
         private readonly struct Message
         {
             internal readonly SendOrPostCallback Callback;
-            internal readonly object State;
+            internal readonly object? State;
             internal readonly ExecutionContext Context;
 
             internal Message(SendOrPostCallback d, object? state, ExecutionContext ctxt)

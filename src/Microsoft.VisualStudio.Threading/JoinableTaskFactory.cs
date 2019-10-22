@@ -41,7 +41,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// The collection to add all created tasks to. May be <c>null</c>.
         /// </summary>
-        private readonly JoinableTaskCollection jobCollection;
+        private readonly JoinableTaskCollection? jobCollection;
 
         /// <summary>
         /// Backing field for the <see cref="HangDetectionTimeout"/> property.
@@ -101,7 +101,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets the collection to which created tasks belong until they complete. May be null.
         /// </summary>
-        internal JoinableTaskCollection Collection
+        internal JoinableTaskCollection? Collection
         {
             get { return this.jobCollection; }
         }
@@ -777,7 +777,7 @@ namespace Microsoft.VisualStudio.Threading
             /// then this will hold a default value of <see cref="CancellationTokenRegistration"/>, and <see cref="OnCompleted(Action)"/>
             /// would not touch it.
             /// </remarks>
-            private readonly StrongBox<CancellationTokenRegistration?> cancellationRegistrationPtr;
+            private readonly StrongBox<CancellationTokenRegistration?>? cancellationRegistrationPtr;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="MainThreadAwaiter"/> struct.
@@ -981,7 +981,7 @@ namespace Microsoft.VisualStudio.Threading
             private readonly JoinableTaskFactory factory;
             private readonly SpecializedSyncContext syncContextRevert;
             private readonly JoinableTask joinable;
-            private readonly JoinableTask previousJoinable;
+            private readonly JoinableTask? previousJoinable;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="RunFramework"/> struct

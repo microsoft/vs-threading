@@ -848,7 +848,7 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         lock (this.JoinableTaskContext.SyncContextLock)
                         {
-                            JoinableTaskDependencyGraph.OnSynchronousTaskStartToBlockWaiting(this, out JoinableTask pendingRequestTask, out this.pendingEventCount);
+                            JoinableTaskDependencyGraph.OnSynchronousTaskStartToBlockWaiting(this, out JoinableTask? pendingRequestTask, out this.pendingEventCount);
 
                             // Add the task to the depending tracking list of itself, so it will monitor the event queue.
                             this.pendingEventSource = pendingRequestTask?.WeakSelf;
@@ -1007,7 +1007,7 @@ namespace Microsoft.VisualStudio.Threading
             return this.queueNeedProcessEvent;
         }
 
-        private bool TryDequeueSelfOrDependencies(bool onMainThread, ref HashSet<IJoinableTaskDependent> visited, [NotNullWhen(true)] out SingleExecuteProtector? work, out Task? tryAgainAfter)
+        private bool TryDequeueSelfOrDependencies(bool onMainThread, ref HashSet<IJoinableTaskDependent>? visited, [NotNullWhen(true)] out SingleExecuteProtector? work, out Task? tryAgainAfter)
         {
             using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
             {

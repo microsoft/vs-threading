@@ -3004,7 +3004,7 @@
         [Fact, Trait("GC", "true")]
         public void JoinableTaskReleasedBySyncContextAfterCompletion()
         {
-            WeakReference job = this.JoinableTaskReleasedBySyncContextAfterCompletion_Helper(out SynchronizationContext syncContext);
+            WeakReference job = this.JoinableTaskReleasedBySyncContextAfterCompletion_Helper(out SynchronizationContext? syncContext);
 
             // We intentionally still have a reference to the SyncContext that represents the task.
             // We want to make sure that even with that, the JoinableTask itself can be collected.
@@ -3797,7 +3797,7 @@
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)] // mem leak detection requires literally popping locals with strong refs off the stack
-        private WeakReference JoinableTaskReleasedBySyncContextAfterCompletion_Helper(out SynchronizationContext syncContext)
+        private WeakReference JoinableTaskReleasedBySyncContextAfterCompletion_Helper(out SynchronizationContext? syncContext)
         {
             SynchronizationContext? sc = null;
             var job = this.asyncPump.RunAsync(() =>
@@ -4112,7 +4112,7 @@
             private AsyncManualResetEvent stopRequested = new AsyncManualResetEvent();
             private int originalThreadManagedId = Environment.CurrentManagedThreadId;
             private Task? dependentTask;
-            private MockAsyncService dependentService;
+            private MockAsyncService? dependentService;
 
             internal MockAsyncService(JoinableTaskContext context, MockAsyncService? dependentService = null)
             {

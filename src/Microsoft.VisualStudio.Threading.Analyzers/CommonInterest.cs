@@ -404,9 +404,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             public QualifiedMember Method { get; }
 
-            public string AsyncAlternativeMethodName { get; }
+            public string? AsyncAlternativeMethodName { get; }
 
-            public IReadOnlyList<string> ExtensionMethodNamespace { get; }
+            public IReadOnlyList<string>? ExtensionMethodNamespace { get; }
         }
     }
 }

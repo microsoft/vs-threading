@@ -553,7 +553,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             private readonly JoinableTaskContext pump;
             private readonly SpecializedSyncContext temporarySyncContext;
-            private readonly JoinableTask oldJoinable;
+            private readonly JoinableTask? oldJoinable;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="RevertRelevance"/> struct.

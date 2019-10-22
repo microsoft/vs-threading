@@ -299,13 +299,13 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Backing weak reference.
             /// </summary>
-            private readonly WeakReference weakReference;
+            private readonly WeakReference? weakReference;
 
             /// <summary>
             /// Some of the instances are around just to do existence checks, and don't want
             /// to allocate WeakReference objects as they are short-lived.
             /// </summary>
-            private readonly T notSoWeakTarget;
+            private readonly T? notSoWeakTarget;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="WeakReference{T}"/> struct.

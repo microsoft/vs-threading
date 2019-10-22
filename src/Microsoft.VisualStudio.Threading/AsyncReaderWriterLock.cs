@@ -528,7 +528,7 @@ namespace Microsoft.VisualStudio.Threading
         protected bool LockStackContains(LockFlags flags, LockHandle handle)
         {
             LockFlags aggregateFlags = LockFlags.None;
-            var awaiter = handle.Awaiter;
+            Awaiter? awaiter = handle.Awaiter;
             if (awaiter != null)
             {
                 lock (this.syncObject)
@@ -712,7 +712,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="read">Receives a value indicating whether a read lock is held.</param>
         /// <param name="upgradeableRead">Receives a value indicating whether an upgradeable read lock is held.</param>
         /// <param name="write">Receives a value indicating whether a write lock is held.</param>
-        private void AggregateLockStackKinds(Awaiter awaiter, out bool read, out bool upgradeableRead, out bool write)
+        private void AggregateLockStackKinds(Awaiter? awaiter, out bool read, out bool upgradeableRead, out bool write)
         {
             read = false;
             upgradeableRead = false;
@@ -757,7 +757,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="awaiter">The most nested lock.</param>
         /// <returns><c>true</c> if all issued locks are the specified lock or nesting locks of it.</returns>
-        private bool AllHeldLocksAreByThisStack(Awaiter awaiter)
+        private bool AllHeldLocksAreByThisStack(Awaiter? awaiter)
         {
             Assumes.True(awaiter == null || !this.IsLockHeld(LockKind.Write, awaiter)); // this method doesn't yet handle sticky upgraded read locks (that appear in the write lock set).
             lock (this.syncObject)
@@ -790,7 +790,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="kind">The kind of lock being queried for.</param>
         /// <param name="awaiter">The (possibly nested) lock.</param>
         /// <returns><c>true</c> if the lock holder (also) holds the specified kind of lock.</returns>
-        private bool LockStackContains(LockKind kind, Awaiter awaiter)
+        private bool LockStackContains(LockKind kind, Awaiter? awaiter)
         {
             if (awaiter != null)
             {
@@ -1117,7 +1117,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="awaiter">The most nested lock to consider.  May be null.</param>
         /// <returns>The first active lock encountered, or <c>null</c> if none.</returns>
-        private Awaiter? GetFirstActiveSelfOrAncestor(Awaiter awaiter)
+        private Awaiter? GetFirstActiveSelfOrAncestor(Awaiter? awaiter)
         {
             while (awaiter != null)
             {
@@ -1215,7 +1215,7 @@ namespace Microsoft.VisualStudio.Threading
                         continue;
                     }
 
-                    for (Awaiter a = nestedCandidate.NestingLock; a != null; a = a.NestingLock)
+                    for (Awaiter? a = nestedCandidate.NestingLock; a != null; a = a.NestingLock)
                     {
                         if (a == lck)
                         {
@@ -1897,7 +1897,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The awaiter most recently acquired by the caller before hiding locks.
             /// </summary>
-            private readonly Awaiter awaiter;
+            private readonly Awaiter? awaiter;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Suppression"/> struct.
@@ -2132,7 +2132,7 @@ namespace Microsoft.VisualStudio.Threading
             /// This field is initialized only when <see cref="AsyncReaderWriterLock"/> is constructed with
             /// the captureDiagnostics parameter set to <c>true</c>.
             /// </remarks>
-            private StackTrace requestingStackTrace;
+            private StackTrace? requestingStackTrace;
 
             /// <summary>
             /// An arbitrary object that may be set by a derived type of the containing lock class.
@@ -2196,7 +2196,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <remarks>
             /// Used for diagnostic purposes only.
             /// </remarks>
-            internal StackTrace RequestingStackTrace
+            internal StackTrace? RequestingStackTrace
             {
                 get { return this.requestingStackTrace; }
             }
@@ -2427,7 +2427,7 @@ namespace Microsoft.VisualStudio.Threading
                     // must be executed via the NonConcurrentSynchronizationContext.
                     SynchronizationContext? synchronizationContext = null;
 
-                    Awaiter awaiter = this.NestingLock;
+                    Awaiter? awaiter = this.NestingLock;
                     while (awaiter != null)
                     {
                         if (this.lck.IsLockActive(awaiter, considerStaActive: true))

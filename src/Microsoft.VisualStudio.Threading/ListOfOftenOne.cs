@@ -27,7 +27,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// The single value or array of values stored by this collection. Null if empty.
         /// </summary>
-        private object value;
+        private object? value;
 
         /// <summary>
         /// Returns an enumerator for a current snapshot of the collection.
@@ -58,7 +58,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         public void Add(T value)
         {
-            object priorValue;
+            object? priorValue;
             object fieldBeforeExchange;
             do
             {
@@ -73,7 +73,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         public void Remove(T? value)
         {
-            object priorValue;
+            object? priorValue;
             object fieldBeforeExchange;
             do
             {

@@ -22,12 +22,12 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// The factory to wrap all pending and active semaphore requests with to mitigate deadlocks.
         /// </summary>
-        private readonly JoinableTaskFactory joinableTaskFactory;
+        private readonly JoinableTaskFactory? joinableTaskFactory;
 
         /// <summary>
         /// The collection of all semaphore holders (and possibly waiters), which waiters should join to mitigate deadlocks.
         /// </summary>
-        private readonly JoinableTaskCollection joinableTaskCollection;
+        private readonly JoinableTaskCollection? joinableTaskCollection;
 
         /// <summary>
         /// The underlying semaphore primitive.
