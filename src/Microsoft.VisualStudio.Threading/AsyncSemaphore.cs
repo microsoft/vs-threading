@@ -26,7 +26,9 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// The semaphore used to keep concurrent access to this lock to just 1.
         /// </summary>
+#pragma warning disable CA2213 // Disposable fields should be disposed
         private readonly SemaphoreSlim semaphore;
+#pragma warning restore CA2213 // Disposable fields should be disposed
 
         /// <summary>
         /// A task to return for any uncontested request for the lock.
