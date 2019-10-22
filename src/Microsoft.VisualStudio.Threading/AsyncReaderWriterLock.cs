@@ -1391,7 +1391,7 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         try
                         {
-                            throw new InvalidOperationException("Write lock out-lived by a nested read lock, which is not allowed.");
+                            throw new InvalidOperationException(Strings.WriteLockOutlived);
                         }
                         catch (InvalidOperationException ex)
                         {
@@ -2499,7 +2499,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 if (Interlocked.CompareExchange(ref this.continuation, continuation, null) != null)
                 {
-                    throw new NotSupportedException("Multiple continuations are not supported.");
+                    throw new NotSupportedException(Strings.MultipleContinuationsNotSupported);
                 }
 
                 bool restoreFlow = !flowExecutionContext && !ExecutionContext.IsFlowSuppressed();

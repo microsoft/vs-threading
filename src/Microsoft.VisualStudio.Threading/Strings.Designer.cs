@@ -170,6 +170,15 @@ namespace Microsoft.VisualStudio.Threading {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Multiple continuations are not supported..
+        /// </summary>
+        internal static string MultipleContinuationsNotSupported {
+            get {
+                return ResourceManager.GetString("MultipleContinuationsNotSupported", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to This operation is not allowed while holding an active upgradeable read or write lock from an AsyncReaderWriterLock..
         /// </summary>
         internal static string NotAllowedUnderURorWLock {
@@ -193,6 +202,15 @@ namespace Microsoft.VisualStudio.Threading {
         internal static string QueueEmpty {
             get {
                 return ResourceManager.GetString("QueueEmpty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Semaphore is already held and reentrancy setting is &apos;{0}&apos;..
+        /// </summary>
+        internal static string SemaphoreAlreadyHeld {
+            get {
+                return ResourceManager.GetString("SemaphoreAlreadyHeld", resourceCulture);
             }
         }
         
@@ -247,6 +265,15 @@ namespace Microsoft.VisualStudio.Threading {
         internal static string ValueFactoryReentrancy {
             get {
                 return ResourceManager.GetString("ValueFactoryReentrancy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Write lock out-lived by a nested read lock, which is not allowed..
+        /// </summary>
+        internal static string WriteLockOutlived {
+            get {
+                return ResourceManager.GetString("WriteLockOutlived", resourceCulture);
             }
         }
     }
