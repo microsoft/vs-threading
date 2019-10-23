@@ -486,7 +486,7 @@
             Task.Run(async delegate
             {
                 // Create the JoinableTaskContext on a dedicated thread which no SynchronizationContext can ever switch back to.
-                var jtc = await Task.Factory.StartNew(() => new JoinableTaskContext(Thread.CurrentThread, new SynchronizationContext()), this.TimeoutToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                var jtc = await Task.Factory.StartNew(() => new JoinableTaskContext(Thread.CurrentThread, new SynchronizationContext()), this.TimeoutToken, TaskCreationOptions.LongRunning | TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Default);
 
                 // Now ask the JTC to switch to that main thread. It should throw when it fails to do so.
                 await Assert.ThrowsAsync<JoinableTaskContextException>(async () => await jtc.Factory.SwitchToMainThreadAsync(this.TimeoutToken));
