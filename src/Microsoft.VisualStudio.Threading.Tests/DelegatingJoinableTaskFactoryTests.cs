@@ -117,7 +117,17 @@ namespace Microsoft.VisualStudio.Threading.Tests
         {
             lock (this.logLock)
             {
-                this.Logger.WriteLine($"Adding entry {entry} (#{this.log.Count + 1}) from thread {Environment.CurrentManagedThreadId}");
+                try
+                {
+                    this.Logger.WriteLine($"Adding entry {entry} (#{this.log.Count + 1}) from thread {Environment.CurrentManagedThreadId}");
+                }
+                catch (InvalidOperationException ex) when (ex.Message.Contains("There is no currently active test."))
+                {
+                    // Avoid throwing an exception which would result in the test runner crashing via a FailFast. This
+                    // case should only occur when the test fails for other reasons, and subsequently fails to join
+                    // outstanding work before the end of the test.
+                }
+
                 this.log.Add(entry);
                 Monitor.Pulse(this.logLock);
             }
