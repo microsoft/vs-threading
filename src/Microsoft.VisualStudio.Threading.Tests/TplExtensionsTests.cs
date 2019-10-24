@@ -191,9 +191,12 @@
             Assert.Equal(3, task.GetResultWithoutInlining());
         }
 
-        [Fact]
-        public void WaitWithoutInlining_DoesNotWaitForOtherInlinedContinuations()
+        [Theory]
+        [IterationData]
+        public void WaitWithoutInlining_DoesNotWaitForOtherInlinedContinuations(int iteration)
         {
+            _ = iteration;
+
             while (true)
             {
                 var sluggishScheduler = new SluggishInliningTaskScheduler();
