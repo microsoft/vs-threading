@@ -36,3 +36,10 @@ steps:
   env:
     DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX: 0
     RuntimeFrameworkVersion: 2.2
+
+- script: dotnet test -v n -f netcoreapp2.1 -c $(BuildConfiguration) --no-build --filter "TestCategory!=FailsInCloudTest"
+  displayName: Run tests for netcoreapp2.1 on the .NET Core 3.0 runtime
+  workingDirectory: ${{ parameters.projectdirectory }}
+  env:
+    DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX: 0
+    RuntimeFrameworkVersion: 3.0
