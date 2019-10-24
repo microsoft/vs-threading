@@ -71,12 +71,24 @@ steps:
   displayName: Build SosThreadingTools x64
 
 - task: DotNetCoreCLI@2
-  displayName: Run tests
+  displayName: Run tests for net472 on the .NET Framework runtime
   inputs:
     command: test
     projects: '**/*.Tests.csproj'
-    arguments: --configuration $(BuildConfiguration) --no-build --filter "TestCategory!=FailsInCloudTest" -v n
+    arguments: -f net472 --configuration $(BuildConfiguration) --no-build --filter "TestCategory!=FailsInCloudTest" -v n
     workingDirectory: src
+  condition: and(succeeded(), ne(variables['SignType'], 'real'))
+
+- task: DotNetCoreCLI@2
+  displayName: Run tests for netcoreapp2.1 on the .NET Core 3.0 runtime
+  inputs:
+    command: test
+    projects: '**/Microsoft.VisualStudio.Threading.Tests.csproj'
+    arguments: -f netcoreapp2.1 --configuration $(BuildConfiguration) --no-build --filter "TestCategory!=FailsInCloudTest" -v n
+    workingDirectory: src
+  env:
+    DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX: 0
+    RuntimeFrameworkVersion: 2.1
   condition: and(succeeded(), ne(variables['SignType'], 'real'))
 
 - task: CopyFiles@1
