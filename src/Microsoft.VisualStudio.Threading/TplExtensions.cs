@@ -53,7 +53,7 @@ namespace Microsoft.VisualStudio.Threading
             if (!task.IsCompleted)
             {
                 // Waiting on a continuation of a task won't ever inline the predecessor (in .NET 4.x anyway).
-                var continuation = task.ContinueWith(t => { }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+                var continuation = task.ContinueWith(t => { }, CancellationToken.None, TaskContinuationOptions.RunContinuationsAsynchronously, TaskScheduler.Default);
                 continuation.Wait();
             }
 
