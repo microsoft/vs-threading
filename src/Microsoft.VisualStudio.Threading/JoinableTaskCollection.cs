@@ -270,6 +270,8 @@ namespace Microsoft.VisualStudio.Threading
             {
                 if (this.parentDependencyNode != null)
                 {
+                    RoslynDebug.Assert(this.childDependencyNode is object, $"{nameof(this.childDependencyNode)} can only be null when {nameof(this.parentDependencyNode)} is null.");
+
                     JoinableTaskDependencyGraph.RemoveDependency(this.parentDependencyNode, this.childDependencyNode);
                     this.parentDependencyNode = null;
                 }
