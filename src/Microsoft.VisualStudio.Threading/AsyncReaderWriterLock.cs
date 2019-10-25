@@ -1933,12 +1933,12 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The awaiter this lock handle wraps.
             /// </summary>
-            private readonly Awaiter awaiter;
+            private readonly Awaiter? awaiter;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="LockHandle"/> struct.
             /// </summary>
-            internal LockHandle(Awaiter awaiter)
+            internal LockHandle(Awaiter? awaiter)
             {
                 this.awaiter = awaiter;
             }
@@ -1956,7 +1956,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             public bool IsActive
             {
-                get { return this.awaiter.OwningLock.IsLockActive(this.awaiter, considerStaActive: true); }
+                get { return this.IsValid && this.awaiter!.OwningLock.IsLockActive(this.awaiter, considerStaActive: true); }
             }
 
             /// <summary>
@@ -1964,7 +1964,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             public bool IsReadLock
             {
-                get { return this.IsValid ? this.awaiter.Kind == LockKind.Read : false; }
+                get { return this.IsValid ? this.awaiter!.Kind == LockKind.Read : false; }
             }
 
             /// <summary>
@@ -1972,7 +1972,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             public bool IsUpgradeableReadLock
             {
-                get { return this.IsValid ? this.awaiter.Kind == LockKind.UpgradeableRead : false; }
+                get { return this.IsValid ? this.awaiter!.Kind == LockKind.UpgradeableRead : false; }
             }
 
             /// <summary>
@@ -1980,7 +1980,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             public bool IsWriteLock
             {
-                get { return this.IsValid ? this.awaiter.Kind == LockKind.Write : false; }
+                get { return this.IsValid ? this.awaiter!.Kind == LockKind.Write : false; }
             }
 
             /// <summary>
@@ -1988,7 +1988,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             public bool HasReadLock
             {
-                get { return this.IsValid ? this.awaiter.OwningLock.IsLockHeld(LockKind.Read, this.awaiter, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true) : false; }
+                get { return this.IsValid ? this.awaiter!.OwningLock.IsLockHeld(LockKind.Read, this.awaiter, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true) : false; }
             }
 
             /// <summary>
@@ -1996,7 +1996,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             public bool HasUpgradeableReadLock
             {
-                get { return this.IsValid ? this.awaiter.OwningLock.IsLockHeld(LockKind.UpgradeableRead, this.awaiter, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true) : false; }
+                get { return this.IsValid ? this.awaiter!.OwningLock.IsLockHeld(LockKind.UpgradeableRead, this.awaiter, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true) : false; }
             }
 
             /// <summary>
@@ -2004,7 +2004,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             public bool HasWriteLock
             {
-                get { return this.IsValid ? this.awaiter.OwningLock.IsLockHeld(LockKind.Write, this.awaiter, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true) : false; }
+                get { return this.IsValid ? this.awaiter!.OwningLock.IsLockHeld(LockKind.Write, this.awaiter, checkSyncContextCompatibility: false, allowNonLockSupportingContext: true) : false; }
             }
 
             /// <summary>
@@ -2012,7 +2012,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             public LockFlags Flags
             {
-                get { return this.IsValid ? this.awaiter.Options : LockFlags.None; }
+                get { return this.IsValid ? this.awaiter!.Options : LockFlags.None; }
             }
 
             /// <summary>
@@ -2022,13 +2022,13 @@ namespace Microsoft.VisualStudio.Threading
             {
                 get
                 {
-                    return this.IsValid ? this.awaiter.Data : null;
+                    return this.IsValid ? this.awaiter!.Data : null;
                 }
 
                 set
                 {
                     Verify.Operation(this.IsValid, Strings.InvalidLock);
-                    this.awaiter.Data = value;
+                    this.awaiter!.Data = value;
                 }
             }
 
@@ -2037,13 +2037,13 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             public LockHandle NestingLock
             {
-                get { return this.IsValid ? new LockHandle(this.awaiter.NestingLock) : default(LockHandle); }
+                get { return this.IsValid ? new LockHandle(this.awaiter!.NestingLock) : default(LockHandle); }
             }
 
             /// <summary>
             /// Gets the wrapped awaiter.
             /// </summary>
-            internal Awaiter Awaiter
+            internal Awaiter? Awaiter
             {
                 get { return this.awaiter; }
             }
