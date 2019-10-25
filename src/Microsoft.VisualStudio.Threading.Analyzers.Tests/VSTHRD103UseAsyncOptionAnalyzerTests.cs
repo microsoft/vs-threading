@@ -322,7 +322,7 @@ class Test {
 }
 ";
 
-            string? withFix = null;
+            string withFix = test;
 ////             var withFix = @"
 //// using System.Threading.Tasks;
 //// using Microsoft.VisualStudio.Shell;
