@@ -773,6 +773,8 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="wrappedTask">The actual result from <see cref="initialDelegate"/>.</param>
         internal void Complete(Task wrappedTask)
         {
+            Assumes.NotNull(this.wrappedTask);
+
             // If we had to synthesize a Task earlier, then wrappedTask is a TaskCompletionSource,
             // which we should now complete.
             if (!(this.wrappedTask is Task))
