@@ -337,7 +337,7 @@
         /// </returns>
         /// <exception cref="Xunit.Sdk.XunitException">Thrown if the isolated test result is a Failure.</exception>
         /// <exception cref="SkipException">Thrown if on a platform that we do not yet support test isolation on.</exception>
-        protected Task<bool> ExecuteInIsolationAsync([CallerMemberName, DisallowNull] string? testMethodName = null)
+        protected Task<bool> ExecuteInIsolationAsync([CallerMemberName] string testMethodName = null!)
         {
             return TestUtilities.ExecuteInIsolationAsync(this, testMethodName, this.Logger);
         }
@@ -353,7 +353,7 @@
         /// </returns>
         /// <exception cref="Xunit.Sdk.XunitException">Thrown if the isolated test result is a Failure.</exception>
         /// <exception cref="SkipException">Thrown if on a platform that we do not yet support test isolation on.</exception>
-        protected bool ExecuteInIsolation([CallerMemberName, DisallowNull] string? testMethodName = null)
+        protected bool ExecuteInIsolation([CallerMemberName] string testMethodName = null!)
         {
             return TestUtilities.ExecuteInIsolationAsync(this, testMethodName, this.Logger).GetAwaiter().GetResult();
         }
