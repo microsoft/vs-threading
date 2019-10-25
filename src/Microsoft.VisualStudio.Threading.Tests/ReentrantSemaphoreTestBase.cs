@@ -361,7 +361,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
             });
 
             releaseInheritor1.Set();
-            await innerOperation1.WithCancellation(this.TimeoutToken);
+            await innerOperation1!.WithCancellation(this.TimeoutToken);
         });
 
         async Task SemaphoreRecycler1()
@@ -490,7 +490,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
                 await Assert.ThrowsAsync<TimeoutException>(() => innerUser.WithTimeout(ExpectedTimeout));
             });
 
-            await innerUser.WithCancellation(this.TimeoutToken);
+            await innerUser!.WithCancellation(this.TimeoutToken);
             Assert.Equal(1, this.semaphore.CurrentCount);
         });
     }
@@ -579,7 +579,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
                 }
             });
 
-            await unrelatedUser.WithCancellation(this.TimeoutToken);
+            await unrelatedUser!.WithCancellation(this.TimeoutToken);
             Assert.Equal(1, this.semaphore.CurrentCount);
         });
     }

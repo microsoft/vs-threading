@@ -41,10 +41,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public void CreateFactory()
         {
-            var factory = this.defaultNode.CreateFactory(this.joinableCollection);
+            var factory = this.defaultNode.CreateFactory(this.joinableCollection!);
             Assert.IsType<JoinableTaskFactory>(factory);
 
-            factory = this.derivedNode.CreateFactory(this.joinableCollection);
+            factory = this.derivedNode.CreateFactory(this.joinableCollection!);
             Assert.IsType<DerivedFactory>(factory);
         }
 

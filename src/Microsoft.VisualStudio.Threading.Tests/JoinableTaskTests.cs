@@ -1011,7 +1011,7 @@
                 await dependentWork2Queued;
 
                 var collection = new JoinableTaskCollection(this.joinableCollection!.Context);
-                collection.Add(task2);
+                collection.Add(task2!);
                 collection.Join();
 
                 await dependentWork1Finished;
@@ -1079,7 +1079,7 @@
                 await dependentWorkQueued;
 
                 var collection = new JoinableTaskCollection(this.joinableCollection!.Context);
-                collection.Add(task2);
+                collection.Add(task2!);
 
                 collection.Join();
                 indirectDependencyAllowed.Set();
@@ -1133,9 +1133,9 @@
                 await taskStarted;
 
                 var collection1 = new JoinableTaskCollection(this.joinableCollection!.Context);
-                collection1.Add(task1);
+                collection1.Add(task1!);
                 var collection2 = new JoinableTaskCollection(this.joinableCollection.Context);
-                collection2.Add(task1);
+                collection2.Add(task1!);
 
                 using (collection1.Join())
                 {
@@ -1221,8 +1221,8 @@
                 await taskStarted;
 
                 var collection = new JoinableTaskCollection(this.joinableCollection!.Context);
-                collection.Add(task2);
-                collection.Add(task3);
+                collection.Add(task2!);
+                collection.Add(task3!);
 
                 using (collection.Join())
                 {
@@ -1282,7 +1282,7 @@
                     await taskStarted;
                     await testStarted;
                     var collection = new JoinableTaskCollection(this.joinableCollection!.Context);
-                    collection.Add(task2);
+                    collection.Add(task2!);
                     using (collection.Join())
                     {
                         task1Prepared.Set();
@@ -1331,9 +1331,9 @@
                 await task2Prepared;
 
                 var collection1 = new JoinableTaskCollection(this.joinableCollection!.Context);
-                collection1.Add(task1);
+                collection1.Add(task1!);
                 var collection2 = new JoinableTaskCollection(this.joinableCollection.Context);
-                collection2.Add(task2);
+                collection2.Add(task2!);
                 await mainThreadDependentFirstWorkQueued;
 
                 using (collection2.Join())
@@ -1394,7 +1394,7 @@
                     await taskStarted;
 
                     var collection = new JoinableTaskCollection(this.joinableCollection!.Context);
-                    collection.Add(task1);
+                    collection.Add(task1!);
                     using (collection.Join())
                     {
                         await this.asyncPump.SwitchToMainThreadAsync();
@@ -1425,7 +1425,7 @@
 
                     var collection = new JoinableTaskCollection(this.joinableCollection!.Context);
                     collection.Add(task2);
-                    collection.Add(task4);
+                    collection.Add(task4!);
                     using (collection.Join())
                     {
                         task3Prepared.Set();
@@ -1468,7 +1468,7 @@
                 await task4Prepared;
 
                 var collection = new JoinableTaskCollection(this.joinableCollection!.Context);
-                collection.Add(task5);
+                collection.Add(task5!);
 
                 using (collection.Join())
                 {
@@ -1811,7 +1811,7 @@
             Task task = this.asyncPump.RunAsync(
                 () => this.SomeOperationThatUsesMainThreadViaItsOwnAsyncPumpAsync()).Task;
             Assert.False(task.IsCompleted);
-            this.asyncPump.CompleteSynchronously(this.joinableCollection, task);
+            this.asyncPump.CompleteSynchronously(this.joinableCollection!, task);
         }
 
         [Fact]
@@ -1825,7 +1825,7 @@
             }).Task;
 
             Assert.False(afterYieldReached);
-            this.asyncPump.CompleteSynchronously(this.joinableCollection, task);
+            this.asyncPump.CompleteSynchronously(this.joinableCollection!, task);
             Assert.True(afterYieldReached);
         }
 
@@ -1842,7 +1842,7 @@
 
             Assert.False(afterYieldReached);
             backgroundThreadWorkDoneEvent.Set();
-            this.asyncPump.CompleteSynchronously(this.joinableCollection, task);
+            this.asyncPump.CompleteSynchronously(this.joinableCollection!, task);
             Assert.True(afterYieldReached);
         }
 
@@ -1866,7 +1866,7 @@
                 }).Task;
             }).GetResultWithoutInlining();
 
-            this.asyncPump.CompleteSynchronously(this.joinableCollection, backgroundWork);
+            this.asyncPump.CompleteSynchronously(this.joinableCollection!, backgroundWork);
         }
 
         [Fact]
@@ -1891,7 +1891,7 @@
                     });
                 });
 
-                this.asyncPump.CompleteSynchronously(this.joinableCollection, backgroundWork);
+                this.asyncPump.CompleteSynchronously(this.joinableCollection!, backgroundWork);
             }
         }
 
@@ -2291,7 +2291,7 @@
             Task.Run(delegate
             {
                 synchronousCompletionStarting = true;
-                this.asyncPump.CompleteSynchronously(this.joinableCollection, asyncTask);
+                this.asyncPump.CompleteSynchronously(this.joinableCollection!, asyncTask);
                 Assert.True(asyncTask.IsCompleted);
                 this.testFrame.Continue = false;
             });
@@ -2330,7 +2330,7 @@
             });
 
             synchronousCompletionStarting = true;
-            this.asyncPump.CompleteSynchronously(this.joinableCollection, asyncTask);
+            this.asyncPump.CompleteSynchronously(this.joinableCollection!, asyncTask);
             Assert.True(asyncTask.IsCompleted);
             asyncTask.Wait(); // realize any exceptions
         }
@@ -2805,7 +2805,7 @@
 
                 try
                 {
-                    innerTask.WaitWithoutInlining(throwOriginalException: true);
+                    innerTask!.WaitWithoutInlining(throwOriginalException: true);
                     Assert.True(postDelegateInvoked.Wait(AsyncDelay), "Timed out waiting for posted delegate to execute. Posted: " + posted);
                 }
                 catch
@@ -4139,7 +4139,7 @@
                 Requires.NotNull(operation, nameof(operation));
                 if (this.dependentService != null)
                 {
-                    await this.dependentService.StopAsync(this.dependentTask);
+                    await this.dependentService.StopAsync(this.dependentTask!);
                 }
 
                 this.stopRequested.Set();

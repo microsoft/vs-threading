@@ -881,7 +881,7 @@
                 invoked++;
                 return TplExtensions.CompletedTask;
             };
-            var task = handler.InvokeAsync(sender, args);
+            var task = handler.InvokeAsync(sender!, args!);
             Assert.True(task.IsCompleted);
             Assert.Equal(1, invoked);
         }
@@ -896,7 +896,7 @@
                 invoked++;
                 return TplExtensions.CompletedTask;
             };
-            var task = handler.InvokeAsync(sender, args!);
+            var task = handler.InvokeAsync(sender!, args!);
             Assert.True(task.IsCompleted);
             Assert.Equal(1, invoked);
         }
