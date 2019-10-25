@@ -268,7 +268,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The delegate to invoke on disposal.
             /// </summary>
-            private readonly Action<ReentrantSemaphore, object> disposeAction;
+            private readonly Action<ReentrantSemaphore, object?> disposeAction;
 
             /// <summary>
             /// The instance that is suppressing relevance.
@@ -278,7 +278,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The argument to pass to the delegate.
             /// </summary>
-            private readonly object state;
+            private readonly object? state;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="RevertRelevance"/> struct.
@@ -286,7 +286,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <param name="disposeAction">The delegate to invoke on disposal.</param>
             /// <param name="semaphore">The instance that is suppressing relevance.</param>
             /// <param name="state">The argument to pass to the delegate.</param>
-            internal RevertRelevance(Action<ReentrantSemaphore, object> disposeAction, ReentrantSemaphore semaphore, object state)
+            internal RevertRelevance(Action<ReentrantSemaphore, object?> disposeAction, ReentrantSemaphore semaphore, object? state)
             {
                 this.disposeAction = disposeAction;
                 this.semaphore = semaphore;
@@ -631,7 +631,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 var originalValue = this.reentrancyDetection.Value;
                 this.reentrancyDetection.Value = null;
-                return new RevertRelevance((t, s) => ((NotAllowedSemaphore)t).reentrancyDetection.Value = (StrongBox<bool>)s, this, originalValue);
+                return new RevertRelevance((t, s) => ((NotAllowedSemaphore)t).reentrancyDetection.Value = (StrongBox<bool>?)s, this, originalValue);
             }
         }
 
@@ -902,7 +902,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 var originalValue = this.reentrantCount.Value;
                 this.reentrantCount.Value = null;
-                return new RevertRelevance((t, s) => ((StackSemaphore)t).reentrantCount.Value = (Stack<StrongBox<AsyncSemaphore.Releaser>>)s, this, originalValue);
+                return new RevertRelevance((t, s) => ((StackSemaphore)t).reentrantCount.Value = (Stack<StrongBox<AsyncSemaphore.Releaser>>?)s, this, originalValue);
             }
 
             /// <summary>
@@ -1131,7 +1131,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 var originalValue = this.reentrantCount.Value;
                 this.reentrantCount.Value = null;
-                return new RevertRelevance((t, s) => ((FreeformSemaphore)t).reentrantCount.Value = (Stack<AsyncSemaphore.Releaser>)s, this, originalValue);
+                return new RevertRelevance((t, s) => ((FreeformSemaphore)t).reentrantCount.Value = (Stack<AsyncSemaphore.Releaser>?)s, this, originalValue);
             }
         }
     }

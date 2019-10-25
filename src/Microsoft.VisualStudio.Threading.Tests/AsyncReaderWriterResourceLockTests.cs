@@ -1233,7 +1233,7 @@
                 base.SetResourceAsAccessed(resource);
             }
 
-            internal new void SetResourceAsAccessed(Func<Resource, object, bool> resourceCheck, object? state)
+            internal new void SetResourceAsAccessed(Func<Resource, object?, bool> resourceCheck, object? state)
             {
                 base.SetResourceAsAccessed(resourceCheck, state);
             }
