@@ -32,7 +32,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// The key comparer to use for hashing and equality checks.
         /// </summary>
-        private readonly IEqualityComparer<TKey> keyComparer;
+        private readonly IEqualityComparer<TKey?> keyComparer;
 
         /// <summary>
         /// The dictionary's initial capacity, and the capacity beyond which we will resist to grow
@@ -46,11 +46,11 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="keyComparer">The key comparer to use. A <c>null</c> value indicates the default comparer will be used.</param>
         /// <param name="capacity">The initial capacity of the dictionary. Growth beyond this capacity will first induce a scavenge operation.</param>
-        public WeakKeyDictionary(IEqualityComparer<TKey>? keyComparer = null, int capacity = 10)
+        public WeakKeyDictionary(IEqualityComparer<TKey?>? keyComparer = null, int capacity = 10)
         {
             Requires.Range(capacity > 0, "capacity");
 
-            this.keyComparer = keyComparer ?? EqualityComparer<TKey>.Default;
+            this.keyComparer = keyComparer ?? EqualityComparer<TKey?>.Default;
             this.capacity = capacity;
             IEqualityComparer<WeakReference<TKey>> equalityComparer = new WeakReferenceEqualityComparer<TKey>(this.keyComparer);
             this.dictionary = new Dictionary<WeakReference<TKey>, TValue>(this.capacity, equalityComparer);
@@ -469,7 +469,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Comparer to use if specified, otherwise null.
             /// </summary>
-            private readonly IEqualityComparer<T> underlyingComparer;
+            private readonly IEqualityComparer<T?> underlyingComparer;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="WeakReferenceEqualityComparer{T}"/> class
@@ -478,7 +478,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <param name="comparer">
             /// May be null, in which case the default comparer for the type will be used.
             /// </param>
-            internal WeakReferenceEqualityComparer(IEqualityComparer<T> comparer)
+            internal WeakReferenceEqualityComparer(IEqualityComparer<T?> comparer)
             {
                 Requires.NotNull(comparer, nameof(comparer));
 

@@ -95,7 +95,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static bool IsEqualToOrDerivedFrom(ITypeSymbol? type, ITypeSymbol expectedType)
         {
-            return EqualityComparer<ITypeSymbol>.Default.Equals(type?.OriginalDefinition, expectedType) || IsDerivedFrom(type, expectedType);
+            return EqualityComparer<ITypeSymbol?>.Default.Equals(type?.OriginalDefinition, expectedType) || IsDerivedFrom(type, expectedType);
         }
 
         internal static bool IsDerivedFrom(ITypeSymbol? type, ITypeSymbol expectedType)

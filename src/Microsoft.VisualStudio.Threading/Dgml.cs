@@ -250,7 +250,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        internal static XDocument WithStyle(this XDocument document, string categoryId, IEnumerable<KeyValuePair<string, string>> properties, string targetType = "Node")
+        internal static XDocument WithStyle(this XDocument document, string categoryId, IEnumerable<KeyValuePair<string, string?>> properties, string targetType = "Node")
         {
             Requires.NotNull(document, nameof(document));
             Requires.NotNullOrEmpty(categoryId, nameof(categoryId));
@@ -277,7 +277,7 @@ namespace Microsoft.VisualStudio.Threading
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal static XDocument WithStyle(this XDocument document, string categoryId, string targetType = "Node", string? foreground = null, string? background = null, string? icon = null)
         {
-            var properties = new Dictionary<string, string>();
+            var properties = new Dictionary<string, string?>();
             if (!string.IsNullOrEmpty(foreground))
             {
                 properties.Add("Foreground", foreground);
