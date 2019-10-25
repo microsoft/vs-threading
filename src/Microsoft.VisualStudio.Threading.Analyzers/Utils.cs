@@ -93,7 +93,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return invokedMethodName;
         }
 
-        internal static bool IsEqualToOrDerivedFrom(ITypeSymbol type, ITypeSymbol expectedType)
+        internal static bool IsEqualToOrDerivedFrom(ITypeSymbol? type, ITypeSymbol expectedType)
         {
             return EqualityComparer<ITypeSymbol>.Default.Equals(type?.OriginalDefinition, expectedType) || IsDerivedFrom(type, expectedType);
         }
@@ -226,7 +226,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return default(ContainingFunctionData);
         }
 
-        internal static bool HasAsyncCompatibleReturnType(this IMethodSymbol methodSymbol) => IsAsyncCompatibleReturnType(methodSymbol?.ReturnType);
+        internal static bool HasAsyncCompatibleReturnType([NotNullWhen(true)] this IMethodSymbol? methodSymbol) => IsAsyncCompatibleReturnType(methodSymbol?.ReturnType);
 
         /// <summary>
         /// Determines whether a type could be used with the async modifier as a method return type.
@@ -238,7 +238,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// that follows the proper pattern. But being an async-compatible type in this sense is a type that can be returned from a method carrying the async keyword modifier,
         /// in that the type is either the special Task type, or offers an async method builder of its own.
         /// </remarks>
-        internal static bool IsAsyncCompatibleReturnType(this ITypeSymbol typeSymbol)
+        internal static bool IsAsyncCompatibleReturnType([NotNullWhen(true)] this ITypeSymbol? typeSymbol)
         {
             if (typeSymbol == null)
             {
@@ -259,7 +259,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 && constructedType.Arity > 0; // could be Lazy<T> or Lazy<T, TMetadata>
         }
 
-        internal static bool IsTask(ITypeSymbol typeSymbol) => typeSymbol?.Name == nameof(Task) && typeSymbol.BelongsToNamespace(Namespaces.SystemThreadingTasks);
+        internal static bool IsTask([NotNullWhen(true)] ITypeSymbol? typeSymbol) => typeSymbol?.Name == nameof(Task) && typeSymbol.BelongsToNamespace(Namespaces.SystemThreadingTasks);
 
         /// <summary>
         /// Gets a value indicating whether a method is async or is ready to be async by having an async-compatible return type.
@@ -312,7 +312,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// or an explicit interface implementation of a public interface;
         /// otherwise <c>false</c>.
         /// </returns>
-        internal static bool IsPublic(ISymbol symbol)
+        internal static bool IsPublic([NotNullWhen(true)] ISymbol? symbol)
         {
             if (symbol == null)
             {
@@ -348,12 +348,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
         }
 
-        internal static bool IsEntrypointMethod(ISymbol symbol, SemanticModel semanticModel, CancellationToken cancellationToken)
+        internal static bool IsEntrypointMethod([NotNullWhen(true)] ISymbol? symbol, SemanticModel semanticModel, CancellationToken cancellationToken)
         {
             return semanticModel.Compilation != null && IsEntrypointMethod(symbol, semanticModel.Compilation, cancellationToken);
         }
 
-        internal static bool IsEntrypointMethod(ISymbol symbol, Compilation compilation, CancellationToken cancellationToken)
+        internal static bool IsEntrypointMethod([NotNullWhen(true)] ISymbol? symbol, Compilation compilation, CancellationToken cancellationToken)
         {
             return compilation.GetEntryPoint(cancellationToken)?.Equals(symbol) ?? false;
         }
@@ -411,7 +411,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return false;
         }
 
-        internal static IEnumerable<ITypeSymbol> FindInterfacesImplemented(this ISymbol symbol)
+        internal static IEnumerable<ITypeSymbol> FindInterfacesImplemented(this ISymbol? symbol)
         {
             if (symbol == null)
             {
@@ -485,7 +485,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// <summary>
         /// Determines whether an expression appears inside a C# "nameof" pseudo-method.
         /// </summary>
-        internal static bool IsWithinNameOf(SyntaxNode syntaxNode)
+        internal static bool IsWithinNameOf([NotNullWhen(true)] SyntaxNode? syntaxNode)
         {
             var invocation = syntaxNode?.FirstAncestorOrSelf<InvocationExpressionSyntax>();
             return invocation is object
@@ -671,7 +671,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return default(T);
         }
 
-        internal static Tuple<string?, string?> SplitOffLastElement(string qualifiedName)
+        internal static Tuple<string?, string?> SplitOffLastElement(string? qualifiedName)
         {
             if (qualifiedName == null)
             {

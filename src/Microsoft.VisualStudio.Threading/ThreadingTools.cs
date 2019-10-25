@@ -148,7 +148,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="syncContext">The synchronization context to apply.</param>
         /// <param name="checkForChangesOnRevert">A value indicating whether to check that the applied SyncContext is still the current one when the original is restored.</param>
-        public static SpecializedSyncContext Apply(this SynchronizationContext syncContext, bool checkForChangesOnRevert = true)
+        public static SpecializedSyncContext Apply(this SynchronizationContext? syncContext, bool checkForChangesOnRevert = true)
         {
             return SpecializedSyncContext.Apply(syncContext, checkForChangesOnRevert);
         }
@@ -356,7 +356,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <param name="taskCompletionSource">The task completion source.</param>
             /// <param name="cancellationCallback">A callback to invoke when cancellation occurs.</param>
             /// <param name="cancellationToken">The cancellation token.</param>
-            internal CancelableTaskCompletionSource(TaskCompletionSource<T> taskCompletionSource, ICancellationNotification cancellationCallback, CancellationToken cancellationToken)
+            internal CancelableTaskCompletionSource(TaskCompletionSource<T> taskCompletionSource, ICancellationNotification? cancellationCallback, CancellationToken cancellationToken)
             {
                 this.TaskCompletionSource = taskCompletionSource ?? throw new ArgumentNullException(nameof(taskCompletionSource));
                 this.CancellationToken = cancellationToken;
@@ -373,7 +373,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             internal TaskCompletionSource<T> TaskCompletionSource { get; }
 
-            internal ICancellationNotification CancellationCallback { get; }
+            internal ICancellationNotification? CancellationCallback { get; }
 
             /// <summary>
             /// Gets or sets the cancellation token registration.

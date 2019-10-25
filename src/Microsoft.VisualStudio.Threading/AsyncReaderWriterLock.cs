@@ -901,7 +901,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="awaiter">The awaiter whose lock should be considered.</param>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "awaiter")]
-        private void CheckSynchronizationContextAppropriateForLock(Awaiter awaiter)
+        private void CheckSynchronizationContextAppropriateForLock(Awaiter? awaiter)
         {
             ////bool syncContextRequired = this.LockStackContains(LockKind.UpgradeableRead, awaiter) || this.LockStackContains(LockKind.Write, awaiter);
             ////if (syncContextRequired) {
@@ -1045,7 +1045,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="headAwaiter">The awaiter to start the search down the stack from.</param>
         /// <returns>The least nested upgradeable reader lock with sticky write flag; or <c>null</c> if none was found.</returns>
-        private Awaiter? FindRootUpgradeableReadWithStickyWrite(Awaiter headAwaiter)
+        private Awaiter? FindRootUpgradeableReadWithStickyWrite(Awaiter? headAwaiter)
         {
             if (headAwaiter == null)
             {
@@ -1564,7 +1564,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Stores the specified lock in the CallContext dictionary.
         /// </summary>
         /// <param name="topAwaiter">The awaiter that tracks the lock to grant to the caller.</param>
-        private void ApplyLockToCallContext(Awaiter topAwaiter)
+        private void ApplyLockToCallContext(Awaiter? topAwaiter)
         {
             var awaiter = this.GetFirstActiveSelfOrAncestor(topAwaiter);
             this.topAwaiter.Value = awaiter;

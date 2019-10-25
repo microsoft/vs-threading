@@ -122,7 +122,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="baseValue">The collection's prior contents.</param>
         /// <param name="value">The value to add to the collection.</param>
         /// <returns>The new value to store as the collection.</returns>
-        private static object Combine(object baseValue, T value)
+        private static object Combine(object? baseValue, T value)
         {
             Requires.NotNull(value, nameof(value));
 
@@ -149,7 +149,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="baseValue">The collection's prior contents.</param>
         /// <param name="value">The value to remove from the collection.</param>
         /// <returns>The new value to store as the collection.</returns>
-        private static object? Remove(object baseValue, T value)
+        private static object? Remove(object? baseValue, T? value)
         {
             if (baseValue == value || baseValue == null)
             {

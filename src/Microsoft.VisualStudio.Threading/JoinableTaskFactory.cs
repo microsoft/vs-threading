@@ -721,7 +721,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             private readonly JoinableTaskFactory jobFactory;
 
-            private readonly JoinableTask job;
+            private readonly JoinableTask? job;
 
             private readonly CancellationToken cancellationToken;
 
@@ -730,7 +730,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Initializes a new instance of the <see cref="MainThreadAwaitable"/> struct.
             /// </summary>
-            internal MainThreadAwaitable(JoinableTaskFactory jobFactory, JoinableTask job, CancellationToken cancellationToken, bool alwaysYield = false)
+            internal MainThreadAwaitable(JoinableTaskFactory jobFactory, JoinableTask? job, CancellationToken cancellationToken, bool alwaysYield = false)
             {
                 Requires.NotNull(jobFactory, nameof(jobFactory));
 
@@ -766,7 +766,7 @@ namespace Microsoft.VisualStudio.Threading
 
             private readonly bool alwaysYield;
 
-            private readonly JoinableTask job;
+            private readonly JoinableTask? job;
 
             /// <summary>
             /// Holds the reference to the <see cref="CancellationTokenRegistration"/> struct, so that all the copies of <see cref="MainThreadAwaiter"/> will hold
@@ -788,7 +788,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Initializes a new instance of the <see cref="MainThreadAwaiter"/> struct.
             /// </summary>
-            internal MainThreadAwaiter(JoinableTaskFactory jobFactory, JoinableTask job, bool alwaysYield, CancellationToken cancellationToken)
+            internal MainThreadAwaiter(JoinableTaskFactory jobFactory, JoinableTask? job, bool alwaysYield, CancellationToken cancellationToken)
             {
                 this.jobFactory = jobFactory;
                 this.job = job;

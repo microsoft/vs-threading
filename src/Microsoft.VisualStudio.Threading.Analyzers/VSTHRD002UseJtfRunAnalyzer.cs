@@ -81,7 +81,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             });
         }
 
-        private static ParameterSyntax? GetFirstParameter(AnonymousFunctionExpressionSyntax anonymousFunctionSyntax)
+        private static ParameterSyntax? GetFirstParameter(AnonymousFunctionExpressionSyntax? anonymousFunctionSyntax)
         {
             switch (anonymousFunctionSyntax)
             {
@@ -118,7 +118,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         private void InspectMemberAccess(
             SyntaxNodeAnalysisContext context,
-            MemberAccessExpressionSyntax memberAccessSyntax,
+            MemberAccessExpressionSyntax? memberAccessSyntax,
             IEnumerable<CommonInterest.SyncBlockingMethod> problematicMethods,
             INamedTypeSymbol taskSymbol)
         {

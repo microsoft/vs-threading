@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -176,7 +177,7 @@
                     && returnType.BelongsToNamespace(Namespaces.SystemThreadingTasks);
             }
 
-            private static bool InspectMemberAccess(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax, IEnumerable<CommonInterest.SyncBlockingMethod> problematicMethods)
+            private static bool InspectMemberAccess(SyntaxNodeAnalysisContext context, [NotNullWhen(true)] MemberAccessExpressionSyntax? memberAccessSyntax, IEnumerable<CommonInterest.SyncBlockingMethod> problematicMethods)
             {
                 if (memberAccessSyntax == null)
                 {

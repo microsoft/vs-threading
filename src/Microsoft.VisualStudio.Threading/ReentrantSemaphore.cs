@@ -43,10 +43,14 @@ namespace Microsoft.VisualStudio.Threading
         /// <devremarks>
         /// This is private protected so that others cannot derive from this type but we can within the assembly.
         /// </devremarks>
-        private protected ReentrantSemaphore(int initialCount, JoinableTaskContext joinableTaskContext)
+        private protected ReentrantSemaphore(int initialCount, JoinableTaskContext? joinableTaskContext)
         {
-            this.joinableTaskCollection = joinableTaskContext?.CreateCollection();
-            this.joinableTaskFactory = joinableTaskContext?.CreateFactory(this.joinableTaskCollection);
+            if (joinableTaskContext is object)
+            {
+                this.joinableTaskCollection = joinableTaskContext.CreateCollection();
+                this.joinableTaskFactory = joinableTaskContext.CreateFactory(this.joinableTaskCollection);
+            }
+
             this.semaphore = new AsyncSemaphore(initialCount);
         }
 
@@ -307,7 +311,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             /// <param name="initialCount">The initial number of concurrent operations to allow.</param>
             /// <param name="joinableTaskContext">The <see cref="JoinableTaskContext"/> to use to mitigate deadlocks.</param>
-            internal NotRecognizedSemaphore(int initialCount, JoinableTaskContext joinableTaskContext)
+            internal NotRecognizedSemaphore(int initialCount, JoinableTaskContext? joinableTaskContext)
                 : base(initialCount, joinableTaskContext)
             {
             }
@@ -463,7 +467,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             /// <param name="initialCount">The initial number of concurrent operations to allow.</param>
             /// <param name="joinableTaskContext">The <see cref="JoinableTaskContext"/> to use to mitigate deadlocks.</param>
-            internal NotAllowedSemaphore(int initialCount, JoinableTaskContext joinableTaskContext)
+            internal NotAllowedSemaphore(int initialCount, JoinableTaskContext? joinableTaskContext)
                 : base(initialCount, joinableTaskContext)
             {
             }
@@ -660,7 +664,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             /// <param name="initialCount">The initial number of concurrent operations to allow.</param>
             /// <param name="joinableTaskContext">The <see cref="JoinableTaskContext"/> to use to mitigate deadlocks.</param>
-            internal StackSemaphore(int initialCount, JoinableTaskContext joinableTaskContext)
+            internal StackSemaphore(int initialCount, JoinableTaskContext? joinableTaskContext)
                 : base(initialCount, joinableTaskContext)
             {
             }
@@ -929,7 +933,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             /// <param name="initialCount">The initial number of concurrent operations to allow.</param>
             /// <param name="joinableTaskContext">The <see cref="JoinableTaskContext"/> to use to mitigate deadlocks.</param>
-            internal FreeformSemaphore(int initialCount, JoinableTaskContext joinableTaskContext)
+            internal FreeformSemaphore(int initialCount, JoinableTaskContext? joinableTaskContext)
                 : base(initialCount, joinableTaskContext)
             {
             }

@@ -649,7 +649,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <param name="notificationCount">The number of times this hang has been reported, including this one.</param>
             /// <param name="hangId">A random GUID that uniquely identifies this particular hang.</param>
             /// <param name="entryMethod">The method that served as the entrypoint for the JoinableTask.</param>
-            public HangDetails(TimeSpan hangDuration, int notificationCount, Guid hangId, MethodInfo entryMethod)
+            public HangDetails(TimeSpan hangDuration, int notificationCount, Guid hangId, MethodInfo? entryMethod)
             {
                 this.HangDuration = hangDuration;
                 this.NotificationCount = notificationCount;
@@ -685,7 +685,7 @@ namespace Microsoft.VisualStudio.Threading
             /// a bug in the code that created it.
             /// This value may be used to assign the hangs to different buckets based on this method info.
             /// </remarks>
-            public MethodInfo EntryMethod { get; private set; }
+            public MethodInfo? EntryMethod { get; private set; }
         }
     }
 }

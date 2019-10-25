@@ -305,10 +305,10 @@
         internal readonly struct YieldAndNotifyAwaitable
         {
             private readonly INotifyCompletion baseAwaiter;
-            private readonly AsyncManualResetEvent yieldingSignal;
-            private readonly AsyncManualResetEvent resumingSignal;
+            private readonly AsyncManualResetEvent? yieldingSignal;
+            private readonly AsyncManualResetEvent? resumingSignal;
 
-            internal YieldAndNotifyAwaitable(INotifyCompletion baseAwaiter, AsyncManualResetEvent yieldingSignal, AsyncManualResetEvent resumingSignal)
+            internal YieldAndNotifyAwaitable(INotifyCompletion baseAwaiter, AsyncManualResetEvent? yieldingSignal, AsyncManualResetEvent? resumingSignal)
             {
                 Requires.NotNull(baseAwaiter, nameof(baseAwaiter));
 
@@ -326,10 +326,10 @@
         internal readonly struct YieldAndNotifyAwaiter : INotifyCompletion
         {
             private readonly INotifyCompletion baseAwaiter;
-            private readonly AsyncManualResetEvent yieldingSignal;
-            private readonly AsyncManualResetEvent resumingSignal;
+            private readonly AsyncManualResetEvent? yieldingSignal;
+            private readonly AsyncManualResetEvent? resumingSignal;
 
-            internal YieldAndNotifyAwaiter(INotifyCompletion baseAwaiter, AsyncManualResetEvent yieldingSignal, AsyncManualResetEvent resumingSignal)
+            internal YieldAndNotifyAwaiter(INotifyCompletion baseAwaiter, AsyncManualResetEvent? yieldingSignal, AsyncManualResetEvent? resumingSignal)
             {
                 Requires.NotNull(baseAwaiter, nameof(baseAwaiter));
 
