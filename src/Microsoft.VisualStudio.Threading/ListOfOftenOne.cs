@@ -186,11 +186,11 @@ namespace Microsoft.VisualStudio.Threading
             private const int IndexSingleElement = -2;
             private const int IndexBeforeSingleElement = -3;
 
-            private readonly object enumeratedValue;
+            private readonly object? enumeratedValue;
 
             private int currentIndex;
 
-            internal Enumerator(object enumeratedValue)
+            internal Enumerator(object? enumeratedValue)
             {
                 this.enumeratedValue = enumeratedValue;
                 this.currentIndex = 0;
@@ -206,9 +206,11 @@ namespace Microsoft.VisualStudio.Threading
                         throw new InvalidOperationException();
                     }
 
+                    // enumeratedValue cannot be null here following a call to `MoveNext` that returns true (required
+                    // for correct usage of IEnumerator).
                     return this.currentIndex == IndexSingleElement
-                        ? (T)this.enumeratedValue
-                        : ((T[])this.enumeratedValue)[this.currentIndex];
+                        ? (T)this.enumeratedValue!
+                        : ((T[])this.enumeratedValue!)[this.currentIndex];
                 }
             }
 
