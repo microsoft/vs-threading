@@ -96,7 +96,7 @@ namespace Microsoft.VisualStudio.Threading
                     nodes.Add(allAwaiterMetadata.Select(am => CreateAwaiterNode(am.Awaiter).WithCategories(am.Categories.ToArray()).ContainedBy(am.GroupId, dgml)));
 
                     // Link the lock stacks among themselves.
-                    links.Add(allAwaiterMetadata.Where(a => a.Awaiter.NestingLock != null).Select(a => Dgml.Link(GetAwaiterId(a.Awaiter.NestingLock), GetAwaiterId(a.Awaiter))));
+                    links.Add(allAwaiterMetadata.Where(a => a.Awaiter.NestingLock != null).Select(a => Dgml.Link(GetAwaiterId(a.Awaiter.NestingLock!), GetAwaiterId(a.Awaiter))));
 
                     return new HangReportContribution(
                         dgml.ToString(),
