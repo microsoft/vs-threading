@@ -345,7 +345,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="valueCheck">The test on the head element that must succeed to dequeue.</param>
         /// <param name="value">Receives the element from the head of the queue; or <c>default(T)</c> if the queue is empty.</param>
         /// <returns><c>true</c> if an element was dequeued; <c>false</c> if the queue was empty.</returns>
-        protected bool TryDequeue(Predicate<T> valueCheck, out T value)
+        protected bool TryDequeue(Predicate<T> valueCheck, [MaybeNullWhen(false)] out T value)
         {
             Requires.NotNull(valueCheck, nameof(valueCheck));
 

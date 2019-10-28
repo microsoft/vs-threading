@@ -124,7 +124,9 @@ namespace Microsoft.VisualStudio.Threading
         /// </remarks>
         public bool ContainsKey(TKey key)
         {
+#pragma warning disable CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
             bool contained = this.TryGetValue(key, out TValue value);
+#pragma warning restore CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
             return contained;
         }
 
@@ -132,7 +134,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Attempts to get the value for the provided key.
         /// Returns true if the key is found, otherwise false.
         /// </summary>
-        public bool TryGetValue(TKey key, out TValue value)
+        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
             return this.dictionary.TryGetValue(new WeakReference<TKey>(key, this.keyComparer, avoidWeakReferenceAllocation: true), out value);
         }
