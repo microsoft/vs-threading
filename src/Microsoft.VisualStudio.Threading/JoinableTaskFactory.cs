@@ -719,7 +719,7 @@ namespace Microsoft.VisualStudio.Threading
         [SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible"), SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
         public readonly struct MainThreadAwaitable
         {
-            private readonly JoinableTaskFactory jobFactory;
+            private readonly JoinableTaskFactory? jobFactory;
 
             private readonly JoinableTask? job;
 
@@ -746,6 +746,11 @@ namespace Microsoft.VisualStudio.Threading
             [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
             public MainThreadAwaiter GetAwaiter()
             {
+                if (this.jobFactory is null)
+                {
+                    return default;
+                }
+
                 return new MainThreadAwaiter(this.jobFactory, this.job, this.alwaysYield, this.cancellationToken);
             }
         }
@@ -760,7 +765,7 @@ namespace Microsoft.VisualStudio.Threading
 
             private static readonly Action<object> UnsafeCancellationAction = state => ThreadPool.UnsafeQueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, state);
 
-            private readonly JoinableTaskFactory jobFactory;
+            private readonly JoinableTaskFactory? jobFactory;
 
             private readonly CancellationToken cancellationToken;
 

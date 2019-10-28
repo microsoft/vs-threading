@@ -1758,7 +1758,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The awaiter to return from the <see cref="GetAwaiter"/> method.
             /// </summary>
-            private readonly Awaiter awaiter;
+            private readonly Awaiter? awaiter;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Awaitable"/> struct.
@@ -1805,7 +1805,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The awaiter who manages the lifetime of a lock.
             /// </summary>
-            private readonly Awaiter awaiter;
+            private readonly Awaiter? awaiter;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Releaser"/> struct.
@@ -1892,7 +1892,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The locking class.
             /// </summary>
-            private readonly AsyncReaderWriterLock lck;
+            private readonly AsyncReaderWriterLock? lck;
 
             /// <summary>
             /// The awaiter most recently acquired by the caller before hiding locks.

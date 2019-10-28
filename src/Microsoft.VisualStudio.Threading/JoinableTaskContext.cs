@@ -551,7 +551,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         public readonly struct RevertRelevance : IDisposable
         {
-            private readonly JoinableTaskContext pump;
+            private readonly JoinableTaskContext? pump;
             private readonly SpecializedSyncContext temporarySyncContext;
             private readonly JoinableTask? oldJoinable;
 
