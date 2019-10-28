@@ -438,6 +438,62 @@ class Test {
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
+        [Fact(Skip = "Not yet supported. See https://github.com/microsoft/vs-threading/issues/542")]
+        public async Task InvokeVsSolutionAfterUIThreadAssertionAndSwitchToThreadPool()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task F() {
+        IVsSolution sln = null;
+        VerifyOnUIThread();
+
+        await TaskScheduler.Default;
+
+        sln.SetProperty(1000, null);
+    }
+
+    void VerifyOnUIThread() {
+    }
+}
+";
+            var expected = Verify.Diagnostic(DescriptorAsync).WithSpan(14, 13, 14, 24).WithArguments("IVsSolution", "JoinableTaskFactory.SwitchToMainThreadAsync");
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact(Skip = "Not yet supported. See https://github.com/microsoft/vs-threading/issues/542")]
+        public async Task InvokeVsSolutionAfterUIThreadAssertionAndConfigureAwaitFalse()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task F() {
+        IVsSolution sln = null;
+        VerifyOnUIThread();
+
+        await SomeAsync().ConfigureAwait(false);
+
+        sln.SetProperty(1000, null);
+    }
+
+    void VerifyOnUIThread() {
+    }
+
+    async Task SomeAsync() => await Task.Yield();
+}
+";
+            var expected = Verify.Diagnostic(DescriptorAsync).WithSpan(14, 13, 14, 24).WithArguments("IVsSolution", "JoinableTaskFactory.SwitchToMainThreadAsync");
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
         [Fact(Skip = "Not yet supported. See https://github.com/Microsoft/vs-threading/issues/38")]
         public async Task InvokeVsSolutionAfterUIThreadAssertionAndConditionalSwitchToThreadPool()
         {
