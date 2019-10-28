@@ -399,7 +399,7 @@
         public void InvokeAsyncNullEverything()
         {
             AsyncEventHandler? handler = null;
-            var task = handler.InvokeAsync(null!, null!);
+            var task = handler.InvokeAsync(null, null!);
             Assert.True(task.IsCompleted);
         }
 
@@ -442,7 +442,7 @@
                 await Task.Yield();
                 Assert.Equal(4, ++counter);
             };
-            var task = handlers.InvokeAsync(null!, null!);
+            var task = handlers.InvokeAsync(null, null!);
             task.GetAwaiter().GetResult();
         }
 
@@ -480,7 +480,7 @@
                 await Task.Yield();
                 throw new ApplicationException("b");
             };
-            var task = handlers.InvokeAsync(null!, null!);
+            var task = handlers.InvokeAsync(null, null!);
             try
             {
                 task.GetAwaiter().GetResult();
@@ -881,7 +881,7 @@
                 invoked++;
                 return TplExtensions.CompletedTask;
             };
-            var task = handler.InvokeAsync(sender!, args!);
+            var task = handler.InvokeAsync(sender, args!);
             Assert.True(task.IsCompleted);
             Assert.Equal(1, invoked);
         }

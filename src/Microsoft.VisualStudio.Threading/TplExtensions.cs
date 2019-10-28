@@ -267,7 +267,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="args">The event argument.</param>
         /// <returns>The task that completes when all handlers have completed.</returns>
         /// <exception cref="AggregateException">Thrown if any handlers fail. It contains a collection of all failures.</exception>
-        public static async Task InvokeAsync(this AsyncEventHandler? handlers, object sender, EventArgs args)
+        public static async Task InvokeAsync(this AsyncEventHandler? handlers, object? sender, EventArgs args)
         {
             if (handlers != null)
             {
@@ -307,8 +307,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="args">The event argument.</param>
         /// <returns>The task that completes when all handlers have completed.  The task is faulted if any handlers throw an exception.</returns>
         /// <exception cref="AggregateException">Thrown if any handlers fail. It contains a collection of all failures.</exception>
-        public static async Task InvokeAsync<TEventArgs>(this AsyncEventHandler<TEventArgs>? handlers, object sender, TEventArgs args)
-            where TEventArgs : EventArgs
+        public static async Task InvokeAsync<TEventArgs>(this AsyncEventHandler<TEventArgs>? handlers, object? sender, TEventArgs args)
         {
             if (handlers != null)
             {
