@@ -14,7 +14,7 @@
         /// <typeparam name="TResult">The type of the return value of the method that the delegate encapsulates.</typeparam>
         /// <param name="func">The delegate which, according to the signature, can return <see langword="null"/>.</param>
         /// <returns>A copy of <paramref name="func"/> with a signature that does not return <see langword="null"/>.</returns>
-        public static Func<T1, T2, TResult> AsNonNullReturnUnchecked<T1, T2, TResult>(Func<T1, T2, TResult?> func)
+        internal static Func<T1, T2, TResult> AsNonNullReturnUnchecked<T1, T2, TResult>(Func<T1, T2, TResult?> func)
             where TResult : class
         {
             return func!;

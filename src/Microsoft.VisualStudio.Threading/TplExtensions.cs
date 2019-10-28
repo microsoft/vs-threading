@@ -346,7 +346,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="state">The state object provided by the caller of the Begin method.</param>
         /// <returns>A task (that implements <see cref="IAsyncResult"/> that should be returned from the Begin method.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Apm")]
-        public static Task<TResult> ToApm<TResult>(this Task<TResult> task, AsyncCallback callback, object state)
+        public static Task<TResult> ToApm<TResult>(this Task<TResult> task, AsyncCallback? callback, object? state)
         {
             Requires.NotNull(task, nameof(task));
 
@@ -388,7 +388,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="state">The state object provided by the caller of the Begin method.</param>
         /// <returns>A task (that implements <see cref="IAsyncResult"/> that should be returned from the Begin method.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Apm")]
-        public static Task ToApm(this Task task, AsyncCallback callback, object state)
+        public static Task ToApm(this Task task, AsyncCallback? callback, object? state)
         {
             Requires.NotNull(task, nameof(task));
 
