@@ -28,7 +28,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference", MessageId = "0#")]
         public static bool ApplyChangeOptimistically<T>(ref T hotLocation, Func<T, T> applyChange)
-            where T : class
+            where T : class?
         {
             Requires.NotNull(applyChange, nameof(applyChange));
 
@@ -71,7 +71,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference", MessageId = "0#")]
         public static bool ApplyChangeOptimistically<T, TArg>(ref T hotLocation, TArg applyChangeArgument, Func<T, TArg, T> applyChange)
-            where T : class
+            where T : class?
         {
             Requires.NotNull(applyChange, nameof(applyChange));
 
