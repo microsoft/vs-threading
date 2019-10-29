@@ -61,7 +61,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             if (invokeMethod?.ContainingType.BelongsToNamespace(Namespaces.SystemThreadingTasks) ?? false)
             {
                 bool reportDiagnostic = false;
-                bool isContinueWith = invokeMethod!.Name == nameof(Task.ContinueWith) && invokeMethod.ContainingType.Name == nameof(Task);
+                bool isContinueWith = invokeMethod.Name == nameof(Task.ContinueWith) && invokeMethod.ContainingType.Name == nameof(Task);
                 bool isTaskFactoryStartNew = invokeMethod.Name == nameof(TaskFactory.StartNew) && invokeMethod.ContainingType.Name == nameof(TaskFactory);
 
                 if (isContinueWith || isTaskFactoryStartNew)
