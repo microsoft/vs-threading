@@ -137,7 +137,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The object to dispose when this struct is disposed.
             /// </summary>
-            private readonly CancellationTokenSource cts;
+            private readonly CancellationTokenSource? cts;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="CombinedCancellationToken"/> struct

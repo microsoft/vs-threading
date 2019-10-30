@@ -4,6 +4,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
     using System.Runtime.CompilerServices;
@@ -112,7 +113,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static void InspectMemberAccess(
             SyntaxNodeAnalysisContext context,
-            MemberAccessExpressionSyntax memberAccessSyntax,
+            MemberAccessExpressionSyntax? memberAccessSyntax,
             DiagnosticDescriptor descriptor,
             IEnumerable<SyncBlockingMethod> problematicMethods,
             bool ignoreIfInsideAnonymousDelegate = false)
@@ -222,7 +223,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return false;
         }
 
-        internal static bool Contains(this ImmutableArray<TypeMatchSpec> types, ITypeSymbol typeSymbol, ISymbol memberSymbol)
+        internal static bool Contains(this ImmutableArray<TypeMatchSpec> types, [NotNullWhen(true)] ITypeSymbol? typeSymbol, ISymbol? memberSymbol)
         {
             TypeMatchSpec matching = default(TypeMatchSpec);
             foreach (var type in types)
@@ -324,7 +325,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             /// <summary>
             /// Tests whether a given symbol matches the description of a type (independent of its <see cref="InvertedLogic"/> property).
             /// </summary>
-            internal bool IsMatch(ITypeSymbol typeSymbol, ISymbol memberSymbol)
+            internal bool IsMatch([NotNullWhen(true)] ITypeSymbol? typeSymbol, ISymbol? memberSymbol)
             {
                 if (typeSymbol == null)
                 {
@@ -395,7 +396,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         [DebuggerDisplay("{" + nameof(Method) + "} -> {" + nameof(AsyncAlternativeMethodName) + "}")]
         internal readonly struct SyncBlockingMethod
         {
-            public SyncBlockingMethod(QualifiedMember method, string asyncAlternativeMethodName = null, IReadOnlyList<string> extensionMethodNamespace = null)
+            public SyncBlockingMethod(QualifiedMember method, string? asyncAlternativeMethodName = null, IReadOnlyList<string>? extensionMethodNamespace = null)
             {
                 this.Method = method;
                 this.AsyncAlternativeMethodName = asyncAlternativeMethodName;
@@ -404,9 +405,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             public QualifiedMember Method { get; }
 
-            public string AsyncAlternativeMethodName { get; }
+            public string? AsyncAlternativeMethodName { get; }
 
-            public IReadOnlyList<string> ExtensionMethodNamespace { get; }
+            public IReadOnlyList<string>? ExtensionMethodNamespace { get; }
         }
     }
 }

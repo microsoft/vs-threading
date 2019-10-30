@@ -26,7 +26,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="action">The action to perform at most once, that has some desirable side-effect.</param>
         /// <param name="joinableTaskFactory">The factory to use when invoking the <paramref name="action"/> in <see cref="InitializeAsync(CancellationToken)"/> to avoid deadlocks when the main thread is required by the <paramref name="action"/>.</param>
-        public AsyncLazyInitializer(Func<Task> action, JoinableTaskFactory joinableTaskFactory = null)
+        public AsyncLazyInitializer(Func<Task> action, JoinableTaskFactory? joinableTaskFactory = null)
         {
             Requires.NotNull(action, nameof(action));
             this.lazy = new AsyncLazy<EmptyStruct>(

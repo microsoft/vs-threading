@@ -17,13 +17,13 @@
 
         private AsyncReaderWriterLock asyncLock;
 
-        private AsyncManualResetEvent lockRequested;
+        private AsyncManualResetEvent? lockRequested;
 
         public JoinableTaskAndAsyncReaderWriterLockTests(ITestOutputHelper logger)
             : base(logger)
         {
             this.asyncLock = new AsyncReaderWriterLock();
-            this.InitializeJoinableTaskFactory();
+            InitializeJoinableTaskFactory(out this.joinableCollection, out this.asyncPump);
         }
 
         [StaFact]
@@ -212,7 +212,7 @@
             this.ExecuteOnDispatcher(
                 async delegate
                 {
-                    this.InitializeJoinableTaskFactory();
+                    InitializeJoinableTaskFactory(out this.joinableCollection, out this.asyncPump);
                     using (var releaser1 = await this.asyncLock.WriteLockAsync())
                     {
                         // This part of the scenario is where we switch back to the main thread
@@ -235,11 +235,11 @@
                 });
         }
 
-        private void InitializeJoinableTaskFactory()
+        private static void InitializeJoinableTaskFactory(out JoinableTaskCollection joinableCollection, out JoinableTaskFactory asyncPump)
         {
             var context = new JoinableTaskContext();
-            this.joinableCollection = context.CreateCollection();
-            this.asyncPump = context.CreateFactory(this.joinableCollection);
+            joinableCollection = context.CreateCollection();
+            asyncPump = context.CreateFactory(joinableCollection);
         }
 
         private void LockWithinRunAsyncAfterYieldHelper()

@@ -28,7 +28,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// The SynchronizationContext applied when this struct was constructed.
         /// </summary>
-        private readonly SynchronizationContext appliedContext;
+        private readonly SynchronizationContext? appliedContext;
 
         /// <summary>
         /// A value indicating whether to check that the applied SyncContext is still the current one when the original is restored.
@@ -38,7 +38,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Initializes a new instance of the <see cref="SpecializedSyncContext"/> struct.
         /// </summary>
-        private SpecializedSyncContext(SynchronizationContext syncContext, bool checkForChangesOnRevert)
+        private SpecializedSyncContext(SynchronizationContext? syncContext, bool checkForChangesOnRevert)
         {
             this.initialized = true;
             this.prior = SynchronizationContext.Current;
@@ -52,7 +52,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="syncContext">The synchronization context to apply.</param>
         /// <param name="checkForChangesOnRevert">A value indicating whether to check that the applied SyncContext is still the current one when the original is restored.</param>
-        public static SpecializedSyncContext Apply(SynchronizationContext syncContext, bool checkForChangesOnRevert = true)
+        public static SpecializedSyncContext Apply(SynchronizationContext? syncContext, bool checkForChangesOnRevert = true)
         {
             return new SpecializedSyncContext(syncContext, checkForChangesOnRevert);
         }

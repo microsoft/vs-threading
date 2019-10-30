@@ -24,6 +24,8 @@
     <Compile Include="..\Microsoft.VisualStudio.Threading\ListOfOftenOne.cs">
       <Link>ListOfOftenOne.cs</Link>
     </Compile>
+    <Compile Include="..\Microsoft.VisualStudio.Threading\NullabilityAttributes.cs" Link="NullabilityAttributes.cs" />
+    <Compile Include="..\Microsoft.VisualStudio.Threading\RoslynDebug.cs" Link="RoslynDebug.cs" />
     <Compile Include="..\Microsoft.VisualStudio.Threading\WeakKeyDictionary.cs">
       <Link>WeakKeyDictionary.cs</Link>
     </Compile>

@@ -123,7 +123,7 @@ namespace Microsoft.VisualStudio.Threading
         /// A single joinable task factory that itself cannot be joined.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private JoinableTaskFactory nonJoinableFactory;
+        private JoinableTaskFactory? nonJoinableFactory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JoinableTaskContext"/> class
@@ -146,7 +146,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="synchronizationContext">
         /// The synchronization context to use to switch to the main thread.
         /// </param>
-        public JoinableTaskContext(Thread mainThread = null, SynchronizationContext synchronizationContext = null)
+        public JoinableTaskContext(Thread? mainThread = null, SynchronizationContext? synchronizationContext = null)
         {
             this.MainThread = mainThread ?? Thread.CurrentThread;
             this.mainThreadManagedThreadId = this.MainThread.ManagedThreadId;
@@ -219,11 +219,11 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets or sets the caller's ambient joinable task.
         /// </summary>
-        internal JoinableTask AmbientTask
+        internal JoinableTask? AmbientTask
         {
             get
             {
-                JoinableTask result = null;
+                JoinableTask? result = null;
                 this.joinableOperation.Value?.TryGetTarget(out result);
                 return result;
             }
@@ -551,9 +551,9 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         public readonly struct RevertRelevance : IDisposable
         {
-            private readonly JoinableTaskContext pump;
+            private readonly JoinableTaskContext? pump;
             private readonly SpecializedSyncContext temporarySyncContext;
-            private readonly JoinableTask oldJoinable;
+            private readonly JoinableTask? oldJoinable;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="RevertRelevance"/> struct.
@@ -569,7 +569,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 if (SynchronizationContext.Current is JoinableTaskSynchronizationContext jobSyncContext)
                 {
-                    SynchronizationContext appliedSyncContext = null;
+                    SynchronizationContext? appliedSyncContext = null;
                     if (jobSyncContext.MainThreadAffinitized)
                     {
                         appliedSyncContext = pump.UnderlyingSynchronizationContext;
@@ -605,7 +605,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The node to receive notifications. May be <c>null</c> if <see cref="Dispose"/> has already been called.
             /// </summary>
-            private JoinableTaskContextNode node;
+            private JoinableTaskContextNode? node;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="HangNotificationRegistration"/> class.
@@ -649,7 +649,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <param name="notificationCount">The number of times this hang has been reported, including this one.</param>
             /// <param name="hangId">A random GUID that uniquely identifies this particular hang.</param>
             /// <param name="entryMethod">The method that served as the entrypoint for the JoinableTask.</param>
-            public HangDetails(TimeSpan hangDuration, int notificationCount, Guid hangId, MethodInfo entryMethod)
+            public HangDetails(TimeSpan hangDuration, int notificationCount, Guid hangId, MethodInfo? entryMethod)
             {
                 this.HangDuration = hangDuration;
                 this.NotificationCount = notificationCount;
@@ -685,7 +685,7 @@ namespace Microsoft.VisualStudio.Threading
             /// a bug in the code that created it.
             /// This value may be used to assign the hangs to different buckets based on this method info.
             /// </remarks>
-            public MethodInfo EntryMethod { get; private set; }
+            public MethodInfo? EntryMethod { get; private set; }
         }
     }
 }

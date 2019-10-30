@@ -51,7 +51,7 @@ public class SingleThreadedSynchronizationContextTests : TestBase
         });
 
         syncContext.PushFrame(frame);
-        Assert.Equal(Environment.CurrentManagedThreadId, observedThreadId.Value);
+        Assert.Equal(Environment.CurrentManagedThreadId, observedThreadId);
     }
 
     [Fact]
@@ -138,7 +138,7 @@ public class SingleThreadedSynchronizationContextTests : TestBase
         var syncContext = new SingleThreadedSynchronizationContext();
         var frame = new SingleThreadedSynchronizationContext.Frame();
 
-        var postedMessageCompletionSource = new TaskCompletionSource<object>();
+        var postedMessageCompletionSource = new TaskCompletionSource<object?>();
         syncContext.Post(
             async state =>
             {

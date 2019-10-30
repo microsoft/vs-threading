@@ -222,7 +222,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The lock instance to release.
             /// </summary>
-            private readonly AsyncSemaphore toRelease;
+            private readonly AsyncSemaphore? toRelease;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Releaser"/> struct.

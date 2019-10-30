@@ -16,7 +16,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
     /// </summary>
     protected static new readonly TimeSpan ExpectedTimeout = TimeSpan.FromMilliseconds(250); // faster than the base class since we use this a lot
 
-    protected ReentrantSemaphore semaphore;
+    protected ReentrantSemaphore? semaphore;
 
     public ReentrantSemaphoreTestBase(ITestOutputHelper logger)
         : base(logger)
@@ -174,7 +174,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
         this.semaphore = this.CreateSemaphore(mode);
         this.ExecuteOnDispatcher(async delegate
         {
-            await Assert.ThrowsAsync<ArgumentNullException>(() => this.semaphore.ExecuteAsync(null, this.TimeoutToken));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => this.semaphore.ExecuteAsync(null!, this.TimeoutToken));
         });
     }
 
@@ -185,7 +185,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
         this.semaphore = this.CreateSemaphore(mode);
         this.ExecuteOnDispatcher(async delegate
         {
-            await Assert.ThrowsAsync<ArgumentNullException>(() => this.semaphore.ExecuteAsync<int>(null, this.TimeoutToken).AsTask());
+            await Assert.ThrowsAsync<ArgumentNullException>(() => this.semaphore.ExecuteAsync<int>(null!, this.TimeoutToken).AsTask());
         });
     }
 
@@ -288,20 +288,20 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
         this.ExecuteOnDispatcher(async delegate
         {
             var releaser1 = new AsyncManualResetEvent();
-            Task innerOperation = null;
+            Task? innerOperation = null;
             await this.semaphore.ExecuteAsync(delegate
             {
                 innerOperation = EnterAndUseSemaphoreAsync(releaser1);
                 return TplExtensions.CompletedTask;
             });
             releaser1.Set();
-            await innerOperation;
+            await innerOperation!;
             Assert.Equal(1, this.semaphore.CurrentCount);
         });
 
         async Task EnterAndUseSemaphoreAsync(AsyncManualResetEvent releaseEvent)
         {
-            await this.semaphore.ExecuteAsync(async delegate
+            await this.semaphore!.ExecuteAsync(async delegate
             {
                 await releaseEvent;
                 Assert.Equal(0, this.semaphore.CurrentCount); // we are still in the semaphore
@@ -317,7 +317,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
         AsyncManualResetEvent releaseInheritor = new AsyncManualResetEvent();
         this.ExecuteOnDispatcher(async delegate
         {
-            Task innerOperation = null;
+            Task? innerOperation = null;
             await this.semaphore.ExecuteAsync(delegate
             {
                 innerOperation = SemaphoreRecycler();
@@ -333,7 +333,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
         async Task SemaphoreRecycler()
         {
             await releaseInheritor;
-            Assert.Equal(0, this.semaphore.CurrentCount);
+            Assert.Equal(0, this.semaphore!.CurrentCount);
 
             // Try to enter the semaphore. This should timeout because someone else is holding the semaphore, waiting for us to timeout.
             await this.semaphore.ExecuteAsync(
@@ -349,8 +349,8 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
         this.semaphore = this.CreateSemaphore(mode);
         AsyncManualResetEvent releaseInheritor1 = new AsyncManualResetEvent();
         AsyncManualResetEvent releaseInheritor2 = new AsyncManualResetEvent();
-        Task innerOperation1 = null;
-        Task innerOperation2 = null;
+        Task? innerOperation1 = null;
+        Task? innerOperation2 = null;
         this.ExecuteOnDispatcher(async delegate
         {
             await this.semaphore.ExecuteAsync(delegate
@@ -361,13 +361,13 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
             });
 
             releaseInheritor1.Set();
-            await innerOperation1.WithCancellation(this.TimeoutToken);
+            await innerOperation1!.WithCancellation(this.TimeoutToken);
         });
 
         async Task SemaphoreRecycler1()
         {
             await releaseInheritor1;
-            Assert.Equal(1, this.semaphore.CurrentCount);
+            Assert.Equal(1, this.semaphore!.CurrentCount);
             await this.semaphore.ExecuteAsync(
                 async delegate
                 {
@@ -380,7 +380,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
         async Task SemaphoreRecycler2()
         {
             await releaseInheritor2;
-            Assert.Equal(0, this.semaphore.CurrentCount);
+            Assert.Equal(0, this.semaphore!.CurrentCount);
 
             // Try to enter the semaphore. This should timeout because someone else is holding the semaphore, waiting for us to timeout.
             await this.semaphore.ExecuteAsync(
@@ -482,7 +482,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
         this.semaphore = this.CreateSemaphore(ReentrantSemaphore.ReentrancyMode.NotRecognized);
         this.ExecuteOnDispatcher(async delegate
         {
-            Task innerUser = null;
+            Task? innerUser = null;
             await this.semaphore.ExecuteAsync(async delegate
             {
                 Assert.Equal(0, this.semaphore.CurrentCount);
@@ -490,7 +490,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
                 await Assert.ThrowsAsync<TimeoutException>(() => innerUser.WithTimeout(ExpectedTimeout));
             });
 
-            await innerUser.WithCancellation(this.TimeoutToken);
+            await innerUser!.WithCancellation(this.TimeoutToken);
             Assert.Equal(1, this.semaphore.CurrentCount);
         });
     }
@@ -503,7 +503,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
         {
             var release1 = new AsyncManualResetEvent();
             var release2 = new AsyncManualResetEvent();
-            Task operation1, operation2 = null;
+            Task? operation1, operation2 = null;
             operation1 = this.semaphore.ExecuteAsync(async delegate
             {
                 operation2 = this.semaphore.ExecuteAsync(async delegate
@@ -562,7 +562,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
         this.semaphore = this.CreateSemaphore(mode);
         this.ExecuteOnDispatcher(async delegate
         {
-            Task unrelatedUser = null;
+            Task? unrelatedUser = null;
             await this.semaphore.ExecuteAsync(async delegate
             {
                 Assert.Equal(0, this.semaphore.CurrentCount);
@@ -579,7 +579,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
                 }
             });
 
-            await unrelatedUser.WithCancellation(this.TimeoutToken);
+            await unrelatedUser!.WithCancellation(this.TimeoutToken);
             Assert.Equal(1, this.semaphore.CurrentCount);
         });
     }
@@ -649,7 +649,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
                 var releaser2 = new AsyncManualResetEvent();
                 var releaser3 = new AsyncManualResetEvent();
 
-                Task innerFaulterSemaphoreTask = null;
+                Task? innerFaulterSemaphoreTask = null;
 
                 // This task will release its semaphore before the inner semaphore does
                 var outerFaultySemaphoreTask = Task.Run(

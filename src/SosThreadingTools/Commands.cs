@@ -32,7 +32,7 @@ namespace CpsDbg
                 return;
             }
 
-            DebuggerContext context = DebuggerContext.GetDebuggerContext(client);
+            DebuggerContext? context = DebuggerContext.GetDebuggerContext(client);
             if (context == null)
             {
                 return;

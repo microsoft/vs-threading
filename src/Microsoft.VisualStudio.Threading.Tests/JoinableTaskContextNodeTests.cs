@@ -41,10 +41,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public void CreateFactory()
         {
-            var factory = this.defaultNode.CreateFactory(this.joinableCollection);
+            var factory = this.defaultNode.CreateFactory(this.joinableCollection!);
             Assert.IsType<JoinableTaskFactory>(factory);
 
-            factory = this.derivedNode.CreateFactory(this.joinableCollection);
+            factory = this.derivedNode.CreateFactory(this.joinableCollection!);
             Assert.IsType<DerivedFactory>(factory);
         }
 
@@ -173,7 +173,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Assert.True(this.derivedNode.HangDetected.IsSet);
             Assert.NotNull(this.derivedNode.HangDetails);
             Assert.NotNull(this.derivedNode.HangDetails.EntryMethod);
-            Assert.Same(this.GetType(), this.derivedNode.HangDetails.EntryMethod.DeclaringType);
+            Assert.Same(this.GetType(), this.derivedNode.HangDetails.EntryMethod!.DeclaringType);
             Assert.Contains(nameof(this.OnHangDetected_Run_OnMainThread), this.derivedNode.HangDetails.EntryMethod.Name);
 
             Assert.True(this.derivedNode.FalseHangReportDetected.IsSet);
@@ -212,7 +212,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Assert.NotNull(hangDetails.EntryMethod);
 
             // Verify that the original method that spawned the JoinableTask is the one identified as the entrypoint method.
-            Assert.Same(this.GetType(), hangDetails.EntryMethod.DeclaringType);
+            Assert.Same(this.GetType(), hangDetails.EntryMethod!.DeclaringType);
             Assert.Contains(nameof(this.OnHangDetected_RunAsync_OnMainThread_BlamedMethodIsEntrypointNotBlockingMethod), hangDetails.EntryMethod.Name);
         }
 

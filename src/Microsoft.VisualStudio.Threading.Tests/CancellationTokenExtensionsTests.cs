@@ -95,7 +95,7 @@
         public void CombineWith_Array_Null()
         {
             var cts1 = new CancellationTokenSource();
-            Assert.Throws<ArgumentNullException>(() => cts1.Token.CombineWith(null));
+            Assert.Throws<ArgumentNullException>(() => cts1.Token.CombineWith(null!));
         }
 
         [Fact]

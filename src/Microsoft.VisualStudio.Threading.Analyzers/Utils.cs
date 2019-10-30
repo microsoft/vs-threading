@@ -9,6 +9,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Reflection;
     using System.Runtime.CompilerServices;
@@ -92,12 +93,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return invokedMethodName;
         }
 
-        internal static bool IsEqualToOrDerivedFrom(ITypeSymbol type, ITypeSymbol expectedType)
+        internal static bool IsEqualToOrDerivedFrom(ITypeSymbol? type, ITypeSymbol expectedType)
         {
-            return EqualityComparer<ITypeSymbol>.Default.Equals(type?.OriginalDefinition, expectedType) || IsDerivedFrom(type, expectedType);
+            return EqualityComparer<ITypeSymbol?>.Default.Equals(type?.OriginalDefinition, expectedType) || IsDerivedFrom(type, expectedType);
         }
 
-        internal static bool IsDerivedFrom(ITypeSymbol type, ITypeSymbol expectedType)
+        internal static bool IsDerivedFrom(ITypeSymbol? type, ITypeSymbol expectedType)
         {
             type = type?.BaseType;
             while (type != null)
@@ -119,9 +120,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// </summary>
         /// <param name="symbol">The input symbol.</param>
         /// <returns>The type represented by the input symbol; or <c>null</c> if could not figure out the type.</returns>
-        internal static ITypeSymbol ResolveTypeFromSymbol(ISymbol symbol)
+        internal static ITypeSymbol? ResolveTypeFromSymbol(ISymbol symbol)
         {
-            ITypeSymbol type = null;
+            ITypeSymbol? type = null;
             switch (symbol?.Kind)
             {
                 case SymbolKind.Local:
@@ -225,7 +226,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return default(ContainingFunctionData);
         }
 
-        internal static bool HasAsyncCompatibleReturnType(this IMethodSymbol methodSymbol) => IsAsyncCompatibleReturnType(methodSymbol?.ReturnType);
+        internal static bool HasAsyncCompatibleReturnType([NotNullWhen(true)] this IMethodSymbol? methodSymbol) => IsAsyncCompatibleReturnType(methodSymbol?.ReturnType);
 
         /// <summary>
         /// Determines whether a type could be used with the async modifier as a method return type.
@@ -237,7 +238,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// that follows the proper pattern. But being an async-compatible type in this sense is a type that can be returned from a method carrying the async keyword modifier,
         /// in that the type is either the special Task type, or offers an async method builder of its own.
         /// </remarks>
-        internal static bool IsAsyncCompatibleReturnType(this ITypeSymbol typeSymbol)
+        internal static bool IsAsyncCompatibleReturnType([NotNullWhen(true)] this ITypeSymbol? typeSymbol)
         {
             if (typeSymbol == null)
             {
@@ -249,7 +250,16 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 || typeSymbol.GetAttributes().Any(ad => ad.AttributeClass?.Name == Types.AsyncMethodBuilderAttribute.TypeName && ad.AttributeClass.BelongsToNamespace(Types.AsyncMethodBuilderAttribute.Namespace));
         }
 
-        internal static bool IsTask(ITypeSymbol typeSymbol) => typeSymbol?.Name == nameof(Task) && typeSymbol.BelongsToNamespace(Namespaces.SystemThreadingTasks);
+        internal static bool IsLazyOfT([NotNullWhen(true)] INamedTypeSymbol? constructedType)
+        {
+            return constructedType is object
+                && constructedType.ContainingNamespace?.Name == nameof(System)
+                && (constructedType.ContainingNamespace.ContainingNamespace?.IsGlobalNamespace ?? false)
+                && constructedType.Name == nameof(Lazy<object>)
+                && constructedType.Arity > 0; // could be Lazy<T> or Lazy<T, TMetadata>
+        }
+
+        internal static bool IsTask([NotNullWhen(true)] ITypeSymbol? typeSymbol) => typeSymbol?.Name == nameof(Task) && typeSymbol.BelongsToNamespace(Namespaces.SystemThreadingTasks);
 
         /// <summary>
         /// Gets a value indicating whether a method is async or is ready to be async by having an async-compatible return type.
@@ -302,7 +312,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// or an explicit interface implementation of a public interface;
         /// otherwise <c>false</c>.
         /// </returns>
-        internal static bool IsPublic(ISymbol symbol)
+        internal static bool IsPublic([NotNullWhen(true)] ISymbol? symbol)
         {
             if (symbol == null)
             {
@@ -338,12 +348,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
         }
 
-        internal static bool IsEntrypointMethod(ISymbol symbol, SemanticModel semanticModel, CancellationToken cancellationToken)
+        internal static bool IsEntrypointMethod([NotNullWhen(true)] ISymbol? symbol, SemanticModel semanticModel, CancellationToken cancellationToken)
         {
             return semanticModel.Compilation != null && IsEntrypointMethod(symbol, semanticModel.Compilation, cancellationToken);
         }
 
-        internal static bool IsEntrypointMethod(ISymbol symbol, Compilation compilation, CancellationToken cancellationToken)
+        internal static bool IsEntrypointMethod([NotNullWhen(true)] ISymbol? symbol, Compilation compilation, CancellationToken cancellationToken)
         {
             return compilation.GetEntryPoint(cancellationToken)?.Equals(symbol) ?? false;
         }
@@ -355,7 +365,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static bool IsOnLeftHandOfAssignment(SyntaxNode syntaxNode)
         {
-            SyntaxNode parent = null;
+            SyntaxNode? parent = null;
             while ((parent = syntaxNode.Parent) != null)
             {
                 if (parent is AssignmentExpressionSyntax assignment)
@@ -401,7 +411,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return false;
         }
 
-        internal static IEnumerable<ITypeSymbol> FindInterfacesImplemented(this ISymbol symbol)
+        internal static IEnumerable<ITypeSymbol> FindInterfacesImplemented(this ISymbol? symbol)
         {
             if (symbol == null)
             {
@@ -475,10 +485,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// <summary>
         /// Determines whether an expression appears inside a C# "nameof" pseudo-method.
         /// </summary>
-        internal static bool IsWithinNameOf(SyntaxNode syntaxNode)
+        internal static bool IsWithinNameOf([NotNullWhen(true)] SyntaxNode? syntaxNode)
         {
             var invocation = syntaxNode?.FirstAncestorOrSelf<InvocationExpressionSyntax>();
-            return (invocation?.Expression as IdentifierNameSyntax)?.Identifier.Text == "nameof"
+            return invocation is object
+                && (invocation.Expression as IdentifierNameSyntax)?.Identifier.Text == "nameof"
                 && invocation.ArgumentList.Arguments.Count == 1;
         }
 
@@ -516,7 +527,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// <param name="positionForLookup">The position in the document that must have access to any candidate <see cref="CancellationToken"/>.</param>
         /// <param name="cancellationToken">A token that represents lost interest in this inquiry.</param>
         /// <returns>Candidate <see cref="CancellationToken"/> symbols.</returns>
-        internal static IEnumerable<ISymbol> FindCancellationToken(SemanticModel semanticModel, int positionForLookup, CancellationToken cancellationToken)
+        internal static IEnumerable<ISymbol>? FindCancellationToken(SemanticModel semanticModel, int positionForLookup, CancellationToken cancellationToken)
         {
             if (semanticModel == null)
             {
@@ -555,7 +566,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             var (fullTypeName, methodName) = SplitOffLastElement(methodAsString);
             var (ns, leafTypeName) = SplitOffLastElement(fullTypeName);
-            string[] namespaces = ns?.Split('.');
+            string[]? namespaces = ns?.Split('.');
             if (fullTypeName == null)
             {
                 return Enumerable.Empty<IMethodSymbol>();
@@ -633,7 +644,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
         }
 
-        internal static T FirstAncestor<T>(this SyntaxNode startingNode, IReadOnlyCollection<Type> doNotPassNodeTypes)
+        internal static T? FirstAncestor<T>(this SyntaxNode startingNode, IReadOnlyCollection<Type> doNotPassNodeTypes)
             where T : SyntaxNode
         {
             if (doNotPassNodeTypes == null)
@@ -660,20 +671,20 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return default(T);
         }
 
-        internal static Tuple<string, string> SplitOffLastElement(string qualifiedName)
+        internal static Tuple<string?, string?> SplitOffLastElement(string? qualifiedName)
         {
             if (qualifiedName == null)
             {
-                return Tuple.Create<string, string>(null, null);
+                return Tuple.Create<string?, string?>(null, null);
             }
 
             int lastPeriod = qualifiedName.LastIndexOf('.');
             if (lastPeriod < 0)
             {
-                return Tuple.Create<string, string>(null, qualifiedName);
+                return Tuple.Create<string?, string?>(null, qualifiedName);
             }
 
-            return Tuple.Create(qualifiedName.Substring(0, lastPeriod), qualifiedName.Substring(lastPeriod + 1));
+            return Tuple.Create<string?, string?>(qualifiedName.Substring(0, lastPeriod), qualifiedName.Substring(lastPeriod + 1));
         }
 
         /// <summary>

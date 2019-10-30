@@ -25,7 +25,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public void WithPriority_ThrowsOnInvalidInputs()
         {
-            Assert.Throws<ArgumentNullException>(() => this.asyncPump.WithPriority(null, DispatcherPriority.Normal));
+            Assert.Throws<ArgumentNullException>(() => this.asyncPump.WithPriority(null!, DispatcherPriority.Normal));
         }
 
         [Fact]
@@ -55,13 +55,13 @@ namespace Microsoft.VisualStudio.Threading.Tests
             {
                 var idlePriorityJtf = this.asyncPump.WithPriority(Dispatcher.CurrentDispatcher, DispatcherPriority.ApplicationIdle);
                 var normalPriorityJtf = this.asyncPump.WithPriority(Dispatcher.CurrentDispatcher, DispatcherPriority.Normal);
-                JoinableTask normalTask = null;
+                JoinableTask? normalTask = null;
                 var unblockNormalPriorityWork = new AsyncManualResetEvent();
                 var idleTask = idlePriorityJtf.RunAsync(async delegate
                 {
                     await Task.Yield();
                     unblockNormalPriorityWork.Set();
-                    normalTask.Join();
+                    normalTask!.Join();
                 });
                 normalTask = normalPriorityJtf.RunAsync(async delegate
                 {

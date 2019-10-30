@@ -37,14 +37,14 @@
         [Fact]
         public void ApplyResultToNullTask()
         {
-            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo(null, new TaskCompletionSource<object>()));
+            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo(null!, new TaskCompletionSource<object>()));
         }
 
         [Fact]
         public void ApplyResultToNullTaskSource()
         {
             var tcs = new TaskCompletionSource<object>();
-            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo(tcs.Task, null));
+            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo(tcs.Task, null!));
         }
 
         [Fact]
@@ -94,33 +94,33 @@
         [Fact]
         public void ApplyResultToNullTaskNonGeneric()
         {
-            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo((Task)null, new TaskCompletionSource<object>()));
+            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo((Task)null!, new TaskCompletionSource<object?>()));
         }
 
         [Fact]
         public void ApplyResultToNullTaskSourceNonGeneric()
         {
             var tcs = new TaskCompletionSource<object>();
-            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo((Task)tcs.Task, (TaskCompletionSource<object>)null));
+            Assert.Throws<ArgumentNullException>(() => TplExtensions.ApplyResultTo((Task)tcs.Task, (TaskCompletionSource<object?>)null!));
         }
 
         [Fact]
         public void ApplyResultToNonGeneric()
         {
-            var tcs1 = new TaskCompletionSource<GenericParameterHelper>();
-            var tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+            var tcs1 = new TaskCompletionSource<GenericParameterHelper?>();
+            var tcs2 = new TaskCompletionSource<GenericParameterHelper?>();
             ((Task)tcs1.Task).ApplyResultTo(tcs2);
             tcs1.SetResult(null);
             Assert.Equal(TaskStatus.RanToCompletion, tcs2.Task.Status);
 
-            tcs1 = new TaskCompletionSource<GenericParameterHelper>();
-            tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+            tcs1 = new TaskCompletionSource<GenericParameterHelper?>();
+            tcs2 = new TaskCompletionSource<GenericParameterHelper?>();
             ((Task)tcs1.Task).ApplyResultTo(tcs2);
             tcs1.SetCanceled();
             Assert.True(tcs2.Task.IsCanceled);
 
-            tcs1 = new TaskCompletionSource<GenericParameterHelper>();
-            tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+            tcs1 = new TaskCompletionSource<GenericParameterHelper?>();
+            tcs2 = new TaskCompletionSource<GenericParameterHelper?>();
             ((Task)tcs1.Task).ApplyResultTo(tcs2);
             tcs1.SetException(new ApplicationException());
             Assert.Same(tcs1.Task.Exception.InnerException, tcs2.Task.Exception.InnerException);
@@ -129,20 +129,20 @@
         [Fact]
         public void ApplyResultToPreCompletedNonGeneric()
         {
-            var tcs1 = new TaskCompletionSource<GenericParameterHelper>();
-            var tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+            var tcs1 = new TaskCompletionSource<GenericParameterHelper?>();
+            var tcs2 = new TaskCompletionSource<GenericParameterHelper?>();
             tcs1.SetResult(null);
             ((Task)tcs1.Task).ApplyResultTo(tcs2);
             Assert.Equal(TaskStatus.RanToCompletion, tcs2.Task.Status);
 
-            tcs1 = new TaskCompletionSource<GenericParameterHelper>();
-            tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+            tcs1 = new TaskCompletionSource<GenericParameterHelper?>();
+            tcs2 = new TaskCompletionSource<GenericParameterHelper?>();
             tcs1.SetCanceled();
             ((Task)tcs1.Task).ApplyResultTo(tcs2);
             Assert.True(tcs2.Task.IsCanceled);
 
-            tcs1 = new TaskCompletionSource<GenericParameterHelper>();
-            tcs2 = new TaskCompletionSource<GenericParameterHelper>();
+            tcs1 = new TaskCompletionSource<GenericParameterHelper?>();
+            tcs2 = new TaskCompletionSource<GenericParameterHelper?>();
             tcs1.SetException(new ApplicationException());
             ((Task)tcs1.Task).ApplyResultTo(tcs2);
             Assert.Same(tcs1.Task.Exception.InnerException, tcs2.Task.Exception.InnerException);
@@ -275,7 +275,7 @@
         [Fact]
         public void WaitWithoutInlining_AttachToParent()
         {
-            Task attachedTask = null;
+            Task? attachedTask = null;
             int originalThreadId = Environment.CurrentManagedThreadId;
             var task = Task.Factory.StartNew(
                 delegate
@@ -293,7 +293,7 @@
                 TaskCreationOptions.None,
                 TaskScheduler.Default);
             task.WaitWithoutInlining();
-            attachedTask.GetAwaiter().GetResult(); // rethrow any exceptions
+            attachedTask!.GetAwaiter().GetResult(); // rethrow any exceptions
         }
 
         [Fact]
@@ -320,8 +320,8 @@
         [CombinatorialData]
         public async Task NoThrowAwaitable_Await_CapturesExecutionContext(bool captureContext)
         {
-            var awaitableTcs = new TaskCompletionSource<object>();
-            var asyncLocal = new AsyncLocal<object>();
+            var awaitableTcs = new TaskCompletionSource<object?>();
+            var asyncLocal = new AsyncLocal<object?>();
             asyncLocal.Value = "expected";
             var testResult = Task.Run(async delegate
             {
@@ -343,9 +343,9 @@
         [CombinatorialData]
         public async Task NoThrowAwaitable_OnCompleted_CapturesExecutionContext(bool captureContext)
         {
-            var testResultTcs = new TaskCompletionSource<object>();
-            var awaitableTcs = new TaskCompletionSource<object>();
-            var asyncLocal = new AsyncLocal<object>();
+            var testResultTcs = new TaskCompletionSource<object?>();
+            var awaitableTcs = new TaskCompletionSource<object?>();
+            var asyncLocal = new AsyncLocal<object?>();
             asyncLocal.Value = "expected";
             var awaiter = awaitableTcs.Task.NoThrowAwaitable(captureContext).GetAwaiter();
             awaiter.OnCompleted(delegate
@@ -371,9 +371,9 @@
         [CombinatorialData]
         public async Task NoThrowAwaitable_UnsafeOnCompleted_DoesNotCaptureExecutionContext(bool captureContext)
         {
-            var testResultTcs = new TaskCompletionSource<object>();
-            var awaitableTcs = new TaskCompletionSource<object>();
-            var asyncLocal = new AsyncLocal<object>();
+            var testResultTcs = new TaskCompletionSource<object?>();
+            var awaitableTcs = new TaskCompletionSource<object?>();
+            var asyncLocal = new AsyncLocal<object?>();
             asyncLocal.Value = "expected";
             var awaiter = awaitableTcs.Task.NoThrowAwaitable(captureContext).GetAwaiter();
             awaiter.UnsafeOnCompleted(delegate
@@ -398,8 +398,8 @@
         [Fact]
         public void InvokeAsyncNullEverything()
         {
-            AsyncEventHandler handler = null;
-            var task = handler.InvokeAsync(null, null);
+            AsyncEventHandler? handler = null;
+            var task = handler.InvokeAsync(null, null!);
             Assert.True(task.IsCompleted);
         }
 
@@ -413,8 +413,8 @@
         [Fact]
         public void InvokeAsyncOfTNullEverything()
         {
-            AsyncEventHandler<EventArgs> handler = null;
-            var task = handler.InvokeAsync(null, null);
+            AsyncEventHandler<EventArgs>? handler = null;
+            var task = handler.InvokeAsync(null!, null!);
             Assert.True(task.IsCompleted);
         }
 
@@ -428,7 +428,7 @@
         [Fact]
         public void InvokeAsyncExecutesEachHandlerSequentially()
         {
-            AsyncEventHandler handlers = null;
+            AsyncEventHandler? handlers = null;
             int counter = 0;
             handlers += async (sender, args) =>
             {
@@ -442,14 +442,14 @@
                 await Task.Yield();
                 Assert.Equal(4, ++counter);
             };
-            var task = handlers.InvokeAsync(null, null);
+            var task = handlers.InvokeAsync(null, null!);
             task.GetAwaiter().GetResult();
         }
 
         [Fact]
         public void InvokeAsyncOfTExecutesEachHandlerSequentially()
         {
-            AsyncEventHandler<EventArgs> handlers = null;
+            AsyncEventHandler<EventArgs>? handlers = null;
             int counter = 0;
             handlers += async (sender, args) =>
             {
@@ -463,14 +463,14 @@
                 await Task.Yield();
                 Assert.Equal(4, ++counter);
             };
-            var task = handlers.InvokeAsync(null, null);
+            var task = handlers.InvokeAsync(null!, null!);
             task.GetAwaiter().GetResult();
         }
 
         [Fact]
         public void InvokeAsyncAggregatesExceptions()
         {
-            AsyncEventHandler handlers = null;
+            AsyncEventHandler? handlers = null;
             handlers += (sender, args) =>
             {
                 throw new ApplicationException("a");
@@ -480,7 +480,7 @@
                 await Task.Yield();
                 throw new ApplicationException("b");
             };
-            var task = handlers.InvokeAsync(null, null);
+            var task = handlers.InvokeAsync(null, null!);
             try
             {
                 task.GetAwaiter().GetResult();
@@ -497,7 +497,7 @@
         [Fact]
         public void InvokeAsyncOfTAggregatesExceptions()
         {
-            AsyncEventHandler<EventArgs> handlers = null;
+            AsyncEventHandler<EventArgs>? handlers = null;
             handlers += (sender, args) =>
             {
                 throw new ApplicationException("a");
@@ -507,7 +507,7 @@
                 await Task.Yield();
                 throw new ApplicationException("b");
             };
-            var task = handlers.InvokeAsync(null, null);
+            var task = handlers.InvokeAsync(null!, null!);
             try
             {
                 task.GetAwaiter().GetResult();
@@ -605,9 +605,9 @@
         {
             var state = new object();
             var tcs = new TaskCompletionSource<int>();
-            IAsyncResult beginResult = null;
+            IAsyncResult? beginResult = null;
 
-            var callbackResult = new TaskCompletionSource<object>();
+            var callbackResult = new TaskCompletionSource<object?>();
             AsyncCallback callback = ar =>
             {
                 try
@@ -632,9 +632,9 @@
         {
             var state = new object();
             var tcs = new TaskCompletionSource<int>(state);
-            IAsyncResult beginResult = null;
+            IAsyncResult? beginResult = null;
 
-            var callbackResult = new TaskCompletionSource<object>();
+            var callbackResult = new TaskCompletionSource<object?>();
             AsyncCallback callback = ar =>
             {
                 try
@@ -658,10 +658,10 @@
         public async Task ToApmWithNoTaskState()
         {
             var state = new object();
-            var tcs = new TaskCompletionSource<object>();
-            IAsyncResult beginResult = null;
+            var tcs = new TaskCompletionSource<object?>();
+            IAsyncResult? beginResult = null;
 
-            var callbackResult = new TaskCompletionSource<object>();
+            var callbackResult = new TaskCompletionSource<object?>();
             AsyncCallback callback = ar =>
             {
                 try
@@ -685,10 +685,10 @@
         public async Task ToApmWithMatchingTaskState()
         {
             var state = new object();
-            var tcs = new TaskCompletionSource<object>(state);
-            IAsyncResult beginResult = null;
+            var tcs = new TaskCompletionSource<object?>(state);
+            IAsyncResult? beginResult = null;
 
-            var callbackResult = new TaskCompletionSource<object>();
+            var callbackResult = new TaskCompletionSource<object?>();
             AsyncCallback callback = ar =>
             {
                 try
@@ -780,8 +780,8 @@
         {
             // Verify that a faulted task is returned instead of throwing.
             Task timeoutTask = generic
-                ? TplExtensions.WithTimeout<int>(null, TimeSpan.FromSeconds(1))
-                : TplExtensions.WithTimeout(null, TimeSpan.FromSeconds(1));
+                ? TplExtensions.WithTimeout<int>(null!, TimeSpan.FromSeconds(1))
+                : TplExtensions.WithTimeout(null!, TimeSpan.FromSeconds(1));
             Assert.Throws<ArgumentNullException>(() => timeoutTask.GetAwaiter().GetResult());
         }
 
@@ -792,9 +792,9 @@
         {
             this.ExecuteOnDispatcher(async delegate
             {
-                var tcs = new TaskCompletionSource<object>();
+                var tcs = new TaskCompletionSource<object?>();
                 var timeoutTask = generic
-                    ? TplExtensions.WithTimeout<object>(tcs.Task, TimeSpan.FromMilliseconds(-1))
+                    ? TplExtensions.WithTimeout<object?>(tcs.Task, TimeSpan.FromMilliseconds(-1))
                     : TplExtensions.WithTimeout((Task)tcs.Task, TimeSpan.FromMilliseconds(-1));
                 Assert.False(timeoutTask.IsCompleted);
                 await Task.Delay(AsyncDelay / 2);
@@ -828,7 +828,7 @@
             // Use a SynchronizationContext to ensure that we never deadlock even when synchronously blocking.
             this.ExecuteOnDispatcher(delegate
             {
-                var tcs = new TaskCompletionSource<object>();
+                var tcs = new TaskCompletionSource<object?>();
                 Task timeoutTask = generic
                     ? tcs.Task.WithTimeout(TimeSpan.FromDays(1))
                     : ((Task)tcs.Task).WithTimeout(TimeSpan.FromDays(1));
@@ -871,7 +871,7 @@
             });
         }
 
-        private static void InvokeAsyncHelper(object sender, EventArgs args)
+        private static void InvokeAsyncHelper(object? sender, EventArgs? args)
         {
             int invoked = 0;
             AsyncEventHandler handler = (s, a) =>
@@ -881,12 +881,12 @@
                 invoked++;
                 return TplExtensions.CompletedTask;
             };
-            var task = handler.InvokeAsync(sender, args);
+            var task = handler.InvokeAsync(sender, args!);
             Assert.True(task.IsCompleted);
             Assert.Equal(1, invoked);
         }
 
-        private static void InvokeAsyncOfTHelper(object sender, EventArgs args)
+        private static void InvokeAsyncOfTHelper(object? sender, EventArgs? args)
         {
             int invoked = 0;
             AsyncEventHandler<EventArgs> handler = (s, a) =>
@@ -896,7 +896,7 @@
                 invoked++;
                 return TplExtensions.CompletedTask;
             };
-            var task = handler.InvokeAsync(sender, args);
+            var task = handler.InvokeAsync(sender!, args!);
             Assert.True(task.IsCompleted);
             Assert.Equal(1, invoked);
         }

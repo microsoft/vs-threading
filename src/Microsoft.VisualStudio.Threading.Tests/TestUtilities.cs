@@ -16,7 +16,7 @@
 
     internal static class TestUtilities
     {
-        internal static Task SetAsync(this TaskCompletionSource<object> tcs)
+        internal static Task SetAsync(this TaskCompletionSource<object?> tcs)
         {
             return Task.Run(() => tcs.TrySetResult(null));
         }
@@ -126,7 +126,7 @@
         /// <param name="yieldingSignal">The signal to set after the continuation has been pended.</param>
         /// <param name="resumingSignal">The signal to set when the continuation has been invoked.</param>
         /// <returns>A new awaitable.</returns>
-        internal static YieldAndNotifyAwaitable YieldAndNotify(this INotifyCompletion baseAwaiter, AsyncManualResetEvent yieldingSignal = null, AsyncManualResetEvent resumingSignal = null)
+        internal static YieldAndNotifyAwaitable YieldAndNotify(this INotifyCompletion baseAwaiter, AsyncManualResetEvent? yieldingSignal = null, AsyncManualResetEvent? resumingSignal = null)
         {
             Requires.NotNull(baseAwaiter, nameof(baseAwaiter));
 
@@ -305,10 +305,10 @@
         internal readonly struct YieldAndNotifyAwaitable
         {
             private readonly INotifyCompletion baseAwaiter;
-            private readonly AsyncManualResetEvent yieldingSignal;
-            private readonly AsyncManualResetEvent resumingSignal;
+            private readonly AsyncManualResetEvent? yieldingSignal;
+            private readonly AsyncManualResetEvent? resumingSignal;
 
-            internal YieldAndNotifyAwaitable(INotifyCompletion baseAwaiter, AsyncManualResetEvent yieldingSignal, AsyncManualResetEvent resumingSignal)
+            internal YieldAndNotifyAwaitable(INotifyCompletion baseAwaiter, AsyncManualResetEvent? yieldingSignal, AsyncManualResetEvent? resumingSignal)
             {
                 Requires.NotNull(baseAwaiter, nameof(baseAwaiter));
 
@@ -326,10 +326,10 @@
         internal readonly struct YieldAndNotifyAwaiter : INotifyCompletion
         {
             private readonly INotifyCompletion baseAwaiter;
-            private readonly AsyncManualResetEvent yieldingSignal;
-            private readonly AsyncManualResetEvent resumingSignal;
+            private readonly AsyncManualResetEvent? yieldingSignal;
+            private readonly AsyncManualResetEvent? resumingSignal;
 
-            internal YieldAndNotifyAwaiter(INotifyCompletion baseAwaiter, AsyncManualResetEvent yieldingSignal, AsyncManualResetEvent resumingSignal)
+            internal YieldAndNotifyAwaiter(INotifyCompletion baseAwaiter, AsyncManualResetEvent? yieldingSignal, AsyncManualResetEvent? resumingSignal)
             {
                 Requires.NotNull(baseAwaiter, nameof(baseAwaiter));
 

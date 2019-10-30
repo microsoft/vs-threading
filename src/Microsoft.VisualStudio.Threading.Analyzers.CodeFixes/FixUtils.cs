@@ -36,7 +36,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             var methodSymbol = (IMethodSymbol)semanticModel.GetSymbolInfo(method, cancellationToken).Symbol;
             bool hasReturnValue = (methodSymbol?.ReturnType as INamedTypeSymbol)?.IsGenericType ?? false;
-            AnonymousFunctionExpressionSyntax updated = null;
+            AnonymousFunctionExpressionSyntax? updated = null;
 
             var simpleLambda = method as SimpleLambdaExpressionSyntax;
             if (simpleLambda != null)
@@ -103,8 +103,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
 
             DocumentId documentId = document.Id;
-            var semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
-            var methodSymbol = semanticModel.GetDeclaredSymbol(method);
+            SemanticModel? semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
+            IMethodSymbol? methodSymbol = semanticModel.GetDeclaredSymbol(method);
 
             bool hasReturnValue;
             TypeSyntax returnType = method.ReturnType;
@@ -390,9 +390,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             // await Task.FromResult(x) => x.
             if (semanticModel != null)
             {
-                var awaitedInvocation = awaitExpression.Expression as InvocationExpressionSyntax;
-                var awaitedInvocationMemberAccess = awaitedInvocation?.Expression as MemberAccessExpressionSyntax;
-                if (awaitedInvocationMemberAccess?.Name.Identifier.Text == nameof(Task.FromResult))
+                if (awaitExpression.Expression is InvocationExpressionSyntax awaitedInvocation
+                    && awaitedInvocation.Expression is MemberAccessExpressionSyntax awaitedInvocationMemberAccess
+                    && awaitedInvocationMemberAccess.Name.Identifier.Text == nameof(Task.FromResult))
                 {
                     // Is the FromResult method on the Task or Task<T> class?
                     var memberOwnerSymbol = semanticModel.GetSymbolInfo(originalSyntax, cancellationToken).Symbol;

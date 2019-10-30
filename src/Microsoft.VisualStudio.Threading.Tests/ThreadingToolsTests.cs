@@ -37,14 +37,14 @@
         public void WithCancellationNull()
         {
             Assert.Throws<ArgumentNullException>(new Action(() =>
-                ThreadingTools.WithCancellation(null, CancellationToken.None)));
+                ThreadingTools.WithCancellation(null!, CancellationToken.None)));
         }
 
         [Fact]
         public void WithCancellationOfTNull()
         {
             Assert.Throws<ArgumentNullException>(new Action(() =>
-                ThreadingTools.WithCancellation<object>(null, CancellationToken.None)));
+                ThreadingTools.WithCancellation<object>(null!, CancellationToken.None)));
         }
 
         /// <summary>
@@ -53,7 +53,7 @@
         [Fact]
         public void WithCancellationOfPrecompletedTask()
         {
-            var tcs = new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSource<object?>();
             tcs.SetResult(null);
             var cts = new CancellationTokenSource();
             Assert.Same(tcs.Task, ((Task)tcs.Task).WithCancellation(cts.Token));
@@ -65,7 +65,7 @@
         [Fact]
         public void WithCancellationOfPrecompletedTaskOfT()
         {
-            var tcs = new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSource<object?>();
             tcs.SetResult(null);
             var cts = new CancellationTokenSource();
             Assert.Same(tcs.Task, tcs.Task.WithCancellation(cts.Token));
@@ -193,7 +193,7 @@
         {
             var dispatcher = SingleThreadedTestSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(dispatcher);
-            var tcs = new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSource<object?>();
             Task.Run(async delegate
             {
                 await Task.Delay(AsyncDelay);
@@ -283,7 +283,7 @@
 
         private static void WithCancellationSyncBlock(bool simulateCancellation)
         {
-            var tcs = new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSource<object?>();
             const int completeAfter = AsyncDelay / 4;
             var cts = new CancellationTokenSource(simulateCancellation ? completeAfter : Timeout.Infinite);
             if (!simulateCancellation)
@@ -309,7 +309,7 @@
 
         private static void WithCancellationSyncBlockOnNoncancelableToken()
         {
-            var tcs = new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSource<object?>();
             Task.Run(async delegate
             {
                 await Task.Delay(AsyncDelay);

@@ -9,6 +9,7 @@ namespace Microsoft.VisualStudio.Threading
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Text;
     using System.Threading;
@@ -33,17 +34,17 @@ namespace Microsoft.VisualStudio.Threading
         /// before it is actually initialized. Volatile prevents CPU reordering of commands around
         /// the assignment (or read) of this field.
         /// </remarks>
-        private volatile TaskCompletionSource<object> completedSource;
+        private volatile TaskCompletionSource<object?>? completedSource;
 
         /// <summary>
         /// The internal queue of elements. Lazily constructed.
         /// </summary>
-        private Queue<T> queueElements;
+        private Queue<T>? queueElements;
 
         /// <summary>
         /// The internal queue of <see cref="DequeueAsync(CancellationToken)"/> waiters. Lazily constructed.
         /// </summary>
-        private Queue<TaskCompletionSource<T>> dequeuingWaiters;
+        private Queue<TaskCompletionSource<T>>? dequeuingWaiters;
 
         /// <summary>
         /// A value indicating whether <see cref="Complete"/> has been called.
@@ -122,7 +123,7 @@ namespace Microsoft.VisualStudio.Threading
                             }
                             else
                             {
-                                this.completedSource = new TaskCompletionSource<object>();
+                                this.completedSource = new TaskCompletionSource<object?>();
                             }
                         }
                     }
@@ -216,7 +217,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="value">Receives the value at the head of the queue; or the default value for the element type if the queue is empty.</param>
         /// <returns><c>true</c> if the queue was non-empty; <c>false</c> otherwise.</returns>
-        public bool TryPeek(out T value)
+        public bool TryPeek([MaybeNullWhen(false)] out T value)
         {
             lock (this.SyncRoot)
             {
@@ -227,7 +228,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
                 else
                 {
-                    value = default(T);
+                    value = default(T)!;
                     return false;
                 }
             }
@@ -239,7 +240,9 @@ namespace Microsoft.VisualStudio.Threading
         /// <exception cref="InvalidOperationException">Thrown if the queue is empty.</exception>
         public T Peek()
         {
+#pragma warning disable CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
             if (!this.TryPeek(out T value))
+#pragma warning restore CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
             {
                 Verify.FailOperation(Strings.QueueEmpty);
             }
@@ -311,9 +314,11 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="value">Receives the element from the head of the queue; or <c>default(T)</c> if the queue is empty.</param>
         /// <returns><c>true</c> if an element was dequeued; <c>false</c> if the queue was empty.</returns>
-        public bool TryDequeue(out T value)
+        public bool TryDequeue([MaybeNullWhen(false)] out T value)
         {
+#pragma warning disable CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
             bool result = this.TryDequeueInternal(null, out value);
+#pragma warning restore CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
             this.CompleteIfNecessary();
             return result;
         }
@@ -328,7 +333,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             lock (this.SyncRoot)
             {
-                return this.queueElements.ToArray();
+                return this.queueElements?.ToArray() ?? Array.Empty<T>();
             }
         }
 
@@ -340,11 +345,13 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="valueCheck">The test on the head element that must succeed to dequeue.</param>
         /// <param name="value">Receives the element from the head of the queue; or <c>default(T)</c> if the queue is empty.</param>
         /// <returns><c>true</c> if an element was dequeued; <c>false</c> if the queue was empty.</returns>
-        protected bool TryDequeue(Predicate<T> valueCheck, out T value)
+        protected bool TryDequeue(Predicate<T> valueCheck, [MaybeNullWhen(false)] out T value)
         {
             Requires.NotNull(valueCheck, nameof(valueCheck));
 
+#pragma warning disable CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
             bool result = this.TryDequeueInternal(valueCheck, out value);
+#pragma warning restore CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
             this.CompleteIfNecessary();
             return result;
         }
@@ -383,7 +390,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="valueCheck">The test on the head element that must succeed to dequeue.</param>
         /// <param name="value">Receives the element from the head of the queue; or <c>default(T)</c> if the queue is empty.</param>
         /// <returns><c>true</c> if an element was dequeued; <c>false</c> if the queue was empty.</returns>
-        private bool TryDequeueInternal(Predicate<T> valueCheck, out T value)
+        private bool TryDequeueInternal(Predicate<T>? valueCheck, [MaybeNullWhen(false)] out T value)
         {
             bool dequeued;
             lock (this.SyncRoot)
@@ -395,7 +402,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
                 else
                 {
-                    value = default(T);
+                    value = default(T)!;
                     dequeued = false;
                 }
             }

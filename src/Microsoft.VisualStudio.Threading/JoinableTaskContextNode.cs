@@ -29,7 +29,7 @@ namespace Microsoft.VisualStudio.Threading
         /// A single joinable task factory that itself cannot be joined.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private JoinableTaskFactory nonJoinableFactory;
+        private JoinableTaskFactory? nonJoinableFactory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JoinableTaskContextNode"/> class.

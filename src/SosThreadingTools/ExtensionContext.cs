@@ -27,7 +27,7 @@ namespace CpsDbg
             return ((major & 0xffff) << 16) | (minor & 0xffff);
         }
 
-        private static Assembly LoadFromSameFolder(object sender, ResolveEventArgs args)
+        private static Assembly? LoadFromSameFolder(object sender, ResolveEventArgs args)
         {
             string folderPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             string assemblyPath = Path.Combine(folderPath, new AssemblyName(args.Name).Name + ".dll");

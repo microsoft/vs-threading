@@ -107,7 +107,7 @@
         [Fact, Trait("GC", "true")]
         public void SurvivesGC()
         {
-            var value = new GenericParameterHelper(5);
+            GenericParameterHelper? value = new GenericParameterHelper(5);
             this.asyncLocal.Value = value;
             Assert.Same(value, this.asyncLocal.Value);
 
@@ -227,7 +227,7 @@
         private static async Task IndependentValuesBetweenContextsHelper<T>()
             where T : class, new()
         {
-            var asyncLocal = new AsyncLocal<T>();
+            var asyncLocal = new AsyncLocal<T?>();
             var player1 = new AsyncAutoResetEvent();
             var player2 = new AsyncAutoResetEvent();
             await Task.WhenAll(

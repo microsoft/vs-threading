@@ -128,7 +128,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </returns>
         private static async Task WaitForRegistryChangeAsync(SafeRegistryHandle registryKeyHandle, bool watchSubtree, RegistryChangeNotificationFilters change, CancellationToken cancellationToken)
         {
-            IDisposable dedicatedThreadReleaser = null;
+            IDisposable? dedicatedThreadReleaser = null;
             try
             {
                 using (var evt = new ManualResetEventSlim())
@@ -216,7 +216,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The thread that should stay alive and be dequeuing <see cref="PendingWork"/>.
             /// </summary>
-            private static Thread liveThread;
+            private static Thread? liveThread;
 
             /// <summary>
             /// Executes some action on a long-lived thread.
@@ -320,7 +320,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 while (true)
                 {
-                    Tuple<Action, TaskCompletionSource<EmptyStruct>> work = null;
+                    Tuple<Action, TaskCompletionSource<EmptyStruct>>? work = null;
                     lock (SyncObject)
                     {
                         if (Thread.CurrentThread != liveThread)

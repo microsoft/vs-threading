@@ -8,6 +8,7 @@ namespace Microsoft.VisualStudio.Threading
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -22,7 +23,7 @@ namespace Microsoft.VisualStudio.Threading
         /// The synchronization object.
         /// Applicable only when <see cref="joinableTaskFactory"/> is null.
         /// </summary>
-        private readonly object syncObject;
+        private readonly object? syncObject;
 
         /// <summary>
         /// The handler to invoke for each progress update.
@@ -33,13 +34,13 @@ namespace Microsoft.VisualStudio.Threading
         /// The set of progress reports that have started (but may not have finished yet).
         /// Applicable only when <see cref="joinableTaskFactory"/> is null.
         /// </summary>
-        private readonly HashSet<Task> outstandingTasks;
+        private readonly HashSet<Task>? outstandingTasks;
 
         /// <summary>
         /// The factory to use for invoking the <see cref="handler"/>.
         /// Applicable only when <see cref="joinableTaskFactory"/> is null.
         /// </summary>
-        private readonly TaskFactory taskFactory;
+        private readonly TaskFactory? taskFactory;
 
         /// <summary>
         /// A value indicating whether this instance was constructed on the main thread.
@@ -51,13 +52,13 @@ namespace Microsoft.VisualStudio.Threading
         /// The <see cref="JoinableTaskFactory"/> to use when invoking the <see cref="handler"/> to mitigate deadlocks.
         /// May be null.
         /// </summary>
-        private readonly JoinableTaskFactory joinableTaskFactory;
+        private readonly JoinableTaskFactory? joinableTaskFactory;
 
         /// <summary>
         /// A collection of outstanding progress updates that have not completed execution.
         /// Applicable only when <see cref="joinableTaskFactory"/> is not null.
         /// </summary>
-        private readonly JoinableTaskCollection outstandingJoinableTasks;
+        private readonly JoinableTaskCollection? outstandingJoinableTasks;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ProgressWithCompletion{T}" /> class.
@@ -93,7 +94,7 @@ namespace Microsoft.VisualStudio.Threading
         /// It is possible that this handler instance could be invoked concurrently with itself.
         /// </param>
         /// <param name="joinableTaskFactory">A <see cref="JoinableTaskFactory"/> instance that can be used to mitigate deadlocks when <see cref="WaitAsync(CancellationToken)"/> is called and the <paramref name="handler"/> requires the main thread.</param>
-        public ProgressWithCompletion(Action<T> handler, JoinableTaskFactory joinableTaskFactory)
+        public ProgressWithCompletion(Action<T> handler, JoinableTaskFactory? joinableTaskFactory)
             : this(WrapSyncHandler(handler), joinableTaskFactory)
         {
         }
@@ -106,7 +107,7 @@ namespace Microsoft.VisualStudio.Threading
         /// It is possible that this handler instance could be invoked concurrently with itself.
         /// </param>
         /// <param name="joinableTaskFactory">A <see cref="JoinableTaskFactory"/> instance that can be used to mitigate deadlocks when <see cref="WaitAsync(CancellationToken)"/> is called and the <paramref name="handler"/> requires the main thread.</param>
-        public ProgressWithCompletion(Func<T, Task> handler, JoinableTaskFactory joinableTaskFactory)
+        public ProgressWithCompletion(Func<T, Task> handler, JoinableTaskFactory? joinableTaskFactory)
         {
             Requires.NotNull(handler, nameof(handler));
             this.handler = handler;
@@ -124,6 +125,23 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
+        private bool IsJoinableTaskAware(
+            [NotNullWhen(true)] out JoinableTaskFactory? joinableTaskFactory,
+            [NotNullWhen(true)] out JoinableTaskCollection? outstandingJoinableTasks,
+            [NotNullWhen(false)] out object? syncObject,
+            [NotNullWhen(false)] out HashSet<Task>? outstandingTasks,
+            [NotNullWhen(false)] out TaskFactory? taskFactory)
+        {
+            joinableTaskFactory = this.joinableTaskFactory;
+            outstandingJoinableTasks = this.outstandingJoinableTasks;
+
+            syncObject = this.syncObject;
+            outstandingTasks = this.outstandingTasks;
+            taskFactory = this.taskFactory;
+
+            return joinableTaskFactory is object;
+        }
+
         /// <summary>
         /// Receives a progress update.
         /// </summary>
@@ -139,9 +157,9 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="value">The value representing the updated progress.</param>
         protected virtual void Report(T value)
         {
-            if (this.joinableTaskFactory != null)
+            if (this.IsJoinableTaskAware(out var joinableTaskFactory, out var outstandingJoinableTasks, out var syncObject, out var outstandingTasks, out var taskFactory))
             {
-                JoinableTask joinableTask = this.joinableTaskFactory.RunAsync(
+                JoinableTask joinableTask = joinableTaskFactory.RunAsync(
                     async delegate
                     {
                         // Emulate the behavior of having captured a SynchronizationContext by invoking the handler on the main thread
@@ -149,7 +167,7 @@ namespace Microsoft.VisualStudio.Threading
                         // inline with our caller, per the behavior folks expect from this and .NET's Progress<T> class.
                         if (this.createdOnMainThread)
                         {
-                            await this.joinableTaskFactory.SwitchToMainThreadAsync(alwaysYield: true);
+                            await joinableTaskFactory.SwitchToMainThreadAsync(alwaysYield: true);
                         }
                         else
                         {
@@ -158,24 +176,24 @@ namespace Microsoft.VisualStudio.Threading
 
                         await this.handler(value).ConfigureAwaitRunInline();
                     });
-                this.outstandingJoinableTasks.Add(joinableTask);
+                outstandingJoinableTasks.Add(joinableTask);
             }
             else
             {
 #pragma warning disable CA2008 // Do not create tasks without passing a TaskScheduler
-                var reported = this.taskFactory.StartNew(() => this.handler(value)).Unwrap();
+                var reported = taskFactory.StartNew(() => this.handler(value)).Unwrap();
 #pragma warning restore CA2008 // Do not create tasks without passing a TaskScheduler
-                lock (this.syncObject)
+                lock (syncObject)
                 {
-                    this.outstandingTasks.Add(reported);
+                    outstandingTasks.Add(reported);
                 }
 
                 reported.ContinueWith(
                     t =>
                     {
-                        lock (this.syncObject)
+                        lock (syncObject)
                         {
-                            this.outstandingTasks.Remove(t);
+                            outstandingTasks.Remove(t);
                         }
                     },
                     CancellationToken.None,
@@ -197,13 +215,13 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns>A task that completes when all progress is complete.</returns>
         public Task WaitAsync(CancellationToken cancellationToken)
         {
-            if (this.outstandingJoinableTasks != null)
+            if (this.IsJoinableTaskAware(out _, out var outstandingJoinableTasks, out var syncObject, out _, out _))
             {
-                return this.outstandingJoinableTasks.JoinTillEmptyAsync(cancellationToken);
+                return outstandingJoinableTasks.JoinTillEmptyAsync(cancellationToken);
             }
             else
             {
-                lock (this.syncObject)
+                lock (syncObject)
                 {
                     return Task.WhenAll(this.outstandingTasks).WithCancellation(cancellationToken);
                 }

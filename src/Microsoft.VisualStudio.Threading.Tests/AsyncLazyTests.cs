@@ -79,7 +79,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public void CtorNullArgs()
         {
-            Assert.Throws<ArgumentNullException>(() => new AsyncLazy<object>(null));
+            Assert.Throws<ArgumentNullException>(() => new AsyncLazy<object>(null!));
         }
 
         /// <summary>
@@ -201,14 +201,14 @@ namespace Microsoft.VisualStudio.Threading.Tests
         public async Task ValueFactoryReentersValueFactorySynchronously(bool specifyJtf)
         {
             var jtf = specifyJtf ? new JoinableTaskContext().Factory : null; // use our own so we don't get main thread deadlocks, which isn't the point of this test.
-            AsyncLazy<object> lazy = null;
+            AsyncLazy<object>? lazy = null;
             bool executed = false;
             lazy = new AsyncLazy<object>(
                 delegate
                 {
                     Assert.False(executed);
                     executed = true;
-                    lazy.GetValueAsync();
+                    lazy!.GetValueAsync();
                     return Task.FromResult<object>(new object());
                 },
                 jtf);
@@ -223,7 +223,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         public async Task ValueFactoryReentersValueFactoryAsynchronously(bool specifyJtf)
         {
             var jtf = specifyJtf ? new JoinableTaskContext().Factory : null; // use our own so we don't get main thread deadlocks, which isn't the point of this test.
-            AsyncLazy<object> lazy = null;
+            AsyncLazy<object>? lazy = null;
             bool executed = false;
             lazy = new AsyncLazy<object>(
                 async delegate
@@ -231,7 +231,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                     Assert.False(executed);
                     executed = true;
                     await Task.Yield();
-                    await lazy.GetValueAsync();
+                    await lazy!.GetValueAsync();
                     return new object();
                 },
                 jtf);
@@ -374,7 +374,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public void ToStringForUncreatedValue()
         {
-            var lazy = new AsyncLazy<object>(() => Task.FromResult<object>(null));
+            var lazy = new AsyncLazy<object?>(() => Task.FromResult<object?>(null));
             string result = lazy.ToString();
             Assert.NotNull(result);
             Assert.NotEqual(string.Empty, result);

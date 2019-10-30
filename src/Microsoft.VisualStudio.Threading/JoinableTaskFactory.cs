@@ -41,7 +41,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// The collection to add all created tasks to. May be <c>null</c>.
         /// </summary>
-        private readonly JoinableTaskCollection jobCollection;
+        private readonly JoinableTaskCollection? jobCollection;
 
         /// <summary>
         /// Backing field for the <see cref="HangDetectionTimeout"/> property.
@@ -72,7 +72,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="owner">The context for the tasks created by this factory.</param>
         /// <param name="collection">The collection that all tasks created by this factory will belong to till they complete. May be null.</param>
-        internal JoinableTaskFactory(JoinableTaskContext owner, JoinableTaskCollection collection)
+        internal JoinableTaskFactory(JoinableTaskContext owner, JoinableTaskCollection? collection)
         {
             Requires.NotNull(owner, nameof(owner));
             Assumes.True(collection == null || collection.Context == owner);
@@ -93,7 +93,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets the synchronization context to apply before executing work associated with this factory.
         /// </summary>
-        internal SynchronizationContext ApplicableJobSyncContext
+        internal SynchronizationContext? ApplicableJobSyncContext
         {
             get { return this.Context.IsOnMainThread ? this.mainThreadJobSyncContext : null; }
         }
@@ -101,7 +101,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets the collection to which created tasks belong until they complete. May be null.
         /// </summary>
-        internal JoinableTaskCollection Collection
+        internal JoinableTaskCollection? Collection
         {
             get { return this.jobCollection; }
         }
@@ -225,12 +225,14 @@ namespace Microsoft.VisualStudio.Threading
             // a (child) job and add that to this job factory's collection so that folks joining that factory
             // can help this switch to complete.
             var ambientJob = this.Context.AmbientTask;
-            SingleExecuteProtector wrapper = null;
+            SingleExecuteProtector? wrapper = null;
             if (ambientJob == null || (this.jobCollection != null && !this.jobCollection.Contains(ambientJob)))
             {
                 var transient = this.RunAsync(
                     delegate
                     {
+                        RoslynDebug.Assert(this.Context.AmbientTask is object, $"{nameof(this.Context.AmbientTask)} is always set for {nameof(this.RunAsync)} callbacks.");
+
                         ambientJob = this.Context.AmbientTask;
                         wrapper = SingleExecuteProtector.Create(ambientJob, callback);
                         ambientJob.Post(SingleExecuteProtector.ExecuteOnce, wrapper, true);
@@ -354,7 +356,7 @@ namespace Microsoft.VisualStudio.Threading
             int hangTimeoutsCount = 0; // useful for debugging dump files to see how many times we looped.
             int hangNotificationCount = 0;
             Guid hangId = Guid.Empty;
-            Stopwatch stopWatch = null;
+            Stopwatch? stopWatch = null;
             try
             {
                 while (!task.Wait(this.HangDetectionTimeout))
@@ -380,6 +382,8 @@ namespace Microsoft.VisualStudio.Threading
 
                 if (hangNotificationCount > 0)
                 {
+                    RoslynDebug.Assert(stopWatch is object);
+
                     // We detect a false alarm. The stop watch was started after the first timeout, so we add intial timeout to the total delay.
                     this.Context.OnFalseHangDetected(
                         stopWatch.Elapsed + this.HangDetectionTimeout,
@@ -546,7 +550,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="asyncMethod">The asynchronous method to execute.</param>
         /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior.</param>
         /// <param name="entrypointOverride">The delegate to record as the entrypoint for this JoinableTask.</param>
-        internal void Run(Func<Task> asyncMethod, JoinableTaskCreationOptions creationOptions, Delegate entrypointOverride)
+        internal void Run(Func<Task> asyncMethod, JoinableTaskCreationOptions creationOptions, Delegate? entrypointOverride)
         {
             VerifyNoNonConcurrentSyncContext();
             var joinable = this.RunAsync(asyncMethod, synchronouslyBlocking: true, creationOptions: creationOptions, entrypointOverride: entrypointOverride);
@@ -562,7 +566,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="synchronouslyBlocking">A value indicating whether the launching thread will synchronously block for this job's completion.</param>
         /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior.</param>
         /// <param name="entrypointOverride">The entry method's info for diagnostics.</param>
-        private JoinableTask RunAsync(Func<Task> asyncMethod, bool synchronouslyBlocking, JoinableTaskCreationOptions creationOptions, Delegate entrypointOverride = null)
+        private JoinableTask RunAsync(Func<Task> asyncMethod, bool synchronouslyBlocking, JoinableTaskCreationOptions creationOptions, Delegate? entrypointOverride = null)
         {
             Requires.NotNull(asyncMethod, nameof(asyncMethod));
 
@@ -614,7 +618,7 @@ namespace Microsoft.VisualStudio.Threading
             return this.RunAsync(asyncMethod, synchronouslyBlocking: false, creationOptions: creationOptions);
         }
 
-        internal void Post(SendOrPostCallback callback, object state, bool mainThreadAffinitized)
+        internal void Post(SendOrPostCallback callback, object? state, bool mainThreadAffinitized)
         {
             Requires.NotNull(callback, nameof(callback));
 
@@ -622,6 +626,8 @@ namespace Microsoft.VisualStudio.Threading
             {
                 var transient = this.RunAsync(delegate
                 {
+                    RoslynDebug.Assert(this.Context.AmbientTask is object, $"{nameof(this.Context.AmbientTask)} is always set for {nameof(this.RunAsync)} callbacks.");
+
                     this.Context.AmbientTask.Post(callback, state, true);
                     return TplExtensions.CompletedTask;
                 });
@@ -713,9 +719,9 @@ namespace Microsoft.VisualStudio.Threading
         [SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible"), SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
         public readonly struct MainThreadAwaitable
         {
-            private readonly JoinableTaskFactory jobFactory;
+            private readonly JoinableTaskFactory? jobFactory;
 
-            private readonly JoinableTask job;
+            private readonly JoinableTask? job;
 
             private readonly CancellationToken cancellationToken;
 
@@ -724,7 +730,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Initializes a new instance of the <see cref="MainThreadAwaitable"/> struct.
             /// </summary>
-            internal MainThreadAwaitable(JoinableTaskFactory jobFactory, JoinableTask job, CancellationToken cancellationToken, bool alwaysYield = false)
+            internal MainThreadAwaitable(JoinableTaskFactory jobFactory, JoinableTask? job, CancellationToken cancellationToken, bool alwaysYield = false)
             {
                 Requires.NotNull(jobFactory, nameof(jobFactory));
 
@@ -740,6 +746,11 @@ namespace Microsoft.VisualStudio.Threading
             [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
             public MainThreadAwaiter GetAwaiter()
             {
+                if (this.jobFactory is null)
+                {
+                    return default;
+                }
+
                 return new MainThreadAwaiter(this.jobFactory, this.job, this.alwaysYield, this.cancellationToken);
             }
         }
@@ -754,13 +765,13 @@ namespace Microsoft.VisualStudio.Threading
 
             private static readonly Action<object> UnsafeCancellationAction = state => ThreadPool.UnsafeQueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, state);
 
-            private readonly JoinableTaskFactory jobFactory;
+            private readonly JoinableTaskFactory? jobFactory;
 
             private readonly CancellationToken cancellationToken;
 
             private readonly bool alwaysYield;
 
-            private readonly JoinableTask job;
+            private readonly JoinableTask? job;
 
             /// <summary>
             /// Holds the reference to the <see cref="CancellationTokenRegistration"/> struct, so that all the copies of <see cref="MainThreadAwaiter"/> will hold
@@ -777,12 +788,12 @@ namespace Microsoft.VisualStudio.Threading
             /// then this will hold a default value of <see cref="CancellationTokenRegistration"/>, and <see cref="OnCompleted(Action)"/>
             /// would not touch it.
             /// </remarks>
-            private readonly StrongBox<CancellationTokenRegistration?> cancellationRegistrationPtr;
+            private readonly StrongBox<CancellationTokenRegistration?>? cancellationRegistrationPtr;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="MainThreadAwaiter"/> struct.
             /// </summary>
-            internal MainThreadAwaiter(JoinableTaskFactory jobFactory, JoinableTask job, bool alwaysYield, CancellationToken cancellationToken)
+            internal MainThreadAwaiter(JoinableTaskFactory jobFactory, JoinableTask? job, bool alwaysYield, CancellationToken cancellationToken)
             {
                 this.jobFactory = jobFactory;
                 this.job = job;
@@ -981,7 +992,7 @@ namespace Microsoft.VisualStudio.Threading
             private readonly JoinableTaskFactory factory;
             private readonly SpecializedSyncContext syncContextRevert;
             private readonly JoinableTask joinable;
-            private readonly JoinableTask previousJoinable;
+            private readonly JoinableTask? previousJoinable;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="RunFramework"/> struct
@@ -1051,7 +1062,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The job that created this wrapper.
             /// </summary>
-            private JoinableTask job;
+            private JoinableTask? job;
 
             private bool raiseTransitionComplete;
 
@@ -1059,12 +1070,12 @@ namespace Microsoft.VisualStudio.Threading
             /// The delegate to invoke.  <c>null</c> if it has already been invoked.
             /// </summary>
             /// <value>May be of type <see cref="Action"/> or <see cref="SendOrPostCallback"/>.</value>
-            private object invokeDelegate;
+            private object? invokeDelegate;
 
             /// <summary>
             /// The value to pass to the delegate if it is a <see cref="SendOrPostCallback"/>.
             /// </summary>
-            private object state;
+            private object? state;
 
             /// <summary>
             /// Stores execution callbacks for <see cref="AddExecutingCallback"/>.
@@ -1138,7 +1149,7 @@ namespace Microsoft.VisualStudio.Threading
                 var stateDelegate = singleExecuteProtector.state as Delegate;
 
                 // We are in favor of "state" when "invokeDelegate" is a static method and "state" is the actual delegate.
-                Delegate actualDelegate = (stateDelegate != null && stateDelegate.Target != null) ? stateDelegate : invokeDelegate;
+                Delegate? actualDelegate = (stateDelegate != null && stateDelegate.Target != null) ? stateDelegate : invokeDelegate;
                 if (actualDelegate == null)
                 {
                     yield return "<COMPLETED>";
@@ -1154,6 +1165,8 @@ namespace Microsoft.VisualStudio.Threading
             internal void RaiseTransitioningEvents()
             {
                 Assumes.False(this.raiseTransitionComplete); // if this method is called twice, that's the sign of a problem.
+                RoslynDebug.Assert(this.job is object);
+
                 this.raiseTransitionComplete = true;
                 this.job.Factory.OnTransitioningToMainThread(this.job);
             }
@@ -1180,7 +1193,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <param name="callback">The callback to invoke.</param>
             /// <param name="state">The state object to pass to the callback.</param>
             /// <returns>An instance of <see cref="SingleExecuteProtector"/>.</returns>
-            internal static SingleExecuteProtector Create(JoinableTask job, SendOrPostCallback callback, object state)
+            internal static SingleExecuteProtector Create(JoinableTask job, SendOrPostCallback callback, object? state)
             {
                 Requires.NotNull(job, nameof(job));
 
@@ -1208,7 +1221,9 @@ namespace Microsoft.VisualStudio.Threading
                 if (invokeDelegate != null)
                 {
                     this.OnExecuting();
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
                     var syncContext = this.job != null ? this.job.ApplicableJobSyncContext : this.job.Factory.ApplicableJobSyncContext;
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
                     using (syncContext.Apply(checkForChangesOnRevert: false))
                     {
                         if (invokeDelegate is Action action)
@@ -1257,6 +1272,8 @@ namespace Microsoft.VisualStudio.Threading
 
                 if (this.raiseTransitionComplete)
                 {
+                    RoslynDebug.Assert(this.job is object);
+
                     this.job.Factory.OnTransitionedToMainThread(this.job, !this.job.Factory.Context.IsOnMainThread);
                 }
             }

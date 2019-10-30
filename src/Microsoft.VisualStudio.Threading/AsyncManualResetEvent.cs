@@ -128,7 +128,7 @@ namespace Microsoft.VisualStudio.Threading
         [Obsolete("Use Set() instead."), EditorBrowsable(EditorBrowsableState.Never)]
         public Task SetAsync()
         {
-            TaskCompletionSourceWithoutInlining<EmptyStruct> tcs = null;
+            TaskCompletionSourceWithoutInlining<EmptyStruct>? tcs = null;
             bool transitionRequired = false;
             lock (this.syncObject)
             {
@@ -194,7 +194,7 @@ namespace Microsoft.VisualStudio.Threading
         [Obsolete("Use PulseAll() instead."), EditorBrowsable(EditorBrowsableState.Never)]
         public Task PulseAllAsync()
         {
-            TaskCompletionSourceWithoutInlining<EmptyStruct> tcs = null;
+            TaskCompletionSourceWithoutInlining<EmptyStruct>? tcs = null;
             lock (this.syncObject)
             {
                 // Atomically replace the completion source with a new, uncompleted source

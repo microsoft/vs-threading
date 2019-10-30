@@ -19,8 +19,8 @@
         [Fact]
         public void Ctor_Nulls()
         {
-            Assert.Throws<ArgumentNullException>(() => new ProgressWithCompletion<GenericParameterHelper>((Action<GenericParameterHelper>)null));
-            Assert.Throws<ArgumentNullException>(() => new ProgressWithCompletion<GenericParameterHelper>((Func<GenericParameterHelper, Task>)null));
+            Assert.Throws<ArgumentNullException>(() => new ProgressWithCompletion<GenericParameterHelper>((Action<GenericParameterHelper>)null!));
+            Assert.Throws<ArgumentNullException>(() => new ProgressWithCompletion<GenericParameterHelper>((Func<GenericParameterHelper, Task>)null!));
         }
 
         [Fact]
@@ -98,7 +98,7 @@
         {
             var syncContext = SingleThreadedTestSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(syncContext);
-            TaskCompletionSource<object> callbackResult = new TaskCompletionSource<object>();
+            TaskCompletionSource<object?> callbackResult = new TaskCompletionSource<object?>();
             var frame = SingleThreadedTestSynchronizationContext.NewFrame();
             var callback = new Action<GenericParameterHelper>(
                 p =>

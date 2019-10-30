@@ -69,7 +69,7 @@
         [Fact]
         public void RemoveFromEmpty()
         {
-            this.list.Remove(null);
+            this.list.Remove(null!);
             Assert.Empty(this.list.ToArray());
             this.list.Remove(new GenericParameterHelper(5));
             Assert.Empty(this.list.ToArray());
@@ -81,7 +81,7 @@
             var value = new GenericParameterHelper(1);
             this.list.Add(value);
 
-            this.list.Remove(null);
+            this.list.Remove(null!);
             Assert.Single(this.list.ToArray());
             this.list.Remove(new GenericParameterHelper(5));
             Assert.Single(this.list.ToArray());
@@ -97,7 +97,7 @@
             this.list.Add(value1);
             this.list.Add(value2);
 
-            this.list.Remove(null);
+            this.list.Remove(null!);
             Assert.Equal(2, this.list.ToArray().Length);
             this.list.Remove(new GenericParameterHelper(5));
             Assert.Equal(2, this.list.ToArray().Length);
@@ -116,7 +116,7 @@
             this.list.Add(value1);
             this.list.Add(value2);
 
-            this.list.Remove(null);
+            this.list.Remove(null!);
             Assert.Equal(2, this.list.ToArray().Length);
             this.list.Remove(new GenericParameterHelper(5));
             Assert.Equal(2, this.list.ToArray().Length);
@@ -144,13 +144,13 @@
         [Fact]
         public void Contains()
         {
-            Assert.False(this.list.Contains(null));
+            Assert.False(this.list.Contains(null!));
 
             var val1 = new GenericParameterHelper();
             Assert.False(this.list.Contains(val1));
             this.list.Add(val1);
             Assert.True(this.list.Contains(val1));
-            Assert.False(this.list.Contains(null));
+            Assert.False(this.list.Contains(null!));
 
             var val2 = new GenericParameterHelper();
             Assert.False(this.list.Contains(val2));
@@ -158,7 +158,7 @@
             Assert.True(this.list.Contains(val2));
 
             Assert.True(this.list.Contains(val1));
-            Assert.False(this.list.Contains(null));
+            Assert.False(this.list.Contains(null!));
             Assert.False(this.list.Contains(new GenericParameterHelper()));
         }
     }

@@ -87,7 +87,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             var symbol = context.SemanticModel.GetSymbolInfo(invocation.Expression, context.CancellationToken).Symbol;
             if (symbol != null)
             {
-                ISymbol type = null;
+                ISymbol? type = null;
                 if (symbol.Kind == SymbolKind.Method)
                 {
                     // Handle the case when call into AsyncEventHandler via Invoke() method.

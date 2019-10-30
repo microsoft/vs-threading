@@ -9,6 +9,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Text;
     using System.Threading;
@@ -67,7 +68,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// <inheritdoc />
         public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
 
-        private static bool TryFindNodeAtSource(Diagnostic diagnostic, SyntaxNode root, out ExpressionSyntax target, out Func<ExpressionSyntax, CancellationToken, ExpressionSyntax> transform)
+        private static bool TryFindNodeAtSource(Diagnostic diagnostic, SyntaxNode root, [NotNullWhen(true)] out ExpressionSyntax? target, [NotNullWhen(true)] out Func<ExpressionSyntax, CancellationToken, ExpressionSyntax>? transform)
         {
             transform = null;
             target = null;
@@ -79,28 +80,31 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 return false;
             }
 
-            ExpressionSyntax FindTwoLevelDeepIdentifierInvocation(ExpressionSyntax from, CancellationToken cancellationToken = default(CancellationToken)) =>
+            ExpressionSyntax? FindTwoLevelDeepIdentifierInvocation(ExpressionSyntax from, CancellationToken cancellationToken = default(CancellationToken)) =>
                 ((((from as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax)?.Expression as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax)?.Expression;
-            ExpressionSyntax FindOneLevelDeepIdentifierInvocation(ExpressionSyntax from, CancellationToken cancellationToken = default(CancellationToken)) =>
+            ExpressionSyntax? FindOneLevelDeepIdentifierInvocation(ExpressionSyntax from, CancellationToken cancellationToken = default(CancellationToken)) =>
                 ((from as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax)?.Expression;
-            ExpressionSyntax FindParentMemberAccess(ExpressionSyntax from, CancellationToken cancellationToken = default(CancellationToken)) =>
+            ExpressionSyntax? FindParentMemberAccess(ExpressionSyntax from, CancellationToken cancellationToken = default(CancellationToken)) =>
                 (from as MemberAccessExpressionSyntax)?.Expression;
 
             var parentInvocation = syntaxNode.FirstAncestorOrSelf<InvocationExpressionSyntax>();
             var parentMemberAccess = syntaxNode.FirstAncestorOrSelf<MemberAccessExpressionSyntax>();
             if (FindTwoLevelDeepIdentifierInvocation(parentInvocation) != null)
             {
-                transform = FindTwoLevelDeepIdentifierInvocation;
+                // This method will not return null for the provided 'target' argument
+                transform = NullableHelpers.AsNonNullReturnUnchecked<ExpressionSyntax, CancellationToken, ExpressionSyntax>(FindTwoLevelDeepIdentifierInvocation);
                 target = parentInvocation;
             }
             else if (FindOneLevelDeepIdentifierInvocation(parentInvocation) != null)
             {
-                transform = FindOneLevelDeepIdentifierInvocation;
+                // This method will not return null for the provided 'target' argument
+                transform = NullableHelpers.AsNonNullReturnUnchecked<ExpressionSyntax, CancellationToken, ExpressionSyntax>(FindOneLevelDeepIdentifierInvocation);
                 target = parentInvocation;
             }
             else if (FindParentMemberAccess(parentMemberAccess) != null)
             {
-                transform = FindParentMemberAccess;
+                // This method will not return null for the provided 'target' argument
+                transform = NullableHelpers.AsNonNullReturnUnchecked<ExpressionSyntax, CancellationToken, ExpressionSyntax>(FindParentMemberAccess);
                 target = parentMemberAccess;
             }
             else

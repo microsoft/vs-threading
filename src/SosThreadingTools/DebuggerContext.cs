@@ -18,7 +18,7 @@ namespace CpsDbg
         /// <summary>
         /// The singleton instance used in a debug session.
         /// </summary>
-        private static DebuggerContext instance;
+        private static DebuggerContext? instance;
 
         static DebuggerContext()
         {
@@ -43,7 +43,7 @@ namespace CpsDbg
 
         private DataTarget DataTarget { get; }
 
-        internal static DebuggerContext GetDebuggerContext(IntPtr ptrClient)
+        internal static DebuggerContext? GetDebuggerContext(IntPtr ptrClient)
         {
             // On our first call to the API:
             //   1. Store a copy of IDebugClient in DebugClient.
@@ -58,7 +58,7 @@ namespace CpsDbg
 
                 var dataTarget = DataTarget.CreateFromDebuggerInterface(debugClient);
 
-                ClrRuntime runtime = null;
+                ClrRuntime? runtime = null;
 
                 // If our ClrRuntime instance is null, it means that this is our first call, or
                 // that the dac wasn't loaded on any previous call.  Find the dac loaded in the
@@ -100,7 +100,7 @@ namespace CpsDbg
             return instance;
         }
 
-        private static Assembly ResolveAssembly(object sender, ResolveEventArgs args)
+        private static Assembly? ResolveAssembly(object sender, ResolveEventArgs args)
         {
             if (args.Name.Contains(ClrMD))
             {

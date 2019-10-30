@@ -77,11 +77,11 @@ namespace Microsoft.VisualStudio.Threading.Tests
         {
             var log = new List<FactoryLogEntry>();
             var delegatingFactory = new DelegatingFactory(this.asyncPump, this.AddToLog);
-            JoinableTask jt = null;
+            JoinableTask? jt = null;
             jt = delegatingFactory.RunAsync(async delegate
             {
                 await Task.Yield();
-                Assert.True(this.joinableCollection.Contains(jt));
+                Assert.True(this.joinableCollection!.Contains(jt!));
             });
 
             jt.Join();

@@ -184,7 +184,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="resourceCheck">A function that returns <c>true</c> if the provided resource should be considered retrieved.</param>
         /// <param name="state">The state object to pass as a second parameter to <paramref name="resourceCheck"/>.</param>
         /// <returns><c>true</c> if the delegate returned <c>true</c> on any of the invocations.</returns>
-        protected bool SetResourceAsAccessed(Func<TResource, object, bool> resourceCheck, object state)
+        protected bool SetResourceAsAccessed(Func<TResource, object?, bool> resourceCheck, object? state)
         {
             return this.helper.SetResourceAsAccessed(resourceCheck, state);
         }
@@ -570,7 +570,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <param name="resourceCheck">A function that returns <c>true</c> if the provided resource should be considered retrieved.</param>
             /// <param name="state">The state object to pass as a second parameter to <paramref name="resourceCheck"/>.</param>
             /// <returns><c>true</c> if the delegate returned <c>true</c> on any of the invocations.</returns>
-            internal bool SetResourceAsAccessed(Func<TResource, object, bool> resourceCheck, object state)
+            internal bool SetResourceAsAccessed(Func<TResource, object?, bool> resourceCheck, object? state)
             {
                 Requires.NotNull(resourceCheck, nameof(resourceCheck));
 

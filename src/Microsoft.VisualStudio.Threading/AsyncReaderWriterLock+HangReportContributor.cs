@@ -96,7 +96,7 @@ namespace Microsoft.VisualStudio.Threading
                     nodes.Add(allAwaiterMetadata.Select(am => CreateAwaiterNode(am.Awaiter).WithCategories(am.Categories.ToArray()).ContainedBy(am.GroupId, dgml)));
 
                     // Link the lock stacks among themselves.
-                    links.Add(allAwaiterMetadata.Where(a => a.Awaiter.NestingLock != null).Select(a => Dgml.Link(GetAwaiterId(a.Awaiter.NestingLock), GetAwaiterId(a.Awaiter))));
+                    links.Add(allAwaiterMetadata.Where(a => a.Awaiter.NestingLock != null).Select(a => Dgml.Link(GetAwaiterId(a.Awaiter.NestingLock!), GetAwaiterId(a.Awaiter))));
 
                     return new HangReportContribution(
                         dgml.ToString(),
@@ -140,7 +140,7 @@ namespace Microsoft.VisualStudio.Threading
                 label.AppendLine("Options: " + awaiter.Options);
             }
 
-            Delegate lockWaitingContinuation;
+            Delegate? lockWaitingContinuation;
             if (awaiter.RequestingStackTrace != null)
             {
                 label.AppendLine(awaiter.RequestingStackTrace.ToString());
@@ -191,10 +191,9 @@ namespace Microsoft.VisualStudio.Threading
         private static IEnumerable<Awaiter> GetLockStack(Awaiter awaiter)
         {
             Requires.NotNull(awaiter, nameof(awaiter));
-            while (awaiter != null)
+            for (Awaiter? current = awaiter; current != null; current = current.NestingLock)
             {
                 yield return awaiter;
-                awaiter = awaiter.NestingLock;
             }
         }
 

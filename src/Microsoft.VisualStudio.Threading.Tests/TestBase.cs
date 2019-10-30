@@ -2,6 +2,7 @@
 {
     using System;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Runtime.CompilerServices;
     using System.Runtime.ExceptionServices;
     using System.Threading;
@@ -261,7 +262,7 @@
                 return;
             }
 
-            Exception staFailure = null;
+            Exception? staFailure = null;
             var staThread = new Thread(state =>
             {
                 try
@@ -299,7 +300,7 @@
             }
 
             var frame = SingleThreadedTestSynchronizationContext.NewFrame();
-            Exception failure = null;
+            Exception? failure = null;
             SynchronizationContext.Current.Post(
                 async _ =>
                 {
@@ -336,7 +337,7 @@
         /// </returns>
         /// <exception cref="Xunit.Sdk.XunitException">Thrown if the isolated test result is a Failure.</exception>
         /// <exception cref="SkipException">Thrown if on a platform that we do not yet support test isolation on.</exception>
-        protected Task<bool> ExecuteInIsolationAsync([CallerMemberName] string testMethodName = null)
+        protected Task<bool> ExecuteInIsolationAsync([CallerMemberName] string testMethodName = null!)
         {
             return TestUtilities.ExecuteInIsolationAsync(this, testMethodName, this.Logger);
         }
@@ -352,7 +353,7 @@
         /// </returns>
         /// <exception cref="Xunit.Sdk.XunitException">Thrown if the isolated test result is a Failure.</exception>
         /// <exception cref="SkipException">Thrown if on a platform that we do not yet support test isolation on.</exception>
-        protected bool ExecuteInIsolation([CallerMemberName] string testMethodName = null)
+        protected bool ExecuteInIsolation([CallerMemberName] string testMethodName = null!)
         {
             return TestUtilities.ExecuteInIsolationAsync(this, testMethodName, this.Logger).GetAwaiter().GetResult();
         }

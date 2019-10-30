@@ -128,19 +128,20 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="tcs">The task that should receive the completion status.</param>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "tcs")]
         public static void ApplyResultTo<T>(this Task task, TaskCompletionSource<T> tcs)
+            //// where T : defaultable
         {
             Requires.NotNull(task, nameof(task));
             Requires.NotNull(tcs, nameof(tcs));
 
             if (task.IsCompleted)
             {
-                ApplyCompletedTaskResultTo<T>(task, tcs, default(T));
+                ApplyCompletedTaskResultTo<T>(task, tcs, default(T)!);
             }
             else
             {
                 // Using a minimum of allocations (just one task, and no closure) ensure that one task's completion sets equivalent completion on another task.
                 task.ContinueWith(
-                    (t, s) => ApplyCompletedTaskResultTo(t, (TaskCompletionSource<T>)s, default(T)),
+                    (t, s) => ApplyCompletedTaskResultTo(t, (TaskCompletionSource<T>)s, default(T)!),
                     tcs,
                     CancellationToken.None,
                     TaskContinuationOptions.ExecuteSynchronously,
@@ -204,7 +205,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="ultimateCancellation">A token whose cancellation signals that the following task should be cancelled.</param>
         /// <param name="taskThatFollows">The TaskCompletionSource whose task is to follow.  Leave at <c>null</c> for a new task to be created.</param>
         /// <returns>The following task.</returns>
-        public static Task<T> FollowCancelableTaskToCompletion<T>(Func<Task<T>> taskToFollow, CancellationToken ultimateCancellation, TaskCompletionSource<T> taskThatFollows = null)
+        public static Task<T> FollowCancelableTaskToCompletion<T>(Func<Task<T>> taskToFollow, CancellationToken ultimateCancellation, TaskCompletionSource<T>? taskThatFollows = null)
         {
             Requires.NotNull(taskToFollow, nameof(taskToFollow));
 
@@ -253,7 +254,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="task">The task whose result is to be ignored.</param>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "task")]
-        public static void Forget(this Task task)
+        public static void Forget(this Task? task)
         {
         }
 
@@ -266,12 +267,12 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="args">The event argument.</param>
         /// <returns>The task that completes when all handlers have completed.</returns>
         /// <exception cref="AggregateException">Thrown if any handlers fail. It contains a collection of all failures.</exception>
-        public static async Task InvokeAsync(this AsyncEventHandler handlers, object sender, EventArgs args)
+        public static async Task InvokeAsync(this AsyncEventHandler? handlers, object? sender, EventArgs args)
         {
             if (handlers != null)
             {
                 var individualHandlers = handlers.GetInvocationList();
-                List<Exception> exceptions = null;
+                List<Exception>? exceptions = null;
                 foreach (AsyncEventHandler handler in individualHandlers)
                 {
                     try
@@ -306,13 +307,12 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="args">The event argument.</param>
         /// <returns>The task that completes when all handlers have completed.  The task is faulted if any handlers throw an exception.</returns>
         /// <exception cref="AggregateException">Thrown if any handlers fail. It contains a collection of all failures.</exception>
-        public static async Task InvokeAsync<TEventArgs>(this AsyncEventHandler<TEventArgs> handlers, object sender, TEventArgs args)
-            where TEventArgs : EventArgs
+        public static async Task InvokeAsync<TEventArgs>(this AsyncEventHandler<TEventArgs>? handlers, object? sender, TEventArgs args)
         {
             if (handlers != null)
             {
                 var individualHandlers = handlers.GetInvocationList();
-                List<Exception> exceptions = null;
+                List<Exception>? exceptions = null;
                 foreach (AsyncEventHandler<TEventArgs> handler in individualHandlers)
                 {
                     try
@@ -346,7 +346,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="state">The state object provided by the caller of the Begin method.</param>
         /// <returns>A task (that implements <see cref="IAsyncResult"/> that should be returned from the Begin method.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Apm")]
-        public static Task<TResult> ToApm<TResult>(this Task<TResult> task, AsyncCallback callback, object state)
+        public static Task<TResult> ToApm<TResult>(this Task<TResult> task, AsyncCallback? callback, object? state)
         {
             Requires.NotNull(task, nameof(task));
 
@@ -388,7 +388,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="state">The state object provided by the caller of the Begin method.</param>
         /// <returns>A task (that implements <see cref="IAsyncResult"/> that should be returned from the Begin method.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Apm")]
-        public static Task ToApm(this Task task, AsyncCallback callback, object state)
+        public static Task ToApm(this Task task, AsyncCallback? callback, object? state)
         {
             Requires.NotNull(task, nameof(task));
 
@@ -407,7 +407,7 @@ namespace Microsoft.VisualStudio.Threading
                 return task;
             }
 
-            var tcs = new TaskCompletionSource<object>(state);
+            var tcs = new TaskCompletionSource<object?>(state);
             task.ContinueWith(
                 t =>
                 {
@@ -843,7 +843,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <param name="sourceState">The state to store in the <see cref="SourceState" /> property.</param>
             /// <param name="taskState">State of the task.</param>
             /// <param name="options">The options.</param>
-            internal TaskCompletionSource(TState sourceState, object taskState = null, TaskCreationOptions options = TaskCreationOptions.None)
+            internal TaskCompletionSource(TState sourceState, object? taskState = null, TaskCreationOptions options = TaskCreationOptions.None)
                 : base(taskState, options)
             {
                 this.SourceState = sourceState;

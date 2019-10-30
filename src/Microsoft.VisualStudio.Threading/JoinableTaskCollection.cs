@@ -27,7 +27,7 @@ namespace Microsoft.VisualStudio.Threading
         /// A human-readable name that may appear in hang reports.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string displayName;
+        private string? displayName;
 
         /// <summary>
         /// The <see cref="JoinableTaskDependencyGraph.JoinableTaskDependentData"/> to track dependencies between tasks.
@@ -38,7 +38,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// An event that is set when the collection is empty (lazily initialized).
         /// </summary>
-        private AsyncManualResetEvent emptyEvent;
+        private AsyncManualResetEvent? emptyEvent;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JoinableTaskCollection"/> class.
@@ -69,7 +69,7 @@ namespace Microsoft.VisualStudio.Threading
         /// personally identifiable information or other confidential data
         /// since this value may be included in hang reports sent to a third party.
         /// </remarks>
-        public string DisplayName
+        public string? DisplayName
         {
             get { return this.displayName; }
             set { this.displayName = value; }
@@ -246,8 +246,8 @@ namespace Microsoft.VisualStudio.Threading
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
         public struct JoinRelease : IDisposable
         {
-            private IJoinableTaskDependent parentDependencyNode;
-            private IJoinableTaskDependent childDependencyNode;
+            private IJoinableTaskDependent? parentDependencyNode;
+            private IJoinableTaskDependent? childDependencyNode;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="JoinRelease"/> struct.
@@ -270,6 +270,8 @@ namespace Microsoft.VisualStudio.Threading
             {
                 if (this.parentDependencyNode != null)
                 {
+                    RoslynDebug.Assert(this.childDependencyNode is object, $"{nameof(this.childDependencyNode)} can only be null when {nameof(this.parentDependencyNode)} is null.");
+
                     JoinableTaskDependencyGraph.RemoveDependency(this.parentDependencyNode, this.childDependencyNode);
                     this.parentDependencyNode = null;
                 }

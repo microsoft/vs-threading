@@ -24,7 +24,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="content">The content for the hang report.</param>
         /// <param name="contentType">The MIME type of the attached content.</param>
         /// <param name="contentName">The suggested filename of the content when it is attached in a report.</param>
-        public HangReportContribution(string content, string contentType, string contentName)
+        public HangReportContribution(string content, string? contentType, string? contentName)
         {
             Requires.NotNull(content, nameof(content));
             this.Content = content;
@@ -39,7 +39,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="contentType">The MIME type of the attached content.</param>
         /// <param name="contentName">The suggested filename of the content when it is attached in a report.</param>
         /// <param name="nestedReports">Nested reports.</param>
-        public HangReportContribution(string content, string contentType, string contentName, params HangReportContribution[] nestedReports)
+        public HangReportContribution(string content, string? contentType, string? contentName, params HangReportContribution[]? nestedReports)
             : this(content, contentType, contentName)
         {
             this.NestedReports = nestedReports;
@@ -53,17 +53,17 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets the MIME type for the content.
         /// </summary>
-        public string ContentType { get; private set; }
+        public string? ContentType { get; private set; }
 
         /// <summary>
         /// Gets the suggested filename for the content.
         /// </summary>
-        public string ContentName { get; private set; }
+        public string? ContentName { get; private set; }
 
         /// <summary>
         /// Gets the nested hang reports, if any.
         /// </summary>
         /// <value>A read only collection, or <c>null</c>.</value>
-        public IReadOnlyCollection<HangReportContribution> NestedReports { get; private set; }
+        public IReadOnlyCollection<HangReportContribution>? NestedReports { get; private set; }
     }
 }

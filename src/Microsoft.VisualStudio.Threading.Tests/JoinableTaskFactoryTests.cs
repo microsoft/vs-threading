@@ -154,9 +154,9 @@
             {
             }
 
-            internal Action<JoinableTask> OnTransitioningToMainThreadCallback { get; set; }
+            internal Action<JoinableTask>? OnTransitioningToMainThreadCallback { get; set; }
 
-            internal Action<JoinableTask, bool> OnTransitionedToMainThreadCallback { get; set; }
+            internal Action<JoinableTask, bool>? OnTransitionedToMainThreadCallback { get; set; }
 
             protected override void OnTransitioningToMainThread(JoinableTask joinableTask)
             {

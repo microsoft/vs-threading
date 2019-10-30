@@ -49,7 +49,7 @@
         public void ReportHangOnRun()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
-            var releaseTaskSource = new TaskCompletionSource<object>();
+            var releaseTaskSource = new TaskCompletionSource<object?>();
             var hangQueue = new AsyncQueue<Tuple<TimeSpan, int, Guid>>();
             this.Context.OnReportHang = (hangDuration, iterations, id) =>
             {
@@ -111,7 +111,7 @@
         public void ReportHangOnRunAsyncThenJoin()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
-            var releaseTaskSource = new TaskCompletionSource<object>();
+            var releaseTaskSource = new TaskCompletionSource<object?>();
             var hangQueue = new AsyncQueue<TimeSpan>();
             this.Context.OnReportHang = (hangDuration, iterations, id) =>
             {
@@ -402,7 +402,7 @@
         {
             const string jtcName = "My Collection";
 
-            this.joinableCollection.DisplayName = jtcName;
+            this.joinableCollection!.DisplayName = jtcName;
             this.Factory.RunAsync(delegate
             {
                 IHangReportContributor contributor = this.Context;
@@ -611,7 +611,7 @@
         {
             var nonBlockingStateObserved = new AsyncManualResetEvent();
             var nowBlocking = new AsyncManualResetEvent();
-            JoinableTask joinableTask = null;
+            JoinableTask? joinableTask = null;
             Task.Run(delegate
             {
                 joinableTask = this.Factory.RunAsync(async delegate
@@ -627,7 +627,7 @@
             this.Factory.Run(async delegate
             {
                 await nonBlockingStateObserved;
-                joinableTask.JoinAsync().Forget();
+                joinableTask!.JoinAsync().Forget();
                 nowBlocking.Set();
             });
         }
@@ -661,7 +661,7 @@
 
         private class JoinableTaskContextDerived : JoinableTaskContext
         {
-            internal Action<TimeSpan, int, Guid> OnReportHang { get; set; }
+            internal Action<TimeSpan, int, Guid>? OnReportHang { get; set; }
 
             public override JoinableTaskFactory CreateFactory(JoinableTaskCollection collection)
             {

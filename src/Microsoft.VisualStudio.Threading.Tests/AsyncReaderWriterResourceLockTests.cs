@@ -27,7 +27,7 @@
         {
             this.resources = new List<Resource>();
             this.resourceLock = new ResourceLockWrapper(this.resources, logger);
-            this.resources.Add(null); // something so that if default(T) were ever used in the product, it would likely throw.
+            this.resources.Add(null!); // something so that if default(T) were ever used in the product, it would likely throw.
             this.resources.Add(new Resource());
             this.resources.Add(new Resource());
         }
@@ -292,7 +292,7 @@
         [Fact]
         public async Task PreparationSucceedsForConcurrentReadersWhenOneCancels()
         {
-            var preparationComplete = new TaskCompletionSource<object>();
+            var preparationComplete = new TaskCompletionSource<object?>();
             this.resourceLock.SetPreparationTask(this.resources[1], preparationComplete.Task).Forget();
 
             var cts = new CancellationTokenSource();
@@ -604,8 +604,8 @@
         [Fact]
         public async Task ResourcesPreparedConcurrently()
         {
-            var resourceTask1 = new TaskCompletionSource<object>();
-            var resourceTask2 = new TaskCompletionSource<object>();
+            var resourceTask1 = new TaskCompletionSource<object?>();
+            var resourceTask2 = new TaskCompletionSource<object?>();
             var preparationEnteredTask1 = this.resourceLock.SetPreparationTask(this.resources[1], resourceTask1.Task);
             var preparationEnteredTask2 = this.resourceLock.SetPreparationTask(this.resources[2], resourceTask2.Task);
 
@@ -641,10 +641,10 @@
         [Fact]
         public async Task IndividualResourcePreparationNotConcurrent()
         {
-            var resourceTask = new TaskCompletionSource<object>();
+            var resourceTask = new TaskCompletionSource<object?>();
             var preparationEnteredTask1 = this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task);
-            var requestSubmitted1 = new TaskCompletionSource<object>();
-            var requestSubmitted2 = new TaskCompletionSource<object>();
+            var requestSubmitted1 = new TaskCompletionSource<object?>();
+            var requestSubmitted2 = new TaskCompletionSource<object?>();
 
             await Task.WhenAll(
                 Task.Run(async delegate
@@ -704,7 +704,7 @@
         [Fact]
         public async Task PreparationReservesLock()
         {
-            var resourceTask = new TaskCompletionSource<object>();
+            var resourceTask = new TaskCompletionSource<object?>();
             var nowait = this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task);
 
             Task<Resource> resource;
@@ -1188,7 +1188,7 @@
         {
             private readonly List<Resource> resources;
 
-            private readonly Dictionary<Resource, Tuple<TaskCompletionSource<object>, Task>> preparationTasks = new Dictionary<Resource, Tuple<TaskCompletionSource<object>, Task>>();
+            private readonly Dictionary<Resource, Tuple<TaskCompletionSource<object?>, Task>> preparationTasks = new Dictionary<Resource, Tuple<TaskCompletionSource<object?>, Task>>();
 
             private readonly AsyncAutoResetEvent preparationTaskBegun = new AsyncAutoResetEvent();
 
@@ -1219,7 +1219,7 @@
                 Requires.NotNull(resource, nameof(resource));
                 Requires.NotNull(task, nameof(task));
 
-                var tcs = new TaskCompletionSource<object>();
+                var tcs = new TaskCompletionSource<object?>();
                 lock (this.preparationTasks)
                 {
                     this.preparationTasks[resource] = Tuple.Create(tcs, task);
@@ -1233,7 +1233,7 @@
                 base.SetResourceAsAccessed(resource);
             }
 
-            internal new void SetResourceAsAccessed(Func<Resource, object, bool> resourceCheck, object state)
+            internal new void SetResourceAsAccessed(Func<Resource, object?, bool> resourceCheck, object? state)
             {
                 base.SetResourceAsAccessed(resourceCheck, state);
             }
@@ -1284,7 +1284,7 @@
                 Assert.True(this.IsWriteLockHeld || !this.IsAnyLockHeld);
                 Assert.False(Monitor.IsEntered(this.SyncObject));
 
-                Tuple<TaskCompletionSource<object>, Task> tuple;
+                Tuple<TaskCompletionSource<object?>, Task> tuple;
                 lock (this.preparationTasks)
                 {
                     if (this.preparationTasks.TryGetValue(resource, out tuple))
