@@ -36,9 +36,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\packageIcon.png" Link="packageIcon.png" Pack="true" PackagePath="" />
-  </ItemGroup>
-  <ItemGroup>
     <CodeAnalysisDictionary Include="CustomDictionary.xml" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsDesktop)' == 'true'  ">

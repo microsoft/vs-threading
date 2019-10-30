@@ -27,10 +27,6 @@
     <Content Include="tools\*.ps1" Pack="true" PackagePath="tools\" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="..\packageIcon.png" Link="packageIcon.png" Pack="true" PackagePath="" />
-  </ItemGroup>
-
   <ItemDefinitionGroup>
     <PackageReference>
       <PrivateAssets>all</PrivateAssets>
