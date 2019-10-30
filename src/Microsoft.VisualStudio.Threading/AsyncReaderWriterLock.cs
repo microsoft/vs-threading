@@ -2565,12 +2565,12 @@ namespace Microsoft.VisualStudio.Threading
                 }
             }
 
-            public override void Send(SendOrPostCallback d, object state)
+            public override void Send(SendOrPostCallback d, object? state)
             {
                 throw new NotSupportedException();
             }
 
-            public override void Post(SendOrPostCallback d, object state)
+            public override void Post(SendOrPostCallback d, object? state)
             {
                 Requires.NotNull(d, nameof(d));
 

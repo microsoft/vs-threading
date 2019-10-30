@@ -573,7 +573,7 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
-        internal void Post(SendOrPostCallback d, object state, bool mainThreadAffinitized)
+        internal void Post(SendOrPostCallback d, object? state, bool mainThreadAffinitized)
         {
             using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
             {

@@ -618,7 +618,7 @@ namespace Microsoft.VisualStudio.Threading
             return this.RunAsync(asyncMethod, synchronouslyBlocking: false, creationOptions: creationOptions);
         }
 
-        internal void Post(SendOrPostCallback callback, object state, bool mainThreadAffinitized)
+        internal void Post(SendOrPostCallback callback, object? state, bool mainThreadAffinitized)
         {
             Requires.NotNull(callback, nameof(callback));
 
@@ -1193,7 +1193,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <param name="callback">The callback to invoke.</param>
             /// <param name="state">The state object to pass to the callback.</param>
             /// <returns>An instance of <see cref="SingleExecuteProtector"/>.</returns>
-            internal static SingleExecuteProtector Create(JoinableTask job, SendOrPostCallback callback, object state)
+            internal static SingleExecuteProtector Create(JoinableTask job, SendOrPostCallback callback, object? state)
             {
                 Requires.NotNull(job, nameof(job));
 

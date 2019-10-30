@@ -72,7 +72,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Removes an element from the collection.
         /// </summary>
-        public void Remove(T? value)
+        public void Remove(T value)
         {
             object? priorValue;
             object fieldBeforeExchange;
@@ -93,7 +93,7 @@ namespace Microsoft.VisualStudio.Threading
         /// This method is intended to hide the Linq Contains extension method to avoid
         /// the boxing of this struct and its Enumerator.
         /// </remarks>
-        public bool Contains(T? value)
+        public bool Contains(T value)
         {
             foreach (var item in this)
             {
@@ -149,7 +149,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="baseValue">The collection's prior contents.</param>
         /// <param name="value">The value to remove from the collection.</param>
         /// <returns>The new value to store as the collection.</returns>
-        private static object? Remove(object? baseValue, T? value)
+        private static object? Remove(object? baseValue, T value)
         {
             if (baseValue == value || baseValue == null)
             {

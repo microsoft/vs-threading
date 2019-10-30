@@ -73,7 +73,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Forwards the specified message to the job this instance belongs to if applicable; otherwise to the factory.
             /// </summary>
-            public override void Post(SendOrPostCallback d, object state)
+            public override void Post(SendOrPostCallback d, object? state)
             {
                 JoinableTask? job = this.job; // capture as local in case field becomes null later.
                 if (job != null)
@@ -89,7 +89,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Forwards a message to the ambient job and blocks on its execution.
             /// </summary>
-            public override void Send(SendOrPostCallback d, object state)
+            public override void Send(SendOrPostCallback d, object? state)
             {
                 Requires.NotNull(d, nameof(d));
 
@@ -122,7 +122,7 @@ namespace Microsoft.VisualStudio.Threading
                                 var tuple = (Tuple<SendOrPostCallback, object>)s;
                                 tuple.Item1(tuple.Item2);
                             },
-                            Tuple.Create<SendOrPostCallback, object>(d, state),
+                            Tuple.Create<SendOrPostCallback, object?>(d, state),
                             CancellationToken.None,
                             TaskCreationOptions.None,
                             TaskScheduler.Default).Wait();
