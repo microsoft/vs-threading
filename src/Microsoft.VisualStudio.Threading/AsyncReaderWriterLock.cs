@@ -2719,7 +2719,7 @@ namespace Microsoft.VisualStudio.Threading
                 this.lck = lck;
             }
 
-            public void Issued(Awaiter lckAwaiter)
+            internal void Issued(Awaiter lckAwaiter)
             {
                 if (ThreadingEventSource.Instance.IsEnabled())
                 {
@@ -2727,7 +2727,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
             }
 
-            public void WaitStart(Awaiter lckAwaiter)
+            internal void WaitStart(Awaiter lckAwaiter)
             {
                 if (ThreadingEventSource.Instance.IsEnabled())
                 {
@@ -2735,7 +2735,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
             }
 
-            public static void WaitStop(Awaiter lckAwaiter)
+            internal static void WaitStop(Awaiter lckAwaiter)
             {
                 if (ThreadingEventSource.Instance.IsEnabled())
                 {

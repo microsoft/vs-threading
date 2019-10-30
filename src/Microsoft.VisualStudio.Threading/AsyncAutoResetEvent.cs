@@ -173,7 +173,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <param name="owner">The event that is initializing this value.</param>
             /// <param name="allowInliningContinuations"><c>true</c> to allow continuations to be inlined upon the completer's callstack.</param>
             /// <param name="cancellationToken">The cancellation token associated with the waiter.</param>
-            public WaiterCompletionSource(AsyncAutoResetEvent owner, bool allowInliningContinuations, CancellationToken cancellationToken)
+            internal WaiterCompletionSource(AsyncAutoResetEvent owner, bool allowInliningContinuations, CancellationToken cancellationToken)
                 : base(allowInliningContinuations)
             {
                 this.CancellationToken = cancellationToken;
@@ -183,12 +183,12 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Gets the <see cref="CancellationToken"/> provided by the waiter.
             /// </summary>
-            public CancellationToken CancellationToken { get; private set; }
+            internal CancellationToken CancellationToken { get; private set; }
 
             /// <summary>
             /// Gets the registration to dispose of when the waiter receives their event.
             /// </summary>
-            public CancellationTokenRegistration Registration { get; private set; }
+            internal CancellationTokenRegistration Registration { get; private set; }
         }
     }
 }

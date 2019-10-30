@@ -32,10 +32,10 @@ namespace System.Diagnostics.CodeAnalysis
         /// <param name="returnValue">
         /// The return value condition. If the method returns this value, the associated parameter may be null.
         /// </param>
-        public MaybeNullWhenAttribute(bool returnValue) => ReturnValue = returnValue;
+        internal MaybeNullWhenAttribute(bool returnValue) => ReturnValue = returnValue;
 
         /// <summary>Gets the return value condition.</summary>
-        public bool ReturnValue { get; }
+        internal bool ReturnValue { get; }
     }
 
     /// <summary>Specifies that when a method returns <see cref="ReturnValue"/>, the parameter will not be null even if the corresponding type allows it.</summary>
@@ -46,10 +46,10 @@ namespace System.Diagnostics.CodeAnalysis
         /// <param name="returnValue">
         /// The return value condition. If the method returns this value, the associated parameter will not be null.
         /// </param>
-        public NotNullWhenAttribute(bool returnValue) => ReturnValue = returnValue;
+        internal NotNullWhenAttribute(bool returnValue) => ReturnValue = returnValue;
 
         /// <summary>Gets the return value condition.</summary>
-        public bool ReturnValue { get; }
+        internal bool ReturnValue { get; }
     }
 
     /// <summary>Specifies that the output will be non-null if the named parameter is non-null.</summary>
@@ -60,10 +60,10 @@ namespace System.Diagnostics.CodeAnalysis
         /// <param name="parameterName">
         /// The associated parameter name.  The output will be non-null if the argument to the parameter specified is non-null.
         /// </param>
-        public NotNullIfNotNullAttribute(string parameterName) => ParameterName = parameterName;
+        internal NotNullIfNotNullAttribute(string parameterName) => ParameterName = parameterName;
 
         /// <summary>Gets the associated parameter name.</summary>
-        public string ParameterName { get; }
+        internal string ParameterName { get; }
     }
 
     /// <summary>Applied to a method that will never return under any circumstance.</summary>
@@ -79,9 +79,9 @@ namespace System.Diagnostics.CodeAnalysis
         /// The condition parameter value. Code after the method will be considered unreachable by diagnostics if the argument to
         /// the associated parameter matches this value.
         /// </param>
-        public DoesNotReturnIfAttribute(bool parameterValue) => ParameterValue = parameterValue;
+        internal DoesNotReturnIfAttribute(bool parameterValue) => ParameterValue = parameterValue;
 
         /// <summary>Gets the condition parameter value.</summary>
-        public bool ParameterValue { get; }
+        internal bool ParameterValue { get; }
     }
 }
