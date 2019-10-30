@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
+    <AssemblyName>$(MSBuildProjectName)_$(Platform)</AssemblyName>
     <IsPackable>false</IsPackable>
     <Platforms>x86;x64</Platforms>
     <CodeAnalysisRuleSet>SosThreadingTools.ruleset</CodeAnalysisRuleSet>

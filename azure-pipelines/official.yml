@@ -15,7 +15,6 @@ variables:
   NUGET_PACKAGES: $(Agent.TempDirectory)/.nuget/packages
 
 jobs:
-- job: Windows
-  pool: VSEng-MicroBuildVS2019
-  steps:
-  - template: build.yml
+- template: build.yml
+  parameters:
+    windowsPool: VSEng-MicroBuildVS2019

@@ -744,6 +744,7 @@
         }
 
         [Fact]
+        [Trait("TestCategory", "FailsInCloudTest")]
         public async Task ToTaskOnHandleSignaledAfterNonZeroTimeout()
         {
             using (var handle = new ManualResetEvent(initialState: false))

@@ -1,150 +1,56 @@
-steps:
-- checkout: self
-  clean: true
+parameters:
+  windowsPool: Hosted Windows 2019 with VS2019
 
-- task: UseDotNet@2
-  displayName: Install .NET Core SDK 3.0.100
-  inputs:
-    packageType: sdk
-    version: 3.0.100
-  condition: and(succeeded(), ne(variables['Hosted'], 'true')) # Hosted agents already have this.
+jobs:
+- job: Windows
+  pool: ${{ parameters.windowsPool }}
+  steps:
+  - checkout: self
+    clean: true
+  - template: install-dependencies.yml
 
-- task: UseDotNet@2
-  displayName: Install .NET Core 2.1 runtime
-  inputs:
-    packageType: runtime
-    version: 2.1.x
+  - powershell: '& (./azure-pipelines/Get-nbgv.ps1) cloud -p src'
+    displayName: Set build number
 
-- script: |
-    dotnet tool install --tool-path .. nbgv
-    ..\nbgv cloud
-    echo ##vso[task.setvariable variable=PATH]%Path%;$(Build.SourcesDirectory)
-  workingDirectory: src
-  displayName: Set build number
+  - ${{ if eq(variables['system.collectionId'], '011b8bdf-6d56-4f87-be0d-0092136884d9') }}:
+    - template: microbuild.before.yml
 
-- task: PowerShell@2
-  inputs:
-    filePath: azure-pipelines\variables\_pipelines.ps1
-    failOnStderr: true
-  displayName: Set pipeline variables based on source
+  - template: dotnet.yml
 
-- ${{ if eq(variables['system.collectionId'], '011b8bdf-6d56-4f87-be0d-0092136884d9') }}:
-  - template: azure-pipeline.microbuild.before.yml
+  - ${{ if eq(variables['system.collectionId'], '011b8bdf-6d56-4f87-be0d-0092136884d9') }}:
+    - template: microbuild.after.yml
 
-- script: dotnet --info
-  displayName: Show dotnet SDK info
+- job: Linux
+  pool:
+    vmImage: Ubuntu 16.04
+  steps:
+  - checkout: self
+    clean: true
+  - template: install-dependencies.yml
+  - template: dotnet.yml
 
-# We have to use the traditional nuget.exe for restoring since we have vcxproj projects too.
-- task: NuGetToolInstaller@0
-  displayName: Pin nuget.exe version
-  inputs:
-    versionSpec: 5.1.x
+- job: macOS
+  pool:
+    vmImage: macOS 10.13
+  steps:
+  - checkout: self
+    clean: true
+  - template: install-dependencies.yml
+  - template: dotnet.yml
 
-- powershell: nuget restore src\Microsoft.VisualStudio.Threading.sln
-  displayName: Nuget restore packages
-
-- task: VSBuild@1
-  inputs:
-    msbuildArgs: /t:build,pack /m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/msbuild.binlog"
-    platform: Any CPU
-    configuration: $(BuildConfiguration)
-  displayName: Build Visual Studio solution
-
-- task: PowerShell@2
-  inputs:
-    filePath: azure-pipelines\artifacts\VSInsertion.ps1
-    failOnStderr: true
-  displayName: Build VSInsertion CoreXT nupkg
-
-- task: VSBuild@1
-  inputs:
-    msbuildArgs: /t:build /m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/msbuild_x86.binlog"
-    platform: x86
-    configuration: $(BuildConfiguration)
-  displayName: Build SosThreadingTools x86
-
-- task: VSBuild@1
-  inputs:
-    msbuildArgs: /t:build /m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/msbuild_x64.binlog"
-    platform: x64
-    configuration: $(BuildConfiguration)
-  displayName: Build SosThreadingTools x64
-
-- task: DotNetCoreCLI@2
-  displayName: Run tests
-  inputs:
-    command: test
-    projects: '**/*.Tests.csproj'
-    arguments: --configuration $(BuildConfiguration) --no-build --filter "TestCategory!=FailsInCloudTest" -v n
-    workingDirectory: src
-  condition: and(succeeded(), ne(variables['SignType'], 'real'))
-
-- task: CopyFiles@1
-  inputs:
-    Contents: |
-      obj/**/project.assets.json
-    TargetFolder: $(Build.ArtifactStagingDirectory)/projectAssetsJson
-  displayName: Collecting project.assets.json artifacts
+- job: WrapUp
+  dependsOn:
+  - Windows
+  - Linux
+  - macOS
+  pool:
+    vmImage: Ubuntu 16.04
   condition: succeededOrFailed()
-
-- task: PublishBuildArtifacts@1
-  inputs:
-    PathtoPublish: $(Build.ArtifactStagingDirectory)/projectAssetsJson
-    ArtifactName: projectAssetsJson
-    ArtifactType: Container
-  displayName: Publish projectAssetsJson artifacts
-  condition: succeededOrFailed()
-
-- task: PublishBuildArtifacts@1
-  inputs:
-    PathtoPublish: $(Build.ArtifactStagingDirectory)/build_logs
-    ArtifactName: build_logs
-    ArtifactType: Container
-  displayName: Publish build_logs artifacts
-  condition: succeededOrFailed()
-
-- task: PowerShell@2
-  inputs:
-    filePath: azure-pipelines\variables\_pipelines.ps1
-    failOnStderr: true
-  displayName: Update pipeline variables based on build outputs
-
-- task: PowerShell@2
-  inputs:
-    filePath: azure-pipelines\artifacts\_pipelines.ps1
-  displayName: Publish artifacts
-
-- task: VSTest@2
-  displayName: Run tests on .NET Framework (with code coverage)
-  inputs:
-    testFiltercriteria: TestCategory!=FailsInCloudTest
-    searchFolder: $(System.DefaultWorkingDirectory)\bin
-    testAssemblyVer2: |
-      **\*tests*.dll
-    platform: $(BuildPlatform)
-    configuration: $(BuildConfiguration)
-    codeCoverageEnabled: true
-  condition: and(false, succeeded(), ne(variables['SignType'], 'real'))
-
-- ${{ if eq(variables['system.collectionId'], '011b8bdf-6d56-4f87-be0d-0092136884d9') }}:
-  - template: azure-pipeline.microbuild.after.yml
-
-- task: PowerShell@2
-  displayName: Collecting deployables
-  inputs:
-    targetType: inline
-    script: |
-      md $(Build.ArtifactStagingDirectory)/deployables\x86
-      md $(Build.ArtifactStagingDirectory)/deployables\x64
-      Get-ChildItem bin\Packages\$(BuildConfiguration)\NuGet\*.nupkg -rec |% { copy $_  $(Build.ArtifactStagingDirectory)\deployables }
-      copy bin\SosThreadingTools/x86/$(BuildConfiguration)/net472/SosThreadingTools.dll $(Build.ArtifactStagingDirectory)\deployables\x86
-      copy bin\SosThreadingTools/x86/$(BuildConfiguration)/net472/Microsoft.Diagnostics.Runtime.dll $(Build.ArtifactStagingDirectory)\deployables\x86
-      copy bin\SosThreadingTools/x64/$(BuildConfiguration)/net472/SosThreadingTools.dll $(Build.ArtifactStagingDirectory)\deployables\x64
-      copy bin\SosThreadingTools/x64/$(BuildConfiguration)/net472/Microsoft.Diagnostics.Runtime.dll $(Build.ArtifactStagingDirectory)\deployables\x64
-
-- task: PublishBuildArtifacts@1
-  inputs:
-    PathtoPublish: $(Build.ArtifactStagingDirectory)/deployables
-    ArtifactName: deployables
-    ArtifactType: Container
-  displayName: Publish deployables artifacts
+  steps:
+  - checkout: self
+    clean: true
+  - template: install-dependencies.yml
+    parameters:
+      initArgs: -NoRestore
+  - template: publish-codecoverage.yml
+  - template: publish-deployables.yml

@@ -15,23 +15,4 @@ variables:
   NUGET_PACKAGES: $(Agent.TempDirectory)/.nuget/packages
 
 jobs:
-- job: Windows
-  pool: Hosted Windows 2019 with VS2019
-  steps:
-  - template: azure-pipelines/build.yml
-
-- job: Linux
-  pool:
-    vmImage: Ubuntu 16.04
-  steps:
-  - template: azure-pipelines/testfx.yml
-    parameters:
-      projectdirectory: src/Microsoft.VisualStudio.Threading.Tests
-
-- job: macOS
-  pool:
-    vmImage: macOS 10.13
-  steps:
-  - template: azure-pipelines/testfx.yml
-    parameters:
-      projectdirectory: src/Microsoft.VisualStudio.Threading.Tests
+- template: azure-pipelines/build.yml
