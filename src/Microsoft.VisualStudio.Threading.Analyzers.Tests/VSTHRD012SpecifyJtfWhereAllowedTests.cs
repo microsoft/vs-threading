@@ -81,6 +81,27 @@ class Test {
         }
 
         [Fact]
+        public async Task SiblingMethodOverloadsWithObsoleteAttribute_WithoutJTC_GeneratesNoWarning()
+        {
+            var test = @"
+using System;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    void F() {
+        G();
+    }
+
+    void G() { }
+    [Obsolete]
+    void G(JoinableTaskContext jtc) { }
+}
+";
+
+            await Verify.VerifyAnalyzerAsync(test);
+        }
+
+        [Fact]
         public async Task SiblingCtorOverloads_WithoutJTF_GeneratesWarning()
         {
             var test = @"
