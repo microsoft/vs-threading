@@ -2,7 +2,7 @@ steps:
 
 - task: ms-vseng.MicroBuildTasks.965C8DC6-1483-45C9-B384-5AC75DA1F1A4.MicroBuildOptProfPlugin@4
   inputs:
-    optimizationInputsDropNamePrefix: OptimizationInputs/DevDiv/vs-streamjsonrpc
+    optimizationInputsDropNamePrefix: OptimizationInputs/DevDiv/vs-threading
     getDropNameByDrop: true
     ShouldSkipOptimize: $(ShouldSkipOptimize)
   displayName: Install OptProf Plugin
