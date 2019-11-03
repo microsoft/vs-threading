@@ -198,7 +198,7 @@
                         if (SingleThreadedTestSynchronizationContext.IsSingleThreadedSyncContext(SynchronizationContext.Current))
                         {
                             var frame = SingleThreadedTestSynchronizationContext.NewFrame();
-                            SynchronizationContext.Current.Post(state => frame.Continue = false, null);
+                            SynchronizationContext.Current!.Post(state => frame.Continue = false, null);
                             SingleThreadedTestSynchronizationContext.PushFrame(SynchronizationContext.Current, frame);
                         }
                     }
@@ -301,7 +301,7 @@
 
             var frame = SingleThreadedTestSynchronizationContext.NewFrame();
             Exception? failure = null;
-            SynchronizationContext.Current.Post(
+            SynchronizationContext.Current!.Post(
                 async _ =>
                 {
                     try

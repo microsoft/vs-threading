@@ -64,14 +64,14 @@ namespace Microsoft.VisualStudio.Threading
             bool inExternalCode = false;
             foreach (var frame in stackTrace.GetFrames())
             {
-                if (frame.GetFileName() != null)
+                if (frame?.GetFileName() != null && frame.GetMethod() is System.Reflection.MethodBase method)
                 {
                     inExternalCode = false;
                     sb.Append(indent);
                     //// at System.Runtime.Remoting.Channels.CrossAppDomainSink.DoDispatch(Byte[] reqStmBuff, SmuggledMethodCallMessage smuggledMcm, SmuggledMethodReturnMessage& smuggledMrm)
-                    sb.Append($"at {frame.GetMethod().DeclaringType.FullName}.{frame.GetMethod().Name}(");
+                    sb.Append($"at {method.DeclaringType?.FullName}.{method.Name}(");
                     bool firstParameter = true;
-                    foreach (var p in frame.GetMethod().GetParameters())
+                    foreach (var p in method.GetParameters())
                     {
                         if (!firstParameter)
                         {

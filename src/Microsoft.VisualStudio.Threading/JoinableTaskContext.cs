@@ -206,7 +206,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets the underlying <see cref="SynchronizationContext"/> that controls the main thread in the host.
         /// </summary>
-        internal SynchronizationContext UnderlyingSynchronizationContext { get; private set; }
+        internal SynchronizationContext? UnderlyingSynchronizationContext { get; private set; }
 
         /// <summary>
         /// Gets the context-wide synchronization lock.

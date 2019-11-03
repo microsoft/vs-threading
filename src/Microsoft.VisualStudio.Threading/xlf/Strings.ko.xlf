@@ -112,6 +112,11 @@
         <target state="translated">이 프레임은 다른 인스턴스에 이미 사용되었습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="SyncContextNotSet">
+        <source>No SynchronizationContext to reach the main thread has been set.</source>
+        <target state="new">No SynchronizationContext to reach the main thread has been set.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ValueFactoryReentrancy" translate="yes" xml:space="preserve">
         <source>The value factory has called for the value on the same instance.</source>
         <target state="translated">값 팩토리가 같은 인스턴스의 값을 호출했습니다.</target>

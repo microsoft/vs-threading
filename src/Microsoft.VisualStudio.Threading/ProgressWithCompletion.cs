@@ -215,7 +215,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns>A task that completes when all progress is complete.</returns>
         public Task WaitAsync(CancellationToken cancellationToken)
         {
-            if (this.IsJoinableTaskAware(out _, out var outstandingJoinableTasks, out var syncObject, out _, out _))
+            if (this.IsJoinableTaskAware(out _, out var outstandingJoinableTasks, out var syncObject, out var outstandingTasks, out _))
             {
                 return outstandingJoinableTasks.JoinTillEmptyAsync(cancellationToken);
             }
@@ -223,7 +223,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 lock (syncObject)
                 {
-                    return Task.WhenAll(this.outstandingTasks).WithCancellation(cancellationToken);
+                    return Task.WhenAll(outstandingTasks).WithCancellation(cancellationToken);
                 }
             }
         }

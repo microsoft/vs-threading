@@ -85,7 +85,7 @@
             var result = evt.SignalAsync();
 #pragma warning restore CS0618 // Type or member is obsolete
             Assert.True(result.IsFaulted);
-            Assert.IsType<InvalidOperationException>(result.Exception.InnerException);
+            Assert.IsType<InvalidOperationException>(result.Exception!.InnerException);
         }
 
         /// <summary>
@@ -97,7 +97,7 @@
             var evt = new AsyncCountdownEvent(0);
             var result = evt.SignalAndWaitAsync();
             Assert.True(result.IsFaulted);
-            Assert.IsType<InvalidOperationException>(result.Exception.InnerException);
+            Assert.IsType<InvalidOperationException>(result.Exception!.InnerException);
         }
 
         /// <summary>

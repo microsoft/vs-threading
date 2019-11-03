@@ -1284,7 +1284,7 @@
                 Assert.True(this.IsWriteLockHeld || !this.IsAnyLockHeld);
                 Assert.False(Monitor.IsEntered(this.SyncObject));
 
-                Tuple<TaskCompletionSource<object?>, Task> tuple;
+                Tuple<TaskCompletionSource<object?>, Task>? tuple;
                 lock (this.preparationTasks)
                 {
                     if (this.preparationTasks.TryGetValue(resource, out tuple))

@@ -640,7 +640,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 thread.Join();
 
                 // Verify that the watching task is still watching.
-                Task completedTask = await Task.WhenAny(watchingTask, Task.Delay(AsyncDelay));
+                Task completedTask = await Task.WhenAny(watchingTask!, Task.Delay(AsyncDelay));
                 Assert.NotSame(watchingTask, completedTask);
                 test.CreateSubKey().Dispose();
                 await watchingTask!;
@@ -652,7 +652,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         {
             Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             string testExePath = Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
+                AppDomain.CurrentDomain.BaseDirectory!,
                 "..",
                 "..",
                 "..",
@@ -733,7 +733,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             protected override void QueueTask(Task task)
             {
                 this.QueueTaskInvocations++;
-                ThreadPool.QueueUserWorkItem(state => this.TryExecuteTask((Task)state), task);
+                ThreadPool.QueueUserWorkItem(state => this.TryExecuteTask((Task)state!), task);
             }
 
             protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)

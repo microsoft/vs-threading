@@ -112,6 +112,11 @@
         <target state="translated">Questo frame è già stato usato con un'istanza diversa.</target>
         <note />
       </trans-unit>
+      <trans-unit id="SyncContextNotSet">
+        <source>No SynchronizationContext to reach the main thread has been set.</source>
+        <target state="new">No SynchronizationContext to reach the main thread has been set.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ValueFactoryReentrancy" translate="yes" xml:space="preserve">
         <source>The value factory has called for the value on the same instance.</source>
         <target state="translated">La factory del valore ha richiesto il valore nella stessa istanza.</target>

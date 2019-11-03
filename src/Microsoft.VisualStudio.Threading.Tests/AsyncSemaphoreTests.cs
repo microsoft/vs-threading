@@ -570,7 +570,7 @@
             // Verify that future EnterAsync's fail synchronously.
             var third = this.lck.EnterAsync(UnexpectedTimeout);
             Assert.True(third.IsFaulted);
-            Assert.IsType<ObjectDisposedException>(third.Exception.InnerException);
+            Assert.IsType<ObjectDisposedException>(third.Exception?.InnerException);
 
             // Now verify that accepting the semaphore and releasing it can succeed.
             using (await first)
@@ -595,7 +595,7 @@
             // Verify that future EnterAsync's fail synchronously.
             var third = this.lck.EnterAsync((int)UnexpectedTimeout.TotalMilliseconds);
             Assert.True(third.IsFaulted);
-            Assert.IsType<ObjectDisposedException>(third.Exception.InnerException);
+            Assert.IsType<ObjectDisposedException>(third.Exception?.InnerException);
 
             // Now verify that accepting the semaphore and releasing it can succeed.
             using (await first)
@@ -620,7 +620,7 @@
             // Verify that future EnterAsync's fail synchronously.
             var third = this.lck.EnterAsync();
             Assert.True(third.IsFaulted);
-            Assert.IsType<ObjectDisposedException>(third.Exception.InnerException);
+            Assert.IsType<ObjectDisposedException>(third.Exception?.InnerException);
 
             // Now verify that accepting the semaphore and releasing it can succeed.
             using (await first)

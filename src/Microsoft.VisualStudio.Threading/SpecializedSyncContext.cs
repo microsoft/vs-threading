@@ -23,7 +23,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// The SynchronizationContext to restore when <see cref="Dispose"/> is invoked.
         /// </summary>
-        private readonly SynchronizationContext prior;
+        private readonly SynchronizationContext? prior;
 
         /// <summary>
         /// The SynchronizationContext applied when this struct was constructed.

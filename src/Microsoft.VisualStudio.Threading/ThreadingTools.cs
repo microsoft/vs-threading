@@ -221,7 +221,7 @@ namespace Microsoft.VisualStudio.Threading
                     tuple.CancellationTokenRegistration = cancellationToken.Register(
                         s =>
                         {
-                            var t = (CancelableTaskCompletionSource<T>)s;
+                            var t = (CancelableTaskCompletionSource<T>)s!;
                             if (t.TaskCompletionSource.TrySetCanceled(t.CancellationToken))
                             {
                                 t.CancellationCallback?.OnCanceled();
@@ -237,7 +237,7 @@ namespace Microsoft.VisualStudio.Threading
                     taskCompletionSource.Task.ContinueWith(
                         (_, s) =>
                         {
-                            var t = (CancelableTaskCompletionSource<T>)s;
+                            var t = (CancelableTaskCompletionSource<T>)s!;
                             if (t.ContinuationScheduled || !t.OnOwnerThread)
                             {
                                 // We're not executing inline... Go ahead and do the work.
@@ -253,7 +253,7 @@ namespace Microsoft.VisualStudio.Threading
                                     {
                                         try
                                         {
-                                            var t2 = (CancelableTaskCompletionSource<T>)s2;
+                                            var t2 = (CancelableTaskCompletionSource<T>)s2!;
                                             t2.CancellationTokenRegistration.Dispose();
                                         }
                                         catch (Exception ex)
@@ -288,7 +288,7 @@ namespace Microsoft.VisualStudio.Threading
             Assumes.True(cancellationToken.CanBeCanceled);
 
             var tcs = new TaskCompletionSource<bool>();
-            using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s).TrySetResult(true), tcs))
+            using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s!).TrySetResult(true), tcs))
             {
                 if (task != await Task.WhenAny(task, tcs.Task).ConfigureAwait(false))
                 {
@@ -316,7 +316,7 @@ namespace Microsoft.VisualStudio.Threading
             Assumes.True(cancellationToken.CanBeCanceled);
 
             var tcs = new TaskCompletionSource<bool>();
-            using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s).TrySetResult(true), tcs))
+            using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s!).TrySetResult(true), tcs))
             {
                 if (task != await Task.WhenAny(task, tcs.Task).ConfigureAwait(continueOnCapturedContext))
                 {

@@ -36,7 +36,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
 #endif
         }
 
-        public static bool IsSingleThreadedSyncContext(SynchronizationContext context)
+        public static bool IsSingleThreadedSyncContext(SynchronizationContext? context)
         {
 #if UseWpfContext
             return context is DispatcherSynchronizationContext;

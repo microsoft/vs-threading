@@ -852,7 +852,7 @@
                     this.asyncPump.Run(async delegate
                     {
                         await this.asyncPump.SwitchToMainThreadAsync();
-                        SynchronizationContext.Current.Post(s => { }, null);
+                        SynchronizationContext.Current!.Post(s => { }, null);
                     });
                 }
                 finally
@@ -880,8 +880,8 @@
                     this.asyncPump.Run(async delegate
                     {
                         await this.asyncPump.SwitchToMainThreadAsync();
-                        SynchronizationContext.Current.Post(s => { }, null);
-                        SynchronizationContext.Current.Post(s => { }, null);
+                        SynchronizationContext.Current!.Post(s => { }, null);
+                        SynchronizationContext.Current!.Post(s => { }, null);
                     });
                 }
                 finally
@@ -917,7 +917,7 @@
                         // the JoinableTask is done, which would deadlock if the
                         // JoinableTask were inappropriately blocking on the completion
                         // of the posted message.
-                        SynchronizationContext.Current.Post(s => { task!.Wait(); }, null);
+                        SynchronizationContext.Current!.Post(s => { task!.Wait(); }, null);
 
                         // Post one more time, since an implementation detail may unblock
                         // the JoinableTask for the very last posted message for reasons that
@@ -1763,7 +1763,7 @@
             this.asyncPump.Run(async delegate
             {
                 mainThreadNowBlocking.Set();
-                Assert.NotSame(task, await Task.WhenAny(task, Task.Delay(AsyncDelay / 2)));
+                Assert.NotSame(task, await Task.WhenAny(task!, Task.Delay(AsyncDelay / 2)));
                 using (this.joinableCollection!.Join())
                 {
                     await task!;
@@ -2029,7 +2029,7 @@
                 syncContext = SynchronizationContext.Current;
 
                 bool executed1 = false;
-                syncContext.Send(s => { Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId); Assert.Same(state, s); executed1 = true; }, state);
+                syncContext!.Send(s => { Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId); Assert.Same(state, s); executed1 = true; }, state);
                 Assert.True(executed1);
 
                 // And from another thread.  But the Main thread is "busy" in a synchronous block,
@@ -2108,7 +2108,7 @@
                     syncContext = SynchronizationContext.Current;
 
                     bool executed1 = false;
-                    syncContext.Send(s => { Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId); Assert.Same(state, s); executed1 = true; }, state);
+                    syncContext!.Send(s => { Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId); Assert.Same(state, s); executed1 = true; }, state);
                     Assert.True(executed1);
 
                     await TaskScheduler.Default.SwitchTo(alwaysYield: true);
@@ -2147,7 +2147,7 @@
                     Task.Run(delegate
             {
                 // This post will only get a chance for processing
-                syncContext.Post(
+                syncContext!.Post(
                 state =>
                 {
                     try
@@ -2791,7 +2791,7 @@
                         {
                             await Task.Yield();
 
-                            capturedContext.Post(
+                            capturedContext!.Post(
                                 s =>
                                 {
                                     postDelegateInvoked.Set();
@@ -3145,7 +3145,7 @@
                 throw exception;
             });
             Assert.True(joinableTask.IsCompleted);
-            Assert.Same(exception, joinableTask.Task.Exception.InnerException);
+            Assert.Same(exception, joinableTask.Task.Exception?.InnerException);
             var awaiter = joinableTask.GetAwaiter();
             try
             {
@@ -3167,7 +3167,7 @@
                 throw exception;
             });
             Assert.True(joinableTask.IsCompleted);
-            Assert.Same(exception, joinableTask.Task.Exception.InnerException);
+            Assert.Same(exception, joinableTask.Task.Exception!.InnerException);
             var awaiter = joinableTask.GetAwaiter();
             try
             {
@@ -3240,7 +3240,7 @@
             WeakReference<object> weakResult = this.SwitchToMainThreadShouldNotLeakJoinableTaskWhenGetResultRunsFirst_Helper();
             GC.Collect();
 
-            weakResult.TryGetTarget(out object target);
+            weakResult.TryGetTarget(out object? target);
             Assert.Null(target); //, "The task's result should be collected unless the JoinableTask is leaked");
         }
 
@@ -3787,7 +3787,7 @@
             Skip.IfNot(outer.IsCompleted, "this is a product defect, but this test assumes this works to test something else.");
 
             // Allow the dispatcher to drain all messages that may be holding references.
-            SynchronizationContext.Current.Post(s => this.testFrame.Continue = false, null);
+            SynchronizationContext.Current!.Post(s => this.testFrame.Continue = false, null);
             this.PushFrame();
 
             // Now we verify that while 'inner' is non-null that it doesn't hold outerFactory in memory
@@ -3862,7 +3862,7 @@
                 longLivedTask = Task.Factory.StartNew(
                     async r =>
                     {
-                        await ((AsyncManualResetEvent)r).WaitAsync();
+                        await ((AsyncManualResetEvent)r!).WaitAsync();
                     },
                     releaser,
                     CancellationToken.None,
@@ -4083,7 +4083,7 @@
             {
                 do
                 {
-                    while (this.queuedMessages.TryDequeue(out Tuple<SendOrPostCallback, object> work))
+                    while (this.queuedMessages.TryDequeue(out Tuple<SendOrPostCallback, object>? work))
                     {
                         work.Item1(work.Item2);
                         cancellationToken.ThrowIfCancellationRequested();

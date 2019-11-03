@@ -173,7 +173,7 @@
         internal static Task<bool> ExecuteInIsolationAsync(object testClass, string testMethodName, ITestOutputHelper logger)
         {
             Requires.NotNull(testClass, nameof(testClass));
-            return ExecuteInIsolationAsync(testClass.GetType().FullName, testMethodName, logger);
+            return ExecuteInIsolationAsync(testClass.GetType().FullName!, testMethodName, logger);
         }
 
         /// <summary>

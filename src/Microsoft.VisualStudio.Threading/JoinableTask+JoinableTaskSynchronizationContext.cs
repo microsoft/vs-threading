@@ -104,7 +104,14 @@ namespace Microsoft.VisualStudio.Threading
                     }
                     else
                     {
-                        this.jobFactory.Context.UnderlyingSynchronizationContext.Send(d, state);
+                        if (this.jobFactory.Context.UnderlyingSynchronizationContext is SynchronizationContext syncContext)
+                        {
+                            syncContext.Send(d, state);
+                        }
+                        else
+                        {
+                            throw new NotSupportedException(Strings.SyncContextNotSet);
+                        }
                     }
                 }
                 else
@@ -119,7 +126,7 @@ namespace Microsoft.VisualStudio.Threading
                         Task.Factory.StartNew(
                             s =>
                             {
-                                var tuple = (Tuple<SendOrPostCallback, object>)s;
+                                var tuple = (Tuple<SendOrPostCallback, object>)s!;
                                 tuple.Item1(tuple.Item2);
                             },
                             Tuple.Create<SendOrPostCallback, object?>(d, state),

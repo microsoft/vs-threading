@@ -1,9 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- We target net451 to test library code to support NET45 -->
-    <!-- We target net452 to test library code to support NET46 light-up from a net45 assembly -->
-    <!-- We target net46 to test library code that supports net46 natively. -->
-    <TargetFrameworks>net472;netcoreapp2.1</TargetFrameworks>
+    <TargetFrameworks>net472;netcoreapp2.1;netcoreapp3.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Tests.ruleset</CodeAnalysisRuleSet>
     <NoWarn>$(NoWarn);CS1591</NoWarn>

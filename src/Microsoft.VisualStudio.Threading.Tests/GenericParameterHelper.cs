@@ -22,7 +22,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
 
         public int Data { get; set; }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is GenericParameterHelper other)
             {

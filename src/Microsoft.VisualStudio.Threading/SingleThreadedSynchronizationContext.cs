@@ -184,9 +184,9 @@ namespace Microsoft.VisualStudio.Threading
         {
             internal readonly SendOrPostCallback Callback;
             internal readonly object? State;
-            internal readonly ExecutionContext Context;
+            internal readonly ExecutionContext? Context;
 
-            internal Message(SendOrPostCallback d, object? state, ExecutionContext ctxt)
+            internal Message(SendOrPostCallback d, object? state, ExecutionContext? ctxt)
             {
                 this.Callback = d;
                 this.State = state;

@@ -5055,7 +5055,7 @@
                     ThreadPool.QueueUserWorkItem(
                         s =>
                         {
-                            var tuple = (Tuple<SpecialTaskScheduler, Task>)s;
+                            var tuple = (Tuple<SpecialTaskScheduler, Task>)s!;
                             Interlocked.Increment(ref tuple.Item1.startedTaskCount);
                             var originalContext = SynchronizationContext.Current;
                             SynchronizationContext.SetSynchronizationContext(this.SynchronizationContext);
@@ -5087,7 +5087,7 @@
 
         private class SelfPreservingSynchronizationContext : SynchronizationContext
         {
-            public override void Post(SendOrPostCallback d, object state)
+            public override void Post(SendOrPostCallback d, object? state)
             {
                 Task.Run(delegate
                 {

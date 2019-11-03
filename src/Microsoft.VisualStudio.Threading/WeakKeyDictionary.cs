@@ -136,7 +136,9 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
+#pragma warning disable CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter. https://github.com/dotnet/roslyn/issues/39656
             return this.dictionary.TryGetValue(new WeakReference<TKey>(key, this.keyComparer, avoidWeakReferenceAllocation: true), out value);
+#pragma warning restore CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
         }
 
         /// <summary>
@@ -349,7 +351,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Compares two structures.
             /// </summary>
-            public override bool Equals(object obj)
+            public override bool Equals(object? obj)
             {
                 // We can't implement equals in the same terms as GetHashCode() because
                 // our target object may have been collected.  Instead just go based on

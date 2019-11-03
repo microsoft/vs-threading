@@ -961,7 +961,7 @@ namespace Microsoft.VisualStudio.Threading
                                     // an accidental execution fork that is exposing concurrency inappropriately.
                                     if (this.CanCurrentThreadHoldActiveLock && !(SynchronizationContext.Current is NonConcurrentSynchronizationContext))
                                     {
-#if NETFRAMEWORK // Assertion failures crash on .NET Core
+#if NETFRAMEWORK || NETCOREAPP // Assertion failures crash on .NET Core < 3.0
                                         Report.Fail("Dangerous request for read lock from fork of write lock.");
 #endif
                                         Verify.FailOperation(Strings.DangerousReadLockRequestFromWriteLockFork);
@@ -2393,7 +2393,7 @@ namespace Microsoft.VisualStudio.Threading
                     }
                     else
                     {
-                        synchronizationContext.Post(state => ((Action)state)(), continuation);
+                        synchronizationContext.Post(state => ((Action)state!)(), continuation);
                     }
 
                     return true;
@@ -2515,7 +2515,7 @@ namespace Microsoft.VisualStudio.Threading
                         this.continuationTaskScheduler = this.OwningLock.GetTaskSchedulerForReadLockRequest();
                     }
 
-                    this.cancellationRegistration = this.cancellationToken.Register(CancellationResponseAction, this, useSynchronizationContext: false);
+                    this.cancellationRegistration = this.cancellationToken.Register(CancellationResponseAction!, this, useSynchronizationContext: false);
                     this.lck.PendAwaiter(this);
 
                     if (this.cancellationToken.IsCancellationRequested && this.cancellationRegistration == default(CancellationTokenRegistration))
@@ -2586,7 +2586,7 @@ namespace Microsoft.VisualStudio.Threading
                 ThreadPool.QueueUserWorkItem(
                     s =>
                     {
-                        var tuple = (Tuple<NonConcurrentSynchronizationContext, SendOrPostCallback, object>)s;
+                        var tuple = (Tuple<NonConcurrentSynchronizationContext, SendOrPostCallback, object>)s!;
                         tuple.Item1.PostHelper(tuple.Item2, tuple.Item3);
                     },
                     Tuple.Create(this, d, state));

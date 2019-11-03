@@ -60,7 +60,7 @@ namespace Microsoft.VisualStudio.Threading
         public void Add(T value)
         {
             object? priorValue;
-            object fieldBeforeExchange;
+            object? fieldBeforeExchange;
             do
             {
                 priorValue = Volatile.Read(ref this.value);
@@ -75,7 +75,7 @@ namespace Microsoft.VisualStudio.Threading
         public void Remove(T value)
         {
             object? priorValue;
-            object fieldBeforeExchange;
+            object? fieldBeforeExchange;
             do
             {
                 priorValue = Volatile.Read(ref this.value);
@@ -112,7 +112,7 @@ namespace Microsoft.VisualStudio.Threading
         internal Enumerator EnumerateAndClear()
         {
             // Enumeration is atomically destructive.
-            object enumeratedValue = Interlocked.Exchange(ref this.value, null);
+            object? enumeratedValue = Interlocked.Exchange(ref this.value, null);
             return new Enumerator(enumeratedValue);
         }
 
