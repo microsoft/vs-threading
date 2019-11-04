@@ -42,6 +42,11 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <AdditionalFiles Include="$(TargetFramework)\PublicAPI.Shipped.txt" />
+    <AdditionalFiles Include="$(TargetFramework)\PublicAPI.Unshipped.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Roslyn.Diagnostics.Analyzers" Version="2.9.7" PrivateAssets="all" />
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.3" />
     <PackageReference Include="Microsoft.VisualStudio.Validation" Version="15.5.31" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="4.5.0" />
