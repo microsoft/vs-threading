@@ -64,7 +64,7 @@
       </trans-unit>
       <trans-unit id="MultipleContinuationsNotSupported">
         <source>Multiple continuations are not supported.</source>
-        <target state="new">Multiple continuations are not supported.</target>
+        <target state="translated">不支持多个延续。</target>
         <note />
       </trans-unit>
       <trans-unit id="NotAllowedUnderURorWLock" translate="yes" xml:space="preserve">
@@ -89,7 +89,7 @@
       </trans-unit>
       <trans-unit id="SemaphoreAlreadyHeld">
         <source>Semaphore is already held and reentrancy setting is '{0}'.</source>
-        <target state="new">Semaphore is already held and reentrancy setting is '{0}'.</target>
+        <target state="translated">信号灯已被占用，并且重新进入的设置为 "{0}"。</target>
         <note />
       </trans-unit>
       <trans-unit id="SemaphoreMisused" translate="yes" xml:space="preserve">
@@ -119,7 +119,7 @@
       </trans-unit>
       <trans-unit id="WriteLockOutlived">
         <source>Write lock out-lived by a nested read lock, which is not allowed.</source>
-        <target state="new">Write lock out-lived by a nested read lock, which is not allowed.</target>
+        <target state="translated">写锁定以嵌套读锁定为生存期，这是不允许的。</target>
         <note />
       </trans-unit>
     </body>
