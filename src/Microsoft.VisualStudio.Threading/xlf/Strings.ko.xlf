@@ -64,7 +64,7 @@
       </trans-unit>
       <trans-unit id="MultipleContinuationsNotSupported">
         <source>Multiple continuations are not supported.</source>
-        <target state="new">Multiple continuations are not supported.</target>
+        <target state="translated">여러 연속 작업은 지원되지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="NotAllowedUnderURorWLock" translate="yes" xml:space="preserve">
@@ -89,7 +89,7 @@
       </trans-unit>
       <trans-unit id="SemaphoreAlreadyHeld">
         <source>Semaphore is already held and reentrancy setting is '{0}'.</source>
-        <target state="new">Semaphore is already held and reentrancy setting is '{0}'.</target>
+        <target state="translated">세마포가 이미 보류되었으며 재입력 설정이 '{0}'입니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="SemaphoreMisused" translate="yes" xml:space="preserve">
@@ -124,7 +124,7 @@
       </trans-unit>
       <trans-unit id="WriteLockOutlived">
         <source>Write lock out-lived by a nested read lock, which is not allowed.</source>
-        <target state="new">Write lock out-lived by a nested read lock, which is not allowed.</target>
+        <target state="translated">중첩된 읽기 잠금이 쓰기 잠금보다 더 오래 지속되는데, 이는 허용되지 않습니다.</target>
         <note />
       </trans-unit>
     </body>

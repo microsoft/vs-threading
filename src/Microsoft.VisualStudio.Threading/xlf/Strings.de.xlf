@@ -64,7 +64,7 @@
       </trans-unit>
       <trans-unit id="MultipleContinuationsNotSupported">
         <source>Multiple continuations are not supported.</source>
-        <target state="new">Multiple continuations are not supported.</target>
+        <target state="translated">Mehrere Fortsetzungen werden nicht unterstützt.</target>
         <note />
       </trans-unit>
       <trans-unit id="NotAllowedUnderURorWLock" translate="yes" xml:space="preserve">
@@ -89,7 +89,7 @@
       </trans-unit>
       <trans-unit id="SemaphoreAlreadyHeld">
         <source>Semaphore is already held and reentrancy setting is '{0}'.</source>
-        <target state="new">Semaphore is already held and reentrancy setting is '{0}'.</target>
+        <target state="translated">Das Semaphor wurde bereits festgelegt, und die Einstellung für die Eintrittsinvarianz lautet "{0}".</target>
         <note />
       </trans-unit>
       <trans-unit id="SemaphoreMisused" translate="yes" xml:space="preserve">
@@ -124,7 +124,7 @@
       </trans-unit>
       <trans-unit id="WriteLockOutlived">
         <source>Write lock out-lived by a nested read lock, which is not allowed.</source>
-        <target state="new">Write lock out-lived by a nested read lock, which is not allowed.</target>
+        <target state="translated">Eine Schreibsperre wird durch eine geschachtelte Lesesperre überdauert. Dies ist nicht zulässig.</target>
         <note />
       </trans-unit>
     </body>
