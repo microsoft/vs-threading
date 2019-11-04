@@ -14,7 +14,7 @@ Microsoft.VisualStudio.Threading.AsyncCountdownEvent.SignalAndWaitAsync() -> Sys
 Microsoft.VisualStudio.Threading.AsyncCountdownEvent.SignalAsync() -> System.Threading.Tasks.Task
 Microsoft.VisualStudio.Threading.AsyncCountdownEvent.WaitAsync() -> System.Threading.Tasks.Task
 Microsoft.VisualStudio.Threading.AsyncEventHandler
-Microsoft.VisualStudio.Threading.AsyncEventHandler<T>
+Microsoft.VisualStudio.Threading.AsyncEventHandler<TEventArgs>
 Microsoft.VisualStudio.Threading.AsyncLazy<T>
 Microsoft.VisualStudio.Threading.AsyncLazy<T>.AsyncLazy(System.Func<System.Threading.Tasks.Task<T>> valueFactory, Microsoft.VisualStudio.Threading.JoinableTaskFactory joinableTaskFactory = null) -> void
 Microsoft.VisualStudio.Threading.AsyncLazy<T>.GetValue() -> T
