@@ -4,9 +4,6 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <CodeAnalysisRuleSet>FxCopRules.ruleset</CodeAnalysisRuleSet>
 
-    <TargetsDesktop Condition=" '$(TargetFramework)' == 'net472' ">true</TargetsDesktop>
-    <DefineConstants Condition=" '$(TargetsDesktop)' == 'true' ">$(DefineConstants);DESKTOP</DefineConstants>
-
     <Summary>Async synchronization primitives, async collections, TPL and dataflow extensions.</Summary>
     <Description>Async synchronization primitives, async collections, TPL and dataflow extensions. The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This package is applicable to any .NET application (not just Visual Studio).</Description>
     <PackageTags>Threading Async Lock Synchronization Threadsafe</PackageTags>
@@ -38,7 +35,7 @@
   <ItemGroup>
     <CodeAnalysisDictionary Include="CustomDictionary.xml" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsDesktop)' == 'true'  ">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net472'  ">
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>

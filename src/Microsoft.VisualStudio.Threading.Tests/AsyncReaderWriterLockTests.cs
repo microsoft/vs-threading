@@ -261,7 +261,7 @@
             }
         }
 
-#if DESKTOP
+#if NETFRAMEWORK
         [Fact, Trait("TestCategory", "FailsInCloudTest")]
         public async Task CallAcrossAppDomainBoundariesWithLock()
         {
@@ -4868,7 +4868,7 @@
             }
         }
 
-#if DESKTOP
+#if NETFRAMEWORK
         private class OtherDomainProxy : MarshalByRefObject
         {
             internal void SomeMethod(int callingAppDomainId)

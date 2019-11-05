@@ -11,8 +11,7 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
 
-    <TargetsDesktop Condition=" '$(TargetFramework)' == 'net472' ">true</TargetsDesktop>
-    <DefineConstants Condition=" '$(TargetsDesktop)' == 'true' ">$(DefineConstants);DESKTOP;ISOLATED_TEST_SUPPORT</DefineConstants>
+    <DefineConstants Condition=" '$(TargetFramework)' == 'net472' ">$(DefineConstants);ISOLATED_TEST_SUPPORT</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\Microsoft.VisualStudio.Threading\InternalUtilities.cs">
@@ -40,7 +39,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsDesktop)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net472' ">
     <Reference Include="System.Configuration" />
     <Reference Include="WindowsBase" />
     <ProjectReference Include="..\IsolatedTestHost\IsolatedTestHost.csproj">
