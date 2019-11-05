@@ -259,6 +259,25 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Consumes a task and doesn't do anything with it.  Useful for fire-and-forget calls to async methods within async methods.
+        /// </summary>
+        /// <param name="task">The task whose result is to be ignored.</param>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "task")]
+        public static void Forget(this ValueTask task)
+        {
+        }
+
+        /// <summary>
+        /// Consumes a task and doesn't do anything with it.  Useful for fire-and-forget calls to async methods within async methods.
+        /// </summary>
+        /// <typeparam name="T">The type of value produced by the <paramref name="task"/>.</typeparam>
+        /// <param name="task">The task whose result is to be ignored.</param>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "task")]
+        public static void Forget<T>(this ValueTask<T> task)
+        {
+        }
+
+        /// <summary>
         /// Invokes asynchronous event handlers, returning a task that completes when all event handlers have been invoked.
         /// Each handler is fully executed (including continuations) before the next handler in the list is invoked.
         /// </summary>
