@@ -16,6 +16,8 @@
     <MicroBuildVersion>2.0.58</MicroBuildVersion>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
 
     <Authors>Microsoft</Authors>
     <Owners>Microsoft, VisualStudioExtensibility</Owners>

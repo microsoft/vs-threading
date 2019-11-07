@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ExtensionPackage>
+  <Name>SosThreadingTools</Name>
+  <Description>Contains the !dumpasync extension for use with .NET Framework processes</Description>
+  <Version>$Version$</Version>
+  <Components>
+    <BinaryComponent Type="Engine" Name="SosThreadingTools">
+      <Files>
+        <File Architecture="x86" Module="tools\win-x86\SosThreadingTools.dll" />
+        <File Architecture="amd64" Module="tools\win-x64\SosThreadingTools.dll" />
+      </Files>
+      <EngineCommands>
+        <EngineCommand Name="dumpasync">
+          <EngineCommandItem>
+            <Syntax>!dumpasync</Syntax>
+            <Description>Dump all async state machines and logical stacks in a .NET Framework process.</Description>
+          </EngineCommandItem>
+        </EngineCommand>
+      </EngineCommands>
+    </BinaryComponent>
+  </Components>
+</ExtensionPackage>
