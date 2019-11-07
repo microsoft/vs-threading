@@ -14,5 +14,5 @@
     <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="1.0.2" />
     <PackageReference Include="DllExport" Version="1.5.2" />
   </ItemGroup>
-  <Import Project="$(NuGetPackageRoot)\dllexport\1.5.2\tools\net.r_eg.DllExport.targets" Condition="Exists('$(NuGetPackageRoot)\dllexport\1.5.2\tools\net.r_eg.DllExport.targets')" />
+  <Import Project="$(PkgDllExport)\tools\net.r_eg.DllExport.targets" Condition="Exists('$(PkgDllExport)\tools\net.r_eg.DllExport.targets')" />
 </Project>
