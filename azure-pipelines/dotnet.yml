@@ -9,23 +9,7 @@ steps:
   displayName: Build Visual Studio solution
   condition: eq(variables['Agent.OS'], 'Windows_NT')
 
-- task: VSBuild@1
-  inputs:
-    msbuildArgs: /t:build /m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/msbuild_x86.binlog"
-    platform: x86
-    configuration: $(BuildConfiguration)
-  displayName: Build SosThreadingTools x86
-  condition: eq(variables['Agent.OS'], 'Windows_NT')
-
-- task: VSBuild@1
-  inputs:
-    msbuildArgs: /t:build /m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/msbuild_x64.binlog"
-    platform: x64
-    configuration: $(BuildConfiguration)
-  displayName: Build SosThreadingTools x64
-  condition: eq(variables['Agent.OS'], 'Windows_NT')
-
-- script: dotnet build /t:build,pack --no-restore -c $(BuildConfiguration) /v:m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/build.binlog"
+- script: dotnet build /t:build,pack --no-restore -c $(BuildConfiguration) /p:Platform=NonWindows /v:m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/build.binlog"
   displayName: dotnet build and pack
   workingDirectory: src
   condition: ne(variables['Agent.OS'], 'Windows_NT')

@@ -9,7 +9,7 @@ namespace CpsDbg
 
     internal static class ExtensionContext
     {
-        [DllExport(nameof(DebugExtensionInitialize))]
+        [DllExport(nameof(DebugExtensionInitialize), CallingConvention.StdCall)]
         internal static int DebugExtensionInitialize(ref uint version, ref uint flags)
         {
             // Set the extension version to 1, which expects exports with this signature:

@@ -18,7 +18,7 @@ namespace CpsDbg
             commandHandlers.Add("dumpasync", new DumpAsyncCommand());
         }
 
-        [DllExport(DumpAsyncCommand)]
+        [DllExport(DumpAsyncCommand, CallingConvention.StdCall)]
         internal static void DumpAsync(IntPtr client, [MarshalAs(UnmanagedType.LPStr)] string args)
         {
             ExecuteCommand(client, DumpAsyncCommand, args);

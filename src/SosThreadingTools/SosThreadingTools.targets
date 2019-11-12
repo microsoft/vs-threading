@@ -1,0 +1,47 @@
+<Project>
+  <UsingTask TaskName="ReplaceFileText" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+    <ParameterGroup>
+      <InputFilename ParameterType="System.String" Required="true" />
+      <OutputFilename ParameterType="System.String" Required="true" />
+      <MatchExpression ParameterType="System.String" Required="true" />
+      <ReplacementText ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Reference Include="System.Core" />
+      <Using Namespace="System" />
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.Text.RegularExpressions" />
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+            File.WriteAllText(
+                OutputFilename,
+                Regex.Replace(File.ReadAllText(InputFilename), MatchExpression, ReplacementText)
+                );
+          ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+
+  <PropertyGroup>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);PackBuildOutputs</TargetsForTfmSpecificContentInPackage>
+    <GenerateNuspecDependsOn>StampAndIncludeGalleryManifest;$(GenerateNuspecDependsOn)</GenerateNuspecDependsOn>
+  </PropertyGroup>
+
+  <Target Name="PackBuildOutputs" DependsOnTargets="DebugSymbolsProjectOutputGroup">
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="$(TargetPath)" PackagePath="tools\$(RuntimeIdentifier)\" />
+      <TfmSpecificPackageFile Include="@(DebugSymbolsProjectOutputGroupOutput->'%(FinalOutputPath)')" PackagePath="symbols\$(RuntimeIdentifier)\" />
+      <TfmSpecificPackageFile Include="$(TargetDir)Microsoft.Diagnostics.Runtime.dll" PackagePath="tools\$(RuntimeIdentifier)\" />
+    </ItemGroup>
+  </Target>
+  <Target Name="StampAndIncludeGalleryManifest" DependsOnTargets="GetBuildVersion" BeforeTargets="_GetPackageFiles">
+    <ReplaceFileText
+      InputFilename="GalleryManifest.xml"
+      OutputFilename="$(IntermediateOutputPath)GalleryManifest.xml"
+      MatchExpression="\$Version\$"
+      ReplacementText="$(BuildVersion)" />
+    <ItemGroup>
+      <None Include="$(IntermediateOutputPath)GalleryManifest.xml" Pack="true" PackagePath="" />
+    </ItemGroup>
+  </Target>
+</Project>
