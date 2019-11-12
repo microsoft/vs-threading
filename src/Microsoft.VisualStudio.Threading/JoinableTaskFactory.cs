@@ -934,7 +934,7 @@ namespace Microsoft.VisualStudio.Threading
                         // if the awaiter has been copied (since it's a struct), each copy of the awaiter
                         // points to the same registration. Without this we can have a memory leak.
                         var registration = this.cancellationToken.Register(
-                            (flowExecutionContext ? SafeCancellationAction : UnsafeCancellationAction)!,
+                            NullableHelpers.AsNullableArgAction(flowExecutionContext ? SafeCancellationAction : UnsafeCancellationAction),
                             wrapper,
                             useSynchronizationContext: false);
 
