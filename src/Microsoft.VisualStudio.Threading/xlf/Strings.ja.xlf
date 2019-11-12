@@ -112,6 +112,11 @@
         <target state="translated">このフレームは、別のインスタンスで既に使用されています。</target>
         <note />
       </trans-unit>
+      <trans-unit id="SyncContextNotSet">
+        <source>No SynchronizationContext to reach the main thread has been set.</source>
+        <target state="new">No SynchronizationContext to reach the main thread has been set.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ValueFactoryReentrancy" translate="yes" xml:space="preserve">
         <source>The value factory has called for the value on the same instance.</source>
         <target state="translated">値ファクトリが同じインスタンスの値を呼び出しました。</target>

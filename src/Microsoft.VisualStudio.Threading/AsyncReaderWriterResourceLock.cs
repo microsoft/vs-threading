@@ -742,7 +742,7 @@ namespace Microsoft.VisualStudio.Threading
                     using (forConcurrentUse ? this.service.HideLocks() : default(Suppression))
                     {
                         preparationTask = new ResourcePreparationTaskAndValidity(
-                            Task.Factory.StartNew(preparationDelegate, stateObject, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap(),
+                            Task.Factory.StartNew(NullableHelpers.AsNullableArgFunc(preparationDelegate), stateObject, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap(),
                             finalState);
                     }
                 }
@@ -758,7 +758,7 @@ namespace Microsoft.VisualStudio.Threading
                     using (forConcurrentUse ? this.service.HideLocks() : default(Suppression))
                     {
                         preparationTask = new ResourcePreparationTaskAndValidity(
-                            preparationTask.PreparationTask.ContinueWith(preparationDelegate, stateObject, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap(),
+                            preparationTask.PreparationTask.ContinueWith(preparationDelegate!, stateObject, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap(),
                             finalState);
                     }
                 }

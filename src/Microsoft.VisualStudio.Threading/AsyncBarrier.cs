@@ -59,7 +59,7 @@ namespace Microsoft.VisualStudio.Threading
                     while (this.waiters.Count > 0)
                     {
                         Task.Factory.StartNew(
-                            state => ((TaskCompletionSource<EmptyStruct>)state).SetResult(default(EmptyStruct)),
+                            state => ((TaskCompletionSource<EmptyStruct>)state!).SetResult(default(EmptyStruct)),
                             this.waiters.Pop(),
                             CancellationToken.None,
                             TaskCreationOptions.None,

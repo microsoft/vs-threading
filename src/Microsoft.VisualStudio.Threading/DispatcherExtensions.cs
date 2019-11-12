@@ -4,7 +4,7 @@
 *                                                        *
 *********************************************************/
 
-#if DESKTOP
+#if NETFRAMEWORK
 
 namespace Microsoft.VisualStudio.Threading
 {

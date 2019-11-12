@@ -1,4 +1,4 @@
-﻿#if DESKTOP
+﻿#if NETFRAMEWORK
 #define UseWpfContext
 #endif
 
@@ -6,9 +6,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Reflection;
     using System.Threading;
-#if DESKTOP
+#if UseWpfContext
     using System.Windows.Threading;
 #endif
 
@@ -36,7 +37,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
 #endif
         }
 
-        public static bool IsSingleThreadedSyncContext(SynchronizationContext context)
+        public static bool IsSingleThreadedSyncContext([NotNullWhen(true)] SynchronizationContext? context)
         {
 #if UseWpfContext
             return context is DispatcherSynchronizationContext;

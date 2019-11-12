@@ -112,6 +112,11 @@
         <target state="translated">其他執行個體已在使用此框架。</target>
         <note />
       </trans-unit>
+      <trans-unit id="SyncContextNotSet">
+        <source>No SynchronizationContext to reach the main thread has been set.</source>
+        <target state="new">No SynchronizationContext to reach the main thread has been set.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ValueFactoryReentrancy" translate="yes" xml:space="preserve">
         <source>The value factory has called for the value on the same instance.</source>
         <target state="translated">值 Factory 需要相同執行個體上的值。</target>

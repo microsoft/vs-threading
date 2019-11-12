@@ -190,4 +190,7 @@
   <data name="MultipleContinuationsNotSupported" xml:space="preserve">
     <value>Multiple continuations are not supported.</value>
   </data>
+  <data name="SyncContextNotSet" xml:space="preserve">
+    <value>No SynchronizationContext to reach the main thread has been set.</value>
+  </data>
 </root>

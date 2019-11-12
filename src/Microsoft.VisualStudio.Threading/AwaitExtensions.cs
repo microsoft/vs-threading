@@ -540,7 +540,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 if (this.scheduler == TaskScheduler.Default)
                 {
-                    ThreadPool.QueueUserWorkItem(state => ((Action)state)(), continuation);
+                    ThreadPool.QueueUserWorkItem(state => ((Action)state!)(), continuation);
                 }
                 else
                 {
@@ -557,7 +557,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 if (this.scheduler == TaskScheduler.Default)
                 {
-                    ThreadPool.UnsafeQueueUserWorkItem(state => ((Action)state)(), continuation);
+                    ThreadPool.UnsafeQueueUserWorkItem(state => ((Action)state!)(), continuation);
                 }
                 else
                 {
@@ -644,7 +644,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
                 else
                 {
-                    ThreadPool.QueueUserWorkItem(state => ((Action)state)(), continuation);
+                    ThreadPool.QueueUserWorkItem(state => ((Action)state!)(), continuation);
                 }
             }
 
@@ -661,7 +661,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
                 else
                 {
-                    ThreadPool.UnsafeQueueUserWorkItem(state => ((Action)state)(), continuation);
+                    ThreadPool.UnsafeQueueUserWorkItem(state => ((Action)state!)(), continuation);
                 }
             }
 
@@ -743,7 +743,7 @@ namespace Microsoft.VisualStudio.Threading
                 Requires.NotNull(continuation, nameof(continuation));
 
                 this.antecedent.ContinueWith(
-                    (_, s) => ((Action)s)(),
+                    (_, s) => ((Action)s!)(),
                     continuation,
                     CancellationToken.None,
                     TaskContinuationOptions.ExecuteSynchronously,
@@ -823,7 +823,7 @@ namespace Microsoft.VisualStudio.Threading
                 Requires.NotNull(continuation, nameof(continuation));
 
                 this.antecedent.ContinueWith(
-                    (_, s) => ((Action)s)(),
+                    (_, s) => ((Action)s!)(),
                     continuation,
                     CancellationToken.None,
                     TaskContinuationOptions.ExecuteSynchronously,

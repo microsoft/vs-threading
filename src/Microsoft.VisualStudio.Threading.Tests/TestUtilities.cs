@@ -93,7 +93,7 @@
 
         internal static DebugAssertionRevert DisableAssertionDialog()
         {
-#if DESKTOP
+#if NETFRAMEWORK
             var listener = Debug.Listeners.OfType<DefaultTraceListener>().FirstOrDefault();
             if (listener != null)
             {
@@ -173,7 +173,7 @@
         internal static Task<bool> ExecuteInIsolationAsync(object testClass, string testMethodName, ITestOutputHelper logger)
         {
             Requires.NotNull(testClass, nameof(testClass));
-            return ExecuteInIsolationAsync(testClass.GetType().FullName, testMethodName, logger);
+            return ExecuteInIsolationAsync(testClass.GetType().FullName!, testMethodName, logger);
         }
 
         /// <summary>
@@ -194,7 +194,7 @@
             Requires.NotNullOrEmpty(testClassName, nameof(testClassName));
             Requires.NotNullOrEmpty(testMethodName, nameof(testMethodName));
 
-#if DESKTOP
+#if NETFRAMEWORK
             const string testHostProcessName = "IsolatedTestHost.exe";
             if (Process.GetCurrentProcess().ProcessName == Path.GetFileNameWithoutExtension(testHostProcessName))
             {
@@ -370,7 +370,7 @@
         {
             public void Dispose()
             {
-#if DESKTOP
+#if NETFRAMEWORK
                 var listener = Debug.Listeners.OfType<DefaultTraceListener>().FirstOrDefault();
                 if (listener != null)
                 {

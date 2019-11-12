@@ -192,7 +192,7 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <inheritdoc />
-            public override bool Equals(object obj) => obj is CombinedCancellationToken other && this.Equals(other);
+            public override bool Equals(object? obj) => obj is CombinedCancellationToken other && this.Equals(other);
 
             /// <inheritdoc />
             public bool Equals(CombinedCancellationToken other) => this.cts == other.cts && this.Token.Equals(other.Token);

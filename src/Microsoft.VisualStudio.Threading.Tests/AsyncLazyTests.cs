@@ -194,7 +194,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             var task2 = lazy.GetValueAsync();
             Assert.Same(task1, task2);
             Assert.True(task1.IsFaulted);
-            Assert.IsType<ApplicationException>(task1.Exception.InnerException);
+            Assert.IsType<ApplicationException>(task1.Exception!.InnerException);
         }
 
         [Theory, CombinatorialData]

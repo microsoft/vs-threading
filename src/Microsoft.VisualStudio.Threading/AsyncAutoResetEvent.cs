@@ -177,7 +177,7 @@ namespace Microsoft.VisualStudio.Threading
                 : base(allowInliningContinuations)
             {
                 this.CancellationToken = cancellationToken;
-                this.Registration = cancellationToken.Register(owner.onCancellationRequestHandler, this);
+                this.Registration = cancellationToken.Register(NullableHelpers.AsNullableArgAction(owner.onCancellationRequestHandler), this);
             }
 
             /// <summary>

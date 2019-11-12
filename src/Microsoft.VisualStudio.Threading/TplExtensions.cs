@@ -141,7 +141,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 // Using a minimum of allocations (just one task, and no closure) ensure that one task's completion sets equivalent completion on another task.
                 task.ContinueWith(
-                    (t, s) => ApplyCompletedTaskResultTo(t, (TaskCompletionSource<T>)s, default(T)!),
+                    (t, s) => ApplyCompletedTaskResultTo(t, (TaskCompletionSource<T>)s!, default(T)!),
                     tcs,
                     CancellationToken.None,
                     TaskContinuationOptions.ExecuteSynchronously,
@@ -193,7 +193,7 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(task, nameof(task));
             Requires.NotNull(action, nameof(action));
 
-            return task.ContinueWith((t, state) => ((Action)state)(), action, cancellation, options, TaskScheduler.Default);
+            return task.ContinueWith((t, state) => ((Action)state!)(), action, cancellation, options, TaskScheduler.Default);
         }
 
         /// <summary>
@@ -217,7 +217,7 @@ namespace Microsoft.VisualStudio.Threading
                 var registeredCallback = ultimateCancellation.Register(
                     state =>
                     {
-                        var tuple = (Tuple<TaskCompletionSource<FollowCancelableTaskState<T>, T>, CancellationToken>)state;
+                        var tuple = (Tuple<TaskCompletionSource<FollowCancelableTaskState<T>, T>, CancellationToken>)state!;
                         tuple.Item1.TrySetCanceled(tuple.Item2);
                     },
                     Tuple.Create(tcs, ultimateCancellation));
@@ -374,7 +374,7 @@ namespace Microsoft.VisualStudio.Threading
                 if (callback != null)
                 {
                     task.ContinueWith(
-                        (t, cb) => ((AsyncCallback)cb)(t),
+                        (t, cb) => ((AsyncCallback)cb!)(t),
                         callback,
                         CancellationToken.None,
                         TaskContinuationOptions.None,
@@ -416,7 +416,7 @@ namespace Microsoft.VisualStudio.Threading
                 if (callback != null)
                 {
                     task.ContinueWith(
-                        (t, cb) => ((AsyncCallback)cb)(t),
+                        (t, cb) => ((AsyncCallback)cb!)(t),
                         callback,
                         CancellationToken.None,
                         TaskContinuationOptions.None,
@@ -485,14 +485,14 @@ namespace Microsoft.VisualStudio.Threading
                 cancellationToken.Register(
                     state =>
                     {
-                        var tuple = (Tuple<TaskCompletionSource<bool>, CancellationToken>)state;
+                        var tuple = (Tuple<TaskCompletionSource<bool>, CancellationToken>)state!;
                         tuple.Item1.TrySetCanceled(tuple.Item2);
                     },
                     Tuple.Create(tcs, cancellationToken));
 
             RegisteredWaitHandle callbackHandle = ThreadPool.RegisterWaitForSingleObject(
                 handle,
-                (state, timedOut) => ((TaskCompletionSource<bool>)state).TrySetResult(!timedOut),
+                (state, timedOut) => ((TaskCompletionSource<bool>)state!).TrySetResult(!timedOut),
                 state: tcs,
                 millisecondsTimeOutInterval: timeout,
                 executeOnlyOnce: true);
@@ -506,7 +506,7 @@ namespace Microsoft.VisualStudio.Threading
                 tcs.Task.ContinueWith(
                     (_, state) =>
                     {
-                        var tuple = (Tuple<RegisteredWaitHandle, CancellationTokenRegistration>)state;
+                        var tuple = (Tuple<RegisteredWaitHandle, CancellationTokenRegistration>)state!;
                         tuple.Item1.Unregister(null); // release resources for the async callback
                         tuple.Item2.Dispose(); // release memory for cancellation token registration
                     },
@@ -520,7 +520,7 @@ namespace Microsoft.VisualStudio.Threading
                 // Since the cancellation token was the default one, the only thing we need to track is clearing the RegisteredWaitHandle,
                 // so do this such that we allocate as few objects as possible.
                 tcs.Task.ContinueWith(
-                    (_, state) => ((RegisteredWaitHandle)state).Unregister(null),
+                    (_, state) => ((RegisteredWaitHandle)state!).Unregister(null),
                     callbackHandle,
                     CancellationToken.None,
                     TaskContinuationOptions.ExecuteSynchronously,
@@ -554,7 +554,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 // Using a minimum of allocations (just one task, and no closure) ensure that one task's completion sets equivalent completion on another task.
                 task.ContinueWith(
-                    (t, s) => ApplyCompletedTaskResultTo(t, (TaskCompletionSource<T>)s),
+                    (t, s) => ApplyCompletedTaskResultTo(t, (TaskCompletionSource<T>)s!),
                     tcs,
                     CancellationToken.None,
                     inlineSubsequentCompletion ? TaskContinuationOptions.ExecuteSynchronously : TaskContinuationOptions.None,
@@ -600,7 +600,7 @@ namespace Microsoft.VisualStudio.Threading
             }
             else if (completedTask.IsFaulted)
             {
-                taskCompletionSource.TrySetException(completedTask.Exception.InnerExceptions);
+                taskCompletionSource.TrySetException(completedTask.Exception!.InnerExceptions);
             }
             else
             {
@@ -630,7 +630,7 @@ namespace Microsoft.VisualStudio.Threading
             }
             else if (completedTask.IsFaulted)
             {
-                taskCompletionSource.TrySetException(completedTask.Exception.InnerExceptions);
+                taskCompletionSource.TrySetException(completedTask.Exception!.InnerExceptions);
             }
             else
             {
@@ -656,7 +656,7 @@ namespace Microsoft.VisualStudio.Threading
             currentTask.ContinueWith(
                 (t, state) =>
                 {
-                    var tcsNested = (TaskCompletionSource<FollowCancelableTaskState<T>, T>)state;
+                    var tcsNested = (TaskCompletionSource<FollowCancelableTaskState<T>, T>)state!;
                     switch (t.Status)
                     {
                         case TaskStatus.RanToCompletion:
@@ -664,7 +664,7 @@ namespace Microsoft.VisualStudio.Threading
                             tcsNested.SourceState.RegisteredCallback.Dispose();
                             break;
                         case TaskStatus.Faulted:
-                            tcsNested.TrySetException(t.Exception.InnerExceptions);
+                            tcsNested.TrySetException(t.Exception!.InnerExceptions);
                             tcsNested.SourceState.RegisteredCallback.Dispose();
                             break;
                         case TaskStatus.Canceled:

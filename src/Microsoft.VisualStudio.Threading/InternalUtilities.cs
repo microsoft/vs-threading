@@ -115,11 +115,11 @@ namespace Microsoft.VisualStudio.Threading
         {
             Requires.NotNull(invokeDelegate, nameof(invokeDelegate));
 
-            MethodInfo method = invokeDelegate.GetMethodInfo();
+            MethodInfo? method = invokeDelegate.GetMethodInfo();
             if (invokeDelegate.Target != null)
             {
                 string instanceType = string.Empty;
-                if (!method.DeclaringType.Equals(invokeDelegate.Target.GetType()))
+                if (!(method?.DeclaringType?.Equals(invokeDelegate.Target.GetType()) ?? false))
                 {
                     instanceType = " (" + invokeDelegate.Target.GetType().FullName + ")";
                 }
@@ -127,8 +127,8 @@ namespace Microsoft.VisualStudio.Threading
                 return string.Format(
                     CultureInfo.CurrentCulture,
                     "{3}{0}.{1}{2} (target address: 0x{4:X" + (IntPtr.Size * 2) + "})",
-                    method.DeclaringType.FullName,
-                    method.Name,
+                    method?.DeclaringType?.FullName,
+                    method?.Name,
                     instanceType,
                     AsyncReturnStackPrefix,
                     GetAddress(invokeDelegate.Target).ToInt64()); // the cast allows hex formatting
@@ -137,8 +137,8 @@ namespace Microsoft.VisualStudio.Threading
             return string.Format(
                 CultureInfo.CurrentCulture,
                 "{2}{0}.{1}",
-                method.DeclaringType.FullName,
-                method.Name,
+                method?.DeclaringType?.FullName,
+                method?.Name,
                 AsyncReturnStackPrefix);
         }
 
@@ -178,6 +178,10 @@ namespace Microsoft.VisualStudio.Threading
                 if (GetFieldValue(invokeDelegate.Target, "m_continuation") is Action continuation)
                 {
                     invokeDelegate = continuation;
+                    if (invokeDelegate.Target == null)
+                    {
+                        return null;
+                    }
                 }
 
                 var stateMachine = GetFieldValue(invokeDelegate.Target, "m_stateMachine") as IAsyncStateMachine;
@@ -240,7 +244,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 foreach (var item in items)
                 {
-                    var action = item as Delegate ?? GetFieldValue(item, "m_action") as Delegate;
+                    var action = item as Delegate ?? GetFieldValue(item!, "m_action") as Delegate;
                     if (action != null)
                     {
                         yield return action;

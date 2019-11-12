@@ -301,7 +301,7 @@
 
             var frame = SingleThreadedTestSynchronizationContext.NewFrame();
             Exception? failure = null;
-            SynchronizationContext.Current.Post(
+            SynchronizationContext.Current!.Post(
                 async _ =>
                 {
                     try

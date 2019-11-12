@@ -66,7 +66,7 @@
             tcs2 = new TaskCompletionSource<GenericParameterHelper>();
             tcs1.Task.ApplyResultTo(tcs2);
             tcs1.SetException(new ApplicationException());
-            Assert.Same(tcs1.Task.Exception.InnerException, tcs2.Task.Exception.InnerException);
+            Assert.Same(tcs1.Task.Exception!.InnerException, tcs2.Task.Exception!.InnerException);
         }
 
         [Fact]
@@ -88,7 +88,7 @@
             tcs2 = new TaskCompletionSource<GenericParameterHelper>();
             tcs1.SetException(new ApplicationException());
             tcs1.Task.ApplyResultTo(tcs2);
-            Assert.Same(tcs1.Task.Exception.InnerException, tcs2.Task.Exception.InnerException);
+            Assert.Same(tcs1.Task.Exception!.InnerException, tcs2.Task.Exception!.InnerException);
         }
 
         [Fact]
@@ -123,7 +123,7 @@
             tcs2 = new TaskCompletionSource<GenericParameterHelper?>();
             ((Task)tcs1.Task).ApplyResultTo(tcs2);
             tcs1.SetException(new ApplicationException());
-            Assert.Same(tcs1.Task.Exception.InnerException, tcs2.Task.Exception.InnerException);
+            Assert.Same(tcs1.Task.Exception!.InnerException, tcs2.Task.Exception!.InnerException);
         }
 
         [Fact]
@@ -145,7 +145,7 @@
             tcs2 = new TaskCompletionSource<GenericParameterHelper?>();
             tcs1.SetException(new ApplicationException());
             ((Task)tcs1.Task).ApplyResultTo(tcs2);
-            Assert.Same(tcs1.Task.Exception.InnerException, tcs2.Task.Exception.InnerException);
+            Assert.Same(tcs1.Task.Exception!.InnerException, tcs2.Task.Exception!.InnerException);
         }
 
         [Fact]
@@ -597,7 +597,7 @@
             }
 
             currentTCS.SetException(new InvalidOperationException());
-            Assert.IsType<InvalidOperationException>(followingTask.Exception.InnerException);
+            Assert.IsType<InvalidOperationException>(followingTask.Exception!.InnerException);
         }
 
         [Fact]
@@ -868,7 +868,7 @@
                 Assert.False(timeoutTask.IsCompleted);
                 tcs.SetException(new ApplicationException());
                 await Assert.ThrowsAsync<ApplicationException>(() => timeoutTask);
-                Assert.Same(tcs.Task.Exception.InnerException, timeoutTask.Exception.InnerException);
+                Assert.Same(tcs.Task.Exception!.InnerException, timeoutTask.Exception!.InnerException);
             });
         }
 

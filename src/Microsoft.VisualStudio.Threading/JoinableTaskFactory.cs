@@ -127,7 +127,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets the underlying <see cref="SynchronizationContext"/> that controls the main thread in the host.
         /// </summary>
-        protected SynchronizationContext UnderlyingSynchronizationContext
+        protected SynchronizationContext? UnderlyingSynchronizationContext
         {
             get { return this.Context.UnderlyingSynchronizationContext; }
         }
@@ -676,7 +676,7 @@ namespace Microsoft.VisualStudio.Threading
             // Don't use Verify.Operation here to avoid loading a string resource in success cases.
             if (SynchronizationContext.Current is AsyncReaderWriterLock.NonConcurrentSynchronizationContext)
             {
-#if NETFRAMEWORK // Assertion failures crash on .NET Core
+#if NETFRAMEWORK || NETCOREAPP // Assertion failures crash on .NET Core < 3.0
                 Report.Fail(Strings.NotAllowedUnderURorWLock); // pops a CHK assert dialog, but doesn't throw.
 #endif
                 Verify.FailOperation(Strings.NotAllowedUnderURorWLock); // actually throws, even in RET.
@@ -934,7 +934,7 @@ namespace Microsoft.VisualStudio.Threading
                         // if the awaiter has been copied (since it's a struct), each copy of the awaiter
                         // points to the same registration. Without this we can have a memory leak.
                         var registration = this.cancellationToken.Register(
-                            flowExecutionContext ? SafeCancellationAction : UnsafeCancellationAction,
+                            NullableHelpers.AsNullableArgAction(flowExecutionContext ? SafeCancellationAction : UnsafeCancellationAction),
                             wrapper,
                             useSynchronizationContext: false);
 
@@ -1052,12 +1052,12 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Executes the delegate if it has not already executed.
             /// </summary>
-            internal static readonly SendOrPostCallback ExecuteOnce = state => ((SingleExecuteProtector)state).TryExecute();
+            internal static readonly SendOrPostCallback ExecuteOnce = state => ((SingleExecuteProtector)state!).TryExecute();
 
             /// <summary>
             /// Executes the delegate if it has not already executed.
             /// </summary>
-            internal static readonly WaitCallback ExecuteOnceWaitCallback = state => ((SingleExecuteProtector)state).TryExecute();
+            internal static readonly WaitCallback ExecuteOnceWaitCallback = state => ((SingleExecuteProtector)state!).TryExecute();
 
             /// <summary>
             /// The job that created this wrapper.
@@ -1217,7 +1217,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             internal bool TryExecute()
             {
-                object invokeDelegate = Interlocked.Exchange(ref this.invokeDelegate, null);
+                object? invokeDelegate = Interlocked.Exchange(ref this.invokeDelegate, null);
                 if (invokeDelegate != null)
                 {
                     this.OnExecuting();

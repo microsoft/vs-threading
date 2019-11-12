@@ -32,7 +32,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Stores the top-most JoinableTask that is completing on the current thread, if any.
         /// </summary>
-        private static readonly ThreadLocal<JoinableTask> CompletingTask = new ThreadLocal<JoinableTask>();
+        private static readonly ThreadLocal<JoinableTask?> CompletingTask = new ThreadLocal<JoinableTask?>();
 
         /// <summary>
         /// The <see cref="Threading.JoinableTaskContext"/> that began the async operation.
@@ -303,7 +303,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <remarks>
         /// This property is intentionally non-public to avoid its abuse by outside callers.
         /// </remarks>
-        internal static JoinableTask TaskCompletingOnThisThread
+        internal static JoinableTask? TaskCompletingOnThisThread
         {
             get { return CompletingTask.Value; }
         }
@@ -757,7 +757,7 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         // Arrange for the wrapped task to complete this job when the task completes.
                         wrappedTask.ContinueWith(
-                            (t, s) => ((JoinableTask)s).Complete(t),
+                            (t, s) => ((JoinableTask)s!).Complete(t),
                             this,
                             CancellationToken.None,
                             TaskContinuationOptions.ExecuteSynchronously,
@@ -825,7 +825,7 @@ namespace Microsoft.VisualStudio.Threading
             Assumes.NotNull(this.wrappedTask);
 
             // "Push" this task onto the TLS field's virtual stack so that on hang reports we know which task to 'blame'.
-            JoinableTask priorCompletingTask = CompletingTask.Value;
+            JoinableTask? priorCompletingTask = CompletingTask.Value;
             CompletingTask.Value = this;
             try
             {
@@ -1028,7 +1028,7 @@ namespace Microsoft.VisualStudio.Threading
 
                         if (this.pendingEventSource != null)
                         {
-                            if (this.pendingEventSource.TryGetTarget(out JoinableTask pendingSource) && JoinableTaskDependencyGraph.IsDependingSynchronousTask(pendingSource, this))
+                            if (this.pendingEventSource.TryGetTarget(out JoinableTask? pendingSource) && JoinableTaskDependencyGraph.IsDependingSynchronousTask(pendingSource, this))
                             {
                                 var queue = onMainThread ? pendingSource.mainThreadQueue : pendingSource.threadPoolQueue;
                                 if (queue != null && !queue.IsCompleted && queue.TryDequeue(out work))

@@ -1,9 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- We target net451 to test library code to support NET45 -->
-    <!-- We target net452 to test library code to support NET46 light-up from a net45 assembly -->
-    <!-- We target net46 to test library code that supports net46 natively. -->
-    <TargetFrameworks>net472;netcoreapp2.1</TargetFrameworks>
+    <TargetFrameworks>net472;netcoreapp2.1;netcoreapp3.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <CodeAnalysisRuleSet>Microsoft.VisualStudio.Threading.Tests.ruleset</CodeAnalysisRuleSet>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
@@ -14,8 +11,7 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
 
-    <TargetsDesktop Condition=" '$(TargetFramework)' == 'net472' ">true</TargetsDesktop>
-    <DefineConstants Condition=" '$(TargetsDesktop)' == 'true' ">$(DefineConstants);DESKTOP;ISOLATED_TEST_SUPPORT</DefineConstants>
+    <DefineConstants Condition=" '$(TargetFramework)' == 'net472' ">$(DefineConstants);ISOLATED_TEST_SUPPORT</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\Microsoft.VisualStudio.Threading\InternalUtilities.cs">
@@ -37,13 +33,13 @@
     <PackageReference Include="Xunit.Combinatorial" Version="1.2.7" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1" />
     <PackageReference Include="Xunit.SkippableFact" Version="1.3.12" />
-    <PackageReference Include="Xunit.StaFact" Version="1.0.11-beta" />
+    <PackageReference Include="Xunit.StaFact" Version="0.3.18" />
     <PackageReference Include="xunit" Version="2.4.1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsDesktop)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net472' ">
     <Reference Include="System.Configuration" />
     <Reference Include="WindowsBase" />
     <ProjectReference Include="..\IsolatedTestHost\IsolatedTestHost.csproj">

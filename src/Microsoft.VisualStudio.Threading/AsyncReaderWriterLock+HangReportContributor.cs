@@ -215,7 +215,9 @@ namespace Microsoft.VisualStudio.Threading
             {
                 get
                 {
+#pragma warning disable CS8605 // Unboxing a possibly null value.
                     foreach (AwaiterCollection value in Enum.GetValues(typeof(AwaiterCollection)))
+#pragma warning restore CS8605 // Unboxing a possibly null value.
                     {
                         if (this.Membership.HasFlag(value))
                         {
@@ -235,7 +237,7 @@ namespace Microsoft.VisualStudio.Threading
                 return this.Awaiter.GetHashCode();
             }
 
-            public override bool Equals(object obj)
+            public override bool Equals(object? obj)
             {
                 var otherAwaiter = obj as AwaiterMetadata;
                 return otherAwaiter != null && this.Awaiter.Equals(otherAwaiter.Awaiter);
