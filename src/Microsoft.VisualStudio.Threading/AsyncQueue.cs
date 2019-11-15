@@ -119,7 +119,7 @@ namespace Microsoft.VisualStudio.Threading
                         {
                             if (this.IsCompleted)
                             {
-                                return TplExtensions.CompletedTask;
+                                return Task.CompletedTask;
                             }
                             else
                             {
@@ -271,7 +271,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return ThreadingTools.TaskFromCanceled<T>(cancellationToken);
+                return Task.FromCanceled<T>(cancellationToken);
             }
 
             T result;

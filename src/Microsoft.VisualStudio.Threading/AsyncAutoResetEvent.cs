@@ -86,7 +86,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return ThreadingTools.TaskFromCanceled(cancellationToken);
+                return Task.FromCanceled(cancellationToken);
             }
 
             lock (this.signalAwaiters)
@@ -94,7 +94,7 @@ namespace Microsoft.VisualStudio.Threading
                 if (this.signaled)
                 {
                     this.signaled = false;
-                    return TplExtensions.CompletedTask;
+                    return Task.CompletedTask;
                 }
                 else
                 {

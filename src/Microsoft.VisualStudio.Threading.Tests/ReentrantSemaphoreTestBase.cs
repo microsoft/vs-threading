@@ -87,7 +87,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
                 {
                     Assert.Equal(originalThreadId, Environment.CurrentManagedThreadId);
                     executed = true;
-                    return TplExtensions.CompletedTask;
+                    return Task.CompletedTask;
                 }, this.TimeoutToken);
             Assert.True(executed);
         });
@@ -110,7 +110,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
                 {
                     Assert.Equal(originalThreadId, Environment.CurrentManagedThreadId);
                     executed = true;
-                    return TplExtensions.CompletedTask;
+                    return Task.CompletedTask;
                 }, this.TimeoutToken);
 
             releaseHolder.Set();
@@ -212,7 +212,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
                 delegate
                 {
                     secondEntered.Set();
-                    return TplExtensions.CompletedTask;
+                    return Task.CompletedTask;
                 },
                 this.TimeoutToken);
 
@@ -274,7 +274,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
                 {
                     await this.semaphore.ExecuteAsync(delegate
                     {
-                        return TplExtensions.CompletedTask;
+                        return Task.CompletedTask;
                     }, this.TimeoutToken);
                 }, this.TimeoutToken);
             }, this.TimeoutToken);
@@ -292,7 +292,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
             await this.semaphore.ExecuteAsync(delegate
             {
                 innerOperation = EnterAndUseSemaphoreAsync(releaser1);
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
             releaser1.Set();
             await innerOperation!;
@@ -321,7 +321,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
             await this.semaphore.ExecuteAsync(delegate
             {
                 innerOperation = SemaphoreRecycler();
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
             await this.semaphore.ExecuteAsync(async delegate
             {
@@ -337,7 +337,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
 
             // Try to enter the semaphore. This should timeout because someone else is holding the semaphore, waiting for us to timeout.
             await this.semaphore.ExecuteAsync(
-                () => TplExtensions.CompletedTask,
+                () => Task.CompletedTask,
                 new CancellationTokenSource(ExpectedTimeout).Token);
         }
     }
@@ -357,7 +357,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
             {
                 innerOperation1 = SemaphoreRecycler1();
                 innerOperation2 = SemaphoreRecycler2();
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
 
             releaseInheritor1.Set();
@@ -384,7 +384,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
 
             // Try to enter the semaphore. This should timeout because someone else is holding the semaphore, waiting for us to timeout.
             await this.semaphore.ExecuteAsync(
-                () => TplExtensions.CompletedTask,
+                () => Task.CompletedTask,
                 new CancellationTokenSource(ExpectedTimeout).Token);
         }
     }
@@ -406,7 +406,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
                     this.TimeoutToken);
             });
 
-            await this.semaphore.ExecuteAsync(() => TplExtensions.CompletedTask, this.TimeoutToken);
+            await this.semaphore.ExecuteAsync(() => Task.CompletedTask, this.TimeoutToken);
         });
     }
 
@@ -417,7 +417,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
         this.semaphore = this.CreateSemaphore(mode);
         this.ExecuteOnDispatcher(async delegate
         {
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => this.semaphore.ExecuteAsync(() => TplExtensions.CompletedTask, new CancellationToken(true)));
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => this.semaphore.ExecuteAsync(() => Task.CompletedTask, new CancellationToken(true)));
         });
     }
 
@@ -432,7 +432,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
             var holder = this.semaphore.ExecuteAsync(() => release.WaitAsync(), this.TimeoutToken);
 
             var cts = CancellationTokenSource.CreateLinkedTokenSource(this.TimeoutToken);
-            var waiter = this.semaphore.ExecuteAsync(() => TplExtensions.CompletedTask, cts.Token);
+            var waiter = this.semaphore.ExecuteAsync(() => Task.CompletedTask, cts.Token);
             Assert.False(waiter.IsCompleted);
             cts.Cancel();
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiter).WithCancellation(this.TimeoutToken);
@@ -451,7 +451,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
             await this.semaphore.ExecuteAsync(delegate
             {
                 this.semaphore.Dispose();
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
         });
     }
@@ -467,7 +467,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
         {
             await this.semaphore.ExecuteAsync(async delegate
             {
-                await Assert.ThrowsAsync<InvalidOperationException>(() => this.semaphore.ExecuteAsync(() => TplExtensions.CompletedTask));
+                await Assert.ThrowsAsync<InvalidOperationException>(() => this.semaphore.ExecuteAsync(() => Task.CompletedTask));
                 Assert.Equal(0, this.semaphore.CurrentCount);
             });
         });
@@ -486,7 +486,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
             await this.semaphore.ExecuteAsync(async delegate
             {
                 Assert.Equal(0, this.semaphore.CurrentCount);
-                innerUser = this.semaphore.ExecuteAsync(() => TplExtensions.CompletedTask);
+                innerUser = this.semaphore.ExecuteAsync(() => Task.CompletedTask);
                 await Assert.ThrowsAsync<TimeoutException>(() => innerUser.WithTimeout(ExpectedTimeout));
             });
 
@@ -529,7 +529,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
 
             // Verify that the semaphore is still in a faulted state, and will reject new calls.
             Assert.Throws<InvalidOperationException>(() => this.semaphore.CurrentCount);
-            await Assert.ThrowsAsync<InvalidOperationException>(() => this.semaphore.ExecuteAsync(() => TplExtensions.CompletedTask));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => this.semaphore.ExecuteAsync(() => Task.CompletedTask));
         });
     }
 
@@ -568,14 +568,14 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
                 Assert.Equal(0, this.semaphore.CurrentCount);
                 using (this.semaphore.SuppressRelevance())
                 {
-                    unrelatedUser = this.semaphore.ExecuteAsync(() => TplExtensions.CompletedTask);
+                    unrelatedUser = this.semaphore.ExecuteAsync(() => Task.CompletedTask);
                 }
 
                 await Assert.ThrowsAsync<TimeoutException>(() => unrelatedUser.WithTimeout(ExpectedTimeout));
 
                 if (IsReentrantMode(mode))
                 {
-                    await this.semaphore.ExecuteAsync(() => TplExtensions.CompletedTask, this.TimeoutToken);
+                    await this.semaphore.ExecuteAsync(() => Task.CompletedTask, this.TimeoutToken);
                 }
             });
 
@@ -609,7 +609,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
                     () =>
                     {
                         enteredLog.Add(j);
-                        return TplExtensions.CompletedTask;
+                        return Task.CompletedTask;
                     },
                     cts[i].Token);
             }
@@ -673,7 +673,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
                     });
 
                 await releaser3.WaitAsync();
-                var pendingSemaphoreTask = semaphore.ExecuteAsync(() => TplExtensions.CompletedTask);
+                var pendingSemaphoreTask = semaphore.ExecuteAsync(() => Task.CompletedTask);
 
                 releaser1.Set();
                 await Assert.ThrowsAsync<InvalidOperationException>(() => outerFaultySemaphoreTask).WithCancellation(this.TimeoutToken);
@@ -681,7 +681,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
 
                 releaser1.Set();
                 await Assert.ThrowsAsync<InvalidOperationException>(() => innerFaulterSemaphoreTask).WithCancellation(this.TimeoutToken);
-                await Assert.ThrowsAsync<InvalidOperationException>(() => semaphore.ExecuteAsync(() => TplExtensions.CompletedTask)).WithCancellation(this.TimeoutToken);
+                await Assert.ThrowsAsync<InvalidOperationException>(() => semaphore.ExecuteAsync(() => Task.CompletedTask)).WithCancellation(this.TimeoutToken);
             });
     }
 

@@ -194,7 +194,7 @@
                 releaser.Dispose();
                 releaser.Dispose();
 
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
         }
     }

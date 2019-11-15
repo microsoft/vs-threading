@@ -67,7 +67,7 @@ namespace Microsoft.VisualStudio.Threading
                     }
 
                     // And allow this one to continue immediately.
-                    return TplExtensions.CompletedTask;
+                    return Task.CompletedTask;
                 }
                 else
                 {

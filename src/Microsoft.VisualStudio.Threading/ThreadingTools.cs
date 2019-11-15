@@ -113,7 +113,7 @@ namespace Microsoft.VisualStudio.Threading
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return TaskFromCanceled<T>(cancellationToken);
+                return Task.FromCanceled<T>(cancellationToken);
             }
 
             return WithCancellationSlow(task, cancellationToken);
@@ -137,7 +137,7 @@ namespace Microsoft.VisualStudio.Threading
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return TaskFromCanceled(cancellationToken);
+                return Task.FromCanceled(cancellationToken);
             }
 
             return WithCancellationSlow(task, continueOnCapturedContext: false, cancellationToken: cancellationToken);
@@ -172,30 +172,10 @@ namespace Microsoft.VisualStudio.Threading
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return TaskFromCanceled(cancellationToken);
+                return Task.FromCanceled(cancellationToken);
             }
 
             return WithCancellationSlow(task, continueOnCapturedContext, cancellationToken);
-        }
-
-        internal static Task TaskFromCanceled(CancellationToken cancellationToken)
-        {
-            return TaskFromCanceled<EmptyStruct>(cancellationToken);
-        }
-
-        internal static Task<T> TaskFromCanceled<T>(CancellationToken cancellationToken)
-        {
-            return Task.FromCanceled<T>(cancellationToken);
-        }
-
-        internal static Task TaskFromException(Exception exception)
-        {
-            return TaskFromException<EmptyStruct>(exception);
-        }
-
-        internal static Task<T> TaskFromException<T>(Exception exception)
-        {
-            return Task.FromException<T>(exception);
         }
 
         /// <summary>

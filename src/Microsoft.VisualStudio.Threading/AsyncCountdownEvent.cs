@@ -111,7 +111,7 @@ namespace Microsoft.VisualStudio.Threading
             }
             catch (Exception ex)
             {
-                return ThreadingTools.TaskFromException(ex);
+                return Task.FromException(ex);
             }
         }
     }

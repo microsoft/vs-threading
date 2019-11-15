@@ -54,7 +54,7 @@ namespace Microsoft.VisualStudio.Threading
             this.semaphore = new SemaphoreSlim(initialCount);
             this.uncontestedReleaser = Task.FromResult(new Releaser(this));
 
-            this.canceledReleaser = ThreadingTools.TaskFromCanceled<Releaser>(new CancellationToken(canceled: true));
+            this.canceledReleaser = Task.FromCanceled<Releaser>(new CancellationToken(canceled: true));
         }
 
         /// <summary>
@@ -71,7 +71,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return ThreadingTools.TaskFromCanceled<Releaser>(cancellationToken);
+                return Task.FromCanceled<Releaser>(cancellationToken);
             }
 
             if (this.disposed)

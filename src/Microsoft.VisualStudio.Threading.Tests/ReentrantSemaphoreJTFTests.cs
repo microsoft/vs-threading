@@ -53,7 +53,7 @@ public class ReentrantSemaphoreJTFTests : ReentrantSemaphoreTestBase
                     {
                         secondEntryComplete = true;
                         Assert.True(firstOperationReachedMainThread);
-                        return TplExtensions.CompletedTask;
+                        return Task.CompletedTask;
                     },
                     this.TimeoutToken);
             });
@@ -175,7 +175,7 @@ public class ReentrantSemaphoreJTFTests : ReentrantSemaphoreTestBase
             () =>
             {
                 acquired = true;
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             },
             cancellationToken)
             .ConfigureAwait(false);

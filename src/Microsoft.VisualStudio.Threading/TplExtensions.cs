@@ -23,13 +23,15 @@ namespace Microsoft.VisualStudio.Threading
         /// A singleton completed task.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
+        [Obsolete("Use Task.CompletedTask instead.")]
         public static readonly Task CompletedTask = Task.FromResult(default(EmptyStruct));
 
         /// <summary>
         /// A task that is already canceled.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-        public static readonly Task CanceledTask = ThreadingTools.TaskFromCanceled(new CancellationToken(canceled: true));
+        [Obsolete("Use Task.FromCanceled instead.")]
+        public static readonly Task CanceledTask = Task.FromCanceled(new CancellationToken(canceled: true));
 
         /// <summary>
         /// A completed task with a <c>true</c> result.
@@ -884,7 +886,7 @@ namespace Microsoft.VisualStudio.Threading
             /// A task that is already canceled.
             /// </summary>
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-            internal static readonly Task<T> CanceledTask = ThreadingTools.TaskFromCanceled<T>(new CancellationToken(canceled: true));
+            internal static readonly Task<T> CanceledTask = Task.FromCanceled<T>(new CancellationToken(canceled: true));
         }
     }
 }

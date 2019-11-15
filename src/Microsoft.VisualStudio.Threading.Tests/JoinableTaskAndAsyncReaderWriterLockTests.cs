@@ -145,7 +145,7 @@
         {
             using (await this.asyncLock.ReadLockAsync())
             {
-                this.asyncPump.Run(() => TplExtensions.CompletedTask);
+                this.asyncPump.Run(() => Task.CompletedTask);
             }
         }
 
@@ -164,7 +164,7 @@
                 {
                     try
                     {
-                        this.asyncPump.Run(() => TplExtensions.CompletedTask);
+                        this.asyncPump.Run(() => Task.CompletedTask);
                         Assert.False(true, "Expected InvalidOperationException not thrown.");
                     }
                     catch (InvalidOperationException)
@@ -191,7 +191,7 @@
                 {
                     try
                     {
-                        this.asyncPump.Run(() => TplExtensions.CompletedTask);
+                        this.asyncPump.Run(() => Task.CompletedTask);
                         Assert.True(false, "Expected InvalidOperationException not thrown.");
                     }
                     catch (InvalidOperationException)
