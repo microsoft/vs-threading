@@ -6,6 +6,7 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using System.Threading.Tasks.Sources;
     using Xunit;
     using Xunit.Abstractions;
 
@@ -146,6 +147,30 @@
             tcs1.SetException(new ApplicationException());
             ((Task)tcs1.Task).ApplyResultTo(tcs2);
             Assert.Same(tcs1.Task.Exception!.InnerException, tcs2.Task.Exception!.InnerException);
+        }
+
+        /// <summary>
+        /// Verifies that an <see cref="IValueTaskSource"/> can be recycled after calling <see cref="TplExtensions.Forget(ValueTask)"/>.
+        /// </summary>
+        [Fact]
+        public async Task ValueTask_Forget()
+        {
+            var mockSource = new MyValueTaskSource<int>();
+            var valueTask = new ValueTask(mockSource, 0);
+            valueTask.Forget();
+            await mockSource.GetResultCalled.WaitAsync(this.TimeoutToken);
+        }
+
+        /// <summary>
+        /// Verifies that an <see cref="IValueTaskSource{T}"/> can be recycled after calling <see cref="TplExtensions.Forget{T}(ValueTask{T})"/>.
+        /// </summary>
+        [Fact]
+        public async Task ValueTask_OfT_Forget()
+        {
+            var mockSource = new MyValueTaskSource<int>();
+            var valueTask = new ValueTask<int>(mockSource, 0);
+            valueTask.Forget();
+            await mockSource.GetResultCalled.WaitAsync(this.TimeoutToken);
         }
 
         [Fact]
@@ -964,6 +989,33 @@
             protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
             {
                 return this.TryExecuteTask(task);
+            }
+        }
+
+        private class MyValueTaskSource<T> : IValueTaskSource<T>, IValueTaskSource
+            where T : struct
+        {
+            internal AsyncManualResetEvent GetResultCalled = new AsyncManualResetEvent();
+
+            T IValueTaskSource<T>.GetResult(short token)
+            {
+                this.GetResultCalled.Set();
+                return default;
+            }
+
+            void IValueTaskSource.GetResult(short token)
+            {
+                this.GetResultCalled.Set();
+            }
+
+            public ValueTaskSourceStatus GetStatus(short token)
+            {
+                return ValueTaskSourceStatus.Pending;
+            }
+
+            public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
+            {
+                Task.Factory.StartNew(continuation, state, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Forget();
             }
         }
     }
