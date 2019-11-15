@@ -259,23 +259,19 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Consumes a task and doesn't do anything with it.  Useful for fire-and-forget calls to async methods within async methods.
+        /// Consumes a <see cref="ValueTask"/> and allows it to be recycled, if applicable.  Useful for fire-and-forget calls to async methods within async methods.
+        /// NOTE: APIs should not generally return <see cref="ValueTask"/> if callers aren't 99.9999% likely to await the result immediately.
         /// </summary>
         /// <param name="task">The task whose result is to be ignored.</param>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "task")]
-        public static void Forget(this ValueTask task)
-        {
-        }
+        public static void Forget(this ValueTask task) => task.Preserve();
 
         /// <summary>
-        /// Consumes a task and doesn't do anything with it.  Useful for fire-and-forget calls to async methods within async methods.
+        /// Consumes a ValueTask and allows it to be recycled, if applicable.  Useful for fire-and-forget calls to async methods within async methods.
+        /// NOTE: APIs should not generally return <see cref="ValueTask{T}"/> if callers aren't 99.9999% likely to await the result immediately.
         /// </summary>
         /// <typeparam name="T">The type of value produced by the <paramref name="task"/>.</typeparam>
         /// <param name="task">The task whose result is to be ignored.</param>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "task")]
-        public static void Forget<T>(this ValueTask<T> task)
-        {
-        }
+        public static void Forget<T>(this ValueTask<T> task) => task.Preserve();
 
         /// <summary>
         /// Invokes asynchronous event handlers, returning a task that completes when all event handlers have been invoked.
