@@ -153,14 +153,7 @@ namespace Microsoft.VisualStudio.Threading
         /// so it is only useful for diagnostics and when we don't expect addresses to be changing much any more.
         /// </remarks>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "value", Justification = "We no-op on one platform.")]
-        private static IntPtr GetAddress(object value)
-        {
-            unsafe
-            {
-                TypedReference tr = __makeref(value);
-                return **(IntPtr**)(&tr);
-            }
-        }
+        private static unsafe IntPtr GetAddress(object value) => new IntPtr(Unsafe.AsPointer(ref value));
 
         /// <summary>
         /// A helper method to find the async state machine from the given delegate.
