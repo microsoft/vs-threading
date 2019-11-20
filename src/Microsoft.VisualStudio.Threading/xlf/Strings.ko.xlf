@@ -114,7 +114,7 @@
       </trans-unit>
       <trans-unit id="SyncContextNotSet">
         <source>No SynchronizationContext to reach the main thread has been set.</source>
-        <target state="new">No SynchronizationContext to reach the main thread has been set.</target>
+        <target state="translated">주 스레드에 연결할 SynchronizationContext가 설정되지 않았습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueFactoryReentrancy" translate="yes" xml:space="preserve">
