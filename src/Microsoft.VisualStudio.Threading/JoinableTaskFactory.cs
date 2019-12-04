@@ -236,7 +236,7 @@ namespace Microsoft.VisualStudio.Threading
                         ambientJob = this.Context.AmbientTask;
                         wrapper = SingleExecuteProtector.Create(ambientJob, callback);
                         ambientJob.Post(SingleExecuteProtector.ExecuteOnce, wrapper, true);
-                        return TplExtensions.CompletedTask;
+                        return Task.CompletedTask;
                     },
                     synchronouslyBlocking: false,
                     creationOptions: JoinableTaskCreationOptions.None,
@@ -629,7 +629,7 @@ namespace Microsoft.VisualStudio.Threading
                     RoslynDebug.Assert(this.Context.AmbientTask is object, $"{nameof(this.Context.AmbientTask)} is always set for {nameof(this.RunAsync)} callbacks.");
 
                     this.Context.AmbientTask.Post(callback, state, true);
-                    return TplExtensions.CompletedTask;
+                    return Task.CompletedTask;
                 });
 
                 if (transient.Task.IsFaulted)

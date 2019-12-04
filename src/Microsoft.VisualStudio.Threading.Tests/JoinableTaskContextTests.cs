@@ -40,7 +40,7 @@
                 await Task.Run(delegate
                 {
                     Assert.True(this.Context.IsWithinJoinableTask);
-                    return TplExtensions.CompletedTask;
+                    return Task.CompletedTask;
                 });
             });
         }
@@ -413,7 +413,7 @@
                                        where node.Attribute(XName.Get("Category"))?.Value == "Collection"
                                        select node.Attribute(XName.Get("Label"))?.Value;
                 Assert.Contains(collectionLabels, label => label == jtcName);
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
         }
 

@@ -234,7 +234,7 @@ namespace Microsoft.VisualStudio.Threading
             return value =>
             {
                 handler(value);
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             };
         }
     }

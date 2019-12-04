@@ -255,7 +255,7 @@
             jtc.Factory.Run(delegate
             {
                 WithCancellationSyncBlock(simulateCancellation: true);
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
         }
 
@@ -266,7 +266,7 @@
             jtc.Factory.Run(delegate
             {
                 WithCancellationSyncBlock(simulateCancellation: false);
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
         }
 
@@ -277,7 +277,7 @@
             jtc.Factory.Run(delegate
             {
                 WithCancellationSyncBlockOnNoncancelableToken();
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
         }
 

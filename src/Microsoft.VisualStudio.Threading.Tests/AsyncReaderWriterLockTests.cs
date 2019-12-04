@@ -2917,7 +2917,7 @@
             {
                 callbackInvoked++;
                 Assert.True(asyncLock.IsWriteLockHeld);
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             };
             using (await asyncLock.WriteLockAsync())
             {

@@ -111,7 +111,7 @@
                 () =>
                 {
                     scenario();
-                    return TplExtensions.CompletedTask;
+                    return Task.CompletedTask;
                 },
                 maxBytesAllocated,
                 iterations,
@@ -288,7 +288,7 @@
             this.ExecuteOnDispatcher(delegate
             {
                 action();
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
         }
 

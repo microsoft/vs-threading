@@ -27,7 +27,7 @@
         public void Ctor_NullJtf()
         {
             var progress = new ProgressWithCompletion<GenericParameterHelper>(v => { }, joinableTaskFactory: null);
-            progress = new ProgressWithCompletion<GenericParameterHelper>(v => TplExtensions.CompletedTask, joinableTaskFactory: null);
+            progress = new ProgressWithCompletion<GenericParameterHelper>(v => Task.CompletedTask, joinableTaskFactory: null);
         }
 
         [Fact]
@@ -41,7 +41,7 @@
         [Fact]
         public void NoWorkFuncOfTask()
         {
-            var callback = new Func<GenericParameterHelper, Task>(p => { return TplExtensions.CompletedTask; });
+            var callback = new Func<GenericParameterHelper, Task>(p => { return Task.CompletedTask; });
             var progress = new ProgressWithCompletion<GenericParameterHelper>(callback);
             Assert.True(progress.WaitAsync().IsCompleted);
         }

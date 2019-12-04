@@ -634,7 +634,7 @@ namespace Microsoft.VisualStudio.Threading
                     }
                 }
 
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             }
 
             /// <summary>
@@ -692,7 +692,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     this.resourcePreparationTasks.TryGetValue(resource, out ResourcePreparationTaskAndValidity previousState);
                     this.resourcePreparationTasks[resource] = new ResourcePreparationTaskAndValidity(
-                        previousState.PreparationTask ?? TplExtensions.CompletedTask, // preserve the original task if it exists in case it's not finished
+                        previousState.PreparationTask ?? Task.CompletedTask, // preserve the original task if it exists in case it's not finished
                         ResourceState.Unknown);
                 }
             }

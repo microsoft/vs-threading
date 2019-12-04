@@ -146,7 +146,7 @@
                     await this.asyncPump.SwitchToMainThreadAsync();
                 });
 
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
             outerTaskCompleted.Set();
 
@@ -203,7 +203,7 @@
                                     this.testFrame.Continue = false;
                                 }
                             });
-                        return TplExtensions.CompletedTask;
+                        return Task.CompletedTask;
                     });
                 mainThreadRequestPended.Set();
             });
@@ -413,7 +413,7 @@
                 });
                 cts.Cancel();
                 testResultSource.Task.Wait(this.TimeoutToken);
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
         }
 
@@ -468,7 +468,7 @@
                 asyncLocal.Value = null;
                 cts.Cancel();
                 testResultSource.Task.Wait(this.TimeoutToken);
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
         }
 
@@ -1757,7 +1757,7 @@
                     await this.asyncPump.SwitchToMainThreadAsync();
                 });
 
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
 
             this.asyncPump.Run(async delegate
@@ -2056,7 +2056,7 @@
                 Assert.True(executed2);
             });
 
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
 
             // From the Main thread.
@@ -2176,7 +2176,7 @@
                     Assert.True(false, $"Posted message threw an exception: {ex}");
                 }
 
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
         }
 
@@ -2201,10 +2201,10 @@
                         }
                     });
 
-                    return TplExtensions.CompletedTask;
+                    return Task.CompletedTask;
                 });
 
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
 
             mainThreadUnblocked.Set();
@@ -2253,7 +2253,7 @@
                     }
                 });
 
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
 
             uiBoundWork = Task.Run(
@@ -2445,7 +2445,7 @@
                 this.asyncPump.Run(delegate
                 {
                     syncContext = SynchronizationContext.Current;
-                    return TplExtensions.CompletedTask;
+                    return Task.CompletedTask;
                 });
                 syncContext!.Post(
                     delegate
@@ -2526,7 +2526,7 @@
                         await loPriFactory.SwitchToMainThreadAsync().GetAwaiter().YieldAndNotify(loPriSwitchPosted);
                     });
                 });
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
             outerFinished.Set();
             loPriSwitchPosted.WaitAsync().Wait();
@@ -2569,7 +2569,7 @@
                 {
                     await outerFinished;
                 });
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
             outerFinished.Set();
 
@@ -2741,7 +2741,7 @@
                         }
                     }
                 });
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
 
             this.asyncPump.Run(delegate
@@ -2765,7 +2765,7 @@
                         }
                     }
                 });
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
 
             this.PushFrame();
@@ -2799,7 +2799,7 @@
                                 null);
                             posted = true;
                         });
-                        return TplExtensions.CompletedTask;
+                        return Task.CompletedTask;
                     });
                 }).WaitWithoutInlining(throwOriginalException: true);
 
@@ -3054,7 +3054,7 @@
                 {
                     this.asyncPump.Run(delegate
                     {
-                        return TplExtensions.CompletedTask;
+                        return Task.CompletedTask;
                     });
                 }, maxBytesAllocated: 819);
             }
@@ -3198,7 +3198,7 @@
                     // of the iterations, showing that doing real work exercerbates the problem.
                     ////for (int j = 0; j < 5000; j++) { }
 
-                    await this.asyncPump.RunAsync(() => TplExtensions.CompletedTask);
+                    await this.asyncPump.RunAsync(() => Task.CompletedTask);
                 }
             });
 
@@ -3329,7 +3329,7 @@
                 {
                     jtStarted.Set();
                     unawaitedWork = otherAsyncMethod();
-                    return TplExtensions.CompletedTask;
+                    return Task.CompletedTask;
                 });
             });
             this.context.Factory.Run(async delegate
@@ -3358,7 +3358,7 @@
                 this.asyncPump.Run(delegate
                 {
                     otherAsyncMethod().Forget();
-                    return TplExtensions.CompletedTask;
+                    return Task.CompletedTask;
                 });
             });
             bkgrndThread.WaitWithoutInlining(throwOriginalException: true);
@@ -3378,7 +3378,7 @@
                 this.asyncPump.Run(delegate
                 {
                     otherAsyncMethod().Forget();
-                    return TplExtensions.CompletedTask;
+                    return Task.CompletedTask;
                 });
             });
             this.context.Factory.Run(async delegate
@@ -3609,7 +3609,7 @@
 
                     // Synchronously block *BEFORE* yielding.
                     unblockJoinableTask.Wait();
-                    return TplExtensions.CompletedTask;
+                    return Task.CompletedTask;
                 });
 
                 await assertingTask; // observe failures.
@@ -3803,7 +3803,7 @@
             var job = this.asyncPump.RunAsync(() =>
             {
                 sc = SynchronizationContext.Current; // simulate someone who has captured the sync context.
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
 
             job.Join(); // it never yielded, so this isn't strictly necessary.

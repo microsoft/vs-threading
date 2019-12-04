@@ -603,7 +603,7 @@ namespace Microsoft.VisualStudio.Threading
             }
             else
             {
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             }
         }
 
@@ -626,7 +626,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
                 else
                 {
-                    return TplExtensions.CompletedTask;
+                    return Task.CompletedTask;
                 }
             }
         }
@@ -1152,7 +1152,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </remarks>
         protected virtual Task OnExclusiveLockReleasedAsync()
         {
-            return TplExtensions.CompletedTask;
+            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -1269,7 +1269,7 @@ namespace Microsoft.VisualStudio.Threading
 
             if (!this.IsLockActive(awaiter, considerStaActive: true))
             {
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             }
 
             Task? reenterConcurrentOutsideCode = null;
@@ -1291,12 +1291,12 @@ namespace Microsoft.VisualStudio.Threading
                 int upgradeableReadLocksAfter = upgradeableReadLocksBefore - (awaiter.Kind == LockKind.UpgradeableRead ? 1 : 0);
                 bool finalExclusiveLockRelease = writeLocksBefore > 0 && writeLocksAfter == 0;
 
-                Task callbackExecution = TplExtensions.CompletedTask;
+                Task callbackExecution = Task.CompletedTask;
                 if (!lockConsumerCanceled)
                 {
                     // Callbacks should be fired synchronously iff the last write lock is being released and read locks are already issued.
                     // This can occur when upgradeable read locks are held and upgraded, and then downgraded back to an upgradeable read.
-                    callbackExecution = this.OnBeforeLockReleasedAsync(finalExclusiveLockRelease, new LockHandle(awaiter)) ?? TplExtensions.CompletedTask;
+                    callbackExecution = this.OnBeforeLockReleasedAsync(finalExclusiveLockRelease, new LockHandle(awaiter)) ?? Task.CompletedTask;
                     synchronousRequired = finalExclusiveLockRelease && upgradeableReadLocksAfter > 0;
                     if (synchronousRequired)
                     {
@@ -1352,12 +1352,12 @@ namespace Microsoft.VisualStudio.Threading
                 }
                 else
                 {
-                    return reenterConcurrentOutsideCode ?? synchronousCallbackExecution ?? TplExtensions.CompletedTask;
+                    return reenterConcurrentOutsideCode ?? synchronousCallbackExecution ?? Task.CompletedTask;
                 }
             }
             else
             {
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             }
         }
 
@@ -1880,7 +1880,7 @@ namespace Microsoft.VisualStudio.Threading
                     }
                 }
 
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             }
         }
 

@@ -20,7 +20,17 @@
         [Fact]
         public void CompletedTask()
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             Assert.True(TplExtensions.CompletedTask.IsCompleted);
+#pragma warning restore CS0618 // Type or member is obsolete
+        }
+
+        [Fact]
+        public void CanceledTask()
+        {
+#pragma warning disable CS0618 // Type or member is obsolete
+            Assert.True(TplExtensions.CanceledTask.IsCanceled);
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         [Fact]
@@ -29,7 +39,7 @@
             var evt = new ManualResetEventSlim();
             Action a = () => evt.Set();
             var cts = new CancellationTokenSource();
-            var result = TplExtensions.CompletedTask.AppendAction(a, TaskContinuationOptions.DenyChildAttach, cts.Token);
+            var result = Task.CompletedTask.AppendAction(a, TaskContinuationOptions.DenyChildAttach, cts.Token);
             Assert.NotNull(result);
             Assert.Equal(TaskContinuationOptions.DenyChildAttach, (TaskContinuationOptions)result.CreationOptions);
             Assert.True(evt.Wait(TestTimeout));
@@ -905,7 +915,7 @@
                 Assert.Same(sender, s);
                 Assert.Same(args, a);
                 invoked++;
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             };
             var task = handler.InvokeAsync(sender, args!);
             Assert.True(task.IsCompleted);
@@ -920,7 +930,7 @@
                 Assert.Same(sender, s);
                 Assert.Same(args, a);
                 invoked++;
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             };
             var task = handler.InvokeAsync(sender!, args!);
             Assert.True(task.IsCompleted);
