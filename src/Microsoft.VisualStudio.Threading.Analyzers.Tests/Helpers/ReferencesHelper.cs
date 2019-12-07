@@ -12,6 +12,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         public static ReferenceAssemblies DefaultReferences = ReferenceAssemblies.Default
             .WithPackages(ImmutableArray.Create(
                 new PackageIdentity("System.Collections.Immutable", NuGetVersion.Parse("1.3.1")),
-                new PackageIdentity("System.Threading.Tasks.Extensions", NuGetVersion.Parse("4.5.3"))));
+                new PackageIdentity("System.Threading.Tasks.Extensions", NuGetVersion.Parse("4.5.3")),
+                new PackageIdentity("Microsoft.Bcl.AsyncInterfaces", NuGetVersion.Parse("1.1.0"))));
     }
 }
