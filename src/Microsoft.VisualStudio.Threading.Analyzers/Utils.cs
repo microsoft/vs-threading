@@ -246,7 +246,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
 
             // ValueTask and ValueTask<T> have the AsyncMethodBuilderAttribute.
+            // TODO: Use nameof(IAsyncEnumerable) after upgrade to netstandard2.1
             return (typeSymbol.Name == nameof(Task) && typeSymbol.BelongsToNamespace(Namespaces.SystemThreadingTasks))
+                || (typeSymbol.Name == "IAsyncEnumerable" && typeSymbol.BelongsToNamespace(Namespaces.SystemCollectionsGeneric))
                 || typeSymbol.GetAttributes().Any(ad => ad.AttributeClass?.Name == Types.AsyncMethodBuilderAttribute.TypeName && ad.AttributeClass.BelongsToNamespace(Types.AsyncMethodBuilderAttribute.Namespace));
         }
 
