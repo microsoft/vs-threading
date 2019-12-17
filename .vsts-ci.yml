@@ -1,39 +1,18 @@
 trigger:
   branches:
-    include: ["master", "v15.8", "v16.0"]
+    include:
+    - master
+    - 'v16.*'
   paths:
-    exclude: [".github", "doc", "*.md", ".appveyor.yml", ".travis.yml"]
+    exclude: [".github", "doc", "*.md"]
 
 variables:
   TreatWarningsAsErrors: true
+  UpdateXlfOnBuild: false # force build breaks if xlf files aren't updated on dev box with resx changes
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   BuildConfiguration: Release
   BuildPlatform: Any CPU
-
-resources:
-  containers:
-  - container: xenial
-    image: andrewarnott/linux-buildagent
+  NUGET_PACKAGES: $(Agent.TempDirectory)/.nuget/packages
 
 jobs:
-- job: Windows
-  pool: Hosted VS2017
-  steps:
-  - template: azure-pipelines/build.yml
-
-- job: Linux
-  pool:
-    vmImage: Ubuntu 16.04
-  container: xenial
-  steps:
-  - template: azure-pipelines/testfx.yml
-    parameters:
-      projectdirectory: src/Microsoft.VisualStudio.Threading.Tests
-
-- job: macOS
-  pool:
-    vmImage: macOS 10.13
-  steps:
-  - template: azure-pipelines/testfx.yml
-    parameters:
-      projectdirectory: src/Microsoft.VisualStudio.Threading.Tests
+- template: azure-pipelines/build.yml

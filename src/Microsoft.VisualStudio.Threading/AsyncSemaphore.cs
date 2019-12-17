@@ -19,9 +19,16 @@ namespace Microsoft.VisualStudio.Threading
     public class AsyncSemaphore : IDisposable
     {
         /// <summary>
+        /// A task that is faulted with an <see cref="ObjectDisposedException"/>.
+        /// </summary>
+        private static readonly Task<Releaser> DisposedReleaserTask = TplExtensions.FaultedTask<Releaser>(new ObjectDisposedException(typeof(AsyncSemaphore).FullName));
+
+        /// <summary>
         /// The semaphore used to keep concurrent access to this lock to just 1.
         /// </summary>
+#pragma warning disable CA2213 // Disposable fields should be disposed
         private readonly SemaphoreSlim semaphore;
+#pragma warning restore CA2213 // Disposable fields should be disposed
 
         /// <summary>
         /// A task to return for any uncontested request for the lock.
@@ -34,6 +41,11 @@ namespace Microsoft.VisualStudio.Threading
         private readonly Task<Releaser> canceledReleaser;
 
         /// <summary>
+        /// A value indicating whether this instance has been disposed.
+        /// </summary>
+        private bool disposed;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="AsyncSemaphore"/> class.
         /// </summary>
         /// <param name="initialCount">The initial number of requests for the semaphore that can be granted concurrently.</param>
@@ -42,7 +54,7 @@ namespace Microsoft.VisualStudio.Threading
             this.semaphore = new SemaphoreSlim(initialCount);
             this.uncontestedReleaser = Task.FromResult(new Releaser(this));
 
-            this.canceledReleaser = ThreadingTools.TaskFromCanceled<Releaser>(new CancellationToken(canceled: true));
+            this.canceledReleaser = Task.FromCanceled<Releaser>(new CancellationToken(canceled: true));
         }
 
         /// <summary>
@@ -59,7 +71,12 @@ namespace Microsoft.VisualStudio.Threading
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return ThreadingTools.TaskFromCanceled<Releaser>(cancellationToken);
+                return Task.FromCanceled<Releaser>(cancellationToken);
+            }
+
+            if (this.disposed)
+            {
+                return DisposedReleaserTask;
             }
 
             return this.LockWaitingHelper(this.semaphore.WaitAsync(cancellationToken));
@@ -73,6 +90,11 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns>A task whose result is a releaser that should be disposed to release the lock.</returns>
         public Task<Releaser> EnterAsync(TimeSpan timeout, CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (this.disposed)
+            {
+                return DisposedReleaserTask;
+            }
+
             return this.LockWaitingHelper(this.semaphore.WaitAsync(timeout, cancellationToken));
         }
 
@@ -84,6 +106,11 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns>A task whose result is a releaser that should be disposed to release the lock.</returns>
         public Task<Releaser> EnterAsync(int timeout, CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (this.disposed)
+            {
+                return DisposedReleaserTask;
+            }
+
             return this.LockWaitingHelper(this.semaphore.WaitAsync(timeout, cancellationToken));
         }
 
@@ -102,7 +129,16 @@ namespace Microsoft.VisualStudio.Threading
         {
             if (disposing)
             {
-                this.semaphore.Dispose();
+                this.disposed = true;
+
+                // !!DO NOT!! dispose the semaphore, for the following reasons:
+                // 1. SemaphoreSlim.Dispose is not safe for concurrent use while something is waiting. Calling Dispose
+                //    requires tracking of all outstanding requests for enter/release.
+                // 2. SemaphoreSlim only allocates resources that could need to be be disposed if the
+                //    SemaphoreSlim.AvailableWaitHandle property is accessed. The semaphore field here is private and we
+                //    do not access this property.
+                //
+                ////this.semaphore.Dispose();
             }
         }
 
@@ -115,7 +151,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             Requires.NotNull(waitTask, nameof(waitTask));
 
-            return waitTask.IsCompleted
+            return waitTask.Status == TaskStatus.RanToCompletion
                 ? this.uncontestedReleaser // uncontested lock
                 : waitTask.ContinueWith(
                     (waiter, state) =>
@@ -123,7 +159,14 @@ namespace Microsoft.VisualStudio.Threading
                         // Re-throw any cancellation or fault exceptions.
                         waiter.GetAwaiter().GetResult();
 
-                        return new Releaser((AsyncSemaphore)state);
+                        var semaphore = (AsyncSemaphore)state!;
+
+                        if (semaphore.disposed)
+                        {
+                            throw new ObjectDisposedException(semaphore.GetType().FullName);
+                        }
+
+                        return new Releaser(semaphore);
                     },
                     this,
                     CancellationToken.None,
@@ -155,7 +198,14 @@ namespace Microsoft.VisualStudio.Threading
                             throw new OperationCanceledException();
                         }
 
-                        return new Releaser((AsyncSemaphore)state);
+                        var semaphore = (AsyncSemaphore)state!;
+
+                        if (semaphore.disposed)
+                        {
+                            throw new ObjectDisposedException(semaphore.GetType().FullName);
+                        }
+
+                        return new Releaser(semaphore);
                     },
                     this,
                     CancellationToken.None,
@@ -167,12 +217,12 @@ namespace Microsoft.VisualStudio.Threading
         /// A value whose disposal triggers the release of a lock.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct Releaser : IDisposable
+        public readonly struct Releaser : IDisposable
         {
             /// <summary>
             /// The lock instance to release.
             /// </summary>
-            private readonly AsyncSemaphore toRelease;
+            private readonly AsyncSemaphore? toRelease;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Releaser"/> struct.

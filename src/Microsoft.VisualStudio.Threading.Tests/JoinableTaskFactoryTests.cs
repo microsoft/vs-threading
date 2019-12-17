@@ -16,13 +16,13 @@
         {
         }
 
-        [StaFact]
+        [Fact]
         public void OnTransitioningToMainThread_DoesNotHoldPrivateLock()
         {
             this.SimulateUIThread(async delegate
             {
                 // Get off the UI thread first so that we can transition (back) to it.
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
 
                 var jtf = new JTFWithTransitioningBlock(this.context);
                 bool noDeadlockDetected = true;
@@ -59,13 +59,13 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void OnTransitionedToMainThread_DoesNotHoldPrivateLock()
         {
             this.SimulateUIThread(async delegate
             {
                 // Get off the UI thread first so that we can transition (back) to it.
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
 
                 var jtf = new JTFWithTransitioningBlock(this.context);
                 bool noDeadlockDetected = true;
@@ -102,7 +102,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void RunShouldCompleteWithStarvedThreadPool()
         {
             using (TestUtilities.StarveThreadpool())
@@ -114,7 +114,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public void RunOfTShouldCompleteWithStarvedThreadPool()
         {
             using (TestUtilities.StarveThreadpool())
@@ -127,7 +127,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public void SwitchToMainThreadAlwaysYield()
         {
             this.SimulateUIThread(async () =>
@@ -136,7 +136,7 @@
                 Assert.False(this.asyncPump.SwitchToMainThreadAsync(alwaysYield: true).GetAwaiter().IsCompleted);
                 Assert.True(this.asyncPump.SwitchToMainThreadAsync(alwaysYield: false).GetAwaiter().IsCompleted);
 
-                await TaskScheduler.Default;
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 Assert.False(this.asyncPump.Context.IsOnMainThread);
                 Assert.False(this.asyncPump.SwitchToMainThreadAsync(alwaysYield: true).GetAwaiter().IsCompleted);
                 Assert.False(this.asyncPump.SwitchToMainThreadAsync(alwaysYield: false).GetAwaiter().IsCompleted);
@@ -154,9 +154,9 @@
             {
             }
 
-            internal Action<JoinableTask> OnTransitioningToMainThreadCallback { get; set; }
+            internal Action<JoinableTask>? OnTransitioningToMainThreadCallback { get; set; }
 
-            internal Action<JoinableTask, bool> OnTransitionedToMainThreadCallback { get; set; }
+            internal Action<JoinableTask, bool>? OnTransitionedToMainThreadCallback { get; set; }
 
             protected override void OnTransitioningToMainThread(JoinableTask joinableTask)
             {

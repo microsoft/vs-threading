@@ -26,18 +26,24 @@
     /// current thread is main thread, or switch to main thread prior invocation explicitly.
     ///
     /// i.e.
+    /// <code>
     ///     IVsSolution sln = GetIVsSolution();
     ///     sln.SetProperty(); /* This analyzer will report warning on this invocation. */
+    /// </code>
     ///
     /// i.e.
+    /// <code>
     ///     ThreadHelper.ThrowIfNotOnUIThread();
     ///     IVsSolution sln = GetIVsSolution();
     ///     sln.SetProperty(); /* Good */
+    /// </code>
     ///
     /// i.e.
+    /// <code>
     ///     await joinableTaskFactory.SwitchToMainThreadAsync();
     ///     IVsSolution sln = GetIVsSolution();
     ///     sln.SetProperty(); /* Good */
+    /// </code>
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
@@ -118,15 +124,13 @@
 
                 compilationStartContext.RegisterCodeBlockStartAction<SyntaxKind>(codeBlockStartContext =>
                 {
-                    var methodAnalyzer = new MethodAnalyzer
-                    {
-                        MainThreadAssertingMethods = mainThreadAssertingMethods,
-                        MainThreadSwitchingMethods = mainThreadSwitchingMethods,
-                        MembersRequiringMainThread = membersRequiringMainThread,
-                        MethodsDeclaringUIThreadRequirement = methodsDeclaringUIThreadRequirement,
-                        MethodsAssertingUIThreadRequirement = methodsAssertingUIThreadRequirement,
-                        DiagnosticProperties = diagnosticProperties,
-                    };
+                    var methodAnalyzer = new MethodAnalyzer(
+                        mainThreadAssertingMethods: mainThreadAssertingMethods,
+                        mainThreadSwitchingMethods: mainThreadSwitchingMethods,
+                        membersRequiringMainThread: membersRequiringMainThread,
+                        methodsDeclaringUIThreadRequirement: methodsDeclaringUIThreadRequirement,
+                        methodsAssertingUIThreadRequirement: methodsAssertingUIThreadRequirement,
+                        diagnosticProperties: diagnosticProperties);
                     codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeInvocation), SyntaxKind.InvocationExpression);
                     codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeMemberAccess), SyntaxKind.SimpleMemberAccessExpression);
                     codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeCast), SyntaxKind.CastExpression);
@@ -201,7 +205,7 @@
                 return;
             }
 
-            IMethodSymbol GetPropertyAccessor(IPropertySymbol propertySymbol)
+            IMethodSymbol? GetPropertyAccessor(IPropertySymbol? propertySymbol)
             {
                 if (propertySymbol != null)
                 {
@@ -213,7 +217,7 @@
                 return null;
             }
 
-            ISymbol targetMethod = null;
+            ISymbol? targetMethod = null;
             SyntaxNode locationToBlame = context.Node;
             switch (context.Node)
             {
@@ -238,7 +242,7 @@
                         callerToCalleeMap[caller] = callees = new List<CallInfo>();
                     }
 
-                    callees.Add(new CallInfo { MethodSymbol = callee, InvocationSyntax = locationToBlame });
+                    callees.Add(new CallInfo(methodSymbol: callee, invocationSyntax: locationToBlame));
                 }
             }
         }
@@ -257,35 +261,57 @@
                         result[callee.MethodSymbol] = callers = new List<CallInfo>();
                     }
 
-                    callers.Add(new CallInfo { MethodSymbol = caller, InvocationSyntax = callee.InvocationSyntax });
+                    callers.Add(new CallInfo(methodSymbol: caller, callee.InvocationSyntax));
                 }
             }
 
             return result;
         }
 
-        private struct CallInfo
+        private readonly struct CallInfo
         {
-            public IMethodSymbol MethodSymbol { get; set; }
+            public CallInfo(IMethodSymbol methodSymbol, SyntaxNode invocationSyntax)
+            {
+                this.MethodSymbol = methodSymbol;
+                this.InvocationSyntax = invocationSyntax;
+            }
 
-            public SyntaxNode InvocationSyntax { get; set; }
+            public IMethodSymbol MethodSymbol { get; }
+
+            public SyntaxNode InvocationSyntax { get; }
         }
 
         private class MethodAnalyzer
         {
             private ImmutableDictionary<SyntaxNode, ThreadingContext> methodDeclarationNodes = ImmutableDictionary<SyntaxNode, ThreadingContext>.Empty;
 
-            internal ImmutableArray<CommonInterest.QualifiedMember> MainThreadAssertingMethods { get; set; }
+            public MethodAnalyzer(
+                ImmutableArray<CommonInterest.QualifiedMember> mainThreadAssertingMethods,
+                ImmutableArray<CommonInterest.QualifiedMember> mainThreadSwitchingMethods,
+                ImmutableArray<CommonInterest.TypeMatchSpec> membersRequiringMainThread,
+                HashSet<IMethodSymbol> methodsDeclaringUIThreadRequirement,
+                HashSet<IMethodSymbol> methodsAssertingUIThreadRequirement,
+                ImmutableDictionary<string, string> diagnosticProperties)
+            {
+                this.MainThreadAssertingMethods = mainThreadAssertingMethods;
+                this.MainThreadSwitchingMethods = mainThreadSwitchingMethods;
+                this.MembersRequiringMainThread = membersRequiringMainThread;
+                this.MethodsDeclaringUIThreadRequirement = methodsDeclaringUIThreadRequirement;
+                this.MethodsAssertingUIThreadRequirement = methodsAssertingUIThreadRequirement;
+                this.DiagnosticProperties = diagnosticProperties;
+            }
 
-            internal ImmutableArray<CommonInterest.QualifiedMember> MainThreadSwitchingMethods { get; set; }
+            internal ImmutableArray<CommonInterest.QualifiedMember> MainThreadAssertingMethods { get; }
 
-            internal ImmutableArray<CommonInterest.TypeMatchSpec> MembersRequiringMainThread { get; set; }
+            internal ImmutableArray<CommonInterest.QualifiedMember> MainThreadSwitchingMethods { get; }
 
-            internal HashSet<IMethodSymbol> MethodsDeclaringUIThreadRequirement { get; set; }
+            internal ImmutableArray<CommonInterest.TypeMatchSpec> MembersRequiringMainThread { get; }
 
-            internal HashSet<IMethodSymbol> MethodsAssertingUIThreadRequirement { get; set; }
+            internal HashSet<IMethodSymbol> MethodsDeclaringUIThreadRequirement { get; }
 
-            internal ImmutableDictionary<string, string> DiagnosticProperties { get; set; }
+            internal HashSet<IMethodSymbol> MethodsAssertingUIThreadRequirement { get; }
+
+            internal ImmutableDictionary<string, string> DiagnosticProperties { get; }
 
             internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
             {
@@ -407,7 +433,7 @@
                     (ad.AttributeClass.Name == Types.TypeLibTypeAttribute.TypeName && ad.AttributeClass.BelongsToNamespace(Types.TypeLibTypeAttribute.Namespace)));
             }
 
-            private bool AnalyzeMemberWithinContext(ITypeSymbol type, ISymbol symbol, SyntaxNodeAnalysisContext context, Location focusDiagnosticOn = null)
+            private bool AnalyzeMemberWithinContext(ITypeSymbol type, ISymbol? symbol, SyntaxNodeAnalysisContext context, Location? focusDiagnosticOn = null)
             {
                 if (type == null)
                 {

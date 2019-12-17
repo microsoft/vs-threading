@@ -2,9 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
-#if DESKTOP || NETCOREAPP2_0
     using System.Configuration;
-#endif
     using System.Linq;
     using System.Text;
     using System.Threading;
@@ -39,14 +37,14 @@
         public void WithCancellationNull()
         {
             Assert.Throws<ArgumentNullException>(new Action(() =>
-                ThreadingTools.WithCancellation(null, CancellationToken.None)));
+                ThreadingTools.WithCancellation(null!, CancellationToken.None)));
         }
 
         [Fact]
         public void WithCancellationOfTNull()
         {
             Assert.Throws<ArgumentNullException>(new Action(() =>
-                ThreadingTools.WithCancellation<object>(null, CancellationToken.None)));
+                ThreadingTools.WithCancellation<object>(null!, CancellationToken.None)));
         }
 
         /// <summary>
@@ -55,7 +53,7 @@
         [Fact]
         public void WithCancellationOfPrecompletedTask()
         {
-            var tcs = new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSource<object?>();
             tcs.SetResult(null);
             var cts = new CancellationTokenSource();
             Assert.Same(tcs.Task, ((Task)tcs.Task).WithCancellation(cts.Token));
@@ -67,7 +65,7 @@
         [Fact]
         public void WithCancellationOfPrecompletedTaskOfT()
         {
-            var tcs = new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSource<object?>();
             tcs.SetResult(null);
             var cts = new CancellationTokenSource();
             Assert.Same(tcs.Task, tcs.Task.WithCancellation(cts.Token));
@@ -124,8 +122,6 @@
         [SkippableFact]
         public void WithCancellationAndPrecancelledToken()
         {
-            Skip.If(TestUtilities.IsNet45Mode, "This test verifies behavior that is only available on .NET 4.6.");
-
             var tcs = new TaskCompletionSource<object>();
             var cts = new CancellationTokenSource();
             cts.Cancel();
@@ -197,7 +193,7 @@
         {
             var dispatcher = SingleThreadedTestSynchronizationContext.New();
             SynchronizationContext.SetSynchronizationContext(dispatcher);
-            var tcs = new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSource<object?>();
             Task.Run(async delegate
             {
                 await Task.Delay(AsyncDelay);
@@ -252,48 +248,42 @@
             WithCancellationSyncBlockOnNoncancelableToken();
         }
 
-        [StaFact]
+        [UIFact]
         public void WithCancellationNoDeadlockFromSyncContextWithinJTFRun_Canceled()
         {
-            var dispatcher = SingleThreadedTestSynchronizationContext.New();
-            SynchronizationContext.SetSynchronizationContext(dispatcher);
             var jtc = new JoinableTaskContext();
             jtc.Factory.Run(delegate
             {
                 WithCancellationSyncBlock(simulateCancellation: true);
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
         }
 
-        [StaFact]
+        [UIFact]
         public void WithCancellationNoDeadlockFromSyncContextWithinJTFRun_Completed()
         {
-            var dispatcher = SingleThreadedTestSynchronizationContext.New();
-            SynchronizationContext.SetSynchronizationContext(dispatcher);
             var jtc = new JoinableTaskContext();
             jtc.Factory.Run(delegate
             {
                 WithCancellationSyncBlock(simulateCancellation: false);
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
         }
 
-        [StaFact]
+        [UIFact]
         public void WithCancellationNoncancelableNoDeadlockFromSyncContextWithinJTFRun()
         {
-            var dispatcher = SingleThreadedTestSynchronizationContext.New();
-            SynchronizationContext.SetSynchronizationContext(dispatcher);
             var jtc = new JoinableTaskContext();
             jtc.Factory.Run(delegate
             {
                 WithCancellationSyncBlockOnNoncancelableToken();
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
         }
 
         private static void WithCancellationSyncBlock(bool simulateCancellation)
         {
-            var tcs = new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSource<object?>();
             const int completeAfter = AsyncDelay / 4;
             var cts = new CancellationTokenSource(simulateCancellation ? completeAfter : Timeout.Infinite);
             if (!simulateCancellation)
@@ -319,7 +309,7 @@
 
         private static void WithCancellationSyncBlockOnNoncancelableToken()
         {
-            var tcs = new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSource<object?>();
             Task.Run(async delegate
             {
                 await Task.Delay(AsyncDelay);

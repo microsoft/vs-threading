@@ -40,7 +40,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             InnerPostToUnderlyingSynchronizationContext,
         }
 
-        [StaFact]
+        [Fact]
         public void DelegationBehaviors()
         {
             var innerFactory = new CustomizedFactory(this.context, this.AddToLog);
@@ -72,16 +72,16 @@ namespace Microsoft.VisualStudio.Threading.Tests
         /// <summary>
         /// Verifies that delegating factories add their tasks to the inner factory's collection.
         /// </summary>
-        [StaFact]
+        [Fact]
         public void DelegationSharesCollection()
         {
             var log = new List<FactoryLogEntry>();
             var delegatingFactory = new DelegatingFactory(this.asyncPump, this.AddToLog);
-            JoinableTask jt = null;
+            JoinableTask? jt = null;
             jt = delegatingFactory.RunAsync(async delegate
             {
                 await Task.Yield();
-                Assert.True(this.joinableCollection.Contains(jt));
+                Assert.True(this.joinableCollection!.Contains(jt!));
             });
 
             jt.Join();
@@ -117,7 +117,17 @@ namespace Microsoft.VisualStudio.Threading.Tests
         {
             lock (this.logLock)
             {
-                this.Logger.WriteLine($"Adding entry {entry} (#{this.log.Count + 1}) from thread {Environment.CurrentManagedThreadId}");
+                try
+                {
+                    this.Logger.WriteLine($"Adding entry {entry} (#{this.log.Count + 1}) from thread {Environment.CurrentManagedThreadId}");
+                }
+                catch (InvalidOperationException ex) when (ex.Message.Contains("There is no currently active test."))
+                {
+                    // Avoid throwing an exception which would result in the test runner crashing via a FailFast. This
+                    // case should only occur when the test fails for other reasons, and subsequently fails to join
+                    // outstanding work before the end of the test.
+                }
+
                 this.log.Add(entry);
                 Monitor.Pulse(this.logLock);
             }

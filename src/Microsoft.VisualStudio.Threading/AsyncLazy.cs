@@ -7,6 +7,7 @@
 namespace Microsoft.VisualStudio.Threading
 {
     using System;
+    using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -35,29 +36,29 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// The function to invoke to produce the task.
         /// </summary>
-        private Func<Task<T>> valueFactory;
+        private Func<Task<T>>? valueFactory;
 
         /// <summary>
         /// The async pump to Join on calls to <see cref="GetValueAsync(CancellationToken)"/>.
         /// </summary>
-        private JoinableTaskFactory jobFactory;
+        private JoinableTaskFactory? jobFactory;
 
         /// <summary>
         /// The result of the value factory.
         /// </summary>
-        private Task<T> value;
+        private Task<T>? value;
 
         /// <summary>
         /// A joinable task whose result is the value to be cached.
         /// </summary>
-        private JoinableTask<T> joinableTask;
+        private JoinableTask<T>? joinableTask;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AsyncLazy{T}"/> class.
         /// </summary>
         /// <param name="valueFactory">The async function that produces the value.  To be invoked at most once.</param>
         /// <param name="joinableTaskFactory">The factory to use when invoking the value factory in <see cref="GetValueAsync(CancellationToken)"/> to avoid deadlocks when the main thread is required by the value factory.</param>
-        public AsyncLazy(Func<Task<T>> valueFactory, JoinableTaskFactory joinableTaskFactory = null)
+        public AsyncLazy(Func<Task<T>> valueFactory, JoinableTaskFactory? joinableTaskFactory = null)
         {
             Requires.NotNull(valueFactory, nameof(valueFactory));
             this.valueFactory = valueFactory;
@@ -130,7 +131,7 @@ namespace Microsoft.VisualStudio.Threading
                     Verify.FailOperation(Strings.ValueFactoryReentrancy);
                 }
 
-                InlineResumable resumableAwaiter = null;
+                InlineResumable? resumableAwaiter = null;
                 lock (this.syncObject)
                 {
                     // Note that if multiple threads hit GetValueAsync() before
@@ -140,9 +141,11 @@ namespace Microsoft.VisualStudio.Threading
                     // has completed.
                     if (this.value == null)
                     {
+                        RoslynDebug.Assert(this.valueFactory is object);
+
                         cancellationToken.ThrowIfCancellationRequested();
                         resumableAwaiter = new InlineResumable();
-                        Func<Task<T>> originalValueFactory = this.valueFactory;
+                        Func<Task<T>>? originalValueFactory = this.valueFactory;
                         this.valueFactory = null;
                         Func<Task<T>> valueFactory = async delegate
                         {
@@ -221,13 +224,15 @@ namespace Microsoft.VisualStudio.Threading
             // As a perf optimization, avoid calling JTF or GetValueAsync if the value factory has already completed.
             if (this.IsValueFactoryCompleted)
             {
+                RoslynDebug.Assert(this.value is object);
+
                 return this.value.GetAwaiter().GetResult();
             }
             else
             {
                 // Capture the factory as a local before comparing and dereferencing it since
                 // the field can transition to null and we want to gracefully handle that race condition.
-                JoinableTaskFactory factory = this.jobFactory;
+                JoinableTaskFactory? factory = this.jobFactory;
                 return factory != null
                     ? factory.Run(() => this.GetValueAsync(cancellationToken))
                     : this.GetValueAsync(cancellationToken).GetAwaiter().GetResult();
@@ -240,7 +245,7 @@ namespace Microsoft.VisualStudio.Threading
         public override string ToString()
         {
             return (this.value != null && this.value.IsCompleted)
-                ? (this.value.Status == TaskStatus.RanToCompletion ? this.value.Result.ToString() : Strings.LazyValueFaulted)
+                ? (this.value.Status == TaskStatus.RanToCompletion ? $"{this.value.Result}" : Strings.LazyValueFaulted)
                 : Strings.LazyValueNotCreated;
         }
     }

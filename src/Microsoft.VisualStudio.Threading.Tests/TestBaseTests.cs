@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Runtime.InteropServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -17,10 +18,10 @@
         {
         }
 
-#if DESKTOP || NETCOREAPP2_0
-        [Fact]
+        [SkippableFact]
         public void ExecuteOnSTA_ExecutesDelegateOnSTA()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             bool executed = false;
             this.ExecuteOnSTA(delegate
             {
@@ -31,28 +32,54 @@
             Assert.True(executed);
         }
 
-        [Fact]
+        [SkippableFact]
         public void ExecuteOnSTA_PropagatesExceptions()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             Assert.Throws<ApplicationException>(() => this.ExecuteOnSTA(() =>
             {
                 throw new ApplicationException();
             }));
         }
 
-        [Fact]
+        [StaFact]
         public void ExecuteOnDispatcher_ExecutesDelegateOnSTA()
         {
             bool executed = false;
             this.ExecuteOnDispatcher(delegate
             {
-                Assert.Equal(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    Assert.Equal(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
+                }
+
                 Assert.NotNull(SynchronizationContext.Current);
                 executed = true;
             });
             Assert.True(executed);
         }
-#endif
+
+        [Fact]
+        public void ExecuteOnDispatcher_ExecutesDelegateOnMTA()
+        {
+            // Wrap the whole thing in Task.Run to force it to an MTA thread,
+            // since xunit uses STA when tests run in batches.
+            Task.Run(delegate
+            {
+                bool executed = false;
+                this.ExecuteOnDispatcher(delegate
+                {
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
+                    }
+
+                    Assert.NotNull(SynchronizationContext.Current);
+                    executed = true;
+                });
+                Assert.True(executed);
+            }).WaitWithoutInlining(throwOriginalException: true);
+        }
 
         [Fact]
         public void ExecuteOnDispatcher_PropagatesExceptions()
@@ -91,7 +118,7 @@
             throw new Exception("Intentional test failure");
         }
 
-#if DESKTOP
+#if NETFRAMEWORK
         [StaFact]
         public async Task ExecuteInIsolation_PassingOnSTA()
         {

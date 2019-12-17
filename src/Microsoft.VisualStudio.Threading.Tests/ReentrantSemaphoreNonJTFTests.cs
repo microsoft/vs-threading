@@ -22,8 +22,8 @@ public class ReentrantSemaphoreNonJTFTests : ReentrantSemaphoreTestBase
         this.semaphore = this.CreateSemaphore(mode);
         this.ExecuteOnDispatcher(delegate
         {
-            this.semaphore.ExecuteAsync(() => TplExtensions.CompletedTask).Wait(this.TimeoutToken);
-            return TplExtensions.CompletedTask;
+            this.semaphore.ExecuteAsync(() => Task.CompletedTask).Wait(this.TimeoutToken);
+            return Task.CompletedTask;
         });
     }
 }

@@ -9,6 +9,13 @@
             nameof(System),
         };
 
+        internal static readonly IReadOnlyList<string> SystemCollectionsGeneric = new[]
+        {
+            nameof(System),
+            nameof(global::System.Collections),
+            nameof(global::System.Collections.Generic),
+        };
+
         internal static readonly IReadOnlyList<string> SystemThreading = new[]
         {
             nameof(System),

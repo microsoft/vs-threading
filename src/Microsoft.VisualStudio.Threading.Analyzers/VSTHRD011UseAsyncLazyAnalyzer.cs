@@ -56,11 +56,7 @@
             var objectCreationSyntax = (ObjectCreationExpressionSyntax)context.Node;
             var methodSymbol = context.SemanticModel.GetSymbolInfo(objectCreationSyntax, context.CancellationToken).Symbol as IMethodSymbol;
             var constructedType = methodSymbol?.ReceiverType as INamedTypeSymbol;
-            var isLazyOfT = constructedType?.ContainingNamespace?.Name == nameof(System)
-                && (constructedType?.ContainingNamespace?.ContainingNamespace?.IsGlobalNamespace ?? false)
-                && constructedType?.Name == nameof(Lazy<object>)
-                && constructedType?.Arity > 0; // could be Lazy<T> or Lazy<T, TMetadata>
-            if (isLazyOfT)
+            if (Utils.IsLazyOfT(constructedType))
             {
                 var typeArg = constructedType.TypeArguments.FirstOrDefault();
                 bool typeArgIsTask = typeArg?.Name == nameof(Task)

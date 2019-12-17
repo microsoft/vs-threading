@@ -14,12 +14,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using CodeAnalysis;
-    using CodeAnalysis.CodeActions;
-    using CodeAnalysis.CodeFixes;
-    using CodeAnalysis.CSharp;
-    using CodeAnalysis.CSharp.Syntax;
-    using CodeAnalysis.Rename;
+    using Microsoft.CodeAnalysis;
+    using Microsoft.CodeAnalysis.CodeActions;
+    using Microsoft.CodeAnalysis.CodeFixes;
+    using Microsoft.CodeAnalysis.CSharp;
+    using Microsoft.CodeAnalysis.CSharp.Syntax;
+    using Microsoft.CodeAnalysis.Rename;
 
     [ExportCodeFixProvider(LanguageNames.CSharp)]
     public class VSTHRD200UseAsyncNamingConventionCodeFix : CodeFixProvider
@@ -35,7 +35,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         {
             var diagnostic = context.Diagnostics.First();
             context.RegisterCodeFix(new AddAsyncSuffixCodeAction(context.Document, diagnostic), diagnostic);
-            return Task.FromResult<object>(null);
+            return Task.FromResult<object?>(null);
         }
 
         /// <inheritdoc />
@@ -58,7 +58,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 this.NewName);
 
             /// <inheritdoc />
-            public override string EquivalenceKey => null;
+            public override string? EquivalenceKey => null;
 
             private string NewName => this.diagnostic.Properties[VSTHRD200UseAsyncNamingConventionAnalyzer.NewNameKey];
 

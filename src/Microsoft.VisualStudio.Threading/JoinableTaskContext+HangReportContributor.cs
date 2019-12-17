@@ -73,7 +73,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 foreach (var joinedTask in JoinableTaskDependencyGraph.GetAllDirectlyDependentJoinableTasks(joinableTaskAndElement.Key))
                 {
-                    if (pendingTasksElements.TryGetValue(joinedTask, out XElement joinedTaskElement))
+                    if (pendingTasksElements.TryGetValue(joinedTask, out XElement? joinedTaskElement))
                     {
                         links.Add(Dgml.Link(joinableTaskAndElement.Value, joinedTaskElement));
                     }
@@ -167,7 +167,7 @@ namespace Microsoft.VisualStudio.Threading
                         methodName = string.Format(
                             CultureInfo.InvariantCulture,
                             " ({0}.{1})",
-                            entryMethodInfo.DeclaringType.FullName,
+                            entryMethodInfo.DeclaringType?.FullName,
                             entryMethodInfo.Name);
                     }
 

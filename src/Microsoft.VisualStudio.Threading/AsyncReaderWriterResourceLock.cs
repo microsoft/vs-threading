@@ -182,9 +182,9 @@ namespace Microsoft.VisualStudio.Threading
         /// satisfy some predicate.
         /// </summary>
         /// <param name="resourceCheck">A function that returns <c>true</c> if the provided resource should be considered retrieved.</param>
-        /// <param name="state">The state object to pass as a second parameter to <paramref name="resourceCheck"/></param>
+        /// <param name="state">The state object to pass as a second parameter to <paramref name="resourceCheck"/>.</param>
         /// <returns><c>true</c> if the delegate returned <c>true</c> on any of the invocations.</returns>
-        protected bool SetResourceAsAccessed(Func<TResource, object, bool> resourceCheck, object state)
+        protected bool SetResourceAsAccessed(Func<TResource, object?, bool> resourceCheck, object? state)
         {
             return this.helper.SetResourceAsAccessed(resourceCheck, state);
         }
@@ -260,7 +260,7 @@ namespace Microsoft.VisualStudio.Threading
         /// An awaitable that is returned from asynchronous lock requests.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct ResourceAwaitable
+        public readonly struct ResourceAwaitable
         {
             /// <summary>
             /// The underlying lock awaitable.
@@ -298,7 +298,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
         [DebuggerDisplay("{awaiter.kind}")]
-        public struct ResourceAwaiter : ICriticalNotifyCompletion
+        public readonly struct ResourceAwaiter : ICriticalNotifyCompletion
         {
             /// <summary>
             /// The underlying lock awaiter.
@@ -389,7 +389,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
         [DebuggerDisplay("{releaser.awaiter.kind}")]
-        public struct ResourceReleaser : IDisposable
+        public readonly struct ResourceReleaser : IDisposable
         {
             /// <summary>
             /// The underlying lock releaser.
@@ -484,11 +484,6 @@ namespace Microsoft.VisualStudio.Threading
             private readonly HashSet<TResource> resourcesAcquiredWithinUpgradeableRead = new HashSet<TResource>();
 
             /// <summary>
-            /// A collection of all the resources requested within the outermost write lock.
-            /// </summary>
-            private readonly HashSet<TResource> resourcesAcquiredWithinWriteLock = new HashSet<TResource>();
-
-            /// <summary>
             /// A map of resources to the tasks that most recently began evaluating them.
             /// </summary>
             private WeakKeyDictionary<TResource, ResourcePreparationTaskAndValidity> resourcePreparationTasks = new WeakKeyDictionary<TResource, ResourcePreparationTaskAndValidity>(capacity: 2);
@@ -552,11 +547,7 @@ namespace Microsoft.VisualStudio.Threading
                 var ambientLock = this.service.AmbientLock;
                 lock (this.service.SyncObject)
                 {
-                    if (ambientLock.HasWriteLock)
-                    {
-                        this.resourcesAcquiredWithinWriteLock.Add(resource);
-                    }
-                    else if (ambientLock.HasUpgradeableReadLock)
+                    if (!ambientLock.HasWriteLock && ambientLock.HasUpgradeableReadLock)
                     {
                         this.resourcesAcquiredWithinUpgradeableRead.Add(resource);
                     }
@@ -568,9 +559,9 @@ namespace Microsoft.VisualStudio.Threading
             /// satisfy some predicate.
             /// </summary>
             /// <param name="resourceCheck">A function that returns <c>true</c> if the provided resource should be considered retrieved.</param>
-            /// <param name="state">The state object to pass as a second parameter to <paramref name="resourceCheck"/></param>
+            /// <param name="state">The state object to pass as a second parameter to <paramref name="resourceCheck"/>.</param>
             /// <returns><c>true</c> if the delegate returned <c>true</c> on any of the invocations.</returns>
-            internal bool SetResourceAsAccessed(Func<TResource, object, bool> resourceCheck, object state)
+            internal bool SetResourceAsAccessed(Func<TResource, object?, bool> resourceCheck, object? state)
             {
                 Requires.NotNull(resourceCheck, nameof(resourceCheck));
 
@@ -610,7 +601,6 @@ namespace Microsoft.VisualStudio.Threading
                     // because backdoors can and legitimately do (as in CPS) exist for tampering
                     // with a resource without going through our access methods.
                     this.SetAllResourcesToUnknownState();
-                    this.resourcesAcquiredWithinWriteLock.Clear(); // the write lock is gone now.
 
                     if (this.service.IsUpgradeableReadLockHeld && this.resourcesAcquiredWithinUpgradeableRead.Count > 0)
                     {
@@ -634,7 +624,7 @@ namespace Microsoft.VisualStudio.Threading
                     }
                 }
 
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             }
 
             /// <summary>
@@ -692,7 +682,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     this.resourcePreparationTasks.TryGetValue(resource, out ResourcePreparationTaskAndValidity previousState);
                     this.resourcePreparationTasks[resource] = new ResourcePreparationTaskAndValidity(
-                        previousState.PreparationTask ?? TplExtensions.CompletedTask, // preserve the original task if it exists in case it's not finished
+                        previousState.PreparationTask ?? Task.CompletedTask, // preserve the original task if it exists in case it's not finished
                         ResourceState.Unknown);
                 }
             }
@@ -742,7 +732,7 @@ namespace Microsoft.VisualStudio.Threading
                     using (forConcurrentUse ? this.service.HideLocks() : default(Suppression))
                     {
                         preparationTask = new ResourcePreparationTaskAndValidity(
-                            Task.Factory.StartNew(preparationDelegate, stateObject, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap(),
+                            Task.Factory.StartNew(NullableHelpers.AsNullableArgFunc(preparationDelegate), stateObject, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap(),
                             finalState);
                     }
                 }
@@ -758,7 +748,7 @@ namespace Microsoft.VisualStudio.Threading
                     using (forConcurrentUse ? this.service.HideLocks() : default(Suppression))
                     {
                         preparationTask = new ResourcePreparationTaskAndValidity(
-                            preparationTask.PreparationTask.ContinueWith(preparationDelegate, stateObject, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap(),
+                            preparationTask.PreparationTask.ContinueWith(preparationDelegate!, stateObject, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap(),
                             finalState);
                     }
                 }
@@ -792,7 +782,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Tracks a task that prepares a resource for either concurrent or exclusive use.
             /// </summary>
-            private struct ResourcePreparationTaskAndValidity
+            private readonly struct ResourcePreparationTaskAndValidity
             {
                 /// <summary>
                 /// Initializes a new instance of the <see cref="ResourcePreparationTaskAndValidity"/> struct.
@@ -808,12 +798,12 @@ namespace Microsoft.VisualStudio.Threading
                 /// <summary>
                 /// Gets the task that is preparing the resource.
                 /// </summary>
-                internal Task PreparationTask { get; private set; }
+                internal Task PreparationTask { get; }
 
                 /// <summary>
                 /// Gets the state the resource will be in when <see cref="PreparationTask"/> has completed.
                 /// </summary>
-                internal ResourceState State { get; private set; }
+                internal ResourceState State { get; }
             }
         }
     }

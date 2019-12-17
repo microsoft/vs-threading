@@ -54,7 +54,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         {
             var diagnostic = context.Diagnostics.First();
             context.RegisterCodeFix(new VoidToTaskCodeAction(context.Document, diagnostic), diagnostic);
-            return Task.FromResult<object>(null);
+            return Task.FromResult<object?>(null);
         }
 
         /// <inheritdoc />
@@ -75,7 +75,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             public override string Title => Strings.VSTHRD100_CodeFix_Title;
 
             /// <inheritdoc />
-            public override string EquivalenceKey => null;
+            public override string? EquivalenceKey => null;
 
             protected override async Task<Document> GetChangedDocumentAsync(CancellationToken cancellationToken)
             {

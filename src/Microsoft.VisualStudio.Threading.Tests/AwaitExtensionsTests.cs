@@ -11,6 +11,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
+    using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Win32;
@@ -143,8 +144,8 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Theory, CombinatorialData]
         public async Task TaskYield_ConfigureAwait_OnCompleted_CapturesExecutionContext(bool captureContext)
         {
-            var taskResultSource = new TaskCompletionSource<object>();
-            AsyncLocal<object> asyncLocal = new AsyncLocal<object>();
+            var taskResultSource = new TaskCompletionSource<object?>();
+            AsyncLocal<object?> asyncLocal = new AsyncLocal<object?>();
             asyncLocal.Value = "expected";
             Task.Yield().ConfigureAwait(captureContext).GetAwaiter().OnCompleted(delegate
             {
@@ -188,7 +189,6 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public void AwaitThreadPoolSchedulerYieldsOnNonThreadPoolThreads()
         {
-#if DESKTOP || NETCOREAPP2_0
             // In some test runs (including VSTS cloud test), this test runs on a threadpool thread.
             if (Thread.CurrentThread.IsThreadPoolThread)
             {
@@ -203,10 +203,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 testResult.GetAwaiter().GetResult(); // rethrow any test failure.
                 return; // skip the test that runs on this thread.
             }
-#else
-            // Set this, which makes it appear our thread is not a threadpool thread.
-            SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
-#endif
+
             Assert.False(TaskScheduler.Default.GetAwaiter().IsCompleted);
         }
 
@@ -215,12 +212,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         {
             Task.Run(delegate
             {
-#if DESKTOP || NETCOREAPP2_0
                 Assert.True(Thread.CurrentThread.IsThreadPoolThread, "Test depends on thread looking like threadpool thread.");
-#else
-                // Erase AsyncTestSyncContext, which somehow still is set in VSTS cloud tests.
-                SynchronizationContext.SetSynchronizationContext(null);
-#endif
                 Assert.True(TaskScheduler.Default.GetAwaiter().IsCompleted);
             }).GetAwaiter().GetResult();
         }
@@ -327,13 +319,11 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
         }
 
-#if !NETCOREAPP1_0 // .NET Core 1.0 doesn't offer a way to avoid flowing ExecutionContext
         [Fact]
-#endif
         public async Task AwaitTaskScheduler_UnsafeOnCompleted_DoesNotCaptureExecutionContext()
         {
-            var taskResultSource = new TaskCompletionSource<object>();
-            AsyncLocal<object> asyncLocal = new AsyncLocal<object>();
+            var taskResultSource = new TaskCompletionSource<object?>();
+            AsyncLocal<object?> asyncLocal = new AsyncLocal<object?>();
             asyncLocal.Value = "expected";
             TaskScheduler.Default.GetAwaiter().UnsafeOnCompleted(delegate
             {
@@ -354,8 +344,8 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Theory, CombinatorialData]
         public async Task AwaitTaskScheduler_OnCompleted_CapturesExecutionContext(bool defaultTaskScheduler)
         {
-            var taskResultSource = new TaskCompletionSource<object>();
-            AsyncLocal<object> asyncLocal = new AsyncLocal<object>();
+            var taskResultSource = new TaskCompletionSource<object?>();
+            AsyncLocal<object?> asyncLocal = new AsyncLocal<object?>();
             asyncLocal.Value = "expected";
             TaskScheduler scheduler = defaultTaskScheduler ? TaskScheduler.Default : new MockTaskScheduler();
             scheduler.GetAwaiter().OnCompleted(delegate
@@ -374,8 +364,6 @@ namespace Microsoft.VisualStudio.Threading.Tests
             await taskResultSource.Task;
         }
 
-#if DESKTOP || NETCOREAPP2_0
-
         [Fact]
         public void AwaitWaitHandle()
         {
@@ -393,12 +381,13 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public async Task WaitForExit_NullArgument()
         {
-            await Assert.ThrowsAsync<ArgumentNullException>(() => AwaitExtensions.WaitForExitAsync(null));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => AwaitExtensions.WaitForExitAsync(null!));
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task WaitForExitAsync_ExitCode()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             Process p = Process.Start(
                 new ProcessStartInfo("cmd.exe", "/c exit /b 55")
                 {
@@ -409,9 +398,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Assert.Equal(55, exitCode);
         }
 
-        [Fact]
+        [SkippableFact]
         public void WaitForExitAsync_AlreadyExited()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             Process p = Process.Start(
                 new ProcessStartInfo("cmd.exe", "/c exit /b 55")
                 {
@@ -427,8 +417,9 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public async Task WaitForExitAsync_UnstartedProcess()
         {
+            string processName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "cmd.exe" : "/bin/bash";
             var process = new Process();
-            process.StartInfo.FileName = "cmd.exe";
+            process.StartInfo.FileName = processName;
             process.StartInfo.CreateNoWindow = true;
             await Assert.ThrowsAsync<InvalidOperationException>(() => process.WaitForExitAsync());
         }
@@ -436,18 +427,27 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public async Task WaitForExitAsync_DoesNotCompleteTillKilled()
         {
-            Process p = Process.Start(new ProcessStartInfo("cmd.exe") { CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden });
+            string processName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "cmd.exe" : "/bin/bash";
+            int expectedExitCode = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? -1 : 128 + 9; // https://stackoverflow.com/a/1041309
+            Process p = Process.Start(new ProcessStartInfo(processName) { CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden });
             try
             {
                 Task<int> t = p.WaitForExitAsync();
                 Assert.False(t.IsCompleted);
                 p.Kill();
                 int exitCode = await t;
-                Assert.Equal(-1, exitCode);
+                Assert.Equal(expectedExitCode, exitCode);
             }
             catch
             {
-                p.Kill();
+                try
+                {
+                    p.Kill();
+                }
+                catch
+                {
+                }
+
                 throw;
             }
         }
@@ -455,7 +455,8 @@ namespace Microsoft.VisualStudio.Threading.Tests
         [Fact]
         public async Task WaitForExitAsync_Canceled()
         {
-            Process p = Process.Start(new ProcessStartInfo("cmd.exe") { CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden });
+            string processName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "cmd.exe" : "/bin/bash";
+            Process p = Process.Start(new ProcessStartInfo(processName) { CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden });
             try
             {
                 var cts = new CancellationTokenSource();
@@ -470,13 +471,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
         }
 
-#endif
-
-#if DESKTOP
-
-        [Fact]
+        [SkippableFact]
         public async Task AwaitRegKeyChange()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             using (var test = new RegKeyTest())
             {
                 Task changeWatcherTask = test.Key.WaitForChangeAsync();
@@ -486,9 +484,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task AwaitRegKeyChange_TwoAtOnce_SameKeyHandle()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             using (var test = new RegKeyTest())
             {
                 Task changeWatcherTask1 = test.Key.WaitForChangeAsync();
@@ -500,9 +499,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task AwaitRegKeyChange_NoChange()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             using (var test = new RegKeyTest())
             {
                 Task changeWatcherTask = test.Key.WaitForChangeAsync(cancellationToken: test.FinishedToken);
@@ -514,9 +514,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task AwaitRegKeyChange_WatchSubtree()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             using (var test = new RegKeyTest())
             {
                 using (var subKey = test.CreateSubKey())
@@ -528,9 +529,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task AwaitRegKeyChange_KeyDeleted()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             using (var test = new RegKeyTest())
             {
                 using (var subKey = test.CreateSubKey())
@@ -542,9 +544,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task AwaitRegKeyChange_NoWatchSubtree()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             using (var test = new RegKeyTest())
             {
                 using (var subKey = test.CreateSubKey())
@@ -560,9 +563,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task AwaitRegKeyChange_Canceled()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             using (var test = new RegKeyTest())
             {
                 var cts = new CancellationTokenSource();
@@ -576,17 +580,15 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 }
                 catch (OperationCanceledException ex)
                 {
-                    if (!TestUtilities.IsNet45Mode)
-                    {
-                        Assert.Equal(cts.Token, ex.CancellationToken);
-                    }
+                    Assert.Equal(cts.Token, ex.CancellationToken);
                 }
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task AwaitRegKeyChange_KeyDisposedWhileWatching()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             Task watchingTask;
             using (var test = new RegKeyTest())
             {
@@ -597,9 +599,10 @@ namespace Microsoft.VisualStudio.Threading.Tests
             await watchingTask;
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task AwaitRegKeyChange_CanceledAndImmediatelyDisposed()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             Task watchingTask;
             CancellationToken expectedCancellationToken;
             using (var test = new RegKeyTest())
@@ -615,22 +618,20 @@ namespace Microsoft.VisualStudio.Threading.Tests
             }
             catch (OperationCanceledException ex)
             {
-                if (!TestUtilities.IsNet45Mode)
-                {
-                    Assert.Equal(expectedCancellationToken, ex.CancellationToken);
-                }
+                Assert.Equal(expectedCancellationToken, ex.CancellationToken);
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task AwaitRegKeyChange_CallingThreadDestroyed()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             using (var test = new RegKeyTest())
             {
                 // Start watching and be certain the thread that started watching is destroyed.
                 // This simulates a more common case of someone on a threadpool thread watching
                 // a key asynchronously and then the .NET Threadpool deciding to reduce the number of threads in the pool.
-                Task watchingTask = null;
+                Task? watchingTask = null;
                 var thread = new Thread(() =>
                 {
                     watchingTask = test.Key.WaitForChangeAsync(cancellationToken: test.FinishedToken);
@@ -639,18 +640,19 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 thread.Join();
 
                 // Verify that the watching task is still watching.
-                Task completedTask = await Task.WhenAny(watchingTask, Task.Delay(AsyncDelay));
+                Task completedTask = await Task.WhenAny(watchingTask!, Task.Delay(AsyncDelay));
                 Assert.NotSame(watchingTask, completedTask);
                 test.CreateSubKey().Dispose();
-                await watchingTask;
+                await watchingTask!;
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task AwaitRegKeyChange_DoesNotPreventAppTerminationOnWin7()
         {
+            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             string testExePath = Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
+                AppDomain.CurrentDomain.BaseDirectory!,
                 "..",
                 "..",
                 "..",
@@ -660,7 +662,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
 #else
                 "Release",
 #endif
-                "net45",
+                "net472",
                 "Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.exe");
             this.Logger.WriteLine("Using testexe path: {0}", testExePath);
             var psi = new ProcessStartInfo(testExePath)
@@ -706,7 +708,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
 
             public CancellationToken FinishedToken => this.testFinished.Token;
 
-            public RegistryKey CreateSubKey(string name = null)
+            public RegistryKey CreateSubKey(string? name = null)
             {
                 return this.key.CreateSubKey(name ?? Path.GetRandomFileName(), RegistryKeyPermissionCheck.Default, RegistryOptions.Volatile);
             }
@@ -718,7 +720,6 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 Registry.CurrentUser.DeleteSubKeyTree(this.keyName);
             }
         }
-#endif
 
         private class MockTaskScheduler : TaskScheduler
         {
@@ -732,7 +733,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             protected override void QueueTask(Task task)
             {
                 this.QueueTaskInvocations++;
-                ThreadPool.QueueUserWorkItem(state => this.TryExecuteTask((Task)state), task);
+                ThreadPool.QueueUserWorkItem(state => this.TryExecuteTask((Task)state!), task);
             }
 
             protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)

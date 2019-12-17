@@ -34,7 +34,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The owning job. May be null from the beginning, or cleared after task completion.
             /// </summary>
-            private JoinableTask job;
+            private JoinableTask? job;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="JoinableTaskSynchronizationContext"/> class
@@ -73,9 +73,9 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Forwards the specified message to the job this instance belongs to if applicable; otherwise to the factory.
             /// </summary>
-            public override void Post(SendOrPostCallback d, object state)
+            public override void Post(SendOrPostCallback d, object? state)
             {
-                JoinableTask job = this.job; // capture as local in case field becomes null later.
+                JoinableTask? job = this.job; // capture as local in case field becomes null later.
                 if (job != null)
                 {
                     job.Post(d, state, this.mainThreadAffinitized);
@@ -89,7 +89,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Forwards a message to the ambient job and blocks on its execution.
             /// </summary>
-            public override void Send(SendOrPostCallback d, object state)
+            public override void Send(SendOrPostCallback d, object? state)
             {
                 Requires.NotNull(d, nameof(d));
 
@@ -104,17 +104,19 @@ namespace Microsoft.VisualStudio.Threading
                     }
                     else
                     {
-                        this.jobFactory.Context.UnderlyingSynchronizationContext.Send(d, state);
+                        if (this.jobFactory.Context.UnderlyingSynchronizationContext is SynchronizationContext syncContext)
+                        {
+                            syncContext.Send(d, state);
+                        }
+                        else
+                        {
+                            throw new NotSupportedException(Strings.SyncContextNotSet);
+                        }
                     }
                 }
                 else
                 {
-#if DESKTOP || NETSTANDARD2_0
                     bool isThreadPoolThread = Thread.CurrentThread.IsThreadPoolThread;
-#else
-                    // On portable profile this is the best estimation we can do.
-                    bool isThreadPoolThread = !this.jobFactory.Context.IsOnMainThread;
-#endif
                     if (isThreadPoolThread)
                     {
                         d(state);
@@ -124,10 +126,10 @@ namespace Microsoft.VisualStudio.Threading
                         Task.Factory.StartNew(
                             s =>
                             {
-                                var tuple = (Tuple<SendOrPostCallback, object>)s;
+                                var tuple = (Tuple<SendOrPostCallback, object>)s!;
                                 tuple.Item1(tuple.Item2);
                             },
-                            Tuple.Create<SendOrPostCallback, object>(d, state),
+                            Tuple.Create<SendOrPostCallback, object?>(d, state),
                             CancellationToken.None,
                             TaskCreationOptions.None,
                             TaskScheduler.Default).Wait();

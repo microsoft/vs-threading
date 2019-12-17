@@ -28,7 +28,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference", MessageId = "0#")]
         public static bool ApplyChangeOptimistically<T>(ref T hotLocation, Func<T, T> applyChange)
-            where T : class
+            where T : class?
         {
             Requires.NotNull(applyChange, nameof(applyChange));
 
@@ -71,7 +71,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference", MessageId = "0#")]
         public static bool ApplyChangeOptimistically<T, TArg>(ref T hotLocation, TArg applyChangeArgument, Func<T, TArg, T> applyChange)
-            where T : class
+            where T : class?
         {
             Requires.NotNull(applyChange, nameof(applyChange));
 
@@ -113,7 +113,7 @@ namespace Microsoft.VisualStudio.Threading
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return TaskFromCanceled<T>(cancellationToken);
+                return Task.FromCanceled<T>(cancellationToken);
             }
 
             return WithCancellationSlow(task, cancellationToken);
@@ -137,7 +137,7 @@ namespace Microsoft.VisualStudio.Threading
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return TaskFromCanceled(cancellationToken);
+                return Task.FromCanceled(cancellationToken);
             }
 
             return WithCancellationSlow(task, continueOnCapturedContext: false, cancellationToken: cancellationToken);
@@ -148,7 +148,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="syncContext">The synchronization context to apply.</param>
         /// <param name="checkForChangesOnRevert">A value indicating whether to check that the applied SyncContext is still the current one when the original is restored.</param>
-        public static SpecializedSyncContext Apply(this SynchronizationContext syncContext, bool checkForChangesOnRevert = true)
+        public static SpecializedSyncContext Apply(this SynchronizationContext? syncContext, bool checkForChangesOnRevert = true)
         {
             return SpecializedSyncContext.Apply(syncContext, checkForChangesOnRevert);
         }
@@ -172,51 +172,10 @@ namespace Microsoft.VisualStudio.Threading
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return TaskFromCanceled(cancellationToken);
+                return Task.FromCanceled(cancellationToken);
             }
 
             return WithCancellationSlow(task, continueOnCapturedContext, cancellationToken);
-        }
-
-#if !TRYSETCANCELEDCT
-        internal static bool TrySetCanceled<T>(this TaskCompletionSource<T> tcs, CancellationToken cancellationToken)
-        {
-            return LightUps<T>.TrySetCanceled != null
-                ? LightUps<T>.TrySetCanceled(tcs, cancellationToken)
-                : tcs.TrySetCanceled();
-        }
-#endif
-
-        internal static Task TaskFromCanceled(CancellationToken cancellationToken)
-        {
-            return TaskFromCanceled<EmptyStruct>(cancellationToken);
-        }
-
-        internal static Task<T> TaskFromCanceled<T>(CancellationToken cancellationToken)
-        {
-#if TRYSETCANCELEDCT
-            return Task.FromCanceled<T>(cancellationToken);
-#else
-            var tcs = new TaskCompletionSource<T>();
-            tcs.TrySetCanceled(cancellationToken);
-            return tcs.Task;
-#endif
-        }
-
-        internal static Task TaskFromException(Exception exception)
-        {
-            return TaskFromException<EmptyStruct>(exception);
-        }
-
-        internal static Task<T> TaskFromException<T>(Exception exception)
-        {
-#if TRYSETCANCELEDCT
-            return Task.FromException<T>(exception);
-#else
-            var tcs = new TaskCompletionSource<T>();
-            tcs.TrySetException(exception);
-            return tcs.Task;
-#endif
         }
 
         /// <summary>
@@ -226,7 +185,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="taskCompletionSource">The <see cref="TaskCompletionSource{TResult}"/> to cancel.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <param name="cancellationCallback">A callback to invoke when cancellation occurs.</param>
-        internal static void AttachCancellation<T>(this TaskCompletionSource<T> taskCompletionSource, CancellationToken cancellationToken, ICancellationNotification cancellationCallback = null)
+        internal static void AttachCancellation<T>(this TaskCompletionSource<T> taskCompletionSource, CancellationToken cancellationToken, ICancellationNotification? cancellationCallback = null)
         {
             Requires.NotNull(taskCompletionSource, nameof(taskCompletionSource));
 
@@ -242,7 +201,7 @@ namespace Microsoft.VisualStudio.Threading
                     tuple.CancellationTokenRegistration = cancellationToken.Register(
                         s =>
                         {
-                            var t = (CancelableTaskCompletionSource<T>)s;
+                            var t = (CancelableTaskCompletionSource<T>)s!;
                             if (t.TaskCompletionSource.TrySetCanceled(t.CancellationToken))
                             {
                                 t.CancellationCallback?.OnCanceled();
@@ -258,7 +217,7 @@ namespace Microsoft.VisualStudio.Threading
                     taskCompletionSource.Task.ContinueWith(
                         (_, s) =>
                         {
-                            var t = (CancelableTaskCompletionSource<T>)s;
+                            var t = (CancelableTaskCompletionSource<T>)s!;
                             if (t.ContinuationScheduled || !t.OnOwnerThread)
                             {
                                 // We're not executing inline... Go ahead and do the work.
@@ -274,7 +233,7 @@ namespace Microsoft.VisualStudio.Threading
                                     {
                                         try
                                         {
-                                            var t2 = (CancelableTaskCompletionSource<T>)s2;
+                                            var t2 = (CancelableTaskCompletionSource<T>)s2!;
                                             t2.CancellationTokenRegistration.Dispose();
                                         }
                                         catch (Exception ex)
@@ -309,7 +268,7 @@ namespace Microsoft.VisualStudio.Threading
             Assumes.True(cancellationToken.CanBeCanceled);
 
             var tcs = new TaskCompletionSource<bool>();
-            using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s).TrySetResult(true), tcs))
+            using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s!).TrySetResult(true), tcs))
             {
                 if (task != await Task.WhenAny(task, tcs.Task).ConfigureAwait(false))
                 {
@@ -337,7 +296,7 @@ namespace Microsoft.VisualStudio.Threading
             Assumes.True(cancellationToken.CanBeCanceled);
 
             var tcs = new TaskCompletionSource<bool>();
-            using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s).TrySetResult(true), tcs))
+            using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s!).TrySetResult(true), tcs))
             {
                 if (task != await Task.WhenAny(task, tcs.Task).ConfigureAwait(continueOnCapturedContext))
                 {
@@ -377,7 +336,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <param name="taskCompletionSource">The task completion source.</param>
             /// <param name="cancellationCallback">A callback to invoke when cancellation occurs.</param>
             /// <param name="cancellationToken">The cancellation token.</param>
-            internal CancelableTaskCompletionSource(TaskCompletionSource<T> taskCompletionSource, ICancellationNotification cancellationCallback, CancellationToken cancellationToken)
+            internal CancelableTaskCompletionSource(TaskCompletionSource<T> taskCompletionSource, ICancellationNotification? cancellationCallback, CancellationToken cancellationToken)
             {
                 this.TaskCompletionSource = taskCompletionSource ?? throw new ArgumentNullException(nameof(taskCompletionSource));
                 this.CancellationToken = cancellationToken;
@@ -394,7 +353,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             internal TaskCompletionSource<T> TaskCompletionSource { get; }
 
-            internal ICancellationNotification CancellationCallback { get; }
+            internal ICancellationNotification? CancellationCallback { get; }
 
             /// <summary>
             /// Gets or sets the cancellation token registration.

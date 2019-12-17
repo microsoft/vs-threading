@@ -53,7 +53,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <inheritdoc/>
-        public override void Post(SendOrPostCallback d, object state)
+        public override void Post(SendOrPostCallback d, object? state)
         {
             var ctxt = ExecutionContext.Capture();
             lock (this.messageQueue)
@@ -65,7 +65,7 @@ namespace Microsoft.VisualStudio.Threading
 
         /// <inheritdoc/>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031", Justification = "We are catching it to rethrow elsewhere.")]
-        public override void Send(SendOrPostCallback d, object state)
+        public override void Send(SendOrPostCallback d, object? state)
         {
             Requires.NotNull(d, nameof(d));
 
@@ -82,8 +82,10 @@ namespace Microsoft.VisualStudio.Threading
             }
             else
             {
-                Exception caughtException = null;
+                Exception? caughtException = null;
+#pragma warning disable CA2000 // Dispose objects before losing scope
                 var evt = new ManualResetEventSlim();
+#pragma warning restore CA2000 // Dispose objects before losing scope
                 var ctxt = ExecutionContext.Capture();
                 lock (this.messageQueue)
                 {
@@ -178,13 +180,13 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
-        private struct Message
+        private readonly struct Message
         {
             internal readonly SendOrPostCallback Callback;
-            internal readonly object State;
-            internal readonly ExecutionContext Context;
+            internal readonly object? State;
+            internal readonly ExecutionContext? Context;
 
-            internal Message(SendOrPostCallback d, object state, ExecutionContext ctxt)
+            internal Message(SendOrPostCallback d, object? state, ExecutionContext? ctxt)
             {
                 this.Callback = d;
                 this.State = state;
@@ -201,7 +203,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The owning sync context.
             /// </summary>
-            private SingleThreadedSynchronizationContext owner;
+            private SingleThreadedSynchronizationContext? owner;
 
             /// <summary>
             /// Backing field for the <see cref="Continue" /> property.

@@ -15,10 +15,8 @@ namespace Microsoft.VisualStudio.Threading
     using System.Security;
     using System.Threading;
     using System.Threading.Tasks;
-#if DESKTOP
     using Microsoft.Win32;
     using Microsoft.Win32.SafeHandles;
-#endif
 
     /// <summary>
     /// Extension methods and awaitables for .NET 4.5.
@@ -48,8 +46,6 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(scheduler, nameof(scheduler));
             return new TaskSchedulerAwaitable(scheduler, alwaysYield);
         }
-
-#if DESKTOP || NETSTANDARD2_0
 
         /// <summary>
         /// Provides await functionality for ordinary <see cref="WaitHandle"/>s.
@@ -103,9 +99,6 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
-#endif
-
-#if DESKTOP
         /// <summary>
         /// Returns a Task that completes when the specified registry key changes.
         /// </summary>
@@ -135,7 +128,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </returns>
         private static async Task WaitForRegistryChangeAsync(SafeRegistryHandle registryKeyHandle, bool watchSubtree, RegistryChangeNotificationFilters change, CancellationToken cancellationToken)
         {
-            IDisposable dedicatedThreadReleaser = null;
+            IDisposable? dedicatedThreadReleaser = null;
             try
             {
                 using (var evt = new ManualResetEventSlim())
@@ -167,7 +160,9 @@ namespace Microsoft.VisualStudio.Threading
                         // subscription to have begun before we return: for the async part to simply be notification.
                         // This async method we're calling uses .ConfigureAwait(false) internally so this won't
                         // deadlock if we're called on a thread with a single-thread SynchronizationContext.
+#pragma warning disable CA2000 // Dispose objects before losing scope
                         dedicatedThreadReleaser = DownlevelRegistryWatcherSupport.ExecuteOnDedicatedThreadAsync(registerAction).GetAwaiter().GetResult();
+#pragma warning restore CA2000 // Dispose objects before losing scope
                     }
 
                     await evt.WaitHandle.ToTask(cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -221,7 +216,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The thread that should stay alive and be dequeuing <see cref="PendingWork"/>.
             /// </summary>
-            private static Thread liveThread;
+            private static Thread? liveThread;
 
             /// <summary>
             /// Executes some action on a long-lived thread.
@@ -325,7 +320,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 while (true)
                 {
-                    Tuple<Action, TaskCompletionSource<EmptyStruct>> work = null;
+                    Tuple<Action, TaskCompletionSource<EmptyStruct>>? work = null;
                     lock (SyncObject)
                     {
                         if (Thread.CurrentThread != liveThread)
@@ -397,8 +392,6 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
-#endif
-
         /// <summary>
         /// Converts a <see cref="YieldAwaitable"/> to a <see cref="ConfiguredTaskYieldAwaitable"/>.
         /// </summary>
@@ -450,7 +443,7 @@ namespace Microsoft.VisualStudio.Threading
         /// An awaitable that executes continuations on the specified task scheduler.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct TaskSchedulerAwaitable
+        public readonly struct TaskSchedulerAwaitable
         {
             /// <summary>
             /// The scheduler for continuations.
@@ -490,7 +483,7 @@ namespace Microsoft.VisualStudio.Threading
         /// An awaiter returned from <see cref="GetAwaiter(TaskScheduler)"/>.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct TaskSchedulerAwaiter : ICriticalNotifyCompletion
+        public readonly struct TaskSchedulerAwaiter : ICriticalNotifyCompletion
         {
             /// <summary>
             /// The scheduler for continuations.
@@ -533,14 +526,7 @@ namespace Microsoft.VisualStudio.Threading
                     // TaskScheduler.Current is never null.  Even if no scheduler is really active and the current
                     // thread is not a threadpool thread, TaskScheduler.Current == TaskScheduler.Default, so we have
                     // to protect against that case too.
-#if DESKTOP || NETSTANDARD2_0
                     bool isThreadPoolThread = Thread.CurrentThread.IsThreadPoolThread;
-#else
-                    // An approximation of whether we're on a threadpool thread is whether
-                    // there is a SynchronizationContext applied. So use that, since it's
-                    // available to portable libraries.
-                    bool isThreadPoolThread = SynchronizationContext.Current == null;
-#endif
                     return (this.scheduler == TaskScheduler.Default && isThreadPoolThread)
                         || (this.scheduler == TaskScheduler.Current && TaskScheduler.Current != TaskScheduler.Default);
                 }
@@ -554,7 +540,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 if (this.scheduler == TaskScheduler.Default)
                 {
-                    ThreadPool.QueueUserWorkItem(state => ((Action)state)(), continuation);
+                    ThreadPool.QueueUserWorkItem(state => ((Action)state!)(), continuation);
                 }
                 else
                 {
@@ -571,11 +557,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 if (this.scheduler == TaskScheduler.Default)
                 {
-#if THREADPOOL
-                    ThreadPool.UnsafeQueueUserWorkItem(state => ((Action)state)(), continuation);
-#else
-                    ThreadPool.QueueUserWorkItem(state => ((Action)state)(), continuation);
-#endif
+                    ThreadPool.UnsafeQueueUserWorkItem(state => ((Action)state!)(), continuation);
                 }
                 else
                 {
@@ -598,7 +580,7 @@ namespace Microsoft.VisualStudio.Threading
         /// then immediately resume, possibly on the original <see cref="SynchronizationContext"/>.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct ConfiguredTaskYieldAwaitable
+        public readonly struct ConfiguredTaskYieldAwaitable
         {
             /// <summary>
             /// A value indicating whether the continuation should run on the captured <see cref="SynchronizationContext"/>, if any.
@@ -627,7 +609,7 @@ namespace Microsoft.VisualStudio.Threading
         /// then immediately resume, possibly on the original <see cref="SynchronizationContext"/>.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct ConfiguredTaskYieldAwaiter : ICriticalNotifyCompletion
+        public readonly struct ConfiguredTaskYieldAwaiter : ICriticalNotifyCompletion
         {
             /// <summary>
             /// A value indicating whether the continuation should run on the captured <see cref="SynchronizationContext"/>, if any.
@@ -662,7 +644,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
                 else
                 {
-                    ThreadPool.QueueUserWorkItem(state => ((Action)state)(), continuation);
+                    ThreadPool.QueueUserWorkItem(state => ((Action)state!)(), continuation);
                 }
             }
 
@@ -679,11 +661,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
                 else
                 {
-#if THREADPOOL
-                    ThreadPool.UnsafeQueueUserWorkItem(state => ((Action)state)(), continuation);
-#else
-                    ThreadPool.QueueUserWorkItem(state => ((Action)state)(), continuation);
-#endif
+                    ThreadPool.UnsafeQueueUserWorkItem(state => ((Action)state!)(), continuation);
                 }
             }
 
@@ -700,7 +678,7 @@ namespace Microsoft.VisualStudio.Threading
         /// A Task awaitable that has affinity to executing callbacks synchronously on the completing callstack.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct ExecuteContinuationSynchronouslyAwaitable
+        public readonly struct ExecuteContinuationSynchronouslyAwaitable
         {
             /// <summary>
             /// The task whose completion will execute the continuation.
@@ -720,7 +698,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Gets the awaiter.
             /// </summary>
-            /// <returns>The awaiter</returns>
+            /// <returns>The awaiter.</returns>
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
             public ExecuteContinuationSynchronouslyAwaiter GetAwaiter() => new ExecuteContinuationSynchronouslyAwaiter(this.antecedent);
         }
@@ -729,7 +707,7 @@ namespace Microsoft.VisualStudio.Threading
         /// A Task awaiter that has affinity to executing callbacks synchronously on the completing callstack.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct ExecuteContinuationSynchronouslyAwaiter : INotifyCompletion
+        public readonly struct ExecuteContinuationSynchronouslyAwaiter : INotifyCompletion
         {
             /// <summary>
             /// The task whose completion will execute the continuation.
@@ -765,7 +743,7 @@ namespace Microsoft.VisualStudio.Threading
                 Requires.NotNull(continuation, nameof(continuation));
 
                 this.antecedent.ContinueWith(
-                    (_, s) => ((Action)s)(),
+                    (_, s) => ((Action)s!)(),
                     continuation,
                     CancellationToken.None,
                     TaskContinuationOptions.ExecuteSynchronously,
@@ -778,7 +756,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <typeparam name="T">The type of value returned by the awaited <see cref="Task"/>.</typeparam>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct ExecuteContinuationSynchronouslyAwaitable<T>
+        public readonly struct ExecuteContinuationSynchronouslyAwaitable<T>
         {
             /// <summary>
             /// The task whose completion will execute the continuation.
@@ -798,7 +776,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Gets the awaiter.
             /// </summary>
-            /// <returns>The awaiter</returns>
+            /// <returns>The awaiter.</returns>
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
             public ExecuteContinuationSynchronouslyAwaiter<T> GetAwaiter() => new ExecuteContinuationSynchronouslyAwaiter<T>(this.antecedent);
         }
@@ -808,7 +786,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <typeparam name="T">The type of value returned by the awaited <see cref="Task"/>.</typeparam>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct ExecuteContinuationSynchronouslyAwaiter<T> : INotifyCompletion
+        public readonly struct ExecuteContinuationSynchronouslyAwaiter<T> : INotifyCompletion
         {
             /// <summary>
             /// The task whose completion will execute the continuation.
@@ -845,7 +823,7 @@ namespace Microsoft.VisualStudio.Threading
                 Requires.NotNull(continuation, nameof(continuation));
 
                 this.antecedent.ContinueWith(
-                    (_, s) => ((Action)s)(),
+                    (_, s) => ((Action)s!)(),
                     continuation,
                     CancellationToken.None,
                     TaskContinuationOptions.ExecuteSynchronously,

@@ -2,6 +2,7 @@
 {
     using System;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Runtime.CompilerServices;
     using System.Runtime.ExceptionServices;
     using System.Threading;
@@ -110,7 +111,7 @@
                 () =>
                 {
                     scenario();
-                    return TplExtensions.CompletedTask;
+                    return Task.CompletedTask;
                 },
                 maxBytesAllocated,
                 iterations,
@@ -166,9 +167,7 @@
                 int[] gcCountBefore = new int[GC.MaxGeneration + 1];
                 int[] gcCountAfter = new int[GC.MaxGeneration + 1];
                 long initialMemory = GC.GetTotalMemory(true);
-#if NET46 || NETCOREAPP2_0
                 GC.TryStartNoGCRegion(8 * 1024 * 1024);
-#endif
                 for (int i = 0; i <= GC.MaxGeneration; i++)
                 {
                     gcCountBefore[i] = GC.CollectionCount(i);
@@ -185,9 +184,7 @@
                 }
 
                 long allocated = (GC.GetTotalMemory(false) - initialMemory) / iterations;
-#if NET46 || NETCOREAPP2_0
                 GC.EndNoGCRegion();
-#endif
 
                 attemptWithinMemoryLimitsObserved |= maxBytesAllocated == -1 || allocated <= maxBytesAllocated;
                 long leaked = long.MaxValue;
@@ -248,12 +245,12 @@
             this.ExecuteOnDispatcher(() => this.CheckGCPressureAsync(scenario, maxBytesAllocated, iterations, allowedAttempts));
         }
 
-#if DESKTOP || NETCOREAPP2_0
         /// <summary>
         /// Executes the delegate on a thread with <see cref="ApartmentState.STA"/>
         /// and without a current <see cref="SynchronizationContext"/>.
         /// </summary>
         /// <param name="action">The delegate to execute.</param>
+        /// <exception cref="PlatformNotSupportedException">Thrown on non-Windows OS.</exception>
         protected void ExecuteOnSTA(Action action)
         {
             Requires.NotNull(action, nameof(action));
@@ -265,7 +262,7 @@
                 return;
             }
 
-            Exception staFailure = null;
+            Exception? staFailure = null;
             var staThread = new Thread(state =>
             {
                 try
@@ -285,80 +282,48 @@
                 ExceptionDispatchInfo.Capture(staFailure).Throw(); // rethrow preserving callstack.
             }
         }
-#endif
 
         protected void ExecuteOnDispatcher(Action action)
         {
             this.ExecuteOnDispatcher(delegate
             {
                 action();
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
         }
 
-        protected void ExecuteOnDispatcher(Func<Task> action, bool staRequired = true)
+        protected void ExecuteOnDispatcher(Func<Task> action)
         {
-            Action worker = delegate
+            if (!SingleThreadedTestSynchronizationContext.IsSingleThreadedSyncContext(SynchronizationContext.Current))
             {
-                var frame = SingleThreadedTestSynchronizationContext.NewFrame();
-                Exception failure = null;
-                SynchronizationContext.Current.Post(
-                    async _ =>
-                    {
-                        try
-                        {
-                            await action();
-                        }
-                        catch (Exception ex)
-                        {
-                            failure = ex;
-                        }
-                        finally
-                        {
-                            frame.Continue = false;
-                        }
-                    },
-                    null);
-
-                SingleThreadedTestSynchronizationContext.PushFrame(SynchronizationContext.Current, frame);
-                if (failure != null)
-                {
-                    ExceptionDispatchInfo.Capture(failure).Throw();
-                }
-            };
-
-#if DESKTOP || NETCOREAPP2_0
-            if ((!staRequired || Thread.CurrentThread.GetApartmentState() == ApartmentState.STA) &&
-                SingleThreadedTestSynchronizationContext.IsSingleThreadedSyncContext(SynchronizationContext.Current))
-            {
-                worker();
+                SynchronizationContext.SetSynchronizationContext(SingleThreadedTestSynchronizationContext.New());
             }
-            else
-            {
-                this.ExecuteOnSTA(() =>
+
+            var frame = SingleThreadedTestSynchronizationContext.NewFrame();
+            Exception? failure = null;
+            SynchronizationContext.Current!.Post(
+                async _ =>
                 {
-                    if (!SingleThreadedTestSynchronizationContext.IsSingleThreadedSyncContext(SynchronizationContext.Current))
+                    try
                     {
-                        SynchronizationContext.SetSynchronizationContext(SingleThreadedTestSynchronizationContext.New());
+                        await action();
                     }
+                    catch (Exception ex)
+                    {
+                        failure = ex;
+                    }
+                    finally
+                    {
+                        frame.Continue = false;
+                    }
+                },
+                null);
 
-                    worker();
-                });
-            }
-#else
-            if (SingleThreadedTestSynchronizationContext.IsSingleThreadedSyncContext(SynchronizationContext.Current))
+            SingleThreadedTestSynchronizationContext.PushFrame(SynchronizationContext.Current, frame);
+            if (failure != null)
             {
-                worker();
+                ExceptionDispatchInfo.Capture(failure).Throw();
             }
-            else
-            {
-                Task.Run(delegate
-                {
-                    SynchronizationContext.SetSynchronizationContext(SingleThreadedTestSynchronizationContext.New());
-                    worker();
-                }).GetAwaiter().GetResult();
-            }
-#endif
         }
 
         /// <summary>
@@ -372,7 +337,7 @@
         /// </returns>
         /// <exception cref="Xunit.Sdk.XunitException">Thrown if the isolated test result is a Failure.</exception>
         /// <exception cref="SkipException">Thrown if on a platform that we do not yet support test isolation on.</exception>
-        protected Task<bool> ExecuteInIsolationAsync([CallerMemberName] string testMethodName = null)
+        protected Task<bool> ExecuteInIsolationAsync([CallerMemberName] string testMethodName = null!)
         {
             return TestUtilities.ExecuteInIsolationAsync(this, testMethodName, this.Logger);
         }
@@ -388,7 +353,7 @@
         /// </returns>
         /// <exception cref="Xunit.Sdk.XunitException">Thrown if the isolated test result is a Failure.</exception>
         /// <exception cref="SkipException">Thrown if on a platform that we do not yet support test isolation on.</exception>
-        protected bool ExecuteInIsolation([CallerMemberName] string testMethodName = null)
+        protected bool ExecuteInIsolation([CallerMemberName] string testMethodName = null!)
         {
             return TestUtilities.ExecuteInIsolationAsync(this, testMethodName, this.Logger).GetAwaiter().GetResult();
         }

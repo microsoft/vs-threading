@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
     using System.Threading.Tasks;
+    using Microsoft.CodeAnalysis.Testing;
     using Xunit;
     using Verify = CSharpCodeFixVerifier<VSTHRD012SpecifyJtfWhereAllowed, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
@@ -28,7 +29,7 @@ class Test {
             {
                 TestCode = test,
                 ExpectedDiagnostics = { expected },
-                VerifyExclusions = false,
+                TestBehaviors = TestBehaviors.SkipGeneratedCodeCheck,
             }.RunAsync();
         }
 
@@ -54,7 +55,7 @@ class Test {
             {
                 TestCode = test,
                 ExpectedDiagnostics = { expected },
-                VerifyExclusions = false,
+                TestBehaviors = TestBehaviors.SkipGeneratedCodeCheck,
             }.RunAsync();
         }
 
@@ -73,6 +74,27 @@ class Test {
 
     void G() { }
     void G([Optional] JoinableTaskContext jtc) { }
+}
+";
+
+            await Verify.VerifyAnalyzerAsync(test);
+        }
+
+        [Fact]
+        public async Task SiblingMethodOverloadsWithObsoleteAttribute_WithoutJTC_GeneratesNoWarning()
+        {
+            var test = @"
+using System;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    void F() {
+        G();
+    }
+
+    void G() { }
+    [Obsolete]
+    void G(JoinableTaskContext jtc) { }
 }
 ";
 
@@ -103,7 +125,7 @@ class Apple {
             {
                 TestCode = test,
                 ExpectedDiagnostics = { expected },
-                VerifyExclusions = false,
+                TestBehaviors = TestBehaviors.SkipGeneratedCodeCheck,
             }.RunAsync();
         }
 
@@ -149,7 +171,7 @@ class Test {
             {
                 TestCode = test,
                 ExpectedDiagnostics = { expected },
-                VerifyExclusions = false,
+                TestBehaviors = TestBehaviors.SkipGeneratedCodeCheck,
             }.RunAsync();
         }
 

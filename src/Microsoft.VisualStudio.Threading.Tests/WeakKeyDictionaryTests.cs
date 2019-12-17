@@ -15,7 +15,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
     using Xunit.Abstractions;
 
     /// <summary>
-    /// Tests for the weak dictionary class
+    /// Tests for the weak dictionary class.
     /// </summary>
     public class WeakKeyDictionaryTests
     {
@@ -35,7 +35,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         }
 
         /// <summary>
-        /// Find with the same key inserted using the indexer
+        /// Find with the same key inserted using the indexer.
         /// </summary>
         [Fact]
         public void Indexer_ReferenceFound()
@@ -54,7 +54,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         }
 
         /// <summary>
-        /// Find something not present with the indexer
+        /// Find something not present with the indexer.
         /// </summary>
         [Fact]
         public void Indexer_NotFound()
@@ -64,7 +64,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         }
 
         /// <summary>
-        /// Find with the same key inserted using TryGetValue
+        /// Find with the same key inserted using TryGetValue.
         /// </summary>
         [Fact]
         public void TryGetValue_ReferenceFound()
@@ -76,21 +76,21 @@ namespace Microsoft.VisualStudio.Threading.Tests
             dictionary[k1] = v1;
 
             // Now look for the same key we inserted
-            bool result = dictionary.TryGetValue(k1, out string v2);
+            bool result = dictionary.TryGetValue(k1, out string? v2);
 
             Assert.True(result);
             Assert.True(object.ReferenceEquals(v1, v2));
         }
 
         /// <summary>
-        /// Find something not present with TryGetValue
+        /// Find something not present with TryGetValue.
         /// </summary>
         [Fact]
         public void TryGetValue_ReferenceNotFound()
         {
             var dictionary = new WeakKeyDictionary<string, string>();
 
-            bool result = dictionary.TryGetValue("x", out string v);
+            bool result = dictionary.TryGetValue("x", out string? v);
 
             Assert.False(result);
             Assert.Null(v);
@@ -98,7 +98,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         }
 
         /// <summary>
-        /// Find a key that wasn't inserted but is equal
+        /// Find a key that wasn't inserted but is equal.
         /// </summary>
         [Fact]
         public void EqualityComparer()
@@ -121,7 +121,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         }
 
         /// <summary>
-        /// Verify dictionary doesn't hold onto keys
+        /// Verify dictionary doesn't hold onto keys.
         /// </summary>
         [Fact]
         public void KeysCollectable()
@@ -143,7 +143,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         }
 
         /// <summary>
-        /// Call Scavenge explicitly
+        /// Call Scavenge explicitly.
         /// </summary>
         [Fact]
         public void ExplicitScavenge()
@@ -158,7 +158,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
         }
 
         /// <summary>
-        /// Growing should invoke Scavenge
+        /// Growing should invoke Scavenge.
         /// </summary>
         [Fact]
         public void ScavengeOnGrow()
@@ -205,8 +205,8 @@ namespace Microsoft.VisualStudio.Threading.Tests
 
             var enumeratedContents = dictionary.ToList();
             Assert.Equal(2, enumeratedContents.Count);
-            Assert.True(enumeratedContents.Contains(new KeyValuePair<object, int>(keepAlive1, 0)));
-            Assert.True(enumeratedContents.Contains(new KeyValuePair<object, int>(keepAlive2, 2)));
+            Assert.Contains(new KeyValuePair<object, int>(keepAlive1, 0), enumeratedContents);
+            Assert.Contains(new KeyValuePair<object, int>(keepAlive2, 2), enumeratedContents);
         }
 
         /// <summary>

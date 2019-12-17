@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -101,33 +102,38 @@
                     ExpressionSyntax invokedMethodName = Utils.IsolateMethodName(invocationExpressionSyntax);
                     var symbolInfo = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax, context.CancellationToken);
                     var methodSymbol = symbolInfo.Symbol as IMethodSymbol;
-                    if (symbolInfo.Symbol != null && !symbolInfo.Symbol.Name.EndsWith(VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix) &&
-                        !(methodSymbol?.ReturnType?.Name == nameof(Task) && methodSymbol.ReturnType.BelongsToNamespace(Namespaces.SystemThreadingTasks)))
+                    if (methodSymbol != null && !methodSymbol.Name.EndsWith(VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix) &&
+                        !(methodSymbol.ReturnType?.Name == nameof(Task) && methodSymbol.ReturnType.BelongsToNamespace(Namespaces.SystemThreadingTasks)))
                     {
-                        string asyncMethodName = symbolInfo.Symbol.Name + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix;
-                        var asyncMethodMatches = context.SemanticModel.LookupSymbols(
+                        string asyncMethodName = methodSymbol.Name + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix;
+                        var symbols = context.SemanticModel.LookupSymbols(
                             invocationExpressionSyntax.Expression.GetLocation().SourceSpan.Start,
-                            symbolInfo.Symbol.ContainingType,
+                            methodSymbol.ContainingType,
                             asyncMethodName,
-                            includeReducedExtensionMethods: true).OfType<IMethodSymbol>()
-                            .Where(m => !m.IsObsolete())
-                            .Where(m => HasSupersetOfParameterTypes(m, methodSymbol))
-                            .Where(m => m.Name != invocationDeclaringMethod?.Identifier.Text)
-                            .Where(Utils.HasAsyncCompatibleReturnType);
+                            includeReducedExtensionMethods: true);
 
-                        if (asyncMethodMatches.Any())
+                        foreach (var s in symbols)
                         {
-                            // An async alternative exists.
-                            var properties = ImmutableDictionary<string, string>.Empty
-                                .Add(AsyncMethodKeyName, asyncMethodName);
+                            if (s is IMethodSymbol m
+                                && !m.IsObsolete()
+                                && HasSupersetOfParameterTypes(m, methodSymbol)
+                                && m.Name != invocationDeclaringMethod?.Identifier.Text
+                                && Utils.HasAsyncCompatibleReturnType(m))
+                            {
+                                // An async alternative exists.
+                                var properties = ImmutableDictionary<string, string>.Empty
+                                    .Add(AsyncMethodKeyName, asyncMethodName);
 
-                            Diagnostic diagnostic = Diagnostic.Create(
-                                Descriptor,
-                                invokedMethodName.GetLocation(),
-                                properties,
-                                invokedMethodName.ToString(),
-                                asyncMethodName);
-                            context.ReportDiagnostic(diagnostic);
+                                Diagnostic diagnostic = Diagnostic.Create(
+                                    Descriptor,
+                                    invokedMethodName.GetLocation(),
+                                    properties,
+                                    invokedMethodName.ToString(),
+                                    asyncMethodName);
+                                context.ReportDiagnostic(diagnostic);
+
+                                return;
+                            }
                         }
                     }
                 }
@@ -150,7 +156,7 @@
             {
                 // We want to scan invocations that occur inside Task and Task<T>-returning delegates or methods.
                 // That is: methods that either are or could be made async.
-                IMethodSymbol methodSymbol = null;
+                IMethodSymbol? methodSymbol = null;
                 var anonymousFunc = context.Node.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>();
                 if (anonymousFunc != null)
                 {
@@ -171,7 +177,7 @@
                     && returnType.BelongsToNamespace(Namespaces.SystemThreadingTasks);
             }
 
-            private static bool InspectMemberAccess(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax, IEnumerable<CommonInterest.SyncBlockingMethod> problematicMethods)
+            private static bool InspectMemberAccess(SyntaxNodeAnalysisContext context, [NotNullWhen(true)] MemberAccessExpressionSyntax? memberAccessSyntax, IEnumerable<CommonInterest.SyncBlockingMethod> problematicMethods)
             {
                 if (memberAccessSyntax == null)
                 {

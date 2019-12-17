@@ -7,10 +7,8 @@
 namespace Microsoft.VisualStudio.Threading
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
+    using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -23,8 +21,9 @@ namespace Microsoft.VisualStudio.Threading
     {
         /// <summary>
         /// The synchronization object.
+        /// Applicable only when <see cref="joinableTaskFactory"/> is null.
         /// </summary>
-        private readonly object syncObject = new object();
+        private readonly object? syncObject;
 
         /// <summary>
         /// The handler to invoke for each progress update.
@@ -33,37 +32,114 @@ namespace Microsoft.VisualStudio.Threading
 
         /// <summary>
         /// The set of progress reports that have started (but may not have finished yet).
+        /// Applicable only when <see cref="joinableTaskFactory"/> is null.
         /// </summary>
-        private readonly HashSet<Task> outstandingTasks = new HashSet<Task>();
+        private readonly HashSet<Task>? outstandingTasks;
 
         /// <summary>
-        /// The factory to use for spawning reports.
+        /// The factory to use for invoking the <see cref="handler"/>.
+        /// Applicable only when <see cref="joinableTaskFactory"/> is null.
         /// </summary>
-        private readonly TaskFactory taskFactory =
-            new TaskFactory(SynchronizationContext.Current != null ? TaskScheduler.FromCurrentSynchronizationContext() : TaskScheduler.Default);
+        private readonly TaskFactory? taskFactory;
+
+        /// <summary>
+        /// A value indicating whether this instance was constructed on the main thread.
+        /// Applicable only when <see cref="joinableTaskFactory"/> is not null.
+        /// </summary>
+        private readonly bool createdOnMainThread;
+
+        /// <summary>
+        /// The <see cref="JoinableTaskFactory"/> to use when invoking the <see cref="handler"/> to mitigate deadlocks.
+        /// May be null.
+        /// </summary>
+        private readonly JoinableTaskFactory? joinableTaskFactory;
+
+        /// <summary>
+        /// A collection of outstanding progress updates that have not completed execution.
+        /// Applicable only when <see cref="joinableTaskFactory"/> is not null.
+        /// </summary>
+        private readonly JoinableTaskCollection? outstandingJoinableTasks;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ProgressWithCompletion{T}" /> class.
         /// </summary>
-        /// <param name="handler">The handler.</param>
+        /// <param name="handler">
+        /// A handler to invoke for each reported progress value.
+        /// Depending on the <see cref="SynchronizationContext"/> instance that is captured when this constructor is invoked,
+        /// it is possible that this handler instance could be invoked concurrently with itself.
+        /// </param>
         public ProgressWithCompletion(Action<T> handler)
+            : this(WrapSyncHandler(handler), joinableTaskFactory: null)
         {
-            Requires.NotNull(handler, nameof(handler));
-            this.handler = value =>
-            {
-                handler(value);
-                return TplExtensions.CompletedTask;
-            };
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ProgressWithCompletion{T}" /> class.
         /// </summary>
-        /// <param name="handler">The async handler.</param>
+        /// <param name="handler">
+        /// A handler to invoke for each reported progress value.
+        /// Depending on the <see cref="SynchronizationContext"/> instance that is captured when this constructor is invoked,
+        /// it is possible that this handler instance could be invoked concurrently with itself.
+        /// </param>
         public ProgressWithCompletion(Func<T, Task> handler)
+            : this(handler, joinableTaskFactory: null)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ProgressWithCompletion{T}" /> class.
+        /// </summary>
+        /// <param name="handler">
+        /// A handler to invoke for each reported progress value.
+        /// It is possible that this handler instance could be invoked concurrently with itself.
+        /// </param>
+        /// <param name="joinableTaskFactory">A <see cref="JoinableTaskFactory"/> instance that can be used to mitigate deadlocks when <see cref="WaitAsync(CancellationToken)"/> is called and the <paramref name="handler"/> requires the main thread.</param>
+        public ProgressWithCompletion(Action<T> handler, JoinableTaskFactory? joinableTaskFactory)
+            : this(WrapSyncHandler(handler), joinableTaskFactory)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ProgressWithCompletion{T}" /> class.
+        /// </summary>
+        /// <param name="handler">
+        /// A handler to invoke for each reported progress value.
+        /// It is possible that this handler instance could be invoked concurrently with itself.
+        /// </param>
+        /// <param name="joinableTaskFactory">A <see cref="JoinableTaskFactory"/> instance that can be used to mitigate deadlocks when <see cref="WaitAsync(CancellationToken)"/> is called and the <paramref name="handler"/> requires the main thread.</param>
+        public ProgressWithCompletion(Func<T, Task> handler, JoinableTaskFactory? joinableTaskFactory)
         {
             Requires.NotNull(handler, nameof(handler));
             this.handler = handler;
+            if (joinableTaskFactory != null)
+            {
+                this.joinableTaskFactory = joinableTaskFactory;
+                this.outstandingJoinableTasks = joinableTaskFactory.Context.CreateCollection();
+                this.createdOnMainThread = joinableTaskFactory.Context.IsOnMainThread;
+            }
+            else
+            {
+                this.syncObject = new object();
+                this.taskFactory = new TaskFactory(SynchronizationContext.Current != null ? TaskScheduler.FromCurrentSynchronizationContext() : TaskScheduler.Default);
+                this.outstandingTasks = new HashSet<Task>();
+            }
+        }
+
+        private bool IsJoinableTaskAware(
+            [NotNullWhen(true)] out JoinableTaskFactory? joinableTaskFactory,
+            [NotNullWhen(true)] out JoinableTaskCollection? outstandingJoinableTasks,
+            [NotNullWhen(false)] out object? syncObject,
+            [NotNullWhen(false)] out HashSet<Task>? outstandingTasks,
+            [NotNullWhen(false)] out TaskFactory? taskFactory)
+        {
+            joinableTaskFactory = this.joinableTaskFactory;
+            outstandingJoinableTasks = this.outstandingJoinableTasks;
+
+            syncObject = this.syncObject;
+            outstandingTasks = this.outstandingTasks;
+            taskFactory = this.taskFactory;
+
+            return joinableTaskFactory is object;
         }
 
         /// <summary>
@@ -81,37 +157,85 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="value">The value representing the updated progress.</param>
         protected virtual void Report(T value)
         {
-#pragma warning disable CA2008 // Do not create tasks without passing a TaskScheduler
-            var reported = this.taskFactory.StartNew(() => this.handler(value)).Unwrap();
-#pragma warning restore CA2008 // Do not create tasks without passing a TaskScheduler
-            lock (this.syncObject)
+            if (this.IsJoinableTaskAware(out var joinableTaskFactory, out var outstandingJoinableTasks, out var syncObject, out var outstandingTasks, out var taskFactory))
             {
-                this.outstandingTasks.Add(reported);
-            }
-
-            reported.ContinueWith(
-                t =>
-                {
-                    lock (this.syncObject)
+                JoinableTask joinableTask = joinableTaskFactory.RunAsync(
+                    async delegate
                     {
-                        this.outstandingTasks.Remove(t);
-                    }
-                },
-                CancellationToken.None,
-                TaskContinuationOptions.NotOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
-                TaskScheduler.Default);
+                        // Emulate the behavior of having captured a SynchronizationContext by invoking the handler on the main thread
+                        // if the constructor was on the main thread. Otherwise use the threadpool thread. But never invoke the handler
+                        // inline with our caller, per the behavior folks expect from this and .NET's Progress<T> class.
+                        if (this.createdOnMainThread)
+                        {
+                            await joinableTaskFactory.SwitchToMainThreadAsync(alwaysYield: true);
+                        }
+                        else
+                        {
+                            await TaskScheduler.Default.SwitchTo(alwaysYield: true);
+                        }
+
+                        await this.handler(value).ConfigureAwaitRunInline();
+                    });
+                outstandingJoinableTasks.Add(joinableTask);
+            }
+            else
+            {
+#pragma warning disable CA2008 // Do not create tasks without passing a TaskScheduler
+                var reported = taskFactory.StartNew(() => this.handler(value)).Unwrap();
+#pragma warning restore CA2008 // Do not create tasks without passing a TaskScheduler
+                lock (syncObject)
+                {
+                    outstandingTasks.Add(reported);
+                }
+
+                reported.ContinueWith(
+                    t =>
+                    {
+                        lock (syncObject)
+                        {
+                            outstandingTasks.Remove(t);
+                        }
+                    },
+                    CancellationToken.None,
+                    TaskContinuationOptions.NotOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                    TaskScheduler.Default);
+            }
         }
 
         /// <summary>
         /// Returns a task that completes when all reported progress has executed.
         /// </summary>
         /// <returns>A task that completes when all progress is complete.</returns>
-        public Task WaitAsync()
+        public Task WaitAsync() => this.WaitAsync(CancellationToken.None);
+
+        /// <summary>
+        /// Returns a task that completes when all reported progress has executed.
+        /// </summary>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        /// <returns>A task that completes when all progress is complete.</returns>
+        public Task WaitAsync(CancellationToken cancellationToken)
         {
-            lock (this.syncObject)
+            if (this.IsJoinableTaskAware(out _, out var outstandingJoinableTasks, out var syncObject, out var outstandingTasks, out _))
             {
-                return Task.WhenAll(this.outstandingTasks);
+                return outstandingJoinableTasks.JoinTillEmptyAsync(cancellationToken);
             }
+            else
+            {
+                lock (syncObject)
+                {
+                    return Task.WhenAll(outstandingTasks).WithCancellation(cancellationToken);
+                }
+            }
+        }
+
+        private static Func<T, Task> WrapSyncHandler(Action<T> handler)
+        {
+            Requires.NotNull(handler, nameof(handler));
+            return value =>
+            {
+                handler(value);
+                return Task.CompletedTask;
+            };
         }
     }
 }

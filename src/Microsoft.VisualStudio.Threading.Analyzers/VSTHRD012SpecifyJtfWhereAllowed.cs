@@ -3,10 +3,10 @@
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Linq;
-    using CodeAnalysis;
-    using CodeAnalysis.CSharp;
-    using CodeAnalysis.CSharp.Syntax;
-    using CodeAnalysis.Diagnostics;
+    using Microsoft.CodeAnalysis;
+    using Microsoft.CodeAnalysis.CSharp;
+    using Microsoft.CodeAnalysis.CSharp.Syntax;
+    using Microsoft.CodeAnalysis.Diagnostics;
 
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class VSTHRD012SpecifyJtfWhereAllowed : DiagnosticAnalyzer
@@ -77,6 +77,7 @@
                 // The method being invoked doesn't take any JTC/JTF parameters.
                 // Look for an overload that does.
                 bool preferableAlternativesExist = otherOverloads
+                    .Where(m => !m.IsObsolete())
                     .Any(m => m.Parameters.Skip(m.IsExtensionMethod ? 1 : 0).Any(IsImportantJtfParameter));
                 if (preferableAlternativesExist)
                 {

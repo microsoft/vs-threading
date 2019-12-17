@@ -22,7 +22,7 @@
             get { return this.asyncPump; }
         }
 
-        [StaFact]
+        [Fact]
         public void DisplayName()
         {
             var jtc = new JoinableTaskCollection(this.context);
@@ -35,14 +35,14 @@
             Assert.Equal("My Name", jtc.DisplayName);
         }
 
-        [StaFact]
+        [Fact]
         public void JoinTillEmptyAlreadyCompleted()
         {
-            var awaiter = this.joinableCollection.JoinTillEmptyAsync().GetAwaiter();
+            var awaiter = this.joinableCollection!.JoinTillEmptyAsync().GetAwaiter();
             Assert.True(awaiter.IsCompleted);
         }
 
-        [StaFact]
+        [Fact]
         public void JoinTillEmptyWithOne()
         {
             var evt = new AsyncManualResetEvent();
@@ -51,7 +51,7 @@
                 await evt;
             });
 
-            var waiter = this.joinableCollection.JoinTillEmptyAsync();
+            var waiter = this.joinableCollection!.JoinTillEmptyAsync();
             Assert.False(waiter.GetAwaiter().IsCompleted);
             Task.Run(async delegate
             {
@@ -62,7 +62,7 @@
             this.PushFrame();
         }
 
-        [StaFact]
+        [Fact]
         public void JoinTillEmptyUsesConfigureAwaitFalse()
         {
             var evt = new AsyncManualResetEvent();
@@ -71,13 +71,13 @@
                 await evt.WaitAsync().ConfigureAwait(false);
             });
 
-            var waiter = this.joinableCollection.JoinTillEmptyAsync();
+            var waiter = this.joinableCollection!.JoinTillEmptyAsync();
             Assert.False(waiter.GetAwaiter().IsCompleted);
             evt.Set();
             Assert.True(waiter.Wait(UnexpectedTimeout));
         }
 
-        [StaFact]
+        [Fact]
         public void EmptyThenMore()
         {
             var evt = new AsyncManualResetEvent();
@@ -86,7 +86,7 @@
                 await evt;
             });
 
-            var waiter = this.joinableCollection.JoinTillEmptyAsync();
+            var waiter = this.joinableCollection!.JoinTillEmptyAsync();
             Assert.False(waiter.GetAwaiter().IsCompleted);
             Task.Run(async delegate
             {
@@ -97,7 +97,7 @@
             this.PushFrame();
         }
 
-        [StaFact]
+        [Fact]
         public void JoinTillEmptyAsyncJoinsCollection()
         {
             var joinable = this.JoinableFactory.RunAsync(async delegate
@@ -107,11 +107,11 @@
 
             this.context.Factory.Run(async delegate
             {
-                await this.joinableCollection.JoinTillEmptyAsync();
+                await this.joinableCollection!.JoinTillEmptyAsync();
             });
         }
 
-        [StaFact]
+        [Fact]
         public void JoinTillEmptyAsync_CancellationToken()
         {
             var tcs = new TaskCompletionSource<object>();
@@ -123,14 +123,14 @@
             this.context.Factory.Run(async delegate
             {
                 var cts = new CancellationTokenSource();
-                Task joinTask = this.joinableCollection.JoinTillEmptyAsync(cts.Token);
+                Task joinTask = this.joinableCollection!.JoinTillEmptyAsync(cts.Token);
                 cts.Cancel();
                 var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => joinTask);
                 Assert.Equal(cts.Token, ex.CancellationToken);
             });
         }
 
-        [StaFact]
+        [Fact]
         public void AddTwiceRemoveOnceRemovesWhenNotRefCounting()
         {
             var finishTaskEvent = new AsyncManualResetEvent();
@@ -147,7 +147,7 @@
             finishTaskEvent.Set();
         }
 
-        [StaFact]
+        [Fact]
         public void AddTwiceRemoveTwiceRemovesWhenRefCounting()
         {
             var finishTaskEvent = new AsyncManualResetEvent();
@@ -166,7 +166,7 @@
             finishTaskEvent.Set();
         }
 
-        [StaFact]
+        [Fact]
         public void AddTwiceRemoveOnceRemovesCompletedTaskWhenRefCounting()
         {
             var finishTaskEvent = new AsyncManualResetEvent();
@@ -185,16 +185,16 @@
             Assert.False(collection.Contains(task));
         }
 
-        [StaFact]
+        [Fact]
         public void JoinDisposedTwice()
         {
             this.JoinableFactory.Run(delegate
             {
-                var releaser = this.joinableCollection.Join();
+                var releaser = this.joinableCollection!.Join();
                 releaser.Dispose();
                 releaser.Dispose();
 
-                return TplExtensions.CompletedTask;
+                return Task.CompletedTask;
             });
         }
     }

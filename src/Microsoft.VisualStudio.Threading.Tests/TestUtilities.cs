@@ -2,9 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
-#if DESKTOP || NETCOREAPP2_0
     using System.Configuration;
-#endif
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
@@ -18,16 +16,7 @@
 
     internal static class TestUtilities
     {
-        /// <summary>
-        /// A value indicating whether the library is operating in .NET 4.5 mode.
-        /// </summary>
-#if NET451 || NET452
-        internal static readonly bool IsNet45Mode = ConfigurationManager.AppSettings["Microsoft.VisualStudio.Threading.NET45Mode"] == "true";
-#else
-        internal static readonly bool IsNet45Mode = false;
-#endif
-
-        internal static Task SetAsync(this TaskCompletionSource<object> tcs)
+        internal static Task SetAsync(this TaskCompletionSource<object?> tcs)
         {
             return Task.Run(() => tcs.TrySetResult(null));
         }
@@ -104,7 +93,7 @@
 
         internal static DebugAssertionRevert DisableAssertionDialog()
         {
-#if DESKTOP
+#if NETFRAMEWORK
             var listener = Debug.Listeners.OfType<DefaultTraceListener>().FirstOrDefault();
             if (listener != null)
             {
@@ -137,7 +126,7 @@
         /// <param name="yieldingSignal">The signal to set after the continuation has been pended.</param>
         /// <param name="resumingSignal">The signal to set when the continuation has been invoked.</param>
         /// <returns>A new awaitable.</returns>
-        internal static YieldAndNotifyAwaitable YieldAndNotify(this INotifyCompletion baseAwaiter, AsyncManualResetEvent yieldingSignal = null, AsyncManualResetEvent resumingSignal = null)
+        internal static YieldAndNotifyAwaitable YieldAndNotify(this INotifyCompletion baseAwaiter, AsyncManualResetEvent? yieldingSignal = null, AsyncManualResetEvent? resumingSignal = null)
         {
             Requires.NotNull(baseAwaiter, nameof(baseAwaiter));
 
@@ -155,11 +144,7 @@
         /// </remarks>
         internal static IDisposable StarveThreadpool()
         {
-#if DESKTOP || NETCOREAPP2_0
             ThreadPool.GetMaxThreads(out int workerThreads, out int completionPortThreads);
-#else
-            int workerThreads = 1023;
-#endif
             var disposalTokenSource = new CancellationTokenSource();
             var unblockThreadpool = new ManualResetEventSlim();
             for (int i = 0; i < workerThreads; i++)
@@ -188,7 +173,7 @@
         internal static Task<bool> ExecuteInIsolationAsync(object testClass, string testMethodName, ITestOutputHelper logger)
         {
             Requires.NotNull(testClass, nameof(testClass));
-            return ExecuteInIsolationAsync(testClass.GetType().FullName, testMethodName, logger);
+            return ExecuteInIsolationAsync(testClass.GetType().FullName!, testMethodName, logger);
         }
 
         /// <summary>
@@ -209,7 +194,7 @@
             Requires.NotNullOrEmpty(testClassName, nameof(testClassName));
             Requires.NotNullOrEmpty(testMethodName, nameof(testMethodName));
 
-#if DESKTOP
+#if NETFRAMEWORK
             const string testHostProcessName = "IsolatedTestHost.exe";
             if (Process.GetCurrentProcess().ProcessName == Path.GetFileNameWithoutExtension(testHostProcessName))
             {
@@ -274,15 +259,56 @@
 #endif
         }
 
+        /// <summary>
+        /// Wait on a task without possibly inlining it to the current thread.
+        /// </summary>
+        /// <param name="task">The task to wait on.</param>
+        /// <param name="throwOriginalException"><c>true</c> to throw the original (inner) exception when the <paramref name="task"/> faults; <c>false</c> to throw <see cref="AggregateException"/>.</param>
+        /// <exception cref="AggregateException">Thrown if <paramref name="task"/> completes in a faulted state if <paramref name="throwOriginalException"/> is <c>false</c>.</exception>
+        internal static void WaitWithoutInlining(this Task task, bool throwOriginalException)
+        {
+            Requires.NotNull(task, nameof(task));
+            if (!task.IsCompleted)
+            {
+                // Waiting on a continuation of a task won't ever inline the predecessor (in .NET 4.x anyway).
+                var continuation = task.ContinueWith(t => { }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+                continuation.Wait();
+            }
+
+            // Rethrow the exception if the task faulted.
+            if (throwOriginalException)
+            {
+                task.GetAwaiter().GetResult();
+            }
+            else
+            {
+                task.Wait();
+            }
+        }
+
+        /// <summary>
+        /// Wait on a task without possibly inlining it to the current thread and returns its result.
+        /// </summary>
+        /// <typeparam name="T">The type of result returned from the <paramref name="task"/>.</typeparam>
+        /// <param name="task">The task to wait on.</param>
+        /// <param name="throwOriginalException"><c>true</c> to throw the original (inner) exception when the <paramref name="task"/> faults; <c>false</c> to throw <see cref="AggregateException"/>.</param>
+        /// <returns>The result of the <see cref="Task{T}"/>.</returns>
+        /// <exception cref="AggregateException">Thrown if <paramref name="task"/> completes in a faulted state if <paramref name="throwOriginalException"/> is <c>false</c>.</exception>
+        internal static T GetResultWithoutInlining<T>(this Task<T> task, bool throwOriginalException = true)
+        {
+            WaitWithoutInlining(task, throwOriginalException);
+            return task.Result;
+        }
+
         private static string AssemblyCommandLineArguments(params string[] args) => string.Join(" ", args.Select(a => $"\"{a}\""));
 
-        internal struct YieldAndNotifyAwaitable
+        internal readonly struct YieldAndNotifyAwaitable
         {
             private readonly INotifyCompletion baseAwaiter;
-            private readonly AsyncManualResetEvent yieldingSignal;
-            private readonly AsyncManualResetEvent resumingSignal;
+            private readonly AsyncManualResetEvent? yieldingSignal;
+            private readonly AsyncManualResetEvent? resumingSignal;
 
-            internal YieldAndNotifyAwaitable(INotifyCompletion baseAwaiter, AsyncManualResetEvent yieldingSignal, AsyncManualResetEvent resumingSignal)
+            internal YieldAndNotifyAwaitable(INotifyCompletion baseAwaiter, AsyncManualResetEvent? yieldingSignal, AsyncManualResetEvent? resumingSignal)
             {
                 Requires.NotNull(baseAwaiter, nameof(baseAwaiter));
 
@@ -297,13 +323,13 @@
             }
         }
 
-        internal struct YieldAndNotifyAwaiter : INotifyCompletion
+        internal readonly struct YieldAndNotifyAwaiter : INotifyCompletion
         {
             private readonly INotifyCompletion baseAwaiter;
-            private readonly AsyncManualResetEvent yieldingSignal;
-            private readonly AsyncManualResetEvent resumingSignal;
+            private readonly AsyncManualResetEvent? yieldingSignal;
+            private readonly AsyncManualResetEvent? resumingSignal;
 
-            internal YieldAndNotifyAwaiter(INotifyCompletion baseAwaiter, AsyncManualResetEvent yieldingSignal, AsyncManualResetEvent resumingSignal)
+            internal YieldAndNotifyAwaiter(INotifyCompletion baseAwaiter, AsyncManualResetEvent? yieldingSignal, AsyncManualResetEvent? resumingSignal)
             {
                 Requires.NotNull(baseAwaiter, nameof(baseAwaiter));
 
@@ -340,11 +366,11 @@
             }
         }
 
-        internal struct DebugAssertionRevert : IDisposable
+        internal readonly struct DebugAssertionRevert : IDisposable
         {
             public void Dispose()
             {
-#if DESKTOP
+#if NETFRAMEWORK
                 var listener = Debug.Listeners.OfType<DefaultTraceListener>().FirstOrDefault();
                 if (listener != null)
                 {

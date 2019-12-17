@@ -8,6 +8,7 @@ namespace Microsoft.VisualStudio.Threading
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Text;
     using System.Threading;
@@ -27,7 +28,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// The single value or array of values stored by this collection. Null if empty.
         /// </summary>
-        private object value;
+        private object? value;
 
         /// <summary>
         /// Returns an enumerator for a current snapshot of the collection.
@@ -58,8 +59,8 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         public void Add(T value)
         {
-            object priorValue;
-            object fieldBeforeExchange;
+            object? priorValue;
+            object? fieldBeforeExchange;
             do
             {
                 priorValue = Volatile.Read(ref this.value);
@@ -73,8 +74,8 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         public void Remove(T value)
         {
-            object priorValue;
-            object fieldBeforeExchange;
+            object? priorValue;
+            object? fieldBeforeExchange;
             do
             {
                 priorValue = Volatile.Read(ref this.value);
@@ -111,7 +112,7 @@ namespace Microsoft.VisualStudio.Threading
         internal Enumerator EnumerateAndClear()
         {
             // Enumeration is atomically destructive.
-            object enumeratedValue = Interlocked.Exchange(ref this.value, null);
+            object? enumeratedValue = Interlocked.Exchange(ref this.value, null);
             return new Enumerator(enumeratedValue);
         }
 
@@ -121,7 +122,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="baseValue">The collection's prior contents.</param>
         /// <param name="value">The value to add to the collection.</param>
         /// <returns>The new value to store as the collection.</returns>
-        private static object Combine(object baseValue, T value)
+        private static object Combine(object? baseValue, T value)
         {
             Requires.NotNull(value, nameof(value));
 
@@ -148,7 +149,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="baseValue">The collection's prior contents.</param>
         /// <param name="value">The value to remove from the collection.</param>
         /// <returns>The new value to store as the collection.</returns>
-        private static object Remove(object baseValue, T value)
+        private static object? Remove(object? baseValue, T value)
         {
             if (baseValue == value || baseValue == null)
             {
@@ -185,11 +186,11 @@ namespace Microsoft.VisualStudio.Threading
             private const int IndexSingleElement = -2;
             private const int IndexBeforeSingleElement = -3;
 
-            private readonly object enumeratedValue;
+            private readonly object? enumeratedValue;
 
             private int currentIndex;
 
-            internal Enumerator(object enumeratedValue)
+            internal Enumerator(object? enumeratedValue)
             {
                 this.enumeratedValue = enumeratedValue;
                 this.currentIndex = 0;
@@ -205,9 +206,11 @@ namespace Microsoft.VisualStudio.Threading
                         throw new InvalidOperationException();
                     }
 
+                    // enumeratedValue cannot be null here following a call to `MoveNext` that returns true (required
+                    // for correct usage of IEnumerator).
                     return this.currentIndex == IndexSingleElement
-                        ? (T)this.enumeratedValue
-                        : ((T[])this.enumeratedValue)[this.currentIndex];
+                        ? (T)this.enumeratedValue!
+                        : ((T[])this.enumeratedValue!)[this.currentIndex];
                 }
             }
 
@@ -239,6 +242,7 @@ namespace Microsoft.VisualStudio.Threading
                     return true;
                 }
 
+                RoslynDebug.Assert(this.enumeratedValue is object);
                 var array = (T[])this.enumeratedValue;
                 if (this.currentIndex >= 0 && this.currentIndex < array.Length)
                 {

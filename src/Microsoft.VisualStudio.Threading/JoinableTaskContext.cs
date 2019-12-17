@@ -25,7 +25,7 @@ namespace Microsoft.VisualStudio.Threading
     /// <devremarks>
     /// Lots of documentation and FAQ on Joinable Tasks is available on OneNote: <![CDATA[
     /// http://devdiv/sites/vspe/prjbld/_layouts/OneNote.aspx?id=%2fsites%2fvspe%2fprjbld%2fOneNote%2fTeamInfo&wd=target%28VS%20Threading.one%7c46FEAAD0-0131-45EE-8C52-C9893F1FD331%2fThreading%20Rules%7cD0EEFAB9-99C0-4B8F-AA5F-4287DD69A38F%2f%29
-    /// ]]>
+    /// ]]>.
     /// </devremarks>
     /// <remarks>
     /// There are three rules that should be strictly followed when using or interacting
@@ -123,7 +123,7 @@ namespace Microsoft.VisualStudio.Threading
         /// A single joinable task factory that itself cannot be joined.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private JoinableTaskFactory nonJoinableFactory;
+        private JoinableTaskFactory? nonJoinableFactory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JoinableTaskContext"/> class
@@ -132,16 +132,9 @@ namespace Microsoft.VisualStudio.Threading
         /// to the main thread from another thread.
         /// </summary>
         public JoinableTaskContext()
-#if DESKTOP || NETSTANDARD2_0
             : this(Thread.CurrentThread, SynchronizationContext.Current)
         {
-#else
-            : this(Environment.CurrentManagedThreadId, SynchronizationContext.Current)
-        {
-#endif
         }
-
-#if DESKTOP || NETSTANDARD2_0
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JoinableTaskContext"/> class.
@@ -153,36 +146,12 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="synchronizationContext">
         /// The synchronization context to use to switch to the main thread.
         /// </param>
-        public JoinableTaskContext(Thread mainThread = null, SynchronizationContext synchronizationContext = null)
+        public JoinableTaskContext(Thread? mainThread = null, SynchronizationContext? synchronizationContext = null)
         {
             this.MainThread = mainThread ?? Thread.CurrentThread;
             this.mainThreadManagedThreadId = this.MainThread.ManagedThreadId;
             this.UnderlyingSynchronizationContext = synchronizationContext ?? SynchronizationContext.Current; // may still be null after this.
         }
-
-#else // Do not expose the threadID constructor on desktop because it gives us no opportunity to initialize the MainThread property.
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="JoinableTaskContext"/> class.
-        /// </summary>
-        /// <param name="mainThreadManagedThreadId">
-        /// The managed thread ID of the thread to switch to in <see cref="JoinableTaskFactory.SwitchToMainThreadAsync(CancellationToken)"/>.
-        /// </param>
-        /// <param name="synchronizationContext">
-        /// The synchronization context to use to switch to the main thread.
-        /// </param>
-        /// <devremarks>
-        /// We MUST NOT expose this constructor in our public API because
-        /// Desktop must be a superset of portable, and this constructor cannot
-        /// appear in Desktop.
-        /// </devremarks>
-        private JoinableTaskContext(int mainThreadManagedThreadId, SynchronizationContext synchronizationContext)
-        {
-            this.mainThreadManagedThreadId = mainThreadManagedThreadId;
-            this.UnderlyingSynchronizationContext = synchronizationContext;
-        }
-
-#endif
 
         /// <summary>
         /// Gets the factory which creates joinable tasks
@@ -210,12 +179,10 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
-#if DESKTOP || NETSTANDARD2_0
         /// <summary>
         /// Gets the main thread that can be shared by tasks created by this context.
         /// </summary>
         public Thread MainThread { get; private set; }
-#endif
 
         /// <summary>
         /// Gets a value indicating whether the caller is executing on the main thread.
@@ -239,7 +206,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets the underlying <see cref="SynchronizationContext"/> that controls the main thread in the host.
         /// </summary>
-        internal SynchronizationContext UnderlyingSynchronizationContext { get; private set; }
+        internal SynchronizationContext? UnderlyingSynchronizationContext { get; private set; }
 
         /// <summary>
         /// Gets the context-wide synchronization lock.
@@ -252,11 +219,11 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets or sets the caller's ambient joinable task.
         /// </summary>
-        internal JoinableTask AmbientTask
+        internal JoinableTask? AmbientTask
         {
             get
             {
-                JoinableTask result = null;
+                JoinableTask? result = null;
                 this.joinableOperation.Value?.TryGetTarget(out result);
                 return result;
             }
@@ -279,12 +246,10 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-#if DESKTOP || NETSTANDARD2_0
                 // Callers of this method are about to take a private lock, which tends
                 // to cause a deadlock while debugging because of lock contention with the
                 // debugger's expression evaluator. So prevent that.
                 Debugger.NotifyOfCrossThreadDependency();
-#endif
 
                 return NoMessagePumpSyncContext.Default;
             }
@@ -541,7 +506,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Raised when it starts to wait a joinable task to complete in the main thread.
         /// </summary>
-        /// <param name="task">The task requires to be completed</param>
+        /// <param name="task">The task requires to be completed.</param>
         internal void OnSynchronousJoinableTaskToCompleteOnMainThread(JoinableTask task)
         {
             Requires.NotNull(task, nameof(task));
@@ -584,11 +549,11 @@ namespace Microsoft.VisualStudio.Threading
         /// A structure that clears CallContext and SynchronizationContext async/thread statics and
         /// restores those values when this structure is disposed.
         /// </summary>
-        public struct RevertRelevance : IDisposable
+        public readonly struct RevertRelevance : IDisposable
         {
-            private readonly JoinableTaskContext pump;
-            private SpecializedSyncContext temporarySyncContext;
-            private JoinableTask oldJoinable;
+            private readonly JoinableTaskContext? pump;
+            private readonly SpecializedSyncContext temporarySyncContext;
+            private readonly JoinableTask? oldJoinable;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="RevertRelevance"/> struct.
@@ -604,7 +569,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 if (SynchronizationContext.Current is JoinableTaskSynchronizationContext jobSyncContext)
                 {
-                    SynchronizationContext appliedSyncContext = null;
+                    SynchronizationContext? appliedSyncContext = null;
                     if (jobSyncContext.MainThreadAffinitized)
                     {
                         appliedSyncContext = pump.UnderlyingSynchronizationContext;
@@ -640,7 +605,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The node to receive notifications. May be <c>null</c> if <see cref="Dispose"/> has already been called.
             /// </summary>
-            private JoinableTaskContextNode node;
+            private JoinableTaskContextNode? node;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="HangNotificationRegistration"/> class.
@@ -684,7 +649,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <param name="notificationCount">The number of times this hang has been reported, including this one.</param>
             /// <param name="hangId">A random GUID that uniquely identifies this particular hang.</param>
             /// <param name="entryMethod">The method that served as the entrypoint for the JoinableTask.</param>
-            public HangDetails(TimeSpan hangDuration, int notificationCount, Guid hangId, MethodInfo entryMethod)
+            public HangDetails(TimeSpan hangDuration, int notificationCount, Guid hangId, MethodInfo? entryMethod)
             {
                 this.HangDuration = hangDuration;
                 this.NotificationCount = notificationCount;
@@ -720,7 +685,7 @@ namespace Microsoft.VisualStudio.Threading
             /// a bug in the code that created it.
             /// This value may be used to assign the hangs to different buckets based on this method info.
             /// </remarks>
-            public MethodInfo EntryMethod { get; private set; }
+            public MethodInfo? EntryMethod { get; private set; }
         }
     }
 }

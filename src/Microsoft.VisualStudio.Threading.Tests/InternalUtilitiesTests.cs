@@ -45,7 +45,7 @@
 
                 // Verify that the remaining elements retained their order.
                 Assert.Equal(list.Length - 1, queue.Count);
-                GenericParameterHelper lastDequeued = null;
+                GenericParameterHelper? lastDequeued = null;
                 do
                 {
                     var item = queue.Dequeue();

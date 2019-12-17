@@ -115,30 +115,30 @@ namespace Microsoft.VisualStudio.Threading
         {
             Requires.NotNull(invokeDelegate, nameof(invokeDelegate));
 
-            MethodInfo method = invokeDelegate.GetMethodInfo();
+            MethodInfo? method = invokeDelegate.GetMethodInfo();
             if (invokeDelegate.Target != null)
             {
                 string instanceType = string.Empty;
-                if (!method.DeclaringType.Equals(invokeDelegate.Target.GetType()))
+                if (!(method?.DeclaringType?.Equals(invokeDelegate.Target.GetType()) ?? false))
                 {
                     instanceType = " (" + invokeDelegate.Target.GetType().FullName + ")";
                 }
 
                 return string.Format(
                     CultureInfo.CurrentCulture,
-                    "{3}{0}.{1}{2} (target address: 0x{4:X8})",
-                    method.DeclaringType.FullName,
-                    method.Name,
+                    "{3}{0}.{1}{2} (target address: 0x{4:X" + (IntPtr.Size * 2) + "})",
+                    method?.DeclaringType?.FullName,
+                    method?.Name,
                     instanceType,
                     AsyncReturnStackPrefix,
-                    (int)GetAddress(invokeDelegate.Target)); // the int cast allows hex formatting
+                    GetAddress(invokeDelegate.Target).ToInt64()); // the cast allows hex formatting
             }
 
             return string.Format(
                 CultureInfo.CurrentCulture,
                 "{2}{0}.{1}",
-                method.DeclaringType.FullName,
-                method.Name,
+                method?.DeclaringType?.FullName,
+                method?.Name,
                 AsyncReturnStackPrefix);
         }
 
@@ -155,21 +155,17 @@ namespace Microsoft.VisualStudio.Threading
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "value", Justification = "We no-op on one platform.")]
         private static IntPtr GetAddress(object value)
         {
-#if DESKTOP || NETSTANDARD2_0
             unsafe
             {
                 TypedReference tr = __makeref(value);
                 return **(IntPtr**)(&tr);
             }
-#else
-            return IntPtr.Zero;
-#endif
         }
 
         /// <summary>
         /// A helper method to find the async state machine from the given delegate.
         /// </summary>
-        private static IAsyncStateMachine FindAsyncStateMachine(Delegate invokeDelegate)
+        private static IAsyncStateMachine? FindAsyncStateMachine(Delegate invokeDelegate)
         {
             Requires.NotNull(invokeDelegate, nameof(invokeDelegate));
 
@@ -182,6 +178,10 @@ namespace Microsoft.VisualStudio.Threading
                 if (GetFieldValue(invokeDelegate.Target, "m_continuation") is Action continuation)
                 {
                     invokeDelegate = continuation;
+                    if (invokeDelegate.Target == null)
+                    {
+                        return null;
+                    }
                 }
 
                 var stateMachine = GetFieldValue(invokeDelegate.Target, "m_stateMachine") as IAsyncStateMachine;
@@ -244,7 +244,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 foreach (var item in items)
                 {
-                    var action = item as Delegate ?? GetFieldValue(item, "m_action") as Delegate;
+                    var action = item as Delegate ?? GetFieldValue(item!, "m_action") as Delegate;
                     if (action != null)
                     {
                         yield return action;
@@ -264,7 +264,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// A helper method to get field's value given the object and the field name.
         /// </summary>
-        private static object GetFieldValue(object obj, string fieldName)
+        private static object? GetFieldValue(object obj, string fieldName)
         {
             Requires.NotNull(obj, nameof(obj));
             Requires.NotNullOrEmpty(fieldName, nameof(fieldName));
@@ -281,7 +281,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// The field names of "async state machine" are not fixed; the workaround is to find the field based on the suffix.
         /// </summary>
-        private static object GetStateMachineFieldValueOnSuffix(IAsyncStateMachine stateMachine, string suffix)
+        private static object? GetStateMachineFieldValueOnSuffix(IAsyncStateMachine stateMachine, string suffix)
         {
             Requires.NotNull(stateMachine, nameof(stateMachine));
             Requires.NotNullOrEmpty(suffix, nameof(suffix));

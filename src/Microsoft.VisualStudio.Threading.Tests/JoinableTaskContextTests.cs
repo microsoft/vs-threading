@@ -28,7 +28,7 @@
             get { return (JoinableTaskContextDerived)this.context; }
         }
 
-        [StaFact]
+        [Fact]
         public void IsWithinJoinableTask()
         {
             Assert.False(this.Context.IsWithinJoinableTask);
@@ -40,16 +40,16 @@
                 await Task.Run(delegate
                 {
                     Assert.True(this.Context.IsWithinJoinableTask);
-                    return TplExtensions.CompletedTask;
+                    return Task.CompletedTask;
                 });
             });
         }
 
-        [StaFact]
+        [Fact]
         public void ReportHangOnRun()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
-            var releaseTaskSource = new TaskCompletionSource<object>();
+            var releaseTaskSource = new TaskCompletionSource<object?>();
             var hangQueue = new AsyncQueue<Tuple<TimeSpan, int, Guid>>();
             this.Context.OnReportHang = (hangDuration, iterations, id) =>
             {
@@ -93,7 +93,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void NoReportHangOnRunAsync()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
@@ -107,11 +107,11 @@
             Assert.False(hangReported);
         }
 
-        [StaFact]
+        [Fact]
         public void ReportHangOnRunAsyncThenJoin()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
-            var releaseTaskSource = new TaskCompletionSource<object>();
+            var releaseTaskSource = new TaskCompletionSource<object?>();
             var hangQueue = new AsyncQueue<TimeSpan>();
             this.Context.OnReportHang = (hangDuration, iterations, id) =>
             {
@@ -146,7 +146,7 @@
             joinableTask.Join();
         }
 
-        [StaFact]
+        [Fact]
         public void HangReportSuppressedOnLongRunningTask()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
@@ -163,7 +163,7 @@
             Assert.False(hangReported);
         }
 
-        [StaFact]
+        [Fact]
         public void HangReportSuppressedOnWaitingLongRunningTask()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
@@ -186,7 +186,7 @@
             Assert.False(hangReported);
         }
 
-        [StaFact]
+        [Fact]
         public void HangReportSuppressedOnWaitingLongRunningTask2()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
@@ -209,7 +209,7 @@
             Assert.False(hangReported);
         }
 
-        [StaFact]
+        [Fact]
         public void HangReportSuppressedOnJoiningLongRunningTask()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
@@ -228,7 +228,7 @@
             Assert.False(hangReported);
         }
 
-        [StaFact]
+        [Fact]
         public void HangReportNotSuppressedOnUnrelatedLongRunningTask()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
@@ -258,7 +258,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public void HangReportNotSuppressedOnLongRunningTaskNoLongerJoined()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
@@ -296,12 +296,12 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public void HangReportNotSuppressedOnLongRunningTaskJoinCancelled()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
-            bool hangReported = false;
-            this.Context.OnReportHang = (hangDuration, iterations, id) => hangReported = true;
+            var hangReported = new AsyncManualResetEvent();
+            this.Context.OnReportHang = (hangDuration, iterations, id) => hangReported.Set();
 
             var task = this.Factory.RunAsync(
                 async () =>
@@ -318,19 +318,18 @@
                     cancellationSource.Cancel();
                     await joinTask.NoThrowAwaitable();
 
-                    await Task.Delay(20);
+                    await hangReported.WaitAsync().WithTimeout(UnexpectedTimeout);
                 });
 
-            Assert.True(hangReported);
             task.Join();
         }
 
-        [StaFact]
+        [Fact]
         public void HangReportNotSuppressedOnLongRunningTaskCompleted()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
-            bool hangReported = false;
-            this.Context.OnReportHang = (hangDuration, iterations, id) => hangReported = true;
+            var hangReported = new AsyncManualResetEvent();
+            this.Context.OnReportHang = (hangDuration, iterations, id) => hangReported.Set();
 
             var task = this.Factory.RunAsync(
                 async () =>
@@ -340,7 +339,7 @@
                 JoinableTaskCreationOptions.LongRunning);
 
             task.Join();
-            Assert.False(hangReported);
+            Assert.False(hangReported.IsSet);
 
             var taskCollection = new JoinableTaskCollection(this.Factory.Context);
             taskCollection.Add(task);
@@ -350,19 +349,17 @@
                 {
                     using (var tempJoin = taskCollection.Join())
                     {
-                        await Task.Delay(20);
+                        await hangReported.WaitAsync().WithTimeout(UnexpectedTimeout);
                     }
                 });
-
-            Assert.True(hangReported);
         }
 
-        [StaFact]
+        [Fact]
         public void HangReportNotSuppressedOnLongRunningTaskCancelled()
         {
             this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
-            bool hangReported = false;
-            this.Context.OnReportHang = (hangDuration, iterations, id) => hangReported = true;
+            var hangReported = new AsyncManualResetEvent();
+            this.Context.OnReportHang = (hangDuration, iterations, id) => hangReported.Set();
             var cancellationSource = new CancellationTokenSource();
 
             var task = this.Factory.RunAsync(
@@ -382,14 +379,12 @@
                     {
                         cancellationSource.Cancel();
                         await task.JoinAsync().NoThrowAwaitable();
-                        await Task.Delay(40);
+                        await hangReported.WaitAsync().WithTimeout(UnexpectedTimeout);
                     }
                 });
-
-            Assert.True(hangReported);
         }
 
-        [StaFact]
+        [Fact]
         public void GetHangReportSimple()
         {
             IHangReportContributor contributor = this.Context;
@@ -402,12 +397,12 @@
             Assert.Equal("http://schemas.microsoft.com/vs/2009/dgml", dgml.Root.Name.Namespace);
         }
 
-        [StaFact]
+        [Fact]
         public void GetHangReportProducesDgmlWithNamedJoinableCollections()
         {
             const string jtcName = "My Collection";
 
-            this.joinableCollection.DisplayName = jtcName;
+            this.joinableCollection!.DisplayName = jtcName;
             this.Factory.RunAsync(delegate
             {
                 IHangReportContributor contributor = this.Context;
@@ -417,12 +412,12 @@
                 var collectionLabels = from node in dgml.Root.Element(XName.Get("Nodes", DgmlNamespace)).Elements()
                                        where node.Attribute(XName.Get("Category"))?.Value == "Collection"
                                        select node.Attribute(XName.Get("Label"))?.Value;
-                Assert.True(collectionLabels.Any(label => label == jtcName));
-                return TplExtensions.CompletedTask;
+                Assert.Contains(collectionLabels, label => label == jtcName);
+                return Task.CompletedTask;
             });
         }
 
-        [StaFact]
+        [Fact]
         public void GetHangReportProducesDgmlWithMethodNameRequestingMainThread()
         {
             var mainThreadRequested = new ManualResetEventSlim();
@@ -440,10 +435,10 @@
             var collectionLabels = from node in dgml.Root.Element(XName.Get("Nodes", DgmlNamespace)).Elements()
                                    where node.Attribute(XName.Get("Category"))?.Value == "Task"
                                    select node.Attribute(XName.Get("Label"))?.Value;
-            Assert.True(collectionLabels.Any(label => label.Contains(nameof(this.GetHangReportProducesDgmlWithMethodNameRequestingMainThread))));
+            Assert.Contains(collectionLabels, label => label.Contains(nameof(this.GetHangReportProducesDgmlWithMethodNameRequestingMainThread)));
         }
 
-        [StaFact(Skip = "Sadly, it seems JoinableTaskFactory.Post can't effectively override the labeled delegate because of another wrapper generated by the compiler.")]
+        [Fact(Skip = "Sadly, it seems JoinableTaskFactory.Post can't effectively override the labeled delegate because of another wrapper generated by the compiler.")]
         public void GetHangReportProducesDgmlWithMethodNameYieldingOnMainThread()
         {
             this.ExecuteOnDispatcher(async delegate
@@ -463,11 +458,11 @@
                 var collectionLabels = from node in dgml.Root.Element(XName.Get("Nodes", DgmlNamespace)).Elements()
                                        where node.Attribute(XName.Get("Category"))?.Value == "Task"
                                        select node.Attribute(XName.Get("Label"))?.Value;
-                Assert.True(collectionLabels.Any(label => label.Contains(nameof(this.YieldingMethodAsync))));
+                Assert.Contains(collectionLabels, label => label.Contains(nameof(this.YieldingMethodAsync)));
             });
         }
 
-        [StaFact]
+        [Fact]
         public void GetHangReportWithActualHang()
         {
             var endTestTokenSource = new CancellationTokenSource();
@@ -499,13 +494,13 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void IsMainThreadBlockedFalseWithNoTask()
         {
             Assert.False(this.Context.IsMainThreadBlocked());
         }
 
-        [StaFact]
+        [Fact]
         public void IsMainThreadBlockedFalseWhenAsync()
         {
             var joinable = this.Factory.RunAsync(async delegate
@@ -520,7 +515,7 @@
             joinable.Join(); // rethrow exceptions
         }
 
-        [StaFact]
+        [Fact]
         public void IsMainThreadBlockedTrueWhenAsyncBecomesBlocking()
         {
             var joinable = this.Factory.RunAsync(async delegate
@@ -544,7 +539,7 @@
             joinable.Join();
         }
 
-        [StaFact]
+        [Fact]
         public void IsMainThreadBlockedTrueWhenAsyncBecomesBlockingWithNestedTask()
         {
             var joinable = this.Factory.RunAsync(async delegate
@@ -575,7 +570,7 @@
             joinable.Join();
         }
 
-        [StaFact]
+        [Fact]
         public void IsMainThreadBlockedTrueWhenOriginallySync()
         {
             this.Factory.Run(async delegate
@@ -597,7 +592,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void IsMainThreadBlockedFalseWhenSyncBlockingOtherThread()
         {
             Task.Run(delegate
@@ -608,15 +603,15 @@
                     await Task.Yield();
                     Assert.False(this.Context.IsMainThreadBlocked());
                 });
-            }).GetAwaiter().GetResult();
+            }).WaitWithoutInlining(throwOriginalException: true);
         }
 
-        [StaFact]
+        [Fact]
         public void IsMainThreadBlockedTrueWhenAsyncOnOtherThreadBecomesSyncOnMainThread()
         {
             var nonBlockingStateObserved = new AsyncManualResetEvent();
             var nowBlocking = new AsyncManualResetEvent();
-            JoinableTask joinableTask = null;
+            JoinableTask? joinableTask = null;
             Task.Run(delegate
             {
                 joinableTask = this.Factory.RunAsync(async delegate
@@ -632,19 +627,19 @@
             this.Factory.Run(async delegate
             {
                 await nonBlockingStateObserved;
-                joinableTask.JoinAsync().Forget();
+                joinableTask!.JoinAsync().Forget();
                 nowBlocking.Set();
             });
         }
 
-        [StaFact]
+        [Fact]
         public void RevertRelevanceDefaultValue()
         {
             var revert = default(JoinableTaskContext.RevertRelevance);
             revert.Dispose();
         }
 
-        [StaFact]
+        [Fact]
         public void Disposable()
         {
             IDisposable disposable = this.Context;
@@ -666,7 +661,7 @@
 
         private class JoinableTaskContextDerived : JoinableTaskContext
         {
-            internal Action<TimeSpan, int, Guid> OnReportHang { get; set; }
+            internal Action<TimeSpan, int, Guid>? OnReportHang { get; set; }
 
             public override JoinableTaskFactory CreateFactory(JoinableTaskCollection collection)
             {

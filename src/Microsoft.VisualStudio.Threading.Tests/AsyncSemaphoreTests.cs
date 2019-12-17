@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Text;
     using System.Threading;
@@ -185,10 +186,40 @@
             }
             catch (OperationCanceledException ex)
             {
-                if (!TestUtilities.IsNet45Mode)
+                Assert.Equal(cts.Token, ex.CancellationToken);
+            }
+        }
+
+        [Fact]
+        public async Task UncontestedAndCanceled_Stress()
+        {
+            var stressTime = TimeSpan.FromSeconds(2);
+            var timer = Stopwatch.StartNew();
+            while (stressTime - timer.Elapsed > TimeSpan.Zero)
+            {
+                var barrier = new Barrier(2);
+                var cts = new CancellationTokenSource();
+                var task1 = Task.Run(delegate
                 {
-                    Assert.Equal(cts.Token, ex.CancellationToken);
-                }
+                    barrier.SignalAndWait();
+                    cts.Cancel();
+                });
+                var task2 = Task.Run(async delegate
+                {
+                    barrier.SignalAndWait();
+                    try
+                    {
+                        using (await this.lck.EnterAsync(cts.Token))
+                        {
+                        }
+
+                        Assert.Equal(1, this.lck.CurrentCount);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
+                });
+                await Task.WhenAll(task1, task2);
             }
         }
 
@@ -467,6 +498,7 @@
         {
             IDisposable disposable = this.lck;
             disposable.Dispose();
+            disposable.Dispose();
         }
 
         /// <summary>
@@ -513,6 +545,90 @@
                     // We got the semaphore and will release it.
                 }
             }
+        }
+
+        [Fact]
+        public async Task AllowReleaseAfterDispose()
+        {
+            using (await this.lck.EnterAsync().ConfigureAwait(false))
+            {
+                this.lck.Dispose();
+            }
+        }
+
+        [Fact]
+        public async Task EnterAsync_TimeSpan_AfterDisposal()
+        {
+            var first = this.lck.EnterAsync(UnexpectedTimeout);
+            Assert.Equal(TaskStatus.RanToCompletion, first.Status);
+
+            var second = this.lck.EnterAsync(UnexpectedTimeout);
+            Assert.False(second.IsCompleted);
+
+            this.lck.Dispose();
+
+            // Verify that future EnterAsync's fail synchronously.
+            var third = this.lck.EnterAsync(UnexpectedTimeout);
+            Assert.True(third.IsFaulted);
+            Assert.IsType<ObjectDisposedException>(third.Exception!.InnerException);
+
+            // Now verify that accepting the semaphore and releasing it can succeed.
+            using (await first)
+            {
+            }
+
+            // Verify that pending EnterAsync's fail.
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => second).WithCancellation(this.TimeoutToken);
+        }
+
+        [Fact]
+        public async Task EnterAsync_int_AfterDisposal()
+        {
+            var first = this.lck.EnterAsync((int)UnexpectedTimeout.TotalMilliseconds);
+            Assert.Equal(TaskStatus.RanToCompletion, first.Status);
+
+            var second = this.lck.EnterAsync((int)UnexpectedTimeout.TotalMilliseconds);
+            Assert.False(second.IsCompleted);
+
+            this.lck.Dispose();
+
+            // Verify that future EnterAsync's fail synchronously.
+            var third = this.lck.EnterAsync((int)UnexpectedTimeout.TotalMilliseconds);
+            Assert.True(third.IsFaulted);
+            Assert.IsType<ObjectDisposedException>(third.Exception!.InnerException);
+
+            // Now verify that accepting the semaphore and releasing it can succeed.
+            using (await first)
+            {
+            }
+
+            // Verify that pending EnterAsync's fail.
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => second).WithCancellation(this.TimeoutToken);
+        }
+
+        [Fact]
+        public async Task EnterAsync_AfterDisposal()
+        {
+            var first = this.lck.EnterAsync();
+            Assert.Equal(TaskStatus.RanToCompletion, first.Status);
+
+            var second = this.lck.EnterAsync();
+            Assert.False(second.IsCompleted);
+
+            this.lck.Dispose();
+
+            // Verify that future EnterAsync's fail synchronously.
+            var third = this.lck.EnterAsync();
+            Assert.True(third.IsFaulted);
+            Assert.IsType<ObjectDisposedException>(third.Exception!.InnerException);
+
+            // Now verify that accepting the semaphore and releasing it can succeed.
+            using (await first)
+            {
+            }
+
+            // Verify that pending EnterAsync's fail.
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => second).WithCancellation(this.TimeoutToken);
         }
     }
 }

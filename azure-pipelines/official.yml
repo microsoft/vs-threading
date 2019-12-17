@@ -1,17 +1,20 @@
 trigger:
   branches:
-    include: ["master", "v15.8", "v16.0"]
+    include:
+    - master
+    - 'v16.*'
   paths:
     exclude: [".github", "doc", "*.md", ".appveyor.yml", ".travis.yml"]
 
 variables:
   TreatWarningsAsErrors: true
+  UpdateXlfOnBuild: false # force build breaks if xlf files aren't updated on dev box with resx changes
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   BuildConfiguration: Release
   BuildPlatform: Any CPU
+  NUGET_PACKAGES: $(Agent.TempDirectory)/.nuget/packages
 
 jobs:
-- job: Windows
-  pool: VSEng-MicroBuildVS2017
-  steps:
-  - template: build.yml
+- template: build.yml
+  parameters:
+    windowsPool: VSEng-MicroBuildVS2019

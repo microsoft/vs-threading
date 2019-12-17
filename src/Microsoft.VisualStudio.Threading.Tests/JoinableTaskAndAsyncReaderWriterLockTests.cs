@@ -17,13 +17,13 @@
 
         private AsyncReaderWriterLock asyncLock;
 
-        private AsyncManualResetEvent lockRequested;
+        private AsyncManualResetEvent? lockRequested;
 
         public JoinableTaskAndAsyncReaderWriterLockTests(ITestOutputHelper logger)
             : base(logger)
         {
             this.asyncLock = new AsyncReaderWriterLock();
-            this.InitializeJoinableTaskFactory();
+            InitializeJoinableTaskFactory(out this.joinableCollection, out this.asyncPump);
         }
 
         [StaFact]
@@ -35,7 +35,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void LockWithinRunMTA()
         {
             Task.Run(delegate
@@ -44,10 +44,10 @@
                 {
                     await this.VerifyReadLockAsync();
                 });
-            }).GetAwaiter().GetResult();
+            }).WaitWithoutInlining(throwOriginalException: true);
         }
 
-        [StaFact]
+        [Fact]
         public void LockWithinRunMTAContended()
         {
             Task.Run(delegate
@@ -57,7 +57,7 @@
                     this.ArrangeLockContentionAsync();
                     await this.VerifyReadLockAsync();
                 });
-            }).GetAwaiter().GetResult();
+            }).WaitWithoutInlining(throwOriginalException: true);
         }
 
         [StaFact]
@@ -70,7 +70,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public void LockWithinRunAfterYieldMTA()
         {
             Task.Run(delegate
@@ -80,7 +80,7 @@
                     await Task.Yield();
                     await this.VerifyReadLockAsync();
                 });
-            }).GetAwaiter().GetResult();
+            }).WaitWithoutInlining(throwOriginalException: true);
         }
 
         [StaFact]
@@ -89,13 +89,13 @@
             this.LockWithinRunAsyncAfterYieldHelper();
         }
 
-        [StaFact]
+        [Fact]
         public void LockWithinRunAsyncAfterYieldMTA()
         {
-            Task.Run(() => this.LockWithinRunAsyncAfterYieldHelper()).GetAwaiter().GetResult();
+            Task.Run(() => this.LockWithinRunAsyncAfterYieldHelper()).WaitWithoutInlining(throwOriginalException: true);
         }
 
-        [StaFact]
+        [Fact]
         public async Task RunWithinExclusiveLock()
         {
             using (TestUtilities.DisableAssertionDialog())
@@ -115,7 +115,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task RunWithinExclusiveLockWithYields()
         {
             using (TestUtilities.DisableAssertionDialog())
@@ -140,12 +140,12 @@
         /// <summary>
         /// Verifies that synchronously blocking works within read locks.
         /// </summary>
-        [StaFact]
+        [Fact]
         public async Task RunWithinReadLock()
         {
             using (await this.asyncLock.ReadLockAsync())
             {
-                this.asyncPump.Run(() => TplExtensions.CompletedTask);
+                this.asyncPump.Run(() => Task.CompletedTask);
             }
         }
 
@@ -155,7 +155,7 @@
         /// this test verifies that anyone using that pattern will be quickly disallowed to avoid hangs
         /// whenever the async code happens to yield.
         /// </summary>
-        [StaFact]
+        [Fact]
         public async Task RunWithinUpgradeableReadLockThrows()
         {
             using (TestUtilities.DisableAssertionDialog())
@@ -164,7 +164,7 @@
                 {
                     try
                     {
-                        this.asyncPump.Run(() => TplExtensions.CompletedTask);
+                        this.asyncPump.Run(() => Task.CompletedTask);
                         Assert.False(true, "Expected InvalidOperationException not thrown.");
                     }
                     catch (InvalidOperationException)
@@ -182,7 +182,7 @@
         /// this test verifies that anyone using that pattern will be quickly disallowed to avoid hangs
         /// whenever the async code happens to yield.
         /// </summary>
-        [StaFact]
+        [Fact]
         public async Task RunWithinWriteLockThrows()
         {
             using (TestUtilities.DisableAssertionDialog())
@@ -191,7 +191,7 @@
                 {
                     try
                     {
-                        this.asyncPump.Run(() => TplExtensions.CompletedTask);
+                        this.asyncPump.Run(() => Task.CompletedTask);
                         Assert.True(false, "Expected InvalidOperationException not thrown.");
                     }
                     catch (InvalidOperationException)
@@ -206,13 +206,13 @@
         /// <summary>
         /// Verifies that an important scenario of write lock + main thread switch + synchronous callback into the write lock works.
         /// </summary>
-        [StaFact]
+        [Fact]
         public void RunWithinExclusiveLockWithYieldsOntoMainThread()
         {
             this.ExecuteOnDispatcher(
                 async delegate
                 {
-                    this.InitializeJoinableTaskFactory();
+                    InitializeJoinableTaskFactory(out this.joinableCollection, out this.asyncPump);
                     using (var releaser1 = await this.asyncLock.WriteLockAsync())
                     {
                         // This part of the scenario is where we switch back to the main thread
@@ -235,11 +235,11 @@
                 });
         }
 
-        private void InitializeJoinableTaskFactory()
+        private static void InitializeJoinableTaskFactory(out JoinableTaskCollection joinableCollection, out JoinableTaskFactory asyncPump)
         {
             var context = new JoinableTaskContext();
-            this.joinableCollection = context.CreateCollection();
-            this.asyncPump = context.CreateFactory(this.joinableCollection);
+            joinableCollection = context.CreateCollection();
+            asyncPump = context.CreateFactory(joinableCollection);
         }
 
         private void LockWithinRunAsyncAfterYieldHelper()

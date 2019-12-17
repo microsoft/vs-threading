@@ -7,7 +7,7 @@
 namespace Microsoft.VisualStudio.Threading
 {
     /// <summary>
-    /// Represents a dependent item in the JoinableTask dependency graph, it can be either a <see cref="JoinableTask"/> or a <see cref="JoinableTaskCollection"/>
+    /// Represents a dependent item in the JoinableTask dependency graph, it can be either a <see cref="JoinableTask"/> or a <see cref="JoinableTaskCollection"/>.
     /// </summary>
     internal interface IJoinableTaskDependent
     {

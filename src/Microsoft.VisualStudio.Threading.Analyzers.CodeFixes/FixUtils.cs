@@ -4,9 +4,6 @@
 *                                                        *
 *********************************************************/
 
-// https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/2267
-#pragma warning disable SA1009 // Closing parenthesis must be spaced correctly
-
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
@@ -18,11 +15,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using CodeAnalysis.CSharp;
-    using CodeAnalysis.CSharp.Syntax;
-    using CodeAnalysis.Diagnostics;
     using Microsoft;
     using Microsoft.CodeAnalysis;
+    using Microsoft.CodeAnalysis.CSharp;
+    using Microsoft.CodeAnalysis.CSharp.Syntax;
+    using Microsoft.CodeAnalysis.Diagnostics;
     using Microsoft.CodeAnalysis.FindSymbols;
     using Microsoft.CodeAnalysis.Rename;
     using Microsoft.CodeAnalysis.Simplification;
@@ -30,7 +27,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     internal static class FixUtils
     {
         internal static AnonymousFunctionExpressionSyntax MakeMethodAsync(this AnonymousFunctionExpressionSyntax method, SemanticModel semanticModel, CancellationToken cancellationToken)
-#pragma warning restore AvoidAsyncSuffix // Avoid Async suffix
         {
             if (method.AsyncKeyword.Kind() == SyntaxKind.AsyncKeyword)
             {
@@ -40,7 +36,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             var methodSymbol = (IMethodSymbol)semanticModel.GetSymbolInfo(method, cancellationToken).Symbol;
             bool hasReturnValue = (methodSymbol?.ReturnType as INamedTypeSymbol)?.IsGenericType ?? false;
-            AnonymousFunctionExpressionSyntax updated = null;
+            AnonymousFunctionExpressionSyntax? updated = null;
 
             var simpleLambda = method as SimpleLambdaExpressionSyntax;
             if (simpleLambda != null)
@@ -84,11 +80,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// The new Document and method syntax, or the original if it was already async.
         /// </returns>
         /// <exception cref="System.ArgumentNullException">
-        /// method
-        /// or
-        /// document
-        /// or
-        /// originalMethodSymbol
+        /// <para>If <paramref name="method"/> is null.</para>
+        /// <para>-or-</para>
+        /// <para>If <paramref name="document"/> is null.</para>
         /// </exception>
         internal static async Task<Tuple<Document, MethodDeclarationSyntax>> MakeMethodAsync(this MethodDeclarationSyntax method, Document document, CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -109,8 +103,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
 
             DocumentId documentId = document.Id;
-            var semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
-            var methodSymbol = semanticModel.GetDeclaredSymbol(method);
+            SemanticModel? semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
+            IMethodSymbol? methodSymbol = semanticModel.GetDeclaredSymbol(method);
 
             bool hasReturnValue;
             TypeSyntax returnType = method.ReturnType;
@@ -396,9 +390,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             // await Task.FromResult(x) => x.
             if (semanticModel != null)
             {
-                var awaitedInvocation = awaitExpression.Expression as InvocationExpressionSyntax;
-                var awaitedInvocationMemberAccess = awaitedInvocation?.Expression as MemberAccessExpressionSyntax;
-                if (awaitedInvocationMemberAccess?.Name.Identifier.Text == nameof(Task.FromResult))
+                if (awaitExpression.Expression is InvocationExpressionSyntax awaitedInvocation
+                    && awaitedInvocation.Expression is MemberAccessExpressionSyntax awaitedInvocationMemberAccess
+                    && awaitedInvocationMemberAccess.Name.Identifier.Text == nameof(Task.FromResult))
                 {
                     // Is the FromResult method on the Task or Task<T> class?
                     var memberOwnerSymbol = semanticModel.GetSymbolInfo(originalSyntax, cancellationToken).Symbol;

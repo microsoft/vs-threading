@@ -27,12 +27,12 @@
         {
             this.resources = new List<Resource>();
             this.resourceLock = new ResourceLockWrapper(this.resources, logger);
-            this.resources.Add(null); // something so that if default(T) were ever used in the product, it would likely throw.
+            this.resources.Add(null!); // something so that if default(T) were ever used in the product, it would likely throw.
             this.resources.Add(new Resource());
             this.resources.Add(new Resource());
         }
 
-        [StaFact]
+        [Fact]
         public async Task ReadResourceAsync()
         {
             using (var access = await this.resourceLock.ReadLockAsync())
@@ -44,7 +44,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task UpgradeableReadResourceAsync()
         {
             using (var access = await this.resourceLock.UpgradeableReadLockAsync())
@@ -56,7 +56,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task WriteResourceAsync()
         {
             using (var access = await this.resourceLock.WriteLockAsync())
@@ -76,7 +76,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task PreparationExecutesJustOncePerReadLock()
         {
             using (var access = await this.resourceLock.ReadLockAsync())
@@ -98,7 +98,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task PreparationExecutesJustOncePerUpgradeableReadLock()
         {
             using (var access = await this.resourceLock.UpgradeableReadLockAsync())
@@ -120,7 +120,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task PreparationExecutesJustOncePerWriteLock()
         {
             using (var access = await this.resourceLock.WriteLockAsync())
@@ -145,7 +145,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task PreparationSkippedForWriteLockWithFlag()
         {
             using (var access = await this.resourceLock.WriteLockAsync(AsyncReaderWriterResourceLock<int, Resource>.LockFlags.SkipInitialPreparation))
@@ -158,7 +158,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task PreparationNotSkippedForUpgradeableReadLockWithFlag()
         {
             using (var access = await this.resourceLock.UpgradeableReadLockAsync(AsyncReaderWriterResourceLock<int, Resource>.LockFlags.SkipInitialPreparation))
@@ -170,7 +170,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task PreparationSkippedForWriteLockUnderUpgradeableReadWithFlag()
         {
             using (var access = await this.resourceLock.UpgradeableReadLockAsync(AsyncReaderWriterResourceLock<int, Resource>.LockFlags.SkipInitialPreparation))
@@ -186,7 +186,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task PreparationSwitchesFromExclusiveToConcurrent()
         {
             using (var access = await this.resourceLock.WriteLockAsync())
@@ -202,7 +202,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task PreparationSwitchesFromConcurrentToExclusive()
         {
             using (var access = await this.resourceLock.ReadLockAsync())
@@ -218,7 +218,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task PreparationSwitchesWithSkipInitialPreparation()
         {
             using (var access = await this.resourceLock.ReadLockAsync())
@@ -249,7 +249,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task PreparationOccursForEachTopLevelExclusiveWrite()
         {
             using (var access = await this.resourceLock.WriteLockAsync())
@@ -289,10 +289,10 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task PreparationSucceedsForConcurrentReadersWhenOneCancels()
         {
-            var preparationComplete = new TaskCompletionSource<object>();
+            var preparationComplete = new TaskCompletionSource<object?>();
             this.resourceLock.SetPreparationTask(this.resources[1], preparationComplete.Task).Forget();
 
             var cts = new CancellationTokenSource();
@@ -340,7 +340,7 @@
             await reader2;
         }
 
-        [StaFact]
+        [Fact]
         public async Task ResourceHeldByUpgradeableReadPreparedWhenWriteLockReleasedWithoutResource()
         {
             using (var access = await this.resourceLock.UpgradeableReadLockAsync())
@@ -368,7 +368,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task ResourceHeldByUpgradeableReadPreparedWhenWriteLockReleased()
         {
             using (var access = await this.resourceLock.UpgradeableReadLockAsync())
@@ -402,7 +402,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task PreparationIsAppliedToResourceImpactedByOutsideChange()
         {
             using (var access = await this.resourceLock.ReadLockAsync())
@@ -449,7 +449,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task PreparationIsAppliedToResourceImpactedByOutsideChangePredicate()
         {
             using (var access = await this.resourceLock.ReadLockAsync())
@@ -502,7 +502,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task PreparationIsAssumedUnknownForAllResourcesAfterExclusiveLockReleased()
         {
             using (var access = await this.resourceLock.ReadLockAsync())
@@ -545,7 +545,7 @@
             Assert.Equal(0, this.resources[2].ExclusiveAccessPreparationCount);
         }
 
-        [StaFact]
+        [Fact]
         public async Task ResourceHeldByStickyUpgradeableReadNotPreparedWhenExplicitWriteLockReleased()
         {
             using (var access = await this.resourceLock.UpgradeableReadLockAsync(AsyncReaderWriterResourceLock<int, Resource>.LockFlags.StickyWrite))
@@ -574,7 +574,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task DowngradedWriteLockDoesNotPrepareResourceWhenUpgradeableReadDidNotHaveIt()
         {
             using (var access = await this.resourceLock.UpgradeableReadLockAsync())
@@ -601,11 +601,11 @@
         /// <summary>
         /// Verifies that multiple resources may be prepared concurrently.
         /// </summary>
-        [StaFact]
+        [Fact]
         public async Task ResourcesPreparedConcurrently()
         {
-            var resourceTask1 = new TaskCompletionSource<object>();
-            var resourceTask2 = new TaskCompletionSource<object>();
+            var resourceTask1 = new TaskCompletionSource<object?>();
+            var resourceTask2 = new TaskCompletionSource<object?>();
             var preparationEnteredTask1 = this.resourceLock.SetPreparationTask(this.resources[1], resourceTask1.Task);
             var preparationEnteredTask2 = this.resourceLock.SetPreparationTask(this.resources[2], resourceTask2.Task);
 
@@ -638,13 +638,13 @@
         /// <summary>
         /// Verifies that a given resource is only prepared on one thread at a time.
         /// </summary>
-        [StaFact]
+        [Fact]
         public async Task IndividualResourcePreparationNotConcurrent()
         {
-            var resourceTask = new TaskCompletionSource<object>();
+            var resourceTask = new TaskCompletionSource<object?>();
             var preparationEnteredTask1 = this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task);
-            var requestSubmitted1 = new TaskCompletionSource<object>();
-            var requestSubmitted2 = new TaskCompletionSource<object>();
+            var requestSubmitted1 = new TaskCompletionSource<object?>();
+            var requestSubmitted2 = new TaskCompletionSource<object?>();
 
             await Task.WhenAll(
                 Task.Run(async delegate
@@ -701,10 +701,10 @@
         /// Verifies that if a lock holder requests a resource and then releases its own lock before the resource is ready,
         /// that the resource was still within its own lock for the preparation step.
         /// </summary>
-        [StaFact]
+        [Fact]
         public async Task PreparationReservesLock()
         {
-            var resourceTask = new TaskCompletionSource<object>();
+            var resourceTask = new TaskCompletionSource<object?>();
             var nowait = this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task);
 
             Task<Resource> resource;
@@ -724,7 +724,7 @@
         /// that sets all accessed or not-yet-accessed resources to Unknown state.
         /// This helps the callers get a lock on a resource with the exact set of options desired.
         /// </summary>
-        [StaFact]
+        [Fact]
         public async Task ResetPreparationTest()
         {
             Resource resource;
@@ -775,7 +775,7 @@
         /// Demonstrates that a conscientious lock holder may asynchronously release a write lock
         /// so that blocking the thread isn't necessary while preparing resource for concurrent access again.
         /// </summary>
-        [StaFact]
+        [Fact]
         public async Task AsyncReleaseOfWriteToUpgradeableReadLock()
         {
             using (var upgradeableReadAccess = await this.resourceLock.UpgradeableReadLockAsync())
@@ -804,7 +804,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task LockReleaseAsyncWithoutWaitFollowedByDispose()
         {
             using (var upgradeableReadAccess = await this.resourceLock.UpgradeableReadLockAsync())
@@ -818,7 +818,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task UpgradeableReadLockAsync()
         {
             await Task.Run(async delegate
@@ -833,7 +833,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public async Task WriteLockAsync()
         {
             await Task.Run(async delegate
@@ -848,7 +848,7 @@
             });
         }
 
-        [StaFact]
+        [Fact]
         public async Task GetResourceAsyncRetriesFaultedPreparation()
         {
             var resourceTask = new TaskCompletionSource<object>();
@@ -874,7 +874,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task PrepareResourceForConcurrentAccessAsync_ThrowsDuringReadShouldNotLeakLock()
         {
             var resourceTask = new TaskCompletionSource<object>();
@@ -900,7 +900,7 @@
             }
         }
 
-        [StaFact]
+        [Fact]
         public async Task PrepareResourceForConcurrentAccessAsync_ThrowsReleasingWriteShouldNotLeakLock()
         {
             TaskCompletionSource<object> resourceTask;
@@ -975,7 +975,7 @@
             }
         }
 
-        [StaFact, Trait("Stress", "true")]
+        [Fact, Trait("Stress", "true")]
         public async Task ResourceLockStress()
         {
             const int MaxLockAcquisitions = -1;
@@ -988,7 +988,7 @@
             await this.StressHelper(MaxLockAcquisitions, MaxLockHeldDelay, overallTimeout, iterationTimeout, maxWorkers, maxResources, testCancellation);
         }
 
-        [StaFact]
+        [Fact]
         public async Task CaptureDiagnosticsCtor()
         {
             Assert.False(this.resourceLock.CaptureDiagnostics);
@@ -1188,7 +1188,7 @@
         {
             private readonly List<Resource> resources;
 
-            private readonly Dictionary<Resource, Tuple<TaskCompletionSource<object>, Task>> preparationTasks = new Dictionary<Resource, Tuple<TaskCompletionSource<object>, Task>>();
+            private readonly Dictionary<Resource, Tuple<TaskCompletionSource<object?>, Task>> preparationTasks = new Dictionary<Resource, Tuple<TaskCompletionSource<object?>, Task>>();
 
             private readonly AsyncAutoResetEvent preparationTaskBegun = new AsyncAutoResetEvent();
 
@@ -1219,7 +1219,7 @@
                 Requires.NotNull(resource, nameof(resource));
                 Requires.NotNull(task, nameof(task));
 
-                var tcs = new TaskCompletionSource<object>();
+                var tcs = new TaskCompletionSource<object?>();
                 lock (this.preparationTasks)
                 {
                     this.preparationTasks[resource] = Tuple.Create(tcs, task);
@@ -1233,7 +1233,7 @@
                 base.SetResourceAsAccessed(resource);
             }
 
-            internal new void SetResourceAsAccessed(Func<Resource, object, bool> resourceCheck, object state)
+            internal new void SetResourceAsAccessed(Func<Resource, object?, bool> resourceCheck, object? state)
             {
                 base.SetResourceAsAccessed(resourceCheck, state);
             }
@@ -1284,7 +1284,7 @@
                 Assert.True(this.IsWriteLockHeld || !this.IsAnyLockHeld);
                 Assert.False(Monitor.IsEntered(this.SyncObject));
 
-                Tuple<TaskCompletionSource<object>, Task> tuple;
+                Tuple<TaskCompletionSource<object?>, Task>? tuple;
                 lock (this.preparationTasks)
                 {
                     if (this.preparationTasks.TryGetValue(resource, out tuple))

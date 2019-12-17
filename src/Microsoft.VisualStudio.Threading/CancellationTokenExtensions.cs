@@ -137,7 +137,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// The object to dispose when this struct is disposed.
             /// </summary>
-            private readonly CancellationTokenSource cts;
+            private readonly CancellationTokenSource? cts;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="CombinedCancellationToken"/> struct
@@ -155,7 +155,7 @@ namespace Microsoft.VisualStudio.Threading
             /// Initializes a new instance of the <see cref="CombinedCancellationToken"/> struct
             /// that represents just a single, non-disposable <see cref="System.Threading.CancellationToken"/>.
             /// </summary>
-            /// <param name="cancellationToken">The cancellation token</param>
+            /// <param name="cancellationToken">The cancellation token.</param>
             public CombinedCancellationToken(CancellationToken cancellationToken)
             {
                 this.cts = null;
@@ -192,7 +192,7 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <inheritdoc />
-            public override bool Equals(object obj) => obj is CombinedCancellationToken other && this.Equals(other);
+            public override bool Equals(object? obj) => obj is CombinedCancellationToken other && this.Equals(other);
 
             /// <inheritdoc />
             public bool Equals(CombinedCancellationToken other) => this.cts == other.cts && this.Token.Equals(other.Token);

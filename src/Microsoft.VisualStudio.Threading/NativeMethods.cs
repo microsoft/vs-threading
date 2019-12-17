@@ -4,16 +4,14 @@
 *                                                        *
 *********************************************************/
 
-#if DESKTOP
-
 namespace Microsoft.VisualStudio.Threading
 {
     using System;
     using System.Runtime.InteropServices;
-    using Win32.SafeHandles;
+    using Microsoft.Win32.SafeHandles;
 
     /// <summary>
-    /// P/Invoke methods
+    /// P/Invoke methods.
     /// </summary>
     internal static partial class NativeMethods
     {
@@ -53,5 +51,3 @@ namespace Microsoft.VisualStudio.Threading
             [MarshalAs(UnmanagedType.Bool)] bool asynchronous);
     }
 }
-
-#endif

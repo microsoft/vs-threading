@@ -59,7 +59,7 @@ namespace Microsoft.VisualStudio.Threading
                     while (this.waiters.Count > 0)
                     {
                         Task.Factory.StartNew(
-                            state => ((TaskCompletionSource<EmptyStruct>)state).SetResult(default(EmptyStruct)),
+                            state => ((TaskCompletionSource<EmptyStruct>)state!).SetResult(default(EmptyStruct)),
                             this.waiters.Pop(),
                             CancellationToken.None,
                             TaskCreationOptions.None,
@@ -67,7 +67,7 @@ namespace Microsoft.VisualStudio.Threading
                     }
 
                     // And allow this one to continue immediately.
-                    return TplExtensions.CompletedTask;
+                    return Task.CompletedTask;
                 }
                 else
                 {

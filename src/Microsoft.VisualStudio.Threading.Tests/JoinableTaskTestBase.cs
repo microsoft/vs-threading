@@ -18,7 +18,7 @@
 
         protected JoinableTaskContext context;
         protected JoinableTaskFactory asyncPump;
-        protected JoinableTaskCollection joinableCollection;
+        protected JoinableTaskCollection? joinableCollection;
 
         protected int originalThreadManagedId;
         protected SynchronizationContext dispatcherContext;
@@ -35,10 +35,8 @@
             this.originalThreadManagedId = Environment.CurrentManagedThreadId;
             this.testFrame = SingleThreadedTestSynchronizationContext.NewFrame();
 
-#if DESKTOP || NETCOREAPP2_0
             // Suppress the assert dialog that appears and causes test runs to hang.
             Trace.Listeners.OfType<DefaultTraceListener>().Single().AssertUiEnabled = false;
-#endif
         }
 
         protected virtual JoinableTaskContext CreateJoinableTaskContext()
@@ -58,7 +56,7 @@
         {
             Verify.Operation(this.originalThreadManagedId == Environment.CurrentManagedThreadId, "We can only simulate the UI thread if you're already on it (the starting thread for the test).");
 
-            Exception failure = null;
+            Exception? failure = null;
             this.dispatcherContext.Post(async delegate
             {
                 try

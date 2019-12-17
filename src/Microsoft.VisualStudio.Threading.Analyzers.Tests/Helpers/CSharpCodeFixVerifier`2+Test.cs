@@ -29,22 +29,14 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 "Microsoft.VisualStudio.Shell.14.0.dll",
             });
 
-            private static readonly ImmutableArray<string> AdditionalReferencesFromBinFolder = ImmutableArray.Create(new string[] {
-                "System.Threading.Tasks.Extensions.dll",
-            });
-
-            private static readonly ImmutableArray<string> AdditionalReferencesFromGAC = ImmutableArray.Create(new string[] {
-                "System.Threading.Tasks, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
-            });
-
             public Test()
             {
+                this.ReferenceAssemblies = ReferencesHelper.DefaultReferences;
+
                 this.SolutionTransforms.Add((solution, projectId) =>
                 {
                     var parseOptions = (CSharpParseOptions)solution.GetProject(projectId).ParseOptions;
-                    solution = solution.WithProjectParseOptions(projectId, parseOptions.WithLanguageVersion(LanguageVersion.CSharp7_1))
-                        .AddMetadataReferences(projectId, AdditionalReferencesFromBinFolder.Select(f => MetadataReference.CreateFromFile(Path.Combine(Environment.CurrentDirectory, f))))
-                        .AddMetadataReferences(projectId, AdditionalReferencesFromGAC.Select(assemblyName => MetadataReference.CreateFromFile(Assembly.Load(assemblyName).Location)));
+                    solution = solution.WithProjectParseOptions(projectId, parseOptions.WithLanguageVersion(LanguageVersion.CSharp7_1));
 
                     if (this.HasEntryPoint)
                     {

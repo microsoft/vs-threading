@@ -29,7 +29,7 @@ namespace Microsoft.VisualStudio.Threading
         /// A single joinable task factory that itself cannot be joined.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private JoinableTaskFactory nonJoinableFactory;
+        private JoinableTaskFactory? nonJoinableFactory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JoinableTaskContextNode"/> class.
@@ -59,7 +59,6 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
-#if DESKTOP || NETSTANDARD2_0
         /// <summary>
         /// Gets the main thread that can be shared by tasks created by this context.
         /// </summary>
@@ -67,7 +66,6 @@ namespace Microsoft.VisualStudio.Threading
         {
             get { return this.context.MainThread; }
         }
-#endif
 
         /// <summary>
         /// Gets a value indicating whether the caller is executing on the main thread.
@@ -177,7 +175,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Invoked when an earlier hang report is false alarm.
         /// </summary>
-        /// <param name="hangDuration">The duration of the total waiting time</param>
+        /// <param name="hangDuration">The duration of the total waiting time.</param>
         /// <param name="hangId">A GUID that uniquely identifies the earlier hang report.</param>
         protected internal virtual void OnFalseHangDetected(TimeSpan hangDuration, Guid hangId)
         {

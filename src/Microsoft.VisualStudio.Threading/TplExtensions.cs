@@ -23,13 +23,15 @@ namespace Microsoft.VisualStudio.Threading
         /// A singleton completed task.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
+        [Obsolete("Use Task.CompletedTask instead.")]
         public static readonly Task CompletedTask = Task.FromResult(default(EmptyStruct));
 
         /// <summary>
         /// A task that is already canceled.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-        public static readonly Task CanceledTask = ThreadingTools.TaskFromCanceled(new CancellationToken(canceled: true));
+        [Obsolete("Use Task.FromCanceled instead.")]
+        public static readonly Task CanceledTask = Task.FromCanceled(new CancellationToken(canceled: true));
 
         /// <summary>
         /// A completed task with a <c>true</c> result.
@@ -53,7 +55,7 @@ namespace Microsoft.VisualStudio.Threading
             if (!task.IsCompleted)
             {
                 // Waiting on a continuation of a task won't ever inline the predecessor (in .NET 4.x anyway).
-                var continuation = task.ContinueWith(t => { }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+                var continuation = task.ContinueWith(t => { }, CancellationToken.None, TaskContinuationOptions.RunContinuationsAsynchronously, TaskScheduler.Default);
                 continuation.Wait();
             }
 
@@ -128,19 +130,20 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="tcs">The task that should receive the completion status.</param>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "tcs")]
         public static void ApplyResultTo<T>(this Task task, TaskCompletionSource<T> tcs)
+            //// where T : defaultable
         {
             Requires.NotNull(task, nameof(task));
             Requires.NotNull(tcs, nameof(tcs));
 
             if (task.IsCompleted)
             {
-                ApplyCompletedTaskResultTo<T>(task, tcs, default(T));
+                ApplyCompletedTaskResultTo<T>(task, tcs, default(T)!);
             }
             else
             {
                 // Using a minimum of allocations (just one task, and no closure) ensure that one task's completion sets equivalent completion on another task.
                 task.ContinueWith(
-                    (t, s) => ApplyCompletedTaskResultTo(t, (TaskCompletionSource<T>)s, default(T)),
+                    (t, s) => ApplyCompletedTaskResultTo(t, (TaskCompletionSource<T>)s!, default(T)!),
                     tcs,
                     CancellationToken.None,
                     TaskContinuationOptions.ExecuteSynchronously,
@@ -192,7 +195,7 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(task, nameof(task));
             Requires.NotNull(action, nameof(action));
 
-            return task.ContinueWith((t, state) => ((Action)state)(), action, cancellation, options, TaskScheduler.Default);
+            return task.ContinueWith((t, state) => ((Action)state!)(), action, cancellation, options, TaskScheduler.Default);
         }
 
         /// <summary>
@@ -204,7 +207,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="ultimateCancellation">A token whose cancellation signals that the following task should be cancelled.</param>
         /// <param name="taskThatFollows">The TaskCompletionSource whose task is to follow.  Leave at <c>null</c> for a new task to be created.</param>
         /// <returns>The following task.</returns>
-        public static Task<T> FollowCancelableTaskToCompletion<T>(Func<Task<T>> taskToFollow, CancellationToken ultimateCancellation, TaskCompletionSource<T> taskThatFollows = null)
+        public static Task<T> FollowCancelableTaskToCompletion<T>(Func<Task<T>> taskToFollow, CancellationToken ultimateCancellation, TaskCompletionSource<T>? taskThatFollows = null)
         {
             Requires.NotNull(taskToFollow, nameof(taskToFollow));
 
@@ -213,15 +216,14 @@ namespace Microsoft.VisualStudio.Threading
 
             if (ultimateCancellation.CanBeCanceled)
             {
-                var sourceState = tcs.SourceState;
-                sourceState.RegisteredCallback = ultimateCancellation.Register(
+                var registeredCallback = ultimateCancellation.Register(
                     state =>
                     {
-                        var tuple = (Tuple<TaskCompletionSource<FollowCancelableTaskState<T>, T>, CancellationToken>)state;
+                        var tuple = (Tuple<TaskCompletionSource<FollowCancelableTaskState<T>, T>, CancellationToken>)state!;
                         tuple.Item1.TrySetCanceled(tuple.Item2);
                     },
                     Tuple.Create(tcs, ultimateCancellation));
-                tcs.SourceState = sourceState; // copy back in, since it's a struct
+                tcs.SourceState = tcs.SourceState.WithRegisteredCallback(registeredCallback);
             }
 
             FollowCancelableTaskToCompletionHelper(tcs, taskToFollow());
@@ -254,25 +256,40 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="task">The task whose result is to be ignored.</param>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "task")]
-        public static void Forget(this Task task)
+        public static void Forget(this Task? task)
         {
         }
+
+        /// <summary>
+        /// Consumes a <see cref="ValueTask"/> and allows it to be recycled, if applicable.  Useful for fire-and-forget calls to async methods within async methods.
+        /// NOTE: APIs should not generally return <see cref="ValueTask"/> if callers aren't 99.9999% likely to await the result immediately.
+        /// </summary>
+        /// <param name="task">The task whose result is to be ignored.</param>
+        public static void Forget(this ValueTask task) => task.Preserve();
+
+        /// <summary>
+        /// Consumes a ValueTask and allows it to be recycled, if applicable.  Useful for fire-and-forget calls to async methods within async methods.
+        /// NOTE: APIs should not generally return <see cref="ValueTask{T}"/> if callers aren't 99.9999% likely to await the result immediately.
+        /// </summary>
+        /// <typeparam name="T">The type of value produced by the <paramref name="task"/>.</typeparam>
+        /// <param name="task">The task whose result is to be ignored.</param>
+        public static void Forget<T>(this ValueTask<T> task) => task.Preserve();
 
         /// <summary>
         /// Invokes asynchronous event handlers, returning a task that completes when all event handlers have been invoked.
         /// Each handler is fully executed (including continuations) before the next handler in the list is invoked.
         /// </summary>
-        /// <param name="handlers">The event handlers.  May be <c>null</c></param>
+        /// <param name="handlers">The event handlers.  May be <c>null</c>.</param>
         /// <param name="sender">The event source.</param>
         /// <param name="args">The event argument.</param>
         /// <returns>The task that completes when all handlers have completed.</returns>
         /// <exception cref="AggregateException">Thrown if any handlers fail. It contains a collection of all failures.</exception>
-        public static async Task InvokeAsync(this AsyncEventHandler handlers, object sender, EventArgs args)
+        public static async Task InvokeAsync(this AsyncEventHandler? handlers, object? sender, EventArgs args)
         {
             if (handlers != null)
             {
                 var individualHandlers = handlers.GetInvocationList();
-                List<Exception> exceptions = null;
+                List<Exception>? exceptions = null;
                 foreach (AsyncEventHandler handler in individualHandlers)
                 {
                     try
@@ -302,18 +319,17 @@ namespace Microsoft.VisualStudio.Threading
         /// Each handler is fully executed (including continuations) before the next handler in the list is invoked.
         /// </summary>
         /// <typeparam name="TEventArgs">The type of argument passed to each handler.</typeparam>
-        /// <param name="handlers">The event handlers.  May be <c>null</c></param>
+        /// <param name="handlers">The event handlers.  May be <c>null</c>.</param>
         /// <param name="sender">The event source.</param>
         /// <param name="args">The event argument.</param>
         /// <returns>The task that completes when all handlers have completed.  The task is faulted if any handlers throw an exception.</returns>
         /// <exception cref="AggregateException">Thrown if any handlers fail. It contains a collection of all failures.</exception>
-        public static async Task InvokeAsync<TEventArgs>(this AsyncEventHandler<TEventArgs> handlers, object sender, TEventArgs args)
-            where TEventArgs : EventArgs
+        public static async Task InvokeAsync<TEventArgs>(this AsyncEventHandler<TEventArgs>? handlers, object? sender, TEventArgs args)
         {
             if (handlers != null)
             {
                 var individualHandlers = handlers.GetInvocationList();
-                List<Exception> exceptions = null;
+                List<Exception>? exceptions = null;
                 foreach (AsyncEventHandler<TEventArgs> handler in individualHandlers)
                 {
                     try
@@ -347,7 +363,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="state">The state object provided by the caller of the Begin method.</param>
         /// <returns>A task (that implements <see cref="IAsyncResult"/> that should be returned from the Begin method.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Apm")]
-        public static Task<TResult> ToApm<TResult>(this Task<TResult> task, AsyncCallback callback, object state)
+        public static Task<TResult> ToApm<TResult>(this Task<TResult> task, AsyncCallback? callback, object? state)
         {
             Requires.NotNull(task, nameof(task));
 
@@ -356,7 +372,7 @@ namespace Microsoft.VisualStudio.Threading
                 if (callback != null)
                 {
                     task.ContinueWith(
-                        (t, cb) => ((AsyncCallback)cb)(t),
+                        (t, cb) => ((AsyncCallback)cb!)(t),
                         callback,
                         CancellationToken.None,
                         TaskContinuationOptions.None,
@@ -389,7 +405,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="state">The state object provided by the caller of the Begin method.</param>
         /// <returns>A task (that implements <see cref="IAsyncResult"/> that should be returned from the Begin method.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Apm")]
-        public static Task ToApm(this Task task, AsyncCallback callback, object state)
+        public static Task ToApm(this Task task, AsyncCallback? callback, object? state)
         {
             Requires.NotNull(task, nameof(task));
 
@@ -398,7 +414,7 @@ namespace Microsoft.VisualStudio.Threading
                 if (callback != null)
                 {
                     task.ContinueWith(
-                        (t, cb) => ((AsyncCallback)cb)(t),
+                        (t, cb) => ((AsyncCallback)cb!)(t),
                         callback,
                         CancellationToken.None,
                         TaskContinuationOptions.None,
@@ -408,7 +424,7 @@ namespace Microsoft.VisualStudio.Threading
                 return task;
             }
 
-            var tcs = new TaskCompletionSource<object>(state);
+            var tcs = new TaskCompletionSource<object?>(state);
             task.ContinueWith(
                 t =>
                 {
@@ -422,8 +438,6 @@ namespace Microsoft.VisualStudio.Threading
 
             return tcs.Task;
         }
-
-#if DESKTOP || NETSTANDARD2_0
 
         /// <summary>
         /// Creates a TPL Task that returns <c>true</c> when a <see cref="WaitHandle"/> is signaled or returns <c>false</c> if a timeout occurs first.
@@ -469,14 +483,14 @@ namespace Microsoft.VisualStudio.Threading
                 cancellationToken.Register(
                     state =>
                     {
-                        var tuple = (Tuple<TaskCompletionSource<bool>, CancellationToken>)state;
+                        var tuple = (Tuple<TaskCompletionSource<bool>, CancellationToken>)state!;
                         tuple.Item1.TrySetCanceled(tuple.Item2);
                     },
                     Tuple.Create(tcs, cancellationToken));
 
             RegisteredWaitHandle callbackHandle = ThreadPool.RegisterWaitForSingleObject(
                 handle,
-                (state, timedOut) => ((TaskCompletionSource<bool>)state).TrySetResult(!timedOut),
+                (state, timedOut) => ((TaskCompletionSource<bool>)state!).TrySetResult(!timedOut),
                 state: tcs,
                 millisecondsTimeOutInterval: timeout,
                 executeOnlyOnce: true);
@@ -490,7 +504,7 @@ namespace Microsoft.VisualStudio.Threading
                 tcs.Task.ContinueWith(
                     (_, state) =>
                     {
-                        var tuple = (Tuple<RegisteredWaitHandle, CancellationTokenRegistration>)state;
+                        var tuple = (Tuple<RegisteredWaitHandle, CancellationTokenRegistration>)state!;
                         tuple.Item1.Unregister(null); // release resources for the async callback
                         tuple.Item2.Dispose(); // release memory for cancellation token registration
                     },
@@ -504,7 +518,7 @@ namespace Microsoft.VisualStudio.Threading
                 // Since the cancellation token was the default one, the only thing we need to track is clearing the RegisteredWaitHandle,
                 // so do this such that we allocate as few objects as possible.
                 tcs.Task.ContinueWith(
-                    (_, state) => ((RegisteredWaitHandle)state).Unregister(null),
+                    (_, state) => ((RegisteredWaitHandle)state!).Unregister(null),
                     callbackHandle,
                     CancellationToken.None,
                     TaskContinuationOptions.ExecuteSynchronously,
@@ -513,8 +527,6 @@ namespace Microsoft.VisualStudio.Threading
 
             return tcs.Task;
         }
-
-#endif
 
         /// <summary>
         /// Applies one task's results to another.
@@ -540,7 +552,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 // Using a minimum of allocations (just one task, and no closure) ensure that one task's completion sets equivalent completion on another task.
                 task.ContinueWith(
-                    (t, s) => ApplyCompletedTaskResultTo(t, (TaskCompletionSource<T>)s),
+                    (t, s) => ApplyCompletedTaskResultTo(t, (TaskCompletionSource<T>)s!),
                     tcs,
                     CancellationToken.None,
                     inlineSubsequentCompletion ? TaskContinuationOptions.ExecuteSynchronously : TaskContinuationOptions.None,
@@ -553,6 +565,17 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <typeparam name="T">The type parameter for the returned task.</typeparam>
         internal static Task<T> CanceledTaskOfT<T>() => CanceledTaskOfTCache<T>.CanceledTask;
+
+        /// <summary>
+        /// Returns a <see cref="Task{TResult}"/> that has been faulted with the specified exception.
+        /// </summary>
+        /// <typeparam name="T">The type of value that might have been returned from the <see cref="Task{TResult}"/>.</typeparam>
+        /// <param name="ex">The exception used to fault the <see cref="Task{TResult}"/>.</param>
+        /// <returns>The faulted task.</returns>
+        internal static Task<T> FaultedTask<T>(Exception ex)
+        {
+            return Task.FromException<T>(ex);
+        }
 
         /// <summary>
         /// Applies a completed task's results to another.
@@ -575,7 +598,7 @@ namespace Microsoft.VisualStudio.Threading
             }
             else if (completedTask.IsFaulted)
             {
-                taskCompletionSource.TrySetException(completedTask.Exception.InnerExceptions);
+                taskCompletionSource.TrySetException(completedTask.Exception!.InnerExceptions);
             }
             else
             {
@@ -605,7 +628,7 @@ namespace Microsoft.VisualStudio.Threading
             }
             else if (completedTask.IsFaulted)
             {
-                taskCompletionSource.TrySetException(completedTask.Exception.InnerExceptions);
+                taskCompletionSource.TrySetException(completedTask.Exception!.InnerExceptions);
             }
             else
             {
@@ -631,7 +654,7 @@ namespace Microsoft.VisualStudio.Threading
             currentTask.ContinueWith(
                 (t, state) =>
                 {
-                    var tcsNested = (TaskCompletionSource<FollowCancelableTaskState<T>, T>)state;
+                    var tcsNested = (TaskCompletionSource<FollowCancelableTaskState<T>, T>)state!;
                     switch (t.Status)
                     {
                         case TaskStatus.RanToCompletion:
@@ -639,7 +662,7 @@ namespace Microsoft.VisualStudio.Threading
                             tcsNested.SourceState.RegisteredCallback.Dispose();
                             break;
                         case TaskStatus.Faulted:
-                            tcsNested.TrySetException(t.Exception.InnerExceptions);
+                            tcsNested.TrySetException(t.Exception!.InnerExceptions);
                             tcsNested.SourceState.RegisteredCallback.Dispose();
                             break;
                         case TaskStatus.Canceled:
@@ -661,7 +684,7 @@ namespace Microsoft.VisualStudio.Threading
         /// An awaitable that wraps a task and never throws an exception when waited on.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct NoThrowTaskAwaitable
+        public readonly struct NoThrowTaskAwaitable
         {
             /// <summary>
             /// The task.
@@ -700,10 +723,10 @@ namespace Microsoft.VisualStudio.Threading
         /// An awaiter that wraps a task and never throws an exception when waited on.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-        public struct NoThrowTaskAwaiter : ICriticalNotifyCompletion
+        public readonly struct NoThrowTaskAwaiter : ICriticalNotifyCompletion
         {
             /// <summary>
-            /// The task
+            /// The task.
             /// </summary>
             private readonly Task task;
 
@@ -765,7 +788,7 @@ namespace Microsoft.VisualStudio.Threading
         /// A state bag for the <see cref="FollowCancelableTaskToCompletion"/> method.
         /// </summary>
         /// <typeparam name="T">The type of value ultimately returned.</typeparam>
-        private struct FollowCancelableTaskState<T>
+        private readonly struct FollowCancelableTaskState<T>
         {
             /// <summary>
             /// The delegate that returns the task to follow.
@@ -778,23 +801,34 @@ namespace Microsoft.VisualStudio.Threading
             /// <param name="getTaskToFollow">The get task to follow.</param>
             /// <param name="cancellationToken">The cancellation token.</param>
             internal FollowCancelableTaskState(Func<Task<T>> getTaskToFollow, CancellationToken cancellationToken)
-                : this()
+                : this(getTaskToFollow, registeredCallback: default, cancellationToken)
+            {
+            }
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="FollowCancelableTaskState{T}"/> struct.
+            /// </summary>
+            /// <param name="getTaskToFollow">The get task to follow.</param>
+            /// <param name="registeredCallback">The cancellation token registration to dispose of when the task completes normally.</param>
+            /// <param name="cancellationToken">The cancellation token.</param>
+            private FollowCancelableTaskState(Func<Task<T>> getTaskToFollow, CancellationTokenRegistration registeredCallback, CancellationToken cancellationToken)
             {
                 Requires.NotNull(getTaskToFollow, nameof(getTaskToFollow));
 
                 this.getTaskToFollow = getTaskToFollow;
+                this.RegisteredCallback = registeredCallback;
                 this.UltimateCancellation = cancellationToken;
             }
 
             /// <summary>
             /// Gets the ultimate cancellation token.
             /// </summary>
-            internal CancellationToken UltimateCancellation { get; private set; }
+            internal CancellationToken UltimateCancellation { get; }
 
             /// <summary>
-            /// Gets or sets the cancellation token registration to dispose of when the task completes normally.
+            /// Gets the cancellation token registration to dispose of when the task completes normally.
             /// </summary>
-            internal CancellationTokenRegistration RegisteredCallback { get; set; }
+            internal CancellationTokenRegistration RegisteredCallback { get; }
 
             /// <summary>
             /// Gets the current task to follow.
@@ -808,6 +842,9 @@ namespace Microsoft.VisualStudio.Threading
                     return task;
                 }
             }
+
+            internal FollowCancelableTaskState<T> WithRegisteredCallback(CancellationTokenRegistration registeredCallback)
+                => new FollowCancelableTaskState<T>(this.getTaskToFollow, registeredCallback, this.UltimateCancellation);
         }
 
         /// <summary>
@@ -823,7 +860,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <param name="sourceState">The state to store in the <see cref="SourceState" /> property.</param>
             /// <param name="taskState">State of the task.</param>
             /// <param name="options">The options.</param>
-            internal TaskCompletionSource(TState sourceState, object taskState = null, TaskCreationOptions options = TaskCreationOptions.None)
+            internal TaskCompletionSource(TState sourceState, object? taskState = null, TaskCreationOptions options = TaskCreationOptions.None)
                 : base(taskState, options)
             {
                 this.SourceState = sourceState;
@@ -845,7 +882,7 @@ namespace Microsoft.VisualStudio.Threading
             /// A task that is already canceled.
             /// </summary>
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-            internal static readonly Task<T> CanceledTask = ThreadingTools.TaskFromCanceled<T>(new CancellationToken(canceled: true));
+            internal static readonly Task<T> CanceledTask = Task.FromCanceled<T>(new CancellationToken(canceled: true));
         }
     }
 }

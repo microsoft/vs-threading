@@ -124,10 +124,7 @@
             }
             catch (OperationCanceledException ex)
             {
-                if (!TestUtilities.IsNet45Mode)
-                {
-                    Assert.Equal(cts.Token, ex.CancellationToken);
-                }
+                Assert.Equal(cts.Token, ex.CancellationToken);
             }
 
             // Now set the event and verify that a future waiter gets the signal immediately.
@@ -154,10 +151,7 @@
             }
             catch (OperationCanceledException ex)
             {
-                if (!TestUtilities.IsNet45Mode)
-                {
-                    Assert.Equal(token, ex.CancellationToken);
-                }
+                Assert.Equal(token, ex.CancellationToken);
             }
 
             // Verify that the signal was not acquired.

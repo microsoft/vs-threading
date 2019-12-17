@@ -171,6 +171,29 @@ class Test {
         }
 
         [Fact]
+        public async Task IAsyncEnumerableOfTReturningMethodWithoutSuffix_GeneratesWarning()
+        {
+            var test = @"
+using System.Collections.Generic;
+
+class Test {
+    IAsyncEnumerable<int> Foo() => default;
+}
+";
+
+            var withFix = @"
+using System.Collections.Generic;
+
+class Test {
+    IAsyncEnumerable<int> FooAsync() => default;
+}
+";
+
+            var expected = Verify.Diagnostic(AddSuffixDescriptor).WithSpan(5, 27, 5, 30);
+            await Verify.VerifyCodeFixAsync(test, expected, withFix);
+        }
+
+        [Fact]
         public async Task TaskReturningMainMethodWithoutSuffix_GeneratesNoWarning()
         {
             var test = @"
@@ -312,6 +335,19 @@ using System.Threading.Tasks;
 
 class Test {
     Task FooAsync() => null;
+}
+";
+            await Verify.VerifyAnalyzerAsync(test);
+        }
+
+        [Fact]
+        public async Task IAsyncEnumerableOfTReturningMethodWithSuffix_GeneratesNoWarning()
+        {
+            var test = @"
+using System.Collections.Generic;
+
+class Test {
+    IAsyncEnumerable<int> FooAsync() => null;
 }
 ";
             await Verify.VerifyAnalyzerAsync(test);

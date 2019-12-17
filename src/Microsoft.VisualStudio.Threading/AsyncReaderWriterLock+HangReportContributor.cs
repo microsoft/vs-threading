@@ -96,7 +96,7 @@ namespace Microsoft.VisualStudio.Threading
                     nodes.Add(allAwaiterMetadata.Select(am => CreateAwaiterNode(am.Awaiter).WithCategories(am.Categories.ToArray()).ContainedBy(am.GroupId, dgml)));
 
                     // Link the lock stacks among themselves.
-                    links.Add(allAwaiterMetadata.Where(a => a.Awaiter.NestingLock != null).Select(a => Dgml.Link(GetAwaiterId(a.Awaiter.NestingLock), GetAwaiterId(a.Awaiter))));
+                    links.Add(allAwaiterMetadata.Where(a => a.Awaiter.NestingLock != null).Select(a => Dgml.Link(GetAwaiterId(a.Awaiter.NestingLock!), GetAwaiterId(a.Awaiter))));
 
                     return new HangReportContribution(
                         dgml.ToString(),
@@ -140,13 +140,11 @@ namespace Microsoft.VisualStudio.Threading
                 label.AppendLine("Options: " + awaiter.Options);
             }
 
-            Delegate lockWaitingContinuation;
-#if DESKTOP || NETSTANDARD2_0
+            Delegate? lockWaitingContinuation;
             if (awaiter.RequestingStackTrace != null)
             {
                 label.AppendLine(awaiter.RequestingStackTrace.ToString());
             }
-#endif
 
             if ((lockWaitingContinuation = awaiter.LockRequestingContinuation) != null)
             {
@@ -193,10 +191,9 @@ namespace Microsoft.VisualStudio.Threading
         private static IEnumerable<Awaiter> GetLockStack(Awaiter awaiter)
         {
             Requires.NotNull(awaiter, nameof(awaiter));
-            while (awaiter != null)
+            for (Awaiter? current = awaiter; current != null; current = current.NestingLock)
             {
                 yield return awaiter;
-                awaiter = awaiter.NestingLock;
             }
         }
 
@@ -218,7 +215,9 @@ namespace Microsoft.VisualStudio.Threading
             {
                 get
                 {
+#pragma warning disable CS8605 // Unboxing a possibly null value.
                     foreach (AwaiterCollection value in Enum.GetValues(typeof(AwaiterCollection)))
+#pragma warning restore CS8605 // Unboxing a possibly null value.
                     {
                         if (this.Membership.HasFlag(value))
                         {
@@ -238,7 +237,7 @@ namespace Microsoft.VisualStudio.Threading
                 return this.Awaiter.GetHashCode();
             }
 
-            public override bool Equals(object obj)
+            public override bool Equals(object? obj)
             {
                 var otherAwaiter = obj as AwaiterMetadata;
                 return otherAwaiter != null && this.Awaiter.Equals(otherAwaiter.Awaiter);

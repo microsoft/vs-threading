@@ -65,7 +65,7 @@
             }
 
             var methodSymbol = context.SemanticModel.GetDeclaredSymbol(functionInfo.Function);
-            ITypeSymbol implicitReturnType = null;
+            ITypeSymbol? implicitReturnType = null;
             if (methodSymbol == null)
             {
                 var funcType = context.SemanticModel.GetTypeInfo(functionInfo.Function).ConvertedType as INamedTypeSymbol;
