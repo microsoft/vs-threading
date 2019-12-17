@@ -1129,7 +1129,7 @@ public static class SpecialTasks {
 }
 ";
 
-            Verify.Test test = null;
+            Verify.Test? test = null;
             test = new Verify.Test
             {
                 TestState =
@@ -1153,7 +1153,7 @@ public static class Boom {
                     {
                         var projectA = solution.AddProject("ProjectA", "ProjectA", LanguageNames.CSharp)
                             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
-                            .WithMetadataReferences(solution.GetProject(projectId).MetadataReferences.Concat(test.TestState.AdditionalReferences))
+                            .WithMetadataReferences(solution.GetProject(projectId).MetadataReferences.Concat(test!.TestState.AdditionalReferences))
                             .AddDocument("SpecialTasks.cs", specialTasksCs).Project;
                         solution = projectA.Solution;
                         solution = solution.AddProjectReference(projectId, new ProjectReference(projectA.Id));
