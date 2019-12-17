@@ -50,13 +50,19 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
         }
 
+        private static ExpressionSyntax? GetCancellationTokenInInvocation(InvocationExpressionSyntax invocation, SemanticModel semanticModel, INamedTypeSymbol cancellationTokenTypeSymbol)
+        {
+            // Consider that named arguments allow for alternative ordering.
+            return invocation.ArgumentList.Arguments.FirstOrDefault(arg => semanticModel.GetTypeInfo(arg.Expression).Type?.Equals(cancellationTokenTypeSymbol) ?? false)?.Expression;
+        }
+
         private async Task<Document> AddThrowOnCanceledAsync(CodeFixContext context, Diagnostic diagnostic, CancellationToken cancellationToken)
         {
             var semanticModel = await context.Document.GetSemanticModelAsync(cancellationToken);
             var root = await context.Document.GetSyntaxRootAsync(cancellationToken);
             var invocationSyntax = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<InvocationExpressionSyntax>();
             var cancellationTokenTypeSymbol = semanticModel.Compilation.GetTypeByMetadataName(typeof(CancellationToken).FullName);
-            var tokenExpressionSyntax = VSTHRD201CancelAfterSwitchToMainThreadAnalyzer.GetCancellationTokenInInvocation(invocationSyntax, semanticModel, cancellationTokenTypeSymbol);
+            var tokenExpressionSyntax = GetCancellationTokenInInvocation(invocationSyntax, semanticModel, cancellationTokenTypeSymbol);
             var statementSyntax = invocationSyntax.FirstAncestorOrSelf<StatementSyntax>();
 
             var checkTokenStatement = SyntaxFactory.ExpressionStatement(

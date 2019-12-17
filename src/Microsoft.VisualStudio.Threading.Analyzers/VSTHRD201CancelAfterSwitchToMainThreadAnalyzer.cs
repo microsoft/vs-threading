@@ -13,6 +13,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Diagnostics;
+    using Microsoft.CodeAnalysis.Operations;
 
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class VSTHRD201CancelAfterSwitchToMainThreadAnalyzer : DiagnosticAnalyzer
@@ -42,82 +43,63 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 {
                     var switchMethods = jtfSymbol.GetMembers(Types.JoinableTaskFactory.SwitchToMainThreadAsync);
                     var cancellationTokenTypeSymbol = startCtxt.Compilation.GetTypeByMetadataName(typeof(CancellationToken).FullName);
-                    startCtxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => this.AnalyzeInvocation(c, switchMethods, cancellationTokenTypeSymbol)), SyntaxKind.InvocationExpression);
+                    var cancellationTokenNoneSymbol = cancellationTokenTypeSymbol.GetMembers(nameof(CancellationToken.None)).Single();
+                    startCtxt.RegisterOperationAction(Utils.DebuggableWrapper(c => this.AnalyzeInvocation(c, switchMethods, cancellationTokenTypeSymbol, cancellationTokenNoneSymbol)), OperationKind.Invocation);
                 }
             });
         }
 
-        internal static ExpressionSyntax? GetCancellationTokenInInvocation(InvocationExpressionSyntax invocation, SemanticModel semanticModel, INamedTypeSymbol cancellationTokenTypeSymbol)
+        private void AnalyzeInvocation(OperationAnalysisContext context, ImmutableArray<ISymbol> switchMethods, INamedTypeSymbol cancellationTokenTypeSymbol, ISymbol cancellationTokenNoneSymbol)
         {
-            // Consider that named arguments allow for alternative ordering.
-            return invocation.ArgumentList.Arguments.FirstOrDefault(arg => semanticModel.GetTypeInfo(arg.Expression).Type?.Equals(cancellationTokenTypeSymbol) ?? false)?.Expression;
-        }
-
-        private void AnalyzeInvocation(SyntaxNodeAnalysisContext context, ImmutableArray<ISymbol> switchMethods, INamedTypeSymbol cancellationTokenTypeSymbol)
-        {
-            var invocationSyntax = (InvocationExpressionSyntax)context.Node;
-            var invokeMethod = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
-            if (invokeMethod != null && switchMethods.Contains(invokeMethod))
+            var invocationOperation = (IInvocationOperation)context.Operation;
+            if (invocationOperation.TargetMethod is object && switchMethods.Contains(invocationOperation.TargetMethod))
             {
-                var tokenSyntax = GetCancellationTokenInInvocation(invocationSyntax, context.SemanticModel, cancellationTokenTypeSymbol);
-                if (tokenSyntax == null)
+                IArgumentOperation? tokenArgument = invocationOperation.Arguments.FirstOrDefault(arg => arg.Value?.Type?.Equals(cancellationTokenTypeSymbol) ?? false);
+
+                // Filter out missing arguments, `default` and `default(CancellationToken)`
+                if (tokenArgument is null || tokenArgument.IsImplicit || tokenArgument.Value.IsImplicit || tokenArgument.Value is IDefaultValueOperation)
                 {
                     return;
                 }
 
-                // Is this *actually* a CancellationToken?
-                if (!context.SemanticModel.GetTypeInfo(tokenSyntax).Type?.Equals(cancellationTokenTypeSymbol) ?? false)
-                {
-                    return;
-                }
-
-                var tokenSymbol = context.SemanticModel.GetSymbolInfo(tokenSyntax).Symbol;
-                if (tokenSymbol == null)
-                {
-                    return;
-                }
-
-                // Did a non-default CancellationToken get passed in?
-                if (tokenSymbol.Name == nameof(CancellationToken.None) &&
-                    tokenSymbol.ContainingType.Name == nameof(CancellationToken))
+                // Did CancellationToken.None get passed in?
+                if (tokenArgument.Value is IPropertyReferenceOperation p && p.Member.Equals(cancellationTokenNoneSymbol))
                 {
                     return;
                 }
 
                 // Did the invocation get followed by a check on that CancellationToken?
-                var statement = invocationSyntax.FirstAncestorOrSelf<AwaitExpressionSyntax>()?.FirstAncestorOrSelf<StatementSyntax>();
-                var containingBlock = statement?.Parent as BlockSyntax;
-                if (containingBlock != null)
+                var statement = Utils.FindAncestor<IExpressionStatementOperation>(invocationOperation);
+                if (statement?.Parent is IBlockOperation containingBlock)
                 {
-                    int statementIndex = containingBlock.Statements.IndexOf(statement);
-                    var nextStatement = statementIndex + 1 < containingBlock.Statements.Count ? containingBlock.Statements[statementIndex + 1] : null;
-                    if (!IsTokenCheck(nextStatement))
+                    int currentStatement = containingBlock.Operations.IndexOf(statement);
+                    IOperation? nextOperation = containingBlock.Operations.Length > currentStatement + 1 ? containingBlock.Operations[currentStatement + 1] : null;
+                    if (!IsTokenCheck(nextOperation, tokenArgument.Value))
                     {
-                        context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationSyntax.GetLocation()));
+                        context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation()));
                     }
                 }
                 else
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationSyntax.GetLocation()));
+                    context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation()));
                 }
 
-                bool IsTokenCheck(StatementSyntax? consideredStatement)
+                bool IsTokenCheck(IOperation? consideredStatement, IOperation token)
                 {
                     // if (token.IsCancellationRequested)
-                    if (consideredStatement is IfStatementSyntax ifStatement &&
-                        ifStatement.Condition is MemberAccessExpressionSyntax memberAccess &&
-                        (context.SemanticModel.GetSymbolInfo(memberAccess.Expression).Symbol?.Equals(tokenSymbol) ?? false) &&
-                        memberAccess.Name?.Identifier.ValueText == nameof(CancellationToken.IsCancellationRequested))
+                    if (consideredStatement is IConditionalOperation ifStatement &&
+                        ifStatement.Condition is IMemberReferenceOperation memberAccess &&
+                        Utils.IsSameSymbol(memberAccess.Instance, token) &&
+                        memberAccess.Member?.Name == nameof(CancellationToken.IsCancellationRequested))
                     {
                         return true;
                     }
 
                     // token.ThrowIfCancellationRequested();
-                    if (consideredStatement is ExpressionStatementSyntax expressionStatement &&
-                        expressionStatement.Expression is InvocationExpressionSyntax invocationExpression &&
-                        invocationExpression.Expression is MemberAccessExpressionSyntax memberAccess2 &&
-                        (context.SemanticModel.GetSymbolInfo(memberAccess2.Expression).Symbol?.Equals(tokenSymbol) ?? false) &&
-                        memberAccess2.Name.Identifier.ValueText == nameof(CancellationToken.ThrowIfCancellationRequested))
+                    if (consideredStatement is IExpressionStatementOperation expressionStatement &&
+                        expressionStatement.Operation is IInvocationOperation invocationExpression &&
+                        Utils.IsSameSymbol(invocationExpression.Instance, token) &&
+                        invocationExpression.TargetMethod.Name == nameof(CancellationToken.ThrowIfCancellationRequested))
                     {
                         return true;
                     }
