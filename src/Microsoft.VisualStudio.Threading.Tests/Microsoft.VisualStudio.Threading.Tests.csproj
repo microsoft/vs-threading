@@ -30,6 +30,7 @@
     <PackageReference Include="coverlet.msbuild" Version="2.6.3" />
     <PackageReference Include="MicroBuild.Nonshipping" Version="$(MicroBuildVersion)" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.6.0" />
     <PackageReference Include="Xunit.Combinatorial" Version="1.2.7" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1" />
     <PackageReference Include="Xunit.SkippableFact" Version="1.3.12" />

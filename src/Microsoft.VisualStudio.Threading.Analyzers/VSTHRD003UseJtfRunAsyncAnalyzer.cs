@@ -161,6 +161,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                                 declarationSyntax.Initializer?.Value is InvocationExpressionSyntax invocationSyntax &&
                                 invocationSyntax.Expression != null)
                             {
+                                if (!context.Compilation.ContainsSyntaxTree(invocationSyntax.SyntaxTree))
+                                {
+                                    // We can't look up the definition of the field. It *probably* is a precompleted cached task, so don't create a diagnostic.
+                                    return null;
+                                }
+
                                 var declarationSemanticModel = context.Compilation.GetSemanticModel(invocationSyntax.SyntaxTree);
                                 if (declarationSemanticModel.GetSymbolInfo(invocationSyntax.Expression, cancellationToken).Symbol is IMethodSymbol invokedMethod &&
                                     invokedMethod.Name == nameof(Task.FromResult) &&

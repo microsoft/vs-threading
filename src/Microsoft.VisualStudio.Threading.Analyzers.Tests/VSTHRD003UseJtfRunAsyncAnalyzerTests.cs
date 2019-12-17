@@ -1,6 +1,10 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
+    using System.Diagnostics.Tracing;
+    using System.Linq;
     using System.Threading.Tasks;
+    using Microsoft.CodeAnalysis;
+    using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.Testing;
     using Xunit;
     using Verify = CSharpCodeFixVerifier<VSTHRD003UseJtfRunAsyncAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
@@ -1111,6 +1115,53 @@ class OtherClass
 ";
 
             var test = new Verify.Test { TestState = { Sources = { source1, source2 } } };
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task CachedTaskReturnedFromExternalToCompilation()
+        {
+            string specialTasksCs = @"
+using System.Threading.Tasks;
+
+public static class SpecialTasks {
+  public static readonly Task<bool> True = Task.FromResult(true);
+}
+";
+
+            Verify.Test test = null;
+            test = new Verify.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        @"
+using System.Threading.Tasks;
+
+public static class Boom {
+  static Task<bool> MyMethodAsync()
+  {
+    return SpecialTasks.True;
+  }
+}",
+                    },
+                },
+                SolutionTransforms =
+                {
+                    (solution, projectId) =>
+                    {
+                        var projectA = solution.AddProject("ProjectA", "ProjectA", LanguageNames.CSharp)
+                            .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
+                            .WithMetadataReferences(solution.GetProject(projectId).MetadataReferences.Concat(test.TestState.AdditionalReferences))
+                            .AddDocument("SpecialTasks.cs", specialTasksCs).Project;
+                        solution = projectA.Solution;
+                        solution = solution.AddProjectReference(projectId, new ProjectReference(projectA.Id));
+                        return solution;
+                    },
+                },
+            };
+
             await test.RunAsync();
         }
 
