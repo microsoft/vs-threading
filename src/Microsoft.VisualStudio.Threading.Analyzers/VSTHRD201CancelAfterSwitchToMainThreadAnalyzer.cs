@@ -6,21 +6,16 @@
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
-    using System;
-    using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Linq;
-    using System.Text;
     using System.Threading;
-    using System.Threading.Tasks;
-    using CodeAnalysis;
-    using CodeAnalysis.Diagnostics;
+    using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
-    using Microsoft.CodeAnalysis.Operations;
+    using Microsoft.CodeAnalysis.Diagnostics;
 
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class VSTHRD201CancelAfterSwitchToMainThreadAnalyzer : DiagnosticAnalyzerBase
+    public class VSTHRD201CancelAfterSwitchToMainThreadAnalyzer : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD201";
 
@@ -52,7 +47,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             });
         }
 
-        internal static ExpressionSyntax GetCancellationTokenInInvocation(InvocationExpressionSyntax invocation, SemanticModel semanticModel, INamedTypeSymbol cancellationTokenTypeSymbol)
+        internal static ExpressionSyntax? GetCancellationTokenInInvocation(InvocationExpressionSyntax invocation, SemanticModel semanticModel, INamedTypeSymbol cancellationTokenTypeSymbol)
         {
             // Consider that named arguments allow for alternative ordering.
             return invocation.ArgumentList.Arguments.FirstOrDefault(arg => semanticModel.GetTypeInfo(arg.Expression).Type?.Equals(cancellationTokenTypeSymbol) ?? false)?.Expression;
@@ -90,7 +85,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 }
 
                 // Did the invocation get followed by a check on that CancellationToken?
-                var statement = invocationSyntax?.FirstAncestorOrSelf<AwaitExpressionSyntax>()?.FirstAncestorOrSelf<StatementSyntax>();
+                var statement = invocationSyntax.FirstAncestorOrSelf<AwaitExpressionSyntax>()?.FirstAncestorOrSelf<StatementSyntax>();
                 var containingBlock = statement?.Parent as BlockSyntax;
                 if (containingBlock != null)
                 {
@@ -106,7 +101,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationSyntax.GetLocation()));
                 }
 
-                bool IsTokenCheck(StatementSyntax consideredStatement)
+                bool IsTokenCheck(StatementSyntax? consideredStatement)
                 {
                     // if (token.IsCancellationRequested)
                     if (consideredStatement is IfStatementSyntax ifStatement &&

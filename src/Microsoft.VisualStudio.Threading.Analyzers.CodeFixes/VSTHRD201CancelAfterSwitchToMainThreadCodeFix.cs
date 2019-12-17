@@ -11,11 +11,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using CodeAnalysis;
-    using CodeAnalysis.CodeActions;
-    using CodeAnalysis.CodeFixes;
-    using CodeAnalysis.CSharp;
-    using CodeAnalysis.CSharp.Syntax;
+    using Microsoft.CodeAnalysis;
+    using Microsoft.CodeAnalysis.CodeActions;
+    using Microsoft.CodeAnalysis.CodeFixes;
+    using Microsoft.CodeAnalysis.CSharp;
+    using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Formatting;
 
     [ExportCodeFixProvider(LanguageNames.CSharp)]

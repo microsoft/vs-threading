@@ -269,6 +269,21 @@ Zamiast tego użyj elementu AsyncLazy&lt;T&gt;.</target>
         <target state="translated">W przypadku metod asynchronicznych używaj sufiksu „Async”</target>
         <note />
       </trans-unit>
+      <trans-unit id="VSTHRD201_CodeFix_Title">
+        <source>Call ThrowIfCancellationRequested()</source>
+        <target state="new">Call ThrowIfCancellationRequested()</target>
+        <note>"ThrowIfCancellationRequested" is a method name and should not be translated.</note>
+      </trans-unit>
+      <trans-unit id="VSTHRD201_MessageFormat">
+        <source>Check for cancellation after calling SwitchToMainThreadAsync(CancellationToken).</source>
+        <target state="new">Check for cancellation after calling SwitchToMainThreadAsync(CancellationToken).</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD201_Title">
+        <source>Check cancellation after SwitchToMainThreadAsync</source>
+        <target state="new">Check cancellation after SwitchToMainThreadAsync</target>
+        <note />
+      </trans-unit>
     </body>
   </file>
 </xliff>

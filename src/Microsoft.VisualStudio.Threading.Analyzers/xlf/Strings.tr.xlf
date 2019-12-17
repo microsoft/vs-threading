@@ -269,6 +269,21 @@ Bunun yerine AsyncLazy&lt;T&gt; kullanın.</target>
         <target state="translated">Async metotları için "Async" sonekini kullanın</target>
         <note />
       </trans-unit>
+      <trans-unit id="VSTHRD201_CodeFix_Title">
+        <source>Call ThrowIfCancellationRequested()</source>
+        <target state="new">Call ThrowIfCancellationRequested()</target>
+        <note>"ThrowIfCancellationRequested" is a method name and should not be translated.</note>
+      </trans-unit>
+      <trans-unit id="VSTHRD201_MessageFormat">
+        <source>Check for cancellation after calling SwitchToMainThreadAsync(CancellationToken).</source>
+        <target state="new">Check for cancellation after calling SwitchToMainThreadAsync(CancellationToken).</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD201_Title">
+        <source>Check cancellation after SwitchToMainThreadAsync</source>
+        <target state="new">Check cancellation after SwitchToMainThreadAsync</target>
+        <note />
+      </trans-unit>
     </body>
   </file>
 </xliff>
