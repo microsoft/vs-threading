@@ -298,5 +298,50 @@ class Test {
 
             await Verify.VerifyAnalyzerAsync(test);
         }
+
+        [Fact(Skip = "Fails. If we can make it work, great.")]
+        public async Task CancellationToken_ThrowWithCTFromWrongObject_ProducesDiagnostic()
+        {
+            var test = @"
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    JoinableTaskFactory jtf;
+    async Task Foo(Context context1, Context context2) {
+        await [|jtf.SwitchToMainThreadAsync(true, context1.CancellationToken)|];
+        context2.CancellationToken.ThrowIfCancellationRequested();
+        jtf.ToString();
+    }
+}
+
+struct Context {
+    internal CancellationToken CancellationToken { get; }
+}
+";
+
+            var withFix = @"
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    JoinableTaskFactory jtf;
+    async Task Foo(Context context1, Context context2) {
+        await jtf.SwitchToMainThreadAsync(true, cancellationToken);
+        context1.CancellationToken.ThrowIfCancellationRequested();
+        context2.CancellationToken.ThrowIfCancellationRequested();
+        jtf.ToString();
+    }
+}
+
+struct Context {
+    internal CancellationToken CancellationToken { get; }
+}
+";
+
+            await Verify.VerifyCodeFixAsync(test, withFix);
+        }
     }
 }

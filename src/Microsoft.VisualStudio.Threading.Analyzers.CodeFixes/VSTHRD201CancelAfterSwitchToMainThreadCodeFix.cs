@@ -8,6 +8,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
     using System.Collections.Immutable;
+    using System.Globalization;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -35,6 +36,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         {
             var diagnostic = context.Diagnostics.First();
 
+            // Check that the analyzer was able to give us some data we require.
+            if (!diagnostic.Properties.ContainsKey(VSTHRD201CancelAfterSwitchToMainThreadAnalyzer.CancellationTokenNamePropertyName))
+            {
+                return;
+            }
+
             // Our fix only works if we're within a block or if statement (no simple lambdas),
             // so check applicability before offering.
             var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
@@ -50,19 +57,13 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
         }
 
-        private static ExpressionSyntax? GetCancellationTokenInInvocation(InvocationExpressionSyntax invocation, SemanticModel semanticModel, INamedTypeSymbol cancellationTokenTypeSymbol)
-        {
-            // Consider that named arguments allow for alternative ordering.
-            return invocation.ArgumentList.Arguments.FirstOrDefault(arg => semanticModel.GetTypeInfo(arg.Expression).Type?.Equals(cancellationTokenTypeSymbol) ?? false)?.Expression;
-        }
-
         private async Task<Document> AddThrowOnCanceledAsync(CodeFixContext context, Diagnostic diagnostic, CancellationToken cancellationToken)
         {
             var semanticModel = await context.Document.GetSemanticModelAsync(cancellationToken);
             var root = await context.Document.GetSyntaxRootAsync(cancellationToken);
             var invocationSyntax = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<InvocationExpressionSyntax>();
-            var cancellationTokenTypeSymbol = semanticModel.Compilation.GetTypeByMetadataName(typeof(CancellationToken).FullName);
-            var tokenExpressionSyntax = GetCancellationTokenInInvocation(invocationSyntax, semanticModel, cancellationTokenTypeSymbol);
+            int argIndex = int.Parse(diagnostic.Properties[VSTHRD201CancelAfterSwitchToMainThreadAnalyzer.CancellationTokenNamePropertyName], CultureInfo.InvariantCulture);
+            var tokenExpressionSyntax = invocationSyntax.ArgumentList.Arguments[argIndex].Expression;
             var statementSyntax = invocationSyntax.FirstAncestorOrSelf<StatementSyntax>();
 
             var checkTokenStatement = SyntaxFactory.ExpressionStatement(

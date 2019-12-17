@@ -299,9 +299,11 @@ Use AsyncLazy&lt;T&gt; instead.</value>
   </data>
   <data name="VSTHRD201_MessageFormat" xml:space="preserve">
     <value>Check for cancellation after calling SwitchToMainThreadAsync(CancellationToken).</value>
+    <comment>"SwitchToMainThreadAsync" is a method name and should not be translated.</comment>
   </data>
   <data name="VSTHRD201_Title" xml:space="preserve">
     <value>Check cancellation after SwitchToMainThreadAsync</value>
+    <comment>"SwitchToMainThreadAsync" is a method name and should not be translated.</comment>
   </data>
   <data name="VSTHRD201_CodeFix_Title" xml:space="preserve">
     <value>Call ThrowIfCancellationRequested()</value>

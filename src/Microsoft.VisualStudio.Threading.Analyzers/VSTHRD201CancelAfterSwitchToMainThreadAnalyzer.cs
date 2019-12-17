@@ -7,6 +7,7 @@
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System.Collections.Immutable;
+    using System.Globalization;
     using System.Linq;
     using System.Threading;
     using Microsoft.CodeAnalysis;
@@ -19,6 +20,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     public class VSTHRD201CancelAfterSwitchToMainThreadAnalyzer : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD201";
+
+        /// <summary>
+        /// The name of the property whose value stores the index of the argument in the SwitchToMainThreadAsync invocation where the CancellationToken is found.
+        /// </summary>
+        internal const string CancellationTokenNamePropertyName = "CancellationToken";
 
         internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
             Id,
@@ -38,11 +44,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             context.RegisterCompilationStartAction(startCtxt =>
             {
-                var jtfSymbol = startCtxt.Compilation.GetTypeByMetadataName(Types.JoinableTaskFactory.FullName);
-                if (jtfSymbol != null)
+                INamedTypeSymbol? jtfSymbol = startCtxt.Compilation.GetTypeByMetadataName(Types.JoinableTaskFactory.FullName);
+                INamedTypeSymbol? cancellationTokenTypeSymbol = startCtxt.Compilation.GetTypeByMetadataName(typeof(CancellationToken).FullName);
+                if (jtfSymbol is object && cancellationTokenTypeSymbol is object)
                 {
                     var switchMethods = jtfSymbol.GetMembers(Types.JoinableTaskFactory.SwitchToMainThreadAsync);
-                    var cancellationTokenTypeSymbol = startCtxt.Compilation.GetTypeByMetadataName(typeof(CancellationToken).FullName);
                     var cancellationTokenNoneSymbol = cancellationTokenTypeSymbol.GetMembers(nameof(CancellationToken.None)).Single();
                     startCtxt.RegisterOperationAction(Utils.DebuggableWrapper(c => this.AnalyzeInvocation(c, switchMethods, cancellationTokenTypeSymbol, cancellationTokenNoneSymbol)), OperationKind.Invocation);
                 }
@@ -76,12 +82,23 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     IOperation? nextOperation = containingBlock.Operations.Length > currentStatement + 1 ? containingBlock.Operations[currentStatement + 1] : null;
                     if (!IsTokenCheck(nextOperation, tokenArgument.Value))
                     {
-                        context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation()));
+                        context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation(), CreateDiagnosticProperties(tokenArgument)));
                     }
                 }
                 else
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation()));
+                    context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation(), CreateDiagnosticProperties(tokenArgument)));
+                }
+
+                ImmutableDictionary<string, string> CreateDiagnosticProperties(IArgumentOperation cancellationArgument)
+                {
+                    if (cancellationArgument.Parent is IInvocationOperation invocationOperation)
+                    {
+                        return ImmutableDictionary<string, string>.Empty
+                            .Add(CancellationTokenNamePropertyName, invocationOperation.Arguments.IndexOf(cancellationArgument).ToString(CultureInfo.InvariantCulture));
+                    }
+
+                    return ImmutableDictionary<string, string>.Empty;
                 }
 
                 bool IsTokenCheck(IOperation? consideredStatement, IOperation token)

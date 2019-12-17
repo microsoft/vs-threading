@@ -1,6 +1,6 @@
 # VSTHRD201 Check cancellation after `SwitchToMainThreadAsync`
 
-Code that should not run if a CancellationToken is canceled should call
+Code that should not run if a `CancellationToken` is canceled should call
 `CancellationToken.ThrowIfCancellationRequested()` explicitly rather than
 relying on `JoinableTaskFactory.SwitchToMainThreadAsync(CancellationToken)` to
 throw `OperationCanceledException`.
