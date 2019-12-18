@@ -119,7 +119,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             // Get the semantic model for the SyntaxTree for the given ExpressionSyntax, since it *may* not be in the same syntax tree
             // as the original context.Node.
-            var semanticModel = context.Compilation.GetSemanticModel(expressionSyntax.SyntaxTree);
+            var semanticModel = context.GetNewOrExistingSemanticModel(expressionSyntax.SyntaxTree);
             SymbolInfo symbolToConsider = semanticModel.GetSymbolInfo(expressionSyntax, cancellationToken);
             if (CommonInterest.TaskConfigureAwait.Any(configureAwait => configureAwait.IsMatch(symbolToConsider.Symbol)))
             {
@@ -167,7 +167,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                                     return null;
                                 }
 
-                                var declarationSemanticModel = context.Compilation.GetSemanticModel(invocationSyntax.SyntaxTree);
+                                var declarationSemanticModel = context.GetNewOrExistingSemanticModel(invocationSyntax.SyntaxTree);
                                 if (declarationSemanticModel.GetSymbolInfo(invocationSyntax.Expression, cancellationToken).Symbol is IMethodSymbol invokedMethod &&
                                     invokedMethod.Name == nameof(Task.FromResult) &&
                                     invokedMethod.ContainingType.Name == nameof(Task) &&
