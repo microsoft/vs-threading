@@ -773,6 +773,8 @@ namespace Microsoft.VisualStudio.Threading
 
             private readonly JoinableTask? job;
 
+            private readonly bool synchronousCancellation;
+
             /// <summary>
             /// Holds the reference to the <see cref="CancellationTokenRegistration"/> struct, so that all the copies of <see cref="MainThreadAwaiter"/> will hold
             /// the same <see cref="CancellationTokenRegistration"/> object.
@@ -798,10 +800,11 @@ namespace Microsoft.VisualStudio.Threading
                 this.jobFactory = jobFactory;
                 this.job = job;
                 this.cancellationToken = cancellationToken;
+                this.synchronousCancellation = cancellationToken.IsCancellationRequested && !alwaysYield && !this.jobFactory.Context.IsOnMainThread;
                 this.alwaysYield = alwaysYield;
 
-                // Don't allocate the pointer if the cancellation token can't be canceled:
-                this.cancellationRegistrationPtr = cancellationToken.CanBeCanceled
+                // Don't allocate the pointer if the cancellation token can't be canceled (or already is):
+                this.cancellationRegistrationPtr = cancellationToken.CanBeCanceled && !this.synchronousCancellation
                     ? new StrongBox<CancellationTokenRegistration?>()
                     : null;
             }
@@ -818,7 +821,8 @@ namespace Microsoft.VisualStudio.Threading
                         return false;
                     }
 
-                    return this.jobFactory == null
+                    return this.synchronousCancellation
+                        || this.jobFactory == null
                         || this.jobFactory.Context.IsOnMainThread
                         || this.jobFactory.Context.UnderlyingSynchronizationContext == null;
                 }

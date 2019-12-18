@@ -472,6 +472,22 @@
             });
         }
 
+        [Fact]
+        public void SwitchToMainThreadAsync_CompletesSynchronouslyWhenPreCanceledOffMainThread()
+        {
+            this.SimulateUIThread(delegate
+            {
+                return Task.Run(delegate
+                {
+                    var precanceled = new CancellationToken(canceled: true);
+                    var awaiter = this.asyncPump.SwitchToMainThreadAsync(precanceled).GetAwaiter();
+                    Assert.True(awaiter.IsCompleted);
+                    var ex = Assert.Throws<OperationCanceledException>(() => awaiter.GetResult());
+                    Assert.Equal(precanceled, ex.CancellationToken);
+                });
+            });
+        }
+
         /// <summary>
         /// Verify that if the <see cref="JoinableTaskContext"/> was initialized
         /// without a <see cref="SynchronizationContext"/> whose
