@@ -242,9 +242,8 @@ namespace Microsoft.VisualStudio.Threading
                     return true;
                 }
 
-                RoslynDebug.Assert(this.enumeratedValue is object);
-                var array = (T[])this.enumeratedValue;
-                if (this.currentIndex >= 0 && this.currentIndex < array.Length)
+                var array = (T[]?)this.enumeratedValue;
+                if (this.currentIndex >= 0 && this.currentIndex < array!.Length)
                 {
                     this.currentIndex++;
                     return this.currentIndex < array.Length;
