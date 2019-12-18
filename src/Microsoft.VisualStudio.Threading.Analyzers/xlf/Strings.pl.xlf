@@ -40,8 +40,8 @@
       </trans-unit>
       <trans-unit id="VSTHRD003_MessageFormat" translate="yes" xml:space="preserve">
         <source>Avoid awaiting or returning a Task representing work that was not started within your context as that can lead to deadlocks.
-Start the work within this context, or use JoinableTaskFactory.RunAsync and await the returned JoinableTask instead.</source>
-        <target state="translated">Unikaj oczekiwania na obiekt Task lub zwracania obiektu Task reprezentującego pracę, która nie została uruchomiona w danym kontekście, ponieważ może to prowadzić do zakleszczeń.
+Start the work within this context, or use JoinableTaskFactory.RunAsync to start the task and await the returned JoinableTask instead.</source>
+        <target state="needs-review-translation">Unikaj oczekiwania na obiekt Task lub zwracania obiektu Task reprezentującego pracę, która nie została uruchomiona w danym kontekście, ponieważ może to prowadzić do zakleszczeń.
 Uruchom pracę w tym kontekście lub zamiast tego użyj metody JoinableTaskFactory.RunAsync i oczekuj na zwrócony obiekt JoinableTask.</target>
         <note from="MultilingualUpdate" annotates="source" priority="2" />
       </trans-unit>

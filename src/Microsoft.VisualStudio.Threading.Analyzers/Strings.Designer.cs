@@ -125,7 +125,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         
         /// <summary>
         ///   Looks up a localized string similar to Avoid awaiting or returning a Task representing work that was not started within your context as that can lead to deadlocks.
-        ///Start the work within this context, or use JoinableTaskFactory.RunAsync and await the returned JoinableTask instead..
+        ///Start the work within this context, or use JoinableTaskFactory.RunAsync to start the task and await the returned JoinableTask instead..
         /// </summary>
         internal static string VSTHRD003_MessageFormat {
             get {

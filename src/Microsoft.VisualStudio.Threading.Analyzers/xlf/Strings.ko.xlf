@@ -40,8 +40,8 @@
       </trans-unit>
       <trans-unit id="VSTHRD003_MessageFormat" translate="yes" xml:space="preserve">
         <source>Avoid awaiting or returning a Task representing work that was not started within your context as that can lead to deadlocks.
-Start the work within this context, or use JoinableTaskFactory.RunAsync and await the returned JoinableTask instead.</source>
-        <target state="translated">교착 상태가 발생할 수 있기 때문에 컨텍스트 내에서 시작되지 않은 작업을 나타내는 작업을 대기하거나 반환하지 않습니다.
+Start the work within this context, or use JoinableTaskFactory.RunAsync to start the task and await the returned JoinableTask instead.</source>
+        <target state="needs-review-translation">교착 상태가 발생할 수 있기 때문에 컨텍스트 내에서 시작되지 않은 작업을 나타내는 작업을 대기하거나 반환하지 않습니다.
 대신 이 컨텍스트 내에서 작업을 시작하거나 JoinableTaskFactory.RunAsync를 사용하고 반환된 JoinableTask를 대기하세요.</target>
         <note from="MultilingualUpdate" annotates="source" priority="2" />
       </trans-unit>
