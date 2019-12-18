@@ -113,6 +113,15 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return invokedMethodName;
         }
 
+        /// <summary>
+        /// Gets a semantic model for the given <see cref="SyntaxTree"/>.
+        /// </summary>
+        internal static SemanticModel GetNewOrExistingSemanticModel(this SyntaxNodeAnalysisContext context, SyntaxTree syntaxTree)
+        {
+            // Avoid calling GetSemanticModel unless we need it since it's much more expensive to create a new one than to reuse one.
+            return context.Node.SyntaxTree != syntaxTree ? context.Compilation.GetSemanticModel(syntaxTree) : context.SemanticModel;
+        }
+
         internal static bool IsEqualToOrDerivedFrom(ITypeSymbol? type, ITypeSymbol expectedType)
         {
             return EqualityComparer<ITypeSymbol?>.Default.Equals(type?.OriginalDefinition, expectedType) || IsDerivedFrom(type, expectedType);
