@@ -19,8 +19,8 @@
 
         internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
             id: Id,
-            title: Strings.VSTHRD111_Title,
-            messageFormat: Strings.VSTHRD111_MessageFormat,
+            title: new LocalizableResourceString(nameof(Strings.VSTHRD111_Title), Strings.ResourceManager, typeof(Strings)),
+            messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD111_MessageFormat), Strings.ResourceManager, typeof(Strings)),
             helpLinkUri: Utils.GetHelpLink(Id),
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Hidden, // projects should opt IN to this policy

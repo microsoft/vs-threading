@@ -28,8 +28,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
             Id,
-            title: Strings.VSTHRD201_Title,
-            messageFormat: Strings.VSTHRD201_MessageFormat,
+            title: new LocalizableResourceString(nameof(Strings.VSTHRD201_Title), Strings.ResourceManager, typeof(Strings)),
+            messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD201_MessageFormat), Strings.ResourceManager, typeof(Strings)),
             helpLinkUri: Utils.GetHelpLink(Id),
             category: "Style",
             defaultSeverity: DiagnosticSeverity.Warning,

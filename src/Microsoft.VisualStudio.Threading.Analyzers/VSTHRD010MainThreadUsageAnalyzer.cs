@@ -55,8 +55,8 @@
         /// </summary>
         internal static readonly DiagnosticDescriptor DescriptorSync = new DiagnosticDescriptor(
             id: Id,
-            title: Strings.VSTHRD010_Title,
-            messageFormat: Strings.VSTHRD010_MessageFormat_Sync,
+            title: new LocalizableResourceString(nameof(Strings.VSTHRD010_Title), Strings.ResourceManager, typeof(Strings)),
+            messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD010_MessageFormat_Sync), Strings.ResourceManager, typeof(Strings)),
             helpLinkUri: Utils.GetHelpLink(Id),
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Warning,
@@ -67,8 +67,8 @@
         /// </summary>
         internal static readonly DiagnosticDescriptor DescriptorAsync = new DiagnosticDescriptor(
             id: Id,
-            title: Strings.VSTHRD010_Title,
-            messageFormat: Strings.VSTHRD010_MessageFormat_Async,
+            title: new LocalizableResourceString(nameof(Strings.VSTHRD010_Title), Strings.ResourceManager, typeof(Strings)),
+            messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD010_MessageFormat_Async), Strings.ResourceManager, typeof(Strings)),
             helpLinkUri: Utils.GetHelpLink(Id),
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Warning,

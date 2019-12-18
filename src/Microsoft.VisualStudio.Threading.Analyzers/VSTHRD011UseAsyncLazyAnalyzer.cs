@@ -18,8 +18,8 @@
 
         internal static readonly DiagnosticDescriptor LazyOfTaskDescriptor = new DiagnosticDescriptor(
             id: Id,
-            title: Strings.VSTHRD011_Title,
-            messageFormat: Strings.VSTHRD011_MessageFormat,
+            title: new LocalizableResourceString(nameof(Strings.VSTHRD011_Title), Strings.ResourceManager, typeof(Strings)),
+            messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD011_MessageFormat), Strings.ResourceManager, typeof(Strings)),
             helpLinkUri: Utils.GetHelpLink(Id),
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Error,
@@ -27,8 +27,8 @@
 
         internal static readonly DiagnosticDescriptor SyncBlockInValueFactoryDescriptor = new DiagnosticDescriptor(
             id: Id,
-            title: Strings.VSTHRD011_Title,
-            messageFormat: Strings.VSTHRD011b_MessageFormat,
+            title: new LocalizableResourceString(nameof(Strings.VSTHRD011_Title), Strings.ResourceManager, typeof(Strings)),
+            messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD011b_MessageFormat), Strings.ResourceManager, typeof(Strings)),
             helpLinkUri: Utils.GetHelpLink(Id),
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Error,

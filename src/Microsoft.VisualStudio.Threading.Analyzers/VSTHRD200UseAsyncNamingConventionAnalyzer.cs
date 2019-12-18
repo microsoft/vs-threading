@@ -22,8 +22,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static readonly DiagnosticDescriptor AddAsyncDescriptor = new DiagnosticDescriptor(
             id: Id,
-            title: Strings.VSTHRD200_Title,
-            messageFormat: Strings.VSTHRD200_AddAsync_MessageFormat,
+            title: new LocalizableResourceString(nameof(Strings.VSTHRD200_Title), Strings.ResourceManager, typeof(Strings)),
+            messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD200_AddAsync_MessageFormat), Strings.ResourceManager, typeof(Strings)),
             helpLinkUri: Utils.GetHelpLink(Id),
             category: "Style",
             defaultSeverity: DiagnosticSeverity.Warning,
@@ -31,8 +31,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static readonly DiagnosticDescriptor RemoveAsyncDescriptor = new DiagnosticDescriptor(
             id: Id,
-            title: Strings.VSTHRD200_Title,
-            messageFormat: Strings.VSTHRD200_RemoveAsync_MessageFormat,
+            title: new LocalizableResourceString(nameof(Strings.VSTHRD200_Title), Strings.ResourceManager, typeof(Strings)),
+            messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD200_RemoveAsync_MessageFormat), Strings.ResourceManager, typeof(Strings)),
             helpLinkUri: Utils.GetHelpLink(Id),
             category: "Style",
             defaultSeverity: DiagnosticSeverity.Warning,
