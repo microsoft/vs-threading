@@ -21,6 +21,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Diagnostics;
+    using Microsoft.CodeAnalysis.Operations;
 
     internal static class Utils
     {
@@ -77,6 +78,25 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 catch (Exception ex) when (LaunchDebuggerExceptionFilter())
                 {
                     throw new Exception($"Analyzer failure while processing syntax at {ctxt.CodeBlock.SyntaxTree.FilePath}({ctxt.CodeBlock.GetLocation()?.GetLineSpan().StartLinePosition.Line + 1},{ctxt.CodeBlock.GetLocation()?.GetLineSpan().StartLinePosition.Character + 1}): {ex.GetType()} {ex.Message}. Syntax: {ctxt.CodeBlock}", ex);
+                }
+            };
+        }
+
+        internal static Action<OperationAnalysisContext> DebuggableWrapper(Action<OperationAnalysisContext> handler)
+        {
+            return ctxt =>
+            {
+                try
+                {
+                    handler(ctxt);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex) when (LaunchDebuggerExceptionFilter())
+                {
+                    throw new Exception($"Analyzer failure while processing syntax at {ctxt.Operation.Syntax.SyntaxTree.FilePath}({ctxt.Operation.Syntax.GetLocation()?.GetLineSpan().StartLinePosition.Line + 1},{ctxt.Operation.Syntax.GetLocation()?.GetLineSpan().StartLinePosition.Character + 1}): {ex.GetType()} {ex.Message}. Syntax: {ctxt.Operation.Syntax}", ex);
                 }
             };
         }
@@ -695,6 +715,35 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// <param name="parameterSymbol">The parameter.</param>
         /// <returns><c>true</c> if the parameter takes a <see cref="CancellationToken"/>; <c>false</c> otherwise.</returns>
         internal static bool IsCancellationTokenParameter(IParameterSymbol parameterSymbol) => parameterSymbol?.Type.Name == nameof(CancellationToken) && parameterSymbol.Type.BelongsToNamespace(Namespaces.SystemThreading);
+
+        internal static ISymbol? GetUnderlyingSymbol(IOperation? operation)
+        {
+            return operation switch
+            {
+                IParameterReferenceOperation paramRef => paramRef.Parameter,
+                ILocalReferenceOperation localRef => localRef.Local,
+                IMemberReferenceOperation memberRef => memberRef.Member,
+                _ => null,
+            };
+        }
+
+        internal static bool IsSameSymbol(IOperation? op1, IOperation? op2) => GetUnderlyingSymbol(op1)?.Equals(GetUnderlyingSymbol(op2)) ?? false;
+
+        internal static T? FindAncestor<T>(IOperation? operation)
+            where T : class, IOperation
+        {
+            while (operation is object)
+            {
+                if (operation.Parent is T parent)
+                {
+                    return parent;
+                }
+
+                operation = operation.Parent;
+            }
+
+            return default;
+        }
 
         private static bool IsSymbolTheRightType(ISymbol symbol, string typeName, IReadOnlyList<string> namespaces)
         {

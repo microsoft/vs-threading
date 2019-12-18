@@ -269,6 +269,21 @@ Use AsyncLazy&lt;T&gt; instead.</source>
         <target state="translated">비동기 메서드에 "Async" 접미사 사용</target>
         <note />
       </trans-unit>
+      <trans-unit id="VSTHRD201_CodeFix_Title">
+        <source>Call ThrowIfCancellationRequested()</source>
+        <target state="new">Call ThrowIfCancellationRequested()</target>
+        <note>"ThrowIfCancellationRequested" is a method name and should not be translated.</note>
+      </trans-unit>
+      <trans-unit id="VSTHRD201_MessageFormat">
+        <source>Check for cancellation after calling SwitchToMainThreadAsync(CancellationToken).</source>
+        <target state="new">Check for cancellation after calling SwitchToMainThreadAsync(CancellationToken).</target>
+        <note>"SwitchToMainThreadAsync" is a method name and should not be translated.</note>
+      </trans-unit>
+      <trans-unit id="VSTHRD201_Title">
+        <source>Check cancellation after SwitchToMainThreadAsync</source>
+        <target state="new">Check cancellation after SwitchToMainThreadAsync</target>
+        <note>"SwitchToMainThreadAsync" is a method name and should not be translated.</note>
+      </trans-unit>
     </body>
   </file>
 </xliff>

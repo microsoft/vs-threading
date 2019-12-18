@@ -25,6 +25,7 @@ ID | Title | Severity | Supports | Default diagnostic severity
 [VSTHRD110](VSTHRD110.md) | Observe result of async calls | Advisory | | Warning
 [VSTHRD111](VSTHRD111.md) | Use `.ConfigureAwait(bool)` | Advisory | | Hidden
 [VSTHRD200](VSTHRD200.md) | Use `Async` naming convention | Guideline | [VSTHRD103](VSTHRD103.md) | Warning
+[VSTHRD201](VSTHRD201.md) | Check cancellation after `SwitchToMainThreadAsync` | Guideline | | Warning
 
 ## Severity descriptions
 

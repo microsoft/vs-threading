@@ -10,7 +10,6 @@
 
 namespace Microsoft.VisualStudio.Threading.Analyzers {
     using System;
-    using System.Reflection;
     
     
     /// <summary>
@@ -20,7 +19,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Strings {
@@ -40,7 +39,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.VisualStudio.Threading.Analyzers.Strings", typeof(Strings).GetTypeInfo().Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.VisualStudio.Threading.Analyzers.Strings", typeof(Strings).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -529,6 +528,33 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         internal static string VSTHRD200_Title {
             get {
                 return ResourceManager.GetString("VSTHRD200_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Call ThrowIfCancellationRequested().
+        /// </summary>
+        internal static string VSTHRD201_CodeFix_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD201_CodeFix_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Check for cancellation after calling SwitchToMainThreadAsync(CancellationToken)..
+        /// </summary>
+        internal static string VSTHRD201_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSTHRD201_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Check cancellation after SwitchToMainThreadAsync.
+        /// </summary>
+        internal static string VSTHRD201_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD201_Title", resourceCulture);
             }
         }
     }
