@@ -10,7 +10,6 @@
 
 namespace Microsoft.VisualStudio.Threading.Analyzers {
     using System;
-    using System.Reflection;
     
     
     /// <summary>
@@ -20,7 +19,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Strings {
@@ -40,7 +39,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.VisualStudio.Threading.Analyzers.Strings", typeof(Strings).GetTypeInfo().Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.VisualStudio.Threading.Analyzers.Strings", typeof(Strings).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -126,7 +125,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         
         /// <summary>
         ///   Looks up a localized string similar to Avoid awaiting or returning a Task representing work that was not started within your context as that can lead to deadlocks.
-        ///Start the work within this context, or use JoinableTaskFactory.RunAsync and await the returned JoinableTask instead..
+        ///Start the work within this context, or use JoinableTaskFactory.RunAsync to start the task and await the returned JoinableTask instead..
         /// </summary>
         internal static string VSTHRD003_MessageFormat {
             get {
