@@ -40,8 +40,8 @@
       </trans-unit>
       <trans-unit id="VSTHRD003_MessageFormat" translate="yes" xml:space="preserve">
         <source>Avoid awaiting or returning a Task representing work that was not started within your context as that can lead to deadlocks.
-Start the work within this context, or use JoinableTaskFactory.RunAsync and await the returned JoinableTask instead.</source>
-        <target state="translated">Kilitlenmelere yol açabileceğinden, bağlamınızda başlatılmamış işi temsil eden bir Görevi beklemekten veya döndürmekten kaçının.
+Start the work within this context, or use JoinableTaskFactory.RunAsync to start the task and await the returned JoinableTask instead.</source>
+        <target state="needs-review-translation">Kilitlenmelere yol açabileceğinden, bağlamınızda başlatılmamış işi temsil eden bir Görevi beklemekten veya döndürmekten kaçının.
 İşi bu bağlamda başlatın veya bunun yerine JoinableTaskFactory.RunAsync kullanın ve döndürülen JoinableTask öğesini bekleyin.</target>
         <note from="MultilingualUpdate" annotates="source" priority="2" />
       </trans-unit>

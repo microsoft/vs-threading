@@ -1144,7 +1144,8 @@ public static class Boom {
   {
     return SpecialTasks.True;
   }
-}",
+}
+",
                     },
                 },
                 SolutionTransforms =

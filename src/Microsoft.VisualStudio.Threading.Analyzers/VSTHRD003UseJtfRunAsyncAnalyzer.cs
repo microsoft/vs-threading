@@ -9,6 +9,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using System.Diagnostics;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -155,6 +156,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
                         // If we can find the source code for the field, we can check whether it has a field initializer
                         // that stores the result of a Task.FromResult invocation.
+                        if (!fieldSymbol.DeclaringSyntaxReferences.Any())
+                        {
+                            // No syntax for it at all. So outside the compilation. It *probably* is a precompleted cached task, so don't create a diagnostic.
+                            return null;
+                        }
+
                         foreach (var syntaxReference in fieldSymbol.DeclaringSyntaxReferences)
                         {
                             if (syntaxReference.GetSyntax(cancellationToken) is VariableDeclaratorSyntax declarationSyntax &&
