@@ -116,7 +116,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// <summary>
         /// Gets a semantic model for the given <see cref="SyntaxTree"/>.
         /// </summary>
-        internal static bool TryGetNewOrExistingSemanticModel(this SyntaxNodeAnalysisContext context, SyntaxTree syntaxTree, out SemanticModel semanticModel)
+        internal static bool TryGetNewOrExistingSemanticModel(this SyntaxNodeAnalysisContext context, SyntaxTree syntaxTree, [NotNullWhen(true)] out SemanticModel? semanticModel)
         {
             // Avoid calling GetSemanticModel unless we need it since it's much more expensive to create a new one than to reuse one.
             semanticModel =
