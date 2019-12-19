@@ -136,6 +136,38 @@ class Tests
         }
 
         [Fact]
+        public async Task ReportWarningWhenTaskIsReturnedDirectlyFromMethodViaExpressionBody()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Tests
+{
+    private Task task;
+
+    public Task GetTask() => task;
+}
+";
+            var expected = this.CreateDiagnostic(8, 30, 4);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
+        public async Task ReportWarningWhenTaskParameterIsReturnedDirectlyFromMethodViaExpressionBody()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Tests
+{
+    public Task GetTask(Task task) => task;
+}
+";
+            var expected = this.CreateDiagnostic(6, 39, 4);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
         public async Task ReportWarningWhenTaskIsReturnedAwaitedFromMethod()
         {
             var test = @"

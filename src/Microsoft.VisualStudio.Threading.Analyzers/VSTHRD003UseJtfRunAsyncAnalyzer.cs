@@ -74,8 +74,22 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeAwaitExpression), SyntaxKind.AwaitExpression);
             context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeReturnStatement), SyntaxKind.ReturnStatement);
+            context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeArrowExpressionClause), SyntaxKind.ArrowExpressionClause);
             context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeLambdaExpression), SyntaxKind.SimpleLambdaExpression);
             context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeLambdaExpression), SyntaxKind.ParenthesizedLambdaExpression);
+        }
+
+        private void AnalyzeArrowExpressionClause(SyntaxNodeAnalysisContext context)
+        {
+            var arrowExpressionClause = (ArrowExpressionClauseSyntax)context.Node;
+            if (arrowExpressionClause.Parent is MethodDeclarationSyntax)
+            {
+                var diagnostic = this.AnalyzeAwaitedOrReturnedExpression(arrowExpressionClause.Expression, context, context.CancellationToken);
+                if (diagnostic is object)
+                {
+                    context.ReportDiagnostic(diagnostic);
+                }
+            }
         }
 
         private void AnalyzeLambdaExpression(SyntaxNodeAnalysisContext context)
