@@ -989,19 +989,41 @@ class Tests {
         public async Task DoNotReportWarningWhenCompletedTaskIsReturnedDirectlyFromMethod()
         {
             var test = @"
+using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
 class Tests
 {
-    public Task GetTask()
-    {
-        return Task.CompletedTask;
-    }
+    static readonly Task MyCompletedTask = Task.CompletedTask;
+    static readonly Task MyCompletedTask1 = TplExtensions.CompletedTask;
+    static readonly Task MyCompletedTask2 = TplExtensions.CanceledTask;
+    static readonly Task MyCompletedTask3 = TplExtensions.TrueTask;
+    static readonly Task MyCompletedTask4 = TplExtensions.FalseTask;
+    static readonly Task MyCompletedTask5 = Task.FromCanceled(new CancellationToken(true));
+    static readonly Task MyCompletedTask6 = Task.FromException(new Exception());
 
-    public Task GetTask2()
+    public Task GetTask(int i)
     {
-        return TplExtensions.CompletedTask;
+        switch (i)
+        {
+            case 1: return Task.CompletedTask;
+            case 2: return TplExtensions.CompletedTask;
+            case 3: return TplExtensions.CanceledTask;
+            case 4: return TplExtensions.TrueTask;
+            case 5: return TplExtensions.FalseTask;
+            case 6: return MyCompletedTask;
+            case 7: return MyCompletedTask1;
+            case 8: return MyCompletedTask2;
+            case 9: return MyCompletedTask3;
+            case 10: return MyCompletedTask4;
+            case 11: return MyCompletedTask5;
+            case 12: return MyCompletedTask6;
+            case 13: return Task.FromCanceled(new CancellationToken(true));
+            case 14: return Task.FromException(new Exception());
+            default: return null;
+        }
     }
 }
 ";
