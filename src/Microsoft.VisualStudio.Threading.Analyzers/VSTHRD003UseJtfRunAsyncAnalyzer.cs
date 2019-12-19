@@ -74,8 +74,22 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeAwaitExpression), SyntaxKind.AwaitExpression);
             context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeReturnStatement), SyntaxKind.ReturnStatement);
+            context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeArrowExpressionClause), SyntaxKind.ArrowExpressionClause);
             context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeLambdaExpression), SyntaxKind.SimpleLambdaExpression);
             context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeLambdaExpression), SyntaxKind.ParenthesizedLambdaExpression);
+        }
+
+        private void AnalyzeArrowExpressionClause(SyntaxNodeAnalysisContext context)
+        {
+            var arrowExpressionClause = (ArrowExpressionClauseSyntax)context.Node;
+            if (arrowExpressionClause.Parent is MethodDeclarationSyntax)
+            {
+                var diagnostic = this.AnalyzeAwaitedOrReturnedExpression(arrowExpressionClause.Expression, context, context.CancellationToken);
+                if (diagnostic is object)
+                {
+                    context.ReportDiagnostic(diagnostic);
+                }
+            }
         }
 
         private void AnalyzeLambdaExpression(SyntaxNodeAnalysisContext context)
@@ -120,7 +134,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             // Get the semantic model for the SyntaxTree for the given ExpressionSyntax, since it *may* not be in the same syntax tree
             // as the original context.Node.
-            var semanticModel = context.GetNewOrExistingSemanticModel(expressionSyntax.SyntaxTree);
+            if (!context.TryGetNewOrExistingSemanticModel(expressionSyntax.SyntaxTree, out var semanticModel))
+            {
+                return null;
+            }
+
             SymbolInfo symbolToConsider = semanticModel.GetSymbolInfo(expressionSyntax, cancellationToken);
             if (CommonInterest.TaskConfigureAwait.Any(configureAwait => configureAwait.IsMatch(symbolToConsider.Symbol)))
             {
@@ -148,12 +166,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     // If the field is readonly and initialized with Task.FromResult, it's OK.
                     if (fieldSymbol.IsReadOnly)
                     {
-                        // Whitelist the TplExtensions.CompletedTask field.
-                        if (fieldSymbol.Name == Types.TplExtensions.CompletedTask && fieldSymbol.ContainingType.Name == Types.TplExtensions.TypeName && fieldSymbol.BelongsToNamespace(Types.TplExtensions.Namespace))
-                        {
-                            return null;
-                        }
-
                         // If we can find the source code for the field, we can check whether it has a field initializer
                         // that stores the result of a Task.FromResult invocation.
                         if (!fieldSymbol.DeclaringSyntaxReferences.Any())
@@ -164,23 +176,57 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
                         foreach (var syntaxReference in fieldSymbol.DeclaringSyntaxReferences)
                         {
-                            if (syntaxReference.GetSyntax(cancellationToken) is VariableDeclaratorSyntax declarationSyntax &&
-                                declarationSyntax.Initializer?.Value is InvocationExpressionSyntax invocationSyntax &&
-                                invocationSyntax.Expression != null)
+                            if (syntaxReference.GetSyntax(cancellationToken) is VariableDeclaratorSyntax declarationSyntax)
                             {
-                                if (!context.Compilation.ContainsSyntaxTree(invocationSyntax.SyntaxTree))
+                                if (declarationSyntax.Initializer?.Value is InvocationExpressionSyntax invocationSyntax &&
+                                    invocationSyntax.Expression != null)
                                 {
-                                    // We can't look up the definition of the field. It *probably* is a precompleted cached task, so don't create a diagnostic.
-                                    return null;
-                                }
+                                    if (!context.Compilation.ContainsSyntaxTree(invocationSyntax.SyntaxTree))
+                                    {
+                                        // We can't look up the definition of the field. It *probably* is a precompleted cached task, so don't create a diagnostic.
+                                        return null;
+                                    }
 
-                                var declarationSemanticModel = context.GetNewOrExistingSemanticModel(invocationSyntax.SyntaxTree);
-                                if (declarationSemanticModel.GetSymbolInfo(invocationSyntax.Expression, cancellationToken).Symbol is IMethodSymbol invokedMethod &&
-                                    invokedMethod.Name == nameof(Task.FromResult) &&
-                                    invokedMethod.ContainingType.Name == nameof(Task) &&
-                                    invokedMethod.ContainingType.BelongsToNamespace(Types.Task.Namespace))
+                                    // Whitelist Task.From*() methods.
+                                    if (!context.TryGetNewOrExistingSemanticModel(invocationSyntax.SyntaxTree, out var declarationSemanticModel))
+                                    {
+                                        return null;
+                                    }
+
+                                    if (declarationSemanticModel.GetSymbolInfo(invocationSyntax.Expression, cancellationToken).Symbol is IMethodSymbol invokedMethod &&
+                                        invokedMethod.ContainingType.Name == nameof(Task) &&
+                                        invokedMethod.ContainingType.BelongsToNamespace(Types.Task.Namespace) &&
+                                        (invokedMethod.Name == nameof(Task.FromResult) || invokedMethod.Name == nameof(Task.FromCanceled) || invokedMethod.Name == nameof(Task.FromException)))
+                                    {
+                                        return null;
+                                    }
+                                }
+                                else if (declarationSyntax.Initializer?.Value is MemberAccessExpressionSyntax memberAccessSyntax && memberAccessSyntax.Expression is object)
                                 {
-                                    return null;
+                                    if (!context.TryGetNewOrExistingSemanticModel(memberAccessSyntax.SyntaxTree, out var declarationSemanticModel))
+                                    {
+                                        return null;
+                                    }
+
+                                    var definition = declarationSemanticModel.GetSymbolInfo(memberAccessSyntax, cancellationToken).Symbol;
+                                    if (definition is IFieldSymbol field)
+                                    {
+                                        // Whitelist the TplExtensions.CompletedTask and related fields.
+                                        if (field.ContainingType.Name == Types.TplExtensions.TypeName && field.BelongsToNamespace(Types.TplExtensions.Namespace) &&
+                                            (field.Name == Types.TplExtensions.CompletedTask || field.Name == Types.TplExtensions.CanceledTask || field.Name == Types.TplExtensions.TrueTask || field.Name == Types.TplExtensions.FalseTask))
+                                        {
+                                            return null;
+                                        }
+                                    }
+                                    else if (definition is IPropertySymbol property)
+                                    {
+                                        // Explicitly allow Task.CompletedTask
+                                        if (property.ContainingType.Name == Types.Task.TypeName && property.BelongsToNamespace(Types.Task.Namespace) &&
+                                            property.Name == Types.Task.CompletedTask)
+                                        {
+                                            return null;
+                                        }
+                                    }
                                 }
                             }
                         }

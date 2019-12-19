@@ -49,6 +49,21 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             /// </summary>
             internal const string CompletedTask = "CompletedTask";
 
+            /// <summary>
+            /// The name of the CanceledTask field.
+            /// </summary>
+            internal const string CanceledTask = "CanceledTask";
+
+            /// <summary>
+            /// The name of the TrueTask field.
+            /// </summary>
+            internal const string TrueTask = "TrueTask";
+
+            /// <summary>
+            /// The name of the FalseTask field.
+            /// </summary>
+            internal const string FalseTask = "FalseTask";
+
             internal static readonly IReadOnlyList<string> Namespace = Namespaces.MicrosoftVisualStudioThreading;
         }
 
@@ -156,6 +171,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             internal const string TypeName = nameof(System.Threading.Tasks.Task);
 
             internal const string FullName = "System.Threading.Tasks." + TypeName;
+
+            internal const string CompletedTask = nameof(System.Threading.Tasks.Task.CompletedTask);
 
             internal static readonly IReadOnlyList<string> Namespace = Namespaces.SystemThreadingTasks;
         }
