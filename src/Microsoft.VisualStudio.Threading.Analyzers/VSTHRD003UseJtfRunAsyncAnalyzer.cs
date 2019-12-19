@@ -134,7 +134,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             // Get the semantic model for the SyntaxTree for the given ExpressionSyntax, since it *may* not be in the same syntax tree
             // as the original context.Node.
-            var semanticModel = context.GetNewOrExistingSemanticModel(expressionSyntax.SyntaxTree);
+            if (!context.TryGetNewOrExistingSemanticModel(expressionSyntax.SyntaxTree, out var semanticModel))
+            {
+                return null;
+            }
+
             SymbolInfo symbolToConsider = semanticModel.GetSymbolInfo(expressionSyntax, cancellationToken);
             if (CommonInterest.TaskConfigureAwait.Any(configureAwait => configureAwait.IsMatch(symbolToConsider.Symbol)))
             {
@@ -184,7 +188,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                                     }
 
                                     // Whitelist Task.From*() methods.
-                                    var declarationSemanticModel = context.GetNewOrExistingSemanticModel(invocationSyntax.SyntaxTree);
+                                    if (!context.TryGetNewOrExistingSemanticModel(invocationSyntax.SyntaxTree, out var declarationSemanticModel))
+                                    {
+                                        return null;
+                                    }
+
                                     if (declarationSemanticModel.GetSymbolInfo(invocationSyntax.Expression, cancellationToken).Symbol is IMethodSymbol invokedMethod &&
                                         invokedMethod.ContainingType.Name == nameof(Task) &&
                                         invokedMethod.ContainingType.BelongsToNamespace(Types.Task.Namespace) &&
@@ -195,7 +203,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                                 }
                                 else if (declarationSyntax.Initializer?.Value is MemberAccessExpressionSyntax memberAccessSyntax && memberAccessSyntax.Expression is object)
                                 {
-                                    var declarationSemanticModel = context.GetNewOrExistingSemanticModel(memberAccessSyntax.SyntaxTree);
+                                    if (!context.TryGetNewOrExistingSemanticModel(memberAccessSyntax.SyntaxTree, out var declarationSemanticModel))
+                                    {
+                                        return null;
+                                    }
+
                                     var definition = declarationSemanticModel.GetSymbolInfo(memberAccessSyntax, cancellationToken).Symbol;
                                     if (definition is IFieldSymbol field)
                                     {
