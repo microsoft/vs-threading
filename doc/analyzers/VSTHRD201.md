@@ -16,6 +16,11 @@ back at the caller if **all** these conditions are met:
 2. The caller was not on the main thread already.
 3. The request to resume the main thread is fulfilled by the threadpool before the main thread can respond to the request.
 
+OR when **all** these conditions are met:
+
+1. The `CancellationToken` passed to it is already canceled before calling `SwitchToMainThreadAsync`.
+2. The caller was not on the main thread already.
+
 When the token is canceled, a request to resume the async method is scheduled to the threadpool.
 If the original request to resume on the main thread executes before the threadpool responds to the request,
 the request made to `SwitchToMainThreadAsync` is considered fulfilled and therefore it returns without throwing

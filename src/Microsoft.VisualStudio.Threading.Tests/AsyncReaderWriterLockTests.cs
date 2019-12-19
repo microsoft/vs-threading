@@ -48,7 +48,7 @@
             this.asyncLock.Complete();
             if (!doNotWaitForLockCompletionAtTestCleanup)
             {
-                Assert.True(this.asyncLock.Completion.Wait(2000));
+                Assert.True(this.asyncLock.Completion.Wait(UnexpectedTimeout));
             }
         }
 
