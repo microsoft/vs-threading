@@ -38,8 +38,8 @@
 
         internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
             id: Id,
-            title: Strings.VSTHRD103_Title,
-            messageFormat: Strings.VSTHRD103_MessageFormat,
+            title: new LocalizableResourceString(nameof(Strings.VSTHRD103_Title), Strings.ResourceManager, typeof(Strings)),
+            messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD103_MessageFormat), Strings.ResourceManager, typeof(Strings)),
             helpLinkUri: Utils.GetHelpLink(Id),
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Warning,
@@ -47,8 +47,8 @@
 
         internal static readonly DiagnosticDescriptor DescriptorNoAlternativeMethod = new DiagnosticDescriptor(
             id: Id,
-            title: Strings.VSTHRD103_Title,
-            messageFormat: Strings.VSTHRD103_MessageFormat_UseAwaitInstead,
+            title: new LocalizableResourceString(nameof(Strings.VSTHRD103_Title), Strings.ResourceManager, typeof(Strings)),
+            messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD103_MessageFormat_UseAwaitInstead), Strings.ResourceManager, typeof(Strings)),
             helpLinkUri: Utils.GetHelpLink(Id),
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Warning,
