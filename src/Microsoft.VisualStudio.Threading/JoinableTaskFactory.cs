@@ -143,10 +143,8 @@ namespace Microsoft.VisualStudio.Threading
         /// </param>
         /// <returns>An awaitable.</returns>
         /// <exception cref="OperationCanceledException">
-        /// Thrown back at the awaiting caller from a background thread
-        /// when <paramref name="cancellationToken" /> is canceled before any required transition to the main thread is complete.
-        /// No exception is thrown if the caller was already on the main thread before calling this method,
-        /// or if the main thread transition completes before the thread pool responds to cancellation.
+        /// Thrown back at the awaiting caller if <paramref name="cancellationToken"/> is canceled,
+        /// even if the caller is already on the main thread.
         /// </exception>
         /// <remarks>
         /// <example>
@@ -182,10 +180,8 @@ namespace Microsoft.VisualStudio.Threading
         /// </param>
         /// <returns>An awaitable.</returns>
         /// <exception cref="OperationCanceledException">
-        /// Thrown back at the awaiting caller from a background thread
-        /// when <paramref name="cancellationToken" /> is canceled before any required transition to the main thread is complete.
-        /// No exception is thrown if <paramref name="alwaysYield" /> is <see langword="false"/> and the caller was already on the main thread before calling this method,
-        /// or if the main thread transition completes before the thread pool responds to cancellation.
+        /// Thrown back at the awaiting caller if <paramref name="cancellationToken"/> is canceled,
+        /// even if the caller is already on the main thread.
         /// </exception>
         /// <remarks>
         /// <example>
@@ -800,7 +796,7 @@ namespace Microsoft.VisualStudio.Threading
                 this.jobFactory = jobFactory;
                 this.job = job;
                 this.cancellationToken = cancellationToken;
-                this.synchronousCancellation = cancellationToken.IsCancellationRequested && !alwaysYield && !this.jobFactory.Context.IsOnMainThread;
+                this.synchronousCancellation = cancellationToken.IsCancellationRequested && !alwaysYield;
                 this.alwaysYield = alwaysYield;
 
                 // Don't allocate the pointer if the cancellation token can't be canceled (or already is):
@@ -890,12 +886,6 @@ namespace Microsoft.VisualStudio.Threading
                     registration.Dispose();
                 }
 
-                // Only throw a cancellation exception if we didn't end up completing what the caller asked us to do (arrive at the main thread).
-                if (!this.jobFactory.Context.IsOnMainThread)
-                {
-                    this.cancellationToken.ThrowIfCancellationRequested();
-                }
-
                 // If this method is called in a continuation after an actual yield, then SingleExecuteProtector.TryExecute
                 // should have already applied the appropriate SynchronizationContext to avoid deadlocks.
                 // However if no yield occurred then no TryExecute would have been invoked, so to avoid deadlocks in those
@@ -905,6 +895,12 @@ namespace Microsoft.VisualStudio.Threading
                 // changes they apply (including SynchronizationContext) when they complete, thanks to the way .NET 4.5 works.
                 var syncContext = this.job != null ? this.job.ApplicableJobSyncContext : this.jobFactory.ApplicableJobSyncContext;
                 syncContext.Apply();
+
+                // Cancel if requested, even if we arrived on the main thread.
+                // Unlike most async methods where throwing OperationCanceledException after completing the work may not be a good idea,
+                // SwitchToMainThreadAsync is a scheduler method, and always precedes some work by the caller that almost certainly should
+                // not be carried out if cancellation was requested.
+                this.cancellationToken.ThrowIfCancellationRequested();
             }
 
             /// <summary>
@@ -943,7 +939,7 @@ namespace Microsoft.VisualStudio.Threading
                             useSynchronizationContext: false);
 
                         // Needs a lock to avoid a race condition between this method and GetResult().
-                        // This method is called on a background thread. After "this.jobFactory.RequestSwitchToMainThread()" returns,
+                        // This method is usually called on a background thread. After "this.jobFactory.RequestSwitchToMainThread()" returns,
                         // the continuation is scheduled and GetResult() will be called whenever it is ready on main thread.
                         // We have observed sometimes GetResult() was called right after "this.jobFactory.RequestSwitchToMainThread()"
                         // and before "this.cancellationToken.Register()". If that happens, that means we lose the interest on the cancellation
