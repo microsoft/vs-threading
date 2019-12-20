@@ -473,6 +473,42 @@
         }
 
         [Fact]
+        public void SwitchToMainThread_PrecanceledOnMainThread()
+        {
+            this.SimulateUIThread(delegate
+            {
+                var awaiter = this.asyncPump.SwitchToMainThreadAsync(new CancellationToken(true)).GetAwaiter();
+                Assert.True(awaiter.IsCompleted);
+                Assert.Throws<OperationCanceledException>(() => awaiter.GetResult());
+                return Task.CompletedTask;
+            });
+        }
+
+        [Fact]
+        public void SwitchToMainThread_PrecanceledOnMainThread_StillYieldsWhenRequired()
+        {
+            this.SimulateUIThread(async delegate
+            {
+                var awaiter = this.asyncPump.SwitchToMainThreadAsync(alwaysYield: true, new CancellationToken(true)).GetAwaiter();
+                Assert.False(awaiter.IsCompleted);
+                var testResult = new TaskCompletionSource<object?>();
+                awaiter.OnCompleted(delegate
+                {
+                    try
+                    {
+                        Assert.Throws<OperationCanceledException>(() => awaiter.GetResult());
+                        testResult.SetResult(null);
+                    }
+                    catch (Exception ex)
+                    {
+                        testResult.SetException(ex);
+                    }
+                });
+                await testResult.Task.WithCancellation(this.TimeoutToken);
+            });
+        }
+
+        [Fact]
         public void SwitchToMainThreadAsync_CompletesSynchronouslyWhenPreCanceledOffMainThread()
         {
             this.SimulateUIThread(delegate
@@ -484,6 +520,37 @@
                     Assert.True(awaiter.IsCompleted);
                     var ex = Assert.Throws<OperationCanceledException>(() => awaiter.GetResult());
                     Assert.Equal(precanceled, ex.CancellationToken);
+                });
+            });
+        }
+
+        [Fact]
+        public void SwitchToMainThreadAsync_ThrowsOnCancellationAfterReachingMainThread()
+        {
+            this.SimulateUIThread(delegate
+            {
+                return Task.Run(async delegate
+                {
+                    var cts = new CancellationTokenSource();
+                    var awaiter = this.asyncPump.SwitchToMainThreadAsync(cts.Token).GetAwaiter();
+                    Assert.False(awaiter.IsCompleted);
+                    var testResult = new TaskCompletionSource<object?>();
+                    awaiter.OnCompleted(delegate
+                    {
+                        try
+                        {
+                            Assert.True(this.context.IsOnMainThread);
+                            cts.Cancel();
+                            var ex = Assert.Throws<OperationCanceledException>(() => awaiter.GetResult());
+                            Assert.Equal(cts.Token, ex.CancellationToken);
+                            testResult.SetResult(null);
+                        }
+                        catch (Exception ex)
+                        {
+                            testResult.SetException(ex);
+                        }
+                    });
+                    await testResult.Task.WithCancellation(this.TimeoutToken);
                 });
             });
         }
