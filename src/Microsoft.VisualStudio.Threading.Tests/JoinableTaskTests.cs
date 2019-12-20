@@ -299,6 +299,7 @@
                 {
                 }
 
+                Assert.Null(SynchronizationContext.Current);
                 Assert.NotEqual(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
             });
 
@@ -458,6 +459,7 @@
                     {
                         Assert.NotEqual(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
                         Assert.Equal("expected", asyncLocal.Value);
+                        Assert.Null(SynchronizationContext.Current);
                         testResultSource.SetResult(null);
                     }
                     catch (Exception ex)
@@ -475,12 +477,15 @@
         [Fact]
         public void SwitchToMainThread_PrecanceledOnMainThread()
         {
-            this.SimulateUIThread(delegate
+            this.SimulateUIThread(async delegate
             {
                 var awaiter = this.asyncPump.SwitchToMainThreadAsync(new CancellationToken(true)).GetAwaiter();
                 Assert.True(awaiter.IsCompleted);
                 Assert.Throws<OperationCanceledException>(() => awaiter.GetResult());
-                return Task.CompletedTask;
+
+                // Verify that the SynchronizationContext remains such that we stay on the main thread after yielding.
+                await Task.Yield();
+                Assert.True(this.context.IsOnMainThread);
             });
         }
 
@@ -497,6 +502,7 @@
                     try
                     {
                         Assert.Throws<OperationCanceledException>(() => awaiter.GetResult());
+                        Assert.Equal(this.context.IsOnMainThread, SynchronizationContext.Current is object);
                         testResult.SetResult(null);
                     }
                     catch (Exception ex)
@@ -520,7 +526,50 @@
                     Assert.True(awaiter.IsCompleted);
                     var ex = Assert.Throws<OperationCanceledException>(() => awaiter.GetResult());
                     Assert.Equal(precanceled, ex.CancellationToken);
+                    Assert.Null(SynchronizationContext.Current);
                 });
+            });
+        }
+
+        [Fact]
+        public void SwitchToMainThreadAsync_CanceledToBackgroundThreadWithSyncContext()
+        {
+            this.SimulateUIThread(delegate
+            {
+                Task.Run(delegate
+                {
+                    this.asyncPump.Run(async delegate
+                    {
+                        // We're on a background thread, so a SyncContext applies even if it isn't the main thread one.
+                        var bkgrndSyncContext = SynchronizationContext.Current;
+                        Assert.NotNull(bkgrndSyncContext);
+                        var cts = new CancellationTokenSource();
+                        var awaiter = this.asyncPump.SwitchToMainThreadAsync(cts.Token).GetAwaiter();
+                        Assert.False(awaiter.IsCompleted);
+
+                        var tcs = new TaskCompletionSource<object?>();
+                        awaiter.OnCompleted(delegate
+                        {
+                            try
+                            {
+                                Assert.False(this.context.IsOnMainThread);
+                                Assert.Same(bkgrndSyncContext, SynchronizationContext.Current);
+                                tcs.SetResult(null);
+                            }
+                            catch (Exception ex)
+                            {
+                                tcs.SetException(ex);
+                            }
+                        });
+
+                        // We never made the main thread available to process messages, so after cancelling,
+                        // the only way the delegate can complete is on another thread.
+                        cts.Cancel();
+
+                        await tcs.Task.WithCancellation(this.TimeoutToken);
+                    });
+                }).WaitWithoutInlining(throwOriginalException: true); // block the main thread so it can't pump messages.
+                return Task.CompletedTask;
             });
         }
 
