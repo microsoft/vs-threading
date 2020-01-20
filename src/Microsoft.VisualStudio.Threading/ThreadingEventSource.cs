@@ -77,7 +77,7 @@ namespace Microsoft.VisualStudio.Threading
         [Event(ReaderWriterLockIssuedLockCountsEvent, Task = Tasks.LockRequest, Opcode = Opcodes.ReaderWriterLockIssued)]
         public void ReaderWriterLockIssued(int lockId, AsyncReaderWriterLock.LockKind kind, int issuedUpgradeableReadCount, int issuedReadCount)
         {
-            this.WriteEvent(ReaderWriterLockIssuedLockCountsEvent, lockId, (int)kind, issuedUpgradeableReadCount, issuedReadCount);
+            this.WriteEvent(ReaderWriterLockIssuedLockCountsEvent, lockId, kind, issuedUpgradeableReadCount, issuedReadCount);
         }
 
         /// <summary>
@@ -95,7 +95,7 @@ namespace Microsoft.VisualStudio.Threading
         [Event(WaitReaderWriterLockStopEvent, Task = Tasks.LockRequestContention, Opcode = EventOpcode.Stop)]
         public void WaitReaderWriterLockStop(int lockId, AsyncReaderWriterLock.LockKind kind)
         {
-            this.WriteEvent(WaitReaderWriterLockStopEvent, lockId, (int)kind);
+            this.WriteEvent(WaitReaderWriterLockStopEvent, lockId, kind);
         }
 
 #endregion
