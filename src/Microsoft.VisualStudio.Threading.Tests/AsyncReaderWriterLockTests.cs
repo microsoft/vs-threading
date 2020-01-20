@@ -611,12 +611,11 @@
         public async Task IsPassiveWriteLockHeldReturnsTrueForIncompatibleSyncContexts()
         {
             var dispatcher = SingleThreadedTestSynchronizationContext.New();
-            using (var releaser = await this.asyncLock.WriteLockAsync())
+            await using (await this.asyncLock.WriteLockAsync())
             {
                 Assert.True(this.asyncLock.IsPassiveWriteLockHeld);
                 SynchronizationContext.SetSynchronizationContext(dispatcher);
                 Assert.True(this.asyncLock.IsPassiveWriteLockHeld);
-                await releaser.ReleaseAsync();
             }
         }
 
@@ -1286,9 +1285,8 @@
                 onExclusiveLockReleasedBegun.Set();
                 await innerLockReleased;
             };
-            using (var releaser = await asyncLock.WriteLockAsync())
+            await using (await asyncLock.WriteLockAsync())
             {
-                await releaser.ReleaseAsync();
             }
         }
 
@@ -3076,9 +3074,8 @@
         public async Task OnBeforeExclusiveLockReleasedAsyncWriteLockReleaseAsync()
         {
             var asyncLock = new LockDerivedWriteLockAroundOnBeforeExclusiveLockReleased();
-            using (var access = await asyncLock.WriteLockAsync())
+            await using (await asyncLock.WriteLockAsync())
             {
-                await access.ReleaseAsync();
             }
         }
 
@@ -3086,9 +3083,8 @@
         public async Task OnBeforeExclusiveLockReleasedAsyncReadLockReleaseAsync()
         {
             var asyncLock = new LockDerivedReadLockAroundOnBeforeExclusiveLockReleased();
-            using (var access = await asyncLock.WriteLockAsync())
+            await using (await asyncLock.WriteLockAsync())
             {
-                await access.ReleaseAsync();
             }
         }
 

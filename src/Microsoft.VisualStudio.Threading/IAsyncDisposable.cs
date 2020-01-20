@@ -11,6 +11,9 @@ namespace Microsoft.VisualStudio.Threading
     /// <summary>
     /// Defines an asynchronous method to release allocated resources.
     /// </summary>
+    /// <remarks>
+    /// Consider implementing <see cref="System.IAsyncDisposable"/> instead.
+    /// </remarks>
     public interface IAsyncDisposable
     {
         /// <summary>

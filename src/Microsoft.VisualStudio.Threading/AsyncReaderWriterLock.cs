@@ -1503,7 +1503,7 @@ namespace Microsoft.VisualStudio.Threading
             Assumes.True(Monitor.IsEntered(this.syncObject));
             Assumes.True(this.beforeWriteReleasedCallbacks.Count > 0);
 
-            using (var releaser = await new Awaitable(this, LockKind.Write, LockFlags.None, CancellationToken.None, checkSyncContextCompatibility: false))
+            await using ((await new Awaitable(this, LockKind.Write, LockFlags.None, CancellationToken.None, checkSyncContextCompatibility: false)).ConfigureAwait(false))
             {
                 await Task.Yield(); // ensure we've yielded to our caller, since the WriteLockAsync will not yield when on an MTA thread.
 
@@ -1528,8 +1528,6 @@ namespace Microsoft.VisualStudio.Threading
                         exceptions.Add(ex);
                     }
                 }
-
-                await releaser.ReleaseAsync().ConfigureAwait(false);
 
                 if (exceptions != null)
                 {
@@ -1800,7 +1798,7 @@ namespace Microsoft.VisualStudio.Threading
         /// A value whose disposal releases a held lock.
         /// </summary>
         [DebuggerDisplay("{awaiter.kind}")]
-        public readonly struct Releaser : IDisposable
+        public readonly struct Releaser : IDisposable, System.IAsyncDisposable
         {
             /// <summary>
             /// The awaiter who manages the lifetime of a lock.
@@ -1863,12 +1861,24 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
+            /// Releases the lock.
+            /// </summary>
+            public async ValueTask DisposeAsync()
+            {
+                await this.ReleaseAsync().ConfigureAwaitRunInline();
+                this.Dispose();
+            }
+
+            /// <summary>
             /// Asynchronously releases the lock.  Dispose should still be called after this.
             /// </summary>
             /// <returns>
             /// A task that should complete before the releasing thread accesses any resource protected by
             /// a lock wrapping the lock being released.
             /// </returns>
+            /// <remarks>
+            /// Rather than calling this method explicitly, use the C# 8 "await using" syntax instead.
+            /// </remarks>
             public Task ReleaseAsync()
             {
                 if (this.awaiter != null)
