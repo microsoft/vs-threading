@@ -4,15 +4,13 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
     using System.Collections.Immutable;
     using Microsoft.CodeAnalysis.Testing;
-    using NuGet.Packaging.Core;
-    using NuGet.Versioning;
 
     internal static class ReferencesHelper
     {
         public static ReferenceAssemblies DefaultReferences = ReferenceAssemblies.Default
             .WithPackages(ImmutableArray.Create(
-                new PackageIdentity("System.Collections.Immutable", NuGetVersion.Parse("1.3.1")),
-                new PackageIdentity("System.Threading.Tasks.Extensions", NuGetVersion.Parse("4.5.3")),
-                new PackageIdentity("Microsoft.Bcl.AsyncInterfaces", NuGetVersion.Parse("1.1.0"))));
+                new PackageIdentity("System.Collections.Immutable", "1.3.1"),
+                new PackageIdentity("System.Threading.Tasks.Extensions", "4.5.3"),
+                new PackageIdentity("Microsoft.Bcl.AsyncInterfaces", "1.1.0")));
     }
 }
