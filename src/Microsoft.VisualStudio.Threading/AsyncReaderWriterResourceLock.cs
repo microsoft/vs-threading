@@ -389,7 +389,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
         [DebuggerDisplay("{releaser.awaiter.kind}")]
-        public readonly struct ResourceReleaser : IDisposable
+        public readonly struct ResourceReleaser : IDisposable, System.IAsyncDisposable
         {
             /// <summary>
             /// The underlying lock releaser.
@@ -440,8 +440,16 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
+            /// Releases the lock.
+            /// </summary>
+            public ValueTask DisposeAsync() => this.LockReleaser.DisposeAsync();
+
+            /// <summary>
             /// Asynchronously releases the lock.  Dispose should still be called after this.
             /// </summary>
+            /// <remarks>
+            /// Rather than calling this method explicitly, use the C# 8 "await using" syntax instead.
+            /// </remarks>
             public Task ReleaseAsync()
             {
                 return this.LockReleaser.ReleaseAsync();
