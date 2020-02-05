@@ -26,6 +26,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
     internal static class FixUtils
     {
+        internal static readonly string BookmarkAnnotationName = "Bookmark";
+
         internal static AnonymousFunctionExpressionSyntax MakeMethodAsync(this AnonymousFunctionExpressionSyntax method, SemanticModel semanticModel, CancellationToken cancellationToken)
         {
             if (method.AsyncKeyword.Kind() == SyntaxKind.AsyncKeyword)
@@ -298,7 +300,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         internal static async Task<Tuple<SyntaxAnnotation, Document, T, SyntaxNode>> BookmarkSyntaxAsync<T>(Document document, T syntaxNode, CancellationToken cancellationToken)
             where T : SyntaxNode
         {
-            var bookmark = new SyntaxAnnotation();
+            var bookmark = new SyntaxAnnotation(BookmarkAnnotationName);
             var root = await syntaxNode.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
             root = root.ReplaceNode(syntaxNode, syntaxNode.WithAdditionalAnnotations(bookmark));
             document = document.WithSyntaxRoot(root);

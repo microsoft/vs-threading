@@ -80,6 +80,30 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 return false;
             }
 
+            SimpleNameSyntax? FindStaticWaitInvocation(ExpressionSyntax from, CancellationToken cancellationToken = default(CancellationToken))
+            {
+                var name = ((from as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax)?.Name;
+                return name?.Identifier.ValueText switch
+                {
+                    nameof(Task.WaitAny) => name,
+                    nameof(Task.WaitAll) => name,
+                    _ => null,
+                };
+            }
+
+            ExpressionSyntax? TransformStaticWhatInvocation(ExpressionSyntax from, CancellationToken cancellationToken = default(CancellationToken))
+            {
+                var name = FindStaticWaitInvocation(from);
+                var newIdentifier = name!.Identifier.ValueText switch
+                {
+                    nameof(Task.WaitAny) => nameof(Task.WhenAny),
+                    nameof(Task.WaitAll) => nameof(Task.WhenAll),
+                    _ => throw new InvalidOperationException(),
+                };
+
+                return from.ReplaceToken(name.Identifier, SyntaxFactory.Identifier(newIdentifier)).WithoutAnnotations(FixUtils.BookmarkAnnotationName);
+            }
+
             ExpressionSyntax? FindTwoLevelDeepIdentifierInvocation(ExpressionSyntax from, CancellationToken cancellationToken = default(CancellationToken)) =>
                 ((((from as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax)?.Expression as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax)?.Expression;
             ExpressionSyntax? FindOneLevelDeepIdentifierInvocation(ExpressionSyntax from, CancellationToken cancellationToken = default(CancellationToken)) =>
@@ -93,6 +117,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             {
                 // This method will not return null for the provided 'target' argument
                 transform = NullableHelpers.AsNonNullReturnUnchecked<ExpressionSyntax, CancellationToken, ExpressionSyntax>(FindTwoLevelDeepIdentifierInvocation);
+                target = parentInvocation;
+            }
+            else if (FindStaticWaitInvocation(parentInvocation) != null)
+            {
+                // This method will not return null for the provided 'target' argument
+                transform = NullableHelpers.AsNonNullReturnUnchecked<ExpressionSyntax, CancellationToken, ExpressionSyntax>(TransformStaticWhatInvocation);
                 target = parentInvocation;
             }
             else if (FindOneLevelDeepIdentifierInvocation(parentInvocation) != null)
