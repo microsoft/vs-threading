@@ -43,6 +43,68 @@ class Test {
         }
 
         [Fact]
+        public async Task TaskWaitAnyShouldReportWarning()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void F() {
+        var task1 = Task.Run(() => {});
+        var task2 = Task.Run(() => {});
+        Task.WaitAny(task1, task2);
+    }
+}
+";
+            var withFix = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    async Task FAsync() {
+        var task1 = Task.Run(() => {});
+        var task2 = Task.Run(() => {});
+        await Task.WhenAny(task1, task2);
+    }
+}
+";
+            var expected = Verify.Diagnostic().WithSpan(9, 14, 9, 21);
+            await Verify.VerifyCodeFixAsync(test, expected, withFix);
+        }
+
+        [Fact]
+        public async Task TaskWaitAllShouldReportWarning()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void F() {
+        var task1 = Task.Run(() => {});
+        var task2 = Task.Run(() => {});
+        Task.WaitAll(task1, task2);
+    }
+}
+";
+            var withFix = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    async Task FAsync() {
+        var task1 = Task.Run(() => {});
+        var task2 = Task.Run(() => {});
+        await Task.WhenAll(task1, task2);
+    }
+}
+";
+            var expected = Verify.Diagnostic().WithSpan(9, 14, 9, 21);
+            await Verify.VerifyCodeFixAsync(test, expected, withFix);
+        }
+
+        [Fact]
         public async Task TaskWaitShouldReportWarning_WithinAnonymousDelegate()
         {
             var test = @"
