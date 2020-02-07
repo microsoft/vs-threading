@@ -41,8 +41,8 @@
       <trans-unit id="VSTHRD003_MessageFormat" translate="yes" xml:space="preserve">
         <source>Avoid awaiting or returning a Task representing work that was not started within your context as that can lead to deadlocks.
 Start the work within this context, or use JoinableTaskFactory.RunAsync to start the task and await the returned JoinableTask instead.</source>
-        <target state="needs-review-translation">Vyhněte se čekání na úlohu (nebo vracení úlohy) představující práci, která nebyla zahájena ve vašem kontextu, protože to může vést k zablokování.
-Zahajte danou práci v tomto kontextu, nebo místo toho použijte JoinableTaskFactory.RunAsync a očekávejte vrácený JoinableTask.</target>
+        <target state="translated">Vyhněte se čekání na úlohu (nebo vracení úlohy) představující práci, která nebyla zahájena ve vašem kontextu, protože to může vést k zablokování.
+Zahajte danou práci v tomto kontextu, nebo místo toho spusťte úlohu pomocí JoinableTaskFactory.RunAsync a očekávejte vrácenou hodnotu JoinableTask.</target>
         <note from="MultilingualUpdate" annotates="source" priority="2" />
       </trans-unit>
       <trans-unit id="VSTHRD003_Title" translate="yes" xml:space="preserve">
@@ -271,17 +271,17 @@ Použijte místo toho AsyncLazy&lt;T&gt;.</target>
       </trans-unit>
       <trans-unit id="VSTHRD201_CodeFix_Title">
         <source>Call ThrowIfCancellationRequested()</source>
-        <target state="new">Call ThrowIfCancellationRequested()</target>
+        <target state="translated">Volat metodu ThrowIfCancellationRequested()</target>
         <note>"ThrowIfCancellationRequested" is a method name and should not be translated.</note>
       </trans-unit>
       <trans-unit id="VSTHRD201_MessageFormat">
         <source>Check for cancellation after calling SwitchToMainThreadAsync(CancellationToken).</source>
-        <target state="new">Check for cancellation after calling SwitchToMainThreadAsync(CancellationToken).</target>
+        <target state="translated">Po volání metody SwitchToMainThreadAsync(CancellationToken) zkontrolujte zrušení.</target>
         <note>"SwitchToMainThreadAsync" is a method name and should not be translated.</note>
       </trans-unit>
       <trans-unit id="VSTHRD201_Title">
         <source>Check cancellation after SwitchToMainThreadAsync</source>
-        <target state="new">Check cancellation after SwitchToMainThreadAsync</target>
+        <target state="translated">Zkontrolovat zrušení po metodě SwitchToMainThreadAsync</target>
         <note>"SwitchToMainThreadAsync" is a method name and should not be translated.</note>
       </trans-unit>
     </body>
