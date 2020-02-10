@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
-  <file datatype="xml" source-language="en-US" target-language="zh-Hant" original="../Strings.resx">
+  <file datatype="xml" source-language="en-US" target-language="zh-HANT" original="../Strings.resx">
     <body>
       <trans-unit id="AwaitXInstead" translate="yes" xml:space="preserve">
         <source>Await {0} instead</source>
@@ -41,8 +41,8 @@
       <trans-unit id="VSTHRD003_MessageFormat" translate="yes" xml:space="preserve">
         <source>Avoid awaiting or returning a Task representing work that was not started within your context as that can lead to deadlocks.
 Start the work within this context, or use JoinableTaskFactory.RunAsync to start the task and await the returned JoinableTask instead.</source>
-        <target state="needs-review-translation">避免等待或傳回代表未在您內容中啟動的工作，因為其可能會造成死結。
-您可以在此內容中啟動該工作，或使用 JoinableTaskFactory.RunAsync，改為等待傳回 JoinableTask。</target>
+        <target state="translated">如有工作代表您未在內容中開始的任務，請避免等候或傳回該工作，因為這可能會造成死結。
+您可以在此內容中開始該任務，或使用 JoinableTaskFactory.RunAsync 開始工作，並改為等候已傳回的 JoinableTask。</target>
         <note from="MultilingualUpdate" annotates="source" priority="2" />
       </trans-unit>
       <trans-unit id="VSTHRD003_Title" translate="yes" xml:space="preserve">
@@ -271,17 +271,17 @@ Use AsyncLazy&lt;T&gt; instead.</source>
       </trans-unit>
       <trans-unit id="VSTHRD201_CodeFix_Title">
         <source>Call ThrowIfCancellationRequested()</source>
-        <target state="new">Call ThrowIfCancellationRequested()</target>
+        <target state="translated">呼叫 ThrowIfCancellationRequested()</target>
         <note>"ThrowIfCancellationRequested" is a method name and should not be translated.</note>
       </trans-unit>
       <trans-unit id="VSTHRD201_MessageFormat">
         <source>Check for cancellation after calling SwitchToMainThreadAsync(CancellationToken).</source>
-        <target state="new">Check for cancellation after calling SwitchToMainThreadAsync(CancellationToken).</target>
+        <target state="translated">呼叫 SwitchToMainThreadAsync(CancellationToken) 之後，檢查是否取消。</target>
         <note>"SwitchToMainThreadAsync" is a method name and should not be translated.</note>
       </trans-unit>
       <trans-unit id="VSTHRD201_Title">
         <source>Check cancellation after SwitchToMainThreadAsync</source>
-        <target state="new">Check cancellation after SwitchToMainThreadAsync</target>
+        <target state="translated">SwitchToMainThreadAsync 後檢查是否取消</target>
         <note>"SwitchToMainThreadAsync" is a method name and should not be translated.</note>
       </trans-unit>
     </body>

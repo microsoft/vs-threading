@@ -15,7 +15,7 @@
       </trans-unit>
       <trans-unit id="VSTHRD001_MessageFormat" translate="yes" xml:space="preserve">
         <source>Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority.</source>
-        <target state="translated">Usare await JoinableTaskFactory.SwitchToMainThreadAsync() per passare al thread dell'interfaccia utente invece di usare API che possono causare deadlock o per le quali è necessario specificare una priorità.</target>
+        <target state="translated">Usare await JoinableTaskFactory.SwitchToMainThreadAsync() per passare al thread di UI invece di usare API che possono causare deadlock o per le quali è necessario specificare una priorità.</target>
         <note />
       </trans-unit>
       <trans-unit id="VSTHRD001_Title" translate="yes" xml:space="preserve">
@@ -41,8 +41,8 @@
       <trans-unit id="VSTHRD003_MessageFormat" translate="yes" xml:space="preserve">
         <source>Avoid awaiting or returning a Task representing work that was not started within your context as that can lead to deadlocks.
 Start the work within this context, or use JoinableTaskFactory.RunAsync to start the task and await the returned JoinableTask instead.</source>
-        <target state="needs-review-translation">Evitare di attendere o restituire un oggetto Task che rappresenta un'operazione non avviata nel contesto perché potrebbe causare deadlock.
-Avviare l'operazione in questo contesto oppure usare JoinableTaskFactory.RunAsync e attendere l'oggetto restituito JoinableTask.</target>
+        <target state="translated">Evitare di attendere o restituire un oggetto Task che rappresenta un'operazione non avviata nel contesto perché potrebbe causare deadlock.
+Avviare l'operazione in questo contesto oppure usare JoinableTaskFactory.RunAsync per avviare l'attività e attendere l'oggetto restituito JoinableTask.</target>
         <note from="MultilingualUpdate" annotates="source" priority="2" />
       </trans-unit>
       <trans-unit id="VSTHRD003_Title" translate="yes" xml:space="preserve">
@@ -131,7 +131,7 @@ In alternativa, usare AsyncLazy&lt;T&gt;.</target>
       </trans-unit>
       <trans-unit id="VSTHRD102_MessageFormat" translate="yes" xml:space="preserve">
         <source>Limit use of synchronously blocking method calls such as JoinableTaskFactory.Run or Task.Result to public entrypoint members where you must be synchronous. Using it for internal members can needlessly add synchronous frames between asynchronous frames, leading to threadpool exhaustion.</source>
-        <target state="translated">Limita l'uso di chiamate a metodi con blocco asincrono, come JoinableTaskFactory.Run o Task.Result, a membri di punti di ingresso pubblici in cui è necessario essere sincroni. Se vengono usate per membri interni, è possibile che vengano aggiunti frame sincroni non necessari tra frame asincroni e questo può causare l'esaurimento del pool di thread.</target>
+        <target state="translated">Limita l'uso di chiamate a un metodo con blocco asincrono, come JoinableTaskFactory.Run o Task.Result, a membri di punti di ingresso pubblici in cui è necessario essere sincroni. Se vengono usate per membri interni, è possibile che vengano aggiunti frame sincroni non necessari tra frame asincroni e questo può causare l'esaurimento del pool di thread.</target>
         <note />
       </trans-unit>
       <trans-unit id="VSTHRD102_Title" translate="yes" xml:space="preserve">
@@ -221,7 +221,7 @@ In alternativa, usare AsyncLazy&lt;T&gt;.</target>
       </trans-unit>
       <trans-unit id="VSTHRD110_MessageFormat" translate="yes" xml:space="preserve">
         <source>Observe the awaitable result of this method call by awaiting it, assigning to a variable, or passing it to another method.</source>
-        <target state="translated">Per osservare il risultato awaitable di questa chiamata al metodo, usare await per la chiamata, assegnarla a una variabile o passarla a un altro metodo.</target>
+        <target state="translated">Per osservare il risultato awaitable di questa chiamata a un metodo, usare await per la chiamata, assegnarla a una variabile o passarla a un altro metodo.</target>
         <note />
       </trans-unit>
       <trans-unit id="VSTHRD110_Title" translate="yes" xml:space="preserve">
@@ -271,17 +271,17 @@ In alternativa, usare AsyncLazy&lt;T&gt;.</target>
       </trans-unit>
       <trans-unit id="VSTHRD201_CodeFix_Title">
         <source>Call ThrowIfCancellationRequested()</source>
-        <target state="new">Call ThrowIfCancellationRequested()</target>
+        <target state="translated">Chiamare ThrowIfCancellationRequested()</target>
         <note>"ThrowIfCancellationRequested" is a method name and should not be translated.</note>
       </trans-unit>
       <trans-unit id="VSTHRD201_MessageFormat">
         <source>Check for cancellation after calling SwitchToMainThreadAsync(CancellationToken).</source>
-        <target state="new">Check for cancellation after calling SwitchToMainThreadAsync(CancellationToken).</target>
+        <target state="translated">Verifica l'annullamento dopo la chiamata di SwitchToMainThreadAsync(CancellationToken).</target>
         <note>"SwitchToMainThreadAsync" is a method name and should not be translated.</note>
       </trans-unit>
       <trans-unit id="VSTHRD201_Title">
         <source>Check cancellation after SwitchToMainThreadAsync</source>
-        <target state="new">Check cancellation after SwitchToMainThreadAsync</target>
+        <target state="translated">Verifica annullamento dopo SwitchToMainThreadAsync</target>
         <note>"SwitchToMainThreadAsync" is a method name and should not be translated.</note>
       </trans-unit>
     </body>

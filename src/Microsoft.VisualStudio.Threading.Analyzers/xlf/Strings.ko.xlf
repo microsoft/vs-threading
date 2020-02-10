@@ -41,8 +41,8 @@
       <trans-unit id="VSTHRD003_MessageFormat" translate="yes" xml:space="preserve">
         <source>Avoid awaiting or returning a Task representing work that was not started within your context as that can lead to deadlocks.
 Start the work within this context, or use JoinableTaskFactory.RunAsync to start the task and await the returned JoinableTask instead.</source>
-        <target state="needs-review-translation">교착 상태가 발생할 수 있기 때문에 컨텍스트 내에서 시작되지 않은 작업을 나타내는 작업을 대기하거나 반환하지 않습니다.
-대신 이 컨텍스트 내에서 작업을 시작하거나 JoinableTaskFactory.RunAsync를 사용하고 반환된 JoinableTask를 대기하세요.</target>
+        <target state="translated">교착 상태가 발생할 수 있기 때문에 컨텍스트 내에서 시작되지 않은 작업을 나타내는 작업을 대기하거나 반환하지 않습니다.
+대신 이 컨텍스트 내에서 작업을 시작하거나 JoinableTaskFactory.RunAsync를 사용하여 작업을 시작하고 반환된 JoinableTask를 대기하세요.</target>
         <note from="MultilingualUpdate" annotates="source" priority="2" />
       </trans-unit>
       <trans-unit id="VSTHRD003_Title" translate="yes" xml:space="preserve">
@@ -271,17 +271,17 @@ Use AsyncLazy&lt;T&gt; instead.</source>
       </trans-unit>
       <trans-unit id="VSTHRD201_CodeFix_Title">
         <source>Call ThrowIfCancellationRequested()</source>
-        <target state="new">Call ThrowIfCancellationRequested()</target>
+        <target state="translated">ThrowIfCancellationRequested() 호출</target>
         <note>"ThrowIfCancellationRequested" is a method name and should not be translated.</note>
       </trans-unit>
       <trans-unit id="VSTHRD201_MessageFormat">
         <source>Check for cancellation after calling SwitchToMainThreadAsync(CancellationToken).</source>
-        <target state="new">Check for cancellation after calling SwitchToMainThreadAsync(CancellationToken).</target>
+        <target state="translated">SwitchToMainThreadAsync를 호출한 후 취소를 확인합니다(CancellationToken).</target>
         <note>"SwitchToMainThreadAsync" is a method name and should not be translated.</note>
       </trans-unit>
       <trans-unit id="VSTHRD201_Title">
         <source>Check cancellation after SwitchToMainThreadAsync</source>
-        <target state="new">Check cancellation after SwitchToMainThreadAsync</target>
+        <target state="translated">SwitchToMainThreadAsync 후 취소 확인</target>
         <note>"SwitchToMainThreadAsync" is a method name and should not be translated.</note>
       </trans-unit>
     </body>
