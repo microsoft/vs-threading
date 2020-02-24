@@ -122,6 +122,7 @@ ThreadHelper.JoinableTaskFactory.Run(async delegate
 
 Do *not* implement your fire and forget async method by returning `async void`.
 These methods will crash the process if they throw an unhandled exception.
+They also may cause a crash if they are still running when VS tears down the `AppDomain` on shutdown.
 
 There are two styles of "fire and forget":
 
