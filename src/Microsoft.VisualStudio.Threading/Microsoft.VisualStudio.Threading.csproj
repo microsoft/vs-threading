@@ -47,16 +47,9 @@
     <PackageReference Include="XliffTasks" Version="1.0.0-beta.19253.2" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
-    <!-- Don't consume the analyzers in this library itself,
-         but have a package dependency so users of this library will automatically get the analyzers.
-         This requires an MSBuild workaround as documented here: https://github.com/Microsoft/msbuild/issues/2661#issuecomment-338808137
-         -->
-    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.csproj">
-      <PrivateAssets>none</PrivateAssets>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
-      <UndefineProperties>TargetFramework</UndefineProperties>
-    </ProjectReference>
+    <!-- We don't consume the analyzers in this library itself,
+         but we reference the project to add a package dependency so users of this library will automatically get the analyzers. -->
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.csproj" PrivateAssets="none" />
   </ItemGroup>
   <Import Project="OptProf.targets" Condition=" '$(TargetFramework)' == 'net472' " />
 </Project>
