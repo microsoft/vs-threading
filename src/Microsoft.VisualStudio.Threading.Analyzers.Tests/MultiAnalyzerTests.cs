@@ -32,7 +32,7 @@ class Test {
         return Task.FromResult(1);
     }
 
-    Task BarAsync() => null;
+    Task BarAsync() => null; // VSTHRD112
 
     static void SetTaskSourceIfCompleted<T>(Task<T> task, TaskCompletionSource<T> tcs) {
         if (task.IsCompleted) {
@@ -45,6 +45,7 @@ class Test {
             {
                 Verify.Diagnostic(VSTHRD103UseAsyncOptionAnalyzer.DescriptorNoAlternativeMethod).WithSpan(10, 24, 10, 33).WithArguments("GetResult"),
                 Verify.Diagnostic(VSTHRD103UseAsyncOptionAnalyzer.Descriptor).WithSpan(11, 13, 11, 16).WithArguments("Run", "RunAsync"),
+                Verify.Diagnostic(VSTHRD112AvoidNullReturnInNonAsyncTaskMethodAnalyzer.Descriptor).WithSpan(15, 24, 15, 28),
                 Verify.Diagnostic(VSTHRD002UseJtfRunAnalyzer.Descriptor).WithSpan(19, 32, 19, 38),
             };
 
@@ -171,7 +172,7 @@ public class A {
         E().ToString();
         E()();
         string v = nameof(E);
-        return null;
+        {|VSTHRD112:return null;|}
     }
 
     internal Task CAsync() {
@@ -181,7 +182,7 @@ public class A {
         E().ToString();
         E()();
         string v = nameof(E);
-        return null;
+        {|VSTHRD112:return null;|}
     }
 
     private void D<T>() { }

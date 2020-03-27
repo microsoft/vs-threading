@@ -50,7 +50,8 @@
         {
             var returnOperation = (IReturnOperation)context.Operation;
 
-            if (returnOperation.ReturnedValue.ConstantValue.HasValue &&
+            if (returnOperation.ReturnedValue != null && // could be null for implicit returns
+                returnOperation.ReturnedValue.ConstantValue.HasValue &&
                 returnOperation.ReturnedValue.ConstantValue.Value == null)
             {
                 context.ReportDiagnostic(Diagnostic.Create(Descriptor, returnOperation.Syntax.GetLocation()));

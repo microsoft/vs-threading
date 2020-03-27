@@ -49,6 +49,24 @@ class Test
         }
 
         [Fact]
+        public async Task TaskArrowReturnsNull_Diagnostic()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test
+{
+    public Task GetTask() => null;
+}
+";
+            await new Verify.Test
+            {
+                TestCode = test,
+                ExpectedDiagnostics = { Verify.Diagnostic().WithSpan(6, 30, 6, 34), },
+            }.RunAsync();
+        }
+
+        [Fact]
         public async Task AsyncReturnsNull_NoDiagnostic()
         {
             var test = @"
