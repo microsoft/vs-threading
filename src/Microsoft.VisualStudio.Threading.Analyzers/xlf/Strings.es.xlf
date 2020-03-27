@@ -249,6 +249,16 @@ Use AsyncLazy&lt;T&gt; en su lugar.</target>
         <target state="translated">Usar ConfigureAwait(bool)</target>
         <note from="MultilingualBuild" annotates="source" priority="2">"ConfigureAwait(bool)" is a reference and should NOT be translated.</note>
       </trans-unit>
+      <trans-unit id="VSTHRD112_MessageFormat">
+        <source>Avoid returning null from a non-async awaitable method</source>
+        <target state="new">Avoid returning null from a non-async awaitable method</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD112_Title">
+        <source>Avoid returning null from a non-async awaitable method</source>
+        <target state="new">Avoid returning null from a non-async awaitable method</target>
+        <note />
+      </trans-unit>
       <trans-unit id="VSTHRD200_AddAsync_MessageFormat" translate="yes" xml:space="preserve">
         <source>Use "Async" suffix in names of methods that return an awaitable type.</source>
         <target state="translated">Use el sufijo "Async" en nombres de métodos que devuelven un tipo que admite await.</target>

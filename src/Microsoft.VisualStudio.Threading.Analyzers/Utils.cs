@@ -101,6 +101,36 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             };
         }
 
+        internal static Action<OperationBlockStartAnalysisContext> DebuggableWrapper(Action<OperationBlockStartAnalysisContext> handler)
+        {
+            return ctxt =>
+            {
+                try
+                {
+                    handler(ctxt);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex) when (LaunchDebuggerExceptionFilter())
+                {
+                    var messageBuilder = new StringBuilder();
+                    messageBuilder.AppendLine("Analyzer failure while processing syntax at");
+
+                    foreach (var operation in ctxt.OperationBlocks)
+                    {
+                        var lineSpan = operation.Syntax.GetLocation()?.GetLineSpan();
+                        messageBuilder.AppendLine($"- {operation.Syntax.SyntaxTree.FilePath}({lineSpan?.StartLinePosition.Line + 1},{lineSpan?.StartLinePosition.Character + 1}). Syntax: {operation.Syntax}");
+                    }
+
+                    messageBuilder.AppendLine($"{ex.GetType()} {ex.Message}");
+
+                    throw new Exception(messageBuilder.ToString(), ex);
+                }
+            };
+        }
+
         internal static ExpressionSyntax IsolateMethodName(InvocationExpressionSyntax invocation)
         {
             if (invocation == null)

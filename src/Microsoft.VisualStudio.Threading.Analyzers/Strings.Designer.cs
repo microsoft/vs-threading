@@ -496,6 +496,24 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Avoid returning null from a non-async awaitable method.
+        /// </summary>
+        internal static string VSTHRD112_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSTHRD112_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Avoid returning null from a non-async awaitable method.
+        /// </summary>
+        internal static string VSTHRD112_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD112_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Use &quot;Async&quot; suffix in names of methods that return an awaitable type..
         /// </summary>
         internal static string VSTHRD200_AddAsync_MessageFormat {
