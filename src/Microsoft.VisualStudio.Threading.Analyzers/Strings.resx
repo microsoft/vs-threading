@@ -310,9 +310,9 @@ Use AsyncLazy&lt;T&gt; instead.</value>
     <comment>"ThrowIfCancellationRequested" is a method name and should not be translated.</comment>
   </data>
   <data name="VSTHRD112_MessageFormat" xml:space="preserve">
-    <value>Avoid returning null from a non-async awaitable method</value>
+    <value>Avoid returning null from a Task-returning method.</value>
   </data>
   <data name="VSTHRD112_Title" xml:space="preserve">
-    <value>Avoid returning null from a non-async awaitable method</value>
+    <value>Avoid returning a null Task</value>
   </data>
 </root>

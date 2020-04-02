@@ -116,15 +116,20 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 catch (Exception ex) when (LaunchDebuggerExceptionFilter())
                 {
                     var messageBuilder = new StringBuilder();
-                    messageBuilder.AppendLine("Analyzer failure while processing syntax at");
+                    messageBuilder.Append("Analyzer failure while processing syntax(es) at ");
 
-                    foreach (var operation in ctxt.OperationBlocks)
+                    for (int i = 0; i < ctxt.OperationBlocks.Length; i++)
                     {
+                        var operation = ctxt.OperationBlocks[i];
                         var lineSpan = operation.Syntax.GetLocation()?.GetLineSpan();
-                        messageBuilder.AppendLine($"- {operation.Syntax.SyntaxTree.FilePath}({lineSpan?.StartLinePosition.Line + 1},{lineSpan?.StartLinePosition.Character + 1}). Syntax: {operation.Syntax}");
+                        if (i > 0)
+                        {
+                            messageBuilder.Append(", ");
+                        }
+                        messageBuilder.Append($"{operation.Syntax.SyntaxTree.FilePath}({lineSpan?.StartLinePosition.Line + 1},{lineSpan?.StartLinePosition.Character + 1}). Syntax: {operation.Syntax}.");
                     }
 
-                    messageBuilder.AppendLine($"{ex.GetType()} {ex.Message}");
+                    messageBuilder.Append($". {ex.GetType()} {ex.Message}");
 
                     throw new Exception(messageBuilder.ToString(), ex);
                 }

@@ -23,7 +23,7 @@ class Test
             await new Verify.Test
             {
                 TestCode = test,
-                ExpectedDiagnostics = { Verify.Diagnostic().WithSpan(8, 9, 8, 21), },
+                ExpectedDiagnostics = { Verify.Diagnostic().WithSpan(8, 16, 8, 20), },
             }.RunAsync();
         }
 
@@ -37,14 +37,13 @@ class Test
 {
     public Task GetTask()
     {
-        return null;
+        return [|null|];
     }
 }
 ";
             await new Verify.Test
             {
                 TestCode = test,
-                ExpectedDiagnostics = { Verify.Diagnostic().WithSpan(8, 9, 8, 21), },
             }.RunAsync();
         }
 
@@ -56,13 +55,12 @@ using System.Threading.Tasks;
 
 class Test
 {
-    public Task GetTask() => null;
+    public Task GetTask() => [|null|];
 }
 ";
             await new Verify.Test
             {
                 TestCode = test,
-                ExpectedDiagnostics = { Verify.Diagnostic().WithSpan(6, 30, 6, 34), },
             }.RunAsync();
         }
 
@@ -139,10 +137,10 @@ class Test
     {
         if (string.IsNullOrEmpty(s))
         {
-            {|VSTHRD112:return null;|}
+            return [|null|];
         }
 
-        {|VSTHRD112:return null;|}
+        return [|null|];
     }
 }
 ";

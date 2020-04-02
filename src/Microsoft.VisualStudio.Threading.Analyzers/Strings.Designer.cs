@@ -496,7 +496,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Avoid returning null from a non-async awaitable method.
+        ///   Looks up a localized string similar to Avoid returning null from a Task-returning method..
         /// </summary>
         internal static string VSTHRD112_MessageFormat {
             get {
@@ -505,7 +505,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Avoid returning null from a non-async awaitable method.
+        ///   Looks up a localized string similar to Avoid returning a null Task.
         /// </summary>
         internal static string VSTHRD112_Title {
             get {

@@ -10,7 +10,7 @@
     /// Finds await expressions on <see cref="Task"/> that do not use <see cref="Task.ConfigureAwait(bool)"/>.
     /// Also works on <see cref="ValueTask"/>.
     /// </summary>
-    [DiagnosticAnalyzer(LanguageNames.CSharp)]
+    [DiagnosticAnalyzer(LanguageNames.CSharp, LanguageNames.VisualBasic)]
     public class VSTHRD112AvoidNullReturnInNonAsyncTaskMethodAnalyzer : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD112";
@@ -54,7 +54,7 @@
                 returnOperation.ReturnedValue.ConstantValue.HasValue &&
                 returnOperation.ReturnedValue.ConstantValue.Value == null)
             {
-                context.ReportDiagnostic(Diagnostic.Create(Descriptor, returnOperation.Syntax.GetLocation()));
+                context.ReportDiagnostic(Diagnostic.Create(Descriptor, returnOperation.ReturnedValue.Syntax.GetLocation()));
             }
         }
     }

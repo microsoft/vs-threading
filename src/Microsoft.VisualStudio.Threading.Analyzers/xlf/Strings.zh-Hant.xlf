@@ -250,13 +250,13 @@ Use AsyncLazy&lt;T&gt; instead.</source>
         <note from="MultilingualBuild" annotates="source" priority="2">"ConfigureAwait(bool)" is a reference and should NOT be translated.</note>
       </trans-unit>
       <trans-unit id="VSTHRD112_MessageFormat">
-        <source>Avoid returning null from a non-async awaitable method</source>
-        <target state="new">Avoid returning null from a non-async awaitable method</target>
+        <source>Avoid returning null from a Task-returning method.</source>
+        <target state="new">Avoid returning null from a Task-returning method.</target>
         <note />
       </trans-unit>
       <trans-unit id="VSTHRD112_Title">
-        <source>Avoid returning null from a non-async awaitable method</source>
-        <target state="new">Avoid returning null from a non-async awaitable method</target>
+        <source>Avoid returning a null Task</source>
+        <target state="new">Avoid returning a null Task</target>
         <note />
       </trans-unit>
       <trans-unit id="VSTHRD200_AddAsync_MessageFormat" translate="yes" xml:space="preserve">
