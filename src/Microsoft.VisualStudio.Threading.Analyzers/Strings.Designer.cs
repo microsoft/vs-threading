@@ -496,6 +496,24 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Use &apos;Task.CompletedTask&apos; instead.
+        /// </summary>
+        internal static string VSTHRD112_CodeFix_CompletedTask {
+            get {
+                return ResourceManager.GetString("VSTHRD112_CodeFix_CompletedTask", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Use &apos;Task.FromResult&apos; instead.
+        /// </summary>
+        internal static string VSTHRD112_CodeFix_FromResult {
+            get {
+                return ResourceManager.GetString("VSTHRD112_CodeFix_FromResult", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Avoid returning null from a Task-returning method..
         /// </summary>
         internal static string VSTHRD112_MessageFormat {
