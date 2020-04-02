@@ -11,7 +11,7 @@
     /// Also works on <see cref="ValueTask"/>.
     /// </summary>
     [DiagnosticAnalyzer(LanguageNames.CSharp, LanguageNames.VisualBasic)]
-    public class VSTHRD112AvoidNullReturnInNonAsyncTaskMethodAnalyzer : DiagnosticAnalyzer
+    public class VSTHRD112AvoidReturningNullTaskAnalyzer : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD112";
 

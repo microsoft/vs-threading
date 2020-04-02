@@ -2,9 +2,9 @@
 {
     using System.Threading.Tasks;
     using Xunit;
-    using Verify = CSharpCodeFixVerifier<VSTHRD112AvoidNullReturnInNonAsyncTaskMethodAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
+    using Verify = CSharpCodeFixVerifier<VSTHRD112AvoidReturningNullTaskAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
-    public class VSTHRD112AvoidNullReturnInNonAsyncTaskMethodAnalyzerTests
+    public class VSTHRD112AvoidReturningNullTaskAnalyzerTests
     {
         [Fact]
         public async Task TaskOfTReturnsNull_Diagnostic()

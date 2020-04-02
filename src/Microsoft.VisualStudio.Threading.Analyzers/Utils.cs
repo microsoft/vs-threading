@@ -122,10 +122,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     {
                         var operation = ctxt.OperationBlocks[i];
                         var lineSpan = operation.Syntax.GetLocation()?.GetLineSpan();
+
                         if (i > 0)
                         {
                             messageBuilder.Append(", ");
                         }
+
                         messageBuilder.Append($"{operation.Syntax.SyntaxTree.FilePath}({lineSpan?.StartLinePosition.Line + 1},{lineSpan?.StartLinePosition.Character + 1}). Syntax: {operation.Syntax}.");
                     }
 
