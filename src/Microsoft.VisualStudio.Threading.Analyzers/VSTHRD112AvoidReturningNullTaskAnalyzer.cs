@@ -1,10 +1,12 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System.Collections.Immutable;
+    using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.Diagnostics;
     using Microsoft.CodeAnalysis.Operations;
+    using Microsoft.VisualStudio.Threading.Analyzers.Lightup;
 
     /// <summary>
     /// Finds await expressions on <see cref="Task"/> that do not use <see cref="Task.ConfigureAwait(bool)"/>.
@@ -52,9 +54,11 @@
 
             if (returnOperation.ReturnedValue != null && // could be null for implicit returns
                 returnOperation.ReturnedValue.ConstantValue.HasValue &&
-                returnOperation.ReturnedValue.ConstantValue.Value == null)
+                returnOperation.ReturnedValue.ConstantValue.Value == null &&
+                returnOperation.ReturnedValue.Syntax is { } returnedValueSyntax &&
+                !context.Compilation.GetSemanticModel(returnedValueSyntax.SyntaxTree).GetNullableContext(returnedValueSyntax.SpanStart).AnnotationsEnabled())
             {
-                context.ReportDiagnostic(Diagnostic.Create(Descriptor, returnOperation.ReturnedValue.Syntax.GetLocation()));
+                context.ReportDiagnostic(Diagnostic.Create(Descriptor, returnedValueSyntax.GetLocation()));
             }
         }
     }

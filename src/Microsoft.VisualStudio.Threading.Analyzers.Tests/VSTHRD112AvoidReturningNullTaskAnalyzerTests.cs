@@ -1,6 +1,8 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
+    using System.IdentityModel.Tokens;
     using System.Threading.Tasks;
+    using Microsoft.CodeAnalysis.CSharp;
     using Xunit;
     using Verify = CSharpCodeFixVerifier<VSTHRD112AvoidReturningNullTaskAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
@@ -147,6 +149,106 @@ class Test
             await new Verify.Test
             {
                 TestCode = test,
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task NullableEnablePragmaBeforeClass_NoDiagnostic()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+#nullable enable
+
+class Test
+{
+    public Task<object> GetTaskObj(string s)
+    {
+        return null;
+    }
+}
+";
+            await new Verify.Test
+            {
+                TestCode = test,
+                SolutionTransforms =
+                {
+                    (solution, projectId) =>
+                    {
+                        var project = solution.GetProject(projectId);
+                        var parseOptions = (CSharpParseOptions)project!.ParseOptions;
+
+                        return project.WithParseOptions(parseOptions.WithLanguageVersion(LanguageVersion.CSharp8)).Solution;
+                    },
+                },
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task NullableEnablePragmaBeforeMethod_NoDiagnostic()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+
+class Test
+{
+#nullable enable
+    public Task<object> GetTaskObj(string s)
+    {
+        return null;
+    }
+}
+";
+            await new Verify.Test
+            {
+                TestCode = test,
+                SolutionTransforms =
+                {
+                    (solution, projectId) =>
+                    {
+                        var project = solution.GetProject(projectId);
+                        var parseOptions = (CSharpParseOptions)project!.ParseOptions;
+
+                        return project.WithParseOptions(parseOptions.WithLanguageVersion(LanguageVersion.CSharp8)).Solution;
+                    },
+                },
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task NullableEnablePragmaBeforeOnlySomeReturns_Diagnostic()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test
+{
+    public Task<object> GetTaskObj(string s)
+    {
+        if (string.IsNullOrEmpty(s))
+        {
+            return [|null|];
+        }
+
+#nullable enable
+        return null;
+    }
+}
+";
+            await new Verify.Test
+            {
+                TestCode = test,
+                SolutionTransforms =
+                {
+                    (solution, projectId) =>
+                    {
+                        var project = solution.GetProject(projectId);
+                        var parseOptions = (CSharpParseOptions)project!.ParseOptions;
+
+                        return project.WithParseOptions(parseOptions.WithLanguageVersion(LanguageVersion.CSharp8)).Solution;
+                    },
+                },
             }.RunAsync();
         }
     }
