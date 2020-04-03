@@ -35,9 +35,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 
                 this.SolutionTransforms.Add((solution, projectId) =>
                 {
-                    Project? project = solution.GetProject(projectId);
+                    Project project = solution.GetProject(projectId)!;
 
-                    var parseOptions = (CSharpParseOptions)project!.ParseOptions;
+                    var parseOptions = (CSharpParseOptions)project.ParseOptions;
                     project = project.WithParseOptions(parseOptions.WithLanguageVersion(LanguageVersion.CSharp7_1));
 
                     if (this.HasEntryPoint)
@@ -60,7 +60,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                         project = project.AddMetadataReference(MetadataReference.CreateFromFile(typeof(IOleServiceProvider).Assembly.Location));
 
                         var nugetPackagesFolder = Environment.CurrentDirectory;
-                        foreach (var reference in CSharpCodeFixVerifier<TAnalyzer, TCodeFix>.Test.VSSDKPackageReferences)
+                        foreach (var reference in VSSDKPackageReferences)
                         {
                             project = project.AddMetadataReference(MetadataReference.CreateFromFile(Path.Combine(nugetPackagesFolder, reference)));
                         }
