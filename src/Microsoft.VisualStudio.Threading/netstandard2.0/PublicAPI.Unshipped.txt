@@ -1,4 +1,10 @@
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Releaser.DisposeAsync() -> System.Threading.Tasks.ValueTask
 Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.ResourceReleaser.DisposeAsync() -> System.Threading.Tasks.ValueTask
+Microsoft.VisualStudio.Threading.NonConcurrentSynchronizationContext
+Microsoft.VisualStudio.Threading.NonConcurrentSynchronizationContext.NonConcurrentSynchronizationContext(bool sticky) -> void
+Microsoft.VisualStudio.Threading.NonConcurrentSynchronizationContext.UnhandledException -> System.EventHandler<System.Exception>
+override Microsoft.VisualStudio.Threading.NonConcurrentSynchronizationContext.CreateCopy() -> System.Threading.SynchronizationContext
+override Microsoft.VisualStudio.Threading.NonConcurrentSynchronizationContext.Post(System.Threading.SendOrPostCallback d, object state) -> void
+override Microsoft.VisualStudio.Threading.NonConcurrentSynchronizationContext.Send(System.Threading.SendOrPostCallback d, object state) -> void
 static Microsoft.VisualStudio.Threading.TplExtensions.Forget(this System.Threading.Tasks.ValueTask task) -> void
 static Microsoft.VisualStudio.Threading.TplExtensions.Forget<T>(this System.Threading.Tasks.ValueTask<T> task) -> void
