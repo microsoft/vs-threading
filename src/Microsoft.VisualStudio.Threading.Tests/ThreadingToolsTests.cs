@@ -20,7 +20,7 @@
         [Fact]
         public void ApplyChangeOptimistically()
         {
-            var n = new GenericParameterHelper(1);
+            GenericParameterHelper n = new GenericParameterHelper(1);
             Assert.True(ThreadingTools.ApplyChangeOptimistically(ref n, i => new GenericParameterHelper(i.Data + 1)));
             Assert.Equal(2, n.Data);
         }
@@ -28,7 +28,7 @@
         [Fact]
         public void ApplyChangeOptimisticallyWithItem()
         {
-            var n = new GenericParameterHelper(1);
+            GenericParameterHelper n = new GenericParameterHelper(1);
             Assert.True(ThreadingTools.ApplyChangeOptimistically(ref n, 2, (i, j) => new GenericParameterHelper(i.Data + j)));
             Assert.Equal(3, n.Data);
         }

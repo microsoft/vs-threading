@@ -139,7 +139,9 @@ namespace Microsoft.VisualStudio.Threading
             outstandingTasks = this.outstandingTasks;
             taskFactory = this.taskFactory;
 
+#pragma warning disable CS8762 // Parameter may not have a null value when exiting in some condition.
             return joinableTaskFactory is object;
+#pragma warning restore CS8762 // Parameter may not have a null value when exiting in some condition.
         }
 
         /// <summary>
