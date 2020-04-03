@@ -33,7 +33,11 @@
             foreach (var diagnostic in context.Diagnostics)
             {
                 var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
-                var syntaxNode = (ExpressionSyntax)root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: true);
+                ExpressionSyntax? syntaxNode = root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: true) as ExpressionSyntax;
+                if (syntaxNode is null)
+                {
+                    continue;
+                }
 
                 var container = Utils.GetContainingFunction(syntaxNode);
                 if (container.BlockOrExpression == null)
@@ -100,7 +104,7 @@
 
                 async Task<Solution> Fix(string fullyQualifiedMethod, IMethodSymbol methodSymbol, CancellationToken cancellationToken)
                 {
-                    var assertionStatementToRemove = syntaxNode.FirstAncestorOrSelf<StatementSyntax>();
+                    var assertionStatementToRemove = syntaxNode!.FirstAncestorOrSelf<StatementSyntax>();
 
                     int typeAndMethodDelimiterIndex = fullyQualifiedMethod.LastIndexOf('.');
                     IdentifierNameSyntax methodName = SyntaxFactory.IdentifierName(fullyQualifiedMethod.Substring(typeAndMethodDelimiterIndex + 1));
