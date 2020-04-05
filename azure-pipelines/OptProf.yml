@@ -1,0 +1,113 @@
+trigger: none
+pr: none
+schedules:
+- cron: "0 3 * * Tue" # Mon @ 8 or 9 PM Mountain Time (depending on DST)
+  displayName: Weekly OptProf run
+  branches:
+    include:
+    - v16.5
+    - v16.6
+    - master
+  always: true # we must keep data fresh since optimizationdata drops are purged after 30 days
+
+resources:
+  repositories:
+  - repository: scripts
+    type: git
+    name: DeploymentScripts
+    ref: refs/heads/test
+
+variables:
+- name: TreatWarningsAsErrors
+  value: true
+- name: DOTNET_SKIP_FIRST_TIME_EXPERIENCE
+  value: true
+- name: BuildConfiguration
+  value: Release
+- name: BuildPlatform
+  value: Any CPU
+- name: NUGET_PACKAGES
+  value: $(Agent.TempDirectory)/.nuget/packages
+- name: push_to_ci
+  value: true
+- name: PublicRelease
+  value: false # avoid using nice version since we're building a preliminary/unoptimized package
+- name: SignType
+  value: test
+- group: Library.Template
+- name: ShouldSkipOptimize
+  value: true # This is the run to get optimization data. Don't fail the build if there isn't already data.
+
+stages:
+- stage: Library
+  jobs:
+  - template: build.yml
+    parameters:
+      windowsPool: VSEng-MicroBuildVS2019
+- stage: QueueVSBuild
+  jobs:
+  - job: QueueOptProf
+    pool: VSEng-RMPool
+    variables:
+      InsertPayloadName: vs-threading
+      InsertTopicBranch: team/VS-IDE/vs-threading-OptProf-run-$(Build.BuildId)
+    steps:
+    - checkout: none # We don't need source from our own repo
+      clean: true
+
+    # Pipeline YAML does not yet support checking out other repos. So we'll do it by hand.
+#    - checkout: scripts # We DO need source from the DeploymentScripts repo
+#      clean: true
+#      path: $(Agent.TempDirectory)/DeploymentScripts
+#      fetchDepth: 1
+    - script: 'git -c http.extraheader="AUTHORIZATION: bearer $(System.AccessToken)" clone https://devdiv.visualstudio.com/DevDiv/_git/DeploymentScripts --depth 1 --branch test "$(Agent.TempDirectory)/DeploymentScripts"'
+      displayName: Download DeploymentScripts repo
+
+    - task: DownloadBuildArtifacts@0
+      displayName: Download insertion artifacts
+      inputs:
+        artifactName: VSInsertion-Windows
+        downloadPath: $(Agent.TempDirectory)
+    - task: DownloadBuildArtifacts@0
+      displayName: Download variables artifacts
+      inputs:
+        artifactName: Variables-Windows
+        downloadPath: $(Agent.TempDirectory)
+    - task: PowerShell@2
+      displayName: Set pipeline variables based on artifacts
+      inputs:
+        targetType: filePath
+        filePath: $(Agent.TempDirectory)/Variables-Windows/_pipelines.ps1
+    - task: NuGetCommand@2
+      displayName: Push CoreXT packages to VS feed
+      inputs:
+        command: push
+        packagesToPush: $(Agent.TempDirectory)/VSInsertion-Windows/*.nupkg
+        publishVstsFeed: 97a41293-2972-4f48-8c0e-05493ae82010 # VS feed
+        allowPackageConflicts: true
+    - task: MicroBuildInsertVsPayload@3
+      displayName: Insert VS Payload
+      inputs:
+        SkipCreatePR: true
+    - task: benjhuser.tfs-extensions-build-tasks.trigger-build-task.TriggerBuild@3
+      displayName: Trigger a new build of DD-CB-PR
+      inputs:
+        buildDefinition: DD-CB-PR
+        useSameBranch: false
+        branchToUse: $(InsertTopicBranch)
+        storeInEnvironmentVariable: true
+        queueBuildForUserThatTriggeredBuild: false
+        authenticationMethod: OAuth Token
+        password: $(System.AccessToken)
+    - task: PowerShell@2
+      displayName: Associate InsertionOutputs artifacts with CloudBuild
+      inputs:
+        targetType: filePath
+        filePath: $(Agent.TempDirectory)/DeploymentScripts/Scripts/Insertion/WriteArtifact.ps1
+        arguments: '-oldBuildID $(Build.BuildId) -newBuildID $(TriggeredBuildIds) -artifactName "InsertionOutputs" -accessToken $(System.AccessToken)'
+    - task: PowerShell@2
+      displayName: Tag the build with vs-threading-insertion
+      inputs:
+        targetType: filePath
+        filePath: $(Agent.TempDirectory)/DeploymentScripts/Scripts/Insertion/TagBuild.ps1
+        arguments: '-buildID $(TriggeredBuildIds) -tagName "vs-threading-insertion" -accessToken $(System.AccessToken)'
