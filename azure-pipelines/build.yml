@@ -21,6 +21,7 @@ jobs:
     - template: microbuild.after.yml
 
 - job: Linux
+  condition: ne(variables['OptProf'], 'true')
   pool:
     vmImage: Ubuntu 16.04
   steps:
@@ -30,6 +31,7 @@ jobs:
   - template: dotnet.yml
 
 - job: macOS
+  condition: ne(variables['OptProf'], 'true')
   pool:
     vmImage: macOS-10.15
   steps:
@@ -45,7 +47,7 @@ jobs:
   - macOS
   pool:
     vmImage: Ubuntu 16.04
-  condition: succeededOrFailed()
+  condition: ne(variables['OptProf'], 'true')
   steps:
   - checkout: self
     clean: true
