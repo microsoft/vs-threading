@@ -21,7 +21,7 @@ steps:
     arguments: --no-build -c $(BuildConfiguration) -f net472 --filter "TestCategory!=FailsInCloudTest" -v n /p:CollectCoverage=true
     testRunTitle: net472-$(Agent.JobName)
     workingDirectory: src
-  condition: eq(variables['Agent.OS'], 'Windows_NT')
+  condition: and(ne(variables['OptProf'], 'true'), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: DotNetCoreCLI@2
   displayName: dotnet test -f netcoreapp2.1
@@ -30,6 +30,7 @@ steps:
     arguments: --no-build -c $(BuildConfiguration) -f netcoreapp2.1 --filter "TestCategory!=FailsInCloudTest" -v n /p:CollectCoverage=true
     testRunTitle: netcoreapp2.1-$(Agent.JobName)
     workingDirectory: src/Microsoft.VisualStudio.Threading.Tests
+  condition: ne(variables['OptProf'], 'true')
 
 # We have to artifically run this script so that the extra .nupkg is produced for variables/InsertConfigValues.ps1 to notice.
 - powershell: azure-pipelines\artifacts\VSInsertion.ps1
