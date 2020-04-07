@@ -40,6 +40,8 @@ variables:
 
 stages:
 - stage: Library
+  variables:
+    OptProf: true
   jobs:
   - template: build.yml
     parameters:
