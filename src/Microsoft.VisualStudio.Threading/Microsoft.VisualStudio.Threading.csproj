@@ -50,7 +50,12 @@
   <ItemGroup>
     <!-- We don't consume the analyzers in this library itself,
          but we reference the project to add a package dependency so users of this library will automatically get the analyzers. -->
-    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.csproj" PrivateAssets="none" />
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.csproj">
+      <!-- Make sure the analyzers show up as a package dependency. -->
+      <PrivateAssets>none</PrivateAssets>
+      <!-- Avoid the CopyLocal behavior that we don't need or want. -->
+      <Private>false</Private>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="OptProf.targets" Condition=" '$(TargetFramework)' == 'net472' " />
 </Project>
