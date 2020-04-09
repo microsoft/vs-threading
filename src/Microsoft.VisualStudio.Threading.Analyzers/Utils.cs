@@ -101,6 +101,81 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             };
         }
 
+        internal static Location? GetLocationOfBaseTypeName(INamedTypeSymbol symbol, INamedTypeSymbol baseType, Compilation compilation, CancellationToken cancellationToken)
+        {
+            foreach (var syntaxReference in symbol.DeclaringSyntaxReferences)
+            {
+                var syntaxNode = syntaxReference.GetSyntax(cancellationToken);
+                if (syntaxNode is TypeDeclarationSyntax typeDeclarationSyntax)
+                {
+                    if (compilation.GetSemanticModel(typeDeclarationSyntax.SyntaxTree) is { } semanticModel)
+                    {
+                        foreach (var baseTypeSyntax in typeDeclarationSyntax.BaseList.Types)
+                        {
+                            SymbolInfo baseTypeSymbolInfo = semanticModel.GetSymbolInfo(baseTypeSyntax.Type, cancellationToken);
+                            if (Equals(baseTypeSymbolInfo.Symbol, baseType))
+                            {
+                                return baseTypeSyntax.GetLocation();
+                            }
+                        }
+                    }
+                }
+                else if (syntaxNode is CodeAnalysis.VisualBasic.Syntax.InterfaceStatementSyntax { Parent: CodeAnalysis.VisualBasic.Syntax.InterfaceBlockSyntax vbInterface })
+                {
+                    if (compilation.GetSemanticModel(vbInterface.SyntaxTree) is { } semanticModel)
+                    {
+                        foreach (var inheritStatement in vbInterface.Inherits)
+                        {
+                            foreach (var typeSyntax in inheritStatement.Types)
+                            {
+                                SymbolInfo baseTypeSymbolInfo = semanticModel.GetSymbolInfo(typeSyntax, cancellationToken);
+                                if (Equals(baseTypeSymbolInfo.Symbol, baseType))
+                                {
+                                    return typeSyntax.GetLocation();
+                                }
+                            }
+                        }
+                    }
+                }
+                else if (syntaxNode is CodeAnalysis.VisualBasic.Syntax.ClassStatementSyntax { Parent: CodeAnalysis.VisualBasic.Syntax.ClassBlockSyntax vbClass })
+                {
+                    if (compilation.GetSemanticModel(vbClass.SyntaxTree) is { } semanticModel)
+                    {
+                        foreach (var implementStatement in vbClass.Implements)
+                        {
+                            foreach (var typeSyntax in implementStatement.Types)
+                            {
+                                SymbolInfo baseTypeSymbolInfo = semanticModel.GetSymbolInfo(typeSyntax, cancellationToken);
+                                if (Equals(baseTypeSymbolInfo.Symbol, baseType))
+                                {
+                                    return typeSyntax.GetLocation();
+                                }
+                            }
+                        }
+                    }
+                }
+                else if (syntaxNode is CodeAnalysis.VisualBasic.Syntax.StructureStatementSyntax { Parent: CodeAnalysis.VisualBasic.Syntax.StructureBlockSyntax vbStruct })
+                {
+                    if (compilation.GetSemanticModel(vbStruct.SyntaxTree) is { } semanticModel)
+                    {
+                        foreach (var implementStatement in vbStruct.Implements)
+                        {
+                            foreach (var typeSyntax in implementStatement.Types)
+                            {
+                                SymbolInfo baseTypeSymbolInfo = semanticModel.GetSymbolInfo(typeSyntax, cancellationToken);
+                                if (Equals(baseTypeSymbolInfo.Symbol, baseType))
+                                {
+                                    return typeSyntax.GetLocation();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return symbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax(cancellationToken)?.GetLocation();
+        }
+
         internal static ExpressionSyntax IsolateMethodName(InvocationExpressionSyntax invocation)
         {
             if (invocation == null)
@@ -741,6 +816,16 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         }
 
         internal static bool IsSameSymbol(IOperation? op1, IOperation? op2) => GetUnderlyingSymbol(op1)?.Equals(GetUnderlyingSymbol(op2)) ?? false;
+
+        internal static IOperation FindFinalAncestor(IOperation operation)
+        {
+            while (operation.Parent is object)
+            {
+                operation = operation.Parent;
+            }
+
+            return operation;
+        }
 
         internal static T? FindAncestor<T>(IOperation? operation)
             where T : class, IOperation

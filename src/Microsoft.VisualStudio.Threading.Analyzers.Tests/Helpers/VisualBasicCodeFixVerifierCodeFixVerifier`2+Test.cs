@@ -7,19 +7,17 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
     using System.IO;
     using System.Linq;
     using System.Reflection;
-    using System.Runtime.CompilerServices;
-    using System.Threading.Tasks;
     using System.Windows.Threading;
     using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CSharp;
-    using Microsoft.CodeAnalysis.CSharp.Testing;
     using Microsoft.CodeAnalysis.Testing.Verifiers;
     using Microsoft.CodeAnalysis.Text;
+    using Microsoft.CodeAnalysis.VisualBasic;
+    using Microsoft.CodeAnalysis.VisualBasic.Testing;
     using IOleServiceProvider = Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
 
-    public static partial class CSharpCodeFixVerifier<TAnalyzer, TCodeFix>
+    public static partial class VisualBasicCodeFixVerifier<TAnalyzer, TCodeFix>
     {
-        public class Test : CSharpCodeFixTest<TAnalyzer, TCodeFix, XUnitVerifier>
+        public class Test : VisualBasicCodeFixTest<TAnalyzer, TCodeFix, XUnitVerifier>
         {
             public Test()
             {
@@ -27,8 +25,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 
                 this.SolutionTransforms.Add((solution, projectId) =>
                 {
-                    var parseOptions = (CSharpParseOptions)solution.GetProject(projectId).ParseOptions;
-                    solution = solution.WithProjectParseOptions(projectId, parseOptions.WithLanguageVersion(LanguageVersion.CSharp7_1));
+                    var parseOptions = (VisualBasicParseOptions)solution.GetProject(projectId).ParseOptions;
+                    solution = solution.WithProjectParseOptions(projectId, parseOptions.WithLanguageVersion(LanguageVersion.VisualBasic15_5));
 
                     if (this.HasEntryPoint)
                     {
