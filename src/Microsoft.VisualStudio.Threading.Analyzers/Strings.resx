@@ -309,4 +309,22 @@ Use AsyncLazy&lt;T&gt; instead.</value>
     <value>Call ThrowIfCancellationRequested()</value>
     <comment>"ThrowIfCancellationRequested" is a method name and should not be translated.</comment>
   </data>
+  <data name="VSTHRD112_CodeFix_Title" xml:space="preserve">
+    <value>Add implementation of System.IAsyncDisposable.</value>
+  </data>
+  <data name="VSTHRD112_MessageFormat" xml:space="preserve">
+    <value>Implement the System.IAsyncDisposable interface when implementing the obsolete Microsoft.VisualStudio.Threading.IAsyncDisposable interface.</value>
+  </data>
+  <data name="VSTHRD112_Title" xml:space="preserve">
+    <value>Implement System.IAsyncDisposable</value>
+  </data>
+  <data name="VSTHRD113_MessageFormat" xml:space="preserve">
+    <value>Add a check for System.IAsyncDisposable in the same code block that checks for Microsoft.VisualStudio.Threading.IAsyncDisposable that behaves similarly.</value>
+  </data>
+  <data name="VSTHRD113_Title" xml:space="preserve">
+    <value>Check for System.IAsyncDisposable</value>
+  </data>
+  <data name="SystemIAsyncDisposablePackageNote" xml:space="preserve">
+    <value>The System.IAsyncDisposable interface is defined in the Microsoft.Bcl.AsyncInterfaces NuGet package.</value>
+  </data>
 </root>

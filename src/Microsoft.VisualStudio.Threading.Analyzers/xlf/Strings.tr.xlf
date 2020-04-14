@@ -8,6 +8,11 @@
         <note from="MultilingualBuild" annotates="source" priority="2">"await" is a C# keyword and should not be translated.
 {0} is a method name.</note>
       </trans-unit>
+      <trans-unit id="SystemIAsyncDisposablePackageNote">
+        <source>The System.IAsyncDisposable interface is defined in the Microsoft.Bcl.AsyncInterfaces NuGet package.</source>
+        <target state="new">The System.IAsyncDisposable interface is defined in the Microsoft.Bcl.AsyncInterfaces NuGet package.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="UseAwaitInstead" translate="yes" xml:space="preserve">
         <source>Use await instead</source>
         <target state="translated">Bunun yerine await kullanın</target>
@@ -248,6 +253,31 @@ Bunun yerine AsyncLazy&lt;T&gt; kullanın.</target>
         <source>Use ConfigureAwait(bool)</source>
         <target state="translated">ConfigureAwait(bool) kullanın</target>
         <note from="MultilingualBuild" annotates="source" priority="2">"ConfigureAwait(bool)" is a reference and should NOT be translated.</note>
+      </trans-unit>
+      <trans-unit id="VSTHRD112_CodeFix_Title">
+        <source>Add implementation of System.IAsyncDisposable.</source>
+        <target state="new">Add implementation of System.IAsyncDisposable.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD112_MessageFormat">
+        <source>Implement the System.IAsyncDisposable interface when implementing the obsolete Microsoft.VisualStudio.Threading.IAsyncDisposable interface.</source>
+        <target state="new">Implement the System.IAsyncDisposable interface when implementing the obsolete Microsoft.VisualStudio.Threading.IAsyncDisposable interface.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD112_Title">
+        <source>Implement System.IAsyncDisposable</source>
+        <target state="new">Implement System.IAsyncDisposable</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD113_MessageFormat">
+        <source>Add a check for System.IAsyncDisposable in the same code block that checks for Microsoft.VisualStudio.Threading.IAsyncDisposable that behaves similarly.</source>
+        <target state="new">Add a check for System.IAsyncDisposable in the same code block that checks for Microsoft.VisualStudio.Threading.IAsyncDisposable that behaves similarly.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="VSTHRD113_Title">
+        <source>Check for System.IAsyncDisposable</source>
+        <target state="new">Check for System.IAsyncDisposable</target>
+        <note />
       </trans-unit>
       <trans-unit id="VSTHRD200_AddAsync_MessageFormat" translate="yes" xml:space="preserve">
         <source>Use "Async" suffix in names of methods that return an awaitable type.</source>
