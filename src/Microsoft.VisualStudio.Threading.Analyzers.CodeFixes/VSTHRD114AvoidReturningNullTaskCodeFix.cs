@@ -1,7 +1,6 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System.Collections.Immutable;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis;
@@ -12,10 +11,10 @@
     using Microsoft.CodeAnalysis.Simplification;
 
     [ExportCodeFixProvider(LanguageNames.CSharp)]
-    public class VSTHRD112AvoidReturningNullTaskCodeFix : CodeFixProvider
+    public class VSTHRD114AvoidReturningNullTaskCodeFix : CodeFixProvider
     {
         private static readonly ImmutableArray<string> ReusableFixableDiagnosticIds = ImmutableArray.Create(
-            VSTHRD112AvoidReturningNullTaskAnalyzer.Id);
+            VSTHRD114AvoidReturningNullTaskAnalyzer.Id);
 
         /// <inheritdoc />
         public override ImmutableArray<string> FixableDiagnosticIds => ReusableFixableDiagnosticIds;
@@ -30,8 +29,7 @@
                 var semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
                 var syntaxRoot = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
 
-                var nullLiteral = syntaxRoot.FindNode(diagnostic.Location.SourceSpan) as LiteralExpressionSyntax;
-                if (nullLiteral == null)
+                if (!(syntaxRoot.FindNode(diagnostic.Location.SourceSpan) is LiteralExpressionSyntax nullLiteral))
                 {
                     continue;
                 }
@@ -44,7 +42,7 @@
 
                 if (!(methodDeclaration.ReturnType is GenericNameSyntax genericReturnType))
                 {
-                    context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD112_CodeFix_CompletedTask, ct => ApplyTaskCompletedTaskFix(ct), "CompletedTask"), diagnostic);
+                    context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD114_CodeFix_CompletedTask, ct => ApplyTaskCompletedTaskFix(ct), "CompletedTask"), diagnostic);
                 }
                 else
                 {
@@ -53,7 +51,7 @@
                         continue;
                     }
 
-                    context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD112_CodeFix_FromResult, ct => ApplyTaskFromResultFix(genericReturnType.TypeArgumentList.Arguments[0], ct), "FromResult"), diagnostic);
+                    context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD114_CodeFix_FromResult, ct => ApplyTaskFromResultFix(genericReturnType.TypeArgumentList.Arguments[0], ct), "FromResult"), diagnostic);
                 }
 
                 Task<Document> ApplyTaskCompletedTaskFix(CancellationToken cancellationToken)

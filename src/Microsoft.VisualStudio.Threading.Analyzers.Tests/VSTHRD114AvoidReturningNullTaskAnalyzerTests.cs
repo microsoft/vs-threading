@@ -3,10 +3,10 @@
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis.CSharp;
     using Xunit;
-    using VerifyCS = CSharpCodeFixVerifier<VSTHRD112AvoidReturningNullTaskAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
-    using VerifyVB = VisualBasicCodeFixVerifier<VSTHRD112AvoidReturningNullTaskAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
+    using VerifyCS = CSharpCodeFixVerifier<VSTHRD114AvoidReturningNullTaskAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
+    using VerifyVB = VisualBasicCodeFixVerifier<VSTHRD114AvoidReturningNullTaskAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
-    public class VSTHRD112AvoidReturningNullTaskAnalyzerTests
+    public class VSTHRD114AvoidReturningNullTaskAnalyzerTests
     {
         [Fact]
         public async Task TaskOfTReturnsNull_Diagnostic()

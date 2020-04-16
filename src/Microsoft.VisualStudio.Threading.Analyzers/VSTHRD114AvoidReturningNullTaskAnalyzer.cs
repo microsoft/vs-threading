@@ -12,9 +12,9 @@
     /// Also works on <see cref="ValueTask"/>.
     /// </summary>
     [DiagnosticAnalyzer(LanguageNames.CSharp, LanguageNames.VisualBasic)]
-    public class VSTHRD112AvoidReturningNullTaskAnalyzer : DiagnosticAnalyzer
+    public class VSTHRD114AvoidReturningNullTaskAnalyzer : DiagnosticAnalyzer
     {
-        public const string Id = "VSTHRD112";
+        public const string Id = "VSTHRD114";
 
         internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
             id: Id,

@@ -168,9 +168,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 
             string ISymbol.ToMinimalDisplayString(SemanticModel semanticModel, int position, SymbolDisplayFormat format)
                 => throw new NotImplementedException();
-
-            bool ISymbol.Equals(ISymbol other, SymbolEqualityComparer equalityComparer)
-                => throw new NotImplementedException();
         }
     }
 }
