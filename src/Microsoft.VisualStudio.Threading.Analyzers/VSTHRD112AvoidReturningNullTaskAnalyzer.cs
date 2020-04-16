@@ -1,7 +1,6 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System.Collections.Immutable;
-    using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.Diagnostics;
@@ -52,11 +51,9 @@
         {
             var returnOperation = (IReturnOperation)context.Operation;
 
-            if (returnOperation.ReturnedValue != null && // could be null for implicit returns
-                returnOperation.ReturnedValue.ConstantValue.HasValue &&
-                returnOperation.ReturnedValue.ConstantValue.Value == null &&
+            if (returnOperation.ReturnedValue is { ConstantValue: { HasValue: true, Value: null } } && // could be null for implicit returns
                 returnOperation.ReturnedValue.Syntax is { } returnedValueSyntax &&
-                !context.Compilation.GetSemanticModel(returnedValueSyntax.SyntaxTree).GetNullableContext(returnedValueSyntax.SpanStart).AnnotationsEnabled())
+                returnOperation.SemanticModel.GetNullableContext(returnedValueSyntax.SpanStart).AnnotationsEnabled())
             {
                 context.ReportDiagnostic(Diagnostic.Create(Descriptor, returnedValueSyntax.GetLocation()));
             }

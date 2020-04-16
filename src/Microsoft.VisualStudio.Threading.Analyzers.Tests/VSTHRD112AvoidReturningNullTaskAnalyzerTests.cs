@@ -1,17 +1,17 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
-    using System.IdentityModel.Tokens;
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis.CSharp;
     using Xunit;
-    using Verify = CSharpCodeFixVerifier<VSTHRD112AvoidReturningNullTaskAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
+    using VerifyCS = CSharpCodeFixVerifier<VSTHRD112AvoidReturningNullTaskAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
+    using VerifyVB = VisualBasicCodeFixVerifier<VSTHRD112AvoidReturningNullTaskAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
     public class VSTHRD112AvoidReturningNullTaskAnalyzerTests
     {
         [Fact]
         public async Task TaskOfTReturnsNull_Diagnostic()
         {
-            var test = @"
+            var csharpTest = @"
 using System.Threading.Tasks;
 
 class Test
@@ -22,17 +22,32 @@ class Test
     }
 }
 ";
-            await new Verify.Test
+            await new VerifyCS.Test
             {
-                TestCode = test,
-                ExpectedDiagnostics = { Verify.Diagnostic().WithSpan(8, 16, 8, 20), },
+                TestCode = csharpTest,
+                ExpectedDiagnostics = { VerifyCS.Diagnostic().WithSpan(8, 16, 8, 20), },
+            }.RunAsync();
+
+            var vbTest = @"
+Imports System.Threading.Tasks
+
+Friend Class Test
+    Public Function GetTaskObj() As Task(Of Object)
+        Return Nothing
+    End Function
+End Class
+";
+            await new VerifyVB.Test
+            {
+                TestCode = vbTest,
+                ExpectedDiagnostics = { VerifyVB.Diagnostic().WithSpan(6, 16, 6, 32), },
             }.RunAsync();
         }
 
         [Fact]
         public async Task TaskReturnsNull_Diagnostic()
         {
-            var test = @"
+            var csharpTest = @"
 using System.Threading.Tasks;
 
 class Test
@@ -43,9 +58,23 @@ class Test
     }
 }
 ";
-            await new Verify.Test
+            await new VerifyCS.Test
             {
-                TestCode = test,
+                TestCode = csharpTest,
+            }.RunAsync();
+
+            var vbTest = @"
+Imports System.Threading.Tasks
+
+Friend Class Test
+    Public Function GetTask() As Task
+        Return [|Nothing|]
+    End Function
+End Class
+";
+            await new VerifyVB.Test
+            {
+                TestCode = vbTest,
             }.RunAsync();
         }
 
@@ -60,7 +89,7 @@ class Test
     public Task GetTask() => [|null|];
 }
 ";
-            await new Verify.Test
+            await new VerifyCS.Test
             {
                 TestCode = test,
             }.RunAsync();
@@ -69,7 +98,7 @@ class Test
         [Fact]
         public async Task AsyncReturnsNull_NoDiagnostic()
         {
-            var test = @"
+            var csharpTest = @"
 using System.Threading.Tasks;
 
 class Test
@@ -80,9 +109,23 @@ class Test
     }
 }
 ";
-            await new Verify.Test
+            await new VerifyCS.Test
             {
-                TestCode = test,
+                TestCode = csharpTest,
+            }.RunAsync();
+
+            var vbTest = @"
+Imports System.Threading.Tasks
+
+Friend Class Test
+    Public Async Function GetTaskObj() As Task(Of Object)
+        Return Nothing
+    End Function
+End Class
+";
+            await new VerifyVB.Test
+            {
+                TestCode = vbTest,
             }.RunAsync();
         }
 
@@ -101,7 +144,7 @@ class Test
     }
 }
 ";
-            await new Verify.Test
+            await new VerifyCS.Test
             {
                 TestCode = test,
             }.RunAsync();
@@ -121,7 +164,7 @@ class Test
     }
 }
 ";
-            await new Verify.Test
+            await new VerifyCS.Test
             {
                 TestCode = test,
             }.RunAsync();
@@ -146,7 +189,7 @@ class Test
     }
 }
 ";
-            await new Verify.Test
+            await new VerifyCS.Test
             {
                 TestCode = test,
             }.RunAsync();
@@ -168,7 +211,7 @@ class Test
     }
 }
 ";
-            await new Verify.Test
+            await new VerifyCS.Test
             {
                 TestCode = test,
                 SolutionTransforms =
@@ -176,7 +219,7 @@ class Test
                     (solution, projectId) =>
                     {
                         var project = solution.GetProject(projectId);
-                        var parseOptions = (CSharpParseOptions)project!.ParseOptions;
+                        var parseOptions = (CSharpParseOptions)project!.ParseOptions!;
 
                         return project.WithParseOptions(parseOptions.WithLanguageVersion(LanguageVersion.CSharp8)).Solution;
                     },
@@ -200,7 +243,7 @@ class Test
     }
 }
 ";
-            await new Verify.Test
+            await new VerifyCS.Test
             {
                 TestCode = test,
                 SolutionTransforms =
@@ -208,7 +251,7 @@ class Test
                     (solution, projectId) =>
                     {
                         var project = solution.GetProject(projectId);
-                        var parseOptions = (CSharpParseOptions)project!.ParseOptions;
+                        var parseOptions = (CSharpParseOptions)project!.ParseOptions!;
 
                         return project.WithParseOptions(parseOptions.WithLanguageVersion(LanguageVersion.CSharp8)).Solution;
                     },
@@ -236,7 +279,7 @@ class Test
     }
 }
 ";
-            await new Verify.Test
+            await new VerifyCS.Test
             {
                 TestCode = test,
                 SolutionTransforms =
@@ -244,7 +287,7 @@ class Test
                     (solution, projectId) =>
                     {
                         var project = solution.GetProject(projectId);
-                        var parseOptions = (CSharpParseOptions)project!.ParseOptions;
+                        var parseOptions = (CSharpParseOptions)project!.ParseOptions!;
 
                         return project.WithParseOptions(parseOptions.WithLanguageVersion(LanguageVersion.CSharp8)).Solution;
                     },

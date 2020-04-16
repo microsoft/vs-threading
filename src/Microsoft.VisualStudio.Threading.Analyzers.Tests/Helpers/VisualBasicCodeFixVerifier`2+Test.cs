@@ -7,19 +7,17 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
     using System.IO;
     using System.Linq;
     using System.Reflection;
-    using System.Runtime.CompilerServices;
-    using System.Threading.Tasks;
     using System.Windows.Threading;
     using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CSharp;
-    using Microsoft.CodeAnalysis.CSharp.Testing;
     using Microsoft.CodeAnalysis.Testing.Verifiers;
     using Microsoft.CodeAnalysis.Text;
+    using Microsoft.CodeAnalysis.VisualBasic;
+    using Microsoft.CodeAnalysis.VisualBasic.Testing;
     using IOleServiceProvider = Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
 
-    public static partial class CSharpCodeFixVerifier<TAnalyzer, TCodeFix>
+    public static partial class VisualBasicCodeFixVerifier<TAnalyzer, TCodeFix>
     {
-        public class Test : CSharpCodeFixTest<TAnalyzer, TCodeFix, XUnitVerifier>
+        public class Test : VisualBasicCodeFixTest<TAnalyzer, TCodeFix, XUnitVerifier>
         {
             private static readonly ImmutableArray<string> VSSDKPackageReferences = ImmutableArray.Create(new string[] {
                 "Microsoft.VisualStudio.Shell.Interop.dll",
@@ -35,10 +33,10 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 
                 this.SolutionTransforms.Add((solution, projectId) =>
                 {
-                    Project project = solution.GetProject(projectId)!;
+                    Project? project = solution.GetProject(projectId);
 
-                    var parseOptions = (CSharpParseOptions)project.ParseOptions!;
-                    project = project.WithParseOptions(parseOptions.WithLanguageVersion(LanguageVersion.CSharp7_1));
+                    var parseOptions = (VisualBasicParseOptions)project!.ParseOptions!;
+                    project = project.WithParseOptions(parseOptions.WithLanguageVersion(LanguageVersion.VisualBasic16));
 
                     if (this.HasEntryPoint)
                     {
@@ -60,7 +58,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                         project = project.AddMetadataReference(MetadataReference.CreateFromFile(typeof(IOleServiceProvider).Assembly.Location));
 
                         var nugetPackagesFolder = Environment.CurrentDirectory;
-                        foreach (var reference in VSSDKPackageReferences)
+                        foreach (var reference in VisualBasicCodeFixVerifier<TAnalyzer, TCodeFix>.Test.VSSDKPackageReferences)
                         {
                             project = project.AddMetadataReference(MetadataReference.CreateFromFile(Path.Combine(nugetPackagesFolder, reference)));
                         }
