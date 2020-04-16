@@ -70,6 +70,15 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The System.IAsyncDisposable interface is defined in the Microsoft.Bcl.AsyncInterfaces NuGet package..
+        /// </summary>
+        internal static string SystemIAsyncDisposablePackageNote {
+            get {
+                return ResourceManager.GetString("SystemIAsyncDisposablePackageNote", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Use await instead.
         /// </summary>
         internal static string UseAwaitInstead {
@@ -496,25 +505,16 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Use &apos;Task.CompletedTask&apos; instead.
+        ///   Looks up a localized string similar to Add implementation of System.IAsyncDisposable..
         /// </summary>
-        internal static string VSTHRD112_CodeFix_CompletedTask {
+        internal static string VSTHRD112_CodeFix_Title {
             get {
-                return ResourceManager.GetString("VSTHRD112_CodeFix_CompletedTask", resourceCulture);
+                return ResourceManager.GetString("VSTHRD112_CodeFix_Title", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Use &apos;Task.FromResult&apos; instead.
-        /// </summary>
-        internal static string VSTHRD112_CodeFix_FromResult {
-            get {
-                return ResourceManager.GetString("VSTHRD112_CodeFix_FromResult", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Avoid returning null from a Task-returning method..
+        ///   Looks up a localized string similar to Implement the System.IAsyncDisposable interface when implementing the obsolete Microsoft.VisualStudio.Threading.IAsyncDisposable interface..
         /// </summary>
         internal static string VSTHRD112_MessageFormat {
             get {
@@ -523,11 +523,65 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Avoid returning a null Task.
+        ///   Looks up a localized string similar to Implement System.IAsyncDisposable.
         /// </summary>
         internal static string VSTHRD112_Title {
             get {
                 return ResourceManager.GetString("VSTHRD112_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Add a check for System.IAsyncDisposable in the same code block that checks for Microsoft.VisualStudio.Threading.IAsyncDisposable that behaves similarly..
+        /// </summary>
+        internal static string VSTHRD113_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSTHRD113_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Check for System.IAsyncDisposable.
+        /// </summary>
+        internal static string VSTHRD113_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD113_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Use &apos;Task.CompletedTask&apos; instead.
+        /// </summary>
+        internal static string VSTHRD114_CodeFix_CompletedTask {
+            get {
+                return ResourceManager.GetString("VSTHRD114_CodeFix_CompletedTask", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Use &apos;Task.FromResult&apos; instead.
+        /// </summary>
+        internal static string VSTHRD114_CodeFix_FromResult {
+            get {
+                return ResourceManager.GetString("VSTHRD114_CodeFix_FromResult", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Avoid returning null from a Task-returning method..
+        /// </summary>
+        internal static string VSTHRD114_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSTHRD114_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Avoid returning a null Task.
+        /// </summary>
+        internal static string VSTHRD114_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD114_Title", resourceCulture);
             }
         }
         

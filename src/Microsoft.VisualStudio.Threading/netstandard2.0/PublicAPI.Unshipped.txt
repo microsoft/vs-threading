@@ -1,4 +1,0 @@
-Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Releaser.DisposeAsync() -> System.Threading.Tasks.ValueTask
-Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.ResourceReleaser.DisposeAsync() -> System.Threading.Tasks.ValueTask
-static Microsoft.VisualStudio.Threading.TplExtensions.Forget(this System.Threading.Tasks.ValueTask task) -> void
-static Microsoft.VisualStudio.Threading.TplExtensions.Forget<T>(this System.Threading.Tasks.ValueTask<T> task) -> void

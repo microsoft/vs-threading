@@ -14,6 +14,18 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     /// </summary>
     internal static class Types
     {
+        internal static class BclAsyncDisposable
+        {
+            internal const string FullName = "System.IAsyncDisposable";
+
+            internal const string PackageId = "Microsoft.Bcl.AsyncInterfaces";
+        }
+
+        internal static class IAsyncDisposable
+        {
+            internal const string FullName = "Microsoft.VisualStudio.Threading.IAsyncDisposable";
+        }
+
         internal static class AwaitExtensions
         {
             /// <summary>

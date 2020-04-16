@@ -51,13 +51,13 @@ class Test {
             {
                 TestCode = test,
                 FixedCode = fixFalse,
-                CodeFixEquivalenceKey = false.ToString(),
+                CodeActionEquivalenceKey = false.ToString(),
             }.RunAsync();
             await new Verify.Test
             {
                 TestCode = test,
                 FixedCode = fixTrue,
-                CodeFixEquivalenceKey = true.ToString(),
+                CodeActionEquivalenceKey = true.ToString(),
             }.RunAsync();
         }
 
@@ -105,13 +105,13 @@ class Test {
             {
                 TestCode = test,
                 FixedCode = fixFalse,
-                CodeFixEquivalenceKey = false.ToString(),
+                CodeActionEquivalenceKey = false.ToString(),
             }.RunAsync();
             await new Verify.Test
             {
                 TestCode = test,
                 FixedCode = fixTrue,
-                CodeFixEquivalenceKey = true.ToString(),
+                CodeActionEquivalenceKey = true.ToString(),
             }.RunAsync();
         }
 
@@ -159,13 +159,13 @@ class Test {
             {
                 TestCode = test,
                 FixedCode = fixFalse,
-                CodeFixEquivalenceKey = false.ToString(),
+                CodeActionEquivalenceKey = false.ToString(),
             }.RunAsync();
             await new Verify.Test
             {
                 TestCode = test,
                 FixedCode = fixTrue,
-                CodeFixEquivalenceKey = true.ToString(),
+                CodeActionEquivalenceKey = true.ToString(),
             }.RunAsync();
         }
     }
