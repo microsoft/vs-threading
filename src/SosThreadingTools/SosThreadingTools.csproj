@@ -10,6 +10,9 @@
     <DebugSymbols>true</DebugSymbols>
     <DllExportOurILAsm>false</DllExportOurILAsm>
 
+    <!-- Workaround build timing break in the DllExport build extension. -->
+    <BuildInParallel>false</BuildInParallel>
+
     <Description>A WinDBG extension that contains the !DumpAsync command for .NET Framework processes.</Description>
 
     <IncludeBuildOutput>false</IncludeBuildOutput>
