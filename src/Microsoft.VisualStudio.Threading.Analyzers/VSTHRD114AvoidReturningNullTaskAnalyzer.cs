@@ -5,7 +5,6 @@
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.Diagnostics;
     using Microsoft.CodeAnalysis.Operations;
-    using Microsoft.VisualStudio.Threading.Analyzers.Lightup;
 
     /// <summary>
     /// Finds await expressions on <see cref="Task"/> that do not use <see cref="Task.ConfigureAwait(bool)"/>.
@@ -52,8 +51,7 @@
             var returnOperation = (IReturnOperation)context.Operation;
 
             if (returnOperation.ReturnedValue is { ConstantValue: { HasValue: true, Value: null } } && // could be null for implicit returns
-                returnOperation.ReturnedValue.Syntax is { } returnedValueSyntax &&
-                returnOperation.SemanticModel.GetNullableContext(returnedValueSyntax.SpanStart).AnnotationsEnabled())
+                returnOperation.ReturnedValue.Syntax is { } returnedValueSyntax)
             {
                 context.ReportDiagnostic(Diagnostic.Create(Descriptor, returnedValueSyntax.GetLocation()));
             }
