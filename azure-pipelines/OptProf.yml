@@ -44,7 +44,7 @@ stages:
       windowsPool: VSEng-MicroBuildVS2019
       SignType: test
       ShouldSkipOptimize: true
-  - stage: QueueVSBuild
+- stage: QueueVSBuild
   jobs:
   - job: QueueOptProf
     pool: VSEng-RMPool
