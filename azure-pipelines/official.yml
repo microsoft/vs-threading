@@ -7,6 +7,17 @@ trigger:
   paths:
     exclude: [".github", "doc", "*.md", ".appveyor.yml", ".travis.yml"]
 
+parameters:
+- name: SignType
+  displayName: Sign type
+  type: string
+  default: Test
+  values: [ 'Test', 'Real' ]
+- name: ShouldSkipOptimize
+  displayName: Skip OptProf optimization
+  type: boolean
+  default: false
+
 variables:
   TreatWarningsAsErrors: true
   UpdateXlfOnBuild: false # force build breaks if xlf files aren't updated on dev box with resx changes
@@ -14,8 +25,11 @@ variables:
   BuildConfiguration: Release
   BuildPlatform: Any CPU
   NUGET_PACKAGES: $(Agent.TempDirectory)/.nuget/packages
+  SignType: ${{ parameters.SignType }}
 
 jobs:
 - template: build.yml
   parameters:
     windowsPool: VSEng-MicroBuildVS2019
+    SignType: ${{ parameters.SignType }}
+    ShouldSkipOptimize: ${{ parameters.ShouldSkipOptimize }}
