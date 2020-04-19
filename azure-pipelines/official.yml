@@ -3,8 +3,20 @@ trigger:
     include:
     - master
     - 'v16.*'
+    - 'validate/*'
   paths:
     exclude: [".github", "doc", "*.md", ".appveyor.yml", ".travis.yml"]
+
+parameters:
+- name: SignType
+  displayName: Sign type
+  type: string
+  default: Test
+  values: [ 'Test', 'Real' ]
+- name: ShouldSkipOptimize
+  displayName: Skip OptProf optimization
+  type: boolean
+  default: false
 
 variables:
   TreatWarningsAsErrors: true
@@ -13,8 +25,11 @@ variables:
   BuildConfiguration: Release
   BuildPlatform: Any CPU
   NUGET_PACKAGES: $(Agent.TempDirectory)/.nuget/packages
+  SignType: ${{ parameters.SignType }}
 
 jobs:
 - template: build.yml
   parameters:
     windowsPool: VSEng-MicroBuildVS2019
+    SignType: ${{ parameters.SignType }}
+    ShouldSkipOptimize: ${{ parameters.ShouldSkipOptimize }}

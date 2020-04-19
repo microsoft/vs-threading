@@ -19,43 +19,52 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
     {
         public class Test : VisualBasicCodeFixTest<TAnalyzer, TCodeFix, XUnitVerifier>
         {
+            private static readonly ImmutableArray<string> VSSDKPackageReferences = ImmutableArray.Create(new string[] {
+                "Microsoft.VisualStudio.Shell.Interop.dll",
+                "Microsoft.VisualStudio.Shell.Interop.11.0.dll",
+                "Microsoft.VisualStudio.Shell.Interop.14.0.DesignTime.dll",
+                "Microsoft.VisualStudio.Shell.Immutable.14.0.dll",
+                "Microsoft.VisualStudio.Shell.14.0.dll",
+            });
+
             public Test()
             {
                 this.ReferenceAssemblies = ReferencesHelper.DefaultReferences;
 
                 this.SolutionTransforms.Add((solution, projectId) =>
                 {
-                    var parseOptions = (VisualBasicParseOptions)solution.GetProject(projectId).ParseOptions;
-                    solution = solution.WithProjectParseOptions(projectId, parseOptions.WithLanguageVersion(LanguageVersion.VisualBasic15_5));
+                    Project? project = solution.GetProject(projectId);
+
+                    var parseOptions = (VisualBasicParseOptions)project!.ParseOptions!;
+                    project = project.WithParseOptions(parseOptions.WithLanguageVersion(LanguageVersion.VisualBasic15_5));
 
                     if (this.HasEntryPoint)
                     {
-                        var compilationOptions = solution.GetProject(projectId).CompilationOptions;
-                        solution = solution.WithProjectCompilationOptions(projectId, compilationOptions.WithOutputKind(OutputKind.ConsoleApplication));
+                        project = project.WithCompilationOptions(project.CompilationOptions!.WithOutputKind(OutputKind.ConsoleApplication));
                     }
 
                     if (this.IncludeMicrosoftVisualStudioThreading)
                     {
-                        solution = solution.AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(JoinableTaskFactory).Assembly.Location));
+                        project = project.AddMetadataReference(MetadataReference.CreateFromFile(typeof(JoinableTaskFactory).Assembly.Location));
                     }
 
                     if (this.IncludeWindowsBase)
                     {
-                        solution = solution.AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(Dispatcher).Assembly.Location));
+                        project = project.AddMetadataReference(MetadataReference.CreateFromFile(typeof(Dispatcher).Assembly.Location));
                     }
 
                     if (this.IncludeVisualStudioSdk)
                     {
-                        solution = solution.AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(IOleServiceProvider).Assembly.Location));
+                        project = project.AddMetadataReference(MetadataReference.CreateFromFile(typeof(IOleServiceProvider).Assembly.Location));
 
                         var nugetPackagesFolder = Environment.CurrentDirectory;
-                        foreach (var reference in ReferencesHelper.VSSDKPackageReferences)
+                        foreach (var reference in VisualBasicCodeFixVerifier<TAnalyzer, TCodeFix>.Test.VSSDKPackageReferences)
                         {
-                            solution = solution.AddMetadataReference(projectId, MetadataReference.CreateFromFile(Path.Combine(nugetPackagesFolder, reference)));
+                            project = project.AddMetadataReference(MetadataReference.CreateFromFile(Path.Combine(nugetPackagesFolder, reference)));
                         }
                     }
 
-                    return solution;
+                    return project.Solution;
                 });
 
                 this.TestState.AdditionalFilesFactories.Add(() =>

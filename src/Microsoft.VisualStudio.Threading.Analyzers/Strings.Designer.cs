@@ -550,6 +550,42 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Use &apos;Task.CompletedTask&apos; instead.
+        /// </summary>
+        internal static string VSTHRD114_CodeFix_CompletedTask {
+            get {
+                return ResourceManager.GetString("VSTHRD114_CodeFix_CompletedTask", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Use &apos;Task.FromResult&apos; instead.
+        /// </summary>
+        internal static string VSTHRD114_CodeFix_FromResult {
+            get {
+                return ResourceManager.GetString("VSTHRD114_CodeFix_FromResult", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Avoid returning null from a Task-returning method..
+        /// </summary>
+        internal static string VSTHRD114_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSTHRD114_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Avoid returning a null Task.
+        /// </summary>
+        internal static string VSTHRD114_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD114_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Use &quot;Async&quot; suffix in names of methods that return an awaitable type..
         /// </summary>
         internal static string VSTHRD200_AddAsync_MessageFormat {

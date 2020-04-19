@@ -7,12 +7,12 @@ steps:
     platform: Any CPU
     configuration: $(BuildConfiguration)
   displayName: Build Visual Studio solution
-  condition: eq(variables['Agent.OS'], 'Windows_NT')
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - script: dotnet build /t:build,pack --no-restore -c $(BuildConfiguration) /p:Platform=NonWindows /v:m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/build.binlog"
   displayName: dotnet build and pack
   workingDirectory: src
-  condition: ne(variables['Agent.OS'], 'Windows_NT')
+  condition: and(succeeded(), ne(variables['Agent.OS'], 'Windows_NT'))
 
 - task: DotNetCoreCLI@2
   displayName: dotnet test -f net472

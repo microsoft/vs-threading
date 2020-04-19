@@ -101,6 +101,43 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             };
         }
 
+        internal static Action<OperationBlockStartAnalysisContext> DebuggableWrapper(Action<OperationBlockStartAnalysisContext> handler)
+        {
+            return ctxt =>
+            {
+                try
+                {
+                    handler(ctxt);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex) when (LaunchDebuggerExceptionFilter())
+                {
+                    var messageBuilder = new StringBuilder();
+                    messageBuilder.Append("Analyzer failure while processing syntax(es) at ");
+
+                    for (int i = 0; i < ctxt.OperationBlocks.Length; i++)
+                    {
+                        var operation = ctxt.OperationBlocks[i];
+                        var lineSpan = operation.Syntax.GetLocation()?.GetLineSpan();
+
+                        if (i > 0)
+                        {
+                            messageBuilder.Append(", ");
+                        }
+
+                        messageBuilder.Append($"{operation.Syntax.SyntaxTree.FilePath}({lineSpan?.StartLinePosition.Line + 1},{lineSpan?.StartLinePosition.Character + 1}). Syntax: {operation.Syntax}.");
+                    }
+
+                    messageBuilder.Append($". {ex.GetType()} {ex.Message}");
+
+                    throw new Exception(messageBuilder.ToString(), ex);
+                }
+            };
+        }
+
         internal static Location? GetLocationOfBaseTypeName(INamedTypeSymbol symbol, INamedTypeSymbol baseType, Compilation compilation, CancellationToken cancellationToken)
         {
             foreach (var syntaxReference in symbol.DeclaringSyntaxReferences)

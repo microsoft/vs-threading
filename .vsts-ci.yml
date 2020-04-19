@@ -3,6 +3,7 @@ trigger:
     include:
     - master
     - 'v16.*'
+    - 'validate/*'
   paths:
     exclude: [".github", "doc", "*.md"]
 
@@ -16,3 +17,6 @@ variables:
 
 jobs:
 - template: azure-pipelines/build.yml
+  parameters:
+    SignType:
+    ShouldSkipOptimize:

@@ -32,11 +32,7 @@ variables:
   value: true
 - name: PublicRelease
   value: false # avoid using nice version since we're building a preliminary/unoptimized package
-- name: SignType
-  value: test
 - group: Library.Template
-- name: ShouldSkipOptimize
-  value: true # This is the run to get optimization data. Don't fail the build if there isn't already data.
 
 stages:
 - stage: Library
@@ -46,6 +42,8 @@ stages:
   - template: build.yml
     parameters:
       windowsPool: VSEng-MicroBuildVS2019
+      SignType: test
+      ShouldSkipOptimize: true
 - stage: QueueVSBuild
   jobs:
   - job: QueueOptProf
