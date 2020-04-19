@@ -207,7 +207,7 @@ class Test {
 }
 ";
 
-            var expected = DiagnosticResult.CompilerError("CS0103").WithLocation(6, 9).WithMessage("The name 'a' does not exist in the current context");
+            var expected = DiagnosticResult.CompilerError("CS0103").WithLocation(6, 9).WithArguments("a");
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
