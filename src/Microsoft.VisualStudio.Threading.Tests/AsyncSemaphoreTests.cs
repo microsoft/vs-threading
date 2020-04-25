@@ -142,15 +142,8 @@
             var second = this.lck.EnterAsync(cts.Token);
             Assert.False(second.IsCompleted);
             cts.Cancel();
-            try
-            {
-                await second;
-                Assert.True(false, "Expected OperationCanceledException not thrown.");
-            }
-            catch (OperationCanceledException ex)
-            {
-                Assert.Equal(cts.Token, ex.CancellationToken);
-            }
+            var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => second);
+            Assert.Equal(cts.Token, ex.CancellationToken);
         }
 
         [Fact]
@@ -235,17 +228,14 @@
         public async Task TimeoutIntEventualFailure()
         {
             var first = this.lck.EnterAsync(0);
-            var second = this.lck.EnterAsync(100);
+            var cts = new CancellationTokenSource();
+            var second = this.lck.EnterAsync(100, cts.Token);
             Assert.False(second.IsCompleted);
-            try
-            {
-                // We expect second to complete and throw OperationCanceledException,
-                // but we add WithTimeout here to prevent a test hang if it fails to do so.
-                await second.WithTimeout(TimeSpan.FromMilliseconds(TestTimeout));
-            }
-            catch (OperationCanceledException)
-            {
-            }
+
+            // We expect second to complete and throw OperationCanceledException,
+            // but we add WithTimeout here to prevent a test hang if it fails to do so.
+            var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => second).WithTimeout(TimeSpan.FromMilliseconds(TestTimeout));
+            Assert.NotEqual(cts.Token, ex.CancellationToken);
         }
 
         [Fact]
@@ -494,6 +484,43 @@
         }
 
         [Fact]
+        public async Task CancelledRequestIsImmediate()
+        {
+            var releaser1 = await this.lck.EnterAsync();
+
+            // With the semaphore fully occupied, issue a cancelable request.
+            var cts = new CancellationTokenSource();
+            var releaser2Task = this.lck.EnterAsync(cts.Token);
+            Assert.False(releaser2Task.IsCompleted);
+
+            // Also pend a 3rd request.
+            var releaser3Task = this.lck.EnterAsync();
+            Assert.False(releaser3Task.IsCompleted);
+
+            // Cancel the second user
+            cts.Cancel();
+            var oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => releaser2Task).WithCancellation(this.TimeoutToken);
+            Assert.Equal(cts.Token, oce.CancellationToken);
+
+            // Verify that the 3rd user still hasn't gotten in.
+            Assert.Equal(0, this.lck.CurrentCount);
+            Assert.False(releaser3Task.IsCompleted);
+
+            // Now have the first user exit the semaphore and verify that the 3rd user gets in.
+            releaser1.Dispose();
+            await releaser3Task.WithCancellation(this.TimeoutToken);
+        }
+
+        [Fact]
+        public async Task CancelledRequest_AfterEntrance_DoesNotReleaseSemaphore()
+        {
+            var cts = new CancellationTokenSource();
+            await this.lck.EnterAsync(cts.Token);
+            cts.Cancel();
+            Assert.Equal(0, this.lck.CurrentCount);
+        }
+
+        [Fact]
         public void Disposable()
         {
             IDisposable disposable = this.lck;
@@ -579,6 +606,20 @@
 
             // Verify that pending EnterAsync's fail.
             await Assert.ThrowsAsync<ObjectDisposedException>(() => second).WithCancellation(this.TimeoutToken);
+        }
+
+        [Fact]
+        public void EnterAsync_TimeSpan_PrecanceledToken_AfterDisposal()
+        {
+            this.lck.Dispose();
+            Assert.True(this.lck.EnterAsync(TimeSpan.FromSeconds(1), new CancellationToken(true)).IsCanceled);
+        }
+
+        [Fact]
+        public void EnterAsync_int_PrecanceledToken_AfterDisposal()
+        {
+            this.lck.Dispose();
+            Assert.True(this.lck.EnterAsync(1, new CancellationToken(true)).IsCanceled);
         }
 
         [Fact]
