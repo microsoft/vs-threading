@@ -316,11 +316,11 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns><c>true</c> if an element was dequeued; <c>false</c> if the queue was empty.</returns>
         public bool TryDequeue([MaybeNullWhen(false)] out T value)
         {
-#pragma warning disable CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
             bool result = this.TryDequeueInternal(null, out value);
-#pragma warning restore CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
             this.CompleteIfNecessary();
+#pragma warning disable CS8762 // Parameter must have a non-null value when exiting in some condition.
             return result;
+#pragma warning restore CS8762 // Parameter must have a non-null value when exiting in some condition.
         }
 
         /// <inheritdoc />
@@ -349,11 +349,11 @@ namespace Microsoft.VisualStudio.Threading
         {
             Requires.NotNull(valueCheck, nameof(valueCheck));
 
-#pragma warning disable CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
             bool result = this.TryDequeueInternal(valueCheck, out value);
-#pragma warning restore CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
             this.CompleteIfNecessary();
+#pragma warning disable CS8762 // Parameter must have a non-null value when exiting in some condition.
             return result;
+#pragma warning restore CS8762 // Parameter must have a non-null value when exiting in some condition.
         }
 
         /// <summary>
