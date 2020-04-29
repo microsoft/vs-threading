@@ -177,5 +177,40 @@ class Test
 
             await Verify.VerifyCodeFixAsync(test, withFix);
         }
+
+        [Fact]
+        public async Task NullReturnFromNonAsyncAnonymousDelegate()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test
+{
+    public void Foo()
+    {
+        Task.Run<object>(delegate
+        {
+            return [|null|];
+        });
+    }
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+class Test
+{
+    public void Foo()
+    {
+        Task.Run<object>(delegate
+        {
+            return Task.FromResult<object>(null);
+        });
+    }
+}
+";
+            await Verify.VerifyCodeFixAsync(test, withFix);
+        }
     }
 }

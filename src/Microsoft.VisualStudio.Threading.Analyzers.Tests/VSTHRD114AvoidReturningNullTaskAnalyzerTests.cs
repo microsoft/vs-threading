@@ -192,5 +192,51 @@ class Test
                 TestCode = test,
             }.RunAsync();
         }
+
+        [Fact]
+        public async Task NullReturnFromAsyncAnonymousDelegate()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test
+{
+    public Task Foo()
+    {
+        return Task.Run<object>(async delegate
+        {
+            return null;
+        });
+    }
+}
+";
+            await new VerifyCS.Test
+            {
+                TestCode = test,
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task NullReturnFromNonAsyncAnonymousDelegate()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test
+{
+    public void Foo()
+    {
+        Task.Run<object>(delegate
+        {
+            return [|null|];
+        });
+    }
+}
+";
+            await new VerifyCS.Test
+            {
+                TestCode = test,
+            }.RunAsync();
+        }
     }
 }
