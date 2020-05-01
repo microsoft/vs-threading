@@ -61,6 +61,7 @@
                     return;
                 }
 
+                var hasReturnValue = ((enclosingSymbol as IMethodSymbol)?.ReturnType as INamedTypeSymbol)?.IsGenericType ?? false;
                 var options = await CommonFixes.ReadMethodsAsync(context, CommonInterest.FileNamePatternForMethodsThatSwitchToMainThread, context.CancellationToken);
                 int positionForLookup = diagnostic.Location.SourceSpan.Start;
                 ISymbol cancellationTokenSymbol = Utils.FindCancellationToken(semanticModel, positionForLookup, context.CancellationToken).FirstOrDefault();
@@ -98,11 +99,11 @@
 
                     void OfferFix(string fullyQualifiedMethod)
                     {
-                        context.RegisterCodeFix(CodeAction.Create($"Use 'await {fullyQualifiedMethod}'", ct => Fix(fullyQualifiedMethod, proposedMethod, ct), fullyQualifiedMethod), context.Diagnostics);
+                        context.RegisterCodeFix(CodeAction.Create($"Use 'await {fullyQualifiedMethod}'", ct => Fix(fullyQualifiedMethod, proposedMethod, hasReturnValue, ct), fullyQualifiedMethod), context.Diagnostics);
                     }
                 }
 
-                async Task<Solution> Fix(string fullyQualifiedMethod, IMethodSymbol methodSymbol, CancellationToken cancellationToken)
+                async Task<Solution> Fix(string fullyQualifiedMethod, IMethodSymbol methodSymbol, bool hasReturnValue, CancellationToken cancellationToken)
                 {
                     var assertionStatementToRemove = syntaxNode!.FirstAncestorOrSelf<StatementSyntax>();
 
@@ -139,7 +140,7 @@
                         {
                             case AnonymousFunctionExpressionSyntax anonFunc:
                                 semanticModel = await newDocument.GetSemanticModelAsync(cancellationToken);
-                                methodSyntax = FixUtils.MakeMethodAsync(anonFunc, semanticModel, cancellationToken);
+                                methodSyntax = FixUtils.MakeMethodAsync(anonFunc, hasReturnValue, semanticModel, cancellationToken);
                                 newDocument = newDocument.WithSyntaxRoot(newSyntaxRoot.ReplaceNode(anonFunc, methodSyntax));
                                 break;
                             case MethodDeclarationSyntax methodDecl:

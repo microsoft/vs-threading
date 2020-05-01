@@ -250,7 +250,7 @@ class Test {
             await Verify.VerifyCodeFixAsync(test, fix);
         }
 
-        [Fact(Skip = "Fails because the semantic model claims the anonymous func returns Task instead of Task<int>. We should probably skip that check and always preserve return statements.")]
+        [Fact]
         public async Task TaskReturningLambdaInsideVoidMethod_NoTypeArg_GeneratesDiagnostic()
         {
             var test = @"

@@ -383,6 +383,27 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return default(ContainingFunctionData);
         }
 
+        internal static ISymbol GetContainingFunction(IOperation operation, ISymbol operationBlockContainingSymbol)
+        {
+            while (operation is object)
+            {
+                if (operation.Kind == OperationKind.AnonymousFunction)
+                {
+                    return ((IAnonymousFunctionOperation)operation).Symbol;
+                }
+                else if (operation.Kind == OperationKind.LocalFunction)
+                {
+                    return ((ILocalFunctionOperation)operation).Symbol;
+                }
+                else
+                {
+                    operation = operation.Parent;
+                }
+            }
+
+            return operationBlockContainingSymbol;
+        }
+
         internal static bool HasAsyncCompatibleReturnType([NotNullWhen(true)] this IMethodSymbol? methodSymbol) => IsAsyncCompatibleReturnType(methodSymbol?.ReturnType);
 
         /// <summary>

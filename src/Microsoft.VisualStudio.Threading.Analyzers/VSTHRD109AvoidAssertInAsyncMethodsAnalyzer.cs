@@ -1,14 +1,9 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers
 {
-    using System;
-    using System.Collections.Generic;
     using System.Collections.Immutable;
-    using System.Linq;
-    using System.Threading;
     using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CSharp;
-    using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Diagnostics;
+    using Microsoft.CodeAnalysis.Operations;
 
     /// <summary>
     /// Report errors when async methods throw when not on the main thread instead of switching to it.
@@ -49,43 +44,26 @@
             context.RegisterCompilationStartAction(ctxt =>
             {
                 var mainThreadAssertingMethods = CommonInterest.ReadMethods(ctxt.Options, CommonInterest.FileNamePatternForMethodsThatAssertMainThread, ctxt.CancellationToken).ToImmutableArray();
-                ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => this.AnalyzeInvocation(c, mainThreadAssertingMethods)), SyntaxKind.InvocationExpression);
+                ctxt.RegisterOperationAction(Utils.DebuggableWrapper(c => this.AnalyzeInvocation(c, mainThreadAssertingMethods)), OperationKind.Invocation);
             });
         }
 
-        private void AnalyzeInvocation(SyntaxNodeAnalysisContext context, ImmutableArray<CommonInterest.QualifiedMember> mainThreadAssertingMethods)
+        private void AnalyzeInvocation(OperationAnalysisContext context, ImmutableArray<CommonInterest.QualifiedMember> mainThreadAssertingMethods)
         {
-            var functionInfo = Utils.GetContainingFunction((CSharpSyntaxNode)context.Node);
-            if (functionInfo.Function == null)
+            if (!(Utils.GetContainingFunction(context.Operation, context.ContainingSymbol) is IMethodSymbol methodSymbol))
             {
-                // One case where this happens is the use of nameof(X) in the argument of a custom attribute on a type, such as:
-                // [System.Diagnostics.DebuggerDisplay(""hi"", Name = nameof(System.Console))]
-                // class Foo { }
                 return;
             }
 
-            var methodSymbol = context.SemanticModel.GetDeclaredSymbol(functionInfo.Function);
-            ITypeSymbol? implicitReturnType = null;
-            if (methodSymbol == null)
+            if (methodSymbol.IsAsync || Utils.HasAsyncCompatibleReturnType(methodSymbol) || Utils.IsAsyncCompatibleReturnType(methodSymbol.ReturnType))
             {
-                var funcType = context.SemanticModel.GetTypeInfo(functionInfo.Function).ConvertedType as INamedTypeSymbol;
-                if (funcType?.Name == nameof(Func<int>) && funcType.BelongsToNamespace(Namespaces.System) && funcType.IsGenericType)
-                {
-                    implicitReturnType = funcType.TypeArguments.Last();
-                }
-            }
-
-            if (functionInfo.IsAsync || Utils.HasAsyncCompatibleReturnType(methodSymbol as IMethodSymbol) || Utils.IsAsyncCompatibleReturnType(implicitReturnType))
-            {
-                var invocationExpression = (InvocationExpressionSyntax)context.Node;
-                var symbolInfo = context.SemanticModel.GetSymbolInfo((InvocationExpressionSyntax)context.Node, context.CancellationToken);
-                var symbol = symbolInfo.Symbol;
+                var invocation = (IInvocationOperation)context.Operation;
+                var symbol = invocation.TargetMethod;
                 if (symbol != null)
                 {
                     if (mainThreadAssertingMethods.Contains(symbol))
                     {
-                        var nodeToLocate = (invocationExpression.Expression as MemberAccessExpressionSyntax)?.Name ?? invocationExpression.Expression;
-                        context.ReportDiagnostic(Diagnostic.Create(Descriptor, nodeToLocate.GetLocation()));
+                        context.ReportDiagnostic(Diagnostic.Create(Descriptor, Utils.IsolateMethodName(invocation).GetLocation()));
                     }
                 }
             }
