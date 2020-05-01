@@ -225,6 +225,18 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return invokedMethodName;
         }
 
+        internal static SyntaxNode IsolateMethodName(IInvocationOperation invocation)
+        {
+            _ = invocation ?? throw new ArgumentNullException(nameof(invocation));
+
+            if (invocation.Syntax is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax memberAccessExpression } invocationExpression)
+            {
+                return memberAccessExpression.Name;
+            }
+
+            return invocation.Syntax;
+        }
+
         /// <summary>
         /// Gets a semantic model for the given <see cref="SyntaxTree"/>.
         /// </summary>
