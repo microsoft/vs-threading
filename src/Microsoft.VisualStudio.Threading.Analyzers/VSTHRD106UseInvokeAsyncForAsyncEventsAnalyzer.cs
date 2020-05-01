@@ -6,16 +6,10 @@
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
-    using System;
-    using System.Collections.Generic;
     using System.Collections.Immutable;
-    using System.Linq;
-    using System.Threading;
-    using System.Threading.Tasks;
     using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CSharp;
-    using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Diagnostics;
+    using Microsoft.CodeAnalysis.Operations;
 
     /// <summary>
     /// Analyzes the usages on AsyncEventHandler delegates and reports warning if
@@ -65,27 +59,24 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
 
-            context.RegisterCodeBlockStartAction<SyntaxKind>(ctxt =>
+            context.RegisterOperationBlockStartAction(context =>
             {
-                // This is a very specical case to check if this method is TplExtensions.InvokeAsync().
+                // This is a very special case to check if this method is TplExtensions.InvokeAsync().
                 // If it is, then do not run the analyzer inside that method.
-                if (!(ctxt.OwningSymbol.Name == Types.TplExtensions.InvokeAsync &&
-                      ctxt.OwningSymbol.ContainingType.Name == Types.TplExtensions.TypeName &&
-                      ctxt.OwningSymbol.ContainingType.BelongsToNamespace(Types.TplExtensions.Namespace)))
+                if (!(context.OwningSymbol.Name == Types.TplExtensions.InvokeAsync &&
+                      context.OwningSymbol.ContainingType.Name == Types.TplExtensions.TypeName &&
+                      context.OwningSymbol.ContainingType.BelongsToNamespace(Types.TplExtensions.Namespace)))
                 {
-                    ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeInvocation), SyntaxKind.InvocationExpression);
+                    context.RegisterOperationAction(Utils.DebuggableWrapper(this.AnalyzeInvocation), OperationKind.Invocation);
                 }
             });
         }
 
-        /// <summary>
-        /// Analyze each invocation syntax node.
-        /// </summary>
-        private void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
+        private void AnalyzeInvocation(OperationAnalysisContext context)
         {
-            var invocation = (InvocationExpressionSyntax)context.Node;
-            var symbol = context.SemanticModel.GetSymbolInfo(invocation.Expression, context.CancellationToken).Symbol;
-            if (symbol != null)
+            var invocation = (IInvocationOperation)context.Operation;
+            var symbol = invocation.TargetMethod;
+            if (symbol is object)
             {
                 ISymbol? type = null;
                 if (symbol.Kind == SymbolKind.Method)
@@ -106,7 +97,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     if (type.Name == Types.AsyncEventHandler.TypeName &&
                         type.BelongsToNamespace(Types.AsyncEventHandler.Namespace))
                     {
-                        context.ReportDiagnostic(Diagnostic.Create(Descriptor, context.Node.GetLocation()));
+                        context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocation.Syntax.GetLocation()));
                     }
                 }
             }
