@@ -122,31 +122,35 @@ namespace Microsoft.VisualStudio.Threading
                 }
                 else
                 {
-                    var node = this.GetNode(new WaiterInfo(this, cancellationToken));
+                    WaiterInfo info = new WaiterInfo(this, cancellationToken);
+                    var node = this.GetNode(info);
 
                     // Careful: consider that if the token was cancelled just now (after we checked it on entry to this method)
                     // or the timeout expires,
                     // then this Register method may *inline* the handler we give it, reversing the apparent order of execution with respect to
                     // the code that follows this Register call.
-                    node.Value.CancellationTokenRegistration = cancellationToken.Register(s => CancellationHandler(s), node.Value);
+                    info.CancellationTokenRegistration = cancellationToken.Register(s => CancellationHandler(s), info);
                     if (timeout != Timeout.InfiniteTimeSpan)
                     {
-                        node.Value.TimerTokenSource = new Timer(s => CancellationHandler(s), node.Value, checked((int)timeout.TotalMilliseconds), Timeout.Infinite);
+                        info.TimerTokenSource = new Timer(s => CancellationHandler(s), info, checked((int)timeout.TotalMilliseconds), Timeout.Infinite);
                     }
 
                     // Only add to the queue if cancellation hasn't already happened.
-                    if (!node.Value.Trigger.Task.IsCanceled)
+                    if (!info.Trigger.Task.IsCanceled)
                     {
                         this.waiters.AddLast(node);
-                        node.Value.Node = node;
+                        info.Node = node;
                     }
                     else
                     {
                         // Make sure we don't leak the Timer if cancellation happened before we created it.
-                        node.Value.Cleanup();
+                        info.Cleanup();
+
+                        // Also recycle the unused node.
+                        this.RecycleNode(node);
                     }
 
-                    return node.Value.Trigger.Task;
+                    return info.Trigger.Task;
                 }
             }
         }
