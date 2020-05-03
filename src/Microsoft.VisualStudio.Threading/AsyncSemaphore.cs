@@ -138,6 +138,7 @@ namespace Microsoft.VisualStudio.Threading
                     if (!node.Value.Trigger.Task.IsCanceled)
                     {
                         this.waiters.AddLast(node);
+                        node.Value.Node = node;
                     }
                     else
                     {
@@ -309,13 +310,10 @@ namespace Microsoft.VisualStudio.Threading
             {
                 var node = this.nodePool.Pop();
                 node.Value = info;
-                info.Node = node!;
                 return node!;
             }
 
-            var newNode = new LinkedListNode<WaiterInfo>(info);
-            info.Node = newNode;
-            return newNode;
+            return new LinkedListNode<WaiterInfo>(info);
         }
 
         private class WaiterInfo
