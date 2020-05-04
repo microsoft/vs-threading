@@ -11,7 +11,7 @@ steps:
     ShouldSkipOptimize: ${{ parameters.ShouldSkipOptimize }}
   displayName: Install OptProf Plugin
 
-- task: MicroBuildSigningPlugin@1
+- task: MicroBuildSigningPlugin@2
   inputs:
     signType: ${{ parameters.SignType }}
     zipSources: false
