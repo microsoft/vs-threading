@@ -11,24 +11,20 @@
         public async Task MethodTaskOfTReturnsNull()
         {
             var test = @"
-using System.Threading.Tasks;
-
 class Test
 {
-    public Task<object> GetTaskObj()
+    public System.Threading.Tasks.Task<object> GetTaskObj()
     {
         return [|null|];
     }
 }";
 
             var withFix = @"
-using System.Threading.Tasks;
-
 class Test
 {
-    public Task<object> GetTaskObj()
+    public System.Threading.Tasks.Task<object> GetTaskObj()
     {
-        return Task.FromResult<object>(null);
+        return System.Threading.Tasks.Task.FromResult<object>(null);
     }
 }";
 
@@ -39,20 +35,16 @@ class Test
         public async Task MethodTaskOfTReturnsNothing_VB()
         {
             var test = @"
-Imports System.Threading.Tasks
-
 Class Test
-    Function GetTaskObj As Task(Of object)
+    Function GetTaskObj As System.Threading.Tasks.Task(Of object)
         Return [|Nothing|]
     End Function
 End Class";
 
             var withFix = @"
-Imports System.Threading.Tasks
-
 Class Test
-    Function GetTaskObj As Task(Of object)
-        Return Task.FromResult(Of Object)(Nothing)
+    Function GetTaskObj As System.Threading.Tasks.Task(Of object)
+        Return System.Threading.Tasks.Task.FromResult(Of Object)(Nothing)
     End Function
 End Class";
 

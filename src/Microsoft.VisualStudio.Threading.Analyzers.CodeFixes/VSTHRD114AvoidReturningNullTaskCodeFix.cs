@@ -47,7 +47,7 @@
                     {
                         var generator = SyntaxGenerator.GetGenerator(context.Document);
                         SyntaxNode completedTaskExpression = generator.MemberAccessExpression(
-                                generator.TypeExpression(returnType),
+                                generator.TypeExpressionForStaticMemberAccess(returnType),
                                 generator.IdentifierName(nameof(Task.CompletedTask)));
 
                         return Task.FromResult(context.Document.WithSyntaxRoot(syntaxRoot.ReplaceNode(nullLiteral, completedTaskExpression)));
@@ -58,7 +58,7 @@
                         var generator = SyntaxGenerator.GetGenerator(context.Document);
                         SyntaxNode taskFromResultExpression = generator.InvocationExpression(
                             generator.MemberAccessExpression(
-                                generator.TypeExpression(returnType.BaseType),
+                                generator.TypeExpressionForStaticMemberAccess(returnType.BaseType),
                                 generator.GenericName(nameof(Task.FromResult), returnType.TypeArguments[0])),
                             generator.NullLiteralExpression());
 
