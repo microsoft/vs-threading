@@ -42,32 +42,13 @@
 
             if (returnOperation.ReturnedValue is { ConstantValue: { HasValue: true, Value: null } } && // could be null for implicit returns
                 returnOperation.ReturnedValue.Syntax is { } returnedValueSyntax &&
-                FindEnclosingMethodOrDelegate(returnOperation) is { } block &&
+                Utils.GetContainingFunction(returnOperation) is { } block &&
                 FindOwningSymbol(block, context.ContainingSymbol) is { } method &&
                 !method.IsAsync &&
                 Utils.IsTask(method.ReturnType))
             {
                 context.ReportDiagnostic(Diagnostic.Create(Descriptor, returnedValueSyntax.GetLocation()));
             }
-        }
-
-        private static IBlockOperation? FindEnclosingMethodOrDelegate(IOperation operation)
-        {
-            var previousAncestor = operation;
-            var ancestor = previousAncestor;
-            do
-            {
-                if (previousAncestor != ancestor)
-                {
-                    previousAncestor = ancestor;
-                }
-
-                ancestor = ancestor.Parent;
-            }
-            while (ancestor != null && ancestor.Kind != OperationKind.MethodBodyOperation && ancestor.Kind != OperationKind.AnonymousFunction &&
-                ancestor.Kind != OperationKind.LocalFunction);
-
-            return previousAncestor as IBlockOperation;
         }
 
         private static IMethodSymbol? FindOwningSymbol(IBlockOperation block, ISymbol containingSymbol)

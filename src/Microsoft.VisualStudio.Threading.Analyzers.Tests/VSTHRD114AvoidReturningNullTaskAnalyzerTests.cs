@@ -262,7 +262,7 @@ class Test
         }
 
         [Fact]
-        public async Task LocalFunctionAsyncReturnsNull_Diagnostic()
+        public async Task LocalFunctionAsyncReturnsNull_NoDiagnostic()
         {
             var csharpTest = @"
 using System.Threading.Tasks;
