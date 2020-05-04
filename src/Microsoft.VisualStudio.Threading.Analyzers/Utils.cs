@@ -225,6 +225,16 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return invokedMethodName;
         }
 
+        internal static SyntaxNode IsolateMethodName(IInvocationOperation invocation)
+        {
+            if (invocation.Syntax is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax memberAccessExpression })
+            {
+                return memberAccessExpression.Name;
+            }
+
+            return invocation.Syntax;
+        }
+
         /// <summary>
         /// Gets a semantic model for the given <see cref="SyntaxTree"/>.
         /// </summary>
@@ -371,7 +381,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return default(ContainingFunctionData);
         }
 
-        internal static IBlockOperation? GetContainingFunction(IOperation operation)
+        internal static IBlockOperation? GetContainingFunctionBlock(IOperation operation)
         {
             var previousAncestor = operation;
             var ancestor = previousAncestor;
@@ -388,6 +398,23 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 ancestor.Kind != OperationKind.LocalFunction);
 
             return previousAncestor as IBlockOperation;
+        }
+
+        internal static ISymbol GetContainingFunction(IOperation operation, ISymbol operationBlockContainingSymbol)
+        {
+            for (var current = operation; current is object; current = current.Parent)
+            {
+                if (current.Kind == OperationKind.AnonymousFunction)
+                {
+                    return ((IAnonymousFunctionOperation)current).Symbol;
+                }
+                else if (current.Kind == OperationKind.LocalFunction)
+                {
+                    return ((ILocalFunctionOperation)current).Symbol;
+                }
+            }
+
+            return operationBlockContainingSymbol;
         }
 
         internal static bool HasAsyncCompatibleReturnType([NotNullWhen(true)] this IMethodSymbol? methodSymbol) => IsAsyncCompatibleReturnType(methodSymbol?.ReturnType);

@@ -42,7 +42,7 @@
 
             if (returnOperation.ReturnedValue is { ConstantValue: { HasValue: true, Value: null } } && // could be null for implicit returns
                 returnOperation.ReturnedValue.Syntax is { } returnedValueSyntax &&
-                Utils.GetContainingFunction(returnOperation) is { } block &&
+                Utils.GetContainingFunctionBlock(returnOperation) is { } block &&
                 FindOwningSymbol(block, context.ContainingSymbol) is { } method &&
                 !method.IsAsync &&
                 Utils.IsTask(method.ReturnType))

@@ -8,18 +8,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Immutable;
     using System.Linq;
-    using System.Reflection;
-    using System.Runtime.CompilerServices;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
-    using Microsoft.CodeAnalysis.Diagnostics;
     using Microsoft.CodeAnalysis.FindSymbols;
     using Microsoft.CodeAnalysis.Rename;
     using Microsoft.CodeAnalysis.Simplification;
@@ -28,7 +22,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     {
         internal static readonly string BookmarkAnnotationName = "Bookmark";
 
-        internal static AnonymousFunctionExpressionSyntax MakeMethodAsync(this AnonymousFunctionExpressionSyntax method, SemanticModel semanticModel, CancellationToken cancellationToken)
+        internal static AnonymousFunctionExpressionSyntax MakeMethodAsync(this AnonymousFunctionExpressionSyntax method, bool hasReturnValue, SemanticModel semanticModel, CancellationToken cancellationToken)
         {
             if (method.AsyncKeyword.Kind() == SyntaxKind.AsyncKeyword)
             {
@@ -36,8 +30,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 return method;
             }
 
-            var methodSymbol = (IMethodSymbol)semanticModel.GetSymbolInfo(method, cancellationToken).Symbol;
-            bool hasReturnValue = (methodSymbol?.ReturnType as INamedTypeSymbol)?.IsGenericType ?? false;
             AnonymousFunctionExpressionSyntax? updated = null;
 
             var simpleLambda = method as SimpleLambdaExpressionSyntax;
