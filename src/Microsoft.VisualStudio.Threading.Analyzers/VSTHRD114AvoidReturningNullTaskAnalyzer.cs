@@ -33,17 +33,7 @@
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
 
-            context.RegisterOperationBlockStartAction(Utils.DebuggableWrapper(context => AnalyzeOperationBlockStart(context)));
-        }
-
-        private static void AnalyzeOperationBlockStart(OperationBlockStartAnalysisContext context)
-        {
-            if (context.OwningSymbol is IMethodSymbol method &&
-                !method.IsAsync &&
-                Utils.IsTask(method.ReturnType))
-            {
-                context.RegisterOperationAction(Utils.DebuggableWrapper(context => AnalyzerReturnOperation(context)), OperationKind.Return);
-            }
+            context.RegisterOperationAction(Utils.DebuggableWrapper(context => AnalyzerReturnOperation(context)), OperationKind.Return);
         }
 
         private static void AnalyzerReturnOperation(OperationAnalysisContext context)
@@ -51,10 +41,48 @@
             var returnOperation = (IReturnOperation)context.Operation;
 
             if (returnOperation.ReturnedValue is { ConstantValue: { HasValue: true, Value: null } } && // could be null for implicit returns
-                returnOperation.ReturnedValue.Syntax is { } returnedValueSyntax)
+                returnOperation.ReturnedValue.Syntax is { } returnedValueSyntax &&
+                FindEnclosingMethodOrDelegate(returnOperation) is { } block &&
+                FindOwningSymbol(block, context.ContainingSymbol) is { } method &&
+                !method.IsAsync &&
+                Utils.IsTask(method.ReturnType))
             {
                 context.ReportDiagnostic(Diagnostic.Create(Descriptor, returnedValueSyntax.GetLocation()));
             }
+        }
+
+        private static IBlockOperation? FindEnclosingMethodOrDelegate(IOperation operation)
+        {
+            var previousAncestor = operation;
+            var ancestor = previousAncestor;
+            do
+            {
+                if (previousAncestor != ancestor)
+                {
+                    previousAncestor = ancestor;
+                }
+
+                ancestor = ancestor.Parent;
+            }
+            while (ancestor != null && ancestor.Kind != OperationKind.MethodBodyOperation && ancestor.Kind != OperationKind.AnonymousFunction &&
+                ancestor.Kind != OperationKind.LocalFunction);
+
+            return previousAncestor as IBlockOperation;
+        }
+
+        private static IMethodSymbol? FindOwningSymbol(IBlockOperation block, ISymbol containingSymbol)
+        {
+            return block.Parent switch
+            {
+                ILocalFunctionOperation localFunction => localFunction.Symbol,
+                IAnonymousFunctionOperation anonymousFunction => anonymousFunction.Symbol,
+
+                // Block parent is the method declaration, for vbnet this means a null parent but for C# it's a IMethodBodyOperation
+                null => containingSymbol as IMethodSymbol,
+                IMethodBodyOperation _ => containingSymbol as IMethodSymbol,
+
+                _ => null,
+            };
         }
     }
 }
