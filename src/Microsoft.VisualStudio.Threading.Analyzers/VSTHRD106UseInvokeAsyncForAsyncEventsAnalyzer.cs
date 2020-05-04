@@ -7,6 +7,7 @@
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System.Collections.Immutable;
+    using System.Diagnostics;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.Diagnostics;
     using Microsoft.CodeAnalysis.Operations;
@@ -75,31 +76,10 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         private void AnalyzeInvocation(OperationAnalysisContext context)
         {
             var invocation = (IInvocationOperation)context.Operation;
-            var symbol = invocation.TargetMethod;
-            if (symbol is object)
+            if (invocation.TargetMethod.ContainingType is { Name: Types.AsyncEventHandler.TypeName } type
+                && type.BelongsToNamespace(Types.AsyncEventHandler.Namespace))
             {
-                ISymbol? type = null;
-                if (symbol.Kind == SymbolKind.Method)
-                {
-                    // Handle the case when call into AsyncEventHandler via Invoke() method.
-                    // i.e.
-                    // AsyncEventHandler handler;
-                    // handler.Invoke(null, null);
-                    type = symbol.ContainingType;
-                }
-                else
-                {
-                    type = Utils.ResolveTypeFromSymbol(symbol);
-                }
-
-                if (type != null)
-                {
-                    if (type.Name == Types.AsyncEventHandler.TypeName &&
-                        type.BelongsToNamespace(Types.AsyncEventHandler.Namespace))
-                    {
-                        context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocation.Syntax.GetLocation()));
-                    }
-                }
+                context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocation.Syntax.GetLocation()));
             }
         }
     }

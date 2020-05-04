@@ -227,9 +227,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static SyntaxNode IsolateMethodName(IInvocationOperation invocation)
         {
-            _ = invocation ?? throw new ArgumentNullException(nameof(invocation));
-
-            if (invocation.Syntax is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax memberAccessExpression } invocationExpression)
+            if (invocation.Syntax is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax memberAccessExpression })
             {
                 return memberAccessExpression.Name;
             }
@@ -385,19 +383,15 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static ISymbol GetContainingFunction(IOperation operation, ISymbol operationBlockContainingSymbol)
         {
-            while (operation is object)
+            for (var current = operation; current is object; current = current.Parent)
             {
-                if (operation.Kind == OperationKind.AnonymousFunction)
+                if (current.Kind == OperationKind.AnonymousFunction)
                 {
-                    return ((IAnonymousFunctionOperation)operation).Symbol;
+                    return ((IAnonymousFunctionOperation)current).Symbol;
                 }
-                else if (operation.Kind == OperationKind.LocalFunction)
+                else if (current.Kind == OperationKind.LocalFunction)
                 {
-                    return ((ILocalFunctionOperation)operation).Symbol;
-                }
-                else
-                {
-                    operation = operation.Parent;
+                    return ((ILocalFunctionOperation)current).Symbol;
                 }
             }
 

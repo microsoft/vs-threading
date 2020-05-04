@@ -42,8 +42,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         private void AnalyzeInvocation(OperationAnalysisContext context)
         {
             var invocation = (IInvocationOperation)context.Operation;
-            if (invocation.TargetMethod is IMethodSymbol methodSymbol &&
-                methodSymbol.Name == Types.JoinableTaskFactory.SwitchToMainThreadAsync &&
+            var methodSymbol = invocation.TargetMethod;
+            if (methodSymbol.Name == Types.JoinableTaskFactory.SwitchToMainThreadAsync &&
                 methodSymbol.ContainingType.Name == Types.JoinableTaskFactory.TypeName &&
                 methodSymbol.ContainingType.BelongsToNamespace(Types.JoinableTaskFactory.Namespace))
             {

@@ -58,13 +58,9 @@
             if (methodSymbol.IsAsync || Utils.HasAsyncCompatibleReturnType(methodSymbol) || Utils.IsAsyncCompatibleReturnType(methodSymbol.ReturnType))
             {
                 var invocation = (IInvocationOperation)context.Operation;
-                var symbol = invocation.TargetMethod;
-                if (symbol != null)
+                if (mainThreadAssertingMethods.Contains(invocation.TargetMethod))
                 {
-                    if (mainThreadAssertingMethods.Contains(symbol))
-                    {
-                        context.ReportDiagnostic(Diagnostic.Create(Descriptor, Utils.IsolateMethodName(invocation).GetLocation()));
-                    }
+                    context.ReportDiagnostic(Diagnostic.Create(Descriptor, Utils.IsolateMethodName(invocation).GetLocation()));
                 }
             }
         }
