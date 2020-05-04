@@ -1,7 +1,6 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
     using System.Threading.Tasks;
-    using Microsoft.CodeAnalysis.CSharp;
     using Xunit;
     using VerifyCS = CSharpCodeFixVerifier<VSTHRD114AvoidReturningNullTaskAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
     using VerifyVB = VisualBasicCodeFixVerifier<VSTHRD114AvoidReturningNullTaskAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
@@ -190,6 +189,98 @@ class Test
             await new VerifyCS.Test
             {
                 TestCode = test,
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task AsyncAnonymousDelegateReturnsNull_NoDiagnostic()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test
+{
+    public Task Foo()
+    {
+        return Task.Run<object>(async delegate
+        {
+            return null;
+        });
+    }
+}
+";
+            await new VerifyCS.Test
+            {
+                TestCode = test,
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task NonAsyncAnonymousDelegateReturnsNull_Diagnostic()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test
+{
+    public void Foo()
+    {
+        Task.Run<object>(delegate
+        {
+            return [|null|];
+        });
+    }
+}
+";
+            await new VerifyCS.Test
+            {
+                TestCode = test,
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task LocalFunctionNonAsyncReturnsNull_Diagnostic()
+        {
+            var csharpTest = @"
+using System.Threading.Tasks;
+
+class Test
+{
+    public void Foo()
+    {
+        Task<object> GetTaskObj()
+        {
+            return [|null|];
+        }
+    }
+}
+";
+            await new VerifyCS.Test
+            {
+                TestCode = csharpTest,
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task LocalFunctionAsyncReturnsNull_NoDiagnostic()
+        {
+            var csharpTest = @"
+using System.Threading.Tasks;
+
+class Test
+{
+    public void Foo()
+    {
+        async Task<object> GetTaskObj()
+        {
+            return null;
+        }
+    }
+}
+";
+            await new VerifyCS.Test
+            {
+                TestCode = csharpTest,
             }.RunAsync();
         }
     }
