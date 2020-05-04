@@ -2,7 +2,8 @@
 {
     using System.Threading.Tasks;
     using Xunit;
-    using Verify = CSharpCodeFixVerifier<VSTHRD114AvoidReturningNullTaskAnalyzer, VSTHRD114AvoidReturningNullTaskCodeFix>;
+    using VerifyCS = CSharpCodeFixVerifier<VSTHRD114AvoidReturningNullTaskAnalyzer, VSTHRD114AvoidReturningNullTaskCodeFix>;
+    using VerifyVB = VisualBasicCodeFixVerifier<VSTHRD114AvoidReturningNullTaskAnalyzer, VSTHRD114AvoidReturningNullTaskCodeFix>;
 
     public class VSTHRD114AvoidReturningNullTaskCodeFixTests
     {
@@ -31,7 +32,31 @@ class Test
     }
 }";
 
-            await Verify.VerifyCodeFixAsync(test, withFix);
+            await VerifyCS.VerifyCodeFixAsync(test, withFix);
+        }
+
+        [Fact]
+        public async Task MethodTaskOfTReturnsNothing_VB()
+        {
+            var test = @"
+Imports System.Threading.Tasks
+
+Class Test
+    Function GetTaskObj As Task(Of object)
+        Return [|Nothing|]
+    End Function
+End Class";
+
+            var withFix = @"
+Imports System.Threading.Tasks
+
+Class Test
+    Function GetTaskObj As Task(Of object)
+        Return Task.FromResult(Of Object)(Nothing)
+    End Function
+End Class";
+
+            await VerifyVB.VerifyCodeFixAsync(test, withFix);
         }
 
         [Fact]
@@ -60,7 +85,7 @@ class Test
 }
 ";
 
-            await Verify.VerifyCodeFixAsync(test, withFix);
+            await VerifyCS.VerifyCodeFixAsync(test, withFix);
         }
 
         [Fact]
@@ -83,7 +108,7 @@ class Test
 }
 ";
 
-            await Verify.VerifyCodeFixAsync(test, withFix);
+            await VerifyCS.VerifyCodeFixAsync(test, withFix);
         }
 
         [Fact]
@@ -106,7 +131,7 @@ class Test
 }
 ";
 
-            await Verify.VerifyCodeFixAsync(test, withFix);
+            await VerifyCS.VerifyCodeFixAsync(test, withFix);
         }
 
         [Fact]
@@ -145,7 +170,7 @@ class Test
 }
 ";
 
-            await Verify.VerifyCodeFixAsync(test, withFix);
+            await VerifyCS.VerifyCodeFixAsync(test, withFix);
         }
 
         [Fact]
@@ -175,10 +200,10 @@ class Test
     }
 }";
 
-            await Verify.VerifyCodeFixAsync(test, withFix);
+            await VerifyCS.VerifyCodeFixAsync(test, withFix);
         }
 
-        [Fact(Skip = "Cannot find generic type")]
+        [Fact]
         public async Task AnonymousDelegateTaskOfTReturnsNull()
         {
             var test = @"
@@ -210,10 +235,10 @@ class Test
     }
 }
 ";
-            await Verify.VerifyCodeFixAsync(test, withFix);
+            await VerifyCS.VerifyCodeFixAsync(test, withFix);
         }
 
-        [Fact(Skip = "Cannot find generic type")]
+        [Fact]
         public async Task LambdaTaskOfTReturnsNull()
         {
             var test = @"
@@ -245,7 +270,7 @@ class Test
     }
 }
 ";
-            await Verify.VerifyCodeFixAsync(test, withFix);
+            await VerifyCS.VerifyCodeFixAsync(test, withFix);
         }
 
         public async Task AnonymousDelegateTaskReturnsNull()
@@ -279,7 +304,7 @@ class Test
     }
 }
 ";
-            await Verify.VerifyCodeFixAsync(test, withFix);
+            await VerifyCS.VerifyCodeFixAsync(test, withFix);
         }
 
         public async Task LambdaTaskReturnsNull()
@@ -313,7 +338,7 @@ class Test
     }
 }
 ";
-            await Verify.VerifyCodeFixAsync(test, withFix);
+            await VerifyCS.VerifyCodeFixAsync(test, withFix);
         }
     }
 }
