@@ -34,24 +34,50 @@
                     continue;
                 }
 
-                var methodDeclaration = nullLiteral.FirstAncestorOrSelf<MethodDeclarationSyntax>();
-                if (methodDeclaration == null)
+                var methodOrDelegateNode = GetEnclosingMethodOrDelegate(nullLiteral);
+
+                switch (methodOrDelegateNode)
                 {
-                    continue;
+                    case LocalFunctionStatementSyntax localFunctionStatement:
+                        RegisterCodeFixFromReturnTypeSyntax(localFunctionStatement.ReturnType);
+                        break;
+
+                    case MethodDeclarationSyntax methodDeclaration:
+                        RegisterCodeFixFromReturnTypeSyntax(methodDeclaration.ReturnType);
+                        break;
+
+                    case AnonymousMethodExpressionSyntax _:
+                    case AnonymousFunctionExpressionSyntax _:
+                        if (semanticModel.GetSymbolInfo(methodOrDelegateNode).Symbol is IMethodSymbol methodSymbol &&
+                            methodSymbol.ReturnType is INamedTypeSymbol namedType)
+                        {
+                            if (!namedType.IsGenericType)
+                            {
+                                context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD114_CodeFix_CompletedTask, ct => ApplyTaskCompletedTaskFix(ct), "CompletedTask"), diagnostic);
+                            }
+                        }
+
+                        break;
+
+                    default:
+                        break;
                 }
 
-                if (!(methodDeclaration.ReturnType is GenericNameSyntax genericReturnType))
+                void RegisterCodeFixFromReturnTypeSyntax(TypeSyntax returnType)
                 {
-                    context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD114_CodeFix_CompletedTask, ct => ApplyTaskCompletedTaskFix(ct), "CompletedTask"), diagnostic);
-                }
-                else
-                {
-                    if (genericReturnType.TypeArgumentList.Arguments.Count != 1)
+                    if (returnType is GenericNameSyntax genericReturnType)
                     {
-                        continue;
-                    }
+                        if (genericReturnType.TypeArgumentList.Arguments.Count != 1)
+                        {
+                            return;
+                        }
 
-                    context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD114_CodeFix_FromResult, ct => ApplyTaskFromResultFix(genericReturnType.TypeArgumentList.Arguments[0], ct), "FromResult"), diagnostic);
+                        context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD114_CodeFix_FromResult, ct => ApplyTaskFromResultFix(genericReturnType.TypeArgumentList.Arguments[0], ct), "FromResult"), diagnostic);
+                    }
+                    else
+                    {
+                        context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD114_CodeFix_CompletedTask, ct => ApplyTaskCompletedTaskFix(ct), "CompletedTask"), diagnostic);
+                    }
                 }
 
                 Task<Document> ApplyTaskCompletedTaskFix(CancellationToken cancellationToken)
@@ -78,6 +104,19 @@
                     return Task.FromResult(context.Document.WithSyntaxRoot(syntaxRoot.ReplaceNode(nullLiteral, completedTaskExpression)));
                 }
             }
+        }
+
+        private static SyntaxNode? GetEnclosingMethodOrDelegate(LiteralExpressionSyntax literalExpression)
+        {
+            SyntaxNode ancestor = literalExpression;
+            do
+            {
+                ancestor = ancestor.Parent;
+            }
+            while (ancestor != null && !ancestor.IsKind(SyntaxKind.AnonymousMethodExpression) && !ancestor.IsKind(SyntaxKind.LocalFunctionStatement)
+                && !ancestor.IsKind(SyntaxKind.MethodDeclaration));
+
+            return ancestor;
         }
     }
 }
