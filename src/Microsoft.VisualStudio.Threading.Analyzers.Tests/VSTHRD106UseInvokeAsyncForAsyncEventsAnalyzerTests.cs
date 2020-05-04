@@ -281,6 +281,29 @@ class Test<T> where T : EventArgs {
         }
 
         [Fact]
+        public async Task DoNotReportWarningIfNonInvokeMethodsAreUsed()
+        {
+            var test = @"
+using System;
+using System.Linq;
+using Microsoft.VisualStudio.Threading;
+
+class Test<T> where T : EventArgs {
+    event AsyncEventHandler<T> handler1;
+    event AsyncEventHandler<EventArgs> handler2;
+    event AsyncEventHandler handler3;
+
+    void F() {
+        handler1.Equals(null);
+        handler2.Equals(null);
+        handler3.Equals(null);
+    }
+}
+";
+            await Verify.VerifyAnalyzerAsync(test);
+        }
+
+        [Fact]
         public async Task DoNotReportWarningIfInvokeAsyncEventHandlerUsingInvokeAsyncAndTheyArePassedAsParameters()
         {
             var test = @"
