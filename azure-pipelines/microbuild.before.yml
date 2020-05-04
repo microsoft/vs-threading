@@ -3,15 +3,15 @@ parameters:
 - name: ShouldSkipOptimize
 
 steps:
-
-- task: ms-vseng.MicroBuildTasks.965C8DC6-1483-45C9-B384-5AC75DA1F1A4.MicroBuildOptProfPlugin@4
+- task: MicroBuildOptProfPlugin@5
   inputs:
-    optimizationInputsDropNamePrefix: OptimizationInputs/DevDiv/vs-threading
-    getDropNameByDrop: true
+    ProfilingInputsDropName: ProfilingInputs/$(System.TeamProject)/$(Build.Repository.Name)/$(Build.SourceBranchName)/$(Build.BuildNumber)
+    OptimizationInputsLookupMethod: DropPrefix
+    DropNamePrefix: OptimizationInputs/$(System.TeamProject)/$(Build.Repository.Name)
     ShouldSkipOptimize: ${{ parameters.ShouldSkipOptimize }}
   displayName: Install OptProf Plugin
 
-- task: MicroBuildSigningPlugin@1
+- task: MicroBuildSigningPlugin@2
   inputs:
     signType: ${{ parameters.SignType }}
     zipSources: false

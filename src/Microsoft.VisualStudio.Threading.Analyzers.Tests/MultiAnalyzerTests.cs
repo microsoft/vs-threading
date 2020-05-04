@@ -85,7 +85,7 @@ internal class Child : Parent {
 }
 ";
 
-            var expected = Verify.CompilerError("CS0535").WithLocation(6, 23).WithMessage("'Parent' does not implement interface member 'A.Foo()'");
+            var expected = Verify.CompilerError("CS0535").WithLocation(6, 23).WithArguments("Parent", "A.Foo()");
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
@@ -128,8 +128,8 @@ public class A {
 
             DiagnosticResult[] expected =
             {
-                Verify.CompilerError("CS0246").WithLocation(6, 21).WithMessage("The type or namespace name 'C' could not be found (are you missing a using directive or an assembly reference?)"),
-                Verify.CompilerError("CS0246").WithLocation(10, 21).WithMessage("The type or namespace name 'C' could not be found (are you missing a using directive or an assembly reference?)"),
+                Verify.CompilerError("CS0246").WithLocation(6, 21).WithArguments("C"),
+                Verify.CompilerError("CS0246").WithLocation(10, 21).WithArguments("C"),
             };
             await Verify.VerifyAnalyzerAsync(test, expected);
         }

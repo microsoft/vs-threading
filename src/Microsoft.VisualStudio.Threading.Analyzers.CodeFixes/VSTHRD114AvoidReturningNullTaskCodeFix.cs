@@ -6,11 +6,10 @@
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CodeActions;
     using Microsoft.CodeAnalysis.CodeFixes;
-    using Microsoft.CodeAnalysis.CSharp;
-    using Microsoft.CodeAnalysis.CSharp.Syntax;
-    using Microsoft.CodeAnalysis.Simplification;
+    using Microsoft.CodeAnalysis.Editing;
+    using Microsoft.CodeAnalysis.Operations;
 
-    [ExportCodeFixProvider(LanguageNames.CSharp)]
+    [ExportCodeFixProvider(LanguageNames.CSharp, LanguageNames.VisualBasic)]
     public class VSTHRD114AvoidReturningNullTaskCodeFix : CodeFixProvider
     {
         private static readonly ImmutableArray<string> ReusableFixableDiagnosticIds = ImmutableArray.Create(
@@ -28,54 +27,43 @@
             {
                 var semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
                 var syntaxRoot = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
-
-                if (!(syntaxRoot.FindNode(diagnostic.Location.SourceSpan) is LiteralExpressionSyntax nullLiteral))
+                var nullLiteral = syntaxRoot.FindNode(diagnostic.Location.SourceSpan);
+                if (semanticModel.GetOperation(nullLiteral, context.CancellationToken) is ILiteralOperation { ConstantValue: { HasValue: true, Value: null } })
                 {
-                    continue;
-                }
-
-                var methodDeclaration = nullLiteral.FirstAncestorOrSelf<MethodDeclarationSyntax>();
-                if (methodDeclaration == null)
-                {
-                    continue;
-                }
-
-                if (!(methodDeclaration.ReturnType is GenericNameSyntax genericReturnType))
-                {
-                    context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD114_CodeFix_CompletedTask, ct => ApplyTaskCompletedTaskFix(ct), "CompletedTask"), diagnostic);
-                }
-                else
-                {
-                    if (genericReturnType.TypeArgumentList.Arguments.Count != 1)
+                    var typeInfo = semanticModel.GetTypeInfo(nullLiteral, context.CancellationToken);
+                    if (typeInfo.ConvertedType is INamedTypeSymbol returnType)
                     {
-                        continue;
+                        if (returnType.IsGenericType)
+                        {
+                            context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD114_CodeFix_FromResult, ct => ApplyTaskFromResultFix(returnType, ct), nameof(Task.FromResult)), diagnostic);
+                        }
+                        else
+                        {
+                            context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD114_CodeFix_CompletedTask, ct => ApplyTaskCompletedTaskFix(returnType, ct), nameof(Task.CompletedTask)), diagnostic);
+                        }
                     }
 
-                    context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD114_CodeFix_FromResult, ct => ApplyTaskFromResultFix(genericReturnType.TypeArgumentList.Arguments[0], ct), "FromResult"), diagnostic);
-                }
+                    Task<Document> ApplyTaskCompletedTaskFix(INamedTypeSymbol returnType, CancellationToken cancellationToken)
+                    {
+                        var generator = SyntaxGenerator.GetGenerator(context.Document);
+                        SyntaxNode completedTaskExpression = generator.MemberAccessExpression(
+                                generator.TypeExpressionForStaticMemberAccess(returnType),
+                                generator.IdentifierName(nameof(Task.CompletedTask)));
 
-                Task<Document> ApplyTaskCompletedTaskFix(CancellationToken cancellationToken)
-                {
-                    ExpressionSyntax completedTaskExpression = SyntaxFactory.MemberAccessExpression(
-                            SyntaxKind.SimpleMemberAccessExpression,
-                            SyntaxFactory.IdentifierName("Task"),
-                            SyntaxFactory.IdentifierName("CompletedTask"))
-                        .WithAdditionalAnnotations(Simplifier.Annotation);
+                        return Task.FromResult(context.Document.WithSyntaxRoot(syntaxRoot.ReplaceNode(nullLiteral, completedTaskExpression)));
+                    }
 
-                    return Task.FromResult(context.Document.WithSyntaxRoot(syntaxRoot.ReplaceNode(nullLiteral, completedTaskExpression)));
-                }
+                    Task<Document> ApplyTaskFromResultFix(INamedTypeSymbol returnType, CancellationToken cancellationToken)
+                    {
+                        var generator = SyntaxGenerator.GetGenerator(context.Document);
+                        SyntaxNode taskFromResultExpression = generator.InvocationExpression(
+                            generator.MemberAccessExpression(
+                                generator.TypeExpressionForStaticMemberAccess(returnType.BaseType),
+                                generator.GenericName(nameof(Task.FromResult), returnType.TypeArguments[0])),
+                            generator.NullLiteralExpression());
 
-                Task<Document> ApplyTaskFromResultFix(TypeSyntax returnTypeArgument, CancellationToken cancellationToken)
-                {
-                    ExpressionSyntax completedTaskExpression = SyntaxFactory.InvocationExpression(
-                        SyntaxFactory.MemberAccessExpression(
-                            SyntaxKind.SimpleMemberAccessExpression,
-                            SyntaxFactory.IdentifierName("Task"),
-                            SyntaxFactory.GenericName("FromResult").AddTypeArgumentListArguments(returnTypeArgument)))
-                        .AddArgumentListArguments(SyntaxFactory.Argument(nullLiteral))
-                        .WithAdditionalAnnotations(Simplifier.Annotation);
-
-                    return Task.FromResult(context.Document.WithSyntaxRoot(syntaxRoot.ReplaceNode(nullLiteral, completedTaskExpression)));
+                        return Task.FromResult(context.Document.WithSyntaxRoot(syntaxRoot.ReplaceNode(nullLiteral, taskFromResultExpression)));
+                    }
                 }
             }
         }

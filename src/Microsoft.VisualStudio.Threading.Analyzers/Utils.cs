@@ -381,6 +381,25 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return default(ContainingFunctionData);
         }
 
+        internal static IBlockOperation? GetContainingFunctionBlock(IOperation operation)
+        {
+            var previousAncestor = operation;
+            var ancestor = previousAncestor;
+            do
+            {
+                if (previousAncestor != ancestor)
+                {
+                    previousAncestor = ancestor;
+                }
+
+                ancestor = ancestor.Parent;
+            }
+            while (ancestor != null && ancestor.Kind != OperationKind.MethodBodyOperation && ancestor.Kind != OperationKind.AnonymousFunction &&
+                ancestor.Kind != OperationKind.LocalFunction);
+
+            return previousAncestor as IBlockOperation;
+        }
+
         internal static ISymbol GetContainingFunction(IOperation operation, ISymbol operationBlockContainingSymbol)
         {
             for (var current = operation; current is object; current = current.Parent)

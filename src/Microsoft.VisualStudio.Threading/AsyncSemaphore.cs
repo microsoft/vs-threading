@@ -8,14 +8,20 @@ namespace Microsoft.VisualStudio.Threading
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
 
     /// <summary>
     /// An asynchronous <see cref="SemaphoreSlim"/> like class with more convenient release syntax.
     /// </summary>
+    /// <remarks>
+    /// <para>This semaphore guarantees FIFO ordering.</para>
+    /// <para>
+    /// This object does *not* need to be disposed of, as it does not hold unmanaged resources.
+    /// Disposing this object has no effect on current users of the semaphore, and they are allowed to release their hold on the semaphore without exception.
+    /// An <see cref="ObjectDisposedException"/> is thrown back at anyone asking to or waiting to enter the semaphore after <see cref="Dispose()"/> is called.
+    /// </para>
+    /// </remarks>
     public class AsyncSemaphore : IDisposable
     {
         /// <summary>
@@ -24,11 +30,9 @@ namespace Microsoft.VisualStudio.Threading
         private static readonly Task<Releaser> DisposedReleaserTask = TplExtensions.FaultedTask<Releaser>(new ObjectDisposedException(typeof(AsyncSemaphore).FullName));
 
         /// <summary>
-        /// The semaphore used to keep concurrent access to this lock to just 1.
+        /// A task that is canceled without a specific token.
         /// </summary>
-#pragma warning disable CA2213 // Disposable fields should be disposed
-        private readonly SemaphoreSlim semaphore;
-#pragma warning restore CA2213 // Disposable fields should be disposed
+        private static readonly Task<Releaser> CanceledReleaser = Task.FromCanceled<Releaser>(new CancellationToken(true));
 
         /// <summary>
         /// A task to return for any uncontested request for the lock.
@@ -36,9 +40,19 @@ namespace Microsoft.VisualStudio.Threading
         private readonly Task<Releaser> uncontestedReleaser;
 
         /// <summary>
-        /// A task that is cancelled.
+        /// The sync object to lock on for mutable field access.
         /// </summary>
-        private readonly Task<Releaser> canceledReleaser;
+        private readonly object syncObject = new object();
+
+        /// <summary>
+        /// A queue of operations waiting to enter the semaphore.
+        /// </summary>
+        private readonly LinkedList<WaiterInfo> waiters = new LinkedList<WaiterInfo>();
+
+        /// <summary>
+        /// A pool of recycled nodes.
+        /// </summary>
+        private readonly Stack<LinkedListNode<WaiterInfo?>> nodePool = new Stack<LinkedListNode<WaiterInfo?>>();
 
         /// <summary>
         /// A value indicating whether this instance has been disposed.
@@ -51,51 +65,94 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="initialCount">The initial number of requests for the semaphore that can be granted concurrently.</param>
         public AsyncSemaphore(int initialCount)
         {
-            this.semaphore = new SemaphoreSlim(initialCount);
+            this.CurrentCount = initialCount;
             this.uncontestedReleaser = Task.FromResult(new Releaser(this));
-
-            this.canceledReleaser = Task.FromCanceled<Releaser>(new CancellationToken(canceled: true));
         }
 
         /// <summary>
         /// Gets the number of openings that remain in the semaphore.
         /// </summary>
-        public int CurrentCount => this.semaphore.CurrentCount;
+        public int CurrentCount { get; private set; }
 
         /// <summary>
         /// Requests access to the lock.
         /// </summary>
         /// <param name="cancellationToken">A token whose cancellation signals lost interest in the lock.</param>
-        /// <returns>A task whose result is a releaser that should be disposed to release the lock.</returns>
-        public Task<Releaser> EnterAsync(CancellationToken cancellationToken = default(CancellationToken))
-        {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled<Releaser>(cancellationToken);
-            }
-
-            if (this.disposed)
-            {
-                return DisposedReleaserTask;
-            }
-
-            return this.LockWaitingHelper(this.semaphore.WaitAsync(cancellationToken));
-        }
+        /// <returns>
+        /// A task whose result is a releaser that should be disposed to release the lock.
+        /// This task may be canceled if <paramref name="cancellationToken"/> is signaled.
+        /// </returns>
+        /// <exception cref="OperationCanceledException">Thrown when <paramref name="cancellationToken"/> is canceled before semaphore access is granted.</exception>
+        /// <exception cref="ObjectDisposedException">Thrown when this semaphore is disposed before semaphore access is granted.</exception>
+        public Task<Releaser> EnterAsync(CancellationToken cancellationToken = default) => this.EnterAsync(Timeout.InfiniteTimeSpan, cancellationToken);
 
         /// <summary>
         /// Requests access to the lock.
         /// </summary>
         /// <param name="timeout">A timeout for waiting for the lock.</param>
         /// <param name="cancellationToken">A token whose cancellation signals lost interest in the lock.</param>
-        /// <returns>A task whose result is a releaser that should be disposed to release the lock.</returns>
-        public Task<Releaser> EnterAsync(TimeSpan timeout, CancellationToken cancellationToken = default(CancellationToken))
+        /// <returns>
+        /// A task whose result is a releaser that should be disposed to release the lock.
+        /// This task may be canceled if <paramref name="cancellationToken"/> is signaled or <paramref name="timeout"/> expires.
+        /// </returns>
+        /// <exception cref="OperationCanceledException">Thrown when <paramref name="cancellationToken"/> is canceled or the <paramref name="timeout"/> expires before semaphore access is granted.</exception>
+        /// <exception cref="ObjectDisposedException">Thrown when this semaphore is disposed before semaphore access is granted.</exception>
+        public Task<Releaser> EnterAsync(TimeSpan timeout, CancellationToken cancellationToken = default)
         {
-            if (this.disposed)
+            if (cancellationToken.IsCancellationRequested)
             {
-                return DisposedReleaserTask;
+                return Task.FromCanceled<Releaser>(cancellationToken);
             }
 
-            return this.LockWaitingHelper(this.semaphore.WaitAsync(timeout, cancellationToken));
+            lock (this.syncObject)
+            {
+                if (this.disposed)
+                {
+                    return DisposedReleaserTask;
+                }
+
+                if (this.CurrentCount > 0)
+                {
+                    this.CurrentCount--;
+                    return this.uncontestedReleaser;
+                }
+                else if (timeout == TimeSpan.Zero)
+                {
+                    return CanceledReleaser;
+                }
+                else
+                {
+                    WaiterInfo info = new WaiterInfo(this, cancellationToken);
+                    var node = this.GetNode(info);
+
+                    // Careful: consider that if the token was cancelled just now (after we checked it on entry to this method)
+                    // or the timeout expires,
+                    // then this Register method may *inline* the handler we give it, reversing the apparent order of execution with respect to
+                    // the code that follows this Register call.
+                    info.CancellationTokenRegistration = cancellationToken.Register(s => CancellationHandler(s), info);
+                    if (timeout != Timeout.InfiniteTimeSpan)
+                    {
+                        info.TimerTokenSource = new Timer(s => CancellationHandler(s), info, checked((int)timeout.TotalMilliseconds), Timeout.Infinite);
+                    }
+
+                    // Only add to the queue if cancellation hasn't already happened.
+                    if (!info.Trigger.Task.IsCanceled)
+                    {
+                        this.waiters.AddLast(node);
+                        info.Node = node;
+                    }
+                    else
+                    {
+                        // Make sure we don't leak the Timer if cancellation happened before we created it.
+                        info.Cleanup();
+
+                        // Also recycle the unused node.
+                        this.RecycleNode(node);
+                    }
+
+                    return info.Trigger.Task;
+                }
+            }
         }
 
         /// <summary>
@@ -104,15 +161,9 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="timeout">A timeout for waiting for the lock (in milliseconds).</param>
         /// <param name="cancellationToken">A token whose cancellation signals lost interest in the lock.</param>
         /// <returns>A task whose result is a releaser that should be disposed to release the lock.</returns>
-        public Task<Releaser> EnterAsync(int timeout, CancellationToken cancellationToken = default(CancellationToken))
-        {
-            if (this.disposed)
-            {
-                return DisposedReleaserTask;
-            }
-
-            return this.LockWaitingHelper(this.semaphore.WaitAsync(timeout, cancellationToken));
-        }
+        /// <exception cref="OperationCanceledException">Thrown when <paramref name="cancellationToken"/> is canceled or the <paramref name="timeout"/> expires before semaphore access is granted.</exception>
+        /// <exception cref="ObjectDisposedException">Thrown when this semaphore is disposed before semaphore access is granted.</exception>
+        public Task<Releaser> EnterAsync(int timeout, CancellationToken cancellationToken = default) => this.EnterAsync(TimeSpan.FromMilliseconds(timeout), cancellationToken);
 
         /// <inheritdoc/>
         public void Dispose()
@@ -129,88 +180,64 @@ namespace Microsoft.VisualStudio.Threading
         {
             if (disposing)
             {
-                this.disposed = true;
+                List<WaiterInfo>? waitersCopy = null;
+                lock (this.syncObject)
+                {
+                    this.disposed = true;
 
-                // !!DO NOT!! dispose the semaphore, for the following reasons:
-                // 1. SemaphoreSlim.Dispose is not safe for concurrent use while something is waiting. Calling Dispose
-                //    requires tracking of all outstanding requests for enter/release.
-                // 2. SemaphoreSlim only allocates resources that could need to be be disposed if the
-                //    SemaphoreSlim.AvailableWaitHandle property is accessed. The semaphore field here is private and we
-                //    do not access this property.
-                //
-                ////this.semaphore.Dispose();
+                    if (this.waiters.Count > 0)
+                    {
+                        waitersCopy = new List<WaiterInfo>(this.waiters.Count);
+                        while (this.waiters.First is { } head)
+                        {
+                            head.Value.Trigger.TrySetException(new ObjectDisposedException(this.GetType().FullName));
+                            waitersCopy.Add(head.Value);
+                            this.waiters.RemoveFirst();
+                        }
+                    }
+
+                    this.nodePool.Clear();
+                }
+
+                if (waitersCopy is object)
+                {
+                    foreach (var waitInfo in waitersCopy)
+                    {
+                        waitInfo.Cleanup();
+                    }
+                }
             }
         }
 
-        /// <summary>
-        /// Requests access to the lock.
-        /// </summary>
-        /// <param name="waitTask">A task that represents a request for the semaphore.</param>
-        /// <returns>A task whose result is a releaser that should be disposed to release the lock.</returns>
-        private Task<Releaser> LockWaitingHelper(Task waitTask)
+        private void Release()
         {
-            Requires.NotNull(waitTask, nameof(waitTask));
-
-            return waitTask.Status == TaskStatus.RanToCompletion
-                ? this.uncontestedReleaser // uncontested lock
-                : waitTask.ContinueWith(
-                    (waiter, state) =>
+            WaiterInfo? info = null;
+            lock (this.syncObject)
+            {
+                if (this.CurrentCount++ == 0)
+                {
+                    // We loop because the First node may have been canceled.
+                    while (this.waiters.First is { } head)
                     {
-                        // Re-throw any cancellation or fault exceptions.
-                        waiter.GetAwaiter().GetResult();
+                        // Remove the head of the queue.
+                        this.waiters.RemoveFirst();
+                        info = head.Value;
+                        this.RecycleNode(head);
 
-                        var semaphore = (AsyncSemaphore)state!;
-
-                        if (semaphore.disposed)
+                        if (info.Trigger.TrySetResult(new Releaser(this)))
                         {
-                            throw new ObjectDisposedException(semaphore.GetType().FullName);
+                            // We successfully let someone enter the semaphore.
+                            this.CurrentCount--;
+
+                            // We've filled the one slot available in the semaphore. Stop looking for more.
+                            break;
                         }
+                    }
+                }
+            }
 
-                        return new Releaser(semaphore);
-                    },
-                    this,
-                    CancellationToken.None,
-                    TaskContinuationOptions.ExecuteSynchronously,
-                    TaskScheduler.Default);
-        }
-
-        /// <summary>
-        /// Requests access to the lock.
-        /// </summary>
-        /// <param name="waitTask">A task that represents a request for the semaphore.</param>
-        /// <returns>A task whose result is a releaser that should be disposed to release the lock.</returns>
-        private Task<Releaser> LockWaitingHelper(Task<bool> waitTask)
-        {
-            Requires.NotNull(waitTask, nameof(waitTask));
-
-            return waitTask.IsCompleted
-                ? (waitTask.Result ? this.uncontestedReleaser : this.canceledReleaser) // uncontested lock
-                : waitTask.ContinueWith(
-                    (waiter, state) =>
-                    {
-                        // Rethrow the original cancellation exception to retain the root CancellationToken,
-                        // or any other faulted exceptions.
-                        waiter.GetAwaiter().GetResult();
-
-                        // Also check for the timeout result.
-                        if (!waiter.Result)
-                        {
-                            throw new OperationCanceledException();
-                        }
-
-                        var semaphore = (AsyncSemaphore)state!;
-
-                        if (semaphore.disposed)
-                        {
-                            throw new ObjectDisposedException(semaphore.GetType().FullName);
-                        }
-
-                        return new Releaser(semaphore);
-                    },
-                    this,
-                    CancellationToken.None,
-                    TaskContinuationOptions.ExecuteSynchronously,
-                    TaskScheduler.Default);
+            // Release memory related to cancellation handling.
+            info?.Cleanup();
         }
 
         /// <summary>
@@ -240,8 +267,94 @@ namespace Microsoft.VisualStudio.Threading
             {
                 if (this.toRelease != null)
                 {
-                    this.toRelease.semaphore.Release();
+                    this.toRelease.Release();
                 }
+            }
+        }
+
+        private static void CancellationHandler(object? state)
+        {
+            var waiterInfo = (WaiterInfo)state!;
+
+            // The party that manages to complete or cancel the task is responsible to remove it from the queue.
+            if (waiterInfo.Trigger.TrySetCanceled(waiterInfo.CancellationToken.IsCancellationRequested ? waiterInfo.CancellationToken : new CancellationToken(true)))
+            {
+                // If the node is in the queue, remove it.
+                // It might not have been added yet if cancellation was already requested by the time we called Register.
+                lock (waiterInfo.Owner.syncObject)
+                {
+                    if (waiterInfo.Node is { } node)
+                    {
+                        waiterInfo.Owner.waiters.Remove(node);
+                        waiterInfo.Owner.RecycleNode(node);
+                    }
+                }
+            }
+
+            // Clear registration and references.
+            waiterInfo.Cleanup();
+        }
+
+        private void RecycleNode(LinkedListNode<WaiterInfo> node)
+        {
+            Assumes.True(Monitor.IsEntered(this.syncObject));
+            node.Value.Node = null;
+            if (this.nodePool.Count < 10)
+            {
+                LinkedListNode<WaiterInfo?> nullableNode = node!;
+                nullableNode.Value = null;
+                this.nodePool.Push(nullableNode);
+            }
+        }
+
+        private LinkedListNode<WaiterInfo> GetNode(WaiterInfo info)
+        {
+            Assumes.True(Monitor.IsEntered(this.syncObject));
+            if (this.nodePool.Count > 0)
+            {
+                var node = this.nodePool.Pop();
+                node.Value = info;
+                return node!;
+            }
+
+            return new LinkedListNode<WaiterInfo>(info);
+        }
+
+        private class WaiterInfo
+        {
+            internal WaiterInfo(AsyncSemaphore owner, CancellationToken cancellationToken)
+            {
+                this.Owner = owner;
+                this.CancellationToken = cancellationToken;
+            }
+
+            internal LinkedListNode<WaiterInfo>? Node { get; set; }
+
+            internal AsyncSemaphore Owner { get; }
+
+            internal TaskCompletionSource<Releaser> Trigger { get; } = new TaskCompletionSource<Releaser>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            internal CancellationToken CancellationToken { get; }
+
+            internal CancellationTokenRegistration CancellationTokenRegistration { private get; set; }
+
+            internal IDisposable? TimerTokenSource { private get; set; }
+
+            internal void Cleanup()
+            {
+                CancellationTokenRegistration cancellationTokenRegistration;
+                IDisposable? timerTokenSource;
+                lock (this)
+                {
+                    cancellationTokenRegistration = this.CancellationTokenRegistration;
+                    this.CancellationTokenRegistration = default;
+
+                    timerTokenSource = this.TimerTokenSource;
+                    this.TimerTokenSource = null;
+                }
+
+                cancellationTokenRegistration.Dispose();
+                timerTokenSource?.Dispose();
             }
         }
     }
