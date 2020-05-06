@@ -110,6 +110,7 @@ class Test : object, VsThreadingAsyncDisposable, BclAsyncDisposable
             await Verify.VerifyCodeFixAsync(test, fix);
         }
 
+#if IncludeVBSupport
         [Fact]
         public async Task ClassImplementsOnlyVsThreadingType_WithBaseClassToo_VB()
         {
@@ -139,6 +140,7 @@ End Class";
 
             await VBVerify.VerifyCodeFixAsync(test, fix);
         }
+#endif
 
         [Fact]
         public async Task StructImplementsBoth()
@@ -203,6 +205,7 @@ struct Test : VsThreadingAsyncDisposable, BclAsyncDisposable
             await Verify.VerifyCodeFixAsync(test, fix);
         }
 
+#if IncludeVBSupport
         [Fact]
         public async Task StructImplementsOnlyVsThreadingType_VB()
         {
@@ -230,6 +233,7 @@ End Structure";
 
             await VBVerify.VerifyCodeFixAsync(test, fix);
         }
+#endif
 
         [Fact]
         public async Task InterfaceImplementsBoth()
@@ -285,6 +289,7 @@ interface Test : VsThreadingAsyncDisposable, BclAsyncDisposable
             await Verify.VerifyCodeFixAsync(test, fix);
         }
 
+#if IncludeVBSupport
         [Fact]
         public async Task InterfaceImplementsOnlyVsThreadingType_VB()
         {
@@ -300,5 +305,6 @@ End Interface";
 
             await VBVerify.VerifyCodeFixAsync(test, fix);
         }
+#endif
     }
 }
