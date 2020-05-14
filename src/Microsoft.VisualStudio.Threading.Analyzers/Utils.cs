@@ -157,6 +157,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                         }
                     }
                 }
+#if IncludeVBSupport
                 else if (syntaxNode is CodeAnalysis.VisualBasic.Syntax.InterfaceStatementSyntax { Parent: CodeAnalysis.VisualBasic.Syntax.InterfaceBlockSyntax vbInterface })
                 {
                     if (compilation.GetSemanticModel(vbInterface.SyntaxTree) is { } semanticModel)
@@ -208,6 +209,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                         }
                     }
                 }
+#endif
             }
 
             return symbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax(cancellationToken)?.GetLocation();
