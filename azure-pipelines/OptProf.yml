@@ -42,7 +42,7 @@ stages:
   - template: build.yml
     parameters:
       windowsPool: VSEng-MicroBuildVS2019
-      SignType: test
+      SignType: real
       ShouldSkipOptimize: true
 - stage: QueueVSBuild
   jobs:
