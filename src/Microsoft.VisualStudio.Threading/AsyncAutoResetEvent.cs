@@ -114,7 +114,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Sets the signal if it has not already been set, allowing one awaiter to handle the signal if one is already waiting.
+        /// Unblocks one waiter or sets the signal if no waiters are present so the next waiter may proceed immediately.
         /// </summary>
         public void Set()
         {
