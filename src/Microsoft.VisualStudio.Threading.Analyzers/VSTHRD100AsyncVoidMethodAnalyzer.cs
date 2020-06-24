@@ -28,7 +28,7 @@
     ///   }
     /// ]]>
     /// </remarks>
-    [DiagnosticAnalyzer(LanguageNames.CSharp)]
+    [DiagnosticAnalyzer(LanguageNames.CSharp, LanguageNames.VisualBasic)]
     public class VSTHRD100AsyncVoidMethodAnalyzer : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD100";
