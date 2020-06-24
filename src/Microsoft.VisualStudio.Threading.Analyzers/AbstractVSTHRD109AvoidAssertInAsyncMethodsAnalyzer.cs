@@ -18,8 +18,7 @@
     /// ]]></code>
     /// It's problematic because callers except that async methods can be called from any thread, per the 1st rule.
     /// </remarks>
-    [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class VSTHRD109AvoidAssertInAsyncMethodsAnalyzer : DiagnosticAnalyzer
+    public abstract class AbstractVSTHRD109AvoidAssertInAsyncMethodsAnalyzer : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD109";
 
@@ -34,6 +33,8 @@
 
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Descriptor);
+
+        private protected abstract LanguageUtils LanguageUtils { get; }
 
         /// <inheritdoc />
         public override void Initialize(AnalysisContext context)
@@ -60,7 +61,7 @@
                 var invocation = (IInvocationOperation)context.Operation;
                 if (mainThreadAssertingMethods.Contains(invocation.TargetMethod))
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(Descriptor, CSharpUtils.IsolateMethodName(invocation).GetLocation()));
+                    context.ReportDiagnostic(Diagnostic.Create(Descriptor, this.LanguageUtils.IsolateMethodName(invocation).GetLocation()));
                 }
             }
         }

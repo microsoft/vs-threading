@@ -2,7 +2,7 @@
 {
     using System.Threading.Tasks;
     using Xunit;
-    using Verify = CSharpCodeFixVerifier<VSTHRD109AvoidAssertInAsyncMethodsAnalyzer, VSTHRD109AvoidAssertInAsyncMethodsCodeFix>;
+    using Verify = CSharpCodeFixVerifier<CSharpVSTHRD109AvoidAssertInAsyncMethodsAnalyzer, VSTHRD109AvoidAssertInAsyncMethodsCodeFix>;
 
     public class VSTHRD109AvoidAssertInAsyncMethodsAnalyzerTests
     {

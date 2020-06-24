@@ -6,90 +6,18 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
-    using System.Text;
     using System.Threading;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Operations;
 
-    internal static class CSharpUtils
+    internal sealed class CSharpUtils : LanguageUtils
     {
-        internal static Location? GetLocationOfBaseTypeName(INamedTypeSymbol symbol, INamedTypeSymbol baseType, Compilation compilation, CancellationToken cancellationToken)
-        {
-            foreach (var syntaxReference in symbol.DeclaringSyntaxReferences)
-            {
-                var syntaxNode = syntaxReference.GetSyntax(cancellationToken);
-                if (syntaxNode is TypeDeclarationSyntax typeDeclarationSyntax)
-                {
-                    if (compilation.GetSemanticModel(typeDeclarationSyntax.SyntaxTree) is { } semanticModel)
-                    {
-                        foreach (var baseTypeSyntax in typeDeclarationSyntax.BaseList.Types)
-                        {
-                            SymbolInfo baseTypeSymbolInfo = semanticModel.GetSymbolInfo(baseTypeSyntax.Type, cancellationToken);
-                            if (Equals(baseTypeSymbolInfo.Symbol, baseType))
-                            {
-                                return baseTypeSyntax.GetLocation();
-                            }
-                        }
-                    }
-                }
-#if IncludeVBSupport
-                else if (syntaxNode is CodeAnalysis.VisualBasic.Syntax.InterfaceStatementSyntax { Parent: CodeAnalysis.VisualBasic.Syntax.InterfaceBlockSyntax vbInterface })
-                {
-                    if (compilation.GetSemanticModel(vbInterface.SyntaxTree) is { } semanticModel)
-                    {
-                        foreach (var inheritStatement in vbInterface.Inherits)
-                        {
-                            foreach (var typeSyntax in inheritStatement.Types)
-                            {
-                                SymbolInfo baseTypeSymbolInfo = semanticModel.GetSymbolInfo(typeSyntax, cancellationToken);
-                                if (Equals(baseTypeSymbolInfo.Symbol, baseType))
-                                {
-                                    return typeSyntax.GetLocation();
-                                }
-                            }
-                        }
-                    }
-                }
-                else if (syntaxNode is CodeAnalysis.VisualBasic.Syntax.ClassStatementSyntax { Parent: CodeAnalysis.VisualBasic.Syntax.ClassBlockSyntax vbClass })
-                {
-                    if (compilation.GetSemanticModel(vbClass.SyntaxTree) is { } semanticModel)
-                    {
-                        foreach (var implementStatement in vbClass.Implements)
-                        {
-                            foreach (var typeSyntax in implementStatement.Types)
-                            {
-                                SymbolInfo baseTypeSymbolInfo = semanticModel.GetSymbolInfo(typeSyntax, cancellationToken);
-                                if (Equals(baseTypeSymbolInfo.Symbol, baseType))
-                                {
-                                    return typeSyntax.GetLocation();
-                                }
-                            }
-                        }
-                    }
-                }
-                else if (syntaxNode is CodeAnalysis.VisualBasic.Syntax.StructureStatementSyntax { Parent: CodeAnalysis.VisualBasic.Syntax.StructureBlockSyntax vbStruct })
-                {
-                    if (compilation.GetSemanticModel(vbStruct.SyntaxTree) is { } semanticModel)
-                    {
-                        foreach (var implementStatement in vbStruct.Implements)
-                        {
-                            foreach (var typeSyntax in implementStatement.Types)
-                            {
-                                SymbolInfo baseTypeSymbolInfo = semanticModel.GetSymbolInfo(typeSyntax, cancellationToken);
-                                if (Equals(baseTypeSymbolInfo.Symbol, baseType))
-                                {
-                                    return typeSyntax.GetLocation();
-                                }
-                            }
-                        }
-                    }
-                }
-#endif
-            }
+        public static readonly CSharpUtils Instance = new CSharpUtils();
 
-            return symbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax(cancellationToken)?.GetLocation();
+        private CSharpUtils()
+        {
         }
 
         internal static ExpressionSyntax IsolateMethodName(InvocationExpressionSyntax invocation)
@@ -102,16 +30,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             var memberAccessExpression = invocation.Expression as MemberAccessExpressionSyntax;
             ExpressionSyntax invokedMethodName = memberAccessExpression?.Name ?? invocation.Expression as IdentifierNameSyntax ?? (invocation.Expression as MemberBindingExpressionSyntax)?.Name ?? invocation.Expression;
             return invokedMethodName;
-        }
-
-        internal static SyntaxNode IsolateMethodName(IInvocationOperation invocation)
-        {
-            if (invocation.Syntax is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax memberAccessExpression })
-            {
-                return memberAccessExpression.Name;
-            }
-
-            return invocation.Syntax;
         }
 
         /// <summary>
@@ -238,6 +156,40 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return invocation is object
                 && (invocation.Expression as IdentifierNameSyntax)?.Identifier.Text == "nameof"
                 && invocation.ArgumentList.Arguments.Count == 1;
+        }
+
+        internal override Location? GetLocationOfBaseTypeName(INamedTypeSymbol symbol, INamedTypeSymbol baseType, Compilation compilation, CancellationToken cancellationToken)
+        {
+            foreach (var syntaxReference in symbol.DeclaringSyntaxReferences)
+            {
+                var syntaxNode = syntaxReference.GetSyntax(cancellationToken);
+                if (syntaxNode is TypeDeclarationSyntax typeDeclarationSyntax)
+                {
+                    if (compilation.GetSemanticModel(typeDeclarationSyntax.SyntaxTree) is { } semanticModel)
+                    {
+                        foreach (var baseTypeSyntax in typeDeclarationSyntax.BaseList.Types)
+                        {
+                            SymbolInfo baseTypeSymbolInfo = semanticModel.GetSymbolInfo(baseTypeSyntax.Type, cancellationToken);
+                            if (Equals(baseTypeSymbolInfo.Symbol, baseType))
+                            {
+                                return baseTypeSyntax.GetLocation();
+                            }
+                        }
+                    }
+                }
+            }
+
+            return symbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax(cancellationToken)?.GetLocation();
+        }
+
+        internal override SyntaxNode IsolateMethodName(IInvocationOperation invocation)
+        {
+            if (invocation.Syntax is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax memberAccessExpression })
+            {
+                return memberAccessExpression.Name;
+            }
+
+            return invocation.Syntax;
         }
 
         internal readonly struct ContainingFunctionData

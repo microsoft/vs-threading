@@ -21,7 +21,7 @@
     public class VSTHRD109AvoidAssertInAsyncMethodsCodeFix : CodeFixProvider
     {
         private static readonly ImmutableArray<string> ReusableFixableDiagnosticIds = ImmutableArray.Create(
-            VSTHRD109AvoidAssertInAsyncMethodsAnalyzer.Id);
+            AbstractVSTHRD109AvoidAssertInAsyncMethodsAnalyzer.Id);
 
         public override ImmutableArray<string> FixableDiagnosticIds => ReusableFixableDiagnosticIds;
 
