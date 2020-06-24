@@ -200,7 +200,7 @@
 
         private static void AddToCallerCalleeMap(SyntaxNodeAnalysisContext context, Dictionary<IMethodSymbol, List<CallInfo>> callerToCalleeMap)
         {
-            if (Utils.IsWithinNameOf(context.Node))
+            if (CSharpUtils.IsWithinNameOf(context.Node))
             {
                 return;
             }
@@ -209,7 +209,7 @@
             {
                 if (propertySymbol != null)
                 {
-                    return Utils.IsOnLeftHandOfAssignment(context.Node)
+                    return CSharpUtils.IsOnLeftHandOfAssignment(context.Node)
                         ? propertySymbol.SetMethod
                         : propertySymbol.GetMethod;
                 }
@@ -319,7 +319,7 @@
                 var invokedMethod = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
                 if (invokedMethod != null)
                 {
-                    var methodDeclaration = context.Node.FirstAncestorOrSelf<SyntaxNode>(n => CommonInterest.MethodSyntaxKinds.Contains(n.Kind()));
+                    var methodDeclaration = context.Node.FirstAncestorOrSelf<SyntaxNode>(n => CSharpCommonInterest.MethodSyntaxKinds.Contains(n.Kind()));
                     if (methodDeclaration != null)
                     {
                         bool assertsMainThread = this.MainThreadAssertingMethods.Contains(invokedMethod);
@@ -446,7 +446,7 @@
                 if (requiresUIThread)
                 {
                     var threadingContext = ThreadingContext.Unknown;
-                    var methodDeclaration = context.Node.FirstAncestorOrSelf<SyntaxNode>(n => CommonInterest.MethodSyntaxKinds.Contains(n.Kind()));
+                    var methodDeclaration = context.Node.FirstAncestorOrSelf<SyntaxNode>(n => CSharpCommonInterest.MethodSyntaxKinds.Contains(n.Kind()));
                     if (methodDeclaration != null)
                     {
                         threadingContext = this.methodDeclarationNodes.GetValueOrDefault(methodDeclaration);
@@ -454,7 +454,7 @@
 
                     if (threadingContext != ThreadingContext.MainThread)
                     {
-                        var function = Utils.GetContainingFunction((CSharpSyntaxNode)context.Node);
+                        var function = CSharpUtils.GetContainingFunction((CSharpSyntaxNode)context.Node);
                         Location location = focusDiagnosticOn ?? context.Node.GetLocation();
                         var descriptor = function.IsAsync ? DescriptorAsync : DescriptorSync;
                         var formattingArgs = function.IsAsync ? new object[] { type.Name } : new object[] { type.Name, this.MainThreadAssertingMethods.FirstOrDefault() };

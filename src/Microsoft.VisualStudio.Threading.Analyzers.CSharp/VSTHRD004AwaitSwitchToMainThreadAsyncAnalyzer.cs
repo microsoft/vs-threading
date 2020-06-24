@@ -50,7 +50,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 // This is a call to JTF.SwitchToMainThreadAsync(). Is it being (directly) awaited?
                 if (!(invocation.Parent is IAwaitOperation))
                 {
-                    var location = (Utils.IsolateMethodName(invocation) ?? invocation.Syntax).GetLocation();
+                    var location = (CSharpUtils.IsolateMethodName(invocation) ?? invocation.Syntax).GetLocation();
                     context.ReportDiagnostic(Diagnostic.Create(Descriptor, location));
                 }
             }

@@ -60,7 +60,7 @@
                 var invocation = (IInvocationOperation)context.Operation;
                 if (mainThreadAssertingMethods.Contains(invocation.TargetMethod))
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(Descriptor, Utils.IsolateMethodName(invocation).GetLocation()));
+                    context.ReportDiagnostic(Diagnostic.Create(Descriptor, CSharpUtils.IsolateMethodName(invocation).GetLocation()));
                 }
             }
         }

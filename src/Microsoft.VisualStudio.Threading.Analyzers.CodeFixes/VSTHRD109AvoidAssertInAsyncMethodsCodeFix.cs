@@ -39,7 +39,7 @@
                     continue;
                 }
 
-                var container = Utils.GetContainingFunction(syntaxNode);
+                var container = CSharpUtils.GetContainingFunction(syntaxNode);
                 if (container.BlockOrExpression == null)
                 {
                     return;
@@ -109,7 +109,7 @@
 
                     int typeAndMethodDelimiterIndex = fullyQualifiedMethod.LastIndexOf('.');
                     IdentifierNameSyntax methodName = SyntaxFactory.IdentifierName(fullyQualifiedMethod.Substring(typeAndMethodDelimiterIndex + 1));
-                    ExpressionSyntax invokedMethod = Utils.MemberAccess(fullyQualifiedMethod.Substring(0, typeAndMethodDelimiterIndex).Split('.'), methodName)
+                    ExpressionSyntax invokedMethod = CSharpUtils.MemberAccess(fullyQualifiedMethod.Substring(0, typeAndMethodDelimiterIndex).Split('.'), methodName)
                         .WithAdditionalAnnotations(Simplifier.Annotation);
                     var invocationExpression = SyntaxFactory.InvocationExpression(invokedMethod);
                     var cancellationTokenParameter = methodSymbol.Parameters.FirstOrDefault(Utils.IsCancellationTokenParameter);

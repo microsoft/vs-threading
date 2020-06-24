@@ -156,7 +156,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 }
             }
 
-            CommonInterest.InspectMemberAccess(context, memberAccessSyntax, Descriptor, problematicMethods);
+            CSharpCommonInterest.InspectMemberAccess(context, memberAccessSyntax, Descriptor, problematicMethods);
         }
     }
 }

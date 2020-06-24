@@ -57,7 +57,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     context.ReportDiagnostic(
                         Diagnostic.Create(
                             Descriptor,
-                            Utils.GetLocationOfBaseTypeName(symbol, vsThreadingAsyncDisposableType, context.Compilation, context.CancellationToken)));
+                            CSharpUtils.GetLocationOfBaseTypeName(symbol, vsThreadingAsyncDisposableType, context.Compilation, context.CancellationToken)));
                 }
             }
         }

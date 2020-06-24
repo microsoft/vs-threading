@@ -92,7 +92,7 @@
         private void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
         {
             var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
-            ExpressionSyntax invokedMethodName = Utils.IsolateMethodName(invocationExpressionSyntax);
+            ExpressionSyntax invokedMethodName = CSharpUtils.IsolateMethodName(invocationExpressionSyntax);
             var argList = invocationExpressionSyntax.ArgumentList;
             var symbolInfo = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax, context.CancellationToken);
             var methodSymbol = symbolInfo.Symbol as IMethodSymbol;

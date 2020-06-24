@@ -99,7 +99,7 @@
                     MethodDeclarationSyntax invocationDeclaringMethod = invocationExpressionSyntax.FirstAncestorOrSelf<MethodDeclarationSyntax>();
 
                     // Also consider all method calls to check for Async-suffixed alternatives.
-                    ExpressionSyntax invokedMethodName = Utils.IsolateMethodName(invocationExpressionSyntax);
+                    ExpressionSyntax invokedMethodName = CSharpUtils.IsolateMethodName(invocationExpressionSyntax);
                     var symbolInfo = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax, context.CancellationToken);
                     var methodSymbol = symbolInfo.Symbol as IMethodSymbol;
                     if (methodSymbol != null && !methodSymbol.Name.EndsWith(VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix) &&
