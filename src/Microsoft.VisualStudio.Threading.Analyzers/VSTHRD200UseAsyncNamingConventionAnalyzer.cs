@@ -11,7 +11,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.Diagnostics;
 
-    [DiagnosticAnalyzer(LanguageNames.CSharp)]
+    [DiagnosticAnalyzer(LanguageNames.CSharp, LanguageNames.VisualBasic)]
     public class VSTHRD200UseAsyncNamingConventionAnalyzer : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD200";

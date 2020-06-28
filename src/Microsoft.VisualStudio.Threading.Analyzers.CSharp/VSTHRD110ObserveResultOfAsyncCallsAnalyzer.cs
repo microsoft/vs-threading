@@ -51,9 +51,9 @@
                 var returnedSymbol = methodSymbol?.ReturnType;
                 if (returnedSymbol?.Name == Types.Task.TypeName && returnedSymbol.BelongsToNamespace(Types.Task.Namespace))
                 {
-                    if (!Utils.GetContainingFunction(invocation).IsAsync)
+                    if (!CSharpUtils.GetContainingFunction(invocation).IsAsync)
                     {
-                        var location = (Utils.IsolateMethodName(invocation) ?? invocation.Expression).GetLocation();
+                        var location = (CSharpUtils.IsolateMethodName(invocation) ?? invocation.Expression).GetLocation();
                         context.ReportDiagnostic(Diagnostic.Create(Descriptor, location));
                     }
                 }

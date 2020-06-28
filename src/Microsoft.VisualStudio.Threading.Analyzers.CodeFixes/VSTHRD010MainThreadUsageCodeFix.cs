@@ -35,7 +35,7 @@
             var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
             var syntaxNode = (ExpressionSyntax)root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: true);
 
-            var container = Utils.GetContainingFunction(syntaxNode);
+            var container = CSharpUtils.GetContainingFunction(syntaxNode);
             if (container.BlockOrExpression == null)
             {
                 return;
@@ -109,7 +109,7 @@
             {
                 int typeAndMethodDelimiterIndex = fullyQualifiedMethod.LastIndexOf('.');
                 IdentifierNameSyntax methodName = SyntaxFactory.IdentifierName(fullyQualifiedMethod.Substring(typeAndMethodDelimiterIndex + 1));
-                ExpressionSyntax invokedMethod = Utils.MemberAccess(fullyQualifiedMethod.Substring(0, typeAndMethodDelimiterIndex).Split('.'), methodName);
+                ExpressionSyntax invokedMethod = CSharpUtils.MemberAccess(fullyQualifiedMethod.Substring(0, typeAndMethodDelimiterIndex).Split('.'), methodName);
                 var invocationExpression = SyntaxFactory.InvocationExpression(invokedMethod);
                 var cancellationTokenParameter = methodSymbol.Parameters.FirstOrDefault(Utils.IsCancellationTokenParameter);
                 if (cancellationTokenParameter != null && cancellationTokenSymbol.Value != null)

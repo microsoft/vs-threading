@@ -14,7 +14,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     public class VSTHRD112ImplementSystemIAsyncDisposableCodeFix : CodeFixProvider
     {
         private static readonly ImmutableArray<string> ReusableFixableDiagnosticIds = ImmutableArray.Create(
-            VSTHRD112ImplementSystemIAsyncDisposableAnalyzer.Id);
+            AbstractVSTHRD112ImplementSystemIAsyncDisposableAnalyzer.Id);
 
         public override ImmutableArray<string> FixableDiagnosticIds => ReusableFixableDiagnosticIds;
 

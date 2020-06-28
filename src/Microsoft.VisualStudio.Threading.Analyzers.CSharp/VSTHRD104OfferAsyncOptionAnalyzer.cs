@@ -82,7 +82,7 @@
                     return;
                 }
 
-                if (Utils.IsWithinNameOf(context.Node as ExpressionSyntax))
+                if (CSharpUtils.IsWithinNameOf(context.Node as ExpressionSyntax))
                 {
                     // We do not consider arguments to nameof( ) because they do not represent invocations of code.
                     return;

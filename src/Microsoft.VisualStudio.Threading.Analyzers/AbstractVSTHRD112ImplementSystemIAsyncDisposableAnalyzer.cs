@@ -2,19 +2,14 @@
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
-    using System;
-    using System.Collections.Generic;
     using System.Collections.Immutable;
-    using System.Linq;
-    using System.Text;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.Diagnostics;
 
     /// <summary>
     /// Verifies that types that implement vs-threading's IAsyncDisposable interface also implement System.IAsyncDisposable.
     /// </summary>
-    [DiagnosticAnalyzer(LanguageNames.CSharp, LanguageNames.VisualBasic)]
-    public class VSTHRD112ImplementSystemIAsyncDisposableAnalyzer : DiagnosticAnalyzer
+    public abstract class AbstractVSTHRD112ImplementSystemIAsyncDisposableAnalyzer : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD112";
 
@@ -30,6 +25,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Descriptor);
+
+        private protected abstract LanguageUtils LanguageUtils { get; }
 
         public override void Initialize(AnalysisContext context)
         {
@@ -57,7 +54,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     context.ReportDiagnostic(
                         Diagnostic.Create(
                             Descriptor,
-                            Utils.GetLocationOfBaseTypeName(symbol, vsThreadingAsyncDisposableType, context.Compilation, context.CancellationToken)));
+                            this.LanguageUtils.GetLocationOfBaseTypeName(symbol, vsThreadingAsyncDisposableType, context.Compilation, context.CancellationToken)));
                 }
             }
         }

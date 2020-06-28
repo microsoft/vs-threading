@@ -82,7 +82,7 @@
 
         private static IEnumerable<SyntaxNode> GetAncestorsWithinMethod(SyntaxNode syntaxNode)
         {
-            return syntaxNode.Ancestors().TakeWhile(n => !CommonInterest.MethodSyntaxKinds.Contains(n.Kind()));
+            return syntaxNode.Ancestors().TakeWhile(n => !CSharpCommonInterest.MethodSyntaxKinds.Contains(n.Kind()));
         }
 
         private static bool IsArgInInvocationToConditionalMethod(SyntaxNodeAnalysisContext context)
