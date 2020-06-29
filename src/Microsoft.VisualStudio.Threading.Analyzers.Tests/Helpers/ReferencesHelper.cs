@@ -3,6 +3,7 @@
 namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
     using System.Collections.Immutable;
+    using System.Net;
     using Microsoft.CodeAnalysis.Testing;
 
     internal static class ReferencesHelper
@@ -12,5 +13,10 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 new PackageIdentity("System.Collections.Immutable", "1.3.1"),
                 new PackageIdentity("System.Threading.Tasks.Extensions", "4.5.3"),
                 new PackageIdentity("Microsoft.Bcl.AsyncInterfaces", "1.1.0")));
+
+        static ReferencesHelper()
+        {
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+        }
     }
 }
