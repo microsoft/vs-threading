@@ -362,7 +362,7 @@ class TestClient {
             {
                 ExpectedDiagnostics =
                 {
-                    Verify.Diagnostic().WithSpan(8, 21, 8, 27),
+                    Verify.Diagnostic().WithSpan("Test0.cs", 8, 21, 8, 27),
                 },
                 HasEntryPoint = true,
             };

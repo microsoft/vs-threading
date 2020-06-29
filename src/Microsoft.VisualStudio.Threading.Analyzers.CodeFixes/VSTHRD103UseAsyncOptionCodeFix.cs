@@ -135,13 +135,16 @@
                 var originalAnonymousMethodContainerIfApplicable = syncMethodName.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>();
                 var originalMethodDeclaration = syncMethodName.FirstAncestorOrSelf<MethodDeclarationSyntax>();
 
+                var enclosingSymbol = semanticModel.GetEnclosingSymbol(this.diagnostic.Location.SourceSpan.Start, cancellationToken);
+                var hasReturnValue = ((enclosingSymbol as IMethodSymbol)?.ReturnType as INamedTypeSymbol)?.IsGenericType ?? false;
+
                 // Ensure that the method or anonymous delegate is using the async keyword.
                 MethodDeclarationSyntax updatedMethod;
                 if (originalAnonymousMethodContainerIfApplicable != null)
                 {
                     updatedMethod = originalMethodDeclaration.ReplaceNode(
                         originalAnonymousMethodContainerIfApplicable,
-                        originalAnonymousMethodContainerIfApplicable.MakeMethodAsync(semanticModel, cancellationToken));
+                        originalAnonymousMethodContainerIfApplicable.MakeMethodAsync(hasReturnValue, semanticModel, cancellationToken));
                 }
                 else
                 {

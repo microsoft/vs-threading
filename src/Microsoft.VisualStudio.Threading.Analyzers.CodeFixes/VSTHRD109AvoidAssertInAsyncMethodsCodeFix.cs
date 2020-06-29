@@ -21,7 +21,7 @@
     public class VSTHRD109AvoidAssertInAsyncMethodsCodeFix : CodeFixProvider
     {
         private static readonly ImmutableArray<string> ReusableFixableDiagnosticIds = ImmutableArray.Create(
-            VSTHRD109AvoidAssertInAsyncMethodsAnalyzer.Id);
+            AbstractVSTHRD109AvoidAssertInAsyncMethodsAnalyzer.Id);
 
         public override ImmutableArray<string> FixableDiagnosticIds => ReusableFixableDiagnosticIds;
 
@@ -39,7 +39,7 @@
                     continue;
                 }
 
-                var container = Utils.GetContainingFunction(syntaxNode);
+                var container = CSharpUtils.GetContainingFunction(syntaxNode);
                 if (container.BlockOrExpression == null)
                 {
                     return;
@@ -61,6 +61,7 @@
                     return;
                 }
 
+                var hasReturnValue = ((enclosingSymbol as IMethodSymbol)?.ReturnType as INamedTypeSymbol)?.IsGenericType ?? false;
                 var options = await CommonFixes.ReadMethodsAsync(context, CommonInterest.FileNamePatternForMethodsThatSwitchToMainThread, context.CancellationToken);
                 int positionForLookup = diagnostic.Location.SourceSpan.Start;
                 ISymbol cancellationTokenSymbol = Utils.FindCancellationToken(semanticModel, positionForLookup, context.CancellationToken).FirstOrDefault();
@@ -98,17 +99,17 @@
 
                     void OfferFix(string fullyQualifiedMethod)
                     {
-                        context.RegisterCodeFix(CodeAction.Create($"Use 'await {fullyQualifiedMethod}'", ct => Fix(fullyQualifiedMethod, proposedMethod, ct), fullyQualifiedMethod), context.Diagnostics);
+                        context.RegisterCodeFix(CodeAction.Create($"Use 'await {fullyQualifiedMethod}'", ct => Fix(fullyQualifiedMethod, proposedMethod, hasReturnValue, ct), fullyQualifiedMethod), context.Diagnostics);
                     }
                 }
 
-                async Task<Solution> Fix(string fullyQualifiedMethod, IMethodSymbol methodSymbol, CancellationToken cancellationToken)
+                async Task<Solution> Fix(string fullyQualifiedMethod, IMethodSymbol methodSymbol, bool hasReturnValue, CancellationToken cancellationToken)
                 {
                     var assertionStatementToRemove = syntaxNode!.FirstAncestorOrSelf<StatementSyntax>();
 
                     int typeAndMethodDelimiterIndex = fullyQualifiedMethod.LastIndexOf('.');
                     IdentifierNameSyntax methodName = SyntaxFactory.IdentifierName(fullyQualifiedMethod.Substring(typeAndMethodDelimiterIndex + 1));
-                    ExpressionSyntax invokedMethod = Utils.MemberAccess(fullyQualifiedMethod.Substring(0, typeAndMethodDelimiterIndex).Split('.'), methodName)
+                    ExpressionSyntax invokedMethod = CSharpUtils.MemberAccess(fullyQualifiedMethod.Substring(0, typeAndMethodDelimiterIndex).Split('.'), methodName)
                         .WithAdditionalAnnotations(Simplifier.Annotation);
                     var invocationExpression = SyntaxFactory.InvocationExpression(invokedMethod);
                     var cancellationTokenParameter = methodSymbol.Parameters.FirstOrDefault(Utils.IsCancellationTokenParameter);
@@ -139,7 +140,7 @@
                         {
                             case AnonymousFunctionExpressionSyntax anonFunc:
                                 semanticModel = await newDocument.GetSemanticModelAsync(cancellationToken);
-                                methodSyntax = FixUtils.MakeMethodAsync(anonFunc, semanticModel, cancellationToken);
+                                methodSyntax = FixUtils.MakeMethodAsync(anonFunc, hasReturnValue, semanticModel, cancellationToken);
                                 newDocument = newDocument.WithSyntaxRoot(newSyntaxRoot.ReplaceNode(anonFunc, methodSyntax));
                                 break;
                             case MethodDeclarationSyntax methodDecl:

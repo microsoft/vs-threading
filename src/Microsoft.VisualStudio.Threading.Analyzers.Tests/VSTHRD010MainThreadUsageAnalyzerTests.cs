@@ -139,7 +139,7 @@ class Test {
                 TestCode = test,
                 ExpectedDiagnostics = { Verify.Diagnostic(DescriptorSync).WithSpan(8, 13, 8, 24).WithArguments("IVsSolution", "Test.VerifyOnUIThread") },
                 FixedCode = fix,
-                CodeFixIndex = CodeFixIndex.SwitchToMainThreadAsync,
+                CodeActionIndex = CodeFixIndex.SwitchToMainThreadAsync,
             }.RunAsync();
         }
 
@@ -286,7 +286,7 @@ class Test {
                 TestCode = test,
                 ExpectedDiagnostics = { expected },
                 FixedCode = fix1,
-                CodeFixIndex = CodeFixIndex.VerifyOnUIThread,
+                CodeActionIndex = CodeFixIndex.VerifyOnUIThread,
             }.RunAsync();
 
             await new Verify.Test
@@ -294,7 +294,7 @@ class Test {
                 TestCode = test,
                 ExpectedDiagnostics = { expected },
                 FixedCode = fix2,
-                CodeFixIndex = CodeFixIndex.ThrowIfNotOnUIThreadIndex1,
+                CodeActionIndex = CodeFixIndex.ThrowIfNotOnUIThreadIndex1,
             }.RunAsync();
         }
 
@@ -359,7 +359,7 @@ class Test {
                 TestCode = test,
                 ExpectedDiagnostics = { Verify.Diagnostic(DescriptorSync).WithSpan(8, 13, 8, 24).WithArguments("IVsSolution", "Test.VerifyOnUIThread") },
                 FixedCode = fix,
-                CodeFixIndex = CodeFixIndex.ThrowIfNotOnUIThreadIndex0,
+                CodeActionIndex = CodeFixIndex.ThrowIfNotOnUIThreadIndex0,
             }.RunAsync();
         }
 
@@ -588,7 +588,7 @@ class Test {
                     Verify.Diagnostic(DescriptorSync).WithSpan(20, 9, 20, 10).WithArguments("Test.G", "Test.VerifyOnUIThread"),
                 },
                 FixedCode = fix,
-                CodeFixIndex = CodeFixIndex.VerifyOnUIThread,
+                CodeActionIndex = CodeFixIndex.VerifyOnUIThread,
             }.RunAsync();
         }
 
@@ -792,7 +792,7 @@ class Test {
                 TestCode = test,
                 ExpectedDiagnostics = { Verify.Diagnostic(DescriptorSync).WithSpan(11, 17, 11, 28).WithArguments("IVsSolution", "Test.VerifyOnUIThread") },
                 FixedCode = fix,
-                CodeFixIndex = CodeFixIndex.VerifyOnUIThread,
+                CodeActionIndex = CodeFixIndex.VerifyOnUIThread,
             }.RunAsync();
         }
 
@@ -843,7 +843,7 @@ class Test {
                 TestCode = test,
                 ExpectedDiagnostics = { Verify.Diagnostic(DescriptorSync).WithSpan(12, 17, 12, 28).WithArguments("IVsSolution", "Test.VerifyOnUIThread") },
                 FixedCode = fix,
-                CodeFixIndex = CodeFixIndex.VerifyOnUIThread,
+                CodeActionIndex = CodeFixIndex.VerifyOnUIThread,
             }.RunAsync();
         }
 
@@ -916,7 +916,7 @@ class Test {
                 TestCode = test,
                 ExpectedDiagnostics = { Verify.Diagnostic(DescriptorSync).WithSpan(11, 17, 11, 28).WithArguments("IVsSolution", "Test.VerifyOnUIThread") },
                 FixedCode = fix,
-                CodeFixIndex = CodeFixIndex.VerifyOnUIThread,
+                CodeActionIndex = CodeFixIndex.VerifyOnUIThread,
             }.RunAsync();
         }
 
@@ -1328,7 +1328,7 @@ class Test : AsyncPackage {
                     Verify.Diagnostic(DescriptorAsync).WithSpan(16, 56, 16, 67).WithArguments("IVsShell", "JoinableTaskFactory.SwitchToMainThreadAsync"),
                 },
                 FixedCode = fix,
-                CodeFixIndex = CodeFixIndex.NotThreadHelper,
+                CodeActionIndex = CodeFixIndex.NotThreadHelper,
             }.RunAsync();
         }
 
@@ -1461,7 +1461,7 @@ class Test : AsyncPackage {
                 TestCode = test,
                 ExpectedDiagnostics = { Verify.Diagnostic(DescriptorAsync).WithSpan(13, 65, 13, 76).WithArguments("IVsShell", "JoinableTaskFactory.SwitchToMainThreadAsync") },
                 FixedCode = fix,
-                CodeFixIndex = CodeFixIndex.NotThreadHelper,
+                CodeActionIndex = CodeFixIndex.NotThreadHelper,
             }.RunAsync();
         }
 
@@ -1514,7 +1514,7 @@ class Test : AsyncPackage {
                 TestCode = test,
                 ExpectedDiagnostics = { Verify.Diagnostic(DescriptorAsync).WithSpan(17, 65, 17, 76).WithArguments("IVsShell", "JoinableTaskFactory.SwitchToMainThreadAsync") },
                 FixedCode = fix,
-                CodeFixIndex = CodeFixIndex.MySwitchingMethodAsync,
+                CodeActionIndex = CodeFixIndex.MySwitchingMethodAsync,
             }.RunAsync();
         }
 

@@ -308,4 +308,4 @@ For more information on this topic, see Andrew Arnott's blog post
 `JoinableTaskFactory`][JTFBlog].
 
 [AsyncHangDebugging]: https://github.com/Microsoft/VSProjectSystem/blob/master/doc/scenario/analyze_hangs.md
-[JTFBlog]: https://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx
+[JTFBlog]: https://devblogs.microsoft.com/premier-developer/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory/

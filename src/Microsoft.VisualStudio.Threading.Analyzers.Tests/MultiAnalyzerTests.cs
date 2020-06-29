@@ -6,10 +6,8 @@
     using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CSharp.Testing;
     using Microsoft.CodeAnalysis.Diagnostics;
     using Microsoft.CodeAnalysis.Testing;
-    using Microsoft.CodeAnalysis.Testing.Verifiers;
     using Xunit;
     using Verify = MultiAnalyzerTests.Verifier;
 
@@ -32,7 +30,7 @@ class Test {
         return Task.FromResult(1);
     }
 
-    Task BarAsync() => null;
+    Task BarAsync() => Task.CompletedTask;
 
     static void SetTaskSourceIfCompleted<T>(Task<T> task, TaskCompletionSource<T> tcs) {
         if (task.IsCompleted) {
@@ -171,7 +169,7 @@ public class A {
         E().ToString();
         E()();
         string v = nameof(E);
-        return null;
+        return Task.CompletedTask;
     }
 
     internal Task CAsync() {
@@ -181,7 +179,7 @@ public class A {
         E().ToString();
         E()();
         string v = nameof(E);
-        return null;
+        return Task.CompletedTask;
     }
 
     private void D<T>() { }

@@ -7,7 +7,10 @@ if ($dirsToSearch) {
         if ($_.Name -match "^(.*)\.(\d+\.\d+\.\d+(?:-.*?)?)(?:\.symbols)?\.nupkg$") {
             $id = $Matches[1]
             $version = $Matches[2]
-            $icv += "$id=$version"
+            # Avoid inserting analyzers in an optprof run.
+            if ($env:OPTPROF -ne 'true' -or $_.Name -notlike '*Analyzers*') {
+                $icv += "$id=$version"
+            }
         }
     }
 }

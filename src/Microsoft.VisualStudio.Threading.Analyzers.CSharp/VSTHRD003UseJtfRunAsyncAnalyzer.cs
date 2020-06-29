@@ -262,7 +262,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
 
             // Report warning if the task was not initialized within the current delegate or lambda expression
-            var containingFunc = Utils.GetContainingFunction(expressionSyntax);
+            var containingFunc = CSharpUtils.GetContainingFunction(expressionSyntax);
             if (containingFunc.BlockOrExpression is BlockSyntax delegateBlock)
             {
                 if (dataflowAnalysisCompatibleVariable)
@@ -290,7 +290,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 else
                 {
                     // Do the best we can searching for assignment statements.
-                    if (!Utils.IsAssignedWithin(containingFunc.BlockOrExpression, semanticModel, symbolToConsider.Symbol, cancellationToken))
+                    if (!CSharpUtils.IsAssignedWithin(containingFunc.BlockOrExpression, semanticModel, symbolToConsider.Symbol, cancellationToken))
                     {
                         return Diagnostic.Create(Descriptor, expressionSyntax.GetLocation());
                     }

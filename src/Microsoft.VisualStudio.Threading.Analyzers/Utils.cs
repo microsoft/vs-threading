@@ -8,18 +8,13 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Immutable;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Reflection;
-    using System.Runtime.CompilerServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft;
     using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CSharp;
-    using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Diagnostics;
     using Microsoft.CodeAnalysis.Operations;
 
@@ -101,16 +96,41 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             };
         }
 
-        internal static ExpressionSyntax IsolateMethodName(InvocationExpressionSyntax invocation)
+        internal static Action<OperationBlockStartAnalysisContext> DebuggableWrapper(Action<OperationBlockStartAnalysisContext> handler)
         {
-            if (invocation == null)
+            return ctxt =>
             {
-                throw new ArgumentNullException(nameof(invocation));
-            }
+                try
+                {
+                    handler(ctxt);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex) when (LaunchDebuggerExceptionFilter())
+                {
+                    var messageBuilder = new StringBuilder();
+                    messageBuilder.Append("Analyzer failure while processing syntax(es) at ");
 
-            var memberAccessExpression = invocation.Expression as MemberAccessExpressionSyntax;
-            ExpressionSyntax invokedMethodName = memberAccessExpression?.Name ?? invocation.Expression as IdentifierNameSyntax ?? (invocation.Expression as MemberBindingExpressionSyntax)?.Name ?? invocation.Expression;
-            return invokedMethodName;
+                    for (int i = 0; i < ctxt.OperationBlocks.Length; i++)
+                    {
+                        var operation = ctxt.OperationBlocks[i];
+                        var lineSpan = operation.Syntax.GetLocation()?.GetLineSpan();
+
+                        if (i > 0)
+                        {
+                            messageBuilder.Append(", ");
+                        }
+
+                        messageBuilder.Append($"{operation.Syntax.SyntaxTree.FilePath}({lineSpan?.StartLinePosition.Line + 1},{lineSpan?.StartLinePosition.Character + 1}). Syntax: {operation.Syntax}.");
+                    }
+
+                    messageBuilder.Append($". {ex.GetType()} {ex.Message}");
+
+                    throw new Exception(messageBuilder.ToString(), ex);
+                }
+            };
         }
 
         /// <summary>
@@ -219,44 +239,40 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return currentNamespace?.IsGlobalNamespace ?? false;
         }
 
-        /// <summary>
-        /// Finds the local function, anonymous function, method, accessor, or ctor that most directly owns a given syntax node.
-        /// </summary>
-        /// <param name="syntaxNode">The syntax node to begin the search from.</param>
-        /// <returns>The containing function, and metadata for it.</returns>
-        internal static ContainingFunctionData GetContainingFunction(CSharpSyntaxNode syntaxNode)
+        internal static IBlockOperation? GetContainingFunctionBlock(IOperation operation)
         {
-            while (syntaxNode != null)
+            var previousAncestor = operation;
+            var ancestor = previousAncestor;
+            do
             {
-                if (syntaxNode is SimpleLambdaExpressionSyntax simpleLambda)
+                if (previousAncestor != ancestor)
                 {
-                    return new ContainingFunctionData(simpleLambda, simpleLambda.AsyncKeyword != default(SyntaxToken), SyntaxFactory.ParameterList().AddParameters(simpleLambda.Parameter), simpleLambda.Body);
+                    previousAncestor = ancestor;
                 }
 
-                if (syntaxNode is AnonymousMethodExpressionSyntax anonymousMethod)
-                {
-                    return new ContainingFunctionData(anonymousMethod, anonymousMethod.AsyncKeyword != default(SyntaxToken), anonymousMethod.ParameterList, anonymousMethod.Body);
-                }
+                ancestor = ancestor.Parent;
+            }
+            while (ancestor != null && ancestor.Kind != OperationKind.MethodBodyOperation && ancestor.Kind != OperationKind.AnonymousFunction &&
+                ancestor.Kind != OperationKind.LocalFunction);
 
-                if (syntaxNode is ParenthesizedLambdaExpressionSyntax lambda)
-                {
-                    return new ContainingFunctionData(lambda, lambda.AsyncKeyword != default(SyntaxToken), lambda.ParameterList, lambda.Body);
-                }
+            return previousAncestor as IBlockOperation;
+        }
 
-                if (syntaxNode is AccessorDeclarationSyntax accessor)
+        internal static ISymbol GetContainingFunction(IOperation operation, ISymbol operationBlockContainingSymbol)
+        {
+            for (var current = operation; current is object; current = current.Parent)
+            {
+                if (current.Kind == OperationKind.AnonymousFunction)
                 {
-                    return new ContainingFunctionData(accessor, false, SyntaxFactory.ParameterList(), accessor.Body);
+                    return ((IAnonymousFunctionOperation)current).Symbol;
                 }
-
-                if (syntaxNode is BaseMethodDeclarationSyntax method)
+                else if (current.Kind == OperationKind.LocalFunction)
                 {
-                    return new ContainingFunctionData(method, method.Modifiers.Any(SyntaxKind.AsyncKeyword), method.ParameterList, method.Body);
+                    return ((ILocalFunctionOperation)current).Symbol;
                 }
-
-                syntaxNode = (CSharpSyntaxNode)syntaxNode.Parent;
             }
 
-            return default(ContainingFunctionData);
+            return operationBlockContainingSymbol;
         }
 
         internal static bool HasAsyncCompatibleReturnType([NotNullWhen(true)] this IMethodSymbol? methodSymbol) => IsAsyncCompatibleReturnType(methodSymbol?.ReturnType);
@@ -398,54 +414,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return symbol.GetAttributes().Any(a => a.AttributeClass.Name == nameof(ObsoleteAttribute) && a.AttributeClass.BelongsToNamespace(Namespaces.System));
         }
 
-        internal static bool IsOnLeftHandOfAssignment(SyntaxNode syntaxNode)
-        {
-            SyntaxNode? parent = null;
-            while ((parent = syntaxNode.Parent) != null)
-            {
-                if (parent is AssignmentExpressionSyntax assignment)
-                {
-                    return assignment.Left == syntaxNode;
-                }
-
-                syntaxNode = parent;
-            }
-
-            return false;
-        }
-
-        internal static bool IsAssignedWithin(SyntaxNode container, SemanticModel semanticModel, ISymbol variable, CancellationToken cancellationToken)
-        {
-            if (semanticModel == null)
-            {
-                throw new ArgumentNullException(nameof(semanticModel));
-            }
-
-            if (variable == null)
-            {
-                throw new ArgumentNullException(nameof(variable));
-            }
-
-            if (container == null)
-            {
-                return false;
-            }
-
-            foreach (var node in container.DescendantNodesAndSelf(n => !(n is AnonymousFunctionExpressionSyntax)))
-            {
-                if (node is AssignmentExpressionSyntax assignment)
-                {
-                    var assignedSymbol = semanticModel.GetSymbolInfo(assignment.Left, cancellationToken).Symbol;
-                    if (variable.Equals(assignedSymbol))
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        }
-
         internal static IEnumerable<ITypeSymbol> FindInterfacesImplemented(this ISymbol? symbol)
         {
             if (symbol == null)
@@ -460,33 +428,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                                            select iface;
 
             return interfaceImplementations;
-        }
-
-        internal static MemberAccessExpressionSyntax MemberAccess(IReadOnlyList<string> qualifiers, SimpleNameSyntax simpleName)
-        {
-            if (qualifiers == null)
-            {
-                throw new ArgumentNullException(nameof(qualifiers));
-            }
-
-            if (simpleName == null)
-            {
-                throw new ArgumentNullException(nameof(simpleName));
-            }
-
-            if (qualifiers.Count == 0)
-            {
-                throw new ArgumentException("At least one qualifier required.");
-            }
-
-            ExpressionSyntax result = SyntaxFactory.IdentifierName(qualifiers[0]);
-            for (int i = 1; i < qualifiers.Count; i++)
-            {
-                var rightSide = SyntaxFactory.IdentifierName(qualifiers[i]);
-                result = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, result, rightSide);
-            }
-
-            return SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, result, simpleName);
         }
 
         internal static string GetFullName(ISymbol symbol)
@@ -515,17 +456,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
 
             return sb.ToString();
-        }
-
-        /// <summary>
-        /// Determines whether an expression appears inside a C# "nameof" pseudo-method.
-        /// </summary>
-        internal static bool IsWithinNameOf([NotNullWhen(true)] SyntaxNode? syntaxNode)
-        {
-            var invocation = syntaxNode?.FirstAncestorOrSelf<InvocationExpressionSyntax>();
-            return invocation is object
-                && (invocation.Expression as IdentifierNameSyntax)?.Identifier.Text == "nameof"
-                && invocation.ArgumentList.Arguments.Count == 1;
         }
 
         internal static void Deconstruct<T1, T2>(this Tuple<T1, T2> tuple, out T1 item1, out T2 item2)
@@ -742,6 +672,16 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static bool IsSameSymbol(IOperation? op1, IOperation? op2) => GetUnderlyingSymbol(op1)?.Equals(GetUnderlyingSymbol(op2)) ?? false;
 
+        internal static IOperation FindFinalAncestor(IOperation operation)
+        {
+            while (operation.Parent is object)
+            {
+                operation = operation.Parent;
+            }
+
+            return operation;
+        }
+
         internal static T? FindAncestor<T>(IOperation? operation)
             where T : class, IOperation
         {
@@ -784,25 +724,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             System.Diagnostics.Debugger.Launch();
 #endif
             return true;
-        }
-
-        internal readonly struct ContainingFunctionData
-        {
-            internal ContainingFunctionData(CSharpSyntaxNode function, bool isAsync, ParameterListSyntax parameterList, CSharpSyntaxNode blockOrExpression)
-            {
-                this.Function = function;
-                this.IsAsync = isAsync;
-                this.ParameterList = parameterList;
-                this.BlockOrExpression = blockOrExpression;
-            }
-
-            internal CSharpSyntaxNode Function { get; }
-
-            internal bool IsAsync { get; }
-
-            internal ParameterListSyntax ParameterList { get; }
-
-            internal CSharpSyntaxNode BlockOrExpression { get; }
         }
     }
 }

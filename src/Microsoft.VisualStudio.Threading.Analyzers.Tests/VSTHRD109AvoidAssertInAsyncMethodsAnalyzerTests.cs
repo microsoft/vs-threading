@@ -2,7 +2,7 @@
 {
     using System.Threading.Tasks;
     using Xunit;
-    using Verify = CSharpCodeFixVerifier<VSTHRD109AvoidAssertInAsyncMethodsAnalyzer, VSTHRD109AvoidAssertInAsyncMethodsCodeFix>;
+    using Verify = CSharpCodeFixVerifier<CSharpVSTHRD109AvoidAssertInAsyncMethodsAnalyzer, VSTHRD109AvoidAssertInAsyncMethodsCodeFix>;
 
     public class VSTHRD109AvoidAssertInAsyncMethodsAnalyzerTests
     {
@@ -16,7 +16,7 @@ using Task = System.Threading.Tasks.Task;
 
 class Test {
     async Task FooAsync() {
-        ThreadHelper.ThrowIfNotOnUIThread();
+        ThreadHelper.[|ThrowIfNotOnUIThread|]();
         await Task.Yield();
     }
 }
@@ -35,8 +35,7 @@ class Test {
 }
 ";
 
-            var expected = Verify.Diagnostic().WithSpan(8, 22, 8, 42);
-            await Verify.VerifyCodeFixAsync(test, expected, fix);
+            await Verify.VerifyCodeFixAsync(test, fix);
         }
 
         [Fact]
@@ -50,7 +49,7 @@ using Task = System.Threading.Tasks.Task;
 
 class Test {
     async Task FooAsync(CancellationToken ct) {
-        ThreadHelper.ThrowIfNotOnUIThread();
+        ThreadHelper.[|ThrowIfNotOnUIThread|]();
         await Task.Yield();
     }
 }
@@ -70,8 +69,7 @@ class Test {
 }
 ";
 
-            var expected = Verify.Diagnostic().WithSpan(9, 22, 9, 42);
-            await Verify.VerifyCodeFixAsync(test, expected, fix);
+            await Verify.VerifyCodeFixAsync(test, fix);
         }
 
         [Fact]
@@ -84,7 +82,7 @@ using Task = System.Threading.Tasks.Task;
 
 class Test {
     Task<int> FooAsync() {
-        ThreadHelper.ThrowIfNotOnUIThread();
+        ThreadHelper.[|ThrowIfNotOnUIThread|]();
         return Task.FromResult(1);
     }
 }
@@ -103,8 +101,7 @@ class Test {
 }
 ";
 
-            var expected = Verify.Diagnostic().WithSpan(8, 22, 8, 42);
-            await Verify.VerifyCodeFixAsync(test, expected, fix);
+            await Verify.VerifyCodeFixAsync(test, fix);
         }
 
         [Fact]
@@ -154,7 +151,7 @@ using Task = System.Threading.Tasks.Task;
 class Test {
     void Foo() {
         Task.Run(async delegate {
-            ThreadHelper.ThrowIfNotOnUIThread();
+            ThreadHelper.[|ThrowIfNotOnUIThread|]();
             await Task.Yield();
         });
     }
@@ -176,8 +173,7 @@ class Test {
 }
 ";
 
-            var expected = Verify.Diagnostic().WithSpan(9, 26, 9, 46);
-            await Verify.VerifyCodeFixAsync(test, expected, fix);
+            await Verify.VerifyCodeFixAsync(test, fix);
         }
 
         [Fact]
@@ -192,7 +188,7 @@ using Task = System.Threading.Tasks.Task;
 class Test {
     void Foo(CancellationToken ct) {
         Task.Run(async delegate {
-            ThreadHelper.ThrowIfNotOnUIThread();
+            ThreadHelper.[|ThrowIfNotOnUIThread|]();
             await Task.Yield();
         });
     }
@@ -215,8 +211,7 @@ class Test {
 }
 ";
 
-            var expected = Verify.Diagnostic().WithSpan(10, 26, 10, 46);
-            await Verify.VerifyCodeFixAsync(test, expected, fix);
+            await Verify.VerifyCodeFixAsync(test, fix);
         }
 
         [Fact]
@@ -230,7 +225,7 @@ using Task = System.Threading.Tasks.Task;
 class Test {
     void Foo() {
         Task.Run<int>(() => {
-            ThreadHelper.ThrowIfNotOnUIThread();
+            ThreadHelper.[|ThrowIfNotOnUIThread|]();
             return Task.FromResult(1);
         });
     }
@@ -252,11 +247,10 @@ class Test {
 }
 ";
 
-            var expected = Verify.Diagnostic().WithSpan(9, 26, 9, 46);
-            await Verify.VerifyCodeFixAsync(test, expected, fix);
+            await Verify.VerifyCodeFixAsync(test, fix);
         }
 
-        [Fact(Skip = "Fails because the semantic model claims the anonymous func returns Task instead of Task<int>. We should probably skip that check and always preserve return statements.")]
+        [Fact]
         public async Task TaskReturningLambdaInsideVoidMethod_NoTypeArg_GeneratesDiagnostic()
         {
             var test = @"
@@ -267,7 +261,7 @@ using Task = System.Threading.Tasks.Task;
 class Test {
     void Foo() {
         Task.Run(() => {
-            ThreadHelper.ThrowIfNotOnUIThread();
+            ThreadHelper.[|ThrowIfNotOnUIThread|]();
             return Task.FromResult(1);
         });
     }
@@ -289,8 +283,7 @@ class Test {
 }
 ";
 
-            var expected = Verify.Diagnostic().WithSpan(9, 26, 9, 46);
-            await Verify.VerifyCodeFixAsync(test, expected, fix);
+            await Verify.VerifyCodeFixAsync(test, fix);
         }
 
         [Fact]

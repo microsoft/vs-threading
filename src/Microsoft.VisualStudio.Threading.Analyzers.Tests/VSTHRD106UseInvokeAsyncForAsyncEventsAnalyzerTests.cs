@@ -20,19 +20,14 @@ class Test<T> where T : EventArgs {
     event AsyncEventHandler handler3;
 
     void F() {
-        handler1(this, null);
-        handler2(this, null);
-        handler3(this, null);
+        [|handler1(this, null)|];
+        [|handler2(this, null)|];
+        [|handler3(this, null)|];
     }
 }
 ";
-            var expected = new[]
-            {
-                Verify.Diagnostic().WithLocation(12, 9),
-                Verify.Diagnostic().WithLocation(13, 9),
-                Verify.Diagnostic().WithLocation(14, 9),
-            };
-            await Verify.VerifyAnalyzerAsync(test, expected);
+
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
@@ -68,19 +63,14 @@ class Test<T> where T : EventArgs {
     event AsyncEventHandler handler3;
 
     void F() {
-        handler1.Invoke(this, null);
-        handler2.Invoke(this, null);
-        handler3.Invoke(this, null);
+        [|handler1.Invoke(this, null)|];
+        [|handler2.Invoke(this, null)|];
+        [|handler3.Invoke(this, null)|];
     }
 }
 ";
-            var expected = new[]
-            {
-                Verify.Diagnostic().WithLocation(12, 9),
-                Verify.Diagnostic().WithLocation(13, 9),
-                Verify.Diagnostic().WithLocation(14, 9),
-            };
-            await Verify.VerifyAnalyzerAsync(test, expected);
+
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
@@ -97,19 +87,14 @@ class Test<T> where T : EventArgs {
     AsyncEventHandler handler3;
 
     void F() {
-        this.handler1.Invoke(this, null);
-        this.handler2.Invoke(this, null);
-        this.handler3.Invoke(this, null);
+        [|this.handler1.Invoke(this, null)|];
+        [|this.handler2.Invoke(this, null)|];
+        [|this.handler3.Invoke(this, null)|];
     }
 }
 ";
-            var expected = new[]
-            {
-                Verify.Diagnostic().WithLocation(12, 9),
-                Verify.Diagnostic().WithLocation(13, 9),
-                Verify.Diagnostic().WithLocation(14, 9),
-            };
-            await Verify.VerifyAnalyzerAsync(test, expected);
+
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
@@ -126,19 +111,14 @@ class Test<T> where T : EventArgs {
         AsyncEventHandler<EventArgs> handler2 = null;
         AsyncEventHandler handler3 = null;
 
-        handler1(this, null);
-        handler2(this, null);
-        handler3(this, null);
+        [|handler1(this, null)|];
+        [|handler2(this, null)|];
+        [|handler3(this, null)|];
     }
 }
 ";
-            var expected = new[]
-            {
-                Verify.Diagnostic().WithLocation(12, 9),
-                Verify.Diagnostic().WithLocation(13, 9),
-                Verify.Diagnostic().WithLocation(14, 9),
-            };
-            await Verify.VerifyAnalyzerAsync(test, expected);
+
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
@@ -155,19 +135,14 @@ class Test<T> where T : EventArgs {
     AsyncEventHandler handler3 { get; set; }
 
     void F() {
-        handler1(this, null);
-        handler2(this, null);
-        handler3(this, null);
+        [|handler1(this, null)|];
+        [|handler2(this, null)|];
+        [|handler3(this, null)|];
     }
 }
 ";
-            var expected = new[]
-            {
-                Verify.Diagnostic().WithLocation(12, 9),
-                Verify.Diagnostic().WithLocation(13, 9),
-                Verify.Diagnostic().WithLocation(14, 9),
-            };
-            await Verify.VerifyAnalyzerAsync(test, expected);
+
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
@@ -184,19 +159,14 @@ class Test<T> where T : EventArgs {
     event AsyncEventHandler handler3;
 
     void F() {
-        handler1.GetInvocationList().Cast<AsyncEventHandler<T>>().Select(h => h(this, null));
-        handler2.GetInvocationList().Cast<AsyncEventHandler<EventArgs>>().Select(h => h(this, null));
-        handler3.GetInvocationList().Cast<AsyncEventHandler>().Select(h => h(this, null));
+        handler1.GetInvocationList().Cast<AsyncEventHandler<T>>().Select(h => [|h(this, null)|]);
+        handler2.GetInvocationList().Cast<AsyncEventHandler<EventArgs>>().Select(h => [|h(this, null)|]);
+        handler3.GetInvocationList().Cast<AsyncEventHandler>().Select(h => [|h(this, null)|]);
     }
 }
 ";
-            var expected = new[]
-            {
-                Verify.Diagnostic().WithLocation(12, 79),
-                Verify.Diagnostic().WithLocation(13, 87),
-                Verify.Diagnostic().WithLocation(14, 76),
-            };
-            await Verify.VerifyAnalyzerAsync(test, expected);
+
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
@@ -213,19 +183,14 @@ class Test<T> where T : EventArgs {
     AsyncEventHandler handler3;
 
     void F() {
-        handler1(this, null);
-        handler2(this, null);
-        handler3(this, null);
+        [|handler1(this, null)|];
+        [|handler2(this, null)|];
+        [|handler3(this, null)|];
     }
 }
 ";
-            var expected = new[]
-            {
-                Verify.Diagnostic().WithLocation(12, 9),
-                Verify.Diagnostic().WithLocation(13, 9),
-                Verify.Diagnostic().WithLocation(14, 9),
-            };
-            await Verify.VerifyAnalyzerAsync(test, expected);
+
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
@@ -242,19 +207,14 @@ class Test<T> where T : EventArgs {
     Lazy<AsyncEventHandler> handler3;
 
     void F() {
-        handler1.Value(this, null);
-        handler2.Value(this, null);
-        handler3.Value(this, null);
+        [|handler1.Value(this, null)|];
+        [|handler2.Value(this, null)|];
+        [|handler3.Value(this, null)|];
     }
 }
 ";
-            var expected = new[]
-            {
-                Verify.Diagnostic().WithLocation(12, 9),
-                Verify.Diagnostic().WithLocation(13, 9),
-                Verify.Diagnostic().WithLocation(14, 9),
-            };
-            await Verify.VerifyAnalyzerAsync(test, expected);
+
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
@@ -267,19 +227,14 @@ using Microsoft.VisualStudio.Threading;
 
 class Test<T> where T : EventArgs {
     void F(AsyncEventHandler<T> handler1, AsyncEventHandler<EventArgs> handler2, AsyncEventHandler handler3) {
-        handler1(this, null);
-        handler2(this, null);
-        handler3(this, null);
+        [|handler1(this, null)|];
+        [|handler2(this, null)|];
+        [|handler3(this, null)|];
     }
 }
 ";
-            var expected = new[]
-            {
-                Verify.Diagnostic().WithLocation(8, 9),
-                Verify.Diagnostic().WithLocation(9, 9),
-                Verify.Diagnostic().WithLocation(10, 9),
-            };
-            await Verify.VerifyAnalyzerAsync(test, expected);
+
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
@@ -292,19 +247,14 @@ using Microsoft.VisualStudio.Threading;
 
 class Test<T> where T : EventArgs {
     void F(AsyncEventHandler<T>[] handlers1, AsyncEventHandler<EventArgs>[] handlers2, AsyncEventHandler[] handlers3) {
-        handlers1.Select(h => h(this, null));
-        handlers2.Select(h => h(this, null));
-        handlers3.Select(h => h(this, null));
+        handlers1.Select(h => [|h(this, null)|]);
+        handlers2.Select(h => [|h(this, null)|]);
+        handlers3.Select(h => [|h(this, null)|]);
     }
 }
 ";
-            var expected = new[]
-            {
-                Verify.Diagnostic().WithLocation(8, 31),
-                Verify.Diagnostic().WithLocation(9, 31),
-                Verify.Diagnostic().WithLocation(10, 31),
-            };
-            await Verify.VerifyAnalyzerAsync(test, expected);
+
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
@@ -324,6 +274,29 @@ class Test<T> where T : EventArgs {
         handler1.InvokeAsync(this, null);
         handler2.InvokeAsync(this, null);
         handler3.InvokeAsync(this, null);
+    }
+}
+";
+            await Verify.VerifyAnalyzerAsync(test);
+        }
+
+        [Fact]
+        public async Task DoNotReportWarningIfNonInvokeMethodsAreUsed()
+        {
+            var test = @"
+using System;
+using System.Linq;
+using Microsoft.VisualStudio.Threading;
+
+class Test<T> where T : EventArgs {
+    event AsyncEventHandler<T> handler1;
+    event AsyncEventHandler<EventArgs> handler2;
+    event AsyncEventHandler handler3;
+
+    void F() {
+        handler1.Equals(null);
+        handler2.Equals(null);
+        handler3.Equals(null);
     }
 }
 ";

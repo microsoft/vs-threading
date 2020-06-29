@@ -24,6 +24,9 @@ ID | Title | Severity | Supports | Default diagnostic severity
 [VSTHRD109](VSTHRD109.md) | Switch instead of assert in async methods | Advisory | [1st rule](../threading_rules.md#Rule1) | Error
 [VSTHRD110](VSTHRD110.md) | Observe result of async calls | Advisory | | Warning
 [VSTHRD111](VSTHRD111.md) | Use `.ConfigureAwait(bool)` | Advisory | | Hidden
+[VSTHRD112](VSTHRD112.md) | Implement `System.IAsyncDisposable` | Advisory | | Info
+[VSTHRD113](VSTHRD113.md) | Check for `System.IAsyncDisposable` | Advisory | | Info
+[VSTHRD114](VSTHRD114.md) | Avoid returning null from a `Task`-returning method. | Advisory | | Warning
 [VSTHRD200](VSTHRD200.md) | Use `Async` naming convention | Guideline | [VSTHRD103](VSTHRD103.md) | Warning
 
 ## Severity descriptions

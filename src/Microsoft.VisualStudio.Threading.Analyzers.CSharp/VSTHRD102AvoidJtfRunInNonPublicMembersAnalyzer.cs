@@ -59,7 +59,7 @@
             internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
             {
                 var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
-                CommonInterest.InspectMemberAccess(
+                CSharpCommonInterest.InspectMemberAccess(
                     context,
                     invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax,
                     Descriptor,

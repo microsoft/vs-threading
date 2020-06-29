@@ -6,22 +6,15 @@
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
-    using System;
-    using System.Collections.Generic;
     using System.Collections.Immutable;
-    using System.Linq;
-    using System.Threading;
-    using System.Threading.Tasks;
     using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CSharp;
-    using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Diagnostics;
+    using Microsoft.CodeAnalysis.Operations;
 
     /// <summary>
     /// Detects invocations of JoinableTaskFactory.SwitchToMainThreadAsync that are not awaited.
     /// </summary>
-    [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class VSTHRD004AwaitSwitchToMainThreadAsyncAnalyzer : DiagnosticAnalyzer
+    public abstract class AbstractVSTHRD004AwaitSwitchToMainThreadAsyncAnalyzer : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD004";
 
@@ -34,36 +27,31 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             defaultSeverity: DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
-        private static readonly IReadOnlyCollection<Type> DoNotAscendBeyondTypes = new Type[]
-        {
-            typeof(AnonymousFunctionExpressionSyntax),
-            typeof(StatementSyntax),
-        };
-
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Descriptor);
+
+        private protected abstract LanguageUtils LanguageUtils { get; }
 
         public override void Initialize(AnalysisContext context)
         {
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
 
-            context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeInvocation), SyntaxKind.InvocationExpression);
+            context.RegisterOperationAction(Utils.DebuggableWrapper(this.AnalyzeInvocation), OperationKind.Invocation);
         }
 
-        private void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
+        private void AnalyzeInvocation(OperationAnalysisContext context)
         {
-            var invocation = (InvocationExpressionSyntax)context.Node;
-            var invokedSymbol = context.SemanticModel.GetSymbolInfo(invocation.Expression, context.CancellationToken);
-            if (invokedSymbol.Symbol is IMethodSymbol methodSymbol &&
-                methodSymbol.Name == Types.JoinableTaskFactory.SwitchToMainThreadAsync &&
+            var invocation = (IInvocationOperation)context.Operation;
+            var methodSymbol = invocation.TargetMethod;
+            if (methodSymbol.Name == Types.JoinableTaskFactory.SwitchToMainThreadAsync &&
                 methodSymbol.ContainingType.Name == Types.JoinableTaskFactory.TypeName &&
                 methodSymbol.ContainingType.BelongsToNamespace(Types.JoinableTaskFactory.Namespace))
             {
                 // This is a call to JTF.SwitchToMainThreadAsync(). Is it being (directly) awaited?
-                if (invocation.FirstAncestor<AwaitExpressionSyntax>(DoNotAscendBeyondTypes) == null)
+                if (!(invocation.Parent is IAwaitOperation))
                 {
-                    var location = (Utils.IsolateMethodName(invocation) ?? invocation.Expression).GetLocation();
+                    var location = (this.LanguageUtils.IsolateMethodName(invocation) ?? invocation.Syntax).GetLocation();
                     context.ReportDiagnostic(Diagnostic.Create(Descriptor, location));
                 }
             }

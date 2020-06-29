@@ -38,7 +38,15 @@ namespace CpsDbg
                 return;
             }
 
-            handler.Execute(context, args);
+            try
+            {
+                handler.Execute(context, args);
+            }
+            catch (Exception ex)
+            {
+                context.Output.WriteLine($"Encountered an unhandled exception running '{command}':");
+                context.Output.WriteLine(ex.ToString());
+            }
         }
     }
 }

@@ -3,7 +3,7 @@
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis.Testing;
     using Xunit;
-    using Verify = CSharpCodeFixVerifier<VSTHRD004AwaitSwitchToMainThreadAsyncAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
+    using Verify = CSharpCodeFixVerifier<CSharpVSTHRD004AwaitSwitchToMainThreadAsyncAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
     public class VSTHRD004AwaitSwitchToMainThreadAsyncAnalyzerTests
     {
@@ -17,13 +17,12 @@ class Test
 
     void Foo()
     {
-        jtf.SwitchToMainThreadAsync();
+        jtf.[|SwitchToMainThreadAsync|]();
     }
 }
 ";
 
-            var expected = this.CreateDiagnostic(8, 13);
-            await Verify.VerifyAnalyzerAsync(test, expected);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
@@ -38,14 +37,13 @@ class Test
 
     async Task FooAsync()
     {
-        jtf.SwitchToMainThreadAsync();
+        jtf.[|SwitchToMainThreadAsync|]();
         await Task.Yield();
     }
 }
 ";
 
-            var expected = this.CreateDiagnostic(10, 13);
-            await Verify.VerifyAnalyzerAsync(test, expected);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
@@ -60,13 +58,12 @@ class Test
 
     async Task FooAsync()
     {
-        await Task.Run(() => jtf.SwitchToMainThreadAsync());
+        await Task.Run(() => jtf.[|SwitchToMainThreadAsync|]());
     }
 }
 ";
 
-            var expected = this.CreateDiagnostic(10, 34);
-            await Verify.VerifyAnalyzerAsync(test, expected);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
@@ -81,13 +78,12 @@ class Test
 
     async Task FooAsync()
     {
-        await Task.Run(delegate { jtf.SwitchToMainThreadAsync(); });
+        await Task.Run(delegate { jtf.[|SwitchToMainThreadAsync|](); });
     }
 }
 ";
 
-            var expected = this.CreateDiagnostic(10, 39);
-            await Verify.VerifyAnalyzerAsync(test, expected);
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         [Fact]
@@ -122,17 +118,13 @@ class Test
 
     Task FooAsync()
     {
-        jtf.SwitchToMainThreadAsync();
+        jtf.[|SwitchToMainThreadAsync|]();
         return Microsoft.VisualStudio.Threading.TplExtensions.CompletedTask;
     }
 }
 ";
 
-            var expected = this.CreateDiagnostic(10, 13);
-            await Verify.VerifyAnalyzerAsync(test, expected);
+            await Verify.VerifyAnalyzerAsync(test);
         }
-
-        private DiagnosticResult CreateDiagnostic(int line, int column)
-            => Verify.Diagnostic().WithSpan(line, column, line, column + nameof(JoinableTaskFactory.SwitchToMainThreadAsync).Length);
     }
 }
