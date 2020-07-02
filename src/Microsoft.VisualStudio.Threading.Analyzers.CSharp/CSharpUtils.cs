@@ -192,6 +192,16 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return invocation.Syntax;
         }
 
+        internal override SyntaxNode IsolateMethodName(IObjectCreationOperation objectCreation)
+        {
+            if (objectCreation.Syntax is ObjectCreationExpressionSyntax { Type: { } type })
+            {
+                return type;
+            }
+
+            return objectCreation.Syntax;
+        }
+
         internal readonly struct ContainingFunctionData
         {
             internal ContainingFunctionData(CSharpSyntaxNode function, bool isAsync, ParameterListSyntax parameterList, CSharpSyntaxNode blockOrExpression)

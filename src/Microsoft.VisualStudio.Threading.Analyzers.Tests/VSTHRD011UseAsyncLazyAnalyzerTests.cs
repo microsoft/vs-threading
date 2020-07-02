@@ -68,7 +68,7 @@ class Test {
 
     void Foo() {
         var t4 = new Lazy<int>(delegate {
-            {|#0:jtf.Run|}(async delegate {
+            jtf.{|#0:Run|}(async delegate {
                 await Task.Yield();
             });
 
@@ -94,7 +94,7 @@ class Test {
 
     void Foo() {
         var t4 = new Lazy<int>(() => {
-            {|#0:jtf.Run|}(async delegate {
+            jtf.{|#0:Run|}(async delegate {
                 await Task.Yield();
             });
 

@@ -81,5 +81,10 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         {
             return invocation.Syntax;
         }
+
+        internal override SyntaxNode IsolateMethodName(IObjectCreationOperation objectCreation)
+        {
+            return objectCreation.Syntax;
+        }
     }
 }
