@@ -2,9 +2,8 @@
 {
     using System.Collections.Immutable;
     using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CSharp;
-    using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Diagnostics;
+    using Microsoft.CodeAnalysis.Operations;
 
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class VSTHRD001UseSwitchToMainThreadAsyncAnalyzer : DiagnosticAnalyzer
@@ -31,7 +30,7 @@
             {
                 var legacyThreadSwitchingMembers = CommonInterest.ReadMethods(compilationStartContext.Options, CommonInterest.FileNamePatternForLegacyThreadSwitchingMembers, compilationStartContext.CancellationToken).ToImmutableArray();
                 var analyzer = new Analyzer(legacyThreadSwitchingMembers);
-                compilationStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(analyzer.AnalyzeInvocation), SyntaxKind.InvocationExpression);
+                compilationStartContext.RegisterOperationAction(Utils.DebuggableWrapper(analyzer.AnalyzeInvocation), OperationKind.Invocation);
             });
         }
 
@@ -44,10 +43,10 @@
                 this.legacyThreadSwitchingMembers = legacyThreadSwitchingMembers;
             }
 
-            internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
+            internal void AnalyzeInvocation(OperationAnalysisContext context)
             {
-                var invocationSyntax = (InvocationExpressionSyntax)context.Node;
-                var invokeMethod = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
+                var invocation = (IInvocationOperation)context.Operation;
+                var invokeMethod = invocation.TargetMethod;
                 if (invokeMethod != null)
                 {
                     foreach (var legacyMethod in this.legacyThreadSwitchingMembers)
@@ -58,7 +57,7 @@
                         {
                             var diagnostic = Diagnostic.Create(
                                 Descriptor,
-                                invocationSyntax.Expression.GetLocation());
+                                CSharpUtils.Instance.IsolateMethodName(invocation).GetLocation());
                             context.ReportDiagnostic(diagnostic);
                             break;
                         }

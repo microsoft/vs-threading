@@ -14,7 +14,7 @@ using Microsoft.VisualStudio.Shell;
 
 class Test {
     void Foo() {
-        {|#0:ThreadHelper.Generic.Invoke|}(delegate { });
+        ThreadHelper.Generic.{|#0:Invoke|}(delegate { });
     }
 }
 ";
@@ -30,7 +30,7 @@ using Microsoft.VisualStudio.Shell;
 
 class Test {
     void Foo() {
-        {|#0:ThreadHelper.Generic.BeginInvoke|}(delegate { });
+        ThreadHelper.Generic.{|#0:BeginInvoke|}(delegate { });
     }
 }
 ";
@@ -46,7 +46,7 @@ using Microsoft.VisualStudio.Shell;
 
 class Test {
     void Foo() {
-        {|#0:ThreadHelper.Generic.InvokeAsync|}(delegate { });
+        ThreadHelper.Generic.{|#0:InvokeAsync|}(delegate { });
     }
 }
 ";
@@ -62,7 +62,7 @@ using System.Windows.Threading;
 
 class Test {
     void Foo() {
-        {|#0:Dispatcher.CurrentDispatcher.Invoke|}(delegate { }, DispatcherPriority.ContextIdle);
+        Dispatcher.CurrentDispatcher.{|#0:Invoke|}(delegate { }, DispatcherPriority.ContextIdle);
     }
 }
 ";
@@ -79,7 +79,7 @@ using System.Windows.Threading;
 
 class Test {
     void Foo() {
-        {|#0:Dispatcher.CurrentDispatcher.BeginInvoke|}(new Action(() => { }));
+        Dispatcher.CurrentDispatcher.{|#0:BeginInvoke|}(new Action(() => { }));
     }
 }
 ";
@@ -95,7 +95,7 @@ using System.Windows.Threading;
 
 class Test {
     void Foo() {
-        {|#0:Dispatcher.CurrentDispatcher.InvokeAsync|}(delegate { }, DispatcherPriority.ContextIdle);
+        Dispatcher.CurrentDispatcher.{|#0:InvokeAsync|}(delegate { }, DispatcherPriority.ContextIdle);
     }
 }
 ";
@@ -111,7 +111,7 @@ using System.Threading;
 
 class Test {
     void Foo() {
-        {|#0:SynchronizationContext.Current.Send|}(s => { }, null);
+        SynchronizationContext.Current.{|#0:Send|}(s => { }, null);
     }
 }
 ";
@@ -127,7 +127,7 @@ using System.Threading;
 
 class Test {
     void Foo() {
-        {|#0:SynchronizationContext.Current.Post|}(s => { }, null);
+        SynchronizationContext.Current.{|#0:Post|}(s => { }, null);
     }
 }
 ";
