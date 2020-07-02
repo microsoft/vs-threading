@@ -1,12 +1,10 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers
 {
-    using System;
     using System.Collections.Immutable;
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CSharp;
-    using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Diagnostics;
+    using Microsoft.CodeAnalysis.Operations;
 
     /// <summary>
     /// Finds await expressions on <see cref="Task"/> that do not use <see cref="Task.ConfigureAwait(bool)"/>.
@@ -35,21 +33,21 @@
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
 
-            context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeAwaitExpression), SyntaxKind.AwaitExpression);
+            context.RegisterOperationAction(Utils.DebuggableWrapper(this.AnalyzeAwaitOperation), OperationKind.Await);
         }
 
-        private void AnalyzeAwaitExpression(SyntaxNodeAnalysisContext context)
+        private void AnalyzeAwaitOperation(OperationAnalysisContext context)
         {
-            var awaitExpression = (AwaitExpressionSyntax)context.Node;
+            var awaitOperation = (IAwaitOperation)context.Operation;
 
             // Emit the diagnostic if the awaited expression is a Task or ValueTask.
             // They obviously aren't using ConfigureAwait in that case since the awaited expression type would be a
             // ConfiguredTaskAwaitable instead.
-            var awaitedTypeInfo = context.SemanticModel.GetTypeInfo(awaitExpression.Expression, context.CancellationToken);
-            if (awaitedTypeInfo.Type != null && awaitedTypeInfo.Type.BelongsToNamespace(Namespaces.SystemThreadingTasks) &&
-                (awaitedTypeInfo.Type.Name == Types.Task.TypeName || awaitedTypeInfo.Type.Name == Types.ValueTask.TypeName))
+            var awaitedTypeInfo = awaitOperation.Operation.Type;
+            if (awaitedTypeInfo != null && awaitedTypeInfo.BelongsToNamespace(Namespaces.SystemThreadingTasks) &&
+                (awaitedTypeInfo.Name == Types.Task.TypeName || awaitedTypeInfo.Name == Types.ValueTask.TypeName))
             {
-                context.ReportDiagnostic(Diagnostic.Create(Descriptor, awaitExpression.Expression.GetLocation()));
+                context.ReportDiagnostic(Diagnostic.Create(Descriptor, awaitOperation.Operation.Syntax.GetLocation()));
             }
         }
     }
