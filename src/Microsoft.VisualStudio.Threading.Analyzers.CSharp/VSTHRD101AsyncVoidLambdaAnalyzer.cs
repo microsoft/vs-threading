@@ -6,16 +6,11 @@
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
-    using System;
-    using System.Collections.Generic;
     using System.Collections.Immutable;
-    using System.Linq;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CSharp;
-    using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Diagnostics;
+    using Microsoft.CodeAnalysis.Operations;
 
     /// <summary>
     /// Analyzes the async lambdas and checks if they are being used as void-returning delegate types.
@@ -70,19 +65,18 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
 
-            context.RegisterSyntaxNodeAction(
-                Utils.DebuggableWrapper(this.AnalyzeNode),
-                SyntaxKind.AnonymousMethodExpression,
-                SyntaxKind.ParenthesizedLambdaExpression,
-                SyntaxKind.SimpleLambdaExpression);
+            context.RegisterOperationAction(
+                Utils.DebuggableWrapper(this.AnalyzeOperation),
+                OperationKind.AnonymousFunction);
         }
 
-        private void AnalyzeNode(SyntaxNodeAnalysisContext context)
+        private void AnalyzeOperation(OperationAnalysisContext context)
         {
-            var methodSymbol = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
+            var operation = (IAnonymousFunctionOperation)context.Operation;
+            var methodSymbol = operation.Symbol;
             if (methodSymbol != null && methodSymbol.IsAsync && methodSymbol.ReturnsVoid)
             {
-                context.ReportDiagnostic(Diagnostic.Create(Descriptor, context.Node.GetLocation()));
+                context.ReportDiagnostic(Diagnostic.Create(Descriptor, operation.Syntax.GetLocation()));
             }
         }
     }
