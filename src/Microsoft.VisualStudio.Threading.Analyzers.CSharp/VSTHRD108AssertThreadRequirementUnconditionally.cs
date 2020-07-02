@@ -1,14 +1,11 @@
 ﻿namespace Microsoft.VisualStudio.Threading.Analyzers
 {
-    using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Linq;
-    using System.Threading;
     using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CSharp;
-    using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Diagnostics;
+    using Microsoft.CodeAnalysis.Operations;
 
     /// <summary>
     /// Report warnings when methods that assert their thread affinity only do so under a condition,
@@ -58,20 +55,17 @@
             {
                 var mainThreadAssertingMethods = CommonInterest.ReadMethods(ctxt.Options, CommonInterest.FileNamePatternForMethodsThatAssertMainThread, ctxt.CancellationToken).ToImmutableArray();
 
-                ctxt.RegisterCodeBlockStartAction<SyntaxKind>(ctxt2 =>
-                {
-                    ctxt2.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => this.AnalyzeInvocation(c, mainThreadAssertingMethods)), SyntaxKind.InvocationExpression);
-                });
+                ctxt.RegisterOperationAction(Utils.DebuggableWrapper(c => this.AnalyzeInvocation(c, mainThreadAssertingMethods)), OperationKind.Invocation);
             });
         }
 
-        private static bool IsInConditional(SyntaxNode syntaxNode)
+        private static bool IsInConditional(IOperation operation)
         {
-            foreach (var ancestor in GetAncestorsWithinMethod(syntaxNode))
+            foreach (var ancestor in GetAncestorsWithinMethod(operation))
             {
-                if (ancestor is IfStatementSyntax ||
-                    ancestor is WhileStatementSyntax ||
-                    ancestor is ForStatementSyntax)
+                if (ancestor is IConditionalOperation ||
+                    ancestor is IWhileLoopOperation { ConditionIsTop: true } ||
+                    ancestor is IForLoopOperation)
                 {
                     return true;
                 }
@@ -80,18 +74,26 @@
             return false;
         }
 
-        private static IEnumerable<SyntaxNode> GetAncestorsWithinMethod(SyntaxNode syntaxNode)
+        private static IEnumerable<IOperation> GetAncestorsWithinMethod(IOperation operation)
         {
-            return syntaxNode.Ancestors().TakeWhile(n => !CSharpCommonInterest.MethodSyntaxKinds.Contains(n.Kind()));
+            for (IOperation current = operation; current is object; current = current.Parent)
+            {
+                if (current is ILocalFunctionOperation || current is IAnonymousFunctionOperation)
+                {
+                    yield break;
+                }
+
+                yield return current;
+            }
         }
 
-        private static bool IsArgInInvocationToConditionalMethod(SyntaxNodeAnalysisContext context)
+        private static bool IsArgInInvocationToConditionalMethod(OperationAnalysisContext context)
         {
-            var argument = GetAncestorsWithinMethod(context.Node).OfType<ArgumentSyntax>().FirstOrDefault();
-            var containingInvocationSyntax = argument?.FirstAncestorOrSelf<InvocationExpressionSyntax>();
-            if (containingInvocationSyntax != null)
+            var argument = GetAncestorsWithinMethod(context.Operation).OfType<IArgumentOperation>().FirstOrDefault();
+            var containingInvocation = argument?.Parent as IInvocationOperation;
+            if (containingInvocation != null)
             {
-                var symbolOfContainingMethodInvocation = context.SemanticModel.GetSymbolInfo(containingInvocationSyntax.Expression, context.CancellationToken).Symbol;
+                var symbolOfContainingMethodInvocation = containingInvocation.TargetMethod;
                 return symbolOfContainingMethodInvocation?.GetAttributes().Any(a =>
                     a.AttributeClass.BelongsToNamespace(Namespaces.SystemDiagnostics) &&
                     a.AttributeClass.Name == nameof(System.Diagnostics.ConditionalAttribute)) ?? false;
@@ -100,22 +102,21 @@
             return false;
         }
 
-        private void AnalyzeInvocation(SyntaxNodeAnalysisContext context, ImmutableArray<CommonInterest.QualifiedMember> mainThreadAssertingMethods)
+        private void AnalyzeInvocation(OperationAnalysisContext context, ImmutableArray<CommonInterest.QualifiedMember> mainThreadAssertingMethods)
         {
-            var invocationExpression = (InvocationExpressionSyntax)context.Node;
-            var symbolInfo = context.SemanticModel.GetSymbolInfo((InvocationExpressionSyntax)context.Node, context.CancellationToken);
-            var symbol = symbolInfo.Symbol;
+            var invocation = (IInvocationOperation)context.Operation;
+            var symbol = invocation.TargetMethod;
             if (symbol != null)
             {
                 bool reportDiagnostic = false;
                 if (mainThreadAssertingMethods.Contains(symbol))
                 {
-                    if (IsInConditional(invocationExpression))
+                    if (IsInConditional(invocation))
                     {
                         reportDiagnostic = true;
                     }
                 }
-                else if (CommonInterest.ThreadAffinityTestingMethods.Any(m => m.IsMatch(symbolInfo.Symbol)))
+                else if (CommonInterest.ThreadAffinityTestingMethods.Any(m => m.IsMatch(symbol)))
                 {
                     if (IsArgInInvocationToConditionalMethod(context))
                     {
@@ -125,7 +126,7 @@
 
                 if (reportDiagnostic)
                 {
-                    var nodeToLocate = (invocationExpression.Expression as MemberAccessExpressionSyntax)?.Name ?? invocationExpression.Expression;
+                    var nodeToLocate = CSharpUtils.Instance.IsolateMethodName(invocation);
                     context.ReportDiagnostic(Diagnostic.Create(Descriptor, nodeToLocate.GetLocation()));
                 }
             }
