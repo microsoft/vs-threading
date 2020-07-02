@@ -10,7 +10,7 @@
       </trans-unit>
       <trans-unit id="SystemIAsyncDisposablePackageNote">
         <source>The System.IAsyncDisposable interface is defined in the Microsoft.Bcl.AsyncInterfaces NuGet package.</source>
-        <target state="new">The System.IAsyncDisposable interface is defined in the Microsoft.Bcl.AsyncInterfaces NuGet package.</target>
+        <target state="translated">System.IAsyncDisposable 인터페이스는 Microsoft.Bcl.AsyncInterfaces NuGet 패키지에 정의되어 있습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="UseAwaitInstead" translate="yes" xml:space="preserve">
@@ -256,47 +256,47 @@ Use AsyncLazy&lt;T&gt; instead.</source>
       </trans-unit>
       <trans-unit id="VSTHRD112_CodeFix_Title">
         <source>Add implementation of System.IAsyncDisposable.</source>
-        <target state="new">Add implementation of System.IAsyncDisposable.</target>
+        <target state="translated">System.IAsyncDisposable의 구현을 추가합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="VSTHRD112_MessageFormat">
         <source>Implement the System.IAsyncDisposable interface when implementing the obsolete Microsoft.VisualStudio.Threading.IAsyncDisposable interface.</source>
-        <target state="new">Implement the System.IAsyncDisposable interface when implementing the obsolete Microsoft.VisualStudio.Threading.IAsyncDisposable interface.</target>
+        <target state="translated">사용되지 않는 Microsoft.VisualStudio.Threading.IAsyncDisposable 인터페이스를 구현할 때는 System.IAsyncDisposable 인터페이스를 구현합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="VSTHRD112_Title">
         <source>Implement System.IAsyncDisposable</source>
-        <target state="new">Implement System.IAsyncDisposable</target>
+        <target state="translated">System.IAsyncDisposable 구현</target>
         <note />
       </trans-unit>
       <trans-unit id="VSTHRD113_MessageFormat">
         <source>Add a check for System.IAsyncDisposable in the same code block that checks for Microsoft.VisualStudio.Threading.IAsyncDisposable that behaves similarly.</source>
-        <target state="new">Add a check for System.IAsyncDisposable in the same code block that checks for Microsoft.VisualStudio.Threading.IAsyncDisposable that behaves similarly.</target>
+        <target state="translated">비슷한 동작을 수행하는 Microsoft.VisualStudio.Threading.IAsyncDisposable을 검사하는 코드 블록 안에 System.IAsyncDisposable에 대한 검사를 추가합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="VSTHRD113_Title">
         <source>Check for System.IAsyncDisposable</source>
-        <target state="new">Check for System.IAsyncDisposable</target>
+        <target state="translated">System.IAsyncDisposable을 검사합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="VSTHRD114_CodeFix_CompletedTask">
         <source>Use 'Task.CompletedTask' instead</source>
-        <target state="new">Use 'Task.CompletedTask' instead</target>
+        <target state="translated">대신 'Task.CompletedTask' 사용</target>
         <note>"Task.CompletedTask" should not be translated.</note>
       </trans-unit>
       <trans-unit id="VSTHRD114_CodeFix_FromResult">
         <source>Use 'Task.FromResult' instead</source>
-        <target state="new">Use 'Task.FromResult' instead</target>
+        <target state="translated">대신 'Task.FromResult' 사용</target>
         <note>"Task.FromResult" should not be translated.</note>
       </trans-unit>
       <trans-unit id="VSTHRD114_MessageFormat">
         <source>Avoid returning null from a Task-returning method.</source>
-        <target state="new">Avoid returning null from a Task-returning method.</target>
+        <target state="translated">Task-returning 메서드에서 null 반환을 방지합니다.</target>
         <note>Task is a type name and should not be translated.</note>
       </trans-unit>
       <trans-unit id="VSTHRD114_Title">
         <source>Avoid returning a null Task</source>
-        <target state="new">Avoid returning a null Task</target>
+        <target state="translated">Null 작업 반환 방지</target>
         <note>Task is a type name and should not be translated.</note>
       </trans-unit>
       <trans-unit id="VSTHRD200_AddAsync_MessageFormat" translate="yes" xml:space="preserve">
