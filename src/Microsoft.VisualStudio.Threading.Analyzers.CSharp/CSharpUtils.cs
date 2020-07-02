@@ -184,9 +184,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal override SyntaxNode IsolateMethodName(IInvocationOperation invocation)
         {
-            if (invocation.Syntax is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax memberAccessExpression })
+            if (invocation.Syntax is InvocationExpressionSyntax invocationExpression)
             {
-                return memberAccessExpression.Name;
+                return IsolateMethodName(invocationExpression);
             }
 
             return invocation.Syntax;
