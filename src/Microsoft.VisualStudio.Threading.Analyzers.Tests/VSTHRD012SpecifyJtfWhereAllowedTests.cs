@@ -3,7 +3,7 @@
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis.Testing;
     using Xunit;
-    using Verify = CSharpCodeFixVerifier<VSTHRD012SpecifyJtfWhereAllowed, CodeAnalysis.Testing.EmptyCodeFixProvider>;
+    using Verify = CSharpCodeFixVerifier<CSharpVSTHRD012SpecifyJtfWhereAllowed, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
     public class VSTHRD012SpecifyJtfWhereAllowedTests
     {

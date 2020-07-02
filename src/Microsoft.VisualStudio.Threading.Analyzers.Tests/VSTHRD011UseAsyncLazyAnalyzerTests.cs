@@ -4,7 +4,7 @@
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.Testing;
     using Xunit;
-    using Verify = CSharpCodeFixVerifier<VSTHRD011UseAsyncLazyAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
+    using Verify = CSharpCodeFixVerifier<CSharpVSTHRD011UseAsyncLazyAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
     public class VSTHRD011UseAsyncLazyAnalyzerTests
     {
@@ -21,7 +21,7 @@ class Test {
     Lazy<int> tInt = new Lazy<int>();
 }
 ";
-            var expected = this.CreateDiagnostic(VSTHRD011UseAsyncLazyAnalyzer.LazyOfTaskDescriptor, 0);
+            var expected = this.CreateDiagnostic(AbstractVSTHRD011UseAsyncLazyAnalyzer.LazyOfTaskDescriptor, 0);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
@@ -36,7 +36,7 @@ class Test {
     Lazy<Task<object>> t3 = new {|#0:Lazy<Task<object>>|}();
 }
 ";
-            var expected = this.CreateDiagnostic(VSTHRD011UseAsyncLazyAnalyzer.LazyOfTaskDescriptor, 0);
+            var expected = this.CreateDiagnostic(AbstractVSTHRD011UseAsyncLazyAnalyzer.LazyOfTaskDescriptor, 0);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
@@ -51,7 +51,7 @@ class Test {
     Lazy<Task> t3 = new {|#0:Lazy<Task>|}();
 }
 ";
-            var expected = this.CreateDiagnostic(VSTHRD011UseAsyncLazyAnalyzer.LazyOfTaskDescriptor, 0);
+            var expected = this.CreateDiagnostic(AbstractVSTHRD011UseAsyncLazyAnalyzer.LazyOfTaskDescriptor, 0);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
@@ -77,7 +77,7 @@ class Test {
     }
 }
 ";
-            var expected = this.CreateDiagnostic(VSTHRD011UseAsyncLazyAnalyzer.SyncBlockInValueFactoryDescriptor, 0);
+            var expected = this.CreateDiagnostic(AbstractVSTHRD011UseAsyncLazyAnalyzer.SyncBlockInValueFactoryDescriptor, 0);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
@@ -103,7 +103,7 @@ class Test {
     }
 }
 ";
-            var expected = this.CreateDiagnostic(VSTHRD011UseAsyncLazyAnalyzer.SyncBlockInValueFactoryDescriptor, 0);
+            var expected = this.CreateDiagnostic(AbstractVSTHRD011UseAsyncLazyAnalyzer.SyncBlockInValueFactoryDescriptor, 0);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
@@ -129,7 +129,7 @@ class Test {
     }
 }
 ";
-            var expected = this.CreateDiagnostic(VSTHRD011UseAsyncLazyAnalyzer.LazyOfTaskDescriptor, 0);
+            var expected = this.CreateDiagnostic(AbstractVSTHRD011UseAsyncLazyAnalyzer.LazyOfTaskDescriptor, 0);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
@@ -175,7 +175,7 @@ class Test {
     }
 }
 ";
-            var expected = this.CreateDiagnostic(VSTHRD011UseAsyncLazyAnalyzer.LazyOfTaskDescriptor, 0);
+            var expected = this.CreateDiagnostic(AbstractVSTHRD011UseAsyncLazyAnalyzer.LazyOfTaskDescriptor, 0);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 

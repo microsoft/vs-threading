@@ -36,7 +36,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     ///   }
     /// ]]>
     /// </remarks>
-    [DiagnosticAnalyzer(LanguageNames.CSharp)]
+    [DiagnosticAnalyzer(LanguageNames.CSharp, LanguageNames.VisualBasic)]
     public class VSTHRD101AsyncVoidLambdaAnalyzer : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD101";

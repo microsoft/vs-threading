@@ -1,4 +1,6 @@
-﻿namespace Microsoft.VisualStudio.Threading.Analyzers
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+
+namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System.Collections.Immutable;
     using System.Threading.Tasks;
@@ -10,7 +12,7 @@
     /// Finds await expressions on <see cref="Task"/> that do not use <see cref="Task.ConfigureAwait(bool)"/>.
     /// Also works on <see cref="ValueTask"/>.
     /// </summary>
-    [DiagnosticAnalyzer(LanguageNames.CSharp)]
+    [DiagnosticAnalyzer(LanguageNames.CSharp, LanguageNames.VisualBasic)]
     public class VSTHRD111UseConfigureAwaitAnalyzer : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD111";

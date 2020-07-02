@@ -1,4 +1,6 @@
-﻿namespace Microsoft.VisualStudio.Threading.Analyzers
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+
+namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System.Collections.Generic;
     using System.Collections.Immutable;
@@ -7,8 +9,7 @@
     using Microsoft.CodeAnalysis.Diagnostics;
     using Microsoft.CodeAnalysis.Operations;
 
-    [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class VSTHRD012SpecifyJtfWhereAllowed : DiagnosticAnalyzer
+    public abstract class AbstractVSTHRD012SpecifyJtfWhereAllowed : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD012";
 
@@ -22,6 +23,8 @@
             isEnabledByDefault: true);
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Descriptor);
+
+        private protected abstract LanguageUtils LanguageUtils { get; }
 
         public override void Initialize(AnalysisContext context)
         {
@@ -92,7 +95,7 @@
         private void AnalyzeInvocation(OperationAnalysisContext context)
         {
             var invocation = (IInvocationOperation)context.Operation;
-            var invokedMethodName = CSharpUtils.Instance.IsolateMethodName(invocation);
+            var invokedMethodName = this.LanguageUtils.IsolateMethodName(invocation);
             var argList = invocation.Arguments;
             var methodSymbol = invocation.TargetMethod;
 
@@ -106,7 +109,7 @@
             var methodSymbol = objectCreation.Constructor;
             AnalyzeCall(
                 context,
-                CSharpUtils.Instance.IsolateMethodName(objectCreation).GetLocation(),
+                this.LanguageUtils.IsolateMethodName(objectCreation).GetLocation(),
                 objectCreation.Arguments,
                 methodSymbol,
                 methodSymbol.ContainingType.Constructors);

@@ -1,8 +1,4 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
@@ -27,8 +23,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     /// on the thread pool. Of course any <see cref="TaskScheduler"/> is fine, so long as it is explicitly given (including
     /// <see cref="TaskScheduler.Current"/> itself).
     /// </remarks>
-    [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class VSTHRD105AvoidImplicitTaskSchedulerCurrentAnalyzer : DiagnosticAnalyzer
+    public abstract class AbstractVSTHRD105AvoidImplicitTaskSchedulerCurrentAnalyzer : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD105";
 
@@ -42,6 +37,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             isEnabledByDefault: true);
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Descriptor);
+
+        private protected abstract LanguageUtils LanguageUtils { get; }
 
         public override void Initialize(AnalysisContext context)
         {
@@ -77,7 +74,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
                 if (reportDiagnostic)
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(Descriptor, CSharpUtils.Instance.IsolateMethodName(operation).GetLocation()));
+                    context.ReportDiagnostic(Diagnostic.Create(Descriptor, this.LanguageUtils.IsolateMethodName(operation).GetLocation()));
                 }
             }
         }

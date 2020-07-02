@@ -3,7 +3,7 @@
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis.Testing;
     using Xunit;
-    using Verify = CSharpCodeFixVerifier<VSTHRD105AvoidImplicitTaskSchedulerCurrentAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
+    using Verify = CSharpCodeFixVerifier<CSharpVSTHRD105AvoidImplicitTaskSchedulerCurrentAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
     public class VSTHRD105AvoidImplicitTaskSchedulerCurrentAnalyzerTests
     {

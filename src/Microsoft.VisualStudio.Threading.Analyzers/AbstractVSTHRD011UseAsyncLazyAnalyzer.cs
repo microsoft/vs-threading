@@ -1,4 +1,6 @@
-﻿namespace Microsoft.VisualStudio.Threading.Analyzers
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+
+namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System.Collections.Immutable;
     using System.Linq;
@@ -7,8 +9,7 @@
     using Microsoft.CodeAnalysis.Diagnostics;
     using Microsoft.CodeAnalysis.Operations;
 
-    [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class VSTHRD011UseAsyncLazyAnalyzer : DiagnosticAnalyzer
+    public abstract class AbstractVSTHRD011UseAsyncLazyAnalyzer : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD011";
 
@@ -36,6 +37,8 @@
             get { return ImmutableArray.Create(LazyOfTaskDescriptor, SyncBlockInValueFactoryDescriptor); }
         }
 
+        private protected abstract LanguageUtils LanguageUtils { get; }
+
         /// <inheritdoc />
         public override void Initialize(AnalysisContext context)
         {
@@ -59,7 +62,7 @@
                     && typeArg.BelongsToNamespace(Namespaces.SystemThreadingTasks);
                 if (typeArgIsTask)
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(LazyOfTaskDescriptor, CSharpUtils.Instance.IsolateMethodName(objectCreation).GetLocation()));
+                    context.ReportDiagnostic(Diagnostic.Create(LazyOfTaskDescriptor, this.LanguageUtils.IsolateMethodName(objectCreation).GetLocation()));
                 }
                 else
                 {
@@ -73,7 +76,7 @@
                         var firstProblem = problems.FirstOrDefault();
                         if (firstProblem != null)
                         {
-                            context.ReportDiagnostic(Diagnostic.Create(SyncBlockInValueFactoryDescriptor, CSharpUtils.Instance.IsolateMethodName(firstProblem).GetLocation()));
+                            context.ReportDiagnostic(Diagnostic.Create(SyncBlockInValueFactoryDescriptor, this.LanguageUtils.IsolateMethodName(firstProblem).GetLocation()));
                         }
                     }
                 }

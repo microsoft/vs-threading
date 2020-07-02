@@ -1,4 +1,6 @@
-﻿namespace Microsoft.VisualStudio.Threading.Analyzers
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+
+namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System.Collections.Generic;
     using System.Collections.Immutable;
@@ -28,8 +30,7 @@
     /// of such bugs as early as possible by making synchronous methods unconditionally thread affinitized.
     /// So a new analyzer should require that the thread-asserting statement appear near the top of the method, and outside of any conditional blocks.
     /// </remarks>
-    [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class VSTHRD108AssertThreadRequirementUnconditionally : DiagnosticAnalyzer
+    public abstract class AbstractVSTHRD108AssertThreadRequirementUnconditionally : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD108";
 
@@ -44,6 +45,8 @@
 
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Descriptor);
+
+        private protected abstract LanguageUtils LanguageUtils { get; }
 
         /// <inheritdoc />
         public override void Initialize(AnalysisContext context)
@@ -126,7 +129,7 @@
 
                 if (reportDiagnostic)
                 {
-                    var nodeToLocate = CSharpUtils.Instance.IsolateMethodName(invocation);
+                    var nodeToLocate = this.LanguageUtils.IsolateMethodName(invocation);
                     context.ReportDiagnostic(Diagnostic.Create(Descriptor, nodeToLocate.GetLocation()));
                 }
             }
