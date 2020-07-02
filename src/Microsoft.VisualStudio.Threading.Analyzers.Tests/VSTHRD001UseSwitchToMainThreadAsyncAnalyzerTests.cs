@@ -14,12 +14,12 @@ using Microsoft.VisualStudio.Shell;
 
 class Test {
     void Foo() {
-        ThreadHelper.Generic.Invoke(delegate { });
+        {|#0:ThreadHelper.Generic.Invoke|}(delegate { });
     }
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithSpan(6, 9, 6, 36));
+            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithLocation(0));
         }
 
         [Fact]
@@ -30,12 +30,12 @@ using Microsoft.VisualStudio.Shell;
 
 class Test {
     void Foo() {
-        ThreadHelper.Generic.BeginInvoke(delegate { });
+        {|#0:ThreadHelper.Generic.BeginInvoke|}(delegate { });
     }
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithSpan(6, 9, 6, 41));
+            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithLocation(0));
         }
 
         [Fact]
@@ -46,12 +46,12 @@ using Microsoft.VisualStudio.Shell;
 
 class Test {
     void Foo() {
-        ThreadHelper.Generic.InvokeAsync(delegate { });
+        {|#0:ThreadHelper.Generic.InvokeAsync|}(delegate { });
     }
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithSpan(6, 9, 6, 41));
+            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithLocation(0));
         }
 
         [Fact]
@@ -62,12 +62,12 @@ using System.Windows.Threading;
 
 class Test {
     void Foo() {
-        Dispatcher.CurrentDispatcher.Invoke(delegate { }, DispatcherPriority.ContextIdle);
+        {|#0:Dispatcher.CurrentDispatcher.Invoke|}(delegate { }, DispatcherPriority.ContextIdle);
     }
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithSpan(6, 9, 6, 44));
+            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithLocation(0));
         }
 
         [Fact]
@@ -79,12 +79,12 @@ using System.Windows.Threading;
 
 class Test {
     void Foo() {
-        Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() => { }));
+        {|#0:Dispatcher.CurrentDispatcher.BeginInvoke|}(new Action(() => { }));
     }
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithSpan(7, 9, 7, 49));
+            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithLocation(0));
         }
 
         [Fact]
@@ -95,12 +95,12 @@ using System.Windows.Threading;
 
 class Test {
     void Foo() {
-        Dispatcher.CurrentDispatcher.InvokeAsync(delegate { }, DispatcherPriority.ContextIdle);
+        {|#0:Dispatcher.CurrentDispatcher.InvokeAsync|}(delegate { }, DispatcherPriority.ContextIdle);
     }
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithSpan(6, 9, 6, 49));
+            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithLocation(0));
         }
 
         [Fact]
@@ -111,12 +111,12 @@ using System.Threading;
 
 class Test {
     void Foo() {
-        SynchronizationContext.Current.Send(s => { }, null);
+        {|#0:SynchronizationContext.Current.Send|}(s => { }, null);
     }
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithSpan(6, 9, 6, 44));
+            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithLocation(0));
         }
 
         [Fact]
@@ -127,12 +127,12 @@ using System.Threading;
 
 class Test {
     void Foo() {
-        SynchronizationContext.Current.Post(s => { }, null);
+        {|#0:SynchronizationContext.Current.Post|}(s => { }, null);
     }
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithSpan(6, 9, 6, 44));
+            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithLocation(0));
         }
     }
 }

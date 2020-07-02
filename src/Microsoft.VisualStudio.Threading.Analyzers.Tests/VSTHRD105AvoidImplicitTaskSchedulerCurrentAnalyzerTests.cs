@@ -16,12 +16,12 @@ using System.Threading.Tasks;
 class Test {
     void F() {
         Task t = null;
-        t.ContinueWith(_ => { });
+        t.{|#0:ContinueWith|}(_ => { });
     }
 }
 ";
 
-            var expected = Verify.Diagnostic().WithSpan(7, 11, 7, 23);
+            var expected = Verify.Diagnostic().WithLocation(0);
             await new Verify.Test
             {
                 TestCode = test,
@@ -38,12 +38,12 @@ using System.Threading.Tasks;
 
 class Test {
     void F() {
-        Task.Factory.StartNew(() => { });
+        Task.Factory.{|#0:StartNew|}(() => { });
     }
 }
 ";
 
-            var expected = Verify.Diagnostic().WithSpan(6, 22, 6, 30);
+            var expected = Verify.Diagnostic().WithLocation(0);
             await new Verify.Test
             {
                 TestCode = test,

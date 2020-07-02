@@ -35,12 +35,12 @@ class Test {
     void F() {
         if (check)
         {
-            ThreadHelper.ThrowIfNotOnUIThread();
+            ThreadHelper.{|#0:ThrowIfNotOnUIThread|}();
         }
     }
 }
 ";
-            var expected = Verify.Diagnostic().WithSpan(11, 26, 11, 46);
+            var expected = Verify.Diagnostic().WithLocation(0);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
@@ -57,7 +57,7 @@ class Test {
     void F() {
         if (check)
         {
-            Action check = () => ThreadHelper.ThrowIfNotOnUIThread();
+            Action check = () => ThreadHelper.{|#0:ThrowIfNotOnUIThread|}();
         }
     }
 }
@@ -80,13 +80,13 @@ class Test {
         {
             if (check)
             {
-                ThreadHelper.ThrowIfNotOnUIThread();
+                ThreadHelper.{|#0:ThrowIfNotOnUIThread|}();
             }
         };
     }
 }
 ";
-            var expected = Verify.Diagnostic().WithSpan(13, 30, 13, 50);
+            var expected = Verify.Diagnostic().WithLocation(0);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
@@ -103,12 +103,12 @@ class Test {
     void F() {
         while (check)
         {
-            ThreadHelper.ThrowIfNotOnUIThread();
+            ThreadHelper.{|#0:ThrowIfNotOnUIThread|}();
         }
     }
 }
 ";
-            var expected = Verify.Diagnostic().WithSpan(11, 26, 11, 46);
+            var expected = Verify.Diagnostic().WithLocation(0);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
@@ -125,12 +125,12 @@ class Test {
     void F() {
         for (int i = 0; false; i++)
         {
-            ThreadHelper.ThrowIfNotOnUIThread();
+            ThreadHelper.{|#0:ThrowIfNotOnUIThread|}();
         }
     }
 }
 ";
-            var expected = Verify.Diagnostic().WithSpan(11, 26, 11, 46);
+            var expected = Verify.Diagnostic().WithLocation(0);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
@@ -164,11 +164,11 @@ using Microsoft.VisualStudio.Shell;
 
 class Test {
     void F() {
-        System.Diagnostics.Debug.Assert(ThreadHelper.CheckAccess());
+        System.Diagnostics.Debug.Assert(ThreadHelper.{|#0:CheckAccess|}());
     }
 }
 ";
-            var expected = Verify.Diagnostic().WithSpan(8, 54, 8, 65);
+            var expected = Verify.Diagnostic().WithLocation(0);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
@@ -182,7 +182,7 @@ using Microsoft.VisualStudio.Shell;
 
 class Test {
     void F() {
-        ThrowIfNot(ThreadHelper.CheckAccess());
+        ThrowIfNot(ThreadHelper.{|#0:CheckAccess|}());
     }
 
     [Conditional(""DEBUG"")]
@@ -192,7 +192,7 @@ class Test {
     }
 }
 ";
-            var expected = Verify.Diagnostic().WithSpan(8, 33, 8, 44);
+            var expected = Verify.Diagnostic().WithLocation(0);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
