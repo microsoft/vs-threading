@@ -4,7 +4,7 @@
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.Testing;
     using Xunit;
-    using Verify = CSharpCodeFixVerifier<VSTHRD011UseAsyncLazyAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
+    using Verify = CSharpCodeFixVerifier<CSharpVSTHRD011UseAsyncLazyAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
     public class VSTHRD011UseAsyncLazyAnalyzerTests
     {
@@ -16,12 +16,12 @@ using System;
 using System.Threading.Tasks;
 
 class Test {
-    Lazy<Task<int>> t = new Lazy<Task<int>>();
+    Lazy<Task<int>> t = new {|#0:Lazy<Task<int>>|}();
     Lazy<Task<int>> t2;
     Lazy<int> tInt = new Lazy<int>();
 }
 ";
-            var expected = this.CreateDiagnostic(VSTHRD011UseAsyncLazyAnalyzer.LazyOfTaskDescriptor, 6, 29, 15);
+            var expected = this.CreateDiagnostic(AbstractVSTHRD011UseAsyncLazyAnalyzer.LazyOfTaskDescriptor, 0);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
@@ -33,10 +33,10 @@ using System;
 using System.Threading.Tasks;
 
 class Test {
-    Lazy<Task<object>> t3 = new Lazy<Task<object>>();
+    Lazy<Task<object>> t3 = new {|#0:Lazy<Task<object>>|}();
 }
 ";
-            var expected = this.CreateDiagnostic(VSTHRD011UseAsyncLazyAnalyzer.LazyOfTaskDescriptor, 6, 33, 18);
+            var expected = this.CreateDiagnostic(AbstractVSTHRD011UseAsyncLazyAnalyzer.LazyOfTaskDescriptor, 0);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
@@ -48,10 +48,10 @@ using System;
 using System.Threading.Tasks;
 
 class Test {
-    Lazy<Task> t3 = new Lazy<Task>();
+    Lazy<Task> t3 = new {|#0:Lazy<Task>|}();
 }
 ";
-            var expected = this.CreateDiagnostic(VSTHRD011UseAsyncLazyAnalyzer.LazyOfTaskDescriptor, 6, 25, 10);
+            var expected = this.CreateDiagnostic(AbstractVSTHRD011UseAsyncLazyAnalyzer.LazyOfTaskDescriptor, 0);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
@@ -68,7 +68,7 @@ class Test {
 
     void Foo() {
         var t4 = new Lazy<int>(delegate {
-            jtf.Run(async delegate {
+            jtf.{|#0:Run|}(async delegate {
                 await Task.Yield();
             });
 
@@ -77,7 +77,7 @@ class Test {
     }
 }
 ";
-            var expected = this.CreateDiagnostic(VSTHRD011UseAsyncLazyAnalyzer.SyncBlockInValueFactoryDescriptor, 11, 13, 7);
+            var expected = this.CreateDiagnostic(AbstractVSTHRD011UseAsyncLazyAnalyzer.SyncBlockInValueFactoryDescriptor, 0);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
@@ -94,7 +94,7 @@ class Test {
 
     void Foo() {
         var t4 = new Lazy<int>(() => {
-            jtf.Run(async delegate {
+            jtf.{|#0:Run|}(async delegate {
                 await Task.Yield();
             });
 
@@ -103,7 +103,7 @@ class Test {
     }
 }
 ";
-            var expected = this.CreateDiagnostic(VSTHRD011UseAsyncLazyAnalyzer.SyncBlockInValueFactoryDescriptor, 11, 13, 7);
+            var expected = this.CreateDiagnostic(AbstractVSTHRD011UseAsyncLazyAnalyzer.SyncBlockInValueFactoryDescriptor, 0);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
@@ -119,7 +119,7 @@ class Test {
     JoinableTaskFactory jtf;
 
     void Foo() {
-        var t4 = new Lazy<Task<int>>(async () => {
+        var t4 = new {|#0:Lazy<Task<int>>|}(async () => {
             await jtf.RunAsync(async delegate {
                 await Task.Yield();
             });
@@ -129,7 +129,7 @@ class Test {
     }
 }
 ";
-            var expected = this.CreateDiagnostic(VSTHRD011UseAsyncLazyAnalyzer.LazyOfTaskDescriptor, 10, 22, 15);
+            var expected = this.CreateDiagnostic(AbstractVSTHRD011UseAsyncLazyAnalyzer.LazyOfTaskDescriptor, 0);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
@@ -171,15 +171,15 @@ using System.Threading.Tasks;
 
 class Test {
     void Foo() {
-        var t4 = new Lazy<Task<object>>();
+        var t4 = new {|#0:Lazy<Task<object>>|}();
     }
 }
 ";
-            var expected = this.CreateDiagnostic(VSTHRD011UseAsyncLazyAnalyzer.LazyOfTaskDescriptor, 7, 22, 18);
+            var expected = this.CreateDiagnostic(AbstractVSTHRD011UseAsyncLazyAnalyzer.LazyOfTaskDescriptor, 0);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
-        private DiagnosticResult CreateDiagnostic(DiagnosticDescriptor descriptor, int line, int column, int length)
-            => Verify.Diagnostic(descriptor).WithSpan(line, column, line, column + length);
+        private DiagnosticResult CreateDiagnostic(DiagnosticDescriptor descriptor, int location)
+            => Verify.Diagnostic(descriptor).WithLocation(location);
     }
 }

@@ -184,12 +184,22 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal override SyntaxNode IsolateMethodName(IInvocationOperation invocation)
         {
-            if (invocation.Syntax is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax memberAccessExpression })
+            if (invocation.Syntax is InvocationExpressionSyntax invocationExpression)
             {
-                return memberAccessExpression.Name;
+                return IsolateMethodName(invocationExpression);
             }
 
             return invocation.Syntax;
+        }
+
+        internal override SyntaxNode IsolateMethodName(IObjectCreationOperation objectCreation)
+        {
+            if (objectCreation.Syntax is ObjectCreationExpressionSyntax { Type: { } type })
+            {
+                return type;
+            }
+
+            return objectCreation.Syntax;
         }
 
         internal readonly struct ContainingFunctionData

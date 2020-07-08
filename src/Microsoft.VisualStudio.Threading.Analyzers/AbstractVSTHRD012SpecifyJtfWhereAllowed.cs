@@ -1,15 +1,15 @@
-﻿namespace Microsoft.VisualStudio.Threading.Analyzers
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+
+namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Linq;
     using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CSharp;
-    using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Diagnostics;
+    using Microsoft.CodeAnalysis.Operations;
 
-    [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class VSTHRD012SpecifyJtfWhereAllowed : DiagnosticAnalyzer
+    public abstract class AbstractVSTHRD012SpecifyJtfWhereAllowed : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD012";
 
@@ -24,13 +24,15 @@
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Descriptor);
 
+        private protected abstract LanguageUtils LanguageUtils { get; }
+
         public override void Initialize(AnalysisContext context)
         {
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
 
-            context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeInvocation), SyntaxKind.InvocationExpression);
-            context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzerObjectCreation), SyntaxKind.ObjectCreationExpression);
+            context.RegisterOperationAction(Utils.DebuggableWrapper(this.AnalyzeInvocation), OperationKind.Invocation);
+            context.RegisterOperationAction(Utils.DebuggableWrapper(this.AnalyzerObjectCreation), OperationKind.ObjectCreation);
         }
 
         private static bool IsImportantJtfParameter(IParameterSymbol ps)
@@ -42,20 +44,20 @@
                 && !ps.GetAttributes().Any(a => a.AttributeClass.Name == "OptionalAttribute");
         }
 
-        private static ArgumentSyntax GetArgumentForParameter(ArgumentListSyntax arguments, IMethodSymbol method, IParameterSymbol parameter)
+        private static IArgumentOperation? GetArgumentForParameter(ImmutableArray<IArgumentOperation> arguments, IParameterSymbol parameter)
         {
-            int indexOfParameter = method.Parameters.IndexOf(parameter);
-            var argByPosition = arguments.Arguments.TakeWhile(arg => arg.NameColon == null).Skip(indexOfParameter).Take(1).FirstOrDefault();
-            if (argByPosition != null)
+            foreach (var argument in arguments)
             {
-                return argByPosition;
+                if (Equals(argument.Parameter, parameter))
+                {
+                    return argument;
+                }
             }
 
-            var argByName = arguments.Arguments.FirstOrDefault(arg => arg.NameColon?.Name.Identifier.ValueText == parameter.Name);
-            return argByName;
+            return null;
         }
 
-        private static void AnalyzeCall(SyntaxNodeAnalysisContext context, Location location, ArgumentListSyntax argList, IMethodSymbol methodSymbol, IEnumerable<IMethodSymbol> otherOverloads)
+        private static void AnalyzeCall(OperationAnalysisContext context, Location location, ImmutableArray<IArgumentOperation> argList, IMethodSymbol methodSymbol, IEnumerable<IMethodSymbol> otherOverloads)
         {
             var firstJtfParameter = methodSymbol.Parameters.FirstOrDefault(IsImportantJtfParameter);
             if (firstJtfParameter != null)
@@ -63,7 +65,8 @@
                 // Verify that if the JTF/JTC parameter is optional, it is actually specified in the caller's syntax.
                 if (firstJtfParameter.HasExplicitDefaultValue)
                 {
-                    if (GetArgumentForParameter(argList, methodSymbol, firstJtfParameter) == null)
+                    var argument = GetArgumentForParameter(argList, firstJtfParameter);
+                    if (argument == null || argument.IsImplicit)
                     {
                         Diagnostic diagnostic = Diagnostic.Create(
                             Descriptor,
@@ -89,36 +92,27 @@
             }
         }
 
-        private void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
+        private void AnalyzeInvocation(OperationAnalysisContext context)
         {
-            var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
-            ExpressionSyntax invokedMethodName = CSharpUtils.IsolateMethodName(invocationExpressionSyntax);
-            var argList = invocationExpressionSyntax.ArgumentList;
-            var symbolInfo = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax, context.CancellationToken);
-            var methodSymbol = symbolInfo.Symbol as IMethodSymbol;
+            var invocation = (IInvocationOperation)context.Operation;
+            var invokedMethodName = this.LanguageUtils.IsolateMethodName(invocation);
+            var argList = invocation.Arguments;
+            var methodSymbol = invocation.TargetMethod;
 
-            // nameof(X) has no method symbol. So skip over such.
-            if (methodSymbol != null)
-            {
-                var otherOverloads = methodSymbol.ContainingType.GetMembers(methodSymbol.Name).OfType<IMethodSymbol>();
-                AnalyzeCall(context, invokedMethodName.GetLocation(), argList, methodSymbol, otherOverloads);
-            }
+            var otherOverloads = methodSymbol.ContainingType.GetMembers(methodSymbol.Name).OfType<IMethodSymbol>();
+            AnalyzeCall(context, invokedMethodName.GetLocation(), argList, methodSymbol, otherOverloads);
         }
 
-        private void AnalyzerObjectCreation(SyntaxNodeAnalysisContext context)
+        private void AnalyzerObjectCreation(OperationAnalysisContext context)
         {
-            var creationSyntax = (ObjectCreationExpressionSyntax)context.Node;
-            var symbolInfo = context.SemanticModel.GetSymbolInfo(creationSyntax, context.CancellationToken);
-            var methodSymbol = symbolInfo.Symbol as IMethodSymbol;
-            if (methodSymbol != null)
-            {
-                AnalyzeCall(
-                    context,
-                    creationSyntax.Type.GetLocation(),
-                    creationSyntax.ArgumentList,
-                    methodSymbol,
-                    methodSymbol.ContainingType.Constructors);
-            }
+            var objectCreation = (IObjectCreationOperation)context.Operation;
+            var methodSymbol = objectCreation.Constructor;
+            AnalyzeCall(
+                context,
+                this.LanguageUtils.IsolateMethodName(objectCreation).GetLocation(),
+                objectCreation.Arguments,
+                methodSymbol,
+                methodSymbol.ContainingType.Constructors);
         }
     }
 }

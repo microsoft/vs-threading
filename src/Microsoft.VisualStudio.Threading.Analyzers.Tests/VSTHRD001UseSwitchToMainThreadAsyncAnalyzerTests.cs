@@ -2,7 +2,7 @@
 {
     using System.Threading.Tasks;
     using Xunit;
-    using Verify = CSharpCodeFixVerifier<VSTHRD001UseSwitchToMainThreadAsyncAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
+    using Verify = CSharpCodeFixVerifier<CSharpVSTHRD001UseSwitchToMainThreadAsyncAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
     public class VSTHRD001UseSwitchToMainThreadAsyncAnalyzerTests
     {
@@ -14,12 +14,12 @@ using Microsoft.VisualStudio.Shell;
 
 class Test {
     void Foo() {
-        ThreadHelper.Generic.Invoke(delegate { });
+        ThreadHelper.Generic.{|#0:Invoke|}(delegate { });
     }
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithSpan(6, 9, 6, 36));
+            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithLocation(0));
         }
 
         [Fact]
@@ -30,12 +30,12 @@ using Microsoft.VisualStudio.Shell;
 
 class Test {
     void Foo() {
-        ThreadHelper.Generic.BeginInvoke(delegate { });
+        ThreadHelper.Generic.{|#0:BeginInvoke|}(delegate { });
     }
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithSpan(6, 9, 6, 41));
+            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithLocation(0));
         }
 
         [Fact]
@@ -46,12 +46,12 @@ using Microsoft.VisualStudio.Shell;
 
 class Test {
     void Foo() {
-        ThreadHelper.Generic.InvokeAsync(delegate { });
+        ThreadHelper.Generic.{|#0:InvokeAsync|}(delegate { });
     }
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithSpan(6, 9, 6, 41));
+            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithLocation(0));
         }
 
         [Fact]
@@ -62,12 +62,12 @@ using System.Windows.Threading;
 
 class Test {
     void Foo() {
-        Dispatcher.CurrentDispatcher.Invoke(delegate { }, DispatcherPriority.ContextIdle);
+        Dispatcher.CurrentDispatcher.{|#0:Invoke|}(delegate { }, DispatcherPriority.ContextIdle);
     }
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithSpan(6, 9, 6, 44));
+            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithLocation(0));
         }
 
         [Fact]
@@ -79,12 +79,12 @@ using System.Windows.Threading;
 
 class Test {
     void Foo() {
-        Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() => { }));
+        Dispatcher.CurrentDispatcher.{|#0:BeginInvoke|}(new Action(() => { }));
     }
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithSpan(7, 9, 7, 49));
+            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithLocation(0));
         }
 
         [Fact]
@@ -95,12 +95,12 @@ using System.Windows.Threading;
 
 class Test {
     void Foo() {
-        Dispatcher.CurrentDispatcher.InvokeAsync(delegate { }, DispatcherPriority.ContextIdle);
+        Dispatcher.CurrentDispatcher.{|#0:InvokeAsync|}(delegate { }, DispatcherPriority.ContextIdle);
     }
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithSpan(6, 9, 6, 49));
+            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithLocation(0));
         }
 
         [Fact]
@@ -111,12 +111,12 @@ using System.Threading;
 
 class Test {
     void Foo() {
-        SynchronizationContext.Current.Send(s => { }, null);
+        SynchronizationContext.Current.{|#0:Send|}(s => { }, null);
     }
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithSpan(6, 9, 6, 44));
+            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithLocation(0));
         }
 
         [Fact]
@@ -127,12 +127,12 @@ using System.Threading;
 
 class Test {
     void Foo() {
-        SynchronizationContext.Current.Post(s => { }, null);
+        SynchronizationContext.Current.{|#0:Post|}(s => { }, null);
     }
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithSpan(6, 9, 6, 44));
+            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithLocation(0));
         }
     }
 }

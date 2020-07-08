@@ -1,13 +1,13 @@
-﻿namespace Microsoft.VisualStudio.Threading.Analyzers
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+
+namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System.Collections.Immutable;
     using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CSharp;
-    using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Diagnostics;
+    using Microsoft.CodeAnalysis.Operations;
 
-    [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class VSTHRD001UseSwitchToMainThreadAsyncAnalyzer : DiagnosticAnalyzer
+    public abstract class AbstractVSTHRD001UseSwitchToMainThreadAsyncAnalyzer : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD001";
 
@@ -22,6 +22,8 @@
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Descriptor);
 
+        private protected abstract LanguageUtils LanguageUtils { get; }
+
         public override void Initialize(AnalysisContext context)
         {
             context.EnableConcurrentExecution();
@@ -30,24 +32,26 @@
             context.RegisterCompilationStartAction(compilationStartContext =>
             {
                 var legacyThreadSwitchingMembers = CommonInterest.ReadMethods(compilationStartContext.Options, CommonInterest.FileNamePatternForLegacyThreadSwitchingMembers, compilationStartContext.CancellationToken).ToImmutableArray();
-                var analyzer = new Analyzer(legacyThreadSwitchingMembers);
-                compilationStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(analyzer.AnalyzeInvocation), SyntaxKind.InvocationExpression);
+                var analyzer = new Analyzer(this.LanguageUtils, legacyThreadSwitchingMembers);
+                compilationStartContext.RegisterOperationAction(Utils.DebuggableWrapper(analyzer.AnalyzeInvocation), OperationKind.Invocation);
             });
         }
 
         private class Analyzer
         {
+            private readonly LanguageUtils languageUtils;
             private readonly ImmutableArray<CommonInterest.QualifiedMember> legacyThreadSwitchingMembers;
 
-            internal Analyzer(ImmutableArray<CommonInterest.QualifiedMember> legacyThreadSwitchingMembers)
+            internal Analyzer(LanguageUtils languageUtils, ImmutableArray<CommonInterest.QualifiedMember> legacyThreadSwitchingMembers)
             {
+                this.languageUtils = languageUtils;
                 this.legacyThreadSwitchingMembers = legacyThreadSwitchingMembers;
             }
 
-            internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
+            internal void AnalyzeInvocation(OperationAnalysisContext context)
             {
-                var invocationSyntax = (InvocationExpressionSyntax)context.Node;
-                var invokeMethod = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
+                var invocation = (IInvocationOperation)context.Operation;
+                var invokeMethod = invocation.TargetMethod;
                 if (invokeMethod != null)
                 {
                     foreach (var legacyMethod in this.legacyThreadSwitchingMembers)
@@ -58,7 +62,7 @@
                         {
                             var diagnostic = Diagnostic.Create(
                                 Descriptor,
-                                invocationSyntax.Expression.GetLocation());
+                                this.languageUtils.IsolateMethodName(invocation).GetLocation());
                             context.ReportDiagnostic(diagnostic);
                             break;
                         }

@@ -1,21 +1,14 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
-    using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Linq;
-    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CSharp;
-    using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Diagnostics;
+    using Microsoft.CodeAnalysis.Operations;
 
     /// <summary>
     /// Report errors when <see cref="TaskFactory.StartNew(Action)"/> or <see cref="Task.ContinueWith(Action{Task, object}, object)"/>
@@ -30,8 +23,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     /// on the thread pool. Of course any <see cref="TaskScheduler"/> is fine, so long as it is explicitly given (including
     /// <see cref="TaskScheduler.Current"/> itself).
     /// </remarks>
-    [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class VSTHRD105AvoidImplicitTaskSchedulerCurrentAnalyzer : DiagnosticAnalyzer
+    public abstract class AbstractVSTHRD105AvoidImplicitTaskSchedulerCurrentAnalyzer : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD105";
 
@@ -46,18 +38,20 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Descriptor);
 
+        private protected abstract LanguageUtils LanguageUtils { get; }
+
         public override void Initialize(AnalysisContext context)
         {
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
 
-            context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeInvocation), SyntaxKind.InvocationExpression);
+            context.RegisterOperationAction(Utils.DebuggableWrapper(this.AnalyzeInvocation), OperationKind.Invocation);
         }
 
-        private void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
+        private void AnalyzeInvocation(OperationAnalysisContext context)
         {
-            var node = (InvocationExpressionSyntax)context.Node;
-            var invokeMethod = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
+            var operation = (IInvocationOperation)context.Operation;
+            var invokeMethod = operation.TargetMethod;
             if (invokeMethod?.ContainingType.BelongsToNamespace(Namespaces.SystemThreadingTasks) ?? false)
             {
                 bool reportDiagnostic = false;
@@ -72,8 +66,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
                         // Only notice uses of TaskFactory on the static instance (since custom instances may have a non-problematic default TaskScheduler set).
                         reportDiagnostic |= isTaskFactoryStartNew
-                            && node.Expression is MemberAccessExpressionSyntax memberAccess && memberAccess.Expression is MemberAccessExpressionSyntax memberAccessInner
-                                && context.SemanticModel.GetSymbolInfo(memberAccessInner, context.CancellationToken).Symbol is IPropertySymbol factoryProperty
+                            && operation.Instance is IPropertyReferenceOperation { Property: { } factoryProperty }
                                 && factoryProperty.ContainingType.Name == Types.Task.TypeName && factoryProperty.ContainingType.BelongsToNamespace(Namespaces.SystemThreadingTasks)
                                 && factoryProperty.Name == nameof(Task.Factory);
                     }
@@ -81,8 +74,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
                 if (reportDiagnostic)
                 {
-                    var memberAccessExpression = (MemberAccessExpressionSyntax)node.Expression;
-                    context.ReportDiagnostic(Diagnostic.Create(Descriptor, memberAccessExpression.Name.GetLocation()));
+                    context.ReportDiagnostic(Diagnostic.Create(Descriptor, this.LanguageUtils.IsolateMethodName(operation).GetLocation()));
                 }
             }
         }

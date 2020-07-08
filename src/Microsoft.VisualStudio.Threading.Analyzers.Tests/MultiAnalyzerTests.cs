@@ -276,7 +276,7 @@ public class Test {
         [Fact]
         public void NoValueTupleReference()
         {
-            var refAssemblies = typeof(VSTHRD001UseSwitchToMainThreadAsyncAnalyzer)
+            var refAssemblies = typeof(CSharpVSTHRD001UseSwitchToMainThreadAsyncAnalyzer)
                 .Assembly.GetReferencedAssemblies();
             Assert.DoesNotContain(refAssemblies, a => a.Name.Equals("System.ValueTuple", StringComparison.OrdinalIgnoreCase));
         }
@@ -293,7 +293,7 @@ public class Test {
         [Fact]
         public void NoValueTaskReference()
         {
-            var refAssemblies = typeof(VSTHRD001UseSwitchToMainThreadAsyncAnalyzer)
+            var refAssemblies = typeof(CSharpVSTHRD001UseSwitchToMainThreadAsyncAnalyzer)
                 .Assembly.GetReferencedAssemblies();
             Assert.DoesNotContain(refAssemblies, a => a.Name.Equals("System.Threading.Tasks.Extensions", StringComparison.OrdinalIgnoreCase));
         }
