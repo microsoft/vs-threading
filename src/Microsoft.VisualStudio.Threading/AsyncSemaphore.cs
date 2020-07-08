@@ -165,7 +165,10 @@ namespace Microsoft.VisualStudio.Threading
         /// <exception cref="ObjectDisposedException">Thrown when this semaphore is disposed before semaphore access is granted.</exception>
         public Task<Releaser> EnterAsync(int timeout, CancellationToken cancellationToken = default) => this.EnterAsync(TimeSpan.FromMilliseconds(timeout), cancellationToken);
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// Faults all pending semaphore waiters with <see cref="ObjectDisposedException"/>
+        /// and rejects all subsequent attempts to enter the semaphore with the same exception.
+        /// </summary>
         public void Dispose()
         {
             this.Dispose(true);

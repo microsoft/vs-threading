@@ -1,4 +1,4 @@
-﻿/********************************************************
+/********************************************************
 *                                                        *
 *   © Copyright (C) Microsoft. All rights reserved.      *
 *                                                        *
@@ -195,7 +195,10 @@ namespace Microsoft.VisualStudio.Threading
         /// </remarks>
         public virtual RevertRelevance SuppressRelevance() => default;
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// Faults all pending semaphore waiters with <see cref="ObjectDisposedException"/>
+        /// and rejects all subsequent attempts to enter the semaphore with the same exception.
+        /// </summary>
         public void Dispose()
         {
             this.Dispose(true);
