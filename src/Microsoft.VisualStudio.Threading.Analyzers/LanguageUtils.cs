@@ -11,5 +11,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         internal abstract Location? GetLocationOfBaseTypeName(INamedTypeSymbol symbol, INamedTypeSymbol baseType, Compilation compilation, CancellationToken cancellationToken);
 
         internal abstract SyntaxNode IsolateMethodName(IInvocationOperation invocation);
+
+        internal abstract SyntaxNode IsolateMethodName(IObjectCreationOperation objectCreation);
     }
 }

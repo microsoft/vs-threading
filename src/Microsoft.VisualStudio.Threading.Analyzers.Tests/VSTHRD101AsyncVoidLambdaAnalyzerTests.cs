@@ -18,12 +18,12 @@ class Test {
     }
 
     void T() {
-        F(async () => {
-        });
+        F({|#0:async () => {
+        }|});
     }
 }
 ";
-            var expected = Verify.Diagnostic().WithLocation(9, 11);
+            var expected = Verify.Diagnostic().WithLocation(0);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
@@ -38,12 +38,12 @@ class Test {
     }
 
     void T() {
-        F(async (x) => {
-        });
+        F({|#0:async (x) => {
+        }|});
     }
 }
 ";
-            var expected = Verify.Diagnostic().WithLocation(9, 11);
+            var expected = Verify.Diagnostic().WithLocation(0);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
@@ -58,12 +58,12 @@ class Test {
     }
 
     void T() {
-        F(async x => {
-        });
+        F({|#0:async x => {
+        }|});
     }
 }
 ";
-            var expected = Verify.Diagnostic().WithLocation(9, 11);
+            var expected = Verify.Diagnostic().WithLocation(0);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
@@ -78,12 +78,12 @@ class Test {
     }
 
     void T() {
-        F(async (object x) => {
-        });
+        F({|#0:async (object x) => {
+        }|});
     }
 }
 ";
-            var expected = Verify.Diagnostic().WithLocation(9, 11);
+            var expected = Verify.Diagnostic().WithLocation(0);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
@@ -95,11 +95,11 @@ using System;
 
 class Test {
     void F() {
-        Action action = async () => {};
+        Action action = {|#0:async () => {}|};
     }
 }
 ";
-            var expected = Verify.Diagnostic().WithLocation(6, 25);
+            var expected = Verify.Diagnostic().WithLocation(0);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
@@ -111,11 +111,11 @@ using System;
 
 class Test {
     void F() {
-        Action<object> action = async (x) => {};
+        Action<object> action = {|#0:async (x) => {}|};
     }
 }
 ";
-            var expected = Verify.Diagnostic().WithLocation(6, 33);
+            var expected = Verify.Diagnostic().WithLocation(0);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
@@ -127,8 +127,8 @@ using System;
 
 class Test {
     void F() {
-        EventHandler action1 = async (sender, e) => {};
-        EventHandler<MyEventArgs> action2 = async (sender, e) => {};
+        EventHandler action1 = {|#0:async (sender, e) => {}|};
+        EventHandler<MyEventArgs> action2 = {|#1:async (sender, e) => {}|};
     }
 
     class MyEventArgs : EventArgs {}
@@ -136,8 +136,8 @@ class Test {
 ";
             DiagnosticResult[] expected =
             {
-                Verify.Diagnostic().WithLocation(6, 32),
-                Verify.Diagnostic().WithLocation(7, 45),
+                Verify.Diagnostic().WithLocation(0),
+                Verify.Diagnostic().WithLocation(1),
             };
             await Verify.VerifyAnalyzerAsync(test, expected);
         }

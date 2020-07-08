@@ -3,7 +3,7 @@
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis.Testing;
     using Xunit;
-    using Verify = CSharpCodeFixVerifier<VSTHRD012SpecifyJtfWhereAllowed, CodeAnalysis.Testing.EmptyCodeFixProvider>;
+    using Verify = CSharpCodeFixVerifier<CSharpVSTHRD012SpecifyJtfWhereAllowed, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
     public class VSTHRD012SpecifyJtfWhereAllowedTests
     {
@@ -16,7 +16,7 @@ using Microsoft.VisualStudio.Threading;
 
 class Test {
     void F() {
-        G();
+        {|#0:G|}();
     }
 
     void G() { }
@@ -24,7 +24,7 @@ class Test {
 }
 ";
 
-            var expected = Verify.Diagnostic().WithSpan(7, 9, 7, 10);
+            var expected = Verify.Diagnostic().WithLocation(0);
             await new Verify.Test
             {
                 TestCode = test,
@@ -42,7 +42,7 @@ using Microsoft.VisualStudio.Threading;
 
 class Test {
     void F() {
-        G();
+        {|#0:G|}();
     }
 
     void G() { }
@@ -50,7 +50,7 @@ class Test {
 }
 ";
 
-            var expected = Verify.Diagnostic().WithSpan(7, 9, 7, 10);
+            var expected = Verify.Diagnostic().WithLocation(0);
             await new Verify.Test
             {
                 TestCode = test,
@@ -110,7 +110,7 @@ using Microsoft.VisualStudio.Threading;
 
 class Test {
     void F() {
-        var a = new Apple();
+        var a = new {|#0:Apple|}();
     }
 }
 
@@ -120,7 +120,7 @@ class Apple {
 }
 ";
 
-            var expected = Verify.Diagnostic().WithSpan(7, 21, 7, 26);
+            var expected = Verify.Diagnostic().WithLocation(0);
             await new Verify.Test
             {
                 TestCode = test,
@@ -161,12 +161,12 @@ using Microsoft.VisualStudio.Threading;
 
 class Test {
     void F() {
-        var o = new AsyncLazy<int>(() => Task.FromResult(1));
+        var o = new {|#0:AsyncLazy<int>|}(() => Task.FromResult(1));
     }
 }
 ";
 
-            var expected = Verify.Diagnostic().WithSpan(7, 21, 7, 35);
+            var expected = Verify.Diagnostic().WithLocation(0);
             await new Verify.Test
             {
                 TestCode = test,
