@@ -5,8 +5,7 @@ schedules:
   displayName: Weekly OptProf run
   branches:
     include:
-    - v16.5
-    - v16.6
+    - 'v16.*'
     - master
   always: true # we must keep data fresh since optimizationdata drops are purged after 30 days
 
