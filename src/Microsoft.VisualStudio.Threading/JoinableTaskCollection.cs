@@ -13,8 +13,11 @@ namespace Microsoft.VisualStudio.Threading
     using System.Threading.Tasks;
 
     /// <summary>
-    /// A collection of joinable tasks.
+    /// A collection of incomplete <see cref="JoinableTask" /> objects.
     /// </summary>
+    /// <remarks>
+    /// Any completed <see cref="JoinableTask" /> is automatically removed from the collection.
+    /// </remarks>
     [DebuggerDisplay("JoinableTaskCollection: {displayName ?? \"(anonymous)\"}")]
     public class JoinableTaskCollection : IJoinableTaskDependent, IEnumerable<JoinableTask>
     {
@@ -88,9 +91,14 @@ namespace Microsoft.VisualStudio.Threading
         ref JoinableTaskDependencyGraph.JoinableTaskDependentData IJoinableTaskDependent.GetJoinableTaskDependentData() => ref this.dependentData;
 
         /// <summary>
-        /// Adds the specified joinable task to this collection.
+        /// Adds the specified <see cref="JoinableTask" /> to this collection.
         /// </summary>
-        /// <param name="joinableTask">The joinable task to add to the collection.</param>
+        /// <param name="joinableTask">The <see cref="JoinableTask" /> to add to the collection.</param>
+        /// <remarks>
+        /// As the collection only stores *incomplete* <see cref="JoinableTask" /> instances,
+        /// if the <paramref name="joinableTask" /> is already completed, it will not be added to the collection and this method will simply return.
+        /// Any <see cref="JoinableTask" /> instances added to the collection will be automatically removed upon completion.
+        /// </remarks>
         public void Add(JoinableTask joinableTask)
         {
             Requires.NotNull(joinableTask, nameof(joinableTask));
@@ -103,10 +111,14 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Removes the specified joinable task from this collection,
+        /// Removes the specified <see cref="JoinableTask" /> from this collection,
         /// or decrements the ref count if this collection tracks that.
         /// </summary>
-        /// <param name="joinableTask">The joinable task to remove.</param>
+        /// <param name="joinableTask">The <see cref="JoinableTask" /> to remove.</param>
+        /// <remarks>
+        /// Completed <see cref="JoinableTask" /> instances are automatically removed from the collection.
+        /// Calling this method to remove them is not necessary.
+        /// </remarks>
         public void Remove(JoinableTask joinableTask)
         {
             Requires.NotNull(joinableTask, nameof(joinableTask));
