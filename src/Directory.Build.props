@@ -44,7 +44,7 @@
 
   <Target Name="PrepareReleaseNotes" BeforeTargets="GenerateNuspec" DependsOnTargets="GetBuildVersion">
     <PropertyGroup>
-      <PackageReleaseNotes>https://github.com/microsoft/vs-streamjsonrpc/releases/tag/v$(Version)</PackageReleaseNotes>
+      <PackageReleaseNotes>https://github.com/microsoft/vs-threading/releases/tag/v$(Version)</PackageReleaseNotes>
     </PropertyGroup>
   </Target>
 </Project>
