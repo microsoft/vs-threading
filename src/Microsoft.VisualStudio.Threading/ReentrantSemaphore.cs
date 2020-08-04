@@ -139,7 +139,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="initialCount">The initial number of concurrent operations to allow.</param>
         /// <param name="joinableTaskContext">The <see cref="JoinableTaskContext"/> to use to mitigate deadlocks.</param>
         /// <param name="mode">How to respond to a semaphore request by a caller that has already entered the semaphore.</param>
-        public static ReentrantSemaphore Create(int initialCount = 1, JoinableTaskContext? joinableTaskContext = default, ReentrancyMode mode = ReentrancyMode.NotAllowed)
+        public static ReentrantSemaphore Create(int initialCount = 1, JoinableTaskContext? joinableTaskContext = null, ReentrancyMode mode = ReentrancyMode.NotAllowed)
         {
             switch (mode)
             {
@@ -440,7 +440,7 @@ namespace Microsoft.VisualStudio.Threading
                             }
                         }
 
-                        return await operation();
+                        return await operation().ConfigureAwait(true);
                     }
                     finally
                     {
@@ -619,7 +619,7 @@ namespace Microsoft.VisualStudio.Threading
                         }
 
                         this.reentrancyDetection.Value = ownedBox = new StrongBox<bool>(true);
-                        return await operation();
+                        return await operation().ConfigureAwait(true);
                     }
                     finally
                     {
@@ -876,7 +876,7 @@ namespace Microsoft.VisualStudio.Threading
                             pushed = true;
                         }
 
-                        return await operation();
+                        return await operation().ConfigureAwait(true);
                     }
                     finally
                     {
@@ -1118,7 +1118,7 @@ namespace Microsoft.VisualStudio.Threading
                             releaser = default; // we should release whatever we pop off the stack (which ensures the last surviving nested holder actually releases).
                         }
 
-                        return await operation();
+                        return await operation().ConfigureAwait(true);
                     }
                     finally
                     {
