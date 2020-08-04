@@ -347,7 +347,9 @@ namespace Microsoft.VisualStudio.Threading
             {
                 CancellationTokenRegistration cancellationTokenRegistration;
                 IDisposable? timerTokenSource;
+#pragma warning disable CA2002 // Do not lock on objects with weak identity
                 lock (this)
+#pragma warning restore CA2002 // Do not lock on objects with weak identity
                 {
                     cancellationTokenRegistration = this.CancellationTokenRegistration;
                     this.CancellationTokenRegistration = default;

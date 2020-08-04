@@ -1,0 +1,12 @@
+# Please see the documentation for all configuration options:
+# https://help.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+
+version: 2
+updates:
+- package-ecosystem: nuget
+  directory: /src
+  schedule:
+    interval: weekly
+  ignore:
+  - dependency-name: Microsoft.CodeAnalysis* # We intentionally target older VS versions.
+  - dependency-name: DllExport # Later versions don't offer what we want.
